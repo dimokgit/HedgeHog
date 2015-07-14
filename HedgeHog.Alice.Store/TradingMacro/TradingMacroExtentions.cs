@@ -1024,14 +1024,14 @@ namespace HedgeHog.Alice.Store {
     public double OpenTradesGross2InPips { get { return TradesManager.MoneyAndLotToPips(OpenTradesGross2, Trades.Lots(), Pair); } }
 
     partial void OnCurrentLossChanged() {
-      if(!IsTrader && _CurrentLoss != 0)
+      if (!IsTrader && _CurrentLoss != 0)
         CurrentLoss = 0;
     }
     public double CurrentGross {
       get { return !IsTrader ? 0 : CurrentLoss + OpenTradesGross; }
     }
 
-    public int CurrentGrossLot { get { return !IsTrader?0: Trades.Select(t => t.Lots).DefaultIfEmpty(AllowedLotSizeCore()).Sum(); } }
+    public int CurrentGrossLot { get { return !IsTrader ? 0 : Trades.Select(t => t.Lots).DefaultIfEmpty(AllowedLotSizeCore()).Sum(); } }
     public double CurrentGrossInPips {
       get {
         return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentGross, CurrentGrossLot, Pair);
@@ -1456,6 +1456,7 @@ namespace HedgeHog.Alice.Store {
         BarsCountLastDate = DateTime.MinValue;
         TradesManager.ResetClosedTrades(Pair);
         _onElliotTradeCorridorDate = DateTime.MinValue;
+        _tradeConditionsTriggerDate = DateTime.MinValue;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if (!_replayRates.Any()) throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
@@ -2867,7 +2868,7 @@ namespace HedgeHog.Alice.Store {
     #region IsTrender
     private bool _IsTrender;
     [Category(categoryCorridor)]
-    [WwwSetting(wwwSettingsCorridor)]
+    [WwwSetting(wwwSettingsCorridorOther)]
     public bool IsTrender {
       get { return _IsTrender; }
       set {
@@ -2924,7 +2925,7 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceMin1,()=> level(TrendLinesTrendsPriceMin1)},
 
           {TradeLevelBy.None,()=>level(tm=>double.NaN)}
-          }; 
+          };
         return _TradeLevelFuncs;
       }
     }
@@ -2960,7 +2961,6 @@ namespace HedgeHog.Alice.Store {
       switch (function) {
         case ScanCorridorFunction.WaveStDevHeight: return ScanCorridorByStDevHeight;
         case ScanCorridorFunction.WaveCount: return ScanCorridorByWaveCount;
-        case ScanCorridorFunction.StDevHeightFft: return ScanCorridorByStDevByHeightFft;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
         case ScanCorridorFunction.TimeRatio: return ScanCorridorByTime;
         case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
@@ -3690,8 +3690,8 @@ namespace HedgeHog.Alice.Store {
 
     ConcurrentDictionary<string, Func<TradeDirections>> _canOpenTradeAutoConditions = new ConcurrentDictionary<string, Func<TradeDirections>>();
     private bool CanOpenTradeAuto(bool isBuy) {
-      return isBuy && _canOpenTradeAutoConditions.Values.DefaultIfEmpty(()=>TradeDirections.Down).All(v => v() == TradeDirections.Up) ||
-        !isBuy && _canOpenTradeAutoConditions.Values.DefaultIfEmpty(()=>TradeDirections.Up).All(v => v() == TradeDirections.Down);
+      return isBuy && _canOpenTradeAutoConditions.Values.DefaultIfEmpty(() => TradeDirections.Down).All(v => v() == TradeDirections.Up) ||
+        !isBuy && _canOpenTradeAutoConditions.Values.DefaultIfEmpty(() => TradeDirections.Up).All(v => v() == TradeDirections.Down);
     }
     public bool CanOpenTradeByDirection(bool isBuy) {
       return TradeDirection.IsAuto()
@@ -4371,7 +4371,16 @@ namespace HedgeHog.Alice.Store {
     public int RatesDuration { get; set; }
   }
   public static class WaveInfoExtentions {
-    public static int Index(this IList<TradingMacro.WaveRange> wrs,TradingMacro.WaveRange wr, Func<TradingMacro.WaveRange, double> value) {
+    public static Func<TradingMacro.WaveRange, double> BestFitProp(this TradingMacro.WaveRange wa) {
+      Func<Func<TradingMacro.WaveRange, double>, Func<TradingMacro.WaveRange, double>> foo = f => f;
+      var foos = new[] { foo(w => w.DistanceByRegression), foo(w => w.WorkByTime) };
+      return foos.OrderBy(f => f(wa)).First();
+    }
+
+    public static int Index(this IList<TradingMacro.WaveRange> wrs, Func<TradingMacro.WaveRange, double> value) {
+      return wrs.OrderByDescending(value).Take(1).Select(w => wrs.IndexOf(w)).DefaultIfEmpty(-1).First();
+    }
+    public static int Index(this IList<TradingMacro.WaveRange> wrs, TradingMacro.WaveRange wr, Func<TradingMacro.WaveRange, double> value) {
       return wrs.OrderByDescending(value).ToList().IndexOf(wr);
     }
     public static IList<Tuple<TradingMacro.WaveRange, int>> WaveRangesOrder(IList<TradingMacro.WaveRange> wrs, Func<TradingMacro.WaveRange, double> value) {

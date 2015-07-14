@@ -154,7 +154,10 @@
     }
 
     #settingsGrid .ui-spinner input[type=text] {
-      width: 60% !important;
+      /*width: 60% !important;*/
+    }
+    #settingsGrid .pgCell input[type=text] {
+      width: 100%;
     }
 
     #settingsGrid .pgGroupRow {
@@ -167,6 +170,9 @@
 
     #settingsGrid .pgTable .pgCell {
       white-space: nowrap;
+    }
+    #settingsGrid .pgTable .pgRow{
+      display:none;
     }
     .dialog-compact  {
       font-size:1em;
@@ -551,27 +557,32 @@
         <tr>
           <th></th>
           <th>Ang</th>
-          <th>H</th>
           <th>SD</th>
-          <th>WC</th>
-          <th>WD</th>
-          <th>WT</th>
+          <th>H</th>
+          <th>WH</th>
           <th>DR</th>
         </tr>
       </thead>
       <tbody data-bind="foreach:waveRanges">
         <tr data-bind="css:{selected:ElliotIndex.v > 0}">
           <td><span data-bind="text:$index()+1"></span></td>
-          <td><span data-bind="text:d3.format('.1f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Height.v),style:{fontWeight:Height.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.1f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(WorkByCount.v),style:{fontWeight:WorkByCount.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(WorkByDistance.v),style:{fontWeight:WorkByDistance.mx?'bold':''}"></span></td>
-          <td style="background-color:lightblue"><span data-bind="text:d3.format('.0f')(WorkByTime.v),style:{fontWeight:WorkByTime.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(Height.v),style:{fontWeight:Height.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(WorkByHeight.v),style:{fontWeight:WorkByHeight.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v),style:{fontWeight:DistanceByRegression.mx?'bold':''}"></span></td>
-
         </tr>
       </tbody>
+      <tfoot data-bind="foreach:waveRangesStats" style="background-color:gold">
+        <tr>
+          <td></td>
+          <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>
+          <td><span data-bind="text:d3.format('.'+($index()===0?'1':'0')+'f')(StDev.v)"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(Height.v)"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(WorkByHeight.v)"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v)"></span></td>
+        </tr>
+      </tfoot>
     </table>
   </div>
   <!--#endregion-->

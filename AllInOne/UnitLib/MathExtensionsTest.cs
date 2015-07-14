@@ -5,6 +5,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 using System.Reflection;
+namespace HedgeHog.Tests {
+  [TestClass()]
+  public class MathExtensionsTest {
+    [TestMethod()]
+    public void RelativeStandardDeviationTest() {
+      var dbls = new double[]{699,1157,2041,2951,2657,3664,3462,2377,3135,2727,2487};
+      Assert.AreEqual(0.507518025484428, dbls.RelativeStandardDeviation().Round(15));
+    }
+  }
+}
 
 namespace UnitLib
 {

@@ -132,7 +132,8 @@ namespace HedgeHog.Alice.Store {
         } else {
           Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
             a => dateToIndex(corrDate = a.IfEmpty(defaultDate).Single()));
-          BarsCountLastDate = corrDate.Max(BarsCountLastDate);
+          if( !WaveRanges.TakeLast(1).Any(wr=>corrDate.Between(wr.StartDate,wr.EndDate)))
+            BarsCountLastDate = corrDate.Max(BarsCountLastDate);
           BarsCountCalc = UseRatesInternal(rl => rl.Count - rl.TakeWhile(r => r.StartDate < BarsCountLastDate).Count());
         }
         SetTpsAverages();
@@ -149,7 +150,7 @@ namespace HedgeHog.Alice.Store {
     #region UseM1Corridor
     private int _UseM1Corridor;
     [Category(categoryActive)]
-    [WwwSetting(Group = wwwSettingsCorridor)]
+    [WwwSetting(wwwSettingsCorridorOther)]
     public int UseM1Corridor {
       get { return _UseM1Corridor; }
       set {

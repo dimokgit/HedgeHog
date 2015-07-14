@@ -229,7 +229,7 @@ namespace HedgeHog.Alice.Store {
           var tradeLevel = (_buyLevel.Rate + _sellLevel.Rate) / 2;
           if ((_buyLevel.CanTrade || _sellLevel.CanTrade) && IsAutoStrategy && tradeLevel.Between(bottom, top)) a();
         };
-        Action<Action> turnOffByCrossCount = a => { if (_buyLevel.TradesCount.Min(_sellLevel.TradesCount) < CorridorCrossesMaximum)a(); };
+        Action<Action> turnOffByCrossCount = a => { if (_buyLevel.TradesCount.Min(_sellLevel.TradesCount) < TradeCountMax)a(); };
         Action<Action> turnOffByWaveHeight = a => { if (WaveShort.RatesHeight < RatesHeight * .75)a(); };
         Action<Action> turnOffByWaveShortLeft = a => { if (WaveShort.Rates.Count < WaveShortLeft.Rates.Count)a(); };
         Action<Action> turnOffByWaveShortAndLeft = a => { if (WaveShortLeft.Rates.Count < CorridorDistanceRatio && WaveShort.Rates.Count < WaveShortLeft.Rates.Count)a(); };
@@ -274,7 +274,7 @@ namespace HedgeHog.Alice.Store {
         if (BuyLevel.Rate.Min(SellLevel.Rate) == 0) BuyLevel.RateEx = SellLevel.RateEx = RatesArray.Middle();
         _buyLevel.CanTrade = _sellLevel.CanTrade = false;
         var _buySellLevels = new[] { _buyLevel, _sellLevel }.ToList();
-        Action<Action> onCorridorCrossesMaximumExeeded = a => _buySellLevels.Where(bs => -bs.TradesCount >= CorridorCrossesMaximum).Take(1).ForEach(_ => a());
+        Action<Action> onCorridorCrossesMaximumExeeded = a => _buySellLevels.Where(bs => -bs.TradesCount >= TradeCountMax).Take(1).ForEach(_ => a());
         ObservableValue<double> ghostLevelOffset = new ObservableValue<double>(0);
         Action<Action<SuppRes>> _buySellLevelsForEach = a => _buySellLevels.ForEach(sr => a(sr));
         Action<Func<SuppRes, bool>, Action<SuppRes>> _buySellLevelsForEachWhere = (where, a) => _buySellLevels.Where(where).ToList().ForEach(sr => a(sr));
@@ -548,7 +548,7 @@ namespace HedgeHog.Alice.Store {
               if (firstTime) {
                 onCloseTradeLocal = t => {
                   if (t.PL >= TakeProfitPips / 2) {
-                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = TradeCountMax; });
                     if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
                   }
                 };
@@ -593,7 +593,7 @@ namespace HedgeHog.Alice.Store {
               if (firstTime) {
                 onCloseTradeLocal = t => {
                   if (t.PL >= TakeProfitPips / 2) {
-                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = TradeCountMax; });
                     if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
                   }
                 };
@@ -636,7 +636,7 @@ namespace HedgeHog.Alice.Store {
               if (firstTime) {
                 onCloseTradeLocal = t => {
                   if (t.PL >= TakeProfitPips / 2) {
-                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = TradeCountMax; });
                     if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
                   }
                 };
@@ -700,7 +700,7 @@ namespace HedgeHog.Alice.Store {
                 watcherCanTrade.Value = false;
                 onCloseTradeLocal = t => {
                   if (t.PL >= TakeProfitPips / 2) {
-                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = TradeCountMax; });
                     if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
                   }
                 };
@@ -764,7 +764,7 @@ namespace HedgeHog.Alice.Store {
                 watcherCanTrade.Value = false;
                 onCloseTradeLocal = t => {
                   if (t.PL >= TakeProfitPips / 2) {
-                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = TradeCountMax; });
                     if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
                   }
                 };
@@ -830,7 +830,7 @@ namespace HedgeHog.Alice.Store {
                 watcherCanTrade.Value = false;
                 onCloseTradeLocal = t => {
                   if (t.PL >= TakeProfitPips / 2) {
-                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = TradeCountMax; });
                     if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
                   }
                 };
@@ -924,7 +924,7 @@ namespace HedgeHog.Alice.Store {
                 watcherCanTrade.Value = false;
                 onCloseTradeLocal = t => {
                   if (t.PL >= TakeProfitPips / 2) {
-                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = TradeCountMax; });
                     if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
                   }
                 };
@@ -1535,7 +1535,7 @@ namespace HedgeHog.Alice.Store {
                   };
                   #endregion
                   onTradesCount += tc => {
-                    if (tc <= -CorridorCrossesMaximum)
+                    if (tc <= -TradeCountMax)
                       _buySellLevels.Where(sr => sr.InManual).ForEach(sr => {
                         sr.CanTrade = false;
                         sr.TradesCount = TradeCountStart;
@@ -1662,7 +1662,7 @@ namespace HedgeHog.Alice.Store {
                       BroadcastCloseAllTrades();
                   };
                   onOpenTradeLocal += t => {
-                    if (_buySellLevels.Any(bs => -bs.TradesCount >= CorridorCrossesMaximum))
+                    if (_buySellLevels.Any(bs => -bs.TradesCount >= TradeCountMax))
                       _buySellLevelsForEach(sr => { sr.CanTradeEx = false; });
                   };
                   #endregion
@@ -1981,7 +1981,7 @@ namespace HedgeHog.Alice.Store {
                         _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                       }
                     if (CurrentGrossInPipTotal > -PriceSpreadAverage) {
-                      _buySellLevelsForEach(sr => sr.TradesCountEx = this.CorridorCrossesMaximum);
+                      _buySellLevelsForEach(sr => sr.TradesCountEx = this.TradeCountMax);
                       BroadcastCloseAllTrades();
                     }
                   };
@@ -2080,7 +2080,7 @@ namespace HedgeHog.Alice.Store {
                   Log = new Exception(new { TradingAngleRange, WaveStDevRatio } + "");
                   onCloseTradeLocal = t => {
                     if (t.PL >= TakeProfitPips / 2) {
-                      _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                      _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = TradeCountMax; });
                       if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
                     }
                   };

@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
+  class TradeConditionStartDateTriggerAttribute : Attribute { }
   partial class TradingMacro {
     #region TradeOpenActions
     public delegate void TradeOpenAction(Trade trade);
@@ -86,42 +87,36 @@ namespace HedgeHog.Alice.Store {
 
     #region TradeConditions
     public delegate bool TradeConditionDelegate();
-    public TradeConditionDelegate WidthOk { get { return () => WaveRanges.Count >= 4 && TrendLines1Trends.StDev > TrendLinesTrends.StDev; } }
-    public TradeConditionDelegate ElliotOk {
+    bool WidthCommonOk(Func<bool> ok) { return !CorridorStartDate.HasValue && WaveCountOk() && ok(); }
+    [TradeConditionStartDateTrigger]
+    public TradeConditionDelegate WidthRBOk {
       get {
-        return () => WaveRanges.Select((wr, i) => new { wr, i })
-          .Where(x => x.wr.ElliotIndex == 1)
-          .Any(x => x.i.Between(1, 1));
+        return () => WidthCommonOk(() => TrendLinesTrends.StDev > TrendLines2Trends.StDev);
       }
     }
-    public TradeConditionDelegate TpsOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TpsMin); } }
+    [TradeConditionStartDateTrigger]
+    public TradeConditionDelegate WidthGROk {
+      get { return () => WidthCommonOk(() => TrendLines1Trends.StDev > TrendLinesTrends.StDev); }
+    }
+    public TradeConditionDelegate DbrOk {
+      get {
+        return () => WaveRanges.Take(1).Any(wr => WaveRangesGRB.Index(wr, w => w.DistanceByRegression) <= DbrIndexMax);
+      }
+    }
+    bool WaveTresholdOk(double value, double treshold) {
+      return !CorridorStartDate.HasValue && WaveRanges[0].Height > WaveHeightAverage && IsTresholdAbsOk(value, treshold);
+    } 
+    public TradeConditionDelegate CorrGROk {
+      get { return () => WaveTresholdOk(CorridorGRRatio, CorridorGRRatioMin); }
+    }
+    public TradeConditionDelegate WaveGOk {
+      get { return () => WaveTresholdOk(WaveFirstSecondRatio, WaveFirstSecondRatioMin); }
+    }
+    public Func<bool> TpsOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TpsMin); } }
     public TradeConditionDelegate TpsAvgMinOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TicksPerSecondAverageAverage * TpsMin.Sign()); } }
-    public TradeConditionDelegate WaveLowOk {
-      get {
-        return () => WaveRanges
-          .Select(wr => wr.Slope.Abs())
-          .Buffer(3, 1)
-          .Where(b => b.Count == 3)
-          .Select((b, i) => new { slope = b.StandardDeviation(), i })
-          .MinBy(x => x.slope)
-          .Select(x => x.i)
-          .DefaultIfEmpty(-1)
-          .Take(1)
-          .Any(i => i == 0);
-      }
-    }
-    public TradeConditionDelegate WaveHeightOk {
-      get {
-        return () => WaveRanges.Skip(2).Take(1)
-          .SelectMany(wr=>new []{wr.Min, wr.Max })
-          .DefaultIfEmpty(0)
-          .All(m => m.Between(WaveRanges[0].Min, WaveRanges[0].Max));
-      }
-    }
-    public TradeConditionDelegate WaveRatioOk { get { return () => WaveFirstSecondRatio > WaveFirstSecondRatioMin; } }
-    public TradeConditionDelegate WaveCount5Ok { get { return () => WaveRanges.Count > 4; } }
-    public TradeConditionDelegate WaveSteepOk { get { return () => WaveRanges[0].Slope.Abs() > WaveRanges[1].Slope.Abs(); } }
-    public TradeConditionDelegate WaveEasyOk { get { return () => WaveRanges[0].Slope.Abs() < WaveRanges[1].Slope.Abs(); } }
+    public TradeConditionDelegate WaveCountOk { get { return () => WaveRanges.Count >= _greenRedBlue.Sum(); } }
+    public Func<bool> WaveSteepOk { get { return () => WaveRanges[0].Slope.Abs() > WaveRanges[1].Slope.Abs(); } }
+    public Func<bool> WaveEasyOk { get { return () => WaveRanges[0].Slope.Abs() < WaveRanges[1].Slope.Abs(); } }
 
     [Description("'Green' corridor is outside the 'Red' and 'Blue' ones")]
     public TradeConditionDelegate GreenOk {
@@ -225,9 +220,10 @@ namespace HedgeHog.Alice.Store {
               select map(x.v, a.Type))
               .ToArray();
     }
-    public TradeConditionDelegate[] GetTradeConditions() {
+    public TradeConditionDelegate[] GetTradeConditions(Func<PropertyInfo,bool> predicate = null) {
       return GetType().GetProperties()
         .Where(p => p.PropertyType == typeof(TradeConditionDelegate))
+        .Where(p=>predicate == null || predicate(p))
         .Select(p => p.GetValue(this))
         .Cast<TradeConditionDelegate>()
         .ToArray();
@@ -246,22 +242,43 @@ namespace HedgeHog.Alice.Store {
              join tc in TradeConditionsInfo((d, s) => new { d, s }) on tcsAll.d equals tc.d
              select map(tc.d, tcsAll.t, tc.s);
     }
+    DateTime _tradeConditionsTriggerDate = DateTime.MinValue;
     public void TradeConditionsTrigger() {
       if (IsTrader) {
-        var evals = TradeConditionsEval();
-        var direction = TradeDirection;
+        if (Trades.Length > 0) {
+          BuyLevel.CanTradeEx = SellLevel.CanTradeEx = false;
+        } else {
+          var evals = TradeConditionsEval();
+          var direction = TradeDirection;
           //TradeConditions.Any(tc => tc == ElliotOk)
           //? WaveRanges[0].Slope > 0
           //? TradeDirections.Up
           //: TradeDirections.Down
           //: TradeDirections.Both;
-        evals.ForEach(eval => {
-          if (eval) {
-            if (TradeDirection.HasUp() && direction.HasUp()) BuyLevel.CanTradeEx = true;
-            if (TradeDirection.HasDown() && direction.HasDown()) SellLevel.CanTradeEx = true;
-          } else BuyLevel.CanTradeEx = SellLevel.CanTradeEx = false;
-        });
+          //TradeConditionsEvalStartDate().ForEach(_ => FreezeCorridorStartDate());
+          evals.ForEach(eval => {
+            if (eval /*&& WaveRanges[0].StartDate > _tradeConditionsTriggerDate*/) {
+              _tradeConditionsTriggerDate = WaveRanges[0].EndDate;
+              if (TradeDirection.HasUp() && direction.HasUp()) BuyLevel.CanTradeEx = true;
+              if (TradeDirection.HasDown() && direction.HasDown()) SellLevel.CanTradeEx = true;
+            } else {
+              BuyLevel.CanTradeEx = SellLevel.CanTradeEx = false;
+            }
+          });
+        }
       }
+    }
+    public IEnumerable<bool> TradeConditionsEvalStartDate() {
+      if (!IsTrader) return new bool[0];
+      return (from d in GetTradeConditions(p=>p.GetCustomAttributes<TradeConditionStartDateTriggerAttribute>().Any())
+              let b = d()
+              group b by b into gb
+              select gb.Key
+              )
+              .DefaultIfEmpty()
+              .OrderBy(b => b)
+              .Take(1)
+              .Where(b => b);
     }
     public IEnumerable<bool> TradeConditionsEval() {
       if (!IsTrader) return new bool[0];

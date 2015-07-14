@@ -256,11 +256,11 @@
       settingsGrid().empty();
       readTradeSettings(function (ts) {
         var tsMeta = {
-          CorridorCrossesMaximum: {
-            name: "Corridor Cross Max",
+          TradeCountMax: {
             type: 'number',
             options: { step: 1, numberFormat: "n" }
           },
+          MoveWrapTradeWithNewTrade:{name:"ForceWrapTrade"},
           TradingRatioByPMC: { name: "Lot By PMC" },
           LimitProfitByRatesHeight: { name: "Limit Profit By Height" },
           FreezeCorridorOnTradeOpen: { name: "Freeze On TradeOpen" },
@@ -619,9 +619,18 @@
     this.waveRangesDialog = function (element) {
       waveRangesDialog = $(element).find("table")[0];
     };
-    var waveRanges = ko.observable();
+    var waveRanges = ko.observableArray();
 
-    this.waveRanges = waveRanges;
+    this.waveRanges = ko.pureComputed(function () {
+      return waveRanges().filter(function (wr) {
+        return !wr.IsStats;
+      });
+    });
+    this.waveRangesStats = ko.pureComputed(function () {
+      return waveRanges().filter(function (wr) {
+        return !!wr.IsStats;
+      });
+    });
     this.startWaveRanges = function () {
       stopWaveRanges = false;
       $(waveRangesDialog).dialog({

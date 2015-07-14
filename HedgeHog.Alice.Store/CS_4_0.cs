@@ -3128,7 +3128,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CloseAfterTradingHours"/></summary>
         public const string CloseAfterTradingHours = "CloseAfterTradingHours";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossesMaximum"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradeCountMax"/></summary>
         public const string CorridorCrossesMaximum = "CorridorCrossesMaximum";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorHeightMax"/></summary>
@@ -7137,7 +7137,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CloseAfterTradingHours"/></summary>
         public static PropertyPath CloseAfterTradingHoursPath { get { return new PropertyPath("CloseAfterTradingHours"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossesMaximum"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradeCountMax"/></summary>
         public static PropertyPath CorridorCrossesMaximumPath { get { return new PropertyPath("CorridorCrossesMaximum"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorHeightMax"/></summary>

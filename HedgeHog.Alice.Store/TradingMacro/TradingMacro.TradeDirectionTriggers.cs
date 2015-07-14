@@ -42,20 +42,20 @@ namespace HedgeHog.Alice.Store {
     DateTime _onElliotTradeCorridorDate = DateTime.MinValue;
     [TradeDirectionTrigger]
     public void OnElliotWave() {
-      var ews = WaveRanges.Where(wr => wr.ElliotIndex > 0).ToArray();
-      if (ews.Length > 0 && WaveRanges.IndexOf(ews[0]) > 0) {
-        var max = ews.Max(wr => wr.Max);
-        var min = ews.Min(wr => wr.Min);
-        var mid = max.Avg(min);
-        var offset = (max - min) * 1.6 / 2;
-        if (new[] { false, true }.All(b => CurrentEnterPrice(b).Between(min, max))) {
-          BuyLevel.Rate = mid - offset;
-          SellLevel.Rate = mid + offset;
-          BuyLevel.InManual = SellLevel.InManual = true;
-          BuyLevel.CanTrade = TradeDirection.HasUp() && true;
-          SellLevel.CanTrade = TradeDirection.HasDown() && true;
-        }
-      }
+      WaveRanges.Where(wr => wr.ElliotIndex > 0).Take(1)
+        .ForEach(wr => {
+          var max = wr.Max;
+          var min = wr.Min;
+          var mid = max.Avg(min);
+          var offset = WaveHeightAverage / 2;
+          if (new[] { false, true }.All(b => CurrentEnterPrice(b).Between(min, max))) {
+            BuyLevel.Rate = mid - offset;
+            SellLevel.Rate = mid + offset;
+            BuyLevel.InManual = SellLevel.InManual = true;
+            BuyLevel.CanTrade = TradeDirection.HasUp() && true;
+            SellLevel.CanTrade = TradeDirection.HasDown() && true;
+          }
+        });
     }
     #endregion
 

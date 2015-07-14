@@ -125,7 +125,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region TpsMin
     private double _TpsMin;
-    [WwwSetting(Group = wwwSettingsCorridor)]
+    [WwwSetting(Group = wwwSettingsCorridorOther)]
     [Category(categoryActive)]
     [DisplayName("TicksPerSec Min")]
     public double TpsMin {

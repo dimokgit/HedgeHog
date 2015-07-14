@@ -56,7 +56,7 @@ namespace HedgeHog.Alice.Store {
     #region MoveWrapTradeWithNewTrade
     private bool _MoveWrapTradeWithNewTrade = false ;
     [Category(categoryTrading)]
-    [WwwSetting(wwwSettingsTradingOther)]
+    [WwwSetting]
     public bool MoveWrapTradeWithNewTrade {
       get { return _MoveWrapTradeWithNewTrade; }
       set {
@@ -151,6 +151,7 @@ namespace HedgeHog.Alice.Store {
         {TradeLevelsPreset.Narrow,Tuple.Create( TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3)},
         {TradeLevelsPreset.Wide,Tuple.Create( TradeLevelBy.PriceAvg21, TradeLevelBy.PriceAvg31)},
         {TradeLevelsPreset.SuperWide,Tuple.Create( TradeLevelBy.PriceAvg22, TradeLevelBy.PriceAvg32)},
+        {TradeLevelsPreset.Corridor1,Tuple.Create( TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0)},
         {TradeLevelsPreset.Corridor2,Tuple.Create( TradeLevelBy.PriceHigh, TradeLevelBy.PriceLow)},
         {TradeLevelsPreset.MinMax,Tuple.Create( TradeLevelBy.PriceMax, TradeLevelBy.PriceMin)},
 

@@ -31,7 +31,6 @@ namespace HedgeHog.Alice.Store {
     TillFlat2 = 2,
     TillFlat3 = 3,
     WaveCount = 4,
-    StDevHeightFft = 5,
     BigGap = 400,
     BigGap2 = 500,
     Spike = 6,

@@ -292,8 +292,8 @@
         return chartNum ? value : yDomain[1];
       }
       yDomain = d3.extent([yDomain[0], yDomain[1]
-        , tradeLevels && canBuy ? tradeLevels.buy : yDomain[1]
-        , tradeLevels && canSell ? tradeLevels.sell : yDomain[1]
+        , sbchnum(tradeLevels && canBuy ? tradeLevels.buy : yDomain[1])
+        , sbchnum(tradeLevels && canSell ? tradeLevels.sell : yDomain[1])
         , sbchnum(
           openBuy && tradeLevels
           ? tradeLevels.buyClose

@@ -326,8 +326,7 @@ namespace HedgeHog.Alice.Client {
         equity = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
         price = new { ask = tm0.CurrentPrice.Ask, bid = tm0.CurrentPrice.Bid },
         tci = GetTradeConditionsInfo(tmTrader),
-        wfs = tmTrader.WorkflowStep,
-        w12 = tmTrader.WaveFirstSecondRatio.Round(1)
+        w12 = (tmTrader.TradeConditions.Contains(tmTrader.CorrGROk) ? tmTrader.CorridorGRRatio : tmTrader.WaveFirstSecondRatio).Round(1)
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
@@ -532,36 +531,38 @@ namespace HedgeHog.Alice.Client {
         throw;
       }
     }
-    public int MoveCorridorWavesCount(string pair, int chartNumber, int step) {
-      return UseTradingMacro(pair, chartNumber, tm => {
-        tm.IsTradingActive = false;
-        return tm.CorridorWaveCount = tm.CorridorWaveCount + step;
-        //return tm.PriceCmaLevels_ = (tm.PriceCmaLevels_ + step).Max(1).Min(2).Round(1);
-      }, true);
-    }
     #endregion
     public object GetWaveRanges(string pair) {
-      var value = MonoidsCore.ToFunc(0.0, false, (v, mx) => new { v, mx });
+      var value = MonoidsCore.ToFunc(0.0,0, false, (v,i, mx) => new { v, i,mx });
       Func<IList<TradingMacro.WaveRange>, Func<TradingMacro.WaveRange, double>, TradingMacro.WaveRange> max = (rs, get) =>
         rs.Select((w, i) => new { w, v = get(w).Abs(), i })
         .OrderByDescending(x => x.v)
         .First().w;
       Func<IList<TradingMacro.WaveRange>, Func<TradingMacro.WaveRange, double>, TradingMacro.WaveRange, bool> isMax = (rs, get1, wr) => max(rs, get1) == wr;
-      var getValue = MonoidsCore.ToFunc(0.0, (IList<TradingMacro.WaveRange>)null, (Func<TradingMacro.WaveRange, double>)null, (TradingMacro.WaveRange)null,
-        (v, rs, get2, wr) => value(v, isMax(rs, get2, wr)));
+      var getValue = MonoidsCore.ToFunc(0.0,0, (IList<TradingMacro.WaveRange>)null, (Func<TradingMacro.WaveRange, double>)null, (TradingMacro.WaveRange)null,
+        (v,i, rs, get2, wr) => value(v,i, isMax(rs, get2, wr)));
       var wrs = UseTradingMacro(pair, tm => tm.IsTrader, false)
         .SelectMany(tm => tm.WaveRanges, (tm, wr) => new { inPips = new Func<double, double>(d => tm.InPips(d)), wr, rs = tm.WaveRanges })
-        .Select(x => new {
-          ElliotIndex = value((double)x.wr.ElliotIndex,false),
-          Angle = getValue(x.wr.Angle, x.rs, wr => wr.Angle, x.wr),//.ToString("###0.0"),
-          Height = getValue(x.inPips(x.wr.Height), x.rs, wr => wr.Height, x.wr),//.ToString("###0.0"),
-          StDev = getValue(x.inPips(x.wr.StDev).Round(1), x.rs, wr => wr.StDev, x.wr),//.ToString("#0.00"),
-          WorkByCount = getValue(x.inPips(x.wr.WorkByCount.Abs()).Round(0), x.rs, wr => wr.WorkByCount, x.wr),
-          WorkByDistance = getValue(x.inPips(x.inPips(x.wr.WorkByDistance.Abs())), x.rs, wr => wr.WorkByDistance, x.wr),
-          DistanceByRegression = getValue(x.inPips(x.wr.DistanceByRegression.Abs()), x.rs, wr => wr.DistanceByRegression, x.wr),
-          WorkByTime = getValue(x.inPips(x.wr.WorkByTime.Abs()).Round(0), x.rs, wr => wr.WorkByTime, x.wr)
+        .Select((x,i) => new {
+          ElliotIndex = value((double)x.wr.ElliotIndex,i+1,false),
+          Angle = getValue(x.wr.Angle,i+1, x.rs, wr => wr.Angle, x.wr),//.ToString("###0.0"),
+          Height = getValue(x.inPips(x.wr.Height), i + 1, x.rs, wr => wr.Height, x.wr),//.ToString("###0.0"),
+          StDev = getValue(x.inPips(x.wr.StDev).Round(1), i + 1, x.rs, wr => wr.StDev, x.wr),//.ToString("#0.00"),
+          DistanceByRegression = getValue(x.inPips(x.wr.DistanceByRegression.Abs()), i + 1, x.rs, wr => wr.DistanceByRegression, x.wr),
+          WorkByHeight = getValue(x.inPips(x.wr.WorkByHeight.Abs()).Round(0), i + 1, x.rs, wr => wr.WorkByHeight, x.wr),
         })
         .ToList();
+      var wrStats = UseTradingMacro(pair, tm => tm.IsTrader, false)
+        .Select(tm => new { wr = tm.WaveRangeSum, inPips = new Func<double, double>(d => tm.InPips(d)) })
+        .Select(x => new {
+          ElliotIndex = value(0, 0, false),
+          Angle = value(x.wr.Angle, 0, false),
+          Height = value(x.inPips(x.wr.Height), 0, false),
+          StDev = value(x.inPips(x.wr.StDev), 0, false),
+          DistanceByRegression = value(x.inPips(x.wr.DistanceByRegression), 0, false),
+          WorkByHeight = value(x.inPips(x.wr.WorkByHeight), 0, false),
+          IsStats = true
+        });
       Func<object, double> getProp = (o) =>
         o.GetType()
         .GetProperties()
@@ -571,23 +572,28 @@ namespace HedgeHog.Alice.Client {
         .First()();
       var wra = wrs.Take(1).Select(wr0 => wr0.GetType()
         .GetProperties()
-        .ToDictionary(p => p.Name, p => value(
+        .ToDictionary(p => p.Name, p =>(object) value(
           wrs
           .Select(wr => getProp(p.GetValue(wr)).Abs())
-          .OrderBy(d => d)
-          .Skip(1)
-          .SkipLast(1)
           .DefaultIfEmpty(0)
+          .ToArray()
+          .AverageInRange(1,-1)
           .Average(),
+          0,
           false
-          )));
+          )))
+          .ToArray();
+      wra[0].Add("IsStats", true);
       //var wrStd = wrs.Take(1).Select(wr0 => wr0.GetType()
       //  .GetProperties()
       //  .ToDictionary(p => p.Name, p => {
       //    var dbls = wrs.Select(wr => getProp(p.GetValue(wr)).Abs()).ToArray();
       //    return value(dbls.StandardDeviation() / dbls.Height(), false);
       //  }));
-      return wrs.Cast<object>().Concat(wra.Cast<object>())/*.Concat(wrStd.Cast<object>())*/.ToArray();
+      return wrs.Cast<object>()
+        .Concat(wra.Cast<object>())
+        .Concat(wrStats.Cast<object>())
+        /*.Concat(wrStd.Cast<object>())*/.ToArray();
     }
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);

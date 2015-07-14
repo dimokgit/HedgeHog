@@ -20,6 +20,7 @@ using System.Xml.Linq;
 using System.IO;
 using System.Collections.Concurrent;
 using HedgeHog;
+using System.Web.Script.Serialization;
 
 namespace ControlExtentions {
   public static class AAA {
@@ -30,6 +31,10 @@ namespace ControlExtentions {
 }
 namespace HedgeHog {
   public static partial class Lib {
+    public static string ToJson(this object obj){
+      JavaScriptSerializer js = new JavaScriptSerializer();
+      return js.Serialize(obj);
+    }
     public static double WeightedAverage<T>(this IList<T> values, Func<T, double> value, Func<T, double> weight) {
       return values.Sum(a => value(a) * weight(a)) / values.Sum(a => weight(a));
     }

@@ -824,6 +824,7 @@ namespace HedgeHog.Alice.Store {
     public const string categorySession = "Session";
     public const string wwwSettingsLiveOrders = "3. Live Orders";
     public const string wwwSettingsCorridor = "2. Corridor";
+    public const string wwwSettingsCorridorOther = "2.1 Corridor";
     public const string wwwSettingsTrading = "1. Trading";
     public const string wwwSettingsTradingOther = "1.1 Trading Other";
 
@@ -842,11 +843,10 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    [WwwSetting(Group = wwwSettingsCorridor)]
+    [WwwSetting(Group = wwwSettingsTradingOther)]
     [Category(categoryActive)]
-    [DisplayName("CorridorCrossesMaximum")]
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
-    public int CorridorCrossesMaximum {
+    public int TradeCountMax {
       get { return CorridorRatioForBreakout.ToInt(); }
       set {
         CorridorRatioForBreakout = value;
@@ -1114,7 +1114,6 @@ namespace HedgeHog.Alice.Store {
     public int BarPeriodInt { get { return (int)BarPeriod; } }
     [DisplayName("Bars Period")]
     [Category(categoryActiveFuncs)]
-    [WwwSetting]
     public BarsPeriodType BarPeriod {
       get { return (BarsPeriodType)LimitBar; }
       set {

@@ -1419,24 +1419,6 @@ namespace HedgeHog.Alice.Store {
       set { _corridorLength2 = value; }
     }
     #endregion
-    private CorridorStatistics ScanCorridorByStDevByHeight(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      return ScanCorridorByStDevByHeight(ratesForCorridor, rates => rates.ToArray(_priceAvg), priceHigh, priceLow);
-    }
-    #region ShowSecondTrend
-    private bool _ShowSecondTrend = true;
-    [Category(categoryCorridor)]
-    [Description("Freeze Corridor Start Date")]
-    public bool ShowSecondTrend {
-      get { return _ShowSecondTrend; }
-      set {
-        if (_ShowSecondTrend != value) {
-          _ShowSecondTrend = value;
-          if (!value) _corridorLength2 = 0;
-          OnPropertyChanged("ShowSecondTrend");
-        }
-      }
-    }
-    #endregion
     #region ClearCOMs
     private bool _ClearCOMs = true;
     [Category(categoryCorridor)]
@@ -1455,63 +1437,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
-    private CorridorStatistics ScanCorridorByStDevByHeightFft(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      return ScanCorridorByStDevByHeight(ratesForCorridor, rates => rates.ToArray(GetPriceMA), priceHigh, priceLow);
-    }
-    private CorridorStatistics ScanCorridorByStDevByHeight(IList<Rate> ratesForCorridor, Func<IList<Rate>, IEnumerable<double>> tranc, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var cp = _priceAvg ?? CorridorPrice();
-      var heightMin = ScanCorridorByStDevAndAngleHeightMinEx;
-      var heightMin2 = ScanCorridorByStDevAndAngleHeightMinEx2;
-      Func<int> freezedCount = () => CorridorStats.Rates.CopyLast(1).Select(r => RatesArray.SkipWhile(r2 => r2.StartDate < r.StartDate).Count()).FirstOrDefault(CorridorDistance);
-      Func<Rate, double> priceAvg02 = rate => (rate.PriceAvg2 - rate.PriceAvg1) / 2 + rate.PriceAvg1;
-      Func<Rate, double> priceAvg03 = rate => rate.PriceAvg1 + (rate.PriceAvg3 - rate.PriceAvg1) / 2;
-      var freeze = CorridorStats.Rates.SkipWhile(r => r.PriceAvg1.IsNaN()).Take(1)
-        .Any(rate => GetTradeEnterBy(true)(rate) >= priceAvg02(rate) || GetTradeEnterBy(false)(rate) <= priceAvg03(rate));
-      Func<IList<Rate>, int> scan = rates => {
-        if (freeze) return freezedCount();
-        var defaultCount = rates.Count;
-        var prices = tranc(rates).ToList();
-        int count = 0;
-        Func<int, double, int> getHeight = (c, h) => count = _corridorLength2 = CalcCorridorLengthByHeightByRegressionMin(prices, h, defaultCount, c, DoFineTuneCorridor);
-        //Func<int, double, int> getHeight2 = (c, h) => _corridorLength2 = CalcCorridorLengthByHeightByRegressionMin(prices, h, defaultCount, DoFineTuneCorridor ? (c * 0.5).ToInt() : c, false);
-        new[] { new { h = heightMin(prices), a = getHeight, i = "" }/*, new { h = heightMin2(prices), a = getHeight2, i = "2" }*/ }
-          .Take(ShowSecondTrend ? 2 : 1)
-          .Do(a => { if (a.h.IsNaN())throw new Exception(new StackFrame().GetMethod().Name + ":height" + a.i + " is NaN"); })
-          .OrderBy(a => a.h)
-          .Aggregate(10, (c, a) => a.a(c, a.h));
-        if (TicksPerSecondAverage == 0) return count;
-        var waveWidth = BarPeriod == BarsPeriodType.m1 ? 60 : _corridorLength2;// 3600.Div(TicksPerSecondAverage).ToInt();
-        var maxCount = 1000;
-        var bufferCount = (rates.Count - count).Div(maxCount).ToInt().Max(1);
-        var ratesForWave = rates
-          .Skip(count)
-          .Buffer(bufferCount)
-          .Select(b => new { Price = b.Average(r => r.PriceCMALast), StartDate = b.Last().StartDate }).ToList();
-        //var s = string.Join(Environment.NewLine, ratesForWave.Select(r => r.StartDate + "," + r.PriceCMALast));
-        //string.IsNullOrEmpty(s);
-        //ratesForWave.Reverse();
-        var cmas = rates.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount() * CmaRatioForWaveLength);
-        var csv = rates.Select((r, i) => new { r, i }).Zip(cmas, (r, ma) => new { r.r.PriceCMALast, ma }).Csv("{0},{1}", x => x.PriceCMALast, x => x.ma);
-        csv.IsEmpty();
-        var dmas = rates.Select((r, i) => new { r, i })
-          .Zip(cmas, (r, ma) => new { r, ma })
-          .DistinctUntilChanged(x => x.r.r.PriceCMALast.Sign(x.ma))
-          .ToArray();
-        var widths = dmas.Zip(dmas.Skip(1), (dma1, dma2) => (double)dma2.r.i - dma1.r.i).DefaultIfEmpty(0.0).ToArray();
-        var widthAvg = widths.AverageByIterations(-1).Average();
-        var waveWidth2 = widths.Where(w => w > widthAvg).Average().Div(bufferCount).ToInt();
-        return ratesForWave
-          .Extreams(waveWidth2, r => r.Price, r => r.StartDate)
-          .Skip(1)
-          .Take(1)
-          .Select(w => rates.FuzzyFind(w.Item2, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate)))
-          .DefaultIfEmpty(count)
-          .Select(c => (Func<int>)(() => c))
-          .Concat(new[] { freezedCount }.Where(_ => IsCorridorForwardOnly))
-          .Max(a => a());
-      };
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
-    }
     private CorridorStatistics ScanCorridorByWaveCount(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<int> freezedCount = () => CorridorStats.Rates.CopyLast(1).Select(r => RatesArray.SkipWhile(r2 => r2.StartDate < r.StartDate).Count()).FirstOrDefault(CorridorDistance);
       Func<int> freezedCount2 = () => CorridorStats.Rates.CopyLast(1)
@@ -1578,7 +1503,7 @@ namespace HedgeHog.Alice.Store {
         .SelectMany(w => rates.FuzzyIndex(w.Item2, isBetween))
         .ToList();
       var index = extreams3
-        .Skip(CorridorWaveCount - 1)
+        .Skip(_greenRedBlue.Take(2).Sum() - 1)
         .Take(1)
         .DefaultIfEmpty(extreams3.DefaultIfEmpty(rates.Count - 1).Last())
         //.Where(_ => !freeze())
@@ -1604,84 +1529,185 @@ namespace HedgeHog.Alice.Store {
         }
         #endregion
 
-        #region Elliot Waves
-        var elliotCount = 2;
-        if (wr.Count > 0)
+        #region Wave Stats
+        Func<Func<WaveRange, double>, double> avg = value => wr.Select(value).ToArray().AverageInRange(1, -1).Average();
+        var wa = WaveRangeAvg = new WaveRange() {
+          DistanceByRegression = avg(w => w.DistanceByRegression),
+          WorkByHeight = avg(w => w.WorkByHeight),
+          WorkByTime = avg(w => w.WorkByTime),
+          Angle = avg(w => w.Angle.Abs()),
+          Height = avg(w => w.Height),
+          StDev = avg(w => w.StDev)
+        };
+        while (
           wr
-            .Select(wr2 => new { wr = wr2, i = WaveRanges.Index(wr2, w => w.WorkByTime.Abs()) })
-            .Buffer(elliotCount, 1)
-            .Where(b => b.Count == elliotCount)
-            .Where(b => b.Min(x => x.i <= 1))
+            .Where(w => w.WorkByTime * WorkByTimeRatio < wa.WorkByTime)
             .Take(1)
-            .SelectMany(b => b)
-            //.IfEmpty(() => {
-            //  return
-            //  WaveRanges
-            //  .OrderByDescending(w => w.WorkByTime.Abs())
-            //  .Take(1)
-            //  .Where(w => w.WorkByTime.Abs() > WaveRanges.Select(w1 => w1.WorkByTime.Abs()).OrderByDescending(d => d).Skip(1).SkipLast(1).Average()*2)
-            //  .Select(w => new { wr = w, i = 0 });
-            //})
-            .ForEach((x, i) => x.wr.ElliotIndex = i + 1);
-        else wr
-          .Select(w => new { w, s = w.StDev * w.Height })
-          .Buffer(3, 1)
-          .Where(b => b.Count == 3)
-          .Select((b, i) => new { score = b.Average(w => w.s) * Math.Sqrt(b.StandardDeviation(w => w.s)), i })
-          .OrderBy(x => x.score)
-          .Take(1)
-          .Select(x => x.i)
-          .SelectMany(i => new[] { i, i + 1, i + 2 })
-          .ForEach((i, j) => wr[i].ElliotIndex = j + 1);
+            .Select(w => wr.IndexOf(w))
+            .Do(i => {
+              var wavesSmoothed = (i == 0
+                ? new[] { WaveRange.Merge(wr.Take(2).Reverse(), PointSize) }.Concat(wr.Skip(2)).ToList()
+                : i == wr.Count - 1
+                ? wr.SkipLast(2).Concat(new[] { WaveRange.Merge(wr.TakeLast(2).Reverse(), PointSize) })
+                : wr.Take(i - 1).Concat(new[] { WaveRange.Merge(wr.GetRange(i - 1, 3).Reverse<WaveRange>(), PointSize) }).Concat(wr.Skip(i + 2))
+                ).ToList();
+              wr = wavesSmoothed;
+            })
+            .Any()) { };
+        Func<Func<WaveRange, double>, double> rsd = value => wr.Sum(value);
+        WaveRangeSum = new WaveRange() {
+          DistanceByRegression = rsd(w => w.DistanceByRegression),
+          WorkByHeight = rsd(w => w.WorkByHeight),
+          WorkByTime = rsd(w => w.WorkByTime),
+          Angle = rsd(w => w.Angle.Abs()),
+          Height = rsd(w => w.Height),
+          StDev = rsd(w => w.StDev)
+        };
+        #endregion
+        #region Elliot Waves
+        {
+          var angleAvg = wr.Average(w => w.Angle.Abs());
+          var elliotWave = wr.OrderByDescending(w => w.DistanceByRegression).First();
+          if (elliotWave.Angle.Abs() < TradingAngleRange) elliotWave.ElliotIndex = 1;
+        }
+        #endregion
+        #region Super Wave
+        {
+          var criterias = new Func<WaveRange, double>[] { 
+          w => w.DistanceByRegression.Abs() ,
+          w => w.WorkByTime.Abs() ,
+          w => w.Height.Abs()
+          };
+          var waveRangesForElliot = criterias.Select(c => wr.OrderByDescending(c).First()).Distinct().ToList();
+          if (waveRangesForElliot.Count == 1)
+            waveRangesForElliot.First().IsSuper = true;
+        }
+        #endregion
         return wr;
       };
-      #endregion
+
       #endregion
 
       if (!CorridorStartDate.HasValue) {
         WaveRanges = makeWaves();
-        var interWaveStep = 2;
-        var xx = extreams3
-          .TakeWhile(c => c < index)
-          .ToArray();
-        _corridorLength1 = xx.Length <= 2
-          ? extreams3[0]
-          : xx.TakeLast(interWaveStep)
+        Func<int, int> length = i => extreams3
+          .Skip(i - 1)
+          .Take(1)
           .DefaultIfEmpty(index)
           .First();
+        _corridorLength1 = length(_greenRedBlue[0]);
         _corridorStartDate1 = rates[_corridorLength1].StartDate;
-        _corridorLength2 = extreams3.SkipWhile(c => c <= index).Take(interWaveStep).DefaultIfEmpty(index).Last();
+
+        _corridorLength2 = length(_greenRedBlue.Sum());
         _corridorStartDate2 = rates[_corridorLength2].StartDate;
 
-        if (new[] { BuyLevel, SellLevel }.All(sr => sr!=null && !sr.InManual) && index.Ratio(CorridorStats.Rates.Count) >= 1.01)
+        if (new[] { BuyLevel, SellLevel }.All(sr => sr != null && !sr.InManual) && index.Ratio(CorridorStats.Rates.Count) >= 1.01)
           ResetSuppResesPricePosition();
       } else {
         var firstWaveRange = rates.TakeWhile(r => r.StartDate >= WaveRanges[0].StartDate).Reverse().ToList();
         WaveRanges = new[] { new WaveRange(firstWaveRange, PointSize) }.Concat(WaveRanges.Skip(1)).ToList();
       }
-      WaveFirstSecondRatio = WaveRanges[0].WorkByTime.Abs() / WaveRanges.Skip(1).Take(2).Sum(x => x.WorkByTime.Abs());
+
+      Func<WaveRange, double> bfp = w => w.DistanceByRegression;// WaveRangeAvg.BestFitProp();
+      WaveFirstSecondRatio = WaveRanges.Take(1).Select(w1 => bfp(w1) / WaveRanges.Take(_greenRedBlue[0]).Skip(1).Sum(bfp)).FirstOrDefault();
+
+      Func<int, double> cr = i => WaveRanges.Skip(i - 1 < 0 ? 0 : _greenRedBlue[i - 1]).Take(_greenRedBlue[i]).Sum(bfp);
+      CorridorGRRatio = cr(0) / cr(1);
+
       var waveHeights = WaveRanges.ToArray(r => r.Height);
-      WaveHeightAverage = extreams3.Count <= 4 ? waveHeights.Average() : waveHeights.AverageInRange(1, -1).Average();
+      WaveHeightAverage = WaveRanges.Count <= 4 ? waveHeights.Average() : waveHeights.AverageInRange(1, -1).Average();
       return index + 1;
     }
 
+
+    #region GreenRedBlue
+    static int[] _greenRedBlueDefault = new[] { 2, 2, 2 };
+    int[] _greenRedBlue = _greenRedBlueDefault;
+    private string _GreenRedBlue;
+    [Category(categoryCorridor)]
+    [WwwSetting(wwwSettingsCorridor)]
+    public string GreenRedBlue {
+      get { return _GreenRedBlue; }
+      set {
+        if (_GreenRedBlue != value) {
+          try {
+            _greenRedBlue = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).ToArray();
+            if (_greenRedBlue.Any(i => i <= 0))
+              throw new Exception("All elemebts must be >=0 in _greenRedBlue " + _greenRedBlue.ToJson());
+            if (_greenRedBlue.Any())
+              _GreenRedBlue = value;
+            else
+              _GreenRedBlue = string.Join(",", _greenRedBlueDefault);
+            OnPropertyChanged("GreenRedBlue");
+          } catch (Exception exc) {
+            Log = exc;
+          }
+        }
+      }
+    }
+    #endregion
+
+    #region DbrIndexMax
+    private int _DbrIndexMax;
+    [Category(categoryActive)]
+    [WwwSetting(wwwSettingsTradingOther)]
+    public int DbrIndexMax {
+      get { return _DbrIndexMax; }
+      set {
+        if (_DbrIndexMax != value) {
+          _DbrIndexMax = value;
+          OnPropertyChanged("DbrIndexMax");
+        }
+      }
+    }
+
+    #endregion
+
     object _waveRangesLocker = new object();
     List<WaveRange> _waveRanges = new List<WaveRange>();
+    public List<WaveRange> WaveRangesGRB { get; set; }
     public List<WaveRange> WaveRanges {
       get { lock (_waveRangesLocker) return _waveRanges; }
-      set { lock (_waveRangesLocker) { _waveRanges = value; } }
+      set {
+        lock (_waveRangesLocker) {
+          _waveRanges = value;
+          WaveRangesGRB = value.Take(_greenRedBlue.Sum()).ToList();
+        }
+      }
     }
+    public WaveRange WaveRangeSum { get; set; }
+    public WaveRange WaveRangeAvg { get; set; }
     public class WaveRange {
       #region Properties
       public DateTime StartDate { get; set; }
-      public double Height { get { return Max - Min; } }
+      double _height = double.NaN;
+      public double Height {
+        get { return _height.IfNaN(Max - Min); }
+        set { _height = value; }
+      }
       public double Distance { get; set; }
       public double Slope { get; set; }
       public double TotalSeconds { get; set; }
-      public double WorkByTime { get { return TotalSeconds * Slope; } }
-      public double WorkByDistance { get { return Distance * Slope; } }
-      public double WorkByCount { get { return Count * Slope; } }
-      public double WorkByHeight { get { return Height * Slope; } }
+      double _workByTime = double.NaN;
+      public double WorkByTime {
+        get { return _workByTime.IfNaN(TotalSeconds * Slope.Abs()); }
+        set { _workByTime = value; }
+      }
+      double _workByDistance = double.NaN;
+      double WorkByDistance {
+        get { return _workByDistance.IfNaN(Distance * Slope.Abs()); }
+        set { _workByDistance = value; }
+      }
+      double _workByCount = double.NaN;
+      double WorkByCount {
+        get { return _workByCount.IfNaN(Count * Slope.Abs()); }
+        set { _workByCount = value; }
+      }
+      public double _workByHeight = double.NaN;
+      public double WorkByHeight {
+        get { return _workByHeight.IfNaN(Height * Angle.Abs()); }
+        set { _workByHeight = value; }
+      }
       public double DistanceByRegression { get; set; }
       public DateTime EndDate { get; set; }
       public int Count { get; set; }
@@ -1695,6 +1721,7 @@ namespace HedgeHog.Alice.Store {
       /// Number from 1 to 5 from Elliot sequence
       /// </summary>
       public int ElliotIndex { get; set; }
+      public bool IsSuper { get; set; }
       #endregion
       static double DistanceByHeightAndAngle(double heigth, double angle) {
         return heigth / Math.Sin((angle.Abs().Min(90) * angle.Sign()).Radians());
@@ -1705,15 +1732,22 @@ namespace HedgeHog.Alice.Store {
       static double DistanceByLengthAndSlope(double length, double slope) {
         return length / Math.Cos(Math.Atan(slope));
       }
+      public static WaveRange Merge(IEnumerable<WaveRange> wrs, double pointSize) {
+        return new WaveRange(wrs.Select(wr => wr.Range).Aggregate((p, n) => p.Concat(n).ToList()).ToList(), pointSize);
+      }
+      public WaveRange() { }
       public WaveRange(List<Rate> range, double pointSize) {
+        this.PointSize = pointSize;
         this.Range = range;
         Count = range.Count;
         StartDate = range[0].StartDate;
         EndDate = range.Last().StartDate;
+        if (EndDate < StartDate)
+          throw new InvalidOperationException("StartDate;{0} must be less then EndDate:{1}".Formater(StartDate, EndDate));
         Max = range.Max(r => r.PriceAvg);
         Min = range.Min(r => r.PriceAvg);
         Distance = range.Distance2(r => r.PriceAvg);
-        TotalSeconds = StartDate.Subtract(EndDate).TotalSeconds;
+        TotalSeconds = EndDate.Subtract(StartDate).TotalSeconds;
         CalcTrendLine(range, pointSize);
       }
       double Smooth(double angle, double[] smoothies) {
@@ -1722,23 +1756,25 @@ namespace HedgeHog.Alice.Store {
       void CalcTrendLine(IList<Rate> range, double pointSize) {
         if (range.Count == 0) return;
         var minutes = (range.Last().StartDate - range[0].StartDate).Duration().TotalMinutes;
-        Func<TimeSpan,IEnumerable<double>> groupped = ts=> range.GroupAdjacentTicks(ts
+        Func<TimeSpan, IEnumerable<double>> groupped = ts => range.GroupAdjacentTicks(ts
           , rate => rate.StartDate
           , g => g.Average(rate => rate.PriceAvg));
-        var doubles = groupped(1.FromMinutes()).ToList();
+        var doubles = groupped(1.FromSeconds()).ToList();
         if (doubles.Count < 2) doubles = groupped(1.FromSeconds()).ToList();
         var coeffs = doubles.Linear();
         this.Slope = coeffs.LineSlope();
-        this.Angle = Slope.Angle(1, pointSize);
+        this.Angle = Slope.Angle(1.0 / 60, pointSize);
         this.StDev = doubles.StDevByRegressoin(coeffs);
         this.InterseptStart = coeffs.RegressionValue(0);
         this.InterseptEnd = coeffs.RegressionValue(doubles.Count - 1);
-        this.DistanceByRegression = DistanceByHeightAndAngle(InterseptStart.Abs(InterseptEnd), Angle);
+        this.DistanceByRegression = DistanceByHeightAndAngle(InterseptStart.Abs(InterseptEnd), Angle).Abs();
       }
 
 
 
       public List<Rate> Range { get; set; }
+
+      public double PointSize { get; set; }
     }
     Lazy<IList<Rate>> _trendLines = null;
     public Lazy<IList<Rate>> TrendLines {
@@ -1758,22 +1794,6 @@ namespace HedgeHog.Alice.Store {
     private double MaGapMax(IList<Rate> rates) {
       return rates.Skip(rates.Count.Div(1.1).ToInt()).Max(r => r.PriceCMALast.Abs(r.PriceAvg));
     }
-    #region CorridorWaveCount
-    private int _CorridorWaveCount = 3;
-    [Category(categoryActive)]
-    [WwwSetting(Group = wwwSettingsCorridor)]
-    public int CorridorWaveCount {
-      get { return _CorridorWaveCount; }
-      set {
-        if (_CorridorWaveCount != value) {
-          _scanCorridorByWaveCountMustReset = true;
-          _CorridorWaveCount = value.Max(1);
-          OnPropertyChanged("CorridorWaveCount");
-        }
-      }
-    }
-
-    #endregion
     #region CmaRatioForWaveLength
     bool _scanCorridorByWaveCountMustReset;
     private double _CmaRatioForWaveLength = 3;
@@ -1942,30 +1962,6 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    #region Smoothies
-    private string _Smoothies = "0.33,7";
-    [Category(categoryCorridor)]
-    [WwwSetting()]
-    public string Smoothies {
-      get { return _Smoothies; }
-      set {
-        if (_Smoothies != value) {
-          _Smoothies = value;
-          OnPropertyChanged("Smoothies");
-        }
-      }
-    }
-
-    double[] SmoothieDoubles {
-      get {
-        return Smoothies
-          .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-          .Select(s => double.Parse(s))
-          .ToArray();
-      }
-    }
-    #endregion
-
     void ResetBarsCountCalc() {
       _BarsCountCalc = null;
       OnPropertyChanged("BarsCountCalc");
@@ -2004,11 +2000,12 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("WaveFirstSecondRatio");
       }
     }
+
     #region WaveFirstSecondRatioMin
     private double _WaveFirstSecondRatioMin;
     [Category(categoryActive)]
-    [Description("Wave 1/2")]
-    [WwwSetting(wwwSettingsTrading)]
+    [DisplayName("Wave 1/2 Min")]
+    [WwwSetting(wwwSettingsCorridor)]
     public double WaveFirstSecondRatioMin {
       get { return _WaveFirstSecondRatioMin; }
       set {
@@ -2020,21 +2017,37 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-
-    #region LogSmooth
-    private int _LogSmooth = 60;
+    public double CorridorGRRatio { get; set; }
+    #region CorridorGRRatioMin
+    private double _CorridorGRRatioMin = 1;
     [Category(categoryActive)]
     [WwwSetting(wwwSettingsCorridor)]
-    public int LogSmooth {
-      get { return _LogSmooth; }
+    public double CorridorGRRatioMin {
+      get { return _CorridorGRRatioMin; }
       set {
-        if (_LogSmooth != value) {
-          _LogSmooth = value;
-          OnPropertyChanged("LogSmooth");
+        if (_CorridorGRRatioMin != value) {
+          _CorridorGRRatioMin = value;
+          OnPropertyChanged("CorridorGRRatioMin");
         }
       }
     }
 
     #endregion
+    #region WorkByTimeRatio
+    private int _WorkByTimeRatio = 10;
+    [Category(categoryXXX)]
+    [WwwSetting]
+    public int WorkByTimeRatio {
+      get { return _WorkByTimeRatio; }
+      set {
+        if (_WorkByTimeRatio != value) {
+          _WorkByTimeRatio = value;
+          OnPropertyChanged("WorkByTimeRatio");
+        }
+      }
+    }
+
+    #endregion
+
   }
 }
