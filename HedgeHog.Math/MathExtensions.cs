@@ -639,6 +639,13 @@ namespace HedgeHog {
       var std = dbls.StandardDeviation();
       return std / avg;
     }
+    public static double AverageByStandardDeviation(this IList<double> dbls) {
+      var min = dbls.Min();
+      dbls = dbls.Select(d => d - min).ToArray();
+      var avg = dbls.Average();
+      var std = dbls.StandardDeviation();
+      return std + avg;
+    }
     public static T[] CopyToArray<T>(this IList<T> values, int count) {
       return values.SafeArray().CopyToArray(count);
     }

@@ -1118,7 +1118,7 @@ namespace HedgeHog.Alice.Client {
         close2 = trends1.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends1.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
-      var waveLines = tm.WaveRanges
+      var waveLines = tm.WaveRangesWithTail
         .ToArray(wr => new {
           dates = new[] { wr.StartDate, wr.EndDate },
           isept = new[] { wr.InterseptStart, wr.InterseptEnd },

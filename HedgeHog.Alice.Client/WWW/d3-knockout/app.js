@@ -375,6 +375,10 @@
       self.setTradeCloseLevelBuy({ value: "PriceHigh0" });
       self.setTradeCloseLevelSell({ value: "PriceLow0" });
     };
+    this.setCloseLevelsToGRB1 = function () {
+      self.setTradeCloseLevelBuy({ value: "PriceMax1" });
+      self.setTradeCloseLevelSell({ value: "PriceMin1" });
+    };
     this.resetCloseLevels = function () {
       self.setTradeLevels(0);
       self.setTradeCloseLevelBuy({ value: 0 });
@@ -616,8 +620,13 @@
         });
     }
     var waveRangesDialog;
+    var sumStartIndex = ko.observable(0);
     this.waveRangesDialog = function (element) {
-      waveRangesDialog = $(element).find("table")[0];
+      var table = $(element).find("table") ;
+      waveRangesDialog = table[0];
+      table.on("click", "tbody tr", function (a, b) {
+        sumStartIndex(parseInt($(this).find("td:first").text()) - 1);
+      });
     };
     var waveRanges = ko.observableArray();
 
@@ -630,6 +639,12 @@
       return waveRanges().filter(function (wr) {
         return !!wr.IsStats;
       });
+    });
+    this.sumStartIndex = sumStartIndex;
+    this.dbrSum = ko.pureComputed(function () {
+      return Math.round(waveRanges().slice(0, sumStartIndex()).reduce(function (a, b) {
+        return a + b.DistanceByRegression.v;
+      }, 0));
     });
     this.startWaveRanges = function () {
       stopWaveRanges = false;
@@ -890,7 +905,7 @@
       $('#manualToggle').click(function () { serverCall("manualToggle", [pair]); });
       $('#sell').click(function () { serverCall("sell", [pair]); });
       $('#buy').click(function () { serverCall("buy", [pair]); });
-      $('#flipTradeLevels').click(function () { serverCall("flipTradeLevels",[pair]); });
+      //$('#flipTradeLevels').click(function () { serverCall("flipTradeLevels",[pair]); });
       // #endregion
     });
     // #endregion

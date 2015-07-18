@@ -2705,14 +2705,15 @@ namespace HedgeHog.Alice.Store {
       return RatesArray.Count * PriceCmaLevels / 100.0;
     }
     #region SmaPasses
-    private int _SmaPasses = 1;
+    private int _CmaPasses = 1;
     [Category(categoryCorridor)]
-    public int SmaPasses {
-      get { return _SmaPasses; }
+    [WwwSetting(wwwSettingsCorridorCMA)]
+    public int CmaPasses {
+      get { return _CmaPasses; }
       set {
-        if (_SmaPasses != value) {
-          _SmaPasses = value;
-          OnPropertyChanged("SmaPasses");
+        if (_CmaPasses != value) {
+          _CmaPasses = value;
+          OnPropertyChanged("CmaPasses");
         }
       }
     }
@@ -2728,8 +2729,10 @@ namespace HedgeHog.Alice.Store {
           break;
         case Store.MovingAverageType.Cma:
           if (PriceCmaLevels > 0) {
-            RatesArray.Cma(_priceAvg, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma);
-            Enumerable.Range(1, SmaPasses).ForEach(_ => RatesArray.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma));
+            UseRates(rates => {
+              rates.Cma(_priceAvg, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma);
+              Enumerable.Range(1, CmaPasses).ForEach(_ => rates.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma));
+            });
             //UseRates(rates => {
             //  rates.Aggregate(double.NaN, (ma, r) => r.PriceCMALast = ma.Cma(PriceCmaLevels, r.PriceAvg));
             //  rates.Reverse();
@@ -2874,6 +2877,8 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_IsTrender != value) {
           _IsTrender = value;
+          LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
+          SuppRes.ForEach(sr => sr.ResetPricePosition());
           OnPropertyChanged("IsTrender");
           var tmo = TradingMacroOther();
           if (!value) tmo.Take(1).ForEach(tm => tm.IsTrender = true);

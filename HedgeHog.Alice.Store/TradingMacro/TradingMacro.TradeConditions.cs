@@ -112,6 +112,17 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate WaveGOk {
       get { return () => WaveTresholdOk(WaveFirstSecondRatio, WaveFirstSecondRatioMin); }
     }
+    public TradeConditionDelegate ElliotOk {
+      get {
+        return () =>
+          WaveRanges
+          .Take(4)
+          .Where(wr => wr.ElliotIndex == 1)
+          .Select(wr => WaveRanges.IndexOf(wr))
+          .Any(i => WaveRanges.Take(i).Sum(wr => wr.DistanceByRegression) > WaveRanges[i].DistanceByRegression);
+      }
+    }
+
     public Func<bool> TpsOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TpsMin); } }
     public TradeConditionDelegate TpsAvgMinOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TicksPerSecondAverageAverage * TpsMin.Sign()); } }
     public TradeConditionDelegate WaveCountOk { get { return () => WaveRanges.Count >= _greenRedBlue.Sum(); } }

@@ -315,9 +315,11 @@
               </li>
               <li>
                 <input type="button" value="X" data-bind="click:resetTradeLevels" title="Clear trade levels" />
-                <input type="button" value="Flip" data-bind="click:flipTradeLevels" title="Flip Trade Levels" />
                 <input type="button" value="X" data-bind="click:resetCloseLevels" title="Clear Close Levels" />
                 <input type="button" value="G" data-bind="click:setCloseLevelsToGreen" title="Set Close Levels to Green Corridor(Range)" />
+                <button data-bind="click:setCloseLevelsToGRB1" title="Set Close Levels to Green Red2 Blue">
+                  <span class="glyphicon glyphicon-fullscreen"></span>
+                </button>
               </li>
               <li>
                 <!--            <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,5,null)" />-->
@@ -560,11 +562,11 @@
           <th>SD</th>
           <th>H</th>
           <th>WH</th>
-          <th>DR</th>
+          <th><span data-bind="text:dbrSum"></span></th>
         </tr>
       </thead>
       <tbody data-bind="foreach:waveRanges">
-        <tr data-bind="css:{selected:ElliotIndex.v > 0}">
+        <tr data-bind="css:{selected:$index() == $parent.sumStartIndex()}">
           <td><span data-bind="text:$index()+1"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.1f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>

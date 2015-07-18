@@ -265,7 +265,7 @@ namespace HedgeHog.Alice.Store {
 
     #region PriceCmaLevels
     [DisplayName("Price CMA Levels")]
-    [WwwSetting(Group = wwwSettingsCorridor)]
+    [WwwSetting(Group = wwwSettingsCorridorCMA)]
     [Category(categoryActive)]
     public double PriceCmaLevels_ {
       get { return PriceCmaLevels; }
@@ -823,9 +823,10 @@ namespace HedgeHog.Alice.Store {
     public const string categoryTestControl = "Test Control";
     public const string categorySession = "Session";
     public const string wwwSettingsLiveOrders = "3. Live Orders";
-    public const string wwwSettingsCorridor = "2. Corridor";
-    public const string wwwSettingsCorridorOther = "2.1 Corridor";
-    public const string wwwSettingsTrading = "1. Trading";
+    public const string wwwSettingsCorridor = "2.0 Corridor";
+    public const string wwwSettingsCorridorCMA = "2.1 Corridor CMA";
+    public const string wwwSettingsCorridorOther = "2.2 Corridor";
+    public const string wwwSettingsTrading = "1.0 Trading";
     public const string wwwSettingsTradingOther = "1.1 Trading Other";
 
     #region CloseAfterTradingHours

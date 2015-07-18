@@ -42,7 +42,7 @@ namespace HedgeHog.Alice.Store {
           }
           var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
           if (q > DateTimeOffset.MinValue)
-            dateStart = q.DateTime;
+            dateStart = q.LocalDateTime;
           if (dateStart == DateTime.MinValue) {
             if (period == 0) throw new Exception("Either period or dateStart must be provided.");
           } else
