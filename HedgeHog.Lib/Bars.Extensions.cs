@@ -1215,9 +1215,9 @@ namespace HedgeHog.Bars {
     //  var timeRounded = fxTicks.Min(t => t.StartDate).Round().AddMinutes(1);
     //  return GetMinuteTicksCore(fxTicks.Where(t => t.StartDate >= timeRounded), period,false);
     //}
-    public static IList<Rate> GetMinuteTicks<TBar>(this IList<TBar> fxTicks, int period, bool Round, bool startFromEnd = true) where TBar : BarBase {
+    public static List<Rate> GetMinuteTicks<TBar>(this IList<TBar> fxTicks, int period, bool Round, bool startFromEnd = true) where TBar : BarBase {
       fxTicks = startFromEnd ? fxTicks.OrderBarsDescending().ToList() : fxTicks.OrderBars().ToList();
-      if (fxTicks.Count() == 0) return new Rate[] { };
+      if (fxTicks.Count() == 0) return new List<Rate>();
       var startDate2 = startFromEnd ? fxTicks.Max(t => t == null ? DateTime.MinValue : t.StartDate2) : fxTicks.Min(t => t == null ? DateTime.MinValue : t.StartDate2);
       if (Round) startDate2 = startDate2.Round().AddMinutes(1);
       double? tempRsi;

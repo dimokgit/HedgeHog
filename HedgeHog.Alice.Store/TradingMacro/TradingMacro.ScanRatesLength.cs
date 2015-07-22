@@ -114,7 +114,7 @@ namespace HedgeHog.Alice.Store {
       });
       Func<IEnumerable<DateTime>> defaultDate = () => new[] { RatesArray[0].StartDate };
       Func<DateTime, int> dateToIndex = date => prices.FuzzyFind(date, isBetween);
-      Func<DateTime, int> dateToCountInternal = date => UseRatesInternal(ri => 
+      Func<DateTime, int> dateToCountInternal = date => UseRatesInternal(ri =>
         ri.Count - ri.FuzzyIndex(date, isBetweenRates).DefaultIfEmpty(-1).Single());
       var corrDate = BarsCountLastDate;
       try {
@@ -132,7 +132,7 @@ namespace HedgeHog.Alice.Store {
         } else {
           Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
             a => dateToIndex(corrDate = a.IfEmpty(defaultDate).Single()));
-          if( !WaveRanges.TakeLast(1).Any(wr=>corrDate.Between(wr.StartDate,wr.EndDate)))
+          if (!WaveRanges.TakeLast(1).Any(wr => corrDate.Between(wr.StartDate, wr.EndDate)))
             BarsCountLastDate = corrDate.Max(BarsCountLastDate);
           BarsCountCalc = UseRatesInternal(rl => rl.Count - rl.TakeWhile(r => r.StartDate < BarsCountLastDate).Count());
         }
@@ -141,6 +141,32 @@ namespace HedgeHog.Alice.Store {
       } catch (Exception exc) {
         Log = exc;
       }
+    }
+    void ScanRatesLengthByDistanceMin() {
+      if (CorridorStartDate.HasValue) {
+        //BarsCountCalc = (CorridorStats.Rates.Count * 1.1).Max(BarsCountCalc).Min(BarsCountCount()).ToInt();
+        if (CorridorStats.Rates.Count * 1.05 > RatesArray.Count) {
+          //SetCorridorStartDateToNextWave(true);
+          BarsCountCalc = (CorridorStats.Rates.Count * 1.05).Ceiling();
+        }
+        return;
+      }
+      var rates = UseRatesInternal(rs => rs.Select(_priceAvg).Reverse().ToArray());
+      var rdm = InPoints(RatesDistanceMin);
+      var count = rates
+        .Zip(rates.Skip(1), (p, n) => p.Abs(n))
+        .Scan(0.0, (i, pa) => i + pa)
+        .TakeWhile(i => i < rdm)
+        .Count();
+      var corrDate = UseRatesInternal(rs => rs[(rs.Count - count - 1).Max(0)].StartDate);
+      WaveRanges.TakeLast(1)
+        .Where(wr => corrDate.Between(wr.StartDate.AddMinutes(-1), wr.EndDate.AddMinutes(1)))
+        .Select(wr => new Action(() => {
+          BarsCountDate = RatesArray[0].StartDate.Min(wr.StartDate);
+          return;
+        }))
+        .DefaultIfEmpty(() => BarsCountCalc = count.Max(BarsCount))
+        .ForEach(a => a());
     }
     DateTime __barsCountLastDate = DateTime.MinValue;
     public DateTime BarsCountLastDate {

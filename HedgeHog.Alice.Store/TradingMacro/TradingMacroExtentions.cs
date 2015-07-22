@@ -2036,7 +2036,7 @@ namespace HedgeHog.Alice.Store {
               RateLast = ri.Last();
               RatePrev = ri[ri.Count - 2];
               RatePrev1 = ri[ri.Count - 3];
-              UseRates(_ => _rateArray = GetRatesSafe(ri).ToList());
+              UseRates(_ => _rateArray = GetRatesSafe(ri));
               RatesDuration = (RatesArray.Last().StartDate2 - RatesArray[0].StartDate2).TotalMinutes.ToInt();
             });
             OnSetBarsCountCalc();
@@ -2125,12 +2125,13 @@ namespace HedgeHog.Alice.Store {
     }
     public bool HasRates { get { return _rateArray.Any(); } }
     private IEnumerable<Rate> GetRatesSafe() { return UseRatesInternal(ri => GetRatesSafe(ri)); }
-    private IEnumerable<Rate> GetRatesSafe(IList<Rate> ri) {
-      Func<IEnumerable<Rate>> a = () => {
+    private List<Rate> GetRatesSafe(IList<Rate> ri) {
+      Func<List<Rate>> a = () => {
         var barsCount = BarsCountCalc;
         var startDate = CorridorStartDate ?? (CorridorStats.Rates.Count > 0 ? CorridorStats.Rates.LastBC().StartDate : (DateTime?)null);
         var countByDate = startDate.HasValue && DoStreatchRates ? ri.Count(r => r.StartDate >= startDate).Min((barsCount * StreatchRatesMaxRatio).ToInt()) : 0;
-        return ri.Skip((ri.Count - (countByDate * 1.05).Max(barsCount).ToInt()).Max(0));
+        var countFinal = (countByDate * 1.05).Max(barsCount).ToInt().Min(ri.Count);
+        return ri.ToList().GetRange(ri.Count - countFinal, countFinal);
         //return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1).Max(BarsCount)).Max(0));
       };
       return _limitBarToRateProvider == (int)BarPeriod ? a() : ri.GetMinuteTicks((int)BarPeriod, false, false);
@@ -2940,7 +2941,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.Pips:
           return InPoints(xRatio);
         case TradingMacroTakeProfitFunction.Wave:
-          return WaveHeightAverage * xRatio;
+          return InPoints(WaveHeightAverage) * xRatio;
         #region RatesHeight
         case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight * TradingDistanceX; break;
         #endregion
@@ -4373,25 +4374,24 @@ namespace HedgeHog.Alice.Store {
     public double RatesHeightMinInPips { get { return InPips(RatesHeightMin); } }
     #endregion
 
+    #region RatesDistanceMin
+    private int _RatesDistanceMin = 1000;
+    [Category(categoryCorridor)]
+    [WwwSetting(wwwSettingsCorridorOther)]
+    public int RatesDistanceMin {
+      get { return _RatesDistanceMin; }
+      set {
+        if (_RatesDistanceMin != value) {
+          _RatesDistanceMin = value;
+          OnPropertyChanged("RatesDistanceMin");
+        }
+      }
+    }
+
+    #endregion
     public int RatesDuration { get; set; }
   }
   public static class WaveInfoExtentions {
-    public static Func<TradingMacro.WaveRange, double> BestFitProp(this TradingMacro.WaveRange wa) {
-      Func<Func<TradingMacro.WaveRange, double>, Func<TradingMacro.WaveRange, double>> foo = f => f;
-      var foos = new[] { foo(w => w.DistanceByRegression), foo(w => w.WorkByTime) };
-      return foos.OrderBy(f => f(wa)).First();
-    }
-
-    public static int Index(this IList<TradingMacro.WaveRange> wrs, Func<TradingMacro.WaveRange, double> value) {
-      return wrs.OrderByDescending(value).Take(1).Select(w => wrs.IndexOf(w)).DefaultIfEmpty(-1).First();
-    }
-    public static int Index(this IList<TradingMacro.WaveRange> wrs, TradingMacro.WaveRange wr, Func<TradingMacro.WaveRange, double> value) {
-      return wrs.OrderByDescending(value).ToList().IndexOf(wr);
-    }
-    public static IList<Tuple<TradingMacro.WaveRange, int>> WaveRangesOrder(IList<TradingMacro.WaveRange> wrs, Func<TradingMacro.WaveRange, double> value) {
-      return wrs.OrderByDescending(value).Select((wr, i) => Tuple.Create(wr, i)).ToArray();
-    }
-
     public static Dictionary<CorridorCalculationMethod, double> ScanWaveWithAngle<T>(this IList<T> rates, Func<T, double> price, double pointSize, CorridorCalculationMethod corridorMethod) {
       return rates.ScanWaveWithAngle(price, price, price, pointSize, corridorMethod);
     }

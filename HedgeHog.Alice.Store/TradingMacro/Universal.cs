@@ -21,7 +21,7 @@ namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
     private CompositeDisposable _strategyTradesCountHandler;
     private void StrategyEnterUniversal() {
-      if (!RatesArray.Any()) return;
+      if (!RatesArray.Any() || !IsTrader) return;
 
       #region ============ Local globals ============
       #region Loss/Gross
@@ -1549,7 +1549,7 @@ namespace HedgeHog.Alice.Store {
                   };
                 }
                 #endregion
-
+                exitFunc();
                 TradeDirectionTriggersRun();
                 TradeConditionsTrigger();
                 SetTradeLevelsToLevelBy(GetTradeLevel)();

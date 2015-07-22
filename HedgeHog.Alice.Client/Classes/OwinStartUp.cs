@@ -35,8 +35,8 @@ namespace HedgeHog.Alice.Client {
       //GlobalHost.HubPipeline.AddModule(new MyHubPipelineModule());
       // Static content
 
-        //HttpListener listener = (HttpListener)app.Properties["System.Net.HttpListener"];
-        //listener.AuthenticationSchemes = AuthenticationSchemes.Ntlm | AuthenticationSchemes.Basic;
+      //HttpListener listener = (HttpListener)app.Properties["System.Net.HttpListener"];
+      //listener.AuthenticationSchemes = AuthenticationSchemes.Ntlm | AuthenticationSchemes.Basic;
 
       var fileSystem = new PhysicalFileSystem("./www");
       var fsOptions = new FileServerOptions {
@@ -144,7 +144,7 @@ namespace HedgeHog.Alice.Client {
 
       // Verifies that the calling client supports gzip encoding.
       if (!(from encoding in context.Request.Headers.GetValues("Accept-Encoding") ?? Enumerable.Empty<string>()
-            from enc in encoding.Split(',').Select(s=>s.Trim())
+            from enc in encoding.Split(',').Select(s => s.Trim())
             where String.Equals(enc, "gzip", StringComparison.OrdinalIgnoreCase)
             select encoding).Any()) {
         await next(environment);
@@ -284,7 +284,7 @@ namespace HedgeHog.Alice.Client {
     static DateTime _newsReadLastDate = DateTime.MinValue;
     static List<DateTimeOffset> _newsDates = new List<DateTimeOffset>();
     public object AskChangedPrice(string pair) {
-      var tm0 = UseTradingMacro(pair, tm => tm,false);
+      var tm0 = UseTradingMacro(pair, tm => tm, false);
       var tm1 = UseTradingMacro(pair, 1, tm => tm, false);
       var tmTrader = UseTradingMacro(pair, tm => tm.IsTrader, false).DefaultIfEmpty(tm0).Single();
 
@@ -320,13 +320,13 @@ namespace HedgeHog.Alice.Client {
         otg = IntOrDouble(tmTrader.OpenTradesGross2InPips, 1),
         tps = tm0.TicksPerSecondAverage.Round(1),
         dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"hh\:mm"),
-        hgt = tmTrader.RatesHeightInPips.ToInt() + "/" + tmTrader.BuySellHeightInPips.ToInt() + "/" + tmTrader.InPips(tmTrader.WaveHeightAverage).Round(0),
+        hgt = tmTrader.RatesHeightInPips.ToInt() + "/" + tmTrader.BuySellHeightInPips.ToInt() + "/" + tmTrader.WaveRangeAvg.Height.Round(0),
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
         equity = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
         price = new { ask = tm0.CurrentPrice.Ask, bid = tm0.CurrentPrice.Bid },
         tci = GetTradeConditionsInfo(tmTrader),
-        w12 = (tmTrader.TradeConditions.Contains(tmTrader.CorrGROk) ? tmTrader.CorridorGRRatio : tmTrader.WaveFirstSecondRatio).Round(1)
+        wp = tmTrader.WaveHeightPower.Round(1)
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
@@ -345,7 +345,7 @@ namespace HedgeHog.Alice.Client {
 
     #region TradeConditions
     public string[] ReadTradingConditions(string pair) {
-      return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, name) => name).ToArray(),false);
+      return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, name) => name).ToArray(), false);
     }
     public string[] GetTradingConditions(string pair) {
       return UseTradingMacro(pair, tm => tm.TradeConditionsInfo((tc, name) => name).ToArray(), false);
@@ -361,7 +361,7 @@ namespace HedgeHog.Alice.Client {
       return tm.TradeConditionsInfo((d, t, c) => new { c, t, d = d() })
         .GroupBy(x => x.t)
         .Select(g => new { g.Key, d = g.ToDictionary(x => x.c, x => x.d) })
-        .ToDictionary(x => x.Key+"", x => x.d);
+        .ToDictionary(x => x.Key + "", x => x.d);
     }
     #endregion
 
@@ -428,10 +428,10 @@ namespace HedgeHog.Alice.Client {
     public void Sell(string pair) {
       UseTradingMacro(pair, tm => tm.OpenTrade(false, tm.LotSizeByLossBuy, "web"), true);
     }
-    public void SetRsdTreshold(string pair,int chartNum, int pips) {
+    public void SetRsdTreshold(string pair, int chartNum, int pips) {
       UseTradingMacro(pair, chartNum, tm => tm.RatesStDevMinInPips = pips, true);
     }
-    public object[] AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair,int chartNum) {
+    public object[] AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair, int chartNum) {
       return UseTradingMacro2(pair, chartNum, tm => tm.IsActive
         , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm), false);
     }
@@ -533,37 +533,39 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
     public object GetWaveRanges(string pair) {
-      var value = MonoidsCore.ToFunc(0.0,0, false, (v,i, mx) => new { v, i,mx });
-      Func<IList<TradingMacro.WaveRange>, Func<TradingMacro.WaveRange, double>, TradingMacro.WaveRange> max = (rs, get) =>
-        rs.Select((w, i) => new { w, v = get(w).Abs(), i })
-        .OrderByDescending(x => x.v)
-        .First().w;
-      Func<IList<TradingMacro.WaveRange>, Func<TradingMacro.WaveRange, double>, TradingMacro.WaveRange, bool> isMax = (rs, get1, wr) => max(rs, get1) == wr;
-      var getValue = MonoidsCore.ToFunc(0.0,0, (IList<TradingMacro.WaveRange>)null, (Func<TradingMacro.WaveRange, double>)null, (TradingMacro.WaveRange)null,
-        (v,i, rs, get2, wr) => value(v,i, isMax(rs, get2, wr)));
+      var value = MonoidsCore.ToFunc(0.0, false, (v, mx) => new { v, mx });
       var wrs = UseTradingMacro(pair, tm => tm.IsTrader, false)
-        .SelectMany(tm => tm.WaveRangesWithTail, (tm, wr) => new { inPips = new Func<double, double>(d => tm.InPips(d)), wr, rs = tm.WaveRangesWithTail })
-        .Select((x,i) => new {
-          ElliotIndex = value((double)x.wr.ElliotIndex,i+1,false),
-          Angle = getValue(x.wr.Angle,i+1, x.rs, wr => wr.Angle, x.wr),//.ToString("###0.0"),
-          Height = getValue(x.inPips(x.wr.Height), i + 1, x.rs, wr => wr.Height, x.wr),//.ToString("###0.0"),
-          StDev = getValue(x.inPips(x.wr.StDev).Round(1), i + 1, x.rs, wr => wr.StDev, x.wr),//.ToString("#0.00"),
-          DistanceByRegression = getValue(x.inPips(x.wr.DistanceByRegression.Abs()), i + 1, x.rs, wr => wr.DistanceByRegression, x.wr),
-          WorkByHeight = getValue(x.wr.WorkByHeight.Abs().Round(0), i + 1, x.rs, wr => wr.WorkByHeight, x.wr),
+        .SelectMany(tm => tm.WaveRangesWithTail, (tm, wr) => new { inPips = new Func<double, double>(d => tm.InPips(d)), wr, rs = tm.WaveRanges })
+        .Select((x, i) => new {
+          i,
+          ElliotIndex = value((double)x.wr.ElliotIndex, false),
+          Angle = value(x.wr.Angle.Round(0), x.wr.Index(x.rs, wr => wr.Angle.Abs()) == 0),//.ToString("###0.0"),
+          Height = value(x.wr.Height.Round(0), x.wr.Index(x.rs, wr => wr.Height) == 0),//.ToString("###0.0"),
+          StDev = value(x.wr.StDev.Round(1), x.wr.Index(x.rs, wr => wr.StDev) == 0),//.ToString("#0.00"),
+          Distance = value(x.wr.Distance.Round(0), x.wr.Index(x.rs, wr => wr.Distance) == 0),
+          DistanceByRegression = value(x.wr.DistanceByRegression.Round(0), x.wr.Index(x.rs, wr => wr.DistanceByRegression) == 0),
+          WorkByHeight = value(x.wr.WorkByHeight.Round(0), x.wr.Index(x.rs, wr => wr.WorkByHeight) == 0),
+          UID = value(x.wr.UID.Round(1), x.wr.Index(x.rs, wr => -wr.UID) == 0),
+          x.wr.IsTail,
+          IsStats = false
         })
         .ToList();
       var wrStats = UseTradingMacro(pair, tm => tm.IsTrader, false)
         .Select(tm => new { wrs = new[] { tm.WaveRangeAvg, tm.WaveRangeSum }, inPips = new Func<double, double>(d => tm.InPips(d)) })
         .SelectMany(x => x.wrs, (x, wr) => new {
-          ElliotIndex = value(0, 0, false),
-          Angle = value(wr.Angle, 0, false),
-          Height = value(x.inPips(wr.Height), 0, false),
-          StDev = value(x.inPips(wr.StDev), 0, false),
-          DistanceByRegression = value(x.inPips(wr.DistanceByRegression), 0, false),
-          WorkByHeight = value(wr.WorkByHeight, 0, false),
-          wr.Hash,
+          i = 0,
+          ElliotIndex = value(0, false),
+          Angle = value(wr.Angle.Round(0), false),
+          Height = value(wr.Height.Round(0), false),
+          StDev = value(wr.StDev.Round(1), false),
+          Distance = value(wr.Distance.Round(0), false),
+          DistanceByRegression = value(wr.DistanceByRegression.Round(0), false),
+          WorkByHeight = value(wr.WorkByHeight.Round(0), false),
+          UID = value(wr.UID.Round(1), false),
+          IsTail = false,
           IsStats = true
         });
+      #region Not Used
       Func<object, double> getProp = (o) =>
         o.GetType()
         .GetProperties()
@@ -573,18 +575,18 @@ namespace HedgeHog.Alice.Client {
         .First()();
       var wra = wrs.Take(0).Select(wr0 => wr0.GetType()
         .GetProperties()
-        .ToDictionary(p => p.Name, p =>(object) value(
+        .ToDictionary(p => p.Name, p => (object)value(
           wrs
           .Select(wr => getProp(p.GetValue(wr)).Abs())
           .DefaultIfEmpty(0)
           .ToArray()
-          .AverageInRange(1,-1)
+          .AverageInRange(1, -1)
           .Average(),
-          0,
           false
           )))
           .Do(wr => wr.Add("IsStats", true))
           .ToArray();
+      #endregion
       //var wrStd = wrs.Take(1).Select(wr0 => wr0.GetType()
       //  .GetProperties()
       //  .ToDictionary(p => p.Name, p => {

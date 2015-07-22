@@ -536,7 +536,7 @@
       lineChartData.push.apply(lineChartData, rates);
       lineChartData.unshift.apply(lineChartData, rates2);
       //lineChartData.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
-
+      response.waveLines.forEach(function (w, i) { w.bold = i == sumStartIndexById(); });
       self.chartData(chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross,response.tpsAvg,response.canBuy,response.canSell,response.waveLines));
       updateChartCmas[0](cma(updateChartCmas[0](), 10, getSecondsBetween(new Date(), d)));
     }
@@ -621,11 +621,14 @@
     }
     var waveRangesDialog;
     var sumStartIndex = ko.observable(0);
+    function waveRangeValue(prop,wr) { return wr[prop].v; }
     this.waveRangesDialog = function (element) {
       var table = $(element).find("table") ;
       waveRangesDialog = table[0];
       table.on("click", "tbody tr", function (a, b) {
-        sumStartIndex(parseInt($(this).find("td:first").text()) - 1);
+        var koData = ko.dataFor(this);
+        var uid = waveRangeValue("Distance", koData);
+        sumStartIndex(uid == sumStartIndex() ? 0 : uid);
       });
     };
     var waveRanges = ko.observableArray();
@@ -641,11 +644,32 @@
       });
     });
     this.sumStartIndex = sumStartIndex;
-    this.dbrSum = ko.pureComputed(function () {
-      return Math.round(waveRanges().slice(0, sumStartIndex()).reduce(function (a, b) {
-        return a + b.DistanceByRegression.v;
-      }, 0));
-    });
+    this.dbrSum = ko.pureComputed(sumByIndex.bind(null, "DistanceByRegression"));
+    this.heightSum = ko.pureComputed(sumByIndex.bind(null, "Height"));
+    this.wbhSum = ko.pureComputed(sumByIndex.bind(null, "WorkByHeight"));
+    this.distanceSum = ko.pureComputed(sumByIndex.bind(null, "Distance"));
+    this.sumStartIndexById = ko.pureComputed(sumStartIndexById);
+    function fuzzyFind(array, prop, value) {
+      if (!array || !array.length) return null;
+      var diffs = array.map(function (v) {
+        return { v: v, d: Math.abs(prop(v) - value) };
+      });
+      var r = _.chain(diffs).sortBy('d').first().value();
+      return r.v;
+    }
+    function sumStartIndexById() {
+      var uid = sumStartIndex();
+      var wr = fuzzyFind(waveRanges(), waveRangeValue.bind(null, "Distance"), uid);
+      return waveRanges().indexOf(wr);
+    }
+    function sumByIndex (prop) {
+      var i = sumStartIndexById();
+      return i <= 0
+        ? 0
+        : Math.round(waveRanges().slice(0, i).reduce(function (a, b) {
+          return a + waveRangeValue(prop, b);
+        }, 0) - waveRangeValue(prop, waveRanges()[i]));
+    }
     this.startWaveRanges = function () {
       stopWaveRanges = false;
       $(waveRangesDialog).dialog({

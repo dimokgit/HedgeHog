@@ -181,8 +181,12 @@
       padding-top:0;
       padding-bottom:0;
     }
-    #waveRangesDialog tr.selected{
+    #waveRangesDialog tr.selected,
+    #waveRangesDialog td.selected{
       background-color:lightblue;
+    }
+    #waveRangesDialog tr.istail{
+      background-color:lightgray;
     }
     #waveRangesDialog th{
       text-align:center;
@@ -315,6 +319,7 @@
               </li>
               <li>
                 <input type="button" value="X" data-bind="click:resetTradeLevels" title="Clear trade levels" />
+                <input type="button" value="F" data-bind="click:flipTradeLevels" title="Flip trade levels" />
                 <input type="button" value="X" data-bind="click:resetCloseLevels" title="Clear Close Levels" />
                 <input type="button" value="G" data-bind="click:setCloseLevelsToGreen" title="Set Close Levels to Green Corridor(Range)" />
                 <button data-bind="click:setCloseLevelsToGRB1" title="Set Close Levels to Green Red2 Blue">
@@ -558,31 +563,47 @@
       <thead>
         <tr>
           <th></th>
+          <th>ID</th>
           <th>Ang</th>
           <th>SD</th>
           <th>H</th>
           <th>WH</th>
-          <th><span data-bind="text:dbrSum"></span></th>
+          <th>DR</th>
+          <th>Ds</th>
+        </tr>
+        <tr style="background-color:gold" data-bind="visible:sumStartIndex()">
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <td><span data-bind="text:heightSum"></span></td>
+          <td><span data-bind="text:wbhSum"></span></td>
+          <td><span data-bind="text:dbrSum"></span></td>
+          <td><span data-bind="text:distanceSum"></span></td>
         </tr>
       </thead>
       <tbody data-bind="foreach:waveRanges">
-        <tr data-bind="css:{selected:$index() == $parent.sumStartIndex()}">
+        <tr data-bind="css:{selected:$parent.sumStartIndexById() == $index(),istail:IsTail}">
           <td><span data-bind="text:$index()+1"></span></td>
+          <td><span data-bind="text:d3.format('.1f')(UID.v),style:{fontWeight:UID.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.1f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Height.v),style:{fontWeight:Height.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(Height.v),style:{fontWeight:Height.mx?'bold':''}" class="selected"></span></td>
           <td><span data-bind="text:d3.format('.0f')(WorkByHeight.v),style:{fontWeight:WorkByHeight.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v),style:{fontWeight:DistanceByRegression.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(Distance.v),style:{fontWeight:Distance.mx?'bold':''}"></span></td>
         </tr>
       </tbody>
       <tfoot data-bind="foreach:waveRangesStats" style="background-color:gold">
         <tr>
           <td></td>
+          <td><span data-bind="text:d3.format('.1f')(UID.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>
           <td><span data-bind="text:d3.format('.'+($index()===0?'1':'0')+'f')(StDev.v)"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Height.v)"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(Height.v)" class="selected"></span></td>
           <td><span data-bind="text:d3.format('.0f')(WorkByHeight.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v)"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(Distance.v)"></span></td>
         </tr>
       </tfoot>
     </table>

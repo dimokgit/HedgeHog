@@ -75,7 +75,7 @@ namespace HedgeHog.Alice.Store {
         //BuyLevel.TradesCount = SellLevel.TradesCount = TradeCountStart;
         //LevelBuyBy = LevelSellBy = 
         //LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
-        var offset = WaveHeightAverage;
+        var offset = InPoints(WaveHeightAverage);
         if (Trades.HaveBuy()) {
           BuyLevel.Rate = Trades.NetOpen();
           SellLevel.Rate = BuyLevel.Rate - offset;

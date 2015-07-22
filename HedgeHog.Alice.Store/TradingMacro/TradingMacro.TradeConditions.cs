@@ -87,7 +87,7 @@ namespace HedgeHog.Alice.Store {
 
     #region TradeConditions
     public delegate bool TradeConditionDelegate();
-    bool WidthCommonOk(Func<bool> ok) { return !CorridorStartDate.HasValue && WaveCountOk() && ok(); }
+    bool WidthCommonOk(Func<bool> ok) { return WaveCountOk() && ok(); }
     [TradeConditionStartDateTrigger]
     public TradeConditionDelegate WidthRBOk {
       get {
@@ -98,6 +98,20 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate WidthGROk {
       get { return () => WidthCommonOk(() => TrendLines1Trends.StDev > TrendLinesTrends.StDev); }
     }
+    public TradeConditionDelegate WaveAvgOk {
+      get {
+        return () => WaveRanges.Take(1).Any(wr => wr.Height > WaveRangeAvg.Height);
+      }
+    }
+    public TradeConditionDelegate PowerOk {
+      get {
+        return () => new[]{
+          WaveRangeAvg.WorkByHeight,
+          WaveRangeAvg.Height ,
+          WaveRangeAvg.DistanceByRegression
+        }.StandardDeviation() < 1;
+      }
+    }
     public TradeConditionDelegate DbrOk {
       get {
         return () => WaveRanges.Take(1).Any(wr => WaveRangesGRB.Index(wr, w => w.DistanceByRegression) <= DbrIndexMax);
@@ -106,20 +120,24 @@ namespace HedgeHog.Alice.Store {
     bool WaveTresholdOk(double value, double treshold) {
       return !CorridorStartDate.HasValue && WaveRanges[0].Height > WaveHeightAverage && IsTresholdAbsOk(value, treshold);
     } 
-    public TradeConditionDelegate CorrGROk {
-      get { return () => WaveTresholdOk(CorridorGRRatio, CorridorGRRatioMin); }
-    }
     public TradeConditionDelegate WaveGOk {
       get { return () => WaveTresholdOk(WaveFirstSecondRatio, WaveFirstSecondRatioMin); }
     }
+    Func<WaveRange, double>[] _elliotProps = new Func<WaveRange, double> []{
+      w=>w.Height,
+      w=>w.WorkByHeight,
+      w=>w.DistanceByRegression,
+      w=>w.Distance
+    };
     public TradeConditionDelegate ElliotOk {
       get {
-        return () =>
-          WaveRanges
-          .Take(4)
-          .Where(wr => wr.ElliotIndex == 1)
-          .Select(wr => WaveRanges.IndexOf(wr))
-          .Any(i => WaveRanges.Take(i).Sum(wr => wr.DistanceByRegression) > WaveRanges[i].DistanceByRegression);
+        return () => WaveRanges
+          .Where(wr => WaveRanges.Take(1).Any(w=>w.Height > WaveRangeAvg.Height || w.WorkByHeight > WaveRangeAvg.WorkByHeight))
+          .Select(wr => new {
+            wr,
+            score = _elliotProps.Select(f => WaveRanges.Index(wr, f)).Count(i => i == 0)
+          })
+          .Any(x => x.score >= 3 && WaveRanges.IndexOf(x.wr).Between(1,1));
       }
     }
 
