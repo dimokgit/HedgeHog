@@ -289,11 +289,12 @@ namespace HedgeHog.Alice.Client {
       var tmTrader = UseTradingMacro(pair, tm => tm.IsTrader, false).DefaultIfEmpty(tm0).Single();
 
       #region marketHours
-      _marketHours
-        .Where(mh => !_marketHoursSet.Contains(mh.Key))
-        .Where(mh => (tmTrader.ServerTime.ToUniversalTime().TimeOfDay - mh.Value.TimeOfDay).TotalMinutes.Between(-15, 0))
-        .Do(mh => Clients.All.marketIsOpening(new { mh.Key, mh.Value }))
-        .ForEach(mh => _marketHoursSet.Add(mh.Key));
+      if (!tmTrader.IsInVitualTrading)
+        _marketHours
+          .Where(mh => !_marketHoursSet.Contains(mh.Key))
+          .Where(mh => (tmTrader.ServerTime.ToUniversalTime().TimeOfDay - mh.Value.TimeOfDay).TotalMinutes.Between(-15, 0))
+          .Do(mh => Clients.All.marketIsOpening(new { mh.Key, mh.Value }))
+          .ForEach(mh => _marketHoursSet.Add(mh.Key));
       _marketHours
         .Where(mh => (tmTrader.ServerTime.ToUniversalTime().TimeOfDay - mh.Value.TimeOfDay).TotalMinutes > 1)
         .ForEach(mh => _marketHoursSet.Remove(mh.Key));

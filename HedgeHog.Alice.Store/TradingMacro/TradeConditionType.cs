@@ -13,4 +13,5 @@ namespace HedgeHog.Alice.Store {
 
     public Types Type { get; set; }
   }
+  public class TradeConditionFreezeAttribute : Attribute { }
 }

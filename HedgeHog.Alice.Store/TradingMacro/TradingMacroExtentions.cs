@@ -1170,6 +1170,17 @@ namespace HedgeHog.Alice.Store {
     public ITradesManager TradesManager { get { return _TradesManager(); } }
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
       _tradingMacros = tradingMacros;
+      Action<Expression<Func<TradingMacro,bool>>> check = g => TradingMacrosByPair()
+        .Scan(0, (t, tm) => t + (g.Compile()(tm) ? 1 : 0))
+        .SkipWhile(c => c <= 1)
+        .Take(1)
+        .ForEach(c => { throw new Exception(Lib.GetLambda(g)+" is set in more then one TradingMacro"); });
+      check(tm => tm.IsTrader);
+      check(tm => tm.IsTrender);
+      TradingMacrosByPair()
+        .GroupBy(tm => tm.PairIndex)
+        .Where(g => g.Count() > 1)
+        .ForEach(g => { throw new Exception("PairIndex " + g.Key + " is user in more that one " + g.First().Pair); });
       _inPips = null;
       this._TradesManager = getTradesManager;
       this.TradesManager.TradeClosed += TradeCloseHandler;

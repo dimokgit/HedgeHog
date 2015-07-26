@@ -730,7 +730,9 @@ namespace HedgeHog {
         .Where(chank => chank.Count == waveWidth)
         .Select(chunk => {
           var slope = chunk.LinearSlope(r => r.y);
-          var extream = slope > 0 ? chunk.MaxBy(c => c.y).First() : chunk.MinBy(c => c.y).First();
+          var list = chunk.SafeList();
+          list.SortByLambda(c => c.y);
+          var extream = slope > 0 ? list.Last() : list.First();
           return new { slope, extream.x, i = extream.i };
         })
         .DistinctLastUntilChanged(a => a.slope.SignUp())

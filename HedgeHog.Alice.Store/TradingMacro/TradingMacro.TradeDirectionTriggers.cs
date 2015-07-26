@@ -21,7 +21,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     bool MySelf(TradingMacro tm) { return tm == this; }
-    bool MySelfNext(TradingMacro tm) { return tm.BarPeriodInt > this.BarPeriodInt; }
+    bool MySelfNext(TradingMacro tm) { return tm.PairIndex > this.PairIndex; }
     #region Triggers
     [TradeDirectionTrigger]
     public void OnOutsideRed() {

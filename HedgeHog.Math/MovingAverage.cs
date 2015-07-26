@@ -12,8 +12,13 @@ namespace HedgeHog {
               .Scan(double.NaN, (ma, d) => ma.Cma(period, d))
               .Reverse();
     }
-    public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period,Action<T,double> setMA) {
-      rates.Zip(rates.Cma(value,period), (r, ma) => { setMA(r, ma); return ma; }).Count();
+    public static void Cma0<T>(this IList<T> rates, Func<T, double> value, double period, Action<T, double> setMA) {
+      rates.Zip(rates.Cma(value, period), (r, ma) => { setMA(r, ma); return ma; }).Count();
+    }
+    public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period, Action<T, double> setMA) {
+      var cmas = rates.Cma(value, period).ToList();
+      for (var i = 0; i < rates.Count; i++)
+        setMA(rates[i], cmas[i]);
     }
 
     public static IEnumerable<U> MovingAverage<T,U>(this IEnumerable<T> inputStream, Func<T, double> selector, int period,Func<T,double,U> map) {

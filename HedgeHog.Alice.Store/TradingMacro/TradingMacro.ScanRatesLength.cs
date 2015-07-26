@@ -79,7 +79,7 @@ namespace HedgeHog.Alice.Store {
       OnRatesArrayChaged = () => OnRatesArrayChaged_SetVoltsByRsd(lastRsd);
     }
     void ScanRatesLengthByStDevMin2() {
-      if (CorridorStartDate.HasValue) {
+      if (IsCorridorFrozen()) {
         //BarsCountCalc = (CorridorStats.Rates.Count * 1.1).Max(BarsCountCalc).Min(BarsCountCount()).ToInt();
         if (CorridorStats.Rates.Count * 1.05 > RatesArray.Count) {
           //SetCorridorStartDateToNextWave(true);
@@ -143,7 +143,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     void ScanRatesLengthByDistanceMin() {
-      if (CorridorStartDate.HasValue) {
+      if (IsCorridorFrozen()) {
         //BarsCountCalc = (CorridorStats.Rates.Count * 1.1).Max(BarsCountCalc).Min(BarsCountCount()).ToInt();
         if (CorridorStats.Rates.Count * 1.05 > RatesArray.Count) {
           //SetCorridorStartDateToNextWave(true);

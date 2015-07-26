@@ -69,7 +69,7 @@
 
       var chartData = ko.unwrap(valueAccessor());
       var chartNum = chartData.chartNum;
-      var hasTps = chartNum === 0;
+      var hasTps = chartNum === 10;
 
       var chartArea = calcChartArea(element);
 
@@ -242,7 +242,7 @@
       var openTradeGross = ko.unwrap(chartData.openTradeGross);
       var tpsAvg = chartData.tpsAvg;
       var chartNum = chartData.chartNum;
-      var hasTps = chartNum === 0;
+      var hasTps = chartNum === 10;
       var canBuy = chartData.canBuy;
       var canSell = chartData.canSell;
       // #endregion
@@ -339,10 +339,10 @@
           var isHotTps = _.last(data).v > tpsAvg;
           var colorTps = isHotTps ? "darkred" : "navy";
           var opacityTps = isHotTps ? tpsOpacity * 2 : tpsOpacity;
-          svg.select("path.line.dataTps")
-            .datum(data)
-            .attr("d", line2).style("stroke", colorTps).style("opacity", opacityTps);
-          setHLine(tpsAvg, "tpsAvg", colorTps, 1, "", y2);
+          //svg.select("path.line.dataTps")
+          //  .datum(data)
+          //  .attr("d", line2).style("stroke", colorTps).style("opacity", opacityTps);
+          //setHLine(tpsAvg, "tpsAvg", colorTps, 1, "", y2);
         }
         if (chartNum === 1)
           setRectArea(chartData.tickDate, yDomain[1], trendLines.dates[1], yDomain[0], "tickArea");

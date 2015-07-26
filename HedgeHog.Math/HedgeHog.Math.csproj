@@ -86,6 +86,7 @@
     <Compile Include="GIS\Point.cs" />
     <Compile Include="GIS\Utility.cs" />
     <Compile Include="GroupAdjacent.cs" />
+    <Compile Include="LambdaComparer.cs" />
     <Compile Include="LinearRegression.cs" />
     <Compile Include="MathExtensions.cs" />
     <Compile Include="MovingAverage.cs" />

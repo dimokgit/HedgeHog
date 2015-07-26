@@ -15,6 +15,10 @@ namespace HedgeHog {
       var slope = 0.0;
       return new[] { GetIntercept(data, out slope), slope };
     }
+    public static double[] Linear<T>(this IList<T> data, Func<T, double> map) {
+      var slope = 0.0;
+      return new[] { GetIntercept(data, map, out slope), slope };
+    }
     public static double LinearSlope(this IList<double> data) {
       double avgY;
       return GetSlope(data, out avgY);
@@ -59,6 +63,19 @@ namespace HedgeHog {
       }
       return ((sumxy - sumx * (averageY = sumy / n)) / (sumx2 - sumx * sumx / n));
     }
+    static double GetSlope<T>(IList<T> yArray,Func<T,double> map, out double averageY) {
+      double n = yArray.Count;
+      double sumxy = 0, sumx = 0, sumy = 0;
+      double sumx2 = 0;
+      for (int i = 0; i < n; i++) {
+        var d = map(yArray[i]);
+        sumxy += i * d;
+        sumx += i;
+        sumy += d;
+        sumx2 += (long)i * i;
+      }
+      return ((sumxy - sumx * (averageY = sumy / n)) / (sumx2 - sumx * sumx / n));
+    }
     static double GetIntercept(IList<double> data, out double slope) {
       if (data.Count == 0) {
         slope = double.NaN;
@@ -71,6 +88,20 @@ namespace HedgeHog {
 
       double avgY;
       slope = GetSlope(data, out avgY);
+      return Intecsept(slope, avgY, data.Count);
+    }
+    static double GetIntercept<T>(IList<T> data,Func<T,double> map, out double slope) {
+      if (data.Count == 0) {
+        slope = double.NaN;
+        return double.NaN;
+      }
+      if (data.Count == 1) {
+        slope = double.NaN;
+        return map(data[0]);
+      }
+
+      double avgY;
+      slope = GetSlope(data,map, out avgY);
       return Intecsept(slope, avgY, data.Count);
     }
     static double Intecsept(double slope, double yAverage, int dataLength) {

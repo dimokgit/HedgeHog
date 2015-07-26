@@ -342,6 +342,11 @@ namespace HedgeHog.Alice.Store {
         #region enterCrossHandler
         Func<SuppRes, bool> enterCrossHandler = (suppRes) => {
           if (CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled(suppRes)) return false;
+          if (Trades.Length > 0 &&
+            BuyLevel != null && SellLevel != null && 
+            BuyLevel.Rate < SellLevel.Rate &&
+            BuyLevel.CanTrade == false && SellLevel.CanTrade == false 
+            ) return false;
           var isBuy = isBuyR(suppRes);
           var lot = Trades.IsBuy(!isBuy).Lots();
           var canTrade = suppResCanTrade(suppRes);
@@ -1493,7 +1498,7 @@ namespace HedgeHog.Alice.Store {
 
                 var toai = MonoidsCore.ToFunc(() => TradeOpenActionsInfo((d, n) => new { n, d }).ToArray());
                 #region FirstTime
-                if (firstTime) {
+                if (firstTime && IsTrader) {
                   WorkflowStep = "";
                   Log = new Exception(conditions() + "");
                   LineTimeMinFunc = rates0 => rates0[rates0.Count - CorridorDistanceByLengthRatio.Abs()].StartDateContinuous;
@@ -1507,7 +1512,7 @@ namespace HedgeHog.Alice.Store {
                     .Where(_ => should)
                     .Do(sr => {
                       sr.InManual = false;
-                      sr.CanTrade = false;
+                      sr.CanTrade = !IsAutoStrategy;
                       sr.TradesCount = TradeCountStart;
                     })
                     .ToArray()
@@ -1549,12 +1554,15 @@ namespace HedgeHog.Alice.Store {
                   };
                 }
                 #endregion
-                exitFunc();
-                TradeDirectionTriggersRun();
-                TradeConditionsTrigger();
+                if (IsTrader) {
+                  exitFunc();
+                  TradeDirectionTriggersRun();
+                  TradeConditionsTrigger();
+                }
                 SetTradeLevelsToLevelBy(GetTradeLevel)();
               }
-              adjustExitLevels0();
+              if (IsTrader)
+                adjustExitLevels0();
               break;
             #endregion
 

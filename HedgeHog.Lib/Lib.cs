@@ -341,6 +341,26 @@ namespace HedgeHog {
     public static string[] GetLambdas<TPropertySource>(params Expression<Func<TPropertySource, object>>[] expressions) {
       return expressions.Select(expression => GetLambda<TPropertySource>(expression)).ToArray();
     }
+    public static string GetLambda<TPropertySource,TProperty>(Expression<Func<TPropertySource, TProperty>> expression) {
+      var lambda = expression as LambdaExpression;
+      MemberExpression memberExpression;
+      if (lambda.Body is UnaryExpression) {
+        var unaryExpression = lambda.Body as UnaryExpression;
+        memberExpression = unaryExpression.Operand as MemberExpression;
+      } else {
+        memberExpression = lambda.Body as MemberExpression;
+      }
+
+      Debug.Assert(memberExpression != null, "Please provide a lambda expression like 'n => n.PropertyName'");
+
+      if (memberExpression != null) {
+        var propertyInfo = memberExpression.Member as PropertyInfo;
+
+        return propertyInfo.Name;
+      }
+
+      return null;
+    }
     public static string GetLambda<TPropertySource>(Expression<Func<TPropertySource, object>> expression) {
       var lambda = expression as LambdaExpression;
       MemberExpression memberExpression;
@@ -440,9 +460,19 @@ namespace HedgeHog {
           yield return new Tuple<A, PropertyInfo>(p.GetCustomAttributes(false).OfType<A>().First(), p);
       }
     }
-    public static IEnumerable<U> GetPropertiesByType<T,U>(this object that,Func<T> sample, Func<T,PropertyInfo,U> map) {
+    public static IEnumerable<U> GetPropertiesByType<T, U>(this object that, Func<T> sample, Func<T, PropertyInfo, U> map) {
       return from p in that.GetType().GetProperties()
              where p.PropertyType == typeof(T)
+             select map((T)p.GetValue(that), p);
+    }
+    public static IEnumerable<U> GetPropertiesByTypeAndAttribute<T,A, U>(
+      this object that, Func<T> sample,
+      Func<A,bool> attributePredicate,
+      Func<T, PropertyInfo, U> map)
+      where A:Attribute {
+      return from p in that.GetType().GetProperties()
+             where p.PropertyType == typeof(T) &&
+             (attributePredicate == null || p.GetCustomAttributes(typeof(A), false).Cast<A>().Where(attributePredicate).Any())
              select map((T)p.GetValue(that), p);
     }
 

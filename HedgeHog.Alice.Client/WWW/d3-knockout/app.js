@@ -575,8 +575,8 @@
     this.lastDate = lastDate;
     this.lastDate2 = lastDate2;
     function lastDateImpl(lineChartData) {
-      var lastIndex = Math.max(0, lineChartData().length - 1);
-      return (lineChartData()[lastIndex] || {}).d;
+      var lastIndex = Math.max(1, lineChartData().length - 1);
+      return (lineChartData()[lastIndex] || {}).d || dateMin;
     }
     function lastDate() {
       return lastDateImpl(lineChartData);

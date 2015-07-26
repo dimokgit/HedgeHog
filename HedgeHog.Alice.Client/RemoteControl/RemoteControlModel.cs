@@ -745,7 +745,8 @@ namespace HedgeHog.Alice.Client {
           {
             _tradingStatistics.CurrentGrossInPips = _tradingStatistics.GetNetInPips();
           }
-          _tradingStatistics.CurrentLossInPips = tms.Sum(tm => tm.CurrentLossInPips);
+          var clp = tms.Sum(tm => tm.CurrentLossInPips);
+          _tradingStatistics.CurrentLossInPips = clp;
           _tradingStatistics.OriginalProfit = MasterModel.AccountModel.OriginalProfit;
         }
       } catch (Exception exc) {
@@ -1044,7 +1045,7 @@ namespace HedgeHog.Alice.Client {
         );
       #endregion
 
-      if (tm.RatesArray.Count == 0 || tm.BuyLevel == null) return new { rates = new int[0] };
+      if (tm.RatesArray.Count == 0 || tm.IsTrader && tm.BuyLevel == null) return new { rates = new int[0] };
 
       var tmTrader = GetTradingMacros(tm.Pair).First(tm1 => tm1.IsTrader);
 
