@@ -209,9 +209,9 @@
     function moveCorridorWavesCount(chartIndex, step) {
       if (chartIndex !== 0) return alert("chartIndex:" + chartIndex + " is not supported");
       var name = "PriceCmaLevels_";
-      readTradeSettings(function (ts) {
+      readTradeSettings(chartIndex,function (ts) {
         var value = Math.round((ts[name].v + step / 10) * 10) / 10;
-        saveTradeSetting(name, value, function (ts,note) {
+        saveTradeSetting(chartIndex,name, value, function (ts,note) {
           var pcl = (ts||{})[name].v;
           note.update({
             type: "success",
@@ -239,22 +239,25 @@
     /**
      * @param {Object} ts
      */
-    function saveTradeSetting(name, value,done) {
+    function saveTradeSetting(chartNum, name, value,done) {
       var ts = {};
       ts[name] = value;
-      serverCall("saveTradeSettings", [pair, ts], done);
+      serverCall("saveTradeSettings", [pair,chartNum, ts], done);
     }
-    function saveTradeSettings() {
+    function saveTradeSettings(chartNum) {
       var ts = settingsGrid().jqPropertyGrid('get');
       settingsGrid().empty();
-      serverCall("saveTradeSettings", [pair, ts]);
+      serverCall("saveTradeSettings", [pair,chartNum, ts]);
     }
-    function readTradeSettings(done) {
-      serverCall("readTradeSettings", [pair], done);
+    function readTradeSettings(chartNum, done) {
+      if (arguments.length !== 2) return alert("readTradeSettings must have two arguments");
+      serverCall("readTradeSettings", [pair, chartNum], done);
     }
-    function loadTradeSettings() {
+    function loadTradeSettings(chartNum) {
+      if (arguments.length < 1) return alert("loadTradeSettings must have at least one argument");
+      tradeSettingsCurrent(chartNum);
       settingsGrid().empty();
-      readTradeSettings(function (ts) {
+      readTradeSettings(chartNum, function (ts) {
         var tsMeta = {
           TradeCountMax: {
             type: 'number',
@@ -370,7 +373,9 @@
     }
     // #endregion
     // #region Trade Settings
-    this.saveTradeSettings = saveTradeSettings;
+    this.saveTradeSettings = function () {
+      saveTradeSettings(tradeSettingsCurrent());
+    };
     this.setCloseLevelsToGreen = function () {
       self.setTradeCloseLevelBuy({ value: "PriceHigh0" });
       self.setTradeCloseLevelSell({ value: "PriceLow0" });
@@ -386,7 +391,9 @@
     };
     this.setTradeCount = setTradeCount;
     this.toggleIsActive = toggleIsActive;
-    this.loadTradeSettings = loadTradeSettings;
+    this.loadTradeSettings = loadTradeSettings.bind(null, 0);
+    this.loadTradeSettings2 = loadTradeSettings.bind(null, 1);
+    var tradeSettingsCurrent = this.tradeSettingsCurrent = ko.observable(0);
 
     this.tradeOpenActionsReady = ko.observable(false);
 

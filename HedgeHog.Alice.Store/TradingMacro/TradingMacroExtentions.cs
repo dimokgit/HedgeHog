@@ -1170,13 +1170,16 @@ namespace HedgeHog.Alice.Store {
     public ITradesManager TradesManager { get { return _TradesManager(); } }
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
       _tradingMacros = tradingMacros;
-      Action<Expression<Func<TradingMacro,bool>>> check = g => TradingMacrosByPair()
+      Action<Expression<Func<TradingMacro, bool>>> check = g => TradingMacrosByPair()
         .Scan(0, (t, tm) => t + (g.Compile()(tm) ? 1 : 0))
         .SkipWhile(c => c <= 1)
         .Take(1)
-        .ForEach(c => { throw new Exception(Lib.GetLambda(g)+" is set in more then one TradingMacro"); });
+        .ForEach(c => { throw new Exception(Lib.GetLambda(g) + " is set in more then one TradingMacro"); });
       check(tm => tm.IsTrader);
-      check(tm => tm.IsTrender);
+      //check(tm => tm.IsTrender);
+      TradingMacrosByPair()
+        .Where(tm => tm.IsTrender)
+        .IfEmpty(new Action(() => { throw new Exception("Pair " + Pair + " does not have any Trenders"); }));
       TradingMacrosByPair()
         .GroupBy(tm => tm.PairIndex)
         .Where(g => g.Count() > 1)
@@ -2893,8 +2896,10 @@ namespace HedgeHog.Alice.Store {
           SuppRes.ForEach(sr => sr.ResetPricePosition());
           OnPropertyChanged("IsTrender");
           var tmo = TradingMacroOther();
-          if (!value) tmo.Take(1).ForEach(tm => tm.IsTrender = true);
-          else tmo.ForEach(tm => tm.IsTrender = false);
+          if (!value && !TradingMacrosByPair().Any(tm => tm.IsTrender))
+            tmo.Take(1).DefaultIfEmpty(this)
+              .ForEach(tm => tm.IsTrender = true);
+          //else tmo.ForEach(tm => tm.IsTrender = false);
         }
       }
     }
@@ -2911,37 +2916,39 @@ namespace HedgeHog.Alice.Store {
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
       get {
-        var tmt = TradingMacroOther(tm => tm.IsTrender).DefaultIfEmpty(this);
+        var tmt = TradingMacroOther(tm => tm.IsTrender).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
         Func<Func<TradingMacro, double>, double> level = f => f(tmt.First());
+        Func<Func<TradingMacro, double>, double> levelMax = f => tmt.Max(tm => f(tm));
+        Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Min(tm => f(tm));
         if (_TradeLevelFuncs == null)
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           { 
           {TradeLevelBy.PriceAvg1,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg1)},
-          {TradeLevelBy.PriceAvg02,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg02)},
-          {TradeLevelBy.PriceAvg2,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg2)},
-          {TradeLevelBy.PriceAvg21,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg21)},
-          {TradeLevelBy.PriceAvg22,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg22)},
+          {TradeLevelBy.PriceAvg02,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg02)},
+          {TradeLevelBy.PriceAvg2,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg2)},
+          {TradeLevelBy.PriceAvg21,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg21)},
+          {TradeLevelBy.PriceAvg22,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg22)},
 
-          {TradeLevelBy.PriceAvg03,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg03)},
-          {TradeLevelBy.PriceAvg3,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg3)},
-          {TradeLevelBy.PriceAvg31,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg31)},
-          {TradeLevelBy.PriceAvg32,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg32)},
+          {TradeLevelBy.PriceAvg03,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg03)},
+          {TradeLevelBy.PriceAvg3,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg3)},
+          {TradeLevelBy.PriceAvg31,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg31)},
+          {TradeLevelBy.PriceAvg32,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg32)},
 
-          {TradeLevelBy.PriceHigh,()=> level(tm=>tm.TrendLines2Trends.PriceAvg2)},
-          {TradeLevelBy.PriceLow,()=> level(tm=>tm.TrendLines2Trends.PriceAvg3)},
+          {TradeLevelBy.PriceHigh,()=> levelMax(tm=>tm.TrendLines2Trends.PriceAvg2)},
+          {TradeLevelBy.PriceLow,()=> levelMin(tm=>tm.TrendLines2Trends.PriceAvg3)},
         
-          {TradeLevelBy.PriceHigh0,()=> level(tm=>tm.TrendLines1Trends.PriceAvg2)},
-          {TradeLevelBy.PriceLow0,()=> level(tm=>tm.TrendLines1Trends.PriceAvg3)},
+          {TradeLevelBy.PriceHigh0,()=> levelMax(tm=>tm.TrendLines1Trends.PriceAvg2)},
+          {TradeLevelBy.PriceLow0,()=> levelMin(tm=>tm.TrendLines1Trends.PriceAvg3)},
 
-          {TradeLevelBy.MaxRG,()=> level(tm=>tm.TrendLines1Trends.PriceAvg2.Max(tm.TrendLinesTrends.PriceAvg2))},
-          {TradeLevelBy.MinRG,()=> level(tm=>tm.TrendLines1Trends.PriceAvg3.Min(tm.TrendLinesTrends.PriceAvg3))},
+          {TradeLevelBy.MaxRG,()=> levelMax(tm=>tm.TrendLines1Trends.PriceAvg2.Max(tm.TrendLinesTrends.PriceAvg2))},
+          {TradeLevelBy.MinRG,()=> levelMin(tm=>tm.TrendLines1Trends.PriceAvg3.Min(tm.TrendLinesTrends.PriceAvg3))},
 
-          {TradeLevelBy.PriceMax,()=> level(TrendLinesTrendsPriceMax)},
-          {TradeLevelBy.PriceMin,()=> level(TrendLinesTrendsPriceMin)},
-          {TradeLevelBy.PriceMax1,()=> level(TrendLinesTrendsPriceMax1)},
-          {TradeLevelBy.PriceMin1,()=> level(TrendLinesTrendsPriceMin1)},
+          {TradeLevelBy.PriceMax,()=> levelMax(TrendLinesTrendsPriceMax)},
+          {TradeLevelBy.PriceMin,()=> levelMin(TrendLinesTrendsPriceMin)},
+          {TradeLevelBy.PriceMax1,()=> levelMax(TrendLinesTrendsPriceMax1)},
+          {TradeLevelBy.PriceMin1,()=> levelMin(TrendLinesTrendsPriceMin1)},
 
-          {TradeLevelBy.None,()=>level(tm=>double.NaN)}
+          {TradeLevelBy.None,()=>double.NaN}
           };
         return _TradeLevelFuncs;
       }
@@ -4386,6 +4393,23 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region RatesDistanceMin
+    int? _ratesDistanceMinCalc;
+    [Category(categoryCorridor)]
+    [WwwSetting(wwwSettingsCorridorOther)]
+    [Dnr]
+    public int? RatesDistanceMinCalc {
+      get { return _ratesDistanceMinCalc.GetValueOrDefault(RatesDistanceMin); }
+      set {
+        if (_ratesDistanceMinCalc == value) return;
+        if (value < RatesDistanceMin)
+          Log = new Exception(new { RatesDistanceMinCalc = value, RatesDistanceMin } + "");
+        else {
+          _ratesDistanceMinCalc = value;
+          Log = new Exception(new { RatesDistanceMinCalc } + "");
+          OnPropertyChanged("RatesDistanceMinCalc");
+        }
+      }
+    }
     private int _RatesDistanceMin = 1000;
     [Category(categoryCorridor)]
     [WwwSetting(wwwSettingsCorridorOther)]
@@ -4395,6 +4419,7 @@ namespace HedgeHog.Alice.Store {
         if (_RatesDistanceMin != value) {
           _RatesDistanceMin = value;
           OnPropertyChanged("RatesDistanceMin");
+          RatesDistanceMinCalc = null;
         }
       }
     }

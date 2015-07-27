@@ -152,7 +152,7 @@ namespace HedgeHog.Alice.Store {
         return;
       }
       var rates = UseRatesInternal(rs => rs.Select(_priceAvg).Reverse().ToArray());
-      var rdm = InPoints(RatesDistanceMin);
+      var rdm = InPoints(RatesDistanceMinCalc.Value);
       var count = rates
         .Zip(rates.Skip(1), (p, n) => p.Abs(n))
         .Scan(0.0, (i, pa) => i + pa)

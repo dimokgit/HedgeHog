@@ -343,9 +343,9 @@ namespace HedgeHog.Alice.Store {
         Func<SuppRes, bool> enterCrossHandler = (suppRes) => {
           if (CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled(suppRes)) return false;
           if (Trades.Length > 0 &&
-            BuyLevel != null && SellLevel != null && 
+            BuyLevel != null && SellLevel != null &&
             BuyLevel.Rate < SellLevel.Rate &&
-            BuyLevel.CanTrade == false && SellLevel.CanTrade == false 
+            BuyLevel.CanTrade == false && SellLevel.CanTrade == false
             ) return false;
           var isBuy = isBuyR(suppRes);
           var lot = Trades.IsBuy(!isBuy).Lots();
@@ -1529,7 +1529,7 @@ namespace HedgeHog.Alice.Store {
                     if (minPLOk(t)) {
                       BuyLevel.InManual = SellLevel.InManual = false;
                       turnItOff(true, () => {
-                        if(canTradeOff)
+                        if (canTradeOff)
                           IsTradingActive = false;
                       });
                     }
@@ -1537,6 +1537,7 @@ namespace HedgeHog.Alice.Store {
                       BroadcastCloseAllTrades();
                     BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
                     CorridorStartDate = null;
+                    TradingMacrosByPair().ForEach(tm => tm.RatesDistanceMinCalc = null);
                   };
                   #endregion
                   onTradesCount += tc => {
@@ -2272,9 +2273,16 @@ namespace HedgeHog.Alice.Store {
     }
 
     private Action SetTradeLevelsToLevelBy(Func<bool, double, double> getTradeLevel) {
+      var isRange = BuyLevel.Rate < SellLevel.Rate;
+      Func<double, double, double> buy = (r, p) => isRange ? r.Min(p) : r.Max(p);
+      Func<double, double, double> sell = (r, p) => isRange ? r.Max(p) : r.Min(p);
       return new Action(() => {
-        BuyLevel.RateEx = getTradeLevel(true, BuyLevel.Rate);
-        SellLevel.RateEx = getTradeLevel(false, SellLevel.Rate);
+        BuyLevel.RateEx = new[] { getTradeLevel(true, BuyLevel.Rate) }
+          .SelectMany(rate => new[] { rate, buy(rate, CurrentEnterPrice(true)) })
+          .Average();
+        SellLevel.RateEx = new[] { getTradeLevel(false, SellLevel.Rate) }
+          .SelectMany(rate => new[] { rate, sell(rate, CurrentEnterPrice(false)) })
+          .Average();
       });
     }
   }

@@ -361,7 +361,7 @@ namespace HedgeHog.Alice.Client {
     private static Dictionary<string, Dictionary<string, bool>> GetTradeConditionsInfo(TradingMacro tm) {
       return tm.TradeConditionsInfo((d, t, c) => new { c, t, d = d() })
         .GroupBy(x => x.t)
-        .Select(g => new { g.Key, d = g.ToDictionary(x => x.c, x => x.d) })
+        .Select(g => new { g.Key, d = g.ToDictionary(x => x.c, x => x.d.IsAny()) })
         .ToDictionary(x => x.Key + "", x => x.d);
     }
     #endregion
@@ -500,17 +500,17 @@ namespace HedgeHog.Alice.Client {
       return Enum.GetValues(typeof(TradeLevelBy)).Cast<TradeLevelBy>().ToDictionary(t => t.ToString(), t => (int)t);
     }
     #region TradeSettings
-    public ExpandoObject SaveTradeSettings(string pair, ExpandoObject ts) {
-      return UseTradingMacro(pair, tm => {
+    public ExpandoObject SaveTradeSettings(string pair,int chartNum, ExpandoObject ts) {
+      return UseTradingMacro(pair,chartNum, tm => {
         var props = (IDictionary<string, object>)ts;
         props.ForEach(kv => {
           tm.SetProperty(kv.Key, kv.Value);
         });
-        return ReadTradeSettings(pair);
+        return ReadTradeSettings(pair,chartNum);
       }, true);
     }
-    public ExpandoObject ReadTradeSettings(string pair) {
-      return UseTradingMacro(pair, tm => {
+    public ExpandoObject ReadTradeSettings(string pair,int chartNum) {
+      return UseTradingMacro(pair,chartNum, tm => {
         var e = (IDictionary<string, object>)new ExpandoObject();
         Func<object, object> convert = o => o.GetType().IsEnum ? o + "" : o;
         tm.GetPropertiesByAttibute<WwwSettingAttribute>(_ => true)
@@ -521,6 +521,7 @@ namespace HedgeHog.Alice.Client {
         return e as ExpandoObject;
       }, false);
     }
+    #endregion
     static string MakePair(string pair) { return pair.Substring(0, 3) + "/" + pair.Substring(3, 3); }
     public Trade[] ReadClosedTrades(string pair) {
       try {
@@ -532,7 +533,6 @@ namespace HedgeHog.Alice.Client {
         throw;
       }
     }
-    #endregion
     public object GetWaveRanges(string pair) {
       var value = MonoidsCore.ToFunc(0.0, false, (v, mx) => new { v, mx });
       var wrs = UseTradingMacro(pair, tm => tm.IsTrader, false)
