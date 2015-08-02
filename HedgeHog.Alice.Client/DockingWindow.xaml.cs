@@ -153,7 +153,14 @@ namespace HedgeHog.Alice.Client {
 
     #region Ctor
     public DockingWindow() {
-      App.container.SatisfyImportsOnce(this);
+      try {
+        App.container.SatisfyImportsOnce(this);
+      } catch (CompositionException exc) {
+        var ie = exc.InnerException;
+        while (ie.InnerException != null)
+          ie = ie.InnerException;
+        throw ie;
+      }
       StyleManager.ApplicationTheme = new VistaTheme();
       InitializeComponent();
       this.Title = "HedgeHog in " + CurrentDirectory.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries).Last();

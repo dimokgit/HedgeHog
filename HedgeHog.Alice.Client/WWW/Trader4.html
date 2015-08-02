@@ -269,7 +269,14 @@
             </button>
           </li>
           <li>
-            <button data-bind="click:startWaveRanges"
+            <button data-bind="click:startWaveRanges.bind($data,0)"
+                    data-toggle1="modal"
+                    data-target1="#waveRangesDialog">
+              <span class="glyphicon glyphicon-stats"></span>
+            </button>
+          </li>
+          <li>
+            <button data-bind="click:startWaveRanges.bind($data,1)"
                     data-toggle1="modal"
                     data-target1="#waveRangesDialog">
               <span class="glyphicon glyphicon-stats"></span>

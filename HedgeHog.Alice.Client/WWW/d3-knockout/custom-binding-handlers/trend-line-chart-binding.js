@@ -363,9 +363,9 @@
       // #endregion
 
       // #region Corridor start date line
-      var corridorStartTime = trendLines.dates[0];
-      setTimeLine(corridorStartTime, "corridorStart", chartData.hasStartDate ? "darkred" : "darkorange", chartData.hasStartDate ? 2 : 1);
+      var corridorStartTime = (trendLines.dates ||[])[0];
       if (corridorStartTime) {
+        setTimeLine(corridorStartTime, "corridorStart", chartData.hasStartDate ? "darkred" : "darkorange", chartData.hasStartDate ? 2 : 1);
         svg.select("path#clearStartDate")
           .attr("transform", "translate(" + x(corridorStartTime) + "," + (height - 7) + ")");
         svg.selectAll("path.nextWave")

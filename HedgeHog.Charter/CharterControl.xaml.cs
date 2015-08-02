@@ -298,11 +298,15 @@ namespace HedgeHog {
     List<double> animatedPriceY = new List<double>();
     EnumerableDataSource<double> animatedDataSource = null;
     EnumerableDataSource<double> animatedDataSource1 = null;
+    EnumerableDataSource<double> animatedDataSource2 = null;
 
     List<double> animatedPriceBidY = new List<double>();
+    List<double> animatedPriceAskY = new List<double>();
     EnumerableDataSource<double> animatedDataSourceBid = null;
+    EnumerableDataSource<double> animatedDataSourceAsk = null;
 
     List<double> animatedPrice1Y = new List<double>();
+    List<double> animatedPrice2Y = new List<double>();
 
     List<DateTime> animatedVoltTimeX = new List<DateTime>();
     List<double> animatedVoltValueY = new List<double>();
@@ -318,7 +322,6 @@ namespace HedgeHog {
     }
     ViewportUIContainer viewPortContainer = new ViewportUIContainer();
 
-    public double CorridorHeightMultiplier { get; set; }
     public Func<PriceBar, double> PriceBarValue;
 
     public Func<Rate, double> GetPriceHigh { get; set; }
@@ -1728,12 +1731,17 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       {
 
         EnumerableDataSource<DateTime> xSrc = new EnumerableDataSource<DateTime>(animatedTimeX);
+        {
+          animatedDataSource1 = new EnumerableDataSource<double>(animatedPrice1Y);
+          animatedDataSource1.SetYMapping(y => y);
+          plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource1), Colors.Black, 1, "")
+            .Description.LegendItem.Visibility = Visibility.Collapsed;
 
-        animatedDataSource1 = new EnumerableDataSource<double>(animatedPrice1Y);
-        animatedDataSource1.SetYMapping(y => y);
-        plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource1), Colors.Black, 1, "")
-          .Description.LegendItem.Visibility = Visibility.Collapsed;
-
+          animatedDataSource2 = new EnumerableDataSource<double>(animatedPrice2Y);
+          animatedDataSource2.SetYMapping(y => y);
+          plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource2), Colors.DarkGray, 1, "")
+            .Description.LegendItem.Visibility = Visibility.Collapsed;
+        }
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
         animatedDataSource = new EnumerableDataSource<double>(animatedPriceY);
         animatedDataSource.SetYMapping(y => y);
@@ -1743,6 +1751,11 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         if (true) {
           animatedDataSourceBid = new EnumerableDataSource<double>(animatedPriceBidY);
           animatedDataSourceBid.SetYMapping(y => y);
+          this.PriceLineGraphBid = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSourceBid), priceLineGraphColorBid, 1, "");
+          this.PriceLineGraphBid.Description.LegendItem.Visibility = Visibility.Collapsed;
+
+          animatedDataSourceAsk = new EnumerableDataSource<double>(animatedPriceAskY);
+          animatedDataSourceAsk.SetYMapping(y => y);
           this.PriceLineGraphBid = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSourceBid), priceLineGraphColorBid, 1, "");
           this.PriceLineGraphBid.Description.LegendItem.Visibility = Visibility.Collapsed;
         }
@@ -2240,6 +2253,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
             ReAdjustXY(animatedTime0X, ticks.Count());
             ReAdjustXY(animatedPriceBidY, ticks.Count());
             ReAdjustXY(animatedPrice1Y, ticks.Count());
+            ReAdjustXY(animatedPrice2Y, ticks.Count());
             var min = animatedPriceY.Min();
             var max = animatedPriceY.Max();
             _trendLinesH = max - min;
@@ -2247,11 +2261,11 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
             {
               var i = 0;
               var lastRate = ticks.Aggregate((rp, rn) => {
-                SetPoint(i++, GetPriceHigh(rp), GetPriceLow(rp)/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, GetPriceMA(rp), rp);
+                SetPoint(i++, GetPriceHigh(rp), GetPriceLow(rp)/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, GetPriceMA(rp), GetPriceMA2(rp), rp);
                 return rn;
               });
               if (CalculateLastPrice == null || animatedPriceY.Last() == 0)
-                SetPoint(i, GetPriceHigh(lastRate), GetPriceLow(lastRate), GetPriceMA(lastRate), lastRate);
+                SetPoint(i, GetPriceHigh(lastRate), GetPriceLow(lastRate), GetPriceMA(lastRate), GetPriceMA2(lastRate), lastRate);
               //SetPoint(i, CalculateLastPrice(lastRate, GetPriceHigh), CalculateLastPrice(lastRate, GetPriceLow), CalculateLastPrice(lastRate, GetPriceMA), lastRate);
             }
             if (voltsByTick != null) {
@@ -2419,28 +2433,30 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         return _SetLastPointSubject;
       }
     }
-    public void SetLastPoint(double high, double low, double ma, Rate rate) {
-      SetLastPointSubject.OnNext(() => _SetLastPoint(high, low, ma, rate));
+    public void SetLastPoint(double high, double low, double ma,double ma2, Rate rate) {
+      SetLastPointSubject.OnNext(() => _SetLastPoint(high, low, ma,ma2, rate));
     }
     #endregion
 
 
-    private void _SetLastPoint(double high, double low, double ma, Rate rateLast) {
+    private void _SetLastPoint(double high, double low, double ma,double ma2, Rate rateLast) {
       try {
         if (animatedPriceY.Any()) {
-          SetPoint(animatedPriceY.Count - 1, high, low, ma, rateLast);
+          SetPoint(animatedPriceY.Count - 1, high, low, ma,ma2, rateLast);
           animatedDataSourceBid.RaiseDataChanged();
           animatedDataSource.RaiseDataChanged();
           animatedDataSource1.RaiseDataChanged();
+          animatedDataSource2.RaiseDataChanged();
         }
       } catch (Exception exc) {
         LogMessage.Send(exc);
       }
     }
-    private void SetPoint(int i, double high, double low, double ma, Rate rateLast) {
+    private void SetPoint(int i, double high, double low, double ma,double ma2, Rate rateLast) {
       animatedPriceY[i] = high.IfNaN(ma);
       animatedPriceBidY[i] = low.IfNaN(ma);
       animatedPrice1Y[i] = double.IsNaN(ma) ? (high + low) / 2 : ma;
+      animatedPrice2Y[i] = double.IsNaN(ma2) ? (high + low) / 2 : ma2;
       animatedTimeX[i] = rateLast.StartDateContinuous;
       animatedTime0X[i] = rateLast.StartDate;
     }
@@ -2536,6 +2552,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
 
     public Func<Rate, double> GetPriceMA { get; set; }
+    public Func<Rate, double> GetPriceMA2 { get; set; }
     public Func<Rate, Func<Rate, double>, double> CalculateLastPrice { get; set; }
 
   }

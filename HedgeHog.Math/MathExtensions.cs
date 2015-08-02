@@ -43,6 +43,12 @@ namespace HedgeHog {
     }
     public static readonly double StDevRatioMax = 0.288675135;
 
+    public static IEnumerable<double> Distances(this IEnumerable<double> source) {
+      return source
+        .Scan(new { prev = 0.0, next = 0.0 }, (prev, next) => new { prev = prev.next, next })
+        .Skip(1)
+        .Scan(0.0, (d, x) => d + x.prev.Abs(x.next));
+    }
     public static IEnumerable<double[]> PrevNext(this IList<double> bars) {
       return bars.Take(bars.Count - 1).Zip(bars.Skip(1), (r1, r2) => new[] { r1, r2 });
     }

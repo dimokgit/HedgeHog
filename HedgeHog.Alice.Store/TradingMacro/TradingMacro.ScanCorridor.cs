@@ -1456,11 +1456,10 @@ namespace HedgeHog.Alice.Store {
 
     private int ScanCorridorByWaveCountImpl(List<Rate> rates) {
       _scanCorridorByWaveCountMustReset = false;
-      var cmas = rates.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount() * CmaRatioForWaveLength);
-      if (CmaRatioForWaveLength == 0) {
-        var csv = rates.Select((r, i) => new { r, i }).Zip(cmas, (r, ma) => new { r.r.PriceCMALast, ma }).Csv("{0},{1}", x => x.PriceCMALast, x => x.ma);
-        csv.IsEmpty();
-      }
+      //rates.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount() * CmaRatioForWaveLength, (r, d) => r.PriceRsiP = d);
+      rates.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount(), (r, d) => r.PriceRsiP = d);
+      for(var i=0; i<CmaRatioForWaveLength;i++)
+        rates.Cma(r => r.PriceRsiP, CmaPeriodByRatesCount(), (r, d) => r.PriceRsiP = d);
       //if (!TradeConditionsEval<TradeConditionUseCorridorAttribute>(true).Single()) {
       //  WaveRangeTail = new WaveRange(0);
       //  var distance = InPoints(RatesDistanceMin) / 3;
@@ -1470,12 +1469,13 @@ namespace HedgeHog.Alice.Store {
         var bufferCount = (rates.Count).Div(maxCount).Max(1).ToInt();
 
         var dmas = rates.Select((r, i) => new { r, i })
-          .Zip(cmas, (r, ma) => new { r, ma })
+          .Zip(rates, (r, ma) => new { r, ma=ma.PriceRsiP })
           .DistinctUntilChanged(x => x.r.r.PriceCMALast.Sign(x.ma))
           .ToArray();
 
+        var waveWidthAvgIterCnt = 1;
         var widths = dmas.Zip(dmas.Skip(1), (dma1, dma2) => (double)dma2.r.i - dma1.r.i).DefaultIfEmpty(0.0).ToArray();
-        var widthAvg = widths.AverageByIterations(1).Average();
+        var widthAvg = widths.AverageByIterations(waveWidthAvgIterCnt).Average();
         var waveWidth = widthAvg.Div(bufferCount).ToInt();
 
         var ratesForWave = rates
@@ -1638,7 +1638,6 @@ namespace HedgeHog.Alice.Store {
         _corridorLength1 = indexGreen.c;
         _corridorStartDate1 = rates[_corridorLength1].StartDate;
 
-        var indexRedDistance = indexGreen.d + WaveRangeAvg.Distance;
         var indexRB = MonoidsCore.ToFunc(indexGreen, 0.0, 0, (indeX, distance, rbIndex) => extreams4
           .SkipWhile(x => x.c <= indeX.c)
           .Skip(_greenRedBlue[rbIndex] - 1)
@@ -1655,11 +1654,7 @@ namespace HedgeHog.Alice.Store {
 
         if (new[] { BuyLevel, SellLevel }.All(sr => sr != null && !sr.InManual) && index.Ratio(CorridorStats.Rates.Count) >= 1.01)
           ResetSuppResesPricePosition();
-        var corridors = new[] { _corridorLength1, index, _corridorLength2 };
-        if (corridors.Distinct().Count() == 3 && _corridorLength2 < RatesArray.Count / 2)
-          RatesDistanceMinCalc = RatesDistanceMin.Max((RatesDistanceMinCalc.Value * .9).ToInt());
-        if (corridors.Distinct().Count() < 3 && RatesArray.Count < RatesInternal.Count)
-          RatesDistanceMinCalc = (RatesDistanceMinCalc.Value * 1.1).ToInt();
+        CorridorLengths = new[] { _corridorLength1, index, _corridorLength2 };
       } else {
         var firstWaveRange = rates.TakeWhile(r => r.StartDate >= WaveRanges[0].StartDate).Reverse().ToList();
         WaveRanges = new[] { new WaveRange(firstWaveRange, PointSize, BarPeriod) }.Concat(WaveRanges.Skip(1)).ToList();
@@ -2006,5 +2001,12 @@ namespace HedgeHog.Alice.Store {
 
 
     public double WaveHeightPower { get; set; }
+
+    int[] _corridorLengths = new int[0];
+
+    public int[] CorridorLengths {
+      get { return _corridorLengths; }
+      set { _corridorLengths = value; }
+    }
   }
 }

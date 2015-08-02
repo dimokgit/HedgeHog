@@ -346,10 +346,10 @@ namespace HedgeHog.Alice.Client {
 
     #region TradeConditions
     public string[] ReadTradingConditions(string pair) {
-      return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, name) => name).ToArray(), false);
+      return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, p, name) => name).ToArray(), false);
     }
     public string[] GetTradingConditions(string pair) {
-      return UseTradingMacro(pair, tm => tm.TradeConditionsInfo((tc, name) => name).ToArray(), false);
+      return UseTradingMacro(pair, tm => tm.TradeConditionsInfo((tc, p, name) => name).ToArray(), false);
     }
     public void SetTradingConditions(string pair, string[] names) {
       UseTradingMacro(pair, tm => tm.TradeConditionsSet(names), true);
@@ -359,9 +359,9 @@ namespace HedgeHog.Alice.Client {
     }
 
     private static Dictionary<string, Dictionary<string, bool>> GetTradeConditionsInfo(TradingMacro tm) {
-      return tm.TradeConditionsInfo((d, t, c) => new { c, t, d = d() })
+      return tm.TradeConditionsInfo((d, p, t, c) => new { c, t, d = d() })
         .GroupBy(x => x.t)
-        .Select(g => new { g.Key, d = g.ToDictionary(x => x.c, x => x.d.IsAny()) })
+        .Select(g => new { g.Key, d = g.ToDictionary(x => x.c, x => x.d.Any()) })
         .ToDictionary(x => x.Key + "", x => x.d);
     }
     #endregion
@@ -500,17 +500,17 @@ namespace HedgeHog.Alice.Client {
       return Enum.GetValues(typeof(TradeLevelBy)).Cast<TradeLevelBy>().ToDictionary(t => t.ToString(), t => (int)t);
     }
     #region TradeSettings
-    public ExpandoObject SaveTradeSettings(string pair,int chartNum, ExpandoObject ts) {
-      return UseTradingMacro(pair,chartNum, tm => {
+    public ExpandoObject SaveTradeSettings(string pair, int chartNum, ExpandoObject ts) {
+      return UseTradingMacro(pair, chartNum, tm => {
         var props = (IDictionary<string, object>)ts;
         props.ForEach(kv => {
           tm.SetProperty(kv.Key, kv.Value);
         });
-        return ReadTradeSettings(pair,chartNum);
+        return ReadTradeSettings(pair, chartNum);
       }, true);
     }
-    public ExpandoObject ReadTradeSettings(string pair,int chartNum) {
-      return UseTradingMacro(pair,chartNum, tm => {
+    public ExpandoObject ReadTradeSettings(string pair, int chartNum) {
+      return UseTradingMacro(pair, chartNum, tm => {
         var e = (IDictionary<string, object>)new ExpandoObject();
         Func<object, object> convert = o => o.GetType().IsEnum ? o + "" : o;
         tm.GetPropertiesByAttibute<WwwSettingAttribute>(_ => true)
@@ -533,9 +533,9 @@ namespace HedgeHog.Alice.Client {
         throw;
       }
     }
-    public object GetWaveRanges(string pair) {
+    public object GetWaveRanges(string pair, int chartNum) {
       var value = MonoidsCore.ToFunc(0.0, false, (v, mx) => new { v, mx });
-      var wrs = UseTradingMacro(pair, tm => tm.IsTrader, false)
+      var wrs = UseTradingMacro(pair, chartNum, tm => true, false)
         .SelectMany(tm => tm.WaveRangesWithTail, (tm, wr) => new { inPips = new Func<double, double>(d => tm.InPips(d)), wr, rs = tm.WaveRanges })
         .Select((x, i) => new {
           i,
@@ -551,7 +551,7 @@ namespace HedgeHog.Alice.Client {
           IsStats = false
         })
         .ToList();
-      var wrStats = UseTradingMacro(pair, tm => tm.IsTrader, false)
+      var wrStats = UseTradingMacro(pair, chartNum, tm => tm.IsTrader, false)
         .Select(tm => new { wrs = new[] { tm.WaveRangeAvg, tm.WaveRangeSum }, inPips = new Func<double, double>(d => tm.InPips(d)) })
         .SelectMany(x => x.wrs, (x, wr) => new {
           i = 0,
@@ -626,9 +626,12 @@ namespace HedgeHog.Alice.Client {
         .Where(t => t.PairPlain == pair);
     }
     IEnumerable<TradingMacro> UseTradingMacro(string pair, Func<TradingMacro, bool> predicate, bool testTraderAccess) {
+      return UseTradingMacro(pair, 0, predicate, testTraderAccess);
+    }
+    IEnumerable<TradingMacro> UseTradingMacro(string pair, int chartNum, Func<TradingMacro, bool> predicate, bool testTraderAccess) {
       try {
         if (testTraderAccess) TestUserAsTrader();
-        return GetTradingMacro(pair, 0).Where(predicate).Take(1);
+        return GetTradingMacro(pair, chartNum).Where(predicate).Take(1);
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;

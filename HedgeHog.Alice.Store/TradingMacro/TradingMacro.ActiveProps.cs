@@ -149,7 +149,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_TradeDirection != value) {
           _TradeDirection = value;
-          if (BuyLevel != null && !value.HasUp() && BuyLevel.CanTrade) BuyLevel.CanTrade = false;
+          if (BuyLevel != null && !value.HasUp() && BuyLevel.CanTrade)BuyLevel.CanTrade = false;
           if (SellLevel != null && !value.HasDown() && SellLevel.CanTrade) SellLevel.CanTrade = false;
           OnPropertyChanged("TradeDirection");
         }

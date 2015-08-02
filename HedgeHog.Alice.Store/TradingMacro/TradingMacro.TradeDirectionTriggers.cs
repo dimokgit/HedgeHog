@@ -12,7 +12,7 @@ namespace HedgeHog.Alice.Store {
     #region Trade Direction Triggers
     void TriggerOnOutside(Func<Func<TradingMacro, Rate.TrendLevels>, TradeDirections> isOutside, Func<TradingMacro, Rate.TrendLevels> trendLevels) {
       var td = isOutside(trendLevels);
-      if (td.IsAny()) {
+      if (td.Any()) {
         TradeDirection = td;
         if (!HasTradeConditions) {
           BuyLevel.CanTradeEx = td.HasUp();

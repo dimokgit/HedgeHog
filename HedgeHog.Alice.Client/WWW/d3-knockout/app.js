@@ -270,7 +270,9 @@
           TradingAngleRange_: { name: "Trading Angle", type: 'number', options: { step: 0.1, numberFormat: "n" } },
           TakeProfitXRatio: { name: "Take ProfitX", type: 'number', options: { step: 0.1, numberFormat: "n" } },
           TradingDistanceX: { name: "Trading DistanceX", type: 'number', options: { step: 0.1, numberFormat: "n" } },
-          PriceCmaLevels_: { name: "PriceCmaLevels", type: 'number', options: { step: 0.1, numberFormat: "n" } },
+          PriceCmaLevels_: { name: "PriceCmaLevels", type: 'number', options: { step: 0.01, numberFormat: "n" } },
+          CorridorLengthDiff: { name: "CorridorLengthDiff", type: 'number', options: { step: 0.01, numberFormat: "n" } },
+          
           TradeDirection: {
             type: "options", options: [
               { text: "None", value: "None" },
@@ -572,8 +574,9 @@
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;
-      var chartData2 = chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, mustShowClosedTrades2() ? closedTrades : [], self.openTradeGross,0, response.canBuy, response.canSell);
+      var chartData2 = chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, mustShowClosedTrades2() ? closedTrades : [], self.openTradeGross,0, response.canBuy, response.canSell,response.waveLines);
       chartData2.tickDate = lineChartData()[0].d;
+      response.waveLines.forEach(function (w, i) { w.bold = i == sumStartIndexById(); });
       self.chartData2(chartData2);
       updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
     }
@@ -609,8 +612,9 @@
     // #region Read Enums
     // #endregion
     //#region WaveRanges
+    var currentWareRangesChartNum = 0;
     function getWaveRanges() {
-      var args = [pair];
+      var args = [pair,currentWareRangesChartNum];
       args.noNote = true;
       serverCall("getWaveRanges", args,
         function (wrs) {
@@ -677,7 +681,8 @@
           return a + waveRangeValue(prop, b);
         }, 0) - waveRangeValue(prop, waveRanges()[i]));
     }
-    this.startWaveRanges = function () {
+    this.startWaveRanges = function (chartNum) {
+      currentWareRangesChartNum = chartNum;
       stopWaveRanges = false;
       $(waveRangesDialog).dialog({
         title: "Wave Ranges",

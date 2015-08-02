@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   class TradeConditionStartDateTriggerAttribute : Attribute { }
+  class TradeConditionOtherCorridorAttribute : Attribute { }
   class TradeConditionUseCorridorAttribute : Attribute { }
   partial class TradingMacro {
     #region TradeOpenActions
@@ -85,7 +86,28 @@ namespace HedgeHog.Alice.Store {
 
     #region TradeConditions
     public delegate TradeDirections TradeConditionDelegate();
-    TradeDirections WidthCommonOk(Func<TradeDirections> ok) { return WaveCountOk().IsAny() ? ok() : TradeDirections.None; }
+    TradeDirections IsTradeConditionOk(Func<TradingMacro, bool> tmPredicate, Func<TradingMacro, TradeDirections> condition) {
+      return TradingMacroOther(tmPredicate).Take(1).Select(condition).DefaultIfEmpty(TradeDirections.Both).First();
+    }
+    public TradeConditionDelegate CorrAngAOk {
+      get {
+        return () => TrendLinesTrendsAll.All(tlt => !tlt.IsEmpty) &&
+          IsTresholdAbsOk(TrendLinesTrendsAll.Average(tlt => tlt.Angle.Abs()), this.TradingAngleRange) ? TradeDirections.Both : TradeDirections.None;
+      }
+    }
+    public TradeConditionDelegate CorrAngMOk {
+      get {
+        return () => TrendLinesTrendsAll.All(tlt => !tlt.IsEmpty) &&
+          IsTresholdAbsOk(TrendLinesTrendsAll.Min(tlt => tlt.Angle.Abs()), this.TradingAngleRange) ? TradeDirections.Both : TradeDirections.None;
+      }
+    }
+    public TradeConditionDelegate CorrCntOk { get { return () => TradeDirectionBoth(CorridorLengths.Distinct().Count() == 3); } }
+    public TradeConditionDelegate CorrCnt2Ok {
+      get {
+        return () => IsTradeConditionOk(MySelfNext, tm => TradeDirectionBoth(tm.CorridorLengths.Distinct().Count() == 3));
+      }
+    }
+    TradeDirections WidthCommonOk(Func<TradeDirections> ok) { return CorrCntOk().Any() ? ok() : TradeDirections.None; }
     [TradeConditionStartDateTrigger]
     public TradeConditionDelegate WidthRBOk {
       get {
@@ -111,7 +133,7 @@ namespace HedgeHog.Alice.Store {
     }
     public TradeConditionDelegate DoubleTapOk {
       get {
-        return () => WaveRanges.Count.Between(3, 5) && WaveRanges[2].IsSuper
+        return () => WaveRanges.Count > 2 && WaveRanges[2].Distance > WaveRangeAvg.Distance && WaveRangeTail.IsEmpty
           ? TradeDirectionBySlope(WaveRanges[2])
           : TradeDirections.None;
       }
@@ -122,7 +144,7 @@ namespace HedgeHog.Alice.Store {
       w=>w.DistanceByRegression,
       w=>w.Distance
     };
-    TradeConditionDelegate TradeDirectionBoth(Func<bool> ok) { return () => ok() ? TradeDirections.Both : TradeDirections.None; }
+    TradeDirections TradeDirectionBoth(bool ok) { return ok ? TradeDirections.Both : TradeDirections.None; }
     TradeConditionDelegate TradeDirectionEither(Func<bool> ok) { return () => ok() ? TradeDirections.Up : TradeDirections.Down; }
     TradeDirections TradeDirectionBySlope(WaveRange wr, bool range = true) {
       return wr.Slope > 0
@@ -134,8 +156,7 @@ namespace HedgeHog.Alice.Store {
         : TradeDirections.Down;
     }
     public Func<bool> TpsOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TpsMin); } }
-    public TradeConditionDelegate TpsAvgMinOk { get { return TradeDirectionBoth(() => IsTresholdAbsOk(TicksPerSecondAverage, TicksPerSecondAverageAverage * TpsMin.Sign())); } }
-    public TradeConditionDelegate WaveCountOk { get { return TradeDirectionBoth(() => WaveRanges.Count >= _greenRedBlue.Sum()); } }
+    public TradeConditionDelegate TpsAvgMinOk { get { return () => TradeDirectionBoth(IsTresholdAbsOk(TicksPerSecondAverage, TicksPerSecondAverageAverage * TpsMin.Sign())); } }
     public Func<bool> WaveSteepOk { get { return () => WaveRanges[0].Slope.Abs() > WaveRanges[1].Slope.Abs(); } }
     public Func<bool> WaveEasyOk { get { return () => WaveRanges[0].Slope.Abs() < WaveRanges[1].Slope.Abs(); } }
 
@@ -160,25 +181,31 @@ namespace HedgeHog.Alice.Store {
           : TradeDirections.None;
       }
     }
+    [TradeConditionOtherCorridor]
     public TradeConditionDelegate OutsideAnyOk {
       get { return () => Outside1Ok() | OutsideOk() | Outside2Ok(); }
     }
     TradeDirections TradeDirectionByAll(params TradeDirections[] tradeDirections) {
       return tradeDirections
-        .Where(td => td.IsAny())
+        .Where(td => td.Any())
         .Buffer(3)
         .Where(b => b.Count == 3 && b.Distinct().Count() == 1)
         .Select(b => b[2])
         .DefaultIfEmpty(TradeDirections.None)
         .Single();
     }
+    [TradeConditionOtherCorridor]
     public TradeConditionDelegate OutsideAllOk {
       [TradeCondition(TradeConditionAttribute.Types.Or)]
       get {
-        return () => TradeDirectionByAll(Outside1Ok(), OutsideOk(), Outside2Ok());
+        return () =>
+          IsCurrentPriceOutsideCorridor(MySelfNext, tm => tm.TrendLinesTrends, tl => tl.PriceAvg31, tl => tl.PriceAvg21).Any()
+          ? TradeDirections.None
+          : TradeDirectionByAll(Outside1Ok(), OutsideOk(), Outside2Ok());
       }
     }
     private bool IsOuside(TradeDirections td) { return td == TradeDirections.Up || td == TradeDirections.Down; }
+    [TradeConditionOtherCorridor]
     public TradeConditionDelegate OutsideExtOk {
       get {
         return () => TradeDirectionByAll(
@@ -235,21 +262,24 @@ namespace HedgeHog.Alice.Store {
       }
       return ok;
     }
+    [TradeConditionOtherCorridor]
     [TradeCondition(TradeConditionAttribute.Types.Or)]
     public TradeConditionDelegate OutsideOk {
       get { return () => IsCurrentPriceOutsideCorridor(MySelfNext, tm => tm.TrendLinesTrends); }
     }
+    [TradeConditionOtherCorridor]
     [TradeCondition(TradeConditionAttribute.Types.Or)]
     public TradeConditionDelegate Outside1Ok {
       get { return () => IsCurrentPriceOutsideCorridor(MySelfNext, tm => tm.TrendLines1Trends); }
     }
+    [TradeConditionOtherCorridor]
     [TradeCondition(TradeConditionAttribute.Types.Or)]
     public TradeConditionDelegate Outside2Ok {
       get { return () => IsCurrentPriceOutsideCorridor(MySelfNext, tm => tm.TrendLines2Trends); }
     }
 
-    public TradeConditionDelegate[] _TradeConditions = new TradeConditionDelegate[0];
-    public TradeConditionDelegate[] TradeConditions {
+    public Tuple<TradeConditionDelegate, PropertyInfo>[] _TradeConditions = new Tuple<TradeConditionDelegate, PropertyInfo>[0];
+    public Tuple<TradeConditionDelegate, PropertyInfo>[] TradeConditions {
       get { return _TradeConditions; }
       set {
         _TradeConditions = value;
@@ -257,20 +287,19 @@ namespace HedgeHog.Alice.Store {
       }
     }
     bool HasTradeConditions { get { return TradeConditions.Any(); } }
-    void TradeConditionsReset() { TradeConditions = new TradeConditionDelegate[0]; }
-    public T[] GetTradeConditions<A, T>(Func<A, bool> attrPredicate, Func<TradeConditionDelegate, TradeConditionAttribute.Types, T> map) where A : Attribute {
+    void TradeConditionsReset() { TradeConditions = new Tuple<TradeConditionDelegate, PropertyInfo>[0]; }
+    public T[] GetTradeConditions<A, T>(Func<A, bool> attrPredicate, Func<TradeConditionDelegate, PropertyInfo, TradeConditionAttribute.Types, T> map) where A : Attribute {
       return (from x in this.GetPropertiesByTypeAndAttribute(() => (TradeConditionDelegate)null, attrPredicate, (v, p) => new { v, p })
               let a = x.p.GetCustomAttributes<TradeConditionAttribute>()
               .DefaultIfEmpty(new TradeConditionAttribute(TradeConditionAttribute.Types.And)).First()
-              select map(x.v, a.Type))
+              select map(x.v, x.p, a.Type))
               .ToArray();
     }
-    public TradeConditionDelegate[] GetTradeConditions(Func<PropertyInfo, bool> predicate = null) {
+    public Tuple<TradeConditionDelegate, PropertyInfo>[] GetTradeConditions(Func<PropertyInfo, bool> predicate = null) {
       return GetType().GetProperties()
         .Where(p => p.PropertyType == typeof(TradeConditionDelegate))
         .Where(p => predicate == null || predicate(p))
-        .Select(p => p.GetValue(this))
-        .Cast<TradeConditionDelegate>()
+        .Select(p => Tuple.Create((TradeConditionDelegate)p.GetValue(this), p))
         .ToArray();
 
       //return new[] { WideOk, TpsOk, AngleOk, Angle0Ok };
@@ -279,19 +308,20 @@ namespace HedgeHog.Alice.Store {
       return Regex.Match(method.Name, "<(.+)>").Groups[1].Value.Substring(4);
 
     }
-    public TradeConditionDelegate[] TradeConditionsSet(IList<string> names) {
-      return TradeConditions = GetTradeConditions().Where(tc => names.Contains(ParseTradeConditionName(tc.Method))).ToArray();
-    }
-    public IEnumerable<T> TradeConditionsInfo<T>(Func<TradeConditionDelegate, TradeConditionAttribute.Types, string, T> map) {
-      return TradeConditionsInfo((Func<Attribute, bool>)null, map);
+    public Tuple<TradeConditionDelegate, PropertyInfo>[] TradeConditionsSet(IList<string> names) {
+      return TradeConditions = GetTradeConditions().Where(tc => names.Contains(ParseTradeConditionName(tc.Item1.Method))).ToArray();
     }
     public IEnumerable<TradeConditionDelegate> TradeConditionsInfo<A>() where A : Attribute {
-      return TradeConditionsInfo(new Func<A, bool>(a => a.GetType() == typeof(A)), (d, ta, s) => d);
+      return TradeConditionsInfo(new Func<Attribute, bool>(a => a.GetType() == typeof(A)), (d, p, ta, s) => d);
     }
-    public IEnumerable<T> TradeConditionsInfo<A, T>(Func<A, bool> attrPredicate, Func<TradeConditionDelegate, TradeConditionAttribute.Types, string, T> map) where A : Attribute {
-      return from tcsAll in GetTradeConditions(attrPredicate, (d, t) => new { d, t })
-             join tc in TradeConditionsInfo((d, s) => new { d, s }) on tcsAll.d equals tc.d
-             select map(tc.d, tcsAll.t, tc.s);
+    public IEnumerable<T> TradeConditionsInfo<T>(Func<TradeConditionDelegate, PropertyInfo, TradeConditionAttribute.Types, string, T> map) {
+      return TradeConditionsInfo((Func<Attribute, bool>)null, map);
+    }
+    public IEnumerable<T> TradeConditionsInfo<A, T>(Func<A, bool> attrPredicate, Func<TradeConditionDelegate, PropertyInfo, TradeConditionAttribute.Types, string, T> map) where A : Attribute {
+      return from tc in TradeConditionsInfo((d, p, s) => new { d, p, s })
+             where attrPredicate == null || tc.p.GetCustomAttributes().OfType<A>().Count(attrPredicate) > 0
+             from tca in tc.p.GetCustomAttributes<TradeConditionAttribute>().DefaultIfEmpty(new TradeConditionAttribute(TradeConditionAttribute.Types.And))
+             select map(tc.d, tc.p, tca.Type, tc.s);
     }
     DateTime _tradeConditionsTriggerDate = DateTime.MinValue;
     public void TradeConditionsTrigger() {
@@ -299,7 +329,7 @@ namespace HedgeHog.Alice.Store {
 
 
         TradeConditionsEval().ForEach(eval => {
-          if (eval.IsAny())
+          if (eval.Any())
             _tradeConditionsTriggerDate = WaveRanges[0].EndDate;
           BuyLevel.CanTradeEx = TradeDirection.HasUp() && eval.HasUp();
           SellLevel.CanTradeEx = TradeDirection.HasDown() && eval.HasDown();
@@ -316,23 +346,11 @@ namespace HedgeHog.Alice.Store {
               .DefaultIfEmpty()
               .OrderBy(b => b)
               .Take(1)
-              .Where(b => b.IsAny());
-    }
-    public IEnumerable<TradeDirections> TradeConditionsEval<A>(TradeDirections defaultDirection) where A : Attribute {
-      if (!IsTrader) return new TradeDirections[0];
-      return (from d in TradeConditionsInfo<A>()
-              let b = d()
-              group b by b into gb
-              select gb.Key
-              )
-              .DefaultIfEmpty(defaultDirection)
-              .OrderBy(b => b)
-              .Take(1)
-              .Where(b => b.IsAny());
+              .Where(b => b.Any());
     }
     public IEnumerable<TradeDirections> TradeConditionsEval() {
       if (!IsTrader) return new TradeDirections[0];
-      return (from tc in TradeConditionsInfo((d, t, s) => new { d, t, s })
+      return (from tc in TradeConditionsInfo((d, p, t, s) => new { d, t, s })
               group tc by tc.t into gtci
               let and = gtci.Select(g => g.d()).ToArray()
               let c = gtci.Key == TradeConditionAttribute.Types.And
@@ -343,19 +361,19 @@ namespace HedgeHog.Alice.Store {
               .Scan(TradeDirections.Both, (a, td) => a & td)
               .TakeLast(1);
     }
-    public IEnumerable<T> TradeConditionsInfo<T>(Func<TradeConditionDelegate, string, T> map) {
+    public IEnumerable<T> TradeConditionsInfo<T>(Func<TradeConditionDelegate, PropertyInfo, string, T> map) {
       return TradeConditionsInfo(TradeConditions, map);
     }
-    public IEnumerable<T> TradeConditionsAllInfo<T>(Func<TradeConditionDelegate, string, T> map) {
+    public IEnumerable<T> TradeConditionsAllInfo<T>(Func<TradeConditionDelegate, PropertyInfo, string, T> map) {
       return TradeConditionsInfo(GetTradeConditions(), map);
     }
-    public IEnumerable<T> TradeConditionsInfo<T>(IList<TradeConditionDelegate> tradeConditions, Func<TradeConditionDelegate, string, T> map) {
-      return tradeConditions.Select(tc => map(tc, ParseTradeConditionName(tc.Method)));
+    public IEnumerable<T> TradeConditionsInfo<T>(IList<Tuple<TradeConditionDelegate, PropertyInfo>> tradeConditions, Func<TradeConditionDelegate, PropertyInfo, string, T> map) {
+      return tradeConditions.Select(tc => map(tc.Item1, tc.Item2, ParseTradeConditionName(tc.Item1.Method)));
     }
     [DisplayName("Trade Conditions")]
     [Category(categoryActiveFuncs)]
     public string TradeConditionsSave {
-      get { return string.Join(",", TradeConditionsInfo((tc, name) => name)); }
+      get { return string.Join(",", TradeConditionsInfo((tc, pi, name) => name)); }
       set {
         TradeConditionsSet(value.Split(','));
       }

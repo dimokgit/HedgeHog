@@ -869,7 +869,8 @@ namespace HedgeHog.Alice.Client {
                 var high = tm.CalculateLastPrice(tm.RateLast, tm.ChartHighPrice());
                 var low = tm.CalculateLastPrice(tm.RateLast, tm.ChartLowPrice());
                 var ma = tm.CalculateLastPrice(tm.RateLast, tm.GetPriceMA());
-                charter.SetLastPoint(high, low, ma, tm.RateLast); ;
+                var ma2 = tm.CalculateLastPrice(tm.RateLast, tm.GetPriceMA2());
+                charter.SetLastPoint(high, low, ma, ma2, tm.RateLast); ;
                 //Debug.WriteLineIf(tm.Pair == "EUR/JPY", string.Format("Current price:{0} @ {1:mm:ss}", tm.CurrentPrice.Average.Round(3), tm.CurrentPrice.Time));
               }), DispatcherPriority.Send);
             }
@@ -1047,7 +1048,7 @@ namespace HedgeHog.Alice.Client {
 
       if (tm.RatesArray.Count == 0 || tm.IsTrader && tm.BuyLevel == null) return new { rates = new int[0] };
 
-      var tmTrader = GetTradingMacros(tm.Pair).First(tm1 => tm1.IsTrader);
+      var tmTrader = GetTradingMacros(tm.Pair).Where(t=>!t.IsAsleep && t.IsTrader).DefaultIfEmpty(tm).Single();
 
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd).ToArray());
       var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart).ToArray());
@@ -1081,6 +1082,30 @@ namespace HedgeHog.Alice.Client {
           });
         } else return rates3.Select(map).ToArray();
       });
+      if (tm.IsAsleep) {
+        var o = new object();
+        var a = new object[0];
+        return new {
+          rates = getRates(ratesForChart),
+          rates2 = getRates(ratesForChart2),
+          ratesCount = tm.RatesArray.Count,
+          dateStart = tm.RatesArray[0].StartDate2,
+          trendLines = o,
+          trendLines2 = o,
+          trendLines1 = o,
+          isTradingActive = tm.IsTradingActive,
+          tradeLevels = o,
+          trades = a,
+          askBid = o,
+          hasStartDate = tm.CorridorStartDate.HasValue,
+          cmp = cmaPeriod,
+          tpsAvg = 0,
+          isTrader = tm.IsTrader,
+          canBuy = false,
+          canSell = false,
+          waveLines = a
+        };
+      }
       var trends = tm.TrendLines.Value.ToList();
       var trendLines = tm.UseRates(rates => new {
         dates = new DateTimeOffset[]{
@@ -1125,7 +1150,7 @@ namespace HedgeHog.Alice.Client {
           isept = new[] { wr.InterseptStart, wr.InterseptEnd },
           bold = wr.ElliotIndex > 0
         });
-      var tradeLevels = new {
+      var tradeLevels = tmTrader.BuyLevel == null ? new object { } : new {
         buy = tmTrader.BuyLevel.Rate.Round(digits),
         buyClose = tmTrader.BuyCloseLevel.Rate.Round(digits),
         canBuy = tmTrader.BuyLevel.CanTrade,
@@ -1141,7 +1166,7 @@ namespace HedgeHog.Alice.Client {
       var trades0 = tmg.GetTrades(pair);
       Func<bool, Trade[]> getTrades = isBuy => trades0.Where(t => t.IsBuy == isBuy).ToArray();
       var trades = new ExpandoObject();
-      var tradeFoo = MonoidsCore.ToFunc(false,isBuy=>new { o = getTrades(isBuy).NetOpen(), t = getTrades(isBuy).Max(t => t.Time) } );
+      var tradeFoo = MonoidsCore.ToFunc(false, isBuy => new { o = getTrades(isBuy).NetOpen(), t = getTrades(isBuy).Max(t => t.Time) });
       getTrades(true).Take(1).ForEach(_ => trades.Add(new { buy = tradeFoo(true) }));
       getTrades(false).Take(1).ForEach(_ => trades.Add(new { sell = tradeFoo(false) }));
       var price = tmg.GetPrice(pair);
@@ -1205,8 +1230,6 @@ namespace HedgeHog.Alice.Client {
         }
         ratesForChart.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
         rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
-        var csFirst = tm.CorridorStats;
-        if (csFirst == null || !csFirst.Rates.Any()) return;
         var corridorTime0 = tm.WaveTradeStart == null || !tm.WaveTradeStart.HasRates ? DateTime.MinValue : tm.WaveTradeStart.Rates[0].StartDateContinuous;
         var corridorTime1 = tm.WaveTradeStart == null || !tm.WaveTradeStart.HasRates ? DateTime.MinValue : tm.WaveTradeStart.Rates.Min(r => r.StartDateContinuous);// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
         var corridorTime2 = !tm.WaveTradeStart1.HasRates ? DateTime.MinValue : tm.WaveTradeStart1.Rates.LastBC().StartDateContinuous;// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
@@ -1218,12 +1241,12 @@ namespace HedgeHog.Alice.Client {
         //charter.Dispatcher.Invoke(new Action(() => {
         try {
           charter.PipSize = tm.PointSize;
-          charter.CorridorHeightMultiplier = csFirst.HeightUpDown0 / csFirst.HeightUpDown;// tm.CorridorHeightMultiplier;
           charter.SetPriceLineColor(tm.Trades.HaveBuy() ? true : tm.Trades.HaveSell() ? false : (bool?)null);
 
           charter.GetPriceHigh = tm.ChartHighPrice();
           charter.GetPriceLow = tm.ChartLowPrice();
           charter.GetPriceMA = tm.GetPriceMA();
+          charter.GetPriceMA2 = tm.GetPriceMA2();
 
           charter.CenterOfMassBuy = tm.CenterOfMassBuy;
           charter.CenterOfMassSell = tm.CenterOfMassSell;
@@ -1239,7 +1262,7 @@ namespace HedgeHog.Alice.Client {
             string.Format(":{0}×[{1}]{2}°{3:n0}‡{4:n0}∆[{5}/{6}][{7}/{8}][{10}]"///↨↔
             /*0*/, tm.BarPeriod
             /*1*/, tm.RatesArray.Count + "," + tm.TicksPerSecondAverage.Round(1)
-            /*2*/, tm.TrendLines2.Value[1].Trends.Angle.Round(2)+"/"+tm.CorridorAngle.Round(2)+"/"+tm.TrendLines1.Value[1].Trends.Angle.Round(2)
+            /*2*/, tm.TrendLines2Trends.Angle.Round(2) + "/" + tm.CorridorAngle.Round(2) + "/" + tm.TrendLines1Trends.Angle.Round(2)
             /*3*/, tm.RatesHeightInPips
             /*4*/, tm.CorridorStats.HeightByRegressionInPips
             /*5*/, IntOrDouble(tm.StDevByHeightInPips, 5)
@@ -1249,10 +1272,12 @@ namespace HedgeHog.Alice.Client {
             /*9*/, tm.CorridorStats.Rates.Count.Div(tm.CorridorDistance).ToInt()
             /*10*/, tm.WorkflowStep
           );
-          charter.SetTrendLines(tm.TrendLines.Value.OrderBarsDescending().ToArray(), tm.CorridorStartDate.HasValue);
-          charter.SetTrendLines2(tm.TrendLines2.Value);
-          charter.SetTrendLines1(tm.TrendLines1.Value);
-          charter.SetMATrendLines(tm.LineMA);
+          if (!tm.IsAsleep) {
+            charter.SetTrendLines(tm.TrendLines.Value.OrderBarsDescending().ToArray(), tm.CorridorStartDate.HasValue);
+            charter.SetTrendLines2(tm.TrendLines2.Value);
+            charter.SetTrendLines1(tm.TrendLines1.Value);
+            charter.SetMATrendLines(tm.LineMA);
+          }
           charter.CalculateLastPrice = tm.IsInVitualTrading || tm.FitRatesToPlotter ? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
           charter.PriceBarValue = pb => pb.Speed;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
@@ -1271,6 +1296,7 @@ namespace HedgeHog.Alice.Client {
           charter.AddTicks(ratesForChart, true ? new PriceBar[1][] { distances/*, distances1*/} : new PriceBar[0][], info, null,
             new[] { tm.GetVoltageHigh(), tm.GetVoltageLow() }, tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
+          if (tm.IsAsleep) return;
           if (tm.CorridorStats.StopRate != null)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
           else if (tm.CorridorStartDate.HasValue)

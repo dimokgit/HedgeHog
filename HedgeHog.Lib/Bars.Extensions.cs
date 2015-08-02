@@ -42,7 +42,7 @@ namespace HedgeHog.Bars {
     public static double CalcTicksPerSecond<TBar>(this IList<TBar> ticks, double treshold) where TBar : BarBaseDate {
       if (ticks.Count == 0) return 0;
       var tps = ticks.Count / (ticks.Last().StartDate - ticks[0].StartDate).Duration().TotalSeconds;
-      return tps;
+      if(ticks.Count>0)      return tps;
       var count = 60;
       var ticks0 = ticks
         .Buffer(2, 1)
@@ -569,7 +569,7 @@ namespace HedgeHog.Bars {
       return distance;
     }
 
-    public static double Distance2<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice, IList<double> distances = null) where TBar : BarBase {
+    public static double Distance2<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice, IList<double> distances = null)  {
       var prices = rates.Select(getPrice).ToArray();
       return rates.Zip(rates.Skip(1), (p, n) => {
         var dist = getPrice(p).Abs(getPrice(n));

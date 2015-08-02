@@ -151,16 +151,22 @@ namespace HedgeHog.Alice.Store {
         }
         return;
       }
-      var rates = UseRatesInternal(rs => rs.Select(_priceAvg).Reverse().ToArray());
       var rdm = InPoints(RatesDistanceMinCalc.Value);
-      var count = rates
-        .Zip(rates.Skip(1), (p, n) => p.Abs(n))
-        .Scan(0.0, (i, pa) => i + pa)
-        .TakeWhile(i => i < rdm)
-        .Count();
-      var corrDate = UseRatesInternal(rs => rs[(rs.Count - count - 1).Max(0)].StartDate);
+      Func<IEnumerable<double>, IEnumerable<double>> scanDistance = dbls => dbls
+        .Buffer(2, 1)
+        .Where(b => b.Count == 2)
+        .Scan(0.0, (a, b) => a + b[0].Abs(b[1]));
+      var rates = UseRatesInternal(rs => rs.Cma(_priceAvg, CmaPeriodByRatesCount(RatesArray.Count)));
+      //var distanceCurrent = scanDistance(rates.Take(RatesArray.Count)).LastOrDefault();
+      //if (distanceCurrent.Ratio(rdm) < 1.2) return;
+      var distances = rates
+        .Distances()
+        .TakeWhile(i => i <= rdm);
+      var count = distances.Count();
+      Func<DateTime> corrDate = ()=>UseRatesInternal(rs => rs[(rs.Count - count - 1).Max(0)].StartDate);
       WaveRanges.TakeLast(1)
-        .Where(wr => corrDate.Between(wr.StartDate.AddMinutes(-1), wr.EndDate.AddMinutes(1)))
+        .Where(_ => false && !IsAsleep)
+        .Where(wr => corrDate().Between(wr.StartDate.AddMinutes(-1), wr.EndDate.AddMinutes(1)))
         .Select(wr => new Action(() => {
           BarsCountDate = RatesArray[0].StartDate.Min(wr.StartDate);
           return;
@@ -264,5 +270,18 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+
+    double _corridorLengthDiff = 1.2;
+
+    [Category(categoryCorridor)]
+    [WwwSettingAttribute(wwwSettingsCorridorOther)]
+    public double CorridorLengthDiff {
+      get { return _corridorLengthDiff; }
+      set {
+        if (_corridorLengthDiff == value) return;
+        _corridorLengthDiff = value;
+        OnPropertyChanged("CorridorLengthDiff");
+      }
+    }
   }
 }

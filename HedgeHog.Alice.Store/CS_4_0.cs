@@ -6173,10 +6173,10 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._CorridorsRates"/></summary>
         public const string _CorridorsRates = "_CorridorsRates";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._buyLevel"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.BuyLevel"/></summary>
         public const string _buyLevel = "_buyLevel";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BuyLevel"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BuyLevel22"/></summary>
         public const string BuyLevel = "BuyLevel";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._buyCloseLevel"/></summary>
@@ -8004,7 +8004,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.VolumeAverageLow"/></summary>
         public static PropertyPath VolumeAverageLowPath { get { return new PropertyPath("VolumeAverageLow"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BuyLevel"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BuyLevel22"/></summary>
         public static PropertyPath BuyLevelPath { get { return new PropertyPath("BuyLevel"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BuyCloseLevel"/></summary>

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 namespace HedgeHog.Alice.Store {
   public class WaveRange {
     #region Properties
+    public bool IsEmpty { get { return Count == 0; } }
     public bool IsTail { get; set; }
     public double UID { get; set; }
     public List<Rate> Range { get; set; }
@@ -91,7 +92,7 @@ namespace HedgeHog.Alice.Store {
         throw new InvalidOperationException("StartDate;{0} must be less then EndDate:{1}".Formater(StartDate, EndDate));
       Max = range.Max(r => r.PriceAvg);
       Min = range.Min(r => r.PriceAvg);
-      Distance = range.Distance2(r => r.PriceAvg) / pointSize;
+      Distance = range.Distance2(r => r.PriceCMALast) / pointSize;
       TotalSeconds = EndDate.Subtract(StartDate).TotalSeconds;
       CalcTrendLine(range, pointSize, period);
       this.UID = Math.Sqrt(Distance / Height);

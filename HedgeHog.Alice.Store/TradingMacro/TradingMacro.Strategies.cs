@@ -265,8 +265,8 @@ namespace HedgeHog.Alice.Store {
        select new { sr, action }
       ).ForEach(a => a.action(a.sr));
     }
-    double _buyLevelNetOpen() { return Trades.IsBuy(true).NetOpen(_buyLevel.Rate); }
-    double _sellLevelNetOpen() { return Trades.IsBuy(false).NetOpen(_sellLevel.Rate); }
+    double _buyLevelNetOpen() { return Trades.IsBuy(true).NetOpen(BuyLevel.Rate); }
+    double _sellLevelNetOpen() { return Trades.IsBuy(false).NetOpen(SellLevel.Rate); }
     Action _adjustEnterLevels = () => { throw new NotImplementedException(); };
     Action<double?, double?> _adjustExitLevels = (buyLevel, selLevel) => { throw new NotImplementedException(); };
     Action _exitTrade = () => { throw new NotImplementedException(); };
@@ -280,9 +280,10 @@ namespace HedgeHog.Alice.Store {
     bool IsTrendsEmpty(Lazy<IList<Rate>> trends) {
       return trends == null || trends.Value.IsEmpty();
     }
-    private Rate.TrendLevels TrendLines2Trends { get { return IsTrendsEmpty(TrendLines2) ? Rate.TrendLevels.Empty : TrendLines2.Value[1].Trends; } }
-    private Rate.TrendLevels TrendLines1Trends { get { return IsTrendsEmpty(TrendLines1) ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
-    private Rate.TrendLevels TrendLinesTrends { get { return IsTrendsEmpty(TrendLines) ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
+    public Rate.TrendLevels TrendLines2Trends { get { return IsTrendsEmpty(TrendLines2) ? Rate.TrendLevels.Empty : TrendLines2.Value[1].Trends; } }
+    public Rate.TrendLevels TrendLines1Trends { get { return IsTrendsEmpty(TrendLines1) ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
+    public Rate.TrendLevels TrendLinesTrends { get { return IsTrendsEmpty(TrendLines) ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
+    public Rate.TrendLevels[] TrendLinesTrendsAll { get { return new[] { TrendLines1Trends, TrendLinesTrends, TrendLines2Trends }; } }
     private double TrendLinesTrendsPriceMax(TradingMacro tm) {
       return tm.TrendLinesTrends.PriceAvg2.Max(tm.TrendLines2Trends.PriceAvg2, tm.TrendLines1Trends.PriceAvg2);
     }
@@ -386,9 +387,9 @@ namespace HedgeHog.Alice.Store {
     public IList<Rate> CalcTrendLines(IList<Rate> corridorValues) {
       if (corridorValues.Count == 0) return new Rate[0];
       var minutes = (corridorValues.Last().StartDate - corridorValues[0].StartDate).Duration().TotalMinutes;
-      var isTicks = minutes > 3 && BarPeriod == BarsPeriodType.t1;
-      var angleBM = isTicks || BarPeriod != BarsPeriodType.t1 ? 1 : minutes / corridorValues.Count;
-      var groupped = corridorValues.GroupAdjacentTicks(1.FromMinutes()
+      var isTicks = BarPeriod == BarsPeriodType.t1;
+      var angleBM = isTicks ? 1 / 60.0 : 1.0;
+      var groupped = corridorValues.GroupAdjacentTicks(1.FromSeconds()
         , rate => rate.StartDate
         , g => g.Average(rate => rate.PriceAvg));
       double h, l, h1, l1;
@@ -806,8 +807,6 @@ namespace HedgeHog.Alice.Store {
       ).ToList();
       return levelsByCount.Aggregate((p, n) => p.count > n.count ? p : n).level;
     }
-    private double _buyLevelRate = double.NaN;
-    private double _sellLevelRate = double.NaN;
 
     double _MagnetPriceRatio = double.NaN;
 

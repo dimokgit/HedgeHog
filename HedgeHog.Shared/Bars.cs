@@ -603,6 +603,7 @@ namespace HedgeHog.Bars {
       static TrendLevels() {
         Empty = new TrendLevels(0,double.NaN, double.NaN);
       }
+      public bool IsEmpty { get { return Count == 0; } }
       public double PriceAvg1 { get; set; }
 
       public double PriceAvg2 { get; set; }

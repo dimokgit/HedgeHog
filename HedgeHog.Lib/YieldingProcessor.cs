@@ -49,7 +49,7 @@ namespace HedgeHog {
     }
 
     public static ITargetBlock<Action> CreateYieldingActionOnDispatcher() {
-      return TaskScheduler.FromCurrentSynchronizationContext().CreateYieldingAction();
+      return DispatcherTaskScheduler.CreateYieldingAction();
     }
     public static ITargetBlock<Action> CreateYieldingAction(this TaskScheduler taskScheduler) {
       return new Action<Action>(a => a()).CreateYieldingTargetBlock(false, taskScheduler);

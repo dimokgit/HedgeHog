@@ -15,10 +15,6 @@ namespace HedgeHog.Alice.Store {
       return sellCloseLevel;
     }
 
-    private Store.SuppRes BuyCloseSupResLevel() {
-      var buyCloseLevel = Support1(); buyCloseLevel.IsExitOnly = true;
-      return buyCloseLevel;
-    }
     #region EllasticRange
     private int _EllasticRange = 5;
     [Category(categoryTrading)]
@@ -187,8 +183,8 @@ namespace HedgeHog.Alice.Store {
           .Select(_priceAvg)
           .DefaultIfEmpty(def);
       };
-      var buyLevel = Trades.HaveBuy() ? rateSinceTrade(_buyLevel.Rate).Min().Min(ExitByBuySellLevel ? _buyLevel.Rate : double.NaN) : _buyLevel.Rate;
-      var sellLevel = Trades.HaveSell() ? rateSinceTrade(_sellLevel.Rate).Max().Max(ExitByBuySellLevel ? _sellLevel.Rate : double.NaN) : _sellLevel.Rate;
+      var buyLevel = Trades.HaveBuy() ? rateSinceTrade(BuyLevel.Rate).Min().Min(ExitByBuySellLevel ? BuyLevel.Rate : double.NaN) : BuyLevel.Rate;
+      var sellLevel = Trades.HaveSell() ? rateSinceTrade(SellLevel.Rate).Max().Max(ExitByBuySellLevel ? SellLevel.Rate : double.NaN) : SellLevel.Rate;
       adjustExitLevels(buyLevel, sellLevel);
     }
   }
