@@ -1727,17 +1727,18 @@ namespace HedgeHog.Alice.Store {
       get { return _waveRangeAvg; }
       set { _waveRangeAvg = value ?? new WaveRange(0); }
     }
-    Lazy<IList<Rate>> _trendLines = null;
+    static Rate[] _trenLinesEmptyRates = new Rate[] { new Rate { Trends = Rate.TrendLevels.Empty }, new Rate { Trends = Rate.TrendLevels.Empty } };
+    Lazy<IList<Rate>> _trendLines = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
     public Lazy<IList<Rate>> TrendLines {
       get { return _trendLines; }
       private set { _trendLines = value; }
     }
-    Lazy<IList<Rate>> _trendLines1 = null;
+    Lazy<IList<Rate>> _trendLines1 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
     public Lazy<IList<Rate>> TrendLines1 {
       get { return _trendLines1; }
       private set { _trendLines1 = value; }
     }
-    Lazy<IList<Rate>> _trendLines2 = null;
+    Lazy<IList<Rate>> _trendLines2 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
     public Lazy<IList<Rate>> TrendLines2 {
       get { return _trendLines2; }
       private set { _trendLines2 = value; }

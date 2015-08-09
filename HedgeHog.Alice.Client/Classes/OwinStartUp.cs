@@ -551,7 +551,7 @@ namespace HedgeHog.Alice.Client {
           IsStats = false
         })
         .ToList();
-      var wrStats = UseTradingMacro(pair, chartNum, tm => tm.IsTrader, false)
+      var wrStats = UseTradingMacro(pair, chartNum, tm => true, false)
         .Select(tm => new { wrs = new[] { tm.WaveRangeAvg, tm.WaveRangeSum }, inPips = new Func<double, double>(d => tm.InPips(d)) })
         .SelectMany(x => x.wrs, (x, wr) => new {
           i = 0,

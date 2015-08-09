@@ -116,9 +116,11 @@ namespace HedgeHog.Alice.Store {
             var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy - PointSize / 10);
             var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell + PointSize / 10);
             var takeProfitLocal = (TakeProfitPips + (UseLastLoss ? LastTradeLossInPips.Abs() : 0)).Max(takeBackInPips).Min(ratesHeightInPips);
+            Func<double> takeProfitDefault = () => CalculateTakeProfit();
+            Func<bool, double, double> netOpen = (isBuy, level) => level.IfNaN(Trades.IsBuy(isBuy).NetOpen());
             Func<bool, double> levelByNetOpenAndTakeProfit = isBuy => isBuy
-              ? Trades.IsBuy(isBuy).NetOpen() + InPoints(takeProfitLocal) - ellasic
-              : Trades.IsBuy(isBuy).NetOpen() - InPoints(takeProfitLocal) + ellasic;
+              ? netOpen(isBuy, buyLevel) + InPoints(takeProfitLocal) - ellasic
+              : netOpen(isBuy, sellLevel) - InPoints(takeProfitLocal) + ellasic;
             Func<bool, double> getTradeCloseLevel = isBuy => !IsTakeBack
               ? GetTradeCloseLevel(isBuy)
               : isBuy
@@ -163,7 +165,7 @@ namespace HedgeHog.Alice.Store {
       return adjustExitLevels;
     }
     bool _limitProfitByRatesHeight;
-    [WwwSetting(Group=wwwSettingsTrading)]
+    [WwwSetting(Group = wwwSettingsTrading)]
     [Category(categoryActiveYesNo)]
     public bool LimitProfitByRatesHeight {
       get { return _limitProfitByRatesHeight; }

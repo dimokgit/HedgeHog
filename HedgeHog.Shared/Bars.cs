@@ -273,8 +273,12 @@ namespace HedgeHog.Bars {
     [DataMember]
     public double? PriceRsi1 { get; set; }
 
+    double _PriceRsiP = double.NaN;
     [DataMember]
-    public double PriceRsiP { get; set; }
+    public double PriceRsiP {
+      get { return _PriceRsiP; }
+      set { _PriceRsiP = value; }
+    }
     [DataMember]
     public double PriceRsiN { get; set; }
     [DataMember]

@@ -1760,10 +1760,8 @@ namespace HedgeHog.Alice.Store {
       return SupportByPosition(1);
     }
     private Store.SuppRes SupportByPosition(int position) {
-      if (SuppRes == null) {
-        Debug.WriteLine(new { SuppRes });
-        return null;
-      }
+      if (SuppRes == null) 
+        throw new Exception(new { SuppRes } + "");
       var s = SuppRes.Where(sr => sr.IsSupport).Skip(position).FirstOrDefault();
       if (s == null) throw new Exception("There is no Support as position {0}".Formater(position));
       return s;
@@ -1792,10 +1790,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     private Store.SuppRes ResistanceByPosition(int position) {
-      if (SuppRes == null) {
-        Debug.WriteLine(new { SuppRes });
-        return null;
-      }
+      if (SuppRes == null)
+        throw new Exception(new { SuppRes } + "");
       var s = SuppRes.Where(sr => !sr.IsSupport).Skip(position).FirstOrDefault();
       if (s == null) throw new Exception("There is no Restiance.");
       return s;
@@ -2061,14 +2057,17 @@ namespace HedgeHog.Alice.Store {
               RatesDuration = (RatesArray.Last().StartDate2 - RatesArray[0].StartDate2).TotalMinutes.ToInt();
             });
             IsAsleep = Trades.Length == 0 && IsInVitualTrading && TradeConditionsInfo<TradeConditionOtherCorridorAttribute>().Any(d => !d().Any());
+
+            var prices = RatesArray.ToArray(_priceAvg);
+            RatesHeight = prices.Height(out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
+
             if (IsAsleep) {
               RaiseShowChart();
               RunStrategy();
               return RatesArray;
             }
+
             OnSetBarsCountCalc();
-            var prices = RatesArray.ToArray(_priceAvg);
-            RatesHeight = prices.Height(out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
             if (IsInVitualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
             PriceSpreadAverage = RatesArray.Average(r => r.PriceSpread);//.ToList().AverageByIterations(2).Average();
@@ -2837,8 +2836,8 @@ namespace HedgeHog.Alice.Store {
       var rate = TradesManager.RateForPipAmount(CurrentPrice);
       return TradesManagerStatic.MoneyAndLotToPips(Pair, com, trades.Lots(), rate, PointSize);
     }
-    double CalculateTakeProfit(bool dontAdjust = false) {
-      var tp = GetValueByTakeProfitFunction(TakeProfitFunction, TakeProfitXRatio);
+    double CalculateTakeProfit(bool dontAdjust = false,double customRatio = double.NaN) {
+      var tp = GetValueByTakeProfitFunction(TakeProfitFunction, customRatio.IfNaN(TakeProfitXRatio));
       return (dontAdjust
         ? tp
         : tp.Max(PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2)
@@ -2933,10 +2932,11 @@ namespace HedgeHog.Alice.Store {
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
       get {
-        var tmt = TradingMacroOther(tm => tm.IsTrender).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
-        Func<Func<TradingMacro, double>, double> level = f => f(tmt.First());
-        Func<Func<TradingMacro, double>, double> levelMax = f => tmt.Max(tm => f(tm));
-        Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Min(tm => f(tm));
+        var tmt = TradingMacroOther(tm => !tm.IsAsleep && tm.IsTrender).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
+        var isDefault = !IsTrader;
+        Func<Func<TradingMacro, double>, double> level = f => f(tmt.Where(tm => tm.IsTrader).DefaultIfEmpty(tmt.First()).First());
+        Func<Func<TradingMacro, double>, double> levelMax = f => isDefault ? RatesMax : tmt.Max(tm => f(tm));
+        Func<Func<TradingMacro, double>, double> levelMin = f => isDefault ? RatesMin : tmt.Min(tm => f(tm));
         if (_TradeLevelFuncs == null)
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           { 
@@ -3765,9 +3765,10 @@ namespace HedgeHog.Alice.Store {
     private List<List<Rate>> _CorridorsRates = new List<List<Rate>>();
     bool IsReverseStrategy { get { return BuyLevel.Rate < SellLevel.Rate; } }
 
+    public bool HasBuyLevel { get { return Resistances.Length > 0; } }
     public Store.SuppRes BuyLevel {
       get {
-        if (Resistances.Length == 0) throw new Exception("There are no Resistance levels.");
+        if (!HasBuyLevel) throw new Exception("There are no Resistance levels.");
         return Resistance0();
       }
     }
@@ -3779,9 +3780,10 @@ namespace HedgeHog.Alice.Store {
       get { return BuyCloseSupResLevel(); }
     }
 
+    public bool HasSellLevel { get { return Supports.Length > 0; } }
     public Store.SuppRes SellLevel {
       get {
-        if (Supports.Length == 0) throw new Exception("There are no Support levels.");
+        if (!HasSellLevel) throw new Exception("There are no Support levels.");
         return Support0();
       }
     }
@@ -4109,9 +4111,17 @@ namespace HedgeHog.Alice.Store {
 
     public Tuple<Rate, Rate, int> _waveLong { get; set; }
 
-    public double _RatesMax = 0;
+    private double _RatesMax = 0;
+    public double RatesMax {
+      get { return _RatesMax; }
+      set { _RatesMax = value; }
+    }
 
-    public double _RatesMin = 0;
+    private double _RatesMin = 0;
+    public double RatesMin {
+      get { return _RatesMin; }
+      set { _RatesMin = value; }
+    }
     private bool _isStrategyRunning;
 
     #region IsTradingActive
@@ -4339,7 +4349,7 @@ namespace HedgeHog.Alice.Store {
             Log = exc;
           }
         }
-        return BuyLevel == null || SellLevel == null ? 0 : BuyLevel.Rate.Abs(SellLevel.Rate);
+        return !HasBuyLevel || !HasSellLevel ? 0 : BuyLevel.Rate.Abs(SellLevel.Rate);
       }
       set {
         OnPropertyChanged(() => BuySellHeight);

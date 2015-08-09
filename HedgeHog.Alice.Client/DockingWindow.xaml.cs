@@ -27,6 +27,7 @@ using System.Threading.Tasks;
 using HedgeHog.Shared;
 using HedgeHog.Shared.Messages;
 using System.Runtime.InteropServices;
+using System.Reflection;
 
 
 namespace HedgeHog.Alice.Client {
@@ -163,7 +164,7 @@ namespace HedgeHog.Alice.Client {
       }
       StyleManager.ApplicationTheme = new VistaTheme();
       InitializeComponent();
-      this.Title = "HedgeHog in " + CurrentDirectory.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries).Last();
+      this.Title = "HedgeHog in " + CurrentDirectory.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries).Last()+": "+Assembly.GetExecutingAssembly().GetName().Version;
       ((INotifyPropertyChanged)RootVisual.DataContext).PropertyChanged += DataContext_PropertyChanged;
       #region Window Events
       Closing += new System.ComponentModel.CancelEventHandler(DockingWindow_Closing);

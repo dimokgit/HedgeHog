@@ -152,18 +152,15 @@ namespace HedgeHog.Alice.Store {
         return;
       }
       var rdm = InPoints(RatesDistanceMinCalc.Value);
-      Func<IEnumerable<double>, IEnumerable<double>> scanDistance = dbls => dbls
-        .Buffer(2, 1)
-        .Where(b => b.Count == 2)
-        .Scan(0.0, (a, b) => a + b[0].Abs(b[1]));
-      var rates = UseRatesInternal(rs => rs.Cma(_priceAvg, CmaPeriodByRatesCount(RatesArray.Count)));
+      var count = UseRatesInternal(rs => rs
+        .Cma(_priceAvg, CmaPeriodByRatesCount(RatesArray.Count))
+        .Distances()
+        .TakeWhile(i => i <= rdm)
+        .Count()
+        );
       //var distanceCurrent = scanDistance(rates.Take(RatesArray.Count)).LastOrDefault();
       //if (distanceCurrent.Ratio(rdm) < 1.2) return;
-      var distances = rates
-        .Distances()
-        .TakeWhile(i => i <= rdm);
-      var count = distances.Count();
-      Func<DateTime> corrDate = ()=>UseRatesInternal(rs => rs[(rs.Count - count - 1).Max(0)].StartDate);
+      Func<DateTime> corrDate = () => UseRatesInternal(rs => rs[(rs.Count - count - 1).Max(0)].StartDate);
       WaveRanges.TakeLast(1)
         .Where(_ => false && !IsAsleep)
         .Where(wr => corrDate().Between(wr.StartDate.AddMinutes(-1), wr.EndDate.AddMinutes(1)))

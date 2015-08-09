@@ -1554,7 +1554,7 @@ namespace HedgeHog.Alice.Store {
                 SetTradeLevelsToLevelBy(GetTradeLevel)();
               }
               if (IsTrader)
-                adjustExitLevels0();
+                adjustExitLevels1();
               break;
             #endregion
 

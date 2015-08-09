@@ -399,13 +399,13 @@ namespace HedgeHog.Alice.Store {
       #region Init BuySellLevels
       this.WhenAny(tm => tm.Strategy
         , tm => tm.TrailingDistanceFunction
-        , tm => tm.BuyLevel
-        , tm => tm.SellLevel
+        , tm => tm.HasBuyLevel
+        , tm => tm.HasSellLevel
         , tm => tm.CanDoEntryOrders
         , tm => tm.CanDoNetLimitOrders
         , tm => tm.MustStopTrading
         , (s, t, eo, no, ta, bl, sl) =>
-          Strategy == Strategies.Universal && BuyLevel != null && SellLevel != null && CanDoEntryOrders && !MustStopTrading && !IsInVitualTrading
+          Strategy == Strategies.Universal && HasBuyLevel && HasSellLevel && CanDoEntryOrders && !MustStopTrading && !IsInVitualTrading
           )
           .DistinctUntilChanged()
           .Sample(bsThrottleTimeSpan)

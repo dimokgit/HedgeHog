@@ -9,6 +9,10 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Prod|Win32">
+      <Configuration>Prod</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release SubArray|Win32">
       <Configuration>Release SubArray</Configuration>
       <Platform>Win32</Platform>
@@ -42,6 +46,12 @@
     <CLRSupport>Safe</CLRSupport>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>Safe</CLRSupport>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
@@ -60,6 +70,9 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -71,8 +84,11 @@
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
     <RunCodeAnalysis Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</RunCodeAnalysis>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">false</LinkIncremental>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">true</LinkIncremental>
@@ -90,8 +106,11 @@
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'" />
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'" />
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -117,6 +136,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>..\..\..\c\src\ta_common; ..\..\..\dotnet\src\Core;..\..\..\c\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <TargetMachine>MachineX86</TargetMachine>
+      <KeyFile>$(ProjectDir)..\key.snk</KeyFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <AdditionalIncludeDirectories>..\..\..\c\src\ta_common; ..\..\..\dotnet\src\Core;..\..\..\c\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -199,6 +237,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TA-Lib-Core.cpp" />
     <ClCompile Include="..\..\..\c\src\ta_func\ta_utility.c">
@@ -213,7 +252,10 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ACOS.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -229,9 +271,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_AD.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -247,9 +293,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ADD.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -265,9 +315,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ADOSC.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -283,9 +337,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ADX.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -301,9 +359,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ADXR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -319,9 +381,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_APO.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -337,9 +403,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_AROON.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -355,9 +425,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_AROONOSC.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -373,9 +447,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ASIN.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -391,9 +469,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ATAN.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -409,9 +491,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ATR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -427,9 +513,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_AVGPRICE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -445,9 +535,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_BBANDS.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -463,9 +557,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_BETA.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -481,9 +579,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_BOP.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -499,9 +601,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CCI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -517,9 +623,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDL2CROWS.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -535,9 +645,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDL3BLACKCROWS.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -553,9 +667,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDL3INSIDE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -571,9 +689,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDL3LINESTRIKE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -589,9 +711,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDL3OUTSIDE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -607,9 +733,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDL3STARSINSOUTH.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -625,9 +755,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDL3WHITESOLDIERS.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -643,9 +777,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLABANDONEDBABY.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -661,9 +799,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLADVANCEBLOCK.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -679,9 +821,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLBELTHOLD.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -697,9 +843,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLBREAKAWAY.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -715,9 +865,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLCLOSINGMARUBOZU.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -733,9 +887,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLCONCEALBABYSWALL.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -751,9 +909,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLCOUNTERATTACK.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -769,9 +931,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLDARKCLOUDCOVER.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -787,9 +953,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLDOJI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -805,9 +975,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLDOJISTAR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -823,9 +997,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLDRAGONFLYDOJI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -841,9 +1019,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLENGULFING.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -859,9 +1041,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLEVENINGDOJISTAR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -877,9 +1063,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLEVENINGSTAR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -895,9 +1085,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLGAPSIDESIDEWHITE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -913,9 +1107,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLGRAVESTONEDOJI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -931,9 +1129,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLHAMMER.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -949,9 +1151,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLHANGINGMAN.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -967,9 +1173,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLHARAMI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -985,9 +1195,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLHARAMICROSS.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1003,9 +1217,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLHIGHWAVE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1021,9 +1239,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLHIKKAKE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1039,9 +1261,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLHIKKAKEMOD.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1057,9 +1283,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLHOMINGPIGEON.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1075,9 +1305,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLIDENTICAL3CROWS.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1093,9 +1327,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLINNECK.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1111,9 +1349,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLINVERTEDHAMMER.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1129,9 +1371,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLKICKING.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1147,9 +1393,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLKICKINGBYLENGTH.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1165,9 +1415,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLLADDERBOTTOM.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1183,9 +1437,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLLONGLEGGEDDOJI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1201,9 +1459,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLLONGLINE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1219,9 +1481,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLMARUBOZU.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1237,9 +1503,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLMATCHINGLOW.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1255,9 +1525,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLMATHOLD.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1273,9 +1547,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLMORNINGDOJISTAR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1291,9 +1569,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLMORNINGSTAR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1309,9 +1591,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLONNECK.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1327,9 +1613,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLPIERCING.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1345,9 +1635,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLRICKSHAWMAN.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1363,9 +1657,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLRISEFALL3METHODS.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1381,9 +1679,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLSEPARATINGLINES.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1399,9 +1701,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLSHOOTINGSTAR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1417,9 +1723,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLSHORTLINE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1435,9 +1745,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLSPINNINGTOP.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1453,9 +1767,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLSTALLEDPATTERN.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1471,9 +1789,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLSTICKSANDWICH.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1489,9 +1811,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLTAKURI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1507,9 +1833,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLTASUKIGAP.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1525,9 +1855,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLTHRUSTING.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1543,9 +1877,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLTRISTAR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1561,9 +1899,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLUNIQUE3RIVER.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1579,9 +1921,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLUPSIDEGAP2CROWS.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1597,9 +1943,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CDLXSIDEGAP3METHODS.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1615,9 +1965,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CEIL.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1633,9 +1987,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CMO.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1651,9 +2009,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_CORREL.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1669,9 +2031,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_COS.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1687,9 +2053,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_COSH.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1705,9 +2075,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_DEMA.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1723,9 +2097,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_DIV.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1741,9 +2119,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_DX.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1759,9 +2141,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_EMA.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1777,9 +2163,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_EXP.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1795,9 +2185,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_FLOOR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1813,9 +2207,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_HT_DCPERIOD.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1831,9 +2229,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_HT_DCPHASE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1849,9 +2251,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_HT_PHASOR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1867,9 +2273,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_HT_SINE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1885,9 +2295,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_HT_TRENDLINE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1903,9 +2317,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_HT_TRENDMODE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1921,9 +2339,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_KAMA.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1939,9 +2361,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_LINEARREG.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1957,9 +2383,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_LINEARREG_ANGLE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1975,9 +2405,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_LINEARREG_INTERCEPT.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1993,9 +2427,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_LINEARREG_SLOPE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2011,9 +2449,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_LN.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2029,9 +2471,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_LOG10.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2047,9 +2493,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MA.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2065,9 +2515,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MACD.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2083,9 +2537,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MACDEXT.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2101,9 +2559,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MACDFIX.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2119,9 +2581,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MAMA.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2137,9 +2603,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MAVP.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2155,9 +2625,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MAX.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2173,9 +2647,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MAXINDEX.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2191,9 +2669,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MEDPRICE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2209,9 +2691,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MFI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2227,9 +2713,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MIDPOINT.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2245,9 +2735,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MIDPRICE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2263,9 +2757,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MIN.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2281,9 +2779,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MININDEX.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2299,9 +2801,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MINMAX.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2317,9 +2823,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MINMAXINDEX.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2335,9 +2845,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MINUS_DI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2353,9 +2867,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MINUS_DM.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2371,9 +2889,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MOM.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2389,9 +2911,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_MULT.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2407,9 +2933,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_NATR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2425,9 +2955,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_OBV.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2443,9 +2977,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_PLUS_DI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2461,9 +2999,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_PLUS_DM.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2479,9 +3021,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_PPO.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2497,9 +3043,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ROC.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2515,9 +3065,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ROCP.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2533,9 +3087,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ROCR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2551,9 +3109,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ROCR100.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2569,9 +3131,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_RSI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2587,9 +3153,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_SAR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2605,9 +3175,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_SAREXT.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2623,9 +3197,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_SIN.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2641,9 +3219,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_SINH.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2659,9 +3241,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_SMA.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2677,9 +3263,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_SQRT.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2695,9 +3285,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_STDDEV.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2713,9 +3307,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_STOCH.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2731,9 +3329,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_STOCHF.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2749,9 +3351,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_STOCHRSI.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2767,9 +3373,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_SUB.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2785,9 +3395,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_SUM.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2803,9 +3417,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_T3.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2821,9 +3439,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_TAN.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2839,9 +3461,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_TANH.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2857,9 +3483,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_TEMA.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2875,9 +3505,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_TRANGE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2893,9 +3527,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_TRIMA.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2911,9 +3549,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_TRIX.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2929,9 +3571,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_TSF.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2947,9 +3593,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_TYPPRICE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2965,9 +3615,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_ULTOSC.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -2983,9 +3637,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_VAR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -3001,9 +3659,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_WCLPRICE.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -3019,9 +3681,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_WILLR.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -3037,9 +3703,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\c\src\ta_func\ta_WMA.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug SubArray|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -3055,9 +3725,13 @@
       </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release SubArray|Win32'">CompileAsCpp</CompileAs>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">
+      </PrecompiledHeader>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Prod|Win32'">CompileAsCpp</CompileAs>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

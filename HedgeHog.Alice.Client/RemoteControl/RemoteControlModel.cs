@@ -1048,7 +1048,7 @@ namespace HedgeHog.Alice.Client {
 
       if (tm.RatesArray.Count == 0 || tm.IsTrader && tm.BuyLevel == null) return new { rates = new int[0] };
 
-      var tmTrader = GetTradingMacros(tm.Pair).Where(t=>!t.IsAsleep && t.IsTrader).DefaultIfEmpty(tm).Single();
+      var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
 
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd).ToArray());
       var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart).ToArray());
@@ -1082,6 +1082,18 @@ namespace HedgeHog.Alice.Client {
           });
         } else return rates3.Select(map).ToArray();
       });
+      var tradeLevels = !tmTrader.HasBuyLevel ? new object { } : new {
+        buy = tmTrader.BuyLevel.Rate.Round(digits),
+        buyClose = tmTrader.BuyCloseLevel.Rate.Round(digits),
+        canBuy = tmTrader.BuyLevel.CanTrade,
+        manualBuy = tmTrader.BuyLevel.InManual,
+        buyCount = tmTrader.BuyLevel.TradesCount,
+        sell = tmTrader.SellLevel.Rate.Round(digits),
+        sellClose = tmTrader.SellCloseLevel.Rate.Round(digits),
+        canSell = tmTrader.SellLevel.CanTrade,
+        manualSell = tmTrader.SellLevel.InManual,
+        sellCount = tmTrader.SellLevel.TradesCount,
+      };
       if (tm.IsAsleep) {
         var o = new object();
         var a = new object[0];
@@ -1150,18 +1162,6 @@ namespace HedgeHog.Alice.Client {
           isept = new[] { wr.InterseptStart, wr.InterseptEnd },
           bold = wr.ElliotIndex > 0
         });
-      var tradeLevels = tmTrader.BuyLevel == null ? new object { } : new {
-        buy = tmTrader.BuyLevel.Rate.Round(digits),
-        buyClose = tmTrader.BuyCloseLevel.Rate.Round(digits),
-        canBuy = tmTrader.BuyLevel.CanTrade,
-        manualBuy = tmTrader.BuyLevel.InManual,
-        buyCount = tmTrader.BuyLevel.TradesCount,
-        sell = tmTrader.SellLevel.Rate.Round(digits),
-        sellClose = tmTrader.SellCloseLevel.Rate.Round(digits),
-        canSell = tmTrader.SellLevel.CanTrade,
-        manualSell = tmTrader.SellLevel.InManual,
-        sellCount = tmTrader.SellLevel.TradesCount,
-      };
       var tmg = TradesManager;
       var trades0 = tmg.GetTrades(pair);
       Func<bool, Trade[]> getTrades = isBuy => trades0.Where(t => t.IsBuy == isBuy).ToArray();
@@ -1272,7 +1272,8 @@ namespace HedgeHog.Alice.Client {
             /*9*/, tm.CorridorStats.Rates.Count.Div(tm.CorridorDistance).ToInt()
             /*10*/, tm.WorkflowStep
           );
-          if (!tm.IsAsleep) {
+          //if (!tm.IsAsleep) 
+          {
             charter.SetTrendLines(tm.TrendLines.Value.OrderBarsDescending().ToArray(), tm.CorridorStartDate.HasValue);
             charter.SetTrendLines2(tm.TrendLines2.Value);
             charter.SetTrendLines1(tm.TrendLines1.Value);
@@ -1296,7 +1297,7 @@ namespace HedgeHog.Alice.Client {
           charter.AddTicks(ratesForChart, true ? new PriceBar[1][] { distances/*, distances1*/} : new PriceBar[0][], info, null,
             new[] { tm.GetVoltageHigh(), tm.GetVoltageLow() }, tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
-          if (tm.IsAsleep) return;
+          //if (tm.IsAsleep) return;
           if (tm.CorridorStats.StopRate != null)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
           else if (tm.CorridorStartDate.HasValue)

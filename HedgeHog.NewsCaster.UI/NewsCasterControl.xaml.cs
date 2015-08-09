@@ -84,7 +84,7 @@ namespace HedgeHog.UI {
         .Except(News, new LambdaComparer<NewsContainer>((l, r) => l.Event.Level == r.Event.Level && l.Event.Name == r.Event.Name && l.Event.Time == r.Event.Time));
       ForexStorage.UseForexContext(c => {
         var dateLast = c.Event__News.Max(e => e.Time);
-        newNews.Select(evt => evt.Event).ToList()
+        newNews.ToList().Select(evt => evt.Event)
           //.Where(evt => evt.Time > dateLast)
           .ForEach(evt => {
             c.Event__News.Add(new Event__News() {
