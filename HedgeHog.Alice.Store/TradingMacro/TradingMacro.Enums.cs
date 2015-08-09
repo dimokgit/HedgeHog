@@ -109,7 +109,9 @@ namespace HedgeHog.Alice.Store {
     PriceMax1,
     PriceMin1,
     MaxRG,
-    MinRG
+    MinRG,
+    PriceAvg1Max,
+    PriceAvg1Min
   }
   public enum CorridorHeightMethods {
     ByMA = 0,

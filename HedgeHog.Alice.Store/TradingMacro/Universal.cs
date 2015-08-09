@@ -323,7 +323,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         #region SuppRes Event Handlers
-        Func<bool> isCrossActive = () => BuyLevel.Rate.Abs(SellLevel.Rate) > InPoints(1);
+        Func<bool> isCrossActive = () => _buySellLevels.Any(sr=>!sr.CanTrade) || BuyLevel.Rate.Abs(SellLevel.Rate) > InPoints(1);
         Func<SuppRes, bool> isCrossDisabled = sr =>
           !isCrossActive() ||
           !IsTradingActive ||
@@ -2268,12 +2268,14 @@ namespace HedgeHog.Alice.Store {
       Func<double, double, double> buy = (r, p) => isRange ? r.Min(p) : r.Max(p);
       Func<double, double, double> sell = (r, p) => isRange ? r.Max(p) : r.Min(p);
       return new Action(() => {
-        BuyLevel.RateEx = new[] { getTradeLevel(true, BuyLevel.Rate) }
-          .SelectMany(rate => new[] { rate, buy(rate, CurrentEnterPrice(true)) })
-          .Average();
-        SellLevel.RateEx = new[] { getTradeLevel(false, SellLevel.Rate) }
-          .SelectMany(rate => new[] { rate, sell(rate, CurrentEnterPrice(false)) })
-          .Average();
+        BuyLevel.RateEx = getTradeLevel(true, BuyLevel.Rate);
+        //new[] { getTradeLevel(true, BuyLevel.Rate) }
+        //   .SelectMany(rate => new[] { rate, buy(rate, CurrentEnterPrice(true)) })
+        //   .Average();
+        SellLevel.RateEx = getTradeLevel(false, SellLevel.Rate);
+        //new[] { getTradeLevel(false, SellLevel.Rate) }
+        //   .SelectMany(rate => new[] { rate, sell(rate, CurrentEnterPrice(false)) })
+        //   .Average();
       });
     }
   }

@@ -13,7 +13,8 @@ namespace HedgeHog.Alice.Store {
     void TriggerOnOutside(Func<Func<TradingMacro, Rate.TrendLevels>, TradeDirections> isOutside, Func<TradingMacro, Rate.TrendLevels> trendLevels) {
       var td = isOutside(trendLevels);
       if (td.Any()) {
-        TradeDirection = td;
+        if (TradeConditionsEval().All(b => b.Any()))
+          TradeDirection = td;
         if (!HasTradeConditions) {
           BuyLevel.CanTradeEx = td.HasUp();
           SellLevel.CanTradeEx = td.HasDown();
@@ -33,6 +34,8 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeDirectionTrigger]
     public void OnOutsideGreen() {
+      Func<Func<TradingMacro, Rate.TrendLevels>, TradeDirections> f = foo =>
+        IsCurrentPriceOutsideCorridor(MySelf, foo, tl => tl.PriceAvg3, tl => tl.PriceAvg2, false);
       TriggerOnOutside(IsCurrentPriceOutsideCorridorSelf, tm => tm.TrendLines1Trends);
     }
     [TradeDirectionTrigger]
@@ -59,6 +62,7 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
+    #region Infrastructure
     public Action[] _tradeDirectionTriggers = new Action[0];
     bool HasTradeDirectionTriggers { get { return _tradeDirectionTriggers.Length > 0; } }
     public Action[] GetTradeDirectionTriggers() {
@@ -91,7 +95,7 @@ namespace HedgeHog.Alice.Store {
         TradeDirectionTriggersSet(value.Split(','));
       }
     }
-
+    #endregion
     #endregion
   }
 }

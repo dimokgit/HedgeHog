@@ -1760,7 +1760,7 @@ namespace HedgeHog.Alice.Store {
       return SupportByPosition(1);
     }
     private Store.SuppRes SupportByPosition(int position) {
-      if (SuppRes == null) 
+      if (SuppRes == null)
         throw new Exception(new { SuppRes } + "");
       var s = SuppRes.Where(sr => sr.IsSupport).Skip(position).FirstOrDefault();
       if (s == null) throw new Exception("There is no Support as position {0}".Formater(position));
@@ -2819,9 +2819,6 @@ namespace HedgeHog.Alice.Store {
 
     delegate CorridorStatistics ScanCorridorDelegate(List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow);
 
-    public double CalculateTakeProfitInPips(bool dontAdjust = false) {
-      return InPips(CalculateTakeProfit(dontAdjust));
-    }
     Trade _tradeForProfit;
     private Trade TradeForCommissionCalculation() {
       var trade = _tradeForProfit ?? (_tradeForProfit = TradesManager.TradeFactory(Pair));
@@ -2836,7 +2833,7 @@ namespace HedgeHog.Alice.Store {
       var rate = TradesManager.RateForPipAmount(CurrentPrice);
       return TradesManagerStatic.MoneyAndLotToPips(Pair, com, trades.Lots(), rate, PointSize);
     }
-    double CalculateTakeProfit(bool dontAdjust = false,double customRatio = double.NaN) {
+    double CalculateTakeProfit(double customRatio = double.NaN, bool dontAdjust = false) {
       var tp = GetValueByTakeProfitFunction(TakeProfitFunction, customRatio.IfNaN(TakeProfitXRatio));
       return (dontAdjust
         ? tp
@@ -2941,6 +2938,9 @@ namespace HedgeHog.Alice.Store {
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           { 
           {TradeLevelBy.PriceAvg1,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg1)},
+          {TradeLevelBy.PriceAvg1Max,()=>levelMax(tm=>TrendLinesTrendsPriceMax( tm,tls=>tls.PriceAvg1))},
+          {TradeLevelBy.PriceAvg1Min,()=>levelMin(tm=>TrendLinesTrendsPriceMin( tm,tls=>tls.PriceAvg1))},
+
           {TradeLevelBy.PriceAvg02,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg02)},
           {TradeLevelBy.PriceAvg2,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg2)},
           {TradeLevelBy.PriceAvg21,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg21)},

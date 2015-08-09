@@ -284,6 +284,12 @@ namespace HedgeHog.Alice.Store {
     public Rate.TrendLevels TrendLines1Trends { get { return IsTrendsEmpty(TrendLines1) ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
     public Rate.TrendLevels TrendLinesTrends { get { return IsTrendsEmpty(TrendLines) ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
     public Rate.TrendLevels[] TrendLinesTrendsAll { get { return new[] { TrendLines1Trends, TrendLinesTrends, TrendLines2Trends }; } }
+    private double TrendLinesTrendsPriceMax(TradingMacro tm, Func<Rate.TrendLevels, double> value) {
+      return value(tm.TrendLinesTrends).Max(value(tm.TrendLines2Trends), value(tm.TrendLines1Trends));
+    }
+    private double TrendLinesTrendsPriceMin(TradingMacro tm, Func<Rate.TrendLevels, double> value) {
+      return value(tm.TrendLinesTrends).Min(value(tm.TrendLines2Trends), value(tm.TrendLines1Trends));
+    }
     private double TrendLinesTrendsPriceMax(TradingMacro tm) {
       return tm.TrendLinesTrends.PriceAvg2.Max(tm.TrendLines2Trends.PriceAvg2, tm.TrendLines1Trends.PriceAvg2);
     }

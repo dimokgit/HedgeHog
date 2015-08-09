@@ -92,7 +92,7 @@ namespace HedgeHog.Alice.Store {
         throw new InvalidOperationException("StartDate;{0} must be less then EndDate:{1}".Formater(StartDate, EndDate));
       Max = range.Max(r => r.PriceAvg);
       Min = range.Min(r => r.PriceAvg);
-      Distance = range.Distance2(r => r.PriceCMALast) / pointSize;
+      Distance = range.Select(r => r.PriceCMALast).Distances().Last() / pointSize;
       TotalSeconds = EndDate.Subtract(StartDate).TotalSeconds;
       CalcTrendLine(range, pointSize, period);
       this.UID = Math.Sqrt(Distance / Height);
