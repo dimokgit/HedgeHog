@@ -14,7 +14,6 @@ namespace HedgeHog.Alice {
     Correlation = 9,
     AboveBelowRatio = 10,
     StDevInsideOutRatio = 20,
-    Volatility = 30,
     HourlyStDevAvg = 40,
     HourlyRsdAvg = 41,
     StDevByHeight = 50,
@@ -51,7 +50,6 @@ namespace HedgeHog.Alice.Store {
     StDevBalanceR = 45,
     StDevSplits = 46,
     StDevSplits3 = 48,
-    TimeRatio = 59,
     Height = 60,
     Ftt = 64,
   }

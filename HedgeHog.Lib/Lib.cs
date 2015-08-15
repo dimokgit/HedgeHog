@@ -158,7 +158,9 @@ namespace HedgeHog {
       return System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, typeof(T), expression).Compile();
     }
     public static T Evaluate<T>(this string expression, params ParameterExpression[] parameters) {
-      return (T)System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, typeof(T), expression).Compile().DynamicInvoke();
+      return string.IsNullOrWhiteSpace(expression)
+        ? default(T)
+        : (T)System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, typeof(T), expression).Compile().DynamicInvoke();
     }
     public static U[] ToArray<T, U>(this IEnumerable<T> es, Func<T, U> a) {
       return es.Select(a).ToArray();

@@ -44,7 +44,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug_RealMicro\</OutputPath>
+    <OutputPath>..\..\..\..\SkyDrive\Public\Forex\Builds\Debug_RealMicro 2\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -56,7 +56,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\..\..\OneDrive\Public\Forex\Builds\Debug_RealMicro\</OutputPath>
+    <OutputPath>..\..\..\..\SkyDrive\Public\Forex\Builds\Debug_RealMicro 2\</OutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -77,7 +77,7 @@
     <GenerateManifests>false</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
@@ -90,6 +90,15 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Prod|x86'">
     <OutputPath>..\..\..\..\..\OneDrive\Public\Forex\Builds\Debug_04\</OutputPath>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'TM 2|x86'">
+    <OutputPath>..\..\..\..\SkyDrive\Public\Forex\Builds\Debug_RealMicro 2\</OutputPath>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -2272,9 +2281,6 @@
     </None>
     <Content Include="bin\Debug_01\Store\Alice.sdf" />
     <Content Include="bin\Debug_02\Store\Alice.sdf" />
-    <Resource Include="bin\Debug_03\RadGridView.txt">
-      <SubType>Designer</SubType>
-    </Resource>
     <Content Include="bin\DTurbo\Store\Alice.sdf" />
     <Resource Include="Images\DownArrow-32.png" />
     <Resource Include="Images\UpArrow-32.png" />

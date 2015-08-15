@@ -218,26 +218,26 @@ Privet:2.3 3.4
       Task.WaitAll(Task.Factory.StartNew(() => Thread.Sleep(10000)));
       Assert.IsTrue(mc.Contains(key));
     }
-    public void MA() {
-      var d = Enumerable.Range(1, 1000).Select(i => Math.Cos(i)).ToDictionary(n => n, n => n);
-      SortedList<double, double> sl = new SortedList<double, double>(d);
-      var period = 9;
-      Stopwatch sw = Stopwatch.StartNew();
-      var mas1 = sl.MovingAverage_(period);
-      Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
-      sw.Restart();
-      var mas2 = sl.MovingAverage(period);
-      Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
-      var mas10 = mas2.Except(mas1);
-      //Assert.IsFalse(mas10.Any());
-      sw.Restart();
-      double[] inReal = d.Select(li => li.Value).ToArray();
-      int outBegIdx, outNBElement;
-      double[] outReal = inReal.Trima(period, out outBegIdx, out outNBElement);
-      Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
-      var mas11 = mas2.Select(li => li.Value).Except(outReal);
-      Assert.IsFalse(mas11.Any());
-    }
+    //public void MA() {
+    //  var d = Enumerable.Range(1, 1000).Select(i => Math.Cos(i)).ToDictionary(n => n, n => n);
+    //  SortedList<double, double> sl = new SortedList<double, double>(d);
+    //  var period = 9;
+    //  Stopwatch sw = Stopwatch.StartNew();
+    //  var mas1 = sl.MovingAverage_(period);
+    //  Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
+    //  sw.Restart();
+    //  var mas2 = sl.MovingAverage(period);
+    //  Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
+    //  var mas10 = mas2.Except(mas1);
+    //  //Assert.IsFalse(mas10.Any());
+    //  sw.Restart();
+    //  double[] inReal = d.Select(li => li.Value).ToArray();
+    //  int outBegIdx, outNBElement;
+    //  double[] outReal = inReal.Trima(period, out outBegIdx, out outNBElement);
+    //  Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
+    //  var mas11 = mas2.Select(li => li.Value).Except(outReal);
+    //  Assert.IsFalse(mas11.Any());
+    //}
     public void ObservableCollectionTest() {
       var oc = new ObservableCollection<string>();
       var t = Task.Factory.StartNew(() => {

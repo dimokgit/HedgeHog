@@ -76,10 +76,12 @@ namespace HedgeHog.Alice.Store {
       get {
         try {
           if (_TradingMacros == null)
-            _TradingMacros = !IsInDesigh ? GlobalStorage.UseAliceContext(Context => Context.TradingMacroes
+            _TradingMacros = !IsInDesigh 
+              ? GlobalStorage.UseAliceContext(Context => Context.TradingMacroes
               .Where(tm=>tm.TradingMacroName == MasterModel.TradingMacroName)
               .OrderBy(tm => tm.TradingGroup)
-              .ThenBy(tm => tm.PairIndex)) : new[] { new TradingMacro() }.AsQueryable();
+              .ThenBy(tm => tm.PairIndex)) 
+              : new[] { new TradingMacro() }.AsQueryable();
           return _TradingMacros;
         } catch (Exception exc) {
           Debug.Fail(exc.ToString());
@@ -208,50 +210,6 @@ namespace HedgeHog.Alice.Store {
       var rs = rates/*.Where(r => r.StartDate > csFirst.StartDate)*/.Select(r => r.PriceAvg).ToArray();
       tm.Correlation_P = global::alglib.pearsoncorrelation(pbs, rs);
       tm.Correlation_R = global::alglib.spearmancorr2(pbs, rs, Math.Min(pbs.Length, rs.Length));
-    }
-  }
-  public class TaskerDispenser<TKey> {
-    ConcurrentDictionary<TKey, Tasker> _taskers = new ConcurrentDictionary<TKey, Tasker>();
-    public void RunOrEnqueue(TKey key, Action action, Action<Exception> logError) {
-      if (!_taskers.ContainsKey(key)) _taskers[key] = new Tasker(key+"");
-      _taskers[key].RunOrEnqueue(action,logError);
-    }
-  }
-  public class Tasker {
-    Task _task;
-    Action _queuedAction;
-    private string _name;
-    private Guid _id;
-    public Tasker(string name) {
-      this._name = name;
-      _id = Guid.NewGuid();
-    }
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    public void RunOrEnqueue(Action action, Action<Exception> logError) {
-      if (_task == null || _task.IsCompleted) {
-        _task = Task.Factory.StartNew(MakeActionInternal(action, logError));
-        _task.ContinueWith(RunQueue);
-      } else {
-        //Debug.WriteLine("Tasker " + _name + " is busy.");
-        //_queuedAction = MakeActionInternal(action, logError);
-      }
-    }
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    void RunQueue(Task task) {
-      if (_queuedAction != null) {
-        _task = Task.Factory.StartNew(_queuedAction);
-        _queuedAction = null;
-      }
-    }
-    Action MakeActionInternal(Action action, Action<Exception> logError) {
-      return () => {
-        try {
-          action();
-        } catch (Exception exc) {
-          if (logError != null)
-            logError(exc);
-        }
-      };
     }
   }
   

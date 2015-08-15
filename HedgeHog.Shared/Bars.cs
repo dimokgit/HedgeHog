@@ -736,21 +736,6 @@ namespace HedgeHog.Bars {
     #endregion
   }
 
-  public class RateDistance {
-    // Methods
-    public RateDistance(double averageAsk, double averageBid, double MA, DateTime startDate) {
-      this.AverageAsk = averageAsk;
-      this.AverageBid = averageBid;
-      this.MA = MA;
-      this.StartDate = startDate;
-    }
-    // Properties
-    public double AverageAsk { get; set; }
-    public double AverageBid { get; set; }
-    public double MA { get; set; }
-    public DateTime StartDate { get; set; }
-  }
-
   public class PriceBar : BarBaseDate {
     // Properties
     [DisplayName("")]
@@ -783,15 +768,6 @@ namespace HedgeHog.Bars {
 
     public override string ToString() {
       return base.ToString() + " : " + Power;
-    }
-  }
-
-  public class BarPoint<TBar> where TBar : BarBaseDate {
-    public int Index { get; set; }
-    public TBar Bar { get; set; }
-    public BarPoint(int index, TBar bar) {
-      this.Index = index;
-      this.Bar = bar;
     }
   }
 }

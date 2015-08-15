@@ -171,7 +171,7 @@ namespace HedgeHog.Alice.Store {
           : TradeDirections.None;
       }
     }
-    public TradeConditionDelegate GreenROk {
+    public TradeConditionDelegate GreenExtOk {
       get {
         return () =>
           TrendLines1Trends.PriceAvg2 >= TrendLinesTrends.PriceAvg21.Max(TrendLines2Trends.PriceAvg2)

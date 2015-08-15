@@ -25,6 +25,22 @@ namespace HedgeHog.Alice.Store {
     bool MySelfNext(TradingMacro tm) { return tm.PairIndex > this.PairIndex; }
     #region Triggers
     [TradeDirectionTrigger]
+    public void OnTradeCondOk() {
+      if (TradeConditionsEval().DefaultIfEmpty(TradeDirections.None).All(b => b.Any())) {
+        UseRates(rates => {
+          double min, max;
+          rates.GetRange(rates.Count - _corridorLength2, _corridorLength2).Height(out min, out max);
+          BuyLevel.Rate = max;
+          SellLevel.Rate = min;
+          new[] { BuyLevel, SellLevel }.ForEach(sr => {
+            sr.CanTrade = true;
+            sr.TradesCount = TradeCountStart;
+            sr.InManual = true;
+          });
+        });
+      }
+    }
+    [TradeDirectionTrigger]
     public void OnOutsideRed() {
       TriggerOnOutside(IsCurrentPriceOutsideCorridorSelf, tm => tm.TrendLinesTrends);
     }

@@ -804,6 +804,7 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Adjust Exit By Time")]
     [Category(categoryActiveYesNo)]
     [Description("Adjust exit level according to price movements since Trade started.")]
+    [WwwSetting(wwwSettingsTradingOther)]
     public bool DoAdjustExitLevelByTradeTime {
       get { return CloseAllOnProfit; }
       set {
@@ -1453,11 +1454,8 @@ namespace HedgeHog.Alice.Store {
     }
     public DateTime ServerTime {
       get {
-        return IsInVitualTrading
-          ? _Rates.Count > 0
-          ? _Rates.LastBC().StartDate.AddMinutes(BarPeriodInt)
-          : DateTime.MinValue
-          : TradesManager == null || !TradesManager.IsLoggedIn ? DateTime.MinValue
+        return TradesManager == null || !TradesManager.IsLoggedIn 
+          ? DateTime.MinValue
           : TradesManager.ServerTime;
       }
     }

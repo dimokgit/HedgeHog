@@ -2781,6 +2781,9 @@ namespace Order2GoAddIn {
         return _utcTimeSpan.Value;
       }
     }
+    public void SetServerTime(DateTime serverTime) {
+      throw new NotImplementedException();
+    }
     public DateTime ServerTimeCached { get; set; }
     public DateTime ServerTime { get { return ServerTimeCached = CoreFX.ServerTime; } }
     static object converterLocker = new object();

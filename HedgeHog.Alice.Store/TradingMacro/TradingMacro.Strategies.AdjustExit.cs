@@ -10,8 +10,9 @@ using System.ComponentModel;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    private Store.SuppRes SellCloseSupResLevel() {
-      var sellCloseLevel = Resistance1(); sellCloseLevel.IsExitOnly = true;
+    private Store.SuppRes[] SellCloseSupResLevel() {
+      var sellCloseLevel = Resistance1();
+      sellCloseLevel.Where(sr => !sr.IsExitOnly).ForEach(sr => sr.IsExitOnly = true);
       return sellCloseLevel;
     }
 
@@ -50,8 +51,8 @@ namespace HedgeHog.Alice.Store {
         new[] { BuyLevel, SellLevel }.All(sr => sr.CanTrade) && currentPrice.Between(SellLevel.Rate, BuyLevel.Rate)
           ? calcExitLevel(exitLevel)
           : exitLevel;
-      Store.SuppRes buyCloseLevel = BuyCloseSupResLevel();
-      Store.SuppRes sellCloseLevel = SellCloseSupResLevel();
+      Store.SuppRes buyCloseLevel = BuyCloseSupResLevel().First();
+      Store.SuppRes sellCloseLevel = SellCloseSupResLevel().First();
       Action<double, double> adjustExitLevels = (buyLevel, sellLevel) => {
         #region Set (buy/sell)Level
         {
@@ -124,7 +125,9 @@ namespace HedgeHog.Alice.Store {
               : isBuy
               ? levelByNetOpenAndTakeProfit(isBuy).Max(GetTradeCloseLevel(isBuy))
               : levelByNetOpenAndTakeProfit(isBuy).Min(GetTradeCloseLevel(isBuy));
-            Func<bool, double> levelByDefault = isBuy => isBuy
+            Func<bool, double> levelByDefault = isBuy => IsTakeBack
+              ? double.NaN
+              : isBuy
               ? buyLevel + CalculateTakeProfit(1)
               : sellLevel - CalculateTakeProfit(1);
             if (buyCloseLevel.IsGhost)

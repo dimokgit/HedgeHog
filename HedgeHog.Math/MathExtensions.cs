@@ -458,22 +458,22 @@ namespace HedgeHog {
       return 0;
     }
 
-    public static double[] Trima(this double[] inReal, int period, out int outBegIdx, out int outNBElement) {
-      try {
-        if (inReal.Length < period) {
-          outBegIdx = 0;
-          outNBElement = 0;
-          return new double[0];
-        }
-        double[] outReal = new double[inReal.Count() - period + 1];
-        //TicTacTec.TA.Library.Core.Sma(0, d.Count - 1, inReal, period, out outBegIdx, out outNBElement, outReal);
-        TicTacTec.TA.Library.Core.Trima(0, inReal.Count() - 1, inReal, period, out outBegIdx, out outNBElement, outReal);
-        return outReal;
-      } catch (Exception exc) {
-        Debug.WriteLine(exc);
-        throw;
-      }
-    }
+    //public static double[] Trima(this double[] inReal, int period, out int outBegIdx, out int outNBElement) {
+    //  try {
+    //    if (inReal.Length < period) {
+    //      outBegIdx = 0;
+    //      outNBElement = 0;
+    //      return new double[0];
+    //    }
+    //    double[] outReal = new double[inReal.Count() - period + 1];
+    //    //TicTacTec.TA.Library.Core.Sma(0, d.Count - 1, inReal, period, out outBegIdx, out outNBElement, outReal);
+    //    TicTacTec.TA.Library.Core.Trima(0, inReal.Count() - 1, inReal, period, out outBegIdx, out outNBElement, outReal);
+    //    return outReal;
+    //  } catch (Exception exc) {
+    //    Debug.WriteLine(exc);
+    //    throw;
+    //  }
+    //}
 
     public static SortedList<T, double> MovingAverage<T>(this SortedList<T, double> series, int period) {
       var result = new SortedList<T, double>();

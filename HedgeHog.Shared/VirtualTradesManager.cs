@@ -90,19 +90,16 @@ namespace HedgeHog.Shared {
 
     public bool IsLoggedIn { get { return true; } }
     public double Leverage(string pair) { return (double)GetBaseUnitSize(pair) / GetOffer(pair).MMR; }
-    IList<Rate> _serverTimeRates;
+    DateTime _serverTime;
     public DateTime ServerTime {
       get {
-        if (_serverTimeRates == null || !_serverTimeRates.Any())
-          _serverTimeRates = RatesByPair().First().Value;
-        return _serverTimeRates.GetVirtualServerTime(barMinutes);
-      }
-      set {
-        if (value == DateTime.MinValue)
-          _serverTimeRates = null;
+        //if (_serverTime.IsMin()) throw new Exception(new { VirtualTradesManager = new { _serverTime } } + "");
+        return _serverTime;
       }
     }
-
+    public void SetServerTime(DateTime serverTime) {
+      _serverTime = serverTime;
+    }
     #region Money
     public double RateForPipAmount(Price price) { return RateForPipAmount(price.Ask, price.Bid); }
     public double RateForPipAmount(double ask, double bid) { return ask.Avg(bid); }
@@ -403,6 +400,7 @@ namespace HedgeHog.Shared {
 
     public Price GetPrice(string pair) {
       Price price;
+      if (PriceCurrent.Count == 0) return new Price(pair, new Rate());
       if (!PriceCurrent.TryGetValue(pair, out price))
         throw new ArgumentNullException(new { pair, error = "No Current Price" } + "");
       return price;

@@ -447,11 +447,11 @@ namespace HedgeHog.Alice.Store {
       //    });
       // New Limit
       this.WhenAny(
-          tm => tm.BuyCloseLevel
-        , tm => tm.SellCloseLevel
+          tm => tm.HasBuyCloseLevel
+        , tm => tm.HasSellCloseLevel
         , tm => tm.CanDoNetLimitOrders
         , (b, s, non) =>
-          BuyCloseLevel != null && SellCloseLevel != null && CanDoNetLimitOrders && !IsInVitualTrading)
+          HasBuyCloseLevel && HasSellCloseLevel && CanDoNetLimitOrders && !IsInVitualTrading)
           .DistinctUntilChanged()
           .Sample(bsThrottleTimeSpan)
           .Subscribe(st => {// Turn on/off live net orders
@@ -469,11 +469,11 @@ namespace HedgeHog.Alice.Store {
           });
       // Net Stop
       this.WhenAny(
-          tm => tm.BuyCloseLevel
-        , tm => tm.SellCloseLevel
+          tm => tm.HasBuyCloseLevel
+        , tm => tm.HasSellCloseLevel
         , tm => tm.CanDoNetStopOrders
         , (b, s, non) =>
-          BuyCloseLevel != null && SellCloseLevel != null && CanDoNetStopOrders && !IsInVitualTrading)
+          HasBuyCloseLevel && HasSellCloseLevel && CanDoNetStopOrders && !IsInVitualTrading)
           .DistinctUntilChanged()
           .Sample(bsThrottleTimeSpan)
           .Subscribe(st => {// Turn on/off live net orders

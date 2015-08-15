@@ -1694,18 +1694,6 @@ namespace HedgeHog.Bars {
         t.PriceCMALast = t.PriceCMA[t.PriceCMA.Count - 1];
       }
     }
-    public static IList<double> GetTrima<TBars>(this IList<TBars> ticks, int period) where TBars : BarBase {
-      int outBegIdx;
-      return ticks.GetTrima(period, out outBegIdx);
-    }
-    public static IList<double> GetTrima<TBars>(this IList<TBars> ticks, int period, out int outBegIdx) where TBars : BarBase {
-      int outNBElement;
-      var outTrima = ticks.Select(t => t.PriceAvg).ToArray().Trima(period, out outBegIdx, out outNBElement);
-      var up = ticks.Count;
-      return Enumerable.Range(outBegIdx, ticks.Count - outBegIdx)
-        .Select(i => outTrima[i + 1 - period])
-        .ToArray();
-    }
     public static TBar FindBar<TBar>(this IEnumerable<TBar> bars, DateTime startDate) where TBar : BarBaseDate {
       if (bars.Count() < 2) return bars.FirstOrDefault();
       var l = new LinkedList<TBar>(bars.OrderBars());
@@ -1723,63 +1711,6 @@ namespace HedgeHog.Bars {
         rates.OfType<Tick>().OrderByDescending(r => r.StartDate).ThenByDescending(r => r.Row).OfType<T>() : rates.ToArray().OrderByDescending(r => r.StartDate);
     }
 
-    class DistanceInfo {
-      public double Distance { get; set; }
-      public double Ask { get; set; }
-      public double Bid { get; set; }
-      public DateTime StartDate { get; set; }
-      public DistanceInfo(double ask, double bid, DateTime startDate) {
-        this.Ask = ask;
-        this.Bid = bid;
-        this.StartDate = startDate;
-
-      }
-    }
-    public static RateDistance[] GetDistances(this ICollection<Rate> ticks) {
-      var period = ticks.GetPeriod();
-      //var tickDistances = (from t in ticks
-      //                     //orderby t.StartDate
-      //                     select t into t
-      //                     join t1 in ticks on t.Index equals t1.Index + 1.0
-      //                     select new { Distance = Math.Abs((double)(t.AskClose - t1.AskClose)), Ask = t.AskClose, Bid = t.BidClose, StartDate = t.StartDate.AddMilliseconds(-t.StartDate.Millisecond) }).ToArray();
-      if (period >= TimeSpan.FromMinutes(1)) {
-        var rds = new List<RateDistance>();
-        ticks.ToList().ForEach(t => {
-          rds.Insert(0, new RateDistance(t.PriceHigh, t.PriceLow, 0, t.StartDate));
-        });
-        return rds.ToArray();
-      }
-      var distances = new List<DistanceInfo>();
-      ticks.Aggregate((tp, tn) => {
-        distances.Insert(0,
-          new DistanceInfo(tn.AskClose, tn.BidClose, tn.StartDate.AddMilliseconds(-tn.StartDate.Millisecond)));
-        return tn;
-      });
-      int i = 0;
-      return (from t in
-                from t in distances
-                //orderby t.StartDate descending
-                select t
-              group t by t.StartDate into g
-              let l = ++i
-              select new {
-                g, MA = g.Skip(l).Take(5).DefaultIfEmpty().Average(ga => {
-                  if (ga != null) {
-                    return (ga.Ask + ga.Bid) / 2.0;
-                  }
-                  return 0.0;
-                })
-              }).Select(gMA => {
-                if (gMA.g == null) {
-                  Debugger.Break();
-                }
-                return new RateDistance(
-                  gMA.g.Average(t => t.Ask),
-                  gMA.g.Average(t => t.Bid),
-                  gMA.MA,
-                  gMA.g.Key);
-              }).ToArray<RateDistance>();
-    }
     public static PriceBar[] GetPriceBars(this ICollection<Rate> Rates, double PointSize, int rowCountOffset) {
       int periodMin = 1;
       double rowCurr;

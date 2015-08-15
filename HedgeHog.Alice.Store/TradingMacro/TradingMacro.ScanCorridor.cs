@@ -1243,9 +1243,6 @@ namespace HedgeHog.Alice.Store {
       CenterOfMassSell = min;
     }
 
-    private CorridorStatistics ScanCorridorByTime(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), new Lazy<int>(() => (BarsCountCalc * CorridorDistanceRatio).ToInt()), ShowVoltsByVolatility);
-    }
     int CalcCorridorLengthByRsdFast(double[] ratesReversed, int countStart, double diffRatio) {
       var rsdMax = double.NaN;
       Func<int, int> calcRsd = (count) => {
@@ -1645,10 +1642,10 @@ namespace HedgeHog.Alice.Store {
           .DefaultIfEmpty(indeX)
           .First());
 
-        var indexRed = indexRB(indexGreen, WaveRangeAvg.Distance, 1);
+        var indexRed = indexRB(indexGreen, WaveRangeAvg.Distance, 0);
         index = indexRed.c;
 
-        var indexBlue = indexRB(indexRed, WaveRangeAvg.Distance, 2);
+        var indexBlue = indexRB(indexRed, WaveRangeAvg.Distance, 0);
         _corridorLength2 = indexBlue.c;
         _corridorStartDate2 = rates[_corridorLength2].StartDate;
 

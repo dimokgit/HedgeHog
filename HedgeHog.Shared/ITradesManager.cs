@@ -19,6 +19,7 @@ namespace HedgeHog.Shared {
 
     #region Common Info
     DateTime ServerTime { get; }
+    void SetServerTime(DateTime serverTime);
     double Leverage(string pair);
     double PipsToMarginCall { get; }
 
@@ -169,9 +170,8 @@ namespace HedgeHog.Shared {
 
 
     public static DateTime GetVirtualServerTime(this IList<Rate> rates, int barMinutes) {
-      if (rates == null || !rates.Any()) return DateTime.MinValue;
-      var rateLast = rates[rates.Count - 1];
-      return rateLast.StartDate.AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/;
+      if (rates == null || rates.Count == 0) return DateTime.MinValue;
+      return rates.Last().StartDate;
     }
     public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
     public static int GetLotSize(double lot, int baseUnitSize, bool useCeiling) {
