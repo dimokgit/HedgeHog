@@ -62,7 +62,9 @@
     this.data = Enumerable.from([]);
   }
   var tpsOpacity = 0.25;
-  var tickAreaBgColor = "lavender";
+  var tickAreaBgColor = "lightgray";//lavender";
+  var doCorridorStartDate = false;
+  var showLineLog = true;
   ko.bindingHandlers.lineChart = {
     init: function (element,valueAccessor) {
       "use strict";
@@ -125,13 +127,17 @@
       addLine("2_1"); addLine("3_1");
       // Other lines
       addLine("buyEnter"); addLine("sellEnter"); addLine("buyClose"); addLine("sellClose");
-      addLine("corridorStart");
-      svg
-        .append("path")
-        .attr("id", "clearStartDate")
-        .attr("d", d3.svg.symbol().type("circle").size(150))
-        .on("click", chartData.toggleStartDate.bind(chartData, chartData.chartNum))
-      ;
+      //#region Corridor StartDate
+      if (doCorridorStartDate) {
+        addLine("corridorStart");
+        svg
+          .append("path")
+          .attr("id", "clearStartDate")
+          .attr("d", d3.svg.symbol().type("circle").size(150))
+          .on("click", chartData.toggleStartDate.bind(chartData, chartData.chartNum))
+        ;
+      }
+      //#endregion
       svg.selectAll("path.nextWave")
           .data([10, 20])
           .enter()
@@ -204,7 +210,7 @@
       }
       var data = ko.unwrap(chartData.data);
       //function roundDate(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()); }
-      //var bufferCount = Math.floor(chartData.data.length / $(element).width());
+      var bufferCount = Math.floor(chartData.data.length / $(element).width());
       //var startDate = roundDate(chartData.data[0].d);
       //var leftTail = Enumerable
       //  .from(lineChart.data.toArray())
@@ -225,11 +231,21 @@
       //  })
       //  .toArray();
       //var data = leftTail.toArray().concat(chartData.data);
-      //if (data.length === 0) {
-      //  $(element).hide();
-      //  return;
-      //}
-      // #region parse data from the data-view-model
+      var __data__ = Enumerable
+        .from(data)
+        .buffer(bufferCount)
+        .select(function (a) {
+          var max = _.max(a, function (e) { return Math.abs(e.c - e.m); });
+          var f = { c: max.c, m: max.m, d: max.d, v: _.max(a, 'v').v };
+          return f;
+        });
+
+      if (data.length === 0) {
+        $(element).hide();
+        return;
+      }
+      $(element).show();
+      //#region parse data from the data-view-model
       var tradeLevels = chartData.tradeLevels;
       var trendLines = chartData.trendLines;
       var trendLines2 = chartData.trendLines2;
@@ -261,7 +277,9 @@
           yAxis2 = hasTps ? d3.svg.axis().scale(y2).orient("right") : null;
           // define the graph line
       var line = d3.svg.line()
-          .x(function (d) { return x(d.d); })
+          .x(function (d) {
+            return x(d.d);
+          })
           .y(function (d) {
             return y(d.c);
           });
@@ -323,12 +341,18 @@
       // #endregion
 
       // #region add the price line to the canvas
-      var dataLine = svg.select("path.line.data")
-        .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue");
       if (shouldUpdateData) {
-        dataLine
-          .datum(data)
+        if (chartNum === 1 && showLineLog) 
+          var lineLogDate = new Date();
+        svg.select("path.line.data").remove();
+        svg.append("path").attr("class", "line data")
+          .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue")
+          .datum(bufferCount >= 3 ? __data__.toArray() : data)
           .attr("d", line);
+        if (lineLogDate) {
+          var lineLogDate2 = new Date(new Date() - lineLogDate);
+          console.log("lineLogDate[" + chartNum + "]: " + (lineLogDate2.getSeconds() * 1000 + lineLogDate2.getMilliseconds()) / 1000 + " sec");
+        }
         //svg.select("path.line.dataMA")
         //  .datum(data)
         //  .attr("d", line1);
@@ -363,17 +387,19 @@
       // #endregion
 
       // #region Corridor start date line
-      var corridorStartTime = (trendLines.dates ||[])[0];
-      if (corridorStartTime) {
-        setTimeLine(corridorStartTime, "corridorStart", chartData.hasStartDate ? "darkred" : "darkorange", chartData.hasStartDate ? 2 : 1);
-        svg.select("path#clearStartDate")
-          .attr("transform", "translate(" + x(corridorStartTime) + "," + (height - 7) + ")");
-        svg.selectAll("path.nextWave")
-          .data([-18, 18])
-          .attr("transform", function (d) {
-            return "translate(" + (x(corridorStartTime) + d) + ",7) rotate(-90)";
-          })
-        ;
+      if (doCorridorStartDate) {
+        var corridorStartTime = (trendLines.dates || [])[0];
+        if (corridorStartTime) {
+          setTimeLine(corridorStartTime, "corridorStart", chartData.hasStartDate ? "darkred" : "darkorange", chartData.hasStartDate ? 2 : 1);
+          svg.select("path#clearStartDate")
+            .attr("transform", "translate(" + x(corridorStartTime) + "," + (height - 7) + ")");
+          svg.selectAll("path.nextWave")
+            .data([-18, 18])
+            .attr("transform", function (d) {
+              return "translate(" + (x(corridorStartTime) + d) + ",7) rotate(-90)";
+            })
+          ;
+        }
       }
       // #endregion
       // #endregion
@@ -580,7 +606,7 @@
           //.style("stroke", rectColour)  // colour the line
           .attr("x", x(date1)) // x position of the first end of the line
           .attr("y", y(level1)) // y position of the first end of the line
-          .attr("width", x(date2) - y(date1)) // x position of the second end of the line
+          .attr("width", x(date2) - x(date1)) // x position of the second end of the line
           .attr("height", y(level2) - y(level1));// y position of the second end of the line
       }
       function setTrendLine2(trendLines, lineNumber, trendIndex, lineColour) {
