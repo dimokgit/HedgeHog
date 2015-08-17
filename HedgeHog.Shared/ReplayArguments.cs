@@ -126,6 +126,9 @@ namespace HedgeHog.Shared {
     public bool IsMyTurn(TTradingMacro tm) {
       return TradingMacros[_TradingMacrosIndex].Equals(tm);
     }
+    public TTradingMacro WhoseTurn(TTradingMacro tm) {
+      return TradingMacros[_TradingMacrosIndex];
+    }
     public void NextTradingMacro() {
       _TradingMacrosIndex = (_TradingMacrosIndex + 1) % TradingMacros.Count;
     }

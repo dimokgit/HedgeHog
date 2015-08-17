@@ -1229,6 +1229,7 @@ namespace HedgeHog.Alice.Store {
         }
       }
       RaisePositionsChanged();
+      IsTradingActive = IsInVitualTrading;
     }
 
     void TradesManager_OrderChanged(object sender, OrderEventArgs e) {
@@ -1380,6 +1381,8 @@ namespace HedgeHog.Alice.Store {
         });
       }
     }
+
+    static EventWaitHandle _waitHandle = new AutoResetEvent(false);
     public void Replay(ReplayArguments<TradingMacro> args) {
       if (!args.DateStart.HasValue) {
         Log = new ApplicationException("Start Date error.");
@@ -1421,11 +1424,12 @@ namespace HedgeHog.Alice.Store {
         if (fw != null)
           PriceHistory.AddTicks(fw, BarPeriodInt, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-BarsCountCount() * 2)), o => Log = new Exception(o + ""));
         //GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
-        var moreMinutes = (args.DateStart.Value.DayOfWeek == DayOfWeek.Monday ? 17 * 60 + 24 * 60 : args.DateStart.Value.DayOfWeek == DayOfWeek.Saturday ? 1440 : 0);
         var internalRateCount = BarsCountCount();
-        var _replayRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, args.DateStart.Value.ToUniversalTime(), BarsCountCount(), BarPeriodInt);
+        var doGroupTick = tms().Skip(1).Take(1).Any(tm => tm == this && tm.BarPeriod == BarsPeriodType.t1);
+        Func<List<Rate>, List<Rate>> groupTicks = rates => doGroupTick ? GroupTicksToSeconds(rates) : rates;
+        var _replayRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, args.DateStart.Value.ToUniversalTime(), BarsCountCount(), BarPeriodInt, groupTicks);
         _replayRates.CopyLast(1).Select(r => r.StartDate2)
-          .ForEach(startDate => _replayRates.AddRange(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, startDate, BarsCount, BarPeriodInt)));
+          .ForEach(startDate => _replayRates.AddRange(groupTicks(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, startDate, BarsCount, BarPeriodInt))));
         //var rateStart = rates.SkipWhile(r => r.StartDate < args.DateStart.Value).First();
         //var rateStartIndex = rates.IndexOf(rateStart);
         //var rateIndexStart = (rateStartIndex - BarsCount).Max(0);
@@ -1483,7 +1487,7 @@ namespace HedgeHog.Alice.Store {
         BarsCountLastDate = DateTime.MinValue;
         TradesManager.ResetClosedTrades(Pair);
         _onElliotTradeCorridorDate = DateTime.MinValue;
-        _tradeConditionsTriggerDate = DateTime.MinValue;
+        _waitHandle.Set();
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if (!_replayRates.Any()) throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
@@ -1491,14 +1495,8 @@ namespace HedgeHog.Alice.Store {
         bool noMoreDbRates = false;
         var isReplaying = false;
         while (!args.MustStop && indexCurrent < _replayRates.Count && Strategy != Strategies.None) {
-          Stopwatch sw = Stopwatch.StartNew();
-          while (isReplaying && !args.IsMyTurn(this)) {
-            //Task.Factory.StartNew(() => {
-            //  while (!args.IsMyTurn(this) && !args.MustStop)
-            //Thread.Sleep(1);
-            if (args.MustStop) return;
-            //}).Wait();
-          }
+          if (isReplaying && !IsTrader)
+            _waitHandle.WaitOne(10000);
           if (tms().Count == 1 && currentPosition > 0 && currentPosition != args.CurrentPosition) {
             var index = (args.CurrentPosition * (_replayRates.Count - BarsCountCalc) / 100.0).ToInt();
             UseRatesInternal(ri => {
@@ -1522,7 +1520,7 @@ namespace HedgeHog.Alice.Store {
                 } else rate = ri.Last();
               });
             } else {
-              if (isReplaying && BarPeriod!= BarsPeriodType.t1 && tms().Count > 1) {
+              if (isReplaying && BarPeriod != BarsPeriodType.t1 && tms().Count > 1) {
                 var rateLast = UseRatesInternal(ri => ri.Last(), 15 * 1000);
                 var a = tms().Select(tm =>
                     tm.RatesInternal.LastBC().YieldNotNull().Select(r => r.StartDate).DefaultIfEmpty().First()).ToArray();
@@ -1534,7 +1532,7 @@ namespace HedgeHog.Alice.Store {
                   continue;
               }
               if (!noMoreDbRates && indexCurrent > _replayRates.Count - BarsCount * .10) {
-                var moreRates = GlobalStorage.GetRateFromDBForwards<Rate>(Pair, _replayRates.Last().StartDate2, BarsCount, BarPeriodInt);
+                var moreRates = groupTicks(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, _replayRates.Last().StartDate2, BarsCount, BarPeriodInt));
                 if (moreRates.Count == 0)
                   noMoreDbRates = true;
                 else {
@@ -1545,7 +1543,7 @@ namespace HedgeHog.Alice.Store {
                   indexCurrent -= slack;
                 }
               }
-              rate = _replayRates[indexCurrent+1];
+              rate = _replayRates[indexCurrent + 1];
               if (!UseRatesInternal(ri => {
                 if (isReplaying && CloseTradesBeforeNews) {
                   var mi = _replayRates.Count - 1;
@@ -1570,6 +1568,9 @@ namespace HedgeHog.Alice.Store {
                     && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || ri[0] < CorridorStats.Rates.LastBC())))
                   ri.RemoveAt(0);
                 return true;
+              }, 1000, () => {
+                Log = new Exception("Replay: UseRatesInternal timeout >" + 1000 + "ms");
+                return false;
               }))
                 continue;
             }
@@ -1584,6 +1585,7 @@ namespace HedgeHog.Alice.Store {
               //} else if (RatesArraySafe.LastBC().StartDate < args.DateStart.Value) {
               //  continue;
             } else {
+              if (!isReplaying) Log = new Exception(new { Pair, PairIndex, isReplaying = "Start" } + "");
               isReplaying = true;
               var rateLast = UseRatesInternal(ri => ri.Last());
               LastRatePullTime = rateLast.StartDate;
@@ -1592,9 +1594,12 @@ namespace HedgeHog.Alice.Store {
               var d = Stopwatch.StartNew();
               if (rate != null) {
                 if ((BarPeriod != BarsPeriodType.t1 || ratePrev == null || ratePrev.StartDate.Second != rate.StartDate.Second)) {
+                  if (tms().Skip(1).FirstOrDefault() == this && tms().First().BarPeriod == BarPeriod)
+                    while (rate.StartDate.AddSeconds(1) < ServerTime && indexCurrent < _replayRates.Count)
+                      rate = _replayRates[indexCurrent++];
+                  if (indexCurrent >= _replayRates.Count) continue;
                   ratePrev = rate;
                   args.CurrentPosition = currentPosition = (100.0 * (indexCurrent - BarsCountCalc) / (_replayRates.Count - BarsCountCalc)).ToInt();
-                  var price = new Price(Pair, rateLast);
                   if (this.TradingMacrosByPair().First() == this) {
                     TradesManager.SetServerTime(RatesInternal.Last().StartDate);
                     TradesManager.RaisePriceChanged(Pair, BarPeriodInt, new Price(Pair, rate));
@@ -1630,7 +1635,9 @@ namespace HedgeHog.Alice.Store {
               }
             }
           } finally {
-            args.NextTradingMacro();
+            //args.NextTradingMacro();
+            if (IsTrader)
+              _waitHandle.Set();
           }
         }
         Log = new Exception("Replay for Pair:{0}[{1}] done.".Formater(Pair, BarPeriod));
@@ -1659,6 +1666,10 @@ namespace HedgeHog.Alice.Store {
           MessageBox.Show(exc.ToString(), "Replay");
         }
       }
+    }
+
+    public static List<TBar> GroupTicksToSeconds<TBar>(List<TBar> rates)where TBar:BarBase,new() {
+      return rates.GroupAdjacentTicks(TimeSpan.FromSeconds(1)).ToList();
     }
 
     private void ReplayEvents() {
@@ -2056,7 +2067,8 @@ namespace HedgeHog.Alice.Store {
           Stopwatch sw = Stopwatch.StartNew();
           var rateLast = UseRatesInternal(ri => ri.LastOrDefault());
           var rs = rateLast.AskHigh - rateLast.BidLow;
-          if (rateLast != null && (rateLast != RateLast || rs != _ratesSpreadSum || RatesArray == null || RatesArray.Count == 0)) {
+          var rs2 = RateLast == null ? 0 : RateLast.AskHigh - RateLast.BidLow;
+          if (rateLast != null && (rateLast != RateLast || rs != rs2 || RatesArray == null || RatesArray.Count == 0)) {
 
             var swDict = new Dictionary<string, double>();
 
@@ -2070,7 +2082,8 @@ namespace HedgeHog.Alice.Store {
               RatesDuration = (RatesArray.Last().StartDate2 - RatesArray[0].StartDate2).TotalMinutes.ToInt();
             });
             IsAsleep = Trades.Length == 0 && IsInVitualTrading && TradeConditionsInfo<TradeConditionOtherCorridorAttribute>().Any(d => !d().Any());
-
+            if (IsAsleep)
+              ResetBarsCountCalc();
             var prices = RatesArray.ToArray(_priceAvg);
             RatesHeight = prices.Height(out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
 
@@ -2083,7 +2096,7 @@ namespace HedgeHog.Alice.Store {
             OnSetBarsCountCalc();
             if (IsInVitualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
-            PriceSpreadAverage = RatesArray.Average(r => r.PriceSpread);//.ToList().AverageByIterations(2).Average();
+            PriceSpreadAverage = PriceSpreadAverage.Cma( 10, RateLast.PriceSpread);// (;//.ToList().AverageByIterations(2).Average();
             #endregion
             SpreadForCorridor = RatesArray.Spread();
             SetMA();
@@ -2755,8 +2768,7 @@ namespace HedgeHog.Alice.Store {
         case Store.MovingAverageType.Cma:
           if (PriceCmaLevels > 0) {
             UseRates(rates => {
-              rates.Cma(_priceAvg, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma);
-              Enumerable.Range(1, CmaPasses).ForEach(_ => rates.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma));
+              SetCma(rates);
             });
             //UseRates(rates => {
             //  rates.Aggregate(double.NaN, (ma, r) => r.PriceCMALast = ma.Cma(PriceCmaLevels, r.PriceAvg));
@@ -2773,6 +2785,12 @@ namespace HedgeHog.Alice.Store {
           break;
       }
     }
+
+    private void SetCma(List<Rate> rates) {
+      rates.Cma(_priceAvg, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma);
+      Enumerable.Range(1, CmaPasses).ForEach(_ => rates.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma));
+    }
+
     private static void SetMAByFtt(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate, double> setValue, double lastHarmonicRatioIndex) {
       rates.Zip(rates.ToArray(getPrice).Fft(lastHarmonicRatioIndex), (rate, d) => { setValue(rate, d); return 0; }).Count();
     }
@@ -2899,7 +2917,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_IsTrender != value) {
           _IsTrender = value;
-          LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
+          //LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
           SuppRes.ForEach(sr => sr.ResetPricePosition());
           OnPropertyChanged("IsTrender");
           var tmo = TradingMacroOther();
@@ -2923,17 +2941,22 @@ namespace HedgeHog.Alice.Store {
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
       get {
-        var tmt = TradingMacroOther(tm => !tm.IsAsleep && tm.IsTrender).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
-        var isDefault = !IsTrader;
+        var tmt = TradingMacroOther(tm => !tm.IsAsleep && tm.IsTrender && !tm.TrendLinesTrends.IsEmpty).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
+        if (!IsTrader)
+          throw new Exception(new { TradeLevelFuncs=new { IsTrader } } + "");
+        Func<double> maxDefault = () => UseRates(rates => rates.Max(_priceAvg));
+        Func<double> minDefault = () => UseRates(rates => rates.Min(_priceAvg));
         Func<Func<TradingMacro, double>, double> level = f => f(tmt.Where(tm => tm.IsTrader).DefaultIfEmpty(tmt.First()).First());
-        Func<Func<TradingMacro, double>, double> levelMax = f => isDefault ? RatesMax : tmt.Max(tm => f(tm));
-        Func<Func<TradingMacro, double>, double> levelMin = f => isDefault ? RatesMin : tmt.Min(tm => f(tm));
+        Func<Func<TradingMacro, double>, double> levelMax = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMax).Max().IfNaN(maxDefault);
+        Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMin).Min().IfNaN(minDefault);
         if (_TradeLevelFuncs == null)
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           {
           {TradeLevelBy.PriceAvg1,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg1)},
-          {TradeLevelBy.PriceAvg1Max,()=>levelMax(tm=>TrendLinesTrendsPriceMax( tm,tls=>tls.PriceAvg1))},
-          {TradeLevelBy.PriceAvg1Min,()=>levelMin(tm=>TrendLinesTrendsPriceMin( tm,tls=>tls.PriceAvg1))},
+          {TradeLevelBy.Avg1Max,()=>levelMax(tm=>tm.TrendLinesTrends.PriceAvg1) },
+          {TradeLevelBy.Avg1Min,()=>levelMin(tm=>tm.TrendLinesTrends.PriceAvg1) },
+          {TradeLevelBy.Avg1GRBMax,()=>levelMax(tm=>tm.TrendLinesTrendsPriceMax( tm,tls=>tls.PriceAvg1)) },
+          {TradeLevelBy.Avg1GRBMin,()=>levelMin(tm=>tm.TrendLinesTrendsPriceMin( tm,tls=>tls.PriceAvg1)) },
 
           {TradeLevelBy.PriceAvg02,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg02)},
           {TradeLevelBy.PriceAvg2,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg2)},
@@ -2968,29 +2991,32 @@ namespace HedgeHog.Alice.Store {
       var tp = double.NaN;
       switch (function) {
         case TradingMacroTakeProfitFunction.Pips:
-          return InPoints(xRatio);
+          tp= InPoints(xRatio);
+          break;
         case TradingMacroTakeProfitFunction.Wave:
-          return InPoints(WaveHeightAverage) * xRatio;
+          if (WaveRanges.Count == 0) throw new Exception(new { WaveRanges = new { Count = WaveRanges.Count } } + "");
+          tp= InPoints(WaveHeightAverage) * xRatio;
+          break;
         #region RatesHeight
-        case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight * TradingDistanceX; break;
+        case TradingMacroTakeProfitFunction.RatesHeight:
+          tp = RatesHeight * xRatio;
+          break;
         #endregion
         #region BuySellLevels
         case TradingMacroTakeProfitFunction.BuySellLevels:
-          tp = (BuyLevel.Rate - SellLevel.Rate).Abs();
-          tp *= TakeProfitXRatio;
-          tp += PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2 + InPoints(this.CommissionInPips());
+          tp = (BuyLevel.Rate - SellLevel.Rate).Abs() * xRatio;
           break;
         #endregion
         default:
           throw new NotImplementedException(new { function, source = "GetValueByTakeProfitFunction" } + "");
       }
-      TakeProfitManual.Max(tp);
-      return tp;
+      return TakeProfitManual.Max(tp + PriceSpreadAverage.GetValueOrDefault(0) * 2 + InPoints(this.CommissionInPips()) * 2);
     }
 
     ScanCorridorDelegate GetScanCorridorFunction(ScanCorridorFunction function) {
       switch (function) {
         case ScanCorridorFunction.WaveStDevHeight: return ScanCorridorByStDevHeight;
+        case ScanCorridorFunction.OneTwoThree: return ScanCorridorBy123;
         case ScanCorridorFunction.WaveCount: return ScanCorridorByWaveCount;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
         case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
@@ -3387,9 +3413,11 @@ namespace HedgeHog.Alice.Store {
     }
     object _innerRateLocker = new object();
     string _UseRatesInternalSource = string.Empty;
-    public T UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000) {
-      if (!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds))
+    public T UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000,Func<T> onTimeout = null) {
+      if (!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds)) {
+        if (onTimeout != null) return onTimeout();
         throw new TimeoutException("[" + Pair + "] _innerRateLocker was busy for more then " + timeoutInMilliseconds + " ms. RatesInternal.Count:" + RatesInternal.Count + "\nSource:\n" + _UseRatesInternalSource);
+      }
       try {
         //_UseRatesInternalSource = string.Join("\n", Enumerable.Range(1, 3)
         //  .Select(frame => new[] { new StackFrame(frame, true) }
@@ -3444,7 +3472,8 @@ namespace HedgeHog.Alice.Store {
             startDate = ratesList.Select(r => r.StartDate).DefaultIfEmpty(startDate).First();
             if (startDate != TradesManagerStatic.FX_DATE_NOW && _Rates.Count > 10)
               periodsBack = 0;
-            RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, ratesList);
+            var groupTicks = BarPeriod == BarsPeriodType.t1 && PairIndex == 2;
+            RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, ratesList,groupTicks);
             if (BarPeriod != BarsPeriodType.t1) {
               var rateLastDate = ratesList.Last().StartDate;
               var delay = ServerTime.Subtract(rateLastDate).Duration();
@@ -3453,7 +3482,7 @@ namespace HedgeHog.Alice.Store {
                 if (delay > (delayMax + delayMax))
                   Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
                 ratesList.RemoveAt(ratesList.Count - 1);
-                RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, ratesList);
+                RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, ratesList,groupTicks);
               }
             }
             {
@@ -4106,13 +4135,13 @@ namespace HedgeHog.Alice.Store {
 
     public Tuple<Rate, Rate, int> _waveLong { get; set; }
 
-    private double _RatesMax = 0;
+    private double _RatesMax = double.NaN;
     public double RatesMax {
       get { return _RatesMax; }
       set { _RatesMax = value; }
     }
 
-    private double _RatesMin = 0;
+    private double _RatesMin = double.NaN;
     public double RatesMin {
       get { return _RatesMin; }
       set { _RatesMin = value; }

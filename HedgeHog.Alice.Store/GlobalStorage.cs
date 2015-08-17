@@ -264,7 +264,16 @@ namespace HedgeHog.Alice.Store {
         return GetRatesFromDBBars(bars);
       });
     }
-    public static List<TBar> GetRateFromDBBackwards<TBar>(string pair, DateTime endDate, int barsCount, int minutesPerPriod) where TBar : BarBase, new() {
+    public static List<TBar> GetRateFromDBBackwards<TBar>(string pair, DateTime endDate, int barsCount, int minutesPerPriod,Func<List<TBar>,List<TBar>> map) where TBar : BarBase, new() {
+      var rates = map(GetRateFromDBBackwards<TBar>(pair, endDate, barsCount, minutesPerPriod));
+      while(rates.Count< barsCount) {
+        var moreRates = map(GetRateFromDBBackwards<TBar>(pair, rates[0].StartDate.ToUniversalTime(), barsCount, minutesPerPriod));
+        if (moreRates.Count == 0) throw new Exception(new { pair, barsCount, minutesPerPriod, error = "Don't have that much." } + "");
+        rates = moreRates.Take(barsCount - rates.Count).Concat(rates).ToList();
+      }
+      return rates;
+    }
+    public static List<TBar> GetRateFromDBBackwards<TBar>(string pair, DateTime endDate, int barsCount, int minutesPerPriod ) where TBar : BarBase, new() {
       return (minutesPerPriod == 0
         ? GetRateFromDBBackwardsInternal<Tick>(pair, endDate, barsCount, minutesPerPriod).Cast<TBar>().ToList()
         : GetRateFromDBBackwardsInternal<TBar>(pair, endDate, barsCount, minutesPerPriod));

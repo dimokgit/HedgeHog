@@ -608,22 +608,114 @@ namespace HedgeHog.Bars {
         Empty = new TrendLevels(0,double.NaN, double.NaN);
       }
       public bool IsEmpty { get { return Count == 0; } }
-      public double PriceAvg1 { get; set; }
+      double _PriceAvg1 = double.NaN;
 
-      public double PriceAvg2 { get; set; }
-      public double PriceAvg02 { get; set; }
-      public double PriceAvg21 { get; set; }
-      public double PriceAvg22 { get; set; }
-      
-      public double PriceAvg03 { get; set; }
-      public double PriceAvg3 { get; set; }
-      public double PriceAvg31 { get; set; }
-      public double PriceAvg32{ get; set; }
+      double _PriceAvg2 = double.NaN;
+      double _PriceAvg02 = double.NaN;
+      double _PriceAvg21 = double.NaN;
+      double _PriceAvg22 = double.NaN;
+
+      double _PriceAvg03 = double.NaN;
+      double _PriceAvg3 = double.NaN;
+      double _PriceAvg31 = double.NaN;
+      double _PriceAvg32 = double.NaN;
+
       
       public double Slope { get; set; }
       public double StDev { get; set; }
       public int Count { get; set; }
       public double Angle { get; set; }
+
+      public double PriceAvg1 {
+        get {
+          return _PriceAvg1;
+        }
+
+        set {
+          _PriceAvg1 = value;
+        }
+      }
+
+      public double PriceAvg2 {
+        get {
+          return _PriceAvg2;
+        }
+
+        set {
+          _PriceAvg2 = value;
+        }
+      }
+
+      public double PriceAvg02 {
+        get {
+          return _PriceAvg02;
+        }
+
+        set {
+          _PriceAvg02 = value;
+        }
+      }
+
+      public double PriceAvg21 {
+        get {
+          return _PriceAvg21;
+        }
+
+        set {
+          _PriceAvg21 = value;
+        }
+      }
+
+      public double PriceAvg22 {
+        get {
+          return _PriceAvg22;
+        }
+
+        set {
+          _PriceAvg22 = value;
+        }
+      }
+
+      public double PriceAvg03 {
+        get {
+          return _PriceAvg03;
+        }
+
+        set {
+          _PriceAvg03 = value;
+        }
+      }
+
+      public double PriceAvg3 {
+        get {
+          return _PriceAvg3;
+        }
+
+        set {
+          _PriceAvg3 = value;
+        }
+      }
+
+      public double PriceAvg31 {
+        get {
+          return _PriceAvg31;
+        }
+
+        set {
+          _PriceAvg31 = value;
+        }
+      }
+
+      public double PriceAvg32 {
+        get {
+          return _PriceAvg32;
+        }
+
+        set {
+          _PriceAvg32 = value;
+        }
+      }
+
       public TrendLevels(int count, double slope,double stDev) {
         this.Count = count;
         this.Slope = slope;

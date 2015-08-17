@@ -106,7 +106,7 @@ namespace HedgeHog.Shared {
     double CommissionByTrades(params Trade[] trades);
     IList<Rate> GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate);
 
-    Tick[] GetTicks(string pair, int periodsBack);
+    Tick[] GetTicks(string pair, int periodsBack,Func<List<Tick>,List<Tick>> map);
 
     void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim);
 

@@ -1249,7 +1249,7 @@ namespace HedgeHog.Bars {
              group tick by tick.StartDate2.AddMilliseconds(-tick.StartDate2.Millisecond) into gt
              select GroupToRate(gt);
     }
-    public static IEnumerable<Rate> GroupAdjacentTicks(this IEnumerable<Rate> ticks, TimeSpan interval) {
+    public static IEnumerable<TBar> GroupAdjacentTicks<TBar>(this IEnumerable<TBar> ticks, TimeSpan interval)where TBar:BarBase,new() {
       return ticks.GroupByAdjacent(t=>t.StartDate2,(t1, t2) => (t1 - t2).Duration() <= interval)
         .Select(GroupToRate);
     }
@@ -1263,8 +1263,8 @@ namespace HedgeHog.Bars {
              select map(gt);
     }
 
-    public static Rate GroupToRate(this IGrouping<DateTimeOffset, Rate> gt) {
-      return new Rate() {
+    public static TBar GroupToRate<TBar>(this IGrouping<DateTimeOffset, TBar> gt)where TBar:BarBase,new() {
+      return new TBar() {
         StartDate2 = gt.Key,
         AskOpen = gt.First().AskOpen,
         AskClose = gt.Last().AskClose,

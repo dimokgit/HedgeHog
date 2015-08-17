@@ -1434,6 +1434,38 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
+    private CorridorStatistics ScanCorridorBy123Ex(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var leg = ratesForCorridor.Count / 3;
+      _corridorLength1 = leg;
+      _corridorLength2 = ratesForCorridor.Count;
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), MonoidsCore.ToLazy(() => leg * 2));
+    }
+    private CorridorStatistics ScanCorridorBy123(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var rates = ratesForCorridor.Reverse().ToList();
+      var legs = rates.Select(r => r.PriceCMALast).Distances().Select((d, i) => new { d, i }).ToList();
+      var leg = legs.Last().d.Div(6);
+      var sectionStarts = legs.DistinctUntilChanged(a => a.d.Div(leg).Floor()).ToList();
+      var sections = sectionStarts.Zip(sectionStarts.Skip(1), (p, n) => {
+        var coeffs = legs.GetRange(p.i, n.i - p.i).Select(a => a.d).ToArray().Linear();
+        return new { end = n.i, start = p.i, coeffs };
+      }).ToList();
+      Func<Rate,int> rateIndex =rate=> rates.FuzzyFind(rate, (r, r1, r2) => r.StartDate.Between(r1.StartDate, r2.StartDate));
+      {
+        Func<int, int, double[], Rate> getExtreamRate = (start, end, coeffs) => {
+          var offset = ((end - start) * 0.2).ToInt();
+          var range = rates.GetRange(start - offset, offset);
+          var line = coeffs.RegressionLine(range.Count);
+          var zip = line.Zip(range, (l, r) => new { l=l.Abs(r.PriceAvg), r });
+          return zip.MaxBy(x => x.l).First().r;
+        };
+        Func<int, Rate> getRate = start =>
+          sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end, a.coeffs)).First();
+        var rate = getRate(2);
+        _corridorLength1 = rateIndex(rate);
+        _corridorLength2 = ratesForCorridor.Count;
+        return ScanCorridorLazy(rates, MonoidsCore.ToLazy(() => rateIndex(getRate(4))));
+      }
+    }
     private CorridorStatistics ScanCorridorByWaveCount(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<int> freezedCount = () => CorridorStats.Rates.CopyLast(1).Select(r => RatesArray.SkipWhile(r2 => r2.StartDate < r.StartDate).Count()).FirstOrDefault(CorridorDistance);
       Func<int> freezedCount2 = () => CorridorStats.Rates.CopyLast(1)

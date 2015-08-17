@@ -757,6 +757,9 @@ namespace HedgeHog {
     public static double IfNaN(this double d, double defaultValue) {
       return double.IsNaN(d) ? defaultValue : d;
     }
+    public static double IfNaN(this double d, Func<double> defaultValue) {
+      return double.IsNaN(d) ? defaultValue() : d;
+    }
     public static double IfNaN(this double d, Lazy<double> defaultValue) {
       return double.IsNaN(d) ? defaultValue.Value : d;
     }

@@ -215,12 +215,12 @@ namespace HedgeHog.Alice.Store {
   
   public class RatesLoader {
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public void LoadRates(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList) {
+    public void LoadRates(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList,bool groupToSeconds) {
       var fetchRates = ratesList.Count() == 0;
       if (ratesList.Count() == -1) {
         if (periodMinutes > 0)
           ratesList.AddRange(fw.GetBarsFromHistory(pair, periodMinutes, TradesManagerStatic.FX_DATE_NOW, endDate).Except(ratesList));
-        else ratesList.AddRange(fw.GetTicks(pair, periodsBack).Except(ratesList));
+        else ratesList.AddRange(fw.GetTicks(pair, periodsBack, groupToSeconds ? TradingMacro.GroupTicksToSeconds : (Func<List<Tick>, List<Tick>>)null).Except(ratesList));
       }
       //if (periodMinutes == 0) {
       //  var d = ratesList.OrderBarsDescending().TakeWhile(t => t.StartDate.Millisecond == 0)

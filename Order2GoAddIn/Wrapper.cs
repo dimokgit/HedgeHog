@@ -516,19 +516,20 @@ namespace Order2GoAddIn {
     #region Get (Ticks/Bars)
     private static object lockHistory = new object();
 
-    public Tick[] GetTicks(string pair, int tickCount) {
+    public Tick[] GetTicks(string pair, int tickCount,Func<List<Tick>,List<Tick>> map) {
+      if (map == null) map = l => l;
       DateTime startDate = DateTime.MinValue;
       var endDate = ServerTime;
-      var ticks = GetTicks(pair, startDate, endDate);
+      var ticks = map(GetTicks(pair, startDate, endDate));
       int timeoutCount = 2;
       if (ticks.Count() > 0) {
         var dateMin = ticks.Min(b => b.StartDate);
         endDate = ticks.SkipWhile(ts => ts.StartDate == dateMin).First().StartDate;
         while (ticks.Count() < tickCount) {
           try {
-            var t = GetTicks(pair, startDate, endDate);
+            var t = map(GetTicks(pair, startDate, endDate));
             if (t.Count() == 0) break;
-            ticks = ticks.Union(t).OrderBars().ToArray();
+            ticks = ticks.Union(t).OrderBars().ToList();
             dateMin = ticks.Min(b => b.StartDate);
             if (endDate > dateMin) {
               endDate = ticks.SkipWhile(ts => ts.StartDate == dateMin).First().StartDate;
@@ -665,8 +666,8 @@ namespace Order2GoAddIn {
         };
       }
     }
-    public Tick[] GetTicks(string pair, DateTime startDate, DateTime endDate) {
-      return GetBarsFromHistory(pair, 0, startDate, endDate).Cast<Tick>().ToArray();
+    public List<Tick> GetTicks(string pair, DateTime startDate, DateTime endDate) {
+      return GetBarsFromHistory(pair, 0, startDate, endDate).Cast<Tick>().ToList();
     }
     public Tick[] GetTicks(string pair, DateTime startDate, DateTime endDate, int barsMax) {
       lock (lockHistory) {

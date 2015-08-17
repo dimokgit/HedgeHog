@@ -44,7 +44,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\SkyDrive\Public\Forex\Builds\Debug_RealMicro 2\</OutputPath>
+    <OutputPath>..\..\..\..\OneDrive\Public\Forex\Builds\Debug_RealMicro 2\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -56,7 +56,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\..\SkyDrive\Public\Forex\Builds\Debug_RealMicro 2\</OutputPath>
+    <OutputPath>..\..\..\..\OneDrive\Public\Forex\Builds\Debug_RealMicro 2\</OutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -98,7 +98,7 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'TM 2|x86'">
-    <OutputPath>..\..\..\..\SkyDrive\Public\Forex\Builds\Debug_RealMicro 2\</OutputPath>
+    <OutputPath>..\..\..\..\OneDrive\Public\Forex\Builds\Debug_RealMicro 2\</OutputPath>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -2384,16 +2384,16 @@
     <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
   </Target>
   <PropertyGroup>
-    <PreBuildEvent>copy "$(ProjectDir)WWW\d3-knockout\app.js" "$(OutDir)WWW\d3-knockout\app.js"
+    <PreBuildEvent>rem copy "$(ProjectDir)WWW\d3-knockout\app.js" "$(OutDir)WWW\d3-knockout\app.js"
 
-copy "$(ProjectDir)WWW\trader4.html" "$(OutDir)WWW\Trader4.html"
+rem copy "$(ProjectDir)WWW\trader4.html" "$(OutDir)WWW\Trader4.html"
 
-copy "$(ProjectDir)WWW\d3-knockout\custom-binding-handlers\trend-line-chart-binding.js" "$(OutDir)WWW\d3-knockout\custom-binding-handlers\trend-line-chart-binding.js"
+rem copy "$(ProjectDir)WWW\d3-knockout\custom-binding-handlers\trend-line-chart-binding.js" "$(OutDir)WWW\d3-knockout\custom-binding-handlers\trend-line-chart-binding.js"
 
-xcopy "$(ProjectDir)WWW\styles" "$(OutDir)WWW\styles" /s /y /i /D
-xcopy "$(ProjectDir)WWW\HedgeHog.ico" "$(OutDir)WWW\HedgeHog.ico" /s /y /i /D
+rem xcopy "$(ProjectDir)WWW\styles" "$(OutDir)WWW\styles" /s /y /i /D
+rem xcopy "$(ProjectDir)WWW\HedgeHog.ico" "$(OutDir)WWW\HedgeHog.ico" /s /y /i /D
 
-xcopy "$(ProjectDir)WWW\Scripts" "$(OutDir)WWW\scripts" /s /y /i /D
+rem xcopy "$(ProjectDir)WWW\Scripts" "$(OutDir)WWW\scripts" /s /y /i /D
 </PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -42,7 +42,7 @@
 
   // #region Reset plotter
   var resetPlotterThrottleTime = 0.5 * 1000;
-  var resetPlotterThrottleTime2 = 2 * 1000;
+  var resetPlotterThrottleTime2 = 1 * 1000;
   var resetPlotter = _.throttle(askRates, resetPlotterThrottleTime);
   var resetPlotter2 = _.throttle(askRates2, resetPlotterThrottleTime2);
   var dateMin = new Date("1/1/9999");
@@ -570,7 +570,7 @@
       });
       lineChartData2.push.apply(lineChartData2, rates);
       lineChartData2.unshift.apply(lineChartData2, rates2);
-      var ratesAll = continuoseDates(lineChartData2(), [response.trendLines.dates, response.trendLines1.dates, response.trendLines2.dates]);
+      var ratesAll = lineChartData2;// continuoseDates(lineChartData2(), [response.trendLines.dates, response.trendLines1.dates, response.trendLines2.dates]);
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;
@@ -638,7 +638,7 @@
       waveRangesDialog = table[0];
       table.on("click", "tbody tr", function (a, b) {
         var koData = ko.dataFor(this);
-        var uid = waveRangeValue("Distance", koData);
+        var uid = waveRangeValue("Angle", koData);
         sumStartIndex(uid == sumStartIndex() ? 0 : uid);
       });
     };
@@ -670,7 +670,7 @@
     }
     function sumStartIndexById() {
       var uid = sumStartIndex();
-      var wr = fuzzyFind(waveRanges(), waveRangeValue.bind(null, "Distance"), uid);
+      var wr = fuzzyFind(waveRanges(), waveRangeValue.bind(null, "Angle"), uid);
       return waveRanges().indexOf(wr);
     }
     function sumByIndex (prop) {

@@ -52,6 +52,7 @@ namespace HedgeHog.Alice.Store {
     StDevSplits3 = 48,
     Height = 60,
     Ftt = 64,
+    OneTwoThree = 5,
   }
   public enum TrailingWaveMethod {
     SimpleMoveBO = 4,
@@ -108,8 +109,10 @@ namespace HedgeHog.Alice.Store {
     PriceMin1,
     MaxRG,
     MinRG,
-    PriceAvg1Max,
-    PriceAvg1Min
+    Avg1Max,
+    Avg1Min,
+    Avg1GRBMax,
+    Avg1GRBMin
   }
   public enum CorridorHeightMethods {
     ByMA = 0,

@@ -473,7 +473,7 @@ namespace HedgeHog.Shared {
       throw new NotImplementedException();
     }
 
-    public Tick[] GetTicks(string pair, int periodsBack) {
+    public Tick[] GetTicks(string pair, int periodsBack, Func<List<Tick>, List<Tick>> map) {
       throw new NotImplementedException();
     }
 

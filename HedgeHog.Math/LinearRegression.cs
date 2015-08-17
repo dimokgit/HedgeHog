@@ -19,6 +19,7 @@ namespace HedgeHog {
       var slope = 0.0;
       return new[] { GetIntercept(data, map, out slope), slope };
     }
+    //Get slope of the the data points
     public static double LinearSlope(this IList<double> data) {
       double avgY;
       return GetSlope(data, out avgY);

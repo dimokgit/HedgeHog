@@ -27,17 +27,19 @@ namespace HedgeHog.Alice.Store {
     [TradeDirectionTrigger]
     public void OnTradeCondOk() {
       if (TradeConditionsEval().DefaultIfEmpty(TradeDirections.None).All(b => b.Any())) {
-        UseRates(rates => {
-          double min, max;
-          rates.GetRange(rates.Count - _corridorLength2, _corridorLength2).Height(out min, out max);
-          BuyLevel.Rate = max;
-          SellLevel.Rate = min;
-          new[] { BuyLevel, SellLevel }.ForEach(sr => {
-            sr.CanTrade = true;
-            sr.TradesCount = TradeCountStart;
-            sr.InManual = true;
+        var bs = new[] { BuyLevel, SellLevel };
+        if (bs.All(sr => !sr.InManual))
+          UseRates(rates => {
+            double min, max;
+            rates.GetRange(rates.Count - _corridorLength2, _corridorLength2).Height(out min, out max);
+            BuyLevel.RateEx = GetTradeLevel(true, max);
+            SellLevel.RateEx = GetTradeLevel(false, min);
+            bs.ForEach(sr => {
+              sr.CanTradeEx = true;
+              sr.TradesCountEx = TradeCountStart;
+              sr.InManual = true;
+            });
           });
-        });
       }
     }
     [TradeDirectionTrigger]

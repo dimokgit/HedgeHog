@@ -3455,7 +3455,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ScanCorridorByFftMA"/></summary>
         public const string ScanCorridorByFftMA = "ScanCorridorByFftMA";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.NewMethod"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetCma"/></summary>
         public const string NewMethod = "NewMethod";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._CorridorLengthRatio"/></summary>

@@ -77,6 +77,13 @@ namespace HedgeHog {
         a(i, coeffs.RegressionValue(i));
       //Enumerable.Range(start, count).ToList().ForEach(i => a(i, coeffs.RegressionValue(i)));
     }
+    public static double[] RegressionLine2(this double[] coeffs, int count) {
+      var a = new double[count];
+      for (var i = 0; i < count; i++)
+        a[i] = coeffs.RegressionValue(i);
+      return a;
+      //Enumerable.Range(start, count).ToList().ForEach(i => a(i, coeffs.RegressionValue(i)));
+    }
     /// <summary>
     /// Regression line
     /// </summary>
