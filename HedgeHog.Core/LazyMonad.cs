@@ -7,6 +7,14 @@ using System.Threading.Tasks;
 namespace HedgeHog {
   public static class Lazy {
     public static Lazy<T> Create<T>(Func<T> func) { return new Lazy<T>(func); }
+    public static Lazy<T> Create<T>(Func<T> func, T defaultValue,Action<Exception> error) {
+      try {
+        return new Lazy<T>(func);
+      }catch (Exception exc) {
+        error(exc);
+        return new Lazy<T>(() => defaultValue);
+      }
+    }
   }
   public static class LazyExtensions {
     public static Lazy<TResult> Select<T, TResult>(this Lazy<T> lazy, Func<T, TResult> selector) {

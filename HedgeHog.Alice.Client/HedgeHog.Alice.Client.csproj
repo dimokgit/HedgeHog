@@ -137,9 +137,9 @@
     <Reference Include="GalaSoft.MvvmLight.Platform">
       <HintPath>..\AllInOne\packages\MvvmLightLibs.5.0.2.0\lib\net45\GalaSoft.MvvmLight.Platform.dll</HintPath>
     </Reference>
-    <Reference Include="HedgeHog.Core, Version=1.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\AllInOne\packages\HedgeHog.Core.1.3.2.0\lib\net45\HedgeHog.Core.dll</HintPath>
+    <Reference Include="HedgeHog.Core, Version=1.3.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\HedgeHog.Core.1.3.3.0\lib\net45\HedgeHog.Core.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="HtmlAgilityPack, Version=1.4.9.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -726,6 +726,11 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Scripts\jquery-1.6.4-vsdoc.js" />
+    <Content Include="Scripts\jquery-1.6.4.js" />
+    <Content Include="Scripts\jquery-1.6.4.min.js" />
+    <Content Include="Scripts\jquery.signalR-2.2.0.js" />
+    <Content Include="Scripts\jquery.signalR-2.2.0.min.js" />
     <Content Include="Settings\EURUSD%281%29_Last.txt" />
     <Content Include="Settings\USDJPY%282%29_Last.txt" />
     <Content Include="WWW\d3-knockout\.gitignore" />
@@ -2384,7 +2389,7 @@
     <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
   </Target>
   <PropertyGroup>
-    <PreBuildEvent>rem copy "$(ProjectDir)WWW\d3-knockout\app.js" "$(OutDir)WWW\d3-knockout\app.js"
+    <PreBuildEvent>copy "$(ProjectDir)WWW\d3-knockout\app.js" "$(ProjectDir)$(OutDir)WWW\d3-knockout\app.js"
 
 rem copy "$(ProjectDir)WWW\trader4.html" "$(OutDir)WWW\Trader4.html"
 

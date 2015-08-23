@@ -1113,6 +1113,17 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    BarsPeriodType _barPeriodCalc = BarsPeriodType.none;
+    [Category(categoryActiveFuncs)]
+    public BarsPeriodType BarPeriodCalc {
+      get { return _barPeriodCalc; }
+      set {
+        if (_barPeriodCalc == value) return;
+        _barPeriodCalc = value;
+        RatesInternal.Clear();
+        OnPropertyChanged("BarPeriodCalc");
+      }
+    }
     public int BarPeriodInt { get { return (int)BarPeriod; } }
     [DisplayName("Bars Period")]
     [Category(categoryActiveFuncs)]

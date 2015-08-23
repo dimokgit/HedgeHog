@@ -22,14 +22,14 @@ using GalaSoft.MvvmLight.Command;
 namespace HedgeHog.Alice.Store {
   public class RemoteControlModelBase : HedgeHog.Models.ModelBase {
 
-    static string[] defaultInstruments = new string[] { "EUR/USD", "USD/JPY", "GBP/USD", "USD/CHF", "USD/CAD", "USD/SEK","EUR/JPY" };
+    static string[] defaultInstruments = new string[] { "EUR/USD", "USD/JPY", "GBP/USD", "USD/CHF", "USD/CAD", "USD/SEK", "EUR/JPY" };
     public ObservableCollection<string> Instruments {
       get { return GlobalStorage.Instruments; }
     }
 
     protected bool IsInDesigh { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
     protected Order2GoAddIn.FXCoreWrapper fwMaster { get { return MasterModel.FWMaster; } }
-    
+
     TraderModelBase _MasterModel;
     [Import]
     public TraderModelBase MasterModel {
@@ -76,11 +76,11 @@ namespace HedgeHog.Alice.Store {
       get {
         try {
           if (_TradingMacros == null)
-            _TradingMacros = !IsInDesigh 
+            _TradingMacros = !IsInDesigh
               ? GlobalStorage.UseAliceContext(Context => Context.TradingMacroes
-              .Where(tm=>tm.TradingMacroName == MasterModel.TradingMacroName)
+              .Where(tm => tm.TradingMacroName == MasterModel.TradingMacroName)
               .OrderBy(tm => tm.TradingGroup)
-              .ThenBy(tm => tm.PairIndex)) 
+              .ThenBy(tm => tm.PairIndex))
               : new[] { new TradingMacro() }.AsQueryable();
           return _TradingMacros;
         } catch (Exception exc) {
@@ -99,7 +99,7 @@ namespace HedgeHog.Alice.Store {
           if (_tradingMacrosCopy.Count == 0)
             _tradingMacrosCopy = TradingMacros.ToList();
           var isAnySelected = false;// _tradingMacrosCopy.Any(tm => tm.IsSelectedInUI);
-          return _tradingMacrosCopy.Where(tm => IsInVirtualTrading && isAnySelected  ? tm.IsSelectedInUI : (TradingMacroFilter(tm) || ShowAllMacrosFilter)).ToArray();
+          return _tradingMacrosCopy.Where(tm => IsInVirtualTrading && isAnySelected ? tm.IsSelectedInUI : (TradingMacroFilter(tm) || ShowAllMacrosFilter)).ToArray();
         }
       }
     }
@@ -115,13 +115,13 @@ namespace HedgeHog.Alice.Store {
       _tradingMacrosCopy.Remove(tm);
       ResetTradingMacros();
     }
-    protected IEnumerable<TradingMacro> GetTradingMacrosByGroup(TradingMacro tm,Func<TradingMacro,bool> predicate) {
+    protected IEnumerable<TradingMacro> GetTradingMacrosByGroup(TradingMacro tm, Func<TradingMacro, bool> predicate) {
       return GetTradingMacrosByGroup(tm).Where(predicate);
     }
     protected IEnumerable<TradingMacro> GetTradingMacrosByGroup(TradingMacro tm) {
       return TradingMacrosCopy.Where(tm1 => tm1.TradingGroup == tm.TradingGroup && tm.IsActive);
     }
-    protected TradingMacro GetTradingMacro(string pair,int period) {
+    protected TradingMacro GetTradingMacro(string pair, int period) {
       return GetTradingMacros(pair).Where(tm => (int)tm.BarPeriod == period).SingleOrDefault();
     }
     protected Dictionary<string, IList<TradingMacro>> _tradingMacrosDictionary = new Dictionary<string, IList<TradingMacro>>(StringComparer.OrdinalIgnoreCase);
@@ -168,7 +168,7 @@ namespace HedgeHog.Alice.Store {
     //protected Account accountCached = new Account();
 
 
-//    protected ITradesManager tradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)fw; } }
+    //    protected ITradesManager tradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)fw; } }
     protected bool IsInVirtualTrading { get { return MasterModel == null ? false : MasterModel.IsInVirtualTrading; } }
 
     #region PriceBars
@@ -187,14 +187,14 @@ namespace HedgeHog.Alice.Store {
         priceBarsDictionary[tradingMacro].Short = priceBars;
     }
     protected PriceBar[] FetchPriceBars(TradingMacro tradingMacro, int rowOffset, bool reversePower) {
-      return FetchPriceBars(tradingMacro, rowOffset,reversePower, DateTime.MinValue);
+      return FetchPriceBars(tradingMacro, rowOffset, reversePower, DateTime.MinValue);
     }
     protected PriceBar[] FetchPriceBars(TradingMacro tradingMacro, int rowOffset, bool reversePower, DateTime dateStart) {
       var isLong = dateStart == DateTime.MinValue;
-      var rs = tradingMacro.RatesArraySafe.Where(r=>r.StartDate>=dateStart).GroupTicksToRates();
+      var rs = tradingMacro.RatesArraySafe.Where(r => r.StartDate >= dateStart).GroupTicksToRates();
       var ratesForDensity = (reversePower ? rs.OrderBarsDescending() : rs.OrderBars()).ToArray();
-      SetPriceBars(tradingMacro,isLong, ratesForDensity.GetPriceBars(TradesManager.GetPipSize(tradingMacro.Pair), rowOffset));
-      return GetPriceBars(tradingMacro,isLong);
+      SetPriceBars(tradingMacro, isLong, ratesForDensity.GetPriceBars(TradesManager.GetPipSize(tradingMacro.Pair), rowOffset));
+      return GetPriceBars(tradingMacro, isLong);
     }
     protected PriceBar[] GetPriceBars(TradingMacro tradingMacro, bool isLong) {
       return priceBarsDictionary.ContainsKey(tradingMacro) ? priceBarsDictionary[tradingMacro].GetPriceBars(isLong) : new PriceBar[0];
@@ -210,24 +210,6 @@ namespace HedgeHog.Alice.Store {
       var rs = rates/*.Where(r => r.StartDate > csFirst.StartDate)*/.Select(r => r.PriceAvg).ToArray();
       tm.Correlation_P = global::alglib.pearsoncorrelation(pbs, rs);
       tm.Correlation_R = global::alglib.spearmancorr2(pbs, rs, Math.Min(pbs.Length, rs.Length));
-    }
-  }
-  
-  public class RatesLoader {
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    public void LoadRates(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList,bool groupToSeconds) {
-      var fetchRates = ratesList.Count() == 0;
-      if (ratesList.Count() == -1) {
-        if (periodMinutes > 0)
-          ratesList.AddRange(fw.GetBarsFromHistory(pair, periodMinutes, TradesManagerStatic.FX_DATE_NOW, endDate).Except(ratesList));
-        else ratesList.AddRange(fw.GetTicks(pair, periodsBack, groupToSeconds ? TradingMacro.GroupTicksToSeconds : (Func<List<Tick>, List<Tick>>)null).Except(ratesList));
-      }
-      //if (periodMinutes == 0) {
-      //  var d = ratesList.OrderBarsDescending().TakeWhile(t => t.StartDate.Millisecond == 0)
-      //    .Select(r => r.StartDate).DefaultIfEmpty(TradesManagerStatic.FX_DATE_NOW).Min();
-      //  ratesList.RemoveAll(r => r.StartDate >= d);
-      //}
-      fw.GetBars(pair, periodMinutes, periodsBack, startDate, endDate, ratesList,true);
     }
   }
 }

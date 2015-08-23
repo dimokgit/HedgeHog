@@ -71,6 +71,10 @@
     <Reference Include="GalaSoft.MvvmLight.Platform">
       <HintPath>..\AllInOne\packages\MvvmLightLibs.5.0.2.0\lib\net45\GalaSoft.MvvmLight.Platform.dll</HintPath>
     </Reference>
+    <Reference Include="HedgeHog.Core, Version=1.3.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\HedgeHog.Core.1.3.3.0\lib\net45\HedgeHog.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Interop.SHDocVw">
       <HintPath>..\AllInOne\packages\WatiN.2.1.0\lib\net40\Interop.SHDocVw.dll</HintPath>
       <EmbedInteropTypes>False</EmbedInteropTypes>

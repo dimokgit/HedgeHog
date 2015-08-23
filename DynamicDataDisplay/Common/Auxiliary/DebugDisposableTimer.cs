@@ -23,8 +23,8 @@ namespace Microsoft.Research.DynamicDataDisplay.Common.Auxiliary
 		public void Dispose()
 		{
 #if DEBUG
-			var duration = timer.ElapsedMilliseconds;
-			Debug.WriteLine(name + ": elapsed " + duration + " ms.");
+			//var duration = timer.ElapsedMilliseconds;
+			//Debug.WriteLine(name + ": elapsed " + duration + " ms.");
 			timer.Stop();
 #endif
 		}

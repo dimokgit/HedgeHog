@@ -286,6 +286,9 @@
               { text: "BuySellLevels", value: "BuySellLevels" },
               { text: "RatesHeight", value: "RatesHeight" },
               { text: "Pips", value: "Pips" },
+              { text: "Green", value: "Green" },
+              { text: "Red", value: "Red" },
+              { text: "Blue", value: "Blue" },
               { text: "Wave", value: "Wave" }
             ]
           },
@@ -294,6 +297,9 @@
               { text: "BuySellLevels", value: "BuySellLevels" },
               { text: "RatesHeight", value: "RatesHeight" },
               { text: "Pips", value: "Pips" },
+              { text: "Green", value: "Green" },
+              { text: "Red", value: "Red" },
+              { text: "Blue", value: "Blue" },
               { text: "Wave", value: "Wave" }
             ]
           },
@@ -387,7 +393,6 @@
       self.setTradeCloseLevelSell({ value: "PriceMin1" });
     };
     this.resetCloseLevels = function () {
-      self.setTradeLevels(0);
       self.setTradeCloseLevelBuy({ value: 0 });
       self.setTradeCloseLevelSell({ value: 0 });
     };
@@ -570,7 +575,7 @@
       });
       lineChartData2.push.apply(lineChartData2, rates);
       lineChartData2.unshift.apply(lineChartData2, rates2);
-      var ratesAll = lineChartData2;// continuoseDates(lineChartData2(), [response.trendLines.dates, response.trendLines1.dates, response.trendLines2.dates]);
+      var ratesAll = lineChartData2;// continuoseDates("second",lineChartData2(), [response.trendLines.dates, response.trendLines1.dates, response.trendLines2.dates]);
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;
@@ -759,11 +764,11 @@
         canSell:canSell
       };
     }
-    function continuoseDates(data, dates) {// jshint ignore:line
+    function continuoseDates(interval, data, dates) {// jshint ignore:line
       var ds = dates.map(function (ds) { return { dates2: [], dates: ds.reverse() }; });
       data.reverse().reduce(function (prevValue, current) {
         var cd = current.d;
-        current.d = prevValue = (prevValue ? dateAdd(prevValue, "minute", -1) : current.d);
+        current.d = prevValue = (prevValue ? dateAdd(prevValue, interval, -1) : current.d);
         ds.forEach(function (d0) {
           if (d0.dates.length > 0)
             d0.dates.forEach(function (d) {
@@ -793,11 +798,12 @@
   var host = location.host.match(/localhost/i) ? "ruleover.com:91" : location.host;
   var hubUrl = location.protocol + "//" + host + "/signalr/hubs";
   document.title = document.title + ":" + location.port;
-  $.getScript(hubUrl, init);
+  //$.getScript(hubUrl, init);
   // Init SignaR client
+  init();
   function init() {
     //Set the hubs URL for the connection
-    $.connection.hub.url = "http://" + host + "/signalr";
+    //$.connection.hub.url = "http://" + host + "/signalr";
 
     // #region Disconnect/Reconnect
     $.connection.hub.error(function (error) {

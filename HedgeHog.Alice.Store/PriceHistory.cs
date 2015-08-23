@@ -38,7 +38,7 @@ namespace HedgeHog.Alice.Store {
             var dateMin = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Min(b => (DateTimeOffset?)b.StartDate);
             if (!dateMin.HasValue) dateMin = DateTimeOffset.Now;
             var dateEnd = dateMin.Value.Subtract(offset).DateTime;
-            fw.GetBarsBase<Rate>(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
+            fw.GetBarsBase<Rate>(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
           }
           var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
           if (q > DateTimeOffset.MinValue)
@@ -48,7 +48,7 @@ namespace HedgeHog.Alice.Store {
           } else
             dateStart = dateStart.Add(offset);
         }
-        fw.GetBarsBase<Rate>(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), showProgress);
+        fw.GetBarsBase<Rate>(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }

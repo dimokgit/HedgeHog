@@ -116,7 +116,7 @@ namespace HedgeHog {
     /// <param name="coeffs"></param>
     /// <returns>Regression result values example:Line,Parabola</returns>
     public static double[] Regression(this IList<double> values, int polyOrder, out double[] coeffs) {
-      coeffs = values.Regress(polyOrder);
+      coeffs = polyOrder == 1 ? values.Linear() : values.Regress(polyOrder);
       return coeffs.RegressionLine(values.Count);
     }
 

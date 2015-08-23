@@ -399,7 +399,7 @@ namespace HedgeHog.Alice.Store {
         , rate => rate.StartDate
         , g => g.Average(rate => rate.PriceAvg));
       double h, l, h1, l1;
-      var doubles = isTicks ? groupped.ToList() : corridorValues.ToList(r => r.PriceAvg);
+      var doubles = isTicks && BarPeriodCalc!=BarsPeriodType.s1  ? groupped.ToList() : corridorValues.ToList(r => r.PriceAvg);
       var coeffs = doubles.Linear();
       var hl = doubles.StDevByRegressoin(coeffs);
       h = hl * 2;

@@ -618,8 +618,8 @@ namespace HedgeHog.Alice.Client {
         .ForEach(action);
     }
     private IEnumerable<TradingMacro> GetTradingMacro(string pair, int chartNum = 0) {
-      var rc = remoteControl.Value;
-      return rc.TradingMacrosCopy
+      return remoteControl.Value.YieldNotNull()
+        .SelectMany(rc => rc.TradingMacrosCopy)
         .Skip(chartNum)
         .Take(1)
         .Where(tm2 => tm2.IsActive)

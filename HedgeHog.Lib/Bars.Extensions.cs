@@ -917,7 +917,7 @@ namespace HedgeHog.Bars {
             duration = duration.Add(d);
           prev = rate;
         }
-      Debug.WriteLine("Duration:{0:n}", sw.ElapsedMilliseconds);
+      //Debug.WriteLine("Duration:{0:n}", sw.ElapsedMilliseconds);
       return duration;
     }
 
@@ -1249,8 +1249,12 @@ namespace HedgeHog.Bars {
              group tick by tick.StartDate2.AddMilliseconds(-tick.StartDate2.Millisecond) into gt
              select GroupToRate(gt);
     }
-    public static IEnumerable<TBar> GroupAdjacentTicks<TBar>(this IEnumerable<TBar> ticks, TimeSpan interval)where TBar:BarBase,new() {
-      return ticks.GroupByAdjacent(t=>t.StartDate2,(t1, t2) => (t1 - t2).Duration() <= interval)
+    public static IEnumerable<TBar> GroupAdjacentTicks<TBar>(this IEnumerable<TBar> ticks, MathExtensions.RoundTo roundTo) where TBar : BarBase, new() {
+      return ticks.GroupByAdjacent(t => t.StartDate2, (t1, t2) => t1.Round(roundTo) == t2.Round(roundTo))
+        .Select(GroupToRate);
+    }
+    public static IEnumerable<TBar> GroupAdjacentTicks<TBar>(this IEnumerable<TBar> ticks, TimeSpan interval) where TBar : BarBase, new() {
+      return ticks.GroupByAdjacent(t => t.StartDate2, (t1, t2) => (t1 - t2).Duration() <= interval)
         .Select(GroupToRate);
     }
     public static IEnumerable<TResult> GroupAdjacentTicks<TValue,TResult>(this IEnumerable<TValue> ticks, TimeSpan interval,Func<TValue,DateTime> key, Func<IGrouping<DateTime, TValue>, TResult> map) {
@@ -1274,7 +1278,8 @@ namespace HedgeHog.Bars {
         BidClose = gt.Last().BidClose,
         BidHigh = gt.Max(t => t.BidHigh),
         BidLow = gt.Min(t => t.BidLow),
-        PriceCMALast = gt.Average(r => r.PriceCMALast)
+        PriceCMALast = gt.Average(r => r.PriceCMALast),
+        IsHistory = gt.Max(t=>t.IsHistory)
         //,Mass = gt.Sum(t => t.Mass)
       };
     }

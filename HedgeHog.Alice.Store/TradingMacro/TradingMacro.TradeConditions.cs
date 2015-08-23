@@ -99,6 +99,28 @@ namespace HedgeHog.Alice.Store {
     TradeDirections IsTradeConditionOk(Func<TradingMacro, bool> tmPredicate, Func<TradingMacro, TradeDirections> condition) {
       return TradingMacroOther(tmPredicate).Take(1).Select(condition).DefaultIfEmpty(TradeDirections.Both).First();
     }
+    double _trendsGroupingInPipsMin = 1;
+    [WwwSetting()]
+    public double TrendsGroupingInPipsMin {
+      get {
+        return _trendsGroupingInPipsMin;
+      }
+      set {
+        _trendsGroupingInPipsMin = value;
+      }
+    }
+    public TradeConditionDelegate GroupingOk {
+      get {
+        return () =>
+          InPips(TrendLinesTrendsAll.Select(tl => tl.PriceAvg2).StandardDeviation()) < TrendsGroupingInPipsMin
+          ? TradeDirections.Down
+          : InPips(TrendLinesTrendsAll.Select(tl => tl.PriceAvg3).StandardDeviation()) < TrendsGroupingInPipsMin
+          ? TradeDirections.Down
+          : TradeDirections.None;
+          
+      }
+    }
+
     public TradeConditionDelegate CorrAngAOk {
       get {
         return () => TrendLinesTrendsAll.All(tlt => !tlt.IsEmpty) &&
@@ -234,8 +256,8 @@ namespace HedgeHog.Alice.Store {
       Func<Rate.TrendLevels, double> max,
       bool ReverseStrategy
       ) {
-      Func<TradeDirections> onBelow = () => ReverseStrategy ? TradeDirections.Down : TradeDirections.Up;
-      Func<TradeDirections> onAbove = () => ReverseStrategy ? TradeDirections.Up : TradeDirections.Down;
+      Func<TradeDirections> onBelow = () =>  TradeDirections.Up;
+      Func<TradeDirections> onAbove = () => TradeDirections.Down;
       return TradingMacroOther(tmPredicate)
         .Select(tm => trendLevels(tm))
         .Select(tls =>
@@ -391,6 +413,7 @@ namespace HedgeHog.Alice.Store {
         TradeConditionsSet(value.Split(','));
       }
     }
+
     #endregion
   }
 }

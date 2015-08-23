@@ -6,6 +6,15 @@ using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static class MonoidsCore {
+    public static Lazy<T> Create<T>(Func<T> func) { return new Lazy<T>(func); }
+    public static Lazy<T> Create<T>(Func<T> func, T defaultValue, Action<Exception> error) {
+      try {
+        return new Lazy<T>(func);
+      } catch (Exception exc) {
+        error(exc);
+        return new Lazy<T>(() => defaultValue);
+      }
+    }
     public static Lazy<T> ToLazy<T>(Func<T> projector) {
       return new Lazy<T>(projector);
     }

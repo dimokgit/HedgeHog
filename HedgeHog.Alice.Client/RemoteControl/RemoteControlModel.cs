@@ -862,17 +862,19 @@ namespace HedgeHog.Alice.Client {
         if (e.PropertyName == TradingMacroMetadata.CurrentPrice) {
           try {
             if (tm.IsActive && tm.HasRates && !IsInVirtualTrading) {
-              var charter = GetCharter(tm);
-              charter.Dispatcher.Invoke(new Action(() => {
-                charter.LineAvgAsk = tm.CurrentPrice.Ask;
-                charter.LineAvgBid = tm.CurrentPrice.Bid;
-                var high = tm.CalculateLastPrice(tm.RateLast, tm.ChartHighPrice());
-                var low = tm.CalculateLastPrice(tm.RateLast, tm.ChartLowPrice());
-                var ma = tm.CalculateLastPrice(tm.RateLast, tm.GetPriceMA());
-                var ma2 = tm.CalculateLastPrice(tm.RateLast, tm.GetPriceMA2());
-                charter.SetLastPoint(high, low, ma, ma2, tm.RateLast); ;
-                //Debug.WriteLineIf(tm.Pair == "EUR/JPY", string.Format("Current price:{0} @ {1:mm:ss}", tm.CurrentPrice.Average.Round(3), tm.CurrentPrice.Time));
-              }), DispatcherPriority.Send);
+              if (!_isMinimized) {
+                var charter = GetCharter(tm);
+                charter.Dispatcher.Invoke(new Action(() => {
+                  charter.LineAvgAsk = tm.CurrentPrice.Ask;
+                  charter.LineAvgBid = tm.CurrentPrice.Bid;
+                  var high = tm.CalculateLastPrice(tm.RateLast, tm.ChartHighPrice());
+                  var low = tm.CalculateLastPrice(tm.RateLast, tm.ChartLowPrice());
+                  var ma = tm.CalculateLastPrice(tm.RateLast, tm.GetPriceMA());
+                  var ma2 = tm.CalculateLastPrice(tm.RateLast, tm.GetPriceMA2());
+                  charter.SetLastPoint(high, low, ma, ma2, tm.RateLast); ;
+                  //Debug.WriteLineIf(tm.Pair == "EUR/JPY", string.Format("Current price:{0} @ {1:mm:ss}", tm.CurrentPrice.Average.Round(3), tm.CurrentPrice.Time));
+                }), DispatcherPriority.Send);
+              }
             }
           } catch (Exception exc) {
             Log = exc;
@@ -1228,8 +1230,13 @@ namespace HedgeHog.Alice.Client {
             })).Result;
           //Log = new Exception(("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}").Formater(MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, tm.Pair, string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value))));
         }
-        ratesForChart.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
-        rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
+        var startDateInterval = tm.BarPeriodCalc == BarsPeriodType.s1 
+          ? 1.FromSeconds() 
+          : tm.BarPeriod == BarsPeriodType.t1 
+          ? TimeSpan.Zero : ((int)tm.BarPeriod).FromMinutes();
+        ratesForChart.SetStartDateForChart(startDateInterval);
+        if(tm.FitRatesToPlotter)
+          rates.SetStartDateForChart(startDateInterval);
         var corridorTime0 = tm.WaveTradeStart == null || !tm.WaveTradeStart.HasRates ? DateTime.MinValue : tm.WaveTradeStart.Rates[0].StartDateContinuous;
         var corridorTime1 = tm.WaveTradeStart == null || !tm.WaveTradeStart.HasRates ? DateTime.MinValue : tm.WaveTradeStart.Rates.Min(r => r.StartDateContinuous);// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
         var corridorTime2 = !tm.WaveTradeStart1.HasRates ? DateTime.MinValue : tm.WaveTradeStart1.Rates.LastBC().StartDateContinuous;// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
@@ -1524,7 +1531,7 @@ namespace HedgeHog.Alice.Client {
       foreach (var currency in currencies)
         CorrelationsByPair.AddRange(RunPairCorrelation(currency));
       //Correlations[currency] = RunCorrelation(currency);
-      Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
+      //Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
     }
 
     private ICollection<PairCorrelation> RunPairCorrelation(string currency) {

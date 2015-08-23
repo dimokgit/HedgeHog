@@ -39,7 +39,7 @@ namespace HedgeHog.Alice.Server {
           if (_LoadRatesSubject == null) {
             _LoadRatesSubject = new Subject<string>();
             _LoadRatesSubject
-              .ObserveOn(Scheduler.ThreadPool)
+              .ObserveOn(ThreadPoolScheduler.Instance)
               .Subscribe(LoadRates);
           }
         return _LoadRatesSubject;
@@ -54,7 +54,7 @@ namespace HedgeHog.Alice.Server {
         var period = pairInfo.Period < 0 ? MainWindowModel.Default.Period : pairInfo.Period;
         var periods = pairInfo.Periods < 0 ? MainWindowModel.Default.Periods : pairInfo.Periods;
         if (pairInfo.Rates.Any()) pairInfo.Rates.Remove(pairInfo.Rates.Last());
-        _fw.GetBars(pair, period, periods, TradesManagerStatic.FX_DATE_NOW, TradesManagerStatic.FX_DATE_NOW, pairInfo.Rates);
+        _fw.GetBars(pair, period, periods, TradesManagerStatic.FX_DATE_NOW, TradesManagerStatic.FX_DATE_NOW, pairInfo.Rates, null);
         pairInfo.Rates.SavePairCsv(pairInfo.Pair);
         AfterPairLoaded(pair);
       } catch (Exception exc) {

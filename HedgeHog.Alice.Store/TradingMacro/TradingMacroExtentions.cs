@@ -42,7 +42,8 @@ namespace HedgeHog.Alice.Store {
     static TimeSpan THROTTLE_INTERVAL = TimeSpan.FromSeconds(1);
 
     public void OnLoadRates(Action a = null) {
-      broadcastLoadRates.Post(u => LoadRates(a));
+      _loadRatesAsyncBuffer.Push(() => LoadRates(a));
+      //broadcastLoadRates.Post(u => LoadRates(a));
     }
 
     #region ScanCorridor Broadcast
@@ -1425,7 +1426,7 @@ namespace HedgeHog.Alice.Store {
           PriceHistory.AddTicks(fw, BarPeriodInt, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-BarsCountCount() * 2)), o => Log = new Exception(o + ""));
         //GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
         var internalRateCount = BarsCountCount();
-        var doGroupTick = tms().Skip(1).Take(1).Any(tm => tm == this && tm.BarPeriod == BarsPeriodType.t1);
+        var doGroupTick = BarPeriodCalc == BarsPeriodType.s1;
         Func<List<Rate>, List<Rate>> groupTicks = rates => doGroupTick ? GroupTicksToSeconds(rates) : rates;
         var _replayRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, args.DateStart.Value.ToUniversalTime(), BarsCountCount(), BarPeriodInt, groupTicks);
         _replayRates.CopyLast(1).Select(r => r.StartDate2)
@@ -1523,7 +1524,7 @@ namespace HedgeHog.Alice.Store {
               if (isReplaying && BarPeriod != BarsPeriodType.t1 && tms().Count > 1) {
                 var rateLast = UseRatesInternal(ri => ri.Last(), 15 * 1000);
                 var a = tms().Select(tm =>
-                    tm.RatesInternal.LastBC().YieldNotNull().Select(r => r.StartDate).DefaultIfEmpty().First()).ToArray();
+                    tm.RatesInternal.Last().YieldNotNull().Select(r => r.StartDate).DefaultIfEmpty().First()).ToArray();
                 var dateMin = a.Min();
                 //if (tms().Distinct(tm => tm.BarPeriod).Count() == 1 && (dateMin - a.Max()).Duration().TotalMinutes > BarPeriodInt.Min(1) * 60) {
                 //  Log = new Exception("MaxTime-MinTime>30mins");
@@ -1669,7 +1670,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public static List<TBar> GroupTicksToSeconds<TBar>(List<TBar> rates)where TBar:BarBase,new() {
-      return rates.GroupAdjacentTicks(TimeSpan.FromSeconds(1)).ToList();
+      return rates.GroupAdjacentTicks(MathExtensions.RoundTo.Second).ToList();
     }
 
     private void ReplayEvents() {
@@ -2989,7 +2990,17 @@ namespace HedgeHog.Alice.Store {
     }
     private double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function, double xRatio) {
       var tp = double.NaN;
+      Func<TradeLevelBy, TradeLevelBy, double> tradeLeveBy = (h, l) => (TradeLevelFuncs[h]() - TradeLevelFuncs[l]()) * xRatio;
       switch (function) {
+        case TradingMacroTakeProfitFunction.Green:
+          tp = tradeLeveBy(TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0);
+          break;
+        case TradingMacroTakeProfitFunction.Red:
+          tp = tradeLeveBy(TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3);
+          break;
+        case TradingMacroTakeProfitFunction.Blue:
+          tp = tradeLeveBy(TradeLevelBy.PriceHigh, TradeLevelBy.PriceLow);
+          break;
         case TradingMacroTakeProfitFunction.Pips:
           tp= InPoints(xRatio);
           break;
@@ -3438,7 +3449,7 @@ namespace HedgeHog.Alice.Store {
         try {
           if (TradesManager != null && !TradesManager.IsInTest && !IsInPlayback && isLoggedIn && !IsInVitualTrading) {
             InfoTooltip = "Loading Rates";
-            Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, ServerTime, (BarsPeriodType)BarPeriod);
+            //Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, ServerTime, (BarsPeriodType)BarPeriod);
             var sw = Stopwatch.StartNew();
             if (before != null) before();
             var serverTime = ServerTime;
@@ -3472,8 +3483,8 @@ namespace HedgeHog.Alice.Store {
             startDate = ratesList.Select(r => r.StartDate).DefaultIfEmpty(startDate).First();
             if (startDate != TradesManagerStatic.FX_DATE_NOW && _Rates.Count > 10)
               periodsBack = 0;
-            var groupTicks = BarPeriod == BarsPeriodType.t1 && PairIndex == 2;
-            RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, ratesList,groupTicks);
+            var groupTicks = BarPeriodCalc == BarsPeriodType.s1;
+            LoadRatesImpl(GetFXWraper(), Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, ratesList,groupTicks);
             if (BarPeriod != BarsPeriodType.t1) {
               var rateLastDate = ratesList.Last().StartDate;
               var delay = ServerTime.Subtract(rateLastDate).Duration();
@@ -3482,7 +3493,7 @@ namespace HedgeHog.Alice.Store {
                 if (delay > (delayMax + delayMax))
                   Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
                 ratesList.RemoveAt(ratesList.Count - 1);
-                RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, ratesList,groupTicks);
+                LoadRatesImpl(GetFXWraper(), Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, ratesList,groupTicks);
               }
             }
             {
@@ -3504,7 +3515,7 @@ namespace HedgeHog.Alice.Store {
             //if (BarPeriod == BarsPeriodType.t1)
             //  UseRatesInternal(ri => { ri.Sort(LambdaComparisson.Factory<Rate>((r1, r2) => r1.StartDate > r2.StartDate)); });
             if (sw.Elapsed > TimeSpan.FromSeconds(LoadRatesSecondsWarning))
-              Debug.WriteLine("LoadRates[" + Pair + ":{1}] - {0:n1} sec", sw.Elapsed.TotalSeconds, (BarsPeriodType)BarPeriod);
+              Log = new Exception("LoadRates[" + Pair + ":{1}] - {0:n1} sec".Formater(sw.Elapsed.TotalSeconds, (BarsPeriodType)BarPeriod));
             LastRatePullTime = ServerTime;
             UseRatesInternal(rl => new[] { rl.Count - BarsCountCount() }.Where(rc => rc > 0).ForEach(rc => rl.RemoveRange(0, rc)));
             Action a = () => {
@@ -3526,6 +3537,25 @@ namespace HedgeHog.Alice.Store {
     }
     public DateTimeOffset LoadRatesStartDate2 { get; set; }
     #region Overrides
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    void LoadRatesImpl(Order2GoAddIn.FXCoreWrapper fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool groupToSeconds) {
+      Func<List<Rate>, List<Rate>> map = groupToSeconds ? TradingMacro.GroupTicksToSeconds<Rate> : (Func<List<Rate>, List<Rate>>)null;
+      var fetchRates = ratesList.Count() == 0;
+      if (ratesList.Count() == -1) {
+        if (periodMinutes > 0)
+          ratesList.AddRange(fw.GetBarsFromHistory(pair, periodMinutes, TradesManagerStatic.FX_DATE_NOW, endDate).Except(ratesList));
+        else ratesList.AddRange(fw.GetTicks(pair, periodsBack, null).Except(ratesList));
+      }
+      //if (periodMinutes == 0) {
+      //  var d = ratesList.OrderBarsDescending().TakeWhile(t => t.StartDate.Millisecond == 0)
+      //    .Select(r => r.StartDate).DefaultIfEmpty(TradesManagerStatic.FX_DATE_NOW).Min();
+      //  ratesList.RemoveAll(r => r.StartDate >= d);
+      //}
+      fw.GetBars(pair, periodMinutes, periodsBack, startDate, endDate, ratesList,z=> {
+        if (groupToSeconds)
+          Log = new Exception(new { GetDars = new { z.Message } } + "");
+      }, true, map);
+    }
 
     class OnPropertyChangedDispatcher : BlockingConsumerBase<Tuple<TradingMacro, string>> {
       public OnPropertyChangedDispatcher() : base(t => t.Item1.OnPropertyChangedCore(t.Item2)) { }
@@ -3558,7 +3588,15 @@ namespace HedgeHog.Alice.Store {
         return _broadcastCorridorDatesChange;
       }
     }
+    class LoadRateAsyncBuffer : AsyncBuffer<LoadRateAsyncBuffer, Action> {
+      public LoadRateAsyncBuffer():base() {
 
+      }
+      protected override Action PushImpl(Action context) {
+        return context;
+      }
+    }
+    LoadRateAsyncBuffer _loadRatesAsyncBuffer = new LoadRateAsyncBuffer();
     BroadcastBlock<Action<Unit>> _broadcastLoadRates;
     BroadcastBlock<Action<Unit>> broadcastLoadRates {
       get {
@@ -3674,15 +3712,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
-
-    RatesLoader _ratesLoader;
-    internal RatesLoader RatesLoader {
-      get {
-        if (_ratesLoader == null) _ratesLoader = new RatesLoader();
-        return _ratesLoader;
-      }
-    }
-
 
     private Rate _rateGannCurrentLast;
     public Rate RateGannCurrentLast {
@@ -4387,6 +4416,7 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActive)]
     [DisplayName("Rates StDev Min")]
     [Description("RatesStDevMinInPips for BarsCountValc")]
+    [WwwSetting(wwwSettingsCorridorOther)]
     public int RatesStDevMinInPips {
       get { return _RatesStDevMinInPips; }
       set {
@@ -4394,7 +4424,7 @@ namespace HedgeHog.Alice.Store {
           _RatesStDevMinInPips = value;
           OnPropertyChanged("RatesStDevMinInPips");
           FreezeCorridorStartDate(true);
-          BarsCountLastDate = DateTime.MinValue;
+          ResetBarsCountLastDate();
         }
       }
     }
@@ -4446,8 +4476,13 @@ namespace HedgeHog.Alice.Store {
           _RatesDistanceMin = value;
           OnPropertyChanged("RatesDistanceMin");
           RatesDistanceMinCalc = null;
+          ResetBarsCountLastDate();
         }
       }
+    }
+
+    private void ResetBarsCountLastDate() {
+      BarsCountLastDate = DateTime.MinValue;
     }
 
     #endregion

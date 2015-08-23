@@ -516,7 +516,7 @@ namespace Order2GoAddIn {
     #region Get (Ticks/Bars)
     private static object lockHistory = new object();
 
-    public Tick[] GetTicks(string pair, int tickCount,Func<List<Tick>,List<Tick>> map) {
+    public Tick[] GetTicks(string pair, int tickCount, Func<List<Tick>, List<Tick>> map) {
       if (map == null) map = l => l;
       DateTime startDate = DateTime.MinValue;
       var endDate = ServerTime;
@@ -533,7 +533,7 @@ namespace Order2GoAddIn {
             dateMin = ticks.Min(b => b.StartDate);
             if (endDate > dateMin) {
               endDate = ticks.SkipWhile(ts => ts.StartDate == dateMin).First().StartDate;
-              System.Diagnostics.Debug.WriteLine("Ticks[{2}]:{0} @ {1:t}", ticks.Count(), endDate.ToLongTimeString(), Pair);
+              //System.Diagnostics.Debug.WriteLine("Ticks[{2}]:{0} @ {1:t}", ticks.Count(), endDate.ToLongTimeString(), Pair);
             } else
               endDate = endDate.AddSeconds(-3);
           } catch (Exception exc) {
@@ -560,7 +560,8 @@ namespace Order2GoAddIn {
         this.NewRates = newBars;
       }
     }
-    public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate {
+    public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate {
+      if (map == null) map = l => l;
       if (period >= 1) {
         startDate = startDate.Round(period);
         if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = endDate.Round(period);
@@ -571,7 +572,7 @@ namespace Order2GoAddIn {
       Func<IList<TBar>> getBars = () => {
         while (true)
           try {
-            return GetBarsBase_<TBar>(pair, period, startDate, endDate);
+            return map(GetBarsBase_<TBar>(pair, period, startDate, endDate));
           } catch (Exception exc) {
             if (!isTimeOut(exc.Message) || timeoutCount-- <= 0)
               throw new Exception(string.Format("Pair:{0},Period:{1}", pair, period), exc);
@@ -633,13 +634,13 @@ namespace Order2GoAddIn {
     //  rates.Sort();
     //  rates.RemoveRange(0, rates.Count() - periodsBack);
     //}
-    IList<TBar> GetBarsBase_<TBar>(string pair, int period, DateTime startDate, DateTime endDate) where TBar : Rate {
+    List<TBar> GetBarsBase_<TBar>(string pair, int period, DateTime startDate, DateTime endDate) where TBar : Rate {
       try {
         return period == 0 ?
           GetTicks(pair, startDate, endDate).Cast<TBar>().ToList() :
           GetBarsFromHistory(pair, period, startDate, endDate).Cast<TBar>().ToList();
       } catch (Exception exc) {
-        var empty = (period == 0 ? new Tick[] { }.Cast<TBar>() : new TBar[] { }).ToArray();
+        var empty = (period == 0 ? new Tick[] { }.Cast<TBar>() : new TBar[] { }).ToList();
         var e = new Exception("StartDate:" + startDate + ",EndDate:" + endDate + ":" + Environment.NewLine + "\t" + exc.Message, exc);
         if (exc.Message.Contains("The specified date's range is empty.") ||
             exc.Message.Contains("Object reference not set to an instance of an object.")) {
@@ -719,17 +720,17 @@ namespace Order2GoAddIn {
       //}
     }
 
-    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, bool doTrim) {
-      GetBars(pair, Period, periodsBack, StartDate, EndDate, Bars, null, doTrim);
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, bool doTrim, Func<List<Rate>, List<Rate>> map) {
+      GetBars(pair, Period, periodsBack, StartDate, EndDate, Bars, null, doTrim, map);
     }
-    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars) {
-      GetBars(pair, Period, periodsBack, StartDate, EndDate, Bars, null);
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Func<List<Rate>, List<Rate>> map) {
+      GetBars(pair, Period, periodsBack, StartDate, EndDate, Bars, null,true, map);
     }
-    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim = true) {
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
       if (periodsBack == 0 && StartDate == TradesManagerStatic.FX_DATE_NOW)
         throw new ArgumentOutOfRangeException("Either periodsBack or startDate must have a real value.");
       if (Bars.Count == 0)
-        GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, callBack);
+        GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack);
       if (Bars.Count == 0) return;
       if (EndDate != TradesManagerStatic.FX_DATE_NOW)
         foreach (var bar in Bars.Where(b => b.StartDate > EndDate).ToArray())
@@ -740,16 +741,16 @@ namespace Order2GoAddIn {
       } else {
         var minimumDate = Bars.Min(b => b.StartDate);
         if (StartDate < minimumDate)
-          GetBarsBase(pair, Period, 0, StartDate, minimumDate, Bars, callBack);
+          GetBarsBase(pair, Period, 0, StartDate, minimumDate, Bars, map, callBack);
         var maximumDate = Bars.Select(b => b.StartDate).DefaultIfEmpty(StartDate).Max();
         if (EndDate == TradesManagerStatic.FX_DATE_NOW || EndDate > maximumDate) {
-          GetBarsBase(pair, Period, 0, maximumDate, EndDate, Bars, callBack);
+          GetBarsBase(pair, Period, 0, maximumDate, EndDate, Bars, map, callBack);
         }
       }
       if (EndDate != TradesManagerStatic.FX_DATE_NOW)
         Bars.RemoveAll(b => b.StartDate > EndDate);
       if (Bars.Count < periodsBack)
-        GetBarsBase(pair, Period, periodsBack, TradesManagerStatic.FX_DATE_NOW, Bars.Select(b => b.StartDate).DefaultIfEmpty(EndDate).Min(), Bars, callBack);
+        GetBarsBase(pair, Period, periodsBack, TradesManagerStatic.FX_DATE_NOW, Bars.Select(b => b.StartDate).DefaultIfEmpty(EndDate).Min(), Bars, map, callBack);
       Bars.Sort();
       if (doTrim) {
         var countMaximum = TradesManagerStatic.GetMaxBarCount(periodsBack, StartDate, Bars);
@@ -1563,7 +1564,7 @@ namespace Order2GoAddIn {
         Ask = (double)Row.CellValue(FIELD_ASK), Bid = (double)Row.CellValue(FIELD_BID),
         AskChangeDirection = (int)Row.CellValue(FIELD_ASKCHANGEDIRECTION),
         BidChangeDirection = (int)Row.CellValue(FIELD_BIDCHANGEDIRECTION),
-        Time2 =ConvertDateToLocal((DateTime)Row.CellValue(FIELD_TIME)),
+        Time2 = ConvertDateToLocal((DateTime)Row.CellValue(FIELD_TIME)),
         Pair = Row.CellValue(FIELD_INSTRUMENT) + ""
       };
     }
@@ -2105,8 +2106,8 @@ namespace Order2GoAddIn {
               ReLoginIfCommandIsDisabled(exc);
               RaiseError(new Exception(new { pair, limitRate, prevRate } + "", exc));
             } finally {
-              Debug.WriteLine("{0}:{1:n1}ms for {2} from {3} to {4} @ " + DateTime.Now.ToString("mm:ss.fff")
-                , MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, pair, prevRate, limitRate);
+              //Debug.WriteLine("{0}:{1:n1}ms for {2} from {3} to {4} @ " + DateTime.Now.ToString("mm:ss.fff")
+              //, MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, pair, prevRate, limitRate);
             }
           }
         } else {
@@ -2128,7 +2129,6 @@ namespace Order2GoAddIn {
     /// <param name="tradeId"></param>
     /// <param name="stopLoss">Negative for Buy Trade</param>
     /// <param name="remark"></param>
-    /// <param name="addToCurrent"></param>
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void FixOrderSetStop(string tradeId, double stopLoss, string remark) {
       try {
@@ -2155,8 +2155,8 @@ namespace Order2GoAddIn {
               ReLoginIfCommandIsDisabled(exc);
               RaiseError(new Exception(new { pair, stopRate, prevRate } + "", exc));
             } finally {
-              Debug.WriteLine("{0}:{1:n1}ms for {2} from {3} to {4} @ " + DateTime.Now.ToString("mm:ss.fff")
-                , MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, pair, prevRate, stopRate);
+              //Debug.WriteLine("{0}:{1:n1}ms for {2} from {3} to {4} @ " + DateTime.Now.ToString("mm:ss.fff")
+              //  , MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, pair, prevRate, stopRate);
             }
           }
         } else {
@@ -2424,7 +2424,8 @@ namespace Order2GoAddIn {
         FXCore.ParserAut parser = Desk.GetParser() as FXCore.ParserAut;
         switch (table.Type.ToLower()) {
           #region Trades
-          case "trades": {
+          case "trades":
+            {
               TradesReset();
               var tradeParsed = InitTrade(new NameValueParser(rowText));
               RaiseTradeAdded(tradeParsed);
@@ -2491,7 +2492,8 @@ namespace Order2GoAddIn {
             }
             break;
           #endregion
-          case "closed trades": {
+          case "closed trades":
+            {
               TradesReset();
               row = table.FindRow(FIELD_TRADEID, RowID, 0) as FXCore.RowAut;
               var trade = InitClosedTrade(row);

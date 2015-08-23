@@ -24,8 +24,9 @@ namespace HedgeHog {
     IDisposable _bufferDisposable;
     ISubject<Action> _StartProcessSubject = new Subject<Action>();
     IDisposable _StartProcessDisposable;
-    public AsyncBuffer() {
-      var buffer = new BroadcastBlock<Action>(n => n, new DataflowBlockOptions() { BoundedCapacity = 1 });
+    public AsyncBuffer() : this(1) { }
+    public AsyncBuffer(int boundedCapacity) {
+      var buffer = new BroadcastBlock<Action>(n => n, new DataflowBlockOptions() { BoundedCapacity = boundedCapacity });
 
       _StartProcessDisposable = _StartProcessSubject
         .ObserveOn(TaskPoolScheduler.Default)

@@ -108,7 +108,7 @@ namespace HedgeHog.Shared {
 
     Tick[] GetTicks(string pair, int periodsBack,Func<List<Tick>,List<Tick>> map);
 
-    void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim);
+    void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map);
 
     PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment);
   }

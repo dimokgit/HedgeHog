@@ -1445,21 +1445,19 @@ namespace HedgeHog.Alice.Store {
       var legs = rates.Select(r => r.PriceCMALast).Distances().Select((d, i) => new { d, i }).ToList();
       var leg = legs.Last().d.Div(6);
       var sectionStarts = legs.DistinctUntilChanged(a => a.d.Div(leg).Floor()).ToList();
-      var sections = sectionStarts.Zip(sectionStarts.Skip(1), (p, n) => {
-        var coeffs = legs.GetRange(p.i, n.i - p.i).Select(a => a.d).ToArray().Linear();
-        return new { end = n.i, start = p.i, coeffs };
-      }).ToList();
+      var sections = sectionStarts.Zip(sectionStarts.Skip(1), (p, n) => new { end = n.i, start = p.i }).ToList();
       Func<Rate,int> rateIndex =rate=> rates.FuzzyFind(rate, (r, r1, r2) => r.StartDate.Between(r1.StartDate, r2.StartDate));
       {
-        Func<int, int, double[], Rate> getExtreamRate = (start, end, coeffs) => {
+        Func<int, int, Rate> getExtreamRate = (start, end) => {
           var offset = ((end - start) * 0.2).ToInt();
-          var range = rates.GetRange(start - offset, offset);
-          var line = coeffs.RegressionLine(range.Count);
-          var zip = line.Zip(range, (l, r) => new { l=l.Abs(r.PriceAvg), r });
+          var range = rates.GetRange(0, rates.Count.Min(end + offset));
+          var line = range.ToArray(r => r.PriceAvg).Line();
+          var skip = start - offset;
+          var zip = line.Skip(skip).Zip(range.Skip(skip), (l, r) => new { l = l.Abs(r.PriceAvg), r });
           return zip.MaxBy(x => x.l).First().r;
         };
         Func<int, Rate> getRate = start =>
-          sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end, a.coeffs)).First();
+          sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end)).First();
         var rate = getRate(2);
         _corridorLength1 = rateIndex(rate);
         _corridorLength2 = ratesForCorridor.Count;

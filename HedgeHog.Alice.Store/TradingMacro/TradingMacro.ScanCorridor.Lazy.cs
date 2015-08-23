@@ -63,10 +63,18 @@ namespace HedgeHog.Alice.Store {
           _corridorLength2 = ratesReversed.TakeWhile(r => r.StartDate >= _corridorStartDate2).Count();
         });
       if (postProcess != null) postProcess();
-      TrendLines1 = new Lazy<IList<Rate>>(() => CalcTrendLines(_corridorLength1));
-      TrendLines = new Lazy<IList<Rate>>(SetTrendLines1231);
-      TrendLines2 = new Lazy<IList<Rate>>(() => CalcTrendLines(_corridorLength2));
+      TrendLines1 = Lazy.Create(() => CalcTrendLines(_corridorLength1), TrendLines1.Value, exc => Log = exc);
+      TrendLines = Lazy.Create(SetTrendLines1231, TrendLines.Value, exc => Log = exc);
+      TrendLines2 = Lazy.Create(() => CalcTrendLines(_corridorLength2), TrendLines2.Value, exc => Log = exc);
       return (showVolts ?? GetShowVoltageFunction())();
+    }
+    IList<Rate> TryGetTrendLines(Func<IList<Rate>> calc,IList<Rate> defaultList) {
+      try {
+        return calc();
+      } catch (Exception exc) {
+        Log = exc;
+        return defaultList;
+      }
     }
     private CorridorStatistics ShowVoltsByStDevIntegral() {
       SetVoltsByStDevDblIntegral3(UseRatesInternal(ri => ri.Reverse().ToArray()), VoltsFrameLength);
