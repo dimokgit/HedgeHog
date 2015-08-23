@@ -72,10 +72,7 @@ namespace HedgeHog.Alice.Store {
       if (Trades.Any() && (SuppRes.All(sr => !sr.InManual) || MoveWrapTradeWithNewTrade)) {
         SuppRes.ForEach(sr => sr.ResetPricePosition());
         BuyLevel.InManual = SellLevel.InManual = true;
-        //BuyLevel.TradesCount = SellLevel.TradesCount = TradeCountStart;
-        //LevelBuyBy = LevelSellBy = 
-        //LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
-        var offset = InPoints(WaveHeightAverage);
+        double offset = HeightForWrapToCorridor();
         if (Trades.HaveBuy()) {
           BuyLevel.Rate = Trades.NetOpen();
           SellLevel.Rate = BuyLevel.Rate - offset;
@@ -86,9 +83,14 @@ namespace HedgeHog.Alice.Store {
       }
       RaiseShowChart();
     }
+
+    private double HeightForWrapToCorridor() {
+      return BuyLevel.Rate.Abs(SellLevel.Rate);
+    }
+
     public void WrapCurrentPriceInCorridor() {
       LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
-      var offset = WaveHeightAverage / 2;
+      var offset = HeightForWrapToCorridor() / 2;
       BuyLevel.Rate = CurrentPrice.Average + offset;
       SellLevel.Rate = CurrentPrice.Average - offset;
       BuyLevel.InManual = SellLevel.InManual = true;

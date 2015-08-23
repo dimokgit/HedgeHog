@@ -128,8 +128,8 @@ namespace HedgeHog.Alice.Store {
             Func<bool, double> levelByDefault = isBuy => IsTakeBack
               ? double.NaN
               : isBuy
-              ? buyLevel + CalculateTakeProfit(1)
-              : sellLevel - CalculateTakeProfit(1);
+              ? buyLevel + CalculateTakeProfit()
+              : sellLevel - CalculateTakeProfit();
             if (buyCloseLevel.IsGhost)
               setExitLevel(buyCloseLevel);
             else if (buyCloseLevel.InManual) {

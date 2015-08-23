@@ -86,7 +86,10 @@ namespace HedgeHog.Alice.Store {
     BuySellLevels = 1,
     RatesHeight = 2,
     Pips = 3,
-    Wave = 4
+    Wave = 4,
+    Green = 5,
+    Red = 6,
+    Blue = 7
   }
   public enum TradeLevelBy {
     None = 0,
