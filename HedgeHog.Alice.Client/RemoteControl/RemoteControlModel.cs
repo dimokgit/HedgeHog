@@ -949,14 +949,8 @@ namespace HedgeHog.Alice.Client {
           if (IsInVirtualTrading) {
             var vt = (VirtualTradesManager)TradesManager;
             vt.SetServerTime(DateTime.MinValue);
-            vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri, 2000));
+            vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri, 2000).Single());
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
-          }
-          if (false) {
-            PriceChangeSubscriptionDispose();
-            _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>
-              (h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
-              .Subscribe(pce => { UpdateTradingStatistics(); }, exc => Log = exc);
           }
           TradesManager.TradeAdded += fw_TradeAdded;
           TradesManager.TradeClosed += fw_TradeClosed;
@@ -1122,11 +1116,13 @@ namespace HedgeHog.Alice.Client {
       }
       var trends = tm.TrendLines.Value.ToList();
       var trendLines = tm.UseRates(rates => new {
-        dates = new DateTimeOffset[]{
+        dates = rates.Count>0
+        ? new DateTimeOffset[]{
           tm.BarPeriod == BarsPeriodType.m1
           ? rates.Last().StartDate2.AddMinutes(-(tm.CorridorStats.Rates.Count - 1))
           : trends[0].StartDate2,
-          rates.Last().StartDate2},
+          rates.Last().StartDate2}
+        :new DateTimeOffset[0],
         close1 = trends.ToArray(t => t.Trends.PriceAvg1.Round(digits)),
         close2 = trends.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends.ToArray(t => t.Trends.PriceAvg3.Round(digits)),

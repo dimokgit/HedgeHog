@@ -265,6 +265,7 @@ namespace HedgeHog.Alice.Store {
       });
     }
     public static List<TBar> GetRateFromDBBackwards<TBar>(string pair, DateTime endDate, int barsCount, int minutesPerPriod,Func<List<TBar>,List<TBar>> map) where TBar : BarBase, new() {
+      map = map ?? new Func<List<TBar>, List<TBar>>(rs => rs);
       var rates = map(GetRateFromDBBackwards<TBar>(pair, endDate, barsCount, minutesPerPriod));
       while(rates.Count< barsCount) {
         var moreRates = map(GetRateFromDBBackwards<TBar>(pair, rates[0].StartDate.ToUniversalTime(), barsCount, minutesPerPriod));
@@ -321,8 +322,11 @@ namespace HedgeHog.Alice.Store {
           AskOpen = b.AskOpen, AskClose = b.AskClose, BidHigh = b.BidHigh,
           BidLow = b.BidLow, BidOpen = b.BidOpen, BidClose = b.BidClose, StartDate2 = b.StartDate,
           Volume = b.Volume,
+          IsHistory = true
         };
-        new[] { bar }.OfType<Tick>().ForEach(t => t.Row = b.Row);
+        var tick = bar as Tick;
+        if(tick != null)
+          tick.Row = b.Row;
         return bar;
       }).ToList();
       var ticks = Lazy.Create(()=>bs.Cast<Tick>().ToArray()) ;

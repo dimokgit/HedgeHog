@@ -522,6 +522,9 @@ namespace HedgeHog.Alice.Client {
             _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
           }
           exc = FileLogger.LogToFile(exc);
+
+          //ReactiveUI.MessageBus.Current.SendMessage<WwwWarningMessage>(new WwwWarningMessage(exc.Message));
+
           lastLogTime = DateTime.Now;
           RaisePropertyChanged(() => LogText, () => IsLogExpanded, () => IsLogPinned);
           IsLogExpanded = true;
@@ -1001,16 +1004,16 @@ namespace HedgeHog.Alice.Client {
         return _LoadHistoryCommand;
       }
     }
-    Task loadHistoryTast;
-    bool isLoadHistoryTaskRunning { get { return loadHistoryTast != null && loadHistoryTast.Status == TaskStatus.Running; } }
+    Task loadHistoryTask;
+    bool isLoadHistoryTaskRunning { get { return loadHistoryTask != null && loadHistoryTask.Status == TaskStatus.Running; } }
     void LoadHistory() {
       if (isLoadHistoryTaskRunning)
-        MessageBox.Show("LoadHistoryTask is in " + loadHistoryTast.Status + " status.");
+        MessageBox.Show("LoadHistoryTask is in " + loadHistoryTask.Status + " status.");
       else {
         Action a = () => { PriceHistory.LoadBars(fwMaster,"", o => Log = new Exception(o + "")); };
-        if (loadHistoryTast == null)
-          loadHistoryTast = Task.Factory.StartNew(a);
-        else loadHistoryTast.Start();
+        if (loadHistoryTask == null)
+          loadHistoryTask = Task.Factory.StartNew(a);
+        else loadHistoryTask.Start();
       }
     }
 

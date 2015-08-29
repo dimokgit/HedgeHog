@@ -132,105 +132,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
   }
-  public sealed class GZipMiddleware {
-    private readonly Func<IDictionary<string, object>, Task> next;
-
-    public GZipMiddleware(Func<IDictionary<string, object>, Task> next) {
-      this.next = next;
-    }
-
-    public async Task Invoke(IDictionary<string, object> environment) {
-      var context = new OwinContext(environment);
-
-      // Verifies that the calling client supports gzip encoding.
-      if (!(from encoding in context.Request.Headers.GetValues("Accept-Encoding") ?? Enumerable.Empty<string>()
-            from enc in encoding.Split(',').Select(s => s.Trim())
-            where String.Equals(enc, "gzip", StringComparison.OrdinalIgnoreCase)
-            select encoding).Any()) {
-        await next(environment);
-        return;
-      }
-      context.Response.Headers.Add("Content-Encoding", new[] { "gzip" });
-
-      // Replaces the response stream by a delegating memory
-      // stream and keeps track of the real response stream.
-      var body = context.Response.Body;
-      context.Response.Body = new BufferingStream(context, body);
-
-      try {
-        await next(environment);
-
-        if (context.Response.Body is BufferingStream) {
-          await context.Response.Body.FlushAsync();
-        }
-      } finally {
-        // Restores the real stream in the environment dictionary.
-        context.Response.Body = body;
-      }
-    }
-
-    private sealed class BufferingStream : MemoryStream {
-      private readonly IOwinContext context;
-      private Stream stream;
-
-      internal BufferingStream(IOwinContext context, Stream stream) {
-        this.context = context;
-        this.stream = stream;
-      }
-
-      public override async Task FlushAsync(CancellationToken cancellationToken) {
-        // Determines if the memory stream should
-        // be copied in the response stream.
-        if (!(stream is GZipStream)) {
-          Seek(0, SeekOrigin.Begin);
-          await CopyToAsync(stream, 8192, cancellationToken);
-          SetLength(0);
-
-          return;
-        }
-
-        // Disposes the GZip stream to allow
-        // the footer to be correctly written.
-        stream.Dispose();
-      }
-
-      public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) {
-        // Determines if the stream has already been replaced by a GZip stream.
-        if (stream is GZipStream) {
-          // The delegated stream is already a GZip stream, continue streaming.
-          await stream.WriteAsync(buffer, offset, count, context.Request.CallCancelled);
-          return;
-        }
-
-        // Determines if the memory stream should continue buffering.
-        if ((count + Length) < 4096) {
-          // Continues buffering.
-          await base.WriteAsync(buffer, offset, count, cancellationToken);
-          return;
-        }
-
-        // Determines if chunking can be safely used.
-        if (!String.Equals(context.Request.Protocol, "HTTP/1.1", StringComparison.Ordinal)) {
-          throw new InvalidOperationException("The Transfer-Encoding: chunked mode can only be used with HTTP/1.1");
-        }
-
-        // Sets the appropriate headers before changing the response stream.
-        context.Response.Headers["Content-Encoding"] = "gzip";
-        context.Response.Headers["Transfer-Encoding"] = "chunked";
-
-        // Writes the buffer in the memory stream.
-        await base.WriteAsync(buffer, offset, count, cancellationToken);
-
-        // Opens a new GZip stream pointing directly to the real response stream.
-        stream = new GZipStream(stream, CompressionMode.Compress, leaveOpen: true);
-
-        // Rewinds the delegating memory stream
-        // and copies it to the GZip stream.
-        Seek(0, SeekOrigin.Begin);
-        await CopyToAsync(stream, 8192, context.Request.CallCancelled);
-      }
-    }
-  }
   public class MyHub : Hub {
     class SendChartBuffer : AsyncBuffer<SendChartBuffer, Action> {
       protected override Action PushImpl(Action action) {
@@ -266,6 +167,10 @@ namespace HedgeHog.Alice.Client {
     }
     public MyHub() {
       remoteControl = App.container.GetExport<RemoteControlModel>();
+      App.WwwMessageWarning.Do(wm => {
+        Clients.All.message(wm);
+      });
+      App.WwwMessageWarning.Clear();
     }
     bool IsLocalRequest {
       get {
@@ -504,7 +409,7 @@ namespace HedgeHog.Alice.Client {
       return UseTradingMacro(pair, chartNum, tm => {
         var props = (IDictionary<string, object>)ts;
         props.ForEach(kv => {
-          tm.SetProperty(kv.Key, kv.Value);
+          tm.SetProperty(kv.Key, kv.Value, p => p.GetSetMethod() != null);
         });
         return ReadTradeSettings(pair, chartNum);
       }, true);
@@ -512,7 +417,7 @@ namespace HedgeHog.Alice.Client {
     public ExpandoObject ReadTradeSettings(string pair, int chartNum) {
       return UseTradingMacro(pair, chartNum, tm => {
         var e = (IDictionary<string, object>)new ExpandoObject();
-        Func<object, object> convert = o => o.GetType().IsEnum ? o + "" : o;
+        Func<object, object> convert = o => o != null && o.GetType().IsEnum ? o + "" : o;
         tm.GetPropertiesByAttibute<WwwSettingAttribute>(_ => true)
           .Select(x => new { x.Item1.Group, p = x.Item2 })
           .OrderBy(x => x.p.Name)

@@ -85,7 +85,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     private double HeightForWrapToCorridor() {
-      return BuyLevel.Rate.Abs(SellLevel.Rate);
+      return this.CalculateTakeProfit(1);
     }
 
     public void WrapCurrentPriceInCorridor() {

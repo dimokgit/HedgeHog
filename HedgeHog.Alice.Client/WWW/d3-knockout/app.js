@@ -887,6 +887,9 @@
     chat.client.newsIsComming = function (news) {
       showWarningPerm(JSON.stringify(news));
     };
+    chat.client.warning = function (message) {
+      showWarningPerm(message);
+    };
     // #endregion
     // #region Start the connection.
     //$.connection.hub.logging = true;

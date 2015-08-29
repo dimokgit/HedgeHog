@@ -4,6 +4,16 @@ using System.Linq;
 using System.Text;
 
 namespace HedgeHog.Shared.Messages {
+  public class WwwWarningMessage {
+    public WwwWarningMessage(string message) {
+      this.Message = message;
+    }
+
+    public string Message {
+      get;
+      private set;
+    }
+  }
   public class AppExitMessage { }
   public class CloseAllTradesMessage<T> {
     public T Sender { get; private set; }

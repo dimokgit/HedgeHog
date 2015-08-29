@@ -724,7 +724,9 @@ namespace HedgeHog.Alice.Store {
       get { return _IsTakeBack; }
       set {
         if (_IsTakeBack != value) {
-          if (value) UseLastLoss = false;
+          if(value) {
+            UseLastLoss = false;
+          }
           _IsTakeBack = value;
           OnPropertyChanged("IsTakeBack");
         }
@@ -809,6 +811,9 @@ namespace HedgeHog.Alice.Store {
       get { return CloseAllOnProfit; }
       set {
         CloseAllOnProfit = value;
+        IsTakeBack = false;
+        this.UseLastLoss = false;
+        Log = new Exception(new { IsTakeBack, UseLastLoss } + "");
         OnPropertyChanged("DoAdjustExitLevelByTradeTime");
       }
     }
@@ -1058,17 +1063,6 @@ namespace HedgeHog.Alice.Store {
       set {
         SpreadShortToLongTreshold = value;
         OnPropertyChanged(() => WaveStDevRatio);
-      }
-    }
-
-    [DisplayName("Corridor Lines By")]
-    [Category(categoryActiveFuncs)]
-    public CorridorHeightMethods CorridorHeightMethod {
-      get { return (CorridorHeightMethods)CorridorIterationsOut; }
-      set {
-        if (CorridorIterationsOut == (int)value) return;
-        CorridorIterationsOut = (int)value;
-        OnPropertyChanged(() => CorridorHeightMethod);
       }
     }
 

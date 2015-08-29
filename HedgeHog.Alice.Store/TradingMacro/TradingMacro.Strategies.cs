@@ -24,8 +24,11 @@ namespace HedgeHog.Alice.Store {
     bool IsTradingTime() { return IsTradingDay() && IsTradingHour(); }
     public bool TradingTimeState { get { try { return IsTradingTime(); } catch { throw; } } }
     private bool IsEndOfWeek() {
-      return ServerTime.DayOfWeek == DayOfWeek.Friday && ServerTime.ToUniversalTime().TimeOfDay > TimeSpan.Parse("2" + (ServerTime.IsDaylightSavingTime() ? "0" : "1") + ":45")
+      var isEow = ServerTime.DayOfWeek == DayOfWeek.Friday && ServerTime.ToUniversalTime().Hour> 16
         || (!TradeOnBOW && IsBeginningOfWeek());
+      if (isEow)
+        Log = new Exception(new { isEow } + "");
+      return isEow;
     }
     private bool IsBeginningOfWeek() { return ServerTime.DayOfWeek == DayOfWeek.Sunday; }
 

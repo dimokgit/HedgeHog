@@ -10,42 +10,6 @@ using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    void ScanRatesLengthByStDevMin() {
-      var ratesInternal = UseRatesInternal(ri => ri.Reverse().ToList(_priceAvg), 5000);
-      var countMin = ratesInternal.Count;
-      var start = BarsCount;
-      var end = RatesInternal.Count - 1;
-      var func = MonoidsCore.ToFunc(true, 0, 0.0, (ok, l, sd) => new { ok, l, sd });
-      var last = func(false, 0, 0.0);
-      var getCount = Lib.GetIterator((_start, _end, _isOk, _nextStep) => {
-        var _last = func(false, 0, 0.0);
-        var sdMin = InPoints(WaveStDevRatio);
-        return Lib.IteratonSequence(_start, _end, _nextStep)
-        .Select(i => {
-          var rates = ratesInternal.GetRange(0, i.Min(countMin));
-          var stDev = rates.HeightByRegressoin();
-          var x = func(stDev > sdMin, rates.Count, stDev);
-          if (_last.sd < stDev) _last = x;
-          return x;
-        })
-        .SkipWhile(a => _isOk(a.ok))
-        .Take(1)
-        .IfEmpty(() => _last);
-      });
-      Func<bool, bool> isOk = b => !b;
-      var divider = 100.0;
-      Func<int, int> nextStep = i => Lib.IteratonSequenceNextStep(i, divider);
-      while (true) {
-        var c = getCount(start, end, isOk, nextStep).Single().l;
-        if (nextStep(c).Abs() <= 1) {
-          BarsCountCalc = c;
-          break;
-        }
-        divider *= -2;
-        start = c; end = start + nextStep(c) * 3;
-        if (divider < 0) { isOk = b => b; } else { isOk = b => !b; }
-      }
-    }
     static bool IsTresholdOk(double value, double treshold) {
       return treshold >= 0 ? value >= treshold : value < -treshold;
     }
@@ -57,90 +21,60 @@ namespace HedgeHog.Alice.Store {
       return (start, end, loop) =>
         counter(Lib.IteratonSequence(start, end, i => nextStep(i, loop)).Select(looper));
     }
-    void ScanRatesLengthByRelativeStDev() {
-      if (!this._isCorridorStopDateManual)
-        return;
-      var ratesInternal = UseRatesInternal(ri => ri.Reverse().Select(_priceAvg).ToList(), 5000);
-      var lopper = MonoidsCore.ToFunc(0, i => {
-        var rates = ratesInternal.GetRange(0, i.Min(ratesInternal.Count));
-        var rsd = rates.Height() / rates.StandardDeviation();
-        return new { rates.Count, rsd };
-      });
-      var start = BarsCount;
-      var end = BarsCountCount() - 1;
-      var nextStep = Lib.IteratonSequencePower(end, IteratorScanRatesLengthLastRatio);
-      var corridor = GetLoper(nextStep, lopper, cors => cors
-        .OrderBy(a => a.rsd)
-        .First());
-      var corridors = IteratorLopper(start, end, nextStep, corridor, c => c.Count);
-      var lastRsd = corridors.OrderBy(x => x.rsd)
-        .Do(x => BarsCountCalc = x.Count)
-        .First().rsd;
-      OnRatesArrayChaged = () => OnRatesArrayChaged_SetVoltsByRsd(lastRsd);
-    }
     void ScanRatesLengthByStDevMin2(int indexMin) {
-      if (IsCorridorFrozen()) {
-        //BarsCountCalc = (CorridorStats.Rates.Count * 1.1).Max(BarsCountCalc).Min(BarsCountCount()).ToInt();
-        if (CorridorStats.Rates.Count * 1.05 > RatesArray.Count) {
-          //SetCorridorStartDateToNextWave(true);
-          BarsCountCalc = (CorridorStats.Rates.Count * 1.05).Ceiling();
-        }
-        return;
-      }
-      var rateA = new { StartDate = DateTime.Now, PriceAvg = 0.0 };
-      Func<DateTime, Rate, Rate, bool> isBetweenRates = (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate);
-      var isBetween = MonoidsCore.ToFunc(DateTime.Now, rateA, rateA, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate));
-      int startIndex = indexMin > 0 ? indexMin : BarsCount;
-      var prices = UseRatesInternal(ri => ri.Reverse().Select(r => new { r.StartDate, PriceAvg = r.PriceCMALast }).ToList());
-      var isTicks = BarPeriod == BarsPeriodType.t1;
-      if (isTicks) {
-        var startIndexDate = prices[startIndex.Min(prices.Count - 1)].StartDate;
-        prices = prices.GroupAdjacentTicks(TimeSpan.FromMinutes(1), a => a.StartDate, g => new { StartDate = g.Key, PriceAvg = g.Average(r => r.PriceAvg) }).ToList();
-        startIndex = prices.FuzzyFind(startIndexDate, isBetween);
-        if (indexMin != 0) indexMin = startIndex;
-      }
-      var getCount = Lib.GetIterator((_start, _end, _isOk, _nextStep) => {
-        var last = new { i = 0, d = prices[indexMin].StartDate, ok = false, std = double.MinValue };
-        return Lib.IteratonSequence(_start, _end, _nextStep)
-          .Where(i => i > indexMin)
-          .Select(i => {
-            //InPips(prices.GetRange(0, i.Min(prices.Count)).StandardDeviation()).Yield()
-            var range = prices.GetRange(0, i.Min(prices.Count));
-            var std = InPips(range.ToArray(r => r.PriceAvg).HeightByRegressoin());
-            return new { i, d = range.Last().StartDate, ok = std <= RatesStDevMinInPips, std };
-          })
-          .SkipWhile(a => { if (last.std < a.std) last = a; return _isOk(a.ok); })
-          .Take(1)
-          .IfEmpty(() => last)
-          .Select(a => a.d);
-      });
-      Func<IEnumerable<DateTime>> defaultDate = () => new[] { RatesArray[0].StartDate };
-      Func<DateTime, int> dateToIndex = date => prices.FuzzyFind(date, isBetween);
-      Func<DateTime, int> dateToCountInternal = date => UseRatesInternal(ri =>
-        ri.Count - ri.FuzzyIndex(date, isBetweenRates).DefaultIfEmpty(-1).Single());
-      var corrDate = BarsCountLastDate;
       try {
-        var maxCount = Lazy.Create(() => UseRatesInternal(ri => ri.Count));
-        var bcByM1 = BarPeriod == BarsPeriodType.t1 && UseM1Corridor > 0
-          ? TradingMacroOther()
-          .SelectMany(tm => tm.WaveRanges.Take(UseM1Corridor), (tm, wr) => dateToCountInternal(wr.StartDate.ToLocalTime()))
-          .TakeWhile(i => i <= maxCount.Value * 1.1)
-          .DefaultIfEmpty(maxCount.Value)
-          .Last()
-          : 0;
-        if (bcByM1 > 0) {
-          BarsCountCalc = bcByM1.Min(maxCount.Value);
-          BarsCountLastDate = DateTime.MinValue;
-        } else {
-          Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
-            a => dateToIndex(corrDate = a.IfEmpty(defaultDate).Single()));
-          if (!WaveRanges.TakeLast(1).Any(wr => corrDate.Between(wr.StartDate, wr.EndDate)))
-            BarsCountLastDate = corrDate;//.Max(BarsCountLastDate);
-          BarsCountCalc = UseRatesInternal(rl => rl.Count - rl.TakeWhile(r => r.StartDate < BarsCountLastDate).Count());
+        if(IsCorridorFrozen()) {
+          //BarsCountCalc = (CorridorStats.Rates.Count * 1.1).Max(BarsCountCalc).Min(BarsCountCount()).ToInt();
+          if(CorridorStats.Rates.Count * 1.05 > RatesArray.Count) {
+            //SetCorridorStartDateToNextWave(true);
+            BarsCountCalc = (CorridorStats.Rates.Count * 1.05).Ceiling();
+          }
+          return;
         }
-        SetTpsAverages();
-        SetTicksPerSecondAverage(RatesArray.Last().TpsAverage);
-      } catch (Exception exc) {
+        var rateA = new { StartDate = DateTime.Now, PriceAvg = 0.0 };
+        Func<DateTime, Rate, Rate, bool> isBetweenRates = (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate);
+        var isBetween = MonoidsCore.ToFunc(DateTime.Now, rateA, rateA, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate));
+        int startIndex = indexMin > 0 ? indexMin : BarsCount;
+        var prices = UseRatesInternal(ri => ri.Reverse().Select(r => new { r.StartDate, PriceAvg = r.PriceCMALast }).ToList()).SelectMany(p => p).ToList();
+        if(prices.Count == 0)
+          return;
+        var isTicks = BarPeriod == BarsPeriodType.t1;
+        if(isTicks) {
+          var startIndexDate = prices[startIndex.Min(prices.Count - 1)].StartDate;
+          prices = prices.GroupAdjacentTicks(TimeSpan.FromMinutes(1), a => a.StartDate, g => new { StartDate = g.Key, PriceAvg = g.Average(r => r.PriceAvg) }).ToList();
+          startIndex = prices.FuzzyFind(startIndexDate, isBetween);
+          if(indexMin != 0)
+            indexMin = startIndex;
+        }
+        var getCount = Lib.GetIterator((_start, _end, _isOk, _nextStep) => {
+          var last = new { i = 0, d = prices[indexMin].StartDate, ok = false, std = double.MinValue };
+          return Lib.IteratonSequence(_start, _end, _nextStep)
+            .Where(i => i > indexMin)
+            .Select(i => {
+              //InPips(prices.GetRange(0, i.Min(prices.Count)).StandardDeviation()).Yield()
+              var range = prices.GetRange(0, i.Min(prices.Count));
+              var std = InPips(range.ToArray(r => r.PriceAvg).HeightByRegressoin());
+              return new { i, d = range.Last().StartDate, ok = std <= RatesStDevMinInPips, std };
+            })
+            .SkipWhile(a => { if(last.std < a.std) last = a; return _isOk(a.ok); })
+            .Take(1)
+            .IfEmpty(() => last)
+            .Select(a => a.d);
+        });
+        Func<IEnumerable<DateTime>> defaultDate = () => new[] { RatesArray[0].StartDate };
+        Func<DateTime, int> dateToIndex = date => prices.FuzzyFind(date, isBetween);
+        var corrDate = BarsCountLastDate;
+        var maxCount = Lazy.Create(() => UseRatesInternal(ri => ri.Count));
+        Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
+          a => dateToIndex(corrDate = a.IfEmpty(defaultDate).Single()));
+        if(!WaveRanges.TakeLast(1).Any(wr => corrDate.Between(wr.StartDate, wr.EndDate)))
+          BarsCountLastDate = corrDate;//.Max(BarsCountLastDate);
+        UseRatesInternal(rl => rl.Count - rl.TakeWhile(r => r.StartDate < BarsCountLastDate).Count()).ForEach(x => {
+          BarsCountCalc = x;
+          SetTpsAverages();
+          SetTicksPerSecondAverage(RatesArray.Last().TpsAverage);
+        }); 
+      } catch(Exception exc) {
         Log = exc;
       }
     }
@@ -154,27 +88,25 @@ namespace HedgeHog.Alice.Store {
         return;
       }
       var rdm = InPoints(RatesDistanceMinCalc.Value);
-      var count = UseRatesInternal(rs => rs
+      Func<IEnumerable<Rate>,IEnumerable<double>> distancesByCma = rs =>rs
         .Cma(_priceAvg, CmaPeriodByRatesCount(RatesArray.Count))
-        .Distances()
+        .Distances();
+      UseRatesInternal(rs => distsnacesByCma(rs)
         .TakeWhile(i => i <= rdm)
         .Count()
-        );
-      ScanRatesLengthByStDevMin2(count);
+        ).ForEach(count => {
+          ScanRatesLengthByStDevMin2(count);
+          OnGeneralPurpose(() => RatesDistanceInPips = InPips(UseRates(rs => distancesByCma(rs).Last())).Round(), false);
+        });
       return;
-      //var distanceCurrent = scanDistance(rates.Take(RatesArray.Count)).LastOrDefault();
-      //if (distanceCurrent.Ratio(rdm) < 1.2) return;
-      Func<DateTime> corrDate = () => UseRatesInternal(rs => rs[(rs.Count - count - 1).Max(0)].StartDate);
-      WaveRanges.TakeLast(1)
-        .Where(_ => false && !IsAsleep)
-        .Where(wr => corrDate().Between(wr.StartDate.AddMinutes(-1), wr.EndDate.AddMinutes(1)))
-        .Select(wr => new Action(() => {
-          BarsCountDate = RatesArray[0].StartDate.Min(wr.StartDate);
-          return;
-        }))
-        .DefaultIfEmpty(() => BarsCountCalc = count.Max(BarsCount))
-        .ForEach(a => a());
     }
+
+    private IEnumerable<double> distsnacesByCma(ReactiveUI.ReactiveList<Rate> rs) {
+      return rs
+              .Cma(_priceAvg, CmaPeriodByRatesCount(RatesArray.Count))
+              .Distances();
+    }
+
     DateTime __barsCountLastDate = DateTime.MinValue;
     public DateTime BarsCountLastDate {
       get { return __barsCountLastDate; }
@@ -228,31 +160,6 @@ namespace HedgeHog.Alice.Store {
         e = s; s = count;// -ns(count) * 2; e = count + ns(count) * 3;
       }
     }
-
-    void ScanRatesLengthByCorridorLength() {
-      Func<IEnumerable<int>> defaultLength = () => CorridorStats.Rates.Count.YieldIf(c => c > 0, () => RatesArray.Count);
-      var ratesInternal = UseRatesInternal(ri => ri.Reverse().Select(_priceAvg).ToList(), 5000);
-      var countMax = BarsCountCount() - 1;
-      var start = BarsCount;
-      var nsp = Lib.IteratonSequencePower(countMax, IteratorScanRatesLengthLastRatio);
-      var corridors = Lib.IteratonSequence(BarsCount, countMax, i => nsp(i, 0))
-        .Select(i => {
-          var rates = ratesInternal.GetRange(0, i.Min(countMax));
-          var ratesStDev = rates.StandardDeviation() * _stDevUniformRatio / 2;
-          var corrLength = CalcCorridorLengthByHeightByRegressionMin(rates, ratesStDev, 0, 10, DoFineTuneCorridor);
-          return new { corrLength = rates.Count, corrRatio = corrLength.Div(rates.Count) };
-        })
-        .Where(x => x.corrRatio > 0)
-        .OrderBy(x => x.corrRatio)
-        .Take(1);
-      var lastRsd = 0.0;
-      BarsCountCalc = corridors
-        .Do(x => lastRsd = x.corrRatio)
-        .Select(x => x.corrLength)
-        .Concat(defaultLength())
-        .First();
-      OnRatesArrayChaged = () => OnRatesArrayChaged_SetVoltsByRsd(lastRsd);
-    }
     #region IteratorScanRatesLengthLastRatio
     private double _IteratorScanRatesLengthLastRatio = 3;
     [Category(categoryCorridor)]
@@ -283,5 +190,8 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("CorridorLengthDiff");
       }
     }
+
+    [WwwSetting(wwwSettingsCorridorOther)]
+    public double RatesDistanceInPips { get; private set; }
   }
 }

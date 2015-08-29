@@ -109,49 +109,68 @@ namespace HedgeHog.Alice.Store {
         _trendsGroupingInPipsMin = value;
       }
     }
+    public TradeConditionDelegate AsleepOk {
+      get {
+        return () => _BarsCountCalc.HasValue ? TradeDirections.Both : TradeDirections.None;
+      }
+    }
+
     public TradeConditionDelegate GroupingOk {
       get {
         return () =>
           InPips(TrendLinesTrendsAll.Select(tl => tl.PriceAvg2).StandardDeviation()) < TrendsGroupingInPipsMin
           ? TradeDirections.Down
           : InPips(TrendLinesTrendsAll.Select(tl => tl.PriceAvg3).StandardDeviation()) < TrendsGroupingInPipsMin
-          ? TradeDirections.Down
+          ? TradeDirections.Up
           : TradeDirections.None;
           
       }
     }
 
+    public TradeConditionDelegate GreenAngAOk { get { return () => TradeDirectionByAngleCondition(TrendLines1Trends); } }
+    public TradeConditionDelegate RedAngAOk { get { return () => TradeDirectionByAngleCondition(TrendLinesTrends); } }
+    public TradeConditionDelegate BlueAngAOk { get { return () => TradeDirectionByAngleCondition(TrendLines2Trends); } }
+
+    TradeDirections TradeDirectionByAngleCondition(Rate.TrendLevels tls) {
+      return IsTresholdAbsOk(tls.Angle, TradingAngleRange)
+        ? TradingAngleRange > 0
+        ? tls.Angle > 0
+        ? TradeDirections.Down
+        : TradeDirections.Up
+        : TradeDirections.Both
+        : TradeDirections.None;
+    }
     public TradeConditionDelegate CorrAngAOk {
       get {
         return () => TrendLinesTrendsAll.All(tlt => !tlt.IsEmpty) &&
-          IsTresholdAbsOk(TrendLinesTrendsAll.Average(tlt => tlt.Angle), this.TradingAngleRange) ? TradeDirections.Both : TradeDirections.None;
+          IsTresholdAbsOk(TrendLinesTrendsAll.Average(tlt => tlt.Angle.Abs()), this.TradingAngleRange) ? TradeDirections.Both : TradeDirections.None;
       }
     }
-    public TradeConditionDelegate CorrAngMOk {
+    public Func<TradeDirections> CorrAngMOk {
       get {
         return () => TrendLinesTrendsAll.All(tlt => !tlt.IsEmpty) &&
           IsTresholdAbsOk(TrendLinesTrendsAll.Min(tlt => tlt.Angle.Abs()), this.TradingAngleRange) ? TradeDirections.Both : TradeDirections.None;
       }
     }
-    public TradeConditionDelegate CorrCntOk { get { return () => TradeDirectionBoth(CorridorLengths.Distinct().Count() == 3); } }
-    public TradeConditionDelegate CorrCnt2Ok {
+    public Func<TradeDirections> CorrCntOk { get { return () => TradeDirectionBoth(CorridorLengths.Distinct().Count() == 3); } }
+    public Func<TradeDirections> CorrCnt2Ok {
       get {
         return () => IsTradeConditionOk(MySelfNext, tm => TradeDirectionBoth(tm.CorridorLengths.Distinct().Count() == 3));
       }
     }
     TradeDirections WidthCommonOk(Func<TradeDirections> ok) { return CorrCntOk().Any() ? ok() : TradeDirections.None; }
     [TradeConditionStartDateTrigger]
-    public TradeConditionDelegate WidthRBOk {
+    public Func<TradeDirections> WidthRBOk {
       get {
         return () => WidthCommonOk(() => TrendLinesTrends.StDev > TrendLines2Trends.StDev ? TradeDirections.Both : TradeDirections.None);
       }
     }
     [TradeConditionStartDateTrigger]
-    public TradeConditionDelegate WidthGROk {
+    public Func<TradeDirections> WidthGROk {
       get { return () => WidthCommonOk(() => TrendLines1Trends.StDev > TrendLinesTrends.StDev ? TradeDirections.Both : TradeDirections.None); }
     }
     [TradeConditionStartDateTrigger]
-    public TradeConditionDelegate WaveAvgOk {
+    public Func<TradeDirections> WaveAvgOk {
       get {
         return () => WaveRanges.Take(2)
           .Where(wr =>
@@ -196,9 +215,9 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate GreenOk {
       get {
         return () =>
-          TrendLines1Trends.PriceAvg2 >= TrendLinesTrends.PriceAvg21.Max(TrendLines2Trends.PriceAvg2)
+          TrendLines1Trends.PriceAvg2 >= TrendLinesTrends.PriceAvg2.Max(TrendLines2Trends.PriceAvg2)
           ? TradeDirections.Down
-          : TrendLines1Trends.PriceAvg3 <= TrendLinesTrends.PriceAvg31.Min(TrendLines2Trends.PriceAvg3)
+          : TrendLines1Trends.PriceAvg3 <= TrendLinesTrends.PriceAvg3.Min(TrendLines2Trends.PriceAvg3)
           ? TradeDirections.Up
           : TradeDirections.None;
       }

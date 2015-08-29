@@ -33,7 +33,9 @@ namespace HedgeHog.Alice.Client {
     public static bool IsInDesignMode { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
   static public  CompositionContainer container;
   static public List<Window> ChildWindows = new List<Window>();
+    static public List<string> WwwMessageWarning = new List<string>();
     App() {
+      ReactiveUI.MessageBus.Current.Listen<WwwWarningMessage>().Subscribe(wm => WwwMessageWarning.Add(wm.Message));
       DataFlowProcessors.Initialize();
       this.DispatcherUnhandledException += App_DispatcherUnhandledException;
       AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
