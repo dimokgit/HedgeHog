@@ -717,7 +717,7 @@ namespace HedgeHog.Alice.Store {
 
     #region IsTakeBack
     private bool _IsTakeBack;
-    [WwwSetting(Group = wwwSettingsTrading)]
+    [WwwSetting()]
     [Category(categoryActiveYesNo)]
     [Description("Set exit level to no-loss.")]
     public bool IsTakeBack {
@@ -806,7 +806,7 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Adjust Exit By Time")]
     [Category(categoryActiveYesNo)]
     [Description("Adjust exit level according to price movements since Trade started.")]
-    [WwwSetting(wwwSettingsTradingOther)]
+    [WwwSetting(wwwSettingsTrading)]
     public bool DoAdjustExitLevelByTradeTime {
       get { return CloseAllOnProfit; }
       set {
@@ -833,7 +833,8 @@ namespace HedgeHog.Alice.Store {
     public const string wwwSettingsCorridorCMA = "2.1 Corridor CMA";
     public const string wwwSettingsCorridorOther = "2.2 Corridor";
     public const string wwwSettingsTrading = "1.0 Trading";
-    public const string wwwSettingsTradingOther = "1.1 Trading Other";
+    public const string wwwSettingsTradingCorridor = "1.1 Trading Corridor";
+    public const string wwwSettingsTradingOther = "1.2 Trading Other";
 
     #region CloseAfterTradingHours
     private bool _CloseAfterTradingHours;

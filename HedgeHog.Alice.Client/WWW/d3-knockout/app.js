@@ -263,6 +263,7 @@
             type: 'number',
             options: { step: 1, numberFormat: "n" }
           },
+          DoAdjustExitLevelByTradeTime: { name: "Adjust Exit By Trade" },
           MoveWrapTradeWithNewTrade:{name:"ForceWrapTrade"},
           TradingRatioByPMC: { name: "Lot By PMC" },
           LimitProfitByRatesHeight: { name: "Limit Profit By Height" },

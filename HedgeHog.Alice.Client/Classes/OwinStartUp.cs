@@ -226,10 +226,10 @@ namespace HedgeHog.Alice.Client {
         otg = IntOrDouble(tmTrader.OpenTradesGross2InPips, 1),
         tps = tm0.TicksPerSecondAverage.Round(1),
         dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"hh\:mm"),
-        hgt = tmTrader.RatesHeightInPips.ToInt() + "/" + tmTrader.BuySellHeightInPips.ToInt() + "/" + tmTrader.WaveRangeAvg.Height.Round(0),
+        hgt = tmTrader.RatesHeightInPips.ToInt() + "/" + tmTrader.BuySellHeightInPips.ToInt() + "/" + tmTrader.RatesDistanceInPips,
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
-        equity = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
+        S = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
         price = new { ask = tm0.CurrentPrice.Ask, bid = tm0.CurrentPrice.Bid },
         tci = GetTradeConditionsInfo(tmTrader),
         wp = tmTrader.WaveHeightPower.Round(1)

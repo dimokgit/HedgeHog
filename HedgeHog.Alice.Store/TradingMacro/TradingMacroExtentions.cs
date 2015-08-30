@@ -326,7 +326,12 @@ namespace HedgeHog.Alice.Store {
       } catch (Exception exc) { Log = exc; }
     }
     public void SaveActiveSettings(string path) {
-      File.WriteAllLines(path, GetActiveSettings().ToArray());
+      if(string.IsNullOrWhiteSpace(path))
+        SaveActiveSettings();
+      else {
+        File.WriteAllLines(path, GetActiveSettings().ToArray());
+        Log = new Exception("Setting saved to " + path);
+      }
     }
     IEnumerable<string> GetActiveSettings() {
       return
@@ -2107,6 +2112,7 @@ namespace HedgeHog.Alice.Store {
             SetMA();
             SetTpsAverages();
             OnGeneralPurpose(() => {
+              RatesDistanceInPips = InPips(UseRates(rs3 => rs3.Select(GetPriceMA).Zip(rs3.Select(GetPriceMA2), (v1, v2) => v1.Abs(v2)).Distances().Last())).Round();
               var leg = RatesArray.Count.Div(10).ToInt();
               PriceSpreadAverage = UseRates(rates => rates.Buffer(leg).Where(b => b.Count > leg * .75).Select(b => b.Average(r => r.PriceSpread))).Min();
               OnRatesArrayChaged();
@@ -2730,6 +2736,9 @@ namespace HedgeHog.Alice.Store {
       }
       return ma;
     }
+    public double GetPriceMA2(Rate rate) {
+      return GetPriceMA2()(rate);
+    }
     public Func<Rate, double> GetPriceMA2() {
       return r => r.PriceRsiP;
     }
@@ -2760,8 +2769,12 @@ namespace HedgeHog.Alice.Store {
       get { return _CmaPasses; }
       set {
         if (_CmaPasses != value) {
-          _CmaPasses = value;
-          OnPropertyChanged("CmaPasses");
+          if(value <= 0)
+            Log = new Exception(new { CmaPasses = value, Error = "Must be > 0" } + "");
+          else {
+            _CmaPasses = value;
+            OnPropertyChanged("CmaPasses");
+          }
         }
       }
     }
@@ -2796,9 +2809,35 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private void SetCma(List<Rate> rates) {
+    private IList<double> GetCma(IList<Rate> rates) {
+      var cmas = rates.Cma(_priceAvg, CmaPeriodByRatesCount());
+      if(rates.Count != cmas.Count)
+        throw new Exception("rates.Count != cmas.Count");
+      Enumerable.Range(0, CmaPasses - 1).ForEach(_ => cmas = cmas.Cma(CmaPeriodByRatesCount()));
+      return cmas;
+    }
+    private void SetCmaBad(List<Rate> rates) {
       rates.Cma(_priceAvg, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma);
       Enumerable.Range(1, CmaPasses).ForEach(_ => rates.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma));
+    }
+    private void SetCma(IList<Rate> rates) {
+      // Set primary CMA
+      var cmas = GetCma(rates);
+      for(var i = 0; i < rates.Count; i++)
+        rates[i].PriceCMALast = cmas[i];
+      // Set secondary CMA
+      if(CmaRatioForWaveLength > 0) {
+        var cmas2 = GetCma2(cmas);
+        for(var i = 0; i < rates.Count; i++)
+          rates[i].PriceRsiP = cmas2[i];
+      }
+    }
+
+    private IList<double> GetCma2(IList<double> cmas) {
+      var cmas2 = cmas.Cma(CmaPeriodByRatesCount());
+      for(var i = 1; i < CmaRatioForWaveLength; i++)
+        cmas2 = cmas2.Cma(CmaPeriodByRatesCount());
+      return cmas2;
     }
 
     private static void SetMAByFtt(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate, double> setValue, double lastHarmonicRatioIndex) {
@@ -3040,7 +3079,6 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
         case ScanCorridorFunction.StDevSplits: return ScanCorridorBySplitHeights;
         case ScanCorridorFunction.StDevSplits3: return ScanCorridorBySplitHeights3;
-        case ScanCorridorFunction.TillFlat3: return ScanCorridorTillFlat3;
       }
       throw new NotSupportedException(function + "");
     }

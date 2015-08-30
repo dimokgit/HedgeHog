@@ -171,7 +171,7 @@ namespace HedgeHog.Alice.Store {
     }
     int _integrationPeriod { get { return CorridorHeightMax.ToInt(); } }
 
-    
+
 
   }
 }

@@ -99,6 +99,8 @@ namespace HedgeHog.Alice.Store {
     TradeDirections IsTradeConditionOk(Func<TradingMacro, bool> tmPredicate, Func<TradingMacro, TradeDirections> condition) {
       return TradingMacroOther(tmPredicate).Take(1).Select(condition).DefaultIfEmpty(TradeDirections.Both).First();
     }
+
+    #region GroupingOk
     double _trendsGroupingInPipsMin = 1;
     [WwwSetting()]
     public double TrendsGroupingInPipsMin {
@@ -126,11 +128,12 @@ namespace HedgeHog.Alice.Store {
           
       }
     }
+    #endregion
 
+    #region Angles
     public TradeConditionDelegate GreenAngAOk { get { return () => TradeDirectionByAngleCondition(TrendLines1Trends); } }
     public TradeConditionDelegate RedAngAOk { get { return () => TradeDirectionByAngleCondition(TrendLinesTrends); } }
     public TradeConditionDelegate BlueAngAOk { get { return () => TradeDirectionByAngleCondition(TrendLines2Trends); } }
-
     TradeDirections TradeDirectionByAngleCondition(Rate.TrendLevels tls) {
       return IsTresholdAbsOk(tls.Angle, TradingAngleRange)
         ? TradingAngleRange > 0
@@ -152,49 +155,18 @@ namespace HedgeHog.Alice.Store {
           IsTresholdAbsOk(TrendLinesTrendsAll.Min(tlt => tlt.Angle.Abs()), this.TradingAngleRange) ? TradeDirections.Both : TradeDirections.None;
       }
     }
-    public Func<TradeDirections> CorrCntOk { get { return () => TradeDirectionBoth(CorridorLengths.Distinct().Count() == 3); } }
-    public Func<TradeDirections> CorrCnt2Ok {
+    #endregion
+
+    public TradeConditionDelegate TimeFrameOk {
       get {
-        return () => IsTradeConditionOk(MySelfNext, tm => TradeDirectionBoth(tm.CorridorLengths.Distinct().Count() == 3));
+        return () => IsTresholdAbsOk(RatesArray.Last().StartDate - RatesArray[0].StartDate, TimeFrameTresholdTimeSpan)
+        ? TradeDirections.Both
+        : TradeDirections.None;
+        ;
       }
     }
-    TradeDirections WidthCommonOk(Func<TradeDirections> ok) { return CorrCntOk().Any() ? ok() : TradeDirections.None; }
-    [TradeConditionStartDateTrigger]
-    public Func<TradeDirections> WidthRBOk {
-      get {
-        return () => WidthCommonOk(() => TrendLinesTrends.StDev > TrendLines2Trends.StDev ? TradeDirections.Both : TradeDirections.None);
-      }
-    }
-    [TradeConditionStartDateTrigger]
-    public Func<TradeDirections> WidthGROk {
-      get { return () => WidthCommonOk(() => TrendLines1Trends.StDev > TrendLinesTrends.StDev ? TradeDirections.Both : TradeDirections.None); }
-    }
-    [TradeConditionStartDateTrigger]
-    public Func<TradeDirections> WaveAvgOk {
-      get {
-        return () => WaveRanges.Take(2)
-          .Where(wr =>
-            wr.DistanceByRegression > WaveRangeAvg.DistanceByRegression &&
-            wr.UID > WaveRangeAvg.UID
-            )
-            .Select(wr => TradeDirectionBySlope(wr))
-            .DefaultIfEmpty(TradeDirections.None)
-            .First();
-      }
-    }
-    public TradeConditionDelegate DoubleTapOk {
-      get {
-        return () => WaveRanges.Count > 2 && WaveRanges[2].Distance > WaveRangeAvg.Distance && WaveRangeTail.IsEmpty
-          ? TradeDirectionBySlope(WaveRanges[2])
-          : TradeDirections.None;
-      }
-    }
-    Func<WaveRange, double>[] _elliotProps = new Func<WaveRange, double>[]{
-      w=>w.Height,
-      w=>w.WorkByHeight,
-      w=>w.DistanceByRegression,
-      w=>w.Distance
-    };
+
+
     TradeDirections TradeDirectionBoth(bool ok) { return ok ? TradeDirections.Both : TradeDirections.None; }
     TradeConditionDelegate TradeDirectionEither(Func<bool> ok) { return () => ok() ? TradeDirections.Up : TradeDirections.Down; }
     TradeDirections TradeDirectionBySlope(WaveRange wr, bool range = true) {

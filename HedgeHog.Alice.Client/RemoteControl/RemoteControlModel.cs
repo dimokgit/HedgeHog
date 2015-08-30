@@ -326,8 +326,8 @@ namespace HedgeHog.Alice.Client {
       try {
         var od = new Microsoft.Win32.SaveFileDialog() { FileName = "Params_" + tm.Pair.Replace("/", ""), DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
         var odRes = od.ShowDialog();
-        if (!odRes.GetValueOrDefault()) return;
-        tm.SaveActiveSettings(od.FileName);
+        var path = !odRes.GetValueOrDefault() ? "" : od.FileName;
+        tm.SaveActiveSettings(path);
       } catch (Exception exc) {
         Log = exc;
         return;

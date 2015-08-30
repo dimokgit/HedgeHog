@@ -6,15 +6,19 @@ using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static class MovingAverageExtensions {
+    public static IList<double> Cma(this IEnumerable<double> rates, double period) {
+      var x = rates.Scan(double.NaN, (ma, r) => ma.Cma(period, r)).ToList();
+      x.Reverse();
+      var y = x.Scan(double.NaN, (ma, d) => ma.Cma(period, d)).ToList();
+      y.Reverse();
+      return y;
+    }
     public static IList<double> Cma<T>(this IEnumerable<T> rates, Func<T, double> value, double period) {
       var x = rates.Scan(double.NaN, (ma, r) => ma.Cma(period, value(r))).ToList();
       x.Reverse();
       var y = x.Scan(double.NaN, (ma, d) => ma.Cma(period, d)).ToList();
       y.Reverse();
       return y;
-    }
-    public static void Cma0<T>(this IList<T> rates, Func<T, double> value, double period, Action<T, double> setMA) {
-      rates.Zip(rates.Cma(value, period), (r, ma) => { setMA(r, ma); return ma; }).Count();
     }
     public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period, Action<T, double> setMA) {
       var cmas = rates.Cma(value, period);

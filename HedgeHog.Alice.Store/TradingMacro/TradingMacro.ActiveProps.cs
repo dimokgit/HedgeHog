@@ -9,6 +9,32 @@ using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
+    TimeSpan _timeFrameTresholdTimeSpan;
+    public TimeSpan TimeFrameTresholdTimeSpan {
+      get {
+        return _timeFrameTresholdTimeSpan;
+      }
+      private set {
+        _timeFrameTresholdTimeSpan = value;
+        OnPropertyChanged("TimeFrameTresholdTimeSpan");
+      }
+    }
+    string _timeFrameTreshold = "0:00";
+    [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsTrading)]
+    public string TimeFrameTreshold {
+      get {
+        return _timeFrameTreshold;
+      }
+
+      set {
+        if(_timeFrameTreshold == value)
+          return;
+        _timeFrameTreshold = value;
+        OnPropertyChanged("TimeFrameTreshold");
+        TimeFrameTresholdTimeSpan = TimeSpan.Parse(value);
+      }
+    }
     #region CorridorLengthRatio
     private double _CorridorLengthRatio;
     [Category(categoryActive)]

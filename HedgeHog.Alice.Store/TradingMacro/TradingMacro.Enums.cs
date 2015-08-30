@@ -18,7 +18,6 @@ namespace HedgeHog.Alice {
 }
 namespace HedgeHog.Alice.Store {
   public enum ScanCorridorFunction {
-    TillFlat3 = 3,
     WaveCount = 4,
     StDevSplits = 46,
     StDevSplits3 = 48,
