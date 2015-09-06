@@ -576,7 +576,7 @@
       });
       lineChartData2.push.apply(lineChartData2, rates);
       lineChartData2.unshift.apply(lineChartData2, rates2);
-      var ratesAll = lineChartData2;// continuoseDates("second",lineChartData2(), [response.trendLines.dates, response.trendLines1.dates, response.trendLines2.dates]);
+      var ratesAll = continuoseDates("minute",lineChartData2(), [response.trendLines.dates, response.trendLines1.dates, response.trendLines2.dates]);
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;

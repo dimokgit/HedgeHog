@@ -1090,6 +1090,7 @@ namespace HedgeHog.Alice.Client {
         manualSell = tmTrader.SellLevel.InManual,
         sellCount = tmTrader.SellLevel.TradesCount,
       };
+      /*
       if (tm.IsAsleep) {
         var o = new object();
         var a = new object[0];
@@ -1114,6 +1115,7 @@ namespace HedgeHog.Alice.Client {
           waveLines = a
         };
       }
+      */
       var trends = tm.TrendLines.Value.ToList();
       var trendLines = tm.UseRates(rates => new {
         dates = rates.Count>0

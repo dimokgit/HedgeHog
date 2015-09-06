@@ -716,6 +716,17 @@ namespace HedgeHog.Bars {
         }
       }
 
+      public double Height {
+        get {
+          return _height;
+        }
+
+        set {
+          _height = value;
+        }
+      }
+
+      double _height = double.NaN;
       public TrendLevels(int count, double slope,double stDev) {
         this.Count = count;
         this.Slope = slope;

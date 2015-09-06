@@ -42,11 +42,13 @@ namespace HedgeHog.Alice.Client {
     void StartReplay(object _) {
       TradingMacro tmOriginal = (TradingMacro)_;
       try {
-        if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
-          MessageBox.Show("Replay is running.");
-          return;
+        while (_replayTasks.ToArray().Any(t => t.Status == TaskStatus.Running)) {
+          Log = new Exception("Replay is running.");
+          Thread.Sleep(1000);
+          continue;
         }
 
+        ReplayArguments.Initiator = tmOriginal;
         ReplayArguments.UseSuperSession = tmOriginal.TestUseSuperSession;
         ReplayArguments.SuperSessionId = tmOriginal.TestSuperSessionUid.ValueOrDefault(Guid.NewGuid());
         _testParamsRaw.Clear();
@@ -74,7 +76,7 @@ namespace HedgeHog.Alice.Client {
       } catch (Exception exc) { Log = exc; }
     }
     void FillTestParams(TradingMacro tmOriginal, Action<IList<KeyValuePair<string, object>[]>> paramsTransformation) {
-      var c = new[] { ',', '\t' };
+      var c = new[] { '^', '\t' };
       if (!_testParamsRaw.Any()) {
         if (tmOriginal.UseTestFile) {
           var od = new Microsoft.Win32.OpenFileDialog() { FileName = "TestParams", DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
@@ -148,12 +150,15 @@ namespace HedgeHog.Alice.Client {
     CancellationTokenSource _replayTaskCancellationToken = new CancellationTokenSource();
     void StartReplayInternal(TradingMacro tmOriginal, TestParam testParameter, Action<Task> continueWith) {
       if (IsInVirtualTrading) {
-        if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
-          MessageBox.Show("Replay is running.");
-          return;
+        while (_replayTasks.ToArray().Any(t => t.Status == TaskStatus.Running)) {
+          Log = new Exception("Replay is running.");
+          Thread.Sleep(1000);
+          continue;
         }
         _replayTasks.Clear();
         MasterModel.AccountModel.Balance = MasterModel.AccountModel.Equity = 50000;
+        MasterModel.AccountModel.CurrentGrossInPips = 0;
+        MasterModel.AccountModel.CurrentLoss = 0;
         TradesManager.GetAccount().Balance = TradesManager.GetAccount().Equity = 50000;
       }
         SaveTradingSettings(tmOriginal);
@@ -164,7 +169,7 @@ namespace HedgeHog.Alice.Client {
         if (IsInVirtualTrading) {
           TradesManager.ClosePair(tm.Pair);
           tm.ResetSessionId(ReplayArguments.SuperSessionId);
-          if (testParameter != null)
+          if (testParameter != null && tm == tmOriginal)
             testParameter.ForEach(tp => {
               try {
                 tm.SetProperty(tp.Key, tp.Value);

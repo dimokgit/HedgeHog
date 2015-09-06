@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   class TradeConditionStartDateTriggerAttribute : Attribute { }
-  class TradeConditionOtherCorridorAttribute : Attribute { }
+  class TradeConditionAsleepAttribute : Attribute { }
   class TradeConditionUseCorridorAttribute : Attribute { }
   partial class TradingMacro {
     #region TradeOpenActions
@@ -131,12 +131,29 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region Angles
-    public TradeConditionDelegate GreenAngAOk { get { return () => TradeDirectionByAngleCondition(TrendLines1Trends); } }
-    public TradeConditionDelegate RedAngAOk { get { return () => TradeDirectionByAngleCondition(TrendLinesTrends); } }
-    public TradeConditionDelegate BlueAngAOk { get { return () => TradeDirectionByAngleCondition(TrendLines2Trends); } }
-    TradeDirections TradeDirectionByAngleCondition(Rate.TrendLevels tls) {
-      return IsTresholdAbsOk(tls.Angle, TradingAngleRange)
-        ? TradingAngleRange > 0
+    public TradeConditionDelegate GBAngOpAOk {
+      get {
+        return () =>
+        TrendLines1Trends.Angle.Sign() != TrendLines2Trends.Angle.Sign()
+        ? TradeDirections.Both
+        : TradeDirections.None;
+      }
+    }
+    public TradeConditionDelegate GreenAngAOk { get { return () => TradeDirectionByHeightCondition(TrendLines1Trends, InPoints(TrendHeightGreen)); } }
+    public TradeConditionDelegate RedAngAOk { get { return () => TradeDirectionByHeightCondition(TrendLinesTrends, InPoints(TrendHeightRed)); } }
+    public TradeConditionDelegate BlueAngAOk { get { return () => TradeDirectionByHeightCondition(TrendLines2Trends, InPoints(TrendHeightBlue)); } }
+    TradeDirections TradeDirectionByHeightCondition(Rate.TrendLevels tls, double trendHeight) {
+      return IsTresholdAbsOk(tls.Height, trendHeight)
+        ? trendHeight >= 0
+        ? tls.Angle > 0
+        ? TradeDirections.Up
+        : TradeDirections.Down
+        : TradeDirections.Both
+        : TradeDirections.None;
+    }
+    TradeDirections TradeDirectionByAngleCondition(Rate.TrendLevels tls,double tradingAngleRange) {
+      return IsTresholdAbsOk(tls.Angle, tradingAngleRange)
+        ? tradingAngleRange > 0
         ? tls.Angle > 0
         ? TradeDirections.Down
         : TradeDirections.Up
@@ -157,9 +174,10 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
+    [TradeConditionAsleep]
     public TradeConditionDelegate TimeFrameOk {
       get {
-        return () => IsTresholdAbsOk(RatesArray.Last().StartDate - RatesArray[0].StartDate, TimeFrameTresholdTimeSpan)
+        return () => RatesArray.Count>0 && IsTresholdAbsOk(RatesArray.Last().StartDate - RatesArray[0].StartDate, TimeFrameTresholdTimeSpan)
         ? TradeDirections.Both
         : TradeDirections.None;
         ;
@@ -204,7 +222,7 @@ namespace HedgeHog.Alice.Store {
           : TradeDirections.None;
       }
     }
-    [TradeConditionOtherCorridor]
+    [TradeConditionAsleep]
     public TradeConditionDelegate OutsideAnyOk {
       get { return () => Outside1Ok() | OutsideOk() | Outside2Ok(); }
     }
@@ -217,7 +235,7 @@ namespace HedgeHog.Alice.Store {
         .DefaultIfEmpty(TradeDirections.None)
         .Single();
     }
-    [TradeConditionOtherCorridor]
+    [TradeConditionAsleep]
     public TradeConditionDelegate OutsideAllOk {
       [TradeCondition(TradeConditionAttribute.Types.Or)]
       get {
@@ -228,7 +246,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     private bool IsOuside(TradeDirections td) { return td == TradeDirections.Up || td == TradeDirections.Down; }
-    [TradeConditionOtherCorridor]
+    [TradeConditionAsleep]
     public TradeConditionDelegate OutsideExtOk {
       get {
         return () => TradeDirectionByAll(
@@ -291,17 +309,17 @@ namespace HedgeHog.Alice.Store {
       }
       return ok;
     }
-    [TradeConditionOtherCorridor]
+    [TradeConditionAsleep]
     [TradeCondition(TradeConditionAttribute.Types.Or)]
     public TradeConditionDelegate OutsideOk {
       get { return () => IsCurrentPriceOutsideCorridor(MySelfNext, tm => tm.TrendLinesTrends); }
     }
-    [TradeConditionOtherCorridor]
+    [TradeConditionAsleep]
     [TradeCondition(TradeConditionAttribute.Types.Or)]
     public TradeConditionDelegate Outside1Ok {
       get { return () => IsCurrentPriceOutsideCorridor(MySelfNext, tm => tm.TrendLines1Trends); }
     }
-    [TradeConditionOtherCorridor]
+    [TradeConditionAsleep]
     [TradeCondition(TradeConditionAttribute.Types.Or)]
     public TradeConditionDelegate Outside2Ok {
       get { return () => IsCurrentPriceOutsideCorridor(MySelfNext, tm => tm.TrendLines2Trends); }
@@ -354,14 +372,32 @@ namespace HedgeHog.Alice.Store {
     }
     public void TradeConditionsTrigger() {
       if (IsTrader) {
-
-
         TradeConditionsEval().ForEach(eval => {
-          BuyLevel.CanTradeEx = TradeDirection.HasUp() && eval.HasUp();
-          SellLevel.CanTradeEx = TradeDirection.HasDown() && eval.HasDown();
+          var hasBuy = TradeDirection.HasUp() && eval.HasUp();
+          var hasSell = TradeDirection.HasDown() && eval.HasDown();
+
+          BuyLevel.CanTradeEx = IsTurnOnOnly && BuyLevel.CanTrade || hasBuy;
+          SellLevel.CanTradeEx = IsTurnOnOnly && SellLevel.CanTrade || hasSell;
+
+          if(BuyLevel.CanTrade && SellLevel.CanTrade) {
+            BuyLevel.CanTradeEx = hasBuy;
+            SellLevel.CanTradeEx = hasSell;
+          }
         });
       }
     }
+    bool _isTurnOnOnly = false;
+    [Category(categoryActiveYesNo)]
+    [WwwSetting(wwwSettingsTradingOther)]
+    public bool IsTurnOnOnly {
+      get {
+        return _isTurnOnOnly;
+      }
+      set {
+        _isTurnOnOnly = value;
+      }
+    }
+
     public IEnumerable<TradeDirections> TradeConditionsEvalStartDate() {
       if (!IsTrader) return new TradeDirections[0];
       return (from d in TradeConditionsInfo<TradeConditionStartDateTriggerAttribute>()

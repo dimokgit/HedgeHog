@@ -391,6 +391,12 @@ namespace HedgeHog.Alice.Store {
           if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels);
           else adjustExitLevels(BuyLevel.Rate, SellLevel.Rate);
         };
+        Action adjustExitLevels2 = () => {
+          if(DoAdjustExitLevelByTradeTime)
+            AdjustExitLevelsByTradeTime(adjustExitLevels);
+          else
+            adjustExitLevels0();
+        };
         #endregion
 
         #region adjustLevels
@@ -1217,9 +1223,6 @@ namespace HedgeHog.Alice.Store {
                     BroadcastCloseAllTrades();
                   BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
                   CorridorStartDate = null;
-                  TradingMacrosByPair().ForEach(tm => tm.RatesDistanceMinCalc = null);
-                  if (_buySellLevels.Min(sr => sr.TradesCount) < -TradeCountMax)
-                    _buySellLevels.ForEach(sr => sr.InManual = false);
                 };
                   #endregion
                   Action<Trade> canTradeByTradeCount = t =>
@@ -1251,7 +1254,7 @@ namespace HedgeHog.Alice.Store {
               SetTradeLevelsToLevelBy(GetTradeLevel)();
             }
             if (IsTrader)
-              adjustExitLevels1();
+              adjustExitLevels2();
             break;
             #endregion
 

@@ -335,6 +335,8 @@ namespace HedgeHog.Alice.Store {
       FreezeCorridorStartDate(true);
     }
     public void FreezeCorridorStartDate(bool unFreeze = false) {
+      if(!unFreeze)
+        throw new NotSupportedException("FreezeCorridorStartDate is dosabled until further notice.");
       if (unFreeze) CorridorStartDate = null;
       else CorridorStartDate = CorridorStats.Rates.Last().StartDate;
     }
@@ -418,6 +420,7 @@ namespace HedgeHog.Alice.Store {
 
       rates[0].Trends.PriceAvg1 = regRates[0];
       rates[1].Trends.PriceAvg1 = regRates[1];
+      rates[1].Trends.Height = regRates[1] - regRates[0];
 
       var pa1 = rates[0].Trends.PriceAvg1;
       rates[0].Trends.PriceAvg02 = pa1 + hl;

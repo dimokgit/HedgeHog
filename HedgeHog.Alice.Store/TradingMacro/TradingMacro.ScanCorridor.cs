@@ -61,10 +61,10 @@ namespace HedgeHog.Alice.Store {
 
     #region _corridors
     DateTime _corridorStartDate1 = DateTime.MinValue;
-    int _corridorLength1 = 0;
+    int _corridorLength1_ = 0;
     public int CorridorLength1 {
-      get { return _corridorLength1; }
-      set { _corridorLength1 = value; }
+      get { return _corridorLength1_; }
+      set { _corridorLength1_ = value; }
     }
     DateTime _corridorStartDate2 = DateTime.MinValue;
     int _corridorLength2 = 0;
@@ -103,15 +103,15 @@ namespace HedgeHog.Alice.Store {
           var offset = ((end - start) * 0.3).ToInt();
           var range = rates.GetRange(0, rates.Count.Min(end + offset));
           var line = range.ToArray(r => r.PriceAvg).Line();
-          var skip = start;
-          var zip = line.Skip(skip - offset.Div(2).ToInt()).Zip(range.Skip(skip), (l, r) => new { l = l.Abs(r.PriceAvg), r });
+          var skip = start - offset.Div(2).ToInt();
+          var zip = line.Skip(skip).Zip(range.Skip(skip), (l, r) => new { l = l.Abs(r.PriceAvg), r });
           return zip.MaxBy(x => x.l).First().r;
         };
         Func<int, Rate> getRate = start =>
           sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end)).First();
         var rate = getRate(1);
         try {
-          _corridorLength1 = rateIndex(rate);
+          CorridorLength1 = rateIndex(rate);
         } catch(Exception exc) {
           Log = exc;
         }
@@ -317,8 +317,8 @@ namespace HedgeHog.Alice.Store {
         //Func<int, int> length = i => extreams3          .Skip(i - 1)          .Take(1)          .DefaultIfEmpty(index)          .First();
         //_corridorLength1 = length(_greenRedBlue[0]);
         var indexGreen = length4(_greenRedBlue[0], WaveRangeAvg.Distance * _greenRedBlue[0]);
-        _corridorLength1 = indexGreen.c;
-        _corridorStartDate1 = rates[_corridorLength1].StartDate;
+        CorridorLength1 = indexGreen.c;
+        _corridorStartDate1 = rates[CorridorLength1].StartDate;
 
         var indexRB = MonoidsCore.ToFunc(indexGreen, 0.0, 0, (indeX, distance, rbIndex) => extreams4
           .SkipWhile(x => x.c <= indeX.c)
@@ -336,7 +336,6 @@ namespace HedgeHog.Alice.Store {
 
         if(new[] { BuyLevel, SellLevel }.All(sr => sr != null && !sr.InManual) && index.Ratio(CorridorStats.Rates.Count) >= 1.01)
           ResetSuppResesPricePosition();
-        CorridorLengths = new[] { _corridorLength1, index, _corridorLength2 };
       } else {
         var firstWaveRange = rates.TakeWhile(r => r.StartDate >= WaveRanges[0].StartDate).Reverse().ToList();
         WaveRanges = new[] { new WaveRange(firstWaveRange, PointSize, BarPeriod) }.Concat(WaveRanges.Skip(1)).ToList();
@@ -616,11 +615,5 @@ namespace HedgeHog.Alice.Store {
 
     public double WaveHeightPower { get; set; }
 
-    int[] _corridorLengths = new int[0];
-
-    public int[] CorridorLengths {
-      get { return _corridorLengths; }
-      set { _corridorLengths = value; }
-    }
   }
 }

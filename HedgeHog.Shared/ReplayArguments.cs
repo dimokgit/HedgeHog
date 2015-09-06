@@ -116,6 +116,7 @@ namespace HedgeHog.Shared {
         }
       }
     }
+    public TTradingMacro Initiator { get; set; }
     public List<TTradingMacro> TradingMacros = new List<TTradingMacro>();
     public void SetTradingMacros(IList<TTradingMacro> tms) {
       TradingMacros.Clear();

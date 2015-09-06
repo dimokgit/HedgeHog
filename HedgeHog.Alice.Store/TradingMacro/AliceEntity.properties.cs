@@ -265,7 +265,7 @@ namespace HedgeHog.Alice.Store {
 
     #region PriceCmaLevels
     [DisplayName("Price CMA Levels")]
-    [WwwSetting(Group = wwwSettingsCorridorCMA)]
+    [WwwSetting(wwwSettingsCorridorCMA)]
     [Category(categoryActive)]
     public double PriceCmaLevels_ {
       get { return PriceCmaLevels; }
@@ -810,6 +810,8 @@ namespace HedgeHog.Alice.Store {
     public bool DoAdjustExitLevelByTradeTime {
       get { return CloseAllOnProfit; }
       set {
+        if(CloseAllOnProfit == value)
+          return;
         CloseAllOnProfit = value;
         IsTakeBack = false;
         this.UseLastLoss = false;
@@ -835,6 +837,7 @@ namespace HedgeHog.Alice.Store {
     public const string wwwSettingsTrading = "1.0 Trading";
     public const string wwwSettingsTradingCorridor = "1.1 Trading Corridor";
     public const string wwwSettingsTradingOther = "1.2 Trading Other";
+    public const string wwwInfoAngles = "Angles";
 
     #region CloseAfterTradingHours
     private bool _CloseAfterTradingHours;
@@ -961,6 +964,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Angle Range")]
+    [WwwInfo(wwwInfoAngles)]
     [WwwSetting(Group = wwwSettingsCorridor)]
     [Category(categoryActive)]
     public double TradingAngleRange_ {
@@ -971,6 +975,49 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => TradingAngleRange_);
       }
     }
+
+    double _trendHeightGreen;
+    [WwwInfo(wwwInfoAngles)]
+    [WwwSetting(Group = wwwSettingsCorridor)]
+    [Category(categoryActive)]
+    public double TrendHeightGreen{
+      get { return _trendHeightGreen; }
+      set {
+        if(_trendHeightGreen == value)
+          return;
+        _trendHeightGreen = value;
+        OnPropertyChanged(() => TrendHeightGreen);
+      }
+    }
+
+    double _trendHeightRed;
+    [WwwInfo(wwwInfoAngles)]
+    [WwwSetting(Group = wwwSettingsCorridor)]
+    [Category(categoryActive)]
+    public double TrendHeightRed {
+      get { return _trendHeightRed; }
+      set {
+        if(_trendHeightRed == value)
+          return;
+        _trendHeightRed = value;
+        OnPropertyChanged(() => TrendHeightRed);
+      }
+    }
+
+    double _trendHeightBlue;
+    [WwwInfo(wwwInfoAngles)]
+    [WwwSetting(Group = wwwSettingsCorridor)]
+    [Category(categoryActive)]
+    public double TrendHeightBlue {
+      get { return _trendHeightBlue; }
+      set {
+        if(_trendHeightBlue == value)
+          return;
+        _trendHeightBlue = value;
+        OnPropertyChanged(() => TrendHeightBlue);
+      }
+    }
+
 
     [DisplayName("Reset On Balance")]
     [Category(categoryXXX_NU)]

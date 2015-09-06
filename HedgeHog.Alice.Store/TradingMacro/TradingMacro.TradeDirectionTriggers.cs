@@ -12,10 +12,10 @@ namespace HedgeHog.Alice.Store {
     #region Trade Direction Triggers
     void TriggerOnOutside(Func<Func<TradingMacro, Rate.TrendLevels>, TradeDirections> isOutside, Func<TradingMacro, Rate.TrendLevels> trendLevels) {
       var td = isOutside(trendLevels);
-      if (td.Any()) {
-        if (TradeConditionsEval().All(b => b.Any()))
+      if(td.Any()) {
+        if(TradeConditionsEval().All(b => b.Any()))
           TradeDirection = td;
-        if (!HasTradeConditions) {
+        if(!HasTradeConditions) {
           BuyLevel.CanTradeEx = td.HasUp();
           SellLevel.CanTradeEx = td.HasDown();
         }
@@ -26,23 +26,26 @@ namespace HedgeHog.Alice.Store {
     #region Triggers
     [TradeDirectionTrigger]
     public void OnTradeCondOk() {
-      if (Trades.Length == 0 && TradeConditionsEval().DefaultIfEmpty(TradeDirections.None).All(b => b.Any())) {
+      if(Trades.Length == 0 && TradeConditionsEval().DefaultIfEmpty(TradeDirections.None).All(b => b.Any())) {
         var bs = new[] { BuyLevel, SellLevel };
-        if (bs.All(sr => !sr.InManual))
-          UseRates(rates => {
-            // Turn off triegger
-            _tradeDirectionTriggers.RemoveAll(tdt => tdt == OnTradeCondOk);
-            double min, max;
-            rates.GetRange(rates.Count - _corridorLength2, _corridorLength2).Height(out min, out max);
-            // set trade levels rates
-            BuyLevel.RateEx = GetTradeLevel(true, max);
-            SellLevel.RateEx = GetTradeLevel(false, min);
-            // init trade levels
-            bs.ForEach(sr => {
-              sr.TradesCountEx = TradeCountStart;
-              sr.InManual = true;
-            });
+        // Turn off triegger
+        //_tradeDirectionTriggers.RemoveAll(tdt => tdt == OnTradeCondOk);
+        double min = GetTradeLevel(false, SellLevel.RateEx), max = GetTradeLevel(true, BuyLevel.Rate);
+        //var l = CorridorLength1;
+        //UseRates(rates => rates.GetRange(rates.Count - l, l).Height(out min, out max));
+        // set trade levels rates
+        if(new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(min, max))) {
+          BuyLevel.ResetPricePosition();
+          BuyLevel.Rate = max;// GetTradeLevel(true, BuyLevel.Rate);
+          SellLevel.ResetPricePosition();
+          SellLevel.Rate = min;// GetTradeLevel(false, SellLevel.RateEx);
+          // init trade levels
+          bs.ForEach(sr => {
+            sr.TradesCount = TradeCountStart;
+            sr.CanTrade = true;
+            sr.InManual = true;
           });
+        }
       }
     }
     [TradeDirectionTrigger]
@@ -72,7 +75,7 @@ namespace HedgeHog.Alice.Store {
           var min = wr.Min;
           var mid = max.Avg(min);
           var offset = WaveHeightAverage / 2;
-          if (new[] { false, true }.All(b => CurrentEnterPrice(b).Between(min, max))) {
+          if(new[] { false, true }.All(b => CurrentEnterPrice(b).Between(min, max))) {
             BuyLevel.Rate = mid - offset;
             SellLevel.Rate = mid + offset;
             BuyLevel.InManual = SellLevel.InManual = true;
@@ -104,7 +107,7 @@ namespace HedgeHog.Alice.Store {
       return TradeDirectionTriggersInfo(GetTradeDirectionTriggers(), map);
     }
     void TradeDirectionTriggersRun() {
-      if (IsTrader)
+      if(IsTrader)
         TradeDirectionTriggersInfo((a, n) => a).ForEach(a => a());
     }
     [DisplayName("Trade Dir. Trgs")]

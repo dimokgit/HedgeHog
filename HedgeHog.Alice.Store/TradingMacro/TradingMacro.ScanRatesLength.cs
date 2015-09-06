@@ -88,6 +88,38 @@ namespace HedgeHog.Alice.Store {
         Log = exc;
       }
     }
+    void ScanRatesLengthByDistanceMin_Slow() {
+      if(IsCorridorFrozen()) {
+        //BarsCountCalc = (CorridorStats.Rates.Count * 1.1).Max(BarsCountCalc).Min(BarsCountCount()).ToInt();
+        if(CorridorStats.Rates.Count * 1.05 > RatesArray.Count) {
+          //SetCorridorStartDateToNextWave(true);
+          BarsCountCalc = (CorridorStats.Rates.Count * 1.05).Ceiling();
+        }
+        return;
+      }
+      var rdm = InPoints(RatesDistanceMin);
+      UseRatesInternal(rs => {
+        var cmas = GetCma(rs.Reverse().ToArray());
+        var cmas2 = GetCma2(cmas);
+        var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
+        return macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2))
+          .Distances()
+          .Skip(BarsCount)
+          .TakeWhile(i => i <= rdm)
+          .Count() + BarsCount;
+        return cmas
+          .Distances()
+          .TakeWhile(i => i <= rdm)
+          .Count();
+      }
+      ).ForEach(count => {
+        //ScanRatesLengthByStDevMin2(count);
+        if(count * 1.1 > BarsCountCount())
+          Log = new Exception(new { BarsCountCalc, BarsCountCount = BarsCountCount() } + "");
+        BarsCountCalc = count;
+      });
+      return;
+    }
     void ScanRatesLengthByDistanceMin() {
       if(IsCorridorFrozen()) {
         //BarsCountCalc = (CorridorStats.Rates.Count * 1.1).Max(BarsCountCalc).Min(BarsCountCount()).ToInt();
@@ -97,23 +129,28 @@ namespace HedgeHog.Alice.Store {
         }
         return;
       }
-      var rdm = InPoints(RatesDistanceMinCalc.Value);
-      UseRatesInternal(rs => {
-        var cmas = GetCma(rs.Reverse().ToArray());
-        var cmas2 = GetCma2(cmas);
-        return cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2))
-          .Distances()
-          .TakeWhile(i => i <= rdm)
-          .Count();
-        return cmas
-          .Distances()
-          .TakeWhile(i => i <= rdm)
-          .Count();
-      }
-      ).ForEach(count => {
-        //ScanRatesLengthByStDevMin2(count);
-        BarsCountCalc = count;
-      });
+      var rdm = InPoints(RatesDistanceMin);
+      UseRatesInternal(rs => { var a = rs.ToArray(); Array.Reverse(a); return a; })
+        .Select(rs => {
+          var cmas = GetCma(rs);
+          var cmas2 = GetCma2(cmas);
+          var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
+          return macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2))
+            .Distances()
+            .Skip(BarsCount)
+            .TakeWhile(i => i <= rdm)
+            .Count() + BarsCount;
+          return cmas
+            .Distances()
+            .TakeWhile(i => i <= rdm)
+            .Count();
+        })
+        .ForEach(count => {
+          //ScanRatesLengthByStDevMin2(count);
+          if(count * 1.1 > BarsCountCount())
+            Log = new Exception(new { BarsCountCalc, BarsCountCount = BarsCountCount() } + "");
+          BarsCountCalc = count;
+        });
       return;
     }
 
@@ -123,20 +160,6 @@ namespace HedgeHog.Alice.Store {
       get { return __barsCountLastDate; }
       set { __barsCountLastDate = value; }
     }
-    #region UseM1Corridor
-    private int _UseM1Corridor;
-    [Category(categoryXXX)]
-    public int UseM1Corridor {
-      get { return _UseM1Corridor; }
-      set {
-        if(_UseM1Corridor != value) {
-          _UseM1Corridor = value;
-          OnPropertyChanged("UseM1Corridor");
-        }
-      }
-    }
-
-    #endregion
     [WwwSetting(wwwSettingsCorridorOther)]
     public double RatesDistanceInPips { get; private set; }
   }

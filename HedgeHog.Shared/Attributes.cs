@@ -9,12 +9,26 @@ namespace HedgeHog {
   [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
   public sealed class DnrAttribute : Attribute { }
   [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
-  public sealed class WwwSettingAttribute : Attribute {
+  public class WwwAttribute : Attribute {
     public string Group { get; set; }
-    public WwwSettingAttribute(string group) {
+    public WwwAttribute(string group) {
       this.Group = group;
     }
-    public WwwSettingAttribute() {
+    public WwwAttribute() {
+
+    }
+  }
+  public class WwwSettingAttribute : WwwAttribute {
+    public WwwSettingAttribute() : base() {
+    }
+    public WwwSettingAttribute(string group):base(group) {
+
+    }
+  }
+  public class WwwInfoAttribute : WwwAttribute {
+    public WwwInfoAttribute() : base() {
+    }
+    public WwwInfoAttribute(string group) : base(group) {
 
     }
   }
