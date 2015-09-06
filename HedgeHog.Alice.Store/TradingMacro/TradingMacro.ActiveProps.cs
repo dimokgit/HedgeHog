@@ -19,6 +19,16 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("TimeFrameTresholdTimeSpan");
       }
     }
+    TimeSpan _timeFrameTresholdTimeSpan2 = TimeSpan.Zero;
+    public TimeSpan TimeFrameTresholdTimeSpan2 {
+      get {
+        return _timeFrameTresholdTimeSpan2;
+      }
+      private set {
+        _timeFrameTresholdTimeSpan2 = value;
+        OnPropertyChanged("TimeFrameTresholdTimeSpan2");
+      }
+    }
     string _timeFrameTreshold = "0:00";
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrading)]
@@ -32,7 +42,11 @@ namespace HedgeHog.Alice.Store {
           return;
         _timeFrameTreshold = value;
         OnPropertyChanged("TimeFrameTreshold");
-        TimeFrameTresholdTimeSpan = TimeSpan.Parse(value);
+        var spans = value.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+        if(spans.IsEmpty())
+          spans = new[] { "0:00" };
+        TimeFrameTresholdTimeSpan = TimeSpan.Parse(spans[0]);
+        TimeFrameTresholdTimeSpan2 = spans.Length > 1 ? TimeSpan.Parse(spans[1]) : TimeSpan.Zero;
       }
     }
     #region CorridorLengthRatio

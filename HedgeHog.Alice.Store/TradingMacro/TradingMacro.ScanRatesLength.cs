@@ -160,7 +160,5 @@ namespace HedgeHog.Alice.Store {
       get { return __barsCountLastDate; }
       set { __barsCountLastDate = value; }
     }
-    [WwwSetting(wwwSettingsCorridorOther)]
-    public double RatesDistanceInPips { get; private set; }
   }
 }

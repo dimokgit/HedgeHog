@@ -942,15 +942,6 @@ namespace HedgeHog.Alice.Store {
     void SetTicksPerSecondAverage(double tpc) { _ticksPerSecondAverage = tpc; }
     double _ticksPerSecondAverage = 0;
     public double TicksPerSecondAverage { get { return _ticksPerSecondAverage; } }
-    public double TicksPerSecondAverageAverage { get; set; }
-
-    private double _TpsAverageLevel;
-    [Category(categoryTrading)]
-    [WwwSetting]
-    public double TpsAverageLevel {
-      get { return _TpsAverageLevel; }
-      set { _TpsAverageLevel = value; }
-    }
 
     int priceQueueCount = 600;
     public class TicksPerPeriod {
@@ -2128,9 +2119,8 @@ namespace HedgeHog.Alice.Store {
             SetMA();
             SetTpsAverages();
             OnGeneralPurpose(() => {
-              RatesDistanceInPips = InPips(UseRates(rs3 => rs3.Select(GetPriceMA).Zip(rs3.Select(GetPriceMA2), (v1, v2) => v1.Abs(v2)).Distances().Last())).Round();
               var leg = RatesArray.Count.Div(10).ToInt();
-              PriceSpreadAverage = UseRates(rates => rates.Buffer(leg).Where(b => b.Count > leg * .75).Select(b => b.Average(r => r.PriceSpread))).Min();
+              PriceSpreadAverage = UseRates(rates => rates.Buffer(leg).Where(b => b.Count > leg * .75).Select(b => b.Max(r => r.PriceSpread))).DefaultIfEmpty(double.NaN).Average();
               OnRatesArrayChaged();
               AdjustSuppResCount();
               var coeffs = prices.Linear();
@@ -2153,13 +2143,6 @@ namespace HedgeHog.Alice.Store {
             }, true);
             OnScanCorridor(RatesArray, () => {
               try {
-                var cs = CorridorStats.Rates[0].StartDate.AddMinutes(-10);
-                var rl = CorridorStats.Rates.TakeWhile(r => r.StartDate > cs).ToArray();
-                if (BarPeriod == BarsPeriodType.t1) {
-                  var tpsAvg = UseRates(ras => ras.GetRange((ras.Count - 60 * 5).Max(0), ras.Count.Min(60 * 5)).AverageByIterations(r => r.TpsAverage, TpsAverageLevel).Average(r => r.TpsAverage));
-                  TicksPerSecondAverageAverage = tpsAvg;
-                }
-
                 RaiseShowChart();
                 RunStrategy();
               } catch (Exception exc) { Log = exc; if (IsInVitualTrading) Strategy = Strategies.None; throw; }
@@ -4469,7 +4452,6 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActive)]
     [DisplayName("Rates StDev Min")]
     [Description("RatesStDevMinInPips for BarsCountValc")]
-    [WwwSetting(wwwSettingsCorridorOther)]
     public int RatesStDevMinInPips {
       get { return _RatesStDevMinInPips; }
       set {
@@ -4505,10 +4487,10 @@ namespace HedgeHog.Alice.Store {
 
     #region RatesDistanceMin
     [Category(categoryCorridor)]
-    private int _RatesDistanceMin = 1000;
+    private double _RatesDistanceMin = 1000;
     [Category(categoryCorridor)]
     [WwwSetting(wwwSettingsCorridorOther)]
-    public int RatesDistanceMin {
+    public double RatesDistanceMin {
       get { return _RatesDistanceMin; }
       set {
         if (_RatesDistanceMin != value) {

@@ -183,11 +183,13 @@ namespace HedgeHog.Alice.Client {
         var tmToRun = tm;
         tmToRun.ReplayCancelationToken = (_replayTaskCancellationToken = new CancellationTokenSource()).Token;
         var task = Task.Factory.StartNew(() => tmToRun.Replay(ReplayArguments), tmToRun.ReplayCancelationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-        task.ContinueWith(t => {
-          RxApp.MainThreadScheduler.Schedule(() => _replayTasks.Remove(t));
-          continueWith(t);
-        });
-        _replayTasks.Add(task);
+        if(tm == tmOriginal) {
+          task.ContinueWith(t => {
+            RxApp.MainThreadScheduler.Schedule(() => _replayTasks.Remove(t));
+            continueWith(t);
+          });
+          _replayTasks.Add(task);
+        }
       }
     }
 

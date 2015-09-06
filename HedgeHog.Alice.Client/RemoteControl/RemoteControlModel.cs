@@ -1027,7 +1027,7 @@ namespace HedgeHog.Alice.Client {
     }
     int _lastServedRatesCount = 0;
     public object ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
-      var tpsAvg = tm.TicksPerSecondAverageAverage;
+      var tpsAvg = 0;
       var digits = tm.Digits();
       if (dateEnd > tm.LoadRatesStartDate2) dateEnd = tm.LoadRatesStartDate2;
       else dateEnd = dateEnd.AddMinutes(-tm.BarPeriodInt.Min(2));

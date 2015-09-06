@@ -25,6 +25,8 @@ namespace HedgeHog.Alice.Store {
         return d.AddDays(1).Add(to);
       return d.Add(to);
     }
+
+    private const string MULTI_VALUE_SEPARATOR = ";";
     #region VoltsAvgIterations
     private int _VoltsAvgIterations;
     [Category(categoryCorridor)]
@@ -253,22 +255,6 @@ namespace HedgeHog.Alice.Store {
         };
         if(wTail.TotalSeconds < 3)
           wTail = new WaveRange();
-        while(
-          false &&
-          wr
-            .Where(w => w.WorkByTime * WorkByTimeRatio < wa.WorkByTime)
-            .Take(1)
-            .Select(w => wr.IndexOf(w))
-            .Do(i => {
-              var wavesSmoothed = (i == 0
-                ? new[] { WaveRange.Merge(wr.Take(2).Reverse()) }.Concat(wr.Skip(2)).ToList()
-                : i == wr.Count - 1
-                ? wr.SkipLast(2).Concat(new[] { WaveRange.Merge(wr.TakeLast(2).Reverse()) })
-                : wr.Take(i - 1).Concat(new[] { WaveRange.Merge(wr.GetRange(i - 1, 3).Reverse<WaveRange>()) }).Concat(wr.Skip(i + 2))
-                ).ToList();
-              wr = wavesSmoothed;
-            })
-            .Any()) { };
         Func<Func<WaveRange, double>, double> rsd = value => wr.Sum(value);
         WaveRangeSum = new WaveRange(1) {
           Distance = rsd(w => w.Distance),
@@ -364,7 +350,6 @@ namespace HedgeHog.Alice.Store {
     int[] _greenRedBlue = _greenRedBlueDefault;
     private string _GreenRedBlue;
     [Category(categoryCorridor)]
-    [WwwSetting(wwwSettingsCorridor)]
     public string GreenRedBlue {
       get { return _GreenRedBlue; }
       set {
@@ -376,7 +361,7 @@ namespace HedgeHog.Alice.Store {
             if(_greenRedBlue.Any())
               _GreenRedBlue = value;
             else
-              _GreenRedBlue = string.Join(",", _greenRedBlueDefault);
+              _GreenRedBlue = string.Join(MULTI_VALUE_SEPARATOR, _greenRedBlueDefault);
             OnPropertyChanged("GreenRedBlue");
           } catch(Exception exc) {
             Log = exc;
@@ -587,23 +572,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("WaveFirstSecondRatio");
       }
     }
-
-    #region WorkByTimeRatio
-    private int _WorkByTimeRatio = 10;
-    [Category(categoryXXX)]
-    [WwwSetting]
-    public int WorkByTimeRatio {
-      get { return _WorkByTimeRatio; }
-      set {
-        if(_WorkByTimeRatio != value) {
-          _WorkByTimeRatio = value;
-          OnPropertyChanged("WorkByTimeRatio");
-        }
-      }
-    }
-
-    #endregion
-
 
     WaveRange _waveRangeTail = new WaveRange(0);
 

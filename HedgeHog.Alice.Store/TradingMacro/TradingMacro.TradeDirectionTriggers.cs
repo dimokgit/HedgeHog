@@ -114,9 +114,9 @@ namespace HedgeHog.Alice.Store {
     [Description("Trade Direction Triggers")]
     [Category(categoryActiveFuncs)]
     public string TradeDirectionTriggerssSave {
-      get { return string.Join(",", TradeDirectionTriggersInfo((tc, name) => name)); }
+      get { return string.Join(MULTI_VALUE_SEPARATOR, TradeDirectionTriggersInfo((tc, name) => name)); }
       set {
-        TradeDirectionTriggersSet(value.Split(','));
+        TradeDirectionTriggersSet(value.Split(MULTI_VALUE_SEPARATOR[0]));
       }
     }
     #endregion

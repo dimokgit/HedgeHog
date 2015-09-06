@@ -1179,7 +1179,7 @@ namespace HedgeHog.Alice.Store {
             #region SimpleMove
             case TrailingWaveMethod.SimpleMove:
             {
-              var conditions = MonoidsCore.ToFunc(() => new { isDirectional = new { AngleOk = true, TradingAngleRange } });
+                var conditions = MonoidsCore.ToFunc(() => new { TrailingDistanceFunction });
               var tci_ = MonoidsCore.ToFunc(() => TradeConditionsInfo((d, p, n) => new { n, v = d(), d }).ToArray());
 
               var toai = MonoidsCore.ToFunc(() => TradeOpenActionsInfo((d, n) => new { n, d }).ToArray());
@@ -1187,8 +1187,6 @@ namespace HedgeHog.Alice.Store {
               if (firstTime && IsTrader) {
                 WorkflowStep = "";
                 Log = new Exception(conditions() + "");
-                LineTimeMinFunc = rates0 => rates0[rates0.Count - CorridorDistanceByLengthRatio.Abs()].StartDateContinuous;
-                workFlowObservableDynamic.Subscribe();
                 ResetTakeProfitManual();
                 #region onCloseTradeLocal
                 onCanTradeLocal = canTrade => canTrade || Trades.Any();

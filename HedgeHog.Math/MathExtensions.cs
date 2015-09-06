@@ -638,9 +638,6 @@ namespace HedgeHog {
       return Math.Sqrt(S / (k - 2));
     }
     public static double RelativeStandardDeviation(this IList<double> dbls) {
-      var min = dbls.Min();
-      var max = dbls.Max();
-      dbls = dbls.Select(d => d - min).ToArray();
       var avg = dbls.Average();
       var std = dbls.StandardDeviation();
       return std / avg;

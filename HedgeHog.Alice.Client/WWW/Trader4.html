@@ -50,7 +50,7 @@
   <script src="Scripts/traverse.js"></script>
   <script src="Scripts/jquery.signalR-2.2.0.min.js"></script>
   <script src="signalr/hubs"></script>
-    <!--<script src="Scripts/bootstrap-notify.min.js"></script>-->
+  <!--<script src="Scripts/bootstrap-notify.min.js"></script>-->
   <script src="Scripts/pnotify.custom.min.js"></script>
   <script src='https://cdn.rawgit.com/ValYouW/jqPropertyGrid/9218bbd5df05bf7efe58591f434ea27ece11a045/jqPropertyGrid.js'></script>
   <script src='d3-knockout/custom-binding-handlers/trend-line-chart-binding.js'></script>
@@ -157,6 +157,7 @@
     #settingsGrid .ui-spinner input[type=text] {
       /*width: 60% !important;*/
     }
+
     #settingsGrid .pgCell input[type=text] {
       width: 100%;
     }
@@ -172,28 +173,35 @@
     #settingsGrid .pgTable .pgCell {
       white-space: nowrap;
     }
-    #settingsGrid .pgTable .pgRow{
-      display:none;
+
+    #settingsGrid .pgTable .pgRow {
+      display: none;
     }
-    .dialog-compact  {
-      font-size:1em;
+
+    .dialog-compact {
+      font-size: 1em;
     }
-    .dialog-compact.ui-dialog .ui-dialog-titlebar{
-      padding-top:0;
-      padding-bottom:0;
-    }
+
+      .dialog-compact.ui-dialog .ui-dialog-titlebar {
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+
     #waveRangesDialog tr.selected,
-    #waveRangesDialog td.selected{
-      background-color:lightblue;
+    #waveRangesDialog td.selected {
+      background-color: lightblue;
     }
-    #waveRangesDialog tr.istail{
-      background-color:lightgray;
+
+    #waveRangesDialog tr.istail {
+      background-color: lightgray;
     }
-    #waveRangesDialog th{
-      text-align:center;
+
+    #waveRangesDialog th {
+      text-align: center;
     }
-    #waveRangesDialog td{
-      text-align:right;
+
+    #waveRangesDialog td {
+      text-align: right;
     }
   </style>
   <script>
@@ -270,13 +278,20 @@
             </button>
           </li>
           <li>
+            <button data-bind="click:startWwwInfo.bind($data,0)"
+                    data-toggle1="modal"
+                    data-target1="#waveRangesDialog">
+              <span class="glyphicon glyphicon-stats"></span>
+            </button>
+          </li>
+          <li style="display:none">
             <button data-bind="click:startWaveRanges.bind($data,0)"
                     data-toggle1="modal"
                     data-target1="#waveRangesDialog">
               <span class="glyphicon glyphicon-stats"></span>
             </button>
           </li>
-          <li>
+          <li style="display:none">
             <button data-bind="click:startWaveRanges.bind($data,1)"
                     data-toggle1="modal"
                     data-target1="#waveRangesDialog">
@@ -570,10 +585,13 @@
     </div>
   </div>
   <!--#endregion-->
-
-
+  <!--#region wwwInfo-->
+  <div data-bind="elementer:wwwInfoDialog" style="display:none">
+    <pre data-bind="text:wwwInfo"></pre>
+  </div>
+  <!--#endregion-->
   <!--#region WaveRanges dialog-->
-  <div data-bind="elementer:waveRangesDialog" style="display:none" >
+  <div data-bind="elementer:waveRangesDialog" style="display:none">
     <table border="1" id="waveRangesDialog">
       <thead>
         <tr>
@@ -624,7 +642,6 @@
     </table>
   </div>
   <!--#endregion-->
-
   <!--#region TradeDIrectionTriggers dialog-->
   <div class="modal" id="tradeDirectionTriggersDialog" tabindex="-1" role="dialog" aria-labelledby="tradeDirectionTriggersDialog" aria-hidden="true">
     <div class="modal-dialog modal-sm">
@@ -648,7 +665,6 @@
     </div>
   </div>
   <!--#endregion-->
-
   <!--#region TradeOpenActions dialog-->
   <div class="modal" id="tradeOpenActionsDialog" tabindex="-1" role="dialog" aria-labelledby="tradeOpenActionsDialog" aria-hidden="true">
     <div class="modal-dialog modal-sm">
@@ -676,7 +692,6 @@
     </div>
   </div>
   <!--#endregion-->
-
   <!--#region CheatSheet-->
   <div class="modal" id="cheatSheetDialog" tabindex="-1" role="dialog" aria-labelledby="cheatSheetDialog" aria-hidden="true">
     <div class="modal-dialog modal-sm">
@@ -706,7 +721,6 @@
     </div>
   </div>
   <!--#endregion-->
-
   <!--#region News-->
   <div class="modal" id="newsDialog" tabindex="-1" role="dialog" aria-labelledby="newsDialog" aria-hidden="true">
     <div class="modal-dialog">
@@ -738,7 +752,6 @@
     </div>
   </div>
   <!--#endregion-->
-
   <!--#region Settings grid-->
   <!--#endregion-->
   <!--#endregion-->

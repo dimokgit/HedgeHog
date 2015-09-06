@@ -831,7 +831,7 @@ namespace HedgeHog.Alice.Store {
     public const string categoryTestControl = "Test Control";
     public const string categorySession = "Session";
     public const string wwwSettingsLiveOrders = "3. Live Orders";
-    public const string wwwSettingsCorridor = "2.0 Corridor";
+    public const string wwwSettingsCorridorAngles = "2.0 Corridor Angles";
     public const string wwwSettingsCorridorCMA = "2.1 Corridor CMA";
     public const string wwwSettingsCorridorOther = "2.2 Corridor";
     public const string wwwSettingsTrading = "1.0 Trading";
@@ -964,8 +964,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Angle Range")]
-    [WwwInfo(wwwInfoAngles)]
-    [WwwSetting(Group = wwwSettingsCorridor)]
+    [WwwSetting(Group = wwwSettingsCorridorAngles)]
     [Category(categoryActive)]
     public double TradingAngleRange_ {
       get { return TradingAngleRange; }
@@ -976,48 +975,58 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    double _trendHeightGreen;
-    [WwwInfo(wwwInfoAngles)]
-    [WwwSetting(Group = wwwSettingsCorridor)]
+    double _trendAngleGreen;
+    [WwwSetting(Group = wwwSettingsCorridorAngles)]
     [Category(categoryActive)]
-    public double TrendHeightGreen{
-      get { return _trendHeightGreen; }
+    public double TrendAngleGreen{
+      get { return _trendAngleGreen; }
       set {
-        if(_trendHeightGreen == value)
+        if(_trendAngleGreen == value)
           return;
-        _trendHeightGreen = value;
-        OnPropertyChanged(() => TrendHeightGreen);
+        _trendAngleGreen = value;
+        OnPropertyChanged(() => TrendAngleGreen);
       }
     }
 
-    double _trendHeightRed;
-    [WwwInfo(wwwInfoAngles)]
-    [WwwSetting(Group = wwwSettingsCorridor)]
+    double _trendAngleRed;
+    [WwwSetting(Group = wwwSettingsCorridorAngles)]
     [Category(categoryActive)]
-    public double TrendHeightRed {
-      get { return _trendHeightRed; }
+    public double TrendAngleRed {
+      get { return _trendAngleRed; }
       set {
-        if(_trendHeightRed == value)
+        if(_trendAngleRed == value)
           return;
-        _trendHeightRed = value;
-        OnPropertyChanged(() => TrendHeightRed);
+        _trendAngleRed = value;
+        OnPropertyChanged(() => TrendAngleRed);
       }
     }
 
-    double _trendHeightBlue;
-    [WwwInfo(wwwInfoAngles)]
-    [WwwSetting(Group = wwwSettingsCorridor)]
+    double _trendAngleBlue;
+    [WwwSetting(Group = wwwSettingsCorridorAngles)]
     [Category(categoryActive)]
-    public double TrendHeightBlue {
-      get { return _trendHeightBlue; }
+    public double TrendAngleBlue {
+      get { return _trendAngleBlue; }
       set {
-        if(_trendHeightBlue == value)
+        if(_trendAngleBlue == value)
           return;
-        _trendHeightBlue = value;
-        OnPropertyChanged(() => TrendHeightBlue);
+        _trendAngleBlue = value;
+        OnPropertyChanged(() => TrendAngleBlue);
       }
     }
 
+    int _trendAnglesSdrRange;
+    [DisplayName("Angle RSD range in %")]
+    [WwwSetting(Group = wwwSettingsCorridorAngles)]
+    [Category(categoryActive)]
+    public int TrendAnglesSdrRange {
+      get { return _trendAnglesSdrRange; }
+      set {
+        if(_trendAnglesSdrRange == value)
+          return;
+        _trendAnglesSdrRange = value;
+        OnPropertyChanged(() => TrendAnglesSdrRange);
+      }
+    }
 
     [DisplayName("Reset On Balance")]
     [Category(categoryXXX_NU)]

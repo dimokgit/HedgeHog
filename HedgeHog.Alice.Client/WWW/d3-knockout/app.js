@@ -493,6 +493,46 @@
         }).value();
     });
     // #endregion
+    // #region WwwInfo
+    var wwwInfoElement;
+    var currentWwwInfoChartNum;
+    var stopWwwInfo;
+    this.wwwInfoDialog = function (element) {
+      wwwInfoElement = element;
+    }
+    this.startWwwInfo = function (chartNum) {
+      currentWwwInfoChartNum = chartNum;
+      stopWwwInfo = false;
+      $(wwwInfoElement).dialog({
+        title: "WWW Info",
+        width: "auto",
+        dialogClass: "dialog-compact",
+        close: function () {
+          stopWwwInfo = true;
+          $(this).dialog("destroy");
+        }
+      });
+      getWwwInfo(chartNum);
+
+    }
+    function getWwwInfo(chartNum) {
+      var args =[pair, chartNum];
+      args.noNote = true;
+      serverCall("getWwwInfo", args, function (info) {
+        wwwInfoRaw(info);
+        if (!stopWwwInfo)
+          setTimeout(getWwwInfo.bind(null, chartNum), 400);
+      });
+    }
+    var wwwInfoRaw = ko.observable();
+    this.wwwInfo = ko.pureComputed(function () {
+      return (((JSON.stringify(wwwInfoRaw(), null, 2) || "")
+        .match(/^\{\s*([\s\S]+)\s*\}$/) || [])[1] || "")
+        .replace(/\{/g, "")
+        .replace(/\},*\s*/g, "")
+        .replace(/\s*$/, "")
+    });
+    // #endregion
     // #region Info bar
     this.profit = ko.observable(0);
     this.openTradeGross = ko.observable(0);

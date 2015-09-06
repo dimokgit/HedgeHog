@@ -226,7 +226,7 @@ namespace HedgeHog.Alice.Client {
         otg = IntOrDouble(tmTrader.OpenTradesGross2InPips, 1),
         tps = tm0.TicksPerSecondAverage.Round(1),
         dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"hh\:mm"),
-        hgt = tmTrader.RatesHeightInPips.ToInt() + "/" + tmTrader.BuySellHeightInPips.ToInt() + "/" + tmTrader.RatesDistanceInPips,
+        hgt = tmTrader.RatesHeightInPips.ToInt() + "/" + tmTrader.BuySellHeightInPips.ToInt(),
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
         S = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
@@ -283,6 +283,9 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
+    public ExpandoObject GetWwwInfo(string pair, int chartNum) {
+      return UseTradingMacro(pair, chartNum, tm => tm.WwwInfo(), false);
+    }
 
     public void Send(string pair, string newInyterval) {
       try {
