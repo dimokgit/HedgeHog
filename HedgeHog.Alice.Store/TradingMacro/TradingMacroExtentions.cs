@@ -2092,13 +2092,13 @@ namespace HedgeHog.Alice.Store {
               RateLast = ri.Last();
               RatePrev = ri[ri.Count - 2];
               RatePrev1 = ri[ri.Count - 3];
-              UseRates(_ => RatesArray = GetRatesSafe(ri));
+              UseRates(_ => RatesArray = GetRatesSafe(ri)).Count();
               RatesDuration = (RatesArray.Last().StartDate2 - RatesArray[0].StartDate2).TotalMinutes.ToInt();
             });
             IsAsleep = new[] { BuyLevel.InManual, SellLevel.InManual }.All(im=>!im) && 
               Trades.Length == 0 && 
               IsInVitualTrading && 
-              TradeConditionsInfo<TradeConditionAsleepAttribute>().Any(d => !d().Any());
+              TradeConditionsHaveAsleep();
             //if (IsAsleep)
               //ResetBarsCountCalc();
             var prices = RatesArray.ToArray(_priceAvg);
@@ -2120,7 +2120,14 @@ namespace HedgeHog.Alice.Store {
             SetTpsAverages();
             OnGeneralPurpose(() => {
               var leg = RatesArray.Count.Div(10).ToInt();
-              PriceSpreadAverage = UseRates(rates => rates.Buffer(leg).Where(b => b.Count > leg * .75).Select(b => b.Max(r => r.PriceSpread))).DefaultIfEmpty(double.NaN).Average();
+              UseRates(rates =>
+                rates
+                .Buffer(leg)
+                .Where(b => b.Count > leg * .75)
+                .Select(b => b.Max(r => r.PriceSpread))
+                .Average()
+                )
+                .ForEach(d => PriceSpreadAverage = d);
               OnRatesArrayChaged();
               AdjustSuppResCount();
               var coeffs = prices.Linear();
@@ -2137,7 +2144,7 @@ namespace HedgeHog.Alice.Store {
                 default:
                   throw new Exception(new { CorridorCalcMethod } + " is not supported.");
               }
-              Angle = UseRates(rates => AngleFromTangent(coeffs.LineSlope(), () => CalcTicksPerSecond(rates)));
+              UseRates(rates => AngleFromTangent(coeffs.LineSlope(), () => CalcTicksPerSecond(rates))).ForEach(a => Angle = a);
               //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
               OnPropertyChanged(() => RatesRsd);
             }, true);
@@ -2997,8 +3004,8 @@ namespace HedgeHog.Alice.Store {
         var tmt = TradingMacroOther(tm => !tm.IsAsleep && tm.IsTrender && !tm.TrendLinesTrends.IsEmpty).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
         if (!IsTrader)
           throw new Exception(new { TradeLevelFuncs=new { IsTrader } } + "");
-        Func<double> maxDefault = () => UseRates(rates => rates.Max(_priceAvg));
-        Func<double> minDefault = () => UseRates(rates => rates.Min(_priceAvg));
+        Func<double> maxDefault = () => UseRates(rates => rates.Max(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
+        Func<double> minDefault = () => UseRates(rates => rates.Min(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
         Func<Func<TradingMacro, double>, double> level = f => f(tmt.Where(tm => tm.IsTrader).DefaultIfEmpty(tmt.First()).First());
         Func<Func<TradingMacro, double>, double> levelMax = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMax).Max().IfNaN(maxDefault);
         Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMin).Min().IfNaN(minDefault);
@@ -3431,17 +3438,19 @@ namespace HedgeHog.Alice.Store {
     }
 
     object _innerRateArrayLocker = new object();
-    public T UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 3000) {
-      if (!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds))
-        throw new TimeoutException("[" + Pair + "] _rateArrayLocker was busy for more then " + timeoutInMilliseconds + " ms. RatesArray.Count:" + RatesArray.Count);
+    public IEnumerable<T> UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 3000) {
+      if(!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds)) {
+        Log = new TimeoutException("[" + Pair + "] _rateArrayLocker was busy for more then " + timeoutInMilliseconds + " ms. RatesArray.Count:" + RatesArray.Count);
+        yield break;
+      }
       try {
-        return func(RatesArray);
+        yield return func(RatesArray);
       } finally {
         Monitor.Exit(_innerRateArrayLocker);
       }
     }
     public void UseRates(Action<List<Rate>> func, int timeoutInMilliseconds = 3000) {
-      UseRates<Unit>(_ => { func(_); return Unit.Default; }, timeoutInMilliseconds);
+      UseRates<Unit>(_ => { func(_); return Unit.Default; }, timeoutInMilliseconds).Count();
     }
     object _innerRateLocker = new object();
     string _UseRatesInternalSource = string.Empty;
@@ -3559,7 +3568,7 @@ namespace HedgeHog.Alice.Store {
                 Store.PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper, BarPeriodInt, Pair, DateTime.MinValue, obj => { if (DoLogSaveRates) Log = new Exception(obj + ""); });
               } catch (Exception exc) { Log = exc; }
             };
-            //Scheduler.Default.Schedule(a);
+            Scheduler.Default.Schedule(a);
             //{
             //  RatesArraySafe.SavePairCsv(Pair);
             //}

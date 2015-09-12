@@ -1028,6 +1028,24 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    int _trendAnglesPerc;
+    [DisplayName("AngleR.Percentage(AngleB): -200 - 200")]
+    [WwwSetting(Group = wwwSettingsCorridorAngles)]
+    [Category(categoryActive)]
+    public int TrendAnglesPerc {
+      get { return _trendAnglesPerc; }
+      set {
+        if(_trendAnglesPerc == value)
+          return;
+        if(!value.Between(-200, 200)) {
+          Log = new Exception(new { TrendAnglesPerc = value, MustBe = " from -200 to 200" } + "");
+          return;
+        }
+        _trendAnglesPerc = value;
+        OnPropertyChanged(() => TrendAnglesPerc);
+      }
+    }
+
     [DisplayName("Reset On Balance")]
     [Category(categoryXXX_NU)]
     public double ResetOnBalance_ {

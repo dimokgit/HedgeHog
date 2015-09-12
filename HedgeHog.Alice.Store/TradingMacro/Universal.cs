@@ -80,12 +80,6 @@ namespace HedgeHog.Alice.Store {
           var l = hl.Where(d => d < 0).Average().Abs();
           return new[] { h, l };
         };
-        Func<double[]> getRegressionLeftRightRates = () => {
-          var rateLeft = CorridorStats.Coeffs.RegressionValue(CorridorStats.Rates.Count - 1);
-          var rightIndex = UseRates(rs => rs.ReverseIfNot().IndexOf(CorridorStats.Rates.LastBC()));
-          var rateRight = new[] { rateLeft, -CorridorStats.Coeffs[1] }.RegressionValue(rightIndex);
-          return new[] { rateLeft, rateRight };
-        };
         #endregion
         Func<bool, Func<Rate, double>> tradeExit = isBuy => MustExitOnReverse ? _priceAvg : GetTradeExitBy(isBuy);
         Action onEOW = () => { };
@@ -220,7 +214,6 @@ namespace HedgeHog.Alice.Store {
         if (_adjustEnterLevels != null) _adjustEnterLevels.GetInvocationList().Cast<Action>().ForEach(d => _adjustEnterLevels -= d);
         if (BuyLevel != null) BuyLevel.Crossed -= null;
         if (SellLevel != null) SellLevel.Crossed -= null;
-        bool exitCrossed = false;
         Action<Trade> onCloseTradeLocal = null;
         Action<Trade> onOpenTradeLocal = null;
 
@@ -330,7 +323,6 @@ namespace HedgeHog.Alice.Store {
         #region exitCrossHandler
         Action<SuppRes> exitCrossHandler = (sr) => {
           if (CanDoNetLimitOrders || isCrossDisabled(sr)) return;
-          exitCrossed = true;
           var lot = Trades.Lots() - (_trimToLotSize ? LotSize.Max(Trades.Lots() / 2) : _trimAtZero ? AllowedLotSizeCore() : 0);
           resetCloseAndTrim();
           if (TradingStatistics.TradingMacros.Count > 1 && (
@@ -449,23 +441,6 @@ namespace HedgeHog.Alice.Store {
         #region Funcs
         Func<Func<Rate, double>, double> getRateLast = (f) => f(RateLast) > 0 ? f(RateLast) : f(RatePrev);
         Func<bool> runOnce = null;
-        #region SetTrendlines
-        Func<double, double, Func<Rate[]>> setTrendLinesByParams = (h, l) => {
-          if (CorridorStats == null || !CorridorStats.Rates.Any()) return () => new[] { new Rate(), new Rate() };
-          var rates = new[] { RatesArray.LastBC(), CorridorStats.Rates.LastBC() };
-          var regRates = getRegressionLeftRightRates();
-
-          rates[0].PriceChartAsk = rates[0].PriceChartBid = double.NaN;
-          rates[0].PriceAvg1 = regRates[1];
-          rates[1].PriceAvg1 = regRates[0];
-
-          rates[0].PriceAvg2 = rates[0].PriceAvg1 + h;
-          rates[0].PriceAvg3 = rates[0].PriceAvg1 - l;
-          rates[1].PriceAvg2 = rates[1].PriceAvg1 + h;
-          rates[1].PriceAvg3 = rates[1].PriceAvg1 - l;
-          return () => rates;
-        };
-        #endregion
         #region initTradeRangeShift
         Action initTradeRangeShift = () => {
           Func<Trade, IEnumerable<Tuple<SuppRes, double>>> ootl_ = (trade) =>
@@ -1830,7 +1805,7 @@ namespace HedgeHog.Alice.Store {
           if (TurnOffOnProfit && t.PL >= PriceSpreadAverageInPips) {
             Strategy = Strategy & ~Strategies.Auto;
           }
-          CloseAtZero = _trimAtZero = _trimToLotSize = exitCrossed = false;
+          CloseAtZero = _trimAtZero = _trimToLotSize = false;
         };
         #endregion
 

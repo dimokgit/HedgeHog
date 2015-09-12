@@ -12,7 +12,8 @@ using System.Dynamic;
 
 namespace HedgeHog.Alice.Store {
   class TradeConditionStartDateTriggerAttribute : Attribute { }
-  class TradeConditionAsleepAttribute : Attribute { }
+  class TradeConditionAsleepAttribute : Attribute {  }
+  class TradeConditionTurnOffAttribute : Attribute { }
   class TradeConditionUseCorridorAttribute : Attribute { }
   partial class TradingMacro {
     #region TradeOpenActions
@@ -106,20 +107,29 @@ namespace HedgeHog.Alice.Store {
         Angle = tls.Angle.Round(1)
       }.ToExpando();
     }
+    double TrendAnglesRatioPerc(Func<Rate.TrendLevels,double> map, params Rate.TrendLevels[] tls) { return tls.ToArray(map).RelativeStandardDeviation().Abs() * 100; }
     double TrendAnglesSdr() { return TrendLinesTrendsAll.ToArray(tl => tl.Slope).RelativeStandardDeviation() * 100; }
     public ExpandoObject WwwInfo() {
       return new ExpandoObject()
-        .Merge(new { AngleSdr = TrendAnglesSdr().Round(0).Abs() })
-        .Merge(new { GreenAngle = TrendLines1Trends.Angle.Round(1) })
-        .Merge(new { RedAngle = TrendLinesTrends.Angle.Round(1) })
+        .Merge(new { AngleSdr_ = TrendAnglesSdr().Round(0).Abs() })
+        .Merge(new { RBAngPerc = TrendAnglesRatioPerc(tl => TrendAnglesPerc < 0 ? tl.Slope.Abs() : tl.Slope, TrendLines2Trends, TrendLinesTrends).Round(0) })
+        .Merge(new { GrnAngle_ = TrendLines1Trends.Angle.Round(1) })
+        .Merge(new { RedAngle_ = TrendLinesTrends.Angle.Round(1) })
         .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })
         ;
     }
     #region Angles
     public TradeConditionDelegate AngSdrOk { get { return () => IsTresholdAbsOk(TrendAnglesSdr().Abs(), TrendAnglesSdrRange) ? TradeDirections.Both : TradeDirections.None; } }
-    public TradeConditionDelegate GreenAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines1Trends, InPoints(TrendAngleGreen)); } }
-    public TradeConditionDelegate RedAngOk { get { return () => TradeDirectionByAngleCondition(TrendLinesTrends, InPoints(TrendAngleRed)); } }
-    public TradeConditionDelegate BlueAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines2Trends, InPoints(TrendAngleBlue)); } }
+    public TradeConditionDelegate AngRBPercOk { get { return () => 
+      IsTresholdAbsOk(TrendAnglesRatioPerc(tl => TrendAnglesPerc < 0 ? tl.Slope.Abs() : tl.Slope, TrendLines2Trends, TrendLinesTrends), TrendAnglesPerc) 
+      ? TradeDirections.Both 
+      : TradeDirections.None; } }
+    [TradeCondition(TradeConditionAttribute.Types.Or)]
+    public TradeConditionDelegate GreenAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines1Trends, TrendAngleGreen); } }
+    [TradeCondition(TradeConditionAttribute.Types.Or)]
+    public TradeConditionDelegate RedAngOk { get { return () => TradeDirectionByAngleCondition(TrendLinesTrends, TrendAngleRed); } }
+    [TradeCondition(TradeConditionAttribute.Types.Or)]
+    public TradeConditionDelegate BlueAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines2Trends, TrendAngleBlue); } }
     TradeDirections TradeDirectionByAngleCondition(Rate.TrendLevels tls,double tradingAngleRange) {
       return IsTresholdAbsOk(tls.Angle, tradingAngleRange)
         ? tradingAngleRange > 0
@@ -128,6 +138,9 @@ namespace HedgeHog.Alice.Store {
         : TradeDirections.Down
         : TradeDirections.Both
         : TradeDirections.None;
+    }
+    public TradeConditionDelegate Ang_G_R_BOk {
+      get { return () => GreenAngOk() | RedAngOk() | BlueAngOk(); }
     }
     public TradeConditionDelegate CorrAngOk {
       get {
@@ -146,6 +159,7 @@ namespace HedgeHog.Alice.Store {
         : IsTresholdAbsOk(ratesSpan, TimeFrameTresholdTimeSpan);
     }
     [TradeConditionAsleep]
+    [TradeConditionTurnOff]
     public TradeConditionDelegate TimeFrameOk {
       get {
         return () => TestTimeFrame()
@@ -328,6 +342,12 @@ namespace HedgeHog.Alice.Store {
     public Tuple<TradeConditionDelegate, PropertyInfo>[] TradeConditionsSet(IList<string> names) {
       return TradeConditions = GetTradeConditions().Where(tc => names.Contains(ParseTradeConditionName(tc.Item1.Method))).ToArray();
     }
+    bool TradeConditionsHaveTurnOff() {
+      return TradeConditionsInfo<TradeConditionTurnOffAttribute>().Any(d => !d().Any());
+    }
+    bool TradeConditionsHaveAsleep() {
+      return TradeConditionsInfo<TradeConditionAsleepAttribute>().Any(d => !d().Any());
+    }
     public IEnumerable<TradeConditionDelegate> TradeConditionsInfo<A>() where A : Attribute {
       return TradeConditionsInfo(new Func<Attribute, bool>(a => a.GetType() == typeof(A)), (d, p, ta, s) => d);
     }
@@ -341,7 +361,7 @@ namespace HedgeHog.Alice.Store {
              select map(tc.d, tc.p, tca.Type, tc.s);
     }
     public void TradeConditionsTrigger() {
-      if (IsTrader) {
+      if(IsTrader) {
         TradeConditionsEval().ForEach(eval => {
           var hasBuy = TradeDirection.HasUp() && eval.HasUp();
           var hasSell = TradeDirection.HasDown() && eval.HasDown();
@@ -387,7 +407,7 @@ namespace HedgeHog.Alice.Store {
               let and = gtci.Select(g => g.d()).ToArray()
               let c = gtci.Key == TradeConditionAttribute.Types.And
               ? and.Aggregate(TradeDirections.Both, (a, td) => a & td)
-              : and.Aggregate(TradeDirections.Both, (a, td) => a | td)
+              : and.Aggregate(TradeDirections.None, (a, td) => a | td)
               select c
               )
               .Scan(TradeDirections.Both, (a, td) => a & td)

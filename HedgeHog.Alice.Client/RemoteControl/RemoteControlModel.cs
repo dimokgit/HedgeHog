@@ -723,9 +723,9 @@ namespace HedgeHog.Alice.Client {
       try {
         _tradingStatistics.CurrentGross = fwMaster.GetTrades().Net2();
 
-        if (GetTradingMacros().Any(tm => !tm.UseRates(rs => rs.Any()))) return;
+        if (GetTradingMacros().Any(tm => !tm.UseRates(rs => rs.Any()).SingleOrDefault())) return;
         var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0 && tm.Strategy != Strategies.None).ToArray();
-        if (tms.Any() && tms.All(tm => tm.UseRates(rs => rs.Any()))) {
+        if (tms.Any() && tms.All(tm => tm.UseRates(rs => rs.Any()).SingleOrDefault())) {
           var tp = (tms.Sum(tm => (tm.CloseOnOpen ? tm.TakeProfitPips : tm.CalcTakeProfitDistance(inPips: true)) * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
           _tradingStatistics.TakeProfitDistanceInPips = tp;
         } else {
@@ -1046,8 +1046,12 @@ namespace HedgeHog.Alice.Client {
 
       var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
 
-      var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd).ToArray());
-      var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart).ToArray());
+      var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd).ToArray()).FirstOrDefault();
+      if(ratesForChart == null)
+        return new { };
+      var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart).ToArray()).FirstOrDefault();
+      if(ratesForChart2 == null)
+        return new { };
       tm.SetTpsAverages();
       var tps = tm.TicksPerSecondAverage;
 
@@ -1063,20 +1067,7 @@ namespace HedgeHog.Alice.Client {
         ratesForChart2 = ratesForChart2.GroupTicksToRates(mapTickToRate).ToArray();
       }
       var getRates = MonoidsCore.ToFunc((IList<Rate>)null, rates3 => {
-        if (tm.BarPeriod == BarsPeriodType.m10) {
-          return tm.UseRates(rates => {
-            var ds = rates.Last().StartDate2;
-            return rates.Reverse<Rate>()
-              .Select((r, i) => EnumsExtensions.CreateExpando(
-                "d", ds.AddMinutes(-i),
-                "c", rateHL(r),
-                "v", r.TpsAverage.IfNaN(tpsAvg),
-                "m", r.PriceCMALast.Round(digits)))
-              .Reverse()
-              //.Take(rates3.Count)
-              .ToArray();
-          });
-        } else return rates3.Select(map).ToArray();
+        return rates3.Select(map).ToArray();
       });
       var tradeLevels = !tmTrader.HasBuyLevel ? new object { } : new {
         buy = tmTrader.BuyLevel.Rate.Round(digits),
@@ -1130,7 +1121,8 @@ namespace HedgeHog.Alice.Client {
         close3 = trends.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
         close21 = trends.ToArray(t => t.Trends.PriceAvg21.Round(digits)),
         close31 = trends.ToArray(t => t.Trends.PriceAvg31.Round(digits))
-      });
+      })
+      .SingleOrDefault();
       var ratesLastStartDate2 = tm.RatesArray.Last().StartDate2;
       var trends2 = tm.TrendLines2.Value.ToList();
       var trendLines2 = new {

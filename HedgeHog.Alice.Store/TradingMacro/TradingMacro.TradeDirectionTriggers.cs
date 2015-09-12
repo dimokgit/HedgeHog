@@ -26,19 +26,21 @@ namespace HedgeHog.Alice.Store {
     #region Triggers
     [TradeDirectionTrigger]
     public void OnTradeCondOk() {
-      if(Trades.Length == 0 && TradeConditionsEval().DefaultIfEmpty(TradeDirections.None).All(b => b.Any())) {
+      if(TradeConditionsHaveTurnOff()) {
+        if(!Trades.Any())
+          new[] { BuyLevel, SellLevel }.ForEach(sr => {
+            sr.CanTrade = false;
+            sr.InManual = false;
+            sr.TradesCount = TradeCountStart;
+          });
+      } else if(Trades.Length == 0 && TradeConditionsEval().DefaultIfEmpty(TradeDirections.None).All(b => b.Any())) {
         var bs = new[] { BuyLevel, SellLevel };
-        // Turn off triegger
-        //_tradeDirectionTriggers.RemoveAll(tdt => tdt == OnTradeCondOk);
-        double min = GetTradeLevel(false, SellLevel.RateEx), max = GetTradeLevel(true, BuyLevel.Rate);
-        //var l = CorridorLength1;
-        //UseRates(rates => rates.GetRange(rates.Count - l, l).Height(out min, out max));
-        // set trade levels rates
-        if(new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(min, max))) {
+        double sell = GetTradeLevel(false, SellLevel.RateEx), buy = GetTradeLevel(true, BuyLevel.Rate);
+        if(new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(sell, buy))) {
           BuyLevel.ResetPricePosition();
-          BuyLevel.Rate = max;// GetTradeLevel(true, BuyLevel.Rate);
+          BuyLevel.Rate = buy;// GetTradeLevel(true, BuyLevel.Rate);
           SellLevel.ResetPricePosition();
-          SellLevel.Rate = min;// GetTradeLevel(false, SellLevel.RateEx);
+          SellLevel.Rate = sell;// GetTradeLevel(false, SellLevel.RateEx);
           // init trade levels
           bs.ForEach(sr => {
             sr.TradesCount = TradeCountStart;
@@ -46,6 +48,42 @@ namespace HedgeHog.Alice.Store {
             sr.InManual = true;
           });
         }
+      }
+    }
+    [TradeDirectionTrigger]
+    public void OnAng_R_G_BOk() {
+      if(TradeConditionsHaveTurnOff()) {
+        if(!Trades.Any())
+          new[] { BuyLevel, SellLevel }.ForEach(sr => {
+            sr.CanTrade = false;
+            sr.InManual = false;
+            sr.TradesCount = TradeCountStart;
+          });
+      } else if(Trades.Length == 0 && TradeConditionsEval().DefaultIfEmpty(TradeDirections.None).All(b => b.Any())) {
+        var bs = new[] { BuyLevel, SellLevel };
+        var angConds = new Dictionary<TradeConditionDelegate, Rate.TrendLevels> {
+          { GreenAngOk,TrendLines1Trends  },
+          { RedAngOk,TrendLinesTrends  },
+          { BlueAngOk,TrendLines2Trends  }
+        };
+        angConds
+          .Where(kv => kv.Key().Any())
+          .Select(kv => new { buy = kv.Value.PriceAvg2, sell = kv.Value.PriceAvg3 })
+          .OrderByDescending(x => x.buy.Abs(x.sell))
+          .Where(x => new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(x.sell, x.buy)))
+          .Take(1)
+          .ForEach(x => {
+            BuyLevel.ResetPricePosition();
+            BuyLevel.Rate = x.buy;// GetTradeLevel(true, BuyLevel.Rate);
+            SellLevel.ResetPricePosition();
+            SellLevel.Rate = x.sell;// GetTradeLevel(false, SellLevel.RateEx);
+                                    // init trade levels
+            bs.ForEach(sr => {
+              sr.TradesCount = TradeCountStart;
+              sr.CanTrade = true;
+              sr.InManual = true;
+            });
+          });
       }
     }
     [TradeDirectionTrigger]

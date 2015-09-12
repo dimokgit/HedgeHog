@@ -33,7 +33,7 @@ namespace HedgeHog.Alice.Store {
     private void ReleasePendingAction(string key) {
       if (PendingEntryOrders.Contains(key)) {
         PendingEntryOrders.Remove(key);
-        Debug.WriteLine("Pending[" + Pair + "] " + key + " released.");
+        //Debug.WriteLine("Pending[" + Pair + "] " + key + " released.");
       }
     }
     private bool HasPendingOrders() { return PendingEntryOrders.Any(); }
@@ -58,7 +58,7 @@ namespace HedgeHog.Alice.Store {
           }
         }
       } else {
-        Debug.WriteLine(Pair + "." + key + " is pending:" + PendingEntryOrders[key] + " in " + Lib.CallingMethod());
+        Log = new Exception(Pair + "." + key + " is pending:" + PendingEntryOrders[key] + " in " + Lib.CallingMethod());
       }
     }
     #endregion

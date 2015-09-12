@@ -382,13 +382,18 @@ namespace HedgeHog.Alice.Store {
         return CalcTrendLines(CorridorStats.Rates.Count > 0 
           ? CorridorStats.Rates.Reverse<Rate>().ToList() 
           : rates.GetRange(rates.Count - c, c));
-      });
+      })
+      .DefaultIfEmpty(new[] { Rate.TrendLevels.EmptyRate, Rate.TrendLevels.EmptyRate })
+      .Single();
     }
     public IList<Rate> CalcTrendLines(int count) {
-      return CalcTrendLines(UseRates(rates => {
+      return UseRates(rates => {
         var c = count.Min(rates.Count);
         return rates.GetRange(rates.Count - c, c);
-      }), count);
+      })
+      .Select(rates => CalcTrendLines(rates, count))
+      .DefaultIfEmpty(new[] { Rate.TrendLevels.EmptyRate, Rate.TrendLevels.EmptyRate })
+      .Single();
     }
     public IList<Rate> CalcTrendLines(List<Rate> source, int count) {
       var c = count.Min(source.Count);
@@ -411,8 +416,12 @@ namespace HedgeHog.Alice.Store {
       l = hl * 2;
       h1 = hl * 3;
       l1 = hl * 3;
-      var rates = new[] { (Rate)corridorValues[0].Clone(), (Rate)UseRates(rs => rs.Last().Clone()) };
-      var count = UseRates(rs => (rs.Count - rs.IndexOf(corridorValues[0])).Div(corridorValues.Count.Div(doubles.Count)).ToInt());
+      var rates = new[] { (Rate)corridorValues[0].Clone() }.Concat(UseRates(rs => (Rate)rs.Last().Clone())).ToList();
+      if(rates.Count == 1)
+        return new[] { Rate.TrendLevels.EmptyRate, Rate.TrendLevels.EmptyRate };
+      var count = UseRates(rs => (rs.Count - rs.IndexOf(corridorValues[0])).Div(corridorValues.Count.Div(doubles.Count)).ToInt()).DefaultIfEmpty().Single();
+      if(count == 0)
+        return new[] { Rate.TrendLevels.EmptyRate, Rate.TrendLevels.EmptyRate };
       var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(count - 1) };
       rates.ForEach(r => r.Trends = new Rate.TrendLevels(corridorValues.Count, coeffs.LineSlope(), hl) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize)
