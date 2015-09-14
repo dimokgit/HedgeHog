@@ -88,14 +88,22 @@ namespace HedgeHog.Alice.Store {
       return this.CalculateTakeProfit(1);
     }
 
-    public void WrapCurrentPriceInCorridor() {
-      LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
-      var offset = HeightForWrapToCorridor() / 2;
-      BuyLevel.Rate = CurrentPrice.Average + offset;
-      SellLevel.Rate = CurrentPrice.Average - offset;
-      BuyLevel.InManual = SellLevel.InManual = true;
-      BuyLevel.TradesCount = SellLevel.TradesCount = 0;
-      RaiseShowChart();
+    public void WrapCurrentPriceInCorridor(Rate.TrendLevels tls) {
+      WrapCurrentPriceInCorridor(tls.Count);
+    }
+    public void WrapCurrentPriceInCorridor(int count) {
+      UseRates(ra => ra.GetRange(ra.Count - count, count)).ForEach(rates => {
+        if(rates.Any()) {
+          rates.Sort(r => r.PriceAvg);
+          LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
+          BuyLevel.Rate = rates.Last().AskHigh;
+          SellLevel.Rate = rates.First().BidLow;
+          BuyLevel.InManual = SellLevel.InManual = true;
+          BuyLevel.TradesCount = SellLevel.TradesCount = TradeCountStart;
+          IsTradingActive = false;
+          RaiseShowChart();
+        }
+      });
     }
     public void SetDefaultTradeLevels() {
       Func<bool> isWide2 = () =>

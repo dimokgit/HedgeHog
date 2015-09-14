@@ -263,6 +263,7 @@
             type: 'number',
             options: { step: 1, numberFormat: "n" }
           },
+          RatesDistanceMin: { options: { step: 0.1 }},
           DoAdjustExitLevelByTradeTime: { name: "Adjust Exit By Trade" },
           MoveWrapTradeWithNewTrade:{name:"ForceWrapTrade"},
           TradingRatioByPMC: { name: "Lot By PMC" },
@@ -271,7 +272,7 @@
           TradingAngleRange_: { name: "Trading Angle", type: 'number', options: { step: 0.1, numberFormat: "n" } },
           TakeProfitXRatio: { name: "Take ProfitX", type: 'number', options: { step: 0.1, numberFormat: "n" } },
           TradingDistanceX: { name: "Trading DistanceX", type: 'number', options: { step: 0.1, numberFormat: "n" } },
-          PriceCmaLevels_: { name: "PriceCmaLevels", type: 'number', options: { step: 0.01, numberFormat: "n" } },
+          PriceCmaLevels_: { name: "PriceCmaLevels", type: 'number', options: { step: 0.001, numberFormat: "n" } },
           CorridorLengthDiff: { name: "CorridorLengthDiff", type: 'number', options: { step: 0.01, numberFormat: "n" } },
           
           TradeDirection: {
@@ -347,7 +348,7 @@
     this.setTradeCloseLevelBuy = setTradeCloseLevel.bind(null, true);
     this.setTradeCloseLevelSell = setTradeCloseLevel.bind(null, false);
     this.wrapTradeInCorridor = wrapTradeInCorridor;
-    this.wrapCurrentPriceInCorridor = function () { serverCall("wrapCurrentPriceInCorridor", [pair], "Close levels were reset"); };
+    this.wrapCurrentPriceInCorridor = function (corridorIndex) { serverCall("wrapCurrentPriceInCorridor", [pair,corridorIndex], "Close levels were reset"); };
     this.moveCorridorWavesCount = moveCorridorWavesCount;
     this.tradeConditions = ko.observableArray([]);
     var closedTrades = [];
@@ -571,6 +572,9 @@
     var updateChartCmas = [ko.observable(), ko.observable()];
     this.stats = { ucia: updateChartIntervalAverages, ucCmas: updateChartCmas };
     function updateChart(response) {
+      if (!response || !response.length) return;
+      if (response.length > 1) throw JSON.stringify(new { "response.length": response.length });
+      response = response[0];
       var d = new Date();
       updateChartIntervalAverages[0](cma(updateChartIntervalAverages[0](), 10, getSecondsBetween(new Date(), ratesInFlight)));
       prepResponse(response);
@@ -596,6 +600,10 @@
       updateChartCmas[0](cma(updateChartCmas[0](), 10, getSecondsBetween(new Date(), d)));
     }
     function updateChart2(response) {
+      if (!response || !response.length) return;
+      if (response.length > 1) throw JSON.stringify(new { "response.length": response.length });
+      response = response[0];
+
       var d = new Date();
       updateChartIntervalAverages[1](cma(updateChartIntervalAverages[1](), 10, getSecondsBetween(new Date(), ratesInFlight2)));
       prepResponse(response);

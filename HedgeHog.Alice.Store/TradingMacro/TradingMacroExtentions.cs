@@ -1396,14 +1396,18 @@ namespace HedgeHog.Alice.Store {
       Action<RepayForwardMessage> sfa = m => args.StepForward = true;
       var tc = new EventHandler<TradeEventArgs>((sender, e) => {
         GlobalStorage.UseForexContext(c => {
-          var session = c.t_Session.Single(s => s.Uid == SessionId);
-          session.MaximumLot = HistoryMaximumLot;
-          session.MinimumGross = MinimumOriginalProfit;
-          session.Profitability = Profitability;
-          session.DateMin = e.Trade.TimeClose;
-          if(session.DateMin == null)
-            session.DateMin = e.Trade.Time;
-          c.SaveChanges();
+          try {
+            var session = c.t_Session.Single(s => s.Uid == SessionId);
+            session.MaximumLot = HistoryMaximumLot;
+            session.MinimumGross = MinimumOriginalProfit;
+            session.Profitability = Profitability;
+            session.DateMin = e.Trade.TimeClose.IfMin(ServerTime);
+            if(session.DateMin == null)
+              session.DateMin = e.Trade.Time;
+            c.SaveChanges();
+          }catch(Exception exc) {
+            Log = exc;
+          }
         });
       });
 
@@ -1497,8 +1501,11 @@ namespace HedgeHog.Alice.Store {
         bool noMoreDbRates = false;
         var isReplaying = false;
         while (!args.MustStop && indexCurrent < _replayRates.Count && Strategy != Strategies.None) {
-          if (isReplaying && !IsTrader)
-            _waitHandle.WaitOne(10000);
+          if(isReplaying && !IsTrader)
+            if(!_waitHandle.WaitOne(1000)) {
+              //Log = new Exception(new { PairIndex, WaitedFor = "1000 seconds. Recircles the loop now." } + "");
+              continue;
+            }
           if (tms().Count == 1 && currentPosition > 0 && currentPosition != args.CurrentPosition) {
             var index = (args.CurrentPosition * (_replayRates.Count - BarsCountCalc) / 100.0).ToInt();
             UseRatesInternal(ri => {
@@ -1655,11 +1662,13 @@ namespace HedgeHog.Alice.Store {
               _waitHandle.Set();
           }
         }
-        Log = new Exception("Replay for Pair:{0}[{1}] done.".Formater(Pair, BarPeriod));
+        Log = new Exception("Replay for PairIndex:{0}[{1}] done.".Formater(PairIndex, BarPeriod));
       } catch (Exception exc) {
         Log = exc;
       } finally {
         try {
+          if(IsTrader)
+            _waitHandle.Set();
           ResetMinimumGross();
           args.TradingMacros.Remove(this);
           args.MustStop = true;
@@ -1779,7 +1788,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     const double suppResDefault = double.NaN;
-    private int BarsCountCount() { return BarsCountMax < 1000 ? BarsCount * BarsCountMax : BarsCountMax; }
+    private int BarsCountCount() { return BarsCountMax; }// BarsCountMax < 1000 ? BarsCount * BarsCountMax : BarsCountMax; }
 
     public void SuppResResetAllTradeCounts(int tradesCount = 0) { SuppResResetTradeCounts(SuppRes, tradesCount); }
     public static void SuppResResetTradeCounts(IEnumerable<SuppRes> suppReses, double tradesCount = 0) {
@@ -2076,7 +2085,7 @@ namespace HedgeHog.Alice.Store {
     public List<Rate> RatesArraySafe {
       get {
         try {
-          if (!SnapshotArguments.IsTarget && UseRatesInternal(ri => ri.Count).DefaultIfEmpty(0).Single() < Math.Max(1, BarsCountCount())) {
+          if (!SnapshotArguments.IsTarget && UseRatesInternal(ri => ri.Count).DefaultIfEmpty(0).Single() < Math.Max(1, BarsCountCalc)) {
             //Log = new RatesAreNotReadyException();
             return new List<Rate>();
           }
@@ -2820,16 +2829,13 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private IList<double> GetCma(IList<Rate> rates) {
-      var cmas = rates.Cma(_priceAvg, CmaPeriodByRatesCount());
+    private IList<double> GetCma(IList<Rate> rates,int? count = null) {
+      count = count ?? rates.Count;
+      var cmas = rates.Cma(_priceAvg, CmaPeriodByRatesCount(count.Value));
       if(rates.Count != cmas.Count)
         throw new Exception("rates.Count != cmas.Count");
-      Enumerable.Range(0, CmaPasses - 1).ForEach(_ => cmas = cmas.Cma(CmaPeriodByRatesCount()));
+      Enumerable.Range(0, CmaPasses - 1).ForEach(_ => cmas = cmas.Cma(count.Value));
       return cmas;
-    }
-    private void SetCmaBad(List<Rate> rates) {
-      rates.Cma(_priceAvg, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma);
-      Enumerable.Range(1, CmaPasses).ForEach(_ => rates.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma));
     }
     private void SetCma(IList<Rate> rates) {
       // Set primary CMA
@@ -2844,10 +2850,11 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private IList<double> GetCma2(IList<double> cmas) {
-      var cmas2 = cmas.Cma(CmaPeriodByRatesCount());
+    private IList<double> GetCma2(IList<double> cmas, int? count = null) {
+      count = count ?? cmas.Count;
+      var cmas2 = cmas.Cma(CmaPeriodByRatesCount(count.Value));
       for(var i = 1; i < CmaRatioForWaveLength; i++)
-        cmas2 = cmas2.Cma(CmaPeriodByRatesCount());
+        cmas2 = cmas2.Cma(CmaPeriodByRatesCount(count.Value));
       return cmas2;
     }
 

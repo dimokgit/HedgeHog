@@ -532,6 +532,8 @@ namespace HedgeHog {
       return values.Except(valueLow.Concat(valueHight)).DefaultIfEmpty(values.Average()).Average();
     }
 
+    public static double RootMeanSquare(this double d1,double d2) { return Math.Sqrt((d1 * d1 + d2 * d2) / 2); }
+
     public static double StandardDeviation(this List<double> doubleList) {
       double average = doubleList.Average();
       double sumOfDerivation = 0;

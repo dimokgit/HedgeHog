@@ -266,7 +266,7 @@ namespace HedgeHog.Alice.Client {
     private static Dictionary<string, Dictionary<string, bool>> GetTradeConditionsInfo(TradingMacro tm) {
       return tm.TradeConditionsInfo((d, p, t, c) => new { c, t, d = d() })
         .GroupBy(x => x.t)
-        .Select(g => new { g.Key, d = g.ToDictionary(x => x.c, x => x.d.Any()) })
+        .Select(g => new { g.Key, d = g.ToDictionary(x => x.c, x => x.d.HasAny()) })
         .ToDictionary(x => x.Key + "", x => x.d);
     }
     #endregion
@@ -328,8 +328,8 @@ namespace HedgeHog.Alice.Client {
     public void WrapTradeInCorridor(string pair) {
       UseTradingMacro(pair, tm => tm.WrapTradeInCorridor(), true);
     }
-    public void WrapCurrentPriceInCorridor(string pair) {
-      UseTradingMacro(pair, tm => tm.WrapCurrentPriceInCorridor(), true);
+    public void WrapCurrentPriceInCorridor(string pair,int corridorIndex) {
+      UseTradingMacro(pair, tm => tm.WrapCurrentPriceInCorridor(tm.TrendLinesTrendsAll[corridorIndex]), true);
     }
     public void Buy(string pair) {
       UseTradingMacro(pair, tm => tm.OpenTrade(true, tm.LotSizeByLossBuy, "web"), true);

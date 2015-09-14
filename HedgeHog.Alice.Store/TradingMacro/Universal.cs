@@ -1817,20 +1817,22 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         #region _adjustEnterLevels
-        _adjustEnterLevels += () => adjustEnterLevels();
-        _adjustEnterLevels += () => turnOff(() => _buySellLevelsForEach(sr => { if (IsAutoStrategy) sr.CanTradeEx = false; }));
-        _adjustEnterLevels += () => exitFunc()();
-        _adjustEnterLevels += () => {
+        Action setLevelPrices = () => {
           try {
-            if (IsTradingActive) {
+            if(IsTradingActive) {
               BuyLevel.SetPrice(enter(true));
               SellLevel.SetPrice(enter(false));
               BuyCloseLevel.SetPrice(CurrentExitPrice(true));
               SellCloseLevel.SetPrice(CurrentExitPrice(false));
             } else
               SuppRes.ForEach(sr => sr.ResetPricePosition());
-          } catch (Exception exc) { Log = exc; }
+          } catch(Exception exc) { Log = exc; }
         };
+        _adjustEnterLevels += setLevelPrices;
+        _adjustEnterLevels += adjustEnterLevels;
+        _adjustEnterLevels += () => turnOff(() => _buySellLevelsForEach(sr => { if (IsAutoStrategy) sr.CanTradeEx = false; }));
+        _adjustEnterLevels += () => exitFunc()();
+        _adjustEnterLevels += setLevelPrices;
         _adjustEnterLevels += () => { if (runOnce != null && runOnce()) runOnce = null; };
         #endregion
 

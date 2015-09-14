@@ -723,9 +723,10 @@ namespace HedgeHog.Alice.Client {
       try {
         _tradingStatistics.CurrentGross = fwMaster.GetTrades().Net2();
 
-        if (GetTradingMacros().Any(tm => !tm.UseRates(rs => rs.Any()).SingleOrDefault())) return;
+        if(GetTradingMacros().Any(tm => !tm.UseRates(rs => rs.Count > 0).SingleOrDefault()))
+          return;
         var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0 && tm.Strategy != Strategies.None).ToArray();
-        if (tms.Any() && tms.All(tm => tm.UseRates(rs => rs.Any()).SingleOrDefault())) {
+        if(tms.Any() && tms.All(tm => tm.UseRates(rs => rs.Count > 0).SingleOrDefault())) {
           var tp = (tms.Sum(tm => (tm.CloseOnOpen ? tm.TakeProfitPips : tm.CalcTakeProfitDistance(inPips: true)) * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
           _tradingStatistics.TakeProfitDistanceInPips = tp;
         } else {
@@ -1130,7 +1131,7 @@ namespace HedgeHog.Alice.Client {
         ? new DateTimeOffset[0]
         : new DateTimeOffset[]{
           tm.BarPeriod == BarsPeriodType.m1
-          ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLength2-1))
+          ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLengthBlue-1))
           : trends2[0].StartDate2,
           ratesLastStartDate2},
         close2 = trends2.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
@@ -1142,7 +1143,7 @@ namespace HedgeHog.Alice.Client {
         ? new DateTimeOffset[0]
         : new DateTimeOffset[]{
           tm.BarPeriod == BarsPeriodType.m1
-          ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLength1-1))
+          ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLengthGreen-1))
           : trends1[0].StartDate2,
           ratesLastStartDate2},
         close2 = trends1.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
@@ -1163,7 +1164,7 @@ namespace HedgeHog.Alice.Client {
       getTrades(false).Take(1).ForEach(_ => trades.Add(new { sell = tradeFoo(false) }));
       var price = tmg.GetPrice(pair);
       var askBid = new { ask = price.Ask.Round(digits), bid = price.Bid.Round(digits) };
-      return new {
+      return tm.UseRates(ratesArray => ratesArray.Take(1).Select(_ => new {
         rates = getRates(ratesForChart),
         rates2 = getRates(ratesForChart2),
         ratesCount = tm.RatesArray.Count,
@@ -1182,7 +1183,8 @@ namespace HedgeHog.Alice.Client {
         canBuy = tmTrader.CanOpenTradeByDirection(true),
         canSell = tmTrader.CanOpenTradeByDirection(false),
         waveLines
-      };
+      }).ToArray())
+      .SelectMany(d => d);
     }
     bool? _isParentHidden;
     void ShowChart(TradingMacro tm) {

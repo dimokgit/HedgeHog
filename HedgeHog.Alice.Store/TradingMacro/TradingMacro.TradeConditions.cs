@@ -124,11 +124,11 @@ namespace HedgeHog.Alice.Store {
       IsTresholdAbsOk(TrendAnglesRatioPerc(tl => TrendAnglesPerc < 0 ? tl.Slope.Abs() : tl.Slope, TrendLines2Trends, TrendLinesTrends), TrendAnglesPerc) 
       ? TradeDirections.Both 
       : TradeDirections.None; } }
-    [TradeCondition(TradeConditionAttribute.Types.Or)]
+    [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate GreenAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines1Trends, TrendAngleGreen); } }
-    [TradeCondition(TradeConditionAttribute.Types.Or)]
+    [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate RedAngOk { get { return () => TradeDirectionByAngleCondition(TrendLinesTrends, TrendAngleRed); } }
-    [TradeCondition(TradeConditionAttribute.Types.Or)]
+    [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate BlueAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines2Trends, TrendAngleBlue); } }
     TradeDirections TradeDirectionByAngleCondition(Rate.TrendLevels tls,double tradingAngleRange) {
       return IsTresholdAbsOk(tls.Angle, tradingAngleRange)
@@ -153,10 +153,18 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     bool TestTimeFrame() {
-      var ratesSpan = RatesArray.Last().StartDate - RatesArray[0].StartDate;
-      return TimeFrameTresholdTimeSpan2 > TimeSpan.Zero
+      return UseRates(rates =>
+      rates.Count == 0
+      ? TimeSpan.Zero
+      : rates.Last().StartDate - rates[0].StartDate
+      )
+      .Where(ts => ts != TimeSpan.Zero)
+      .Select(ratesSpan => TimeFrameTresholdTimeSpan2 > TimeSpan.Zero
         ? ratesSpan <= TimeFrameTresholdTimeSpan && ratesSpan >= TimeFrameTresholdTimeSpan2
-        : IsTresholdAbsOk(ratesSpan, TimeFrameTresholdTimeSpan);
+        : IsTresholdAbsOk(ratesSpan, TimeFrameTresholdTimeSpan)
+        )
+        .DefaultIfEmpty()
+        .Any(b => b);
     }
     [TradeConditionAsleep]
     [TradeConditionTurnOff]
@@ -212,7 +220,7 @@ namespace HedgeHog.Alice.Store {
     }
     TradeDirections TradeDirectionByAll(params TradeDirections[] tradeDirections) {
       return tradeDirections
-        .Where(td => td.Any())
+        .Where(td => td.HasAny())
         .Buffer(3)
         .Where(b => b.Count == 3 && b.Distinct().Count() == 1)
         .Select(b => b[2])
@@ -224,7 +232,7 @@ namespace HedgeHog.Alice.Store {
       [TradeCondition(TradeConditionAttribute.Types.Or)]
       get {
         return () =>
-          IsCurrentPriceOutsideCorridor(MySelfNext, tm => tm.TrendLinesTrends, tl => tl.PriceAvg31, tl => tl.PriceAvg21,IsReverseStrategy).Any()
+          IsCurrentPriceOutsideCorridor(MySelfNext, tm => tm.TrendLinesTrends, tl => tl.PriceAvg31, tl => tl.PriceAvg21,IsReverseStrategy).HasAny()
           ? TradeDirections.None
           : TradeDirectionByAll(Outside1Ok(), OutsideOk(), Outside2Ok());
       }
@@ -343,10 +351,13 @@ namespace HedgeHog.Alice.Store {
       return TradeConditions = GetTradeConditions().Where(tc => names.Contains(ParseTradeConditionName(tc.Item1.Method))).ToArray();
     }
     bool TradeConditionsHaveTurnOff() {
-      return TradeConditionsInfo<TradeConditionTurnOffAttribute>().Any(d => !d().Any());
+      return TradeConditionsInfo<TradeConditionTurnOffAttribute>().Any(d => d().HasNone());
     }
     bool TradeConditionsHaveAsleep() {
-      return TradeConditionsInfo<TradeConditionAsleepAttribute>().Any(d => !d().Any());
+      return TradeConditionsInfo<TradeConditionAsleepAttribute>().Any(d => d().HasNone());
+    }
+    bool TradeConditionsHave(TradeConditionDelegate td) {
+      return TradeConditionsInfo().Any(d => d == td);
     }
     public IEnumerable<TradeConditionDelegate> TradeConditionsInfo<A>() where A : Attribute {
       return TradeConditionsInfo(new Func<Attribute, bool>(a => a.GetType() == typeof(A)), (d, p, ta, s) => d);
@@ -398,7 +409,7 @@ namespace HedgeHog.Alice.Store {
               .DefaultIfEmpty()
               .OrderBy(b => b)
               .Take(1)
-              .Where(b => b.Any());
+              .Where(b => b.HasAny());
     }
     public IEnumerable<TradeDirections> TradeConditionsEval() {
       if (!IsTrader) return new TradeDirections[0];
@@ -412,6 +423,9 @@ namespace HedgeHog.Alice.Store {
               )
               .Scan(TradeDirections.Both, (a, td) => a & td)
               .TakeLast(1);
+    }
+    public IEnumerable<TradeConditionDelegate> TradeConditionsInfo() {
+      return TradeConditionsInfo(TradeConditions, (d, p, s) => d);
     }
     public IEnumerable<T> TradeConditionsInfo<T>(Func<TradeConditionDelegate, PropertyInfo, string, T> map) {
       return TradeConditionsInfo(TradeConditions, map);

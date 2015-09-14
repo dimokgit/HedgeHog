@@ -1330,7 +1330,7 @@ namespace HedgeHog.Alice.Client {
           //TradesManager.PriceChanged -= fwMaster_PriceChanged;
           //fwMaster.OrderChanged -= fwMaster_OrderChanged;
           fwMaster.OrderAdded -= fwMaster_OrderAdded;
-          PriceChangeSubscribtion.Dispose();
+          PriceChangeSubscribtion.YieldNotNull().ForEach(d => d.Dispose());
         };
         #endregion
 

@@ -4,16 +4,17 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.Reactive.Concurrency;
+using System.Reactive.Threading;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     #region Trade Direction Triggers
     void TriggerOnOutside(Func<Func<TradingMacro, Rate.TrendLevels>, TradeDirections> isOutside, Func<TradingMacro, Rate.TrendLevels> trendLevels) {
       var td = isOutside(trendLevels);
-      if(td.Any()) {
-        if(TradeConditionsEval().All(b => b.Any()))
+      if(td.HasAny()) {
+        if(TradeConditionsEval().All(b => b.HasAny()))
           TradeDirection = td;
         if(!HasTradeConditions) {
           BuyLevel.CanTradeEx = td.HasUp();
@@ -26,14 +27,7 @@ namespace HedgeHog.Alice.Store {
     #region Triggers
     [TradeDirectionTrigger]
     public void OnTradeCondOk() {
-      if(TradeConditionsHaveTurnOff()) {
-        if(!Trades.Any())
-          new[] { BuyLevel, SellLevel }.ForEach(sr => {
-            sr.CanTrade = false;
-            sr.InManual = false;
-            sr.TradesCount = TradeCountStart;
-          });
-      } else if(Trades.Length == 0 && TradeConditionsEval().DefaultIfEmpty(TradeDirections.None).All(b => b.Any())) {
+      if(!TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
         var bs = new[] { BuyLevel, SellLevel };
         double sell = GetTradeLevel(false, SellLevel.RateEx), buy = GetTradeLevel(true, BuyLevel.Rate);
         if(new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(sell, buy))) {
@@ -51,41 +45,106 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeDirectionTrigger]
-    public void OnAng_R_G_BOk() {
-      if(TradeConditionsHaveTurnOff()) {
-        if(!Trades.Any())
-          new[] { BuyLevel, SellLevel }.ForEach(sr => {
-            sr.CanTrade = false;
-            sr.InManual = false;
-            sr.TradesCount = TradeCountStart;
-          });
-      } else if(Trades.Length == 0 && TradeConditionsEval().DefaultIfEmpty(TradeDirections.None).All(b => b.Any())) {
+    public void OnBlueOk() {
+      if(!TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
         var bs = new[] { BuyLevel, SellLevel };
-        var angConds = new Dictionary<TradeConditionDelegate, Rate.TrendLevels> {
-          { GreenAngOk,TrendLines1Trends  },
-          { RedAngOk,TrendLinesTrends  },
-          { BlueAngOk,TrendLines2Trends  }
-        };
-        angConds
-          .Where(kv => kv.Key().Any())
-          .Select(kv => new { buy = kv.Value.PriceAvg2, sell = kv.Value.PriceAvg3 })
-          .OrderByDescending(x => x.buy.Abs(x.sell))
-          .Where(x => new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(x.sell, x.buy)))
-          .Take(1)
-          .ForEach(x => {
+        var startIndex = TrendLinesTrends.Count - 10;
+        var count = TrendLinesTrends.Count - TrendLines1Trends.Count + 10;
+        UseRates(ra => ra.GetRange(ra.Count - startIndex, count)).ForEach(range => {
+          range.Sort(r=>r.PriceAvg);
+          var buy = range.Last().AskHigh;
+          var sell = range.First().BidLow;
+          //if(new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(sell, buy))) {
             BuyLevel.ResetPricePosition();
-            BuyLevel.Rate = x.buy;// GetTradeLevel(true, BuyLevel.Rate);
+            BuyLevel.Rate = buy;// GetTradeLevel(true, BuyLevel.Rate);
             SellLevel.ResetPricePosition();
-            SellLevel.Rate = x.sell;// GetTradeLevel(false, SellLevel.RateEx);
-                                    // init trade levels
+            SellLevel.Rate = sell;// GetTradeLevel(false, SellLevel.RateEx);
+                                  // init trade levels
             bs.ForEach(sr => {
               sr.TradesCount = TradeCountStart;
               sr.CanTrade = true;
               sr.InManual = true;
             });
-          });
+          //}
+        });
       }
     }
+    [TradeDirectionTrigger]
+    public void OnAngRGOk() {
+      var bs = new[] { BuyLevel, SellLevel };
+      if(bs.Any(sr => sr.InManual))
+        return;
+      if(!TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
+        var angCondsAll = new Dictionary<TradeConditionDelegate, Rate.TrendLevels> {
+          { GreenAngOk,TrendLines1Trends  },
+          { RedAngOk,TrendLinesTrends  },
+          { BlueAngOk,TrendLines2Trends  }
+        };
+        var angConds = from ac in angCondsAll
+                       join tc in TradeConditionsInfo() on ac.Key equals tc
+                       select ac;
+        var anonBS = MonoidsCore.ToFunc(0.0, 0.0, (buy, sell) => new { buy, sell });
+        var getBS = MonoidsCore.ToFunc(0, count => {
+          double buy, sell;
+          RatesArray.GetRange(RatesArray.Count - count, count).Height(out sell, out buy);
+          return anonBS(buy, sell);
+        });
+        var setLevels = MonoidsCore.ToFunc(anonBS(0, 0), x => {
+          BuyLevel.ResetPricePosition();
+          BuyLevel.Rate = x.buy;// GetTradeLevel(true, BuyLevel.Rate);
+          SellLevel.ResetPricePosition();
+          SellLevel.Rate = x.sell;// GetTradeLevel(false, SellLevel.RateEx);
+                                  // init trade levels
+          bs.ForEach(sr => {
+            sr.TradesCount = TradeCountStart;
+            sr.CanTrade = true;
+            sr.InManual = true;
+          });
+          return true;
+        });
+        angConds
+          //.Where(kv => kv.Key().HasAny()) //only need this for OR conditions
+          .MaxBy(kv=>kv.Value.Count)
+          .Select(kv => getBS(kv.Value.Count))
+          .Where(x => new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(x.sell, x.buy)))
+          .Select(x => MonoidsCore.ToFunc(() => setLevels(x)))
+          .ForEach(a => a());
+      }
+    }
+
+    [TradeDirectionTrigger]
+    public void OnManualMove() {
+      if(TradeConditionsHave(TimeFrameOk) && TimeFrameOk().HasAny()) {
+        var bs = new[] { BuyLevel, SellLevel };
+        if(bs.All(sr => sr.InManual)) {
+          var buyOffset = CurrentPrice.Ask - BuyLevel.Rate;
+          if(buyOffset > 0 && BuyLevel.TradesCount > 0)
+            bs.ForEach(sr => sr.Rate += buyOffset);
+          var sellOffset = CurrentPrice.Bid - SellLevel.Rate;
+          if(sellOffset < 0 && SellLevel.TradesCount > 0)
+            bs.ForEach(sr => sr.Rate += sellOffset);
+        }
+      }
+    }
+    [TradeDirectionTrigger]
+    public void OnHaveTurnOff() {
+      if(TradeConditionsHaveTurnOff()) 
+        TurnOfManualCorridor();
+    }
+
+    private void TurnOfManualCorridor() {
+      if(!Trades.Any())
+        new[] { BuyLevel, SellLevel }
+        .Where(sr => sr.InManual)
+        .Do(sr => {
+          sr.CanTrade = false;
+          sr.InManual = false;
+          sr.TradesCount = TradeCountStart;
+        })
+        .Take(1)
+        .ForEach(_ => Log = new Exception("TurnOfManualCorridor"));
+    }
+
     [TradeDirectionTrigger]
     public void OnOutsideRed() {
       TriggerOnOutside(IsCurrentPriceOutsideCorridorSelf, tm => tm.TrendLinesTrends);

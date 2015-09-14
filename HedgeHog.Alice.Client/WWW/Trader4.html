@@ -443,7 +443,11 @@
               </li>
               <li><button data-bind="click:refreshOrders">Refresh Orders</button></li>
               <li><button data-bind="click:wrapTradeInCorridor">Wrap Trade</button></li>
-              <li><button data-bind="click:wrapCurrentPriceInCorridor">Wrap Price</button></li>
+              <li>
+                <button data-bind="click:wrapCurrentPriceInCorridor.bind($data,0)">Wrap G</button>
+                <button data-bind="click:wrapCurrentPriceInCorridor.bind($data,1)">R</button>
+                <button data-bind="click:wrapCurrentPriceInCorridor.bind($data,2)">B</button>
+              </li>
               <li>
                 <input type="button" value=" Buy " id="buy" />
                 <input type="button" value=" Sell " id="sell" />

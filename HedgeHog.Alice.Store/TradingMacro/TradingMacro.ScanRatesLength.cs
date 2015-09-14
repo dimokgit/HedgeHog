@@ -75,7 +75,7 @@ namespace HedgeHog.Alice.Store {
         var maxCount = Lazy.Create(() => UseRatesInternal(ri => ri.Count));
         Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
           a => dateToIndex(corrDate = a.IfEmpty(defaultDate).Single()));
- {
+        {
           if(!WaveRanges.TakeLast(1).Any(wr => corrDate.Between(wr.StartDate, wr.EndDate)))
             BarsCountLastDate = corrDate;//.Max(BarsCountLastDate);
           UseRatesInternal(rl => rl.Count - rl.TakeWhile(r => r.StartDate < BarsCountLastDate).Count()).ForEach(x => {
@@ -87,38 +87,6 @@ namespace HedgeHog.Alice.Store {
       } catch(Exception exc) {
         Log = exc;
       }
-    }
-    void ScanRatesLengthByDistanceMin_Slow() {
-      if(IsCorridorFrozen()) {
-        //BarsCountCalc = (CorridorStats.Rates.Count * 1.1).Max(BarsCountCalc).Min(BarsCountCount()).ToInt();
-        if(CorridorStats.Rates.Count * 1.05 > RatesArray.Count) {
-          //SetCorridorStartDateToNextWave(true);
-          BarsCountCalc = (CorridorStats.Rates.Count * 1.05).Ceiling();
-        }
-        return;
-      }
-      var rdm = InPoints(RatesDistanceMin);
-      UseRatesInternal(rs => {
-        var cmas = GetCma(rs.Reverse().ToArray());
-        var cmas2 = GetCma2(cmas);
-        var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
-        return macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2))
-          .Distances()
-          .Skip(BarsCount)
-          .TakeWhile(i => i <= rdm)
-          .Count() + BarsCount;
-        return cmas
-          .Distances()
-          .TakeWhile(i => i <= rdm)
-          .Count();
-      }
-      ).ForEach(count => {
-        //ScanRatesLengthByStDevMin2(count);
-        if(count * 1.1 > BarsCountCount())
-          Log = new Exception(new { BarsCountCalc, BarsCountCount = BarsCountCount() } + "");
-        BarsCountCalc = count;
-      });
-      return;
     }
     void ScanRatesLengthByDistanceMin() {
       if(IsCorridorFrozen()) {
@@ -132,23 +100,21 @@ namespace HedgeHog.Alice.Store {
       var rdm = InPoints(RatesDistanceMin);
       UseRatesInternal(rs => { var a = rs.ToArray(); Array.Reverse(a); return a; })
         .Select(rs => {
-          var cmas = GetCma(rs);
-          var cmas2 = GetCma2(cmas);
+          var cmas = GetCma(rs,BarsCountCalc);
+          var cmas2 = GetCma2(cmas,BarsCountCalc);
           var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
           return macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2))
             .Distances()
             .Skip(BarsCount)
             .TakeWhile(i => i <= rdm)
             .Count() + BarsCount;
-          return cmas
-            .Distances()
-            .TakeWhile(i => i <= rdm)
-            .Count();
         })
         .ForEach(count => {
-          //ScanRatesLengthByStDevMin2(count);
-          if(count * 1.1 > BarsCountCount())
-            Log = new Exception(new { BarsCountCalc, BarsCountCount = BarsCountCount() } + "");
+          const double adjuster = 1.1;
+          if(count * adjuster > BarsCountMax) {
+            BarsCountMax = (BarsCountMax * adjuster).Ceiling();
+            Log = new Exception(new { BarsCountMax, PairIndex, Action = "Stretched" } + "");
+          }
           BarsCountCalc = count;
         });
       return;
