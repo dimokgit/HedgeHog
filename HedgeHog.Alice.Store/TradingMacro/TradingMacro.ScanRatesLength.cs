@@ -103,7 +103,8 @@ namespace HedgeHog.Alice.Store {
           var cmas = GetCma(rs,BarsCountCalc);
           var cmas2 = GetCma2(cmas,BarsCountCalc);
           var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
-          return macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2))
+          var macd2 = macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2));
+          return macd2
             .Distances()
             .Skip(BarsCount)
             .TakeWhile(i => i <= rdm)

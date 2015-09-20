@@ -48,9 +48,15 @@ namespace HedgeHog.Alice.Store {
     public void OnBlueOk() {
       if(!TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
         var bs = new[] { BuyLevel, SellLevel };
-        var startIndex = TrendLinesTrends.Count - 10;
-        var count = TrendLinesTrends.Count - TrendLines1Trends.Count + 10;
-        UseRates(ra => ra.GetRange(ra.Count - startIndex, count)).ForEach(range => {
+        UseRates(ra => {
+          var startIndex = ra.Count - (TrendLinesTrends.Count - 10);
+          var count = TrendLinesTrends.Count - TrendLines1Trends.Count + 10;
+          if(startIndex <= 0 || count >= startIndex)
+            return new List<Rate>();
+          return ra.GetRange(ra.Count - startIndex, count);
+        })
+        .Where(range=>range.Any())
+        .ForEach(range => {
           range.Sort(r=>r.PriceAvg);
           var buy = range.Last().AskHigh;
           var sell = range.First().BidLow;

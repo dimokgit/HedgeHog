@@ -1506,16 +1506,10 @@ namespace HedgeHog.Alice.Store {
               //Log = new Exception(new { PairIndex, WaitedFor = "1000 seconds. Recircles the loop now." } + "");
               continue;
             }
-          if (tms().Count == 1 && currentPosition > 0 && currentPosition != args.CurrentPosition) {
-            var index = (args.CurrentPosition * (_replayRates.Count - BarsCountCalc) / 100.0).ToInt();
-            UseRatesInternal(ri => {
-              ri.Clear();
-              ri.AddRange(_replayRates.Skip(index).Take(BarsCountCalc - 1));
-            });
-          }
           Rate rate = null;
           try {
             if(args.StepBack) {
+              #region StepBack
               UseRatesInternal(ri => {
                 if(ri.Last().StartDate > args.DateStart.Value) {
                   args.InPause = true;
@@ -1531,16 +1525,12 @@ namespace HedgeHog.Alice.Store {
                 } else
                   rate = ri.Last();
               });
+              #endregion
             } else {
-              if(isReplaying && BarPeriod != BarsPeriodType.t1 && tms().Count > 1) {
+              if(isReplaying && !IsTrader && tms().Count > 1) {
                 var rateLast = UseRatesInternal(ri => ri.Last(), 15 * 1000);
-                var a = tms().Select(tm => {
-                  return tm.UseRatesInternal(ri => ri.IfEmpty(() => new Rate()).Last().StartDate).DefaultIfEmpty().First();
-                }).ToArray();
-                var dateMin = a.Min();
-                //if (tms().Distinct(tm => tm.BarPeriod).Count() == 1 && (dateMin - a.Max()).Duration().TotalMinutes > BarPeriodInt.Min(1) * 60) {
-                //  Log = new Exception("MaxTime-MinTime>30mins");
-                //}
+                var dateMin = tms().First(tm=>tm.IsTrader).UseRatesInternal(ri => ri.IfEmpty(() => new Rate()).Last().StartDate).DefaultIfEmpty().First();
+               
                 if(rateLast.IsEmpty() || rateLast.Single().StartDate > dateMin)
                   continue;
               }
@@ -1564,6 +1554,7 @@ namespace HedgeHog.Alice.Store {
                 Debugger.Break();
               }
               if(!UseRatesInternal(ri => {
+                #region CloseTradesBeforeNews
                 if(isReplaying && CloseTradesBeforeNews) {
                   var mi = _replayRates.Count - 1;
                   var ratesNext = Enumerable.Range(indexCurrent, 3).Where(i => i <= mi).Select(i => _replayRates[i]);
@@ -1574,6 +1565,7 @@ namespace HedgeHog.Alice.Store {
                     CloseTrades("Blackout");
                   }
                 }
+                #endregion
                 if(rate != null)
                   if(ri.Count == 0 || rate > ri.LastBC()) {
                     var tmPrime = tms()[0];
@@ -1715,8 +1707,11 @@ namespace HedgeHog.Alice.Store {
         SetTradeStatistics(trade);
     }
     public TradeStatistics SetTradeStatistics(Trade trade) {
-      if (!TradeStatisticsDictionary.ContainsKey(trade.Id))
-        TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics() { CorridorStDev = GetVoltageHigh().IfNaN(0), CorridorStDevCma = GetVoltageAverage().IfNaN(0) });
+      if(!TradeStatisticsDictionary.ContainsKey(trade.Id))
+        TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics() {
+          CorridorStDev = GetVoltageHigh().IfNaN(0),
+          CorridorStDevCma = RatesTimeSpan().FirstOrDefault().TotalMinutes
+        });
       var ts = TradeStatisticsDictionary[trade.Id];
       if (false) {
         if (!trade.Buy && ts.Resistanse == 0 && HasCorridor)
@@ -2831,10 +2826,12 @@ namespace HedgeHog.Alice.Store {
 
     private IList<double> GetCma(IList<Rate> rates,int? count = null) {
       count = count ?? rates.Count;
-      var cmas = rates.Cma(_priceAvg, CmaPeriodByRatesCount(count.Value));
+      var cmaPeriod = CmaPeriodByRatesCount(count.Value);
+      var cmas = rates.Cma(_priceAvg, cmaPeriod);
       if(rates.Count != cmas.Count)
         throw new Exception("rates.Count != cmas.Count");
-      Enumerable.Range(0, CmaPasses - 1).ForEach(_ => cmas = cmas.Cma(count.Value));
+      for(var i = CmaPasses; i > 1; i--)
+        cmas = cmas.Cma(cmaPeriod);
       return cmas;
     }
     private void SetCma(IList<Rate> rates) {
@@ -2852,9 +2849,10 @@ namespace HedgeHog.Alice.Store {
 
     private IList<double> GetCma2(IList<double> cmas, int? count = null) {
       count = count ?? cmas.Count;
-      var cmas2 = cmas.Cma(CmaPeriodByRatesCount(count.Value));
-      for(var i = 1; i < CmaRatioForWaveLength; i++)
-        cmas2 = cmas2.Cma(CmaPeriodByRatesCount(count.Value));
+      var cmaPeriod = CmaPeriodByRatesCount(count.Value);
+      var cmas2 = cmas.Cma(cmaPeriod);
+      for(var i = CmaRatioForWaveLength; i > 1; i--)
+        cmas2 = cmas2.Cma(cmaPeriod);
       return cmas2;
     }
 
@@ -2977,8 +2975,8 @@ namespace HedgeHog.Alice.Store {
 
     #region IsTrender
     private bool _IsTrender;
-    [Category(categoryCorridor)]
-    [WwwSetting(wwwSettingsCorridorOther)]
+    [Category(categoryActiveYesNo)]
+    [WwwSetting()]
     public bool IsTrender {
       get { return _IsTrender; }
       set {
@@ -3445,14 +3443,18 @@ namespace HedgeHog.Alice.Store {
     }
 
     object _innerRateArrayLocker = new object();
-    public IEnumerable<T> UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 3000) {
+    string _lastUserRatesCaller = "";
+    public IEnumerable<T> UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
       if(!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds)) {
-        Log = new TimeoutException("[" + Pair + "] _rateArrayLocker was busy for more then " + timeoutInMilliseconds + " ms. RatesArray.Count:" + RatesArray.Count);
+        var message = new { Pair, PairIndex, Method = "UseRates", Caller, LastCaller = _lastUserRatesCaller, timeoutInMilliseconds } + "";
+        Log = new TimeoutException(message);
         yield break;
       }
       try {
+        _lastUserRatesCaller = Caller;
         yield return func(RatesArray);
       } finally {
+        _lastUserRatesCaller = "";
         Monitor.Exit(_innerRateArrayLocker);
       }
     }
@@ -3461,16 +3463,13 @@ namespace HedgeHog.Alice.Store {
     }
     object _innerRateLocker = new object();
     string _UseRatesInternalSource = string.Empty;
-    public T[] UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000) {
+    public T[] UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
       if (!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds)) {
-        Log = new TimeoutException("[" + Pair + "] _innerRateLocker was busy for more then " + timeoutInMilliseconds + " ms. RatesInternal.Count:" + RatesInternal.Count + "\nSource:\n" + _UseRatesInternalSource);
+        var message = new { Pair, PairIndex, Method = "UseRatesInternal", Caller, LastCaller = _lastUserRatesCaller, timeoutInMilliseconds } + "";
+        Log = new TimeoutException(message);
         return new T[0];
       }
       try {
-        //_UseRatesInternalSource = string.Join("\n", Enumerable.Range(1, 3)
-        //  .Select(frame => new[] { new StackFrame(frame, true) }
-        //    .Select(sf => new { frame, sf.GetMethod().Name, file = sf.GetFileName() + ":" + sf.GetFileLineNumber() }))
-        //    .SelectMany(x => x + ""));
         return new[] { func(_Rates) };
       } finally {
         Monitor.Exit(_innerRateLocker);
@@ -4504,8 +4503,8 @@ namespace HedgeHog.Alice.Store {
     #region RatesDistanceMin
     [Category(categoryCorridor)]
     private double _RatesDistanceMin = 1000;
-    [Category(categoryCorridor)]
-    [WwwSetting(wwwSettingsCorridorOther)]
+    [Category(categoryActive)]
+    [WwwSetting(wwwSettingsCorridorCMA)]
     public double RatesDistanceMin {
       get { return _RatesDistanceMin; }
       set {
