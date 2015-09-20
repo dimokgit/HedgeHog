@@ -283,6 +283,20 @@ namespace HedgeHog {
       var neg = counts.Where(v => v.Value < 0).Select(b => b.Value).ToArray();
       return new[] { pos, neg };
     }
+    public static IList<double> CrossesSmoothed(this IList<double> sin, IList<double> cos) {
+      var zip = sin.Zip(cos, (s, c) => s.SignUp(c))
+        .Select((sign, i) => new { sign, i })
+        .DistinctUntilChanged(x => x.sign)
+        .Select(x => x.i)
+        .Concat(new[] { sin.Count })
+        .Select((c, i) => new { c, i })
+        .ToArray();
+      var zip2 = zip.Zip(zip.Skip(1), (p, n) => new { start = p.i, count = n.c - p.c, step = 1.0 / (n.c - p.c) }).ToArray();
+      var zip3 = zip2.SelectMany(z => Enumerable.Range(0, z.count).Select(i => z.start + z.step * i)).ToArray();
+      return zip3;
+    }
+
+
     public static IEnumerable<Tuple<T, T>> Mash<T>(this IList<T> list) {
       return list.Zip(list.Skip(1), (f, s) => new Tuple<T, T>(f, s));
     }

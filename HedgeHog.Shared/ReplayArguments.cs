@@ -24,19 +24,6 @@ namespace HedgeHog.Shared {
     public void ResetSuperSession() { SuperSessionId = Guid.Empty; }
     #endregion
 
-    #region CurrentPosition
-    private int _CurrentPosition;
-    public int CurrentPosition {
-      get { return _CurrentPosition; }
-      set {
-        if (_CurrentPosition != value) {
-          _CurrentPosition = value;
-          RaisePropertyChanged("CurrentPosition");
-        }
-      }
-    }
-    #endregion
-
     #region MonthsToTest
     private double _MonthsToTest;
     public double MonthsToTest {
