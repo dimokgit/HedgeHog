@@ -55,24 +55,61 @@ namespace HedgeHog.Alice.Store {
             return new List<Rate>();
           return ra.GetRange(ra.Count - startIndex, count);
         })
-        .Where(range=>range.Any())
+        .Where(range => range.Any())
         .ForEach(range => {
-          range.Sort(r=>r.PriceAvg);
+          range.Sort(r => r.PriceAvg);
           var buy = range.Last().AskHigh;
           var sell = range.First().BidLow;
           //if(new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(sell, buy))) {
-            BuyLevel.ResetPricePosition();
-            BuyLevel.Rate = buy;// GetTradeLevel(true, BuyLevel.Rate);
-            SellLevel.ResetPricePosition();
-            SellLevel.Rate = sell;// GetTradeLevel(false, SellLevel.RateEx);
-                                  // init trade levels
-            bs.ForEach(sr => {
-              sr.TradesCount = TradeCountStart;
-              sr.CanTrade = true;
-              sr.InManual = true;
-            });
+          BuyLevel.ResetPricePosition();
+          BuyLevel.Rate = buy;// GetTradeLevel(true, BuyLevel.Rate);
+          SellLevel.ResetPricePosition();
+          SellLevel.Rate = sell;// GetTradeLevel(false, SellLevel.RateEx);
+                                // init trade levels
+          bs.ForEach(sr => {
+            sr.TradesCount = TradeCountStart;
+            sr.CanTrade = true;
+            sr.InManual = true;
+          });
           //}
         });
+      }
+    }
+    [TradeDirectionTrigger]
+    public void OnOkDoGreen() {
+      TradeCorridorByGRB(TrendLines1Trends);
+    }
+    [TradeDirectionTrigger]
+    public void OnOkDoRed() {
+      TradeCorridorByGRB(TrendLinesTrends);
+    }
+    [TradeDirectionTrigger]
+    public void OnOkDoBlue() {
+      TradeCorridorByGRB(TrendLinesTrends);
+    }
+    public void TradeCorridorByGRB(Rate.TrendLevels tls) {
+      if(BarsCountCalc > BarsCount && !TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
+        var bs = new[] { BuyLevel, SellLevel };
+        UseRates(ra => ra.GetRange(ra.Count - tls.Count, tls.Count))
+          .Where(ra => ra.Count > 0)
+          .Select(ra => new { buy = ra.Max(r => r.AskHigh), sell = ra.Min(r => r.BidLow) })
+          .Where(x => new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(x.sell, x.buy)))
+          .ForEach(x => {
+            var maxHeight = bs.Any(sr => sr.InManual) ? BuyLevel.Rate.Abs(SellLevel.Rate) : double.MaxValue;
+            if(x.buy.Abs(x.sell) < maxHeight) {
+              BuyLevel.ResetPricePosition();
+              BuyLevel.Rate = x.buy;// GetTradeLevel(true, BuyLevel.Rate);
+              SellLevel.ResetPricePosition();
+              SellLevel.Rate = x.sell;// GetTradeLevel(false, SellLevel.RateEx);
+                                      // init trade levels
+              bs.ForEach(sr => {
+                sr.TradesCount = TradeCountStart;
+                sr.CanTrade = true;
+                sr.InManual = true;
+              });
+            }
+            //}
+          });
       }
     }
     [TradeDirectionTrigger]
@@ -110,7 +147,7 @@ namespace HedgeHog.Alice.Store {
         });
         angConds
           //.Where(kv => kv.Key().HasAny()) //only need this for OR conditions
-          .MaxBy(kv=>kv.Value.Count)
+          .MaxBy(kv => kv.Value.Count)
           .Select(kv => getBS(kv.Value.Count))
           .Where(x => new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(x.sell, x.buy)))
           .Select(x => MonoidsCore.ToFunc(() => setLevels(x)))
@@ -118,6 +155,20 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [TradeDirectionTrigger]
+    public void OnTradesCountMove() {
+      if(Trades.Length == 0) {
+        var bs = new[] { BuyLevel, SellLevel };
+        if(bs.All(sr => sr.InManual)) {
+          var buyOffset = CurrentPrice.Ask - BuyLevel.Rate;
+          if(buyOffset > 0 && BuyLevel.TradesCount > 0)
+            bs.ForEach(sr => sr.Rate += buyOffset);
+          var sellOffset = CurrentPrice.Bid - SellLevel.Rate;
+          if(sellOffset < 0 && SellLevel.TradesCount > 0)
+            bs.ForEach(sr => sr.Rate += sellOffset);
+        }
+      }
+    }
     [TradeDirectionTrigger]
     public void OnManualMove() {
       if(TradeConditionsHave(TimeFrameOk) && TimeFrameOk().HasAny()) {
@@ -134,7 +185,7 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeDirectionTrigger]
     public void OnHaveTurnOff() {
-      if(TradeConditionsHaveTurnOff()) 
+      if(TradeConditionsHaveTurnOff())
         TurnOfManualCorridor();
     }
 
@@ -168,24 +219,6 @@ namespace HedgeHog.Alice.Store {
     [TradeDirectionTrigger]
     public void OnOutsideBlue() {
       TriggerOnOutside(IsCurrentPriceOutsideCorridorSelf, tm => tm.TrendLines2Trends);
-    }
-    DateTime _onElliotTradeCorridorDate = DateTime.MinValue;
-    [TradeDirectionTrigger]
-    public void OnElliotWave() {
-      WaveRanges.Where(wr => wr.ElliotIndex > 0).Take(1)
-        .ForEach(wr => {
-          var max = wr.Max;
-          var min = wr.Min;
-          var mid = max.Avg(min);
-          var offset = WaveHeightAverage / 2;
-          if(new[] { false, true }.All(b => CurrentEnterPrice(b).Between(min, max))) {
-            BuyLevel.Rate = mid - offset;
-            SellLevel.Rate = mid + offset;
-            BuyLevel.InManual = SellLevel.InManual = true;
-            BuyLevel.CanTrade = TradeDirection.HasUp() && true;
-            SellLevel.CanTrade = TradeDirection.HasDown() && true;
-          }
-        });
     }
     #endregion
 
