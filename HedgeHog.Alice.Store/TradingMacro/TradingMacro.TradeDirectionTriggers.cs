@@ -88,22 +88,26 @@ namespace HedgeHog.Alice.Store {
       TradeCorridorByGRB(TrendLinesTrends);
     }
     public void TradeCorridorByGRB(Rate.TrendLevels tls) {
-      if(BarsCountCalc > BarsCount && !TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
+      var tcEval = TradeConditionsEval().ToArray();
+      if(BarsCountCalc > BarsCount && !TradeConditionsHaveTurnOff() && Trades.Length == 0 && tcEval.Any(b => b.HasAny())) {
         var bs = new[] { BuyLevel, SellLevel };
         UseRates(ra => ra.GetRange(ra.Count - tls.Count, tls.Count))
           .Where(ra => ra.Count > 0)
           .Select(ra => new { buy = ra.Max(r => r.AskHigh), sell = ra.Min(r => r.BidLow) })
           .Where(x => new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(x.sell, x.buy)))
           .ForEach(x => {
-            var maxHeight = bs.Any(sr => sr.InManual) ? BuyLevel.Rate.Abs(SellLevel.Rate) : double.MaxValue;
+            var maxHeight = double.MaxValue;// bs.Any(sr => sr.InManual) ? BuyLevel.Rate.Abs(SellLevel.Rate) : double.MaxValue;
             if(x.buy.Abs(x.sell) < maxHeight) {
+
               BuyLevel.ResetPricePosition();
               BuyLevel.Rate = x.buy;// GetTradeLevel(true, BuyLevel.Rate);
+              BuyLevel.TradesCount = TradeCountStart + (tcEval.First().HasUp() ? 0 : 1);
+
               SellLevel.ResetPricePosition();
               SellLevel.Rate = x.sell;// GetTradeLevel(false, SellLevel.RateEx);
-                                      // init trade levels
+              SellLevel.TradesCount = TradeCountStart + (tcEval.First().HasDown() ? 0 : 1);
+
               bs.ForEach(sr => {
-                sr.TradesCount = TradeCountStart;
                 sr.CanTrade = true;
                 sr.InManual = true;
               });

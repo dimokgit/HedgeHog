@@ -138,12 +138,13 @@ IsTresholdAbsOk(TrendAnglesRatioPerc(tl => TrendAnglesPerc < 0 ? tl.Slope.Abs() 
     public TradeConditionDelegate RedAngOk { get { return () => TradeDirectionByAngleCondition(TrendLinesTrends, TrendAngleRed); } }
     [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate BlueAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines2Trends, TrendAngleBlue); } }
+
     TradeDirections TradeDirectionByAngleCondition(Rate.TrendLevels tls, double tradingAngleRange) {
       return IsTresholdAbsOk(tls.Angle, tradingAngleRange)
         ? tradingAngleRange > 0
         ? tls.Angle > 0
-        ? TradeDirections.Up
-        : TradeDirections.Down
+        ? TradeDirections.Down
+        : TradeDirections.Up
         : TradeDirections.Both
         : TradeDirections.None;
     }
