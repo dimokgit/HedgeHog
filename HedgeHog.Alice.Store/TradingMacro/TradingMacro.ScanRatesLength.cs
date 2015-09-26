@@ -116,37 +116,17 @@ namespace HedgeHog.Alice.Store {
       return;
     }
     public void ScanRatesLengthByDistanceMinAndCrossesCount() {
-      if(IsCorridorFrozen()) {
-        //BarsCountCalc = (CorridorStats.Rates.Count * 1.1).Max(BarsCountCalc).Min(BarsCountCount()).ToInt();
-        if(CorridorStats.Rates.Count * 1.05 > RatesArray.Count) {
-          //SetCorridorStartDateToNextWave(true);
-          BarsCountCalc = (CorridorStats.Rates.Count * 1.05).Ceiling();
-        }
-        return;
-      }
-      var rdm = InPoints(RatesDistanceMin);
-      UseRatesInternal(rs => {
-      var a = rs.ToArray();
-      Array.Reverse(a);
-      var hs = a.Scan(new[] { double.MaxValue, double.MinValue }, (mm, rate) => {
-        mm[0] = rate.PriceAvg.Min(mm[0]);
-        mm[1] = rate.PriceAvg.Max(mm[1]);
-        return mm;
-      });
-        return new { rs = a, hs };
-      })
-        .Select(u => {
-          var cmas = GetCma(u.rs, BarsCountCalc);
+      UseRatesInternal(rs => rs.ToList())
+        .Select(rs => {
+          rs.Reverse();
+          var rdm = InPoints(RatesDistanceMin);
+          var cmas = GetCma(rs, BarsCountCalc);
           var cmas2 = GetCma2(cmas, BarsCountCalc);
           var crosses = cmas.CrossesSmoothed(cmas2);
-          //var zip = cmas.Zip(cmas2, (v1, v2) => new { abs = v1.Abs(v2), sign = v1.SignUp(v2) }).ToArray();
-          //var scan = zip.Scan();
           var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
           var macd2 = macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2));
           var macd3 = macd2
             .Distances();
-            //.Zip(crosses, (dist, cross) => new { dist, cross })
-            //.Zip(u.hs, (x, mm) => new {dist= InPips(x.dist), x.cross, height = InPips(mm[1] - mm[0]) });
           return macd3
             .Skip(BarsCount)
             .TakeWhile(i => i <= rdm)
