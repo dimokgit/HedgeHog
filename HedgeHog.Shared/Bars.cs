@@ -606,7 +606,7 @@ namespace HedgeHog.Bars {
       public static readonly TrendLevels Empty;
       public static readonly Rate EmptyRate;
       static TrendLevels() {
-        Empty = new TrendLevels(0,double.NaN, double.NaN);
+        Empty = new TrendLevels(0,new[] { double.NaN, double.NaN }, double.NaN);
         EmptyRate = new Rate { Trends = Empty };
       }
       public bool IsEmpty { get { return Count == 0; } }
@@ -728,10 +728,16 @@ namespace HedgeHog.Bars {
         }
       }
 
+      public double[] Coeffs {
+        get;
+        private set;
+      }
+
       double _height = double.NaN;
-      public TrendLevels(int count, double slope,double stDev) {
+      public TrendLevels(int count, double[] coeffs,double stDev) {
         this.Count = count;
-        this.Slope = slope;
+        this.Slope = coeffs.LineSlope();
+        this.Coeffs = coeffs;
         this.StDev = stDev;
       }
     }

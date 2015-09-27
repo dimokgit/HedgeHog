@@ -89,7 +89,7 @@ namespace HedgeHog.Alice.Store {
     }
     public void TradeCorridorByGRB(Rate.TrendLevels tls) {
       var tcEval = TradeConditionsEval().ToArray();
-      if(BarsCountCalc > BarsCount && !TradeConditionsHaveTurnOff() && Trades.Length == 0 && tcEval.Any(b => b.HasAny())) {
+      if(BarsCountCalc > BarsCount && tcEval.Any(b => b.HasAny())) {
         var bs = new[] { BuyLevel, SellLevel };
         UseRates(ra => ra.GetRange(ra.Count - tls.Count, tls.Count))
           .Where(ra => ra.Count > 0)
@@ -101,22 +101,28 @@ namespace HedgeHog.Alice.Store {
 
               BuyLevel.ResetPricePosition();
               BuyLevel.Rate = x.buy;// GetTradeLevel(true, BuyLevel.Rate);
-              BuyLevel.TradesCount = TradeCountStart + (tcEval.First().HasUp() ? 0 : 1);
 
               SellLevel.ResetPricePosition();
               SellLevel.Rate = x.sell;// GetTradeLevel(false, SellLevel.RateEx);
-              SellLevel.TradesCount = TradeCountStart + (tcEval.First().HasDown() ? 0 : 1);
 
-              bs.ForEach(sr => {
-                sr.CanTrade = true;
-                sr.InManual = true;
-              });
+              var hasUp = tcEval.First().HasUp();
+              var hasDown = tcEval.First().HasDown();
+
+              if(Trades.Length == 0) {
+                BuyLevel.TradesCount = TradeCountStart + (hasUp ? 0 : 1);
+                SellLevel.TradesCount = TradeCountStart + (hasDown ? 0 : 1);
+
+                BuyLevel.CanTrade = hasUp;
+                SellLevel.CanTrade = hasDown;
+
+                bs.ForEach(sr => sr.InManual = true);
+              }
             }
             //}
           });
       }
     }
-    [TradeDirectionTrigger]
+    //[TradeDirectionTrigger]
     public void OnAngRGOk() {
       var bs = new[] { BuyLevel, SellLevel };
       if(bs.Any(sr => sr.InManual))
@@ -159,6 +165,19 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region Move Trade corridor
+    [TradeDirectionTrigger]
+    public void OnCantTradeMove() {
+      var bs = new[] { BuyLevel, SellLevel };
+      if(bs.All(sr => sr.InManual)) {
+        var buyOffset = CurrentPrice.Ask - BuyLevel.Rate;
+        if(buyOffset > 0 && !BuyLevel.CanTrade)
+          bs.ForEach(sr => sr.Rate += buyOffset);
+        var sellOffset = CurrentPrice.Bid - SellLevel.Rate;
+        if(sellOffset < 0 && !SellLevel.CanTrade)
+          bs.ForEach(sr => sr.Rate += sellOffset);
+      }
+    }
     [TradeDirectionTrigger]
     public void OnTradesCountMove() {
       if(Trades.Length == 0) {
@@ -187,6 +206,8 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    #endregion
+
     [TradeDirectionTrigger]
     public void OnHaveTurnOff() {
       if(TradeConditionsHaveTurnOff())

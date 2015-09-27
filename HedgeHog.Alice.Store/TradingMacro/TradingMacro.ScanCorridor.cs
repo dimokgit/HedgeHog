@@ -111,7 +111,15 @@ namespace HedgeHog.Alice.Store {
           Log = exc;
         }
         CorridorLengthBlue = ratesForCorridor.Count;
-        return ScanCorridorLazy(rates, MonoidsCore.ToLazy(() => rateIndex(getRate(3))));
+        TrendLines1 = Lazy.Create(() => CalcTrendLines(CorridorLengthGreen), TrendLines1.Value, exc => Log = exc);
+        var redLength = rateIndex(getRate(3));
+        TrendLines = Lazy.Create(() => CalcTrendLines(redLength), TrendLines.Value, exc => Log = exc);
+        TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue), TrendLines2.Value, exc => Log = exc);
+
+        var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
+        redRates.Reverse();
+        WaveShort.Rates = redRates;
+        return new CorridorStatistics(redRates, TrendLinesTrends.StDev, TrendLinesTrends.Coeffs, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height);
       }
     }
     private CorridorStatistics ScanCorridorByWaveCount(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {

@@ -425,7 +425,7 @@ namespace HedgeHog.Alice.Store {
       if(count == 0)
         return new[] { Rate.TrendLevels.EmptyRate, Rate.TrendLevels.EmptyRate };
       var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(count - 1) };
-      rates.ForEach(r => r.Trends = new Rate.TrendLevels(corridorValues.Count, coeffs.LineSlope(), hl) {
+      rates.ForEach(r => r.Trends = new Rate.TrendLevels(corridorValues.Count, coeffs, hl) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize)
       });
 
