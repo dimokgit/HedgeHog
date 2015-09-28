@@ -9,26 +9,6 @@ using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    public void SetCorridorStartDateToNextWave(bool backwards = false) {
-      var waveWidth = BarPeriod == BarsPeriodType.m1 ? 60 : 3600.Div(TicksPerSecondAverage).ToInt();
-      var indexOffset = waveWidth / 6;
-      var waves = RatesArray.Reverse<Rate>().ToArray().Extreams(waveWidth, r => r.PriceCMALast, r => r.StartDate);
-      var startIndex = CorridorStats.Rates.Count - 1;
-      Func<int, int, int> getExtramIndex = (index, slopeSign) => {
-        var start = RatesArray.Count - (index - waveWidth / 4);
-        return RatesArray.GetRange(start, waveWidth / 2)
-          .Select((r, i) => new { r.PriceAvg, i })
-          .MaxBy(r => r.PriceAvg * slopeSign).First().i + start;
-      };
-      var waves2 = !backwards
-        ? waves.SkipWhile(w => w.Item1 < startIndex + indexOffset).Take(1)
-        : waves.TakeWhile(w => w.Item1 < startIndex - indexOffset).TakeLast(1);
-      waves2
-        .Select(t => t.Item1)
-        .IfEmpty(() => CorridorStats.Rates.Count.Div(1.1).ToInt().YieldIf(backwards))
-        .ForEach(count => CorridorStartDate = RatesArray[RatesArray.Count - count].StartDate);
-      ScanCorridorByWaveCount(RatesArray, _priceAvg, _priceAvg);
-    }
     private IList<int> MACrosses(IList<Rate> rates, int frame) {
       var rates1 = rates.Zip(rates.Skip(1), (f, s) => new { f = f.PriceAvg, s = s.PriceAvg, ma = f.PriceCMALast }).ToArray();
       var crosses = new int[0].ToConcurrentQueue();

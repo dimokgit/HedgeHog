@@ -38,7 +38,7 @@ using System.Data.Entity.Core.Objects.DataClasses;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
 
-    #region Subjects
+    #region Subjechiss
     static TimeSpan THROTTLE_INTERVAL = TimeSpan.FromSeconds(1);
 
     public void OnLoadRates(Action a = null) {
@@ -1748,7 +1748,23 @@ namespace HedgeHog.Alice.Store {
     }
 
     public static List<TBar> GroupTicksToSeconds<TBar>(List<TBar> rates) where TBar : BarBase, new() {
-      return rates.GroupAdjacentTicks(MathExtensions.RoundTo.Second).ToList();
+      return rates.GroupedDistinct(rate => rate.StartDate.AddMilliseconds(-rate.StartDate.Millisecond), GroupToRate).ToList();
+    }
+
+    public static TBar GroupToRate<TBar>(IList<TBar> gt) where TBar : BarBase, new() {
+      return new TBar() {
+        StartDate2 = gt[0].StartDate2,
+        AskOpen = gt.First().AskOpen,
+        AskClose = gt.Last().AskClose,
+        AskHigh = gt.Max(t => t.AskHigh),
+        AskLow = gt.Min(t => t.AskLow),
+        BidOpen = gt.First().BidOpen,
+        BidClose = gt.Last().BidClose,
+        BidHigh = gt.Max(t => t.BidHigh),
+        BidLow = gt.Min(t => t.BidLow),
+        PriceCMALast = gt.Average(r => r.PriceCMALast)
+        //,Mass = gt.Sum(t => t.Mass)
+      };
     }
 
     private void ReplayEvents() {
@@ -2190,38 +2206,37 @@ namespace HedgeHog.Alice.Store {
             if(IsInVitualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
             #endregion
-            SpreadForCorridor = RatesArray.Spread();
-            SetMA();
-            SetTpsAverages();
             OnGeneralPurpose(() => {
-              var leg = RatesArray.Count.Div(10).ToInt();
-              UseRates(rates =>
-                rates
+              UseRates(rates => rates.ToList())
+              .ForEach(rates => {
+                SpreadForCorridor = rates.Spread();
+                SetCma(rates);
+                var leg = RatesArray.Count.Div(10).ToInt();
+                PriceSpreadAverage = rates
                 .Buffer(leg)
                 .Where(b => b.Count > leg * .75)
                 .Select(b => b.Max(r => r.PriceSpread))
-                .Average()
-                )
-                .ForEach(d => PriceSpreadAverage = d);
-              OnRatesArrayChaged();
-              AdjustSuppResCount();
-              var coeffs = prices.Linear();
-              StDevByPriceAvg = prices.StandardDeviation();
-              StDevByHeight = prices.StDevByRegressoin(coeffs);
-              switch(CorridorCalcMethod) {
-                case CorridorCalculationMethod.Height:
-                case CorridorCalculationMethod.HeightUD:
-                  RatesStDev = StDevByHeight;
-                  break;
-                case CorridorCalculationMethod.PriceAverage:
-                  RatesStDev = StDevByPriceAvg;
-                  break;
-                default:
-                  throw new Exception(new { CorridorCalcMethod } + " is not supported.");
-              }
-              UseRates(rates => AngleFromTangent(coeffs.LineSlope(), () => CalcTicksPerSecond(rates))).ForEach(a => Angle = a);
+                .Average();
+                OnRatesArrayChaged();
+                AdjustSuppResCount();
+                var coeffs = prices.Linear();
+                StDevByPriceAvg = prices.StandardDeviation();
+                StDevByHeight = prices.StDevByRegressoin(coeffs);
+                switch(CorridorCalcMethod) {
+                  case CorridorCalculationMethod.Height:
+                  case CorridorCalculationMethod.HeightUD:
+                    RatesStDev = StDevByHeight;
+                    break;
+                  case CorridorCalculationMethod.PriceAverage:
+                    RatesStDev = StDevByPriceAvg;
+                    break;
+                  default:
+                    throw new Exception(new { CorridorCalcMethod } + " is not supported.");
+                }
+                Angle = AngleFromTangent(coeffs.LineSlope(), () => CalcTicksPerSecond(rates));
               //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
               OnPropertyChanged(() => RatesRsd);
+              });
             }, true);
             OnScanCorridor(RatesArray, () => {
               try {
@@ -2246,17 +2261,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public void SetTpsAverages() {
-      if(IsBarsCountCalcSet && RatesArray.Last().TpsAverage.IsNaN())
-        UseRates(rates => rates.Reverse<Rate>()
-          .Buffer(60 * 5, 1)
-          .TakeWhile(b => b.Count == 60 * 5)
-          .TakeWhile(rs => rs.Any(r => r.TpsAverage.IsNaN()))
-          .ForEach(r => {
-            var tps = CalcTicksPerSecond(r);
-            r[0].TpsAverage = tps;
-          }));
-    }
     double CalcTicksPerSecond(IList<Rate> rates) {
       if(BarPeriod != BarsPeriodType.t1)
         return 1;
@@ -2901,6 +2905,7 @@ namespace HedgeHog.Alice.Store {
           if(PriceCmaLevels > 0) {
             UseRates(rates => {
               SetCma(rates);
+              return true;
             });
             //UseRates(rates => {
             //  rates.Aggregate(double.NaN, (ma, r) => r.PriceCMALast = ma.Cma(PriceCmaLevels, r.PriceAvg));
@@ -2922,6 +2927,16 @@ namespace HedgeHog.Alice.Store {
       count = count ?? rates.Count;
       var cmaPeriod = CmaPeriodByRatesCount(count.Value);
       var cmas = rates.Cma(_priceAvg, cmaPeriod);
+      if(rates.Count != cmas.Count)
+        throw new Exception("rates.Count != cmas.Count");
+      for(var i = CmaPasses; i > 1; i--)
+        cmas = cmas.Cma(cmaPeriod);
+      return cmas;
+    }
+    private IList<double> GetCma(IList<double> rates, int? count = null) {
+      count = count ?? rates.Count;
+      var cmaPeriod = CmaPeriodByRatesCount(count.Value);
+      var cmas = rates.Cma(cmaPeriod);
       if(rates.Count != cmas.Count)
         throw new Exception("rates.Count != cmas.Count");
       for(var i = CmaPasses; i > 1; i--)
@@ -3193,8 +3208,6 @@ namespace HedgeHog.Alice.Store {
       switch(function) {
         case ScanCorridorFunction.OneTwoThree:
           return ScanCorridorBy123;
-        case ScanCorridorFunction.WaveCount:
-          return ScanCorridorByWaveCount;
         case ScanCorridorFunction.Ftt:
           return ScanCorridorByFft;
         case ScanCorridorFunction.StDevSplits:
@@ -3569,22 +3582,23 @@ namespace HedgeHog.Alice.Store {
 
     object _innerRateArrayLocker = new object();
     string _lastUserRatesCaller = "";
-    public IEnumerable<T> UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
+    string _lastUserRatesFile = "";
+    int _lastUserRatesLine = 0;
+    public T[] UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "",[CallerFilePath] string LastFile = "",[CallerLineNumber]int LineNumber = 0) {
       if(!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds)) {
-        var message = new { Pair, PairIndex, Method = "UseRates", Caller, LastCaller = _lastUserRatesCaller, timeoutInMilliseconds } + "";
+        var message = new { Pair, PairIndex, Method = "UseRates", Caller, LastCaller = _lastUserRatesCaller, LastFile = _lastUserRatesFile, LastLine = _lastUserRatesLine, timeoutInMilliseconds } + "";
         Log = new TimeoutException(message);
-        yield break;
+        return new T[0];
       }
       try {
         _lastUserRatesCaller = Caller;
-        yield return func(RatesArray);
+        _lastUserRatesFile = LastFile;
+        _lastUserRatesLine = LineNumber;
+        return new[] { func(RatesArray) };
       } finally {
         _lastUserRatesCaller = "";
         Monitor.Exit(_innerRateArrayLocker);
       }
-    }
-    public void UseRates(Action<List<Rate>> func, int timeoutInMilliseconds = 3000) {
-      UseRates<Unit>(_ => { func(_); return Unit.Default; }, timeoutInMilliseconds).Count();
     }
     object _innerRateLocker = new object();
     string _UseRatesInternalSource = string.Empty;

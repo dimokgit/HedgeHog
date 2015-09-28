@@ -5,6 +5,15 @@ using System.Text;
 
 namespace HedgeHog {
   public static class GroupAdjacentExtention {
+    public static IEnumerable<TResult> GroupedDistinct<TSource, TKey, TResult>(this List<TSource> source, Func<TSource, TKey> keySelector, Func<List<TSource>, TResult> map) {
+      return source.Select((d, i) => new { d, i, ks = keySelector(d) })
+        .DistinctUntilChanged(a => a.ks)
+        .Scan(new { start = 0, end = 0 },
+        (seed, a) => seed.end == 0 ? new { start = 0, end = a.i } : new { start = seed.end + 1, end = a.i })
+        .Skip(1).Select(a => source.GetRange(a.start, a.end - a.start + 1))
+        .Select(range => map(range));
+    }
+
     public static IEnumerable<TSource>
       DistinctLastUntilChanged<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TKey, bool> keyComparer = null) {
         keyComparer = keyComparer ?? EqualityComparer<TKey>.Default.Equals;
@@ -28,7 +37,7 @@ namespace HedgeHog {
       if (haveLast)
         yield return last;
     }
-    public static IEnumerable<IGrouping<TKey, TSource>>
+    static IEnumerable<IGrouping<TKey, TSource>>
       GroupByAdjacent<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TKey, bool> keyComparer = null) {
         keyComparer = keyComparer ?? EqualityComparer<TKey>.Default.Equals;
       TKey last = default(TKey);

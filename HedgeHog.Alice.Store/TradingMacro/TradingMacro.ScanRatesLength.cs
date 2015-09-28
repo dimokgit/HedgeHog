@@ -41,7 +41,7 @@ namespace HedgeHog.Alice.Store {
         var isTicks = BarPeriod == BarsPeriodType.t1;
         if(isTicks) {
           var startIndexDate = prices[startIndex.Min(prices.Count - 1)].StartDate;
-          prices = prices.GroupAdjacentTicks(TimeSpan.FromMinutes(1), a => a.StartDate, g => new { StartDate = g.Key, PriceAvg = g.Average(r => r.PriceAvg) }).ToList();
+          prices = prices.GroupedDistinct(a => a.StartDate.AddMilliseconds(-a.StartDate.Millisecond), g => new { StartDate = g[0].StartDate, PriceAvg = g.Average(r => r.PriceAvg) }).ToList();
           startIndex = prices.FuzzyFind(startIndexDate, isBetween);
           if(indexMin != 0)
             indexMin = startIndex;
@@ -75,7 +75,6 @@ namespace HedgeHog.Alice.Store {
             BarsCountLastDate = corrDate;//.Max(BarsCountLastDate);
           UseRatesInternal(rl => rl.Count - rl.TakeWhile(r => r.StartDate < BarsCountLastDate).Count()).ForEach(x => {
             BarsCountCalc = x;
-            SetTpsAverages();
             SetTicksPerSecondAverage(RatesArray.Last().TpsAverage);
           });
         }
@@ -94,10 +93,20 @@ namespace HedgeHog.Alice.Store {
           var macd2 = macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2));
           var macd3 = macd2
             .Distances();
-          return macd3
+          var count = macd3
             .Skip(BarsCount)
             .TakeWhile(i => i <= rdm)
             .Count() + BarsCount;
+          var doubles = rs.ToList(_priceAvg);
+          var a = new { count, slope = doubles.GetRange(0, count).LinearSlope().Abs() };
+          for(var c = (count * 1.05).ToInt(); c < rs.Count; c = (c * 1.05).ToInt()) {
+            var slope = doubles.GetRange(0, c).LinearSlope().Abs();
+            if(slope < a.slope)
+              break;
+            else
+              a = new { count = c, slope };
+          }
+          return a.count;
         })
         .ForEach(count => {
           const double adjuster = 0;

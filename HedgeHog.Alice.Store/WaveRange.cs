@@ -103,12 +103,10 @@ namespace HedgeHog.Alice.Store {
     double Smooth(double angle, double[] smoothies) {
       return Math.Pow(Math.Abs(angle), smoothies[0]) * smoothies[1] * Math.Sign(angle);
     }
-    void CalcTrendLine(IList<Rate> range, double pointSize,BarsPeriodType period) {
+    void CalcTrendLine(List<Rate> range, double pointSize,BarsPeriodType period) {
       if (range.Count == 0) return;
       var minutes = (range.Last().StartDate - range[0].StartDate).Duration().TotalMinutes;
-      Func<TimeSpan, IEnumerable<double>> groupped = ts => range.GroupAdjacentTicks(ts
-        , rate => rate.StartDate
-        , g => g.Average(rate => rate.PriceAvg));
+      Func<TimeSpan, IEnumerable<double>> groupped = ts => range.GroupedDistinct(rate => rate.StartDate.AddMilliseconds(-rate.StartDate.Millisecond), g => g.Average(rate => rate.PriceAvg));
       var doubles = period == BarsPeriodType.t1 ? groupped(1.FromSeconds()).ToList() : range.Select(r => r.PriceAvg).ToList();
       if (doubles.Count < 2) doubles = groupped(1.FromSeconds()).ToList();
       var coeffs = doubles.Linear();

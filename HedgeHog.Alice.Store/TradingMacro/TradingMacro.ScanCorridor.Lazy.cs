@@ -65,7 +65,7 @@ namespace HedgeHog.Alice.Store {
       if (postProcess != null) postProcess();
       if(WaveShort.HasRates) {
         TrendLines1 = Lazy.Create(() => CalcTrendLines(CorridorLengthGreen), TrendLines1.Value, exc => Log = exc);
-        var trendRates = WaveShort.Rates.Reverse().ToArray();
+        var trendRates = WaveShort.Rates.Reverse().ToList();
         TrendLines = Lazy.Create(() => CalcTrendLines(trendRates), TrendLines.Value, exc => Log = exc);
         TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue), TrendLines2.Value, exc => Log = exc);
       }

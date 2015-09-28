@@ -12,6 +12,37 @@ namespace HedgeHog.Tests {
     [TestClass]
     public class EnumerableExTest {
       [TestMethod()]
+      public void GroupByAdjacentOriginal() {
+        var r = new Random();
+        var data0 = Enumerable
+          .Range(0, 100000)
+          .Select(i => r.NextDouble())
+          .ToList();
+        var data = data0.Scan(
+            new { date = DateTime.Now, value = 0.0 },
+            (seed, d) => new { date = seed.date.AddSeconds(d), value = r.NextDouble() * 100 }
+          ).ToList();
+        var sec = 1.FromSeconds();
+        var sw = new Stopwatch();
+        sw.Start();
+        var res2 = data.Select((d, i) => new { d, i })
+          .DistinctUntilChanged(a => a.d.date.AddMilliseconds(-a.d.date.Millisecond));
+        var scan = res2.Scan(new { start = 0, end = 0 },
+          (seed, a) => seed.end == 0 ? new { start = 0, end = a.i } : new { start = seed.end + 1, end = a.i });
+        var ranges = scan.Skip(1).Select(a => data.GetRange(a.start, a.end - a.start + 1));
+        var res3 = ranges.Select(range => range.Average(a=>a.value))
+          .ToList();
+        sw.Stop();
+        Console.WriteLine(new { v = "New", sw.ElapsedMilliseconds, res3.Count });
+        res2.Count();
+        sw.Restart();
+        var groupDist = data.GroupedDistinct(d => d.date.AddMilliseconds(-d.date.Millisecond), range => range.Average(a => a.value)).ToList();
+        sw.Stop();
+        groupDist.Count();
+        Console.WriteLine(new { v = "Super", sw.ElapsedMilliseconds, groupDist.Count });
+        Assert.IsTrue(sw.ElapsedMilliseconds<100);
+      }
+      [TestMethod()]
       public void CrossesSmoothedTest() {
         var rads = Enumerable.Range(1, 90).Select(i => i * Math.PI / 180).ToArray();
         var sin = rads.Select(rad => Math.Sin(rad)).ToArray();

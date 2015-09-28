@@ -155,15 +155,6 @@ namespace HedgeHog.Alice.Client {
           charter.FitToView();
           tm.FreezeCorridorStartDate(true);
           break;
-        case Key.E:
-          tm.SetCorridorStartDateToNextWave();
-          break;
-        case Key.I:
-          tm.SetCorridorStartDateToNextWave(backwards: true);
-          break;
-        case Key.F:
-          tm.FlipTradeLevels();
-          break;
         case Key.R:
           this.TradesManager.RefreshOrders(); break;
         case Key.S:
@@ -1053,8 +1044,6 @@ namespace HedgeHog.Alice.Client {
       var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart).ToArray()).FirstOrDefault();
       if(ratesForChart2 == null)
         return new { };
-      tm.SetTpsAverages();
-      var tps = tm.TicksPerSecondAverage;
 
       Func<IGrouping<DateTimeOffset, Rate>, Rate> mapTickToRate = g => {
         var r = g.GroupToRate();
@@ -1164,7 +1153,7 @@ namespace HedgeHog.Alice.Client {
       getTrades(false).Take(1).ForEach(_ => trades.Add(new { sell = tradeFoo(false) }));
       var price = tmg.GetPrice(pair);
       var askBid = new { ask = price.Ask.Round(digits), bid = price.Bid.Round(digits) };
-      return tm.UseRates(ratesArray => ratesArray.Take(1).Select(_ => new {
+      var ret = tm.UseRates(ratesArray => ratesArray.Take(1).ToArray()).ToArray(_ => new {
         rates = getRates(ratesForChart),
         rates2 = getRates(ratesForChart2),
         ratesCount = tm.RatesArray.Count,
@@ -1183,8 +1172,8 @@ namespace HedgeHog.Alice.Client {
         canBuy = tmTrader.CanOpenTradeByDirection(true),
         canSell = tmTrader.CanOpenTradeByDirection(false),
         waveLines
-      }).ToArray())
-      .SelectMany(d => d);
+      });
+      return ret;
     }
     bool? _isParentHidden;
     void ShowChart(TradingMacro tm) {
