@@ -2234,8 +2234,8 @@ namespace HedgeHog.Alice.Store {
                     throw new Exception(new { CorridorCalcMethod } + " is not supported.");
                 }
                 Angle = AngleFromTangent(coeffs.LineSlope(), () => CalcTicksPerSecond(rates));
-              //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
-              OnPropertyChanged(() => RatesRsd);
+                //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
+                OnPropertyChanged(() => RatesRsd);
               });
             }, true);
             OnScanCorridor(RatesArray, () => {
@@ -3584,18 +3584,22 @@ namespace HedgeHog.Alice.Store {
     string _lastUserRatesCaller = "";
     string _lastUserRatesFile = "";
     int _lastUserRatesLine = 0;
-    public T[] UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "",[CallerFilePath] string LastFile = "",[CallerLineNumber]int LineNumber = 0) {
-      if(!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds)) {
-        var message = new { Pair, PairIndex, Method = "UseRates", Caller, LastCaller = _lastUserRatesCaller, LastFile = _lastUserRatesFile, LastLine = _lastUserRatesLine, timeoutInMilliseconds } + "";
+    int _userRatesQueueLength = 0;
+    public T[] UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber]int LineNumber = 0) {
+      var userRatesQueue = _userRatesQueueLength;
+      if(!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds * _userRatesQueueLength.Min(1))) {
+        var message = new { Pair, PairIndex, Method = "UseRates", Caller, LastCaller = _lastUserRatesCaller, LastFile = Path.GetFileNameWithoutExtension(_lastUserRatesFile), LastLine = _lastUserRatesLine, timeoutInMilliseconds, userRatesQueue } + "";
         Log = new TimeoutException(message);
         return new T[0];
       }
       try {
+        _userRatesQueueLength++;
         _lastUserRatesCaller = Caller;
         _lastUserRatesFile = LastFile;
         _lastUserRatesLine = LineNumber;
         return new[] { func(RatesArray) };
       } finally {
+        _userRatesQueueLength--;
         _lastUserRatesCaller = "";
         Monitor.Exit(_innerRateArrayLocker);
       }

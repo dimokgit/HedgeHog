@@ -410,6 +410,8 @@ namespace HedgeHog.Alice.Store {
       var groupped = corridorValues.GroupedDistinct(r => r.StartDate, range => range.Average(_priceAvg));
       double h, l, h1, l1;
       var doubles = isTicks && BarPeriodCalc!=BarsPeriodType.s1  ? groupped.ToList() : corridorValues.ToList(r => r.PriceAvg);
+      if(doubles.Count < 5)
+        return new List<Rate>();
       var coeffs = doubles.Linear();
       var hl = doubles.StandardDeviation().RootMeanSquare(doubles.StDevByRegressoin(coeffs));
       h = hl * 2;

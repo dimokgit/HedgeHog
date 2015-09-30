@@ -79,14 +79,6 @@ namespace HedgeHog.Alice.Store {
     public void OnOkDoGreen() {
       TradeCorridorByGRB(TrendLines1Trends);
     }
-    [TradeDirectionTrigger]
-    public void OnOkDoRed() {
-      TradeCorridorByGRB(TrendLinesTrends);
-    }
-    [TradeDirectionTrigger]
-    public void OnOkDoBlue() {
-      TradeCorridorByGRB(TrendLinesTrends);
-    }
     public void TradeCorridorByGRB(Rate.TrendLevels tls) {
       var tcEval = TradeConditionsEval().ToArray();
       if(BarsCountCalc > BarsCount && tcEval.Any(b => b.HasAny())) {
@@ -112,8 +104,8 @@ namespace HedgeHog.Alice.Store {
                 BuyLevel.TradesCount = TradeCountStart + (hasUp ? 0 : 1);
                 SellLevel.TradesCount = TradeCountStart + (hasDown ? 0 : 1);
 
-                BuyLevel.CanTrade = hasUp;
-                SellLevel.CanTrade = hasDown;
+                BuyLevel.CanTrade = true;
+                SellLevel.CanTrade = true;
 
                 bs.ForEach(sr => sr.InManual = true);
               }
@@ -210,7 +202,7 @@ namespace HedgeHog.Alice.Store {
 
     [TradeDirectionTrigger]
     public void OnHaveTurnOff() {
-      if(TradeConditionsHaveTurnOff())
+      if(TradeConditionsHaveTurnOff() && Trades.IsEmpty())
         TurnOfManualCorridor();
     }
 
