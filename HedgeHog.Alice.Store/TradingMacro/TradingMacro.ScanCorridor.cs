@@ -87,24 +87,27 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
     private CorridorStatistics ScanCorridorBy123(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var rates = ratesForCorridor.Reverse().ToList();
-      var legs = rates.Select(r => r.PriceCMALast).Distances().Select((d, i) => new { d, i }).ToList();
+      var rates = ratesForCorridor.ToList();
+      rates.Reverse();
+      var legs = GetCma(rates).Distances().Select((d, i) => new { d, i }).ToList();
       var leg = legs.Last().d.Div(6);
       var sectionStarts = legs.DistinctUntilChanged(a => a.d.Div(leg).Floor()).ToList();
       var sections = sectionStarts.Zip(sectionStarts.Skip(1), (p, n) => new { end = n.i, start = p.i }).ToList();
+      //var sections2 = sectionStarts.Scan(new { end=0,start=0},(p, n) => new { end = n.i, start = p.end }).ToList();
+      //sections2.Count();
       Func<Rate, int> rateIndex = rate => rates.FuzzyFind(rate, (r, r1, r2) => r.StartDate.Between(r1.StartDate, r2.StartDate));
       {
         Func<int, int, Rate> getExtreamRate = (start, end) => {
           var offset = ((end - start) * 0.3).ToInt();
           var range = rates.GetRange(0, rates.Count.Min(end));
           var line = range.ToArray(r => r.PriceAvg).Line();
-          var skip = start - offset;// - offset.Div(2).ToInt();
+          var skip = end - start - offset;// - offset.Div(2).ToInt();
           var zip = line.Skip(skip).Zip(range.Skip(skip), (l, r) => new { l = l.Abs(r.PriceAvg), r });
           return zip.MaxBy(x => x.l).First().r;
         };
         Func<int, Rate> getRate = start =>
           sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end)).First();
-        var rate = getRate(1);
+        var rate = getRate(0);
         try {
           CorridorLengthGreen = rateIndex(rate);
         } catch(Exception exc) {

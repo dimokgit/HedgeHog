@@ -86,9 +86,10 @@ namespace HedgeHog.Alice.Store {
         UseRates(ra => ra.GetRange(ra.Count - tls.Count, tls.Count))
           .Where(ra => ra.Count > 0)
           .Select(ra => new { buy = ra.Max(r => r.AskHigh), sell = ra.Min(r => r.BidLow) })
+          .Where(x => InPips(x.buy.Abs(x.sell)) > 5)
           .Where(x => new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(x.sell, x.buy)))
           .ForEach(x => {
-            var maxHeight = double.MaxValue;// bs.Any(sr => sr.InManual) ? BuyLevel.Rate.Abs(SellLevel.Rate) : double.MaxValue;
+            var maxHeight = bs.Any(sr => sr.InManual) ? BuyLevel.Rate.Abs(SellLevel.Rate) : double.MaxValue;
             if(x.buy.Abs(x.sell) < maxHeight) {
 
               BuyLevel.ResetPricePosition();
