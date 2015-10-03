@@ -944,7 +944,6 @@ namespace HedgeHog.Alice.Client {
             vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri, 2000).Single());
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
-          TradesManager.TradeAdded += fw_TradeAdded;
           TradesManager.TradeClosed += fw_TradeClosed;
           TradesManager.Error += fw_Error;
         }
@@ -983,7 +982,6 @@ namespace HedgeHog.Alice.Client {
     void CoreFX_LoggedOffEvent(object sender, EventArgs e) {
       if (TradesManager != null) {
         PriceChangeSubscriptionDispose();
-        TradesManager.TradeAdded -= fw_TradeAdded;
         TradesManager.Error -= fw_Error;
 
         TradingMacrosCopy.ToList().ForEach(tm => new Action(() => InitTradingMacro(tm, true)).InvoceOnUI());
@@ -1329,40 +1327,18 @@ namespace HedgeHog.Alice.Client {
       //    };
     }
 
-    public void fw_TradeAdded(object sender, TradeEventArgs e) {
-      if (e.IsHandled) return;
-      e.IsHandled = true;
-      try {
-        Trade trade = e.Trade;
-        var comm = MasterModel.CommissionByTrade(trade);
-        if (IsInVirtualTrading)
-          TradesManager.GetAccount().Balance -= comm;
-        var tm = GetTradingMacros(trade.Pair).First();
-        tm.CurrentLoss -= comm;
-        tm.RunningBalance -= comm;
-        //if (tm.LastTrade.Time < trade.Time) tm.LastTrade = trade;
-        var trades = TradesManager.GetTradesInternal(trade.Pair);
-        tm.CurrentLot = trades.Sum(t => t.Lots);
-        var amountK = tm.CurrentLot / tm.BaseUnitSize;
-        if (tm.HistoryMaximumLot < amountK) tm.HistoryMaximumLot = amountK;
-        var ts = tm.SetTradeStatistics(trade);
-      } catch (Exception exc) {
-        Log = exc;
-      }
-    }
-
     void fw_Error(object sender, HedgeHog.Shared.ErrorEventArgs e) {
       Log = e.Error;
     }
 
     #region ZeroPositiveLoss Subject
     object _ZeroPositiveLossSubjectLocker = new object();
-    ISubject<TradingMacro> _ZeroPositiveLossSubject;
-    ISubject<TradingMacro> ZeroPositiveLossSubject {
+    ISubject<Unit> _ZeroPositiveLossSubject;
+    ISubject<Unit> ZeroPositiveLossSubject {
       get {
         lock (_ZeroPositiveLossSubjectLocker)
           if (_ZeroPositiveLossSubject == null) {
-            _ZeroPositiveLossSubject = new Subject<TradingMacro>();
+            _ZeroPositiveLossSubject = new Subject<Unit>();
             _ZeroPositiveLossSubject
               .Throttle(5.FromSeconds())
               .Subscribe(tradingMacro => {
@@ -1372,11 +1348,11 @@ namespace HedgeHog.Alice.Client {
         return _ZeroPositiveLossSubject;
       }
     }
-    void OnZeroPositiveLoss(TradingMacro tm) {
+    void OnZeroPositiveLoss() {
       if (IsInVirtualTrading)
         AdjustCurrentLosses();
       else
-        ZeroPositiveLossSubject.OnNext(tm);
+        ZeroPositiveLossSubject.OnNext(Unit.Default);
     }
     #endregion
 
@@ -1413,17 +1389,9 @@ namespace HedgeHog.Alice.Client {
     void fw_TradeClosed(object sender, TradeEventArgs e) {
       if (e.IsHandled) return;
       e.IsHandled = true;
-      var trade = e.Trade;
       try {
-        var pair = trade.Pair;
-        var tm = GetTradingMacros(pair).First();
-        tm.LastTrade = trade;
-        var totalGross = trade.NetPL;
-        tm.LastTradeLossInPips = tm.InPips(totalGross).Min(0);
-        tm.RunningBalance += totalGross;
-        tm.CurrentLoss = tm.CurrentLoss + totalGross;
-        OnZeroPositiveLoss(tm);
-        SaveTradeAction.Post(trade);
+        OnZeroPositiveLoss();
+        SaveTradeAction.Post(e.Trade);
       } catch (Exception exc) {
         Log = exc;
       }

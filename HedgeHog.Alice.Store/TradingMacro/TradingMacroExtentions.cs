@@ -1182,17 +1182,15 @@ namespace HedgeHog.Alice.Store {
         _priceChangedSubscribsion = value;
       }
     }
-    EventHandler<TradeEventArgs> _tradeCloseHandler;
     EventHandler<TradeEventArgs> TradeCloseHandler {
       get {
-        return _tradeCloseHandler ?? (_tradeCloseHandler = TradesManager_TradeClosed);
+        return TradesManager_TradeClosed;
       }
     }
 
-    EventHandler<TradeEventArgs> _TradeAddedHandler;
     EventHandler<TradeEventArgs> TradeAddedHandler {
       get {
-        return _TradeAddedHandler ?? (_TradeAddedHandler = TradesManager_TradeAddedGlobal);
+        return TradesManager_TradeAddedGlobal;
       }
     }
 
@@ -1325,9 +1323,23 @@ namespace HedgeHog.Alice.Store {
         RaisePositionsChanged();
         if(_strategyExecuteOnTradeOpen != null)
           _strategyExecuteOnTradeOpen(e.Trade);
+        HandleTradeStats(e);
       } catch(Exception exc) {
         Log = exc;
       }
+    }
+    void HandleTradeStats(TradeEventArgs e) {
+      Trade trade = e.Trade;
+      var comm = CommissionByTrade(trade);
+      if(IsInVitualTrading)
+        TradesManager.GetAccount().Balance -= comm;
+      CurrentLoss -= comm;
+      RunningBalance -= comm;
+      CurrentLot = Trades.Sum(t => t.Lots);
+      var amountK = CurrentLot / BaseUnitSize;
+      if(HistoryMaximumLot < amountK)
+        HistoryMaximumLot = amountK;
+      SetTradeStatistics(trade);
     }
 
     bool IsMyTrade(Trade trade) { return trade.Pair == Pair && IsTrader; }
@@ -1356,7 +1368,18 @@ namespace HedgeHog.Alice.Store {
       ReleasePendingAction("CT");
       if(_strategyExecuteOnTradeClose != null)
         _strategyExecuteOnTradeClose(e.Trade);
+      TradeClosedStats(e);
     }
+
+    void TradeClosedStats(TradeEventArgs e) {
+      var trade = e.Trade;
+      LastTrade = trade;
+      var totalGross = trade.NetPL;
+      LastTradeLossInPips = InPips(totalGross).Min(0);
+      RunningBalance += totalGross;
+      CurrentLoss = CurrentLoss + totalGross;
+    }
+
 
     private void RaisePositionsChanged() {
       OnPropertyChanged("PositionsSell");
@@ -1785,7 +1808,7 @@ namespace HedgeHog.Alice.Store {
     public TradeStatistics SetTradeStatistics(Trade trade) {
       if(!TradeStatisticsDictionary.ContainsKey(trade.Id))
         TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics() {
-          CorridorStDev = GetVoltageHigh().IfNaN(0),
+          CorridorStDev = TrendLines1Trends.Angle.Abs(),
           CorridorStDevCma = RatesTimeSpan().FirstOrDefault().TotalMinutes
         });
       var ts = TradeStatisticsDictionary[trade.Id];
@@ -3581,34 +3604,25 @@ namespace HedgeHog.Alice.Store {
     }
 
     object _innerRateArrayLocker = new object();
-    string _lastUserRatesCaller = "";
-    string _lastUserRatesFile = "";
-    int _lastUserRatesLine = 0;
-    int _userRatesQueueLength = 0;
     public T[] UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber]int LineNumber = 0) {
-      var userRatesQueue = _userRatesQueueLength;
-      if(!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds * _userRatesQueueLength.Min(1))) {
-        var message = new { Pair, PairIndex, Method = "UseRates", Caller, LastCaller = _lastUserRatesCaller, LastFile = Path.GetFileNameWithoutExtension(_lastUserRatesFile), LastLine = _lastUserRatesLine, timeoutInMilliseconds, userRatesQueue } + "";
-        Log = new TimeoutException(message);
-        return new T[0];
-      }
+      var sw = new Stopwatch();
+      lock (_innerRateArrayLocker)
       try {
-        _userRatesQueueLength++;
-        _lastUserRatesCaller = Caller;
-        _lastUserRatesFile = LastFile;
-        _lastUserRatesLine = LineNumber;
-        return new[] { func(RatesArray) };
-      } finally {
-        _userRatesQueueLength--;
-        _lastUserRatesCaller = "";
-        Monitor.Exit(_innerRateArrayLocker);
-      }
+          sw.Start();
+          return new[] { func(RatesArray) };
+        } finally {
+          sw.Stop();
+          if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
+            var message = new { Pair, PairIndex, Method = "UseRates", Caller, LastFile = Path.GetFileNameWithoutExtension(LastFile), LastLine = LineNumber, ms = sw.ElapsedMilliseconds, timeOut = timeoutInMilliseconds } + "";
+            Log = new TimeoutException(message);
+          }
+        }
     }
     object _innerRateLocker = new object();
     string _UseRatesInternalSource = string.Empty;
     public IEnumerable<T> UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
       if(!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds)) {
-        var message = new { Pair, PairIndex, Method = "UseRatesInternal", Caller, LastCaller = _lastUserRatesCaller, timeoutInMilliseconds } + "";
+        var message = new { Pair, PairIndex, Method = "UseRatesInternal", Caller, timeoutInMilliseconds } + "";
         Log = new TimeoutException(message);
         yield break;
       }
