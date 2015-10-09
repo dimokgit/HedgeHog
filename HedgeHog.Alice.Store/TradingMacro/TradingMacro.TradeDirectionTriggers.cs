@@ -79,24 +79,30 @@ namespace HedgeHog.Alice.Store {
     public void OnOkDoGreen() {
       TradeCorridorByGRB(TrendLines1Trends);
     }
+    [TradeDirectionTrigger]
+    public void OnOkDoBlue() {
+      TradeCorridorByGRB(TrendLines2Trends);
+    }
     public void TradeCorridorByGRB(Rate.TrendLevels tls) {
       var tcEval = TradeConditionsEval().ToArray();
       if(BarsCountCalc > BarsCount && tcEval.Any(b => b.HasAny())) {
         var bs = new[] { BuyLevel, SellLevel };
         UseRates(ra => ra.GetRange(ra.Count - tls.Count, tls.Count))
           .Where(ra => ra.Count > 0)
-          .Select(ra => new { buy = ra.Max(r => r.AskHigh), sell = ra.Min(r => r.BidLow) })
+          .Select(ra => new { buy = ra.Max(r => r.AskHigh), sell = ra.Min(r => r.BidLow),eval = tcEval.Single() })
           .Where(x => InPips(x.buy.Abs(x.sell)) > 5)
           .Where(x => new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(x.sell, x.buy)))
           .ForEach(x => {
+            var buy = x.eval.HasUp() ? x.buy : UseRates(ra => ra.Max(r => r.AskHigh)).Single();
+            var sell = x.eval.HasDown() ? x.sell: UseRates(ra => ra.Min(r => r.BidLow)).Single();
             var maxHeight = bs.Any(sr => sr.InManual) ? BuyLevel.Rate.Abs(SellLevel.Rate) : double.MaxValue;
-            if(x.buy.Abs(x.sell) < maxHeight) {
+            if(buy.Abs(sell) < maxHeight) {
 
               BuyLevel.ResetPricePosition();
-              BuyLevel.Rate = x.buy;// GetTradeLevel(true, BuyLevel.Rate);
+              BuyLevel.Rate = buy;// GetTradeLevel(true, BuyLevel.Rate);
 
               SellLevel.ResetPricePosition();
-              SellLevel.Rate = x.sell;// GetTradeLevel(false, SellLevel.RateEx);
+              SellLevel.Rate = sell;// GetTradeLevel(false, SellLevel.RateEx);
 
               var hasUp = tcEval.First().HasUp();
               var hasDown = tcEval.First().HasDown();
@@ -203,7 +209,7 @@ namespace HedgeHog.Alice.Store {
 
     [TradeDirectionTrigger]
     public void OnHaveTurnOff() {
-      if(TradeConditionsHaveTurnOff() && Trades.IsEmpty())
+      if(TradeConditionsHaveTurnOff() )
         TurnOfManualCorridor();
     }
 
@@ -213,8 +219,11 @@ namespace HedgeHog.Alice.Store {
         .Where(sr => sr.InManual)
         .Do(sr => {
           sr.CanTrade = false;
-          sr.InManual = false;
-          sr.TradesCount = TradeCountStart;
+          if(Trades.IsEmpty()) {
+            sr.InManual = false;
+            sr.TradesCount = TradeCountStart;
+          } else
+            sr.TradesCount = -(TradeCountMax + 1);
         })
         .Take(1)
         .ForEach(_ => Log = new Exception("TurnOfManualCorridor"));

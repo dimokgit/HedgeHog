@@ -7,6 +7,7 @@ namespace HedgeHog.Alice {
   public enum VoltageFunction {
     None = 0,
     BounceCom = 1,
+    DistanceMacd = 2,
     Volume = 5,
     Rsd = 6,
     FractalDensity = 7,
@@ -83,8 +84,8 @@ namespace HedgeHog.Alice.Store {
     MinRG,
     Avg1Max,
     Avg1Min,
-    Avg1GRBMax,
-    Avg1GRBMin
+    Avg2GRBMax,
+    Avg3GRBMin
   }
   public enum CorridorHeightMethods {
     ByMA = 0,

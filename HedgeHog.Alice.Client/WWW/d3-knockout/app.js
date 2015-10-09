@@ -352,7 +352,7 @@
     this.moveCorridorWavesCount = moveCorridorWavesCount;
     this.tradeConditions = ko.observableArray([]);
     var closedTrades = [];
-    var mustShowClosedTrades2 = ko.observable(false);
+    var mustShowClosedTrades2 = ko.observable(true);
     this.showClosedTrades2Text = ko.pureComputed(function () { return mustShowClosedTrades2() ? "ON" : "OFF"; });
     this.toggleClosedTrades2 = function () {
       mustShowClosedTrades2(!mustShowClosedTrades2());

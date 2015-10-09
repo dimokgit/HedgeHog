@@ -20,6 +20,11 @@ namespace HedgeHog.Alice.Store {
       return (start, end, loop) =>
         counter(Lib.IteratonSequence(start, end, i => nextStep(i, loop)).Select(looper));
     }
+    #region ScanRatesLengthByStDevMin2
+    /// <summary>
+    /// Keep it around as Lib.GetIterator example
+    /// </summary>
+    /// <param name="indexMinOriginal"></param>
     void ScanRatesLengthByStDevMin2(int indexMinOriginal) {
       var indexMin = indexMinOriginal;
       try {
@@ -82,31 +87,28 @@ namespace HedgeHog.Alice.Store {
         Log = exc;
       }
     }
+    #endregion
+
     void ScanRatesLengthByDistanceMin() {
       UseRatesInternal(rs => rs.ToList())
         .Select(rs => {
           rs.Reverse();
           var rdm = InPoints(RatesDistanceMin);
-          var cmas = GetCma(rs, BarsCountCalc);
-          var cmas2 = GetCma2(cmas, BarsCountCalc);
-          var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
-          var macd2 = macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2));
-          var macd3 = macd2
-            .Distances();
-          var count = macd3
+          var count = DistanceByMACD(rs)
             .Skip(BarsCount)
             .TakeWhile(i => i <= rdm)
             .Count() + BarsCount;
-          var doubles = rs.ToList(_priceAvg);
-          var a = new { count, slope = doubles.GetRange(0, count).LinearSlope().Abs() };
-          for(var c = (count * 1.05).ToInt(); c < rs.Count; c = (c * 1.05).ToInt()) {
-            var slope = doubles.GetRange(0, c).LinearSlope().Abs();
-            if(slope < a.slope)
-              break;
-            else
-              a = new { count = c, slope };
-          }
-          return a.count;
+          return count;
+          //var doubles = rs.ToList(_priceAvg);
+          //var a = new { count, slope = doubles.GetRange(0, count).LinearSlope().Abs() };
+          //for(var c = (count * 1.05).ToInt(); c < rs.Count; c = (c * 1.05).ToInt()) {
+          //  var slope = doubles.GetRange(0, c).LinearSlope().Abs();
+          //  if(slope < a.slope)
+          //    break;
+          //  else
+          //    a = new { count = c, slope };
+          //}
+          //return a.count;
         })
         .ForEach(count => {
           const double adjuster = 0;
@@ -117,6 +119,17 @@ namespace HedgeHog.Alice.Store {
           BarsCountCalc = count;
         });
     }
+
+    private IEnumerable<double> DistanceByMACD(IList<Rate> rs) {
+      var cmas = GetCma(rs, BarsCountCalc);
+      var cmas2 = GetCma2(cmas, BarsCountCalc);
+      var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
+      var macd2 = macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2));
+      var macd3 = macd2
+        .Distances();
+      return macd3;
+    }
+
     public void ScanRatesLengthByDistanceMinAndCrossesCount() {
       UseRatesInternal(rs => rs.ToList())
         .Select(rs => {
@@ -144,6 +157,20 @@ namespace HedgeHog.Alice.Store {
         });
     }
 
+    double _ScanRatesLengthByTimeFrameDistance = double.NaN;
+    void ScanRatesLengthByTimeFrame() {
+      UseRates(ra => ra.Last().StartDate)
+        .ForEach(dateEnd => {
+          var dateStart = dateEnd.Subtract(TimeFrameTresholdTimeSpan);
+          UseRatesInternal(ri => ri.FuzzyIndex(dateStart, (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
+          .SelectMany(i => i)
+          .ForEach(i => {
+            var count = RatesInternal.Count - i;
+            if(count >= BarsCount)
+              BarsCountCalc = count;
+          });
+        });
+    }
 
     DateTime __barsCountLastDate = DateTime.MinValue;
     public DateTime BarsCountLastDate {

@@ -195,7 +195,7 @@ namespace HedgeHog {
       return File.ReadAllLines(Path.Combine(path, testFileName))
         .Where(s => !string.IsNullOrWhiteSpace(s) && !s.StartsWith("//"))
         .Select(pl => pl.Trim().Split(new[] { separator }, StringSplitOptions.RemoveEmptyEntries))
-        .Where(a => a.Length > 1 && !string.IsNullOrWhiteSpace(a[1]))
+        //.Where(a => a.Length > 1 && !string.IsNullOrWhiteSpace(a[1]))
         .Select(a => new { name = a[0], value = string.Join(separator, a.Skip(1)).Trim() })
         .ToDictionary(p => p.name, p => ParseParamRange(p.value));
     }
@@ -532,7 +532,8 @@ namespace HedgeHog {
       return values.Except(valueLow.Concat(valueHight)).DefaultIfEmpty(values.Average()).Average();
     }
 
-    public static double RootMeanSquare(this double d1,double d2) { return Math.Sqrt((d1 * d1 + d2 * d2) / 2); }
+    public static double RootMeanSquare(this double d1, double d2) { return Math.Sqrt((d1 * d1 + d2 * d2) / 2); }
+    public static double SquareMeanRoot(this double d1, double d2) { return Math.Pow((Math.Sqrt(d1) + Math.Sqrt(d2)) / 2, 2); }
 
     public static double StandardDeviation(this List<double> doubleList) {
       double average = doubleList.Average();
@@ -749,6 +750,9 @@ namespace HedgeHog {
     }
     public static bool IsZeroOrNaN(this double d) {
       return d == 0 || double.IsNaN(d);
+    }
+    public static bool IsNaNOrZero(this double d) {
+      return double.IsNaN(d) || d ==0;
     }
     public static bool IsNaN(this double d) {
       return double.IsNaN(d);

@@ -944,6 +944,7 @@ namespace HedgeHog.Alice.Client {
             vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri, 2000).Single());
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
+          TradesManager.TradeAdded += fw_TradeAdded;
           TradesManager.TradeClosed += fw_TradeClosed;
           TradesManager.Error += fw_Error;
         }
@@ -982,6 +983,7 @@ namespace HedgeHog.Alice.Client {
     void CoreFX_LoggedOffEvent(object sender, EventArgs e) {
       if (TradesManager != null) {
         PriceChangeSubscriptionDispose();
+        TradesManager.TradeAdded -= fw_TradeAdded;
         TradesManager.Error -= fw_Error;
 
         TradingMacrosCopy.ToList().ForEach(tm => new Action(() => InitTradingMacro(tm, true)).InvoceOnUI());
@@ -1017,7 +1019,6 @@ namespace HedgeHog.Alice.Client {
     }
     int _lastServedRatesCount = 0;
     public object ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
-      var tpsAvg = 0;
       var digits = tm.Digits();
       if (dateEnd > tm.LoadRatesStartDate2) dateEnd = tm.LoadRatesStartDate2;
       else dateEnd = dateEnd.AddMinutes(-tm.BarPeriodInt.Min(2));
@@ -1027,7 +1028,7 @@ namespace HedgeHog.Alice.Client {
       Func<Rate, ExpandoObject> map = rate => EnumsExtensions.CreateExpando(
         "d", rate.StartDate2,
         "c", rateHL(rate),
-        "v", rate.TpsAverage.IfNaN(tpsAvg),
+        "v", tm.GetVoltage(rate),
         "m", rate.PriceCMALast.Round(digits)
         );
       #endregion
@@ -1035,24 +1036,24 @@ namespace HedgeHog.Alice.Client {
       if (tm.RatesArray.Count == 0 || tm.IsTrader && tm.BuyLevel == null) return new { rates = new int[0] };
 
       var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
+      var tpsAvg = tmTrader.DistanceByMASD;
 
-      var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd).ToArray()).FirstOrDefault();
+
+      var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd && !tm.GetVoltage(r).IsNaNOrZero()).ToList()).FirstOrDefault();
       if(ratesForChart == null)
         return new { };
-      var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart).ToArray()).FirstOrDefault();
+      var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart && !tm.GetVoltage(r).IsNaNOrZero()).ToList()).FirstOrDefault();
       if(ratesForChart2 == null)
         return new { };
 
-      Func<IGrouping<DateTimeOffset, Rate>, Rate> mapTickToRate = g => {
-        var r = g.GroupToRate();
-        r.TpsAverage = g.Average(r2 => r2.TpsAverage.IfNaN(tpsAvg)).Round(2);
-        return r;
-      };
       double cmaPeriod = tm.CmaPeriodByRatesCount();
       if (tm.BarPeriod == BarsPeriodType.t1) {
+        Action<IList<Rate>, Rate> volts = (gr, r) => tm.SetVoltage(r, gr.Select(tm.GetVoltage).Where(v=>v.IsNotNaN()).DefaultIfEmpty(0).Average());
         cmaPeriod /= tm.TicksPerSecondAverage;
-        ratesForChart = ratesForChart.GroupTicksToRates(mapTickToRate).ToArray();
-        ratesForChart2 = ratesForChart2.GroupTicksToRates(mapTickToRate).ToArray();
+        if(ratesForChart.Count > 1)
+          ratesForChart = TradingMacro.GroupTicksToSeconds(ratesForChart, volts).ToList();
+        if(ratesForChart2.Count > 1)
+          ratesForChart2 = TradingMacro.GroupTicksToSeconds(ratesForChart2, volts).ToList();
       }
       var getRates = MonoidsCore.ToFunc((IList<Rate>)null, rates3 => {
         return rates3.Select(map).ToArray();
@@ -1327,18 +1328,40 @@ namespace HedgeHog.Alice.Client {
       //    };
     }
 
+    public void fw_TradeAdded(object sender, TradeEventArgs e) {
+      if (e.IsHandled) return;
+      e.IsHandled = true;
+      try {
+        Trade trade = e.Trade;
+        var comm = MasterModel.CommissionByTrade(trade);
+        if (IsInVirtualTrading)
+          TradesManager.GetAccount().Balance -= comm;
+        var tm = GetTradingMacros(trade.Pair).First();
+        tm.CurrentLoss -= comm;
+        tm.RunningBalance -= comm;
+        //if (tm.LastTrade.Time < trade.Time) tm.LastTrade = trade;
+        var trades = TradesManager.GetTradesInternal(trade.Pair);
+        tm.CurrentLot = trades.Sum(t => t.Lots);
+        var amountK = tm.CurrentLot / tm.BaseUnitSize;
+        if (tm.HistoryMaximumLot < amountK) tm.HistoryMaximumLot = amountK;
+        var ts = tm.SetTradeStatistics(trade);
+      } catch (Exception exc) {
+        Log = exc;
+      }
+    }
+
     void fw_Error(object sender, HedgeHog.Shared.ErrorEventArgs e) {
       Log = e.Error;
     }
 
     #region ZeroPositiveLoss Subject
     object _ZeroPositiveLossSubjectLocker = new object();
-    ISubject<Unit> _ZeroPositiveLossSubject;
-    ISubject<Unit> ZeroPositiveLossSubject {
+    ISubject<TradingMacro> _ZeroPositiveLossSubject;
+    ISubject<TradingMacro> ZeroPositiveLossSubject {
       get {
         lock (_ZeroPositiveLossSubjectLocker)
           if (_ZeroPositiveLossSubject == null) {
-            _ZeroPositiveLossSubject = new Subject<Unit>();
+            _ZeroPositiveLossSubject = new Subject<TradingMacro>();
             _ZeroPositiveLossSubject
               .Throttle(5.FromSeconds())
               .Subscribe(tradingMacro => {
@@ -1348,11 +1371,11 @@ namespace HedgeHog.Alice.Client {
         return _ZeroPositiveLossSubject;
       }
     }
-    void OnZeroPositiveLoss() {
+    void OnZeroPositiveLoss(TradingMacro tm) {
       if (IsInVirtualTrading)
         AdjustCurrentLosses();
       else
-        ZeroPositiveLossSubject.OnNext(Unit.Default);
+        ZeroPositiveLossSubject.OnNext(tm);
     }
     #endregion
 
@@ -1389,9 +1412,17 @@ namespace HedgeHog.Alice.Client {
     void fw_TradeClosed(object sender, TradeEventArgs e) {
       if (e.IsHandled) return;
       e.IsHandled = true;
+      var trade = e.Trade;
       try {
-        OnZeroPositiveLoss();
-        SaveTradeAction.Post(e.Trade);
+        var pair = trade.Pair;
+        var tm = GetTradingMacros(pair).First();
+        tm.LastTrade = trade;
+        var totalGross = trade.NetPL;
+        tm.LastTradeLossInPips = tm.InPips(totalGross).Min(0);
+        tm.RunningBalance += totalGross;
+        tm.CurrentLoss = tm.CurrentLoss + totalGross;
+        OnZeroPositiveLoss(tm);
+        SaveTradeAction.Post(trade);
       } catch (Exception exc) {
         Log = exc;
       }

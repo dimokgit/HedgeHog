@@ -101,7 +101,7 @@ namespace HedgeHog.Alice.Store {
           var offset = ((end - start) * 0.3).ToInt();
           var range = rates.GetRange(0, rates.Count.Min(end));
           var line = range.ToArray(r => r.PriceAvg).Line();
-          var skip = end - start - offset;// - offset.Div(2).ToInt();
+          var skip = end /*- start*/ - offset;// - offset.Div(2).ToInt();
           var zip = line.Skip(skip).Zip(range.Skip(skip), (l, r) => new { l = l.Abs(r.PriceAvg), r });
           return zip.MaxBy(x => x.l).First().r;
         };

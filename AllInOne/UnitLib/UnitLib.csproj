@@ -78,14 +78,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\EntityFramework.6.1.2\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
-    <Reference Include="HedgeHog.Core, Version=1.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\HedgeHog.Core.1.3.2.0\lib\net45\HedgeHog.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="HedgeHog.Core.Reactive, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\HedgeHog.Core.Reactive.1.0.2.0\lib\net45\HedgeHog.Core.Reactive.dll</HintPath>
-    </Reference>
     <Reference Include="HtmlAgilityPack, Version=1.4.9.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\HtmlAgilityPack.1.4.9\lib\Net45\HtmlAgilityPack.dll</HintPath>
@@ -217,6 +209,14 @@
     <ProjectReference Include="..\..\HedgeHog.Charter\HedgeHog.Charter.csproj">
       <Project>{29F0B895-BF08-4747-A454-D44C7E43C7B1}</Project>
       <Name>HedgeHog.Charter</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\HedgeHog.Core.Reactive\HedgeHog.Core.Reactive.csproj">
+      <Project>{edc8fa19-6e01-4997-84ba-ee5881fb3a52}</Project>
+      <Name>HedgeHog.Core.Reactive</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\HedgeHog.Core\HedgeHog.Core.csproj">
+      <Project>{0FF063E1-E910-4D16-976B-15BC31D11159}</Project>
+      <Name>HedgeHog.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\HedgeHog.DB\HedgeHog.DB.csproj">
       <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>

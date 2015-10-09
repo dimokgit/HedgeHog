@@ -10,8 +10,15 @@ namespace HedgeHog.Tests {
   public class MathExtensionsTest {
     [TestMethod()]
     public void RelativeStandardDeviationTest() {
-      var dbls = new double[]{699,1157,2041,2951,2657,3664,3462,2377,3135,2727,2487};
+      var dbls = new double[] { 699, 1157, 2041, 2951, 2657, 3664, 3462, 2377, 3135, 2727, 2487 };
       Assert.AreEqual(0.507518025484428, dbls.RelativeStandardDeviation().Round(15));
+    }
+
+    [TestMethod()]
+    public void RootMeanSquareTest() {
+      double a = 5, b = 10;
+      Assert.AreEqual(7.9057, a.RootMeanSquare(b).Round(4));
+      Assert.AreEqual(7.2855,a.SquareMeanRoot(b).Round(4));
     }
   }
 }

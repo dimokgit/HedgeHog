@@ -305,6 +305,10 @@ namespace HedgeHog.Alice.Store {
     private double TrendLinesTrendsPriceMin1(TradingMacro tm) {
       return tm.TrendLinesTrends.PriceAvg31.Min(tm.TrendLines2Trends.PriceAvg3, tm.TrendLines1Trends.PriceAvg3);
     }
+    private double TrendLinesTrendsPriceAvg(TradingMacro tm, Func<Rate.TrendLevels, double> value) {
+      return tm.TrendLinesTrendsAll.Average(value);
+    }
+
     double GetTradeCloseLevel(bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy]().IfNaN(def); }
 
     void SendSms(string header, object message, bool sendScreenshot) {
@@ -407,13 +411,13 @@ namespace HedgeHog.Alice.Store {
       var minutes = (corridorValues.Last().StartDate - corridorValues[0].StartDate).Duration().TotalMinutes;
       var isTicks = BarPeriod == BarsPeriodType.t1;
       var angleBM = isTicks ? 1 / 60.0 : 1.0;
-      var groupped = corridorValues.GroupedDistinct(r => r.StartDate, range => range.Average(_priceAvg));
+      var groupped = corridorValues.GroupedDistinct(r => r.StartDate.AddMilliseconds(-r.StartDate.Millisecond), range => range.Average(_priceAvg));
       double h, l, h1, l1;
       var doubles = isTicks && BarPeriodCalc!=BarsPeriodType.s1  ? groupped.ToList() : corridorValues.ToList(r => r.PriceAvg);
       if(doubles.Count < 5)
         return new List<Rate>();
       var coeffs = doubles.Linear();
-      var hl = doubles.StandardDeviation().RootMeanSquare(doubles.StDevByRegressoin(coeffs));
+      var hl = doubles.StDevByRegressoin(coeffs).SquareMeanRoot(doubles.StandardDeviation());
       h = hl * 2;
       l = hl * 2;
       h1 = hl * 3;

@@ -32,7 +32,7 @@ namespace HedgeHog.Alice.Store {
     }
     public TradeOpenAction Avg1GRBExitOnTrade {
       get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.Avg1GRBMax, TradeLevelBy.Avg1GRBMin));
+        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.Avg2GRBMax, TradeLevelBy.Avg3GRBMin));
       }
     }
     public TradeOpenAction GreenExitOnTrade {
@@ -122,6 +122,14 @@ namespace HedgeHog.Alice.Store {
         .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })
         ;
     }
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate DistanceByMACDOk {
+      get {
+        return () => IsTresholdAbsOk(DistanceByMASD, RatesDistanceMin) ? TradeDirections.Both : TradeDirections.None;
+      }
+    }
+
+
     #region Angles
     public TradeConditionDelegate AngSdrOk { get { return () => IsTresholdAbsOk(TrendAnglesSdr().Abs(), TrendAnglesSdrRange) ? TradeDirections.Both : TradeDirections.None; } }
     public TradeConditionDelegate AngRBPercOk {
@@ -424,9 +432,9 @@ IsTresholdAbsOk(TrendAnglesRatioPerc(tl => TrendAnglesPerc < 0 ? tl.Slope.Abs() 
               .Take(1)
               .Where(b => b.HasAny());
     }
-    public IEnumerable<TradeDirections> TradeConditionsEval() {
+    public IEnumerableCore.Singleable<TradeDirections> TradeConditionsEval() {
       if(!IsTrader)
-        return new TradeDirections[0];
+        return new TradeDirections[0].AsSingleable();
       return (from tc in TradeConditionsInfo((d, p, t, s) => new { d, t, s })
               group tc by tc.t into gtci
               let and = gtci.Select(g => g.d()).ToArray()
@@ -436,7 +444,8 @@ IsTresholdAbsOk(TrendAnglesRatioPerc(tl => TrendAnglesPerc < 0 ? tl.Slope.Abs() 
               select c
               )
               .Scan(TradeDirections.Both, (a, td) => a & td)
-              .TakeLast(1);
+              .TakeLast(1)
+              .AsSingleable();
     }
     public IEnumerable<TradeConditionDelegate> TradeConditionsInfo() {
       return TradeConditionsInfo(TradeConditions, (d, p, s) => d);

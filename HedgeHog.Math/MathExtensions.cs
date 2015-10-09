@@ -551,14 +551,18 @@ namespace HedgeHog {
       var convert = new Func<object, Type, object>((value, type) => {
         if (value != null) {
           Type tThis = Nullable.GetUnderlyingType(type);
-          if (tThis == null) tThis = type;
+          var isNullable = true;
+          if(tThis == null) {
+            tThis = type;
+            isNullable = false;
+          }
           if (tThis.IsEnum) 
             try{
             return Enum.Parse(tThis, v + "", true);
             } catch (Exception exc) {
               throw new ArgumentException(new { property = p } + "", exc);
             }
-          return Convert.ChangeType(v, tThis, null);
+          return string.IsNullOrWhiteSpace((v ?? "")+"") && isNullable ? null : Convert.ChangeType(v, tThis, null);
         }
         return value;
       });

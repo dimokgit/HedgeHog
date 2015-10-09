@@ -12,6 +12,12 @@ namespace HedgeHog.Tests {
     [TestClass]
     public class EnumerableExTest {
       [TestMethod()]
+      public void GetRangeTest() {
+        var a = new[] { 0, 1, 2, 3, 4, 5 };
+        var b = a.GetRange(2);
+        Assert.IsTrue(a.Skip(4).SequenceEqual(b));
+      }
+      [TestMethod()]
       public void GroupByAdjacentOriginal() {
         var r = new Random();
         var data0 = Enumerable

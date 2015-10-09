@@ -7,7 +7,27 @@ using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static class IEnumerableCore {
-
+    public class Singleable<T> : IEnumerable<T> {
+      private IEnumerable<T> _source;
+      public Singleable(IEnumerable<T> sourse  ) {
+        this._source = sourse;
+      }
+      IEnumerator IEnumerable.GetEnumerator() {
+        return _source.GetEnumerator();
+      }
+      IEnumerator<T> IEnumerable<T>.GetEnumerator() {
+        return _source.GetEnumerator();
+      }
+    }
+    public static T[] GetRange<T>(this IList<T> source,int count) {
+      var a = new T[count];
+      var start = source.Count - count;
+      Array.Copy(source.ToArray(), start, a, 0, count);
+      return a;
+    }
+    public static Singleable<T> AsSingleable<T>(this IEnumerable<T> source) {
+      return new Singleable<T>(source);
+    }
     public static IEnumerable<T> BackwardsIterator<T>(this IList<T> lst) {
       for (int i = lst.Count - 1; i >= 0; i--) {
         yield return lst[i];
