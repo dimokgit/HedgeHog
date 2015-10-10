@@ -417,7 +417,7 @@ namespace HedgeHog.Alice.Store {
       if(doubles.Count < 5)
         return new List<Rate>();
       var coeffs = doubles.Linear();
-      var hl = doubles.StDevByRegressoin(coeffs).SquareMeanRoot(doubles.StandardDeviation());
+      var hl = doubles.StDevByRegressoin(coeffs).PowerMeanPower(doubles.StandardDeviation(),100);
       h = hl * 2;
       l = hl * 2;
       h1 = hl * 3;

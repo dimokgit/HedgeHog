@@ -2223,7 +2223,7 @@ namespace HedgeHog.Alice.Store {
                 }
                 SpreadForCorridor = rates.Spread();
                 SetCma(rates);
-                var leg = RatesArray.Count.Div(10).ToInt();
+                var leg = rates.Count.Div(10).ToInt();
                 PriceSpreadAverage = rates
                 .Buffer(leg)
                 .Where(b => b.Count > leg * .75)
@@ -2277,7 +2277,7 @@ namespace HedgeHog.Alice.Store {
       rates.Reverse();
       var dist = BarPeriod == BarsPeriodType.t1
         ? DistanceByMASD = rates.Count > BarsCount
-        ? new[] { rates.GetRange(0, TrendLines1Trends.Count) }.Select(range => InPips(DistanceByMACD(range).LastOrDefault() / range.Last().StartDate.Subtract(range[0].StartDate).TotalHours.Abs())).SingleOrDefault()
+        ? new[] { rates }.Select(range => InPips(DistanceByMACD(range).LastOrDefault() / range.Last().StartDate.Subtract(range[0].StartDate).TotalHours.Abs())).SingleOrDefault()
         : 0
         : this.TradingMacrosByPair()
         .Where(tm => tm.BarPeriod == BarsPeriodType.t1)
@@ -3015,6 +3015,8 @@ namespace HedgeHog.Alice.Store {
         Func<Rate, double> priceHigh = CorridorGetHighPrice();
         Func<Rate, double> priceLow = CorridorGetLowPrice();
         var crossedCorridor = GetScanCorridorFunction(ScanCorridorBy)(ratesForCorridor, priceHigh, priceLow);
+        if(crossedCorridor.Rates.Count == 0)
+          return;
         #endregion
         #region Update Corridor
         var csOld = CorridorStats;

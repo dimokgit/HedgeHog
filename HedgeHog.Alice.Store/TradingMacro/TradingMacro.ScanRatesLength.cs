@@ -124,7 +124,7 @@ namespace HedgeHog.Alice.Store {
       var cmas = GetCma(rs, BarsCountCalc);
       var cmas2 = GetCma2(cmas, BarsCountCalc);
       var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
-      var macd2 = macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2));
+      var macd2 = CmaMACD = macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2));
       var macd3 = macd2
         .Distances();
       return macd3;
@@ -139,7 +139,7 @@ namespace HedgeHog.Alice.Store {
           var cmas2 = GetCma2(cmas, BarsCountCalc);
           var crosses = cmas.CrossesSmoothed(cmas2);
           var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
-          var macd2 = macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2));
+          var macd2 = CmaMACD = macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2));
           var macd3 = macd2
             .Distances();
           return macd3
@@ -192,6 +192,11 @@ namespace HedgeHog.Alice.Store {
         _crossCountRatioForCorridorLength = value;
         OnPropertyChanged("CrossCountRatioForCorridorLength");
       }
+    }
+
+    public IEnumerable<double> CmaMACD {
+      get;
+      private set;
     }
   }
 }

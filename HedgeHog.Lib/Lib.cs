@@ -25,13 +25,15 @@ using System.Web.Script.Serialization;
 namespace ControlExtentions {
   public static class AAA {
     public static void ResetText(this ComboBox ComboBox) {
-      var t = ComboBox.Text; ComboBox.Text = ""; ComboBox.Text = t;
+      var t = ComboBox.Text;
+      ComboBox.Text = "";
+      ComboBox.Text = t;
     }
   }
 }
 namespace HedgeHog {
   public static partial class Lib {
-    public static string ToJson(this object obj){
+    public static string ToJson(this object obj) {
       JavaScriptSerializer js = new JavaScriptSerializer();
       return js.Serialize(obj);
     }
@@ -130,7 +132,7 @@ namespace HedgeHog {
       list.Aggregate((p, n) => {
         var nValue = getValue(n);
         var nPosition = getPosition(n);
-        if (nValue.Sign() == getValue(p).Sign()) {
+        if(nValue.Sign() == getValue(p).Sign()) {
           var area = areas.LastBC();
           area.Area += nValue;
           area.Stop = nPosition;
@@ -142,14 +144,15 @@ namespace HedgeHog {
       return areas;
     }
     public static void FillGaps<T>(this IList<T> rates, Func<T, bool> isEmpty, Func<T, double> getValue, Action<T, double> setValue) {
-      if (!rates.Any()) return;
+      if(!rates.Any())
+        return;
       var rates1 = rates.Select((r, i) => new { r, i }).ToArray();
       rates1.Where(r => !isEmpty(r.r))
       .Aggregate((p, n) => {
         var diffDist = getValue(n.r) - getValue(p.r);
         var diffIndex = (n.i - p.i - 1).Max(1);
         var step = diffDist / (diffIndex + 1).Max(1);
-        for (var i = p.i + 1; i < n.i; i++)
+        for(var i = p.i + 1; i < n.i; i++)
           setValue(rates1[i].r, getValue(rates1[i - 1].r) + step);
         return n;
       });
@@ -180,12 +183,13 @@ namespace HedgeHog {
     public static string ParseParamRange(this string param) {
       var range = new System.Text.RegularExpressions.Regex(@"(?<from>[\d.]+)-(?<to>[\d.]+),(?<step>[-\d.]+)");
       var m = range.Match(param);
-      if (!m.Success) return param;
+      if(!m.Success)
+        return param;
       var l = new List<double>();
       var from = double.Parse(m.Groups["from"].Value);
       var to = double.Parse(m.Groups["to"].Value);
       var step = double.Parse(m.Groups["step"].Value);
-      for (var d = from; step > 0 && d <= to || step < 0 && d >= to; d += step)
+      for(var d = from; step > 0 && d <= to || step < 0 && d >= to; d += step)
         l.Add(d);
       return string.Join("\t", l);
     }
@@ -228,14 +232,14 @@ namespace HedgeHog {
       return rates.Height(valueHigh, valueLow, out min, out max);
     }
     public static double Height<T>(this IEnumerable<T> rates, Func<T, double> valueMax, Func<T, double> valueMin, out double min, out double max) {
-      if (!rates.Any())
+      if(!rates.Any())
         return min = max = double.NaN;
       min = rates.Min(valueMin);
       max = rates.Max(valueMax);
       return max - min;
     }
     public static double Height(this IList<double> rates, out double min, out double max) {
-      if (rates.Count == 0)
+      if(rates.Count == 0)
         return min = max = double.NaN;
       min = rates.Min();
       max = rates.Max();
@@ -271,7 +275,7 @@ namespace HedgeHog {
       return count >= 0 ? list.Take(count) : list.Skip(list.Count() + count);
     }
     public static T Last<T>(this IList<T> list, int index) {
-      if (list.Count == 0)
+      if(list.Count == 0)
         return default(T);
       return list[list.Count - index - 1];
     }
@@ -282,7 +286,7 @@ namespace HedgeHog {
     /// <param name="list"></param>
     /// <returns></returns>
     public static T LastBC<T>(this IList<T> list, int positionFromEnd = 1) {
-      if (list.Count == 0)
+      if(list.Count == 0)
         return default(T);
       return list[list.Count - positionFromEnd];
     }
@@ -311,7 +315,7 @@ namespace HedgeHog {
       }
     }
 
-    public static IDisposable SubscribeToPropertiesChanged<T>(this T me, Action<T> fire, params Expression<Func<T, object>>[] props) where T : class,INotifyPropertyChanged {
+    public static IDisposable SubscribeToPropertiesChanged<T>(this T me, Action<T> fire, params Expression<Func<T, object>>[] props) where T : class, INotifyPropertyChanged {
       return Observable.Merge<T>(props.Select(p => me.ObservePropertyChanged(p)).ToArray())
         .Throttle(0.1.FromSeconds())
               .ObserveOn(GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher)
@@ -343,10 +347,10 @@ namespace HedgeHog {
     public static string[] GetLambdas<TPropertySource>(params Expression<Func<TPropertySource, object>>[] expressions) {
       return expressions.Select(expression => GetLambda<TPropertySource>(expression)).ToArray();
     }
-    public static string GetLambda<TPropertySource,TProperty>(Expression<Func<TPropertySource, TProperty>> expression) {
+    public static string GetLambda<TPropertySource, TProperty>(Expression<Func<TPropertySource, TProperty>> expression) {
       var lambda = expression as LambdaExpression;
       MemberExpression memberExpression;
-      if (lambda.Body is UnaryExpression) {
+      if(lambda.Body is UnaryExpression) {
         var unaryExpression = lambda.Body as UnaryExpression;
         memberExpression = unaryExpression.Operand as MemberExpression;
       } else {
@@ -355,7 +359,7 @@ namespace HedgeHog {
 
       Debug.Assert(memberExpression != null, "Please provide a lambda expression like 'n => n.PropertyName'");
 
-      if (memberExpression != null) {
+      if(memberExpression != null) {
         var propertyInfo = memberExpression.Member as PropertyInfo;
 
         return propertyInfo.Name;
@@ -366,7 +370,7 @@ namespace HedgeHog {
     public static string GetLambda<TPropertySource>(Expression<Func<TPropertySource, object>> expression) {
       var lambda = expression as LambdaExpression;
       MemberExpression memberExpression;
-      if (lambda.Body is UnaryExpression) {
+      if(lambda.Body is UnaryExpression) {
         var unaryExpression = lambda.Body as UnaryExpression;
         memberExpression = unaryExpression.Operand as MemberExpression;
       } else {
@@ -375,7 +379,7 @@ namespace HedgeHog {
 
       Debug.Assert(memberExpression != null, "Please provide a lambda expression like 'n => n.PropertyName'");
 
-      if (memberExpression != null) {
+      if(memberExpression != null) {
         var propertyInfo = memberExpression.Member as PropertyInfo;
 
         return propertyInfo.Name;
@@ -388,14 +392,14 @@ namespace HedgeHog {
     public static string[] GetLambdas(params LE.Expression<Func<object>>[] funcs) { return funcs.Names(); }
     public static string[] Names(this LE.Expression<Func<object>>[] funcs) {
       var names = new List<string>();
-      foreach (var e in funcs)
+      foreach(var e in funcs)
         names.Add(e.Name());
       return names.ToArray();
     }
 
     public static string Name(this Expression<Func<object>> propertyLamda) {
       var body = propertyLamda.Body as UnaryExpression;
-      if (body == null) {
+      if(body == null) {
         return ((propertyLamda as LambdaExpression).Body as MemberExpression).Member.Name;
       } else {
         var operand = body.Operand as MemberExpression;
@@ -406,12 +410,12 @@ namespace HedgeHog {
 
     public static string Name(this LambdaExpression propertyExpression) {
       var body = propertyExpression.Body as MemberExpression;
-      if (body == null)
+      if(body == null)
         throw new ArgumentException("'propertyExpression' should be a member expression");
 
       // Extract the right part (after "=>")
       var vmExpression = body.Expression as ConstantExpression;
-      if (vmExpression == null)
+      if(vmExpression == null)
         throw new ArgumentException("'propertyExpression' body should be a constant expression");
 
       // Create a reference to the calling object to pass it as the sender
@@ -432,7 +436,7 @@ namespace HedgeHog {
       var d = o.GetType().GetProperties().Select(s => new DynamicProperty(s.Name, s.PropertyType));
       Type t = System.Linq.Dynamic.DynamicExpression.CreateClass(d.ToArray());
       object ret = Activator.CreateInstance(t);
-      foreach (var e in d)
+      foreach(var e in d)
         ret.SetProperty(e.Name, o.GetProperty(e.Name));
       return ret;
     }
@@ -440,13 +444,14 @@ namespace HedgeHog {
     public static TReturn Invoke<TReturn>(this object o, string methodName, object[] parameters) {
       var t = o.GetType();
       var mi = t.GetMethod(methodName);
-      if (mi != null) return (TReturn)mi.Invoke(o, parameters);
+      if(mi != null)
+        return (TReturn)mi.Invoke(o, parameters);
       throw new NotImplementedException("Property/Field " + methodName + " is not implemented in " + o.GetType().Name + ".");
     }
     public static void Invoke(this object o, string methodName, object[] parameters) {
       var t = o.GetType();
       var mi = t.GetMethod(methodName);
-      if (mi != null) {
+      if(mi != null) {
         mi.Invoke(o, parameters);
         return;
       }
@@ -457,8 +462,8 @@ namespace HedgeHog {
     }
 
     public static IEnumerable<Tuple<A, PropertyInfo>> GetPropertiesByAttibute<A>(this object that, Func<A, bool> predicate) where A : Attribute {
-      foreach (var p in that.GetType().GetProperties()) {
-        if (p.GetCustomAttributes(typeof(A), false).Cast<A>().Where(predicate).Any())
+      foreach(var p in that.GetType().GetProperties()) {
+        if(p.GetCustomAttributes(typeof(A), false).Cast<A>().Where(predicate).Any())
           yield return new Tuple<A, PropertyInfo>(p.GetCustomAttributes(false).OfType<A>().First(), p);
       }
     }
@@ -467,11 +472,11 @@ namespace HedgeHog {
              where p.PropertyType == typeof(T)
              select map((T)p.GetValue(that), p);
     }
-    public static IEnumerable<U> GetPropertiesByTypeAndAttribute<T,A, U>(
+    public static IEnumerable<U> GetPropertiesByTypeAndAttribute<T, A, U>(
       this object that, Func<T> sample,
-      Func<A,bool> attributePredicate,
+      Func<A, bool> attributePredicate,
       Func<T, PropertyInfo, U> map)
-      where A:Attribute {
+      where A : Attribute {
       return from p in that.GetType().GetProperties()
              where p.PropertyType == typeof(T) &&
              (attributePredicate == null || p.GetCustomAttributes(typeof(A), false).Cast<A>().Where(attributePredicate).Any())
@@ -481,17 +486,21 @@ namespace HedgeHog {
     public static T GetProperty<T>(this object o, string p) {
       var t = o.GetType();
       System.Reflection.PropertyInfo pi = t.GetProperty(p);
-      if (pi != null) return (T)pi.GetValue(o, null);
+      if(pi != null)
+        return (T)pi.GetValue(o, null);
       System.Reflection.FieldInfo fi = t.GetField(p);
-      if (fi != null) return (T)fi.GetValue(o);
+      if(fi != null)
+        return (T)fi.GetValue(o);
       throw new NotImplementedException("Property/Field " + p + " is not implemented in " + o.GetType().Name + ".");
     }
 
     public static object GetProperty(this object o, string p) {
       System.Reflection.PropertyInfo pi = o.GetType().GetProperty(p);
-      if (pi != null) return pi.GetValue(o, null);
+      if(pi != null)
+        return pi.GetValue(o, null);
       System.Reflection.FieldInfo fi = o.GetType().GetField(p);
-      if (fi != null) return fi.GetValue(o);
+      if(fi != null)
+        return fi.GetValue(o);
       throw new NotImplementedException("Property/Field " + p + " is not implemented in " + o.GetType().Name + ".");
     }
 
@@ -506,14 +515,14 @@ namespace HedgeHog {
       double SumOfValues = 0;
       var count = Values.Count();
       //Calculate the sum of all the values
-      foreach (double item in Values) {
+      foreach(double item in Values) {
         SumOfValues += item;
       }
       //Calculate the sum of all the values squared
-      foreach (double item in Values) {
+      foreach(double item in Values) {
         SumOfValuesSquared += Math.Pow(item, 2);
       }
-      if (CalculationType == DeviationType.Sample) {
+      if(CalculationType == DeviationType.Sample) {
         return Math.Sqrt((SumOfValuesSquared - Math.Pow(SumOfValues, 2) / count) / (count - 1));
       } else {
         return Math.Sqrt((SumOfValuesSquared - Math.Pow(SumOfValues, 2) / count) / count);
@@ -527,13 +536,14 @@ namespace HedgeHog {
     public static double MeanAverage(this IList<double> values, int iterations = 3) {
       var valueLow = values.AverageByIterations(iterations, true);
       var valueHight = values.AverageByIterations(iterations, false);
-      if (valueLow.Count == 0 && valueHight.Count == 0)
+      if(valueLow.Count == 0 && valueHight.Count == 0)
         return values.MeanAverage(iterations - 1);
       return values.Except(valueLow.Concat(valueHight)).DefaultIfEmpty(values.Average()).Average();
     }
 
     public static double RootMeanSquare(this double d1, double d2) { return Math.Sqrt((d1 * d1 + d2 * d2) / 2); }
     public static double SquareMeanRoot(this double d1, double d2) { return Math.Pow((Math.Sqrt(d1) + Math.Sqrt(d2)) / 2, 2); }
+    public static double PowerMeanPower(this double d1, double d2, double power) { return Math.Pow((Math.Pow(d1, 1 / power) + Math.Pow(d2, 1 / power)) / 2, power); }
 
     public static double StandardDeviation(this List<double> doubleList) {
       double average = doubleList.Average();
@@ -585,7 +595,7 @@ namespace HedgeHog {
     public static double StDevP(this ICollection<double> n) {
       double total = 0, average = 0;
 
-      foreach (double num in n) {
+      foreach(double num in n) {
         total += num;
       }
 
@@ -593,7 +603,7 @@ namespace HedgeHog {
 
       double runningTotal = 0;
 
-      foreach (double num in n) {
+      foreach(double num in n) {
         runningTotal += ((num - average) * (num - average));
       }
 
@@ -615,14 +625,14 @@ namespace HedgeHog {
     }
     public static void LinearRegression(this double[] valuesY, out double a, out double b) {
       var valuesX = new double[valuesY.Length];
-      for (var i = 0; i < valuesY.Length; i++)
+      for(var i = 0; i < valuesY.Length; i++)
         valuesX[i] = i;
       LinearRegression_(valuesX, valuesY, out a, out b);
     }
     public static void LinearRegression_(double[] valuesX, double[] valuesY, out double a, out double b) {
       double xAvg = 0;
       double yAvg = 0;
-      for (int x = 0; x < valuesY.Length; x++) {
+      for(int x = 0; x < valuesY.Length; x++) {
         xAvg += valuesX[x];
         yAvg += valuesY[x];
       }
@@ -630,7 +640,7 @@ namespace HedgeHog {
       yAvg = yAvg / valuesY.Length;
       double v1 = 0;
       double v2 = 0;
-      for (int x = 0; x < valuesY.Length; x++) {
+      for(int x = 0; x < valuesY.Length; x++) {
         v1 += (x - xAvg) * (valuesY[x] - yAvg);
         v2 += Math.Pow(x - xAvg, 2);
       }
@@ -645,7 +655,7 @@ namespace HedgeHog {
     static void LinearRegression_(double[] values, out double a, out double b) {
       double xAvg = 0;
       double yAvg = 0;
-      for (int x = 0; x < values.Length; x++) {
+      for(int x = 0; x < values.Length; x++) {
         xAvg += x;
         yAvg += values[x];
       }
@@ -653,7 +663,7 @@ namespace HedgeHog {
       yAvg = yAvg / values.Length;
       double v1 = 0;
       double v2 = 0;
-      for (int x = 0; x < values.Length; x++) {
+      for(int x = 0; x < values.Length; x++) {
         v1 += (x - xAvg) * (values[x] - yAvg);
         v2 += (x - xAvg) * (x - xAvg);
         v2 += Math.Pow(x - xAvg, 2);
@@ -675,12 +685,13 @@ namespace HedgeHog {
       public double Min { get { return CmaArray.Concat(new double?[] { Current }).Min().GetValueOrDefault(); } }
       public double?[] CmaArray;
       public CmaWalker(int cmaCount) {
-        if (cmaCount < 1) throw new ArgumentException("Array length must be more then zero.", "cmaCount");
+        if(cmaCount < 1)
+          throw new ArgumentException("Array length must be more then zero.", "cmaCount");
         this.CmaArray = new double?[cmaCount];
       }
       public void Add(double value, double cmaPeriod) {
         Current = value;
-        for (var i = 0; i < CmaArray.Length; i++) {
+        for(var i = 0; i < CmaArray.Length; i++) {
           CmaArray[i] = CmaArray[i].Cma(cmaPeriod, value);
           value = CmaArray[i].Value;
         }
@@ -690,20 +701,22 @@ namespace HedgeHog {
         RaisePropertyChanged("Prev");
       }
       public void Clear() {
-        for (var i = 0; i < CmaArray.Length; i++)
+        for(var i = 0; i < CmaArray.Length; i++)
           CmaArray[i] = null;
       }
       public void Reset(int newCmaCount) {
         var offset = newCmaCount - CmaArray.Length;
-        if (offset == 0) return;
-        if (offset > 0)
+        if(offset == 0)
+          return;
+        if(offset > 0)
           CmaArray = CmaArray.Concat(new double?[newCmaCount - CmaArray.Length]).ToArray();
-        else CmaArray = CmaArray.Take(newCmaCount).ToArray();
+        else
+          CmaArray = CmaArray.Take(newCmaCount).ToArray();
       }
       public double Diff(double current) { return current - CmaArray[0].Value; }
       public double[] Diffs() {
         var diffs = new List<double>();
-        for (var i = 1; i < CmaArray.Length; i++)
+        for(var i = 1; i < CmaArray.Length; i++)
           diffs.Add((CmaArray[i - 1].GetValueOrDefault() - CmaArray[i]).GetValueOrDefault());
         return diffs.ToArray();
       }
@@ -720,7 +733,8 @@ namespace HedgeHog {
       return g != System.Guid.Empty ? g : defaultValue;
     }
     public static Guid Guid(this int i) {
-      if (!i.Between(0, 255)) throw new ArgumentException("Value must be between 0 and 255.");
+      if(!i.Between(0, 255))
+        throw new ArgumentException("Value must be between 0 and 255.");
       var b = (byte)i;
       return new Guid(0, 0, 0, new byte[] { 0, 0, 0, 0, 0, 0, 0, b });
     }
@@ -752,7 +766,7 @@ namespace HedgeHog {
       return d == 0 || double.IsNaN(d);
     }
     public static bool IsNaNOrZero(this double d) {
-      return double.IsNaN(d) || d ==0;
+      return double.IsNaN(d) || d == 0;
     }
     public static bool IsNaN(this double d) {
       return double.IsNaN(d);
@@ -783,7 +797,7 @@ namespace HedgeHog {
     }
 
     public static double PositionByMiddle(this double d, double up, double down) { return (d - down) / (up - down); }
-    public static double Round(this double v ) { return Math.Round(v, 0); }
+    public static double Round(this double v) { return Math.Round(v, 0); }
     public static double Round(this double v, int decimals) { return Math.Round(v, decimals); }
     public static double? Round(this double? v, int decimals) { return v.HasValue ? v.Value.Round(decimals) : (double?)null; }
     public static double AutoRound(this double d, int digits) {
@@ -802,20 +816,21 @@ namespace HedgeHog {
     public static int GetTextBoxTextInt(TextBox TextBox) {
       var t = GetTextBoxText(TextBox);
       int i;
-      if (!int.TryParse(t, out i)) throw new FormatException(t + " is not an integer.");
+      if(!int.TryParse(t, out i))
+        throw new FormatException(t + " is not an integer.");
       return i;
     }
     public static string GetTextBoxText(TextBox TextBox) {
       return TextBox.Dispatcher.Invoke(
         DispatcherPriority.Input,
-        (DispatcherOperationCallback)delegate(object o) { return TextBox.Text; },
+        (DispatcherOperationCallback)delegate (object o) { return TextBox.Text; },
         null
       ) + "";
     }
     public static string SetTextBoxText(TextBox TextBox, string Text) {
       TextBox.Dispatcher.BeginInvoke(
         DispatcherPriority.Background,
-        (DispatcherOperationCallback)delegate(object o) { TextBox.Text = Text; return null; },
+        (DispatcherOperationCallback)delegate (object o) { TextBox.Text = Text; return null; },
         null
       );
       return Text;
@@ -824,8 +839,8 @@ namespace HedgeHog {
       SetChecked(CheckBox, IsChecked, false);
     }
     public static void SetChecked(CheckBox CheckBox, bool IsChecked, bool Force) {
-      var d = (DispatcherOperationCallback)delegate(object o) { CheckBox.IsChecked = IsChecked; return null; };
-      if (Force)
+      var d = (DispatcherOperationCallback)delegate (object o) { CheckBox.IsChecked = IsChecked; return null; };
+      if(Force)
         CheckBox.Dispatcher.Invoke(DispatcherPriority.Send, d, null);
       else
         CheckBox.Dispatcher.BeginInvoke(DispatcherPriority.Send, d, null);
@@ -834,7 +849,7 @@ namespace HedgeHog {
       return (bool?)
       CheckBox.Dispatcher.Invoke(
         DispatcherPriority.Input,
-        (DispatcherOperationCallback)delegate(object o) { return CheckBox.IsChecked; },
+        (DispatcherOperationCallback)delegate (object o) { return CheckBox.IsChecked; },
         null
       );
     }
@@ -846,7 +861,7 @@ namespace HedgeHog {
 
     public static string PropertiesToString(this object o, string separator) {
       List<string> props = new List<string>();
-      foreach (var prop in o.GetType().GetProperties().OrderBy(p => p.Name))
+      foreach(var prop in o.GetType().GetProperties().OrderBy(p => p.Name))
         props.Add(prop.Name + ":" + prop.GetValue(o, new object[0]));
       return string.Join(separator, props);
     }
@@ -855,8 +870,9 @@ namespace HedgeHog {
     #region TimeSpan
     public static TimeSpan Max(this IEnumerable<TimeSpan> spans) {
       var spanMin = TimeSpan.MinValue;
-      foreach (var span in spans)
-        if (spanMin < span) spanMin = span;
+      foreach(var span in spans)
+        if(spanMin < span)
+          spanMin = span;
       return spanMin;
     }
     public static TimeSpan Average(this IEnumerable<TimeSpan> span) {

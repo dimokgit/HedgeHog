@@ -83,6 +83,13 @@ namespace HedgeHog.Alice.Store {
     public void OnOkDoBlue() {
       TradeCorridorByGRB(TrendLines2Trends);
     }
+    [TradeDirectionTrigger]
+    public void OnOkTip() {
+      if(Trades.IsEmpty())
+        TradeCorridorByTradeLevel(TrendLines2Trends);
+      TradeConditionsEval().Where(b => b.HasAny() && CanTriggerTradeDirection())
+        .ForEach(tc => TradeCorridorTurnOnIfManual(tc));
+    }
     public void TradeCorridorByGRB(Rate.TrendLevels tls) {
       var tcEval = TradeConditionsEval().ToArray();
       if(BarsCountCalc > BarsCount && tcEval.Any(b => b.HasAny())) {
@@ -121,6 +128,51 @@ namespace HedgeHog.Alice.Store {
           });
       }
     }
+    public void TradeCorridorByTradeLevel(Rate.TrendLevels tls) {
+      if(CanTriggerTradeDirection()) {
+        var bsl = new[] { BuyLevel, SellLevel };
+        var buy = GetTradeLevel(true, double.NaN);
+        var sell = GetTradeLevel(false, double.NaN);
+        var zip = bsl.Zip(new[] { buy, sell }, (sr, bs) => new { sr, bs });
+        var angle = tls.Angle;
+        if(bsl.Any(sr => !sr.InManual))
+          bsl.ForEach(sr => {
+            sr.InManual = true;
+            sr.ResetPricePosition();
+          });
+        zip.ForEach(x => {
+          var rate = angle > 0 ? x.bs.Max(x.sr.Rate) : x.bs.Min(x.sr.Rate);
+          var reset = InPips(rate.Abs(x.sr.Rate)) > 1;
+          if(reset)
+            x.sr.ResetPricePosition();
+          x.sr.Rate = rate;
+          if(reset)
+            x.sr.ResetPricePosition();
+        });
+      }
+    }
+    public void TradeCorridorTurnOnIfManual(TradeDirections tds) {
+      if(CanTriggerTradeDirection()) {
+        var bsl = new[] { BuyLevel, SellLevel };
+        var cps = new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
+        Func<bool> isIn = () => cps.All(cp => cp.Between(bsl[1].Rate, bsl[0].Rate));
+        Func<SuppRes, int> tradeCount = sr => sr.IsBuy ? tds.HasUp() ? 0 : 1 : tds.HasDown() ? 0 : 1;
+        if(bsl.All(sr => sr.InManual && !sr.CanTrade && isIn()))
+          bsl.ForEach(sr => {
+            sr.ResetPricePosition();
+            sr.CanTrade = true;
+            sr.TradesCount = TradeCountStart + tradeCount(sr);
+          });
+      }
+    }
+
+    private bool CanTriggerTradeDirection() {
+      var canTriggerTradeDirection = TrendLines2Trends.Count > BarsCount;
+      if(!canTriggerTradeDirection)
+        Log = new Exception(new { canTriggerTradeDirection } + "");
+      return canTriggerTradeDirection;
+    }
+
     //[TradeDirectionTrigger]
     public void OnAngRGOk() {
       var bs = new[] { BuyLevel, SellLevel };
