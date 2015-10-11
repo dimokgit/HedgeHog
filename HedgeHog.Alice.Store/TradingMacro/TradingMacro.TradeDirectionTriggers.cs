@@ -87,7 +87,7 @@ namespace HedgeHog.Alice.Store {
     public void OnOkTip() {
       if(Trades.IsEmpty())
         TradeCorridorByTradeLevel(TrendLines2Trends);
-      TradeConditionsEval().Where(b => b.HasAny() && CanTriggerTradeDirection())
+      TradeConditionsEval().Where(b => b.HasAny() && CanTriggerTradeDirection() && Trades.IsEmpty())
         .ForEach(tc => TradeCorridorTurnOnIfManual(tc));
     }
     public void TradeCorridorByGRB(Rate.TrendLevels tls) {
@@ -96,12 +96,12 @@ namespace HedgeHog.Alice.Store {
         var bs = new[] { BuyLevel, SellLevel };
         UseRates(ra => ra.GetRange(ra.Count - tls.Count, tls.Count))
           .Where(ra => ra.Count > 0)
-          .Select(ra => new { buy = ra.Max(r => r.AskHigh), sell = ra.Min(r => r.BidLow),eval = tcEval.Single() })
+          .Select(ra => new { buy = ra.Max(r => r.AskHigh), sell = ra.Min(r => r.BidLow), eval = tcEval.Single() })
           .Where(x => InPips(x.buy.Abs(x.sell)) > 5)
           .Where(x => new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(x.sell, x.buy)))
           .ForEach(x => {
             var buy = x.eval.HasUp() ? x.buy : UseRates(ra => ra.Max(r => r.AskHigh)).Single();
-            var sell = x.eval.HasDown() ? x.sell: UseRates(ra => ra.Min(r => r.BidLow)).Single();
+            var sell = x.eval.HasDown() ? x.sell : UseRates(ra => ra.Min(r => r.BidLow)).Single();
             var maxHeight = bs.Any(sr => sr.InManual) ? BuyLevel.Rate.Abs(SellLevel.Rate) : double.MaxValue;
             if(buy.Abs(sell) < maxHeight) {
 
@@ -128,6 +128,8 @@ namespace HedgeHog.Alice.Store {
           });
       }
     }
+    static object _rateLocker = new object();
+    int _tradeCorridorByTradeLevel_Sign = 0;
     public void TradeCorridorByTradeLevel(Rate.TrendLevels tls) {
       if(CanTriggerTradeDirection()) {
         var bsl = new[] { BuyLevel, SellLevel };
@@ -140,19 +142,31 @@ namespace HedgeHog.Alice.Store {
             sr.InManual = true;
             sr.ResetPricePosition();
           });
-        zip.ForEach(x => {
-          var rate = angle > 0 ? x.bs.Max(x.sr.Rate) : x.bs.Min(x.sr.Rate);
-          var reset = InPips(rate.Abs(x.sr.Rate)) > 1;
-          if(reset)
-            x.sr.ResetPricePosition();
-          x.sr.Rate = rate;
-          if(reset)
-            x.sr.ResetPricePosition();
-        });
+        lock (_rateLocker) {
+          var canTrade = true;
+          zip.ForEach(x => {
+            if(_tradeCorridorByTradeLevel_Sign != angle.Sign())
+              x.sr.CanTrade = false;
+            var rate = angle > 0 ? x.bs.Max(x.sr.Rate) : x.bs.Min(x.sr.Rate);
+            var rateJump = InPips(rate.Abs(x.sr.Rate));
+            var reset = rateJump > 1;
+            if(reset)
+              x.sr.ResetPricePosition();
+            if(x.sr.Rate != rate) {
+              canTrade = false;
+              x.sr.Rate = rate;
+            }
+            if(reset)
+              x.sr.ResetPricePosition();
+          });
+          _tradeCorridorByTradeLevel_Sign = angle.Sign();
+          if(!canTrade)
+            bsl.ForEach(sr => sr.CanTrade = false);
+        }
       }
     }
     public void TradeCorridorTurnOnIfManual(TradeDirections tds) {
-      if(CanTriggerTradeDirection()) {
+      if(CanTriggerTradeDirection() && !TradeConditionsHaveTurnOff()) {
         var bsl = new[] { BuyLevel, SellLevel };
         var cps = new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
         Func<bool> isIn = () => cps.All(cp => cp.Between(bsl[1].Rate, bsl[0].Rate));
@@ -261,24 +275,20 @@ namespace HedgeHog.Alice.Store {
 
     [TradeDirectionTrigger]
     public void OnHaveTurnOff() {
-      if(TradeConditionsHaveTurnOff() )
+      if(TradeConditionsHaveTurnOff())
         TurnOfManualCorridor();
     }
 
     private void TurnOfManualCorridor() {
-      if(!Trades.Any())
-        new[] { BuyLevel, SellLevel }
-        .Where(sr => sr.InManual)
-        .Do(sr => {
-          sr.CanTrade = false;
-          if(Trades.IsEmpty()) {
-            sr.InManual = false;
-            sr.TradesCount = TradeCountStart;
-          } else
-            sr.TradesCount = -(TradeCountMax + 1);
-        })
-        .Take(1)
-        .ForEach(_ => Log = new Exception("TurnOfManualCorridor"));
+      new[] { BuyLevel, SellLevel }
+      .Where(sr => sr.CanTrade)
+      .Do(sr => {
+        sr.CanTrade = false;
+        if(!Trades.IsEmpty())
+          sr.TradesCount = -(TradeCountMax + 1);
+      })
+      .Take(1)
+      .ForEach(_ => Log = new Exception("TurnOfManualCorridor"));
     }
 
     [TradeDirectionTrigger]

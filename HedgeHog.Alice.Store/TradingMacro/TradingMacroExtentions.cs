@@ -1550,6 +1550,7 @@ namespace HedgeHog.Alice.Store {
         TradesManager.ResetClosedTrades(Pair);
         _waitHandle.Set();
         TradingStatistics.OriginalProfit = 0;
+        _tradeCorridorByTradeLevel_Sign = 0;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if(!_replayRates.Any())
@@ -2276,7 +2277,7 @@ namespace HedgeHog.Alice.Store {
     private void SetVoltageByDistanceMACD(List<Rate> rates) {
       rates.Reverse();
       var dist = BarPeriod == BarsPeriodType.t1
-        ? DistanceByMASD = rates.Count > BarsCount
+        ? rates.Count > BarsCount
         ? new[] { rates }.Select(range => InPips(DistanceByMACD(range).LastOrDefault() / range.Last().StartDate.Subtract(range[0].StartDate).TotalHours.Abs())).SingleOrDefault()
         : 0
         : this.TradingMacrosByPair()
@@ -2285,8 +2286,10 @@ namespace HedgeHog.Alice.Store {
           var date = rates[0].StartDate;
           return tm.UseRates(ra => ra.SkipWhile(r => r.StartDate < date).Select(r => tm.GetVoltage(r)).DefaultIfEmpty(0).Average()).First();
         }).First();
-      if(dist > 0)
+      if(dist > 0) {
         rates.TakeWhile(r => GetVoltage(r).IsNaNOrZero()).ForEach(r => SetVoltage(r, dist));
+        DistanceByMASD = rates.Average(GetVoltage);
+      }
       rates.Reverse();
     }
 
