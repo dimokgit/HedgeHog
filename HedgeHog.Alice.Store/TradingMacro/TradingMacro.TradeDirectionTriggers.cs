@@ -129,7 +129,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
     static object _rateLocker = new object();
-    int _tradeCorridorByTradeLevel_Sign = 0;
     public void TradeCorridorByTradeLevel(Rate.TrendLevels tls) {
       if(CanTriggerTradeDirection()) {
         var bsl = new[] { BuyLevel, SellLevel };
@@ -145,8 +144,6 @@ namespace HedgeHog.Alice.Store {
         lock (_rateLocker) {
           var canTrade = true;
           zip.ForEach(x => {
-            if(_tradeCorridorByTradeLevel_Sign != angle.Sign())
-              x.sr.CanTrade = false;
             var rate = angle > 0 ? x.bs.Max(x.sr.Rate) : x.bs.Min(x.sr.Rate);
             var rateJump = InPips(rate.Abs(x.sr.Rate));
             var reset = rateJump > 1;
@@ -159,7 +156,6 @@ namespace HedgeHog.Alice.Store {
             if(reset)
               x.sr.ResetPricePosition();
           });
-          _tradeCorridorByTradeLevel_Sign = angle.Sign();
           if(!canTrade)
             bsl.ForEach(sr => sr.CanTrade = false);
         }
@@ -171,11 +167,12 @@ namespace HedgeHog.Alice.Store {
         var cps = new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
         Func<bool> isIn = () => cps.All(cp => cp.Between(bsl[1].Rate, bsl[0].Rate));
         Func<SuppRes, int> tradeCount = sr => sr.IsBuy ? tds.HasUp() ? 0 : 1 : tds.HasDown() ? 0 : 1;
+        Func<SuppRes, bool> canTrade = sr => sr.IsBuy ? tds.HasUp() : tds.HasDown();
         if(bsl.All(sr => sr.InManual && !sr.CanTrade && isIn()))
           bsl.ForEach(sr => {
             sr.ResetPricePosition();
-            sr.CanTrade = true;
-            sr.TradesCount = TradeCountStart + tradeCount(sr);
+            sr.CanTrade = canTrade(sr);
+            sr.TradesCount = TradeCountStart;
           });
       }
     }

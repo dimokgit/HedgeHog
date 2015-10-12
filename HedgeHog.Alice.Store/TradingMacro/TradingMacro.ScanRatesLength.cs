@@ -157,19 +157,21 @@ namespace HedgeHog.Alice.Store {
         });
     }
 
-    double _ScanRatesLengthByTimeFrameDistance = double.NaN;
     void ScanRatesLengthByTimeFrame() {
-      UseRates(ra => ra.Last().StartDate)
-        .ForEach(dateEnd => {
-          var dateStart = dateEnd.Subtract(TimeFrameTresholdTimeSpan);
-          UseRatesInternal(ri => ri.FuzzyIndex(dateStart, (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
-          .SelectMany(i => i)
-          .ForEach(i => {
-            var count = RatesInternal.Count - i;
-            if(count >= BarsCount)
-              BarsCountCalc = count;
-          });
-        });
+      if(BarPeriod != BarsPeriodType.t1)
+        BarsCountCalc = TimeFrameTresholdTimeSpan.TotalMinutes.ToInt();
+      else
+        UseRates(ra => ra.Last().StartDate)
+         .ForEach(dateEnd => {
+           var dateStart = dateEnd.Subtract(TimeFrameTresholdTimeSpan);
+           UseRatesInternal(ri => ri.FuzzyIndex(dateStart, (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
+           .SelectMany(i => i)
+           .ForEach(i => {
+             var count = RatesInternal.Count - i;
+             if(count >= BarsCount)
+               BarsCountCalc = count;
+           });
+         });
     }
 
     DateTime __barsCountLastDate = DateTime.MinValue;

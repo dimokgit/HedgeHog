@@ -1550,7 +1550,6 @@ namespace HedgeHog.Alice.Store {
         TradesManager.ResetClosedTrades(Pair);
         _waitHandle.Set();
         TradingStatistics.OriginalProfit = 0;
-        _tradeCorridorByTradeLevel_Sign = 0;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if(!_replayRates.Any())
@@ -2291,6 +2290,8 @@ namespace HedgeHog.Alice.Store {
         DistanceByMASD = rates.Average(GetVoltage);
       }
       rates.Reverse();
+      var firstVolt = Lazy.Create(() => rates.SkipWhile(r => GetVoltage(r).IsNaN()).Take(1).ToArray(GetVoltage));
+      rates.TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => firstVolt.Value.ForEach(v => SetVoltage(r, v)));
     }
 
     double CalcTicksPerSecond(IList<Rate> rates) {

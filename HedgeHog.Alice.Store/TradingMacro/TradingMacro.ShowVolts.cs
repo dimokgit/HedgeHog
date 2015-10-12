@@ -131,7 +131,9 @@ namespace HedgeHog.Alice.Store {
     void OnSetBarsCountCalc(Action p) {
       SetBarsCountCalcSubject.OnNext(p);
     }
-    void OnSetBarsCountCalc() { OnSetBarsCountCalc(ScanRatesLengthByTimeFrame); }
+    void OnSetBarsCountCalc() {
+      OnSetBarsCountCalc(BarPeriodInt > 0 ? (Action)ScanRatesLengthByDistanceMin : ScanRatesLengthByTimeFrame);
+    }
     #endregion
 
     double _stDevUniformRatio = Math.Sqrt(12);
