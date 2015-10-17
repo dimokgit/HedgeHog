@@ -664,6 +664,7 @@
     // #endregion
     // #endregion
     // #region Read Enums
+    this.ratesLengthFuncs = ko.observableArray();
     // #endregion
     //#region WaveRanges
     var currentWareRangesChartNum = 0;
@@ -957,6 +958,10 @@
       var defTDT = dataViewModel.readTradeDirectionTriggers();
       var defTC = dataViewModel.readTradingConditions();
       var defTOC = dataViewModel.readTradeOpenActions();
+      var defRLF = serverCall("readEnum", ["RatesLengthFunction"], function (enums) {
+        debugger;
+        dataViewModel.ratesLengthFuncs(enums);
+      });
       //dataViewModel.readNews();
       $.when.apply($, [defTL,defTC,defTOC,defTDT]).done(function () {
         ko.applyBindings(dataViewModel);

@@ -18,6 +18,10 @@ namespace HedgeHog.Alice {
   }
 }
 namespace HedgeHog.Alice.Store {
+  public enum RatesLengthFunction {
+    DistanceMin,
+    TimeFrame
+  }
   public enum ScanCorridorFunction {
     StDevSplits = 46,
     StDevSplits3 = 48,
@@ -122,7 +126,16 @@ namespace HedgeHog.Alice.Store {
     CorrTouch = 10
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
-  public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3, Minimum = 4, Maximum = 5, PriceAverage = 6 }
+  public enum CorridorCalculationMethod {
+    Height = 1,
+    Price = 2,
+    HeightUD = 3,
+    Minimum = 4,
+    Maximum = 5,
+    PriceAverage = 6,
+    PowerMeanPower = 7,
+    RootMeanSquare = 8
+  }
   [Flags]
   public enum LevelType { CenterOfMass = 1, Magnet = 2, CoM_Magnet = CenterOfMass | Magnet }
   [Flags]

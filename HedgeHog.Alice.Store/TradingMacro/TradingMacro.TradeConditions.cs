@@ -122,14 +122,6 @@ namespace HedgeHog.Alice.Store {
         .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })
         ;
     }
-    [TradeConditionTurnOff]
-    public TradeConditionDelegate DistanceByMACDOk {
-      get {
-        return () => IsTresholdAbsOk(DistanceByMASD, RatesDistanceMin) ? TradeDirections.Both : TradeDirections.None;
-      }
-    }
-
-
     #region Angles
     public TradeConditionDelegate AngSdrOk { get { return () => IsTresholdAbsOk(TrendAnglesSdr().Abs(), TrendAnglesSdrRange) ? TradeDirections.Both : TradeDirections.None; } }
     public TradeConditionDelegate AngRBPercOk {

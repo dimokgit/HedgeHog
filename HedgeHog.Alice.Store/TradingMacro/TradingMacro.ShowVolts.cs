@@ -132,7 +132,18 @@ namespace HedgeHog.Alice.Store {
       SetBarsCountCalcSubject.OnNext(p);
     }
     void OnSetBarsCountCalc() {
-      OnSetBarsCountCalc(BarPeriodInt > 0 ? (Action)ScanRatesLengthByDistanceMin : ScanRatesLengthByTimeFrame);
+      OnSetBarsCountCalc(GetRatesLengthFunction());
+    }
+
+    Action GetRatesLengthFunction() {
+      switch(RatesLengthBy) {
+        case RatesLengthFunction.DistanceMin:
+          return ScanRatesLengthByDistanceMin;
+        case RatesLengthFunction.TimeFrame:
+          return ScanRatesLengthByTimeFrame;
+        default:
+          throw new NotImplementedException(new { RatesLengthFunction = RatesLengthBy, Error = "Not implemented" } + "");
+      }
     }
     #endregion
 

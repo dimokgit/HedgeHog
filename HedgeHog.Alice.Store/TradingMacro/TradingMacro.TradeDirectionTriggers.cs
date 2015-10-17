@@ -85,10 +85,12 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeDirectionTrigger]
     public void OnOkTip() {
-      if(Trades.IsEmpty())
+      // TODO: change Trades.IsEmpty() to LastrTrade.Date is a minute (or so) ago
+      if(Trades.IsEmpty()) {
         TradeCorridorByTradeLevel(TrendLines2Trends);
-      TradeConditionsEval().Where(b => b.HasAny() && CanTriggerTradeDirection() && Trades.IsEmpty())
-        .ForEach(tc => TradeCorridorTurnOnIfManual(tc));
+        TradeConditionsEval().Where(b => b.HasAny() && CanTriggerTradeDirection())
+          .ForEach(tc => TradeCorridorTurnOnIfManual(tc));
+      }
     }
     public void TradeCorridorByGRB(Rate.TrendLevels tls) {
       var tcEval = TradeConditionsEval().ToArray();
@@ -165,10 +167,11 @@ namespace HedgeHog.Alice.Store {
       if(CanTriggerTradeDirection() && !TradeConditionsHaveTurnOff()) {
         var bsl = new[] { BuyLevel, SellLevel };
         var cps = new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
+        var canTradeAny = bsl.Any(sr => sr.CanTrade);
         Func<bool> isIn = () => cps.All(cp => cp.Between(bsl[1].Rate, bsl[0].Rate));
         Func<SuppRes, int> tradeCount = sr => sr.IsBuy ? tds.HasUp() ? 0 : 1 : tds.HasDown() ? 0 : 1;
         Func<SuppRes, bool> canTrade = sr => sr.IsBuy ? tds.HasUp() : tds.HasDown();
-        if(bsl.All(sr => sr.InManual && !sr.CanTrade && isIn()))
+        if(!canTradeAny && bsl.All(sr => sr.InManual/* && isIn()*/))
           bsl.ForEach(sr => {
             sr.ResetPricePosition();
             sr.CanTrade = canTrade(sr);

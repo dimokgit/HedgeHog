@@ -60,7 +60,7 @@ namespace HedgeHog.Alice.Client {
             .Subscribe(pair => {
               try {
                 myHub().Clients.All.priceChanged(pair);
-              } catch (Exception exc) {
+              } catch(Exception exc) {
                 GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
               }
             });
@@ -72,7 +72,7 @@ namespace HedgeHog.Alice.Client {
             .Subscribe(pair => {
               try {
                 myHub().Clients.All.tradesChanged(pair);
-              } catch (Exception exc) {
+              } catch(Exception exc) {
                 GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
               }
             });
@@ -81,39 +81,39 @@ namespace HedgeHog.Alice.Client {
       app.UseCors(CorsOptions.AllowAll);
       app.Use((context, next) => {
         try {
-          if (context == null)
+          if(context == null)
             App.SetSignalRSubjectSubject(() => {
               var tm = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == Pair);
-              if (tm != null) {
+              if(tm != null) {
                 try {
                   GlobalHost.ConnectionManager.GetHubContext<MyHub>()
                     .Clients.All.addMessage();
-                } catch (Exception exc) {
+                } catch(Exception exc) {
                   GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
                 }
               }
             });
 
-          if (context.Request.Path.Value.ToLower() == "/hello") {
+          if(context.Request.Path.Value.ToLower() == "/hello") {
             return context.Response.WriteAsync("privet:" + DateTimeOffset.Now);
           }
           var path = context.Request.Path.Value.ToLower().Substring(1);
           var rc = remoteControl.Value;
           {
             var tm = rc.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == path);
-            if (tm != null) {
+            if(tm != null) {
               context.Response.ContentType = "image/png";
               return context.Response.WriteAsync(rc.GetCharter(tm).GetPng());
             }
           }
           {
             var tm = rc.TradingMacrosCopy.Skip(1).FirstOrDefault(t => t.PairPlain == path.Replace("2", ""));
-            if (tm != null) {
+            if(tm != null) {
               context.Response.ContentType = "image/png";
               return context.Response.WriteAsync(rc.GetCharter(tm).GetPng());
             }
           }
-        } catch (Exception exc) {
+        } catch(Exception exc) {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         }
         return next();
@@ -126,8 +126,8 @@ namespace HedgeHog.Alice.Client {
         var hubConfiguration = new HubConfiguration();
         hubConfiguration.EnableDetailedErrors = true;
         app.MapSignalR(hubConfiguration);
-      } catch (InvalidOperationException exc) {
-        if (!exc.Message.StartsWith("Counter"))
+      } catch(InvalidOperationException exc) {
+        if(!exc.Message.StartsWith("Counter"))
           throw;
       }
     }
@@ -154,7 +154,7 @@ namespace HedgeHog.Alice.Client {
     { "London", DateTimeOffset.Parse("07:00 +0:00") } ,
     { "New York", DateTimeOffset.Parse("12:00 +0:00") } ,
     { "Sydney", DateTimeOffset.Parse("22:00 +0:00") } ,
-    { "Tokyo", DateTimeOffset.Parse("23:00 +0:00") } 
+    { "Tokyo", DateTimeOffset.Parse("23:00 +0:00") }
     };
     static List<string> _marketHoursSet = new List<string>();
     static MyHub() {
@@ -183,7 +183,7 @@ namespace HedgeHog.Alice.Client {
         Context.User.Identity.Name.Split('\\').DefaultIfEmpty("").Last().ToLower() == "dimon";
     }
     void TestUserAsTrader() {
-      if (!IsUserTrader())
+      if(!IsUserTrader())
         throw new UnauthorizedAccessException("This feature is for traders only.");
     }
     static DateTime _newsReadLastDate = DateTime.MinValue;
@@ -194,7 +194,7 @@ namespace HedgeHog.Alice.Client {
       var tmTrader = UseTradingMacro(pair, tm => tm.IsTrader, false).DefaultIfEmpty(tm0).Single();
 
       #region marketHours
-      if (!tmTrader.IsInVitualTrading)
+      if(!tmTrader.IsInVitualTrading)
         _marketHours
           .Where(mh => !_marketHoursSet.Contains(mh.Key))
           .Where(mh => (tmTrader.ServerTime.ToUniversalTime().TimeOfDay - mh.Value.TimeOfDay).TotalMinutes.Between(-15, 0))
@@ -206,7 +206,7 @@ namespace HedgeHog.Alice.Client {
       #endregion
 
       #region News
-      if (DateTime.Now.Subtract(_newsReadLastDate).TotalMinutes > 1) {
+      if(DateTime.Now.Subtract(_newsReadLastDate).TotalMinutes > 1) {
         _newsReadLastDate = DateTime.Now;
         var now = DateTimeOffset.UtcNow;
         var then = now.AddMinutes(60);
@@ -214,18 +214,18 @@ namespace HedgeHog.Alice.Client {
           .Where(n => !_newsDates.Contains(n.Time))
           .Where(n => n.Time > now && n.Time < then)
           .ToArray();
-        if (news.Any()) {
+        if(news.Any()) {
           _newsDates.AddRange(news.Select(n => n.Time));
           Clients.All.newsIsComming(news.Select(n => new { n.Time, n.Name }).ToArray());
         }
       }
       #endregion
       return new {
-        time = tm0.ServerTime.ToString("HH:mm:ss"),
+        time = tm0.ServerTime.ToString("HH:mm:ss") + (tm1 != null ? "," + tm1.RatesArray.Count : ""),
         prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 1),
         otg = IntOrDouble(tmTrader.OpenTradesGross2InPips, 1),
         tps = tm0.TicksPerSecondAverage.Round(1),
-        dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"hh\:mm"),
+        dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"h\:mm"),
         hgt = tmTrader.RatesHeightInPips.ToInt() + "/" + tmTrader.BuySellHeightInPips.ToInt(),
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
@@ -291,28 +291,28 @@ namespace HedgeHog.Alice.Client {
       try {
         App.SignalRInterval = int.Parse(newInyterval);
         App.ResetSignalR();
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
     public void CloseTrades(string pair) {
       try {
         GetTradingMacro(pair).ForEach(tm => tm.CloseTrades("SignalR"));
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
     public void MoveTradeLevel(string pair, bool isBuy, double pips) {
       try {
         GetTradingMacro(pair).ForEach(tm => tm.MoveBuySellLeve(isBuy, pips));
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
     public void ManualToggle(string pair) {
       try {
         GetTradingMacro(pair).ForEach(tm => tm.ResetSuppResesInManual());
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
@@ -328,7 +328,7 @@ namespace HedgeHog.Alice.Client {
     public void WrapTradeInCorridor(string pair) {
       UseTradingMacro(pair, tm => tm.WrapTradeInCorridor(), true);
     }
-    public void WrapCurrentPriceInCorridor(string pair,int corridorIndex) {
+    public void WrapCurrentPriceInCorridor(string pair, int corridorIndex) {
       UseTradingMacro(pair, tm => tm.WrapCurrentPriceInCorridor(tm.TrendLinesTrendsAll[corridorIndex]), true);
     }
     public void Buy(string pair) {
@@ -349,9 +349,9 @@ namespace HedgeHog.Alice.Client {
     static SendChartBuffer _sendChartBuffer = SendChartBuffer.Create();
     public void AskRates_(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
       UseTradingMacro2(pair, 0, tm => {
-        if (tm.IsActive)
+        if(tm.IsActive)
           _sendChartBuffer.Push(() => {
-            if (_sendChartBufferCounter > 1) {
+            if(_sendChartBufferCounter > 1) {
               throw new Exception(new { _sendChartBufferCounter } + "");
             }
             _sendChartBufferCounter++;
@@ -373,7 +373,7 @@ namespace HedgeHog.Alice.Client {
     public void SetTradeLevel(string pair, bool isBuy, int level) {
       //var l = level.GetType() == typeof(string) ? (TradeLevelBy)Enum.Parse(typeof(TradeLevelBy), level+"", false) : (TradeLevelBy)level;
       UseTradingMacro(pair, tm => {
-        if (isBuy) {
+        if(isBuy) {
           tm.LevelBuyBy = (TradeLevelBy)level;
         } else {
           tm.LevelSellBy = (TradeLevelBy)level;
@@ -382,7 +382,7 @@ namespace HedgeHog.Alice.Client {
     }
     public void SetTradeCloseLevel(string pair, bool isBuy, int level) {
       UseTradingMacro(pair, tm => {
-        if (isBuy) {
+        if(isBuy) {
           tm.LevelBuyCloseBy = (TradeLevelBy)level;
         } else {
           tm.LevelSellCloseBy = (TradeLevelBy)level;
@@ -436,7 +436,7 @@ namespace HedgeHog.Alice.Client {
         return new[] { new { p = MakePair(pair), rc = remoteControl.Value } }.SelectMany(x =>
           x.rc.GetClosedTrades(x.p).Concat(x.rc.TradesManager.GetTrades(x.p)))
           .ToArray();
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
       }
@@ -538,9 +538,10 @@ namespace HedgeHog.Alice.Client {
     }
     IEnumerable<TradingMacro> UseTradingMacro(string pair, int chartNum, Func<TradingMacro, bool> predicate, bool testTraderAccess) {
       try {
-        if (testTraderAccess) TestUserAsTrader();
+        if(testTraderAccess)
+          TestUserAsTrader();
         return GetTradingMacro(pair, chartNum).Where(predicate).Take(1);
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
       }
@@ -553,36 +554,40 @@ namespace HedgeHog.Alice.Client {
     }
     void UseTradingMacro(string pair, int chartNum, Action<TradingMacro> action, bool testTraderAccess) {
       try {
-        if (testTraderAccess) TestUserAsTrader();
+        if(testTraderAccess)
+          TestUserAsTrader();
         GetTradingMacro(pair, chartNum).ForEach(action);
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
       }
     }
     T UseTradingMacro<T>(string pair, int chartNum, Func<TradingMacro, T> func, bool testTraderAccess) {
       try {
-        if (testTraderAccess) TestUserAsTrader();
+        if(testTraderAccess)
+          TestUserAsTrader();
         return GetTradingMacro(pair, chartNum).Select(func).DefaultIfEmpty(default(T)).First();
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
       }
     }
     T[] UseTradingMacro2<T>(string pair, int chartNum, Func<TradingMacro, bool> where, Func<TradingMacro, T> func, bool testTraderAccess) {
       try {
-        if (testTraderAccess) TestUserAsTrader();
+        if(testTraderAccess)
+          TestUserAsTrader();
         return GetTradingMacro(pair, chartNum).Where(where).Select(func).ToArray();
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
       }
     }
     void UseTradingMacro2(string pair, int chartNum, Action<TradingMacro> func, bool testTraderAccess) {
       try {
-        if (testTraderAccess) TestUserAsTrader();
+        if(testTraderAccess)
+          TestUserAsTrader();
         GetTradingMacro(pair, chartNum).ForEach(func);
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
       }

@@ -413,11 +413,11 @@ namespace HedgeHog.Alice.Store {
       var angleBM = isTicks ? 1 / 60.0 : 1.0;
       var groupped = corridorValues.GroupedDistinct(r => r.StartDate.AddMilliseconds(-r.StartDate.Millisecond), range => range.Average(_priceAvg));
       double h, l, h1, l1;
-      var doubles = isTicks && BarPeriodCalc!=BarsPeriodType.s1  ? groupped.ToList() : corridorValues.ToList(r => r.PriceAvg);
+      var doubles = isTicks && BarPeriodCalc != BarsPeriodType.s1 ? groupped.ToList() : corridorValues.ToList(r => r.PriceAvg);
       if(doubles.Count < 5)
         return new List<Rate>();
       var coeffs = doubles.Linear();
-      var hl = doubles.StDevByRegressoin(coeffs).PowerMeanPower(doubles.StandardDeviation(),100);
+      var hl = CalcCorridorStDev(doubles, coeffs);
       h = hl * 2;
       l = hl * 2;
       h1 = hl * 3;
@@ -459,6 +459,18 @@ namespace HedgeHog.Alice.Store {
       return rates;
     }
 
+    private double CalcCorridorStDev(List<double> doubles, double[] coeffs) {
+      switch(CorridorCalcMethod) {
+        case CorridorCalculationMethod.PowerMeanPower:
+          return doubles.StDevByRegressoin(coeffs).PowerMeanPower(doubles.StandardDeviation(), 100);
+        case CorridorCalculationMethod.Height:
+          return doubles.StDevByRegressoin(coeffs);
+        case CorridorCalculationMethod.RootMeanSquare:
+          return doubles.StDevByRegressoin(coeffs).RootMeanSquare(doubles.StandardDeviation());
+        default:
+          throw new NotSupportedException(new { CorridorCalcMethod,Error= "Nosupported by CalcCorridorStDev" } + "");
+      }
+    }
 
     private static void OnCloseTradeLocal(IList<Trade> trades, TradingMacro tm) {
       tm.BuyCloseLevel.InManual = tm.SellCloseLevel.InManual = false;

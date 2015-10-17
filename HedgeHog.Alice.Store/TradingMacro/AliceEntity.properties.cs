@@ -501,6 +501,22 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region RatesLenghBy
+    private RatesLengthFunction _RatesLengthBy = RatesLengthFunction.TimeFrame;
+    [DisplayName("Rates Length By")]
+    [Category(categoryActiveFuncs)]
+    public RatesLengthFunction RatesLengthBy {
+      get { return _RatesLengthBy; }
+      set {
+        if(_RatesLengthBy != value) {
+          _RatesLengthBy = value;
+          OnPropertyChanged("RatesLengthBy");
+        }
+      }
+    }
+
+    #endregion
+
     [DisplayName("Trailing Distance")]
     [Category(categoryActiveFuncs)]
     [Description("TrailingDistanceFunction")]

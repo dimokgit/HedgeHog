@@ -2242,6 +2242,12 @@ namespace HedgeHog.Alice.Store {
                   case CorridorCalculationMethod.PriceAverage:
                     RatesStDev = StDevByPriceAvg;
                     break;
+                  case CorridorCalculationMethod.PowerMeanPower:
+                    RatesStDev = StDevByPriceAvg.PowerMeanPower(StDevByHeight, 100);
+                    break;
+                  case CorridorCalculationMethod.RootMeanSquare:
+                    RatesStDev = StDevByPriceAvg.RootMeanSquare(StDevByHeight);
+                    break;
                   default:
                     throw new Exception(new { CorridorCalcMethod } + " is not supported.");
                 }
@@ -2277,7 +2283,7 @@ namespace HedgeHog.Alice.Store {
       rates.Reverse();
       var dist = BarPeriod == BarsPeriodType.t1
         ? rates.Count > BarsCount
-        ? new[] { rates }.Select(range => InPips(DistanceByMACD(range).LastOrDefault() / range.Last().StartDate.Subtract(range[0].StartDate).TotalHours.Abs())).SingleOrDefault()
+        ? new[] { rates }.Select(range => InPips(DistanceByMACD(range).LastOrDefault())).SingleOrDefault()
         : 0
         : this.TradingMacrosByPair()
         .Where(tm => tm.BarPeriod == BarsPeriodType.t1)
