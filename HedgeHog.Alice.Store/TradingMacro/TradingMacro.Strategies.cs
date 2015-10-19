@@ -460,7 +460,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     private double CalcCorridorStDev(List<double> doubles, double[] coeffs) {
-      switch(CorridorCalcMethod) {
+      var cm = Trades.Any() ? CorridorCalculationMethod.Height : CorridorCalcMethod;
+      switch(cm) {
         case CorridorCalculationMethod.PowerMeanPower:
           return doubles.StDevByRegressoin(coeffs).PowerMeanPower(doubles.StandardDeviation(), 100);
         case CorridorCalculationMethod.Height:

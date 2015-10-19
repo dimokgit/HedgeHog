@@ -1675,7 +1675,7 @@ namespace HedgeHog.Alice.Store {
                   if(indexCurrent >= _replayRates.Count)
                     continue;
                   ratePrev = rate;
-                  if(this.TradingMacrosByPair().First() == this) {
+                  if(this.TradingMacrosByPair().First() == this && (Trades.Any() || IsTradingDay())) {
                     TradesManager.SetServerTime(RatesInternal.Last().StartDate);
                     TradesManager.RaisePriceChanged(Pair, BarPeriodInt, new Price(Pair, rate));
                   }
@@ -2281,7 +2281,7 @@ namespace HedgeHog.Alice.Store {
 
     private void SetVoltageByDistanceMACD(List<Rate> rates) {
       rates.Reverse();
-      var dist = BarPeriod == BarsPeriodType.t1
+      var dist = BarPeriod != BarsPeriodType.none
         ? rates.Count > BarsCount
         ? new[] { rates }.Select(range => InPips(DistanceByMACD(range).LastOrDefault())).SingleOrDefault()
         : 0

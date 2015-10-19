@@ -90,7 +90,10 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     void ScanRatesLengthByDistanceMin() {
-      UseRatesInternal(rs => rs.ToList())
+      BarsCountCalc = GetRatesLengthByDistanceMin();
+    }
+    int GetRatesLengthByDistanceMin() {
+      return UseRatesInternal(rs => rs.ToList())
         .Select(rs => {
           rs.Reverse();
           var rdm = InPoints(RatesDistanceMin);
@@ -99,25 +102,16 @@ namespace HedgeHog.Alice.Store {
             .TakeWhile(i => i <= rdm)
             .Count() + BarsCount;
           return count;
-          //var doubles = rs.ToList(_priceAvg);
-          //var a = new { count, slope = doubles.GetRange(0, count).LinearSlope().Abs() };
-          //for(var c = (count * 1.05).ToInt(); c < rs.Count; c = (c * 1.05).ToInt()) {
-          //  var slope = doubles.GetRange(0, c).LinearSlope().Abs();
-          //  if(slope < a.slope)
-          //    break;
-          //  else
-          //    a = new { count = c, slope };
-          //}
-          //return a.count;
         })
-        .ForEach(count => {
+        .Select(count => {
           const double adjuster = 0;
           if(count * adjuster > BarsCountMax) {
             BarsCountMax = (BarsCountMax * adjuster).Ceiling();
             Log = new Exception(new { BarsCountMax, PairIndex, Action = "Stretched" } + "");
           }
-          BarsCountCalc = count;
-        });
+          return count;
+        })
+        .Single();
     }
 
     private IEnumerable<double> DistanceByMACD(IList<Rate> rs) {
@@ -172,6 +166,35 @@ namespace HedgeHog.Alice.Store {
                BarsCountCalc = count;
            });
          });
+    }
+
+    void ScanRatesLengthByDistanceMinAndimeFrame() {
+      var count = GetRatesLengthByDistanceMin();
+      var counts = GetRatesLengthsByTimeFrameRange();
+      BarsCountCalc = counts[0].Max(counts).Min(counts[1]);
+    }
+    int[] GetRatesLengthsByTimeFrameRange() {
+      if(BarPeriod != BarsPeriodType.t1)
+        return new[] { TimeFrameTresholdTimeSpan.TotalMinutes.ToInt(), TimeFrameTresholdTimeSpan.TotalMinutes.ToInt() };
+      else {
+        Func<DateTime, TimeSpan, int> getCount = (dateEnd, timeFrame) => 
+          UseRatesInternal(ri => ri.FuzzyIndex(dateEnd.Subtract(timeFrame), (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
+           .SelectMany(i => i, (_, i) => RatesInternal.Count - i)
+           .Single();
+
+        var counts = UseRates(ra => ra.Last().StartDate)
+         .SelectMany(dateEnd => new[] { new { dateEnd, timeSpan = TimeFrameTresholdTimeSpan2 }, new { dateEnd, timeSpan = TimeFrameTresholdTimeSpan2 } })
+         .Select(x => getCount(x.dateEnd, x.timeSpan))
+         .ToArray();
+        return counts;
+      }
+    }
+
+    private int GetRatesCountByTimeFrame(DateTime dateEnd, TimeSpan timeFrame) {
+      var dateStart = dateEnd.Subtract(timeFrame);
+      return UseRatesInternal(ri => ri.FuzzyIndex(dateStart, (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
+       .SelectMany(i => i, (_, i) => BarsCountCalc.Max(RatesInternal.Count - i))
+       .Single();
     }
 
     DateTime __barsCountLastDate = DateTime.MinValue;

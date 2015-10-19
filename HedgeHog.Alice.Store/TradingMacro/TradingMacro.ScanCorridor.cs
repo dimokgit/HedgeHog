@@ -103,7 +103,7 @@ namespace HedgeHog.Alice.Store {
           var line = range.ToArray(r => r.PriceAvg).Line();
           var skip = end /*- start*/ - offset;// - offset.Div(2).ToInt();
           var zip = line.Skip(skip).Zip(range.Skip(skip), (l, r) => new { l = l.Abs(r.PriceAvg), r });
-          return zip.MaxBy(x => x.l).First().r;
+          return zip.OrderByDescending(x => x.l).Take(1).Select(x=>x.r).DefaultIfEmpty(range.Last()).Single();
         };
         Func<int, Rate> getRate = start =>
           sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end)).First();

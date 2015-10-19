@@ -141,6 +141,8 @@ namespace HedgeHog.Alice.Store {
           return ScanRatesLengthByDistanceMin;
         case RatesLengthFunction.TimeFrame:
           return ScanRatesLengthByTimeFrame;
+        case RatesLengthFunction.DMTF:
+          return ScanRatesLengthByDistanceMinAndimeFrame;
         default:
           throw new NotImplementedException(new { RatesLengthFunction = RatesLengthBy, Error = "Not implemented" } + "");
       }

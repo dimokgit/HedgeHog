@@ -647,7 +647,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Days")]
-    [Category(categoryTrading)]
+    [Category(categoryActiveFuncs)]
     public WeekDays TradingDaysRange {
       get { return (WeekDays)CorridorRatioForRange; }
       set {

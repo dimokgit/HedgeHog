@@ -20,7 +20,8 @@ namespace HedgeHog.Alice {
 namespace HedgeHog.Alice.Store {
   public enum RatesLengthFunction {
     DistanceMin,
-    TimeFrame
+    TimeFrame,
+    DMTF
   }
   public enum ScanCorridorFunction {
     StDevSplits = 46,

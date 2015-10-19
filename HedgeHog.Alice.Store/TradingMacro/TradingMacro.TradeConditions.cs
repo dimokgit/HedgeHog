@@ -111,27 +111,14 @@ namespace HedgeHog.Alice.Store {
         Angle = tls.Angle.Round(1)
       }.ToExpando();
     }
-    double TrendAnglesRatioPerc(Func<Rate.TrendLevels, double> map, params Rate.TrendLevels[] tls) { return tls.ToArray(map).RelativeStandardDeviation().Abs() * 100; }
-    double TrendAnglesSdr() { return TrendLinesTrendsAll.ToArray(tl => tl.Slope).RelativeStandardDeviation() * 100; }
     public ExpandoObject WwwInfo() {
       return new ExpandoObject()
-        .Merge(new { AngleSdr_ = TrendAnglesSdr().Round(0).Abs() })
-        .Merge(new { RBAngPerc = TrendAnglesRatioPerc(tl => TrendAnglesPerc < 0 ? tl.Slope.Abs() : tl.Slope, TrendLines2Trends, TrendLinesTrends).Round(0) })
         .Merge(new { GrnAngle_ = TrendLines1Trends.Angle.Round(1) })
         .Merge(new { RedAngle_ = TrendLinesTrends.Angle.Round(1) })
         .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })
         ;
     }
     #region Angles
-    public TradeConditionDelegate AngSdrOk { get { return () => IsTresholdAbsOk(TrendAnglesSdr().Abs(), TrendAnglesSdrRange) ? TradeDirections.Both : TradeDirections.None; } }
-    public TradeConditionDelegate AngRBPercOk {
-      get {
-        return () =>
-IsTresholdAbsOk(TrendAnglesRatioPerc(tl => TrendAnglesPerc < 0 ? tl.Slope.Abs() : tl.Slope, TrendLines2Trends, TrendLinesTrends), TrendAnglesPerc)
-? TradeDirections.Both
-: TradeDirections.None;
-      }
-    }
     [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate GreenAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines1Trends, TrendAngleGreen); } }
     [TradeCondition(TradeConditionAttribute.Types.And)]
@@ -366,7 +353,7 @@ IsTresholdAbsOk(TrendAnglesRatioPerc(tl => TrendAnglesPerc < 0 ? tl.Slope.Abs() 
       return TradeConditionsInfo<TradeConditionTurnOffAttribute>().Any(d => d().HasNone());
     }
     bool TradeConditionsHaveAsleep() {
-      return TradeConditionsInfo<TradeConditionAsleepAttribute>().Any(d => d().HasNone());
+      return TradeConditionsInfo<TradeConditionAsleepAttribute>().Any(d => d().HasNone()) || !IsTradingDay();
     }
     bool TradeConditionsHave(TradeConditionDelegate td) {
       return TradeConditionsInfo().Any(d => d == td);
