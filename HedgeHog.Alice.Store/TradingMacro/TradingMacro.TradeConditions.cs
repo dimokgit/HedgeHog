@@ -116,6 +116,9 @@ namespace HedgeHog.Alice.Store {
         .Merge(new { GrnAngle_ = TrendLines1Trends.Angle.Round(1) })
         .Merge(new { RedAngle_ = TrendLinesTrends.Angle.Round(1) })
         .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })
+        .Merge(new { GRBRatio_ = TrendAnglesRatio() })
+        .Merge(new { _RBRatio_ = TrendLines2Trends.Angle.Percentage(TrendLinesTrends.Angle).ToPercent() })
+        
         ;
     }
     #region Angles
@@ -135,12 +138,33 @@ namespace HedgeHog.Alice.Store {
     [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate BlueAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines2Trends, TrendAngleBlue); } }
 
-    public TradeConditionDelegate AngRBRatioOk {
+    public TradeConditionDelegate GRBRatioOk {
       get {
-        return () => IsTresholdAbsOk(TrendLines2Trends.Angle.Percentage(TrendLinesTrends.Angle),TrendAnglesPerc)
+        return () => IsTresholdAbsOk(TrendAnglesRatio(), TrendAnglesPerc)
           ? TradeDirections.Both
           : TradeDirections.None;
       }
+    }
+    public TradeConditionDelegate AngRBRatioOk {
+      get {
+        return () => IsTresholdAbsOk(TrendLines2Trends.Angle.Percentage(TrendLinesTrends.Angle).ToPercent(),TrendAnglesPerc)
+          ? TradeDirections.Both
+          : TradeDirections.None;
+      }
+    }
+    int TrendAnglesRatio() {
+      return new[] {
+        new[] {TrendLines2Trends, TrendLinesTrends },
+        new[] {TrendLines2Trends, TrendLines1Trends },
+        new[] {TrendLinesTrends, TrendLines1Trends }
+      }
+      .Select(b=> b[0].Angle.Percentage(b[1].Angle).ToPercent())
+      .Max();
+      //.CartesianProduct()
+      //.Select(b=>b.ToList())
+      //.Where(b=>b[0]!=b[1])
+      //.Select(b=>b[0].Angle.Percentage(b[1].Angle).ToPercent())
+      //.Min();
     }
     #endregion
 

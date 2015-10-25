@@ -291,7 +291,13 @@ namespace HedgeHog.Alice.Client {
         var odRes = od.ShowDialog();
         if (!odRes.GetValueOrDefault()) return;
         var settings = Lib.ReadTestParameters(od.FileName);
-        settings.ForEach(tp => tm.SetProperty(tp.Key, (object)tp.Value));
+        settings.ForEach(tp => {
+          try {
+            tm.SetProperty(tp.Key, (object)tp.Value);
+          } catch(MissingMemberException exc) {
+            Log = exc;
+          }
+        });
       } catch (Exception exc) {
         Log = exc;
         return;

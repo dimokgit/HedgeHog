@@ -120,6 +120,7 @@ namespace HedgeHog {
       return (int)(useCeiling ? Math.Ceiling(d) : Math.Floor(d));
     }
     public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
+    public static int ToPercent(this double d) { return (int)Math.Round(d * 100, 0); }
 
     #region Between
     public static bool Between(this int value, double d1, double d2) {

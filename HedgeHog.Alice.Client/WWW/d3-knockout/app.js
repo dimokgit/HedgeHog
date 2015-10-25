@@ -54,8 +54,11 @@
     if (secsInFlight > 60) return false;
     return date && secsInFlight > 0;
   }
+  function isConnected() {
+    return $.connection.hub.state === 1;
+  }
   function askRates() {
-    if (isInFlight(ratesInFlight,0))
+    if (!isConnected() || isInFlight(ratesInFlight,0))
       return;
     ratesInFlight = new Date();
     chat.server.askRates(1200, dataViewModel.firstDate().toISOString(), dataViewModel.lastDate().toISOString(), pair, 0)
@@ -73,7 +76,7 @@
       });
   }
   function askRates2() {
-    if (isInFlight(ratesInFlight2,2))
+    if (!isConnected() || isInFlight(ratesInFlight2,2))
       return;
     ratesInFlight2 = new Date();
     chat.server.askRates(1200, dataViewModel.firstDate2().toISOString(), dataViewModel.lastDate2().toISOString(), pair, 1)
@@ -959,7 +962,6 @@
       var defTC = dataViewModel.readTradingConditions();
       var defTOC = dataViewModel.readTradeOpenActions();
       var defRLF = serverCall("readEnum", ["RatesLengthFunction"], function (enums) {
-        debugger;
         dataViewModel.ratesLengthFuncs(enums);
       });
       //dataViewModel.readNews();

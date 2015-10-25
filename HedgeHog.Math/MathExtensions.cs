@@ -545,6 +545,8 @@ namespace HedgeHog {
 
 
     public static void SetProperty(this object o, string p, object v) {
+      if(o == null)
+        throw new NullReferenceException(new { o, p, v } + "");
       o.SetProperty(p, v, pi => pi.GetSetMethod() != null || pi.GetSetMethod(true) != null);
     }
     public static void SetProperty(this object o, string p, object v, Func<PropertyInfo, bool> propertyPredicate = null) {
@@ -568,7 +570,12 @@ namespace HedgeHog {
       });
       var t = o.GetType();
       var pi = t.GetProperty(p);
-      if (propertyPredicate != null && !propertyPredicate(pi)) return;
+      if(propertyPredicate != null) {
+        if(pi == null)
+          throw new MissingMemberException(t.Name, p);
+        if(!propertyPredicate(pi))
+          return;
+      }
       if (pi != null) pi.SetValue(o, v = convert(v, pi.PropertyType), new object[] { });
       else {
         System.Reflection.FieldInfo fi = o.GetType().GetField(p);
