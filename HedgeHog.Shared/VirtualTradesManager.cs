@@ -267,8 +267,11 @@ namespace HedgeHog.Shared {
 
     #region ITradesManager Members
 
+    object _tradesOpenedLocker = new object();
     public Trade[] GetTrades(string pair) {
-      return tradesOpened.Where(t => t.Pair.ToLower() == pair.ToLower()).ToArray();
+      lock (_tradesOpenedLocker) {
+        return tradesOpened.ToArray().Where(t => t.Pair.ToLower() == pair.ToLower()).ToArray();
+      }
     }
 
     public Trade[] GetTrades() {

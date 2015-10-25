@@ -49,21 +49,6 @@ namespace HedgeHog.Alice.Store {
         TimeFrameTresholdTimeSpan2 = spans.Length > 1 ? TimeSpan.Parse(spans[1]) : TimeSpan.Zero;
       }
     }
-    #region CorridorLengthRatio
-    private double _CorridorLengthRatio;
-    [Category(categoryActive)]
-    [DisplayName("Corridor Length Ratio")]
-    [Description("CanTrade = CorridorLength > RatesArrayLength * X")]
-    public double CorridorLengthRatio {
-      get { return _CorridorLengthRatio; }
-      set {
-        if (_CorridorLengthRatio != value) {
-          _CorridorLengthRatio = value;
-          OnPropertyChanged("CorridorLengthRatio");
-        }
-      }
-    }
-    #endregion
     #region Rsd
     private double _Rsd;
     [Category(categoryXXX)]

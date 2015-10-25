@@ -3461,7 +3461,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._CorridorLengthRatio"/></summary>
         public const string _CorridorLengthRatio = "_CorridorLengthRatio";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorLengthRatio"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorAngleRatio"/></summary>
         public const string CorridorLengthRatio = "CorridorLengthRatio";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._Rsd"/></summary>
@@ -7344,7 +7344,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IpPort"/></summary>
         public static PropertyPath IpPortPath { get { return new PropertyPath("IpPort"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorLengthRatio"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorAngleRatio"/></summary>
         public static PropertyPath CorridorLengthRatioPath { get { return new PropertyPath("CorridorLengthRatio"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RsdTreshold"/></summary>

@@ -119,13 +119,6 @@ namespace HedgeHog.Alice.Store {
         ;
     }
     #region Angles
-    [TradeCondition(TradeConditionAttribute.Types.And)]
-    public TradeConditionDelegate GreenAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines1Trends, TrendAngleGreen); } }
-    [TradeCondition(TradeConditionAttribute.Types.And)]
-    public TradeConditionDelegate RedAngOk { get { return () => TradeDirectionByAngleCondition(TrendLinesTrends, TrendAngleRed); } }
-    [TradeCondition(TradeConditionAttribute.Types.And)]
-    public TradeConditionDelegate BlueAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines2Trends, TrendAngleBlue); } }
-
     TradeDirections TradeDirectionByAngleCondition(Rate.TrendLevels tls, double tradingAngleRange) {
       return IsTresholdAbsOk(tls.Angle, tradingAngleRange)
         ? tradingAngleRange > 0
@@ -135,13 +128,16 @@ namespace HedgeHog.Alice.Store {
         : TradeDirections.Both
         : TradeDirections.None;
     }
-    public TradeConditionDelegate Ang_G_R_BOk {
-      get { return () => GreenAngOk() | RedAngOk() | BlueAngOk(); }
-    }
-    public TradeConditionDelegate CorrAngOk {
+    [TradeCondition(TradeConditionAttribute.Types.And)]
+    public TradeConditionDelegate GreenAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines1Trends, TrendAngleGreen); } }
+    [TradeCondition(TradeConditionAttribute.Types.And)]
+    public TradeConditionDelegate RedAngOk { get { return () => TradeDirectionByAngleCondition(TrendLinesTrends, TrendAngleRed); } }
+    [TradeCondition(TradeConditionAttribute.Types.And)]
+    public TradeConditionDelegate BlueAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines2Trends, TrendAngleBlue); } }
+
+    public TradeConditionDelegate AngRBRatioOk {
       get {
-        return () => TrendLinesTrendsAll.All(tlt => !tlt.IsEmpty) &&
-          IsTresholdAbsOk(TrendLinesTrendsAll.Average(tlt => tlt.Angle.Abs()), this.TradingAngleRange)
+        return () => IsTresholdAbsOk(TrendLines2Trends.Angle.Percentage(TrendLinesTrends.Angle),TrendAnglesPerc)
           ? TradeDirections.Both
           : TradeDirections.None;
       }

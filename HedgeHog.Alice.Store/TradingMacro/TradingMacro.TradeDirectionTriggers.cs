@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Reactive.Concurrency;
 using System.Reactive.Threading;
+using System.Text.RegularExpressions;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -88,7 +89,8 @@ namespace HedgeHog.Alice.Store {
       // TODO: change Trades.IsEmpty() to LastrTrade.Date is a minute (or so) ago
       if(Trades.IsEmpty()) {
         TradeCorridorByTradeLevel(TrendLines2Trends);
-        TradeConditionsEval().Where(b => b.HasAny() && CanTriggerTradeDirection())
+        TradeConditionsEval()
+          .Where(b => CanTriggerTradeDirection())
           .ForEach(tc => TradeCorridorTurnOnIfManual(tc));
       }
     }
@@ -132,12 +134,15 @@ namespace HedgeHog.Alice.Store {
     }
     static object _rateLocker = new object();
     public void TradeCorridorByTradeLevel(Rate.TrendLevels tls) {
+      var angle = tls.Angle;
+      var angles = TradingMacroOther().Select(tm => tm.TrendLines1Trends.Angle);
+      //var hasOutside = TradeConditionsInfo((a,b,c)=> Regex.IsMatch(c,"ouside.+");
+      Func<bool> anglesOk = () => new[] { angle }.Concat(angles).Select(a => a.Sign()).Distinct().Count() == 1;
       if(CanTriggerTradeDirection()) {
         var bsl = new[] { BuyLevel, SellLevel };
         var buy = GetTradeLevel(true, double.NaN);
         var sell = GetTradeLevel(false, double.NaN);
         var zip = bsl.Zip(new[] { buy, sell }, (sr, bs) => new { sr, bs });
-        var angle = tls.Angle;
         if(bsl.Any(sr => !sr.InManual))
           bsl.ForEach(sr => {
             sr.InManual = true;
@@ -164,8 +169,11 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public void TradeCorridorTurnOnIfManual(TradeDirections tds) {
-      if(CanTriggerTradeDirection() && !TradeConditionsHaveTurnOff()) {
-        var bsl = new[] { BuyLevel, SellLevel };
+      var bsl = new[] { BuyLevel, SellLevel };
+      if(tds.HasNone()) {
+        if(!IsTurnOnOnly)
+          bsl.ForEach(sr => sr.CanTrade = false);
+      } else if(CanTriggerTradeDirection() && !TradeConditionsHaveTurnOff()) {
         var cps = new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
         var canTradeAny = bsl.Any(sr => sr.CanTrade);
         Func<bool> isIn = () => cps.All(cp => cp.Between(bsl[1].Rate, bsl[0].Rate));
@@ -180,6 +188,12 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    bool AreTrendLevelsInSync<T>(Func<TradingMacro, Rate.TrendLevels> tls, Func<Rate.TrendLevels, T> eval) {
+      return TradingMacrosByPair()
+        .Select(tm => eval(tls(tm)))
+        .Distinct()
+        .Count() == 1;
+    }
     private bool CanTriggerTradeDirection() {
       var canTriggerTradeDirection = TrendLines2Trends.Count > BarsCount;
       if(!canTriggerTradeDirection)

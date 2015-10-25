@@ -1793,7 +1793,7 @@ namespace HedgeHog.Alice.Store {
     public TradeStatistics SetTradeStatistics(Trade trade) {
       if(!TradeStatisticsDictionary.ContainsKey(trade.Id))
         TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics() {
-          CorridorStDev = TrendLines1Trends.Angle.Abs(),
+          CorridorStDev = TrendLines2Trends.Angle.Abs(),
           CorridorStDevCma = RatesTimeSpan().FirstOrDefault().TotalMinutes
         });
       var ts = TradeStatisticsDictionary[trade.Id];

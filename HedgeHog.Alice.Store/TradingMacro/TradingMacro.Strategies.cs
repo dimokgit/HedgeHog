@@ -47,7 +47,6 @@ namespace HedgeHog.Alice.Store {
     bool _trimAtZero;
     bool _trimToLotSize;
 
-    int CorridorDistanceByLengthRatio { get { return (RatesArray.Count * CorridorLengthRatio).ToInt(); } }
     #region CorridorDistance
     public int CorridorDistance {
       get {
