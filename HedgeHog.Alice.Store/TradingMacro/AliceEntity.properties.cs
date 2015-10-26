@@ -1017,16 +1017,28 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    double _trendAngleBlue;
+
+    public double TrendAngleBlue0 { get; set; }
+    public double TrendAngleBlue1 { get; set; }
+    string _trendAngleBlue = "0";
     [WwwSetting(Group = wwwSettingsCorridorAngles)]
     [Category(categoryActive)]
-    public double TrendAngleBlue {
+    [Description("Range or single value: 15-30 or 60 or -60")]
+    public string TrendAngleBlue {
       get { return _trendAngleBlue; }
       set {
         if(_trendAngleBlue == value)
           return;
+
         _trendAngleBlue = value;
         OnPropertyChanged(() => TrendAngleBlue);
+
+        var spans = value.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+        if(spans.IsEmpty())
+          spans = new[] { "0" };
+        TrendAngleBlue0 = double.Parse(spans[0]);
+        TrendAngleBlue1 = spans.Length > 1 ? double.Parse(spans[1]) : double.NaN;
+
       }
     }
 

@@ -122,12 +122,15 @@ namespace HedgeHog.Alice.Store {
         ;
     }
     #region Angles
+    TradeDirections TradeDirectionByAngleSign(double angle) {
+      return angle > 0
+        ? TradeDirections.Down
+        : TradeDirections.Up;
+    }
     TradeDirections TradeDirectionByAngleCondition(Rate.TrendLevels tls, double tradingAngleRange) {
       return IsTresholdAbsOk(tls.Angle, tradingAngleRange)
         ? tradingAngleRange > 0
-        ? tls.Angle > 0
-        ? TradeDirections.Down
-        : TradeDirections.Up
+        ? TradeDirectionByAngleSign(tls.Angle)
         : TradeDirections.Both
         : TradeDirections.None;
     }
@@ -135,8 +138,16 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate GreenAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines1Trends, TrendAngleGreen); } }
     [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate RedAngOk { get { return () => TradeDirectionByAngleCondition(TrendLinesTrends, TrendAngleRed); } }
-    [TradeCondition(TradeConditionAttribute.Types.And)]
-    public TradeConditionDelegate BlueAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines2Trends, TrendAngleBlue); } }
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate BlueAngOk {
+      get {
+        return () => TrendAngleBlue1.IsNaN()
+        ? TradeDirectionByAngleCondition(TrendLines2Trends, TrendAngleBlue0)
+        : TrendLines2Trends.Angle.Between(TrendAngleBlue0, TrendAngleBlue1)
+        ? TradeDirectionByAngleSign(TrendLines2Trends.Angle)
+        : TradeDirections.None;
+      }
+    }
 
     public TradeConditionDelegate GRBRatioOk {
       get {
@@ -199,15 +210,6 @@ namespace HedgeHog.Alice.Store {
 
     TradeDirections TradeDirectionBoth(bool ok) { return ok ? TradeDirections.Both : TradeDirections.None; }
     TradeConditionDelegate TradeDirectionEither(Func<bool> ok) { return () => ok() ? TradeDirections.Up : TradeDirections.Down; }
-    TradeDirections TradeDirectionBySlope(WaveRange wr, bool range = true) {
-      return wr.Slope > 0
-        ? range
-        ? TradeDirections.Down
-        : TradeDirections.Up
-        : range
-        ? TradeDirections.Up
-        : TradeDirections.Down;
-    }
     public Func<bool> TpsOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TpsMin); } }
     public Func<bool> WaveSteepOk { get { return () => WaveRanges[0].Slope.Abs() > WaveRanges[1].Slope.Abs(); } }
     public Func<bool> WaveEasyOk { get { return () => WaveRanges[0].Slope.Abs() < WaveRanges[1].Slope.Abs(); } }

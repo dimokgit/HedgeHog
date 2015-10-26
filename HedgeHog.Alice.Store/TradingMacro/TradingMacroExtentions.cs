@@ -377,6 +377,7 @@ namespace HedgeHog.Alice.Store {
     void SuppRes_AssociationChanged(object sender, CollectionChangeEventArgs e) {
       switch(e.Action) {
         case CollectionChangeAction.Add:
+          ((Store.SuppRes)e.Element).CanTradeChanged += SuppRes_CanTradeChanged;
           ((Store.SuppRes)e.Element).RateChanged += SuppRes_RateChanged;
           ((Store.SuppRes)e.Element).Scan += SuppRes_Scan;
           ((Store.SuppRes)e.Element).IsActiveChanged += SuppRes_IsActiveChanged;
@@ -385,6 +386,7 @@ namespace HedgeHog.Alice.Store {
         case CollectionChangeAction.Refresh:
           ((EntityCollection<SuppRes>)sender).ToList()
             .ForEach(sr => {
+              sr.CanTradeChanged += SuppRes_CanTradeChanged;
               sr.RateChanged += SuppRes_RateChanged;
               sr.Scan += SuppRes_Scan;
               sr.SetLevelBy += SuppRes_SetLevelBy;
@@ -393,6 +395,7 @@ namespace HedgeHog.Alice.Store {
             });
           break;
         case CollectionChangeAction.Remove:
+          ((Store.SuppRes)e.Element).CanTradeChanged -= SuppRes_CanTradeChanged;
           ((Store.SuppRes)e.Element).RateChanged -= SuppRes_RateChanged;
           ((Store.SuppRes)e.Element).Scan -= SuppRes_Scan;
           ((Store.SuppRes)e.Element).SetLevelBy -= SuppRes_SetLevelBy;
@@ -462,6 +465,8 @@ namespace HedgeHog.Alice.Store {
     void SuppRes_RateChanged(object sender, EventArgs e) {
       if(!IsInVitualTrading)
         RaiseShowChart();
+    }
+    void SuppRes_CanTradeChanged(object sender, EventArgs e) {
     }
     #endregion
 
