@@ -90,9 +90,9 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     void ScanRatesLengthByDistanceMin() {
-      BarsCountCalc = GetRatesLengthByDistanceMin();
+      BarsCountCalc = GetRatesLengthByDistanceMin().DefaultIfEmpty(BarsCountCalc).Single();
     }
-    int GetRatesLengthByDistanceMin() {
+    IEnumerable<int> GetRatesLengthByDistanceMin() {
       return UseRatesInternal(rs => rs.ToList())
         .Select(rs => {
           rs.Reverse();
@@ -110,8 +110,7 @@ namespace HedgeHog.Alice.Store {
             Log = new Exception(new { BarsCountMax, PairIndex, Action = "Stretched" } + "");
           }
           return count;
-        })
-        .Single();
+        });
     }
 
     private IEnumerable<double> DistanceByMACD(IList<Rate> rs) {

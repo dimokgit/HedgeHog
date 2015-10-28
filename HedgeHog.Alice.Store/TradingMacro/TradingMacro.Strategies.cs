@@ -404,6 +404,10 @@ namespace HedgeHog.Alice.Store {
       return CalcTrendLines(range);
     }
     public IList<Rate> CalcTrendLines(List<Rate> corridorValues) {
+      if(corridorValues.Count == 0) {
+        Log = new Exception("corridorValues[0] == null");
+        corridorValues = new List<Rate>();
+      }
       if(corridorValues.Count == 0)
         return new[] { Rate.TrendLevels.EmptyRate, Rate.TrendLevels.EmptyRate };
 

@@ -2223,6 +2223,10 @@ namespace HedgeHog.Alice.Store {
             OnGeneralPurpose(() => {
               UseRates(rates => rates.ToList())
               .ForEach(rates => {
+                if(rates.Count < BarsCount) {
+                  Log = new Exception(new { BarsCount, Error = "Too low" } + "");
+                  return;
+                }
                 if(VoltageFunction_ == Alice.VoltageFunction.DistanceMacd) {
                   SetVoltageByDistanceMACD(rates);
                 }
@@ -3633,6 +3637,9 @@ namespace HedgeHog.Alice.Store {
       try {
           sw.Start();
           return new[] { func(RatesArray) };
+        } catch(Exception exc) {
+          Log = exc;
+          return new T[0];
         } finally {
           sw.Stop();
           if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
@@ -3643,14 +3650,17 @@ namespace HedgeHog.Alice.Store {
     }
     object _innerRateLocker = new object();
     string _UseRatesInternalSource = string.Empty;
-    public IEnumerable<T> UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
+    public T[] UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
       if(!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds)) {
         var message = new { Pair, PairIndex, Method = "UseRatesInternal", Caller, timeoutInMilliseconds } + "";
         Log = new TimeoutException(message);
-        yield break;
+        return new T[0];
       }
       try {
-        yield return func(_Rates);
+        return new[] { func(_Rates) };
+      } catch(Exception exc) {
+        Log = exc;
+        return new T[0];
       } finally {
         Monitor.Exit(_innerRateLocker);
       }

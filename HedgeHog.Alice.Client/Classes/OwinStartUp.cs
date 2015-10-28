@@ -543,7 +543,7 @@ namespace HedgeHog.Alice.Client {
         return GetTradingMacro(pair, chartNum).Where(predicate).Take(1);
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        throw;
+        return new TradingMacro[0];
       }
     }
     T UseTradingMacro<T>(string pair, Func<TradingMacro, T> func, bool testTraderAccess) {
@@ -559,7 +559,6 @@ namespace HedgeHog.Alice.Client {
         GetTradingMacro(pair, chartNum).ForEach(action);
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        throw;
       }
     }
     T UseTradingMacro<T>(string pair, int chartNum, Func<TradingMacro, T> func, bool testTraderAccess) {
@@ -569,7 +568,7 @@ namespace HedgeHog.Alice.Client {
         return GetTradingMacro(pair, chartNum).Select(func).DefaultIfEmpty(default(T)).First();
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        throw;
+        return default(T);
       }
     }
     T[] UseTradingMacro2<T>(string pair, int chartNum, Func<TradingMacro, bool> where, Func<TradingMacro, T> func, bool testTraderAccess) {
@@ -579,7 +578,7 @@ namespace HedgeHog.Alice.Client {
         return GetTradingMacro(pair, chartNum).Where(where).Select(func).ToArray();
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        throw;
+        return new T[0];
       }
     }
     void UseTradingMacro2(string pair, int chartNum, Action<TradingMacro> func, bool testTraderAccess) {
@@ -589,7 +588,6 @@ namespace HedgeHog.Alice.Client {
         GetTradingMacro(pair, chartNum).ForEach(func);
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        throw;
       }
     }
 
