@@ -2232,6 +2232,8 @@ namespace HedgeHog.Alice.Store {
                 }
                 SpreadForCorridor = rates.Spread();
                 SetCma(rates);
+                if(BarPeriod > BarsPeriodType.t1)
+                  ScanForWaveRanges(rates);
                 var leg = rates.Count.Div(10).ToInt();
                 PriceSpreadAverage = rates
                 .Buffer(leg)
@@ -3764,7 +3766,7 @@ namespace HedgeHog.Alice.Store {
                 Store.PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper, BarPeriodInt, Pair, DateTime.MinValue, obj => { if(DoLogSaveRates) Log = new Exception(obj + ""); });
               } catch(Exception exc) { Log = exc; }
             };
-            Scheduler.Default.Schedule(a);
+            //Scheduler.Default.Schedule(a);
             //{
             //  RatesArraySafe.SavePairCsv(Pair);
             //}

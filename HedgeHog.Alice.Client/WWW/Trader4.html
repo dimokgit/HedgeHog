@@ -203,6 +203,9 @@
     #waveRangesDialog td {
       text-align: right;
     }
+    .isLong{
+      background-color:lightgray;
+    }
   </style>
   <script>
     $(function () {
@@ -220,7 +223,7 @@
 <body>
   <!--#region Nav bar-->
   <div class="navbar navbar-default" role="navigation">
-    <div class="container" style="padding-left:2.5em">
+    <div class="container" style="padding-left:0;padding-right:0">
       <!--#region Header-->
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -291,7 +294,7 @@
               <span class="glyphicon glyphicon-stats"></span>
             </button>
           </li>
-          <li style="display:none">
+          <li>
             <button data-bind="click:startWaveRanges.bind($data,1)"
                     data-toggle1="modal"
                     data-target1="#waveRangesDialog">
@@ -513,7 +516,7 @@
   </div>
   <!--#endregion-->
   <!--#region Info Bar-->
-  <div style="background-color: whitesmoke;border-bottom:1px solid silver;width:100%">
+  <div style="background-color: whitesmoke;border-bottom:1px solid silver;width:100%;margin-left:1em">
     <span id="profit" data-bind="text:profit,css:{profit:profit()>0,loss:profit()<0}"></span>
     <span id="openTradeGross" data-bind="text:openTradeGross,css:{profit:openTradeGross()>0,loss:openTradeGross()<0},visible:openTradeGross()!=0"></span>
     <span id="discussion"></span>
@@ -531,7 +534,7 @@
     <span data-bind="text:Math.round(ucCmas[0]()*100,2)/100"></span>/
     <span data-bind="text:Math.round(ucCmas[1]()*100,2)/100,visible:ucCmas[1]()"></span>
     <!-- /ko -->
-    <div style="width:4em;height:1.5em;position:absolute;left:0;top:0">
+    <div style="width:4em;height:1.5em;position:absolute;left:0;top:0;display:none">
       <input data-bind="value:rsdMin" style="width:1.5em;" />
       <input data-bind="value:rsdMin2" style="width:1.5em;" />
     </div>
@@ -604,9 +607,9 @@
           <th>Ang</th>
           <th>SD</th>
           <th>H</th>
-          <th>WH</th>
           <th>DR</th>
           <th>Ds</th>
+          <th>Dc</th>
         </tr>
         <tr style="background-color:gold" data-bind="visible:sumStartIndex()">
           <th></th>
@@ -614,33 +617,33 @@
           <th></th>
           <th></th>
           <td><span data-bind="text:heightSum"></span></td>
-          <td><span data-bind="text:wbhSum"></span></td>
           <td><span data-bind="text:dbrSum"></span></td>
           <td><span data-bind="text:distanceSum"></span></td>
+          <td><span data-bind="text:distanceCmaSum"></span></td>
         </tr>
       </thead>
       <tbody data-bind="foreach:waveRanges">
         <tr data-bind="css:{selected:$parent.sumStartIndexById() == $index(),istail:IsTail}">
           <td><span data-bind="text:$index()+1"></span></td>
-          <td><span data-bind="text:d3.format('.1f')(UID.v),style:{fontWeight:UID.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.2f')(UID.v),style:{fontWeight:UID.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.1f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Height.v),style:{fontWeight:Height.mx?'bold':''}" class="selected"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(WorkByHeight.v),style:{fontWeight:WorkByHeight.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v),style:{fontWeight:DistanceByRegression.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v),style:{fontWeight:Distance.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(DistanceCma.v),style:{fontWeight:DistanceCma.mx?'bold':'',css:{isLong:isLong}}"></span></td>
         </tr>
       </tbody>
       <tfoot data-bind="foreach:waveRangesStats" style="background-color:gold">
         <tr>
           <td></td>
-          <td><span data-bind="text:d3.format('.1f')(UID.v)"></span></td>
+          <td><span data-bind="text:d3.format('.2f')(UID.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>
           <td><span data-bind="text:d3.format('.'+($index()===0?'1':'0')+'f')(StDev.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Height.v)" class="selected"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(WorkByHeight.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v)"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(DistanceCma.v)"></span></td>
         </tr>
       </tfoot>
     </table>

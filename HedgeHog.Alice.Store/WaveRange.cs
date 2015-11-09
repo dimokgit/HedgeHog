@@ -20,6 +20,7 @@ namespace HedgeHog.Alice.Store {
       set { _height = value; }
     }
     public double Distance { get; set; }
+    public double DistanceCma { get; set; }
     public double Slope { get; private set; }
     public double TotalSeconds { get; private set; }
     double _workByTime = double.NaN;
@@ -86,13 +87,16 @@ namespace HedgeHog.Alice.Store {
       this.PointSize = pointSize;
       this.Range = range;
       Count = range.Count;
+      if(Count == 0)
+        return;
       StartDate = range[0].StartDate;
       EndDate = range.Last().StartDate;
       if (EndDate < StartDate)
         throw new InvalidOperationException("StartDate;{0} must be less then EndDate:{1}".Formater(StartDate, EndDate));
       Max = range.Max(r => r.PriceAvg);
       Min = range.Min(r => r.PriceAvg);
-      Distance = range.Select(r => r.PriceCMALast).Distances().Last() / pointSize;
+      Distance = range.Select(r => r.PriceAvg).Distances().Last() / pointSize;
+      DistanceCma = range.Select(r => r.PriceCMALast).Distances().Last() / pointSize;
       TotalSeconds = EndDate.Subtract(StartDate).TotalSeconds;
       CalcTrendLine(range, pointSize, period);
       this.UID = Math.Sqrt(Distance / Height);

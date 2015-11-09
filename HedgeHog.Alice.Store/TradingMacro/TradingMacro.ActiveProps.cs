@@ -148,21 +148,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    #region TpsMin
-    private double _TpsMin;
-    [Category(categoryActive)]
-    [DisplayName("TicksPerSec Min")]
-    public double TpsMin {
-      get { return _TpsMin; }
-      set {
-        if (_TpsMin != value) {
-          _TpsMin = value;
-          OnPropertyChanged("TpsMin");
-        }
-      }
-    }
-
-    #endregion
     TradeDirections _TradeDirection = TradeDirections.Both;
     [WwwSetting(Group = wwwSettingsTrading)]
     [Category(categoryActive)]

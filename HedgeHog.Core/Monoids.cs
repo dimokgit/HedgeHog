@@ -19,14 +19,8 @@ namespace HedgeHog {
       return new Lazy<T>(projector);
     }
     #region ToFunc
-    public static Func<T> ToFunc<T>(this T value, Func<T> action) {
-      return action;
-    }
     public static Func<T> ToFunc<T>(this T value) {
       return () => value;
-    }
-    public static Func<U1, U2, T> ToFunc<T, U1, U2>(this T value, U1 input, U2 input2) {
-      return (u1, u2) => value;
     }
     public static Func<U1, T> ToFunc<T, U1>(this T value, U1 input, Func<U1, T> projector) {
       return projector;

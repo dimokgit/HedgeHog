@@ -452,9 +452,10 @@ namespace HedgeHog.Alice.Client {
           Height = value(x.wr.Height.Round(0), x.wr.Index(x.rs, wr => wr.Height) == 0),//.ToString("###0.0"),
           StDev = value(x.wr.StDev.Round(1), x.wr.Index(x.rs, wr => wr.StDev) == 0),//.ToString("#0.00"),
           Distance = value(x.wr.Distance.Round(0), x.wr.Index(x.rs, wr => wr.Distance) == 0),
+          DistanceCma = value(x.wr.DistanceCma.Round(0), x.wr.Index(x.rs, wr => wr.DistanceCma) == 0),
           DistanceByRegression = value(x.wr.DistanceByRegression.Round(0), x.wr.Index(x.rs, wr => wr.DistanceByRegression) == 0),
           WorkByHeight = value(x.wr.WorkByHeight.Round(0), x.wr.Index(x.rs, wr => wr.WorkByHeight) == 0),
-          UID = value(x.wr.UID.Round(1), x.wr.Index(x.rs, wr => -wr.UID) == 0),
+          UID = value(x.wr.UID, x.wr.Index(x.rs, wr => wr.UID) == 0),
           x.wr.IsTail,
           IsStats = false
         })
@@ -468,9 +469,10 @@ namespace HedgeHog.Alice.Client {
           Height = value(wr.Height.Round(0), false),
           StDev = value(wr.StDev.Round(1), false),
           Distance = value(wr.Distance.Round(0), false),
+          DistanceCma = value(wr.DistanceCma.Round(0), false),
           DistanceByRegression = value(wr.DistanceByRegression.Round(0), false),
           WorkByHeight = value(wr.WorkByHeight.Round(0), false),
-          UID = value(wr.UID.Round(1), false),
+          UID = value(wr.UID, false),
           IsTail = false,
           IsStats = true
         });

@@ -97,6 +97,10 @@ namespace HedgeHog {
       if (v) yield return v;
       yield break;
     }
+    public static IEnumerable<U> YieldIf<T,U>(this T v, Func<T,bool> condition,Func<T,U> map) {
+      if(condition(v))
+        yield return map(v);
+    }
     public static IEnumerable<T> YieldIf<T>(this T v, bool condition) {
       if (condition)
         yield return v;

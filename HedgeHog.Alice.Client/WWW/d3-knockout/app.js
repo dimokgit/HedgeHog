@@ -627,7 +627,7 @@
       });
       lineChartData2.push.apply(lineChartData2, rates);
       lineChartData2.unshift.apply(lineChartData2, rates2);
-      var ratesAll = continuoseDates("minute",lineChartData2(), [response.trendLines.dates, response.trendLines1.dates, response.trendLines2.dates]);
+      var ratesAll = continuoseDates("minute", lineChartData2(), [].concat(response.waveLines.map(function (v) { return v.dates; })));
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;
@@ -670,7 +670,7 @@
     this.ratesLengthFuncs = ko.observableArray();
     // #endregion
     //#region WaveRanges
-    var currentWareRangesChartNum = 0;
+    var currentWareRangesChartNum = 1;
     function getWaveRanges() {
       var args = [pair,currentWareRangesChartNum];
       args.noNote = true;
@@ -696,16 +696,23 @@
       waveRangesDialog = table[0];
       table.on("click", "tbody tr", function (a, b) {
         var koData = ko.dataFor(this);
-        var uid = waveRangeValue("Angle", koData);
+        var uid = waveRangeValue(waveRangesUidProp, koData);
         sumStartIndex(uid == sumStartIndex() ? 0 : uid);
       });
     };
     var waveRanges = ko.observableArray();
-
     this.waveRanges = ko.pureComputed(function () {
-      return waveRanges().filter(function (wr) {
+      var avg = waveRanges().find(function (wr) {
+        return !!wr.IsStats;
+      });
+      var wrs = waveRanges().filter(function (wr) {
         return !wr.IsStats;
       });
+      var prop = "DistanceCma";
+      wrs.forEach(function (wr) {
+        wr.isLong = wr[prop] > avg[prop];
+      });
+      return wrs;
     });
     this.waveRangesStats = ko.pureComputed(function () {
       return waveRanges().filter(function (wr) {
@@ -717,6 +724,7 @@
     this.heightSum = ko.pureComputed(sumByIndex.bind(null, "Height"));
     this.wbhSum = ko.pureComputed(sumByIndex.bind(null, "WorkByHeight"));
     this.distanceSum = ko.pureComputed(sumByIndex.bind(null, "Distance"));
+    this.distanceCmaSum = ko.pureComputed(sumByIndex.bind(null, "DistanceCma"));
     this.sumStartIndexById = ko.pureComputed(sumStartIndexById);
     function fuzzyFind(array, prop, value) {
       if (!array || !array.length) return null;
@@ -726,9 +734,10 @@
       var r = _.chain(diffs).sortBy('d').first().value();
       return r.v;
     }
+    var waveRangesUidProp = "UID";
     function sumStartIndexById() {
       var uid = sumStartIndex();
-      var wr = fuzzyFind(waveRanges(), waveRangeValue.bind(null, "Angle"), uid);
+      var wr = fuzzyFind(waveRanges(), waveRangeValue.bind(null, waveRangesUidProp), uid);
       return waveRanges().indexOf(wr);
     }
     function sumByIndex (prop) {
@@ -820,12 +829,12 @@
     function continuoseDates(interval, data, dates) {// jshint ignore:line
       var ds = dates.map(function (ds) { return { dates2: [], dates: ds.reverse() }; });
       data.reverse().reduce(function (prevValue, current) {
-        var cd = current.d;
+        var cdo = current.do;
         current.d = prevValue = (prevValue ? dateAdd(prevValue, interval, -1) : current.d);
         ds.forEach(function (d0) {
           if (d0.dates.length > 0)
             d0.dates.forEach(function (d) {
-              if (d.valueOf() >= cd.valueOf()) {
+              if (d.valueOf() >= cdo.valueOf()) {
                 removeItem(d0.dates, d);
                 d0.dates2.push(prevValue);
               }
@@ -879,6 +888,9 @@
     // #region Create functions that the hub can call to broadcast messages.
     function addMessage(response) {
       if (isDocHidden()) return;
+
+      delete response.tps;
+      delete response.wp;
 
       dataViewModel.rsdMin(response.rsdMin);
       delete response.rsdMin;

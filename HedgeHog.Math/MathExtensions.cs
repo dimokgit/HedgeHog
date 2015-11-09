@@ -676,6 +676,11 @@ namespace HedgeHog {
       var std = dbls.StandardDeviation();
       return std + avg;
     }
+    public static double AverageByAverageUp(this IList<double> dbls) {
+      var avg0 = dbls.Average();
+      var avg1 = dbls.Where(d => d <= avg0).Average();
+      return dbls.Where(d => d >= avg1).Average();
+    }
     public static T[] CopyToArray<T>(this IList<T> values, int count) {
       return values.SafeArray().CopyToArray(count);
     }
@@ -917,11 +922,21 @@ namespace HedgeHog {
     }
 
     public static IEnumerable<double> AverageByStDev(this IList<double> values) {
-      if (values.Count < 2) return values.DefaultIfEmpty(double.NaN);
+      if(values.Count < 2)
+        return values.DefaultIfEmpty(double.NaN);
       var avg = values.Average();
       var stDev = values.StDev();
       var r1 = avg - stDev;
       var r2 = avg + stDev;
+      return values.Where(v => v.Between(r1, r2));
+    }
+    public static IEnumerable<double> AverageByStDevHigh(this IList<double> values) {
+      if(values.Count < 2)
+        return values.DefaultIfEmpty(double.NaN);
+      var avg = values.Average();
+      var stDev = values.StDev();
+      var r1 = avg + stDev;
+      var r2 = avg + stDev * 2;
       return values.Where(v => v.Between(r1, r2));
     }
 

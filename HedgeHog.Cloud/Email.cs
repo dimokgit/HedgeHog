@@ -17,20 +17,23 @@ namespace HedgeHog.Cloud {
         , attachments.Select(att => Tuple.Create(Encoding.UTF8.GetBytes(att.Item1), att.Item2)).ToArray());
     }
     public static void Send(string from, string to, string password, string subject, string body, params Tuple<byte[], string>[] attachments) {
-      if (string.IsNullOrWhiteSpace(from)) throw new Exception("From email is empty");
-      if (string.IsNullOrWhiteSpace(to)) throw new Exception("To email is empty");
-      if (string.IsNullOrWhiteSpace(password)) throw new Exception("From email password is empty");
+      if(string.IsNullOrWhiteSpace(from))
+        throw new Exception("From email is empty");
+      if(string.IsNullOrWhiteSpace(to))
+        throw new Exception("To email is empty");
+      if(string.IsNullOrWhiteSpace(password))
+        throw new Exception("From email password is empty");
       var fromAddress = new MailAddress(from, from);
       var toAddress = new MailAddress(to, to);
       var smtp = new SmtpClient {
         Host = "smtp.gmail.com",
         Port = 587,
+        Timeout = 30 * 1000,
         EnableSsl = true,
         DeliveryMethod = SmtpDeliveryMethod.Network,
-        Credentials = new NetworkCredential(fromAddress.Address, password),
-        Timeout = 20000,
+        Credentials = new NetworkCredential(fromAddress.Address, password)
       };
-      using (var message = new MailMessage(fromAddress, toAddress) {
+      using(var message = new MailMessage(fromAddress, toAddress) {
         Subject = subject.Replace(Environment.NewLine, " "),
         Body = body,
       }) {
@@ -44,7 +47,7 @@ namespace HedgeHog.Cloud {
       public string Subject { get; set; }
       public string From { get; set; }
       public override string ToString() {
-        return string.Join(" ", new string[] { 
+        return string.Join(" ", new string[] {
           Since > DateTimeOffset.MinValue ? "SINCE "+Since.ToString("d-MMM-yyyy") : "",
           !string.IsNullOrWhiteSpace(Subject)?"SUBJECT \""+Subject+"\"":"",
           !string.IsNullOrWhiteSpace(From)?"FROM \""+From+"\"":""
@@ -56,13 +59,13 @@ namespace HedgeHog.Cloud {
     }
     public static IList<ImapX.Message> Read(string userName, string password, string folder, string search) {
       var server = "imap.gmail.com";
-      using (var client = new IX.ImapClient(server, true, false)) {
-        if (client.Connect()) {
-          if (client.Login(userName, password)) {
+      using(var client = new IX.ImapClient(server, true, false)) {
+        if(client.Connect()) {
+          if(client.Login(userName, password)) {
             //var messages = client.Folders.Inbox.Search("UID SEARCH FROM \"13057880763@mymetropcs.com\"");
             try {
               return client.Folders.Inbox.Search(search);
-            } catch (Exception exc) {
+            } catch(Exception exc) {
               throw new ApplicationException(new { userName, folder, server, search } + "", exc);
             }
           } else {

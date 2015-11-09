@@ -359,7 +359,7 @@ namespace HedgeHog.Alice.Client {
           return TradingAccountsList.SourceCollection.OfType<TradingAccount>().Where(FilterTradingAccounts);
         } catch (Exception exc) {
           Log = exc;
-          return null;
+          throw;
         }
       }
     }

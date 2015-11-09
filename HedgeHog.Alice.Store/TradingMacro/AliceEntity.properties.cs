@@ -846,13 +846,17 @@ namespace HedgeHog.Alice.Store {
     public const string categoryTest = "Test";
     public const string categoryTestControl = "Test Control";
     public const string categorySession = "Session";
+
     public const string wwwSettingsLiveOrders = "3. Live Orders";
     public const string wwwSettingsCorridorAngles = "2.0 Corridor Angles";
+
     public const string wwwSettingsCorridorCMA = "2.1 Corridor CMA";
     public const string wwwSettingsCorridorOther = "2.2 Corridor";
+
     public const string wwwSettingsTrading = "1.0 Trading";
     public const string wwwSettingsTradingCorridor = "1.1 Trading Corridor";
     public const string wwwSettingsTradingOther = "1.2 Trading Other";
+    public const string wwwSettingsTradingConditions = "1.3 Trading Conditions";
     public const string wwwInfoAngles = "Angles";
 
     #region CloseAfterTradingHours
@@ -1030,10 +1034,12 @@ namespace HedgeHog.Alice.Store {
         if(_trendAngleBlue == value)
           return;
 
-        _trendAngleBlue = value;
+        _trendAngleBlue = value.Trim();
         OnPropertyChanged(() => TrendAngleBlue);
 
-        var spans = value.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+        var spans = _trendAngleBlue.StartsWith("-") 
+          ? new[] { _trendAngleBlue } 
+          : value.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
         if(spans.IsEmpty())
           spans = new[] { "0" };
         TrendAngleBlue0 = double.Parse(spans[0]);

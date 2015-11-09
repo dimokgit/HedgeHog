@@ -143,15 +143,18 @@ namespace HedgeHog.Alice.Store {
         var buy = GetTradeLevel(true, double.NaN);
         var sell = GetTradeLevel(false, double.NaN);
         var zip = bsl.Zip(new[] { buy, sell }, (sr, bs) => new { sr, bs });
-        if(bsl.Any(sr => !sr.InManual))
-          bsl.ForEach(sr => {
-            sr.InManual = true;
-            sr.ResetPricePosition();
+        zip.Where(x => !x.sr.InManual)
+          .ForEach(x => {
+            x.sr.InManual = true;
+            x.sr.ResetPricePosition();
+            x.sr.Rate = x.bs;
           });
         lock (_rateLocker) {
           var canTrade = true;
+          var hasTipOk = TradeConditionsHave(TipOk);
+          Func<double> getRate = () => hasTipOk ? angle > 0 ? RatesMax : RatesMin : double.NaN;
           zip.ForEach(x => {
-            var rate = angle > 0 ? x.bs.Max(x.sr.Rate) : x.bs.Min(x.sr.Rate);
+            var rate = angle > 0 ? x.bs.Max(x.sr.Rate).Min(getRate()) : x.bs.Min(x.sr.Rate).Max(getRate());
             var rateJump = InPips(rate.Abs(x.sr.Rate));
             var reset = rateJump > 1;
             if(reset)

@@ -1045,10 +1045,10 @@ namespace HedgeHog.Alice.Client {
       var tpsAvg = tmTrader.DistanceByMASD;
 
 
-      var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd && !tm.GetVoltage(r).IsNaNOrZero()).ToList()).FirstOrDefault();
+      var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd/* && !tm.GetVoltage(r).IsNaNOrZero()*/).ToList()).FirstOrDefault();
       if(ratesForChart == null)
         return new { };
-      var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart && !tm.GetVoltage(r).IsNaNOrZero()).ToList()).FirstOrDefault();
+      var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart/* && !tm.GetVoltage(r).IsNaNOrZero()*/).ToList()).FirstOrDefault();
       if(ratesForChart2 == null)
         return new { };
 
