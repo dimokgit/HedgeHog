@@ -146,10 +146,28 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionTurnOff]
-    public TradeConditionDelegate ThickWaveOk {
+    public TradeConditionDelegate TriplettOk {
       get {
-        Func<WaveRange, TradingMacro, bool> predicate = (wr, tm) => wr.UID > tm.WaveRangeAvg.UID;
-        return () => IsWaveOk(predicate, BigWaveIndex);
+        Func<WaveRange, TradingMacro, bool> isBig = (wr, tm) => wr.DistanceCma > tm.WaveRangeAvg.DistanceCma / 2;
+        Func<WaveRange[], TradingMacro, bool> areBig = (wrs, tm) => wrs.Sum(wr => wr.DistanceCma) > tm.WaveRangeAvg.DistanceCma * 2;
+        Func<WaveRange, TradingMacro, bool> isSmall = (wr, tm) => wr.DistanceCma < tm.WaveRangeAvg.DistanceCma / 3;
+        Func<TradingMacro, IEnumerable<WaveRange>> bigUns = tm => tm.WaveRanges
+          .Take(3)
+          .Select((wr, i) => new { wr, i })
+          .Where(x => x.i != 1)
+          .Select(x => x.wr);
+        Func<TradingMacro, WaveRange> smallOne = tm => tm.WaveRanges[1];
+
+        return () =>
+          TradingMacroOther()
+          .Where(tm => tm.WaveRanges.Count > 2)
+          .Select(tm =>
+            areBig(bigUns(tm).ToArray(), tm) && bigUns(tm).All(wr => isBig(wr, tm)) && isSmall(smallOne(tm), tm)
+            ? this.TradeDirectionByAngleSign(tm.WaveRanges[0].Angle)
+            : TradeDirections.None
+          )
+          .DefaultIfEmpty(TradeDirections.None)
+          .Single();
       }
     }
 
@@ -548,7 +566,7 @@ namespace HedgeHog.Alice.Store {
               )
               .Scan(TradeDirections.Both, (a, td) => a & td)
               .TakeLast(1)
-              .Select(td=> td & TradeDirection)
+              .Select(td => td & TradeDirection)
               .AsSingleable();
     }
     public IEnumerable<TradeConditionDelegate> TradeConditionsInfo() {

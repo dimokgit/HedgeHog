@@ -677,9 +677,9 @@ namespace HedgeHog {
       return std + avg;
     }
     public static double AverageByAverageUp(this IList<double> dbls) {
-      var avg0 = dbls.Average();
-      var avg1 = dbls.Where(d => d <= avg0).Average();
-      return dbls.Where(d => d >= avg1).Average();
+      var avg0 = dbls.DefaultIfEmpty(double.NaN).Average();
+      var avg1 = dbls.Where(d => d <= avg0).DefaultIfEmpty(avg0).Average();
+      return dbls.Where(d => d >= avg1).DefaultIfEmpty(avg1).Average();
     }
     public static T[] CopyToArray<T>(this IList<T> values, int count) {
       return values.SafeArray().CopyToArray(count);
