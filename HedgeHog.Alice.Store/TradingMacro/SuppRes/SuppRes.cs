@@ -77,7 +77,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
-
+    public bool HasRateCanTradeChanged { get { return RateCanTrade != Rate; } }
+    public double RateCanTrade { get; set; }
     public bool CanTradeEx {
       get { return CanTrade; }
       set {

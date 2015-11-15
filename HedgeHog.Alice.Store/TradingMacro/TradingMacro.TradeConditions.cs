@@ -146,6 +146,13 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionTurnOff]
+    [TradeConditionAsleep]
+    public TradeConditionDelegate FatWaveOk {
+      get {
+        return () => IsWaveOk2((wr, tm) => wr.Fatness >= tm.WaveRangeAvg.Fatness, 0);
+      }
+    }
+    [TradeConditionTurnOff]
     public TradeConditionDelegate TriplettOk {
       get {
         Func<WaveRange, TradingMacro, bool> isBig = (wr, tm) => wr.DistanceCma > tm.WaveRangeAvg.DistanceCma / 2;
@@ -180,6 +187,19 @@ namespace HedgeHog.Alice.Store {
       .Take(1)
       .Where(wr => predicate(wr, tm))
       .Select(wr => wr.Slope > 0 ? TradeDirections.Down : TradeDirections.Up)
+      )
+      .DefaultIfEmpty(TradeDirections.None)
+      .Single();
+    }
+    private TradeDirections IsWaveOk2(Func<WaveRange, TradingMacro, bool> predicate, int index) {
+      return TradingMacroOther()
+      .Take(1)
+      .SelectMany(tm => tm.WaveRanges
+      .SkipWhile(wr => wr.IsEmpty)
+      .Skip(index)
+      .Take(1)
+      .Where(wr => predicate(wr, tm))
+      .Select(wr => TradeDirections.Both)
       )
       .DefaultIfEmpty(TradeDirections.None)
       .Single();
@@ -229,11 +249,7 @@ namespace HedgeHog.Alice.Store {
         .Merge(new { GrnAngle_ = TrendLines1Trends.Angle.Round(1) })
         .Merge(new { RedAngle_ = TrendLinesTrends.Angle.Round(1) })
         .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })
-        .Merge(new { GRBRatio_ = TrendAnglesRatio() })
-        .Merge(new { _RBRatio_ = TrendLines2Trends.Angle.Percentage(TrendLinesTrends.Angle).ToPercent() })
-        .Merge(new { TipRatio_ = _tipRatioCurrent.Round(1) })
-
-        ;
+        .Merge(new { TipRatio_ = _tipRatioCurrent.Round(1) });
     }
     #endregion
 

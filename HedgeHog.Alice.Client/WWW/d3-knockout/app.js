@@ -721,7 +721,6 @@
     });
     this.sumStartIndex = sumStartIndex;
     this.dbrSum = ko.pureComputed(sumByIndex.bind(null, "DistanceByRegression"));
-    this.heightSum = ko.pureComputed(sumByIndex.bind(null, "Height"));
     this.wbhSum = ko.pureComputed(sumByIndex.bind(null, "WorkByHeight"));
     this.distanceSum = ko.pureComputed(sumByIndex.bind(null, "Distance"));
     this.distanceCmaSum = ko.pureComputed(sumByIndex.bind(null, "DistanceCma"));
@@ -734,7 +733,7 @@
       var r = _.chain(diffs).sortBy('d').first().value();
       return r.v;
     }
-    var waveRangesUidProp = "UID";
+    var waveRangesUidProp = "Fatness";
     function sumStartIndexById() {
       var uid = sumStartIndex();
       var wr = fuzzyFind(waveRanges(), waveRangeValue.bind(null, waveRangesUidProp), uid);

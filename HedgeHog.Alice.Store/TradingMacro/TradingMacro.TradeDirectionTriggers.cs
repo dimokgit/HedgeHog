@@ -183,11 +183,13 @@ namespace HedgeHog.Alice.Store {
         Func<SuppRes, int> tradeCount = sr => sr.IsBuy ? tds.HasUp() ? 0 : 1 : tds.HasDown() ? 0 : 1;
         Func<SuppRes, bool> canTrade = sr => sr.IsBuy ? tds.HasUp() : tds.HasDown();
         if(!canTradeAny && bsl.All(sr => sr.InManual/* && isIn()*/))
-          bsl.ForEach(sr => {
-            sr.ResetPricePosition();
-            sr.CanTrade = canTrade(sr);
-            sr.TradesCount = TradeCountStart;
-          });
+          bsl
+            .Where(sr => sr.HasRateCanTradeChanged)
+            .ForEach(sr => {
+              sr.ResetPricePosition();
+              sr.CanTrade = canTrade(sr);
+              sr.TradesCount = TradeCountStart;
+            });
       }
     }
 

@@ -39,21 +39,29 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         #region Wave Stats
-        Func<Func<WaveRange, double>, double> avg = value => wr.Select(value).DefaultIfEmpty().ToArray().AverageByAverageUp();
+        Func<IList<WaveRange>, Func<WaveRange, double>, double> summ = (wrs, v) => wrs.Select(v).DefaultIfEmpty(double.NaN).Sum();
+        Func<IList<WaveRange>, Func<WaveRange, double>, double> avg = (wrs, v) => 
+          summ(wrs, w => v(w) * w.DistanceCma) / summ(wrs, w => w.DistanceCma);
+        Func<IList<WaveRange>, double> fatAvg = wrs => avg(wrs, w => w.Fatness);
+        Func<Func<WaveRange, double>, double> avgUp = value => wr.Select(value).DefaultIfEmpty().ToArray().AverageByAverageUp();
         var wa = new WaveRange(1) {
-          Distance = avg(w => w.Distance),
-          DistanceCma = avg(w => w.DistanceCma),
-          DistanceByRegression = avg(w => w.DistanceByRegression),
-          WorkByHeight = avg(w => w.WorkByHeight),
-          WorkByTime = avg(w => w.WorkByTime),
-          Angle = avg(w => w.Angle.Abs()),
-          Height = avg(w => w.Height),
-          StDev = avg(w => w.StDev),
-          UID = wr.Select(w => w.UID).DefaultIfEmpty().Average()
+          Distance = avg(wr, w => w.Distance),
+          DistanceCma = avg(wr, w => w.DistanceCma),
+          DistanceByRegression = avg(wr, w => w.DistanceByRegression),
+          WorkByHeight = avg(wr, w => w.WorkByHeight),
+          WorkByTime = avg(wr, w => w.WorkByTime),
+          Angle = avg(wr, w => w.Angle.Abs()),
+          Height = avg(wr, w => w.Height),
+          StDev = avg(wr, w => w.StDev),
+          UID = wr.Select(w => w.UID).DefaultIfEmpty().Average(),
+          Fatness = fatAvg(wr)
         };
         if(wTail.TotalSeconds < 3)
           wTail = new WaveRange();
         Func<Func<WaveRange, double>, double> rsd = value => wr.Select(value).DefaultIfEmpty().Sum();
+        Func<Func<WaveRange, bool>, double> fatness = predicate => fatAvg(wr.Where(predicate).ToArray());
+        var fatUp = fatness(w => w.Slope > 0);
+        var fatDown = fatness(w => w.Slope < 0);
         var ws = new WaveRange(1) {
           Distance = rsd(w => w.Distance),
           DistanceCma = rsd(w => w.DistanceCma),
@@ -63,7 +71,8 @@ namespace HedgeHog.Alice.Store {
           Angle = rsd(w => w.Angle),
           Height = rsd(w => w.Height),
           StDev = rsd(w => w.StDev),
-          UID = wr.Select(w => w.UID).DefaultIfEmpty().Average()
+          UID = wr.Select(w => w.UID).DefaultIfEmpty().Average(),
+          Fatness = fatUp / fatDown
         };
         #endregion
         #region Elliot Waves

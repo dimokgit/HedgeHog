@@ -467,6 +467,9 @@ namespace HedgeHog.Alice.Store {
         RaiseShowChart();
     }
     void SuppRes_CanTradeChanged(object sender, EventArgs e) {
+      var sr = (SuppRes)sender;
+      if(sr.CanTrade)
+        sr.RateCanTrade = sr.Rate;
     }
     #endregion
 

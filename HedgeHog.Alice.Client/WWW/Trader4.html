@@ -606,7 +606,7 @@
           <th>ID</th>
           <th>Ang</th>
           <th>SD</th>
-          <th>H</th>
+          <th>F</th>
           <th>DR</th>
           <th>Ds</th>
           <th>Dc</th>
@@ -616,7 +616,7 @@
           <th></th>
           <th></th>
           <th></th>
-          <td><span data-bind="text:heightSum"></span></td>
+          <th></th>
           <td><span data-bind="text:dbrSum"></span></td>
           <td><span data-bind="text:distanceSum"></span></td>
           <td><span data-bind="text:distanceCmaSum"></span></td>
@@ -628,7 +628,7 @@
           <td><span data-bind="text:d3.format('.2f')(UID.v),style:{fontWeight:UID.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.1f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Height.v),style:{fontWeight:Height.mx?'bold':''}" class="selected"></span></td>
+          <td><span data-bind="text:d3.format('.1f')(Fatness.v),style:{fontWeight:Fatness.mx?'bold':''}" class="selected"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v),style:{fontWeight:DistanceByRegression.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v),style:{fontWeight:Distance.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceCma.v),style:{fontWeight:DistanceCma.mx?'bold':'',css:{isLong:isLong}}"></span></td>
@@ -640,7 +640,7 @@
           <td><span data-bind="text:d3.format('.2f')(UID.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>
           <td><span data-bind="text:d3.format('.'+($index()===0?'1':'0')+'f')(StDev.v)"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Height.v)" class="selected"></span></td>
+          <td><span data-bind="text:d3.format('.1f')(Fatness.v)" class="selected"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceCma.v)"></span></td>

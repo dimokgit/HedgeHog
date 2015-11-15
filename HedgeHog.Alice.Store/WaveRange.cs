@@ -99,7 +99,8 @@ namespace HedgeHog.Alice.Store {
       DistanceCma = range.Select(r => r.PriceCMALast).Distances().Last() / pointSize;
       TotalSeconds = EndDate.Subtract(StartDate).TotalSeconds;
       CalcTrendLine(range, pointSize, period);
-      this.UID = Math.Sqrt(Distance / Height);
+      UID = Math.Sqrt(Distance / Height);
+      this.Fatness = Distance / DistanceByRegression;
     }
     #endregion
 
@@ -124,6 +125,10 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     public BarsPeriodType Period { get; set; }
+    public double Fatness {
+      get;
+      set;
+    }
   }
   public static class WaveRangesMixin{
       public static Func<WaveRange, double> BestFitProp(this WaveRange wa) {
