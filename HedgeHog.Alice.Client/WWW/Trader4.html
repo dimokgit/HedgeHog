@@ -604,9 +604,9 @@
         <tr>
           <th></th>
           <th>ID</th>
+          <th>F</th>
           <th>Ang</th>
           <th>SD</th>
-          <th>F</th>
           <th>DR</th>
           <th>Ds</th>
           <th>Dc</th>
@@ -626,9 +626,9 @@
         <tr data-bind="css:{selected:$parent.sumStartIndexById() == $index(),istail:IsTail}">
           <td><span data-bind="text:$index()+1"></span></td>
           <td><span data-bind="text:d3.format('.2f')(UID.v),style:{fontWeight:UID.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.2f')(Fatness.v),style:{fontWeight:Fatness.mx?'bold':''}" class="selected"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.1f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.1f')(Fatness.v),style:{fontWeight:Fatness.mx?'bold':''}" class="selected"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v),style:{fontWeight:DistanceByRegression.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v),style:{fontWeight:Distance.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceCma.v),style:{fontWeight:DistanceCma.mx?'bold':'',css:{isLong:isLong}}"></span></td>
@@ -638,9 +638,9 @@
         <tr>
           <td></td>
           <td><span data-bind="text:d3.format('.2f')(UID.v)"></span></td>
+          <td><span data-bind="text:d3.format('.2f')(Fatness.v)" class="selected"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>
           <td><span data-bind="text:d3.format('.'+($index()===0?'1':'0')+'f')(StDev.v)"></span></td>
-          <td><span data-bind="text:d3.format('.1f')(Fatness.v)" class="selected"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceCma.v)"></span></td>

@@ -53,7 +53,7 @@ namespace HedgeHog.Alice.Store {
           Angle = avg(wr, w => w.Angle.Abs()),
           Height = avg(wr, w => w.Height),
           StDev = avg(wr, w => w.StDev),
-          UID = wr.Select(w => w.UID).DefaultIfEmpty().Average(),
+          UID = avg(wr, w => w.UID),
           Fatness = fatAvg(wr)
         };
         if(wTail.TotalSeconds < 3)
@@ -62,6 +62,8 @@ namespace HedgeHog.Alice.Store {
         Func<Func<WaveRange, bool>, double> fatness = predicate => fatAvg(wr.Where(predicate).ToArray());
         var fatUp = fatness(w => w.Slope > 0);
         var fatDown = fatness(w => w.Slope < 0);
+        var uidUp = avg(wr.Where(w => w.Slope > 0).ToArray(), w => w.UID);
+        var uidDown = avg(wr.Where(w => w.Slope < 0).ToArray(), w => w.UID);
         var ws = new WaveRange(1) {
           Distance = rsd(w => w.Distance),
           DistanceCma = rsd(w => w.DistanceCma),
@@ -71,7 +73,7 @@ namespace HedgeHog.Alice.Store {
           Angle = rsd(w => w.Angle),
           Height = rsd(w => w.Height),
           StDev = rsd(w => w.StDev),
-          UID = wr.Select(w => w.UID).DefaultIfEmpty().Average(),
+          UID = uidUp / uidDown,
           Fatness = fatUp / fatDown
         };
         #endregion

@@ -733,7 +733,7 @@
       var r = _.chain(diffs).sortBy('d').first().value();
       return r.v;
     }
-    var waveRangesUidProp = "Fatness";
+    var waveRangesUidProp = "UID";
     function sumStartIndexById() {
       var uid = sumStartIndex();
       var wr = fuzzyFind(waveRanges(), waveRangeValue.bind(null, waveRangesUidProp), uid);
