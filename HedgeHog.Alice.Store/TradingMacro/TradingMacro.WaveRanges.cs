@@ -9,7 +9,7 @@ namespace HedgeHog.Alice.Store {
     double waveWidthAvgIterCnt = 2000;
     private void ScanForWaveRanges(List<Rate> rates) {
       #region Average Wave Height Calc
-      var makeWaves = MonoidsCore.ToFunc((List<Rate>)null, ( rateses) => {
+      var makeWaves = MonoidsCore.ToFunc((List<Rate>)null, (rateses) => {
         List<WaveRange> wr = GetWaveRanges(rateses);
 
         #region Split First Wave
@@ -40,21 +40,23 @@ namespace HedgeHog.Alice.Store {
 
         #region Wave Stats
         Func<IList<WaveRange>, Func<WaveRange, double>, double> summ = (wrs, v) => wrs.Select(v).DefaultIfEmpty(double.NaN).Sum();
-        Func<IList<WaveRange>, Func<WaveRange, double>, double> avg = (wrs, v) => 
+        Func<IList<WaveRange>, Func<WaveRange, double>, double> avg = (wrs, v) =>
           summ(wrs, w => v(w) * w.DistanceCma) / summ(wrs, w => w.DistanceCma);
+        Func<IList<WaveRange>, Func<WaveRange, double>, Func<WaveRange, double>, double> avg2 = (wrs, v, d) =>
+            summ(wrs, w => v(w) * d(w)) / summ(wrs, w => d(w));
         Func<IList<WaveRange>, double> fatAvg = wrs => avg(wrs, w => w.Fatness);
         Func<Func<WaveRange, double>, double> avgUp = value => wr.Select(value).DefaultIfEmpty().ToArray().AverageByAverageUp();
         var wa = new WaveRange(1) {
           Distance = avg(wr, w => w.Distance),
-          DistanceCma = avg(wr, w => w.DistanceCma),
-          DistanceByRegression = avg(wr, w => w.DistanceByRegression),
+          DistanceCma = avg2(wr, w => w.DistanceCma, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),
+          DistanceByRegression = avg(wr.AverageByAverageUp(w => w.DistanceByRegression), w => w.DistanceByRegression),
           WorkByHeight = avg(wr, w => w.WorkByHeight),
           WorkByTime = avg(wr, w => w.WorkByTime),
           Angle = avg(wr, w => w.Angle.Abs()),
           Height = avg(wr, w => w.Height),
           StDev = avg(wr, w => w.StDev),
-          UID = avg(wr, w => w.UID),
-          Fatness = fatAvg(wr)
+          UID = avg(wr.AverageByAverageUp(w => w.UID), w => w.UID),
+          Fatness = avg(wr.AverageByAverageUp(w => w.Fatness), w => w.Fatness),
         };
         if(wTail.TotalSeconds < 3)
           wTail = new WaveRange();
@@ -73,8 +75,8 @@ namespace HedgeHog.Alice.Store {
           Angle = rsd(w => w.Angle),
           Height = rsd(w => w.Height),
           StDev = rsd(w => w.StDev),
-          UID = uidUp / uidDown,
-          Fatness = fatUp / fatDown
+          UID = avg2(wr, w => w.UID, w => 1 / w.Distance),
+          Fatness = -avg(wr.AverageByAverageUp(w => -w.Fatness), w => w.Fatness),
         };
         #endregion
         #region Elliot Waves
@@ -171,7 +173,7 @@ namespace HedgeHog.Alice.Store {
       }
       return extreams3;
     }
-    private List<WaveRange> GetWaveRanges( List<Rate> rates) {
+    private List<WaveRange> GetWaveRanges(List<Rate> rates) {
       rates = rates.ToList();
       rates.Reverse();
       IList<int> extreams = GetWaveRangesExtreams(rates);

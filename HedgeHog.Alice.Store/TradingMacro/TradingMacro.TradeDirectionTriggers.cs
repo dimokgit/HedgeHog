@@ -94,6 +94,10 @@ namespace HedgeHog.Alice.Store {
           .ForEach(tc => TradeCorridorTurnOnIfManual(tc));
       }
     }
+    [TradeDirectionTrigger]
+    public void OnOkTip2() {
+      TradeCorridorByTradeLevel2(TrendLines2Trends);
+    }
     public void TradeCorridorByGRB(Rate.TrendLevels tls) {
       var tcEval = TradeConditionsEval().ToArray();
       if(BarsCountCalc > BarsCount && tcEval.Any(b => b.HasAny())) {
@@ -169,6 +173,41 @@ namespace HedgeHog.Alice.Store {
           if(!canTrade)
             bsl.ForEach(sr => sr.CanTrade = false);
         }
+      }
+    }
+    public void TradeCorridorByTradeLevel2(Rate.TrendLevels tls) {
+      if(CanTriggerTradeDirection() && Trades.Length == 0) {
+        var bsl = new[] { BuyLevel, SellLevel };
+        var buy = GetTradeLevel(true, double.NaN);
+        var sell = GetTradeLevel(false, double.NaN);
+        var zip = bsl.Zip(new[] { buy, sell }, (sr, bs) => new { sr, bs });
+        zip.Where(x => !x.sr.InManual)
+          .ForEach(x => {
+            x.sr.InManual = true;
+            x.sr.ResetPricePosition();
+            x.sr.Rate = x.bs;
+          });
+        var bsHeight = BuyLevel.Rate.Abs(SellLevel.Rate);
+        var tlHeight = buy.Abs(sell);
+        var tlAvg = buy.Avg(sell);
+        var canSetLevel = (!tlAvg.Between(SellLevel.Rate, BuyLevel.Rate) || tlHeight < bsHeight);
+        var currentPrice = new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
+        if(canSetLevel)
+          lock (_rateLocker) {
+            var tipOk = TipOk();
+            zip.ForEach(x => {
+              var rate = x.bs;
+              var rateJump = InPips(rate.Abs(x.sr.Rate));
+              var reset = rateJump > 1;
+              if(reset)
+                x.sr.ResetPricePosition();
+              x.sr.Rate = rate;
+              if(reset)
+                x.sr.ResetPricePosition();
+              var canTrade = x.sr.IsBuy && tipOk.HasUp() || x.sr.IsSell && tipOk.HasDown();
+              x.sr.CanTrade = canTrade;
+            });
+          }
       }
     }
     public void TradeCorridorTurnOnIfManual(TradeDirections tds) {

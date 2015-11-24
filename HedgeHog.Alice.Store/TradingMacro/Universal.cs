@@ -1221,8 +1221,12 @@ namespace HedgeHog.Alice.Store {
               #endregion
               if (IsTrader) {
                 exitFunc();
-                TradeDirectionTriggersRun();
-                TradeConditionsTrigger();
+                  try {
+                    TradeDirectionTriggersRun();
+                    TradeConditionsTrigger();
+                  } catch(Exception exc) {
+                    Log = exc;
+                  }
               }
               SetTradeLevelsToLevelBy(GetTradeLevel)();
             }

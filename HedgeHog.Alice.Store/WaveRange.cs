@@ -95,12 +95,14 @@ namespace HedgeHog.Alice.Store {
         throw new InvalidOperationException("StartDate;{0} must be less then EndDate:{1}".Formater(StartDate, EndDate));
       Max = range.Max(r => r.PriceAvg);
       Min = range.Min(r => r.PriceAvg);
-      Distance = range.Select(r => r.PriceAvg).Distances().Last() / pointSize;
-      DistanceCma = range.Select(r => r.PriceCMALast).Distances().Last() / pointSize;
+      var priceAvgs = range.ToArray(r => r.PriceAvg);
+      Distance = priceAvgs.Distances().Last() / pointSize;
+      var lastCmas = range.ToArray(r => r.PriceCMALast);
+      DistanceCma = lastCmas.Distances().Last() / pointSize;
       TotalSeconds = EndDate.Subtract(StartDate).TotalSeconds;
       CalcTrendLine(range, pointSize, period);
       UID = Math.Sqrt(Distance / Height);
-      this.Fatness = Distance / DistanceByRegression;
+      this.Fatness = AlgLib.correlation.pearsoncorrelation(priceAvgs, lastCmas).Abs();
     }
     #endregion
 

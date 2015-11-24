@@ -36,7 +36,12 @@ namespace HedgeHog.DB {
     public static void SaveConcurrent(this DbContext context)  {
       try {
         context.SaveChanges();
-      } catch (System.Data.Entity.Infrastructure.DbUpdateConcurrencyException) { }
+      } catch (System.Data.Entity.Infrastructure.DbUpdateConcurrencyException exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+      }catch(Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+        throw;
+      }
     }
     public static T UseForexContext<T>(Func<ForexEntities, T> action, Action<ForexEntities, Exception> error = null) {
       try {

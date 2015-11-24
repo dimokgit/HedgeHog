@@ -149,7 +149,7 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionAsleep]
     public TradeConditionDelegate FatWaveOk {
       get {
-        return () => IsWaveOk2((wr, tm) => wr.UID >= tm.WaveRangeAvg.UID, 0);
+        return () => IsWaveOk((wr, tm) => wr.UID >= tm.WaveRangeAvg.UID, 0);
       }
     }
     [TradeConditionTurnOff]
