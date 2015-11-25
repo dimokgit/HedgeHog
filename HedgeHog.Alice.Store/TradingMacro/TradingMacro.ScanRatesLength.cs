@@ -89,15 +89,18 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
-    void ScanRatesLengthByDistanceMin() {
-      BarsCountCalc = GetRatesLengthByDistanceMin().DefaultIfEmpty(BarsCountCalc).Single();
+    void ScanRatesLengthByDistanceMin0() {
+      BarsCountCalc = GetRatesLengthByDistanceMinByMacd(DistanceByMACD).DefaultIfEmpty(BarsCountCalc).Single();
     }
-    IEnumerable<int> GetRatesLengthByDistanceMin() {
+    void ScanRatesLengthByDistanceMin() {
+      BarsCountCalc = GetRatesLengthByDistanceMinByMacd(DistanceByMACD2).DefaultIfEmpty(BarsCountCalc).Single();
+    }
+    IEnumerable<int> GetRatesLengthByDistanceMinByMacd(Func<IList<Rate>,int,IEnumerable<double>> macd) {
       return UseRatesInternal(rs => rs.ToList())
         .Select(rs => {
           rs.Reverse();
           var rdm = InPoints(RatesDistanceMin);
-          var count = DistanceByMACD(rs)
+          var count = macd(rs, BarsCountCalc)
             .Skip(BarsCount)
             .TakeWhile(i => i <= rdm)
             .Count() + BarsCount;
@@ -113,14 +116,22 @@ namespace HedgeHog.Alice.Store {
         });
     }
 
-    private IEnumerable<double> DistanceByMACD(IList<Rate> rs) {
-      var cmas = GetCma(rs, BarsCountCalc);
-      var cmas2 = GetCma2(cmas, BarsCountCalc);
+    private IList<double> Macd(IList<Rate> rs, int cmaPeriodCount) {
+      var cmas = GetCma(rs, cmaPeriodCount);
+      var cmas2 = GetCma2(cmas, cmaPeriodCount);
       var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
+      return macd;
+    }
+
+    private IEnumerable<double> DistanceByMACD(IList<Rate> rs, int cmaPeriodCount) {
+      IEnumerable<double> macd = CmaMACD = Macd(rs, cmaPeriodCount);
+      return macd.Distances();
+    }
+
+    private IEnumerable<double> DistanceByMACD2(IList<Rate> rs, int cmaPeriodCount) {
+      var macd = Macd(rs, cmaPeriodCount);
       var macd2 = CmaMACD = macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2));
-      var macd3 = macd2
-        .Distances();
-      return macd3;
+      return macd2.Distances();
     }
 
     public void ScanRatesLengthByDistanceMinAndCrossesCount() {
@@ -168,7 +179,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     void ScanRatesLengthByDistanceMinAndimeFrame() {
-      var count = GetRatesLengthByDistanceMin();
+      var count = GetRatesLengthByDistanceMinByMacd(DistanceByMACD2);
       var counts = GetRatesLengthsByTimeFrameRange();
       BarsCountCalc = counts[0].Max(counts).Min(counts[1]);
     }
@@ -176,7 +187,7 @@ namespace HedgeHog.Alice.Store {
       if(BarPeriod != BarsPeriodType.t1)
         return new[] { TimeFrameTresholdTimeSpan.TotalMinutes.ToInt(), TimeFrameTresholdTimeSpan.TotalMinutes.ToInt() };
       else {
-        Func<DateTime, TimeSpan, int> getCount = (dateEnd, timeFrame) => 
+        Func<DateTime, TimeSpan, int> getCount = (dateEnd, timeFrame) =>
           UseRatesInternal(ri => ri.FuzzyIndex(dateEnd.Subtract(timeFrame), (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
            .SelectMany(i => i, (_, i) => RatesInternal.Count - i)
            .Single();

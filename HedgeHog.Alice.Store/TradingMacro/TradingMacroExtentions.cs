@@ -2235,6 +2235,7 @@ namespace HedgeHog.Alice.Store {
                 }
                 SpreadForCorridor = rates.Spread();
                 SetCma(rates);
+                _ratesHeightCma = rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax);
                 if(BarPeriod > BarsPeriodType.t1)
                   ScanForWaveRanges(rates);
                 var leg = rates.Count.Div(10).ToInt();
@@ -2297,7 +2298,7 @@ namespace HedgeHog.Alice.Store {
       rates.Reverse();
       var dist = BarPeriod != BarsPeriodType.none
         ? rates.Count > BarsCount
-        ? new[] { rates }.Select(range => InPips(DistanceByMACD(range).LastOrDefault())).SingleOrDefault()
+        ? new[] { rates }.Select(range => InPips(DistanceByMACD2(range, BarsCountCalc).LastOrDefault())).SingleOrDefault()
         : 0
         : this.TradingMacrosByPair()
         .Where(tm => tm.BarPeriod == BarsPeriodType.t1)
@@ -4726,6 +4727,10 @@ namespace HedgeHog.Alice.Store {
     #region RatesDistanceMin
     [Category(categoryCorridor)]
     private double _RatesDistanceMin = 1000;
+    private double _ratesHeightCma;
+    private double _ratesHeightCmaMax;
+    private double _ratesHeightCmaMin;
+
     [Category(categoryActive)]
     [WwwSetting(wwwSettingsCorridorCMA)]
     public double RatesDistanceMin {

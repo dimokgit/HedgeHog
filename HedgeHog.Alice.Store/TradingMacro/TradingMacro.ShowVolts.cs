@@ -139,6 +139,8 @@ namespace HedgeHog.Alice.Store {
       switch(RatesLengthBy) {
         case RatesLengthFunction.DistanceMin:
           return ScanRatesLengthByDistanceMin;
+        case RatesLengthFunction.DistanceMin0:
+          return ScanRatesLengthByDistanceMin0;
         case RatesLengthFunction.TimeFrame:
           return ScanRatesLengthByTimeFrame;
         case RatesLengthFunction.DMTF:
