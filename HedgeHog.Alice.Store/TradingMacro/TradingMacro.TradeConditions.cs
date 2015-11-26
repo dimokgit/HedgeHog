@@ -228,18 +228,19 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTurnOff]
     public TradeConditionDelegate Tip2Ok {
       get {
-        return () => TrendLines2Trends
-          .YieldIf(p => !p.IsEmpty, p => p.Slope.SignUp())
-          .Select(ss => {
-            var tradeLevel = ss > 0 ? SellLevel.Rate : BuyLevel.Rate;
-            var extream = ss > 0 ? _RatesMax.Max(BuyLevel.Rate) : _RatesMin.Min(SellLevel.Rate);
-            _tipRatioCurrent = _ratesHeightCma / tradeLevel.Abs(extream);
-            return !IsTresholdAbsOk(_tipRatioCurrent, TipRatio)
-              ? TradeDirections.None
-              : TradeDirectionByAngleSign(ss);
-          })
-          .DefaultIfEmpty(TradeDirections.None)
-          .Single();
+        return () => {
+          var isSell = BuyLevel.Rate >= _RatesMax;
+          var isBuy = SellLevel.Rate <= _RatesMin;
+          var tradeLevel = isSell ? SellLevel.Rate : BuyLevel.Rate;
+          var extream = isSell ? _RatesMax.Max(BuyLevel.Rate) : _RatesMin.Min(SellLevel.Rate);
+          _tipRatioCurrent = _ratesHeightCma / BuyLevel.Rate.Abs(SellLevel.Rate);// tradeLevel.Abs(extream);
+          var isOutside = isSell || isBuy;
+          return isOutside && IsTresholdAbsOk(_tipRatioCurrent, TipRatio)
+            ? isSell
+            ? TradeDirections.Down
+            : TradeDirections.Up
+            : TradeDirections.None;
+        };
       }
     }
 
@@ -256,11 +257,6 @@ namespace HedgeHog.Alice.Store {
 
 
     #region WwwInfo
-    ExpandoObject WwwInfoBuild(Rate.TrendLevels tls) {
-      return new {
-        Angle = tls.Angle.Round(1)
-      }.ToExpando();
-    }
     public ExpandoObject WwwInfo() {
       return new ExpandoObject()
         .Merge(new { GrnAngle_ = TrendLines1Trends.Angle.Round(1) })

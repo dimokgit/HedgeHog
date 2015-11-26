@@ -96,7 +96,7 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeDirectionTrigger]
     public void OnOkTip2() {
-      TradeCorridorByTradeLevel2(TrendLines2Trends);
+      TradeCorridorByTradeLevel2();
     }
     public void TradeCorridorByGRB(Rate.TrendLevels tls) {
       var tcEval = TradeConditionsEval().ToArray();
@@ -175,7 +175,7 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    public void TradeCorridorByTradeLevel2(Rate.TrendLevels tls) {
+    public void TradeCorridorByTradeLevel2() {
       if(CanTriggerTradeDirection() && Trades.Length == 0) {
         var bsl = new[] { BuyLevel, SellLevel };
         var buy = GetTradeLevel(true, double.NaN);
@@ -194,7 +194,7 @@ namespace HedgeHog.Alice.Store {
         var currentPrice = new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
         if(canSetLevel)
           lock (_rateLocker) {
-            var tipOk = TipOk();
+            var tipOk = TradeConditionsEval().Single();
             zip.ForEach(x => {
               var rate = x.bs;
               var rateJump = InPips(rate.Abs(x.sr.Rate));
