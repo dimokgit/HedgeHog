@@ -47,7 +47,7 @@ namespace HedgeHog.Alice.Store {
         Func<IList<WaveRange>, double> fatAvg = wrs => avg(wrs, w => w.Fatness);
         Func<Func<WaveRange, double>, double> avgUp = value => wr.Select(value).DefaultIfEmpty().ToArray().AverageByAverageUp();
         var wa = new WaveRange(1) {
-          Distance = avg(wr, w => w.Distance),
+          Distance = avg2(wr, w => w.Distance, w => 1 / w.Angle.Abs()),
           DistanceCma = avg2(wr, w => w.DistanceCma, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),
           DistanceByRegression = avg(wr.AverageByAverageUp(w => w.DistanceByRegression), w => w.DistanceByRegression),
           WorkByHeight = avg(wr, w => w.WorkByHeight),
@@ -67,8 +67,8 @@ namespace HedgeHog.Alice.Store {
         var uidUp = avg(wr.Where(w => w.Slope > 0).ToArray(), w => w.UID);
         var uidDown = avg(wr.Where(w => w.Slope < 0).ToArray(), w => w.UID);
         var ws = new WaveRange(1) {
-          Distance = rsd(w => w.Distance),
-          DistanceCma = rsd(w => w.DistanceCma),
+          Distance = avg2(wr, w => w.Distance, w => w.Angle.Abs()),
+          DistanceCma = avg2(wr, w => w.DistanceCma, w => w.Distance),
           DistanceByRegression = rsd(w => w.DistanceByRegression),
           WorkByHeight = rsd(w => w.WorkByHeight),
           WorkByTime = rsd(w => w.WorkByTime),

@@ -2930,7 +2930,7 @@ namespace HedgeHog.Alice.Store {
     }
     #region SmaPasses
     private int _CmaPasses = 1;
-    [Category(categoryCorridor)]
+    [Category(categoryActive)]
     [WwwSetting(wwwSettingsCorridorCMA)]
     public int CmaPasses {
       get { return _CmaPasses; }
