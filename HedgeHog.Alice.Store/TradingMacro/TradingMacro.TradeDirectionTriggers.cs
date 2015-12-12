@@ -229,8 +229,9 @@ namespace HedgeHog.Alice.Store {
         var bsHeight = BuyLevel.Rate.Abs(SellLevel.Rate);
         var tlHeight = buy.Abs(sell);
         var tlAvg = buy.Avg(sell);
-        var canSetLevel = (!tlAvg.Between(SellLevel.Rate, BuyLevel.Rate) || tlHeight < bsHeight);
-        var currentPrice = new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
+        var thinWaveOk = GRBRatioOk().HasAny();
+        var canSetLevel = thinWaveOk && (!tlAvg.Between(SellLevel.Rate, BuyLevel.Rate) || tlHeight < bsHeight);
+        //var currentPrice = new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
         if(canSetLevel)
           lock (_rateLocker) {
             zip.ForEach(x => {
@@ -245,10 +246,16 @@ namespace HedgeHog.Alice.Store {
             });
           }
         var tipOk = TradeConditionsEval().Single();
+        var setTradeCount = false;
         bsl.ForEach(sr => {
           var canTrade = sr.IsBuy && tipOk.HasUp() || sr.IsSell && tipOk.HasDown();
-          sr.CanTrade = canTrade;
+          if(!IsTurnOnOnly || canTrade) {
+            sr.CanTrade = canTrade;
+            setTradeCount = canTrade;
+          }
         });
+        if(setTradeCount)
+          bsl.ForEach(sr => sr.TradesCount = TradeCountStart);
       }
     }
     public void TradeCorridorTurnOnIfManual(TradeDirections tds) {

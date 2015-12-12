@@ -147,11 +147,12 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeConditionTurnOff]
     [TradeConditionAsleep]
-    public TradeConditionDelegate FatWaveOk {
+    public Func<TradeDirections> FatWaveOk {
       get {
         return () => IsWaveOk((wr, tm) => wr.UID >= tm.WaveRangeAvg.UID, 0);
       }
     }
+
     [TradeConditionTurnOff]
     public TradeConditionDelegate TriplettOk {
       get {
@@ -259,10 +260,11 @@ namespace HedgeHog.Alice.Store {
     #region WwwInfo
     public ExpandoObject WwwInfo() {
       return new ExpandoObject()
+        .Merge(new { GRBRatio___ = TrendPrice1Ratio() })
         .Merge(new { GrnAngle_ = TrendLines1Trends.Angle.Round(1) })
         .Merge(new { RedAngle_ = TrendLinesTrends.Angle.Round(1) })
         .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })
-        .Merge(new { CmaDist = InPips(CmaMACD.Distances().Last()).Round(3) })
+        .Merge(new { CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
         .Merge(new { TipRatio_ = _tipRatioCurrent.Round(1) });
     }
     #endregion
@@ -295,9 +297,9 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public Func<TradeDirections> GRBRatioOk {
+    public TradeConditionDelegate GRBRatioOk {
       get {
-        return () => IsTresholdAbsOk(TrendAnglesRatio(), TrendAnglesPerc)
+        return () => IsTresholdAbsOk(TrendPrice1Ratio(), TrendAnglesPerc)
           ? TradeDirections.Both
           : TradeDirections.None;
       }
@@ -310,11 +312,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     int TrendAnglesRatio() {
-      return new[] {
-        new[] {TrendLines2Trends, TrendLinesTrends },
-        new[] {TrendLines2Trends, TrendLines1Trends },
-        new[] {TrendLinesTrends, TrendLines1Trends }
-      }
+      return TrendLinesTrendsCrossJoin
       .Select(b => b[0].Angle.Percentage(b[1].Angle).ToPercent())
       .Max();
       //.CartesianProduct()
@@ -322,6 +320,11 @@ namespace HedgeHog.Alice.Store {
       //.Where(b=>b[0]!=b[1])
       //.Select(b=>b[0].Angle.Percentage(b[1].Angle).ToPercent())
       //.Min();
+    }
+    int TrendPrice1Ratio() {
+      return GetTrendLinesCrossJoinValues(tls => tls[0].PriceAvg1.Abs(tls[1].PriceAvg1) / tls[1].Count)
+      .Select(b => b[0].Percentage(b[1]).ToPercent())
+      .Average().ToInt();
     }
     #endregion
 
