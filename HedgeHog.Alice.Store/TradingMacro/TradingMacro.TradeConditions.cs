@@ -154,7 +154,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegate TriplettOk {
+    public Func<TradeDirections> TriplettOk {
       get {
         Func<WaveRange, TradingMacro, bool> isBig = (wr, tm) => wr.DistanceCma > tm.WaveRangeAvg.DistanceCma / 2;
         Func<WaveRange[], TradingMacro, bool> areBig = (wrs, tm) => wrs.Sum(wr => wr.DistanceCma) > tm.WaveRangeAvg.DistanceCma * 2;
@@ -232,9 +232,8 @@ namespace HedgeHog.Alice.Store {
         return () => {
           var isSell = BuyLevel.Rate >= _RatesMax;
           var isBuy = SellLevel.Rate <= _RatesMin;
-          var tradeLevel = isSell ? SellLevel.Rate : BuyLevel.Rate;
           var extream = isSell ? _RatesMax.Max(BuyLevel.Rate) : _RatesMin.Min(SellLevel.Rate);
-          _tipRatioCurrent = _ratesHeightCma / BuyLevel.Rate.Abs(SellLevel.Rate);// tradeLevel.Abs(extream);
+          _tipRatioCurrent = _ratesHeightCma / BuyLevel.Rate.Abs(SellLevel.Rate);
           var isOutside = isSell || isBuy;
           return isOutside && IsTresholdAbsOk(_tipRatioCurrent, TipRatio)
             ? isSell
@@ -260,7 +259,8 @@ namespace HedgeHog.Alice.Store {
     #region WwwInfo
     public ExpandoObject WwwInfo() {
       return new ExpandoObject()
-        .Merge(new { GRBRatio___ = TrendPrice1Ratio() })
+        .Merge(new { GRBHRatio___ = TrendPrice1Ratio() })
+        .Merge(new { GRBRatio_ = TrendHeighRatio() })
         .Merge(new { GrnAngle_ = TrendLines1Trends.Angle.Round(1) })
         .Merge(new { RedAngle_ = TrendLinesTrends.Angle.Round(1) })
         .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })
@@ -270,6 +270,11 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region Angles
+    TradeDirections TradeDirectionByTradeLevels(double buyLevel,double sellLevel) {
+      return buyLevel.Avg(sellLevel).PositionRatio(_RatesMin, _RatesMax).ToPercent() > 50
+        ? TradeDirections.Down
+        : TradeDirections.None;
+    }
     TradeDirections TradeDirectionByAngleSign(double angle) {
       return angle > 0
         ? TradeDirections.Down
@@ -304,6 +309,13 @@ namespace HedgeHog.Alice.Store {
           : TradeDirections.None;
       }
     }
+    public TradeConditionDelegate GRBHRatioOk {
+      get {
+        return () => IsTresholdAbsOk(TrendHeighRatio(), TrendHeightPerc)
+          ? TradeDirections.Both
+          : TradeDirections.None;
+      }
+    }
     public Func<TradeDirections> AngRBRatioOk {
       get {
         return () => IsTresholdAbsOk(TrendLines2Trends.Angle.Percentage(TrendLinesTrends.Angle).ToPercent(), TrendAnglesPerc)
@@ -323,6 +335,11 @@ namespace HedgeHog.Alice.Store {
     }
     int TrendPrice1Ratio() {
       return GetTrendLinesCrossJoinValues(tls => tls[0].PriceAvg1.Abs(tls[1].PriceAvg1) / tls[1].Count)
+      .Select(b => b[0].Percentage(b[1]).ToPercent())
+      .Average().ToInt();
+    }
+    int TrendHeighRatio() {
+      return GetTrendLinesCrossJoinValues(tls => tls[0].PriceAvg2 - tls[0].PriceAvg3)
       .Select(b => b[0].Percentage(b[1]).ToPercent())
       .Average().ToInt();
     }
