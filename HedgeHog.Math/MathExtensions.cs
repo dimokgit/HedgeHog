@@ -183,7 +183,7 @@ namespace HedgeHog {
     public static double Percentage(this double v, double other) {
       var max = Math.Max(Math.Abs(v), Math.Abs(other));
       var min = Math.Min(Math.Abs(v), Math.Abs(other));
-      return (max - min) / max;
+      return (v - other).Abs() / max;
     }
     public static ILookup<bool, double> Fractals(this IList<double> rates, int fractalLength) {
       return rates.Fractals(fractalLength, d => d, d => d);

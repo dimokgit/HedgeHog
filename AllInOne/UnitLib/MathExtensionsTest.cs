@@ -237,5 +237,10 @@ namespace UnitLib
       Assert.AreEqual(expected, bins);
       Assert.Inconclusive("Verify the correctness of this test method.");
     }
+    [TestMethod]
+    public void BasedRatio() {
+      var result = (-20.0).Percentage(-10);
+      Assert.AreEqual(0.5, result);
+    }
   }
 }

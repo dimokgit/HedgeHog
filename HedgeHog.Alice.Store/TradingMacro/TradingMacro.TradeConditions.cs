@@ -232,7 +232,6 @@ namespace HedgeHog.Alice.Store {
         return () => {
           var isSell = BuyLevel.Rate >= _RatesMax;
           var isBuy = SellLevel.Rate <= _RatesMin;
-          var extream = isSell ? _RatesMax.Max(BuyLevel.Rate) : _RatesMin.Min(SellLevel.Rate);
           _tipRatioCurrent = _ratesHeightCma / BuyLevel.Rate.Abs(SellLevel.Rate);
           var isOutside = isSell || isBuy;
           return isOutside && IsTresholdAbsOk(_tipRatioCurrent, TipRatio)
@@ -334,14 +333,23 @@ namespace HedgeHog.Alice.Store {
       //.Min();
     }
     int TrendPrice1Ratio() {
-      return GetTrendLinesBlueJoinValues(tls => (tls[0].PriceAvg1-tls[1].PriceAvg1) / tls[1].Count)
-      .Select(b => b[0].Percentage(b[1]).ToPercent())
-      .Average().ToInt();
+      Func<IList<Rate>, double> spread = tls => tls[1].Trends.Angle;
+      var blueSpread = spread(TrendLines2.Value);
+      var redSpread = spread(TrendLines.Value);
+      var greenSpread = spread(TrendLines1.Value);
+      return BlueBasedRatio(blueSpread, redSpread, greenSpread).ToPercent();
     }
+
+    public static double BlueBasedRatio(double blue, double red, double green) {
+      return new[] { blue.Percentage(red), blue.Percentage(green) }.Average().Abs();
+    }
+
     int TrendHeighRatio() {
-      return GetTrendLinesBlueJoinValues(tls => tls[0].PriceAvg2 - tls[0].PriceAvg3)
-      .Select(b => b[0].Percentage(b[1]).ToPercent())
-      .Average().ToInt();
+      Func<IList<Rate>, double> spread = tls => tls[0].Trends.PriceAvg2 - tls[0].Trends.PriceAvg3;
+      var blueSpread = spread(TrendLines2.Value);
+      var redSpread = spread(TrendLines.Value);
+      var greenSpread = spread(TrendLines1.Value);
+      return BlueBasedRatio(blueSpread, redSpread, greenSpread).ToPercent();
     }
     #endregion
 

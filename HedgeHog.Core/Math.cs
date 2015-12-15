@@ -148,6 +148,9 @@ namespace HedgeHog {
     public static double IntOrDouble(this double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : Math.Round(d, 1);
     }
+    public static double BasedRatio(this double baseValue, double other) {
+      return (baseValue - other).Abs() / baseValue.Abs();
+    }
 
   }
 }
