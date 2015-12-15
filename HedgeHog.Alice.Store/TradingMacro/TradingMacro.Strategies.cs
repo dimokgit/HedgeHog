@@ -323,8 +323,11 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
-    IEnumerable<IList<T>> GetTrendLinesCrossJoinValues<T>(Func<Rate.TrendLevels[],T> map) {
+    IEnumerable<IList<T>> GetTrendLinesCrossJoinValues<T>(Func<Rate.TrendLevels[], T> map) {
       return TrendLinesCrossJoin.Select(tls => tls.Select(tl => tl.Value.ToArray(v => v.Trends)).ToArray(x => map(x)));
+    }
+    IEnumerable<IList<T>> GetTrendLinesBlueJoinValues<T>(Func<Rate.TrendLevels[], T> map) {
+      return TrendLinesCrossJoin.Take(2).Select(tls => tls.Select(tl => tl.Value.ToArray(v => v.Trends)).ToArray(x => map(x)));
     }
     private double TrendLinesTrendsPriceMax(TradingMacro tm, Func<Rate.TrendLevels, double> value) {
       return value(tm.TrendLinesTrends).Max(value(tm.TrendLines2Trends), value(tm.TrendLines1Trends));

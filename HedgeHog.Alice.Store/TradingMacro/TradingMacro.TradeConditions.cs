@@ -259,8 +259,8 @@ namespace HedgeHog.Alice.Store {
     #region WwwInfo
     public ExpandoObject WwwInfo() {
       return new ExpandoObject()
-        .Merge(new { GRBHRatio___ = TrendPrice1Ratio() })
-        .Merge(new { GRBRatio_ = TrendHeighRatio() })
+        .Merge(new { GRBHRatio__ = TrendHeighRatio() })
+        .Merge(new { GRBRatio_ = TrendPrice1Ratio() })
         .Merge(new { GrnAngle_ = TrendLines1Trends.Angle.Round(1) })
         .Merge(new { RedAngle_ = TrendLinesTrends.Angle.Round(1) })
         .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })
@@ -273,7 +273,7 @@ namespace HedgeHog.Alice.Store {
     TradeDirections TradeDirectionByTradeLevels(double buyLevel,double sellLevel) {
       return buyLevel.Avg(sellLevel).PositionRatio(_RatesMin, _RatesMax).ToPercent() > 50
         ? TradeDirections.Down
-        : TradeDirections.None;
+        : TradeDirections.Up;
     }
     TradeDirections TradeDirectionByAngleSign(double angle) {
       return angle > 0
@@ -312,7 +312,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate GRBHRatioOk {
       get {
         return () => IsTresholdAbsOk(TrendHeighRatio(), TrendHeightPerc)
-          ? TradeDirections.Both
+          ? TradeDirectionByTradeLevels(BuyLevel.Rate,SellLevel.Rate)
           : TradeDirections.None;
       }
     }
@@ -334,12 +334,12 @@ namespace HedgeHog.Alice.Store {
       //.Min();
     }
     int TrendPrice1Ratio() {
-      return GetTrendLinesCrossJoinValues(tls => tls[0].PriceAvg1.Abs(tls[1].PriceAvg1) / tls[1].Count)
+      return GetTrendLinesBlueJoinValues(tls => (tls[0].PriceAvg1-tls[1].PriceAvg1) / tls[1].Count)
       .Select(b => b[0].Percentage(b[1]).ToPercent())
       .Average().ToInt();
     }
     int TrendHeighRatio() {
-      return GetTrendLinesCrossJoinValues(tls => tls[0].PriceAvg2 - tls[0].PriceAvg3)
+      return GetTrendLinesBlueJoinValues(tls => tls[0].PriceAvg2 - tls[0].PriceAvg3)
       .Select(b => b[0].Percentage(b[1]).ToPercent())
       .Average().ToInt();
     }
@@ -570,10 +570,10 @@ namespace HedgeHog.Alice.Store {
 
           BuyLevel.CanTradeEx = IsTurnOnOnly && BuyLevel.CanTrade || hasBuy;
           SellLevel.CanTradeEx = IsTurnOnOnly && SellLevel.CanTrade || hasSell;
-
+          var isPriceIn = new[] { CurrentEnterPrice(false), this.CurrentEnterPrice(true) }.All(cp => cp.Between(SellLevel.Rate, BuyLevel.Rate));
           if(BuyLevel.CanTrade && SellLevel.CanTrade && hasBuy != hasSell) {
-            BuyLevel.CanTradeEx = hasBuy;
-            SellLevel.CanTradeEx = hasSell;
+            BuyLevel.CanTradeEx = hasBuy && isPriceIn;
+            SellLevel.CanTradeEx = hasSell && isPriceIn;
           }
         });
       }
