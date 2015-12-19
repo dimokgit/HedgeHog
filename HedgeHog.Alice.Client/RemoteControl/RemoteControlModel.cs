@@ -1031,18 +1031,19 @@ namespace HedgeHog.Alice.Client {
       string pair = tm.Pair;
       Func<Rate, double> rateHL = rate => (rate.PriceAvg >= rate.PriceCMALast ? rate.PriceHigh : rate.PriceLow).Round(digits);
       #region map
-      Func<Rate, ExpandoObject> map = rate => EnumsExtensions.CreateExpando(
-        "d", rate.StartDate2,
-        "c", rateHL(rate),
-        "v", tm.GetVoltage(rate),
-        "m", rate.PriceCMALast.Round(digits)
-        );
+      var lastVolt = tm.UseRates(rates => rates.BackwardsIterator().Select(tm.GetVoltage).SkipWhile(v => v.IsNaNOrZero()).FirstOrDefault()).FirstOrDefault();
+      var map = MonoidsCore.ToFunc((Rate)null, rate => new {
+        d = rate.StartDate2,
+        c = rateHL(rate),
+        v = tm.GetVoltage(rate).IfNaNOrZero(lastVolt),
+        m = rate.PriceCMALast.Round(digits)
+      });
       #endregion
 
       if (tm.RatesArray.Count == 0 || tm.IsTrader && tm.BuyLevel == null) return new { rates = new int[0] };
 
       var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
-      var tpsAvg = tmTrader.DistanceByMASD;
+      var tpsAvg = tmTrader.UseRates(rates => rates.Select(tmTrader.GetVoltage).Where(Lib.IsNotNaN).DefaultIfEmpty().Average());
 
 
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd/* && !tm.GetVoltage(r).IsNaNOrZero()*/).ToList()).FirstOrDefault();
@@ -1061,9 +1062,7 @@ namespace HedgeHog.Alice.Client {
         if(ratesForChart2.Count > 1)
           ratesForChart2 = TradingMacro.GroupTicksToSeconds(ratesForChart2, volts).ToList();
       }
-      var getRates = MonoidsCore.ToFunc((IList<Rate>)null, rates3 => {
-        return rates3.Select(map).ToArray();
-      });
+      var getRates = MonoidsCore.ToFunc((IList<Rate>)null, rates3 => rates3.Select(map).ToList());
       var tradeLevels = !tmTrader.HasBuyLevel ? new object { } : new {
         buy = tmTrader.BuyLevel.Rate.Round(digits),
         buyClose = tmTrader.BuyCloseLevel.Rate.Round(digits),

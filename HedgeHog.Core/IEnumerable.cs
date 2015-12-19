@@ -9,7 +9,7 @@ namespace HedgeHog {
   public static class IEnumerableCore {
     public class Singleable<T> : IEnumerable<T> {
       private IEnumerable<T> _source;
-      public Singleable(IEnumerable<T> sourse  ) {
+      public Singleable(IEnumerable<T> sourse) {
         this._source = sourse;
       }
       IEnumerator IEnumerable.GetEnumerator() {
@@ -19,7 +19,7 @@ namespace HedgeHog {
         return _source.GetEnumerator();
       }
     }
-    public static T[] GetRange<T>(this IList<T> source,int count) {
+    public static T[] GetRange<T>(this IList<T> source, int count) {
       var a = new T[count];
       var start = source.Count - count;
       Array.Copy(source.ToArray(), start, a, 0, count);
@@ -29,8 +29,35 @@ namespace HedgeHog {
       return new Singleable<T>(source);
     }
     public static IEnumerable<T> BackwardsIterator<T>(this IList<T> lst) {
-      for (int i = lst.Count - 1; i >= 0; i--) {
+      for(int i = lst.Count - 1; i >= 0; i--) {
         yield return lst[i];
+      }
+    }
+    public static IEnumerable<T> TakeFirst<T>(this IList<T> lst, int count) {
+      var last = (count >= 0 ? count : (lst.Count + count).Max(0)).Min(lst.Count);
+      for(int i = 0; i < last; i++) {
+        yield return lst[i];
+      }
+    }
+    public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Predicate<TSource> predicate, int count) {
+      if(count < 0)
+        throw new ArgumentException("Must be >= 0", "count");
+      using(IEnumerator<TSource> iterator = source.GetEnumerator()) {
+        while(iterator.MoveNext()) {
+          TSource item = iterator.Current;
+          if(predicate(item))
+            yield return item;
+          else {
+            while(count > 0) {
+              yield return item;
+              count--;
+              if(count == 0 || !iterator.MoveNext())
+                break;
+              item = iterator.Current;
+            }
+            break;
+          }
+        }
       }
     }
     #region IfEmpty
@@ -38,30 +65,33 @@ namespace HedgeHog {
           Action emptyAction) {
 
       var isEmpty = true;
-      foreach (var e in enumerable) {
+      foreach(var e in enumerable) {
         isEmpty = false;
         yield return e;
       }
-      if (isEmpty)
+      if(isEmpty)
         emptyAction();
     }
     public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
           Func<IEnumerable<T>> emptySelector) {
 
       var isEmpty = true;
-      foreach (var e in enumerable) {
+      foreach(var e in enumerable) {
         isEmpty = false;
         yield return e;
       }
-      if (isEmpty)
-        foreach (var e in emptySelector())
+      if(isEmpty)
+        foreach(var e in emptySelector())
           yield return e;
     }
     public static T IfEmpty<T>(this T enumerable,
           Action<T> thenSelector,
           Action<T> elseSelector) where T : IEnumerable {
 
-      if (!enumerable.GetEnumerator().MoveNext()) thenSelector(enumerable); else elseSelector(enumerable);
+      if(!enumerable.GetEnumerator().MoveNext())
+        thenSelector(enumerable);
+      else
+        elseSelector(enumerable);
       return enumerable;
     }
     public static TResult IfEmpty<T, TResult>(this IEnumerable<T> enumerable,
@@ -71,12 +101,12 @@ namespace HedgeHog {
       return (!enumerable.Any()) ? thenSelector() : elseSelector();
     }
     public static IEnumerable<TSource> IfEmpty<TSource>(this IEnumerable<TSource> source, Func<TSource> getDefaultValue) {
-      using (var enumerator = source.GetEnumerator()) {
-        if (enumerator.MoveNext()) {
+      using(var enumerator = source.GetEnumerator()) {
+        if(enumerator.MoveNext()) {
           do {
             yield return enumerator.Current;
           }
-          while (enumerator.MoveNext());
+          while(enumerator.MoveNext());
         } else
           yield return getDefaultValue();
       }
@@ -89,37 +119,44 @@ namespace HedgeHog {
     public static IEnumerable<T> Yield<T>(this T v) { yield return v; }
     public static IEnumerable<T> YieldNotNull<T>(this T v) { return v.YieldNotNull(true); }
     public static IEnumerable<T> YieldNotNull<T>(this T v, bool? condition) {
-      if (v == null) yield break;
-      if (!condition.HasValue || condition.Value) yield return v;
+      if(v == null)
+        yield break;
+      if(!condition.HasValue || condition.Value)
+        yield return v;
       yield break;
     }
     public static IEnumerable<bool> YieldTrue(this bool v) {
-      if (v) yield return v;
+      if(v)
+        yield return v;
       yield break;
     }
-    public static IEnumerable<U> YieldIf<T,U>(this T v, Func<T,bool> condition,Func<T,U> map) {
+    public static IEnumerable<U> YieldIf<T, U>(this T v, Func<T, bool> condition, Func<T, U> map) {
       if(condition(v))
         yield return map(v);
     }
     public static IEnumerable<T> YieldIf<T>(this T v, bool condition) {
-      if (condition)
+      if(condition)
         yield return v;
-      else yield break;
+      else
+        yield break;
     }
     public static IEnumerable<T> YieldIf<T>(this T v, Func<T, bool> predicate) {
-      if (predicate(v))
+      if(predicate(v))
         yield return v;
-      else yield break;
+      else
+        yield break;
     }
-    public static IEnumerable<T> YieldIf<T>(this T v, Func<T, bool> predicate,Func<T> otherwise) {
-      if (predicate(v))
+    public static IEnumerable<T> YieldIf<T>(this T v, Func<T, bool> predicate, Func<T> otherwise) {
+      if(predicate(v))
         yield return v;
-      else yield return otherwise();
+      else
+        yield return otherwise();
     }
     public static IEnumerable<T> YieldIf<T>(this bool v, Func<T> yielder) {
-      if (v)
+      if(v)
         yield return yielder();
-      else yield break;
+      else
+        yield break;
     }
     public static IEnumerable<T> YieldBreak<T>(this T v) { yield break; }
     public static Queue<T> ToQueue<T>(this IEnumerable<T> t) {
@@ -141,8 +178,8 @@ namespace HedgeHog {
       var values = input
         .Select((t, i) => new { v = getValue(t) })
         .OrderBy(d => d.v)
-        .GroupBy(d=>d.v)
-        .Select(g => new { v=g.Key, c = g.Count()})
+        .GroupBy(d => d.v)
+        .Select(g => new { v = g.Key, c = g.Count() })
         .ToArray();
       var valuesRange = values.Distinct(a => a.v).ToArray();
       var last = valuesRange.LastOrDefault().YieldNotNull().Select(a => a.v).DefaultIfEmpty(double.NaN).Last();

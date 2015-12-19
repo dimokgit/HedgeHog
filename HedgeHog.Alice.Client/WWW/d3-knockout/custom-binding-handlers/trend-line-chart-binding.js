@@ -65,13 +65,14 @@
   var tickAreaBgColor = "lightgray";//lavender";
   var doCorridorStartDate = false;
   var showLineLog = false;
+  var tpsChartNum = 0;
   ko.bindingHandlers.lineChart = {
     init: function (element,valueAccessor) {
       "use strict";
 
       var chartData = ko.unwrap(valueAccessor());
       var chartNum = chartData.chartNum;
-      var hasTps = chartNum >= 10;
+      var hasTps = chartNum == tpsChartNum;
 
       var chartArea = calcChartArea(element);
 
@@ -258,7 +259,7 @@
       var openTradeGross = ko.unwrap(chartData.openTradeGross);
       var tpsAvg = chartData.tpsAvg;
       var chartNum = chartData.chartNum;
-      var hasTps = chartNum >= 10;
+      var hasTps = chartNum == tpsChartNum;
       var canBuy = chartData.canBuy;
       var canSell = chartData.canSell;
       // #endregion

@@ -1558,6 +1558,7 @@ namespace HedgeHog.Alice.Store {
         TradesManager.ResetClosedTrades(Pair);
         _waitHandle.Set();
         TradingStatistics.OriginalProfit = 0;
+        _rhsd = double.NaN;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if(!_replayRates.Any())
@@ -2231,7 +2232,7 @@ namespace HedgeHog.Alice.Store {
                   return;
                 }
                 if(VoltageFunction_ == Alice.VoltageFunction.DistanceMacd) {
-                  SetVoltageByDistanceMACD(rates);
+                  SetVoltageByRHSD(rates);
                 }
                 SpreadForCorridor = rates.Spread();
                 SetCma(rates);
@@ -2298,7 +2299,7 @@ namespace HedgeHog.Alice.Store {
       rates.Reverse();
       var dist = BarPeriod != BarsPeriodType.none
         ? rates.Count > BarsCount
-        ? new[] { rates }.Select(range => InPips(DistanceByMACD2(range, BarsCountCalc).LastOrDefault())).SingleOrDefault()
+        ? new[] { rates }.Select(range => InPips(DistanceByMACD2(range, BarsCountCalc, null).LastOrDefault())).SingleOrDefault()
         : 0
         : this.TradingMacrosByPair()
         .Where(tm => tm.BarPeriod == BarsPeriodType.t1)
@@ -2313,6 +2314,10 @@ namespace HedgeHog.Alice.Store {
       rates.Reverse();
       var firstVolt = Lazy.Create(() => rates.SkipWhile(r => GetVoltage(r).IsNaN()).Take(1).ToArray(GetVoltage));
       rates.TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => firstVolt.Value.ForEach(v => SetVoltage(r, v)));
+    }
+    private void SetVoltageByRHSD(List<Rate> rates) {
+      if(_rhsd.IsNotNaN())
+        rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, _rhsd));
     }
 
     double CalcTicksPerSecond(IList<Rate> rates) {
@@ -3246,7 +3251,7 @@ namespace HedgeHog.Alice.Store {
           break;
         #region RatesHeight
         case TradingMacroTakeProfitFunction.RatesHeight:
-          tp = RatesHeight * xRatio;
+          tp = this._ratesHeightCma * xRatio;
           break;
         #endregion
         #region BuySellLevels

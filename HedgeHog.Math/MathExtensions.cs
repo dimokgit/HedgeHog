@@ -43,11 +43,15 @@ namespace HedgeHog {
     }
     public static readonly double StDevRatioMax = 0.288675135;
 
-    public static IEnumerable<double> Distances(this IEnumerable<double> source) {
+    public static IEnumerable<double> Distances(this IEnumerable<double> source, Action<double, double> onScan = null) {
       return source
         .Scan(new { prev = 0.0, next = 0.0 }, (prev, next) => new { prev = prev.next, next })
         .Skip(1)
-        .Scan(0.0, (d, x) => d + x.prev.Abs(x.next));
+        .Scan(0.0, (d, x) => {
+          if(onScan != null)
+            onScan(x.prev, x.next);
+          return d + x.prev.Abs(x.next);
+        });
     }
     public static IEnumerable<double[]> PrevNext(this IList<double> bars) {
       return bars.Take(bars.Count - 1).Zip(bars.Skip(1), (r1, r2) => new[] { r1, r2 });
@@ -97,7 +101,7 @@ namespace HedgeHog {
       double[] signal = signalIn.SafeArray();
       var line = signal.ToArray().Regression(1);
       IEnumerable<double> ratesFft = signal;
-      if (reversed) ratesFft = ratesFft.Reverse();
+      if(reversed) ratesFft = ratesFft.Reverse();
       alglib.fftr1d(ratesFft.Zip(line, (r, l) => r - l).ToArray(), out bins);
       return bins;
     }
@@ -127,9 +131,9 @@ namespace HedgeHog {
       var c = new alglib.complex(0);
       Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(c, count); };
       return bins.Select((b, i) => {
-        if (i == 0) return b;
-        if (i < harmonic) return c;
-        if (i.Between(harmonic, harmonic + range - 1)) return b;
+        if(i == 0) return b;
+        if(i < harmonic) return c;
+        if(i.Between(harmonic, harmonic + range - 1)) return b;
         return c;
       }).ToArray();
     }
@@ -200,7 +204,7 @@ namespace HedgeHog {
       var rates = rates1.Select(r => new { r, h = priceHigh(r), l = priceLow(r) }).ToArray();
       var indexMiddle = fractalLength / 2;
       var zipped = rates.Zip(rates.Skip(1), (f, s) => new[] { f, s }.ToList());
-      for (var i = 2; i < fractalLength; i++)
+      for(var i = 2; i < fractalLength; i++)
         zipped = zipped.Zip(rates.Skip(i), (z, v) => { z.Add(v); return z; });
       return zipped.AsParallel()
         .Where(z => includeTails || z.Count == fractalLength)
@@ -214,10 +218,10 @@ namespace HedgeHog {
       var sign = Math.Sign(values[1] - values[0]);
       var wavelette = new List<double>(values.Take(2));
       var prev = values[1];
-      foreach (var curr in values.Skip(2)) {
+      foreach(var curr in values.Skip(2)) {
         var s = Math.Sign(curr - prev);
-        if (s == -sign) break;
-        if (sign == 0) sign = s;
+        if(s == -sign) break;
+        if(sign == 0) sign = s;
         wavelette.Add(curr);
         prev = curr;
       }
@@ -246,11 +250,11 @@ namespace HedgeHog {
       counts.Add(new { index = new Box<int>(0), last });
       Func<double, double, double>[] comp = new[] { Math.Min, (Func<double, double, double>)null, Math.Max };
       index = 0;
-      foreach (var v in values.Skip(1)) {
+      foreach(var v in values.Skip(1)) {
         index++;
         var sign = Math.Sign(v);
-        if (sign != 0) {
-          if (sign == Math.Sign(last.Value)) {
+        if(sign != 0) {
+          if(sign == Math.Sign(last.Value)) {
             var compI = sign > 0 ? 2 : 0;
             last.Value = comp[compI](last.Value, v);
             counts.Last().index.Value = index;
@@ -269,10 +273,10 @@ namespace HedgeHog {
       var last = new Box<double>(values[0]);
       var counts = new List<Box<double>>() { last };
       Func<double, double, double>[] comp = new[] { Math.Min, (Func<double, double, double>)null, Math.Max };
-      foreach (var v in values.Skip(1)) {
+      foreach(var v in values.Skip(1)) {
         var sign = Math.Sign(v);
-        if (sign != 0) {
-          if (sign == Math.Sign(last.Value)) {
+        if(sign != 0) {
+          if(sign == Math.Sign(last.Value)) {
             var compI = sign > 0 ? 2 : 0;
             last.Value = comp[compI](last.Value, v);
           } else
@@ -312,7 +316,7 @@ namespace HedgeHog {
         .Select(a => a.first);
     }
     public static IEnumerable<T> Crosses<T>(this IList<T> list, double signal, Func<T, double> getValue) {
-      if (double.IsNaN(signal)) return new T[0];
+      if(double.IsNaN(signal)) return new T[0];
       return list.Crosses(Enumerable.Repeat(signal, list.Count).ToArray(), getValue);
     }
     public static IEnumerable<T> Crosses<T>(this IList<T> list, IList<double> signal, Func<T, double> getValue) {
@@ -418,15 +422,15 @@ namespace HedgeHog {
       double variance;
       mean = 0; // adjust values
 
-      if ((fcompensate) && (value.Length > 1000)) {
+      if((fcompensate) && (value.Length > 1000)) {
         int n = (int)(value.Length * 0.1);
-        for (int i = 0; i <= (n - 1); i++) {
+        for(int i = 0; i <= (n - 1); i++) {
           mean = mean + value[i];
         }
         mean = mean / n;
       }
 
-      for (int i = 1; i <= value.Length; i++) {
+      for(int i = 1; i <= value.Length; i++) {
         average[i % 2] = average[(i + 1) % 2] + (value[i - 1] - mean - average[(i + 1) % 2]) / i;
         stdev += (value[i - 1] - mean - average[(i + 1) % 2]) * (value[i - 1] - mean - average[i % 2]);
       }
@@ -446,8 +450,8 @@ namespace HedgeHog {
       double mean = 0;
       int n = x.Length;
 
-      if (fcompensate) {
-        for (i = 0; i <= (n - 1); i++) {
+      if(fcompensate) {
+        for(i = 0; i <= (n - 1); i++) {
           sum = sum + x[i];
         }
         mean = sum / n;
@@ -456,16 +460,16 @@ namespace HedgeHog {
       //
       // Variance (using corrected two-pass algorithm)
       //
-      if (n != 1) {
+      if(n != 1) {
         v1 = 0; v2 = 0;
-        for (i = 0; i <= n - 1; i++) {
+        for(i = 0; i <= n - 1; i++) {
           v1 = v1 + (x[i] - mean) * (x[i] - mean);
           v2 = v2 + (x[i] - mean);
         }
 
         v2 = v2 * v2 / n;
         variance = (v1 - v2) / (n - 1);
-        if ((double)(variance) < (double)(0)) {
+        if((double)(variance) < (double)(0)) {
           variance = 0;
         }
         var stddev = Math.Sqrt(variance);
@@ -494,12 +498,12 @@ namespace HedgeHog {
     public static SortedList<T, double> MovingAverage<T>(this SortedList<T, double> series, int period) {
       var result = new SortedList<T, double>();
       double total = 0;
-      for (int i = 0; i < series.Count(); i++) {
-        if (i >= period) {
+      for(int i = 0; i < series.Count(); i++) {
+        if(i >= period) {
           total -= series.Values[i - period];
         }
         total += series.Values[i];
-        if (i >= period - 1) {
+        if(i >= period - 1) {
           double average = total / period;
           result.Add(series.Keys[i], average);
         }
@@ -507,10 +511,10 @@ namespace HedgeHog {
     }
     public static SortedList<T, double> MovingAverage_<T>(this SortedList<T, double> series, int period) {
       var result = new SortedList<T, double>();
-      for (int i = 0; i < series.Count(); i++) {
-        if (i >= period - 1) {
+      for(int i = 0; i < series.Count(); i++) {
+        if(i >= period - 1) {
           double total = 0;
-          for (int x = i; x > (i - period); x--)
+          for(int x = i; x > (i - period); x--)
             total += series.Values[x];
           double average = total / period;
           result.Add(series.Keys[i], average);
@@ -520,7 +524,7 @@ namespace HedgeHog {
     }
     public static double[] Linear(double[] x, double[] y) {
       double[,] m = new double[x.Length, 2];
-      for (int i = 0; i < x.Length; i++) {
+      for(int i = 0; i < x.Length; i++) {
         m[i, 0] = x[i];
         m[i, 1] = y[i];
       }
@@ -535,10 +539,10 @@ namespace HedgeHog {
 
     public static void SetProperty<T>(this object o, string p, T v) {
       System.Reflection.PropertyInfo pi = o.GetType().GetProperty(p);
-      if (pi != null) pi.SetValue(o, v, new object[] { });
+      if(pi != null) pi.SetValue(o, v, new object[] { });
       else {
         System.Reflection.FieldInfo fi = o.GetType().GetField(p);
-        if (fi == null) throw new NotImplementedException("Property " + p + " is not implemented in " + o.GetType().FullName + ".");
+        if(fi == null) throw new NotImplementedException("Property " + p + " is not implemented in " + o.GetType().FullName + ".");
         fi.SetValue(o, v);
       }
     }
@@ -551,20 +555,20 @@ namespace HedgeHog {
     }
     public static void SetProperty(this object o, string p, object v, Func<PropertyInfo, bool> propertyPredicate = null) {
       var convert = new Func<object, Type, object>((value, type) => {
-        if (value != null) {
+        if(value != null) {
           Type tThis = Nullable.GetUnderlyingType(type);
           var isNullable = true;
           if(tThis == null) {
             tThis = type;
             isNullable = false;
           }
-          if (tThis.IsEnum) 
-            try{
-            return Enum.Parse(tThis, v + "", true);
-            } catch (Exception exc) {
+          if(tThis.IsEnum)
+            try {
+              return Enum.Parse(tThis, v + "", true);
+            } catch(Exception exc) {
               throw new ArgumentException(new { property = p } + "", exc);
             }
-          return string.IsNullOrWhiteSpace((v ?? "")+"") && isNullable ? null : Convert.ChangeType(v, tThis, null);
+          return string.IsNullOrWhiteSpace((v ?? "") + "") && isNullable ? null : Convert.ChangeType(v, tThis, null);
         }
         return value;
       });
@@ -576,10 +580,10 @@ namespace HedgeHog {
         if(!propertyPredicate(pi))
           return;
       }
-      if (pi != null) pi.SetValue(o, v = convert(v, pi.PropertyType), new object[] { });
+      if(pi != null) pi.SetValue(o, v = convert(v, pi.PropertyType), new object[] { });
       else {
         System.Reflection.FieldInfo fi = o.GetType().GetField(p);
-        if (fi == null) throw new MissingMemberException(t.Name, p);
+        if(fi == null) throw new MissingMemberException(t.Name, p);
         fi.SetValue(o, convert(v, fi.FieldType));
       }
     }
@@ -617,10 +621,10 @@ namespace HedgeHog {
     }
     public static double StDev(this IList<double> values, out double avgOut, out double maxOut, out double minOut) {
       double ret = 0, avg = 0, max = double.MinValue, min = double.MaxValue;
-      if (values.Count > 0) {
+      if(values.Count > 0) {
         avg = values.Average(v => {
-          if (max < v) max = v;
-          if (min > v) min = v;
+          if(max < v) max = v;
+          if(min > v) min = v;
           return v;
         });
         double sum = values.Sum(d => (d - avg) * (d - avg));
@@ -632,14 +636,24 @@ namespace HedgeHog {
       return ret;
     }
     public static double StandardDeviation(this IEnumerable<double> valueList) {
+      double max, min;
+      return valueList.StandardDeviation(out max, out min);
+    }
+    public static double StandardDeviation(this IEnumerable<double> valueList, out double max, out double min) {
       double M = 0.0;
       double S = 0.0;
       int k = 1;
-      foreach (double value in valueList) {
+      max = double.MinValue;
+      min = double.MaxValue;
+      foreach(double value in valueList) {
         double tmpM = M;
         M += (value - tmpM) / k;
         S += (value - tmpM) * (value - M);
         k++;
+        if(max < value)
+          max = value;
+        if(min > value)
+          min = value;
       }
       return Math.Sqrt(S / (k - 2));
     }
@@ -668,6 +682,11 @@ namespace HedgeHog {
       var avg = dbls.Average();
       var std = dbls.StandardDeviation();
       return std / avg;
+    }
+    public static double RelativeToHeightStandardDeviation(this IList<double> dbls) {
+      double min, max;
+      var std = dbls.StandardDeviation(out max,out min);
+      return std / (max- min);
     }
     public static double AverageByStandardDeviation(this IList<double> dbls) {
       var min = dbls.Min();

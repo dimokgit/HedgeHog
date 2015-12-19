@@ -253,7 +253,8 @@ namespace HedgeHog.Alice.Store {
         setCloseLevels(true);
         #region updateTradeCount
         Action<SuppRes, SuppRes> updateTradeCount = (supRes, other) => {
-          if (supRes.TradesCount <= other.TradesCount) other.TradesCount = supRes.TradesCount - 1;
+          if (supRes.TradesCount <= other.TradesCount && new[] { supRes, other }.Any(sr => sr.CanTrade))
+            other.TradesCount = supRes.TradesCount - 1;
         };
         Func<SuppRes, SuppRes> updateNeares = supRes => {
           var other = suppResNearest(supRes);
@@ -1170,7 +1171,8 @@ namespace HedgeHog.Alice.Store {
                 Action<bool, Action> turnItOff = (should, a) => _buySellLevels
                   .Where(_ => should)
                   .Do(sr => {
-                    sr.InManual = false;
+                    if(!TradeConditionsHave(Tip2Ok))
+                      sr.InManual = false;
                     sr.CanTrade = !IsAutoStrategy;
                     sr.TradesCount = TradeCountStart;
                   })
@@ -1204,7 +1206,6 @@ namespace HedgeHog.Alice.Store {
                     .Take(1)
                     .ForEach(_ => {
                       _buySellLevels
-                      .Where(sr => sr.CanTrade)
                       .ForEach(sr => {
                         sr.CanTrade = false;
                         sr.TradesCount = TradeCountStart;

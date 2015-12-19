@@ -381,7 +381,7 @@ namespace HedgeHog.Alice.Store {
 
     [TradeDirectionTrigger]
     public void OnHaveTurnOff() {
-      if(TradeConditionsHaveTurnOff())
+      if(TradeConditionsHaveTurnOff() && Trades.IsEmpty())
         TurnOfManualCorridor();
     }
 

@@ -141,6 +141,21 @@ namespace HedgeHog.Tests {
         Console.WriteLine("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, "Test", string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value)));
 
       }
+      [TestMethod]
+      public void TakeWhileWithCounter() {
+        var ints = Enumerable.Range(0, 5).ToList();
+        Console.WriteLine(new { ints });
+        Assert.AreEqual(2, ints.BackwardsIterator().TakeWhile(i => i >= 4, 2).Last());
+        Assert.AreEqual(0, ints.BackwardsIterator().TakeWhile(i => i >= 4, 20).Last());
+      }
+      [TestMethod]
+      public void TakeFirst() {
+        var ints = Enumerable.Range(1, 5).ToList();
+        Assert.AreEqual(3, ints.TakeFirst(-2).Last());
+        Assert.AreEqual(2, ints.TakeFirst(2).Last());
+        Assert.AreEqual(5, ints.TakeFirst(20).Last());
+        Assert.AreEqual(0, ints.TakeFirst(-20).DefaultIfEmpty().Last());
+      }
     }
   }
 }

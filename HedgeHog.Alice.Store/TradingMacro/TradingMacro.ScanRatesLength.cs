@@ -95,18 +95,23 @@ namespace HedgeHog.Alice.Store {
     void ScanRatesLengthByDistanceMin() {
       BarsCountCalc = GetRatesLengthByDistanceMinByMacd(DistanceByMACD2).DefaultIfEmpty(BarsCountCalc).Single();
     }
-    IEnumerable<int> GetRatesLengthByDistanceMinByMacd(Func<IList<Rate>,int,IEnumerable<double>> macd) {
+    double _rhsd = double.NaN;
+
+    IEnumerable<int> GetRatesLengthByDistanceMinByMacd(Func<IList<Rate>, int, Action<double, double>, IEnumerable<double>> macd) {
+      var distances = new List<double>(BarsCountCalc);
+      Action<double, double> addDistance = (p, n) => distances.Add(p.Abs(n));
       return UseRatesInternal(rs => rs.ToList())
         .Select(rs => {
           rs.Reverse();
           var rdm = InPoints(RatesDistanceMin);
-          var count = macd(rs, BarsCountCalc)
+          var count = macd(rs, BarsCountCalc, addDistance)
             .Skip(BarsCount)
             .TakeWhile(i => i <= rdm)
             .Count() + BarsCount;
           return count;
         })
         .Select(count => {
+          _rhsd = distances.RelativeToHeightStandardDeviation() * 100;
           const double adjuster = 0;
           if(count * adjuster > BarsCountMax) {
             BarsCountMax = (BarsCountMax * adjuster).Ceiling();
@@ -123,15 +128,15 @@ namespace HedgeHog.Alice.Store {
       return macd;
     }
 
-    private IEnumerable<double> DistanceByMACD(IList<Rate> rs, int cmaPeriodCount) {
+    private IEnumerable<double> DistanceByMACD(IList<Rate> rs, int cmaPeriodCount, Action<double, double> onDistance = null) {
       IEnumerable<double> macd = CmaMACD = Macd(rs, cmaPeriodCount);
-      return macd.Distances();
+      return macd.Distances(onDistance);
     }
 
-    private IEnumerable<double> DistanceByMACD2(IList<Rate> rs, int cmaPeriodCount) {
+    private IEnumerable<double> DistanceByMACD2(IList<Rate> rs, int cmaPeriodCount, Action<double, double> onDistance = null) {
       var macd = Macd(rs, cmaPeriodCount);
       var macd2 = CmaMACD = macd.Zip(macd.Skip(1), (v1, v2) => v1.Abs(v2));
-      return macd2.Distances();
+      return macd2.Distances(onDistance);
     }
 
     public void ScanRatesLengthByDistanceMinAndCrossesCount() {
@@ -233,5 +238,6 @@ namespace HedgeHog.Alice.Store {
       get;
       private set;
     }
+
   }
 }
