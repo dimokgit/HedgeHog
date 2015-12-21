@@ -96,6 +96,7 @@ namespace HedgeHog.Alice.Store {
       BarsCountCalc = GetRatesLengthByDistanceMinByMacd(DistanceByMACD2).DefaultIfEmpty(BarsCountCalc).Single();
     }
     double _rhsd = double.NaN;
+    double _rhsdAvg = double.NaN;
 
     IEnumerable<int> GetRatesLengthByDistanceMinByMacd(Func<IList<Rate>, int, Action<double, double>, IEnumerable<double>> macd) {
       var distances = new List<double>(BarsCountCalc);
@@ -108,16 +109,16 @@ namespace HedgeHog.Alice.Store {
             .Skip(BarsCount)
             .TakeWhile(i => i <= rdm)
             .Count() + BarsCount;
-          return count;
+          return new { count, length = RatesTimeSpan(rs.GetRange(0, count)) };
         })
-        .Select(count => {
-          _rhsd = distances.RelativeToHeightStandardDeviation() * 100;
+        .Select(x => {
+          _rhsd = distances.RelativeStandardDeviationSmoothed(1) / x.length.TotalDays;
           const double adjuster = 0;
-          if(count * adjuster > BarsCountMax) {
+          if(x.count * adjuster > BarsCountMax) {
             BarsCountMax = (BarsCountMax * adjuster).Ceiling();
             Log = new Exception(new { BarsCountMax, PairIndex, Action = "Stretched" } + "");
           }
-          return count;
+          return x.count;
         });
     }
 
@@ -239,5 +240,14 @@ namespace HedgeHog.Alice.Store {
       private set;
     }
 
+    public double RhSDAvg {
+      get {
+        return _rhsdAvg;
+      }
+
+      set {
+        _rhsdAvg = value;
+      }
+    }
   }
 }

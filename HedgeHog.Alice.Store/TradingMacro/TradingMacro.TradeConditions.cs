@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Dynamic;
+using System.Globalization;
 
 namespace HedgeHog.Alice.Store {
   class TradeConditionStartDateTriggerAttribute : Attribute {
@@ -333,16 +334,16 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public TradeConditionDelegate RhSDRatioOk {
-      get { return () => TradeDirectionByBool(IsTresholdAbsOk(_rhsd, RhSDRatio)); }
+    public TradeConditionDelegate RhSDAvgOk {
+      get { return () => TradeDirectionByBool(_rhsd >= RhSDAvg); }
     }
 
     #region WwwInfo
     public ExpandoObject WwwInfo() {
       return new ExpandoObject()
         .Merge(new { GRBHRatio__ = TrendHeighRatio() })
-        .Merge(new { GRHRatio__ = TrendPrice1Ratio() })
-        .Merge(new { StDevRH__ = _rhsd.Round(1) })
+        .Merge(new { GRHatio__ = TrendPrice1Ratio() })
+        .Merge(new { RhSDAvg__ = _rhsd.Round(2) })
         .Merge(new { GrnAngle_ = TrendLines1Trends.Angle.Round(1) })
         .Merge(new { RedAngle_ = TrendLinesTrends.Angle.Round(1) })
         .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })
@@ -453,13 +454,29 @@ namespace HedgeHog.Alice.Store {
         .Any(b => b);
     }
 
+    static readonly Calendar callendar = CultureInfo.GetCultureInfo("en-US").Calendar;
+    TimeSpan _RatesTimeSpanCache = TimeSpan.Zero;
+    DateTime[] _RateForTimeSpanCache = new DateTime[0];
     private IEnumerable<TimeSpan> RatesTimeSpan() {
       return UseRates(rates => rates.Count == 0
-            ? TimeSpan.Zero
-            : rates.Last().StartDate - rates[0].StartDate);
+        ? TimeSpan.Zero
+        : RatesTimeSpan(rates));// rates.Last().StartDate - rates[0].StartDate);
     }
 
-    [TradeConditionAsleep]
+    private TimeSpan RatesTimeSpan(IList<Rate> rates) {
+      var ratesLast = new[] { rates[0].StartDate, rates.Last().StartDate };
+      if((from rl in ratesLast join ch in _RateForTimeSpanCache on rl equals ch select rl).Count() == 2)
+        return _RatesTimeSpanCache;
+      _RateForTimeSpanCache = ratesLast;
+      var periodMin = BarPeriodInt.Max(1);
+      return _RatesTimeSpanCache = rates
+        .Pairwise((r1, r2) => r1.StartDate.Subtract(r2.StartDate).Duration())
+        .Where(ts => ts.TotalMinutes <= periodMin)
+        .Sum(ts => ts.TotalMinutes)
+        .FromMinutes();
+    }
+
+    //[TradeConditionAsleep]
     [TradeConditionTurnOff]
     public TradeConditionDelegate TimeFrameOk {
       get {

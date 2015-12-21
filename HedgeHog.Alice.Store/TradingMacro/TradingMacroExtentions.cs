@@ -1803,7 +1803,8 @@ namespace HedgeHog.Alice.Store {
       if(!TradeStatisticsDictionary.ContainsKey(trade.Id))
         TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics() {
           CorridorStDev = TrendLines2Trends.Angle.Abs(),
-          CorridorStDevCma = RatesTimeSpan().FirstOrDefault().TotalMinutes
+          CorridorStDevCma = RatesTimeSpan().FirstOrDefault().TotalMinutes,
+          Resistanse = _rhsdAvg 
         });
       var ts = TradeStatisticsDictionary[trade.Id];
       if(false) {
@@ -2316,8 +2317,11 @@ namespace HedgeHog.Alice.Store {
       rates.TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => firstVolt.Value.ForEach(v => SetVoltage(r, v)));
     }
     private void SetVoltageByRHSD(List<Rate> rates) {
-      if(_rhsd.IsNotNaN())
+      if(_rhsd.IsNotNaN()) {
         rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, _rhsd));
+        var avg = 0.0;
+        RhSDAvg = rates.Select(GetVoltage).Where(Lib.IsNotNaN).DefaultIfEmpty().StandardDeviation(out avg) + avg;
+      }
     }
 
     double CalcTicksPerSecond(IList<Rate> rates) {
@@ -3332,7 +3336,7 @@ namespace HedgeHog.Alice.Store {
         lock (_GeneralPurposeSubjectLocker)
           if(_GeneralPurposeSubject == null) {
             _GeneralPurposeSubject = new Subject<Action>();
-            _GeneralPurposeSubject.SubscribeToLatestOnBGThread(exc => Log = exc, ThreadPriority.Lowest);
+            _GeneralPurposeSubject.SubscribeToLatestOnBGThread(exc => Log = exc, ThreadPriority.Normal);
             //.Latest().ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
             //.Subscribe(s => s(), exc => Log = exc);
           }

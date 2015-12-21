@@ -636,12 +636,21 @@ namespace HedgeHog {
       return ret;
     }
     public static double StandardDeviation(this IEnumerable<double> valueList) {
+      double avg, max, min;
+      return valueList.StandardDeviation(out avg, out max, out min);
+    }
+    public static double StandardDeviation(this IEnumerable<double> valueList, out double avg) {
       double max, min;
-      return valueList.StandardDeviation(out max, out min);
+      return valueList.StandardDeviation(out avg, out max, out min);
     }
     public static double StandardDeviation(this IEnumerable<double> valueList, out double max, out double min) {
+      double avg;
+      return valueList.StandardDeviation(out avg, out max, out min);
+    }
+    public static double StandardDeviation(this IEnumerable<double> valueList, out double avg, out double max, out double min) {
       double M = 0.0;
       double S = 0.0;
+      double summ = 0.0;
       int k = 1;
       max = double.MinValue;
       min = double.MaxValue;
@@ -649,12 +658,14 @@ namespace HedgeHog {
         double tmpM = M;
         M += (value - tmpM) / k;
         S += (value - tmpM) * (value - M);
+        summ += value;
         k++;
         if(max < value)
           max = value;
         if(min > value)
           min = value;
       }
+      avg = summ / k;
       return Math.Sqrt(S / (k - 2));
     }
     public static double StandardDeviation<T>(this IEnumerable<T> valueList, Func<T, double> get) {
@@ -667,26 +678,45 @@ namespace HedgeHog {
       int k = 1;
       max = double.MinValue;
       min = double.MaxValue;
-      foreach (T v in valueList) {
+      foreach(T v in valueList) {
         var value = get(v);
         double tmpM = M;
         M += (value - tmpM) / k;
         S += (value - tmpM) * (value - M);
         k++;
-        if (max < value) max = value;
-        if (min > value) min = value;
+        if(max < value) max = value;
+        if(min > value) min = value;
       }
       return Math.Sqrt(S / (k - 2));
     }
-    public static double RelativeStandardDeviation(this IList<double> dbls) {
-      var avg = dbls.Average();
-      var std = dbls.StandardDeviation();
+    public static double RelativeStandardDeviationSmoothed(this IEnumerable<double> dbls) {
+      double avg, std;
+      var rsd = dbls.RelativeStandardDeviation(out std, out avg);
+      while(rsd > 1) {
+        rsd = dbls.Where(d => d < std).RelativeStandardDeviation(out std,out avg);
+      }
+      return rsd;
+    }
+    public static double RelativeStandardDeviationSmoothed(this IEnumerable<double> dbls,int smoothCount) {
+      double avg, std;
+      var rsd = dbls.RelativeStandardDeviation(out std, out avg);
+      while(--smoothCount >= 0) {
+        rsd = dbls.Where(d => d < std).RelativeStandardDeviation(out std, out avg);
+      }
+      return rsd;
+    }
+    public static double RelativeStandardDeviation(this IEnumerable<double> dbls) {
+      double avg,std;
+      return dbls.RelativeStandardDeviation(out std, out avg);
+    }
+    public static double RelativeStandardDeviation(this IEnumerable<double> dbls,out double std, out double avg) {
+      std = dbls.StandardDeviation(out avg);
       return std / avg;
     }
     public static double RelativeToHeightStandardDeviation(this IList<double> dbls) {
       double min, max;
-      var std = dbls.StandardDeviation(out max,out min);
-      return std / (max- min);
+      var std = dbls.StandardDeviation(out max, out min);
+      return std / (max - min);
     }
     public static double AverageByStandardDeviation(this IList<double> dbls) {
       var min = dbls.Min();

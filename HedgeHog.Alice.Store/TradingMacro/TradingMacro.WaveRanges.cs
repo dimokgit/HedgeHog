@@ -104,7 +104,7 @@ namespace HedgeHog.Alice.Store {
         WaveRangeSum = wrwt.ws;
         WaveRangeAvg = wrwt.wa;
       } else {
-        var firstWaveRange = rates.TakeWhile(r => r.StartDate >= WaveRanges[0].StartDate).Reverse().ToList();
+        var firstWaveRange = rates.BackwardsIterator().TakeWhile(r => r.StartDate >= WaveRanges[0].StartDate).Reverse().ToList();
         WaveRanges = new[] { new WaveRange(firstWaveRange, PointSize, BarPeriod) }.Concat(WaveRanges.Skip(1)).ToList();
         WaveRangeTail = new WaveRange(0);
       }
