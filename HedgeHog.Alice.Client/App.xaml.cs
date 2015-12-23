@@ -59,6 +59,9 @@ namespace HedgeHog.Alice.Client {
                 port++;
               }
           }
+        } catch(CompositionException cex) {
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(cex.ToJson()));
+          MessageBox.Show(cex + "");
         } catch (Exception exc) {
           MessageBox.Show(exc + "");
         }

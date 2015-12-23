@@ -109,10 +109,10 @@ namespace HedgeHog.Alice.Store {
             .Skip(BarsCount)
             .TakeWhile(i => i <= rdm)
             .Count() + BarsCount;
-          return new { count, length = RatesTimeSpan(rs.GetRange(0, count)) };
+          return new { count };//, length = RatesTimeSpan(rs.GetRange(0, count)) };
         })
         .Select(x => {
-          _rhsd = distances.RelativeStandardDeviationSmoothed(1) / x.length.TotalDays;
+          _rhsd = distances.RelativeStandardDeviationSmoothed(1) * 100;// / x.length.TotalDays;
           const double adjuster = 0;
           if(x.count * adjuster > BarsCountMax) {
             BarsCountMax = (BarsCountMax * adjuster).Ceiling();
