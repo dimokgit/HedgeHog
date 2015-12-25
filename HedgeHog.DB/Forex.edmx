@@ -119,6 +119,15 @@
           <Property Name="RunningBalanceTotal" Type="float" />
           <Property Name="SessionInfo2" Type="varchar" MaxLength="1024" />
         </EntityType>
+        <EntityType Name="t_TradeValue">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="TradeId" Type="nvarchar" MaxLength="16" Nullable="false" />
+          <Property Name="Name" Type="varchar" MaxLength="128" Nullable="false" />
+          <Property Name="Value" Type="varchar" MaxLength="256" Nullable="false" />
+        </EntityType>
         <EntityType Name="Event">
           <Key>
             <PropertyRef Name="Country" />
@@ -257,6 +266,20 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <Association Name="FK_t_TradeValue_t_Trade">
+          <End Role="t_Trade" Type="Self.t_Trade" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="t_TradeValue" Type="Self.t_TradeValue" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="t_Trade">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="t_TradeValue">
+              <PropertyRef Name="TradeId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Function Name="BarsByMinutes" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
           <Parameter Name="Pair" Type="varchar" Mode="In" />
           <Parameter Name="Period" Type="tinyint" Mode="In" />
@@ -303,6 +326,7 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
           <EntitySet Name="t_Session" EntityType="Self.t_Session" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="t_Stat" EntityType="Self.t_Stat" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="t_Trade" EntityType="Self.t_Trade" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_TradeValue" EntityType="Self.t_TradeValue" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Event" EntityType="Self.Event" Schema="news" store:Type="Tables" />
           <EntitySet Name="EventLevel" EntityType="Self.EventLevel" Schema="news" store:Type="Tables" />
           <EntitySet Name="MonthlyStats" EntityType="Self.MonthlyStats" Schema="stats" store:Type="Tables" />
@@ -379,6 +403,10 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
             <End Role="t_Bar" EntitySet="t_Bar" />
             <End Role="t_BarExtender" EntitySet="t_BarExtender" />
           </AssociationSet>
+          <AssociationSet Name="FK_t_TradeValue_t_Trade" Association="Self.FK_t_TradeValue_t_Trade">
+            <End Role="t_Trade" EntitySet="t_Trade" />
+            <End Role="t_TradeValue" EntitySet="t_TradeValue" />
+          </AssociationSet>
         </EntityContainer>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -437,6 +465,11 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           <AssociationSet Name="FK_t_BarExtender_t_Bar" Association="ForexModel.FK_t_BarExtender_t_Bar">
             <End Role="t_Bar" EntitySet="t_Bar" />
             <End Role="t_BarExtender" EntitySet="t_BarExtender" />
+          </AssociationSet>
+          <EntitySet Name="t_TradeValue" EntityType="ForexModel.t_TradeValue" />
+          <AssociationSet Name="FK_t_TradeValue_t_Trade" Association="ForexModel.FK_t_TradeValue_t_Trade">
+            <End Role="t_Trade" EntitySet="t_Trade" />
+            <End Role="t_TradeValue" EntitySet="t_TradeValue" />
           </AssociationSet>
         </EntityContainer>
         <ComplexType Name="GetCorridorAverage_Result">
@@ -513,6 +546,7 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           <Property Type="Double" Name="RunningBalance" />
           <Property Type="Double" Name="RunningBalanceTotal" />
           <Property Name="SessionInfo2" Type="String" MaxLength="1024" FixedLength="false" Unicode="false" />
+          <NavigationProperty Name="t_TradeValue" Relationship="ForexModel.FK_t_TradeValue_t_Trade" FromRole="t_Trade" ToRole="t_TradeValue" />
         </EntityType>
         <EntityType Name="t_BarHeight">
           <Key>
@@ -734,6 +768,30 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
             </Principal>
             <Dependent Role="t_BarExtender">
               <PropertyRef Name="BarID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="t_TradeValue">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="TradeId" Type="String" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="128" FixedLength="false" Unicode="false" />
+          <NavigationProperty Name="t_Trade" Relationship="ForexModel.FK_t_TradeValue_t_Trade" FromRole="t_TradeValue" ToRole="t_Trade" />
+          <Property Name="Value" Type="String" Nullable="false" MaxLength="256" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <Association Name="FK_t_TradeValue_t_Trade">
+          <End Type="ForexModel.t_Trade" Role="t_Trade" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="ForexModel.t_TradeValue" Role="t_TradeValue" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="t_Trade">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="t_TradeValue">
+              <PropertyRef Name="TradeId" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -1030,6 +1088,16 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="t_TradeValue">
+            <EntityTypeMapping TypeName="ForexModel.t_TradeValue">
+              <MappingFragment StoreEntitySet="t_TradeValue">
+                <ScalarProperty Name="Value" ColumnName="Value" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="TradeId" ColumnName="TradeId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -1072,6 +1140,8 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
         <edmx:EntityTypeShape EntityType="ForexModel.v_TradeSession" Width="1.5" PointX="3.375" PointY="10.75" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.75" PointY="0.75" />
         <edmx:AssociationConnector Association="ForexModel.FK_t_BarExtender_t_Bar" />
+        <edmx:EntityTypeShape EntityType="ForexModel.t_TradeValue" Width="1.5" PointX="9" PointY="10.5" />
+        <edmx:AssociationConnector Association="ForexModel.FK_t_TradeValue_t_Trade" />
       </edmx:Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

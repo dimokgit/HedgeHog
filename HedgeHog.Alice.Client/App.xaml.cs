@@ -110,9 +110,9 @@ namespace HedgeHog.Alice.Client {
           }
           else
           {
-              var mm = GetTraderModelBase();
-              if (mm != null) mm.Log = e.Exception;
-          }
+          FileLogger.LogToFile(e.ToJson());
+          MessageBox.Show(e.Exception + "");
+        }
       } catch (ObjectDisposedException) {
         MessageBox.Show(e.Exception + "");
       }

@@ -14,6 +14,12 @@ namespace HedgeHog.DB
     
     public partial class t_Trade
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
+        public t_Trade()
+        {
+            this.t_TradeValue = new HashSet<t_TradeValue>();
+        }
+    
         public string Id { get; set; }
         public bool Buy { get; set; }
         public double PL { get; set; }
@@ -35,5 +41,8 @@ namespace HedgeHog.DB
         public Nullable<double> RunningBalance { get; set; }
         public Nullable<double> RunningBalanceTotal { get; set; }
         public string SessionInfo2 { get; set; }
+    
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<t_TradeValue> t_TradeValue { get; set; }
     }
 }

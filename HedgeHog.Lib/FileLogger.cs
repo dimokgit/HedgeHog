@@ -18,12 +18,12 @@ namespace HedgeHog {
     public static Exception LogToFile(Exception exc,string fileName) {
       try {
         if (exc != null) {
-          var text = DateTime.Now.ToString("[dd HH:mm:ss.fff] ") +" **************** Exception ***************" + Environment.NewLine;
-          while (exc != null) {
+          var text = DateTime.Now.ToString("[dd HH:mm:ss.fff] ") + " **************** Exception ***************" + Environment.NewLine;
+          while(exc != null) {
             text += exc.Message + Environment.NewLine + exc.StackTrace + Environment.NewLine;
             exc = exc.InnerException;
           }
-          System.IO.File.AppendAllText(fileName, text);
+          LogToFile(fileName, text);
           //nLogger.Error(text);
         }
 
@@ -33,6 +33,14 @@ namespace HedgeHog {
         } catch { }
       }
       return exc;
+    }
+
+    public static void LogToFile( string text) {
+      LogToFile(logFileName, text);
+    }
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    public static void LogToFile(string fileName, string text) {
+      System.IO.File.AppendAllText(fileName, text);
     }
   }
 }

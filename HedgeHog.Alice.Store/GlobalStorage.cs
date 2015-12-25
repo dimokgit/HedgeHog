@@ -265,14 +265,18 @@ namespace HedgeHog.Alice.Store {
       });
     }
     public static List<TBar> GetRateFromDBBackwards<TBar>(string pair, DateTime endDate, int barsCount, int minutesPerPriod,Func<List<TBar>,List<TBar>> map) where TBar : BarBase, new() {
-      map = map ?? new Func<List<TBar>, List<TBar>>(rs => rs);
-      var rates = map(GetRateFromDBBackwards<TBar>(pair, endDate, barsCount, minutesPerPriod));
-      while(rates.Count< barsCount) {
-        var moreRates = map(GetRateFromDBBackwards<TBar>(pair, rates[0].StartDate.ToUniversalTime(), barsCount, minutesPerPriod));
-        if (moreRates.Count == 0) throw new Exception(new { pair, barsCount, minutesPerPriod, error = "Don't have that much." } + "");
-        rates = moreRates.Take(barsCount - rates.Count).Concat(rates).ToList();
+      try {
+        map = map ?? new Func<List<TBar>, List<TBar>>(rs => rs);
+        var rates = map(GetRateFromDBBackwards<TBar>(pair, endDate, barsCount, minutesPerPriod));
+        while(rates.Count < barsCount) {
+          var moreRates = map(GetRateFromDBBackwards<TBar>(pair, rates[0].StartDate.ToUniversalTime(), barsCount, minutesPerPriod));
+          if(moreRates.Count == 0) throw new Exception(new { pair, barsCount, minutesPerPriod, error = "Don't have that much." } + "");
+          rates = moreRates.Take(barsCount - rates.Count).Concat(rates).ToList();
+        }
+        return rates;
+      }catch(Exception exc) {
+        throw new Exception(new { pair, endDate, barsCount, minutesPerPriod } + "", exc);
       }
-      return rates;
     }
     public static List<TBar> GetRateFromDBBackwards<TBar>(string pair, DateTime endDate, int barsCount, int minutesPerPriod ) where TBar : BarBase, new() {
       return (minutesPerPriod == 0

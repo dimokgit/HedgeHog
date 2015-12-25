@@ -287,9 +287,9 @@ namespace HedgeHog.Alice.Store {
         .Count() == 1;
     }
     private bool CanTriggerTradeDirection() {
-      var canTriggerTradeDirection = TrendLines2Trends.Count > BarsCount;
+      var canTriggerTradeDirection = TrendLines2Trends.Count > BarsCount && _isRatesLengthStable;
       if(!canTriggerTradeDirection)
-        Log = new Exception(new { canTriggerTradeDirection } + "");
+        Log = new Exception(new { canTriggerTradeDirection, _isRatesLengthStable } + "");
       return canTriggerTradeDirection;
     }
 

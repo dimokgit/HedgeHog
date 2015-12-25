@@ -179,6 +179,9 @@
     <Compile Include="t_Trade.cs">
       <DependentUpon>ForexModel.tt</DependentUpon>
     </Compile>
+    <Compile Include="t_TradeValue.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="v_BlackoutTime.cs">
       <DependentUpon>ForexModel.tt</DependentUpon>
     </Compile>

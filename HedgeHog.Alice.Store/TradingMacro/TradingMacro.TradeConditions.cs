@@ -335,7 +335,13 @@ namespace HedgeHog.Alice.Store {
     }
 
     public TradeConditionDelegate RhSDAvgOk {
-      get { return () => TradeDirectionByBool(_rhsd >= RhSDAvg); }
+      get { return () => TradeDirectionByBool(_macd2Rsd >= MacdRsdAvg); }
+    }
+
+    public TradeConditionDelegate CmaRsdOk {
+      get {
+        return () => TradeDirectionByBool(IsTresholdAbsOk(MacdRsdAvg, MacdRsdAvgLevel));
+      }
     }
 
     #region WwwInfo
@@ -343,7 +349,7 @@ namespace HedgeHog.Alice.Store {
       return new ExpandoObject()
         .Merge(new { GRBHRatio__ = TrendHeighRatio() })
         .Merge(new { GRHatio__ = TrendPrice1Ratio() })
-        .Merge(new { RhSDAvg__ = _rhsd.Round(2) })
+        .Merge(new { RhSDAvg__ = _macd2Rsd.Round(2) })
         .Merge(new { GrnAngle_ = TrendLines1Trends.Angle.Round(1) })
         .Merge(new { RedAngle_ = TrendLinesTrends.Angle.Round(1) })
         .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })

@@ -9,6 +9,7 @@ namespace HedgeHog.Shared {
     public double CorridorStDevCma { get; set; }
     public double Resistanse { get; set; }
     public double Support { get; set; }
+    public Dictionary<string, object> Values { get; set; } = new Dictionary<string, object>();
 
     public Guid SessionId { get; set; }
     public string SessionInfo { get; set; }

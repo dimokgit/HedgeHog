@@ -95,8 +95,9 @@ namespace HedgeHog.Alice.Store {
     void ScanRatesLengthByDistanceMin() {
       BarsCountCalc = GetRatesLengthByDistanceMinByMacd(DistanceByMACD2).DefaultIfEmpty(BarsCountCalc).Single();
     }
-    double _rhsd = double.NaN;
-    double _rhsdAvg = double.NaN;
+    double _macd2Rsd = double.NaN;
+    public double MacdRsdAvg { get; set; }
+    bool _isRatesLengthStable = false;
 
     IEnumerable<int> GetRatesLengthByDistanceMinByMacd(Func<IList<Rate>, int, Action<double, double>, IEnumerable<double>> macd) {
       var distances = new List<double>(BarsCountCalc);
@@ -112,12 +113,13 @@ namespace HedgeHog.Alice.Store {
           return new { count };//, length = RatesTimeSpan(rs.GetRange(0, count)) };
         })
         .Select(x => {
-          _rhsd = distances.RelativeStandardDeviationSmoothed(1) * 100;// / x.length.TotalDays;
+          _macd2Rsd = distances.RelativeStandardDeviationSmoothed(1) * 100;// / x.length.TotalDays;
           const double adjuster = 0;
           if(x.count * adjuster > BarsCountMax) {
             BarsCountMax = (BarsCountMax * adjuster).Ceiling();
             Log = new Exception(new { BarsCountMax, PairIndex, Action = "Stretched" } + "");
           }
+          _isRatesLengthStable = RatesArray.Count.Ratio(x.count) < 1.05;
           return x.count;
         });
     }
@@ -240,14 +242,5 @@ namespace HedgeHog.Alice.Store {
       private set;
     }
 
-    public double RhSDAvg {
-      get {
-        return _rhsdAvg;
-      }
-
-      set {
-        _rhsdAvg = value;
-      }
-    }
   }
 }

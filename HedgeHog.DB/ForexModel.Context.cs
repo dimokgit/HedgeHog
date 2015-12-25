@@ -41,6 +41,7 @@ namespace HedgeHog.DB
         public virtual DbSet<t_BarExtender> t_BarExtender { get; set; }
         public virtual DbSet<v_TradeSession> v_TradeSession { get; set; }
         public virtual DbSet<t_Bar> t_Bar { get; set; }
+        public virtual DbSet<t_TradeValue> t_TradeValue { get; set; }
     
         public virtual ObjectResult<Nullable<float>> GetCorridor(string pair, Nullable<byte> period, Nullable<System.DateTime> date, Nullable<int> spreadPeriod)
         {

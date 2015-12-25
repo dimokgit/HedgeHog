@@ -1558,7 +1558,9 @@ namespace HedgeHog.Alice.Store {
         TradesManager.ResetClosedTrades(Pair);
         _waitHandle.Set();
         TradingStatistics.OriginalProfit = 0;
-        _rhsd = double.NaN;
+        _macd2Rsd = double.NaN;
+        MacdRsdAvg = double.NaN;
+        _isRatesLengthStable = false;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if(!_replayRates.Any())
@@ -1670,6 +1672,8 @@ namespace HedgeHog.Alice.Store {
               isReplaying = true;
               if(UseRatesInternal(ri => ri.Last())
                 .Do(rl => {
+                  if(IsTrader)
+                    TradesManager.SetServerTime(rl.StartDate);
                   LastRatePullTime = rl.StartDate;
                   LoadRatesStartDate2 = rl.StartDate2;
                 }).IsEmpty())
@@ -1685,7 +1689,6 @@ namespace HedgeHog.Alice.Store {
                     continue;
                   ratePrev = rate;
                   if(this.TradingMacrosByPair().First() == this && (Trades.Any() || IsTradingDay())) {
-                    TradesManager.SetServerTime(RatesInternal.Last().StartDate);
                     TradesManager.RaisePriceChanged(Pair, BarPeriodInt, new Price(Pair, rate));
                   }
                   ReplayEvents();
@@ -1804,7 +1807,11 @@ namespace HedgeHog.Alice.Store {
         TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics() {
           CorridorStDev = TrendLines2Trends.Angle.Abs(),
           CorridorStDevCma = RatesTimeSpan().FirstOrDefault().TotalMinutes,
-          Resistanse = _rhsdAvg 
+          Values = new Dictionary<string, object> {
+            { "Angle", TrendLines2Trends.Angle.Abs() },
+            { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
+            { "CmaMacdRsd", MacdRsdAvg }
+          }
         });
       var ts = TradeStatisticsDictionary[trade.Id];
       if(false) {
@@ -2317,10 +2324,33 @@ namespace HedgeHog.Alice.Store {
       rates.TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => firstVolt.Value.ForEach(v => SetVoltage(r, v)));
     }
     private void SetVoltageByRHSD(List<Rate> rates) {
-      if(_rhsd.IsNotNaN()) {
-        rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, _rhsd));
+      if(CanTriggerTradeDirection()) {
+        if(PairIndex == 1) {
+          if(_macd2Rsd.IsNotNaN()) {
+            rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, _macd2Rsd));
+          }
+        } else {
+          var oneMinute = 1.FromMinutes();
+          Func<Rate, double, bool> setVolts = (r, v) => { SetVoltage(r, v); return true; };
+          (from tm in TradingMacroOther(tm => tm.BarPeriod == BarsPeriodType.t1)
+           from lastRate in UseRates(ra => ra.Last())
+           let lastDate = lastRate.StartDate
+           from voltsAvg in tm.UseRates(ra => ra.BackwardsIterator()
+            .TakeWhile(r => r.StartDate.Subtract(lastDate).Duration() < oneMinute)
+            .Select(r => tm.GetVoltage(r))
+            .Where(Lib.IsNotNaN)
+            .DefaultIfEmpty(double.NaN)
+            .Average())
+            .Where(Lib.IsNotNaN)
+           select rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNaN()).Do(r => SetVoltage(r, voltsAvg)).Count()+
+                  rates.TakeWhile(r => GetVoltage(r).IsNaN()).Do(r => SetVoltage(r, voltsAvg)).Count()
+           ).Count();
+        }
         var avg = 0.0;
-        RhSDAvg = rates.Select(GetVoltage).Where(Lib.IsNotNaN).DefaultIfEmpty().StandardDeviation(out avg) + avg;
+        var std = rates.Select(GetVoltage).Where(Lib.IsNotNaN).DefaultIfEmpty().StandardDeviation(out avg);
+        MacdRsdAvg = std + avg;
+        GetVoltageHigh = () => MacdRsdAvg;
+        GetVoltageAverage = () => avg;
       }
     }
 
