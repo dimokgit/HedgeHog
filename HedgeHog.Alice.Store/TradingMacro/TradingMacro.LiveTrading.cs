@@ -17,11 +17,16 @@ using System.Reactive.Disposables;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
-
+    private bool HaveTrades() {
+      return Trades.Any() || HasPendingOrders();
+    }
+    void LogTradingAction(object message) {
+      if(LogTrades)
+      Log = new Exception(message + "");
+    }
     #region Pending Action
-    bool HasPendingEntryOrders { get { return PendingEntryOrders.Count() > 0; } }
     static MemoryCache _pendingEntryOrders;
-    MemoryCache PendingEntryOrders {
+    MemoryCache PendingEntryOrders_ {
       [MethodImpl(MethodImplOptions.Synchronized)]
       get {
         if (_pendingEntryOrders == null)
@@ -31,16 +36,30 @@ namespace HedgeHog.Alice.Store {
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     private void ReleasePendingAction(string key) {
-      if (PendingEntryOrders.Contains(key)) {
-        PendingEntryOrders.Remove(key);
-        //Debug.WriteLine("Pending[" + Pair + "] " + key + " released.");
+      LogPendingActions();
+      if(_pendingEntryOrders.Contains(key)) {
+        _pendingEntryOrders.Remove(key);
+        LogTradingAction(new { Pending = Pair, key, status = "Released." });
       }
     }
-    private bool HasPendingOrders() { return PendingEntryOrders.Any(); }
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    private void AddPendingAction(string key, object value, CacheItemPolicy cip) {
+      if(_pendingEntryOrders.Contains(key))
+        throw new Exception(new { PendingEntryOrders = new { key, message = "Already exists" } } + "");
+      LogPendingActions();
+      _pendingEntryOrders.Add(key, DateTimeOffset.Now, cip);
+      LogTradingAction(new { PendingEntryOrders = new { Pair, key, value, status = "Added." } });
+    }
+
+    private void LogPendingActions() {
+      LogTradingAction(new { PendingEntryOrders = "\n" + string.Join("\n", _pendingEntryOrders.Select(po => new { po.Key, po.Value, status = "Existing" })) });
+    }
+
+    private bool HasPendingOrders() { return _pendingEntryOrders.Any(); }
     private bool HasPendingKey(string key) { return !CheckPendingKey(key); }
     [MethodImpl(MethodImplOptions.Synchronized)]
     private bool CheckPendingKey(string key) {
-      return !PendingEntryOrders.Contains(key);
+      return !_pendingEntryOrders.Contains(key);
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     private void CheckPendingAction(string key, Action<Action> action = null) {
@@ -48,8 +67,9 @@ namespace HedgeHog.Alice.Store {
         if (action != null) {
           try {
             Action a = () => {
-              var cip = new CacheItemPolicy() { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1), RemovedCallback = ce => { if (!IsInVitualTrading) Log = new Exception(ce.CacheItem.Key + "[" + Pair + "] expired."); } };
-              PendingEntryOrders.Add(key, DateTimeOffset.Now, cip);
+              var exp = IsInVitualTrading ? ObjectCache.InfiniteAbsoluteExpiration : DateTimeOffset.Now.AddMinutes(1);
+              var cip = new CacheItemPolicy() { AbsoluteExpiration = exp, RemovedCallback = ce => { /*if (!IsInVitualTrading)*/ Log = new Exception(ce.CacheItem.Key + "[" + Pair + "] expired without being closed."); } };
+              AddPendingAction(key, DateTimeOffset.Now, cip);
             };
             action(a);
           } catch (Exception exc) {
@@ -58,7 +78,7 @@ namespace HedgeHog.Alice.Store {
           }
         }
       } else {
-        Log = new Exception(Pair + "." + key + " is pending:" + PendingEntryOrders[key] + " in " + Lib.CallingMethod());
+        LogPendingActions();
       }
     }
     #endregion

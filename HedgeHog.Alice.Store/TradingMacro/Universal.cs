@@ -1186,19 +1186,21 @@ namespace HedgeHog.Alice.Store {
                   #endregion
                 var hasTradeCountOff = _buySellLevels.Where(sr => sr.TradesCount < -TradeCountMax);
                 onCloseTradeLocal += t => {
-                  if (_buySellLevels.All(sr => sr.InManual && !sr.CanTrade))
-                    _buySellLevelsForEach(sr => sr.InManual = false);
-                  if (minPLOk(t) || hasTradeCountOff.Any()) {
-                    BuyLevel.InManual = SellLevel.InManual = false;
-                    turnItOff(true, () => {
-                      if (canTradeOff)
-                        IsTradingActive = false;
-                    });
+                  if(!HaveTrades()) {
+                    if(_buySellLevels.All(sr => sr.InManual && !sr.CanTrade))
+                      _buySellLevelsForEach(sr => sr.InManual = false);
+                    if(minPLOk(t) || hasTradeCountOff.Any()) {
+                      BuyLevel.InManual = SellLevel.InManual = false;
+                      turnItOff(true, () => {
+                        if(canTradeOff)
+                          IsTradingActive = false;
+                      });
+                    }
+                    if(CurrentGrossInPipTotal > 0)
+                      BroadcastCloseAllTrades();
+                    BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
+                    CorridorStartDate = null;
                   }
-                  if (CurrentGrossInPipTotal > 0)
-                    BroadcastCloseAllTrades();
-                  BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
-                  CorridorStartDate = null;
                 };
                   #endregion
                   Action<Trade> canTradeByTradeCount = t =>

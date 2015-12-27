@@ -279,7 +279,7 @@ namespace HedgeHog.Alice.Store {
       get {
         return () => {
           var bsl = new[] { BuyLevel, SellLevel };
-          if(Trades.Length == 0)
+          if(!HaveTrades())
             SetTradeCorridorToMinHeight2();
           _tipRatioCurrent = _ratesHeightCma / BuyLevel.Rate.Abs(SellLevel.Rate);
           return TradeDirectionByTradeLevels(BuyLevel.Rate, SellLevel.Rate) &

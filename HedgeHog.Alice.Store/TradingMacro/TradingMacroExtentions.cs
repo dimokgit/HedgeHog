@@ -229,7 +229,9 @@ namespace HedgeHog.Alice.Store {
     #region ctor
     [Import]
     static NewsCasterModel _newsCaster { get { return NewsCasterModel.Default; } }
+
     public TradingMacro() {
+
       this.ObservableForProperty(tm => tm.Pair, false, false)
         .Where(oc => !string.IsNullOrWhiteSpace(oc.Value) && !IsInVitualTrading)
         .Throttle(1.FromSeconds())
@@ -359,7 +361,7 @@ namespace HedgeHog.Alice.Store {
         var settings = Lib.ReadTestParameters(path);
         settings.ForEach(tp => {
           try {
-            this.SetProperty(tp.Key, (object)tp.Value, p => p != null && p.GetCustomAttribute<DnrAttribute>() == null);
+            LoadSetting(tp);
           } catch(Exception exc) {
             Log = new Exception(new { tp.Key, tp.Value } + "", exc);
           }
@@ -368,6 +370,10 @@ namespace HedgeHog.Alice.Store {
       } catch(Exception exc) {
         Log = exc;
       }
+    }
+
+    public void LoadSetting<T>(KeyValuePair<string, T> tp) {
+      this.SetProperty(tp.Key, (object)tp.Value, p => p != null && p.GetCustomAttribute<DnrAttribute>() == null);
     }
 
     #endregion
@@ -577,6 +583,7 @@ namespace HedgeHog.Alice.Store {
       GlobalStorage.UseForexContext(f => {
         this._blackoutTimes = f.v_BlackoutTime.ToArray();
       });
+      _pendingEntryOrders = new MemoryCache(Pair);
       OnPropertyChanged(TradingMacroMetadata.CompositeName);
     }
     partial void OnLimitBarChanged() { OnPropertyChanged(TradingMacroMetadata.CompositeName); }
@@ -1359,7 +1366,6 @@ namespace HedgeHog.Alice.Store {
         CloseAtZero = false;
         EnsureActiveSuppReses();
         RaisePositionsChanged();
-        ReleasePendingAction("OT");
         ReleasePendingAction("CT");
         if(_strategyExecuteOnTradeClose != null)
           _strategyExecuteOnTradeClose(e.Trade);
@@ -2830,11 +2836,11 @@ namespace HedgeHog.Alice.Store {
         sr.RateEx = rate;
     }
     public void OpenTrade(bool isBuy, int lot, string reason) {
-      CheckPendingAction("OT", (pa) => {
+      var key = lot - Trades.Lots(t => t.IsBuy != isBuy) > 0 ? "OT" : "CT";
+      CheckPendingAction(key, (pa) => {
         if(lot > 0) {
           pa();
-          if(LogTrades)
-            Log = new Exception(string.Format("{0}[{1}]: {2} {3} from {4} by [{5}]", Pair, BarPeriod, isBuy ? "Buying" : "Selling", lot, new StackFrame(3).GetMethod().Name, reason));
+          LogTradingAction(string.Format("{0}[{1}]: {2} {3} from {4} by [{5}]", Pair, BarPeriod, isBuy ? "Buying" : "Selling", lot, new StackFrame(3).GetMethod().Name, reason));
           TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", null);
         }
       });
@@ -2850,9 +2856,8 @@ namespace HedgeHog.Alice.Store {
       if(lot > 0)
         CheckPendingAction("CT", pa => {
           pa();
-          if(LogTrades)
-            Log = new Exception(string.Format("{0}[{1}]: Closing {2} from {3} in {4} from {5}]"
-              , Pair, BarPeriod, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name, reason));
+          LogTradingAction(string.Format("{0}[{1}]: Closing {2} from {3} in {4} from {5}]"
+            , Pair, BarPeriod, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name, reason));
           if(!TradesManager.ClosePair(Pair, Trades[0].IsBuy, lot))
             ReleasePendingAction("CT");
         });

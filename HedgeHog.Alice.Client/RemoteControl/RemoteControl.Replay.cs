@@ -83,8 +83,12 @@ namespace HedgeHog.Alice.Client {
           var odRes = od.ShowDialog();
           if (!odRes.GetValueOrDefault()) throw new ArgumentException("Must provide test params file name.");
           tmOriginal.TestFileName = System.IO.Path.GetFileName(od.FileName);
-          var paramsDict = Lib.ReadTestParameters(od.FileName);
-          _testParamsRaw.AddRange(paramsDict.Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v)).ToArray()));
+          if(tmOriginal.TestFileName.Contains("skipme"))
+            tmOriginal.TestFileName = "";
+          else {
+            var paramsDict = Lib.ReadTestParameters(od.FileName);
+            _testParamsRaw.AddRange(paramsDict.Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v)).ToArray()));
+          }
         } else {
           var testParams = tmOriginal.GetPropertiesByAttibute<CategoryAttribute>(a => a.Category == TradingMacro.categoryTest);
           var paramsDict = testParams.ToDictionary(p => p.Item2.Name.Substring(4), p => p.Item2.GetValue(tmOriginal, null).ToString().ParseParamRange());
@@ -172,7 +176,7 @@ namespace HedgeHog.Alice.Client {
           if (testParameter != null && tm == tmOriginal)
             testParameter.ForEach(tp => {
               try {
-                tm.SetProperty(tp.Key, tp.Value);
+                tm.LoadSetting(tp);
               }catch(SetLotSizeException){
               } catch (Exception exc) {
                 if(!(exc.InnerException is SetLotSizeException))

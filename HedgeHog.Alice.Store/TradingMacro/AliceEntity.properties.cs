@@ -95,6 +95,7 @@ namespace HedgeHog.Alice.Store {
     public string _TestFileName = "";
     [DisplayName("Test File Name")]
     [Category(categoryTestControl)]
+    [Dnr]
     public string TestFileName {
       get { return _TestFileName; }
       set {
@@ -171,8 +172,9 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public bool _UseTestFile;
+    public bool _UseTestFile = true;
     [Category(categoryTestControl)]
+    [Dnr]
     public bool UseTestFile {
       get { return _UseTestFile; }
       set {

@@ -11,8 +11,11 @@ using System.Diagnostics;
 
 namespace HedgeHog.Shared {
   public static class TradeExtensions {
-    public static int Positions(this IEnumerable<Trade> trades,int lotBase) {
+    public static int Positions(this IEnumerable<Trade> trades, int lotBase) {
       return ((double)trades.Sum(t => t.Lots) / lotBase).Ceiling();
+    }
+    public static int Lots(this IEnumerable<Trade> trades, Func<Trade, bool> predicate) {
+      return trades.Where(predicate).Lots();
     }
     public static int Lots(this IEnumerable<Trade> trades) {
       return trades.Select(t => t.Lots).DefaultIfEmpty().Sum();
@@ -71,7 +74,7 @@ namespace HedgeHog.Shared {
     /// Not Implemented exception
     /// </summary>
     public static Func<double> PipRateNI = () => { throw new NotImplementedException(); };
-    public static Trade Create(string pair, double pipSize,Func<Trade,double> commissionByTrade) {
+    public static Trade Create(string pair, double pipSize, Func<Trade, double> commissionByTrade) {
       return new Trade() { Pair = pair, PipSize = pipSize, CommissionByTrade = commissionByTrade };
     }
     protected Trade() {
@@ -103,7 +106,7 @@ namespace HedgeHog.Shared {
     public double Open {
       get { return _Open; }
       set {
-        _Open = value; 
+        _Open = value;
       }
     }
     double _Close;
@@ -114,7 +117,8 @@ namespace HedgeHog.Shared {
       get { return _Close; }
       set {
         _Close = value;
-        if (BaseUnitSize == 0) return;
+        if(BaseUnitSize == 0)
+          return;
         var gross = Buy ? Close - Open : Open - Close;
         PL = gross / PipSize;
         var offset = Pair == "USDOLLAR" ? 1 : 10.0;
@@ -123,7 +127,7 @@ namespace HedgeHog.Shared {
     }
     [DataMember]
     [DisplayName("")]
-    [UpdateOnUpdate("LimitInPips","LimitToCloseInPips")]
+    [UpdateOnUpdate("LimitInPips", "LimitToCloseInPips")]
     public double Limit { get; set; }
     [DisplayName("")]
     public double LimitInPips { get { return Limit == 0 ? 0 : InPips(IsBuy ? Limit - Open : Open - Limit); } }
@@ -137,7 +141,7 @@ namespace HedgeHog.Shared {
     public double Stop {
       get { return _Stop; }
       set {
-        if (_Stop != value) {
+        if(_Stop != value) {
           _Stop = value;
           OnPropertyChanged("Stop");
         }
@@ -207,7 +211,7 @@ namespace HedgeHog.Shared {
     public string StopOrderID { get; set; }
     [DataMember]
     public string LimitOrderID { get; set; }
-    
+
 
     [DataMember]
     public double Commission { get; set; }
@@ -220,10 +224,10 @@ namespace HedgeHog.Shared {
     public ITradesManager TradesManager {
       get { return _tradesManager; }
       set {
-        if (_tradesManager != null)
+        if(_tradesManager != null)
           _tradesManager.PriceChanged -= UpdateByPrice;
         _tradesManager = value;
-        if (_tradesManager != null)
+        if(_tradesManager != null)
           _tradesManager.PriceChanged += UpdateByPrice;
       }
     }
@@ -233,9 +237,11 @@ namespace HedgeHog.Shared {
     }
     public int BaseUnitSize { get; set; }
     public void UpdateByPrice(ITradesManager tradesManager, Price price) {
-      if (price.Pair == Pair) {
-        if (PipSize == 0) PipSize = tradesManager.GetPipSize(Pair);
-        if (BaseUnitSize == 0) BaseUnitSize = tradesManager.GetBaseUnitSize(Pair);
+      if(price.Pair == Pair) {
+        if(PipSize == 0)
+          PipSize = tradesManager.GetPipSize(Pair);
+        if(BaseUnitSize == 0)
+          BaseUnitSize = tradesManager.GetBaseUnitSize(Pair);
         Time2Close = price.Time2.DateTime;
         Close = Buy ? price.Bid : price.Ask;
         Commission = CommissionByTrade(this);
@@ -279,10 +285,10 @@ namespace HedgeHog.Shared {
     public Trade FromString(string xmlString) {
       var x = XElement.Parse(xmlString);
       var nodes = x.Nodes().ToArray();
-      foreach (var property in GetType().GetProperties()) {
+      foreach(var property in GetType().GetProperties()) {
         var element = x.Element(property.Name);
-        if (element != null && property.CanWrite && property.PropertyType != typeof(UnKnownBase))
-          if (property.PropertyType == typeof(TradeRemark))
+        if(element != null && property.CanWrite && property.PropertyType != typeof(UnKnownBase))
+          if(property.PropertyType == typeof(TradeRemark))
             this.Remark = new TradeRemark(element.Value);
           else
             this.SetProperty(property.Name, element.Value);
@@ -302,9 +308,10 @@ namespace HedgeHog.Shared {
     public int TradeWaveInMinutes {
       get { return _tradeWaveInMinutes; }
       set {
-        if (value < 1000)
+        if(value < 1000)
           _tradeWaveInMinutes = value;
-        else _tradeWaveInMinutes = 0;
+        else
+          _tradeWaveInMinutes = 0;
       }
     }
     [DataMember]
@@ -327,9 +334,12 @@ namespace HedgeHog.Shared {
     public TradeRemark(string remark) {
       this.Remark = remark;
       var info = remark.Split(new[] { PIPE }, StringSplitOptions.RemoveEmptyEntries);
-      if (info.Length > 0) int.TryParse(info[0], out _tradeWaveInMinutes);
-      if (info.Length > 1) double.TryParse(info[1], out _tradeWaveHeight);
-      if (info.Length > 2) double.TryParse(info[2], out _angle);
+      if(info.Length > 0)
+        int.TryParse(info[0], out _tradeWaveInMinutes);
+      if(info.Length > 1)
+        double.TryParse(info[1], out _tradeWaveHeight);
+      if(info.Length > 2)
+        double.TryParse(info[2], out _angle);
     }
     public override string ToString() {
       return !(Remark ?? "").Contains('|') ? Remark : string.Join(PIPE + "",

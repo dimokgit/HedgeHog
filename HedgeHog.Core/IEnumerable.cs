@@ -26,7 +26,7 @@ namespace HedgeHog {
       return a;
     }
     public static Singleable<T> AsSingleable<T>(this IEnumerable<T> source) {
-      return new Singleable<T>(source);
+      return new Singleable<T>(source.Take(1));
     }
     public static IEnumerable<T> BackwardsIterator<T>(this IList<T> lst) {
       for(int i = lst.Count - 1; i >= 0; i--) {

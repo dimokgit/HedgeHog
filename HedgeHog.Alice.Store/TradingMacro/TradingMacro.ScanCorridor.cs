@@ -105,24 +105,30 @@ namespace HedgeHog.Alice.Store {
           var zip = line.Skip(skip).Zip(range.Skip(skip), (l, r) => new { l = l.Abs(r.PriceAvg), r });
           return zip.OrderByDescending(x => x.l).Take(1).Select(x=>x.r).DefaultIfEmpty(range.Last()).Single();
         };
-        Func<int, Rate> getRate = start =>
-          sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end)).First();
-        var rate = getRate(1);
-        try {
-          CorridorLengthGreen = rateIndex(rate);
-        } catch(Exception exc) {
-          Log = exc;
-        }
+        Func<int, IEnumerableCore.Singleable<Rate>> getRate = start =>
+          sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end)).AsSingleable();
+        getRate(1).ForEach( rate => {
+          try {
+            CorridorLengthGreen = rateIndex(rate);
+          } catch(Exception exc) {
+            Log = exc;
+          }
+        });
         CorridorLengthBlue = ratesForCorridor.Count;
         TrendLines1 = Lazy.Create(() => CalcTrendLines(CorridorLengthGreen), TrendLines1.Value, exc => Log = exc);
-        var redLength = rateIndex(getRate(3));
-        TrendLines = Lazy.Create(() => CalcTrendLines(redLength), TrendLines.Value, exc => Log = exc);
-        TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue), TrendLines2.Value, exc => Log = exc);
-
-        var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
-        redRates.Reverse();
-        WaveShort.Rates = redRates;
-        return new CorridorStatistics(redRates, TrendLinesTrends.StDev, TrendLinesTrends.Coeffs, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height);
+        var ratesForCorr = getRate(3).Select(rate => {
+          var redLength = rateIndex(rate);
+          TrendLines = Lazy.Create(() => CalcTrendLines(redLength), TrendLines.Value, exc => Log = exc);
+          TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue), TrendLines2.Value, exc => Log = exc);
+          var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
+          redRates.Reverse();
+          WaveShort.Rates = redRates;
+          return redRates;
+        });
+        return ratesForCorr
+          .Select(redRates=> new CorridorStatistics(redRates, TrendLinesTrends.StDev, TrendLinesTrends.Coeffs, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height))
+          .DefaultIfEmpty(CorridorStats)
+          .First();
       }
     }
 
