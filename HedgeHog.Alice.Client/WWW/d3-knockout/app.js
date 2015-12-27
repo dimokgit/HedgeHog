@@ -535,6 +535,7 @@
         .replace(/\{/g, "")
         .replace(/\},*\s*/g, "")
         .replace(/\s*$/, "")
+        .replace(/\s+"/g, "\n\"");
     });
     // #endregion
     // #region Info bar

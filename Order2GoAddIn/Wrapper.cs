@@ -567,15 +567,23 @@ namespace Order2GoAddIn {
         if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = endDate.Round(period);
       }
       if (startDate == DateTime.MinValue) startDate = TradesManagerStatic.FX_DATE_NOW;
-      int timeoutCount = 10;
+      int timeoutCount = 3;
       Func<string, bool> isTimeOut = s => Regex.IsMatch(s, "time[A-Z ]{0,3}out", RegexOptions.IgnoreCase);
       Func<IList<TBar>> getBars = () => {
         while (true)
           try {
             return map(GetBarsBase_<TBar>(pair, period, startDate, endDate));
           } catch (Exception exc) {
+            LogMessage.Send(new Exception(new { pair, period, periodsBack, startDate, endDate } + "", exc));
             if (!isTimeOut(exc.Message) || timeoutCount-- <= 0)
               throw new Exception(string.Format("Pair:{0},Period:{1}", pair, period), exc);
+            LogMessage.Send("Sleep for 10 second");
+            var timeout = 11;
+            while(timeout-- > 0) {
+              LogMessage.Send("Re-trying GetBarsBase in "+timeout+" seconds");
+              Thread.Sleep(1000);
+            }
+            LogMessage.Send("Re-starting GetBarsBase");
           }
       };
       Func<bool> doContinue = () => (endDate == TradesManagerStatic.FX_DATE_NOW || startDate != TradesManagerStatic.FX_DATE_NOW && startDate < endDate) || (periodsBack > 0 && ticks.Count() < periodsBack);

@@ -40,6 +40,7 @@ namespace HedgeHog {
     public static void Initialize() {
     }
     public static BroadcastBlock<Action<Unit>> SubscribeToBroadcastBlock() { return SubscribeToBroadcastBlock<Unit>(() => Unit.Default); }
+    public static BroadcastBlock<Action<Unit>> SubscribeToBroadcastBlock(TaskScheduler scheduler) { return SubscribeToBroadcastBlock<Unit>(() => Unit.Default, scheduler); }
     public static BroadcastBlock<Action<Unit>> SubscribeToBroadcastBlockOnDispatcher() { return SubscribeToBroadcastBlockOnDispatcher<Unit>(() => Unit.Default); }
     public static BroadcastBlock<Action<T>> SubscribeToBroadcastBlockOnDispatcher<T>(Func<T> getT) { return SubscribeToBroadcastBlock(getT, DispatcherTaskScheduler); }
     public static BroadcastBlock<Action<T>> SubscribeToBroadcastBlock<T>(Func<T> getT,TaskScheduler taskSCheduler = null) {

@@ -70,7 +70,8 @@ namespace HedgeHog.Alice.Store {
           }
         }).TakeLast(1)
         .ForEach(_ => context.Dispose());
-      saveTickActionBlock.Post(a);
+      a();
+      //saveTickActionBlock.Post(a);
     }
     private static t_Bar FillBar(int period, string pair, t_Bar bar, Rate t) {
       bar.Pair = pair;

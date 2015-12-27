@@ -274,7 +274,7 @@ namespace HedgeHog.Alice.Store {
           rates = moreRates.Take(barsCount - rates.Count).Concat(rates).ToList();
         }
         return rates;
-      }catch(Exception exc) {
+      } catch(Exception exc) {
         throw new Exception(new { pair, endDate, barsCount, minutesPerPriod } + "", exc);
       }
     }
@@ -284,16 +284,20 @@ namespace HedgeHog.Alice.Store {
         : GetRateFromDBBackwardsInternal<TBar>(pair, endDate, barsCount, minutesPerPriod));
     }
     static List<TBar> GetRateFromDBBackwardsInternal<TBar>(string pair, DateTime endDate, int barsCount, int minutesPerPriod) where TBar : BarBase, new() {
-      return GlobalStorage.UseForexContext(context => {
-        var bars = context.t_Bar
-            .Where(b => b.Pair == pair && b.Period == minutesPerPriod && b.StartDate <= endDate)
-            .OrderByDescending(b => b.StartDate)
-            .Take(barsCount)
-            .ToList()
-            .OrderBy(b=>b.StartDate)
-            .ThenBy(b => b.Row);
-        return GetRatesFromDbBars<TBar>(bars.ToList());
-      });
+      try {
+        return GlobalStorage.UseForexContext(context => {
+          var bars = context.t_Bar
+              .Where(b => b.Pair == pair && b.Period == minutesPerPriod && b.StartDate <= endDate)
+              .OrderByDescending(b => b.StartDate)
+              .Take(barsCount)
+              .ToList()
+              .OrderBy(b => b.StartDate)
+              .ThenBy(b => b.Row);
+          return GetRatesFromDbBars<TBar>(bars.ToList());
+        });
+      } catch(Exception exc) {
+        throw new Exception(new { pair, endDate, barsCount, minutesPerPriod } + "", exc);
+      }
     }
 
     static List<Rate> GetRatesFromDBBars(IQueryable<t_Bar> bars) {

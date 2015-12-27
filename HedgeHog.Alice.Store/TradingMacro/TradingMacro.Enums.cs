@@ -20,6 +20,7 @@ namespace HedgeHog.Alice {
 namespace HedgeHog.Alice.Store {
   public enum RatesLengthFunction {
     DistanceMin,
+    DistanceMinSmth,
     DistanceMin0,
     TimeFrame,
     DMTF

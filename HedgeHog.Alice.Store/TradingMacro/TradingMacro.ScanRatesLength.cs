@@ -124,6 +124,41 @@ namespace HedgeHog.Alice.Store {
         });
     }
 
+    void ScanRatesLengthByDistanceMinSmoothed() {
+      BarsCountCalc = GetRatesLengthByDistanceMinByMacdSmoothed(DistanceByMACD2).DefaultIfEmpty(BarsCountCalc).Single();
+    }
+    object _macdDiastancesLocker = new object();
+    List<double> _macdDiastances = new List<double>();
+
+    IEnumerable<int> GetRatesLengthByDistanceMinByMacdSmoothed(Func<IList<Rate>, int, Action<double, double>, IEnumerable<double>> macd) {
+      var distances = new List<double>(BarsCountCalc);
+      Action<double, double> addDistance = (p, n) => distances.Add(p.Abs(n));
+      return UseRatesInternal(rs => rs.ToList())
+        .Select(rs => {
+          rs.Reverse();
+          var rdm = InPoints(RatesDistanceMin);
+          _macdDiastances = Macd(rs, BarsCountCalc)
+            .Pairwise((v1, v2) => v1.Abs(v2))
+            .Cma(CmaPeriodByRatesCount(BarsCountCalc))
+            .Distances(addDistance)
+            .Skip(BarsCount)
+            .TakeWhile(i => i <= rdm)
+            .ToList();
+          var count = _macdDiastances.Count + BarsCount;
+          return new { count };//, length = RatesTimeSpan(rs.GetRange(0, count)) };
+        })
+        .Select(x => {
+          _macd2Rsd = distances.RelativeStandardDeviation() * 100;// / x.length.TotalDays;
+          const double adjuster = 0;
+          if(x.count * adjuster > BarsCountMax) {
+            BarsCountMax = (BarsCountMax * adjuster).Ceiling();
+            Log = new Exception(new { BarsCountMax, PairIndex, Action = "Stretched" } + "");
+          }
+          _isRatesLengthStable = RatesArray.Count.Ratio(x.count) < 1.05;
+          return x.count;
+        });
+    }
+
     private IList<double> Macd(IList<Rate> rs, int cmaPeriodCount) {
       var cmas = GetCma(rs, cmaPeriodCount);
       var cmas2 = GetCma2(cmas, cmaPeriodCount);

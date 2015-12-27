@@ -705,6 +705,11 @@ namespace HedgeHog {
       }
       return rsd;
     }
+    public static IEnumerable<double> SmoothedByRsd(this IEnumerable<double> dbls) {
+      double avg, std;
+      var rsd = dbls.RelativeStandardDeviation(out std, out avg);
+      return dbls.Where(d => d <= std);
+    }
     public static double RelativeStandardDeviation(this IEnumerable<double> dbls) {
       double avg,std;
       return dbls.RelativeStandardDeviation(out std, out avg);

@@ -114,8 +114,8 @@ namespace HedgeHog.Alice.Store {
     double _tipRatioCurrent = double.NaN;
 
     int _bigWaveIndex = 0;
-    [Category(categoryActive)]
-    [WwwSetting(wwwSettingsTradingConditions)]
+    [Category(categoryTrading)]
+    [WwwSetting]
     public int BigWaveIndex {
       get {
         return _bigWaveIndex;
@@ -236,7 +236,7 @@ namespace HedgeHog.Alice.Store {
             ? TradeDirections.Both
             : TradeDirections.None;
           var bsl = new[] { BuyLevel, SellLevel };
-          if(bsl.Any(sr => sr.CanTrade) && Trades.Length == 0)
+          if(/*bsl.Any(sr => sr.CanTrade) && */Trades.Length == 0)
             SetTradeCorridorToMinHeight();
           return td;
         };
@@ -259,6 +259,59 @@ namespace HedgeHog.Alice.Store {
         var tlAvg = buy.Avg(sell);
         //var currentPrice = new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
         var canSetLevel = (!tlAvg.Between(SellLevel.Rate, BuyLevel.Rate) || tlHeight < bsHeight);
+        if(canSetLevel)
+          lock (_rateLocker) {
+            zip.ForEach(x => {
+              var rate = x.bs;
+              var rateJump = InPips(rate.Abs(x.sr.Rate));
+              var reset = rateJump > 1;
+              if(reset)
+                x.sr.ResetPricePosition();
+              x.sr.Rate = rate;
+              if(reset)
+                x.sr.ResetPricePosition();
+            });
+          }
+      }
+    }
+
+    public TradeConditionDelegate Tip3Ok {
+      get {
+        return () => {
+          var bsl = new[] { BuyLevel, SellLevel };
+          if(Trades.Length == 0)
+            SetTradeCorridorToMinHeight2();
+          _tipRatioCurrent = _ratesHeightCma / BuyLevel.Rate.Abs(SellLevel.Rate);
+          return TradeDirectionByBool(IsCurrentPriceInsideTradeLevels && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
+        };
+      }
+    }
+
+    private bool IsCurrentPriceInsideTradeLevels {
+      get {
+        return new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }.All(cp => cp.Between(SellLevel.Rate, BuyLevel.Rate));
+      }
+    }
+
+    public void SetTradeCorridorToMinHeight2() {
+      if(CanTriggerTradeDirection()) {
+        var bsl = new[] { BuyLevel, SellLevel };
+        var buy = GetTradeLevel(true, double.NaN);
+        var sell = GetTradeLevel(false, double.NaN);
+        var zip = bsl.Zip(new[] { buy, sell }, (sr, bs) => new { sr, bs });
+        zip.Where(x => !x.sr.InManual)
+          .ForEach(x => {
+            x.sr.InManual = true;
+            x.sr.ResetPricePosition();
+            x.sr.Rate = x.bs;
+          });
+        var bsHeight = BuyLevel.Rate.Abs(SellLevel.Rate);
+        var tlHeight = buy.Abs(sell);
+        var tlAvg = buy.Avg(sell);
+        var tlJumped = !tlAvg.Between(SellLevel.Rate, BuyLevel.Rate) && tlHeight.Div(bsHeight) > 1.5;
+        if(tlJumped)
+          bsl.ForEach(sr => sr.CanTrade = false);
+        var canSetLevel = (tlJumped || tlHeight < bsHeight);
         if(canSetLevel)
           lock (_rateLocker) {
             zip.ForEach(x => {
@@ -333,28 +386,29 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => RhSDRatio);
       }
     }
-
+    [TradeConditionTurnOff]
     public TradeConditionDelegate RhSDAvgOk {
       get { return () => TradeDirectionByBool(_macd2Rsd >= MacdRsdAvg); }
     }
 
-    public TradeConditionDelegate CmaRsdOk {
+    public Func<TradeDirections> CmaRsdOk {
       get {
         return () => TradeDirectionByBool(IsTresholdAbsOk(MacdRsdAvg, MacdRsdAvgLevel));
       }
     }
 
     #region WwwInfo
-    public ExpandoObject WwwInfo() {
-      return new ExpandoObject()
-        .Merge(new { GRBHRatio__ = TrendHeighRatio() })
-        .Merge(new { GRHatio__ = TrendPrice1Ratio() })
-        .Merge(new { RhSDAvg__ = _macd2Rsd.Round(2) })
-        .Merge(new { GrnAngle_ = TrendLines1Trends.Angle.Round(1) })
-        .Merge(new { RedAngle_ = TrendLinesTrends.Angle.Round(1) })
-        .Merge(new { BlueAngle = TrendLines2Trends.Angle.Round(1) })
-        //.Merge(new { CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
-        .Merge(new { TipRatio_ = _tipRatioCurrent.Round(1) });
+    public object WwwInfo() {
+      return new {
+        GRBHRatio = TrendHeighRatio(),
+        GRBRatio_ = TrendAnglesRatio(),
+        TipRatio_ = _tipRatioCurrent.Round(1),
+        GrnAngle_ = TrendLines1Trends.Angle.Round(1),
+        RedAngle_ = TrendLinesTrends.Angle.Round(1),
+        BlueAngle = TrendLines2Trends.Angle.Round(1)
+      };
+      // RhSDAvg__ = _macd2Rsd.Round(1) })
+      // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
     }
     #endregion
 
@@ -398,9 +452,7 @@ namespace HedgeHog.Alice.Store {
 
     public TradeConditionDelegate GRBRatioOk {
       get {
-        return () => IsTresholdAbsOk(TrendPrice1Ratio(), TrendAnglesPerc)
-          ? TradeDirections.Both
-          : TradeDirections.None;
+        return () => TradeDirectionByBool(IsTresholdAbsOk(TrendAnglesRatio(), TrendAnglesPerc));
       }
     }
     public TradeConditionDelegate GRBHRatioOk {
@@ -418,14 +470,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     int TrendAnglesRatio() {
-      return TrendLinesTrendsCrossJoin
-      .Select(b => b[0].Angle.Percentage(b[1].Angle).ToPercent())
-      .Max();
-      //.CartesianProduct()
-      //.Select(b=>b.ToList())
-      //.Where(b=>b[0]!=b[1])
-      //.Select(b=>b[0].Angle.Percentage(b[1].Angle).ToPercent())
-      //.Min();
+      Func<IList<Rate>, double> spread = tls => tls[1].Trends.Angle;
+      return BlueBasedRatio(spread).ToPercent();
     }
     int TrendPrice1Ratio() {
       Func<IList<Rate>, double> spread = tls => tls[1].Trends.Angle;
@@ -438,13 +484,16 @@ namespace HedgeHog.Alice.Store {
     public static double BlueBasedRatio(double blue, double red, double green) {
       return new[] { blue.Percentage(red), blue.Percentage(green) }.Average().Abs();
     }
+    public double BlueBasedRatio( Func<IList<Rate>, double> spread) {
+      var blue = spread(TrendLines2.Value);
+      var red = spread(TrendLines.Value);
+      var green = spread(TrendLines1.Value);
+      return new[] { blue.Percentage(red), blue.Percentage(green) }.Average().Abs();
+    }
 
     int TrendHeighRatio() {
       Func<IList<Rate>, double> spread = tls => tls[0].Trends.PriceAvg2 - tls[0].Trends.PriceAvg3;
-      var blueSpread = spread(TrendLines2.Value);
-      var redSpread = spread(TrendLines.Value);
-      var greenSpread = spread(TrendLines1.Value);
-      return BlueBasedRatio(blueSpread, redSpread, greenSpread).ToPercent();
+      return BlueBasedRatio(spread).ToPercent();
     }
     #endregion
 

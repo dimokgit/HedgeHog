@@ -1064,7 +1064,7 @@ namespace HedgeHog.Alice.Store {
 
     int _trendAnglesPerc;
     [DisplayName("AngleR.Percentage(AngleB): -200 - 200")]
-    [WwwSetting(Group = wwwSettingsCorridorAngles)]
+    [WwwSetting(Group = wwwSettingsTradingConditions)]
     [Category(categoryActive)]
     public int TrendAnglesPerc {
       get { return _trendAnglesPerc; }
