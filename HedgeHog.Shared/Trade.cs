@@ -179,7 +179,9 @@ namespace HedgeHog.Shared {
     [DataMember]
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
     public DateTime Time { get; private set; }
-
+    public void SetTime(DateTime time) {
+      Time = time;
+    }
     private DateTime _time2Close;
     [DataMember]
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]

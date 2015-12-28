@@ -455,13 +455,13 @@
             closedSize = 60;
 
           function ctf(ct, time, level, u, d) {
-            var isOpen = time.match(/open$/i),
+            var isOpen = time === 0,//.match(/open$/i),
               isKindOpen = !ct.isClosed,
               paint = (isKindOpen ? openTradeGross : ct.grossPL) >= 0 ? "green" : "red";
             if (!isOpen && isKindOpen) return null;
             var upDown = (ct.isBuy ? ud[u] : ud[d]);
             return {
-              x: ct[time], y: ct[level],
+              x: ct.dates[time], y: ct[level],
               shape: "triangle-" + upDown,
               fill: !isOpen ? "white" : "white",
               stroke: paint,
@@ -472,7 +472,8 @@
             };
           }
           function map(ct) {
-            return [ctf(ct, "timeOpen", "open", 0, 1), ctf(ct, "timeClose", "close", 1, 0)];
+            var timeOpen = 0,timeClose = 1;
+            return [ctf(ct, timeOpen, "open", 0, 1), ctf(ct, timeClose, "close", 1, 0)];
           }
           var cts = Enumerable.from(closedTrades)
             //.where("ct => !ct.isClosed")

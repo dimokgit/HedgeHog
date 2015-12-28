@@ -283,6 +283,18 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
+    #region Strategies
+    public object[] ReadStrategies() {
+      return RemoteControlModel.ReadStrategies((name, path) => new { name, path }).ToArray();
+    }
+    public void LoadStrategy(string pair, string strategyPath) {
+      UseTradingMacro(pair, 0, tm => {
+        tm.IsTradingActive = false;
+        tm.LoadActiveSettings(strategyPath);
+      }, true);
+    }
+    #endregion
+
     public object GetWwwInfo(string pair, int chartNum) {
       return UseTradingMacro(pair, chartNum, tm => tm.WwwInfo(), false);
     }
@@ -400,8 +412,9 @@ namespace HedgeHog.Alice.Client {
     }
     public Dictionary<string, int> ReadEnum(string enumName) {
       return typeof(TradingMacro).Assembly.GetTypes()
-        .Where(t => t.Name.ToLower() == enumName)
+        .Where(t => t.Name.ToLower() == enumName.ToLower())
         .SelectMany(et => Enum.GetNames(et), (et, e) => new { name = e, value = (int)Enum.Parse(et, e, true) })
+        .IfEmpty(() => { throw new Exception(new { enumName, message = "Not Found" } + ""); })
         .ToDictionary(t => t.name, t => t.value);
     }
     public Dictionary<string, int> ReadTradeLevelBys() {

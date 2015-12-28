@@ -325,7 +325,7 @@ namespace HedgeHog.Alice.Store {
     public int BarsCountCalc {
       get {
         return BarsCountDate.HasValue
-          ? UseRatesInternal(BarCountByDate).IfEmpty(() => BarsCountCalc).First()
+          ? UseRatesInternal(BarCountByDate).DefaultIfEmpty(() => BarsCountCalc).First()
           : _BarsCountCalc.GetValueOrDefault(BarsCount);
       }
       set {

@@ -1023,6 +1023,10 @@ namespace HedgeHog.Alice.Client {
       if (!_isMinimized)
         GetTradingMacros().ForEach(tm => AddShowChart(tm));
     }
+    public static IEnumerable<T> ReadStrategies<T>(Func<string,string,T> map ) {
+      return Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "..", "Strategies"))
+        .Select(file => map(Path.GetFileNameWithoutExtension(file),file));
+    }
     int _lastServedRatesCount = 0;
     public object ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
       var digits = tm.Digits();

@@ -51,7 +51,7 @@ namespace HedgeHog.Bars {
       var ticks1 = ticks0.Select(b => (b[1].StartDate - b[0].StartDate).Duration().TotalSeconds);
       if (tps >= treshold) return tps;
       return 1 / ticks1
-        .IfEmpty(() => double.MaxValue)
+        .DefaultIfEmpty(() => double.MaxValue)
         .Average();
     }
 

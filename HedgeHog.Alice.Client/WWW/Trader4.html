@@ -206,6 +206,13 @@
     .isLong{
       background-color:lightgray;
     }
+    /*strategiesDialog*/
+    #strategiesDialog .modal-body li{
+      cursor:pointer;
+    }
+    #strategiesDialog .modal-body li:hover{
+      text-decoration: underline;
+    }
   </style>
   <script>
     $(function () {
@@ -454,6 +461,9 @@
               <li>
                 <input type="button" value=" Buy " id="buy" />
                 <input type="button" value=" Sell " id="sell" />
+              </li>
+              <li>
+                <button data-bind="click:showStrategies">Strategies</button>
               </li>
               <li>
                 <button data-bind="click:toggleClosedTrades">Trades</button>
@@ -759,6 +769,28 @@
     </div>
   </div>
   <!--#endregion-->
+  <!--#region Strategies dialog-->
+  <div class="modal" data-bind="elementer:strategiesDialog" id="strategiesDialog" tabindex="-1" role="dialog" aria-labelledby="strategiesDialog" aria-hidden="true" c>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <span class="modal-title" id="myModalLabel">Strategies</span>
+        </div>
+        <div class="modal-body">
+          <ul data-bind="foreach:strategies">
+            <li data-bind="text:name,click:$parent.setStrategy"></li>
+          </ul>
+        </div>
+        <div class="modal-footer" style="display:none">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--#endregion-->
+
   <!--#region Settings grid-->
   <!--#endregion-->
   <!--#endregion-->

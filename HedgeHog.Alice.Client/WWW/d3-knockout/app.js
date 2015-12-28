@@ -144,6 +144,7 @@
     if ($.isFunction(done)) r.done(function (data) {
       done(data, note);
     });
+    return r;
   }
   // #endregion
 
@@ -372,6 +373,7 @@
       serverCall("readClosedTrades", [pair], function (trades) {
         closedTrades = prepDates(trades).map(function (t) {
           return {
+            dates: [t.Time, t.TimeClose],
             timeOpen: t.Time,
             timeClose: t.TimeClose,
             isBuy: t.IsBuy,
@@ -561,6 +563,27 @@
     this.tradeConditionInfosAnd = tradeConditionsInfosAnd;
     this.tradeConditionInfosOr = tradeConditionsInfosOr;
     // #endregion
+    // #region Strategies
+    this.strategies = ko.observableArray();
+    this.strategiesDialog = ko.observable();
+    this.showStrategies = function () {
+      this.readStrategies();
+      $(this.strategiesDialog()).modal("show");
+    }.bind(this);
+    this.hideStrategies = function () { $(this.strategiesDialog()).modal("hide"); }.bind(this);
+    this.setStrategy = function (data) {
+      serverCall("loadStrategy", [pair, data.path], " loading <b>" + data.name + "</b>")
+        .done(function () {
+          this.hideStrategies();
+        }.bind(this));
+    }.bind(this);
+    this.readStrategies = function readStrategies() {
+      return serverCall("readStrategies", [], function (strategies) {
+        this.strategies(strategies);
+      }.bind(this));
+    }.bind(this);
+
+    // #endregion
     // #region Charts
     this.chartArea = [{}, {}];
     this.chartData = ko.observable(defaultChartData(0));
@@ -628,11 +651,16 @@
       });
       lineChartData2.push.apply(lineChartData2, rates);
       lineChartData2.unshift.apply(lineChartData2, rates2);
-      var ratesAll = continuoseDates("minute", lineChartData2(), [].concat(response.waveLines.map(function (v) { return v.dates; })));
+      var closedTradesLocal = mustShowClosedTrades2()
+        ? closedTrades.map(function (ct) { return $.extend(true, {}, ct); })
+        : [];
+      function mapDates(v) { return v.dates; }
+      var moreDates = [].concat(response.waveLines.map(mapDates)).concat(closedTradesLocal.map(mapDates));
+      var ratesAll = continuoseDates("minute", lineChartData2(), moreDates);
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;
-      var chartData2 = chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, mustShowClosedTrades2() ? closedTrades : [], self.openTradeGross,0, response.canBuy, response.canSell,response.waveLines);
+      var chartData2 = chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod,closedTradesLocal , self.openTradeGross,0, response.canBuy, response.canSell,response.waveLines);
       chartData2.tickDate = lineChartData()[0].d;
       response.waveLines.forEach(function (w, i) { w.bold = i == sumStartIndexById(); });
       self.chartData2(chartData2);
@@ -976,8 +1004,9 @@
       var defRLF = serverCall("readEnum", ["RatesLengthFunction"], function (enums) {
         dataViewModel.ratesLengthFuncs(enums);
       });
+      var defRS = dataViewModel.readStrategies();
       //dataViewModel.readNews();
-      $.when.apply($, [defTL,defTC,defTOC,defTDT]).done(function () {
+      $.when.apply($, [defTL,defTC,defTOC,defTDT,defRS]).done(function () {
         ko.applyBindings(dataViewModel);
       });
       //#endregion

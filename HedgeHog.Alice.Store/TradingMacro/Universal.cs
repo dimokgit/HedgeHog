@@ -1081,7 +1081,7 @@ namespace HedgeHog.Alice.Store {
               var getContext0 = MonoidsCore.ToFunc(() => getContext(0.0, 0.0, false, null));
               var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
                   _ti =>{ WorkflowStep = "1 Wait corridorOk";
-                    var context = _ti.OfType(getContext0).IfEmpty(getContext0).Single();
+                    var context = _ti.OfType(getContext0).DefaultIfEmpty(getContext0).Single();
                     var replaceContext = MonoidsCore.ToFunc(context, newContext => {
                       _ti.Remove(context);
                       _ti.Add(newContext);

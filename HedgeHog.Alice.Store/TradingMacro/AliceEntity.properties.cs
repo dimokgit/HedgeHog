@@ -105,6 +105,17 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    string _closedSession;
+    [DisplayName("Closed Session")]
+    [Category(categoryTestControl)]
+    [Dnr]
+    public string TestClosedSession {
+      get { return _closedSession; }
+      set {
+        _closedSession = value;
+        OnPropertyChanged(() => TestClosedSession);
+      }
+    }
 
     public string _TestBarsCount = "";
     [DisplayName("BarsCount")]

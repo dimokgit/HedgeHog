@@ -1562,6 +1562,35 @@ namespace HedgeHog.Alice.Store {
         LoadRatesStartDate2 = DateTimeOffset.MinValue;
         BarsCountLastDate = DateTime.MinValue;
         TradesManager.ResetClosedTrades(Pair);
+        var closedSessionToLoad = TestClosedSession;
+        if(!string.IsNullOrWhiteSpace(closedSessionToLoad)) {
+          var vtm = (VirtualTradesManager)TradesManager;
+          var sessionUid = Guid.Parse(closedSessionToLoad);
+          var dbTrades = GlobalStorage.UseForexContext(c => c.t_Trade.Where(t => t.SessionId == sessionUid).ToArray());
+          var trades = dbTrades.Select(trade => {
+            var t = Trade.Create(trade.Pair, PointSize, CommissionByTrade);
+            Func<DateTime, DateTime> convert = d => DateTime.SpecifyKind(TimeZoneInfo.ConvertTime(d, HedgeHog.DateTimeZone.DateTimeZone.Eastern), DateTimeKind.Local);
+            {
+              t.Id = trade.Id;
+              t.Buy = t.IsBuy = trade.Buy;
+              t.PL = trade.PL;
+              t.GrossPL = trade.GrossPL;
+              t.Lots = trade.Lot.ToInt();
+              t.SetTime(convert(trade.TimeOpen));
+              t.TimeClose = convert(trade.TimeClose);
+              t.Commission = trade.Commission;
+              t.IsVirtual = trade.IsVirtual;
+              t.Open = trade.PriceOpen;
+              t.Close = trade.PriceClose;
+              t.Kind = PositionBase.PositionKind.Closed;
+
+            }
+            return t;
+          })
+          .ToList();
+          vtm.SetClosedTrades(trades);
+          Log = new Exception("Loaded {1} trades from session {0}.".Formater(closedSessionToLoad, trades.Count));
+        }
         _waitHandle.Set();
         TradingStatistics.OriginalProfit = 0;
         _macd2Rsd = double.NaN;
@@ -1603,7 +1632,7 @@ namespace HedgeHog.Alice.Store {
             } else {
               if(isReplaying && !IsTrader && tms().Count > 1) {
                 var rateLast = UseRatesInternal(ri => ri.Last(), 15 * 1000);
-                var dateMin = tms().First(tm => tm.IsTrader).UseRatesInternal(ri => ri.IfEmpty(() => new Rate()).Last().StartDate).DefaultIfEmpty().First();
+                var dateMin = tms().First(tm => tm.IsTrader).UseRatesInternal(ri => ri.DefaultIfEmpty(() => new Rate()).Last().StartDate).DefaultIfEmpty().First();
 
                 if(rateLast.IsEmpty() || rateLast.Single().StartDate > dateMin)
                   continue;

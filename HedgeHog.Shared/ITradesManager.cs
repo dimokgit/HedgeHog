@@ -209,7 +209,7 @@ namespace HedgeHog.Shared {
         .Zip(foos, (c, f) => new { ok = c == f.acc, f.a })
         .Where(a => a.ok)
         .Select(a => a.a)
-        .IfEmpty(() => error)
+        .DefaultIfEmpty(() => error)
         .First()();
     }
     #region PipAmount

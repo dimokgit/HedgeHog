@@ -84,7 +84,7 @@ namespace HedgeHog {
         foreach(var e in emptySelector())
           yield return e;
     }
-    public static T IfEmpty<T>(this T enumerable,
+    static T IfEmpty<T>(this T enumerable,
           Action<T> thenSelector,
           Action<T> elseSelector) where T : IEnumerable {
 
@@ -94,13 +94,13 @@ namespace HedgeHog {
         elseSelector(enumerable);
       return enumerable;
     }
-    public static TResult IfEmpty<T, TResult>(this IEnumerable<T> enumerable,
+    static TResult IfEmpty<T, TResult>(this IEnumerable<T> enumerable,
           Func<TResult> thenSelector,
           Func<TResult> elseSelector) {
 
       return (!enumerable.Any()) ? thenSelector() : elseSelector();
     }
-    public static IEnumerable<TSource> IfEmpty<TSource>(this IEnumerable<TSource> source, Func<TSource> getDefaultValue) {
+    public static IEnumerable<TSource> DefaultIfEmpty<TSource>(this IEnumerable<TSource> source, Func<TSource> getDefaultValue) {
       using(var enumerator = source.GetEnumerator()) {
         if(enumerator.MoveNext()) {
           do {
