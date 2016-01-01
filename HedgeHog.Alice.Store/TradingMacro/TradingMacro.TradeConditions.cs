@@ -282,8 +282,7 @@ namespace HedgeHog.Alice.Store {
           if(!HaveTrades())
             SetTradeCorridorToMinHeight2();
           _tipRatioCurrent = _ratesHeightCma / BuyLevel.Rate.Abs(SellLevel.Rate);
-          return TradeDirectionByTradeLevels(BuyLevel.Rate, SellLevel.Rate) &
-            TradeDirectionByBool(IsCurrentPriceInsideTradeLevels && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
+          return TradeDirectionByBool(IsCurrentPriceInsideTradeLevels && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
         };
       }
     }

@@ -106,7 +106,9 @@ namespace HedgeHog.Alice.Store {
           return zip.OrderByDescending(x => x.l).Take(1).Select(x=>x.r).DefaultIfEmpty(range.Last()).Single();
         };
         Func<int, IEnumerableCore.Singleable<Rate>> getRate = start =>
-          sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end)).AsSingleable();
+          (start < sections.Count - 1
+          ? sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end))
+          : new Rate[0]).AsSingleable();
         getRate(1).ForEach( rate => {
           try {
             CorridorLengthGreen = rateIndex(rate);

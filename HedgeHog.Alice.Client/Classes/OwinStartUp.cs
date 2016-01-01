@@ -285,7 +285,12 @@ namespace HedgeHog.Alice.Client {
 
     #region Strategies
     public object[] ReadStrategies() {
-      return RemoteControlModel.ReadStrategies((name, path) => new { name, path }).ToArray();
+      return RemoteControlModel.ReadStrategies((nick, name, path) => new { nick, name, path }).ToArray();
+    }
+    public void SaveStrategy(string pair, string nick) {
+      if(string.IsNullOrWhiteSpace(nick))
+        throw new ArgumentException("Is empty", "nick");
+      UseTradingMacro(pair, 0, tm => RemoteControlModel.SaveStrategies(tm, nick), true);
     }
     public void LoadStrategy(string pair, string strategyPath) {
       UseTradingMacro(pair, 0, tm => {

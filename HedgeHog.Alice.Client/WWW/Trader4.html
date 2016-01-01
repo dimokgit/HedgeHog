@@ -464,6 +464,8 @@
               </li>
               <li>
                 <button data-bind="click:showStrategies">Strategies</button>
+                <button data-toggle="modal"
+                        data-target="#strategyNameDialog">Save</button>
               </li>
               <li>
                 <button data-bind="click:toggleClosedTrades">Trades</button>
@@ -770,8 +772,8 @@
   </div>
   <!--#endregion-->
   <!--#region Strategies dialog-->
-  <div class="modal" data-bind="elementer:strategiesDialog" id="strategiesDialog" tabindex="-1" role="dialog" aria-labelledby="strategiesDialog" aria-hidden="true" c>
-    <div class="modal-dialog">
+  <div class="modal" data-bind="elementer:strategiesDialog" id="strategiesDialog" tabindex="-1" role="dialog" aria-labelledby="strategiesDialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
@@ -779,8 +781,27 @@
         </div>
         <div class="modal-body">
           <ul data-bind="foreach:strategies">
-            <li data-bind="text:name,click:$parent.setStrategy"></li>
+            <li data-bind="text:nick,click:$parent.setStrategy"></li>
           </ul>
+        </div>
+        <div class="modal-footer" style="display:none">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--#endregion-->
+  <!--#region Strategies dialog-->
+  <div class="modal" id="strategyNameDialog" tabindex="-1" role="dialog" aria-labelledby="strategyNameDialog" aria-hidden="true" >
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <span class="modal-title" id="myModalLabel">Strategy Name</span>
+        </div>
+        <div class="modal-body">
+          <input data-bind="value:strategyNick" /><button data-bind="click:saveStrategy">Save</button>
         </div>
         <div class="modal-footer" style="display:none">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

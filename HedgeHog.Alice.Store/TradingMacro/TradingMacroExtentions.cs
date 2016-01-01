@@ -338,11 +338,15 @@ namespace HedgeHog.Alice.Store {
       } catch(Exception exc) { Log = exc; }
     }
     public void SaveActiveSettings(string path) {
-      if(string.IsNullOrWhiteSpace(path))
-        SaveActiveSettings();
-      else {
-        File.WriteAllLines(path, GetActiveSettings().ToArray());
-        Log = new Exception("Setting saved to " + path);
+      try {
+        if(string.IsNullOrWhiteSpace(path))
+          SaveActiveSettings();
+        else {
+          File.WriteAllLines(path, GetActiveSettings().ToArray());
+          Log = new Exception("Setting saved to " + path);
+        }
+      }catch(Exception exc) {
+        throw new Exception(new { path } + "", exc);
       }
     }
     IEnumerable<string> GetActiveSettings() {
@@ -3927,7 +3931,6 @@ namespace HedgeHog.Alice.Store {
         return _broadcastLoadRates;
       }
     }
-
     public void OnPropertyChangedCore(string property) {
       if(EntityState == System.Data.Entity.EntityState.Detached)
         return;
@@ -3953,8 +3956,6 @@ namespace HedgeHog.Alice.Store {
           CorridorStartDate = null;
           goto case TradingMacroMetadata.TakeProfitFunction;
         case TradingMacroMetadata.BarsCount:
-        case TradingMacroMetadata.LimitBar:
-          //Strategy = Strategies.None;
           if(!IsInVitualTrading) {
             OnLoadRates(() => UseRatesInternal(ri => ri.Clear()));
           } else {
@@ -4020,11 +4021,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => PriceSpreadAverage);
         SetPriceSpreadOk();
       }
-    }
-    partial void OnLimitBarChanging(int newLimitBar) {
-      if(newLimitBar == (int)BarPeriod)
-        return;
-      OnLoadRates();
     }
     Strategies[] _exceptionStrategies = new[] { Strategies.Auto };
     partial void OnCorridorBarMinutesChanging(int value) {

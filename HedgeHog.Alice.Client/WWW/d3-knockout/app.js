@@ -566,6 +566,10 @@
     // #region Strategies
     this.strategies = ko.observableArray();
     this.strategiesDialog = ko.observable();
+    this.strategyNick = ko.observable();
+    this.saveStrategy = function () {
+      serverCall("saveStrategy", [pair, this.strategyNick()]);
+    }.bind(this);
     this.showStrategies = function () {
       this.readStrategies();
       $(this.strategiesDialog()).modal("show");
