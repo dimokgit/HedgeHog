@@ -213,6 +213,12 @@
     #strategiesDialog .modal-body li:hover{
       text-decoration: underline;
     }
+    div.ui-dialog-content.replay{
+      background-color:#C9FEBE;
+    }
+    div.ui-dialog-content.replay.no{
+      background-color:#FFBBB7;
+    }
   </style>
   <script>
     $(function () {
@@ -245,10 +251,15 @@
       <div class="collapse navbar-collapse">
         <!--#region Settings-->
         <ul class="nav navbar-nav navbar-right">
+          <li data-bind="visible:isVirtual">
+            <button data-bind="click: showReplayDialog" title="Back Testing">
+              <span class="glyphicon glyphicon-fast-backward"></span>
+            </button>
+          </li>
           <li>
             <button data-bind="click:readNews"
                     data-toggle="modal"
-                    data-target="#newsDialog">
+                    data-target="#newsDialog" title="Read News">
               <span class="glyphicon glyphicon-globe"></span>
             </button>
           </li>
@@ -609,6 +620,18 @@
     <pre data-bind="text:wwwInfo"></pre>
   </div>
   <!--#endregion-->
+  <!--#region replayDialog-->
+  <div data-bind="elementer:replayDialog,css:{no:!isReplayOn()}" class="replay" style="display:none;min-height:20px">
+    <div>
+      <button data-bind="css:{'text-muted':!isReplayOn()},enable:isReplayOn,click:stopReplay">
+        <span class="glyphicon glyphicon-stop"></span>
+      </button>
+      <input data-bind="value:replayDateStart" size="13"/>
+      <button data-bind="css:{'text-muted':isReplayOn()},disable:isReplayOn,click:startReplay">
+        <span class="glyphicon glyphicon-play"></span>
+      </button>    </div>
+  </div>
+  <!--#endregion-->
   <!--#region WaveRanges dialog-->
   <div data-bind="elementer:waveRangesDialog" style="display:none">
     <table border="1" id="waveRangesDialog">
@@ -781,7 +804,10 @@
         </div>
         <div class="modal-body">
           <ul data-bind="foreach:strategies">
-            <li data-bind="text:nick,click:$parent.setStrategy"></li>
+            <li data-bind="attr:{title:name}">
+              <span data-bind="text:nick,click:$parent.setStrategy"></span>
+              <span data-bind="click:$parent.removeStrategy" class="glyphicon glyphicon-remove"></span>
+            </li>
           </ul>
         </div>
         <div class="modal-footer" style="display:none">
@@ -801,7 +827,7 @@
           <span class="modal-title" id="myModalLabel">Strategy Name</span>
         </div>
         <div class="modal-body">
-          <input data-bind="value:strategyNick" /><button data-bind="click:saveStrategy">Save</button>
+          <input data-bind="value:strategyNick,elementer:strategyNameInput" /><button data-bind="click:saveStrategy">Save</button>
         </div>
         <div class="modal-footer" style="display:none">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

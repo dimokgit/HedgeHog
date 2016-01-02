@@ -6,6 +6,8 @@ using System.Text;
 namespace HedgeHog.Shared {
   public class ReplayArguments<TTradingMacro>:GalaSoft.MvvmLight.ViewModelBase {
 
+    public bool IsWww { get; set; }
+
     #region Session Statistics
     public class SessionStatistics {
       public double ProfitToLossRatio { get; set; }
@@ -44,7 +46,7 @@ namespace HedgeHog.Shared {
       get { return _DateStart; }
       set {
         if (_DateStart != value) {
-          _DateStart = value;
+          _DateStart = DateTime.SpecifyKind(value.Value, DateTimeKind.Local);
           RaisePropertyChanged("DateStart");
         }
       }

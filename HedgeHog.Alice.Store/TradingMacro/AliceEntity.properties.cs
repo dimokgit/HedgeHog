@@ -606,6 +606,7 @@ namespace HedgeHog.Alice.Store {
     public bool UsePrevHeight {
       get { return StrictTradeClose; }
       set {
+        if(StrictTradeClose == value)return;
         StrictTradeClose = value;
         OnPropertyChanged(() => UsePrevHeight);
       }

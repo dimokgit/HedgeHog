@@ -1024,6 +1024,7 @@ namespace HedgeHog.Alice.Client {
       if(!_isMinimized)
         GetTradingMacros().ForEach(tm => AddShowChart(tm));
     }
+    #region Strategies
     public static IEnumerable<T> ReadStrategies<T>(Func<string, string, string, T> map) {
       Func<string, string> name = s =>
         Regex.Matches(s, @"\{(.+)\}").Cast<Match>().SelectMany(m => m.Groups.Cast<Group>()
@@ -1039,12 +1040,16 @@ namespace HedgeHog.Alice.Client {
       return Path.Combine(Directory.GetCurrentDirectory(), "..", "Strategies", pathEnd);
     }
 
-    public static void SaveStrategies(TradingMacro tm,string nick) {
-      var fullName = string.Join("-", tm.TradeConditionsInfo((tc, p, name) => name));
+    public static void SaveStrategy(TradingMacro tm, string nick) {
+      var fullName = tm.PairPlain + "_" + tm.BarPeriod + "-" + string.Join("-", tm.TradeConditionsInfo((tc, p, name) => name));
       var suffix = "{" + nick + "}";
       var path = fullName + suffix + ".txt";
       tm.SaveActiveSettings(StrategiesPath(path));
     }
+    public static void RemoveStrategy(string path) {
+      File.Delete(path);
+    }
+    #endregion
     int _lastServedRatesCount = 0;
     public object ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
       var digits = tm.Digits();

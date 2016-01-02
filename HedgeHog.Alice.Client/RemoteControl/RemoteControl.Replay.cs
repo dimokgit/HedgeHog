@@ -39,8 +39,8 @@ namespace HedgeHog.Alice.Client {
     }
 
     public ReactiveList<Task> _replayTasks = new ReactiveList<Task>();
-    void StartReplay(object _) {
-      TradingMacro tmOriginal = (TradingMacro)_;
+    void StartReplay(object tm) {
+      TradingMacro tmOriginal = (TradingMacro)tm;
       try {
         while (_replayTasks.ToArray().Any(t => t.Status == TaskStatus.Running)) {
           Log = new Exception("Replay is running.");
@@ -78,7 +78,7 @@ namespace HedgeHog.Alice.Client {
     void FillTestParams(TradingMacro tmOriginal, Action<IList<KeyValuePair<string, object>[]>> paramsTransformation) {
       var c = new[] { '^', '\t' };
       if (!_testParamsRaw.Any()) {
-        if (tmOriginal.UseTestFile) {
+        if (!ReplayArguments.IsWww && tmOriginal.UseTestFile) {
           var od = new Microsoft.Win32.OpenFileDialog() { FileName = "TestParams", DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
           var odRes = od.ShowDialog();
           if (!odRes.GetValueOrDefault()) throw new ArgumentException("Must provide test params file name.");
@@ -96,6 +96,7 @@ namespace HedgeHog.Alice.Client {
             .Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v)).ToArray()));
         }
       }
+      ReplayArguments.IsWww = false;
       TestParams.Clear();
       paramsTransformation(_testParamsRaw);
       _testParamsRaw.CartesianProduct().ForEach(tp => TestParams.Enqueue(tp.ToArray()));

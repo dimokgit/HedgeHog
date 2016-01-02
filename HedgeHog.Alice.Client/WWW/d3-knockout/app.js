@@ -111,7 +111,12 @@
     return note;
   }
   // #endregion
-  function serverCall(name, args, done,fail) {
+  function withNoNote() {
+    var args = _.toArray(arguments);
+    args.noNote = true;
+    return args;
+  }
+  function serverCall(name, args, done, fail) {
     var method = chat.server[name];
     if (!method) {
       showErrorPerm("Server method " + name + " not found.");
@@ -157,6 +162,8 @@
     function lineChartDataEmpty() {
       return [{ d: new Date("1/1/1900"),do: new Date("1/1/1900"), c: 0, v: 0, m: 0 }];// jshint ignore:line
     }
+    // #endregion
+    this.isVirtual = ko.observable(true);
     var lineChartData = ko.observableArray(lineChartDataEmpty());
     var lineChartData2 = ko.observableArray(lineChartDataEmpty());
     // #region Server proxies
@@ -567,6 +574,7 @@
     this.strategies = ko.observableArray();
     this.strategiesDialog = ko.observable();
     this.strategyNick = ko.observable();
+    this.strategyNameInput = ko.observable();
     this.saveStrategy = function () {
       serverCall("saveStrategy", [pair, this.strategyNick()]);
     }.bind(this);
@@ -579,6 +587,12 @@
       serverCall("loadStrategy", [pair, data.path], " loading <b>" + data.name + "</b>")
         .done(function () {
           this.hideStrategies();
+        }.bind(this));
+    }.bind(this);
+    this.removeStrategy = function (data) {
+      serverCall("removeStrategy", [data.path], " removed strategy <b>" + data.name + "</b>")
+        .done(function () {
+          this.readStrategies();
         }.bind(this));
     }.bind(this);
     this.readStrategies = function readStrategies() {
@@ -800,6 +814,40 @@
     };
 
     //#endregion
+    //#region replayDialog
+    var replayDialog = this.replayDialog = ko.observable();
+    var isReplayOn = this.isReplayOn = ko.observable(false);
+    var replayDateStart = this.replayDateStart = ko.observable();
+    var readReplayProcID = 0;
+    function readReplayArguments() {
+      serverCall("readReplayArguments", withNoNote(pair), function (ra) {
+        replayDateStart(d3.time.format("%m/%d/%y %H:%M")(new Date(ra.DateStart)));
+        isReplayOn(ra.isReplayOn);
+        if (ra.isReplayOn && !readReplayProcID)
+         readReplayProcID = setInterval(readReplayArguments, 5 * 1000);
+        if (!ra.isReplayOn && readReplayProcID) {
+          clearInterval(readReplayProcID);
+          readReplayProcID = 0;
+        }
+      });
+    }
+    this.showReplayDialog = function () {
+      $(replayDialog()).dialog({
+        title: "Replay Controls",
+        width: "auto",
+        minHeight:20,
+        dialogClass: "dialog-compact"
+      });
+      readReplayArguments();
+    }
+    this.startReplay = function () {
+      serverCall("startReplay", [pair, replayDateStart()]);
+      readReplayProcID = setInterval(readReplayArguments, 3 * 1000);
+    }
+    this.stopReplay = function () {
+      serverCall("stopReplay", [pair], readReplayArguments);
+    }
+    // #endregion
     // #endregion
 
     // #region Helpers
@@ -941,6 +989,9 @@
 
       dataViewModel.syncTradeConditionInfos(response.tci);
       delete response.tci;
+
+      dataViewModel.isVirtual(response.isVT);
+      delete response.isVT;
 
       $('#discussion').text(JSON.stringify(response).replace(/["{}]/g, ""));
 

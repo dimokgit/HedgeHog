@@ -221,7 +221,8 @@ namespace HedgeHog.Alice.Client {
       }
       #endregion
       return new {
-        time = tm0.ServerTime.ToString("HH:mm:ss") + (tm1 != null ? "," + tm1.RatesArray.Count : ""),
+        time = tm0.ServerTime.ToString("HH:mm:ss")
+          + (tm1 != null ? "," + (tm1.RatesArray.Count * tm1.BarPeriodInt).FromMinutes().TotalDays.Round(1) : ""),
         prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 1),
         otg = IntOrDouble(tmTrader.OpenTradesGross2InPips, 1),
         tps = tm0.TicksPerSecondAverage.Round(1),
@@ -232,7 +233,8 @@ namespace HedgeHog.Alice.Client {
         S = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
         price = new { ask = tm0.CurrentPrice.Ask, bid = tm0.CurrentPrice.Bid },
         tci = GetTradeConditionsInfo(tmTrader),
-        wp = tmTrader.WaveHeightPower.Round(1)
+        wp = tmTrader.WaveHeightPower.Round(1),
+        isVT = tmTrader.IsInVitualTrading
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
@@ -290,7 +292,10 @@ namespace HedgeHog.Alice.Client {
     public void SaveStrategy(string pair, string nick) {
       if(string.IsNullOrWhiteSpace(nick))
         throw new ArgumentException("Is empty", "nick");
-      UseTradingMacro(pair, 0, tm => RemoteControlModel.SaveStrategies(tm, nick), true);
+      UseTradingMacro(pair, 0, tm => RemoteControlModel.SaveStrategy(tm, nick), true);
+    }
+    public void RemoveStrategy(string path) {
+      RemoteControlModel.RemoveStrategy(path);
     }
     public void LoadStrategy(string pair, string strategyPath) {
       UseTradingMacro(pair, 0, tm => {
@@ -300,6 +305,29 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
+    #region ReplayArguments
+    public object ReadReplayArguments(string pair) {
+      return UseTradingMacro(pair, tm => new {
+        remoteControl.Value.ReplayArguments.DateStart,
+        isReplayOn = tm.IsInPlayback
+      }, false);
+
+    }
+    public object StartReplay(string pair, string startWhen) {
+      TimeSpan ts;
+      DateTime dateStart = TimeSpan.TryParse(startWhen, out ts)
+        ? DateTime.Now.Subtract(ts)
+        : DateTime.Parse(startWhen);
+      remoteControl.Value.ReplayArguments.DateStart = dateStart;
+      remoteControl.Value.ReplayArguments.IsWww = true;
+      UseTradingMacro(pair, tm => remoteControl.Value.StartReplayCommand.Execute(tm), false);
+      return ReadReplayArguments(pair);
+    }
+    public object StopReplay(string pair) {
+      remoteControl.Value.ReplayArguments.MustStop = true;
+      return ReadReplayArguments(pair);
+    }
+    #endregion
     public object GetWwwInfo(string pair, int chartNum) {
       return UseTradingMacro(pair, chartNum, tm => tm.WwwInfo(), false);
     }
