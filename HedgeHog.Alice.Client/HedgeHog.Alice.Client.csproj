@@ -195,6 +195,10 @@
       <HintPath>..\AllInOne\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Octokit, Version=0.17.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Octokit.0.17.0\lib\net45\Octokit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Owin">
       <HintPath>..\AllInOne\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
@@ -629,6 +633,10 @@
     <ProjectReference Include="..\HedgeHog.Charter\HedgeHog.Charter.csproj">
       <Project>{29F0B895-BF08-4747-A454-D44C7E43C7B1}</Project>
       <Name>HedgeHog.Charter</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Cloud\HedgeHog.Cloud.csproj">
+      <Project>{da5773fd-ef73-4eb6-8ab7-b086db49b968}</Project>
+      <Name>HedgeHog.Cloud</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Core.Reactive\HedgeHog.Core.Reactive.csproj">
       <Project>{edc8fa19-6e01-4997-84ba-ee5881fb3a52}</Project>

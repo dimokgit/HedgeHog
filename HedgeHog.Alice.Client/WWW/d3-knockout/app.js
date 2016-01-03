@@ -584,13 +584,13 @@
     }.bind(this);
     this.hideStrategies = function () { $(this.strategiesDialog()).modal("hide"); }.bind(this);
     this.setStrategy = function (data) {
-      serverCall("loadStrategy", [pair, data.path], " loading <b>" + data.name + "</b>")
+      serverCall("loadStrategy", [pair, data.name], " loading <b>" + data.name + "</b>")
         .done(function () {
           this.hideStrategies();
         }.bind(this));
     }.bind(this);
     this.removeStrategy = function (data) {
-      serverCall("removeStrategy", [data.path], " removed strategy <b>" + data.name + "</b>")
+      serverCall("removeStrategy", [data.nick], " removed strategy <b>" + data.name + "</b>")
         .done(function () {
           this.readStrategies();
         }.bind(this));

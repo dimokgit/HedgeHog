@@ -349,7 +349,7 @@ namespace HedgeHog.Alice.Store {
         throw new Exception(new { path } + "", exc);
       }
     }
-    IEnumerable<string> GetActiveSettings() {
+    public IEnumerable<string> GetActiveSettings() {
       return
         from setting in this.GetPropertiesByAttibute<CategoryAttribute>(a => true)
         group setting by setting.Item1.Category into g
@@ -361,8 +361,12 @@ namespace HedgeHog.Alice.Store {
     }
     void LoadActiveSettings() { LoadActiveSettings(ActiveSettingsPath()); }
     public void LoadActiveSettings(string path) {
+      var settings = Lib.ReadTestParameters(path);
+      LoadActiveSettings(settings);
+    }
+
+    public void LoadActiveSettings(Dictionary<string, string> settings) {
       try {
-        var settings = Lib.ReadTestParameters(path);
         settings.ForEach(tp => {
           try {
             LoadSetting(tp);

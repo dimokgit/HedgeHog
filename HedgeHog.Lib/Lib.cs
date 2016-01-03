@@ -194,8 +194,16 @@ namespace HedgeHog {
     }
     public static Dictionary<string, string> ReadTestParameters(string testFileName) {
       var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+      var lines = File.ReadAllLines(Path.Combine(path, testFileName));
+      return ReadParameters(lines);
+    }
+
+    public static Dictionary<string, string> ReadParametersFromString(string parameters) {
+      return ReadParameters(parameters.Split('\n'));
+    }
+    private static Dictionary<string, string> ReadParameters( string[] lines) {
       var separator = "=";
-      return File.ReadAllLines(Path.Combine(path, testFileName))
+      return lines
         .Where(s => !string.IsNullOrWhiteSpace(s) && !s.StartsWith("//"))
         .Select(pl => pl.Trim().Split(new[] { separator }, StringSplitOptions.RemoveEmptyEntries))
         //.Where(a => a.Length > 1 && !string.IsNullOrWhiteSpace(a[1]))

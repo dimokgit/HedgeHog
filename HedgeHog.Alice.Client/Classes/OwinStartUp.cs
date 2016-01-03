@@ -286,21 +286,21 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Strategies
-    public object[] ReadStrategies() {
-      return RemoteControlModel.ReadStrategies((nick, name, path) => new { nick, name, path }).ToArray();
+    public async Task<object[]> ReadStrategies() {
+      return (await RemoteControlModel.ReadStrategies((nick, name) => new { nick, name })).ToArray();
     }
     public void SaveStrategy(string pair, string nick) {
       if(string.IsNullOrWhiteSpace(nick))
         throw new ArgumentException("Is empty", "nick");
       UseTradingMacro(pair, 0, tm => RemoteControlModel.SaveStrategy(tm, nick), true);
     }
-    public void RemoveStrategy(string path) {
-      RemoteControlModel.RemoveStrategy(path);
+    public async Task RemoveStrategy(string name) {
+      await RemoteControlModel.RemoveStrategy(name);
     }
-    public void LoadStrategy(string pair, string strategyPath) {
-      UseTradingMacro(pair, 0, tm => {
+    public async Task LoadStrategy(string pair, string strategyPath) {
+      await UseTradingMacro(pair, 0, async tm => {
         tm.IsTradingActive = false;
-        tm.LoadActiveSettings(strategyPath);
+        await RemoteControlModel.LoadStrategy(tm, strategyPath);
       }, true);
     }
     #endregion

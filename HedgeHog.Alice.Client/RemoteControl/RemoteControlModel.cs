@@ -1025,29 +1025,41 @@ namespace HedgeHog.Alice.Client {
         GetTradingMacros().ForEach(tm => AddShowChart(tm));
     }
     #region Strategies
-    public static IEnumerable<T> ReadStrategies<T>(Func<string, string, string, T> map) {
-      Func<string, string> name = s =>
-        Regex.Matches(s, @"\{(.+)\}").Cast<Match>().SelectMany(m => m.Groups.Cast<Group>()
-        .Skip(1).Take(1)
-        .Select(g => g.Value))
-        .DefaultIfEmpty(s).First();
-      return Directory.GetFiles(StrategiesPath())
-        .OrderBy(file => file)
-        .Select(file => map(name(Path.GetFileNameWithoutExtension(file)), Path.GetFileNameWithoutExtension(file), file));
+    public static async Task<IEnumerable<T>> ReadStrategies<T>(Func<string, string, T> map) {
+      return await Cloud.GitHub.GistStrategies(map);
+
+      //Func<string, string> name = s =>
+      //  Regex.Matches(s, @"\{(.+)\}").Cast<Match>().SelectMany(m => m.Groups.Cast<Group>()
+      //  .Skip(1).Take(1)
+      //  .Select(g => g.Value))
+      //  .DefaultIfEmpty(s).First();
+      //return Directory.GetFiles(StrategiesPath())
+      //  .OrderBy(file => file)
+      //  .Select(file => map(name(Path.GetFileNameWithoutExtension(file)), Path.GetFileNameWithoutExtension(file), file));
     }
 
-    private static string StrategiesPath(string pathEnd = "") {
-      return Path.Combine(Directory.GetCurrentDirectory(), "..", "Strategies", pathEnd);
-    }
+    //private static string StrategiesPath(string pathEnd = "") {
+    //  return Path.Combine(Directory.GetCurrentDirectory(), "..", "Strategies", pathEnd);
+    //}
 
-    public static void SaveStrategy(TradingMacro tm, string nick) {
+    public static async  Task SaveStrategy(TradingMacro tm, string nick) {
       var fullName = tm.PairPlain + "_" + tm.BarPeriod + "-" + string.Join("-", tm.TradeConditionsInfo((tc, p, name) => name));
       var suffix = "{" + nick + "}";
       var path = fullName + suffix + ".txt";
-      tm.SaveActiveSettings(StrategiesPath(path));
+      var settings = string.Join("", tm.GetActiveSettings());
+      await Cloud.GitHub.GistStrategyAddOrUpdate(nick, fullName, settings);
+      //tm.SaveActiveSettings(StrategiesPath(path));
     }
-    public static void RemoveStrategy(string path) {
-      File.Delete(path);
+    public static async Task RemoveStrategy(string name) {
+      await Cloud.GitHub.GistStrategyDeleteByName(name);
+      //File.Delete(path);
+    }
+    public static async Task LoadStrategy(TradingMacro tm, string strategy) {
+      var strategies = (await Cloud.GitHub.GistStrategyFindByName(strategy)).AsSingleable().ToArray();
+      if(strategies.IsEmpty())
+        throw new Exception(new { strategy, message = "Not Found" } + "");
+      strategies.SelectMany(gist=>gist.Files.Select(file=>file.Value.Content))
+        .ForEach(content => tm.LoadActiveSettings(Lib.ReadParametersFromString(content)));
     }
     #endregion
     int _lastServedRatesCount = 0;
