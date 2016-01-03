@@ -88,6 +88,10 @@
       <HintPath>..\AllInOne\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Octokit, Version=0.17.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Octokit.0.17.0\lib\net45\Octokit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
@@ -113,6 +117,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\AllInOne\packages\Ix-Main.1.2.3\lib\net45\System.Interactive.dll</HintPath>
     </Reference>
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Reactive.Core">
       <HintPath>..\AllInOne\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
     </Reference>
@@ -188,6 +193,7 @@
     <Compile Include="SmartObservableCollection.cs" />
     <Compile Include="StaticRangePartitioer.cs" />
     <Compile Include="TBar.cs" />
+    <Compile Include="TestParameters.cs" />
     <Compile Include="UI\GroupFilter.cs" />
     <Compile Include="MarkupExtemssions.cs" />
     <Compile Include="ValueTrigger.cs" />
@@ -207,6 +213,10 @@
     <ProjectReference Include="..\EnumerableHH\HedgeHog.EnumerableHH.csproj">
       <Project>{8b110eee-4d1a-4b1a-b7d9-b5880af2b737}</Project>
       <Name>HedgeHog.EnumerableHH</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Cloud\HedgeHog.Cloud.csproj">
+      <Project>{da5773fd-ef73-4eb6-8ab7-b086db49b968}</Project>
+      <Name>HedgeHog.Cloud</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Core\HedgeHog.Core.csproj">
       <Project>{0ff063e1-e910-4d16-976b-15bc31d11159}</Project>

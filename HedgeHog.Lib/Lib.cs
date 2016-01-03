@@ -179,37 +179,6 @@ namespace HedgeHog {
     public static string Formater(this string format, params object[] args) {
       return string.Format(format, args);
     }
-    public static string ParseParamRange(this string param) {
-      var range = new System.Text.RegularExpressions.Regex(@"(?<from>[\d.]+)-(?<to>[\d.]+),(?<step>[-\d.]+)");
-      var m = range.Match(param);
-      if(!m.Success)
-        return param;
-      var l = new List<double>();
-      var from = double.Parse(m.Groups["from"].Value);
-      var to = double.Parse(m.Groups["to"].Value);
-      var step = double.Parse(m.Groups["step"].Value);
-      for(var d = from; step > 0 && d <= to || step < 0 && d >= to; d += step)
-        l.Add(d);
-      return string.Join("\t", l);
-    }
-    public static Dictionary<string, string> ReadTestParameters(string testFileName) {
-      var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-      var lines = File.ReadAllLines(Path.Combine(path, testFileName));
-      return ReadParameters(lines);
-    }
-
-    public static Dictionary<string, string> ReadParametersFromString(string parameters) {
-      return ReadParameters(parameters.Split('\n'));
-    }
-    private static Dictionary<string, string> ReadParameters( string[] lines) {
-      var separator = "=";
-      return lines
-        .Where(s => !string.IsNullOrWhiteSpace(s) && !s.StartsWith("//"))
-        .Select(pl => pl.Trim().Split(new[] { separator }, StringSplitOptions.RemoveEmptyEntries))
-        //.Where(a => a.Length > 1 && !string.IsNullOrWhiteSpace(a[1]))
-        .Select(a => new { name = a[0], value = string.Join(separator, a.Skip(1)).Trim() })
-        .ToDictionary(p => p.name, p => ParseParamRange(p.value));
-    }
 
     public static string CallingMethod(int skipFrames = 1) {
       return new StackFrame(skipFrames + 1).GetMethod().Name;

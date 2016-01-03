@@ -584,7 +584,7 @@
     }.bind(this);
     this.hideStrategies = function () { $(this.strategiesDialog()).modal("hide"); }.bind(this);
     this.setStrategy = function (data) {
-      serverCall("loadStrategy", [pair, data.name], " loading <b>" + data.name + "</b>")
+      serverCall("loadStrategy", [pair, data.nick], " loading <b>" + data.name + "</b>")
         .done(function () {
           this.hideStrategies();
         }.bind(this));

@@ -60,7 +60,7 @@ namespace HedgeHog.Cloud {
     }
 
     public static async Task<Gist> GistStrategyAdd(string name, string description, string content) {
-      var newGist = new NewGist() { Description = description };
+      var newGist = new NewGist() { Description = description, Public = true };
       newGist.Files.Add( MakeStrategyName(name), content);
       return await ClientFactory().Gist.Create(newGist);
     }

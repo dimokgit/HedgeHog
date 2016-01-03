@@ -80,7 +80,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public TradeOpenAction[] TradeOpenActionsSet(IList<string> names) {
-      return _tradeOpenActions = GetTradeOpenActions().Where(tc => names.Contains(ParseTradeConditionName(tc.Method))).ToArray();
+      return _tradeOpenActions = GetTradeOpenActions().Where(tc => names.Contains(ParseTradeConditionNameFromMethod(tc.Method))).ToArray();
     }
     public IEnumerable<T> TradeOpenActionsInfo<T>(Func<TradeOpenAction, string, T> map) {
       return TradeOpenActionsInfo(_tradeOpenActions, map);
@@ -89,7 +89,7 @@ namespace HedgeHog.Alice.Store {
       return TradeOpenActionsInfo(GetTradeOpenActions(), map);
     }
     public IEnumerable<T> TradeOpenActionsInfo<T>(IList<TradeOpenAction> tradeOpenActions, Func<TradeOpenAction, string, T> map) {
-      return tradeOpenActions.Select(tc => map(tc, ParseTradeConditionName(tc.Method)));
+      return tradeOpenActions.Select(tc => map(tc, ParseTradeConditionNameFromMethod(tc.Method)));
     }
     [DisplayName("Trade Actions")]
     [Category(categoryActiveFuncs)]
@@ -702,12 +702,15 @@ namespace HedgeHog.Alice.Store {
 
       //return new[] { WideOk, TpsOk, AngleOk, Angle0Ok };
     }
-    public static string ParseTradeConditionName(MethodInfo method) {
+    public static string ParseTradeConditionNameFromMethod(MethodInfo method) {
       return Regex.Match(method.Name, "<(.+)>").Groups[1].Value.Substring(4);
 
     }
+    public static string ParseTradeConditionToNick(string tradeConditionFullName) {
+      return Regex.Replace(tradeConditionFullName, "ok$","", RegexOptions.IgnoreCase);
+    }
     public Tuple<TradeConditionDelegate, PropertyInfo>[] TradeConditionsSet(IList<string> names) {
-      return TradeConditions = GetTradeConditions().Where(tc => names.Contains(ParseTradeConditionName(tc.Item1.Method))).ToArray();
+      return TradeConditions = GetTradeConditions().Where(tc => names.Contains(ParseTradeConditionNameFromMethod(tc.Item1.Method))).ToArray();
     }
     bool TradeConditionsHaveTurnOff() {
       return TradeConditionsInfo<TradeConditionTurnOffAttribute>().Any(d => d().HasNone());
@@ -812,7 +815,7 @@ namespace HedgeHog.Alice.Store {
       return TradeConditionsInfo(GetTradeConditions(), map);
     }
     public IEnumerable<T> TradeConditionsInfo<T>(IList<Tuple<TradeConditionDelegate, PropertyInfo>> tradeConditions, Func<TradeConditionDelegate, PropertyInfo, string, T> map) {
-      return tradeConditions.Select(tc => map(tc.Item1, tc.Item2, ParseTradeConditionName(tc.Item1.Method)));
+      return tradeConditions.Select(tc => map(tc.Item1, tc.Item2, ParseTradeConditionNameFromMethod(tc.Item1.Method)));
     }
     [DisplayName("Trade Conditions")]
     [Category(categoryActiveFuncs)]

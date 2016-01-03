@@ -133,13 +133,14 @@ namespace HedgeHog.Alice.Store {
     IEnumerable<int> GetRatesLengthByDistanceMinByMacdSmoothed(Func<IList<Rate>, int, Action<double, double>, IEnumerable<double>> macd) {
       var distances = new List<double>(BarsCountCalc);
       Action<double, double> addDistance = (p, n) => distances.Add(p.Abs(n));
+      var cmaPeriod = CmaPeriodByRatesCount(BarsCountCalc);
       return UseRatesInternal(rs => rs.ToList())
         .Select(rs => {
           rs.Reverse();
           var rdm = InPoints(RatesDistanceMin);
           _macdDiastances = Macd(rs, BarsCountCalc)
             .Pairwise((v1, v2) => v1.Abs(v2))
-            .Cma(CmaPeriodByRatesCount(BarsCountCalc))
+            .Cma(cmaPeriod)
             .Distances(addDistance)
             .Skip(BarsCount)
             .TakeWhile(i => i <= rdm)
@@ -148,7 +149,11 @@ namespace HedgeHog.Alice.Store {
           return new { count };//, length = RatesTimeSpan(rs.GetRange(0, count)) };
         })
         .Select(x => {
-          _macd2Rsd = distances.RelativeStandardDeviation() * 100;// / x.length.TotalDays;
+          TrendLines1.Value.Skip(1)
+            .Select(tl => tl.Trends.Count)
+            .Where(count => count > 0)
+            .ForEach(count =>
+              _macd2Rsd = distances.Skip(cmaPeriod.ToInt()).Take(count).RelativeStandardDeviation() * 100);// / x.length.TotalDays;
           const double adjuster = 0;
           if(x.count * adjuster > BarsCountMax) {
             BarsCountMax = (BarsCountMax * adjuster).Ceiling();
