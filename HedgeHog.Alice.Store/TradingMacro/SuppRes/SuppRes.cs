@@ -105,7 +105,7 @@ namespace HedgeHog.Alice.Store {
           _rateExErrorCounter = 0;
         } catch (Exception exc) {
           if (_rateExErrorCounter > 100) throw;
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(new Exception("Rate: " + new { Prev = valuePrev, Curr = Rate } + ""));
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(new Exception("Rate: " + new { Prev = valuePrev, Curr = Rate } + "", exc));
         }
       }
     }

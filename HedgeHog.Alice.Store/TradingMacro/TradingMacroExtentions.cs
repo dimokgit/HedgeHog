@@ -231,7 +231,7 @@ namespace HedgeHog.Alice.Store {
     static NewsCasterModel _newsCaster { get { return NewsCasterModel.Default; } }
 
     public TradingMacro() {
-
+      Strategy = IsInVitualTrading ? Strategies.UniversalA : Strategies.Universal;
       this.ObservableForProperty(tm => tm.Pair, false, false)
         .Where(oc => !string.IsNullOrWhiteSpace(oc.Value) && !IsInVitualTrading)
         .Throttle(1.FromSeconds())
@@ -1547,6 +1547,7 @@ namespace HedgeHog.Alice.Store {
         _macd2Rsd = double.NaN;
         MacdRsdAvg = double.NaN;
         _isRatesLengthStable = false;
+        ResetTradeStrip = false;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if(!_replayRates.Any())
@@ -2582,6 +2583,7 @@ namespace HedgeHog.Alice.Store {
 
     private Strategies _Strategy;
     [Category(categorySession)]
+    [Dnr]
     public Strategies Strategy {
       get {
         return _Strategy;

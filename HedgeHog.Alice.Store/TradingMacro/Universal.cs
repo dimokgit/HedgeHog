@@ -1154,54 +1154,54 @@ namespace HedgeHog.Alice.Store {
 
             #region SimpleMove
             case TrailingWaveMethod.SimpleMove:
-            {
+              {
                 var conditions = MonoidsCore.ToFunc(() => new { TrailingDistanceFunction });
-              var tci_ = MonoidsCore.ToFunc(() => TradeConditionsInfo((d, p, n) => new { n, v = d(), d }).ToArray());
+                var tci_ = MonoidsCore.ToFunc(() => TradeConditionsInfo((d, p, n) => new { n, v = d(), d }).ToArray());
 
-              var toai = MonoidsCore.ToFunc(() => TradeOpenActionsInfo((d, n) => new { n, d }).ToArray());
-              #region FirstTime
-              if (firstTime && IsTrader) {
-                WorkflowStep = "";
-                Log = new Exception(conditions() + "");
-                ResetTakeProfitManual();
-                #region onCloseTradeLocal
-                onCanTradeLocal = canTrade => canTrade || Trades.Any();
-                var canTradeOff = !IsAutoStrategy;
-                #region turnItOff
-                Action<bool, Action> turnItOff = (should, a) => _buySellLevels
-                  .Where(_ => should)
-                  .Do(sr => {
-                    if(!TradeConditionsHave(Tip2Ok))
-                      sr.InManual = false;
-                    sr.CanTrade = !IsAutoStrategy;
-                    sr.TradesCount = TradeCountStart;
-                  })
-                  .ToArray()
-                  .Take(1)
-                  .Do(_ => {
-                    UnFreezeCorridorStartDate();
-                  })
-                  .Where(_ => a != null)
-                  .ForEach(_ => a());
+                var toai = MonoidsCore.ToFunc(() => TradeOpenActionsInfo((d, n) => new { n, d }).ToArray());
+                #region FirstTime
+                if(firstTime && IsTrader) {
+                  WorkflowStep = "";
+                  Log = new Exception(conditions() + "");
+                  ResetTakeProfitManual();
+                  #region onCloseTradeLocal
+                  onCanTradeLocal = canTrade => canTrade || Trades.Any();
+                  var canTradeOff = !IsAutoStrategy;
+                  #region turnItOff
+                  Action<bool, Action> turnItOff = (should, a) => _buySellLevels
+                    .Where(_ => should)
+                    .Do(sr => {
+                      if(!TradeConditionsHave(Tip2Ok))
+                        sr.InManual = false;
+                      sr.CanTrade = !IsAutoStrategy;
+                      sr.TradesCount = TradeCountStart;
+                    })
+                    .ToArray()
+                    .Take(1)
+                    .Do(_ => {
+                      UnFreezeCorridorStartDate();
+                    })
+                    .Where(_ => a != null)
+                    .ForEach(_ => a());
                   #endregion
-                var hasTradeCountOff = _buySellLevels.Where(sr => sr.TradesCount < -TradeCountMax);
-                onCloseTradeLocal += t => {
-                  if(!HaveTrades()) {
-                    if(_buySellLevels.All(sr => sr.InManual && !sr.CanTrade))
-                      _buySellLevelsForEach(sr => sr.InManual = false);
-                    if(minPLOk(t) || hasTradeCountOff.Any()) {
-                      BuyLevel.InManual = SellLevel.InManual = false;
-                      turnItOff(true, () => {
-                        if(canTradeOff)
-                          IsTradingActive = false;
-                      });
+                  var hasTradeCountOff = _buySellLevels.Where(sr => sr.TradesCount < -TradeCountMax);
+                  onCloseTradeLocal += t => {
+                    if(!HaveTrades()) {
+                      if(_buySellLevels.All(sr => sr.InManual && !sr.CanTrade))
+                        _buySellLevelsForEach(sr => sr.InManual = false);
+                      if(minPLOk(t) || hasTradeCountOff.Any()) {
+                        BuyLevel.InManual = SellLevel.InManual = false;
+                        turnItOff(true, () => {
+                          if(canTradeOff)
+                            IsTradingActive = false;
+                        });
+                      }
+                      if(CurrentGrossInPipTotal > 0)
+                        BroadcastCloseAllTrades();
+                      BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
+                      CorridorStartDate = null;
                     }
-                    if(CurrentGrossInPipTotal > 0)
-                      BroadcastCloseAllTrades();
-                    BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
-                    CorridorStartDate = null;
-                  }
-                };
+                  };
                   #endregion
                   Action<Trade> canTradeByTradeCount = t =>
                     hasTradeCountOff
@@ -1213,167 +1213,29 @@ namespace HedgeHog.Alice.Store {
                         sr.TradesCount = TradeCountStart;
                       });
                     });
-                onOpenTradeLocal += t => {
-                  canTradeByTradeCount(t);
-                  toai().ForEach(x => {
-                    Log = new Exception("TradeOpenAction:" + x.n);
-                    x.d(t);
-                  });
-                };
-              }
-              #endregion
-              if (IsTrader) {
-                exitFunc();
+                  onOpenTradeLocal += t => {
+                    canTradeByTradeCount(t);
+                    toai().ForEach(x => {
+                      Log = new Exception("TradeOpenAction:" + x.n);
+                      x.d(t);
+                    });
+                  };
+                }
+                #endregion
+                if(IsTrader) {
+                  exitFunc();
                   try {
                     TradeDirectionTriggersRun();
                     TradeConditionsTrigger();
                   } catch(Exception exc) {
                     Log = exc;
                   }
+                }
+                if(!TradeConditionsHaveSetCorridor())
+                  SetTradeLevelsToLevelBy(GetTradeLevel)();
               }
-              SetTradeLevelsToLevelBy(GetTradeLevel)();
-            }
             if (IsTrader)
               adjustExitLevels2();
-            break;
-            #endregion
-
-            #region SimpleMoveBO
-            case TrailingWaveMethod.SimpleMoveBO:
-            {
-              #region FirstTime
-              if (firstTime) {
-                Log = new Exception(new { TradingAngleRange = TradingAngleRange.Round(2), TicksPerSecondAverage = TicksPerSecondAverage.Round(1), TradeCountStart } + "");
-                workFlowObservableDynamic.Subscribe();
-                ResetTakeProfitManual();
-                #region onCloseTradeLocal
-                onCanTradeLocal = canTrade => canTrade || Trades.Any();
-                onCloseTradeLocal += t => {
-                  if (IsInVitualTrading) {
-                    var tpByGross = InPoints(_tradingStatistics.GetNetInPips()).Min(0).Abs() / 3;
-                    TakeProfitManual = (t.PL < 0 ? InPoints(t.PL.Abs() * 1.4).Max(TakeProfitManual) : double.NaN).Max(tpByGross);
-                  }
-                  if (minPLOk(t)) {
-                    _buySellLevelsForEach(sr => sr.CanTrade = sr.InManual = false);
-                    if (!IsInVitualTrading && !IsAutoStrategy) IsTradingActive = false;
-                  }
-                  BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
-                  if (CurrentGrossInPipTotal > 0)
-                    BroadcastCloseAllTrades();
-                };
-                Action resetTradeLevels = () => _buySellLevelsForEach(sr => {
-                  sr.CanTrade = false;
-                  sr.TradesCount = 0;
-                });
-                onOpenTradeLocal += t => onCorridorCrossesMaximumExeeded(resetTradeLevels);
-                #endregion
-              }
-              #endregion
-              #region Locals
-              var tradeLevels = MonoidsCore.ToLazy(() => new[] { new { up = GetTradeLevel(true, double.NaN), down = GetTradeLevel(false, double.NaN) } });
-              Func<bool> isInside = () => (from tl in tradeLevels.Value
-                                           from cp in new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }
-                                           select cp.Between(tl.down, tl.up)).All(t => t);
-              var trendLines1 = new { TrendLines1Trends.PriceAvg2, TrendLines1Trends.PriceAvg3 };
-              var trendLines = new { TrendLinesTrends.PriceAvg2, TrendLinesTrends.PriceAvg3 };
-              Func<double, bool> tradeLevelOk = tl => tl.Between(trendLines.PriceAvg2, trendLines.PriceAvg3);
-              Func<bool> corridorOk1 = () => tradeLevelOk(trendLines1.PriceAvg2) && tradeLevelOk(trendLines1.PriceAvg3);
-
-              Func<bool> corridorOk = () => TrendLines1Trends.StDev > TrendLinesTrends.StDev * 1.05 && corridorOk1();
-              var canTradeOkA = MonoidsCore.ToLazy(() => new { corridor = corridorOk(), angle = calcAngleOk(), inside = isInside() });
-              Func<bool> canTradeOk = () => canTradeOkA.Value.corridor && canTradeOkA.Value.angle && canTradeOkA.Value.inside;
-              IEnumerable<Action> setTradeLevels = new[] {
-                  ()=> _buySellLevelsForEach(sr => sr.ResetPricePosition()),
-                  SetTradeLevelsToLevelBy(GetTradeLevel)
-                }
-              .Concat(new Action[]{()=>{
-                  BuyLevel.TradesCount = SellLevel.TradesCount = TradeCountStart;
-                  if (IsAutoStrategy)
-                    _buySellLevelsForEach(sr => sr.CanTradeEx = true);
-                  else SendSms("BreakOut corridor", "", false);
-                }});
-              #endregion
-              #region WorkFlow
-              Func<double> slope = () => CorridorStats.Slope.Abs();
-              var angleMin = WFD.Make("angleMin", double.MaxValue);
-              var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
-                  _ti =>{ WorkflowStep = "1.Wait flat"+canTradeOkA.Value;
-                    return canTradeOk() ? WFD.tupleNext(_ti) : WFD.tupleStay(_ti);
-                  },ti=>{WorkflowStep = "2.Set Trade Levels"+canTradeOkA.Value;
-                    setTradeLevels.ForEach(a => a());
-                    angleMin(ti, slope);
-                    return WFD.tupleNext(ti);
-                  },ti=>{WorkflowStep = "3.While flat"+canTradeOkA.Value;
-                    setTradeLevels
-                      .Where(_ => canTradeOk() && slope() < angleMin(ti))
-                      .Do(a => a())
-                      .Take(1).ForEach(_ => angleMin(ti, slope));
-                    return canTradeOk() ? WFD.tupleStay(ti) : WFD.tupleNext(ti);
-                  }
-                };
-              workflowSubjectDynamic.OnNext(wfManual);
-              #endregion
-            }
-            adjustExitLevels0();
-            break;
-            #endregion
-
-            #region SimpleMoveRng
-            case TrailingWaveMethod.SimpleMoveRng:
-            {
-              #region FirstTime
-              var conditions = MonoidsCore.ToFunc(() => new { TicksPerSecondAverage = TicksPerSecondAverage.Round(1), TradeCountStart });
-              if (firstTime) {
-                Log = new Exception(conditions() + "");
-                workFlowObservableDynamic.Subscribe();
-                ResetTakeProfitManual();
-                #region onCloseTradeLocal
-                onCanTradeLocal = canTrade => canTrade || Trades.Any();
-                onCloseTradeLocal += t => {
-                  if (IsInVitualTrading) {
-                    var tpByGross = InPoints(_tradingStatistics.GetNetInPips()).Min(0).Abs() / 3;
-                    TakeProfitManual = (t.PL < 0 ? InPoints(t.PL.Abs() * 1.4).Max(TakeProfitManual) : double.NaN).Max(tpByGross);
-                  }
-                  if (minPLOk(t)) {
-                    _buySellLevelsForEach(sr => sr.CanTrade = sr.InManual = false);
-                    if (!IsInVitualTrading && !IsAutoStrategy) IsTradingActive = false;
-                  }
-                  BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
-                  if (CurrentGrossInPipTotal > 0)
-                    BroadcastCloseAllTrades();
-                };
-                onOpenTradeLocal += t => {
-                  if (_buySellLevels.Any(bs => -bs.TradesCount >= TradeCountMax))
-                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; });
-                };
-                #endregion
-              }
-              #endregion
-
-              #region Locals
-              Action setTradeLevels = SetTradeLevelsToLevelBy(GetTradeLevel);
-              Func<bool> isCorridorOk = () => TrendLines1Trends.StDev > TrendLinesTrends.StDev;
-              var canTradeOk = MonoidsCore.ToLazy(() => new { corrOk = isCorridorOk() });
-              Func<bool> isCanTradeOk = () => canTradeOk.Value.corrOk;
-              Action<bool> setCanTrade = isBuy => {
-                BuyLevel.CanTradeEx = SellLevel.CanTradeEx = isBuy;
-                BuyLevel.TradesCountEx = SellLevel.TradesCountEx = TradeCountStart;
-              };
-              #endregion
-
-              #region WorkFlow
-              var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
-                  e =>{ WorkflowStep = "1.Wait "+canTradeOk.Value;
-                    setCanTrade(isCanTradeOk());
-                    return WFD.tupleStay(e);
-                  }
-                };
-              #endregion
-
-              setTradeLevels();
-              workflowSubjectDynamic.OnNext(wfManual);
-            }
-            adjustExitLevels0();
             break;
             #endregion
 

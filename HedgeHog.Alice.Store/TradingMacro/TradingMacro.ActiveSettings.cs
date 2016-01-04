@@ -52,6 +52,7 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<string> GetActiveSettings() {
       return
         from setting in this.GetPropertiesByAttibute<CategoryAttribute>(a => true)
+        where IsNotDnr(setting.Item2)
         group setting by setting.Item1.Category into g
         orderby g.Key
         from g2 in new[] { "//{0}//".Formater(g.Key) }
@@ -96,8 +97,11 @@ namespace HedgeHog.Alice.Store {
     }
 
     public void LoadSetting<T>(KeyValuePair<string, T> tp) {
-      this.SetProperty(tp.Key, (object)tp.Value, p => p != null && p.GetCustomAttribute<DnrAttribute>() == null);
+      this.SetProperty(tp.Key, (object)tp.Value, p => p != null && IsNotDnr(p));
     }
 
+    private static bool IsNotDnr(PropertyInfo p) {
+      return p.GetCustomAttribute<DnrAttribute>() == null;
+    }
   }
 }

@@ -12,97 +12,22 @@ using System.Dynamic;
 using System.Globalization;
 
 namespace HedgeHog.Alice.Store {
-  class TradeConditionStartDateTriggerAttribute : Attribute {
-  }
-  class TradeConditionAsleepAttribute : Attribute {
-  }
-  class TradeConditionTurnOffAttribute : Attribute {
-  }
-  class TradeConditionUseCorridorAttribute : Attribute {
-  }
   partial class TradingMacro {
-    #region TradeOpenActions
-    public delegate void TradeOpenAction(Trade trade);
-    public TradeOpenAction FreezeOnTrade { get { return trade => FreezeCorridorStartDate(); } }
-    public TradeOpenAction WrapOnTrade { get { return trade => WrapTradeInCorridor(); } }
-
-    public TradeOpenAction Avg1ExitOnTrade {
-      get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.Avg1Max, TradeLevelBy.Avg1Min));
-      }
-    }
-    public TradeOpenAction Avg1GRBExitOnTrade {
-      get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.Avg2GRBMax, TradeLevelBy.Avg3GRBMin));
-      }
-    }
-    public TradeOpenAction GreenExitOnTrade {
-      get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0));
-      }
-    }
-
-    public TradeOpenAction RedExitOnTrade {
-      get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3));
-      }
-    }
-
-    public TradeOpenAction BlueExitOnTrade {
-      get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.PriceHigh, TradeLevelBy.PriceLow));
-      }
-    }
-
-    TradeOpenAction SetCorridorExit(TradeLevelBy buy, TradeLevelBy sell) {
-      return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, buy, sell));
-    }
-    private void SetCorridorExitImpl(Trade trade, TradeLevelBy buy, TradeLevelBy sell) {
-      if(trade.IsBuy) {
-        var level = TradeLevelFuncs[buy]();
-        if(InPips(level - trade.Open) > 5)
-          LevelBuyCloseBy = buy;
-      } else {
-        var level = TradeLevelFuncs[TradeLevelBy.PriceLow0]();
-        if(InPips(-level + trade.Open) > 5)
-          LevelSellCloseBy = TradeLevelBy.PriceLow0;
-      }
-    }
-
-    TradeOpenAction[] _tradeOpenActions = new TradeOpenAction[0];
-    void OnTradeConditionsReset() { _tradeOpenActions = new TradeOpenAction[0]; }
-    public TradeOpenAction[] GetTradeOpenActions() {
-      return GetType().GetProperties()
-        .Where(p => p.PropertyType == typeof(TradeOpenAction))
-        .Select(p => p.GetValue(this))
-        .Cast<TradeOpenAction>()
-        .ToArray();
-    }
-
-    public TradeOpenAction[] TradeOpenActionsSet(IList<string> names) {
-      return _tradeOpenActions = GetTradeOpenActions().Where(tc => names.Contains(ParseTradeConditionNameFromMethod(tc.Method))).ToArray();
-    }
-    public IEnumerable<T> TradeOpenActionsInfo<T>(Func<TradeOpenAction, string, T> map) {
-      return TradeOpenActionsInfo(_tradeOpenActions, map);
-    }
-    public IEnumerable<T> TradeOpenActionsAllInfo<T>(Func<TradeOpenAction, string, T> map) {
-      return TradeOpenActionsInfo(GetTradeOpenActions(), map);
-    }
-    public IEnumerable<T> TradeOpenActionsInfo<T>(IList<TradeOpenAction> tradeOpenActions, Func<TradeOpenAction, string, T> map) {
-      return tradeOpenActions.Select(tc => map(tc, ParseTradeConditionNameFromMethod(tc.Method)));
-    }
-    [DisplayName("Trade Actions")]
-    [Category(categoryActiveFuncs)]
-    public string TradeOpenActionsSave {
-      get { return string.Join(MULTI_VALUE_SEPARATOR, TradeOpenActionsInfo((tc, name) => name)); }
-      set {
-        TradeOpenActionsSet(value.Split(MULTI_VALUE_SEPARATOR[0]));
-      }
-    }
-    #endregion
 
     #region TradeConditions
     public delegate TradeDirections TradeConditionDelegate();
+    public delegate TradeDirections TradeConditionDelegateHide();
+    #region Trade Condition Helers
+    bool IsCurrentPriceInside(params double[] levels) {
+      return new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }.All(cp => cp.Between(levels[0], levels[1]));
+    }
+    private bool IsCurrentPriceInsideTradeLevels {
+      get {
+        return new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }.All(cp => cp.Between(SellLevel.Rate, BuyLevel.Rate));
+      }
+    }
+    private bool IsCurrentPriceInsideBlueStrip { get { return IsCurrentPriceInside(CenterOfMassSell, CenterOfMassBuy); } }
+    #endregion
     #region TradeDirection Helpers
     TradeDirections TradeDirectionBoth(bool ok) { return ok ? TradeDirections.Both : TradeDirections.None; }
     TradeConditionDelegate TradeDirectionEither(Func<bool> ok) { return () => ok() ? TradeDirections.Up : TradeDirections.Down; }
@@ -113,6 +38,7 @@ namespace HedgeHog.Alice.Store {
 
     double _tipRatioCurrent = double.NaN;
 
+    #region Wave Conditions
     int _bigWaveIndex = 0;
     [Category(categoryTrading)]
     [WwwSetting]
@@ -130,7 +56,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegate BigWaveOk {
+    public TradeConditionDelegateHide BigWaveOk {
       get {
         var ors = new Func<WaveRange, double>[] { wr => wr.DistanceCma };
         Func<WaveRange, TradingMacro, bool> predicate = (wr, tm) =>
@@ -148,14 +74,14 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeConditionTurnOff]
     [TradeConditionAsleep]
-    public Func<TradeDirections> FatWaveOk {
+    public TradeConditionDelegateHide FatWaveOk {
       get {
         return () => IsWaveOk((wr, tm) => wr.UID >= tm.WaveRangeAvg.UID, 0);
       }
     }
 
     [TradeConditionTurnOff]
-    public Func<TradeDirections> TriplettOk {
+    public TradeConditionDelegateHide TriplettOk {
       get {
         Func<WaveRange, TradingMacro, bool> isBig = (wr, tm) => wr.DistanceCma > tm.WaveRangeAvg.DistanceCma / 2;
         Func<WaveRange[], TradingMacro, bool> areBig = (wrs, tm) => wrs.Sum(wr => wr.DistanceCma) > tm.WaveRangeAvg.DistanceCma * 2;
@@ -206,6 +132,9 @@ namespace HedgeHog.Alice.Store {
       .DefaultIfEmpty(TradeDirections.None)
       .Single();
     }
+    #endregion
+
+    #region Trade Corridor and Directions conditions
 
     [TradeConditionTurnOff]
     public TradeConditionDelegate TipOk {
@@ -287,10 +216,67 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private bool IsCurrentPriceInsideTradeLevels {
-      get {
-        return new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }.All(cp => cp.Between(SellLevel.Rate, BuyLevel.Rate));
+    #region Properties
+    [Category(categoryCorridor)]
+    [WwwSetting]
+    public bool ResetTradeStrip {
+      get { return false; }
+      set {
+        if(value)
+          CenterOfMassSell = CenterOfMassBuy = CenterOfMassSell2 = CenterOfMassBuy2 = double.NaN;
       }
+    }
+    double _tradeStripJumpRatio = 1.333333;
+    [Category(categoryActive)]
+    [WwwSetting]
+    public double TradeStripJumpRatio {
+      get { return _tradeStripJumpRatio; }
+      set {
+        if(_tradeStripJumpRatio == value)
+          return;
+        _tradeStripJumpRatio = value;
+        OnPropertyChanged(() => TradeStripJumpRatio);
+      }
+    }
+    #endregion
+
+    [TradeConditionSetCorridor]
+    public TradeConditionDelegate TradeStripOk {
+      get {
+        return () => {
+          var tradeStripHeight = SetTradeStrip(false);
+          var canSetStrip = Trades.IsEmpty();
+          _tipRatioCurrent = _ratesHeightCma / tradeStripHeight;
+          var td = TradeDirectionByBool(IsCurrentPriceInsideBlueStrip && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
+          if(canSetStrip && td.HasAny())
+            SetTradeStrip(true);
+          return td;
+        };
+      }
+    }
+    public double SetTradeStrip(bool doSetTradeLevels) {
+      if(doSetTradeLevels) {
+        BuyLevel.RateEx = CenterOfMassBuy.IfNaN(GetTradeLevel(true, BuyLevel.Rate));
+        SellLevel.RateEx = CenterOfMassSell.IfNaN(GetTradeLevel(false, SellLevel.Rate));
+      } else if(CanTriggerTradeDirection()) {
+        var tlbuy = GetTradeLevel(true, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMax]();
+        var tlSell = GetTradeLevel(false, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMin]();
+        var bsHeight = CenterOfMassBuy.Abs(CenterOfMassSell);
+        var tlHeight = tlbuy.Abs(tlSell);
+        var tlAvg = tlbuy.Avg(tlSell);
+        var tlJumped = !tlAvg.Between(CenterOfMassSell, CenterOfMassBuy) && tlHeight.Div(bsHeight) <= TradeStripJumpRatio;
+        if(tlJumped) {
+          CenterOfMassBuy2 = CenterOfMassBuy;
+          CenterOfMassSell2 = CenterOfMassSell;
+        }
+        var canSetLevel = (bsHeight.IsNaN() || tlJumped || tlHeight < bsHeight);
+        if(canSetLevel) {
+          CenterOfMassBuy = tlbuy;
+          CenterOfMassSell = tlSell;
+        }
+        return CenterOfMassBuy.Abs(CenterOfMassSell);
+      }
+      return double.NaN;
     }
 
     public void SetTradeCorridorToMinHeight2() {
@@ -361,7 +347,7 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-
+    #endregion
 
     double _tipRatio = 4;
     [Category(categoryActive)]
@@ -484,7 +470,7 @@ namespace HedgeHog.Alice.Store {
     public static double BlueBasedRatio(double blue, double red, double green) {
       return new[] { blue.Percentage(red), blue.Percentage(green) }.Average().Abs();
     }
-    public double BlueBasedRatio( Func<IList<Rate>, double> spread) {
+    public double BlueBasedRatio(Func<IList<Rate>, double> spread) {
       var blue = spread(TrendLines2.Value);
       var red = spread(TrendLines.Value);
       var green = spread(TrendLines1.Value);
@@ -707,13 +693,16 @@ namespace HedgeHog.Alice.Store {
 
     }
     public static string ParseTradeConditionToNick(string tradeConditionFullName) {
-      return Regex.Replace(tradeConditionFullName, "ok$","", RegexOptions.IgnoreCase);
+      return Regex.Replace(tradeConditionFullName, "ok$", "", RegexOptions.IgnoreCase);
     }
     public Tuple<TradeConditionDelegate, PropertyInfo>[] TradeConditionsSet(IList<string> names) {
       return TradeConditions = GetTradeConditions().Where(tc => names.Contains(ParseTradeConditionNameFromMethod(tc.Item1.Method))).ToArray();
     }
     bool TradeConditionsHaveTurnOff() {
       return TradeConditionsInfo<TradeConditionTurnOffAttribute>().Any(d => d().HasNone());
+    }
+    bool TradeConditionsHaveSetCorridor() {
+      return TradeConditionsInfo<TradeConditionSetCorridorAttribute>().Any();
     }
     bool TradeConditionsHaveAsleep() {
       return TradeConditionsInfo<TradeConditionAsleepAttribute>().Any(d => d().HasNone()) || !IsTradingDay();

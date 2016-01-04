@@ -680,6 +680,7 @@
         commonChartParts.tradeLevels = response.tradeLevels;
       var chartData2 = chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod,closedTradesLocal , self.openTradeGross,0, response.canBuy, response.canSell,response.waveLines);
       chartData2.tickDate = lineChartData()[0].d;
+      chartData2.com = self.com;
       response.waveLines.forEach(function (w, i) { w.bold = i == sumStartIndexById(); });
       self.chartData2(chartData2);
       updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
@@ -819,17 +820,18 @@
     var isReplayOn = this.isReplayOn = ko.observable(false);
     var replayDateStart = this.replayDateStart = ko.observable();
     var readReplayProcID = 0;
+    function clearReadReplayArguments() {
+      clearInterval(readReplayProcID);
+      readReplayProcID = 0;
+    }
     function readReplayArguments() {
       serverCall("readReplayArguments", withNoNote(pair), function (ra) {
         replayDateStart(d3.time.format("%m/%d/%y %H:%M")(new Date(ra.DateStart)));
         isReplayOn(ra.isReplayOn);
         if (ra.isReplayOn && !readReplayProcID)
-         readReplayProcID = setInterval(readReplayArguments, 5 * 1000);
-        if (!ra.isReplayOn && readReplayProcID) {
-          clearInterval(readReplayProcID);
-          readReplayProcID = 0;
-        }
-      });
+          readReplayProcID = setInterval(readReplayArguments, 5 * 1000);
+        if (!ra.isReplayOn && readReplayProcID) clearReadReplayArguments();
+      }, clearReadReplayArguments);
     }
     this.showReplayDialog = function () {
       $(replayDialog()).dialog({
@@ -992,6 +994,9 @@
 
       dataViewModel.isVirtual(response.isVT);
       delete response.isVT;
+
+      dataViewModel.com = response.com;
+      delete response.com;
 
       $('#discussion').text(JSON.stringify(response).replace(/["{}]/g, ""));
 

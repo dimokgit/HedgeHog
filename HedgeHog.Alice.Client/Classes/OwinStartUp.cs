@@ -221,12 +221,12 @@ namespace HedgeHog.Alice.Client {
       }
       #endregion
       return new {
-        time = tm0.ServerTime.ToString("HH:mm:ss")
-          + (tm1 != null ? "," + (tm1.RatesArray.Count * tm1.BarPeriodInt).FromMinutes().TotalDays.Round(1) : ""),
+        time = tm0.ServerTime.ToString("HH:mm:ss"),
         prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 1),
         otg = IntOrDouble(tmTrader.OpenTradesGross2InPips, 1),
         tps = tm0.TicksPerSecondAverage.Round(1),
-        dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"h\:mm"),// + "|" + TimeSpan.FromMinutes(tm1.RatesDuration).ToString(@"h\:mm"),
+        dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"h\:mm")
+          + (tm1 != null ? "," + (tm1.RatesArray.Count * tm1.BarPeriodInt).FromMinutes().TotalDays.Round(1) : ""),// + "|" + TimeSpan.FromMinutes(tm1.RatesDuration).ToString(@"h\:mm"),
         hgt = tmTrader.RatesHeightInPips.ToInt() + "/" + tmTrader.BuySellHeightInPips.ToInt(),
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
@@ -234,7 +234,8 @@ namespace HedgeHog.Alice.Client {
         price = new { ask = tm0.CurrentPrice.Ask, bid = tm0.CurrentPrice.Bid },
         tci = GetTradeConditionsInfo(tmTrader),
         wp = tmTrader.WaveHeightPower.Round(1),
-        isVT = tmTrader.IsInVitualTrading
+        isVT = tmTrader.IsInVitualTrading,
+        com = new { b = tmTrader.CenterOfMassBuy, s = tmTrader.CenterOfMassSell }
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
@@ -385,9 +386,10 @@ namespace HedgeHog.Alice.Client {
     public void SetRsdTreshold(string pair, int chartNum, int pips) {
       UseTradingMacro(pair, chartNum, tm => tm.RatesStDevMinInPips = pips, true);
     }
-    public object[] AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair, int chartNum) {
-      return UseTradingMacro2(pair, chartNum, tm => tm.IsActive
-        , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm), false);
+    public async Task<object[]> AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair, int chartNum) {
+      var a = UseTradingMacro2(pair, chartNum, tm => tm.IsActive
+        ,async tm =>await Task.Run(()=> remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm)), false);
+      return await Task.WhenAll(a);
     }
 
     static int _sendChartBufferCounter = 0;
@@ -407,9 +409,9 @@ namespace HedgeHog.Alice.Client {
     }
 
     static SendChartBuffer _sendChart2Buffer = SendChartBuffer.Create();
-    public object[] AskRates2(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
-      return UseTradingMacro2(pair, 1, tm => tm.IsActive
-        , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm), false);
+    public async Task<object[]> AskRates2(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
+      return await Task.WhenAll(UseTradingMacro2(pair, 1, tm => tm.IsActive
+        , async tm => await Task.Run(() => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm)), false));
     }
     public void SetPresetTradeLevels(string pair, TradeLevelsPreset presetLevels, object isBuy) {
       bool? b = isBuy == null ? null : (bool?)isBuy;

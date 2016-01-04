@@ -214,8 +214,10 @@
     <Compile Include="TradingMacro\TradingMacro.Shorthands.cs" />
     <Compile Include="TradingMacro\TradingMacro.ShowVolts.cs" />
     <Compile Include="TradingMacro\TradingMacro.SnapshotArguments.cs" />
+    <Compile Include="TradingMacro\TradingMacro.TradeConditionAttributes.cs" />
     <Compile Include="TradingMacro\TradingMacro.TradeConditions.cs" />
     <Compile Include="TradingMacro\TradingMacro.TradeDirectionTriggers.cs" />
+    <Compile Include="TradingMacro\TradingMacro.TradeOpenActions.cs" />
     <Compile Include="TradingMacro\TradingMacro.WaveRanges.cs" />
     <Compile Include="TradingMacro\TradingMacroExtentions.cs" />
     <Compile Include="TradingMacro\TradingMacro.Strategies.cs" />

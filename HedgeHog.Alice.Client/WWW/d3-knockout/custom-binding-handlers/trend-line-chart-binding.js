@@ -63,6 +63,7 @@
   }
   var tpsOpacity = 0.25;
   var tickAreaBgColor = "lightgray";//lavender";
+  var blueStrip = "blueStrip";
   var doCorridorStartDate = false;
   var showLineLog = false;
   var tpsChartNum = 0;
@@ -103,8 +104,10 @@
       //.style("text-anchor", "end")
       //.text("Price ($)");
       ;
-      if (chartNum === 1)
+      if (chartNum === 1) {
         addRect("tickArea", tickAreaBgColor);
+        addRect(blueStrip, "lavender",0.4);
+      }
       if (hasTps) {
         svg.append("g")
             .attr("transform", "translate(" + (width) + ",0)")
@@ -179,11 +182,11 @@
       // #endregion
 
       // #region Locals
-      function addRect(name, color) {
+      function addRect(name, color,opacity) {
         svg.append("rect")
           .attr("class", name)
         .style("fill", color)  // colour the line
-        .style("opacity",0.25)
+        .style("opacity",opacity || 0.25)
         .attr("x", 0) // x position of the first end of the line
         .attr("y", 0) // y position of the first end of the line
         .attr("width", 10) // x position of the second end of the line
@@ -262,6 +265,7 @@
       var hasTps = chartNum == tpsChartNum;
       var canBuy = chartData.canBuy;
       var canSell = chartData.canSell;
+      var com = chartData.com;
       // #endregion
 
       // #region adjust svg and axis'
@@ -369,8 +373,10 @@
             .attr("d", line2).style("stroke", colorTps).style("opacity", opacityTps);
           setHLine(tpsAvg, "tpsAvg", colorTps, 1, "", y2);
         }
-        if (chartNum === 1)
+        if (chartNum === 1) {
           setRectArea(chartData.tickDate, yDomain[1], trendLines.dates[1], yDomain[0], "tickArea");
+          setHorizontalStrip( com.b, com.s, blueStrip);
+        }
         // #region add trend corridor
         setTrendLine(trendLines, 1, "lightgrey");
         setTrendLine(trendLines, 2, "darkred");
@@ -609,6 +615,15 @@
           .attr("x", x(date1)) // x position of the first end of the line
           .attr("y", y(level1)) // y position of the first end of the line
           .attr("width", x(date2) - x(date1)) // x position of the second end of the line
+          .attr("height", y(level2) - y(level1));// y position of the second end of the line
+      }
+      function setHorizontalStrip(level1, level2, rectName) {
+        var dates = [data[0].d, data[data.length - 1].d];
+        svg.select("rect." + rectName)
+          //.style("stroke", rectColour)  // colour the line
+          .attr("x", x(dates[0])) // x position of the first end of the line
+          .attr("y", y(level1)) // y position of the first end of the line
+          .attr("width", x(dates[1]) - x(dates[0])) // x position of the second end of the line
           .attr("height", y(level2) - y(level1));// y position of the second end of the line
       }
       function setTrendLine2(trendLines, lineNumber, trendIndex, lineColour) {
