@@ -245,7 +245,7 @@ namespace HedgeHog.Alice.Store {
       get {
         return () => {
           var tradeStripHeight = SetTradeStrip(false);
-          var canSetStrip = Trades.IsEmpty();
+          var canSetStrip = true;// Trades.IsEmpty();
           _tipRatioCurrent = _ratesHeightCma / tradeStripHeight;
           var td = TradeDirectionByBool(IsCurrentPriceInsideBlueStrip && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
           if(canSetStrip && td.HasAny())
