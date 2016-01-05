@@ -153,7 +153,8 @@ namespace HedgeHog.Alice.Store {
             .Select(tl => tl.Trends.Count)
             .Where(count => count > 0)
             .ForEach(count =>
-              _macd2Rsd = distances.Skip(cmaPeriod.ToInt()).Take(count).RelativeStandardDeviation() * 100);// / x.length.TotalDays;
+              _macd2Rsd = distances.RelativeStandardDeviation() * 100);// / x.length.TotalDays;
+    //        _macd2Rsd = distances.Skip(cmaPeriod.ToInt()).Take(count).RelativeStandardDeviation() * 100);// / x.length.TotalDays;
           const double adjuster = 0;
           if(x.count * adjuster > BarsCountMax) {
             BarsCountMax = (BarsCountMax * adjuster).Ceiling();
