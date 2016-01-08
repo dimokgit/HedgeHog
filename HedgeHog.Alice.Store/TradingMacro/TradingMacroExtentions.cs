@@ -2510,7 +2510,6 @@ namespace HedgeHog.Alice.Store {
       MinimumOriginalProfit = double.NaN;
     }
     private double _MinimumGross = double.NaN;
-    [Category(categorySession)]
     public double MinimumGross {
       get { return _MinimumGross; }
       set {

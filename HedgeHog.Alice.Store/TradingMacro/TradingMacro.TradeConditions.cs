@@ -244,21 +244,24 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate TradeStripOk {
       get {
         return () => {
-          var tradeStripHeight = SetTradeStrip(false);
           var canSetStrip = true;// Trades.IsEmpty();
-          _tipRatioCurrent = _ratesHeightCma / tradeStripHeight;
+          _tipRatioCurrent = _ratesHeightCma / GetTradeLevelsToTradeStrip().Height();
           var td = TradeDirectionByBool(IsCurrentPriceInsideBlueStrip && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
           if(canSetStrip && td.HasAny())
-            SetTradeStrip(true);
+            SetTradeLevelsToTradeStrip();
           return td;
         };
       }
     }
-    public double SetTradeStrip(bool doSetTradeLevels) {
-      if(doSetTradeLevels) {
-        BuyLevel.RateEx = CenterOfMassBuy.IfNaN(GetTradeLevel(true, BuyLevel.Rate));
-        SellLevel.RateEx = CenterOfMassSell.IfNaN(GetTradeLevel(false, SellLevel.Rate));
-      } else if(CanTriggerTradeDirection()) {
+    SuppRes[] BuySellLevels { get { return new[] { BuyLevel, SellLevel }; } }
+    void BuySellLevelsForEach(Action<SuppRes> action) {
+      BuySellLevels.ForEach(action);
+    }
+    void BuySellLevelsForEach(Func<SuppRes,bool>predicate, Action<SuppRes> action) {
+      BuySellLevels.Where(predicate).ForEach(action);
+    }
+    public double SetTradeStrip() {
+      if(CanTriggerTradeDirection() && !TradeConditionsTradeStrip().Any(tc=>tc.HasNone())) {
         var tlbuy = GetTradeLevel(true, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMax]();
         var tlSell = GetTradeLevel(false, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMin]();
         var bsHeight = CenterOfMassBuy.Abs(CenterOfMassSell);
@@ -268,6 +271,7 @@ namespace HedgeHog.Alice.Store {
         if(tlJumped) {
           CenterOfMassBuy2 = CenterOfMassBuy;
           CenterOfMassSell2 = CenterOfMassSell;
+          BuySellLevelsForEach( sr => sr.CanTradeEx = false);
         }
         var canSetLevel = (bsHeight.IsNaN() || tlJumped || tlHeight < bsHeight);
         if(canSetLevel) {
@@ -277,6 +281,14 @@ namespace HedgeHog.Alice.Store {
         return CenterOfMassBuy.Abs(CenterOfMassSell);
       }
       return double.NaN;
+    }
+
+    private void SetTradeLevelsToTradeStrip() {
+      BuyLevel.RateEx = CenterOfMassBuy.IfNaN(GetTradeLevel(true, BuyLevel.Rate));
+      SellLevel.RateEx = CenterOfMassSell.IfNaN(GetTradeLevel(false, SellLevel.Rate));
+    }
+    private double[] GetTradeLevelsToTradeStrip() {
+      return new[] { CenterOfMassBuy, CenterOfMassSell };
     }
 
     public void SetTradeCorridorToMinHeight2() {
@@ -436,11 +448,13 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [TradeConditionTradeStrip]
     public TradeConditionDelegate GRBRatioOk {
       get {
         return () => TradeDirectionByBool(IsTresholdAbsOk(TrendAnglesRatio(), TrendAnglesPerc));
       }
     }
+    [TradeConditionTradeStrip]
     public TradeConditionDelegate GRBHRatioOk {
       get {
         return () => IsTresholdAbsOk(TrendHeighRatio(), TrendHeightPerc)
@@ -657,7 +671,7 @@ namespace HedgeHog.Alice.Store {
       return TradingMacrosByPair().Where(tm => tm != this);
     }
     private IEnumerable<TradingMacro> TradingMacrosByPair() {
-      return _tradingMacros.Where(tm => tm.Pair == Pair);
+      return _tradingMacros.Where(tm => tm.Pair == Pair).OrderBy(tm=>PairIndex);
     }
     #endregion
 
@@ -703,6 +717,9 @@ namespace HedgeHog.Alice.Store {
     }
     bool TradeConditionsHaveSetCorridor() {
       return TradeConditionsInfo<TradeConditionSetCorridorAttribute>().Any();
+    }
+    IEnumerable<TradeDirections> TradeConditionsTradeStrip() {
+      return TradeConditionsInfo<TradeConditionTradeStripAttribute>().Select(d => d());
     }
     bool TradeConditionsHaveAsleep() {
       return TradeConditionsInfo<TradeConditionAsleepAttribute>().Any(d => d().HasNone()) || !IsTradingDay();
@@ -781,6 +798,7 @@ namespace HedgeHog.Alice.Store {
     public IEnumerableCore.Singleable<TradeDirections> TradeConditionsEval() {
       if(!IsTrader)
         return new TradeDirections[0].AsSingleable();
+      SetTradeStrip();
       return (from tc in TradeConditionsInfo((d, p, t, s) => new { d, t, s })
               group tc by tc.t into gtci
               let and = gtci.Select(g => g.d()).ToArray()

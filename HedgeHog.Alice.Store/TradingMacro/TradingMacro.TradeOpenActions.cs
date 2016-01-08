@@ -10,7 +10,7 @@ namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
     #region TradeOpenActions
     public delegate void TradeOpenAction(Trade trade);
-    public TradeOpenAction FreezeOnTrade { get { return trade => FreezeCorridorStartDate(); } }
+    public TradeOpenAction FreezeOnTrade { get { return trade => BuyLevel.InManual = SellLevel.InManual = true; } }
     public TradeOpenAction WrapOnTrade { get { return trade => WrapTradeInCorridor(); } }
 
     public TradeOpenAction Avg1ExitOnTrade {

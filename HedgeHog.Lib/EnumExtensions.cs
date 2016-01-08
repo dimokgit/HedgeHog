@@ -90,6 +90,9 @@ namespace HedgeHog {
     public static Dictionary<string, object> ToDictionary(this object instance) {
       return instance.GetType().GetProperties().ToDictionary(p => p.Name, p => p.GetValue(instance));
     }
+    public static Dictionary<TKey, TValue> ToDictionary<TKey,TValue>(this IEnumerable<KeyValuePair<TKey,TValue>> instance) {
+      return instance.ToDictionary(p => p.Key, p => p.Value);
+    }
     public static IList<string> HasDuplicates(this Enum me) {
       var type = me.GetType();
       return Enum.GetNames(type)

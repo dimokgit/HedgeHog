@@ -596,8 +596,8 @@
         }.bind(this));
     }.bind(this);
     this.readStrategies = function readStrategies() {
-      return serverCall("readStrategies", [], function (strategies) {
-        this.strategies(strategies);
+      return serverCall("readStrategies", [pair], function (strategies) {
+        this.strategies(strategies.map(function (s) { return { nick: s.nick, name: s.diff.join("\n") || s.name,isActive:s.isActive }; }));
       }.bind(this));
     }.bind(this);
 

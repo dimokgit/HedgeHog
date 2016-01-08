@@ -406,6 +406,7 @@ namespace HedgeHog.Alice.Store {
     bool _logTrades = true;
     [DisplayName("Log Trades")]
     [Category(categoryTrading)]
+    [Dnr]
     public bool LogTrades {
       get { return _logTrades; }
       set {
@@ -1328,6 +1329,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Current Loss")]
     [Category(categoryTrading)]
+    [IsNotStrategy]
     public double CurrentLoss_ {
       get { return CurrentLoss; }
       set {
@@ -1400,8 +1402,6 @@ namespace HedgeHog.Alice.Store {
     }
     #region LastProfitStartDate
     DateTime? _LastProfitStartDate;
-    [DisplayName("Last Profit StartDate")]
-    [Category(categoryTrading)]
     public DateTime? LastProfitStartDate {
       get { return _LastProfitStartDate; }
       set {

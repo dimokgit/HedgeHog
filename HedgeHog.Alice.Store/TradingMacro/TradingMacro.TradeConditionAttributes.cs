@@ -13,4 +13,6 @@ namespace HedgeHog.Alice.Store {
   }
   class TradeConditionSetCorridorAttribute : Attribute {
   }
+  class TradeConditionTradeStripAttribute : Attribute {
+  }
 }

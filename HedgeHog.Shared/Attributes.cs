@@ -8,6 +8,7 @@ namespace HedgeHog {
   // Do Not Recessitate
   [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
   public sealed class DnrAttribute : Attribute { }
+  public sealed class IsNotStrategyAttribute : Attribute {  }
   [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
   public class WwwAttribute : Attribute {
     public string Group { get; set; }

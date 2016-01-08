@@ -375,7 +375,8 @@
         }
         if (chartNum === 1) {
           setRectArea(chartData.tickDate, yDomain[1], trendLines.dates[1], yDomain[0], "tickArea");
-          setHorizontalStrip( com.b, com.s, blueStrip);
+          if (com)
+            setHorizontalStrip(com.b, com.s, blueStrip);
         }
         // #region add trend corridor
         setTrendLine(trendLines, 1, "lightgrey");
@@ -619,12 +620,15 @@
       }
       function setHorizontalStrip(level1, level2, rectName) {
         var dates = [data[0].d, data[data.length - 1].d];
+        var bottom = Math.min(y(level1), y(level2));
+        var height = Math.abs(y(level1) - y(level2));
+        if (isNaN(bottom) || isNaN(height)) return;
         svg.select("rect." + rectName)
           //.style("stroke", rectColour)  // colour the line
           .attr("x", x(dates[0])) // x position of the first end of the line
-          .attr("y", y(level1)) // y position of the first end of the line
+          .attr("y", bottom) // y position of the first end of the line
           .attr("width", x(dates[1]) - x(dates[0])) // x position of the second end of the line
-          .attr("height", y(level2) - y(level1));// y position of the second end of the line
+          .attr("height", height);// y position of the second end of the line
       }
       function setTrendLine2(trendLines, lineNumber, trendIndex, lineColour) {
         var dates = (trendLines || {}).dates;

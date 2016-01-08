@@ -10,9 +10,20 @@ using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client {
   partial class RemoteControlModel {
-    public static async Task<IEnumerable<T>> ReadStrategies<T>(Func<string, string, T> map) {
-      return await Cloud.GitHub.GistStrategies(map);
-
+    public static async Task<IEnumerable<T>> ReadStrategies<T>(TradingMacro tm, Func<string, string, string[], T> map) {
+      var localMap = MonoidsCore.ToFunc("", "", "", 0, (name, description, content, index) => new { name, description, content, index });
+      var strategies = await Cloud.GitHub.GistStrategies(localMap);
+      var activeSettings = Lib.ReadParametersToString(tm.GetActiveSettings());
+      return (from strategy in strategies
+              where strategy.index == 0
+              let diffs = TradingMacro.ActiveSettingsDiff(strategy.content, activeSettings).ToDictionary()
+              let diff = diffs.Select(kv=>kv.Key +" ["+kv.Value[0]+"][" +kv.Value[1]+ "]" ).ToArray()
+              select map(strategy.name,strategy.description,diff)
+               );
+      //Func<IDictionary<string,string>, IDictionary<string, string>> joinDicts = (d)
+      //(from strategy in strategies
+      // from content in strategy.content
+      // join )
       //Func<string, string> name = s =>
       //  Regex.Matches(s, @"\{(.+)\}").Cast<Match>().SelectMany(m => m.Groups.Cast<Group>()
       //  .Skip(1).Take(1)

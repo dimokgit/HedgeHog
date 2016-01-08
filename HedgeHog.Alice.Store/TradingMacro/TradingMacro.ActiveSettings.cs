@@ -45,8 +45,9 @@ namespace HedgeHog.Alice.Store {
 
     private async Task SaveActiveSettingsToGist(string path) {
       var fullName = PairPlain.ToLower() + "(" + BarPeriod + ")" + string.Join("-", TradeConditionsInfo((tc, p, name) => ParseTradeConditionToNick(name)));
-      var settings = Lib.ReadParametersToString(GetActiveSettings());
-      await Cloud.GitHub.GistStrategyAddOrUpdate(path, fullName, settings);
+      var settings = new[] { Lib.ReadParametersToString(GetActiveSettings()) }
+      .Concat(TradingMacroOther().Select(tm => Lib.ReadParametersToString(tm.GetActiveSettings())));
+      await Cloud.GitHub.GistStrategyAddOrUpdate(path, fullName, settings.ToArray());
     }
 
     public IEnumerable<string> GetActiveSettings() {
@@ -67,7 +68,9 @@ namespace HedgeHog.Alice.Store {
     public async Task LoadActiveSettings(string path, ActiveSettingsStore store) {
       switch(store) {
         case ActiveSettingsStore.Gist:
-          LoadActiveSettings(await Lib.ReadTestParametersFromGist(path));
+          TradingMacrosByPair()
+            .Zip(await Lib.ReadTestParametersFromGist(path), (tm, settings) => new { tm, settings })
+            .ForEach(x => x.tm.LoadActiveSettings(x.settings));
           break;
         case ActiveSettingsStore.Local:
           LoadActiveSettings(path);
@@ -96,6 +99,19 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public static IDictionary<string, string[]> ActiveSettingsDiff(string settings1, string settings2) {
+      var exclude = typeof(TradingMacro)
+        .GetPropertiesByAttibute<IsNotStrategyAttribute>(a => true)
+        .Select(t => t.Item2.Name)
+        .ToArray();
+      var d1 = Lib.ReadParametersFromString(settings1);
+      var d2 = Lib.ReadParametersFromString(settings2);
+      var diff = from kv1 in d1
+                 join kv2 in d2 on kv1.Key equals kv2.Key
+                 where !exclude.Contains(kv1.Key) && kv1.Value != kv2.Value
+                 select new { key = kv1.Key, value = new[] { kv1.Value, kv2.Value } };
+      return diff.OrderBy(d => d.key).ToDictionary(d => d.key, d => d.value);
+    }
     public void LoadSetting<T>(KeyValuePair<string, T> tp) {
       this.SetProperty(tp.Key, (object)tp.Value, p => p != null && IsNotDnr(p));
     }

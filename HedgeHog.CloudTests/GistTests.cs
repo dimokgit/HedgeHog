@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using HedgeHog.Cloud;
 
 namespace HedgeHog.CloudTests {
   [TestClass]
@@ -13,18 +14,21 @@ namespace HedgeHog.CloudTests {
       Assert.AreEqual(0, (await Cloud.GitHub.GistStrategyFindByName(gistName)).Count());
       var gistDescription = "Decription ";
       var gistContent = DateTime.Now + "";
-      var newGist = await Cloud.GitHub.GistStrategyAddOrUpdate(gistName, gistDescription, gistContent);
-      var gists = await Cloud.GitHub.GistStrategies((name, rawUrl, content) => new {rawUrl, name, content });
+      Func<string> gistContent2 = () => gistContent + "(2)";
+      var newGist = await Cloud.GitHub.GistStrategyAddOrUpdate(gistName, gistDescription, gistContent, gistContent2());
+      var gists = await Cloud.GitHub.GistStrategyFindByName(gistName);
       Console.WriteLine(string.Join("\n", gists.Select(gist => gist.ToString())));
-      Assert.AreEqual(1, gists.Count(gist => gist.name == gistName));
-      Assert.AreEqual(1, gists.Count(gist => gist.content == gistContent));
+      Assert.AreEqual(1, gists.Count(gist => gist.Strategy() == gistName));
+      Assert.AreEqual(1, gists.SelectMany(gist => gist.Files).Count(file => file.Value.Content == gistContent));
+      Assert.AreEqual(1, gists.SelectMany(gist => gist.Files).Count(file => file.Value.Content == gistContent2()));
 
       gistContent = DateTime.Now.AddDays(1) + "";
-      newGist = await Cloud.GitHub.GistStrategyAddOrUpdate(gistName, gistDescription, gistContent);
-      gists = await Cloud.GitHub.GistStrategies(( name, rawUrl, content) => new { rawUrl, name, content });
+      newGist = await Cloud.GitHub.GistStrategyAddOrUpdate(gistName, gistDescription, gistContent, gistContent2());
+      gists = await Cloud.GitHub.GistStrategyFindByName(gistName);
       Console.WriteLine(string.Join("\n", gists.Select(gist => gist.ToString())));
-      Assert.AreEqual(1, gists.Count(gist => gist.name == gistName));
-      Assert.AreEqual(1, (await Cloud.GitHub.GistStrategyFindByName(gistName)).SelectMany(gist=>gist.Files) .Count(gist => gist.Value.Content == gistContent));
+      Assert.AreEqual(1, gists.Count(gist => gist.Strategy() == gistName));
+      Assert.AreEqual(1, gists.SelectMany(gist => gist.Files).Count(file => file.Value.Content == gistContent));
+      Assert.AreEqual(1, gists.SelectMany(gist => gist.Files).Count(file => file.Value.Content == gistContent2()));
     }
   }
 }

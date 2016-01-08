@@ -209,6 +209,10 @@
     /*strategiesDialog*/
     #strategiesDialog .modal-body li{
       cursor:pointer;
+      margin-left:20px;
+    }
+    #strategiesDialog .modal-body li span.active-strategy{
+      font-weight:bold;
     }
     #strategiesDialog .modal-body li:hover{
       text-decoration: underline;
@@ -805,7 +809,7 @@
         <div class="modal-body">
           <ul data-bind="foreach:strategies">
             <li data-bind="attr:{title:name}">
-              <span data-bind="text:nick,click:$parent.setStrategy"></span>
+              <span data-bind="text:nick,click:$parent.setStrategy,css:{'active-strategy':isActive}"></span>
               <span data-bind="click:$parent.removeStrategy" class="glyphicon glyphicon-remove"></span>
             </li>
           </ul>

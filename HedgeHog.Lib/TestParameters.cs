@@ -32,13 +32,12 @@ namespace HedgeHog {
       var lines = File.ReadAllLines(Path.Combine(path, testFileName));
       return ReadTestParameters(lines);
     }
-    public static async Task<Dictionary<string, string>> ReadTestParametersFromGist(string strategy) {
-        var strategies = (await Cloud.GitHub.GistStrategyFindByName(strategy)).AsSingleable();
-        return strategies
-          .SelectMany(gist => gist.Files.Select(file => file.Value.Content))
-          .IfEmpty(()=> { throw new Exception(new { strategy, message = "Not Found" } + ""); })
-          .Select(content => Lib.ReadParametersFromString(content))
-          .Single();
+    public static async Task<IEnumerable<Dictionary<string, string>>> ReadTestParametersFromGist(string strategy) {
+      var strategies = (await Cloud.GitHub.GistStrategyFindByName(strategy));
+      return strategies
+        .SelectMany(gist => gist.Files.Select(file => file.Value.Content))
+        .IfEmpty(() => { throw new Exception(new { strategy, message = "Not Found" } + ""); })
+        .Select(content => Lib.ReadParametersFromString(content));
     }
     public static readonly string TestParametersRowDelimiter = "\n";
     public static Dictionary<string, string> ReadParametersFromString(string parameters) {
@@ -47,7 +46,7 @@ namespace HedgeHog {
     public static string ReadParametersToString(IEnumerable<string> parameters) {
       return string.Join(Lib.TestParametersRowDelimiter, parameters);
     }
-    private static Dictionary<string, string> ReadTestParameters(string[] lines) {
+    public static Dictionary<string, string> ReadTestParameters(string[] lines) {
       var separator = "=";
       return lines
         .Where(s => !string.IsNullOrWhiteSpace(s) && !s.StartsWith("//"))

@@ -287,8 +287,11 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Strategies
-    public async Task<object[]> ReadStrategies() {
-      return (await RemoteControlModel.ReadStrategies((nick, name) => new { nick, name })).ToArray();
+    public async Task<object[]> ReadStrategies(string pair) {
+      return await UseTradingMacro(pair
+        , async tm => (await RemoteControlModel.ReadStrategies(tm, (nick, name, diff)
+          => new { nick, name, diff, isActive = diff.IsEmpty() })).OrderBy(x => x.nick).ToArray()
+        , false);
     }
     public void SaveStrategy(string pair, string nick) {
       if(string.IsNullOrWhiteSpace(nick))
