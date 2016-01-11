@@ -244,6 +244,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate TradeStripOk {
       get {
         return () => {
+          SetTradeStrip();
           var canSetStrip = true;// Trades.IsEmpty();
           _tipRatioCurrent = _ratesHeightCma / GetTradeLevelsToTradeStrip().Height();
           var td = TradeDirectionByBool(IsCurrentPriceInsideBlueStrip && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
@@ -257,6 +258,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate TradeStripTrackOk {
       get {
         return () => {
+          SetTradeStrip();
           _tipRatioCurrent = _ratesHeightCma / GetTradeLevelsToTradeStrip().Height();
           var td = TradeDirectionByBool(IsCurrentPriceInsideBlueStrip && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
           SetTradeLevelsToTradeStrip();
@@ -751,7 +753,7 @@ namespace HedgeHog.Alice.Store {
              select map(tc.d, tc.p, tca.Type, tc.s);
     }
     public void TradeConditionsTrigger() {
-      if(IsTrader && CanTriggerTradeDirection() && HaveTrades() /*&& !HasTradeDirectionTriggers*/) {
+      if(IsTrader && CanTriggerTradeDirection() && !HaveTrades() /*&& !HasTradeDirectionTriggers*/) {
         TradeConditionsEval().ForEach(eval => {
           var hasBuy = TradeDirection.HasUp() && eval.HasUp();
           var hasSell = TradeDirection.HasDown() && eval.HasDown();
@@ -809,7 +811,6 @@ namespace HedgeHog.Alice.Store {
     public IEnumerableCore.Singleable<TradeDirections> TradeConditionsEval() {
       if(!IsTrader)
         return new TradeDirections[0].AsSingleable();
-      SetTradeStrip();
       return (from tc in TradeConditionsInfo((d, p, t, s) => new { d, t, s })
               group tc by tc.t into gtci
               let and = gtci.Select(g => g.d()).ToArray()
