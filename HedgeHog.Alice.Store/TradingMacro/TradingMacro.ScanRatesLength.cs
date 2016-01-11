@@ -134,18 +134,19 @@ namespace HedgeHog.Alice.Store {
       var distances = new List<double>(BarsCountCalc);
       Action<double, double> addDistance = (p, n) => distances.Add(p.Abs(n));
       var cmaPeriod = CmaPeriodByRatesCount(BarsCountCalc);
-      return UseRatesInternal(rs => rs.ToList())
+      return UseRatesInternal(rs => rs.GetRange((BarsCountCalc*1.1).ToInt()).ToList())
         .Select(rs => {
-          rs.Reverse();
+          //rs.Reverse();
           var rdm = InPoints(RatesDistanceMin);
           _macdDiastances = Macd(rs, BarsCountCalc)
             .Pairwise((v1, v2) => v1.Abs(v2))
             .Cma(cmaPeriod)
+            .Reverse()
             .Distances(addDistance)
-            .Skip(BarsCount)
+            //.Skip(BarsCount)
             .TakeWhile(i => i <= rdm)
             .ToList();
-          var count = _macdDiastances.Count + BarsCount;
+          var count = _macdDiastances.Count;// + BarsCount;
           return new { count };//, length = RatesTimeSpan(rs.GetRange(0, count)) };
         })
         .Select(x => {

@@ -253,6 +253,17 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+    [TradeConditionSetCorridor]
+    public TradeConditionDelegate TradeStripTrackOk {
+      get {
+        return () => {
+          _tipRatioCurrent = _ratesHeightCma / GetTradeLevelsToTradeStrip().Height();
+          var td = TradeDirectionByBool(IsCurrentPriceInsideBlueStrip && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
+          SetTradeLevelsToTradeStrip();
+          return td;
+        };
+      }
+    }
     SuppRes[] BuySellLevels { get { return new[] { BuyLevel, SellLevel }; } }
     void BuySellLevelsForEach(Action<SuppRes> action) {
       BuySellLevels.ForEach(action);
@@ -492,7 +503,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     int TrendHeighRatio() {
-      Func<IList<Rate>, double> spread = tls => tls[0].Trends.PriceAvg2 - tls[0].Trends.PriceAvg3;
+      Func<IList<Rate>, double> spread = tls => tls.Take(1).Select(tl=>tl.Trends.PriceAvg2 - tl.Trends.PriceAvg3).DefaultIfEmpty(double.NaN).Single();
       return BlueBasedRatio(spread).ToPercent();
     }
     #endregion
@@ -740,7 +751,7 @@ namespace HedgeHog.Alice.Store {
              select map(tc.d, tc.p, tca.Type, tc.s);
     }
     public void TradeConditionsTrigger() {
-      if(IsTrader && CanTriggerTradeDirection() && Trades.Length == 0 /*&& !HasTradeDirectionTriggers*/) {
+      if(IsTrader && CanTriggerTradeDirection() && HaveTrades() /*&& !HasTradeDirectionTriggers*/) {
         TradeConditionsEval().ForEach(eval => {
           var hasBuy = TradeDirection.HasUp() && eval.HasUp();
           var hasSell = TradeDirection.HasDown() && eval.HasDown();

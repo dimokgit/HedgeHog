@@ -227,7 +227,11 @@ namespace HedgeHog.Alice.Client {
         tps = tm0.TicksPerSecondAverage.Round(1),
         dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"h\:mm")
           + (tm1 != null ? "," + (tm1.RatesArray.Count * tm1.BarPeriodInt).FromMinutes().TotalDays.Round(1) : ""),// + "|" + TimeSpan.FromMinutes(tm1.RatesDuration).ToString(@"h\:mm"),
-        hgt = tmTrader.RatesHeightInPips.ToInt() + "/" + tmTrader.BuySellHeightInPips.ToInt(),
+        hgt = string.Join("/", new[] {
+          tmTrader.RatesHeightInPips.ToInt(),
+          tmTrader.BuySellHeightInPips.ToInt(),
+          tmTrader.InPips(tmTrader.CenterOfMassBuy.Abs(tmTrader.CenterOfMassSell)).ToInt()
+        }),
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
         S = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
@@ -235,7 +239,8 @@ namespace HedgeHog.Alice.Client {
         tci = GetTradeConditionsInfo(tmTrader),
         wp = tmTrader.WaveHeightPower.Round(1),
         isVT = tmTrader.IsInVitualTrading,
-        com = new { b = tmTrader.CenterOfMassBuy, s = tmTrader.CenterOfMassSell }
+        com = new { b = tmTrader.CenterOfMassBuy, s = tmTrader.CenterOfMassSell },
+        com2 = new { b = tmTrader.CenterOfMassBuy2, s = tmTrader.CenterOfMassSell2 }
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
@@ -289,8 +294,8 @@ namespace HedgeHog.Alice.Client {
     #region Strategies
     public async Task<object[]> ReadStrategies(string pair) {
       return await UseTradingMacro(pair
-        , async tm => (await RemoteControlModel.ReadStrategies(tm, (nick, name, diff)
-          => new { nick, name, diff, isActive = diff.IsEmpty() })).OrderBy(x => x.nick).ToArray()
+        , async tm => (await RemoteControlModel.ReadStrategies(tm, (nick, name, uri, diff)
+          => new { nick, name, uri, diff, isActive = diff.IsEmpty() })).ToArray()
         , false);
     }
     public void SaveStrategy(string pair, string nick) {
@@ -300,6 +305,12 @@ namespace HedgeHog.Alice.Client {
     }
     public async Task RemoveStrategy(string name) {
       await RemoteControlModel.RemoveStrategy(name);
+    }
+    public async Task UpdateStrategy(string pair, string name) {
+      await UseTradingMacro(pair, 0, async tm => {
+        tm.IsTradingActive = false;
+        await RemoteControlModel.LoadStrategy(tm, name);
+      }, true);
     }
     public async Task LoadStrategy(string pair, string strategyPath) {
       await UseTradingMacro(pair, 0, async tm => {
@@ -391,7 +402,7 @@ namespace HedgeHog.Alice.Client {
     }
     public async Task<object[]> AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair, int chartNum) {
       var a = UseTradingMacro2(pair, chartNum, tm => tm.IsActive
-        ,async tm =>await Task.Run(()=> remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm)), false);
+        , async tm => await Task.Run(() => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm)), false);
       return await Task.WhenAll(a);
     }
 
@@ -562,9 +573,6 @@ namespace HedgeHog.Alice.Client {
     }
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
-    }
-    public void RefreshOrders() {
-      remoteControl.Value.TradesManager.RefreshOrders();
     }
     public void SetTradeCount(string pair, int tradeCount) {
       GetTradingMacro(pair, tm => tm.SetTradeCount(tradeCount));

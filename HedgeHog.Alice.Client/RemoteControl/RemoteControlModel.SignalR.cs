@@ -10,15 +10,16 @@ using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client {
   partial class RemoteControlModel {
-    public static async Task<IEnumerable<T>> ReadStrategies<T>(TradingMacro tm, Func<string, string, string[], T> map) {
-      var localMap = MonoidsCore.ToFunc("", "", "", 0, (name, description, content, index) => new { name, description, content, index });
+    public static async Task<IEnumerable<T>> ReadStrategies<T>(TradingMacro tm, Func<string, string, Uri, string[], T> map) {
+      var localMap = MonoidsCore.ToFunc("", "", "", (Uri)null, 0, (name, description, content, uri, index) => new { name, description, content, uri, index });
       var strategies = await Cloud.GitHub.GistStrategies(localMap);
       var activeSettings = Lib.ReadParametersToString(tm.GetActiveSettings());
       return (from strategy in strategies
               where strategy.index == 0
               let diffs = TradingMacro.ActiveSettingsDiff(strategy.content, activeSettings).ToDictionary()
-              let diff = diffs.Select(kv=>kv.Key +" ["+kv.Value[0]+"][" +kv.Value[1]+ "]" ).ToArray()
-              select map(strategy.name,strategy.description,diff)
+              let diff = diffs.Select(kv => new { diff = kv.Key + "= " + kv.Value[0] + " {" + kv.Value[1] + "}", lev = Lib.LevenshteinDistance(kv.Value[0], kv.Value[1]) }).ToArray()
+              orderby diff.Length, diff.Sum(x => x.lev), strategy.name
+              select map(strategy.name, strategy.description, strategy.uri, diff.Select(x => x.diff).ToArray())
                );
       //Func<IDictionary<string,string>, IDictionary<string, string>> joinDicts = (d)
       //(from strategy in strategies
@@ -43,6 +44,10 @@ namespace HedgeHog.Alice.Client {
     }
     public static async Task RemoveStrategy(string name) {
       await Cloud.GitHub.GistStrategyDeleteByName(name);
+      //File.Delete(path);
+    }
+    public static async Task UpdateStrategy(TradingMacro tm, string nick) {
+      await tm.SaveActiveSettings(nick, TradingMacro.ActiveSettingsStore.Gist);
       //File.Delete(path);
     }
     public static async Task LoadStrategy(TradingMacro tm, string strategy) {

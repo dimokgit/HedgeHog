@@ -19,6 +19,13 @@ namespace HedgeHog {
         return _source.GetEnumerator();
       }
     }
+    /// <summary>
+    /// Get last <paramref name="count" />  elements
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="count"></param>
+    /// <returns></returns>
     public static T[] GetRange<T>(this IList<T> source, int count) {
       var a = new T[count];
       var start = source.Count - count;

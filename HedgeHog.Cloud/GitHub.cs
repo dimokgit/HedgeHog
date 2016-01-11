@@ -34,7 +34,7 @@ namespace HedgeHog.Cloud {
     /// <typeparam name="T"></typeparam>
     /// <param name="map">T map(key,description,content)</param>
     /// <returns><typeparamref name="T"/></returns>
-    public static async Task<IEnumerable<T>> GistStrategies<T>(Func<string, string, string,int, T> map) {
+    public static async Task<IEnumerable<T>> GistStrategies<T>(Func<string, string, string,Uri,int, T> map) {
       var gists = await Task.WhenAll(from gist in await GistStrategies()
                                      select ClientFactory().Gist.Get(gist.Id));
       return MapStrategies(gists, map);
@@ -81,10 +81,10 @@ namespace HedgeHog.Cloud {
     }
     #endregion
     #region Helpers
-    private static IEnumerable<T> MapStrategies<T>(Gist[] gists, Func<string, string, string,int, T> map,int count = int.MaxValue) {
+    private static IEnumerable<T> MapStrategies<T>(Gist[] gists, Func<string, string, string,Uri,int, T> map,int count = int.MaxValue) {
       return from gist in gists
              from file in gist.Files.Take(count).Select((file, i) => new { file, i })
-             select map(CleanStrategyName(file.file.Key), gist.Description, file.file.Value.Content, file.i);
+             select map(CleanStrategyName(file.file.Key), gist.Description, file.file.Value.Content, new Uri(file.file.Value.RawUrl), file.i);
     }
 
     private static async Task<string> FetchGistContent(GistFile file) {

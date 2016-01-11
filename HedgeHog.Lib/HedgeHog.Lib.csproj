@@ -161,6 +161,7 @@
     <Compile Include="Chunk.cs" />
     <Compile Include="ChunkIt.cs" />
     <Compile Include="Class1.cs" />
+    <Compile Include="LevenshteinDistance.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="DateTimeZone.cs" />
     <Compile Include="Dynamic.cs" />

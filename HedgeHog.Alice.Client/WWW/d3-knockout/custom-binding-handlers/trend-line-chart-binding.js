@@ -64,6 +64,7 @@
   var tpsOpacity = 0.25;
   var tickAreaBgColor = "lightgray";//lavender";
   var blueStrip = "blueStrip";
+  var greenStrip = "greenStrip";
   var doCorridorStartDate = false;
   var showLineLog = false;
   var tpsChartNum = 0;
@@ -106,7 +107,8 @@
       ;
       if (chartNum === 1) {
         addRect("tickArea", tickAreaBgColor);
-        addRect(blueStrip, "lavender",0.4);
+        addRect(blueStrip, "lavender", 0.4);
+        addRect(greenStrip, "#54C571", 0.1);
       }
       if (hasTps) {
         svg.append("g")
@@ -266,6 +268,7 @@
       var canBuy = chartData.canBuy;
       var canSell = chartData.canSell;
       var com = chartData.com;
+      var com2 = chartData.com2;
       // #endregion
 
       // #region adjust svg and axis'
@@ -377,6 +380,8 @@
           setRectArea(chartData.tickDate, yDomain[1], trendLines.dates[1], yDomain[0], "tickArea");
           if (com)
             setHorizontalStrip(com.b, com.s, blueStrip);
+          if (com2)
+            setHorizontalStrip(com2.b, com2.s, greenStrip);
         }
         // #region add trend corridor
         setTrendLine(trendLines, 1, "lightgrey");
@@ -622,7 +627,7 @@
         var dates = [data[0].d, data[data.length - 1].d];
         var bottom = Math.min(y(level1), y(level2));
         var height = Math.abs(y(level1) - y(level2));
-        if (isNaN(bottom) || isNaN(height)) return;
+        if(isNaN(bottom)||isNaN(height))return;
         svg.select("rect." + rectName)
           //.style("stroke", rectColour)  // colour the line
           .attr("x", x(dates[0])) // x position of the first end of the line

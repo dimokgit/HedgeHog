@@ -211,10 +211,10 @@
       cursor:pointer;
       margin-left:20px;
     }
-    #strategiesDialog .modal-body li span.active-strategy{
+    #strategiesDialog .modal-body span.active-strategy{
       font-weight:bold;
     }
-    #strategiesDialog .modal-body li:hover{
+    #strategiesDialog .modal-body span:hover{
       text-decoration: underline;
     }
     div.ui-dialog-content.replay{
@@ -466,7 +466,7 @@
                 <input type="button" value="Manual" id="manualToggle" />
                 <button data-bind="click:toggleStartDate">Start Date</button>
               </li>
-              <li><button data-bind="click:refreshOrders">Refresh Orders</button></li>
+              <li><button data-bind="click:refreshCharts">Refresh Charts</button></li>
               <li><button data-bind="click:wrapTradeInCorridor">Wrap Trade</button></li>
               <li>
                 <button data-bind="click:wrapCurrentPriceInCorridor.bind($data,0)">Wrap G</button>
@@ -479,8 +479,6 @@
               </li>
               <li>
                 <button data-bind="click:showStrategies">Strategies</button>
-                <button data-toggle="modal"
-                        data-target="#strategyNameDialog">Save</button>
               </li>
               <li>
                 <button data-bind="click:toggleClosedTrades">Trades</button>
@@ -806,12 +804,12 @@
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
           <span class="modal-title" id="myModalLabel">Strategies</span>
         </div>
-        <div class="modal-body">
-          <ul data-bind="foreach:strategies">
-            <li data-bind="attr:{title:name}">
-              <span data-bind="text:nick,click:$parent.setStrategy,css:{'active-strategy':isActive}"></span>
-              <span data-bind="click:$parent.removeStrategy" class="glyphicon glyphicon-remove"></span>
-            </li>
+        <div class="modal-body"data-bind="foreach:strategies">
+            <div data-bind="attr:{title:name}">
+              <input data-bind="checked:isSelected" type="checkbox"/>
+              <span data-bind="text:nick,click:$parent.updateStrategy,css:{'active-strategy':isActive}"></span>
+              <a data-bind="attr:{href:uri}" target="_blank" class="glyphicon glyphicon-list"></a>
+            </div>
           </ul>
         </div>
         <div class="modal-footer" style="display:none">
@@ -823,7 +821,7 @@
   </div>
   <!--#endregion-->
   <!--#region Strategies dialog-->
-  <div class="modal" id="strategyNameDialog" tabindex="-1" role="dialog" aria-labelledby="strategyNameDialog" aria-hidden="true" >
+  <div class="modal" data-bind="elementer:strategyNameDialog" id="strategyNameDialog" tabindex="-1" role="dialog" aria-labelledby="strategyNameDialog" aria-hidden="true" >
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header">
@@ -831,7 +829,10 @@
           <span class="modal-title" id="myModalLabel">Strategy Name</span>
         </div>
         <div class="modal-body">
-          <input data-bind="value:strategyNick,elementer:strategyNameInput" /><button data-bind="click:saveStrategy">Save</button>
+          <input data-bind="value:strategyNick,elementer:strategyNameInput" />
+          <button data-bind="click:setStrategy">Load</button>
+          <button data-bind="click:saveStrategy">Save</button>
+          <button data-bind="click:removeStrategy">Remove</button>
         </div>
         <div class="modal-footer" style="display:none">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

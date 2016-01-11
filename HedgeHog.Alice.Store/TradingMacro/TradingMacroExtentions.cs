@@ -1548,6 +1548,7 @@ namespace HedgeHog.Alice.Store {
         MacdRsdAvg = double.NaN;
         _isRatesLengthStable = false;
         ResetTradeStrip = false;
+        CenterOfMassBuy = CenterOfMassBuy2 = CenterOfMassSell = CenterOfMassSell2 = double.NaN;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if(!_replayRates.Any())
@@ -2329,7 +2330,7 @@ namespace HedgeHog.Alice.Store {
             .DefaultIfEmpty(double.NaN)
             .Average())
             .Where(Lib.IsNotNaN)
-           select rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNaN()).Do(r => SetVoltage(r, voltsAvg)).Count()+
+           select rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNaN()).Do(r => SetVoltage(r, voltsAvg)).Count() +
                   rates.TakeWhile(r => GetVoltage(r).IsNaN()).Do(r => SetVoltage(r, voltsAvg)).Count()
            ).Count();
         }
@@ -3105,7 +3106,7 @@ namespace HedgeHog.Alice.Store {
       var rate = TradesManager.RateForPipAmount(CurrentPrice);
       return TradesManagerStatic.MoneyAndLotToPips(Pair, com, trades.Lots(), rate, PointSize);
     }
-    double CalculateTakeProfit(double customRatio = double.NaN, bool dontAdjust = false) {
+    double CalculateTakeProfit(double customRatio = double.NaN, bool dontAdjust = true) {
       var tp = GetValueByTakeProfitFunction(TakeProfitFunction, customRatio.IfNaN(TakeProfitXRatio));
       return (dontAdjust
         ? tp
@@ -3278,6 +3279,39 @@ namespace HedgeHog.Alice.Store {
         #region BuySellLevels
         case TradingMacroTakeProfitFunction.BuySellLevels:
           tp = (BuyLevel.Rate - SellLevel.Rate).Abs() * xRatio;
+          break;
+        #endregion
+        #region TradeHeight
+        case TradingMacroTakeProfitFunction.TradeHeight:
+          var xRate = MonoidsCore.ToFunc((List<Rate>)null, 0, (rates, sign) => new { rates, sign });
+          Func<Func<Rate, bool>, IEnumerable<List<Rate>>> useRates = p => UseRates(rates => rates.Where(p).ToList());
+
+          Func<double, Func<Rate, bool>> ratesBelow = open => r => r.PriceAvg <= open;
+          Func<double, Func<Rate, bool>> ratesAbove = open => r => r.PriceAvg >= open;
+          Func<Trade, Func<Rate, bool>> ratesAfterTrade = trade => trade.IsBuy ? ratesBelow(trade.Open) : ratesAbove(trade.Open);
+
+          Func<Func<Rate, DateTime, bool>, DateTime, Func<Rate, bool>> ratesByTime = (p, t) => r => p(r, t);
+          Func<DateTime, Func<Rate, bool>> ratesBefore = time => ratesByTime((r, t) => r.StartDate <= t, time);
+          Func<DateTime, Func<Rate, bool>> ratesAfter = time => ratesByTime((r, t) => r.StartDate >= t, time);
+          //Func<Trade, Func<Rate, bool>> ratesBeforeTrade = trade => trade.IsBuy ? ratesBelow(trade.Open) : ratesAbove(trade.Open);
+
+          Func<Trade, double> heightBuySell = (trade) => {
+            var before = useRates(ratesBefore(trade.Time)).Select(rates => rates.Height()).ToArray();
+            var after = useRates(ratesAfter(trade.Time))
+              .SelectMany(rates => rates.Where(ratesAfterTrade(trade)))
+              .Height();
+            return before
+              .Where(Lib.IsNotNaN)
+              .Select(b => b - (after - b).Max(0))
+              .DefaultIfEmpty(-after)
+              .Where(Lib.IsNotNaN)
+              .DefaultIfEmpty(tp)
+              .Single();
+          };
+          tp = Trades.TakeLast(1)
+            .Select(trade => heightBuySell(trade) * xRatio)
+            .DefaultIfEmpty(tp)
+            .Single();
           break;
         #endregion
         default:

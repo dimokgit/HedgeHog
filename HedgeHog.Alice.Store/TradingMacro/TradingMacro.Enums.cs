@@ -18,6 +18,14 @@ namespace HedgeHog.Alice {
   }
 }
 namespace HedgeHog.Alice.Store {
+  public static class EnumMixins {
+    public static double IfNotDirect(this TradingMacroTakeProfitFunction e,double takeProfit,Func<double,double> calc) {
+      return e.IsDirect() ? takeProfit : calc(takeProfit);
+    }
+    public static bool IsDirect(this TradingMacroTakeProfitFunction e) {
+      return e == TradingMacroTakeProfitFunction.TradeHeight || e == TradingMacroTakeProfitFunction.Pips;
+    }
+  }
   public enum RatesLengthFunction {
     DistanceMin,
     DistanceMinSmth,
@@ -66,7 +74,8 @@ namespace HedgeHog.Alice.Store {
     Wave = 4,
     Green = 5,
     Red = 6,
-    Blue = 7
+    Blue = 7,
+    TradeHeight = 8
   }
   public enum TradeLevelBy {
     None = 0,
