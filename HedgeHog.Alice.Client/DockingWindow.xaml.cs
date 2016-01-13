@@ -192,7 +192,7 @@ namespace HedgeHog.Alice.Client {
       var paneLast = RootVisual.Panes.Last();
 
       var paneGroup = RootVisual.Panes.First().PaneGroup;
-      panesOriginal.Except(RootVisual.Panes).ForEach(pane => {
+      panesOriginal.Except(RootVisual.Panes).ToList().ForEach(pane => {
         pane.RemoveFromParent();
         paneGroup.AddItem(pane, Telerik.Windows.Controls.Docking.DockPosition.Right) ;
         pane.IsHidden = false;

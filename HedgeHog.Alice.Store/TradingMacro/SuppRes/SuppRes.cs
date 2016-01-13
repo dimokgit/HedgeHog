@@ -67,6 +67,9 @@ namespace HedgeHog.Alice.Store {
       get { return _CanTrade; }
       set {
         if (_CanTrade != value) {
+          if(value)
+            RateCanTrade = Rate;
+
           //if (value && IsExitOnly)
           //  Scheduler.Default.Schedule(() => CanTrade = false);
           _CanTrade = value;
@@ -93,7 +96,10 @@ namespace HedgeHog.Alice.Store {
         TradesCount = value;
       }
     }
-
+    partial void OnRateChanging(double value) {
+      if(value != Rate && CanTrade)
+        RateCanTrade = Rate;
+    }
     int _rateExErrorCounter = 0;// This is to ammend some wierd bug in IEntityChangeTracker.EntityMemberChanged or something that it calls
     public double RateEx {
       get { return Rate; }
@@ -403,5 +409,13 @@ namespace HedgeHog.Alice.Store {
     }
 
     public DateTime? TradeDate { get; set; }
+  }
+  public static class SuppResMixins {
+    public static bool HasCanTradeCorridorChanged(this IList<SuppRes> buySellLevels) {
+      var bsRates = buySellLevels.Select(sr => sr.Rate).OrderBy(r => r).ToArray();
+      var bsRatesCT = buySellLevels.Select(sr => sr.RateCanTrade).OrderBy(r => r).ToArray();
+      int min = 0, max = 1;
+      return bsRates[min] > bsRatesCT[max] || bsRates[max] < bsRatesCT[min];
+    }
   }
 }

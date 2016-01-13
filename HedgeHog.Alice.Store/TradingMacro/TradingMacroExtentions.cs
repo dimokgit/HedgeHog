@@ -3825,11 +3825,10 @@ namespace HedgeHog.Alice.Store {
               Log = new Exception("LoadRates[" + Pair + ":{1}] - {0:n1} sec".Formater(sw.Elapsed.TotalSeconds, (BarsPeriodType)BarPeriod));
             LastRatePullTime = ServerTime;
             UseRatesInternal(rl => new[] { rl.Count - BarsCountCount() }.Where(rc => rc > 0).ForEach(rc => rl.RemoveRange(0, rc)));
-            Action a = () => {
-              try {
-                Store.PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper, BarPeriodInt, Pair, DateTime.MinValue, obj => { if(DoLogSaveRates) Log = new Exception(obj + ""); });
-              } catch(Exception exc) { Log = exc; }
-            };
+            if(LoadHistoryRealTime) {
+              _addHistoryOrdersBuffer.Push(() 
+                => PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper, BarPeriodInt, Pair, DateTime.MinValue, obj => { if(DoLogSaveRates) Log = new Exception(obj + ""); }));
+            }
             //Scheduler.Default.Schedule(a);
             //{
             //  RatesArraySafe.SavePairCsv(Pair);
@@ -3842,6 +3841,13 @@ namespace HedgeHog.Alice.Store {
           InfoTooltip = "";
         }
     }
+    AddHistoryOrdersBuffer _addHistoryOrdersBuffer = AddHistoryOrdersBuffer.Create();
+    class AddHistoryOrdersBuffer : AsyncBuffer<AddHistoryOrdersBuffer, Action> {
+      protected override Action PushImpl(Action action) {
+        return action;
+      }
+    }
+
     public DateTimeOffset LoadRatesStartDate2 { get; set; }
     #region Overrides
     [MethodImpl(MethodImplOptions.Synchronized)]

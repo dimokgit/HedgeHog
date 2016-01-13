@@ -12,6 +12,7 @@ using System.Reactive;
 using HedgeHog.Shared;
 using HedgeHog.Shared.Messages;
 using EntityFramework.BulkInsert.Extensions;
+using System.Runtime.CompilerServices;
 
 namespace HedgeHog.Alice.Store {
   public static class PriceHistory {
@@ -22,6 +23,7 @@ namespace HedgeHog.Alice.Store {
         AddTicks(fw, pair.Item2, pair.Item1, DateTime.Now.AddYears(-1), progressCallback);
     }
     static Task saveTicksTask;
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public static void AddTicks(FXCoreWrapper fw, int period, string pair, DateTime dateStart, Action<object> progressCallback) {
       try {
         #region callback

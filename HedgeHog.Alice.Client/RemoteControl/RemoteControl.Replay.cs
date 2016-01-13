@@ -75,8 +75,9 @@ namespace HedgeHog.Alice.Client {
         StartReplayInternal(tmOriginal, TestParams.Any() ? TestParams.Dequeue() : null, task => { ContinueReplayWith(tmOriginal, TestParams); });
       } catch (Exception exc) { Log = exc; }
     }
+    char[] _testParamValuesSeparators = new[] { '^', '\t' };
     void FillTestParams(TradingMacro tmOriginal, Action<IList<KeyValuePair<string, object>[]>> paramsTransformation) {
-      var c = new[] { '^', '\t' };
+      var c = _testParamValuesSeparators;
       if (!_testParamsRaw.Any()) {
         if (!ReplayArguments.IsWww && tmOriginal.UseTestFile) {
           var od = new Microsoft.Win32.OpenFileDialog() { FileName = "TestParams", DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };

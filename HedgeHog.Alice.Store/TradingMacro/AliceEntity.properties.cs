@@ -57,6 +57,7 @@ namespace HedgeHog.Alice.Store {
     #region DoLogSaveRates
     private bool _DoLogSaveRates;
     [Category(categoryXXX)]
+    [IsNotStrategy]
     public bool DoLogSaveRates {
       get { return _DoLogSaveRates; }
       set {
@@ -68,6 +69,20 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    bool _loadHistoryRealTime;
+    [Category(categoryXXX)]
+    [IsNotStrategy]
+    public bool LoadHistoryRealTime {
+      get {
+        return _loadHistoryRealTime;
+      }
+
+      set {
+        _loadHistoryRealTime = value;
+        OnPropertyChanged(() => LoadHistoryRealTime);
+      }
+    }
+
     //RatesHeightMinimum
     public string _TestRatesHeightMinimum = "";
     [DisplayName("RatesHeightMinimum")]

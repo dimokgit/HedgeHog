@@ -588,6 +588,9 @@
       $(this.strategyNameDialog()).modal("hide");
       this.readStrategies();
       $(this.strategiesDialog()).modal("show");
+      $(this.strategiesDialog()).find('.modal-dialog').draggable({
+        handle: ".modal-header"
+      });
     }.bind(this);
     this.hideStrategies = function () { $(this.strategiesDialog()).modal("hide"); }.bind(this);
     this.setStrategy = function (data) {

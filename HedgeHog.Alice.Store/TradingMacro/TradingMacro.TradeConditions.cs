@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Dynamic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -254,15 +255,10 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
-    [TradeConditionSetCorridor]
-    public TradeConditionDelegate TradeStripTrackOk {
+    public TradeConditionDelegate TrdCorChgOk {
       get {
         return () => {
-          SetTradeStrip();
-          _tipRatioCurrent = _ratesHeightCma / GetTradeLevelsToTradeStrip().Height();
-          var td = TradeDirectionByBool(IsCurrentPriceInsideBlueStrip && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
-          SetTradeLevelsToTradeStrip();
-          return td;
+          return TradeDirectionByBool(BuySellLevels.HasCanTradeCorridorChanged());
         };
       }
     }
@@ -270,21 +266,25 @@ namespace HedgeHog.Alice.Store {
     void BuySellLevelsForEach(Action<SuppRes> action) {
       BuySellLevels.ForEach(action);
     }
-    void BuySellLevelsForEach(Func<SuppRes,bool>predicate, Action<SuppRes> action) {
+    void BuySellLevelsForEach(Func<SuppRes, bool> predicate, Action<SuppRes> action) {
       BuySellLevels.Where(predicate).ForEach(action);
     }
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public double SetTradeStrip() {
-      if(CanTriggerTradeDirection() && !TradeConditionsTradeStrip().Any(tc=>tc.HasNone())) {
+      if(CanTriggerTradeDirection() && !TradeConditionsTradeStrip().Any(tc => tc.HasNone())) {
         var tlbuy = GetTradeLevel(true, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMax]();
         var tlSell = GetTradeLevel(false, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMin]();
-        var bsHeight = CenterOfMassBuy.Abs(CenterOfMassSell);
+        var bsHeight = CenterOfMassBuy.Abs(CenterOfMassSell).IfNaN(double.MaxValue);
         var tlHeight = tlbuy.Abs(tlSell);
-        var tlAvg = tlbuy.Avg(tlSell);
-        var tlJumped = !tlAvg.Between(CenterOfMassSell, CenterOfMassBuy) && tlHeight.Div(bsHeight) <= TradeStripJumpRatio;
+        //var tlAvg = tlbuy.Avg(tlSell);
+        double tlMax = tlbuy.Max(tlSell), tlMin = tlSell.Min(tlbuy);
+        double comMax = CenterOfMassSell.Max(CenterOfMassBuy), comMin = CenterOfMassSell.Min(CenterOfMassBuy);
+        var tlJumped = (tlMin > comMax || tlMax < comMin)
+          && tlHeight.Div(bsHeight) <= TradeStripJumpRatio;
         if(tlJumped) {
           CenterOfMassBuy2 = CenterOfMassBuy;
           CenterOfMassSell2 = CenterOfMassSell;
-          BuySellLevelsForEach( sr => sr.CanTradeEx = false);
+          BuySellLevelsForEach(sr => sr.CanTradeEx = false);
         }
         var canSetLevel = (bsHeight.IsNaN() || tlJumped || tlHeight < bsHeight);
         if(canSetLevel) {
@@ -505,7 +505,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     int TrendHeighRatio() {
-      Func<IList<Rate>, double> spread = tls => tls.Take(1).Select(tl=>tl.Trends.PriceAvg2 - tl.Trends.PriceAvg3).DefaultIfEmpty(double.NaN).Single();
+      Func<IList<Rate>, double> spread = tls => tls.Take(1).Select(tl => tl.Trends.PriceAvg2 - tl.Trends.PriceAvg3).DefaultIfEmpty(double.NaN).Single();
       return BlueBasedRatio(spread).ToPercent();
     }
     #endregion
@@ -684,7 +684,7 @@ namespace HedgeHog.Alice.Store {
       return TradingMacrosByPair().Where(tm => tm != this);
     }
     private IEnumerable<TradingMacro> TradingMacrosByPair() {
-      return _tradingMacros.Where(tm => tm.Pair == Pair).OrderBy(tm=>PairIndex);
+      return _tradingMacros.Where(tm => tm.Pair == Pair).OrderBy(tm => PairIndex);
     }
     #endregion
 
