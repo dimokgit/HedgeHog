@@ -438,7 +438,14 @@ namespace HedgeHog {
     }
 
     public static IEnumerable<Tuple<A, PropertyInfo>> GetPropertiesByAttibute<A>(this object that, Func<A, bool> predicate) where A : Attribute {
-      foreach(var p in that.GetType().GetProperties()) {
+      var type = that.GetType();
+      foreach(var p in type.GetProperties()) {
+        if(p.GetCustomAttributes(typeof(A), false).Cast<A>().Where(predicate).Any())
+          yield return new Tuple<A, PropertyInfo>(p.GetCustomAttributes(false).OfType<A>().First(), p);
+      }
+    }
+    public static IEnumerable<Tuple<A, PropertyInfo>> GetPropertiesByAttibute<A>(this Type type, Func<A, bool> predicate) where A : Attribute {
+      foreach(var p in type.GetProperties()) {
         if(p.GetCustomAttributes(typeof(A), false).Cast<A>().Where(predicate).Any())
           yield return new Tuple<A, PropertyInfo>(p.GetCustomAttributes(false).OfType<A>().First(), p);
       }

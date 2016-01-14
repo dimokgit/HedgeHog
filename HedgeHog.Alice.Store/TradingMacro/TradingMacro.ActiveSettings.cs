@@ -100,10 +100,14 @@ namespace HedgeHog.Alice.Store {
     }
 
     public static IDictionary<string, string[]> ActiveSettingsDiff(string settings1, string settings2) {
-      var exclude = typeof(TradingMacro)
+      var exclude1 = typeof(TradingMacro)
         .GetPropertiesByAttibute<IsNotStrategyAttribute>(a => true)
-        .Select(t => t.Item2.Name)
-        .ToArray();
+        .Select(t => t.Item2.Name);
+      var exclude2 = typeof(TradingMacro)
+        .GetPropertiesByAttibute<CategoryAttribute>(a => a.Category.StartsWith("Test"))
+        .Select(t => t.Item2.Name);
+      var exclude = exclude1.Concat(exclude2).ToArray();
+
       var d1 = Lib.ReadParametersFromString(settings1);
       var d2 = Lib.ReadParametersFromString(settings2);
       var diff = from kv1 in d1

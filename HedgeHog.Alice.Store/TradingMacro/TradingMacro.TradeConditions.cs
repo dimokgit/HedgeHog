@@ -137,7 +137,12 @@ namespace HedgeHog.Alice.Store {
 
     #region Trade Corridor and Directions conditions
 
-    [TradeConditionTurnOff]
+    public TradeConditionDelegate IsInOk {
+      get {
+        return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels);
+      }
+    }
+      [TradeConditionTurnOff]
     public TradeConditionDelegate TipOk {
       get {
         return () => TrendLines2Trends
@@ -240,6 +245,28 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
+    [TradeConditionSetCorridor]
+    public TradeConditionDelegate TradeSlideOk {
+      get {
+        return () => {
+          SetTradeStrip();
+          var canSetStrip = true;// Trades.IsEmpty();
+          var tradeLevles = GetTradeLevelsToTradeStrip();
+          _tipRatioCurrent = _ratesHeightCma / tradeLevles.Height();
+          var tipRatioOk = IsTresholdAbsOk(_tipRatioCurrent, TipRatio);
+          if(!tipRatioOk)
+            BuySellLevelsForEach(sr => sr.CanTradeEx = false);
+          var td = TradeDirectionByBool(tipRatioOk);
+          if(canSetStrip && td.HasAny()) {
+            var h = TrendLinesTrendsAll.Select(tl => tl.PriceAvg2 - tl.PriceAvg3).Average();
+            var mean = TrendLines2Trends.PriceAvg1;
+            BuyLevel.RateEx = mean + h;
+            SellLevel.RateEx = mean - h;
+          }
+          return td;
+        };
+      }
+    }
 
     [TradeConditionSetCorridor]
     public TradeConditionDelegate TradeStripOk {
@@ -247,14 +274,31 @@ namespace HedgeHog.Alice.Store {
         return () => {
           SetTradeStrip();
           var canSetStrip = true;// Trades.IsEmpty();
-          _tipRatioCurrent = _ratesHeightCma / GetTradeLevelsToTradeStrip().Height();
-          var td = TradeDirectionByBool(IsCurrentPriceInsideBlueStrip && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
+          var tradeLevles = GetTradeLevelsToTradeStrip();
+          _tipRatioCurrent = TradeLevelsEdgeRatio(tradeLevles).Min(_ratesHeightCma / tradeLevles.Height());
+          var tipRatioOk = IsTresholdAbsOk(_tipRatioCurrent, TipRatio);
+          if(!tipRatioOk)
+            BuySellLevelsForEach(sr => sr.CanTradeEx = false);
+          var td = TradeDirectionByBool(IsCurrentPriceInsideBlueStrip && tipRatioOk);
           if(canSetStrip && td.HasAny())
             SetTradeLevelsToTradeStrip();
           return td;
         };
       }
     }
+    private double TradeLevelsEdgeRatio(double[] tradeLevles) {
+      return TrendLines2Trends
+        .YieldIf(p => !p.IsEmpty, p => p.Slope.SignUp())
+        .Select(ss => {
+          var tradeLevel = ss > 0 ? tradeLevles.Min() : tradeLevles.Max();
+          var extream = ss > 0 ? _RatesMax : _RatesMin;
+          var tip = extream.Abs(tradeLevel);
+          return RatesHeight / tip;
+        })
+        .DefaultIfEmpty(double.NaN)
+        .Single();
+    }
+
     public TradeConditionDelegate TrdCorChgOk {
       get {
         return () => {

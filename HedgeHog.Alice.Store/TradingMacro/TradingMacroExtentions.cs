@@ -2447,6 +2447,7 @@ namespace HedgeHog.Alice.Store {
     #region LastTradeLossInPips
     private double _LastTradeLossInPips;
     [Category(categoryTrading)]
+    [IsNotStrategy]
     public double LastTradeLossInPips {
       get { return _LastTradeLossInPips; }
       set {
