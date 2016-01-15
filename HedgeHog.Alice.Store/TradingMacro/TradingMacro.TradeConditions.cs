@@ -142,7 +142,7 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels);
       }
     }
-      [TradeConditionTurnOff]
+    [TradeConditionTurnOff]
     public TradeConditionDelegate TipOk {
       get {
         return () => TrendLines2Trends
@@ -256,9 +256,13 @@ namespace HedgeHog.Alice.Store {
           var tipRatioOk = IsTresholdAbsOk(_tipRatioCurrent, TipRatio);
           if(!tipRatioOk)
             BuySellLevelsForEach(sr => sr.CanTradeEx = false);
+          if(TrendLines2Trends.Slope < 0 && SellLevel.CanTrade)
+            SellLevel.CanTrade = false;
+          if(TrendLines2Trends.Slope > 0 && BuyLevel.CanTrade)
+            BuyLevel.CanTrade = false;
           var td = TradeDirectionByBool(tipRatioOk);
           if(canSetStrip && td.HasAny()) {
-            var h = TrendLinesTrendsAll.Select(tl => tl.PriceAvg2 - tl.PriceAvg3).Average();
+            var h = TrendLinesTrendsAll.Select(tl => tl.PriceAvg2 - tl.PriceAvg3).Average() / 2;
             var mean = TrendLines2Trends.PriceAvg1;
             BuyLevel.RateEx = mean + h;
             SellLevel.RateEx = mean - h;

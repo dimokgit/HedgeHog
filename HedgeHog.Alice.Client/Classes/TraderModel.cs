@@ -57,6 +57,16 @@ namespace HedgeHog.Alice.Client {
         return _default;
       }
     }
+    #region Title
+    public string TitleRoot {
+      get { return TitleImpl(); }
+    }
+
+    #endregion
+    public string TitleImpl() {
+      return Common.CurrentDirectory.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries).Last() + ":" + IpPortActual;
+    }
+
 
     #region FXCM
     private Order2GoAddIn.CoreFX _coreFX = new Order2GoAddIn.CoreFX();
@@ -125,9 +135,20 @@ namespace HedgeHog.Alice.Client {
     public override int IpPort {
       get { return _IpPort; }
       set {
-        if (_IpPort != value) {
+        if(_IpPort != value) {
           _IpPort = value;
           RaisePropertyChangedCore();
+        }
+      }
+    }
+    private int _IpPortActual = 0;
+    public int IpPortActual {
+      get { return _IpPortActual; }
+      set {
+        if(_IpPortActual != value) {
+          _IpPortActual = value;
+          RaisePropertyChangedCore();
+          OnPropertyChanged(Lib.GetLambda(()=> TitleRoot));
         }
       }
     }

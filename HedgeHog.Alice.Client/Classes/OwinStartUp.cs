@@ -139,6 +139,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     Lazy<RemoteControlModel> remoteControl;
+    Lazy<TraderModel> trader;
     static Exception Log { set { GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(value)); } }
     static ISubject<Action> _AskRatesSubject;
     static ISubject<Action> AskRatesSubject {
@@ -167,6 +168,8 @@ namespace HedgeHog.Alice.Client {
     }
     public MyHub() {
       remoteControl = App.container.GetExport<RemoteControlModel>();
+      trader = App.container.GetExport<TraderModel>();
+
       App.WwwMessageWarning.Do(wm => {
         Clients.All.message(wm);
       });
@@ -244,6 +247,7 @@ namespace HedgeHog.Alice.Client {
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
+    public string ReadTitleRoot() { return trader.Value.TitleRoot; }
 
     #region TradeDirectionTriggers
     public string[] ReadTradeDirectionTriggers(string pair) {

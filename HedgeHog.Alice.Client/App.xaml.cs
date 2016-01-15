@@ -45,18 +45,18 @@ namespace HedgeHog.Alice.Client {
         try {
           var trader = App.container.GetExportedValue<TraderModel>();
           if (trader.IpPort > 0) {
-            var port = trader.IpPort;
+            trader.IpPortActual = trader.IpPort;
             while (true)
               try {
-                string url = "http://+:" + port + "/";
+                string url = "http://+:" + trader.IpPortActual + "/";
                 _webApp = WebApp.Start<StartUp>(url);
                 GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(new { url } + ""));
                 break;
               } catch (Exception exc) {
                 var he = exc.InnerException as System.Net.HttpListenerException;
                 if (exc == null || he.ErrorCode != 183) return;
-                GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(new { port, isBusy = true } + ""));
-                port++;
+                GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(new { port = trader.IpPortActual, isBusy = true } + ""));
+                trader.IpPortActual++;
               }
           }
         } catch(CompositionException cex) {

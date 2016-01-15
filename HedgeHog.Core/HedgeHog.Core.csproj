@@ -76,6 +76,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Box.cs" />
+    <Compile Include="Common.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="IEnumerable.cs" />
     <Compile Include="LazyMonad.cs" />
