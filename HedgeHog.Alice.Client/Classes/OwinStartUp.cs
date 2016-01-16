@@ -298,7 +298,7 @@ namespace HedgeHog.Alice.Client {
     #region Strategies
     public async Task<object[]> ReadStrategies(string pair) {
       return await UseTradingMacro(pair
-        , async tm => (await RemoteControlModel.ReadStrategies(tm, (nick, name, uri, diff)
+        , async tm => (await RemoteControlModel.ReadStrategies(tm, (nick, name, content, uri, diff)
           => new { nick, name, uri, diff, isActive = diff.IsEmpty() })).ToArray()
         , false);
     }

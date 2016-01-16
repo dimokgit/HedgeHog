@@ -250,19 +250,15 @@ namespace HedgeHog.Alice.Store {
       get {
         return () => {
           SetTradeStrip();
-          var canSetStrip = true;// Trades.IsEmpty();
           var tradeLevles = GetTradeLevelsToTradeStrip();
           _tipRatioCurrent = _ratesHeightCma / tradeLevles.Height();
           var tipRatioOk = IsTresholdAbsOk(_tipRatioCurrent, TipRatio);
           if(!tipRatioOk)
             BuySellLevelsForEach(sr => sr.CanTradeEx = false);
-          if(TrendLines2Trends.Slope < 0 && SellLevel.CanTrade)
-            SellLevel.CanTrade = false;
-          if(TrendLines2Trends.Slope > 0 && BuyLevel.CanTrade)
-            BuyLevel.CanTrade = false;
+          CanTradeOffByAngle(TrendLines2Trends);
           var td = TradeDirectionByBool(tipRatioOk);
-          if(canSetStrip && td.HasAny()) {
-            var h = TrendLinesTrendsAll.Select(tl => tl.PriceAvg2 - tl.PriceAvg3).Average() / 2;
+          if(td.HasAny()) {
+            var h = tradeLevles.Height() / 2;
             var mean = TrendLines2Trends.PriceAvg1;
             BuyLevel.RateEx = mean + h;
             SellLevel.RateEx = mean - h;
@@ -270,6 +266,13 @@ namespace HedgeHog.Alice.Store {
           return td;
         };
       }
+    }
+
+    private void CanTradeOffByAngle(Rate.TrendLevels tl) {
+      if(tl.Slope < 0 && SellLevel.CanTrade)
+        SellLevel.CanTrade = false;
+      if(TrendLines2Trends.Slope > 0 && BuyLevel.CanTrade)
+        BuyLevel.CanTrade = false;
     }
 
     [TradeConditionSetCorridor]

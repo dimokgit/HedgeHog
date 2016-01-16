@@ -7,7 +7,7 @@ using HedgeHog.Alice.Store;
 
 namespace HedgeHog.Alice.Client {
   partial class RemoteControlModel {
-    public static async Task<IEnumerable<T>> ReadStrategies<T>(TradingMacro tm, Func<string, string, Uri, string[], T> map) {
+    public static async Task<IEnumerable<T>> ReadStrategies<T>(TradingMacro tm, Func<string, string, string, Uri, string[], T> map) {
       var localMap = MonoidsCore.ToFunc("", "", "", (Uri)null, 0, (name, description, content, uri, index) => new { name, description, content, uri, index });
       var strategies = await Cloud.GitHub.GistStrategies(localMap);
       var activeSettings = Lib.ReadParametersToString(tm.GetActiveSettings());
@@ -16,20 +16,8 @@ namespace HedgeHog.Alice.Client {
               let diffs = TradingMacro.ActiveSettingsDiff(strategy.content, activeSettings).ToDictionary()
               let diff = diffs.Select(kv => new { diff = kv.Key + "= " + kv.Value[0] + " {" + kv.Value[1] + "}", lev = Lib.LevenshteinDistance(kv.Value[0], kv.Value[1]) }).ToArray()
               orderby diff.Length, diff.Sum(x => x.lev), strategy.name
-              select map(strategy.name, strategy.description, strategy.uri, diff.Select(x => x.diff).ToArray())
+              select map(strategy.name, strategy.description, strategy.content, strategy.uri, diff.Select(x => x.diff).ToArray())
                );
-      //Func<IDictionary<string,string>, IDictionary<string, string>> joinDicts = (d)
-      //(from strategy in strategies
-      // from content in strategy.content
-      // join )
-      //Func<string, string> name = s =>
-      //  Regex.Matches(s, @"\{(.+)\}").Cast<Match>().SelectMany(m => m.Groups.Cast<Group>()
-      //  .Skip(1).Take(1)
-      //  .Select(g => g.Value))
-      //  .DefaultIfEmpty(s).First();
-      //return Directory.GetFiles(StrategiesPath())
-      //  .OrderBy(file => file)
-      //  .Select(file => map(name(Path.GetFileNameWithoutExtension(file)), Path.GetFileNameWithoutExtension(file), file));
     }
 
     //private static string StrategiesPath(string pathEnd = "") {

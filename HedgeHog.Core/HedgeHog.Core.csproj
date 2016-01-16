@@ -84,6 +84,7 @@
     <Compile Include="Monoids.cs" />
     <Compile Include="Persistance.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TaskMonad.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
