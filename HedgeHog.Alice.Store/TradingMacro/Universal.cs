@@ -47,8 +47,8 @@ namespace HedgeHog.Alice.Store {
 
       if (_strategyExecuteOnTradeClose == null) {
         Func<SuppRes, IObservable<EventPattern<EventArgs>>> onCanTrade = sr => Observable.FromEventPattern<EventHandler<EventArgs>, EventArgs>(h => h, h => sr.CanTradeChanged += h, h => sr.CanTradeChanged -= h);
-        if (IsInVitualTrading && Trades.Any()) throw new Exception("StrategyEnterUniversal: All trades must be closed befor strategy init.");
-        if (IsInVitualTrading) TurnOffSuppRes(RatesArray.Select(r => r.PriceAvg).DefaultIfEmpty().Average());
+        if (IsInVirtualTrading && Trades.Any()) throw new Exception("StrategyEnterUniversal: All trades must be closed befor strategy init.");
+        if (IsInVirtualTrading) TurnOffSuppRes(RatesArray.Select(r => r.PriceAvg).DefaultIfEmpty().Average());
         #region SetTrendLines
         Func<Func<Rate, double>, double, double[]> getStDevByAverage1 = (price, skpiRatio) => {
           var line = new double[CorridorStats.Rates.Count];
@@ -221,7 +221,7 @@ namespace HedgeHog.Alice.Store {
         if (SuppResLevelsCount < 2) SuppResLevelsCount = 2;
         if (SuppRes.Do(sr => sr.IsExitOnly = false).Count() == 0) return; ;
 
-        if (!IsInVitualTrading) {
+        if (!IsInVirtualTrading) {
           var buySellCanTradeObservable = onCanTrade(BuyLevel).Merge(onCanTrade(SellLevel))
             .Select(e => e.Sender as SuppRes)
             .DistinctUntilChanged(sr => sr.CanTrade)
@@ -246,7 +246,7 @@ namespace HedgeHog.Alice.Store {
         Action<bool> setCloseLevels = (overWrite) => setCloseLevel(BuyCloseLevel, overWrite);
         setCloseLevels += (overWrite) => setCloseLevel(SellCloseLevel, overWrite);
         ForEachSuppRes(sr => {
-          if (IsInVitualTrading) sr.InManual = false;
+          if (IsInVirtualTrading) sr.InManual = false;
           sr.ResetPricePosition();
           sr.ClearCrossedHandlers();
         });
@@ -718,7 +718,7 @@ namespace HedgeHog.Alice.Store {
                 onCloseTradeLocal += t => {
                   if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                   if (CurrentGrossInPipTotal > 0) {
-                    if (!IsInVitualTrading) IsTradingActive = false;
+                    if (!IsInVirtualTrading) IsTradingActive = false;
                     BroadcastCloseAllTrades();
                   }
                 };
@@ -755,7 +755,7 @@ namespace HedgeHog.Alice.Store {
                 onCloseTradeLocal += t => {
                   if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                   if (CurrentGrossInPipTotal > 0) {
-                    if (!IsInVitualTrading) IsTradingActive = false;
+                    if (!IsInVirtualTrading) IsTradingActive = false;
                     BroadcastCloseAllTrades();
                   }
                 };
@@ -800,7 +800,7 @@ namespace HedgeHog.Alice.Store {
                 #region onCloseTradeLocal
                 onCloseTradeLocal += t => {
                   if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                  if (!IsInVitualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
+                  if (!IsInVirtualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
                     IsTradingActive = false;
                   if (CurrentGrossInPipTotal > 0)
                     BroadcastCloseAllTrades();
@@ -882,7 +882,7 @@ namespace HedgeHog.Alice.Store {
                 #region onCloseTradeLocal
                 onCloseTradeLocal += t => {
                   if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                  if (!IsInVitualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
+                  if (!IsInVirtualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
                     IsTradingActive = false;
                   if (CurrentGrossInPipTotal > 0)
                     BroadcastCloseAllTrades();
@@ -960,7 +960,7 @@ namespace HedgeHog.Alice.Store {
                 #region onCloseTradeLocal
                 onCloseTradeLocal += t => {
                   if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                  if (!IsInVitualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
+                  if (!IsInVirtualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
                     IsTradingActive = false;
                   if (CurrentGrossInPipTotal > 0)
                     BroadcastCloseAllTrades();
@@ -1037,7 +1037,7 @@ namespace HedgeHog.Alice.Store {
                   BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
                   if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                   if (CurrentGrossInPipTotal > 0) {
-                    if (!IsInVitualTrading) IsTradingActive = false;
+                    if (!IsInVirtualTrading) IsTradingActive = false;
                     BroadcastCloseAllTrades();
                   }
                 };
@@ -1122,7 +1122,7 @@ namespace HedgeHog.Alice.Store {
                   BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
                   if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                   if (CurrentGrossInPipTotal > 0) {
-                    if (!IsInVitualTrading) IsTradingActive = false;
+                    if (!IsInVirtualTrading) IsTradingActive = false;
                     BroadcastCloseAllTrades();
                   }
                 };
@@ -1288,7 +1288,7 @@ namespace HedgeHog.Alice.Store {
                 #region onCloseTradeLocal
                 onCloseTradeLocal += t => {
                   if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                  if (!IsInVitualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
+                  if (!IsInVirtualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
                     IsTradingActive = false;
                   if (CurrentGrossInPipTotal > 0)
                     BroadcastCloseAllTrades();
@@ -1354,7 +1354,7 @@ namespace HedgeHog.Alice.Store {
                 #region onCloseTradeLocal
                 onCloseTradeLocal += t => {
                   if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                  if (!IsInVitualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
+                  if (!IsInVirtualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
                     IsTradingActive = false;
                   if (CurrentGrossInPipTotal > 0)
                     BroadcastCloseAllTrades();
@@ -1440,7 +1440,7 @@ namespace HedgeHog.Alice.Store {
                 #region onCloseTradeLocal
                 onCloseTradeLocal += t => {
                   if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                  if (!IsInVitualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
+                  if (!IsInVirtualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
                     IsTradingActive = false;
                   if (CurrentGrossInPipTotal > 0)
                     BroadcastCloseAllTrades();
@@ -1615,7 +1615,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.LongCross:
             #region FirstTime
             if (firstTime) {
-              LogTrades = DoNews = !IsInVitualTrading;
+              LogTrades = DoNews = !IsInVirtualTrading;
               Log = new Exception(new { WaveStDevRatio, DoAdjustExitLevelByTradeTime } + "");
               onCloseTradeLocal = t => { };
               onOpenTradeLocal = t => { };
@@ -1654,7 +1654,7 @@ namespace HedgeHog.Alice.Store {
             firstTime = false;
             ResetBarsCountCalc();
             ForEachSuppRes(sr => sr.ResetPricePosition());
-            LogTrades = !IsInVitualTrading;
+            LogTrades = !IsInVirtualTrading;
           }
         };
         #endregion
@@ -1707,7 +1707,7 @@ namespace HedgeHog.Alice.Store {
       }
 
       #region if (!IsInVitualTrading) {
-      if (!IsInVitualTrading) {
+      if (!IsInVirtualTrading) {
         this.TradesManager.TradeClosed += TradeCloseHandler;
         this.TradesManager.TradeAdded += TradeAddedHandler;
       }

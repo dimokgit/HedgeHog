@@ -169,7 +169,7 @@ namespace HedgeHog.Alice.Store {
 
 
     //    protected ITradesManager tradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)fw; } }
-    protected bool IsInVirtualTrading { get { return MasterModel == null ? false : MasterModel.IsInVirtualTrading; } }
+    public bool IsInVirtualTrading { get { return MasterModel == null ? false : MasterModel.IsInVirtualTrading; } }
 
     #region PriceBars
     protected class PriceBarsDuplex {

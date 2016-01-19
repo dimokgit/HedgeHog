@@ -81,6 +81,8 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
     public bool HasRateCanTradeChanged { get { return RateCanTrade != Rate; } }
+    public double RateTrade { get; set; }
+    public void SetRateTrade() { RateTrade = Rate; }
     public double RateCanTrade { get; set; }
     public bool CanTradeEx {
       get { return CanTrade; }
@@ -412,10 +414,16 @@ namespace HedgeHog.Alice.Store {
   }
   public static class SuppResMixins {
     public static bool HasCanTradeCorridorChanged(this IList<SuppRes> buySellLevels) {
-      var bsRates = buySellLevels.Select(sr => sr.Rate).OrderBy(r => r).ToArray();
-      var bsRatesCT = buySellLevels.Select(sr => sr.RateCanTrade).OrderBy(r => r).ToArray();
-      int min = 0, max = 1;
-      return bsRates[min] > bsRatesCT[max] || bsRates[max] < bsRatesCT[min];
+      return buySellLevels.HasCorridorChangedImpl(sr => sr.RateCanTrade);
     }
+    public static bool HasTradeCorridorChanged(this IList<SuppRes> buySellLevels) {
+      return buySellLevels.HasCorridorChangedImpl(sr => sr.RateTrade);
+    }
+    static bool HasCorridorChangedImpl(this IList<SuppRes> buySellLevels,Func<SuppRes,double> getter) {
+      var bsRates = buySellLevels.Select(sr => sr.Rate).OrderBy(r => r).ToArray();
+      var bsRatesCT = buySellLevels.Select(getter).OrderBy(r => r).ToArray();
+      return !bsRates.DoSetsOverlap(bsRatesCT);
+    }
+
   }
 }

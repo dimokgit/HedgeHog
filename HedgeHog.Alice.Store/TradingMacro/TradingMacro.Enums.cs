@@ -8,6 +8,7 @@ namespace HedgeHog.Alice {
     None = 0,
     BounceCom = 1,
     DistanceMacd = 2,
+    StDev = 3,
     Volume = 5,
     Rsd = 6,
     FractalDensity = 7,
@@ -75,7 +76,8 @@ namespace HedgeHog.Alice.Store {
     Green = 5,
     Red = 6,
     Blue = 7,
-    TradeHeight = 8
+    TradeHeight = 8,
+    StDev = 9
   }
   public enum TradeLevelBy {
     None = 0,

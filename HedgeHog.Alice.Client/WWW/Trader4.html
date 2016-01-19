@@ -203,26 +203,31 @@
     #waveRangesDialog td {
       text-align: right;
     }
-    .isLong{
-      background-color:lightgray;
+
+    .isLong {
+      background-color: lightgray;
     }
     /*strategiesDialog*/
-    #strategiesDialog .modal-body li{
-      cursor:pointer;
-      margin-left:20px;
+    #strategiesDialog .modal-body li {
+      cursor: pointer;
+      margin-left: 20px;
     }
-    #strategiesDialog .modal-body span.active-strategy{
-      font-weight:bold;
+
+    #strategiesDialog .modal-body span.active-strategy {
+      font-weight: bold;
     }
-    #strategiesDialog .modal-body span:hover{
+
+    #strategiesDialog .modal-body span:hover {
       text-decoration: underline;
     }
-    div.ui-dialog-content.replay{
-      background-color:#C9FEBE;
+
+    div.ui-dialog-content.replay {
+      background-color: #C9FEBE;
     }
-    div.ui-dialog-content.replay.no{
-      background-color:#FFBBB7;
-    }
+
+      div.ui-dialog-content.replay.no {
+        background-color: #FFBBB7;
+      }
   </style>
   <script>
     $(function () {
@@ -268,90 +273,96 @@
             </button>
           </li>
           <li>
-            <button data-bind="click:loadTradeSettings"
-                    data-toggle="modal"
-                    data-target="#settingsDialog">
+            <button class="dropdown-toggle" data-toggle="dropdown" role="button">
               <span class="glyphicon glyphicon-cog"></span>
             </button>
+            <ul class="dropdown-menu" role="menu" aria-expanded="false">
+              <li>
+                <button data-bind="click:loadTradeSettings" title="Settings Chart Ticks"
+                        data-toggle="modal"
+                        data-target="#settingsDialog">
+                  <span class="glyphicon glyphicon-cog"></span>
+                </button>
+                <button data-bind="click:loadTradeSettings2" title="Settings Chart Minutes"
+                        data-toggle="modal"
+                        data-target="#settingsDialog">
+                  <span class="glyphicon glyphicon-cog"></span>
+                </button>
+                <button data-bind="click:getTradeDirectionTriggers" title="Trade Direction Triggers"
+                        data-toggle="modal"
+                        data-target="#tradeDirectionTriggersDialog">
+                  <span class="glyphicon glyphicon-retweet"></span>
+                </button>
+                <button data-bind="click:getTradeOpenActions" title="On Trade Open Actions"
+                        data-toggle="modal"
+                        data-target="#tradeOpenActionsDialog">
+                  <span class="glyphicon glyphicon-check"></span>
+                </button>
+              </li>
+              <li role="presentation" class="divider"></li>
+              <li>
+                <button data-bind="click:startWwwInfo.bind($data,0)" title="Tick Stats"
+                        data-toggle1="modal"
+                        data-target1="#waveRangesDialog">
+                  <span class="glyphicon glyphicon-stats"></span>
+                </button>
+                <button data-bind="click:startWaveRanges.bind($data,1)" title="Minute Waves"
+                        data-toggle1="modal"
+                        data-target1="#waveRangesDialog">
+                  <span class="glyphicon glyphicon-stats"></span>
+                </button>
+                <button data-bind="click:getTradingConditions" title="Trade Conditions"
+                        data-toggle="modal"
+                        data-target="#tradeConditionsDialog">
+                  <span class="glyphicon glyphicon-ok"></span>
+                </button>
+                <button>
+                  <a href="https://shrib.com/hedgehog?v=md" target="_blank" class="glyphicon glyphicon-book"></a>
+                </button>
+              </li>
+            </ul>
           </li>
-          <li>
-            <button data-bind="click:loadTradeSettings2"
-                    data-toggle="modal"
-                    data-target="#settingsDialog">
-              <span class="glyphicon glyphicon-cog"></span>
-            </button>
-          </li>
-          <li>
-            <button data-bind="click:getTradingConditions"
-                    data-toggle="modal"
-                    data-target="#tradeConditionsDialog">
-              <span class="glyphicon glyphicon-ok"></span>
-            </button>
-          </li>
-          <li>
-            <button data-bind="click:getTradeDirectionTriggers"
-                    data-toggle="modal"
-                    data-target="#tradeDirectionTriggersDialog">
-              <span class="glyphicon glyphicon-retweet"></span>
-            </button>
-          </li>
-          <li>
-            <button data-bind="click:getTradeOpenActions"
-                    data-toggle="modal"
-                    data-target="#tradeOpenActionsDialog">
-              <span class="glyphicon glyphicon-check"></span>
-            </button>
-          </li>
-          <li>
-            <button data-bind="click:startWwwInfo.bind($data,0)"
-                    data-toggle1="modal"
-                    data-target1="#waveRangesDialog">
-              <span class="glyphicon glyphicon-stats"></span>
-            </button>
-          </li>
-          <li style="display:none">
-            <button data-bind="click:startWaveRanges.bind($data,0)"
-                    data-toggle1="modal"
-                    data-target1="#waveRangesDialog">
-              <span class="glyphicon glyphicon-stats"></span>
-            </button>
-          </li>
-          <li>
-            <button data-bind="click:startWaveRanges.bind($data,1)"
-                    data-toggle1="modal"
-                    data-target1="#waveRangesDialog">
-              <span class="glyphicon glyphicon-stats"></span>
-            </button>
-          </li>
-          <li>
-            <button>
-              <a href="https://shrib.com/hedgehog?v=md" target="_blank" class="glyphicon glyphicon-book"></a>
-            </button>
-          </li>
-          <li>
-            <button>
-              <a href="http://1drv.ms/1BatfGq" target="_blank" class="glyphicon glyphicon-paperclip"></a>
-            </button>
-          </li>
+
 
         </ul>
         <!--#endregion-->
         <!--#region Left bar-->
         <ul class="nav navbar-nav">
-          <li><input type="button" value="Stop" id="stopTrades" /></li>
-          <li><input type="button" value=" Close " id="closeTrades" /></li>
-          <li><button id="buyDown">B<span class="glyphicon glyphicon-save"></span></button></li>
-          <li><button id="buyUp">B<span class="glyphicon glyphicon-open"></span></button></li>
-          <li><button id="sellDown">S<span class="glyphicon glyphicon-save"></span></button></li>
-          <li><button id="sellUp">S<span class="glyphicon glyphicon-open"></span></button></li>
+          <!-- ko ifnot:canShowClose -->
+          <li>
+            <input type="button" data-bind="click:stopTrades,visible:showStopTrades" value="Stop" />
+            <button data-bind="click:startBuyTrades,visible:showBuyTrades">
+              <span class="glyphicon glyphicon-arrow-up"></span>
+            </button>
+            <button data-bind="click:startSellTrades,visible:showSellTrades">
+              <span class="glyphicon glyphicon-arrow-down"></span>
+            </button>
+          </li>
+          <!-- /ko -->
           <li>
             <button class="dropdown-toggle" data-toggle="dropdown" role="button" area-expanded="false">
-              <span class="glyphicon glyphicon-superscript"></span>
+              <span class="glyphicon glyphicon-menu-hamburger"></span>
             </button>
             <ul class="dropdown-menu" role="menu">
-              <li><button data-bind="click:setTradeCount.bind($data,0)">Trade Count:0</button></li>
-              <li><button data-bind="click:setTradeCount.bind($data,1)">Trade Count:1</button></li>
-              <li><button data-bind="click:setTradeCount.bind($data,2)">Trade Count:2</button></li>
+              <li>
+                <button id="buyDown">B<span class="glyphicon glyphicon-save"></span></button>
+                <button id="buyUp">B<span class="glyphicon glyphicon-open"></span></button>
+                <button data-bind="click:toggleQuickTrade">
+                  <span class="glyphicon glyphicon-exclamation-sign"></span>
+                </button>
+              </li>
+              <li>
+                <button id="sellDown">S<span class="glyphicon glyphicon-save"></span></button>
+                <button id="sellUp">S<span class="glyphicon glyphicon-open"></span></button>
+              </li>
+              <li class="dropdown-submenu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Trade Counts</a>
+                <ul class="dropdown-menu" role="menu">
+                  <li><button data-bind="click:setTradeCount.bind($data,0)">Trade Count:0</button></li>
+                  <li><button data-bind="click:setTradeCount.bind($data,1)">Trade Count:1</button></li>
+                  <li><button data-bind="click:setTradeCount.bind($data,2)">Trade Count:2</button></li>
+                </ul>
+              </li>
             </ul>
           </li>
           <!--#region Trade Levels-->
@@ -397,32 +408,32 @@
               </li>
               <li role="presentation" class="divider"></li>
               <!--Buy/Sell levels-->
-              <li class="dropdown-submenu">
+              <!--<li class="dropdown-submenu">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Buy Level</a>
-                <ul class="dropdown-menu" data-bind="foreach:tradeLevelBys" data-is-buy="true">
-                  <li><a href="#" data-bind="text:text,click:$root.setTradeLevelBuy" style="width:100%"></a></li>
+                <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="true">
+                  <li><a href="#" data-bind1="text:text,click:$root.setTradeLevelBuy" style="width:100%"></a></li>
                 </ul>
               </li>
               <li class="dropdown-submenu">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Buy Close</a>
-                <ul class="dropdown-menu" data-bind="foreach:tradeLevelBys" data-is-buy="true">
-                  <li><a href="#" data-bind="text:text,click:$root.setTradeCloseLevelBuy" style="width:100%"></a></li>
+                <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="true">
+                  <li><a href="#" data-bind1="text:text,click:$root.setTradeCloseLevelBuy" style="width:100%"></a></li>
                 </ul>
               </li>
-              <li role="presentation" class="divider"></li>
+              <li role="presentation" class="divider"></li>-->
               <!--Buy/Sell Close levels-->
-              <li class="dropdown-submenu">
+              <!--<li class="dropdown-submenu">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Sell Level</a>
-                <ul class="dropdown-menu" data-bind="foreach:tradeLevelBys" data-is-buy="false">
-                  <li><a href="#" data-bind="text:text,click:$root.setTradeLevelSell" style="width:100%"></a></li>
+                <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="false">
+                  <li><a href="#" data-bind1="text:text,click:$root.setTradeLevelSell" style="width:100%"></a></li>
                 </ul>
               </li>
               <li class="dropdown-submenu">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Sell Close</a>
-                <ul class="dropdown-menu" data-bind="foreach:tradeLevelBys" data-is-buy="false">
-                  <li><a href="#" data-bind="text:text,click:$root.setTradeCloseLevelSell" style="width:100%"></a></li>
+                <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="false">
+                  <li><a href="#" data-bind1="text:text,click:$root.setTradeCloseLevelSell" style="width:100%"></a></li>
                 </ul>
-              </li>
+              </li>-->
               <!--Other sub menus-->
               <li class="dropdown-submenu">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Levels</a>
@@ -492,6 +503,33 @@
               <span class="glyphicon glyphicon-off"></span>
             </button>
           </li>
+          <li data-bind="visible:strategiesSelected().length">
+            <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+              <span class="glyphicon glyphicon-king"></span>
+            </button>
+            <ul class="dropdown-menu multi-level" data-bind="foreach:strategiesSelected">
+              <li>
+                <button data-bind="text:nick,click:$parent.setStrategy.bind(null,$data)"></button>
+              </li>
+            </ul>
+          </li>
+          <li data-bind="visible:isVirtual">
+            <button id="toggleIsActive" data-bind="click:togglePause.bind(null,0)">
+              <span class="glyphicon glyphicon-pause" data-bind="visible:!inPause()"></span>
+              <span class="glyphicon glyphicon-play" data-bind="visible:inPause"></span>
+            </button>
+          </li>
+          <li class="nav-divider">|</li>
+          <li class="nav-divider">|</li>
+          <li data-bind="visible:isQuickTrade">
+            <input type="button" data-bind="click:buy,visible:canShowBuyButton" value=" Buy " />
+            <input type="button" data-bind="click:sell,visible:canShowSellButton" value=" Sell " />
+          </li>
+          <!-- ko if:canShowClose -->
+          <li class="nav-divider">|</li>
+          <li><input type="button" data-bind="click:closeTrades" value=" Close " /></li>
+          <!-- /ko -->
+
           <!--#region Sample-->
           <li style="display:none">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Menu 2 <b class="caret"></b></a>
@@ -628,10 +666,11 @@
       <button data-bind="css:{'text-muted':!isReplayOn()},enable:isReplayOn,click:stopReplay">
         <span class="glyphicon glyphicon-stop"></span>
       </button>
-      <input data-bind="value:replayDateStart" size="13"/>
+      <input data-bind="value:replayDateStart" size="13" />
       <button data-bind="css:{'text-muted':isReplayOn()},disable:isReplayOn,click:startReplay">
         <span class="glyphicon glyphicon-play"></span>
-      </button>    </div>
+      </button>
+    </div>
   </div>
   <!--#endregion-->
   <!--#region WaveRanges dialog-->
@@ -640,17 +679,13 @@
       <thead>
         <tr>
           <th></th>
-          <th>ID</th>
-          <th>F</th>
-          <th>Ang</th>
           <th>SD</th>
+          <th>Ang</th>
           <th>DR</th>
           <th>Ds</th>
           <th>Dc</th>
         </tr>
         <tr style="background-color:gold" data-bind="visible:sumStartIndex()">
-          <th></th>
-          <th></th>
           <th></th>
           <th></th>
           <th></th>
@@ -662,10 +697,8 @@
       <tbody data-bind="foreach:waveRanges">
         <tr data-bind="css:{selected:$parent.sumStartIndexById() == $index(),istail:IsTail}">
           <td><span data-bind="text:$index()+1"></span></td>
-          <td><span data-bind="text:d3.format('.2f')(UID.v),style:{fontWeight:UID.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.2f')(Fatness.v),style:{fontWeight:Fatness.mx?'bold':''}" class="selected"></span></td>
+          <td><span data-bind="text:d3.format('.2f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.1f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v),style:{fontWeight:DistanceByRegression.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v),style:{fontWeight:Distance.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceCma.v),style:{fontWeight:DistanceCma.mx?'bold':'',css:{isLong:isLong}}"></span></td>
@@ -674,10 +707,8 @@
       <tfoot data-bind="foreach:waveRangesStats" style="background-color:gold">
         <tr>
           <td></td>
-          <td><span data-bind="text:d3.format('.2f')(UID.v)"></span></td>
-          <td><span data-bind="text:d3.format('.2f')(Fatness.v)" class="selected"></span></td>
+          <td><span data-bind="text:d3.format('.2f')(StDev.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>
-          <td><span data-bind="text:d3.format('.'+($index()===0?'1':'0')+'f')(StDev.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceByRegression.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(DistanceCma.v)"></span></td>
@@ -804,12 +835,12 @@
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
           <span class="modal-title" id="myModalLabel">Strategies</span>
         </div>
-        <div class="modal-body"data-bind="foreach:strategies">
-            <div data-bind="attr:{title:name}">
-              <input data-bind="checked:isSelected" type="checkbox"/>
-              <span data-bind="text:nick,click:$parent.updateStrategy,css:{'active-strategy':isActive}"></span>
-              <a data-bind="attr:{href:uri}" target="_blank" class="glyphicon glyphicon-list"></a>
-            </div>
+        <div class="modal-body" data-bind="foreach:strategies">
+          <div data-bind="attr:{title:name}">
+            <input data-bind="checked:isSelected" type="checkbox" />
+            <span data-bind="text:nick,click:$parent.updateStrategy,css:{'active-strategy':isActive}"></span>
+            <a data-bind="attr:{href:uri}" target="_blank" class="glyphicon glyphicon-list"></a>
+          </div>
           </ul>
         </div>
         <div class="modal-footer" style="display:none">
@@ -821,7 +852,7 @@
   </div>
   <!--#endregion-->
   <!--#region Strategies dialog-->
-  <div class="modal" data-bind="elementer:strategyNameDialog" id="strategyNameDialog" tabindex="-1" role="dialog" aria-labelledby="strategyNameDialog" aria-hidden="true" >
+  <div class="modal" data-bind="elementer:strategyNameDialog" id="strategyNameDialog" tabindex="-1" role="dialog" aria-labelledby="strategyNameDialog" aria-hidden="true">
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header">
@@ -830,9 +861,9 @@
         </div>
         <div class="modal-body">
           <input data-bind="value:strategyNick,elementer:strategyNameInput" />
-          <button data-bind="click:setStrategy">Load</button>
-          <button data-bind="click:saveStrategy">Save</button>
-          <button data-bind="click:removeStrategy">Remove</button>
+          <button data-bind="click:setStrategy.bind(null)">Load</button>
+          <button data-bind="click:saveStrategy.bind(null)">Save</button>
+          <button data-bind="click:removeStrategy.bind(null)">Remove</button>
         </div>
         <div class="modal-footer" style="display:none">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -842,7 +873,6 @@
     </div>
   </div>
   <!--#endregion-->
-
   <!--#region Settings grid-->
   <!--#endregion-->
   <!--#endregion-->

@@ -10,7 +10,7 @@ namespace HedgeHog.Alice.Client {
     public static async Task<IEnumerable<T>> ReadStrategies<T>(TradingMacro tm, Func<string, string, string, Uri, string[], T> map) {
       var localMap = MonoidsCore.ToFunc("", "", "", (Uri)null, 0, (name, description, content, uri, index) => new { name, description, content, uri, index });
       var strategies = await Cloud.GitHub.GistStrategies(localMap);
-      var activeSettings = Lib.ReadParametersToString(tm.GetActiveSettings());
+      var activeSettings = Lib.ReadParametersToString(tm.GetActiveSettings(true));
       return (from strategy in strategies
               where strategy.index == 0
               let diffs = TradingMacro.ActiveSettingsDiff(strategy.content, activeSettings).ToDictionary()

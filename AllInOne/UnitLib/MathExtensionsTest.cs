@@ -18,17 +18,28 @@ namespace HedgeHog.Tests {
     public void RootMeanSquareTest() {
       double a = 5, b = 10;
       Assert.AreEqual(7.9057, a.RootMeanSquare(b).Round(4));
-      Assert.AreEqual(7.2855,a.SquareMeanRoot(b).Round(4));
+      Assert.AreEqual(7.2855, a.SquareMeanRoot(b).Round(4));
+    }
+    [TestMethod()]
+    public void DoSetsOverlapTest() {
+      var set1 = new double[] { 2, 4 };
+      var set2 = new double[] { 3, 4 };
+      var set3 = new double[] { 5, 9 };
+      var set4 = new double[] { 0, 1 };
+      var set5 = new double[] { 1, 3 };
+      Assert.IsTrue(set1.DoSetsOverlap(set2));
+      Assert.IsTrue(set1.DoSetsOverlap(set5));
+      Assert.IsFalse(set1.DoSetsOverlap(set3));
+      Assert.IsFalse(set1.DoSetsOverlap(set4));
     }
   }
 }
 
-namespace UnitLib
-{
-    /// <summary>
-    ///This is a test class for MathExtensionsTest and is intended
-    ///to contain all MathExtensionsTest Unit Tests
-    ///</summary>
+namespace UnitLib {
+  /// <summary>
+  ///This is a test class for MathExtensionsTest and is intended
+  ///to contain all MathExtensionsTest Unit Tests
+  ///</summary>
   [TestClass()]
   public class MathExtensionsTest {
 
@@ -121,7 +132,7 @@ namespace UnitLib
     [TestMethod()]
     public void BetweenTest() {
       double value = 5; // TODO: Initialize to an appropriate value
-      Assert.IsTrue(value.Between(1,5));
+      Assert.IsTrue(value.Between(1, 5));
       Assert.IsTrue(value.Between(5, 5));
       Assert.IsTrue(value.Between(5, 15));
       Assert.IsTrue(value.Between(15, 5));
@@ -140,7 +151,7 @@ namespace UnitLib
       int sinLength = 180;
       int waveLength = 300;
       int wavesCount = 3;
-      double[] actual = MathExtensions.Sin(sinLength, waveLength,100, 1, wavesCount);
+      double[] actual = MathExtensions.Sin(sinLength, waveLength, 100, 1, wavesCount);
       Assert.IsNotNull(actual);
     }
 
@@ -149,7 +160,7 @@ namespace UnitLib
     ///</summary>
     [TestMethod()]
     public void CrossesTest() {
-      var l = 180*2;
+      var l = 180 * 2;
       IList<double> values1 = Enumerable.Range(0, l).Select(i => Math.Sin(i * Math.PI / 180)).ToArray();
       IList<double> values2 = Enumerable.Range(0, l).Select(i => Math.Cos(i * Math.PI / 180)).ToArray();
       int expected = 2;
@@ -169,7 +180,7 @@ namespace UnitLib
       Assert.AreEqual(91, actual.Count);
       var values1 = new[] { 0.0, 0.0, 1.0, 2.0, 1.0 };
       actual = MathExtensions.Wavelette(values1);
-      Assert.AreEqual(4,actual.Count);
+      Assert.AreEqual(4, actual.Count);
     }
 
     /// <summary>
@@ -181,7 +192,7 @@ namespace UnitLib
       var csv = values.Csv();
       TestContext.WriteLine(csv);
       double step = 0.01;
-      var actual = Lib.Edge(values, step,3);
+      var actual = Lib.Edge(values, step, 3);
       Assert.AreEqual(0.62352314519258079, actual[0].SumAvg);
     }
 

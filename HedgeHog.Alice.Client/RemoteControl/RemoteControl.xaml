@@ -57,9 +57,6 @@
             <KeyBinding Command="{Binding DataContext.HidePropertiesDialogCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Popup}}" Gesture="Escape"/>
           </Popup.InputBindings>
           <StackPanel>
-            <Expander Header="Gann" IsExpanded="False" Background="AliceBlue">
-              <localModels:GannAnglesEdit Height="200" />
-            </Expander>
             <wpg:PropertyGrid Instance="{Binding BindsDirectlyToSource=True}" Width="300" Height="550"/>
           </StackPanel>
         </Popup>

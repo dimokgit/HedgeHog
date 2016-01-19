@@ -223,7 +223,7 @@ namespace HedgeHog.Alice.Store {
           Log = exc;
         }
       };
-      if(false && IsInVitualTrading)
+      if(false && IsInVirtualTrading)
         Scheduler.CurrentThread.Schedule(TimeSpan.FromMilliseconds(1), () => a(0));
       else
         broadcastCorridorDatesChange.SendAsync(a);
@@ -359,7 +359,7 @@ namespace HedgeHog.Alice.Store {
       SendSms(header, message, sendScreenshot ? _lastChartSnapshot : null);
     }
     void SendSms(string header, object message, byte[] attachment) {
-      if(!IsInVitualTrading)
+      if(!IsInVirtualTrading)
         Observable.Timer(TimeSpan.FromSeconds(1))
           .Do(_ => HedgeHog.Cloud.Emailer.Send(
             "dimokdimon@gmail.com",
@@ -372,8 +372,8 @@ namespace HedgeHog.Alice.Store {
             .Retry(2)
             .Subscribe(_ => { }, exc => Log = exc);
     }
-    public void ToggleIsActive() {
-      IsTradingActive = !IsTradingActive;
+    public bool ToggleIsActive() {
+      return IsTradingActive = !IsTradingActive;
     }
     public void ToggleCorridorStartDate() {
       FreezeCorridorStartDate(CorridorStartDate.HasValue);
@@ -527,12 +527,12 @@ namespace HedgeHog.Alice.Store {
       tm.BuyCloseLevel.InManual = tm.SellCloseLevel.InManual = false;
       if(trades.Any(t => t.Pair == tm.Pair) && trades.Select(t => t.PL).DefaultIfEmpty().Sum() >= -tm.PriceSpreadAverage) {
         tm.BuyLevel.CanTradeEx = tm.SellLevel.CanTradeEx = false;
-        if(!tm.IsInVitualTrading && !tm.IsAutoStrategy)
+        if(!tm.IsInVirtualTrading && !tm.IsAutoStrategy)
           tm.IsTradingActive = false;
       }
       if(tm.CurrentGrossInPipTotal > 0) {
         tm.BuyLevel.CanTrade = tm.SellLevel.CanTrade = false;
-        if(!tm.IsInVitualTrading)
+        if(!tm.IsInVirtualTrading)
           tm.IsTradingActive = false;
       }
     }

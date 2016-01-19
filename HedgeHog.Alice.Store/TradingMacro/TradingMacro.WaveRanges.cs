@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using HedgeHog;
 using HedgeHog.Bars;
@@ -44,53 +45,34 @@ namespace HedgeHog.Alice.Store {
           summ(wrs, w => v(w) * w.DistanceCma) / summ(wrs, w => w.DistanceCma);
         Func<IList<WaveRange>, Func<WaveRange, double>, Func<WaveRange, double>, double> avg2 = (wrs, v, d) =>
             summ(wrs, w => v(w) * d(w)) / summ(wrs, w => d(w));
-        Func<IList<WaveRange>, double> fatAvg = wrs => avg(wrs, w => w.Fatness);
         Func<Func<WaveRange, double>, double> avgUp = value => wr.Select(value).DefaultIfEmpty().ToArray().AverageByAverageUp();
         var wa = new WaveRange(1) {
           Distance = avg2(wr, w => w.Distance, w => 1 / w.Angle.Abs()),
           DistanceCma = avg2(wr, w => w.DistanceCma, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),
-          DistanceByRegression = avg(wr.AverageByAverageUp(w => w.DistanceByRegression), w => w.DistanceByRegression),
+          DistanceByRegression = avg2(wr, w => w.DistanceByRegression, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),
           WorkByHeight = avg(wr, w => w.WorkByHeight),
           WorkByTime = avg(wr, w => w.WorkByTime),
-          Angle = avg(wr, w => w.Angle.Abs()),
+          Angle = avg2(wr, w => w.Angle.Abs(), w => w.Distance),
           Height = avg(wr, w => w.Height),
-          StDev = avg(wr, w => w.StDev),
-          UID = avg(wr.AverageByAverageUp(w => w.UID), w => w.UID),
-          Fatness = avg(wr.AverageByAverageUp(w => w.Fatness), w => w.Fatness),
+          StDev = avg2(wr, w => w.StDev, w => 1 / Math.Pow(w.Distance, FatnessWeightPower))
         };
         if(wTail.TotalSeconds < 3)
           wTail = new WaveRange();
         Func<Func<WaveRange, double>, double> rsd = value => wr.Select(value).DefaultIfEmpty().Sum();
-        Func<Func<WaveRange, bool>, double> fatness = predicate => fatAvg(wr.Where(predicate).ToArray());
-        var fatUp = fatness(w => w.Slope > 0);
-        var fatDown = fatness(w => w.Slope < 0);
-        var uidUp = avg(wr.Where(w => w.Slope > 0).ToArray(), w => w.UID);
-        var uidDown = avg(wr.Where(w => w.Slope < 0).ToArray(), w => w.UID);
         var ws = new WaveRange(1) {
           Distance = avg2(wr, w => w.Distance, w => w.Angle.Abs()),
           DistanceCma = avg2(wr, w => w.DistanceCma, w => w.Distance),
-          DistanceByRegression = rsd(w => w.DistanceByRegression),
+          DistanceByRegression = avg2(wr, w => w.DistanceByRegression, w => w.Distance),
           WorkByHeight = rsd(w => w.WorkByHeight),
           WorkByTime = rsd(w => w.WorkByTime),
-          Angle = rsd(w => w.Angle),
+          Angle = avg2(wr, w => w.Angle.Abs(), w => 1 / w.Distance),
           Height = rsd(w => w.Height),
-          StDev = rsd(w => w.StDev),
-          UID = avg2(wr, w => w.UID, w => 1 / w.Distance),
-          Fatness = -avg(wr.AverageByAverageUp(w => -w.Fatness), w => w.Fatness),
+          StDev = avg2(wr, w => w.StDev, w => Math.Pow(w.Distance, FatnessWeightPower))
         };
         #endregion
-        #region Elliot Waves
-        {
-          var criterias = new Func<WaveRange, double>[] {
-          w => w.Distance,
-          w => w.DistanceByRegression,
-          w => w.WorkByHeight ,
-          w => w.Height
-          };
-          var waveRangesForElliot = criterias.Select(c => wr.OrderByDescending(c).FirstOrDefault()).Distinct().ToList();
-          if(waveRangesForElliot.Count(w => w != null) == 1)
-            waveRangesForElliot.First().IsSuper = true;
-        }
+        #region Conditions
+        wr.ForEach(w => w.IsFatnessOk = w.StDev <= wa.StDev);
+        wr.ForEach(w => w.IsDistanceCmaOk = w.DistanceCma >= wa.DistanceCma);
         #endregion
         return new { wr, wTail, wa, ws };
       });
@@ -119,6 +101,22 @@ namespace HedgeHog.Alice.Store {
           WaveRangeAvg.DistanceByRegression
         }.StandardDeviation();
     }
+
+    #region FatnessWeightPower
+    private double _FatnessWeightPower = 5;
+    [Category(categoryActive)]
+    [WwwSetting]
+    public double FatnessWeightPower {
+      get { return _FatnessWeightPower; }
+      set {
+        if(_FatnessWeightPower != value) {
+          _FatnessWeightPower = value;
+          OnPropertyChanged("FatnessWeightPower");
+        }
+      }
+    }
+
+    #endregion
 
     private List<int> GetWaveRangesExtreams(List<Rate> rates) {
       var maxCount = 1000;

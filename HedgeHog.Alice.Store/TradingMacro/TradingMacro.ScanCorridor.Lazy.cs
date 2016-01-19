@@ -25,13 +25,14 @@ namespace HedgeHog.Alice.Store {
       Task _task;
       Action _action;
       public void Run(Action a) {
-        if (_task != null && !_task.IsCompleted)
+        if(_task != null && !_task.IsCompleted)
           _action = a;
         else {
           _action = null;
           _task = Task.Run(a);
           _task.ContinueWith(_ => {
-            if (_action != null) Run(_action);
+            if(_action != null)
+              Run(_action);
           });
         }
       }
@@ -39,7 +40,8 @@ namespace HedgeHog.Alice.Store {
     TaskRunner _corridorsTask = new TaskRunner();
     private CorridorStatistics ScanCorridorLazy(IList<Rate> ratesReversed, Lazy<int> lazyCount, Func<CorridorStatistics> showVolts = null, Action postProcess = null) {
       Lazy<int> lenghForwardOnly = new Lazy<int>(() => {
-        if (ratesReversed.Count < RatesArray.Count) return ratesReversed.Count;
+        if(ratesReversed.Count < RatesArray.Count)
+          return ratesReversed.Count;
         var date = CorridorStats.Rates.Last().StartDate;
         return ratesReversed.TakeWhile(r => r.StartDate >= date).Count();
       });
@@ -54,15 +56,17 @@ namespace HedgeHog.Alice.Store {
           .TakeWhile(r => r.StartDate > ratesReversed[lazyCount.Value].StartDate).ToArray()
         : ratesReversed.SkipWhile(r => lazyCount.Value > 0 && r.StartDate > startMax.Value).Take(lengthMax.Value.Min(lazyCount.Value)).ToArray()
         : ratesReversed.SkipWhile(r => r.StartDate > startMax.Value).TakeWhile(r => r.StartDate >= startMin).ToArray();
-      if (IsCorridorForwardOnly && _isCorridorStopDateManual && rates.Last().StartDate < CorridorStats.StartDate)
+      if(IsCorridorForwardOnly && _isCorridorStopDateManual && rates.Last().StartDate < CorridorStats.StartDate)
         WaveShort.ResetRates(CorridorStats.Rates);
-      else WaveShort.ResetRates(rates);
-      if (CorridorStartDate.HasValue)
+      else
+        WaveShort.ResetRates(rates);
+      if(CorridorStartDate.HasValue)
         _corridorsTask.Run(() => {
           CorridorLengthGreen = ratesReversed.TakeWhile(r => r.StartDate >= _corridorStartDate1).Count();
           CorridorLengthBlue = ratesReversed.TakeWhile(r => r.StartDate >= _corridorStartDate2).Count();
         });
-      if (postProcess != null) postProcess();
+      if(postProcess != null)
+        postProcess();
       if(WaveShort.HasRates) {
         TrendLines1 = Lazy.Create(() => CalcTrendLines(CorridorLengthGreen), TrendLines1.Value, exc => Log = exc);
         var trendRates = WaveShort.Rates.Reverse().ToList();
@@ -71,16 +75,16 @@ namespace HedgeHog.Alice.Store {
       }
       return (showVolts ?? GetShowVoltageFunction())();
     }
-    IList<Rate> TryGetTrendLines(Func<IList<Rate>> calc,IList<Rate> defaultList) {
+    IList<Rate> TryGetTrendLines(Func<IList<Rate>> calc, IList<Rate> defaultList) {
       try {
         return calc();
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         Log = exc;
         return defaultList;
       }
     }
     private CorridorStatistics ShowVoltsNone() {
-      if (!WaveShort.HasRates)
+      if(!WaveShort.HasRates)
         WaveShort.Rates = RatesArray.ToArray().Reverse().Take(CorridorDistance).ToArray();
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
@@ -97,28 +101,27 @@ namespace HedgeHog.Alice.Store {
     }
 
     private CorridorStatistics ShowVolts(double volt, int averageIterations) {
-      if (!WaveShort.HasRates) return null;
-      RatesArray.Where(r => GetVoltage(r).IsNaN()).ToList().ForEach(r => SetVoltage(r, volt));
+      if(!WaveShort.HasRates)
+        return null;
+      SetVots(volt, averageIterations);
+      var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return corridor;
+    }
+
+    private void SetVots(double volt, int averageIterations) {
+      UseRates(rates => rates.Where(r => GetVoltage(r).IsNaN()).ToList()).ForEach(rates => rates.ForEach(r => SetVoltage(r, volt)));
       //SetVoltage(RateLast, volt);
       var voltRates = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray();
-      var tasks = new List<Task>();
-      if (voltRates.Any()) {
-        tasks.Add(Task.Factory.StartNew(() => {
+      if(voltRates.Any()) {
+        GeneralPurposeSubject.OnNext(() => {
           try {
             var voltageAvgLow = voltRates.AverageByIterations(-averageIterations).DefaultIfEmpty(double.NaN).Average();
             GetVoltageAverage = () => voltageAvgLow;
-          } catch (Exception exc) { Log = exc; }
-        }));
-        tasks.Add(Task.Factory.StartNew(() => {
-          try {
             var voltageAvgHigh = voltRates.AverageByIterations(averageIterations).DefaultIfEmpty(double.NaN).Average();
             GetVoltageHigh = () => voltageAvgHigh;
-          } catch (Exception exc) { Log = exc; }
-        }));
+          } catch(Exception exc) { Log = exc; }
+        });
       }
-      var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
-      Task.WaitAll(tasks.ToArray());
-      return corridor;
     }
   }
 }

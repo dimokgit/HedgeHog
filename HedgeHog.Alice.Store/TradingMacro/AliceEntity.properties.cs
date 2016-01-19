@@ -325,6 +325,7 @@ namespace HedgeHog.Alice.Store {
     #region BuyLevelBy
     private TradeLevelBy _LevelBuyBy;
     [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsTradingCorridor)]
     public TradeLevelBy LevelBuyBy {
       get { return _LevelBuyBy; }
       set {
@@ -367,6 +368,7 @@ namespace HedgeHog.Alice.Store {
     #region LevelSellBy
     private TradeLevelBy _LevelSellBy;
     [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsTradingCorridor)]
     public TradeLevelBy LevelSellBy {
       get { return _LevelSellBy; }
       set {

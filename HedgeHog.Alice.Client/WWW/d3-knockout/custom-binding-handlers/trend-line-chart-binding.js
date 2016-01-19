@@ -85,7 +85,7 @@
         svg = d3.select(element).append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
-        .on("dblclick", chartData.toggleIsActive.bind(chartData, chartData.chartNum))
+        .on("dblclick", chartData.togglePause.bind(chartData, chartData.chartNum))
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
       // #endregion
@@ -128,8 +128,8 @@
 
       // #region create chart elements
       // Trend Lines
-      addLine(1); addLine(2); addLine(3); addLine(21); addLine(31);
-      addLine("2_2"); addLine("3_2");
+      /*addLine(1);*/ addLine(2); addLine(3); addLine(21); addLine(31);
+      addLine("1_2"); addLine("2_2"); addLine("3_2");
       addLine("2_1"); addLine("3_1");
       // Other lines
       addLine("buyEnter"); addLine("sellEnter"); addLine("buyClose"); addLine("sellClose");
@@ -384,12 +384,13 @@
             setHorizontalStrip(com2.b, com2.s, greenStrip);
         }
         // #region add trend corridor
-        setTrendLine(trendLines, 1, "lightgrey");
+        //setTrendLine(trendLines, 1, "lightgrey");
         setTrendLine(trendLines, 2, "darkred");
         setTrendLine(trendLines, 3, "darkred");
         setTrendLine(trendLines, 21, "darkred");
         setTrendLine(trendLines, 31, "darkred");
 
+        setTrendLine2(trendLines2, 1, 2,"lightgrey");
         setTrendLine2(trendLines2, 2, 2, "navy");
         setTrendLine2(trendLines2, 3, 2, "navy");
 
@@ -523,6 +524,7 @@
       //#region waveLines
       var waveLines = chartData.waveLines || [];
       var waveLineColor = "gray";
+      var waveLineColorOk = "limegreen";
       var waveLineWidth = 1;
       var wlDelta = svg.selectAll("line.waveLine").data(waveLines);
       function waveLineDate(i) {
@@ -537,8 +539,7 @@
       }
       wlDelta.enter()
         .append("line")
-        .attr("class", "waveLine")
-        .style("stroke", waveLineColor);
+        .attr("class", "waveLine");
       wlDelta
         .style("stroke-width", function (d) {
           return d.bold ? 2 : 1;
@@ -546,7 +547,10 @@
         .attr("x1", waveLineDate(0))
         .attr("y1", waveLineISept(0))
         .attr("x2", waveLineDate(1))
-        .attr("y2", waveLineISept(1));
+        .attr("y2", waveLineISept(1))
+        .style("stroke", function (w) {
+          return w.color ? waveLineColorOk : waveLineColor;
+        });
       wlDelta.exit().remove();
       //#endregion
 

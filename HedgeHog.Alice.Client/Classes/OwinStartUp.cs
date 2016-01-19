@@ -194,10 +194,11 @@ namespace HedgeHog.Alice.Client {
     public object AskChangedPrice(string pair) {
       var tm0 = UseTradingMacro(pair, tm => tm, false);
       var tm1 = UseTradingMacro(pair, 1, tm => tm, false);
-      var tmTrader = UseTradingMacro(pair, tm => tm.IsTrader, false).DefaultIfEmpty(tm0).Single();
+      var tmTrader = UseTradingMacro(tm => tm.IsTrader, pair, false).DefaultIfEmpty(tm0).Single();
+      var isVertual = tmTrader.IsInVirtualTrading;
 
       #region marketHours
-      if(!tmTrader.IsInVitualTrading)
+      if(!tmTrader.IsInVirtualTrading)
         _marketHours
           .Where(mh => !_marketHoursSet.Contains(mh.Key))
           .Where(mh => (tmTrader.ServerTime.ToUniversalTime().TimeOfDay - mh.Value.TimeOfDay).TotalMinutes.Between(-15, 0))
@@ -223,8 +224,9 @@ namespace HedgeHog.Alice.Client {
         }
       }
       #endregion
+      var timeFormat = (isVertual ? "d " : "") + "HH:mm:ss";
       return new {
-        time = tm0.ServerTime.ToString("HH:mm:ss"),
+        time = tm0.ServerTime.ToString(timeFormat),
         prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 1),
         otg = IntOrDouble(tmTrader.OpenTradesGross2InPips, 1),
         tps = tm0.TicksPerSecondAverage.Round(1),
@@ -241,11 +243,20 @@ namespace HedgeHog.Alice.Client {
         price = new { ask = tm0.CurrentPrice.Ask, bid = tm0.CurrentPrice.Bid },
         tci = GetTradeConditionsInfo(tmTrader),
         wp = tmTrader.WaveHeightPower.Round(1),
-        isVT = tmTrader.IsInVitualTrading,
+        ip = remoteControl.Value.ReplayArguments.InPause ? 1 : 0,
         com = new { b = tmTrader.CenterOfMassBuy, s = tmTrader.CenterOfMassSell },
         com2 = new { b = tmTrader.CenterOfMassBuy2, s = tmTrader.CenterOfMassSell2 }
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
+    }
+    public bool IsInVirtual() {
+      return remoteControl.Value.IsInVirtualTrading;
+    }
+    public bool TogglePause(string pair, int chartNum) {
+      return UseTradingMacro(pair, chartNum, tm => remoteControl.Value.IsInVirtualTrading
+       ? remoteControl.Value.ToggleReplayPause()
+       : tm.ToggleIsActive()
+      , true);
     }
     public string ReadTitleRoot() { return trader.Value.TitleRoot; }
 
@@ -383,8 +394,8 @@ namespace HedgeHog.Alice.Client {
     public void ToggleStartDate(string pair, int chartNumber) {
       UseTradingMacro(pair, chartNumber, tm => tm.ToggleCorridorStartDate(), true);
     }
-    public void ToggleIsActive(string pair, int chartNumber) {
-      UseTradingMacro(pair, chartNumber, tm => tm.ToggleIsActive(), true);
+    public bool ToggleIsActive(string pair, int chartNumber) {
+      return UseTradingMacro(pair, chartNumber, tm => tm.ToggleIsActive(), true);
     }
     public void FlipTradeLevels(string pair) {
       UseTradingMacro(pair, tm => tm.FlipTradeLevels(), true);
@@ -509,37 +520,37 @@ namespace HedgeHog.Alice.Client {
     }
     public object GetWaveRanges(string pair, int chartNum) {
       var value = MonoidsCore.ToFunc(0.0, false, (v, mx) => new { v, mx });
-      var wrs = UseTradingMacro(pair, chartNum, tm => true, false)
+      var wrs = UseTradingMacro(tm => true, pair, chartNum, false)
         .SelectMany(tm => tm.WaveRangesWithTail, (tm, wr) => new { inPips = new Func<double, double>(d => tm.InPips(d)), wr, rs = tm.WaveRanges })
         .Select((x, i) => new {
           i,
           ElliotIndex = value((double)x.wr.ElliotIndex, false),
           Angle = value(x.wr.Angle.Round(0), x.wr.Index(x.rs, wr => wr.Angle.Abs()) == 0),//.ToString("###0.0"),
-          Fatness = value(x.wr.Fatness.Round(2), x.wr.Index(x.rs, wr => wr.Fatness) == 0),//.ToString("###0.0"),
-          StDev = value(x.wr.StDev.Round(1), x.wr.Index(x.rs, wr => wr.StDev) == 0),//.ToString("#0.00"),
+          StDev = value(x.wr.StDev.Round(2), x.wr.Index(x.rs, wr => wr.StDev) == 0),//.ToString("#0.00"),
           Distance = value(x.wr.Distance.Round(0), x.wr.Index(x.rs, wr => wr.Distance) == 0),
           DistanceCma = value(x.wr.DistanceCma.Round(0), x.wr.Index(x.rs, wr => wr.DistanceCma) == 0),
           DistanceByRegression = value(x.wr.DistanceByRegression.Round(0), x.wr.Index(x.rs, wr => wr.DistanceByRegression) == 0),
           WorkByHeight = value(x.wr.WorkByHeight.Round(0), x.wr.Index(x.rs, wr => wr.WorkByHeight) == 0),
-          UID = value(x.wr.UID, x.wr.Index(x.rs, wr => wr.UID) == 0),
           x.wr.IsTail,
+          IsFOk = x.wr.IsFatnessOk,
+          IsDcOk = x.wr.IsDistanceCmaOk,
           IsStats = false
         })
         .ToList();
-      var wrStats = UseTradingMacro(pair, chartNum, tm => true, false)
+      var wrStats = UseTradingMacro(tm => true, pair, chartNum, false)
         .Select(tm => new { wrs = new[] { tm.WaveRangeAvg, tm.WaveRangeSum }, inPips = new Func<double, double>(d => tm.InPips(d)) })
         .SelectMany(x => x.wrs, (x, wr) => new {
           i = 0,
           ElliotIndex = value(0, false),
           Angle = value(wr.Angle.Round(0), false),
-          Fatness = value(wr.Fatness.Round(2), false),
-          StDev = value(wr.StDev.Round(1), false),
+          StDev = value(wr.StDev.Round(2), false),
           Distance = value(wr.Distance.Round(0), false),
           DistanceCma = value(wr.DistanceCma.Round(0), false),
           DistanceByRegression = value(wr.DistanceByRegression.Round(0), false),
           WorkByHeight = value(wr.WorkByHeight.Round(0), false),
-          UID = value(wr.UID, false),
           IsTail = false,
+          IsFOk = false,
+          IsDcOk = false,
           IsStats = true
         });
       #region Not Used
@@ -598,10 +609,10 @@ namespace HedgeHog.Alice.Client {
         .Where(tm2 => tm2.IsActive)
         .Where(t => t.PairPlain == pair);
     }
-    IEnumerable<TradingMacro> UseTradingMacro(string pair, Func<TradingMacro, bool> predicate, bool testTraderAccess) {
-      return UseTradingMacro(pair, 0, predicate, testTraderAccess);
+    IEnumerable<TradingMacro> UseTradingMacro(Func<TradingMacro, bool> predicate, string pair, bool testTraderAccess) {
+      return UseTradingMacro(predicate, pair, 0, testTraderAccess);
     }
-    IEnumerable<TradingMacro> UseTradingMacro(string pair, int chartNum, Func<TradingMacro, bool> predicate, bool testTraderAccess) {
+    IEnumerable<TradingMacro> UseTradingMacro(Func<TradingMacro, bool> predicate, string pair, int chartNum, bool testTraderAccess) {
       try {
         if(testTraderAccess)
           TestUserAsTrader();

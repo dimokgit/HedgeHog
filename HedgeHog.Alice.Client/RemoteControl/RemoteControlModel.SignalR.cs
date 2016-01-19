@@ -33,7 +33,7 @@ namespace HedgeHog.Alice.Client {
         return new { rates = new int[0] };
 
       var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
-      var tpsAvg = tmTrader.MacdRsdAvg;
+      var tpsAvg = tmTrader.GetVoltageHigh();
 
 
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd/* && !tm.GetVoltage(r).IsNaNOrZero()*/).ToList()).FirstOrDefault();
@@ -117,6 +117,7 @@ namespace HedgeHog.Alice.Client {
           ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLengthBlue-1))
           : trends2[0].StartDate2,
           ratesLastStartDate2},
+        close1 = trends2.ToArray(t => t.Trends.PriceAvg1.Round(digits)),
         close2 = trends2.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends2.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
@@ -136,7 +137,7 @@ namespace HedgeHog.Alice.Client {
         .ToArray(wr => new {
           dates = new[] { wr.StartDate, wr.EndDate },
           isept = new[] { wr.InterseptStart, wr.InterseptEnd },
-          bold = wr.ElliotIndex > 0
+          isOk = wr.IsFatnessOk
         });
       var tmg = TradesManager;
       var trades0 = tmg.GetTrades(pair);

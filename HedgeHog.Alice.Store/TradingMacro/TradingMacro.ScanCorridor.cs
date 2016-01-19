@@ -127,6 +127,7 @@ namespace HedgeHog.Alice.Store {
           WaveShort.Rates = redRates;
           return redRates;
         });
+        GetShowVoltageFunction()();
         return ratesForCorr
           .Select(redRates=> new CorridorStatistics(redRates, TrendLinesTrends.StDev, TrendLinesTrends.Coeffs, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height))
           .DefaultIfEmpty(CorridorStats)

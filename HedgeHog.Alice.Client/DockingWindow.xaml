@@ -22,7 +22,6 @@
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceDictionary Source="UI/TradesOnServer.xaml"/>
 			</ResourceDictionary.MergedDictionaries>
-			<store:GlobalStorage x:Key="GlobalStorage" />
 			<Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
 				<Setter Property="FontWeight" Value="Black"/>
 			</Style>
@@ -624,20 +623,6 @@
 					<telerik:RadPane Header="Table" Title="Table" CanUserClose="False" telerik:RadDocking.SerializationTag="Table" Name="Table">
 						<telerik:RadPane.ContentTemplate>
 						<DataTemplate>
-								<telerik:RadGridView CanUserSelect="False" IsSynchronizedWithCurrentItem="False" CanUserSortColumns="True" ShowGroupPanel="False" IsFilteringAllowed="False" RowIndicatorVisibility="Collapsed" RowHeight="16"
-										ItemsSource="{Binding GenericList,Source={x:Static store:GlobalStorage.Instance}}" AutoGenerateColumns="True">
-									<telerik:RadGridView.Resources>
-										<Style TargetType="{x:Type telerik:GridViewCell}">
-											<Setter Property="HorizontalAlignment" Value="Right"/>
-										</Style>
-									</telerik:RadGridView.Resources>
-									<telerik:RadGridView.RowStyle>
-										<Style TargetType="telerik:GridViewRow">
-											<Setter Property="FontWeight" Value="{Binding FontWeight}" />
-											<Setter Property="Background" Value="{Binding Color}" />
-										</Style>
-									</telerik:RadGridView.RowStyle>
-								</telerik:RadGridView>
 							</DataTemplate>
 						</telerik:RadPane.ContentTemplate>
 					</telerik:RadPane>

@@ -67,7 +67,7 @@ namespace HedgeHog.Alice.Store {
         if (action != null) {
           try {
             Action a = () => {
-              var exp = IsInVitualTrading ? ObjectCache.InfiniteAbsoluteExpiration : DateTimeOffset.Now.AddMinutes(1);
+              var exp = IsInVirtualTrading ? ObjectCache.InfiniteAbsoluteExpiration : DateTimeOffset.Now.AddMinutes(1);
               var cip = new CacheItemPolicy() { AbsoluteExpiration = exp, RemovedCallback = ce => { /*if (!IsInVitualTrading)*/ Log = new Exception(ce.CacheItem.Key + "[" + Pair + "] expired without being closed."); } };
               AddPendingAction(key, DateTimeOffset.Now, cip);
             };
@@ -425,7 +425,7 @@ namespace HedgeHog.Alice.Store {
         , tm => tm.CanDoNetLimitOrders
         , tm => tm.MustStopTrading
         , (s, t, eo, no, ta, bl, sl) =>
-          Strategy == Strategies.Universal && HasBuyLevel && HasSellLevel && CanDoEntryOrders && !MustStopTrading && !IsInVitualTrading
+          Strategy == Strategies.Universal && HasBuyLevel && HasSellLevel && CanDoEntryOrders && !MustStopTrading && !IsInVirtualTrading
           )
           .DistinctUntilChanged()
           .Sample(bsThrottleTimeSpan)
@@ -471,7 +471,7 @@ namespace HedgeHog.Alice.Store {
         , tm => tm.HasSellCloseLevel
         , tm => tm.CanDoNetLimitOrders
         , (b, s, non) =>
-          HasBuyCloseLevel && HasSellCloseLevel && CanDoNetLimitOrders && !IsInVitualTrading)
+          HasBuyCloseLevel && HasSellCloseLevel && CanDoNetLimitOrders && !IsInVirtualTrading)
           .DistinctUntilChanged()
           .Sample(bsThrottleTimeSpan)
           .Subscribe(st => {// Turn on/off live net orders
@@ -493,7 +493,7 @@ namespace HedgeHog.Alice.Store {
         , tm => tm.HasSellCloseLevel
         , tm => tm.CanDoNetStopOrders
         , (b, s, non) =>
-          HasBuyCloseLevel && HasSellCloseLevel && CanDoNetStopOrders && !IsInVitualTrading)
+          HasBuyCloseLevel && HasSellCloseLevel && CanDoNetStopOrders && !IsInVirtualTrading)
           .DistinctUntilChanged()
           .Sample(bsThrottleTimeSpan)
           .Subscribe(st => {// Turn on/off live net orders

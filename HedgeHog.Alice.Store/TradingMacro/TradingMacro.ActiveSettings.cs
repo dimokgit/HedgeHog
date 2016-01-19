@@ -45,15 +45,15 @@ namespace HedgeHog.Alice.Store {
 
     private async Task SaveActiveSettingsToGist(string path) {
       var fullName = PairPlain.ToLower() + "(" + BarPeriod + ")" + string.Join("-", TradeConditionsInfo((tc, p, name) => ParseTradeConditionToNick(name)));
-      var settings = new[] { Lib.ReadParametersToString(GetActiveSettings()) }
-      .Concat(TradingMacroOther().Select(tm => Lib.ReadParametersToString(tm.GetActiveSettings())));
+      var settings = new[] { Lib.ReadParametersToString(GetActiveSettings(true)) }
+      .Concat(TradingMacroOther().Select(tm => Lib.ReadParametersToString(tm.GetActiveSettings(true))));
       await Cloud.GitHub.GistStrategyAddOrUpdate(path, fullName, settings.ToArray());
     }
 
-    public IEnumerable<string> GetActiveSettings() {
+    public IEnumerable<string> GetActiveSettings(bool excludeNotStrategy = false) {
       return
         from setting in this.GetPropertiesByAttibute<CategoryAttribute>(a => true)
-        where IsNotDnr(setting.Item2)
+        where IsNotDnr(setting.Item2) && (!excludeNotStrategy || IsStrategy(setting.Item2))
         group setting by setting.Item1.Category into g
         orderby g.Key
         from g2 in new[] { "//{0}//".Formater(g.Key) }
@@ -100,13 +100,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public static IDictionary<string, string[]> ActiveSettingsDiff(string settings1, string settings2) {
-      var exclude1 = typeof(TradingMacro)
-        .GetPropertiesByAttibute<IsNotStrategyAttribute>(a => true)
-        .Select(t => t.Item2.Name);
-      var exclude2 = typeof(TradingMacro)
-        .GetPropertiesByAttibute<CategoryAttribute>(a => a.Category.StartsWith("Test"))
-        .Select(t => t.Item2.Name);
-      var exclude = exclude1.Concat(exclude2).ToArray();
+      string[] exclude = GetNotStrategyActiveSettings();
 
       var d1 = Lib.ReadParametersFromString(settings1);
       var d2 = Lib.ReadParametersFromString(settings2);
@@ -116,12 +110,27 @@ namespace HedgeHog.Alice.Store {
                  select new { key = kv1.Key, value = new[] { kv1.Value, kv2.Value } };
       return diff.OrderBy(d => d.key).ToDictionary(d => d.key, d => d.value);
     }
+
+    private static string[] GetNotStrategyActiveSettings() {
+      var exclude1 = typeof(TradingMacro)
+        .GetPropertiesByAttibute<IsNotStrategyAttribute>(a => true)
+        .Select(t => t.Item2.Name);
+      var exclude2 = typeof(TradingMacro)
+        .GetPropertiesByAttibute<CategoryAttribute>(a => a.Category.StartsWith("Test"))
+        .Select(t => t.Item2.Name);
+      var exclude = exclude1.Concat(exclude2).ToArray();
+      return exclude;
+    }
+
     public void LoadSetting<T>(KeyValuePair<string, T> tp) {
       this.SetProperty(tp.Key, (object)tp.Value, p => p != null && IsNotDnr(p));
     }
 
     private static bool IsNotDnr(PropertyInfo p) {
       return p.GetCustomAttribute<DnrAttribute>() == null;
+    }
+    private static bool IsStrategy(PropertyInfo p) {
+      return p.GetCustomAttribute<IsNotStrategyAttribute>() == null;
     }
   }
 }

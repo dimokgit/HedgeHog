@@ -1013,7 +1013,7 @@ namespace HedgeHog.Alice.Client {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
     }
     void AddShowChart(TradingMacro tm) {
-      if(tm.IsInVitualTrading)
+      if(tm.IsInVirtualTrading)
         GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => ShowChart(tm), DispatcherPriority.ContextIdle);
       else
         ShowChartQueue.OnNext(() => ShowChart(tm));
@@ -1031,7 +1031,7 @@ namespace HedgeHog.Alice.Client {
       try {
         if (_isMinimized) return;
         var charter = GetCharter(tm);
-        if (tm.IsInVitualTrading) {
+        if (tm.IsInVirtualTrading) {
           if (_isParentHidden.HasValue && !tm.Trades.Any()) {
             charter.IsParentHidden = _isParentHidden.Value;
             _isParentHidden = null;
@@ -1118,7 +1118,7 @@ namespace HedgeHog.Alice.Client {
             charter.SetTrendLines1(tm.TrendLines1.Value);
             charter.SetMATrendLines(tm.LineMA);
           }
-          charter.CalculateLastPrice = tm.IsInVitualTrading || tm.FitRatesToPlotter ? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
+          charter.CalculateLastPrice = tm.IsInVirtualTrading || tm.FitRatesToPlotter ? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
           charter.PriceBarValue = pb => pb.Speed;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
           var volts = tm.GetVoltage;

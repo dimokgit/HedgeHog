@@ -120,6 +120,12 @@ namespace HedgeHog {
       return coeffs.RegressionLine(values.Count);
     }
 
+    /// <summary>
+    /// Using <paramref name="coeffs" return regression line/>
+    /// </summary>
+    /// <param name="coeffs"></param>
+    /// <param name="lineLength"></param>
+    /// <returns></returns>
     public static double[] RegressionLine(this double[] coeffs, int lineLength) {
       var parabola = new double[lineLength];
       coeffs.SetRegressionPrice(0, lineLength, (i, v) => parabola[i] = v);

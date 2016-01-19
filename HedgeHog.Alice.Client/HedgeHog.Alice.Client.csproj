@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HedgeHog.Alice.Client</RootNamespace>
     <AssemblyName>HedgeHog.Alice.Client</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -369,11 +369,6 @@
     <Compile Include="Commands\DelegateCommand.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="CS_4_0.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>CS_4_0.tt</DependentUpon>
-    </Compile>
     <Compile Include="DockingWindow.xaml.cs">
       <DependentUpon>DockingWindow.xaml</DependentUpon>
     </Compile>
@@ -393,11 +388,6 @@
     <Compile Include="RemoteControl\RemoteControlModel.cs" />
     <Compile Include="RemoteControl\RemoteControlModel.SignalR.cs" />
     <Compile Include="RemoteControl\RemoteControlModel.Strategy.cs" />
-    <Compile Include="Service References\PriceService\Reference.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Compile>
     <Compile Include="Service References\TraderService\Reference.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -569,22 +559,6 @@
     </None>
     <AppDesigner Include="Properties\" />
     <None Include="Publish - RM.cmd" />
-    <None Include="Service References\PriceService\Arrays.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Service References\PriceService\HedgeHog.Alice.Server.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Service References\PriceService\HedgeHog.Bars.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Service References\PriceService\service.wsdl" />
-    <None Include="Service References\PriceService\service.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Service References\PriceService\service1.xsd">
-      <SubType>Designer</SubType>
-    </None>
     <None Include="Service References\TraderService\Arrays.xsd">
       <SubType>Designer</SubType>
     </None>
@@ -630,7 +604,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj">
-      <Project>{C8766AE8-E649-4D05-A206-7D2FAB63F14A}</Project>
+      <Project>{c8766ae8-e649-4d05-a206-7d2fab63f14a}</Project>
       <Name>HedgeHog.Alice.Store</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Charter\HedgeHog.Charter.csproj">
@@ -2309,18 +2283,11 @@
     <Content Include="bin\DTurbo\Store\Alice.sdf" />
     <Resource Include="Images\DownArrow-32.png" />
     <Resource Include="Images\UpArrow-32.png" />
-    <None Include="Service References\PriceService\configuration91.svcinfo" />
-    <None Include="Service References\PriceService\configuration.svcinfo" />
-    <None Include="Service References\PriceService\Reference.svcmap">
-      <Generator>WCF Proxy Generator</Generator>
-      <LastGenOutput>Reference.cs</LastGenOutput>
-    </None>
     <Resource Include="HedgeHog.ico" />
     <Resource Include="FodyWeavers.xml" />
     <Content Include="Store\Alice.sdf" />
   </ItemGroup>
   <ItemGroup>
-    <WCFMetadataStorage Include="Service References\PriceService\" />
     <WCFMetadataStorage Include="Service References\TraderService\" />
   </ItemGroup>
   <ItemGroup>

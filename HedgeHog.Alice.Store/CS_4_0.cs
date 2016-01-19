@@ -5846,7 +5846,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CommissionByTrade"/></summary>
         public const string CommissionByTrade = "CommissionByTrade";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsInVitualTrading"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsInVirtualTrading"/></summary>
         public const string IsInVitualTrading = "IsInVitualTrading";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CanTrade"/></summary>
@@ -7899,7 +7899,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitXRatio"/></summary>
         public static PropertyPath TakeProfitBSRatioPath { get { return new PropertyPath("TakeProfitBSRatio"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsInVitualTrading"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsInVirtualTrading"/></summary>
         public static PropertyPath IsInVitualTradingPath { get { return new PropertyPath("IsInVitualTrading"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RunPriceBroadcast"/></summary>

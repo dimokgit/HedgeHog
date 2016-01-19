@@ -231,9 +231,9 @@ namespace HedgeHog.Alice.Store {
     static NewsCasterModel _newsCaster { get { return NewsCasterModel.Default; } }
 
     public TradingMacro() {
-      Strategy = IsInVitualTrading ? Strategies.UniversalA : Strategies.Universal;
+      Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategies.Universal;
       this.ObservableForProperty(tm => tm.Pair, false, false)
-        .Where(oc => !string.IsNullOrWhiteSpace(oc.Value) && !IsInVitualTrading)
+        .Where(oc => !string.IsNullOrWhiteSpace(oc.Value) && !IsInVirtualTrading)
         .Throttle(1.FromSeconds())
         .ObserveOn(Application.Current.Dispatcher)
         .Subscribe(oc => {
@@ -312,7 +312,7 @@ namespace HedgeHog.Alice.Store {
           Scheduler.Default.Schedule(10.FromSeconds(), () => SnapshotArguments.IsTarget = true);
         }
       });
-      IsTradingActive = IsInVitualTrading;
+      IsTradingActive = IsInVirtualTrading;
       MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveActiveSettings());
     }
 
@@ -367,7 +367,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     void SuppRes_Scan(object sender, EventArgs e) {
-      if(IsInVitualTrading)
+      if(IsInVirtualTrading)
         return;
       var sr = (sender as SuppRes);
       var rate = sr.Rate;
@@ -420,7 +420,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     void SuppRes_RateChanged(object sender, EventArgs e) {
-      if(!IsInVitualTrading)
+      if(!IsInVirtualTrading)
         RaiseShowChart();
     }
     void SuppRes_CanTradeChanged(object sender, EventArgs e) {
@@ -1214,7 +1214,7 @@ namespace HedgeHog.Alice.Store {
             OnPropertyChanged(TradingMacroMetadata.PipsPerPosition);
           } catch(Exception exc) { Log = exc; }
         });
-      if(!IsInVitualTrading)
+      if(!IsInVirtualTrading)
         PriceChangedSubscribsion = a.SubscribeToLatestOnBGThread(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
       else
         PriceChangedSubscribsion = a.Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
@@ -1230,7 +1230,7 @@ namespace HedgeHog.Alice.Store {
         }
       }
       RaisePositionsChanged();
-      IsTradingActive = IsInVitualTrading;
+      IsTradingActive = IsInVirtualTrading;
     }
 
     void TradesManager_OrderChanged(object sender, OrderEventArgs e) {
@@ -1440,7 +1440,7 @@ namespace HedgeHog.Alice.Store {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register(this, sfa);
           args.MustStop = false;
         }
-        if(!IsInVitualTrading)
+        if(!IsInVirtualTrading)
           UnSubscribeToTradeClosedEVent(TradesManager);
         SetPlayBackInfo(true, args.DateStart.GetValueOrDefault(), args.DelayInSeconds.FromSeconds());
         var dateStartDownload = AddWorkingDays(args.DateStart.Value, -(BarsCountCount() / 1440.0).Ceiling());
@@ -1700,7 +1700,7 @@ namespace HedgeHog.Alice.Store {
                 Log = new Exception("Replay:End");
               ReplayCancelationToken.ThrowIfCancellationRequested();
               Thread.Sleep((args.DelayInSeconds - d.Elapsed.TotalSeconds).Max(0).FromSeconds());
-              Func<bool> inPause = () => args.InPause || !IsTradingActive;
+              Func<bool> inPause = () => args.InPause;
               if(inPause()) {
                 args.StepBack = args.StepForward = false;
                 Task.Factory.StartNew(() => {
@@ -1736,7 +1736,7 @@ namespace HedgeHog.Alice.Store {
           }
           SetPlayBackInfo(false, args.DateStart.GetValueOrDefault(), args.DelayInSeconds.FromSeconds());
           args.StepBack = args.StepBack = args.InPause = false;
-          if(!IsInVitualTrading) {
+          if(!IsInVirtualTrading) {
             UseRatesInternal(ri => ri.Clear());
             SubscribeToTradeClosedEVent(null, _tradingMacros);
             LoadRates();
@@ -2202,7 +2202,7 @@ namespace HedgeHog.Alice.Store {
             });
             IsAsleep = new[] { BuyLevel.InManual, SellLevel.InManual }.All(im => !im) &&
               Trades.Length == 0 &&
-              IsInVitualTrading &&
+              IsInVirtualTrading &&
               TradeConditionsHaveAsleep();
             //if (IsAsleep)
             //ResetBarsCountCalc();
@@ -2217,7 +2217,7 @@ namespace HedgeHog.Alice.Store {
               return RatesArray;
             }
 
-            if(IsInVitualTrading)
+            if(IsInVirtualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
             #endregion
             OnGeneralPurpose(() => {
@@ -2272,14 +2272,14 @@ namespace HedgeHog.Alice.Store {
               try {
                 RaiseShowChart();
                 RunStrategy();
-              } catch(Exception exc) { Log = exc; if(IsInVitualTrading) Strategy = Strategies.None; throw; }
-            }, IsInVitualTrading);
+              } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
+            }, IsInVirtualTrading);
             OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
             OnPropertyChanged(() => SpreadForCorridorInPips);
             OnPropertyChanged(TradingMacroMetadata.TradingTimeState);
           }
-          if(!IsInVitualTrading && sw.Elapsed > TimeSpan.FromSeconds(5)) {
+          if(!IsInVirtualTrading && sw.Elapsed > TimeSpan.FromSeconds(5)) {
             //var s = string.Join(Environment.NewLine, timeSpanDict.Select(kv => " " + kv.Key + ":" + kv.Value));
             Log = new Exception("RatesArraySafe[{0}] took {1:n1} sec.".Formater(Pair, sw.Elapsed.TotalSeconds));
           }
@@ -2341,6 +2341,10 @@ namespace HedgeHog.Alice.Store {
         GetVoltageHigh = () => MacdRsdAvg;
         GetVoltageAverage = () => avg;
       }
+    }
+    CorridorStatistics ShowVoltsByStDev() {
+      SetVots(StDevByPriceAvgInPips, 2);
+      return null;
     }
 
     double CalcTicksPerSecond(IList<Rate> rates) {
@@ -3112,7 +3116,7 @@ namespace HedgeHog.Alice.Store {
       return (dontAdjust
         ? tp
         : tp.Max(PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2)
-        ) + InPoints(CommissionInPips());
+        );// + InPoints(CommissionInPips());
     }
 
 
@@ -3255,6 +3259,8 @@ namespace HedgeHog.Alice.Store {
       var tp = double.NaN;
       Func<TradeLevelBy, TradeLevelBy, double> tradeLeveBy = (h, l) => (TradeLevelFuncs[h]() - TradeLevelFuncs[l]()) * xRatio;
       switch(function) {
+        case TradingMacroTakeProfitFunction.StDev:
+          return StDevByPriceAvg + InPoints(CommissionInPips()) * 2;
         case TradingMacroTakeProfitFunction.Green:
           tp = tradeLeveBy(TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0);
           break;
@@ -3341,6 +3347,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsNone;
         case HedgeHog.Alice.VoltageFunction.Volume:
           return ShowVoltsByFrameAngle;
+        case HedgeHog.Alice.VoltageFunction.StDev:
+          return ShowVoltsByStDev;
         case HedgeHog.Alice.VoltageFunction.Rsd:
           return ShowVoltsByRsd;
         case HedgeHog.Alice.VoltageFunction.FractalDensity:
@@ -3357,9 +3365,9 @@ namespace HedgeHog.Alice.Store {
 
     public double CommissionByTrade(Trade trade) { return TradesManager.CommissionByTrade(trade); }
 
-    public bool IsInVitualTrading { get { return TradesManager is VirtualTradesManager; } }
+    public bool IsInVirtualTrading { get { return TradesManager is VirtualTradesManager; } }
     private bool CanTrade() {
-      return IsInVitualTrading || !IsInPlayback;
+      return IsInVirtualTrading || !IsInPlayback;
     }
 
     ITargetBlock<PriceChangedEventArgs> _runPriceBroadcast;
@@ -3492,7 +3500,7 @@ namespace HedgeHog.Alice.Store {
           });
         SetLotSize();
         Stopwatch swLocal = Stopwatch.StartNew();
-        if(!IsInVitualTrading && swLocal.Elapsed > TimeSpan.FromSeconds(5)) {
+        if(!IsInVirtualTrading && swLocal.Elapsed > TimeSpan.FromSeconds(5)) {
           Log = new Exception("RunPrice({0}) took {1:n1} sec.".Formater(Pair, swLocal.Elapsed.TotalSeconds));
         }
         if(RatesArraySafe.Count == 0)
@@ -3738,7 +3746,7 @@ namespace HedgeHog.Alice.Store {
     }
     static object _loadRatesLoader = new object();
     public void LoadRates(Action before = null) {
-      if(!IsActive || !isLoggedIn || TradesManager == null || TradesManager.IsInTest || IsInVitualTrading || IsInPlayback)
+      if(!IsActive || !isLoggedIn || TradesManager == null || TradesManager.IsInTest || IsInVirtualTrading || IsInPlayback)
         return;
       var noRates = UseRatesInternal(ri => ri.Count < 0);
       if(noRates.IsEmpty())
@@ -3946,7 +3954,7 @@ namespace HedgeHog.Alice.Store {
           CorridorStartDate = null;
           goto case TradingMacroMetadata.TakeProfitFunction;
         case TradingMacroMetadata.BarsCount:
-          if(!IsInVitualTrading) {
+          if(!IsInVirtualTrading) {
             OnLoadRates(() => UseRatesInternal(ri => ri.Clear()));
           } else {
             var func = new[] {
@@ -4016,7 +4024,7 @@ namespace HedgeHog.Alice.Store {
     partial void OnCorridorBarMinutesChanging(int value) {
       if(value == CorridorBarMinutes)
         return;
-      if(!IsInVitualTrading) {
+      if(!IsInVirtualTrading) {
         if(!_exceptionStrategies.Any(s => Strategy.HasFlag(s)))
           Strategy = Strategies.None;
         OnLoadRates();
