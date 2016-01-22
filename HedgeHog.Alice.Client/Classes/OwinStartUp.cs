@@ -245,7 +245,8 @@ namespace HedgeHog.Alice.Client {
         wp = tmTrader.WaveHeightPower.Round(1),
         ip = remoteControl.Value.ReplayArguments.InPause ? 1 : 0,
         com = new { b = tmTrader.CenterOfMassBuy, s = tmTrader.CenterOfMassSell },
-        com2 = new { b = tmTrader.CenterOfMassBuy2, s = tmTrader.CenterOfMassSell2 }
+        com2 = new { b = tmTrader.CenterOfMassBuy2, s = tmTrader.CenterOfMassSell2 },
+        com3 = new { b = tmTrader.CenterOfMassBuy3, s = tmTrader.CenterOfMassSell3 }
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }

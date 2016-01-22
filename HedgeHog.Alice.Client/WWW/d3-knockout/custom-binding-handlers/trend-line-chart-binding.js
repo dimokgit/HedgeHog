@@ -379,9 +379,9 @@
         if (chartNum === 1) {
           setRectArea(chartData.tickDate, yDomain[1], trendLines.dates[1], yDomain[0], "tickArea");
           if (com)
-            setHorizontalStrip(com.b, com.s, blueStrip);
+            setHorizontalStrip(com.b, com.s, greenStrip);
           if (com2)
-            setHorizontalStrip(com2.b, com2.s, greenStrip);
+            setHorizontalStrip(com2.b, com2.s, blueStrip);
         }
         // #region add trend corridor
         //setTrendLine(trendLines, 1, "lightgrey");

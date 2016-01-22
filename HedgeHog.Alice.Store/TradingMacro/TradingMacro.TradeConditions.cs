@@ -261,7 +261,6 @@ namespace HedgeHog.Alice.Store {
           return new[] { buyLevel, sellLevel };
         });
         return () => {
-          SetTradeStrip();
           var tradeLevels = getTradeLevels2(baseTL());
           var blueLevles = GetTradeLevelsToTradeStrip();
           _tipRatioCurrent = TradeLevelsEdgeRatio(tradeLevels).Min(_ratesHeightCma / tradeLevels.Height());
@@ -290,7 +289,6 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate TradeStripOk {
       get {
         return () => {
-          SetTradeStrip();
           var canSetStrip = true;// Trades.IsEmpty();
           var tradeLevles = GetTradeLevelsToTradeStrip();
           _tipRatioCurrent = TradeLevelsEdgeRatio(tradeLevles).Min(_ratesHeightCma / tradeLevles.Height());
@@ -400,9 +398,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    bool IsFathessOk(TradingMacro tm) { return tm.WaveRanges.Take(1).Any(wr => Angle.Sign() == wr.Slope.Sign() &&  wr.IsFatnessOk); }
-    bool IsDistanceCmaOk(TradingMacro tm) { return tm.WaveRanges.Take(1).Any(wr 
-      => TrendLines2Trends.Slope.Sign() == wr.Slope.Sign() && wr.DistanceCma>=StDevByPriceAvgInPips); }
+    bool IsFathessOk(TradingMacro tm) { return tm.WaveRanges.Take(1).Any(wr => Angle.Sign() == wr.Slope.Sign() && wr.IsFatnessOk); }
+    bool IsDistanceCmaOk(TradingMacro tm) {
+      return tm.WaveRanges.Take(1).Any(wr => TrendLines2Trends.Slope.Sign() == wr.Slope.Sign() && wr.DistanceCma < StDevByPriceAvgInPips);
+    }
 
     #endregion
 
@@ -424,8 +423,8 @@ namespace HedgeHog.Alice.Store {
     [MethodImpl(MethodImplOptions.Synchronized)]
     public double SetTradeStrip() {
       if(CanTriggerTradeDirection() && !TradeConditionsTradeStrip().Any(tc => tc.HasNone())) {
-        var tlbuy = GetTradeLevel(true, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMax]();
-        var tlSell = GetTradeLevel(false, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMin]();
+        var tlbuy = TradeLevelFuncs[TradeLevelBy.PriceMax]();// GetTradeLevel(true, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMax]();
+        var tlSell = TradeLevelFuncs[TradeLevelBy.PriceMin]();// GetTradeLevel(false, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMin]();
         var bsHeight = CenterOfMassBuy.Abs(CenterOfMassSell).IfNaN(double.MaxValue);
         var tlHeight = tlbuy.Abs(tlSell);
         //var tlAvg = tlbuy.Avg(tlSell);
@@ -440,8 +439,8 @@ namespace HedgeHog.Alice.Store {
         }
         var canSetLevel = (bsHeight.IsNaN() || tlJumped || tlHeight < bsHeight);
         if(canSetLevel) {
-          CenterOfMassBuy = tlbuy;
-          CenterOfMassSell = tlSell;
+          CenterOfMassBuy = tlMax;
+          CenterOfMassSell = tlMin;
         }
         return CenterOfMassBuy.Abs(CenterOfMassSell);
       }
@@ -615,12 +614,14 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionTradeStrip]
+    [TradeConditionTurnOff]
     public TradeConditionDelegate GRBRatioOk {
       get {
         return () => TradeDirectionByBool(IsTresholdAbsOk(TrendHeighRatio(TrendLines2Trends), TrendAnglesPerc));
       }
     }
     [TradeConditionTradeStrip]
+    [TradeConditionTurnOff]
     public TradeConditionDelegate GRBHRatioOk {
       get {
         return () => IsTresholdAbsOk(TrendHeighRatio(), TrendHeightPerc)
@@ -667,11 +668,11 @@ namespace HedgeHog.Alice.Store {
       Func<IList<Rate>, double[]> spread = tls => tls.TakeLast(1).Select(tl =>
         new[] { tl.Trends.PriceAvg1.Abs(baseLevel.PriceAvg2), baseLevel.PriceAvg3.Abs(tl.Trends.PriceAvg1) }
         )
-        .DefaultIfEmpty(new double [0])
+        .DefaultIfEmpty(new double[0])
         .Single();
       var blue = baseLevel.PriceAvg2 - baseLevel.PriceAvg1;
       var greenLevels = spread(TrendLines1.Value).Select(gl => gl.Percentage(blue)).Max();
-      var redLevels = spread(TrendLines.Value).Select(gl=>gl.Percentage(blue)).Max();
+      var redLevels = spread(TrendLines.Value).Select(gl => gl.Percentage(blue)).Max();
       return greenLevels.Avg(redLevels).ToPercent();
     }
     #endregion
@@ -919,6 +920,8 @@ namespace HedgeHog.Alice.Store {
              select map(tc.d, tc.p, tca.Type, tc.s);
     }
     public void TradeConditionsTrigger() {
+      if(IsTrader && CanTriggerTradeDirection())
+        SetTradeStrip();
       if(IsTrader && CanTriggerTradeDirection() && !HaveTrades() /*&& !HasTradeDirectionTriggers*/) {
         TradeConditionsEval().ForEach(eval => {
           var hasBuy = TradeDirection.HasUp() && eval.HasUp();

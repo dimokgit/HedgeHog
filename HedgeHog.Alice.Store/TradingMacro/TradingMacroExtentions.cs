@@ -2080,12 +2080,28 @@ namespace HedgeHog.Alice.Store {
     double _CenterOfMassSell2 = double.NaN;
     public double CenterOfMassSell2 {
       get { return _CenterOfMassSell2; }
-      private set { _CenterOfMassSell2 = value; }
+      private set {
+        CenterOfMassSell3 = _CenterOfMassSell2;
+        _CenterOfMassSell2 = value;
+      }
     }
     double _CenterOfMassBuy2 = double.NaN;
     public double CenterOfMassBuy2 {
       get { return _CenterOfMassBuy2; }
-      private set { _CenterOfMassBuy2 = value; }
+      private set {
+        CenterOfMassBuy3 = _CenterOfMassBuy2;
+        _CenterOfMassBuy2 = value;
+      }
+    }
+    double _CenterOfMassSell3 = double.NaN;
+    public double CenterOfMassSell3 {
+      get { return _CenterOfMassSell3; }
+      private set { _CenterOfMassSell3 = value; }
+    }
+    double _CenterOfMassBuy3 = double.NaN;
+    public double CenterOfMassBuy3 {
+      get { return _CenterOfMassBuy3; }
+      private set { _CenterOfMassBuy3 = value; }
     }
 
     #endregion
