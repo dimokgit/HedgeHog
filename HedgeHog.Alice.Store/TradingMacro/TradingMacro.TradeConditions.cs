@@ -422,25 +422,21 @@ namespace HedgeHog.Alice.Store {
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public double SetTradeStrip() {
-      if(CanTriggerTradeDirection() && !TradeConditionsTradeStrip().Any(tc => tc.HasNone())) {
+      if(CanTriggerTradeDirection()) {
         var tlbuy = TradeLevelFuncs[TradeLevelBy.PriceMax]();// GetTradeLevel(true, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMax]();
         var tlSell = TradeLevelFuncs[TradeLevelBy.PriceMin]();// GetTradeLevel(false, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMin]();
         var bsHeight = CenterOfMassBuy.Abs(CenterOfMassSell).IfNaN(double.MaxValue);
         var tlHeight = tlbuy.Abs(tlSell);
-        //var tlAvg = tlbuy.Avg(tlSell);
-        double tlMax = tlbuy.Max(tlSell), tlMin = tlSell.Min(tlbuy);
-        double comMax = CenterOfMassSell.Max(CenterOfMassBuy), comMin = CenterOfMassSell.Min(CenterOfMassBuy);
-        var tlJumped = (tlMin > comMax || tlMax < comMin)
-          && tlHeight.Div(bsHeight) <= TradeStripJumpRatio;
+        var tlJumped = !GetTradeLevelsToTradeStrip().DoSetsOverlap(tlSell, tlbuy)
+          && tlHeight.Div(bsHeight.Max(StDevByHeight)) <= TradeStripJumpRatio;
         if(tlJumped) {
           CenterOfMassBuy2 = CenterOfMassBuy;
           CenterOfMassSell2 = CenterOfMassSell;
           BuySellLevelsForEach(sr => sr.CanTradeEx = false);
         }
-        var canSetLevel = (bsHeight.IsNaN() || tlJumped || tlHeight < bsHeight);
-        if(canSetLevel) {
-          CenterOfMassBuy = tlMax;
-          CenterOfMassSell = tlMin;
+        if(tlJumped || tlHeight < bsHeight) {
+          CenterOfMassBuy = tlbuy.Max(tlSell);
+          CenterOfMassSell = tlSell.Min(tlbuy);
         }
         return CenterOfMassBuy.Abs(CenterOfMassSell);
       }
@@ -550,8 +546,25 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionTurnOff]
-    public TradeConditionDelegate RhSDAvgOk {
+    public TradeConditionDelegateHide RhSDAvgOk {
       get { return () => TradeDirectionByBool(_macd2Rsd >= MacdRsdAvg); }
+    }
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate SDAvgOk {
+      get {
+        return () => {
+          var volt = UseRates(rates 
+            => rates.BackwardsIterator()
+              .Select(GetVoltage)
+              .SkipWhile(double.IsNaN)
+              .DefaultIfEmpty(double.NaN)
+              .First()
+            )
+            .DefaultIfEmpty(double.NaN)
+            .Single();
+          return TradeDirectionByBool(volt > GetVoltageHigh());
+        };
+      }
     }
 
     public Func<TradeDirections> CmaRsdOk {
@@ -856,16 +869,16 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region TradeConditions
-    public Tuple<TradeConditionDelegate, PropertyInfo>[] _TradeConditions = new Tuple<TradeConditionDelegate, PropertyInfo>[0];
+    public ReactiveUI.ReactiveList<Tuple<TradeConditionDelegate, PropertyInfo>> _TradeConditions = new ReactiveUI.ReactiveList<Tuple<TradeConditionDelegate, PropertyInfo>>();
     public Tuple<TradeConditionDelegate, PropertyInfo>[] TradeConditions {
-      get { return _TradeConditions; }
-      set {
-        _TradeConditions = value;
-        OnPropertyChanged("TradeConditions");
-      }
+      get { return _TradeConditions.ToArray(); }
+      //set {
+      //  _TradeConditions = value;
+      //  OnPropertyChanged("TradeConditions");
+      //}
     }
     bool HasTradeConditions { get { return TradeConditions.Any(); } }
-    void TradeConditionsReset() { TradeConditions = new Tuple<TradeConditionDelegate, PropertyInfo>[0]; }
+    void TradeConditionsReset() { _TradeConditions.Clear(); }
     public T[] GetTradeConditions<A, T>(Func<A, bool> attrPredicate, Func<TradeConditionDelegate, PropertyInfo, TradeConditionAttribute.Types, T> map) where A : Attribute {
       return (from x in this.GetPropertiesByTypeAndAttribute(() => (TradeConditionDelegate)null, attrPredicate, (v, p) => new { v, p })
               let a = x.p.GetCustomAttributes<TradeConditionAttribute>()
@@ -889,8 +902,23 @@ namespace HedgeHog.Alice.Store {
     public static string ParseTradeConditionToNick(string tradeConditionFullName) {
       return Regex.Replace(tradeConditionFullName, "ok$", "", RegexOptions.IgnoreCase);
     }
-    public Tuple<TradeConditionDelegate, PropertyInfo>[] TradeConditionsSet(IList<string> names) {
-      return TradeConditions = GetTradeConditions().Where(tc => names.Contains(ParseTradeConditionNameFromMethod(tc.Item1.Method))).ToArray();
+    void OnTradeConditionSet(Tuple<TradeConditionDelegate, PropertyInfo> tc) {
+      switch(ParseTradeConditionNameFromMethod(tc.Item1.Method)) {
+        case "Tip3Ok":
+          BuyLevel.Crossed += BuyLevel_Crossed;
+          break;
+      }
+    }
+
+    private void BuyLevel_Crossed(object sender, SuppRes.CrossedEvetArgs e) {
+      throw new NotImplementedException();
+    }
+
+    public IList<Tuple<TradeConditionDelegate, PropertyInfo>> TradeConditionsSet(IList<string> names) {
+      TradeConditionsReset();
+      GetTradeConditions().Where(tc => names.Contains(ParseTradeConditionNameFromMethod(tc.Item1.Method)))
+        .ForEach(tc => _TradeConditions.Add(tc));
+      return _TradeConditions;
     }
     bool TradeConditionsHaveTurnOff() {
       return TradeConditionsInfo<TradeConditionTurnOffAttribute>().Any(d => d().HasNone());

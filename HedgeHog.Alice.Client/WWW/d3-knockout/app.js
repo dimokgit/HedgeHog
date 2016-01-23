@@ -596,7 +596,18 @@
     this.tradeConditionInfosOr = tradeConditionsInfosOr;
     // #endregion
     // #region Strategies
+    var strategyFilter = this.strategyFilter = ko.observable("");
+    this.clearStrategy = function () {
+      serverCall("clearStrategy", [pair], function () {
+        readStrategies();
+      });
+    }
     var strategies = this.strategies = ko.observableArray();
+    this.strategiesFiltered = ko.pureComputed(function(){
+      return strategies().filter(function (s) {
+        return s.nick.match(new RegExp(strategyFilter(), "i"));
+      });
+    })
     this.strategiesSelected = ko.pureComputed(function () {
       return strategies().filter(function (s) {
         return s.isSelected();
@@ -641,14 +652,15 @@
           this.hideStrategies();
         }.bind(this));
     }.bind(this);
-    this.removeStrategy = function () {
-      serverCall("removeStrategy", [this.strategyNick()], " removed strategy <b>" + this.strategyNick() + "</b>")
+    this.removeStrategy = function (permanent) {
+      var note = permanent ? "removed" : "archived";
+      serverCall("removeStrategy", [this.strategyNick(), permanent], " " + note + " strategy <b>" + this.strategyNick() + "</b>")
         .done(function () {
           this.showStrategies();
           setTimeout(this.readStrategies.bind(this), 1000);
         }.bind(this));
     }.bind(this);
-    this.readStrategies = function readStrategies() {
+    var readStrategies = this.readStrategies = function readStrategies() {
       return serverCall("readStrategies", [pair], function (strategies) {
         this.strategies(strategies.map(function (s) {
           return {
@@ -745,6 +757,7 @@
       chartData2.tickDate = lineChartData()[0].d;
       chartData2.com = self.com;
       chartData2.com2 = self.com2;
+      chartData2.com3 = self.com3;
       response.waveLines.forEach(function (w, i) {
         w.bold = i == sumStartIndexById();
         w.color = w.isOk ? "limegreen" : "";
@@ -912,7 +925,10 @@
       readReplayArguments();
     }
     this.startReplay = function () {
-      serverCall("startReplay", [pair, replayDateStart()]);
+      serverCall("startReplay", [pair, replayDateStart()], function (replayArguments) {
+        if (replayArguments.LastWwwError)
+          showErrorPerm(replayArguments.LastWwwError);
+      });
       readReplayProcID = setInterval(readReplayArguments, 3 * 1000);
     }
     this.stopReplay = function () {
@@ -1062,8 +1078,12 @@
 
       dataViewModel.com = response.com;
       delete response.com;
+
       dataViewModel.com2 = response.com2;
       delete response.com2;
+
+      dataViewModel.com3 = response.com3;
+      delete response.com3;
 
       dataViewModel.inPause(response.ip);
       delete response.ip;

@@ -41,11 +41,25 @@ namespace HedgeHog.Alice.Client {
     public bool ToggleReplayPause() {
       return ReplayArguments.InPause = !ReplayArguments.InPause;
     }
+    void LogWww(Exception exc) {
+      if(ReplayArguments.IsWww)
+        ReplayArguments.LastWwwError = exc.Message;
+      Log = exc;
+    }
     public ReactiveList<Task> _replayTasks = new ReactiveList<Task>();
     void StartReplay(object tm) {
       TradingMacro tmOriginal = (TradingMacro)tm;
+      if(!IsLoggedIn) {
+        LogWww(new Exception("Must login first."));
+        return;
+      }
+
       try {
         while(_replayTasks.ToArray().Any(t => t.Status == TaskStatus.Running)) {
+          if(ReplayArguments.IsWww) {
+            ReplayArguments.LastWwwError = "Replay is running";
+            return;
+          }
           Log = new Exception("Replay is running.");
           Thread.Sleep(1000);
           continue;
@@ -97,9 +111,10 @@ namespace HedgeHog.Alice.Client {
             _testParamsRaw.AddRange(paramsDict.Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v)).ToArray()));
           }
         } else if(ReplayArguments.IsWww) {
+          ReplayArguments.LastWwwError = "";
           TaskMonad.RunSync(() => ReadStrategies(tmOriginal, (name, desc, content, uri, diff) => new { name, content, diff }))
             .Where(s => s.diff.IsEmpty())
-            .IfEmpty(() => { throw new Exception("Current settings don't match any strategy"); })
+            .IfEmpty(() => { throw new Exception(ReplayArguments.LastWwwError = "Current settings don't match any strategy"); })
             .Take(1)
             .ForEach(strategy => {
               tmOriginal.TestFileName = strategy.name;

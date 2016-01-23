@@ -65,6 +65,7 @@
   var tickAreaBgColor = "lightgray";//lavender";
   var blueStrip = "blueStrip";
   var greenStrip = "greenStrip";
+  var redStrip = "redStrip";
   var doCorridorStartDate = false;
   var showLineLog = false;
   var tpsChartNum = 0;
@@ -108,7 +109,8 @@
       if (chartNum === 1) {
         addRect("tickArea", tickAreaBgColor);
         addRect(blueStrip, "lavender", 0.4);
-        addRect(greenStrip, "#54C571", 0.1);
+        addRect(greenStrip, "#E6FAE6", 0.4);
+        addRect(redStrip, "#FAE6E6", 0.4);
       }
       if (hasTps) {
         svg.append("g")
@@ -269,6 +271,7 @@
       var canSell = chartData.canSell;
       var com = chartData.com;
       var com2 = chartData.com2;
+      var com3 = chartData.com3;
       // #endregion
 
       // #region adjust svg and axis'
@@ -382,6 +385,8 @@
             setHorizontalStrip(com.b, com.s, greenStrip);
           if (com2)
             setHorizontalStrip(com2.b, com2.s, blueStrip);
+          if (com3)
+            setHorizontalStrip(com3.b, com3.s, redStrip);
         }
         // #region add trend corridor
         //setTrendLine(trendLines, 1, "lightgrey");

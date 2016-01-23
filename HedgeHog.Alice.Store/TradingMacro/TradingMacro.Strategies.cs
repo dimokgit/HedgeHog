@@ -19,6 +19,44 @@ using System.Dynamic;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
 
+    public void CleanStrategyParameters() {
+      DoAdjustExitLevelByTradeTime = false;
+      TakeProfitFunction = TradingMacroTakeProfitFunction.BuySellLevels;
+      TakeProfitXRatio = 1;
+      TimeFrameTreshold = "";
+      TradeDirection = TradeDirections.Both;
+      LevelBuyBy = TradeLevelBy.None;
+      LevelSellBy = TradeLevelBy.None;
+      IsTurnOnOnly = false;
+      TradeCountMax = 0;
+      TradeCountStart = 0;
+      TradingDistanceFunction = TradingMacroTakeProfitFunction.RatesHeight;
+      TradingDistanceX = 1;
+      TradingRatioByPMC = true;
+      MacdRsdAvgLevel = 0;
+      RhSDRatio = 0;
+      TipRatio = 0;
+      TrendAnglesPerc = 0;
+      TrendHeightPerc = 0;
+      TradingAngleRange = 0;
+      TrendAngleBlue = "";
+      TrendAngleRed = TrendAngleGreen = 0;
+      CmaPasses = 20;
+      CmaRatioForWaveLength = 2;
+      PriceCmaLevels = 0.1;
+      RatesDistanceMin = 0.5;
+      BigWaveIndex = 0;
+      CanDoEntryOrders = false;
+      CanDoNetLimitOrders = false;
+      FatnessWeightPower = 0.5;
+      IsTakeBack = false;
+      IsTrader = BarPeriod == BarsPeriodType.t1;
+      IsTrender = true;
+      LimitProfitByRatesHeight = false;
+      ForceOpenTrade = false;
+      TradeStripJumpRatio = 1.5;
+    }
+
     bool IsTradingHour() { return IsTradingHour(ServerTime); }
     bool IsTradingDay() { return IsTradingDay(ServerTime); }
     bool IsTradingTime() { return IsTradingDay() && IsTradingHour(); }

@@ -225,6 +225,7 @@ namespace HedgeHog.Alice.Client {
       }
       #endregion
       var timeFormat = (isVertual ? "d " : "") + "HH:mm:ss";
+      var digits = tmTrader.Digits();
       return new {
         time = tm0.ServerTime.ToString(timeFormat),
         prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 1),
@@ -244,9 +245,9 @@ namespace HedgeHog.Alice.Client {
         tci = GetTradeConditionsInfo(tmTrader),
         wp = tmTrader.WaveHeightPower.Round(1),
         ip = remoteControl.Value.ReplayArguments.InPause ? 1 : 0,
-        com = new { b = tmTrader.CenterOfMassBuy, s = tmTrader.CenterOfMassSell },
-        com2 = new { b = tmTrader.CenterOfMassBuy2, s = tmTrader.CenterOfMassSell2 },
-        com3 = new { b = tmTrader.CenterOfMassBuy3, s = tmTrader.CenterOfMassSell3 }
+        com = new { b = tmTrader.CenterOfMassBuy.Round(digits), s = tmTrader.CenterOfMassSell.Round(digits) },
+        com2 = new { b = tmTrader.CenterOfMassBuy2.Round(digits), s = tmTrader.CenterOfMassSell2.Round(digits) },
+        com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits) }
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
@@ -308,6 +309,9 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Strategies
+    public void ClearStrategy(string pair) {
+      UseTradingMacro(pair, tm => tm.CleanStrategyParameters(), true);
+    }
     public async Task<object[]> ReadStrategies(string pair) {
       return await UseTradingMacro(pair
         , async tm => (await RemoteControlModel.ReadStrategies(tm, (nick, name, content, uri, diff)
@@ -319,8 +323,8 @@ namespace HedgeHog.Alice.Client {
         throw new ArgumentException("Is empty", "nick");
       UseTradingMacro(pair, 0, tm => RemoteControlModel.SaveStrategy(tm, nick), true);
     }
-    public async Task RemoveStrategy(string name) {
-      await RemoteControlModel.RemoveStrategy(name);
+    public async Task RemoveStrategy(string name,bool permanent) {
+      await RemoteControlModel.RemoveStrategy(name,permanent);
     }
     public async Task UpdateStrategy(string pair, string name) {
       await UseTradingMacro(pair, 0, async tm => {
@@ -338,11 +342,13 @@ namespace HedgeHog.Alice.Client {
 
     #region ReplayArguments
     public object ReadReplayArguments(string pair) {
-      return UseTradingMacro(pair, tm => new {
+      var ra = UseTradingMacro(pair, tm => new {
         remoteControl.Value.ReplayArguments.DateStart,
-        isReplayOn = tm.IsInPlayback
+        isReplayOn = tm.IsInPlayback,
+        remoteControl.Value.ReplayArguments.LastWwwError
       }, false);
-
+      remoteControl.Value.ReplayArguments.LastWwwError = "";
+      return ra;
     }
     public object StartReplay(string pair, string startWhen) {
       TimeSpan ts;

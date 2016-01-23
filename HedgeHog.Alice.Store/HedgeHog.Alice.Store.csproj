@@ -222,7 +222,7 @@
     <Compile Include="TradingMacro\TradingMacroExtentions.cs" />
     <Compile Include="TradingMacro\TradingMacro.Strategies.cs" />
     <Compile Include="TradingMacro\TradingStatistics.cs" />
-    <Compile Include="TradingMacro\Universal.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Universal.cs" />
     <Compile Include="WaveRange.cs" />
     <EntityDeploy Include="Model\Model1.edmx">
       <Generator>EntityModelCodeGenerator</Generator>

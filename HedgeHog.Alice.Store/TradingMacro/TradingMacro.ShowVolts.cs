@@ -17,6 +17,28 @@ using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
+    Func<CorridorStatistics> GetShowVoltageFunction() {
+      switch(VoltageFunction_) {
+        case HedgeHog.Alice.VoltageFunction.None:
+          return ShowVoltsNone;
+        case HedgeHog.Alice.VoltageFunction.Volume:
+          return ShowVoltsByFrameAngle;
+        case HedgeHog.Alice.VoltageFunction.StDev:
+          return ShowVoltsByStDev;
+        case HedgeHog.Alice.VoltageFunction.Rsd:
+          return ShowVoltsByRsd;
+        case HedgeHog.Alice.VoltageFunction.FractalDensity:
+          return ShowVoltsByFractalDensity;
+        case HedgeHog.Alice.VoltageFunction.Correlation:
+          return ShowVoltsByCorrelation;
+        case HedgeHog.Alice.VoltageFunction.StDevInsideOutRatio:
+          return ShowVoltsByStDevPercentage;
+        case HedgeHog.Alice.VoltageFunction.BounceCom:
+          return OnSetCentersOfMass;
+      }
+      throw new NotSupportedException(VoltageFunction_ + " not supported.");
+    }
+
     private CorridorStatistics ShowVoltsByCorrelation() {
       var volts = InPips(WaveShort.Rates.Select(r => r.PriceAvg.Abs(r.PriceCMALast)).StandardDeviation());
       return ShowVolts(volts, 2);

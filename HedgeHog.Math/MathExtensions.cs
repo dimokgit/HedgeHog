@@ -1197,7 +1197,7 @@ namespace HedgeHog {
       dt = dt.Round();
       return dt.AddMinutes(dt.Minute / period * period - dt.Minute);
     }
-    public static bool DoSetsOverlap(this double[] bsRates, double[] bsRatesCT) {
+    public static bool DoSetsOverlap(this double[] bsRates, params double[] bsRatesCT) {
       return !(bsRates.Min() > bsRatesCT.Max() || bsRates.Max() < bsRatesCT.Min());
     }
 

@@ -1080,19 +1080,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    int _trendAnglesSdrRange;
-    [DisplayName("Angle RSD range in %")]
-    [WwwSetting(Group = wwwSettingsCorridorAngles)]
-    [Category(categoryActive)]
-    public int TrendAnglesSdrRange {
-      get { return _trendAnglesSdrRange; }
-      set {
-        if(_trendAnglesSdrRange == value)
-          return;
-        _trendAnglesSdrRange = value;
-        OnPropertyChanged(() => TrendAnglesSdrRange);
-      }
-    }
 
     int _trendAnglesPerc;
     [DisplayName("AngleR.Percentage(AngleB): -200 - 200")]

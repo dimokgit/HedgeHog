@@ -260,9 +260,22 @@
       <div class="collapse navbar-collapse">
         <!--#region Settings-->
         <ul class="nav navbar-nav navbar-right">
-          <li data-bind="visible:isVirtual">
+          <!-- ko if: isVirtual-->
+          <li>
+            <button id="toggleIsActive" data-bind="click:togglePause.bind(null,0)">
+              <span class="glyphicon glyphicon-pause" data-bind="visible:!inPause()"></span>
+              <span class="glyphicon glyphicon-play" data-bind="visible:inPause"></span>
+            </button>
+          </li>
+          <li>
             <button data-bind="click: showReplayDialog" title="Back Testing">
-              <span class="glyphicon glyphicon-fast-backward"></span>
+              <span class="glyphicon glyphicon-fast-forward"></span>
+            </button>
+          </li>
+          <!-- /ko -->
+          <li>
+            <button data-bind="click:showStrategies">
+              <span class="glyphicon glyphicon-king"></span>
             </button>
           </li>
           <li>
@@ -489,9 +502,6 @@
                 <input type="button" value=" Sell " id="sell" />
               </li>
               <li>
-                <button data-bind="click:showStrategies">Strategies</button>
-              </li>
-              <li>
                 <button data-bind="click:toggleClosedTrades">Trades</button>
                 <button data-bind="click:toggleClosedTrades2,text:showClosedTrades2Text"></button>
               </li>
@@ -505,19 +515,13 @@
           </li>
           <li data-bind="visible:strategiesSelected().length">
             <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-              <span class="glyphicon glyphicon-king"></span>
+              <span class="glyphicon glyphicon-tower"></span>
             </button>
             <ul class="dropdown-menu multi-level" data-bind="foreach:strategiesSelected">
               <li>
                 <button data-bind="text:nick,click:$parent.setStrategy.bind(null,$data)"></button>
               </li>
             </ul>
-          </li>
-          <li data-bind="visible:isVirtual">
-            <button id="toggleIsActive" data-bind="click:togglePause.bind(null,0)">
-              <span class="glyphicon glyphicon-pause" data-bind="visible:!inPause()"></span>
-              <span class="glyphicon glyphicon-play" data-bind="visible:inPause"></span>
-            </button>
           </li>
           <li class="nav-divider">|</li>
           <li class="nav-divider">|</li>
@@ -529,7 +533,6 @@
           <li class="nav-divider">|</li>
           <li><input type="button" data-bind="click:closeTrades" value=" Close " /></li>
           <!-- /ko -->
-
           <!--#region Sample-->
           <li style="display:none">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Menu 2 <b class="caret"></b></a>
@@ -832,16 +835,19 @@
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <!--<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>-->
           <span class="modal-title" id="myModalLabel">Strategies</span>
+          <input data-bind="textInput:strategyFilter" />
+          <button data-bind="click: clearStrategy" title="Empty Strategy">
+            <span class="glyphicon glyphicon-flash" />
+          </button>
         </div>
-        <div class="modal-body" data-bind="foreach:strategies">
+        <div class="modal-body" data-bind="foreach:strategiesFiltered">
           <div data-bind="attr:{title:name}">
             <input data-bind="checked:isSelected" type="checkbox" />
             <span data-bind="text:nick,click:$parent.updateStrategy,css:{'active-strategy':isActive}"></span>
             <a data-bind="attr:{href:uri}" target="_blank" class="glyphicon glyphicon-list"></a>
           </div>
-          </ul>
         </div>
         <div class="modal-footer" style="display:none">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -860,22 +866,28 @@
           <span class="modal-title" id="myModalLabel">Strategy Name</span>
         </div>
         <div class="modal-body">
-          <input data-bind="value:strategyNick,elementer:strategyNameInput" />
-          <button data-bind="click:setStrategy.bind(null)">Load</button>
-          <button data-bind="click:saveStrategy.bind(null)">Save</button>
-          <button data-bind="click:removeStrategy.bind(null)">Remove</button>
-        </div>
-        <div class="modal-footer" style="display:none">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+          <input data-bind="value:strategyNick,elementer:strategyNameInput" style="width:100%" />
+          <div>
+            <div style="display:inline-block">
+              <button data-bind="click:setStrategy.bind(null)">Load</button>
+              <button data-bind="click:saveStrategy.bind(null)">Save</button>
+            </div>
+            <div style="display:inline-block;float:right">
+              <button data-bind="click:removeStrategy.bind(null,false)">Archive</button>
+              <button data-bind="click:removeStrategy.bind(null,true)">Remove</button>
+            </div>
+          </div>
+          <div class="modal-footer" style="display:none">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  <!--#endregion-->
-  <!--#region Settings grid-->
-  <!--#endregion-->
-  <!--#endregion-->
+    <!--#endregion-->
+    <!--#region Settings grid-->
+    <!--#endregion-->
+    <!--#endregion-->
 
 </body>
 </html>

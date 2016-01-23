@@ -7,6 +7,7 @@ namespace HedgeHog.Shared {
   public class ReplayArguments<TTradingMacro>:GalaSoft.MvvmLight.ViewModelBase {
 
     public bool IsWww { get; set; }
+    public string LastWwwError { get; set; }
 
     #region Session Statistics
     public class SessionStatistics {

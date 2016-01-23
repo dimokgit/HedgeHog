@@ -3276,7 +3276,7 @@ namespace HedgeHog.Alice.Store {
       Func<TradeLevelBy, TradeLevelBy, double> tradeLeveBy = (h, l) => (TradeLevelFuncs[h]() - TradeLevelFuncs[l]()) * xRatio;
       switch(function) {
         case TradingMacroTakeProfitFunction.StDev:
-          return StDevByPriceAvg + InPoints(CommissionInPips()) * 2;
+          return StDevByPriceAvg * xRatio + InPoints(CommissionInPips()) * 2;
         case TradingMacroTakeProfitFunction.Green:
           tp = tradeLeveBy(TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0);
           break;
@@ -3355,28 +3355,6 @@ namespace HedgeHog.Alice.Store {
           return ScanCorridorBySplitHeights3;
       }
       throw new NotSupportedException(function + "");
-    }
-
-    Func<CorridorStatistics> GetShowVoltageFunction() {
-      switch(VoltageFunction_) {
-        case HedgeHog.Alice.VoltageFunction.None:
-          return ShowVoltsNone;
-        case HedgeHog.Alice.VoltageFunction.Volume:
-          return ShowVoltsByFrameAngle;
-        case HedgeHog.Alice.VoltageFunction.StDev:
-          return ShowVoltsByStDev;
-        case HedgeHog.Alice.VoltageFunction.Rsd:
-          return ShowVoltsByRsd;
-        case HedgeHog.Alice.VoltageFunction.FractalDensity:
-          return ShowVoltsByFractalDensity;
-        case HedgeHog.Alice.VoltageFunction.Correlation:
-          return ShowVoltsByCorrelation;
-        case HedgeHog.Alice.VoltageFunction.StDevInsideOutRatio:
-          return ShowVoltsByStDevPercentage;
-        case HedgeHog.Alice.VoltageFunction.BounceCom:
-          return OnSetCentersOfMass;
-      }
-      throw new NotSupportedException(VoltageFunction_ + " not supported.");
     }
 
     public double CommissionByTrade(Trade trade) { return TradesManager.CommissionByTrade(trade); }

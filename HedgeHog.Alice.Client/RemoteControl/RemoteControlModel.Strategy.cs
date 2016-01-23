@@ -27,8 +27,8 @@ namespace HedgeHog.Alice.Client {
     public static async Task SaveStrategy(TradingMacro tm, string nick) {
       await tm.SaveActiveSettings(nick, TradingMacro.ActiveSettingsStore.Gist);
     }
-    public static async Task RemoveStrategy(string name) {
-      await Cloud.GitHub.GistStrategyDeleteByName(name);
+    public static async Task RemoveStrategy(string name,bool permanent) {
+      await Cloud.GitHub.GistStrategyDeleteByName(name, permanent);
       //File.Delete(path);
     }
     public static async Task UpdateStrategy(TradingMacro tm, string nick) {
