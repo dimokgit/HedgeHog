@@ -2359,7 +2359,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     CorridorStatistics ShowVoltsByStDev() {
-      SetVots(StDevByPriceAvgInPips, 2);
+      SetVots(StDevByPriceAvgInPips / this.RatesDuration * 60, 2);
       return null;
     }
 
@@ -3829,7 +3829,7 @@ namespace HedgeHog.Alice.Store {
             LastRatePullTime = ServerTime;
             UseRatesInternal(rl => new[] { rl.Count - BarsCountCount() }.Where(rc => rc > 0).ForEach(rc => rl.RemoveRange(0, rc)));
             if(LoadHistoryRealTime) {
-              _addHistoryOrdersBuffer.Push(() 
+              _addHistoryOrdersBuffer.Push(()
                 => PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper, BarPeriodInt, Pair, DateTime.MinValue, obj => { if(DoLogSaveRates) Log = new Exception(obj + ""); }));
             }
             //Scheduler.Default.Schedule(a);
