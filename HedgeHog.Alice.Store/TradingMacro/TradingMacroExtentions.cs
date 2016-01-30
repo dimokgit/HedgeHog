@@ -3284,11 +3284,11 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.RedStripH,()=> CenterOfMassBuy3.IfNaN(TradeLevelFuncs[TradeLevelBy.BlueStripH]) },
           {TradeLevelBy.RedStripL,()=> CenterOfMassSell3.IfNaN(TradeLevelFuncs[TradeLevelBy.BlueStripL]) },
 
-          {TradeLevelBy.LimeMax,()=> TrendLines0Trends.PriceMax.Value },
-          {TradeLevelBy.LimeMin,()=> TrendLines0Trends.PriceMin.Value },
+          {TradeLevelBy.LimeMax,()=> TrendLines0Trends.PriceMax.DefaultIfEmpty(double.NaN).Single() },
+          {TradeLevelBy.LimeMin,()=> TrendLines0Trends.PriceMin.DefaultIfEmpty(double.NaN).Single() },
 
-          {TradeLevelBy.GreenMax,()=> TrendLines1Trends.PriceMax.Value },
-          {TradeLevelBy.GreenMin,()=> TrendLines1Trends.PriceMin.Value },
+          {TradeLevelBy.GreenMax,()=> TrendLines1Trends.PriceMax.DefaultIfEmpty(double.NaN).Single() },
+          {TradeLevelBy.GreenMin,()=> TrendLines1Trends.PriceMin.DefaultIfEmpty(double.NaN).Single() },
 
           {TradeLevelBy.PriceMax1,()=> levelMax(TrendLinesTrendsPriceMax1)},
           {TradeLevelBy.PriceMin1,()=> levelMin(TrendLinesTrendsPriceMin1)},

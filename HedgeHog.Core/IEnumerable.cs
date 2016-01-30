@@ -19,6 +19,31 @@ namespace HedgeHog {
         return _source.GetEnumerator();
       }
     }
+
+    public static T[] MinMax<T>(this IEnumerable<T> source, Func<T, double> getter) {
+      return source.MinMax(getter, getter);
+    }
+    public static T[] MinMax<T>(this IEnumerable<T> source, Func<T,double> miner, Func<T,double> maxer) {
+      var def = default(T);
+      var min = def;
+      var max = def;
+      var b = false;
+      var p = def;
+      foreach(var t in source) {
+        if(!b) {
+          min = max = t;
+          b = true;
+        } else {
+          if(miner(min) > miner(t))
+            min = t;
+          if(maxer(max) < maxer(t))
+            max = t;
+        }
+      }
+      return b ? new[] { min, max } : new T[0];
+    }
+
+
     /// <summary>
     /// Get last <paramref name="count" />  elements
     /// </summary>

@@ -11,6 +11,15 @@ using System.Collections;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 
+namespace HedgeHog.Tests {
+  [TestClass()]
+  public class ExtensionsTest {
+    [TestMethod()]
+    public void LevelsTest() {
+      Console.WriteLine(Fibonacci.Levels(10, 0).ToJson());
+    }
+  }
+}
 
 namespace UnitLib {
 

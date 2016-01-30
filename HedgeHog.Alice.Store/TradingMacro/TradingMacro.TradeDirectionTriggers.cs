@@ -305,7 +305,19 @@ namespace HedgeHog.Alice.Store {
     public void OnCantTradeFreeze() {
       if(BuySellLevels.All(sr => !sr.InManual) && BuySellLevels.Any(sr => sr.CanTrade))
         BuySellLevelsForEach(sr => sr.InManual = true);
+      else if(!HaveTrades() && BuySellLevels.All(sr => sr.InManual) && BuySellLevels.Any(sr => sr.CanTrade) && !IsCurrentPriceInsideTradeLevels3(InPoints(3)))
+        BuySellLevelsForEach(sr => sr.InManual = sr.CanTrade = false);
+      else if(!HaveTrades() && BuySellLevels.All(sr => sr.InManual) && BuySellLevels.Any(sr => sr.CanTrade)) {
+        var buy = CurrentEnterPrice(true) - BuyLevel.Rate;
+        var sell = CurrentEnterPrice(false) - SellLevel.Rate;
+        Func<SuppRes, SuppRes, bool> isCold = (sr, sr2) => sr.TradesCount > sr2.TradesCount || !sr.CanTrade;
+        Action setCorr = () => BuySellLevels.ForEach(sr => sr.Rate = GetTradeLevel(sr.IsBuy, sr.Rate));
+        if(isCold(BuyLevel, SellLevel) && buy > 0 || isCold(SellLevel, BuyLevel) && sell < 0)
+          setCorr();
+      }
     }
+
+
     [TradeDirectionTrigger]
     public void OnTradesCountMove() {
       if(Trades.Length == 0) {

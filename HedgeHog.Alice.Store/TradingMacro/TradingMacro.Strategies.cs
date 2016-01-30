@@ -339,6 +339,7 @@ namespace HedgeHog.Alice.Store {
       Scheduler.CurrentThread.Schedule(TimeSpan.FromMilliseconds(1), () => CorridorStartDate = date);
     }
     double CurrentEnterPrice(bool? isBuy) { return CalculateLastPrice(GetTradeEnterBy(isBuy)); }
+    double[] CurrentEnterPrices() { return new[] { CurrentEnterPrice(false), CurrentEnterPrice(true) }; }
     double CurrentExitPrice(bool? isBuy) { return CalculateLastPrice(GetTradeExitBy(isBuy)); }
     bool IsTrendsEmpty(Lazy<IList<Rate>> trends) {
       return trends == null || trends.Value.IsEmpty();
@@ -525,8 +526,7 @@ namespace HedgeHog.Alice.Store {
       rates[0].Trends.PriceAvg1 = regRates[0];
       rates[1].Trends.PriceAvg1 = regRates[1];
       rates[1].Trends.Height = regRates[1] - regRates[0];
-      rates[1].Trends.PriceMax = Lazy.Create(() => corridorValues.Max(r => r.AskHigh));
-      rates[1].Trends.PriceMin = Lazy.Create(() => corridorValues.Min(r => r.BidLow));
+      rates[1].Trends.Sorted = Lazy.Create(() => { var range = corridorValues.ToList();range.Sort(_priceAvg);return new[] { range[0], range.Last() }; });
 
       var pa1 = rates[0].Trends.PriceAvg1;
       rates[0].Trends.PriceAvg02 = pa1 + hl;

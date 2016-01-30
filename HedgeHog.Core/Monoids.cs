@@ -43,6 +43,15 @@ namespace HedgeHog {
     public static Func<U1, U2, U3, U4, U5, T> ToFunc<T, U1, U2, U3, U4, U5>(U1 u1, U2 u2, U3 u3, U4 u4, U5 u5, Func<U1, U2, U3, U4, U5, T> projector) {
       return projector;
     }
+    public static Func<U1, U2, U3, U4, U5, U6, T> ToFunc<T, U1, U2, U3, U4, U5, U6>(U1 u1, U2 u2, U3 u3, U4 u4, U5 u5, U6 u6, Func<U1, U2, U3, U4, U5, U6, T> projector) {
+      return projector;
+    }
+    public static Func<U1, U2, U3, U4, U5, U6, U7, T> ToFunc<T, U1, U2, U3, U4, U5, U6, U7>(U1 u1, U2 u2, U3 u3, U4 u4, U5 u5, U6 u6, U7 u7, Func<U1, U2, U3, U4, U5, U6, U7, T> projector) {
+      return projector;
+    }
+    public static Func<U1, U2, U3, U4, U5, U6, U7, U8, T> ToFunc<T, U1, U2, U3, U4, U5, U6, U7, U8>(U1 u1, U2 u2, U3 u3, U4 u4, U5 u5, U6 u6, U7 u7, U8 u8, Func<U1, U2, U3, U4, U5, U6, U7, U8, T> projector) {
+      return projector;
+    }
     public static Func<U1, U2, T> ToFunc<T, U1, U2>(this T value, U1 input, U2 input2, Func<U1, U2, T> projector) {
       return projector;
     }

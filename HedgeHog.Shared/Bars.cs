@@ -10,8 +10,12 @@ using HedgeHog.DB;
 using System.Data.Entity.Core.Objects.DataClasses;
 [assembly: CLSCompliant(true)]
 namespace HedgeHog.Bars {
-  public enum FractalType { None = 0, Buy = -1, Sell = 1 };
-  public enum OverlapType { None = 0, Up = 1, Down = -1 };
+  public enum FractalType {
+    None = 0, Buy = -1, Sell = 1
+  };
+  public enum OverlapType {
+    None = 0, Up = 1, Down = -1
+  };
   [DataContract]
   public abstract class BarBaseDate {
     #region StartDate2
@@ -19,7 +23,7 @@ namespace HedgeHog.Bars {
     public DateTimeOffset StartDate2 {
       get { return _StartDate2; }
       set {
-        if (_StartDate2 != value) {
+        if(_StartDate2 != value) {
           _StartDate2 = value;
           StartDate = _StartDate2.LocalDateTime;
         }
@@ -32,7 +36,8 @@ namespace HedgeHog.Bars {
     public DateTime StartDate {
       get { return _StartDate; }
       private set {
-        if (_StartDate == value) return;
+        if(_StartDate == value)
+          return;
         _StartDate = StartDateContinuous = value;
       }
     }
@@ -168,7 +173,7 @@ namespace HedgeHog.Bars {
     public double PriceChartAsk {
       get { return double.IsNaN(_PriceChartAsk) ? AskHigh : _PriceChartAsk; }
       set {
-        if (_PriceChartAsk != value)
+        if(_PriceChartAsk != value)
           _PriceChartAsk = value;
       }
     }
@@ -178,7 +183,7 @@ namespace HedgeHog.Bars {
     public double PriceChartBid {
       get { return double.IsNaN(_PriceChartBid) ? BidLow : _PriceChartBid; }
       set {
-        if (_PriceChartBid != value) {
+        if(_PriceChartBid != value) {
           _PriceChartBid = value;
         }
       }
@@ -187,7 +192,7 @@ namespace HedgeHog.Bars {
     public void SetPriceChart() {
       _PriceChartAsk = _PriceChartBid = double.NaN;
       return;
-      if (PriceAvg > PriceAvg1) {
+      if(PriceAvg > PriceAvg1) {
         PriceChartAsk = AskHigh;
         PriceChartBid = BidHigh;
 
@@ -203,9 +208,9 @@ namespace HedgeHog.Bars {
       get { return _PriceAvg1; }
       set {
         _PriceAvg1 = value;
-        if (double.IsNaN(_PriceAvg1)) {
+        if(double.IsNaN(_PriceAvg1)) {
           PriceChartAsk = PriceChartBid = double.NaN;
-        } else if (double.IsNaN(PriceChartAsk)) {
+        } else if(double.IsNaN(PriceChartAsk)) {
           SetPriceChart();
         }
       }
@@ -345,9 +350,12 @@ namespace HedgeHog.Bars {
     public FractalType Fractal {
       get { return (int)FractalSell + FractalBuy; }
       set {
-        if (value == FractalType.None) FractalBuy = FractalSell = FractalType.None;
-        else if (value == FractalType.Buy) FractalBuy = value;
-        else FractalSell = value;
+        if(value == FractalType.None)
+          FractalBuy = FractalSell = FractalType.None;
+        else if(value == FractalType.Buy)
+          FractalBuy = value;
+        else
+          FractalSell = value;
       }
     }
     [DataMember]
@@ -416,7 +424,8 @@ namespace HedgeHog.Bars {
     PhClass _Ph = null;
     public PhClass Ph {
       get {
-        if (_Ph == null) _Ph = new PhClass();
+        if(_Ph == null)
+          _Ph = new PhClass();
         return _Ph;
       }
       set {
@@ -452,7 +461,8 @@ namespace HedgeHog.Bars {
 
     public TrendInfo Trend {
       get {
-        if (_trend == null) Trend = new TrendInfo();
+        if(_trend == null)
+          Trend = new TrendInfo();
         return _trend;
       }
       set { _trend = value; }
@@ -463,22 +473,31 @@ namespace HedgeHog.Bars {
     [DataMember]
     public TimeSpan? Flatness;
     public OverlapType OverlapsWith(BarBase bar) {
-      if (this.PriceLow.Between(bar.PriceLow, bar.PriceHigh)) return OverlapType.Up;
-      else if (this.PriceHigh.Between(bar.PriceLow, bar.PriceHigh)) return OverlapType.Down;
-      else if (bar.PriceLow.Between(this.PriceLow, this.PriceHigh)) return OverlapType.Down;
-      else if (bar.PriceHigh.Between(this.PriceLow, this.PriceHigh)) return OverlapType.Up;
+      if(this.PriceLow.Between(bar.PriceLow, bar.PriceHigh))
+        return OverlapType.Up;
+      else if(this.PriceHigh.Between(bar.PriceLow, bar.PriceHigh))
+        return OverlapType.Down;
+      else if(bar.PriceLow.Between(this.PriceLow, this.PriceHigh))
+        return OverlapType.Down;
+      else if(bar.PriceHigh.Between(this.PriceLow, this.PriceHigh))
+        return OverlapType.Up;
       return OverlapType.None;
     }
     public OverlapType FillOverlap(BarBase bar) {
       OverlapType ret = OverlapType.None;
-      if (this.PriceLow.Between(bar.PriceLow, bar.PriceHigh)) ret = OverlapType.Up;
-      else if (this.PriceHigh.Between(bar.PriceLow, bar.PriceHigh)) ret = OverlapType.Down;
-      else if (bar.PriceLow.Between(this.PriceLow, this.PriceHigh)) ret = OverlapType.Down;
-      else if (bar.PriceHigh.Between(this.PriceLow, this.PriceHigh)) ret = OverlapType.Up;
+      if(this.PriceLow.Between(bar.PriceLow, bar.PriceHigh))
+        ret = OverlapType.Up;
+      else if(this.PriceHigh.Between(bar.PriceLow, bar.PriceHigh))
+        ret = OverlapType.Down;
+      else if(bar.PriceLow.Between(this.PriceLow, this.PriceHigh))
+        ret = OverlapType.Down;
+      else if(bar.PriceHigh.Between(this.PriceLow, this.PriceHigh))
+        ret = OverlapType.Up;
       //else if (bar.PriceLow.Between(this.PriceLow, this.PriceHigh)) ret = OverlapType.Down;
       //else if (this.PriceHigh.Between(bar.PriceLow, bar.PriceHigh)) ret = OverlapType.Down;
       //else if (bar.PriceHigh.Between(this.PriceLow, this.PriceHigh)) ret = OverlapType.Up;
-      if (ret != OverlapType.None) Overlap = this.StartDate - bar.StartDate;
+      if(ret != OverlapType.None)
+        Overlap = this.StartDate - bar.StartDate;
       return ret;
     }
     [DataMember]
@@ -486,9 +505,11 @@ namespace HedgeHog.Bars {
 
     public void FillOverlap<TBar>(IEnumerable<TBar> bars, TimeSpan period) where TBar : BarBase {
       TBar barPrev = null;
-      foreach (var bar in bars) {
-        if (barPrev != null && (barPrev.StartDate - bar.StartDate).Duration() > period) return;
-        if (FillOverlap(bar) == OverlapType.None) return;
+      foreach(var bar in bars) {
+        if(barPrev != null && (barPrev.StartDate - bar.StartDate).Duration() > period)
+          return;
+        if(FillOverlap(bar) == OverlapType.None)
+          return;
         barPrev = bar;
       }
     }
@@ -511,16 +532,21 @@ namespace HedgeHog.Bars {
     }
     public void AddTick(Price price) { AddTick(price.Time.ToUniversalTime(), price.Ask, price.Bid); }
     public void AddTick(DateTime startDate, double ask, double bid) {
-      if (startDate.Kind != DateTimeKind.Utc) throw new ArgumentException("startDate must be of Utc kind");
-      if (Count++ == 0) {
+      if(startDate.Kind != DateTimeKind.Utc)
+        throw new ArgumentException("startDate must be of Utc kind");
+      if(Count++ == 0) {
         SetAsk(ask);
         SetBid(bid);
         StartDate2 = startDate.Round();
       } else {
-        if (ask > AskHigh) AskHigh = ask;
-        if (ask < AskLow) AskLow = ask;
-        if (bid > BidHigh) BidHigh = bid;
-        if (bid < BidLow) BidLow = bid;
+        if(ask > AskHigh)
+          AskHigh = ask;
+        if(ask < AskLow)
+          AskLow = ask;
+        if(bid > BidHigh)
+          BidHigh = bid;
+        if(bid < BidLow)
+          BidLow = bid;
       }
       AskClose = ask;
       BidClose = bid;
@@ -553,11 +579,14 @@ namespace HedgeHog.Bars {
       return BiggerFractal(b1, b2, b => b.FractalPrice);
     }
     public static TBar BiggerFractal<TBar>(TBar b1, TBar b2, Func<TBar, double?> Price) where TBar : BarBase {
-      if (b1.Fractal == b2.Fractal) {
-        if (b1.Fractal == FractalType.Buy) return Price(b1) < Price(b2) ? b1 : b2;
-        if (b1.Fractal == FractalType.Sell) return Price(b1) > Price(b2) ? b1 : b2;
+      if(b1.Fractal == b2.Fractal) {
+        if(b1.Fractal == FractalType.Buy)
+          return Price(b1) < Price(b2) ? b1 : b2;
+        if(b1.Fractal == FractalType.Sell)
+          return Price(b1) > Price(b2) ? b1 : b2;
         return null;
-      } else return null;
+      } else
+        return null;
     }
 
     #region Overrides
@@ -568,10 +597,11 @@ namespace HedgeHog.Bars {
       return obj is BarBase ? Equals(obj as BarBase) : false;
     }
     public virtual bool Equals(BarBase other) {
-      if ((object)other == null || StartDate != other.StartDate || Row != other.Row) return false;
+      if((object)other == null || StartDate != other.StartDate || Row != other.Row)
+        return false;
       return true;
     }
-//    public override int GetHashCode_() { return StartDate.GetHashCode(); }
+    //    public override int GetHashCode_() { return StartDate.GetHashCode(); }
     public override int GetHashCode() {
       unchecked // Overflow is fine, just wrap
       {
@@ -599,14 +629,16 @@ namespace HedgeHog.Bars {
     #endregion
   }
   //public enum BarsPeriodTypeFXCM { t1 = 0, m1 = 1, m5 = 5, m15 = 15, m30 = 30, H1 = 60, D1 = 24 * H1, W1 = 7 * D1 }
-  public enum BarsPeriodType { t1 = 0, m1 = 1, m2 = 2, m3 = 3, m5 = 5, m10 = 10, m15 = 15, m30 = 30, H1 = 60, H2 = H1 * 2, H3 = H1 * 3, H4 = H1 * 4, H6 = H1 * 6, H8 = H1 * 8, H12 = H6 * 2, D1 = 24 * H1, W1 = 7 * D1, s1 = -60, none = int.MaxValue }
+  public enum BarsPeriodType {
+    t1 = 0, m1 = 1, m2 = 2, m3 = 3, m5 = 5, m10 = 10, m15 = 15, m30 = 30, H1 = 60, H2 = H1 * 2, H3 = H1 * 3, H4 = H1 * 4, H6 = H1 * 6, H8 = H1 * 8, H12 = H6 * 2, D1 = 24 * H1, W1 = 7 * D1, s1 = -60, none = int.MaxValue
+  }
   [DataContract]
   public class Rate : BarBase {
     public class TrendLevels {
       public static readonly TrendLevels Empty;
       public static readonly Rate EmptyRate;
       static TrendLevels() {
-        Empty = new TrendLevels(0,new[] { double.NaN, double.NaN }, double.NaN);
+        Empty = new TrendLevels(0, new[] { double.NaN, double.NaN }, double.NaN);
         EmptyRate = new Rate { Trends = Empty };
       }
       public bool IsEmpty { get { return Count == 0; } }
@@ -622,7 +654,7 @@ namespace HedgeHog.Bars {
       double _PriceAvg31 = double.NaN;
       double _PriceAvg32 = double.NaN;
 
-      
+
       public double Slope { get; set; }
       public double StDev { get; set; }
       public int Count { get; set; }
@@ -728,21 +760,15 @@ namespace HedgeHog.Bars {
         }
       }
 
-      public double[] Coeffs {
-        get;
-        private set;
-      }
-      public Lazy<double> PriceMax {
-        get;
-        set;
-      } = Lazy.Create(() => double.NaN);
-      public Lazy<double> PriceMin {
-        get;
-        set;
-      } = Lazy.Create(() => double.NaN);
+      public double[] Coeffs { get; private set; }
+      public IEnumerable<Rate> RateMax { get { return Sorted.Value.Skip(1); } }
+      public IEnumerable<double> PriceMax { get { return RateMax.Select(r => r.AskHigh); } }
+      public IEnumerable<Rate> RateMin { get { return Sorted.Value.Take(1); } }
+      public IEnumerable<double> PriceMin { get { return RateMin.Select(r => r.BidLow); } }
+      public Lazy<Rate[]> Sorted { get; set; } = Lazy.Create(() => new Rate[0]);
 
       double _height = double.NaN;
-      public TrendLevels(int count, double[] coeffs,double stDev) {
+      public TrendLevels(int count, double[] coeffs, double stDev) {
         this.Count = count;
         this.Slope = coeffs.LineSlope();
         this.Coeffs = coeffs;
@@ -757,7 +783,8 @@ namespace HedgeHog.Bars {
                     double BidHigh, double BidLow, double BidOpen, double BidClose,
                     DateTime StartDate
       ) {
-      if (StartDate.Kind != DateTimeKind.Utc) throw new ArgumentException("StartDate must be of Utc kind");
+      if(StartDate.Kind != DateTimeKind.Utc)
+        throw new ArgumentException("StartDate must be of Utc kind");
       this.AskHigh = AskHigh;
       this.AskLow = AskLow;
       this.AskOpen = AskOpen;
@@ -790,11 +817,11 @@ namespace HedgeHog.Bars {
     }
 
     #region TpsAverage
-    private double _TpsAverage= double.NaN;
+    private double _TpsAverage = double.NaN;
     public double TpsAverage {
       get { return _TpsAverage; }
       set {
-        if (_TpsAverage != value) {
+        if(_TpsAverage != value) {
           _TpsAverage = value;
         }
       }
