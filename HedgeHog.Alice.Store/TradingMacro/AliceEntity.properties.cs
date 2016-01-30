@@ -1030,13 +1030,26 @@ namespace HedgeHog.Alice.Store {
     double _trendAngleGreen;
     [WwwSetting(Group = wwwSettingsCorridorAngles)]
     [Category(categoryActive)]
-    public double TrendAngleGreen{
+    public double TrendAngleGreen {
       get { return _trendAngleGreen; }
       set {
         if(_trendAngleGreen == value)
           return;
         _trendAngleGreen = value;
         OnPropertyChanged(() => TrendAngleGreen);
+      }
+    }
+
+    double _trendAngleLime;
+    [WwwSetting(Group = wwwSettingsCorridorAngles)]
+    [Category(categoryActive)]
+    public double TrendAngleLime {
+      get { return _trendAngleLime; }
+      set {
+        if(_trendAngleLime == value)
+          return;
+        _trendAngleLime = value;
+        OnPropertyChanged(() => TrendAngleLime);
       }
     }
 

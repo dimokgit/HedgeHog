@@ -1171,8 +1171,8 @@ namespace HedgeHog.Alice.Store {
                   Action<bool, Action> turnItOff = (should, a) => _buySellLevels
                     .Where(_ => should)
                     .Do(sr => {
-                      if(!TradeConditionsHave(Tip2Ok))
-                        sr.InManual = false;
+                      //if(!TradeConditionsHave(Tip2Ok))
+                      sr.InManual = false;
                       sr.CanTrade = !IsAutoStrategy;
                       sr.TradesCount = TradeCountStart;
                     })

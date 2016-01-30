@@ -63,6 +63,7 @@ namespace HedgeHog.Alice.Store {
 
     #region _corridors
     DateTime _corridorStartDate1 = DateTime.MinValue;
+    public int CorridorLengthLime { get; private set; }
     public int CorridorLengthGreen { get; private set; }
     public int CorridorLengthRed { get; private set; }
     DateTime _corridorStartDate2 = DateTime.MinValue;
@@ -89,50 +90,62 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorBy123(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var rates = ratesForCorridor.ToList();
       rates.Reverse();
-      var legs = (BarPeriodInt >0 || CmaMACD == null ? DistanceByMACD2(rates,BarsCountCalc) : _macdDiastances).Select((d, i) => new { d, i }).Take(rates.Count).ToList();
-      var leg = legs.Last().d.Div(6);
+      var legs = (BarPeriodInt > 0 || CmaMACD == null ? DistanceByMACD2(rates, BarsCountCalc) : _macdDiastances).Select((d, i) => new { d, i }).Take(rates.Count).ToList();
+      var leg = legs.Last().d.Div(7);
       var sectionStarts = legs.DistinctUntilChanged(a => a.d.Div(leg).Floor()).ToList();
       var sections = sectionStarts.Zip(sectionStarts.Skip(1), (p, n) => new { end = n.i, start = p.i }).ToList();
       //var sections2 = sectionStarts.Scan(new { end=0,start=0},(p, n) => new { end = n.i, start = p.end }).ToList();
       //sections2.Count();
+
+      #region Funcs
       Func<Rate, int> rateIndex = rate => rates.FuzzyFind(rate, (r, r1, r2) => r.StartDate.Between(r1.StartDate, r2.StartDate));
-      {
-        Func<int, int, Rate> getExtreamRate = (start, end) => {
-          var offset = ((end - start) * 0.3).ToInt();
-          var range = rates.GetRange(0, rates.Count.Min(end));
-          var line = range.ToArray(r => r.PriceAvg).Line();
-          var skip = end /*- start*/ - offset;// - offset.Div(2).ToInt();
-          var zip = line.Skip(skip).Zip(range.Skip(skip), (l, r) => new { l = l.Abs(r.PriceAvg), r });
-          return zip.OrderByDescending(x => x.l).Take(1).Select(x=>x.r).DefaultIfEmpty(range.Last()).Single();
-        };
-        Func<int, IEnumerableCore.Singleable<Rate>> getRate = start =>
-          (start < sections.Count - 1
-          ? sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end))
-          : new Rate[0]).AsSingleable();
-        getRate(1).ForEach( rate => {
-          try {
-            CorridorLengthGreen = rateIndex(rate);
-          } catch(Exception exc) {
-            Log = exc;
-          }
-        });
-        CorridorLengthBlue = ratesForCorridor.Count;
+      Func<int, int, Rate> getExtreamRate = (start, end) => {
+        var offset = ((end - start) * 0.3).ToInt();
+        var range = rates.GetRange(0, rates.Count.Min(end));
+        var line = range.ToArray(r => r.PriceAvg).Line();
+        var skip = end /*- start*/ - offset;// - offset.Div(2).ToInt();
+        var zip = line.Skip(skip).Zip(range.Skip(skip), (l, r) => new { l = l.Abs(r.PriceAvg), r });
+        return zip.OrderByDescending(x => x.l).Take(1).Select(x => x.r).DefaultIfEmpty(range.Last()).Single();
+      };
+      Func<int, IEnumerableCore.Singleable<Rate>> getRate = start =>
+        (start < sections.Count - 1
+        ? sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end))
+        : new Rate[0]).AsSingleable();
+      Func<Exception, IEnumerable<int>> handler = exc => { Log = exc; return new int[0]; };
+      Func<int, IEnumerable<int>> getLength = (index) => {
+        return getRate(index)
+        .Select(rateIndex)
+        .Catch(handler);
+      };
+      #endregion
+
+      getLength(0).ForEach(i => {
+        CorridorLengthLime = i;
+        TrendLines0 = Lazy.Create(() => CalcTrendLines(CorridorLengthLime), TrendLines0.Value, exc => Log = exc);
+      });
+
+      getLength(1).ForEach(i => {
+        CorridorLengthGreen = i;
         TrendLines1 = Lazy.Create(() => CalcTrendLines(CorridorLengthGreen), TrendLines1.Value, exc => Log = exc);
-        var ratesForCorr = getRate(3).Select(rate => {
-          var redLength = rateIndex(rate);
-          TrendLines = Lazy.Create(() => CalcTrendLines(redLength), TrendLines.Value, exc => Log = exc);
-          TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue), TrendLines2.Value, exc => Log = exc);
-          var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
-          redRates.Reverse();
-          WaveShort.Rates = redRates;
-          return redRates;
-        });
-        GetShowVoltageFunction()();
-        return ratesForCorr
-          .Select(redRates=> new CorridorStatistics(redRates, TrendLinesTrends.StDev, TrendLinesTrends.Coeffs, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height))
-          .DefaultIfEmpty(CorridorStats)
-          .First();
-      }
+      });
+
+      CorridorLengthBlue = ratesForCorridor.Count;
+      TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue), TrendLines2.Value, exc => Log = exc);
+
+      var ratesForCorr = getRate(3).Select(rate => {
+        var redLength = rateIndex(rate);
+        TrendLines = Lazy.Create(() => CalcTrendLines(redLength), TrendLines.Value, exc => Log = exc);
+        var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
+        redRates.Reverse();
+        WaveShort.Rates = redRates;
+        return redRates;
+      });
+
+      GetShowVoltageFunction()();
+      return ratesForCorr
+        .Select(redRates => new CorridorStatistics(redRates, TrendLinesTrends.StDev, TrendLinesTrends.Coeffs, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height))
+        .DefaultIfEmpty(CorridorStats)
+        .First();
     }
 
     public bool IsCorridorFrozen() {
@@ -193,6 +206,11 @@ namespace HedgeHog.Alice.Store {
     public Lazy<IList<Rate>> TrendLines {
       get { return _trendLines; }
       private set { _trendLines = value; }
+    }
+    Lazy<IList<Rate>> _trendLines0 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    public Lazy<IList<Rate>> TrendLines0 {
+      get { return _trendLines0; }
+      private set { _trendLines0 = value; }
     }
     Lazy<IList<Rate>> _trendLines1 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
     public Lazy<IList<Rate>> TrendLines1 {

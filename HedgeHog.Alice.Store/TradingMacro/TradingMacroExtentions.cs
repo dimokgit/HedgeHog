@@ -1460,12 +1460,14 @@ namespace HedgeHog.Alice.Store {
         //var rateStartIndex = rates.IndexOf(rateStart);
         //var rateIndexStart = (rateStartIndex - BarsCount).Max(0);
         //rates.RemoveRange(0, rateIndexStart);
-        var dateStop = args.MonthsToTest > 0 ? args.DateStart.Value.AddDays(args.MonthsToTest * 30.5) : DateTime.MaxValue;
-        if(args.MonthsToTest > 0) {
+        var dateStop = args.DaysToTest > 0 ? args.DateStart.Value.AddDays(args.DaysToTest) : DateTime.MaxValue;
+        if(args.DaysToTest > 0) {
           //rates = rates.Where(r => r.StartDate <= args.DateStart.Value.AddDays(args.MonthsToTest*30.5)).ToList();
-          if((_replayRates[0].StartDate - _replayRates.Last().StartDate).Duration().TotalDays < args.MonthsToTest * 30) {
-            args.ResetSuperSession();
-            return;
+          var avaibleDays = (_replayRates[0].StartDate - _replayRates.Last().StartDate).Duration().TotalDays;
+          if(avaibleDays < args.DaysToTest) {
+            //args.ResetSuperSession();
+            //return;
+            Log = new Exception("Total avalible days<" + avaibleDays + "> is less the DaysToTest<" + args.DaysToTest + ">");
           }
         }
         #region Init stuff
@@ -1798,7 +1800,7 @@ namespace HedgeHog.Alice.Store {
           Values = new Dictionary<string, object> {
             { "Angle", TrendLines2Trends.Angle.Abs() },
             { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
-            { "CmaMacdRsd", MacdRsdAvg }
+            { "Voltage", GetVoltageHigh() }
           }
         });
       var ts = TradeStatisticsDictionary[trade.Id];
@@ -2359,7 +2361,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     CorridorStatistics ShowVoltsByStDev() {
-      SetVots(StDevByPriceAvgInPips / this.RatesDuration * 60, 2);
+      SetVots(StDevByHeightInPips, 2);
       return null;
     }
 
@@ -3237,23 +3239,32 @@ namespace HedgeHog.Alice.Store {
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           {
           {TradeLevelBy.PriceAvg1,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg1)},
-          {TradeLevelBy.Avg1Max,()=>levelMax(tm=>tm.TrendLinesTrends.PriceAvg1) },
+          {TradeLevelBy.BlueAvg1,()=>level(tm=>tm.TrendLines2Trends.PriceAvg1)},
+          {TradeLevelBy.GreenAvg1,()=>level(tm=>tm.TrendLines1Trends.PriceAvg1)},
+
+            { TradeLevelBy.Avg1Max,()=>levelMax(tm=>tm.TrendLinesTrends.PriceAvg1) },
           {TradeLevelBy.Avg1Min,()=>levelMin(tm=>tm.TrendLinesTrends.PriceAvg1) },
+
           {TradeLevelBy.Avg2GRBMax,()=>levelMax(tm=>tm.TrendLinesTrendsPriceAvg( tm,tls=>tls.PriceAvg2)) },
           {TradeLevelBy.Avg3GRBMin,()=>levelMin(tm=>tm.TrendLinesTrendsPriceAvg( tm,tls=>tls.PriceAvg3)) },
 
           {TradeLevelBy.PriceAvg02,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg02)},
           {TradeLevelBy.PriceAvg2,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg2)},
+
           {TradeLevelBy.PriceAvg21,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg21)},
           {TradeLevelBy.PriceAvg22,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg22)},
 
           {TradeLevelBy.PriceAvg03,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg03)},
           {TradeLevelBy.PriceAvg3,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg3)},
+
           {TradeLevelBy.PriceAvg31,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg31)},
           {TradeLevelBy.PriceAvg32,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg32)},
 
           {TradeLevelBy.PriceHigh,()=> levelMax(tm=>tm.TrendLines2Trends.PriceAvg2)},
           {TradeLevelBy.PriceLow,()=> levelMin(tm=>tm.TrendLines2Trends.PriceAvg3)},
+
+          {TradeLevelBy.PriceLimeH,()=> levelMax(tm=>tm.TrendLines0Trends.PriceAvg2)},
+          {TradeLevelBy.PriceLimeL,()=> levelMin(tm=>tm.TrendLines0Trends.PriceAvg3)},
 
           {TradeLevelBy.PriceHigh0,()=> levelMax(tm=>tm.TrendLines1Trends.PriceAvg2)},
           {TradeLevelBy.PriceLow0,()=> levelMin(tm=>tm.TrendLines1Trends.PriceAvg3)},
@@ -3263,6 +3274,22 @@ namespace HedgeHog.Alice.Store {
 
           {TradeLevelBy.PriceMax,()=> levelMax(TrendLinesTrendsPriceMax)},
           {TradeLevelBy.PriceMin,()=> levelMin(TrendLinesTrendsPriceMin)},
+
+          {TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
+          {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
+
+          {TradeLevelBy.BlueStripH,()=> CenterOfMassBuy2.IfNaN(TradeLevelFuncs[TradeLevelBy.GreenStripH]) },
+          {TradeLevelBy.BlueStripL,()=> CenterOfMassSell2.IfNaN(TradeLevelFuncs[TradeLevelBy.GreenStripL]) },
+
+          {TradeLevelBy.RedStripH,()=> CenterOfMassBuy3.IfNaN(TradeLevelFuncs[TradeLevelBy.BlueStripH]) },
+          {TradeLevelBy.RedStripL,()=> CenterOfMassSell3.IfNaN(TradeLevelFuncs[TradeLevelBy.BlueStripL]) },
+
+          {TradeLevelBy.LimeMax,()=> TrendLines0Trends.PriceMax.Value },
+          {TradeLevelBy.LimeMin,()=> TrendLines0Trends.PriceMin.Value },
+
+          {TradeLevelBy.GreenMax,()=> TrendLines1Trends.PriceMax.Value },
+          {TradeLevelBy.GreenMin,()=> TrendLines1Trends.PriceMin.Value },
+
           {TradeLevelBy.PriceMax1,()=> levelMax(TrendLinesTrendsPriceMax1)},
           {TradeLevelBy.PriceMin1,()=> levelMin(TrendLinesTrendsPriceMin1)},
 
@@ -3276,7 +3303,10 @@ namespace HedgeHog.Alice.Store {
       Func<TradeLevelBy, TradeLevelBy, double> tradeLeveBy = (h, l) => (TradeLevelFuncs[h]() - TradeLevelFuncs[l]()) * xRatio;
       switch(function) {
         case TradingMacroTakeProfitFunction.StDev:
-          return StDevByPriceAvg * xRatio + InPoints(CommissionInPips()) * 2;
+          return StDevByHeight * xRatio + InPoints(CommissionInPips()) * 2;
+        case TradingMacroTakeProfitFunction.Lime:
+          tp = tradeLeveBy(TradeLevelBy.PriceLimeH, TradeLevelBy.PriceLimeL);
+          break;
         case TradingMacroTakeProfitFunction.Green:
           tp = tradeLeveBy(TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0);
           break;
@@ -3288,11 +3318,6 @@ namespace HedgeHog.Alice.Store {
           break;
         case TradingMacroTakeProfitFunction.Pips:
           tp = InPoints(xRatio);
-          break;
-        case TradingMacroTakeProfitFunction.Wave:
-          if(WaveRanges.Count == 0)
-            throw new Exception(new { WaveRanges = new { Count = WaveRanges.Count } } + "");
-          tp = InPoints(WaveHeightAverage) * xRatio;
           break;
         #region RatesHeight
         case TradingMacroTakeProfitFunction.RatesHeight:
@@ -3481,7 +3506,7 @@ namespace HedgeHog.Alice.Store {
         CurrentLossPercent = CurrentGross / account.Balance;
         BalanceOnStop = account.Balance + StopAmount.GetValueOrDefault();
         BalanceOnLimit = account.Balance + LimitAmount.GetValueOrDefault();
-        SetTradesStatistics(trades);
+        //SetTradesStatistics(trades);
         if(DoNews && RatesArray.Any())
           OnNews(() => {
             if(!RatesArray.Any())
@@ -3830,7 +3855,11 @@ namespace HedgeHog.Alice.Store {
             UseRatesInternal(rl => new[] { rl.Count - BarsCountCount() }.Where(rc => rc > 0).ForEach(rc => rl.RemoveRange(0, rc)));
             if(LoadHistoryRealTime) {
               _addHistoryOrdersBuffer.Push(()
-                => PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper, BarPeriodInt, Pair, DateTime.MinValue, obj => { if(DoLogSaveRates) Log = new Exception(obj + ""); }));
+                => {
+                  TradingMacrosByPair().ForEach(tm =>
+                  PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper
+                    , tm.BarPeriodInt, Pair, DateTime.Now.AddDays(-1), obj => { if(DoLogSaveRates) Log = new Exception(obj + ""); }));
+                });
             }
             //Scheduler.Default.Schedule(a);
             //{

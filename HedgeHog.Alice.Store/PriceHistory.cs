@@ -42,12 +42,10 @@ namespace HedgeHog.Alice.Store {
             var dateEnd = dateMin.Value.Subtract(offset).DateTime;
             fw.GetBarsBase<Rate>(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
           }
-          if(dateStart == DateTime.MinValue) {
-            var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
-            if(q == DateTimeOffset.MinValue)
-              throw new Exception("Either period or dateStart must be provided.");
-            dateStart = q.LocalDateTime;
-          }
+          var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
+          if(dateStart == DateTime.MinValue && q == DateTimeOffset.MinValue)
+            throw new Exception("dateStart must be provided there is no bars in database.");
+          dateStart = q.LocalDateTime;
         }
         fw.GetBarsBase<Rate>(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
       } catch (Exception exc) {

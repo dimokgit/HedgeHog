@@ -196,7 +196,11 @@ namespace HedgeHog.Alice.Client {
 
       var paneGroup = RootVisual.Panes.First().PaneGroup;
       panesOriginal.Except(RootVisual.Panes).ToList().ForEach(pane => {
-        pane.RemoveFromParent();
+        try {
+          pane.RemoveFromParent();
+        }catch(Exception exc) {
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
+        }
         paneGroup.AddItem(pane, Telerik.Windows.Controls.Docking.DockPosition.Right) ;
         pane.IsHidden = false;
       });

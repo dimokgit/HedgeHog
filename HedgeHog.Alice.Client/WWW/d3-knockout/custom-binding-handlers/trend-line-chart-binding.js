@@ -108,10 +108,12 @@
       ;
       if (chartNum === 1) {
         addRect("tickArea", tickAreaBgColor);
-        addRect(blueStrip, "lavender", 0.4);
-        addRect(greenStrip, "#E6FAE6", 0.4);
-        addRect(redStrip, "#FAE6E6", 0.4);
       }
+      // coms
+      addRect(redStrip, "#FAE6E6", 0.5);
+      addRect(blueStrip, "lavender", 0.5);
+      addRect(greenStrip, "#E6FAE6", 0.6);
+
       if (hasTps) {
         svg.append("g")
             .attr("transform", "translate(" + (width) + ",0)")
@@ -133,6 +135,7 @@
       /*addLine(1);*/ addLine(2); addLine(3); addLine(21); addLine(31);
       addLine("1_2"); addLine("2_2"); addLine("3_2");
       addLine("2_1"); addLine("3_1");
+      addLine("2_0"); addLine("3_0");
       // Other lines
       addLine("buyEnter"); addLine("sellEnter"); addLine("buyClose"); addLine("sellClose");
       //#region Corridor StartDate
@@ -258,6 +261,7 @@
       var trendLines = chartData.trendLines;
       var trendLines2 = chartData.trendLines2;
       var trendLines1 = chartData.trendLines1;
+      var trendLines0 = chartData.trendLines0;
       var openTrades = chartData.trades;
       var openBuy = openTrades.buy, openSell = openTrades.sell;
       var closedTrades = chartData.closedTrades;
@@ -381,13 +385,13 @@
         }
         if (chartNum === 1) {
           setRectArea(chartData.tickDate, yDomain[1], trendLines.dates[1], yDomain[0], "tickArea");
-          if (com)
-            setHorizontalStrip(com.b, com.s, greenStrip);
-          if (com2)
-            setHorizontalStrip(com2.b, com2.s, blueStrip);
-          if (com3)
-            setHorizontalStrip(com3.b, com3.s, redStrip);
         }
+        if (com)
+          setHorizontalStrip(com.b, com.s, greenStrip);
+        if (com2)
+          setHorizontalStrip(com2.b, com2.s, blueStrip);
+        if (com3)
+          setHorizontalStrip(com3.b, com3.s, redStrip);
         // #region add trend corridor
         //setTrendLine(trendLines, 1, "lightgrey");
         setTrendLine(trendLines, 2, "darkred");
@@ -401,7 +405,10 @@
 
         setTrendLine2(trendLines1, 2, 1, "green");
         setTrendLine2(trendLines1, 3, 1, "green");
-      // #endregion
+
+        setTrendLine2(trendLines0, 2, 0, "limegreen");
+        setTrendLine2(trendLines0, 3, 0, "limegreen");
+        // #endregion
       }
       // #endregion
 

@@ -28,13 +28,13 @@ namespace HedgeHog.Shared {
     #endregion
 
     #region MonthsToTest
-    private double _MonthsToTest;
-    public double MonthsToTest {
-      get { return _MonthsToTest; }
+    private double _DaysToTest;
+    public double DaysToTest {
+      get { return _DaysToTest; }
       set {
-        if (_MonthsToTest != value) {
-          _MonthsToTest = value;
-          RaisePropertyChanged("MonthsToTest");
+        if (_DaysToTest != value) {
+          _DaysToTest = value;
+          RaisePropertyChanged("DaysToTest");
         }
       }
     }

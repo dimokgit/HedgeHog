@@ -121,6 +121,18 @@ namespace HedgeHog.Alice.Client {
         close2 = trends2.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends2.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
+      var trends0 = tm.TrendLines0.Value.ToList();
+      var trendLines0 = new {
+        dates = trends0.Count == 0
+        ? new DateTimeOffset[0]
+        : new DateTimeOffset[]{
+          tm.BarPeriod == BarsPeriodType.m1
+          ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLengthLime-1))
+          : trends0[0].StartDate2,
+          ratesLastStartDate2},
+        close2 = trends0.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
+        close3 = trends0.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
+      };
       var trends1 = tm.TrendLines1.Value.ToList();
       var trendLines1 = new {
         dates = trends1.Count == 0
@@ -153,6 +165,7 @@ namespace HedgeHog.Alice.Client {
         rates2 = getRates(ratesForChart2),
         ratesCount = tm.RatesArray.Count,
         dateStart = tm.RatesArray[0].StartDate2,
+        trendLines0,
         trendLines,
         trendLines2,
         trendLines1,

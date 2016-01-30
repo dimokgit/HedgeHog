@@ -345,8 +345,9 @@ namespace HedgeHog.Alice.Store {
     }
     public Rate.TrendLevels TrendLines2Trends { get { return IsTrendsEmpty(TrendLines2) ? Rate.TrendLevels.Empty : TrendLines2.Value[1].Trends; } }
     public Rate.TrendLevels TrendLines1Trends { get { return IsTrendsEmpty(TrendLines1) ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
+    public Rate.TrendLevels TrendLines0Trends { get { return IsTrendsEmpty(TrendLines0) ? Rate.TrendLevels.Empty : TrendLines0.Value[1].Trends; } }
     public Rate.TrendLevels TrendLinesTrends { get { return IsTrendsEmpty(TrendLines) ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
-    public Rate.TrendLevels[] TrendLinesTrendsAll { get { return new[] { TrendLines1Trends, TrendLinesTrends, TrendLines2Trends }; } }
+    public Rate.TrendLevels[] TrendLinesTrendsAll { get { return new[] { TrendLines0Trends, TrendLines1Trends, TrendLinesTrends, TrendLines2Trends }; } }
     public IEnumerable<IList<Rate.TrendLevels>> TrendLinesTrendsCrossJoin {
       get {
         return  GetTrendLinesCrossJoinValues(tls => tls[1]);
@@ -374,13 +375,13 @@ namespace HedgeHog.Alice.Store {
       return value(tm.TrendLinesTrends).Min(value(tm.TrendLines2Trends), value(tm.TrendLines1Trends));
     }
     private double TrendLinesTrendsPriceMax(TradingMacro tm) {
-      return tm.TrendLinesTrends.PriceAvg2.Max(tm.TrendLines2Trends.PriceAvg2, tm.TrendLines1Trends.PriceAvg2);
+      return tm.TrendLinesTrendsAll.Max(tl=> tl.PriceAvg2);
     }
     private double TrendLinesTrendsPriceMax1(TradingMacro tm) {
       return tm.TrendLinesTrends.PriceAvg21.Max(tm.TrendLines2Trends.PriceAvg2, tm.TrendLines1Trends.PriceAvg2);
     }
     private double TrendLinesTrendsPriceMin(TradingMacro tm) {
-      return tm.TrendLinesTrends.PriceAvg3.Min(tm.TrendLines2Trends.PriceAvg3, tm.TrendLines1Trends.PriceAvg3);
+      return tm.TrendLinesTrendsAll.Min(tl => tl.PriceAvg3);
     }
     private double TrendLinesTrendsPriceMin1(TradingMacro tm) {
       return tm.TrendLinesTrends.PriceAvg31.Min(tm.TrendLines2Trends.PriceAvg3, tm.TrendLines1Trends.PriceAvg3);
@@ -524,6 +525,8 @@ namespace HedgeHog.Alice.Store {
       rates[0].Trends.PriceAvg1 = regRates[0];
       rates[1].Trends.PriceAvg1 = regRates[1];
       rates[1].Trends.Height = regRates[1] - regRates[0];
+      rates[1].Trends.PriceMax = Lazy.Create(() => corridorValues.Max(r => r.AskHigh));
+      rates[1].Trends.PriceMin = Lazy.Create(() => corridorValues.Min(r => r.BidLow));
 
       var pa1 = rates[0].Trends.PriceAvg1;
       rates[0].Trends.PriceAvg02 = pa1 + hl;

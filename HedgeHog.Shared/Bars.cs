@@ -732,6 +732,14 @@ namespace HedgeHog.Bars {
         get;
         private set;
       }
+      public Lazy<double> PriceMax {
+        get;
+        set;
+      } = Lazy.Create(() => double.NaN);
+      public Lazy<double> PriceMin {
+        get;
+        set;
+      } = Lazy.Create(() => double.NaN);
 
       double _height = double.NaN;
       public TrendLevels(int count, double[] coeffs,double stDev) {
