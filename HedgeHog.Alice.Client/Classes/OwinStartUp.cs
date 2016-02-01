@@ -391,6 +391,9 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
+    public void SetTradeRate(string pair, bool isBuy, double price) {
+        GetTradingMacro(pair).ForEach(tm => tm.SetTradeRate(isBuy, price));
+    }
     public void ManualToggle(string pair) {
       try {
         GetTradingMacro(pair).ForEach(tm => tm.ResetSuppResesInManual());

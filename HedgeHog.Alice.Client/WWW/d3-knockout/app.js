@@ -206,6 +206,12 @@
     function setTradeCount(tc) {
       chat.server.setTradeCount(pair, tc);
     }
+    this.setTradeRate = function setTradeLeve(isBuy, rate) {
+      var args = [pair, isBuy, rate];
+      args.noNote = true;
+      serverCall("setTradeRate", args);
+    }
+
     // #endregion
     // #region Buy/Sell
     this.isQuickTrade = ko.observable(false);

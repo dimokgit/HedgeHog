@@ -339,6 +339,7 @@ namespace HedgeHog.Alice.Store {
       Scheduler.CurrentThread.Schedule(TimeSpan.FromMilliseconds(1), () => CorridorStartDate = date);
     }
     double CurrentEnterPrice(bool? isBuy) { return CalculateLastPrice(GetTradeEnterBy(isBuy)); }
+    IEnumerable<double> CurrentEnterPrices(Func<double, bool> predicate) { return CurrentEnterPrices().Where(predicate); }
     double[] CurrentEnterPrices() { return new[] { CurrentEnterPrice(false), CurrentEnterPrice(true) }; }
     double CurrentExitPrice(bool? isBuy) { return CalculateLastPrice(GetTradeExitBy(isBuy)); }
     bool IsTrendsEmpty(Lazy<IList<Rate>> trends) {
@@ -351,7 +352,7 @@ namespace HedgeHog.Alice.Store {
     public Rate.TrendLevels[] TrendLinesTrendsAll { get { return new[] { TrendLines0Trends, TrendLines1Trends, TrendLinesTrends, TrendLines2Trends }; } }
     public IEnumerable<IList<Rate.TrendLevels>> TrendLinesTrendsCrossJoin {
       get {
-        return  GetTrendLinesCrossJoinValues(tls => tls[1]);
+        return GetTrendLinesCrossJoinValues(tls => tls[1]);
       }
     }
     public Lazy<IList<Rate>>[][] TrendLinesCrossJoin {
@@ -376,7 +377,7 @@ namespace HedgeHog.Alice.Store {
       return value(tm.TrendLinesTrends).Min(value(tm.TrendLines2Trends), value(tm.TrendLines1Trends));
     }
     private double TrendLinesTrendsPriceMax(TradingMacro tm) {
-      return tm.TrendLinesTrendsAll.Max(tl=> tl.PriceAvg2);
+      return tm.TrendLinesTrendsAll.Max(tl => tl.PriceAvg2);
     }
     private double TrendLinesTrendsPriceMax1(TradingMacro tm) {
       return tm.TrendLinesTrends.PriceAvg21.Max(tm.TrendLines2Trends.PriceAvg2, tm.TrendLines1Trends.PriceAvg2);
@@ -526,7 +527,7 @@ namespace HedgeHog.Alice.Store {
       rates[0].Trends.PriceAvg1 = regRates[0];
       rates[1].Trends.PriceAvg1 = regRates[1];
       rates[1].Trends.Height = regRates[1] - regRates[0];
-      rates[1].Trends.Sorted = Lazy.Create(() => { var range = corridorValues.ToList();range.Sort(_priceAvg);return new[] { range[0], range.Last() }; });
+      rates[1].Trends.Sorted = Lazy.Create(() => { var range = corridorValues.ToList(); range.Sort(_priceAvg); return new[] { range[0], range.Last() }; });
 
       var pa1 = rates[0].Trends.PriceAvg1;
       rates[0].Trends.PriceAvg02 = pa1 + hl;

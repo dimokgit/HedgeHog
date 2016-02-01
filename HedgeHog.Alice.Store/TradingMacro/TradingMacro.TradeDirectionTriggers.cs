@@ -27,6 +27,39 @@ namespace HedgeHog.Alice.Store {
     bool MySelfNext(TradingMacro tm) { return tm.PairIndex > this.PairIndex; }
     #region Triggers
     [TradeDirectionTrigger]
+    public void Limie() {
+      var tlCount = TrendLines0Trends.Count;
+      UseRates(rates => rates.GetRange(rates.Count-tlCount , tlCount.Div(1.05).ToInt())).ForEach(range => {
+        var minMax = range.Select((r, i) => new { r, i }).MinMax(x => x.r.PriceAvg);
+        var fibRange = Fibonacci.Levels(minMax[1].r.AskHigh, minMax[0].r.BidLow).Skip(4).Take(2).ToArray();
+        CenterOfMassBuy = fibRange[1];
+        CenterOfMassSell = fibRange[0];
+        var isUp = minMax[0].r.StartDate < minMax[1].r.StartDate;
+        if(HaveTrades())
+          return;
+        double buy, sell;
+        if(isUp) {
+          buy = minMax[1].r.AskHigh;
+          sell = range.GetRange(range.Count - minMax[1].i).Select(r => r.BidLow).DefaultIfEmpty(minMax[0].r.BidLow).Min();
+          if(!sell.Between(fibRange))
+            return;
+        } else {
+          sell = minMax[0].r.BidLow;
+          buy = range.GetRange(range.Count - minMax[0].i).Select(r => r.AskHigh).DefaultIfEmpty(minMax[1].r.AskHigh).Max();
+          if(!buy.Between(fibRange))
+            return;
+        }
+        if(BuyLevel.RateEx != buy || SellLevel.RateEx != sell)
+          BuySellLevels.ForEach(sr => sr.CanTradeEx = false);
+        if(BuySellLevels.Any(sr => sr.CanTrade) || InPips(buy.Abs(sell)) < GetVoltageHigh())
+          return;
+        BuyLevel.RateEx = buy;
+        SellLevel.RateEx = sell;
+      });
+    }
+    
+
+    [TradeDirectionTrigger]
     public void OnTradeCondOk() {
       if(!TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
         var bs = new[] { BuyLevel, SellLevel };

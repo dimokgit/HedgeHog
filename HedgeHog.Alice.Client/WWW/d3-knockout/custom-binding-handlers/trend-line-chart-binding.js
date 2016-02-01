@@ -70,9 +70,10 @@
   var showLineLog = false;
   var tpsChartNum = 0;
   ko.bindingHandlers.lineChart = {
-    init: function (element,valueAccessor) {
+    init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
       "use strict";
 
+      viewModel = bindingContext.$root;
       var chartData = ko.unwrap(valueAccessor());
       var chartNum = chartData.chartNum;
       var hasTps = chartNum == tpsChartNum;
@@ -136,8 +137,48 @@
       addLine("1_2"); addLine("2_2"); addLine("3_2");
       addLine("2_1"); addLine("3_1");
       addLine("2_0"); addLine("3_0");
-      // Other lines
-      addLine("buyEnter"); addLine("sellEnter"); addLine("buyClose"); addLine("sellClose");
+      // Trade lines
+      function isTradeDrag() {
+        return viewModel.chartArea[chartNum].inDrag;
+      }
+      function setTradeDrag(inDrag) {
+        viewModel.chartArea[chartNum].inDrag = inDrag;;
+      }
+      var drag = d3.behavior.drag()
+        .on("drag", dragmove)
+        .on("dragstart", dragstart)
+        .on("dragend", dragend);
+      function dragmove(d) {
+        var vm = viewModel.chartArea[chartNum].cha;
+        var line = d3.select(this);
+        line.attr("y1", d3.event.y).attr("y2", d3.event.y);
+        setTradeRate.bind(this)();
+      }
+      function dragstart(d) {
+        if (this.oldWidth) {
+          var line = d3.select(this);
+          line.style("stroke-width", this.oldWidth);
+        }
+      }
+      function dragend(d) {
+        setTradeDrag(false);
+        setTradeRate.bind(this)();
+      }
+      function setTradeRate() {
+        var y = viewModel.chartArea[chartNum].cha.y;
+        var line = d3.select(this);
+        var y1 = parseFloat(line.attr("y1"));
+        var price = y.invert(y1);
+        var isBuy = line.node().buySell;
+        if (isBuy === undefined) return alert(JSON.stringify({ isBuy: isBuy }));
+        viewModel.setTradeRate(isBuy == "buy", price);
+
+      }
+      function setTradeLine(name, color, key,drag) {
+        addLine(name, color, 1, 5, drag).node().buySell = key;
+      }
+      setTradeLine("buyEnter", "darkred", "buy",drag); setTradeLine("sellEnter", "darkblue", "sell", drag);
+      setTradeLine("buyClose", "darkblue"); setTradeLine("sellClose", "darkred");
       //#region Corridor StartDate
       if (doCorridorStartDate) {
         addLine("corridorStart");
@@ -159,7 +200,7 @@
           .on("click", function (d, i) {
             chartData.moveCorridorWavesCount(chartData.chartNum, i === 0 ? 1 : -1);
           })
-        ;
+      ;
       addLine("ask", "steelblue", 1, "2,2");
       addLine("bid", "steelblue", 1, "2,2"); 
       addLine("trade");
@@ -199,13 +240,31 @@
         .attr("width", 10) // x position of the second end of the line
         .attr("height", 50);// y position of the second end of the line
       }
-      function addLine(lineSuffix, color, width, dashArray) {
-        return svg.append("line")
+      function addLine(lineSuffix, color, width, dashArray, drag) {
+        var line = svg.append("line")
           .attr("class", "line" + lineSuffix)
           .style("stroke", color)  // colour the line
           .style("stroke-width", width)  // colour the line
           .style("stroke-dasharray", dashArray)  // colour the line
           .attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 0);
+        if (drag)
+          line
+            .call(drag)
+            .on("mouseover", onLineMouseOver)
+            .on("mouseout", onLineMouseOut);
+
+        return line;
+
+        function onLineMouseOver(d, i) {
+          if (isTradeDrag()) return;
+          var line = d3.select(this);
+          if (!this.oldWidth) this.oldWidth = parseInt(line.style("stroke-width"));
+          line.style("stroke-width", this.oldWidth + 5);
+        }
+        function onLineMouseOut(d, i) {
+          d3.select(this).style("stroke-width", this.oldWidth);
+        }
+
       }
       // #endregion
     },
@@ -281,6 +340,7 @@
       // #region adjust svg and axis'
       $(element).show();
       var chartArea = calcChartArea(element);
+      viewModel.chartArea[chartNum].cha = chartArea;
       var
           width = chartArea.width,
           height = chartArea.height,
@@ -433,15 +493,18 @@
       setHLine((openBuy || {}).o || (openSell || {}).o, "trade", openBuy ? "darkgreen" : "red", 1, "2,2,5,2");
 
       // #region trade levels
-      if (tradeLevels) {
+      function isTradeDrag() {
+        return viewModel.chartArea[chartNum].inDrag;
+      }
+      if (tradeLevels && !isTradeDrag()) {
         setTradeLevel(tradeLevels.buy, "buyEnter", "darkred", 1);
         setTradeLevel(tradeLevels.buyClose, "buyClose", "darkblue", openBuy ? 1 : 0, 3);
         setTradeLevel(tradeLevels.sell, "sellEnter", "darkblue", 1);
         setTradeLevel(tradeLevels.sellClose, "sellClose", "darkred", openSell ? 1 : 0, 3);
 
         var chkBoxData = [
-          tradeLevelUIFactory(x(data[0].d)+8, y(tradeLevels.buy) - 16, tradeLevels.canBuy, tradeLevels.manualBuy, tradeLevels.buyCount, canBuy),
-          tradeLevelUIFactory(x(data[0].d)+8, y(tradeLevels.sell), tradeLevels.canSell, tradeLevels.manualSell, tradeLevels.sellCount, canSell)];
+          tradeLevelUIFactory(x(data[0].d) + 8, y(tradeLevels.buy) - 16, tradeLevels.canBuy, tradeLevels.manualBuy, tradeLevels.buyCount, canBuy),
+          tradeLevelUIFactory(x(data[0].d) + 8, y(tradeLevels.sell), tradeLevels.canSell, tradeLevels.manualSell, tradeLevels.sellCount, canSell)];
         svg.selectAll("*.tradeLineUI")
           .data(chkBoxData)
           .attr('x', function (d) { return d.x; })
@@ -449,7 +512,7 @@
         ;
         svg.selectAll("*.tradeLineUI input")
           .data(chkBoxData)
-          .style("display", function (d) { return d.canTrade ? "" : "none";})
+          .style("display", function (d) { return d.canTrade ? "" : "none"; })
           .property('checked', function (d) { return d.on ? true : false; });
 
         svg.selectAll("*.tradeLineUI span")
@@ -605,15 +668,19 @@
         var strokeDashArray = strokeDash + "," + strokeDash;
         var dates = [data[0].d, data[data.length - 1].d];
         if (dates) {
-          if (level)
-            svg.select("line.line" + levelName)
-              .style("stroke", lineColour)  // colour the line
-              .style("stroke-width", strokeWidth)  // colour the line
-              .style("stroke-dasharray", strokeDashArray)  // colour the line
+          if (level) {
+            var line = svg.select("line.line" + levelName)
+              //.style("stroke", lineColour)  // colour the line
+              //.style("stroke-width", strokeWidth)  // colour the line
+              //.style("stroke-dasharray", strokeDashArray)  // colour the line
               .attr("x1", x(dates[0]) - xAxisOffset) // x position of the first end of the line
               .attr("y1", y(level)) // y position of the first end of the line
               .attr("x2", x(dates[1]) + xAxisOffset) // x position of the second end of the line
               .attr("y2", y(level));// y position of the second end of the line
+            if (strokeWidth !== undefined)
+              line.style("stroke-width", strokeWidth);
+
+          }
           //.duration(animationDuration);    
         }
       }

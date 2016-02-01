@@ -3727,20 +3727,25 @@ namespace HedgeHog.Alice.Store {
     object _innerRateArrayLocker = new object();
     public T[] UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber]int LineNumber = 0) {
       var sw = new Stopwatch();
-      lock (_innerRateArrayLocker)
-      try {
-          sw.Start();
-          return new[] { func(RatesArray) };
-        } catch(Exception exc) {
-          Log = exc;
+      if(!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds)) {
+          var message = new { Pair, PairIndex, Method = "UseRates", Caller, timeoutInMilliseconds } + "";
+          Log = new TimeoutException(message);
           return new T[0];
-        } finally {
-          sw.Stop();
-          if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
-            var message = new { Pair, PairIndex, Method = "UseRates", Caller, LastFile = Path.GetFileNameWithoutExtension(LastFile), LastLine = LineNumber, ms = sw.ElapsedMilliseconds, timeOut = timeoutInMilliseconds } + "";
-            Log = new TimeoutException(message);
-          }
         }
+      try {
+        sw.Start();
+        return new[] { func(RatesArray) };
+      } catch(Exception exc) {
+        Log = exc;
+        return new T[0];
+      } finally {
+        Monitor.Exit(_innerRateArrayLocker);
+        sw.Stop();
+        if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
+          var message = new { Pair, PairIndex, Method = "UseRates", Caller, LastFile = Path.GetFileNameWithoutExtension(LastFile), LastLine = LineNumber, ms = sw.ElapsedMilliseconds, timeOut = timeoutInMilliseconds } + "";
+          Log = new TimeoutException(message);
+        }
+      }
     }
     object _innerRateLocker = new object();
     string _UseRatesInternalSource = string.Empty;

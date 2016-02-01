@@ -190,6 +190,16 @@ namespace HedgeHog.Alice.Store {
         setTL( v => LevelSellBy = v, tlbs[preset].Item2);
       setLevels();
     }
+    public  void SetTradeRate(bool isBuy,double price) {
+      BuySellLevels
+        .Where(sr => sr.IsBuy == isBuy)
+        .ForEach(sr => {
+          IsTradingActive = false;
+          sr.InManual = true;
+          sr.Rate = price;
+          RaiseShowChart();
+        });
+    }
     public void MoveBuySellLeve(bool isBuy, double pips) {
       Func<double, double> setOrDef = l => l > 0 ? l : RatesArray.Middle();
       new[] { BuyLevel, SellLevel }

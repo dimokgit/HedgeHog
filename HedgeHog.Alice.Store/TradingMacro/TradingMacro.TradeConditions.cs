@@ -417,15 +417,64 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTurnOff]
     public TradeConditionDelegate TCbVOk {
       get {
+        Log = new Exception(new { TCbVOk = new { RhSDRatio } } + "");
         return () => TradeDirectionByBool(IsTresholdAbsOk(InPips(BuyLevel.Rate.Abs(SellLevel.Rate)) / GetVoltageHigh(), RhSDRatio));
       }
     }
 
-    public TradeConditionDelegateHide IsIn2Ok {
+    public TradeConditionDelegate IsIn2Ok {
       get {
         return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels2);
       }
     }
+
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate IsLimieOk {
+      get {
+        return () => IsLimie();
+      }
+    }
+    public TradeDirections IsLimie() {
+      var tlCount = TrendLines0Trends.Count;
+      return UseRates(rates => rates.GetRange(rates.Count - tlCount, tlCount)).Select(range => {
+        var minMax = range.Select((r, i) => new { r, i }).MinMax(x => x.r.PriceAvg);
+
+        var fibRange = Fibonacci.Levels(minMax[1].r.AskHigh, minMax[0].r.BidLow).Skip(4).Take(2).ToArray();
+        CenterOfMassBuy = fibRange[1];
+        CenterOfMassSell = fibRange[0];
+
+        double buy, sell;
+        var td = TradeDirections.None;
+        var isUp = minMax[0].r.StartDate < minMax[1].r.StartDate;
+        if(isUp) {
+          buy = minMax[1].r.AskHigh;
+          sell = range.GetRange(range.Count - minMax[1].i).Select(r => r.BidLow).DefaultIfEmpty(minMax[0].r.BidLow).Min();
+          if(sell.Between(fibRange))
+            td = TradeDirections.Both;
+        } else {
+          sell = minMax[0].r.BidLow;
+          buy = range.GetRange(range.Count - minMax[0].i).Select(r => r.AskHigh).DefaultIfEmpty(minMax[1].r.AskHigh).Max();
+          if(buy.Between(fibRange))
+            td = TradeDirections.Both;
+        }
+        td = td & TradeDirectionByBool(InPips(buy.Abs(sell)) > GetVoltageHigh());
+
+        if(BuyLevel.RateEx != buy && SellLevel.RateEx != sell)
+          BuySellLevels.ForEach(sr => sr.CanTradeEx = false);
+
+        //var cpTd = TradeDirectionByBool(!CurrentEnterPrices(cp => !cp.Between(fibRange)).Any());
+        if(td.HasAny() && !BuySellLevels.Any(sr => sr.CanTrade)) {
+          BuyLevel.RateEx = buy;
+          SellLevel.RateEx = sell;
+        }
+
+        return td;
+      })
+      .DefaultIfEmpty()
+      .Single();
+    }
+
+
     [TradeConditionTurnOff]
     public TradeConditionDelegateHide ToStripOk {
       get {
