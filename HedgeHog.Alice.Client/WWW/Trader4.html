@@ -509,6 +509,9 @@
           </li>
           <!--#endregion-->
           <li>
+            <button  data-bind="click:manualToggle">
+              <span class="glyphicon glyphicon-hand-right"></span>
+            </button>
             <button id="toggleIsActive" data-bind="click:toggleIsActive.bind($data,0)">
               <span class="glyphicon glyphicon-off"></span>
             </button>
@@ -870,10 +873,10 @@
           <div>
             <div style="display:inline-block">
               <button data-bind="click:setStrategy.bind(null)">Load</button>
-              <button data-bind="click:saveStrategy.bind(null)">Save</button>
+              <button data-bind="click:removeStrategy.bind(null,false)">Archive</button>
             </div>
             <div style="display:inline-block;float:right">
-              <button data-bind="click:removeStrategy.bind(null,false)">Archive</button>
+              <button data-bind="click:saveStrategy.bind(null)">Save</button>
               <button data-bind="click:removeStrategy.bind(null,true)">Remove</button>
             </div>
           </div>

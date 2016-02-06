@@ -211,7 +211,9 @@
       args.noNote = true;
       serverCall("setTradeRate", args);
     }
-
+    this.manualToggle = function () {
+      serverCall("manualToggle", [pair]);
+    }
     // #endregion
     // #region Buy/Sell
     this.isQuickTrade = ko.observable(false);
@@ -722,7 +724,7 @@
       openTrades(response.trades)
       //lineChartData.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
       response.waveLines.forEach(function (w, i) { w.bold = i == sumStartIndexById(); });
-      var chartData = chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross, response.tpsAvg, response.canBuy, response.canSell, response.waveLines);
+      var chartData = chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross, response.tpsHigh, response.tpsLow, response.canBuy, response.canSell, response.waveLines);
       chartData.com = self.com;
       chartData.com2 = self.com2;
       chartData.com3 = self.com3;
@@ -763,7 +765,7 @@
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;
-      var chartData2 = chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross, 0, response.canBuy, response.canSell, response.waveLines);
+      var chartData2 = chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross, 0, 0, response.canBuy, response.canSell, response.waveLines);
       chartData2.tickDate = lineChartData()[0].d;
       chartData2.com = self.com;
       chartData2.com2 = self.com2;
@@ -973,7 +975,7 @@
       });
       return root;
     }
-    function chartDataFactory(data, trendLines, trendLines2, trendLines1, trendLines0, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross, tpsAvg, canBuy, canSell, waveLines) {
+    function chartDataFactory(data, trendLines, trendLines2, trendLines1, trendLines0, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross, tpsHigh,tpsLow, canBuy, canSell, waveLines) {
       return {
         data: data ? ko.unwrap(data) : [],
         trendLines: trendLines,
@@ -998,7 +1000,8 @@
         cmaPeriod: cmaPeriod,
         closedTrades: closedTrades,
         openTradeGross: openTradeGross,
-        tpsAvg: tpsAvg,
+        tpsHigh: tpsHigh,
+        tpsLow: tpsLow,
 
         canBuy: canBuy,
         canSell:canSell

@@ -123,7 +123,8 @@
             .attr("transform", "rotate(-90)")
             .attr("y", 6)
             .attr("dy", ".71em");
-        addLine("tpsAvg", "silver").style("opacity", tpsOpacity);
+        addLine("tpsHigh", "silver").style("opacity", tpsOpacity);
+        addLine("tpsLow", "silver").style("opacity", tpsOpacity);
       }
       // #endregion
 
@@ -327,7 +328,8 @@
       var isTradingActive = chartData.isTradingActive;
       var shouldUpdateData = chartData.shouldUpdateData || svgChanged;
       var openTradeGross = ko.unwrap(chartData.openTradeGross);
-      var tpsAvg = chartData.tpsAvg;
+      var tpsHigh = chartData.tpsHigh;
+      var tpsLow = chartData.tpsLow;
       var chartNum = chartData.chartNum;
       var hasTps = chartNum == tpsChartNum;
       var canBuy = chartData.canBuy;
@@ -435,13 +437,14 @@
           var line2 = d3.svg.line()
               .x(function (d) { return x(d.d); })
               .y(function (d) { return y2(d.v); });
-          var isHotTps = _.last(data).v > tpsAvg;
+          var isHotTps = _.last(data).v > tpsHigh || _.last(data).v < tpsLow;
           var colorTps = isHotTps ? "darkred" : "navy";
           var opacityTps = isHotTps ? tpsOpacity * 2 : tpsOpacity;
           svg.select("path.line.dataTps")
             .datum(data)
             .attr("d", line2).style("stroke", colorTps).style("opacity", opacityTps);
-          setHLine(tpsAvg, "tpsAvg", colorTps, 1, "", y2);
+          setHLine(tpsHigh, "tpsHigh", colorTps, 1, "", y2);
+          setHLine(tpsLow, "tpsLow", colorTps, 1, "", y2);
         }
         if (chartNum === 1) {
           setRectArea(chartData.tickDate, yDomain[1], trendLines.dates[1], yDomain[0], "tickArea");

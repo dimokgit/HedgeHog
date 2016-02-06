@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Dynamic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Reactive;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -68,6 +69,111 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public TradeConditionDelegate EdgesOk {
+      get {
+        return () => {
+          DoSetTradeStrip = false;
+          var edges = UseRates(rates => rates.Select(_priceAvg).ToArray().EdgeByStDev(InPoints(0.1), BigWaveIndex))
+          .SelectMany(x => x.ToArray())
+          .ToArray();
+          CenterOfMassBuy = edges[0].Item1;
+          CenterOfMassSell = edges.Last().Item1;
+          return TradeDirections.Both;
+        };
+      }
+    }
+    class SetEdgeLinesAsyncBuffer : AsyncBuffer<SetEdgeLinesAsyncBuffer, Action> {
+      public SetEdgeLinesAsyncBuffer() : base() {
+
+      }
+      protected override Action PushImpl(Action context) {
+        return context;
+      }
+    }
+    LoadRateAsyncBuffer _setEdgeLinesAsyncBuffer = new LoadRateAsyncBuffer();
+
+    public TradeConditionDelegate EdgesAOk {
+      get {
+        return () => {
+          DoSetTradeStrip = false;
+          return UseRates(rates => rates.Select(_priceAvg).ToArray())
+          .Select(rates => {
+            _setEdgeLinesAsyncBuffer.Push(() => SetAvgLines(rates));
+            return TradeDirections.Both;
+          })
+          .SingleOrDefault();
+        };
+      }
+    }
+
+    private void SetAvgLines(double[] rates) {
+      var edges = rates.EdgeByAverage(InPoints(0.01)).ToArray();
+      var minLevel1 = edges[0].Item1;
+      Func<Func<double, bool>, IEnumerable<Tuple<double, double>>> superEdge = predicate => rates
+         .Where(predicate).ToArray()
+         .EdgeByAverage(InPoints(0.01));
+      AvgLineMax = superEdge(e => e > minLevel1).First().Item1;
+      AvgLineMin = superEdge(e => e < minLevel1).First().Item1;
+      CenterOfMassBuy = edges[0].Item1.Max(edges.Last().Item1);
+      CenterOfMassSell = edges[0].Item1.Min(edges.Last().Item1);
+      AvgLineRatio = edges.Last().Item2 / edges[0].Item2;
+    }
+
+    public TradeConditionDelegate EdgesA2Ok {
+      get {
+        return () => {
+          DoSetTradeStrip = false;
+          var step = InPoints(0.1);
+          var edges = UseRates(rates => rates.Select(_priceAvg).ToArray().EdgeByAverage(step))
+          .SelectMany(x => x.ToArray())
+          .ToArray();
+          var edgeMinMax = EdgesDownUp(edges, step / 3);
+          AvgLineMax = edgeMinMax.Item2.Item1;
+          AvgLineMin = edgeMinMax.Item1.Item1;
+          CenterOfMassBuy = edges[0].Item1.Max(edges.Last().Item1);
+          CenterOfMassSell = edges[0].Item1.Min(edges.Last().Item1);
+          AvgLineAvg = edges[0].Item2;
+          AvgLineRatio = edges.Last().Item2 / edges[0].Item2;
+          return TradeDirections.Both;
+        };
+      }
+    }
+    static Tuple< Tuple<double,double>,Tuple<double,double>> EdgesDownUp(IList<Tuple<double,double>> edges,double step) {
+      var minLevel1 = edges[0].Item1;
+      var maxAvg = edges.Last().Item2;
+      var minLevelU = minLevel1 + maxAvg;
+      var minLevelD = minLevel1 - maxAvg;
+      Func<double, double, IEnumerable<Tuple<double, double>>> superEdge_ = (min, max) => edges
+        .Where(edge => edge.Item1.Between(min, min))
+        .ToArray(edge => edge.Item1)
+        .EdgeByAverage(step);
+      var edgeUp = superEdge_(minLevel1, minLevelU).First();
+      var edgeDown = superEdge_(minLevelD, minLevel1).First();
+      return Tuple.Create(edgeDown, edgeUp);
+    }
+
+    public TradeConditionDelegate Elliot123Ok {
+      get {
+        return () => {
+          var angleOk = !TrendLines0Trends.IsEmpty && TrendLines0Trends.Slope.Sign() != TrendLines1Trends.Slope.Sign();
+          if(!angleOk || BuySellLevels.Max(sr => sr.DateCanTrade) < ServerTime.AddMinutes(-5)) {
+            BuySellLevels.ForEach(sr => sr.CanTradeEx = false);
+          }
+          return !TrendLines0Trends.IsEmpty && angleOk
+          ? TrendLines0Trends.Sorted.Value.Select(r => r.StartDate).MinBy(d => d)
+          .Select(limeStart => {
+            var greenRange = UseRates(rates => rates.GetRange(TrendLines1Trends.Count))
+            .SelectMany(rates => rates.TakeWhile(r => r.StartDate < limeStart).MinMax(r => r.BidLow, r => r.AskHigh));
+            var greenHeight = greenRange.Height();
+            var limeHeight = TrendLines0Trends.Sorted.Value.Height();
+            _tipRatioCurrent = limeHeight / greenHeight;
+            return TradeDirectionByBool(IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
+          }).SingleOrDefault()
+          : TradeDirections.None;
+          ;
+        };
+      }
+    }
     [TradeConditionTurnOff]
     public TradeConditionDelegate Elliot12Ok {
       get {
@@ -415,11 +521,36 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionTurnOff]
+    [TradeConditionByRatio]
     public TradeConditionDelegate TCbVOk {
       get {
+        //TradeConditionsRemoveExcept<TradeConditionByRatioAttribute>(TCbVOk);
         Log = new Exception(new { TCbVOk = new { RhSDRatio } } + "");
-        return () => TradeDirectionByBool(IsTresholdAbsOk(InPips(BuyLevel.Rate.Abs(SellLevel.Rate)) / GetVoltageHigh(), RhSDRatio));
+        return () => TradeDirectionByBool(IsTresholdAbsOk(_tipRatioCurrent = InPips(BuyLevel.Rate.Abs(SellLevel.Rate)) / GetVoltageHigh(), RhSDRatio));
       }
+    }
+
+    [TradeConditionTurnOff]
+    [TradeConditionByRatio]
+    public TradeConditionDelegate PigTailOk {
+      get {
+        //TradeConditionsRemoveExcept<TradeConditionByRatioAttribute>(PigTailOk);
+        Log = new Exception(new { PigTailOk = new { TipRatio } } + "");
+        return () => {
+          _tipRatioCurrent = TrendLines1Trends.PriceHeight0.Zip(TrendLines0Trends.PriceHeight0, (g, l) => g / l).DefaultIfEmpty(double.NaN).Single();
+          return TradeDirectionByBool(IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
+        };
+      }
+    }
+
+    private void TradeConditionsRemoveExcept<T>(TradeConditionDelegate except) where T : Attribute {
+      TradeConditionsRemove(TradeConditionsInfo<T>().Where(x => x != except).ToArray());
+    }
+    private void TradeConditionsRemove(params TradeConditionDelegate[] dels) {
+      dels.ForEach(d => TradeConditions.Where(tc => tc.Item1 == d).ToList().ForEach(t => {
+        Log = new Exception(new { d, was = "Removed" } + "");
+        TradeConditions.Remove(t);
+      }));
     }
 
     public TradeConditionDelegate IsIn2Ok {
@@ -616,7 +747,7 @@ namespace HedgeHog.Alice.Store {
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public double SetTradeStrip() {
-      if(CanTriggerTradeDirection()) {
+      if(DoSetTradeStrip && CanTriggerTradeDirection()) {
         var tlbuy = TradeLevelFuncs[TradeLevelBy.PriceMax]();// GetTradeLevel(true, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMax]();
         var tlSell = TradeLevelFuncs[TradeLevelBy.PriceMin]();// GetTradeLevel(false, double.NaN);//TradeLevelFuncs[TradeLevelBy.PriceMin]();
         var bsHeight = CenterOfMassBuy.Abs(CenterOfMassSell).IfNaN(double.MaxValue);
@@ -1282,6 +1413,23 @@ namespace HedgeHog.Alice.Store {
       set {
         TradeConditionsSet(value.Split(MULTI_VALUE_SEPARATOR[0]));
       }
+    }
+
+    public double AvgLineMax {
+      get;
+      private set;
+    }
+    public double AvgLineMin {
+      get;
+      private set;
+    }
+    public double AvgLineRatio {
+      get;
+      private set;
+    }
+    public double AvgLineAvg {
+      get;
+      private set;
     }
 
 

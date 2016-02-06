@@ -425,8 +425,10 @@ namespace HedgeHog.Alice.Store {
     }
     void SuppRes_CanTradeChanged(object sender, EventArgs e) {
       var sr = (SuppRes)sender;
-      if(sr.CanTrade)
+      if(sr.CanTrade) {
         sr.RateCanTrade = sr.Rate;
+        sr.DateCanTrade = ServerTime;
+      }
     }
     #endregion
 
@@ -2364,6 +2366,10 @@ namespace HedgeHog.Alice.Store {
       SetVots(StDevByHeightInPips, 2);
       return null;
     }
+    CorridorStatistics ShowVoltsByAvgLineRatio() {
+      SetVots(AvgLineRatio, 2);
+      return null;
+    }
 
     double CalcTicksPerSecond(IList<Rate> rates) {
       if(BarPeriod != BarsPeriodType.t1)
@@ -3242,8 +3248,11 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.BlueAvg1,()=>level(tm=>tm.TrendLines2Trends.PriceAvg1)},
           {TradeLevelBy.GreenAvg1,()=>level(tm=>tm.TrendLines1Trends.PriceAvg1)},
 
-            { TradeLevelBy.Avg1Max,()=>levelMax(tm=>tm.TrendLinesTrends.PriceAvg1) },
+          { TradeLevelBy.Avg1Max,()=>levelMax(tm=>tm.TrendLinesTrends.PriceAvg1) },
           {TradeLevelBy.Avg1Min,()=>levelMin(tm=>tm.TrendLinesTrends.PriceAvg1) },
+
+          { TradeLevelBy.AvgLineMax,()=>AvgLineMax },
+          {TradeLevelBy.AvgLineMin,()=>AvgLineMin },
 
           {TradeLevelBy.Avg2GRBMax,()=>levelMax(tm=>tm.TrendLinesTrendsPriceAvg( tm,tls=>tls.PriceAvg2)) },
           {TradeLevelBy.Avg3GRBMin,()=>levelMin(tm=>tm.TrendLinesTrendsPriceAvg( tm,tls=>tls.PriceAvg3)) },
@@ -3284,11 +3293,11 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.RedStripH,()=> CenterOfMassBuy3.IfNaN(TradeLevelFuncs[TradeLevelBy.BlueStripH]) },
           {TradeLevelBy.RedStripL,()=> CenterOfMassSell3.IfNaN(TradeLevelFuncs[TradeLevelBy.BlueStripL]) },
 
-          {TradeLevelBy.LimeMax,()=> TrendLines0Trends.PriceMax.DefaultIfEmpty(double.NaN).Single() },
-          {TradeLevelBy.LimeMin,()=> TrendLines0Trends.PriceMin.DefaultIfEmpty(double.NaN).Single() },
+          {TradeLevelBy.LimeMax,()=> TrendLines0Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single() },
+          {TradeLevelBy.LimeMin,()=> TrendLines0Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single() },
 
-          {TradeLevelBy.GreenMax,()=> TrendLines1Trends.PriceMax.DefaultIfEmpty(double.NaN).Single() },
-          {TradeLevelBy.GreenMin,()=> TrendLines1Trends.PriceMin.DefaultIfEmpty(double.NaN).Single() },
+          {TradeLevelBy.GreenMax,()=> TrendLines1Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single() },
+          {TradeLevelBy.GreenMin,()=> TrendLines1Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single() },
 
           {TradeLevelBy.PriceMax1,()=> levelMax(TrendLinesTrendsPriceMax1)},
           {TradeLevelBy.PriceMin1,()=> levelMin(TrendLinesTrendsPriceMin1)},
@@ -3728,10 +3737,10 @@ namespace HedgeHog.Alice.Store {
     public T[] UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber]int LineNumber = 0) {
       var sw = new Stopwatch();
       if(!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds)) {
-          var message = new { Pair, PairIndex, Method = "UseRates", Caller, timeoutInMilliseconds } + "";
-          Log = new TimeoutException(message);
-          return new T[0];
-        }
+        var message = new { Pair, PairIndex, Method = "UseRates", Caller, timeoutInMilliseconds } + "";
+        Log = new TimeoutException(message);
+        return new T[0];
+      }
       try {
         sw.Start();
         return new[] { func(RatesArray) };

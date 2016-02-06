@@ -527,7 +527,16 @@ namespace HedgeHog.Alice.Store {
       rates[0].Trends.PriceAvg1 = regRates[0];
       rates[1].Trends.PriceAvg1 = regRates[1];
       rates[1].Trends.Height = regRates[1] - regRates[0];
-      rates[1].Trends.Sorted = Lazy.Create(() => { var range = corridorValues.ToList(); range.Sort(_priceAvg); return new[] { range[0], range.Last() }; });
+      rates[1].Trends.Sorted = Lazy.Create(() => {
+        var range = corridorValues.ToList();
+        range.Sort(_priceAvg);
+        return new[] { range[0], range.Last() };
+      });
+      rates[1].Trends.Sorted0 = Lazy.Create(() => {
+        var range = corridorValues.GetRange(0.95).ToList();
+        range.Sort(_priceAvg);
+        return new[] { range[0], range.Last() };
+      });
 
       var pa1 = rates[0].Trends.PriceAvg1;
       rates[0].Trends.PriceAvg02 = pa1 + hl;

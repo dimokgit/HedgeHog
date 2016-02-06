@@ -49,7 +49,7 @@ namespace HedgeHog.Alice.Store {
           if(!buy.Between(fibRange))
             return;
         }
-        if(BuyLevel.RateEx != buy || SellLevel.RateEx != sell)
+        if(BuyLevel.RateEx != buy && SellLevel.RateEx != sell)
           BuySellLevels.ForEach(sr => sr.CanTradeEx = false);
         if(BuySellLevels.Any(sr => sr.CanTrade) || InPips(buy.Abs(sell)) < GetVoltageHigh())
           return;

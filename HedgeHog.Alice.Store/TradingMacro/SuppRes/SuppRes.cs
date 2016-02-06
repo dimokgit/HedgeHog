@@ -67,8 +67,9 @@ namespace HedgeHog.Alice.Store {
       get { return _CanTrade; }
       set {
         if (_CanTrade != value) {
-          if(value)
+          if(value) {
             RateCanTrade = Rate;
+          }
 
           //if (value && IsExitOnly)
           //  Scheduler.Default.Schedule(() => CanTrade = false);
@@ -84,6 +85,7 @@ namespace HedgeHog.Alice.Store {
     public double RateTrade { get; set; }
     public void SetRateTrade() { RateTrade = Rate; }
     public double RateCanTrade { get; set; }
+    public DateTime DateCanTrade { get; set; }
     public bool CanTradeEx {
       get { return CanTrade; }
       set {

@@ -57,6 +57,14 @@ namespace HedgeHog {
       Array.Copy(source.ToArray(), start, a, 0, count);
       return a;
     }
+    public static T[] GetRange<T>(this IList<T> source, double size) {
+      var count = (source.Count * size).ToInt();
+      if(count < 0)
+        return source.GetRange(-count);
+      var a = new T[count];
+      Array.Copy(source.ToArray(), a, count);
+      return a;
+    }
     public static Singleable<T> AsSingleable<T>(this IEnumerable<T> source) {
       return new Singleable<T>(source.Take(1));
     }

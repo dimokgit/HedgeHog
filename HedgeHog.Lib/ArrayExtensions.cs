@@ -179,8 +179,47 @@ namespace HedgeHog {
          list.GroupBy(l => l.height.Sign()).Select(l => l.OrderBy(a => a.sumAvg).First().height).ToArray());
     }
 
+
+    public static IEnumerable<Tuple<double, double>> EdgeByStDev(this double[] values, double step, int smootheCount) {
+      if(values.Length < 3)
+        return new[] { new Tuple<double, double>(double.NaN, 0.0) };
+      Func<double, double, double> calcRatio = (d1, d2) => d1 < d2 ? d1 / d2 : d2 / d1;
+      var min = values.Min();
+      var max = values.Max();
+      var steps = max.Sub(min).Div(step).ToInt();
+      var levels = Enumerable.Range(1, steps - 1).Select(s => min + s * step);
+      var tuples = levels
+        .AsParallel()
+        .Select(level => {
+          var line = Enumerable.Repeat(level, values.Length).ToArray();
+          var heights = values.Zip(line, (lvl, ln) => lvl.Abs(ln));
+          var stDev = heights.RelativeStandardDeviationSmoothed(smootheCount);
+          return Tuple.Create(level, stDev);
+        });
+      return tuples.OrderBy(t => t.Item2);
+    }
+
+    public static IEnumerable<Tuple<double, double>> EdgeByAverage(this IList<double> values, double step) {
+      if(values.Count < 3)
+        return new[] { new Tuple<double, double>(double.NaN, 0.0) };
+      Func<double, double, double> calcRatio = (d1, d2) => d1 < d2 ? d1 / d2 : d2 / d1;
+      var min = values.Min();
+      var max = values.Max();
+      var steps = max.Sub(min).Div(step).ToInt();
+      var levels = Enumerable.Range(1, steps - 1).Select(s => min + s * step);
+      var tuples = levels
+        .AsParallel()
+        .Select(level => {
+          var line = Enumerable.Repeat(level, values.Count).ToArray();
+          var avg = values.Zip(line, (lvl, ln) => lvl.Abs(ln)).Average();
+          return Tuple.Create(level, avg);
+        });
+      return tuples.OrderBy(t => t.Item2);
+    }
+
     public static IList<Tuple<double, int>> CrossedLevelsWithGap(this double[] values, double step) {
-      if (values.Length < 3) return new[] { new Tuple<double, int>(double.NaN, 0) };
+      if(values.Length < 3)
+        return new[] { new Tuple<double, int>(double.NaN, 0) };
       Func<double, double, double> calcRatio = (d1, d2) => d1 < d2 ? d1 / d2 : d2 / d1;
       var min = values.Min();
       var max = values.Max();
@@ -190,7 +229,7 @@ namespace HedgeHog {
         .Aggregate(new Tuple<double, int>(double.NaN, 0).YieldBreakAsList(), (list, height) => {
           var line = Enumerable.Repeat(height, values.Length).ToArray();
           var indexes = line.Crosses3(values).Select(t => t.Item2).ToArray();
-          if (indexes.Length > 1) {
+          if(indexes.Length > 1) {
             var gap = indexes.Zip(indexes.Skip(1), (p, n) => n - p).Max();
             list.Add(new Tuple<double, int>(height, gap));
           }

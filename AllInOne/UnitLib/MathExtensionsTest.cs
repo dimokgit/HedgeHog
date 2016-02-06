@@ -187,13 +187,22 @@ namespace UnitLib {
     ///A test for Edge
     ///</summary>
     [TestMethod()]
-    public void EdgeTest() {
+    public void Edge() {
       double[] values = MathExtensions.Sin(100, 10000, 3, 0, 10);
       var csv = values.Csv();
       TestContext.WriteLine(csv);
       double step = 0.01;
       var actual = Lib.Edge(values, step, 3);
       Assert.AreEqual(0.62352314519258079, actual[0].SumAvg);
+    }
+    [TestMethod()]
+    public void EdgeByStDev() {
+      double[] values = MathExtensions.Sin(100, 10000, 3, 0, 10);
+      var csv = values.Csv();
+      TestContext.WriteLine(csv);
+      double step = 0.01;
+      var actual = Lib.EdgeByStDev(values, step,0);
+      Assert.AreEqual(0.62352314519258079, actual.First().Item1);
     }
 
     /// <summary>

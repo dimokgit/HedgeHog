@@ -33,7 +33,8 @@ namespace HedgeHog.Alice.Client {
         return new { rates = new int[0] };
 
       var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
-      var tpsAvg = tmTrader.GetVoltageHigh();
+      var tpsHigh = tmTrader.GetVoltageHigh();
+      var tpsAvg = tmTrader.GetVoltageAverage();
 
 
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd/* && !tm.GetVoltage(r).IsNaNOrZero()*/).ToList()).FirstOrDefault();
