@@ -632,8 +632,7 @@
     this.strategyNameDialog = ko.observable();
     this.saveStrategy = function () {
       serverCall("saveStrategy", [pair, this.strategyNick()], function () {
-        this.showStrategies();
-        setTimeout(this.readStrategies.bind(this), 1000);
+        setTimeout(this.showStrategies.bind(this), 1000);
       }.bind(this));
     }.bind(this);
     this.updateStrategy = function (data) {
@@ -1178,9 +1177,9 @@
         dataViewModel.tradeLevelBys(mapEnumsForSettings(enums));
       });
       //#endregion
-      var defRS = dataViewModel.readStrategies();
+      dataViewModel.readStrategies();
       //dataViewModel.readNews();
-      $.when.apply($, [defTC,defTOC,defTDT,defRS]).done(function () {
+      $.when.apply($, [defTC,defTOC,defTDT]).done(function () {
         ko.applyBindings(dataViewModel);
       });
       serverCall("readTitleRoot", [], function (t) {

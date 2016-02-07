@@ -204,6 +204,16 @@ namespace UnitLib {
       var actual = Lib.EdgeByStDev(values, step,0);
       Assert.AreEqual(0.62352314519258079, actual.First().Item1);
     }
+    [TestMethod()]
+    public void EdgeByAverageSlowTest() {
+      double[] values = MathExtensions.Sin(100, 10000, 3, 0, 10);
+      double step = 0.01;
+      var sw = Stopwatch.StartNew();
+      var actual2 = Lib.EdgeByAverage(values, step).ToArray();
+      sw.Stop();
+      Console.WriteLine(new { actual = sw.ElapsedMilliseconds });
+
+    }
 
     /// <summary>
     ///A test for Round

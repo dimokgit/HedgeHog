@@ -335,19 +335,43 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeDirectionTrigger]
+    public void OnPriceOutDisarm() {
+      (from bsl in BuySellLevels.ToSupressesList()
+       where !HaveTrades()
+       from x in bsl.IfAllManual()
+       from y in x.IfAnyCanTrade()
+       from z in y.If(srs => !IsCurrentPriceInsideTradeLevels3(srs.Height()))
+       select z
+       ).ForEach(srs => srs.ForEach(sr => sr.InManual = sr.CanTrade = false));
+
+    }
+    [TradeDirectionTrigger]
     public void OnCantTradeFreeze() {
-      if(BuySellLevels.All(sr => !sr.InManual) && BuySellLevels.Any(sr => sr.CanTrade))
-        BuySellLevelsForEach(sr => sr.InManual = true);
-      else if(!HaveTrades() && BuySellLevels.All(sr => sr.InManual) && BuySellLevels.Any(sr => sr.CanTrade) && !IsCurrentPriceInsideTradeLevels3(InPoints(3)))
-        BuySellLevelsForEach(sr => sr.InManual = sr.CanTrade = false);
-      else if(!HaveTrades() && BuySellLevels.All(sr => sr.InManual) && BuySellLevels.Any(sr => sr.CanTrade)) {
-        var buy = CurrentEnterPrice(true) - BuyLevel.Rate;
-        var sell = CurrentEnterPrice(false) - SellLevel.Rate;
-        Func<SuppRes, SuppRes, bool> isCold = (sr, sr2) => sr.TradesCount > sr2.TradesCount || !sr.CanTrade;
-        Action setCorr = () => BuySellLevels.ForEach(sr => sr.Rate = GetTradeLevel(sr.IsBuy, sr.Rate));
-        if(isCold(BuyLevel, SellLevel) && buy > 0 || isCold(SellLevel, BuyLevel) && sell < 0)
-          setCorr();
-      }
+      (from bsl in BuySellLevels.ToSupressesList()
+       from x in bsl.IfAllNonManual()
+       from y in x.IfAnyCanTrade()
+       select y
+       ).ForEach(srs => srs.ForEach(sr => sr.InManual = true));
+    }
+    [TradeDirectionTrigger]
+    public void OnManuaColdMove() {
+      (from bsl in BuySellLevels.ToSupressesList()
+       where !HaveTrades()
+       from x in bsl.IfAllManual()
+       from y in x.IfAnyCanTrade()
+       select y
+        ).ForEach(_ => {
+          var buy = CurrentEnterPrice(true) - BuyLevel.Rate;
+          var sell = CurrentEnterPrice(false) - SellLevel.Rate;
+          Func<SuppRes, bool> canTrade = sr => sr.TradesCount <= 0 && sr.CanTrade;
+          Func<SuppRes, SuppRes, bool> isCold = (sr, sr2) => canTrade(sr) && canTrade(sr2);
+          Action setCorr = () => BuySellLevels.ForEach(sr => sr.Rate = GetTradeLevel(sr.IsBuy, sr.Rate));
+          var tradeLevels = BuySellLevels.ToArray(sr => GetTradeLevel(sr));
+          if(
+            isCold(BuyLevel, SellLevel) && BuyLevel.Rate >= GetTradeLevel(BuyLevel) || 
+            isCold(SellLevel, BuyLevel) && SellLevel.Rate <= GetTradeLevel(SellLevel))
+            setCorr();
+        });
     }
 
 

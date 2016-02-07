@@ -2367,7 +2367,7 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByAvgLineRatio() {
-      SetVots(AvgLineRatio, 2);
+      SetVots(AvgLineRatio(), 2);
       return null;
     }
 
@@ -3223,6 +3223,9 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    double GetTradeLevel(SuppRes supRes) {
+      return GetTradeLevel(supRes.IsBuy, supRes.Rate);
+    }
     double GetTradeLevel(bool buy, double def) {
       return GetTradeLevel(buy, () => def);
     }

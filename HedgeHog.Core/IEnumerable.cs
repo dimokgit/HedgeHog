@@ -23,7 +23,7 @@ namespace HedgeHog {
     public static T[] MinMax<T>(this IEnumerable<T> source, Func<T, double> getter) {
       return source.MinMax(getter, getter);
     }
-    public static T[] MinMax<T>(this IEnumerable<T> source, Func<T,double> miner, Func<T,double> maxer) {
+    public static T[] MinMax<T>(this IEnumerable<T> source, Func<T, double> miner, Func<T, double> maxer) {
       var def = default(T);
       var min = def;
       var max = def;
@@ -41,6 +41,23 @@ namespace HedgeHog {
         }
       }
       return b ? new[] { min, max } : new T[0];
+    }
+    public static double[] MinMax(this IEnumerable<double> source) {
+      var min = 0.0;
+      var max = 0.0;
+      var b = false;
+      foreach(var t in source) {
+        if(!b) {
+          min = max = t;
+          b = true;
+        } else {
+          if(min > t)
+            min = t;
+          if(max < t)
+            max = t;
+        }
+      }
+      return b ? new[] { min, max } : new double[0];
     }
 
 

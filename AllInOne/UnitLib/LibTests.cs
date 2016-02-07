@@ -20,21 +20,27 @@ namespace HedgeHog.Tests {
       Stopwatch sw = Stopwatch.StartNew();
       var intersept1 = 0.0;
       var slope1 = Intercept1(valuesY, out intersept1);
-      swDict.Add("Intercept1", sw.ElapsedMilliseconds); sw.Restart();
+      swDict.Add("Intercept1", sw.ElapsedMilliseconds);
+      sw.Restart();
 
       var coeffs0 = Lib.LinearRegression(valuesY);
-      swDict.Add("LinearRegression", sw.ElapsedMilliseconds); sw.Restart();
+      swDict.Add("LinearRegression", sw.ElapsedMilliseconds);
+      sw.Restart();
 
       var coeffs = valuesY.Regress(1);
-      swDict.Add("Regress", sw.ElapsedMilliseconds); sw.Restart();
+      swDict.Add("Regress", sw.ElapsedMilliseconds);
+      sw.Restart();
 
       var coeffs2 = valuesY.LinearRegression((value, slope) => new { value, slope });
-      swDict.Add("LinearRegression<T>", sw.ElapsedMilliseconds); sw.Restart();
+      swDict.Add("LinearRegression<T>", sw.ElapsedMilliseconds);
+      sw.Restart();
 
       var linear = valuesY.Linear();
-      swDict.Add("Linear", sw.ElapsedMilliseconds); sw.Restart();
+      swDict.Add("Linear", sw.ElapsedMilliseconds);
+      sw.Restart();
       var linear2 = valuesY.Linear((intercept, slope) => new { intercept, slope });
-      swDict.Add("Linear2", sw.ElapsedMilliseconds); sw.Restart();
+      swDict.Add("Linear2", sw.ElapsedMilliseconds);
+      sw.Restart();
 
       Console.WriteLine("{0}:{1:n1}ms" + Environment.NewLine + "{2}", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value)));
       Assert.AreEqual(coeffs.LineSlope().Round(7), coeffs0.LineSlope().Round(7));
@@ -49,12 +55,12 @@ namespace HedgeHog.Tests {
 
     public static double Slope1(double[] data, out double averageY) {
       var sum = 0.0;
-      for (var i = 0; i < data.Length; i++)
+      for(var i = 0; i < data.Length; i++)
         sum += data[i];
       double averageX = (data.Length - 1) / 2.0;
       averageY = sum / data.Length;
       double sum1 = 0.0, sum2 = 0.0;
-      for (var j = 0; j < data.Length; j++) {
+      for(var j = 0; j < data.Length; j++) {
         sum1 += (j - averageX) * (data[j] - averageY);
         sum2 += (j - averageX) * (j - averageX);
       }

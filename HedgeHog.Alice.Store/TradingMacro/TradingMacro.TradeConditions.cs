@@ -38,7 +38,9 @@ namespace HedgeHog.Alice.Store {
       }
     }
     private bool IsCurrentPriceInsideTradeLevels3(double slack) {
-      return new[] { CurrentEnterPrice(true) - slack, CurrentEnterPrice(false) + slack }.Any(cp => cp.Between(SellLevel.Rate, BuyLevel.Rate));
+      return 
+        !BuyLevel.CanTrade || CurrentEnterPrice(true) - slack < BuyLevel.Rate && 
+        !SellLevel.CanTrade || CurrentEnterPrice(false) + slack > SellLevel.Rate;
     }
     private bool IsCurrentPriceInsideBlueStrip { get { return IsCurrentPriceInside(CenterOfMassSell, CenterOfMassBuy); } }
     #endregion
@@ -106,6 +108,19 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public TradeConditionDelegate EdgeOutOk {
+      get {
+        return () => {
+          DoSetTradeStrip = false;
+          return UseRates(rates => rates.Select(_priceAvg).ToArray())
+          .Select(rates => {
+            _setEdgeLinesAsyncBuffer.Push(() => SetAvgLines(rates));
+            return TradeDirectionByBool(!BuySellLevels.Select(sr => sr.Rate).ToArray().DoSetsOverlap(CenterOfMassBuy, CenterOfMassSell));
+          })
+          .SingleOrDefault();
+        };
+      }
+    }
     private void SetAvgLines(double[] rates) {
       var edges = rates.EdgeByAverage(InPoints(0.01)).ToArray();
       var minLevel1 = edges[0].Item1;
@@ -114,12 +129,13 @@ namespace HedgeHog.Alice.Store {
          .EdgeByAverage(InPoints(0.01));
       AvgLineMax = superEdge(e => e > minLevel1).First().Item1;
       AvgLineMin = superEdge(e => e < minLevel1).First().Item1;
-      CenterOfMassBuy = edges[0].Item1.Max(edges.Last().Item1);
-      CenterOfMassSell = edges[0].Item1.Min(edges.Last().Item1);
-      AvgLineRatio = edges.Last().Item2 / edges[0].Item2;
+      var fibs = Fibonacci.Levels(AvgLineMax, AvgLineMin);
+      CenterOfMassBuy = fibs.Skip(1).First();
+      CenterOfMassSell = fibs.TakeLast(2).First();
+      AvgLineRatio = () => edges.Select(e => e.Item2).RelativeStandardDeviation();
     }
 
-    public TradeConditionDelegate EdgesA2Ok {
+    public TradeConditionDelegateHide EdgesA2Ok {
       get {
         return () => {
           DoSetTradeStrip = false;
@@ -133,12 +149,12 @@ namespace HedgeHog.Alice.Store {
           CenterOfMassBuy = edges[0].Item1.Max(edges.Last().Item1);
           CenterOfMassSell = edges[0].Item1.Min(edges.Last().Item1);
           AvgLineAvg = edges[0].Item2;
-          AvgLineRatio = edges.Last().Item2 / edges[0].Item2;
+          AvgLineRatio = () => edges.Last().Item2 / edges[0].Item2;
           return TradeDirections.Both;
         };
       }
     }
-    static Tuple< Tuple<double,double>,Tuple<double,double>> EdgesDownUp(IList<Tuple<double,double>> edges,double step) {
+    static Tuple<Tuple<double, double>, Tuple<double, double>> EdgesDownUp(IList<Tuple<double, double>> edges, double step) {
       var minLevel1 = edges[0].Item1;
       var maxAvg = edges.Last().Item2;
       var minLevelU = minLevel1 + maxAvg;
@@ -1423,7 +1439,7 @@ namespace HedgeHog.Alice.Store {
       get;
       private set;
     }
-    public double AvgLineRatio {
+    public Func<double> AvgLineRatio {
       get;
       private set;
     }

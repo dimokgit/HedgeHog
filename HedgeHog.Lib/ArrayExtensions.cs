@@ -202,20 +202,16 @@ namespace HedgeHog {
     public static IEnumerable<Tuple<double, double>> EdgeByAverage(this IList<double> values, double step) {
       if(values.Count < 3)
         return new[] { new Tuple<double, double>(double.NaN, 0.0) };
-      Func<double, double, double> calcRatio = (d1, d2) => d1 < d2 ? d1 / d2 : d2 / d1;
       var min = values.Min();
       var max = values.Max();
       var steps = max.Sub(min).Div(step).ToInt();
-      var levels = Enumerable.Range(1, steps - 1).Select(s => min + s * step);
+      var levels = Enumerable.Range(1, steps - 1).Select(s => min + s * step).AsParallel();
       var tuples = levels
-        .AsParallel()
-        .Select(level => {
-          var line = Enumerable.Repeat(level, values.Count).ToArray();
-          var avg = values.Zip(line, (lvl, ln) => lvl.Abs(ln)).Average();
-          return Tuple.Create(level, avg);
-        });
+        .Select(level => Tuple.Create(level, values.Select(v => v.Abs(level)).Average()));
       return tuples.OrderBy(t => t.Item2);
     }
+
+
 
     public static IList<Tuple<double, int>> CrossedLevelsWithGap(this double[] values, double step) {
       if(values.Length < 3)
