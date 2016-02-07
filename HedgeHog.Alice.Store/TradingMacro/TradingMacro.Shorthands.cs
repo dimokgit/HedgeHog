@@ -68,8 +68,8 @@ namespace HedgeHog.Alice.Store {
     }
     
     #endregion
-    public void WrapTradeInCorridor() {
-      if (Trades.Any() && (SuppRes.All(sr => !sr.InManual) || MoveWrapTradeWithNewTrade)) {
+    public void WrapTradeInCorridor(bool forceMove = false) {
+      if (Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove || MoveWrapTradeWithNewTrade)) {
         SuppRes.ForEach(sr => sr.ResetPricePosition());
         BuyLevel.InManual = SellLevel.InManual = true;
         double offset = HeightForWrapToCorridor();

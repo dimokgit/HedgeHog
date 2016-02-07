@@ -167,13 +167,15 @@ namespace HedgeHog.Alice.Client {
       _AskRates2Subject.Subscribe(a => a());
     }
     public MyHub() {
-      remoteControl = App.container.GetExport<RemoteControlModel>();
-      trader = App.container.GetExport<TraderModel>();
+      try {
+        remoteControl = App.container.GetExport<RemoteControlModel>();
+        trader = App.container.GetExport<TraderModel>();
 
-      App.WwwMessageWarning.Do(wm => {
-        Clients.All.message(wm);
-      });
-      App.WwwMessageWarning.Clear();
+        App.WwwMessageWarning.Do(wm => {
+          Clients.All.message(wm);
+        });
+        App.WwwMessageWarning.Clear();
+      } catch(ObjectDisposedException) { }
     }
     bool IsLocalRequest {
       get {

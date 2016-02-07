@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Reactive.Concurrency;
 using System.Reactive.Threading;
 using System.Text.RegularExpressions;
+using System.Reactive.Linq;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -29,7 +30,7 @@ namespace HedgeHog.Alice.Store {
     [TradeDirectionTrigger]
     public void Limie() {
       var tlCount = TrendLines0Trends.Count;
-      UseRates(rates => rates.GetRange(rates.Count-tlCount , tlCount.Div(1.05).ToInt())).ForEach(range => {
+      UseRates(rates => rates.GetRange(rates.Count - tlCount, tlCount.Div(1.05).ToInt())).ForEach(range => {
         var minMax = range.Select((r, i) => new { r, i }).MinMax(x => x.r.PriceAvg);
         var fibRange = Fibonacci.Levels(minMax[1].r.AskHigh, minMax[0].r.BidLow).Skip(4).Take(2).ToArray();
         CenterOfMassBuy = fibRange[1];
@@ -57,7 +58,7 @@ namespace HedgeHog.Alice.Store {
         SellLevel.RateEx = sell;
       });
     }
-    
+
 
     [TradeDirectionTrigger]
     public void OnTradeCondOk() {
@@ -366,11 +367,15 @@ namespace HedgeHog.Alice.Store {
           Func<SuppRes, bool> canTrade = sr => sr.TradesCount <= 0 && sr.CanTrade;
           Func<SuppRes, SuppRes, bool> isCold = (sr, sr2) => canTrade(sr) && canTrade(sr2);
           Action setCorr = () => BuySellLevels.ForEach(sr => sr.Rate = GetTradeLevel(sr.IsBuy, sr.Rate));
-          var tradeLevels = BuySellLevels.ToArray(sr => GetTradeLevel(sr));
-          if(
-            isCold(BuyLevel, SellLevel) && BuyLevel.Rate >= GetTradeLevel(BuyLevel) || 
-            isCold(SellLevel, BuyLevel) && SellLevel.Rate <= GetTradeLevel(SellLevel))
-            setCorr();
+          var tradeLevels = BuySellLevels.Select(sr => sr.Rate).OrderByDescending(tl => tl);
+          var isOut = CurrentEnterPrices()
+              .OrderBy(cp => cp)
+              .Zip(tradeLevels, (cp, tl) => new { cp, tl })
+              .Buffer(2)
+              .Select(b => b[0].cp > b[0].tl || b[1].cp < b[1].tl)
+              .Single();
+          if(isOut)
+            Observable.Start(setCorr).Subscribe(x => Log = new Exception("Corridor moved"));
         });
     }
 
