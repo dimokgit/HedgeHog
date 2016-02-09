@@ -122,8 +122,12 @@ namespace HedgeHog.Alice.Client {
     Dictionary<string, bool> _canUserCloseDictionary = new Dictionary<string, bool>();
     bool CanUserClose(RadPane pane) {
       bool canUserClose;
-      var hasValue = _canUserCloseDictionary.TryGetValue(RadDocking.GetSerializationTag(pane),out canUserClose);
-      return !hasValue || canUserClose;
+      try {
+        var hasValue = _canUserCloseDictionary.TryGetValue(RadDocking.GetSerializationTag(pane), out canUserClose);
+        return !hasValue || canUserClose;
+      } catch {
+        return true;
+      }
     }
 
     ObservableCollection<RadPane> _Views = new ObservableCollection<RadPane>();

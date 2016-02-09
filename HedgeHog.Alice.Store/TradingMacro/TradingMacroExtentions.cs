@@ -2367,7 +2367,11 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByAvgLineRatio() {
-      SetVots(AvgLineRatio(), 2);
+      _setEdgeLinesAsyncBuffer.Push(() => 
+        UseRates(rates=> rates.ToArray(_priceAvg)).ForEach(rates=> {
+          SetAvgLines(rates);
+          SetVots(InPips(AvgLineAvg),2);
+        }));
       return null;
     }
 
@@ -3250,27 +3254,19 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceAvg1,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg1)},
           {TradeLevelBy.BlueAvg1,()=>level(tm=>tm.TrendLines2Trends.PriceAvg1)},
           {TradeLevelBy.GreenAvg1,()=>level(tm=>tm.TrendLines1Trends.PriceAvg1)},
+          {TradeLevelBy.LimeAvg1,()=>level(tm=>tm.TrendLines0Trends.PriceAvg1)},
 
-          { TradeLevelBy.Avg1Max,()=>levelMax(tm=>tm.TrendLinesTrends.PriceAvg1) },
-          {TradeLevelBy.Avg1Min,()=>levelMin(tm=>tm.TrendLinesTrends.PriceAvg1) },
+          {TradeLevelBy.Avg1Max,()=> TrendLinesTrendsAll.Max(tl=>tl.PriceAvg1)},
+          {TradeLevelBy.Avg1Min,()=> TrendLinesTrendsAll.Min(tl=>tl.PriceAvg1)},
+
+          { TradeLevelBy.Avg2Max,()=> TrendLinesTrendsAll.Max(tl=>tl.PriceAvg2)},
+          {TradeLevelBy.Avg3Min,()=> TrendLinesTrendsAll.Min(tl=>tl.PriceAvg3)},
 
           { TradeLevelBy.AvgLineMax,()=>AvgLineMax },
           {TradeLevelBy.AvgLineMin,()=>AvgLineMin },
 
           {TradeLevelBy.Avg2GRBMax,()=>levelMax(tm=>tm.TrendLinesTrendsPriceAvg( tm,tls=>tls.PriceAvg2)) },
           {TradeLevelBy.Avg3GRBMin,()=>levelMin(tm=>tm.TrendLinesTrendsPriceAvg( tm,tls=>tls.PriceAvg3)) },
-
-          {TradeLevelBy.PriceAvg02,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg02)},
-          {TradeLevelBy.PriceAvg2,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg2)},
-
-          {TradeLevelBy.PriceAvg21,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg21)},
-          {TradeLevelBy.PriceAvg22,()=>levelMax(tm=>tm.TrendLines.Value[1].Trends.PriceAvg22)},
-
-          {TradeLevelBy.PriceAvg03,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg03)},
-          {TradeLevelBy.PriceAvg3,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg3)},
-
-          {TradeLevelBy.PriceAvg31,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg31)},
-          {TradeLevelBy.PriceAvg32,()=>levelMin(tm=>tm.TrendLines.Value[1].Trends.PriceAvg32)},
 
           {TradeLevelBy.PriceHigh,()=> levelMax(tm=>tm.TrendLines2Trends.PriceAvg2)},
           {TradeLevelBy.PriceLow,()=> levelMin(tm=>tm.TrendLines2Trends.PriceAvg3)},
@@ -3290,20 +3286,11 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
 
-          {TradeLevelBy.BlueStripH,()=> CenterOfMassBuy2.IfNaN(TradeLevelFuncs[TradeLevelBy.GreenStripH]) },
-          {TradeLevelBy.BlueStripL,()=> CenterOfMassSell2.IfNaN(TradeLevelFuncs[TradeLevelBy.GreenStripL]) },
-
-          {TradeLevelBy.RedStripH,()=> CenterOfMassBuy3.IfNaN(TradeLevelFuncs[TradeLevelBy.BlueStripH]) },
-          {TradeLevelBy.RedStripL,()=> CenterOfMassSell3.IfNaN(TradeLevelFuncs[TradeLevelBy.BlueStripL]) },
-
           {TradeLevelBy.LimeMax,()=> TrendLines0Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single() },
           {TradeLevelBy.LimeMin,()=> TrendLines0Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single() },
 
           {TradeLevelBy.GreenMax,()=> TrendLines1Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single() },
           {TradeLevelBy.GreenMin,()=> TrendLines1Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single() },
-
-          {TradeLevelBy.PriceMax1,()=> levelMax(TrendLinesTrendsPriceMax1)},
-          {TradeLevelBy.PriceMin1,()=> levelMin(TrendLinesTrendsPriceMin1)},
 
           {TradeLevelBy.None,()=>double.NaN}
           };

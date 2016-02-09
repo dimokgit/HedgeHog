@@ -121,7 +121,7 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
-    private void SetAvgLines(double[] rates) {
+    private void SetAvgLines(IList<double> rates) {
       var edges = rates.EdgeByAverage(InPoints(0.01)).ToArray();
       var minLevel1 = edges[0].Item1;
       Func<Func<double, bool>, IEnumerable<Tuple<double, double>>> superEdge = predicate => rates
@@ -129,6 +129,7 @@ namespace HedgeHog.Alice.Store {
          .EdgeByAverage(InPoints(0.01));
       AvgLineMax = superEdge(e => e > minLevel1).First().Item1;
       AvgLineMin = superEdge(e => e < minLevel1).First().Item1;
+      AvgLineAvg = edges[0].Item2;
       var fibs = Fibonacci.Levels(AvgLineMax, AvgLineMin);
       CenterOfMassBuy = fibs.Skip(1).First();
       CenterOfMassSell = fibs.TakeLast(2).First();

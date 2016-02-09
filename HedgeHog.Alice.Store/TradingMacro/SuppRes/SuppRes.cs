@@ -350,6 +350,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_InManual == value) return;
         _InManual = value;
+        ResetPricePosition();
         OnPropertyChanged("InManual");
       }
     }

@@ -45,6 +45,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
+  <script src="Scripts/shortcut.js"></script>
   <script src="Scripts/linq.js"></script>
   <script src="Scripts/json.date-extensions.min.js"></script>
   <script src="Scripts/traverse.js"></script>
@@ -351,10 +352,11 @@
               <span class="glyphicon glyphicon-arrow-down"></span>
             </button>
           </li>
+          <li class="nav-divider">|</li>
           <!-- /ko -->
           <li>
             <button class="dropdown-toggle" data-toggle="dropdown" role="button" area-expanded="false">
-              <span class="glyphicon glyphicon-menu-hamburger"></span>
+              <span class="glyphicon glyphicon-equalizer"></span>
             </button>
             <ul class="dropdown-menu" role="menu">
               <li>
@@ -380,7 +382,7 @@
           </li>
           <!--#region Trade Levels-->
           <li>
-            <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-random"></span></button>
+            <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-menu-hamburger"></span></button>
             <ul class="dropdown-menu multi-level">
               <li>
                 <!--                <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,1,null)" />-->
@@ -508,6 +510,12 @@
             </ul>
           </li>
           <!--#endregion-->
+          <li class="nav-divider">|</li>
+          <li>
+            <button>
+              <span class="glyphicon glyphicon-random" data-bind="click:flipTradeLevels" title="Flip trade levels" ></span>
+            </button>
+          </li>
           <li>
             <button  data-bind="click:manualToggle">
               <span class="glyphicon glyphicon-hand-right"></span>

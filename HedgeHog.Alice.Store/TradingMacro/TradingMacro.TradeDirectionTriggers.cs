@@ -355,18 +355,20 @@ namespace HedgeHog.Alice.Store {
        ).ForEach(srs => srs.ForEach(sr => sr.InManual = true));
     }
     [TradeDirectionTrigger]
-    public void OnManuaColdMove() {
+    public void OnManualColdMove() {
       (from bsl in BuySellLevels.ToSupressesList()
        where !HaveTrades()
        from x in bsl.IfAllManual()
-       from y in x.IfAnyCanTrade()
-       select y
+       //from y in x.IfAnyCanTrade()
+       select x
         ).ForEach(_ => {
           var buy = CurrentEnterPrice(true) - BuyLevel.Rate;
           var sell = CurrentEnterPrice(false) - SellLevel.Rate;
           Func<SuppRes, bool> canTrade = sr => sr.TradesCount <= 0 && sr.CanTrade;
           Func<SuppRes, SuppRes, bool> isCold = (sr, sr2) => canTrade(sr) && canTrade(sr2);
-          Action setCorr = () => BuySellLevels.ForEach(sr => sr.Rate = GetTradeLevel(sr.IsBuy, sr.Rate));
+          Action setCorr = () => HaveTrades()
+            .YieldIf(b => !b)
+            .ForEach(__ => BuySellLevels.ForEach(sr => sr.Rate = GetTradeLevel(sr.IsBuy, sr.Rate)));
           var tradeLevels = BuySellLevels.Select(sr => sr.Rate).OrderByDescending(tl => tl);
           var isOut = CurrentEnterPrices()
               .OrderBy(cp => cp)

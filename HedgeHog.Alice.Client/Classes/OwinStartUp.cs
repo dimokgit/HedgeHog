@@ -604,9 +604,15 @@ namespace HedgeHog.Alice.Client {
     public void SetTradeCount(string pair, int tradeCount) {
       GetTradingMacro(pair, tm => tm.SetTradeCount(tradeCount));
     }
-    public void StopTrades(string pair) { SetCanTrade(pair, false, null); }
+    public void StopTrades(string pair) { SetCanTradeImpl(pair, false, null); }
     public void StartTrades(string pair, bool isBuy) { SetCanTrade(pair, true, isBuy); }
-    void SetCanTrade(string pair, bool canTrade, bool? isBuy) {
+    void SetCanTradeImpl(string pair, bool canTrade, bool? isBuy) {
+      GetTradingMacro(pair).ForEach(tm => tm.SetCanTrade(canTrade, isBuy));
+    }
+    public bool[] ToggleCanTrade(string pair, bool isBuy) {
+      return UseTradingMacro(pair, tm => tm.ToggleCanTrade(isBuy), true).ToArray();
+    }
+    public void SetCanTrade(string pair, bool canTrade, bool isBuy) {
       GetTradingMacro(pair).ForEach(tm => tm.SetCanTrade(canTrade, isBuy));
     }
     private void GetTradingMacro(string pair, Action<TradingMacro> action) {

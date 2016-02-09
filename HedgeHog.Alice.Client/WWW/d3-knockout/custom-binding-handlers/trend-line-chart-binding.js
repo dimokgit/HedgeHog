@@ -725,7 +725,7 @@
         var dates = (trendLines || {}).dates;
         if (dates && dates.length) {
           var line = trendLines["close" + lineNumber];
-          if (line)
+          if (line && !line.some(function (v) { return isNaN(v); }))
             svg.select("line.line" + lineNumber + "_" + trendIndex)
               .style("visibility", "visible")
               .style("stroke", lineColour)  // colour the line

@@ -17,11 +17,16 @@ namespace HedgeHog.Alice.Store {
       SuppRes.ForEach(sr => sr.ResetPricePosition());
     }
     public void ResetSuppResesInManual(bool isManual) {
-      if (!isManual)
+      if(ShouldTurnTradingOff() && !isManual)
         IsTradingActive = false;
       _suppResesForBulk().ToList().ForEach(sr => sr.InManual = isManual);
       RaiseShowChart();
     }
+
+    private bool ShouldTurnTradingOff() {
+      return BuySellLevels.Any(sr => sr.CanTrade) || HaveTrades();
+    }
+
     public void SetCanTrade(bool canTrade, bool? isBuy) {
       _suppResesForBulk()
         .Where(sr => sr.IsBuy == isBuy.GetValueOrDefault(sr.IsBuy))
@@ -34,13 +39,17 @@ namespace HedgeHog.Alice.Store {
       srs.ForEach(sr => sr.CanTrade = canTrade);
       RaiseShowChart();
     }
+    public IEnumerable<bool> ToggleCanTrade(bool isBuy) {
+      return BuySellLevels.IsBuy(isBuy).Do(sr => sr.CanTrade = !sr.CanTrade).Select(sr => sr.CanTrade);
+    }
     public void SetTradeCount(int tradeCount) {
       _suppResesForBulk().ForEach(sr => sr.TradesCount = tradeCount);
       RaiseShowChart();
     }
     public void FlipTradeLevels() {
       try {
-        IsTradingActive = false;
+        if(ShouldTurnTradingOff())
+          IsTradingActive = false;
         var b = BuyLevel.Rate;
         BuyLevel.Rate = SellLevel.Rate;
         SellLevel.Rate = b;
@@ -85,7 +94,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     private double HeightForWrapToCorridor() {
-      return this.CalculateTakeProfit(1);
+      return TakeProfitFunction == TradingMacroTakeProfitFunction.Pips
+        ? StDevByPriceAvg
+        : CalculateTakeProfit(1);
     }
 
     public void WrapCurrentPriceInCorridor(Rate.TrendLevels tls) {
@@ -106,24 +117,9 @@ namespace HedgeHog.Alice.Store {
       });
     }
     public void SetDefaultTradeLevels() {
-      Func<bool> isWide2 = () =>
-        LevelBuyBy == TradeLevelBy.PriceAvg22 &&
-        LevelSellBy == TradeLevelBy.PriceAvg32;
       Func<bool> isNarrow = () =>
         LevelBuyBy == TradeLevelBy.PriceAvg2 &&
         LevelSellBy == TradeLevelBy.PriceAvg3;
-      Action<Rate> setWide = rate => {
-        LevelBuyBy = TradeLevelBy.PriceAvg21;
-        LevelSellBy = TradeLevelBy.PriceAvg31;
-        BuyLevel.Rate = rate.PriceAvg21;
-        SellLevel.Rate = rate.PriceAvg31;
-      };
-      Action<Rate> setWide2 = rate => {
-        LevelBuyBy = TradeLevelBy.PriceAvg22;
-        LevelSellBy = TradeLevelBy.PriceAvg32;
-        BuyLevel.Rate = rate.PriceAvg2 + rate.PriceAvg2 - rate.PriceAvg1;
-        SellLevel.Rate = rate.PriceAvg3 - (rate.PriceAvg1 - rate.PriceAvg3);
-      };
       Action<Rate> setNarrow = rate => {
         LevelBuyBy = TradeLevelBy.PriceAvg2;
         LevelSellBy = TradeLevelBy.PriceAvg3;
@@ -135,7 +131,7 @@ namespace HedgeHog.Alice.Store {
         .ForEach(rate => {
           IsTradingActive = false;
           LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
-          (isWide2() ? setNarrow : isNarrow() ? setWide : setWide2)(rate);
+          
         });
       RaiseShowChart();
     }
@@ -157,18 +153,12 @@ namespace HedgeHog.Alice.Store {
     public void SetTradeLevelsPreset(TradeLevelsPreset preset, bool? isBuy) {
       Dictionary<TradeLevelsPreset, Tuple<TradeLevelBy,TradeLevelBy>> tlbs = new Dictionary<TradeLevelsPreset, Tuple<TradeLevelBy,TradeLevelBy>>(){
         {TradeLevelsPreset.None,Tuple.Create( TradeLevelBy.None, TradeLevelBy.None)},
-        {TradeLevelsPreset.SuperNarrow,Tuple.Create( TradeLevelBy.PriceAvg02, TradeLevelBy.PriceAvg03)},
         {TradeLevelsPreset.Narrow,Tuple.Create( TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3)},
-        {TradeLevelsPreset.Wide,Tuple.Create( TradeLevelBy.PriceAvg21, TradeLevelBy.PriceAvg31)},
-        {TradeLevelsPreset.SuperWide,Tuple.Create( TradeLevelBy.PriceAvg22, TradeLevelBy.PriceAvg32)},
         {TradeLevelsPreset.Corridor1,Tuple.Create( TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0)},
         {TradeLevelsPreset.Corridor2,Tuple.Create( TradeLevelBy.PriceHigh, TradeLevelBy.PriceLow)},
         {TradeLevelsPreset.MinMax,Tuple.Create( TradeLevelBy.PriceMax, TradeLevelBy.PriceMin)},
 
-        {TradeLevelsPreset.SuperNarrowR,Tuple.Create( TradeLevelBy.PriceAvg03, TradeLevelBy.PriceAvg02)},
         {TradeLevelsPreset.NarrowR,Tuple.Create( TradeLevelBy.PriceAvg3, TradeLevelBy.PriceAvg2)},
-        {TradeLevelsPreset.WideR,Tuple.Create( TradeLevelBy.PriceAvg31, TradeLevelBy.PriceAvg21)},
-        {TradeLevelsPreset.SuperWideR,Tuple.Create( TradeLevelBy.PriceAvg32, TradeLevelBy.PriceAvg22)},
         {TradeLevelsPreset.Corridor2R,Tuple.Create( TradeLevelBy.PriceLow, TradeLevelBy.PriceHigh)},
         {TradeLevelsPreset.Corridor1R,Tuple.Create( TradeLevelBy.PriceLow0, TradeLevelBy.PriceHigh0)},
         {TradeLevelsPreset.MinMaxR,Tuple.Create( TradeLevelBy.PriceMin, TradeLevelBy.PriceMax)}

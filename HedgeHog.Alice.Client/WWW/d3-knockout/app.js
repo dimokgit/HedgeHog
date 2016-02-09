@@ -39,6 +39,38 @@
     });
   });
   // #endregion
+  var scOptions = { 'disable_in_input': true };
+  $(function (e) {
+    shortcut.add("B", function () {
+      serverCall("toggleCanTrade", withNoNote(pair, true), function (d) {
+        d[0] ? showSuccess("Buy is on") : showError("Buy is off");
+      });
+    }, scOptions);
+    shortcut.add("S", function () {
+      serverCall("toggleCanTrade", withNoNote(pair, false), function (d) {
+        d[0] ? showSuccess("Sell is on") : showError("Sell is off");
+      });
+    }, scOptions);
+    shortcut.add("SHIFT+B", function () {
+      serverCall("setCanTrade", withNoNote(pair, false, true), showError.bind(null, "Buy is off"));
+    }, scOptions);
+    shortcut.add("SHIFT+S", function () {
+      serverCall("setCanTrade", withNoNote(pair, false, false), showError.bind(null, "Sell is off"));
+    }, scOptions);
+    shortcut.add("F", function () {
+      serverCall("flipTradeLevels", withNoNote(pair), "Flipped");
+    }, scOptions);
+    shortcut.add("C", function () {
+      dataViewModel.closeTrades();
+    }, scOptions);
+    shortcut.add("A", function () {
+      dataViewModel.toggleIsActive(0);
+    }, scOptions);
+    shortcut.add("M", function () {
+      dataViewModel.manualToggle();
+    }, scOptions);
+  });
+
 
   // #region Reset plotter
   var resetPlotterThrottleTime = 0.5 * 1000;
