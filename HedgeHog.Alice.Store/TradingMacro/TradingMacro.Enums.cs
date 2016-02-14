@@ -6,17 +6,19 @@ using System.Text;
 namespace HedgeHog.Alice {
   public enum VoltageFunction {
     None = 0,
-    BounceCom = 1,
-    DistanceMacd = 2,
-    StDev = 3,
-    AvgLineRatio = 4,
-    Volume = 5,
-    Rsd = 6,
-    FractalDensity = 7,
-    Correlation = 9,
-    StDevInsideOutRatio = 20,
-    HourlyStDevAvg = 40,
-    StDevSumRatio = 60
+    BounceCom,
+    DistanceMacd,
+    StDev,
+    AvgLineRatio,
+    BBRsd,
+    BBRsdRatio,
+    Volume,
+    Rsd,
+    FractalDensity,
+    Correlation,
+    StDevInsideOutRatio,
+    HourlyStDevAvg,
+    StDevSumRatio
   }
 }
 namespace HedgeHog.Alice.Store {
@@ -82,6 +84,9 @@ namespace HedgeHog.Alice.Store {
   }
   public enum TradeLevelBy {
     None = 0,
+    PriceCma,
+    BoilingerUp,
+    BoilingerDown,
     PriceAvg1,
     BlueAvg1,
     GreenAvg1,

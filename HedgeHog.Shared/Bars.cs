@@ -294,20 +294,15 @@ namespace HedgeHog.Bars {
     public double? PriceTsi { get; set; }
     [DataMember]
     public double? PriceTsiCR { get; set; }
-    [DataMember]
-    public List<double> PriceCMA { get; set; }
     double _PriceCMALast = double.NaN;
     public double PriceCMALast {
       get {
-        return !double.IsNaN(_PriceCMALast)
-          ? _PriceCMALast
-          : PriceCMA == null || PriceCMA.Count == 0 ? double.IsNaN(_PriceCMALast) ? PriceAvg : _PriceCMALast : PriceCMA[PriceCMA.Count - 1];
+        return _PriceCMALast;
       }
       set {
         _PriceCMALast = value;
       }
     }
-    public double PriceCmaRatio { get { return Math.Abs((PriceCMA[0] - PriceCMALast) / PriceCMALast); } }
 
     public List<double> PriceCMAOther { get; set; }
 

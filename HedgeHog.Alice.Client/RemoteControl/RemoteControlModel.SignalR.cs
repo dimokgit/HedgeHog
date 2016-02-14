@@ -21,11 +21,12 @@ namespace HedgeHog.Alice.Client {
       Func<Rate, double> rateHL = rate => (rate.PriceAvg >= rate.PriceCMALast ? rate.PriceHigh : rate.PriceLow).Round(digits);
       #region map
       var lastVolt = tm.UseRates(rates => rates.BackwardsIterator().Select(tm.GetVoltage).SkipWhile(v => v.IsNaNOrZero()).FirstOrDefault()).FirstOrDefault();
+      var lastCma = tm.UseRates(TradingMacro.GetLastRateCma).SelectMany(cma=> cma).FirstOrDefault();
       var map = MonoidsCore.ToFunc((Rate)null, rate => new {
         d = rate.StartDate2,
         c = rateHL(rate),
         v = tm.GetVoltage(rate).IfNaNOrZero(lastVolt),
-        m = rate.PriceCMALast.Round(digits)
+        m = rate.PriceCMALast.IfNaNOrZero(lastCma).Round(digits)
       });
       #endregion
 
@@ -34,7 +35,7 @@ namespace HedgeHog.Alice.Client {
 
       var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
       var tpsHigh = tmTrader.GetVoltageHigh();
-      var tpsAvg = tmTrader.GetVoltageAverage();
+      var tpsLow = tmTrader.GetVoltageAverage();
 
 
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd/* && !tm.GetVoltage(r).IsNaNOrZero()*/).ToList()).FirstOrDefault();
@@ -176,7 +177,8 @@ namespace HedgeHog.Alice.Client {
         askBid,
         hasStartDate = tm.CorridorStartDate.HasValue,
         cmp = cmaPeriod,
-        tpsAvg,
+        tpsHigh,
+        tpsLow,
         isTrader = tm.IsTrader,
         canBuy = tmTrader.CanOpenTradeByDirection(true),
         canSell = tmTrader.CanOpenTradeByDirection(false),

@@ -61,7 +61,7 @@
   function LineChart() {
     this.data = Enumerable.from([]);
   }
-  var tpsOpacity = 0.25;
+  var tpsOpacity = 0.35;
   var tickAreaBgColor = "lightgray";//lavender";
   var blueStrip = "blueStrip";
   var greenStrip = "greenStrip";

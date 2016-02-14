@@ -2284,10 +2284,11 @@ namespace HedgeHog.Alice.Store {
                     throw new Exception(new { CorridorCalcMethod } + " is not supported.");
                 }
                 Angle = AngleFromTangent(coeffs.LineSlope(), () => CalcTicksPerSecond(rates));
+                CalcBoilingerBand();
                 //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
                 OnPropertyChanged(() => RatesRsd);
               });
-            }, true);
+            }, false);
             OnScanCorridor(RatesArray, () => {
               try {
                 RaiseShowChart();
@@ -2367,13 +2368,41 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByAvgLineRatio() {
-      _setEdgeLinesAsyncBuffer.Push(() => 
-        UseRates(rates=> rates.ToArray(_priceAvg)).ForEach(rates=> {
+      _setEdgeLinesAsyncBuffer.Push(() =>
+        UseRates(rates => rates.ToArray(_priceAvg)).ForEach(rates => {
           SetAvgLines(rates);
-          SetVots(InPips(AvgLineAvg),2);
+          SetVots(InPips(AvgLineAvg), 2);
         }));
       return null;
     }
+
+    CorridorStatistics ShowVoltsByBBRsd() {
+      if(CanTriggerTradeDirection()) {
+        _boilingerBanderAsyncAction.Push(() =>
+        UseRates(rate => rate.Select(r => r.PriceCMALast.Abs(r.PriceAvg)).Where(Lib.IsNotNaN).RelativeStandardDeviation())
+          .ForEach(stDev => { SetVots(stDev.ToPercent(), 2); }));
+      }
+      return null;
+    }
+    CorridorStatistics ShowVoltsByBBUpDownRatio() {
+      if(CanTriggerTradeDirection()) {
+        _boilingerBanderAsyncAction.Push(() => {
+          (from rates in UseRates(rate => rate.Select(r => r.PriceAvg - r.PriceCMALast).Where(Lib.IsNotNaN))
+           from diff in rates
+           group diff by diff > 0 into upDown
+           select new { dir = upDown.Key, rsd = upDown.RelativeStandardDeviation() }
+           )
+           .OrderBy(x => x.dir)
+           .Buffer(2)
+           .Select(b => b[1].rsd / b[0].rsd.Abs() - 1)
+           .ForEach(stDev => { SetVots(stDev.ToPercent(), 2); });
+        });
+      }
+      return null;
+    }
+    void CalcBoilingerRsd() {
+    }
+
 
     double CalcTicksPerSecond(IList<Rate> rates) {
       if(BarPeriod != BarsPeriodType.t1)
@@ -3237,6 +3266,33 @@ namespace HedgeHog.Alice.Store {
       return TradeLevelFuncs[buy ? LevelBuyBy : LevelSellBy]().IfNaN(def());
     }
 
+    class BolingerBanderAsyncBuffer : AsyncBuffer<BolingerBanderAsyncBuffer, Action> {
+      protected override Action PushImpl(Action context) { return context; }
+    }
+    BolingerBanderAsyncBuffer _boilingerBanderAsyncAction = new BolingerBanderAsyncBuffer();
+
+    double _boilingerStDev;
+    void CalcBoilingerBand() {
+      UseRates(rate => rate.Select(r => r.PriceCMALast.Abs(r.PriceAvg)).StandardDeviation())
+        .ForEach(stDev => { _boilingerStDev = stDev; });
+    }
+
+    public static IEnumerable<double> GetLastRateCma(List<Rate> rate) {
+      return rate.BackwardsIterator().Select(r => r.PriceCMALast).SkipWhile(double.IsNaN).Take(1);
+    }
+
+    double _bbRatio = 4;
+    [Category(categoryActive)]
+    [WwwSetting]
+    public double BbRatio {
+      get {
+        return _bbRatio;
+      }
+
+      set {
+        _bbRatio = value;
+      }
+    }
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
       get {
@@ -3251,6 +3307,14 @@ namespace HedgeHog.Alice.Store {
         if(_TradeLevelFuncs == null)
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           {
+          {TradeLevelBy.BoilingerUp,()=>level(tm=> {
+            return GetLastRateCma(RatesArray).Select(cma=>cma+_boilingerStDev*BbRatio).DefaultIfEmpty(double.NaN).Single();
+          })},
+          {TradeLevelBy.BoilingerDown,()=>level(tm=> {
+            return GetLastRateCma(RatesArray).Select(cma=>cma-_boilingerStDev*BbRatio).DefaultIfEmpty(double.NaN).Single();
+          })},
+
+            { TradeLevelBy.PriceCma,()=>level(tm=>tm.UseRates(GetLastRateCma).SelectMany(cma=>cma).DefaultIfEmpty(double.NaN).Single()) },
           {TradeLevelBy.PriceAvg1,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg1)},
           {TradeLevelBy.BlueAvg1,()=>level(tm=>tm.TrendLines2Trends.PriceAvg1)},
           {TradeLevelBy.GreenAvg1,()=>level(tm=>tm.TrendLines1Trends.PriceAvg1)},
@@ -4856,6 +4920,7 @@ namespace HedgeHog.Alice.Store {
         _distanceByMASD = value;
       }
     }
+
   }
   public static class WaveInfoExtentions {
     public static Dictionary<CorridorCalculationMethod, double> ScanWaveWithAngle<T>(this IList<T> rates, Func<T, double> price, double pointSize, CorridorCalculationMethod corridorMethod) {

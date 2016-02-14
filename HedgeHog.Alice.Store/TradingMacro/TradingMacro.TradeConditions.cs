@@ -108,25 +108,12 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public TradeConditionDelegate EdgeOutOk {
-      get {
-        return () => {
-          DoSetTradeStrip = false;
-          return UseRates(rates => rates.Select(_priceAvg).ToArray())
-          .Select(rates => {
-            _setEdgeLinesAsyncBuffer.Push(() => SetAvgLines(rates));
-            return TradeDirectionByBool(!BuySellLevels.Select(sr => sr.Rate).ToArray().DoSetsOverlap(CenterOfMassBuy, CenterOfMassSell));
-          })
-          .SingleOrDefault();
-        };
-      }
-    }
     private void SetAvgLines(IList<double> rates) {
-      var edges = rates.EdgeByAverage(InPoints(0.01)).ToArray();
+      var edges = rates.EdgeByAverage(InPoints(1)).ToArray();
       var minLevel1 = edges[0].Item1;
       Func<Func<double, bool>, IEnumerable<Tuple<double, double>>> superEdge = predicate => rates
          .Where(predicate).ToArray()
-         .EdgeByAverage(InPoints(0.01));
+         .EdgeByAverage(InPoints(0.1));
       AvgLineMax = superEdge(e => e > minLevel1).First().Item1;
       AvgLineMin = superEdge(e => e < minLevel1).First().Item1;
       AvgLineAvg = edges[0].Item2;
@@ -180,7 +167,7 @@ namespace HedgeHog.Alice.Store {
           ? TrendLines0Trends.Sorted.Value.Select(r => r.StartDate).MinBy(d => d)
           .Select(limeStart => {
             var greenRange = UseRates(rates => rates.GetRange(TrendLines1Trends.Count))
-            .SelectMany(rates => rates.TakeWhile(r => r.StartDate < limeStart).MinMax(r => r.BidLow, r => r.AskHigh));
+            .SelectMany(rates => rates.TakeWhile(r => r.StartDate < limeStart).MinMaxBy(r => r.BidLow, r => r.AskHigh));
             var greenHeight = greenRange.Height();
             var limeHeight = TrendLines0Trends.Sorted.Value.Height();
             _tipRatioCurrent = limeHeight / greenHeight;
@@ -204,14 +191,14 @@ namespace HedgeHog.Alice.Store {
             corrs.AddRange(tl.PriceMin.Select(_ => {
               var rangeGreen = UseRates(rates => rates.GetRange(tg.Count)).Single().Select((r, i) => new { r, i }).ToList();
               var limeStart = rangeGreen.Count - tl.Count.Div(1.15).ToInt();
-              var rangeMinMax = rangeGreen.Take(limeStart).MinMax(x => x.r.BidLow, x => x.r.AskHigh);
+              var rangeMinMax = rangeGreen.Take(limeStart).MinMaxBy(x => x.r.BidLow, x => x.r.AskHigh);
               var maxRate = rangeMinMax[1];
               var max = maxRate.r.AskHigh;
               var min = rangeMinMax[0].r.BidLow;
               var range = Fibonacci.Levels(max, min).Skip(4).Take(2).ToArray();
               CenterOfMassBuy = range.Max();
               CenterOfMassSell = range.Min();
-              var limeRange = rangeGreen.Skip((limeStart * 1.1).ToInt()).MinMax(r => r.r.PriceAvg);
+              var limeRange = rangeGreen.Skip((limeStart * 1.1).ToInt()).MinMaxBy(r => r.r.PriceAvg);
               var mid = limeRange[0].r.PriceAvg;
               var maxLime = limeRange[1].r.AskHigh;
               var ok = mid.Between(range)
@@ -236,13 +223,13 @@ namespace HedgeHog.Alice.Store {
                  corrs.AddRange(tl.PriceMin.Select(_ => {
                    var rangeGreen = UseRates(rates => rates.GetRange(tg.Count)).Single().Select((r, i) => new { r, i }).ToList();
                    var limeStart = rangeGreen.Count - tl.Count.Div(1.15).ToInt();
-                   var rangeMinMax = rangeGreen.Take(limeStart).MinMax(x => x.r.BidLow, x => x.r.AskHigh);
+                   var rangeMinMax = rangeGreen.Take(limeStart).MinMaxBy(x => x.r.BidLow, x => x.r.AskHigh);
                    var max = rangeMinMax[1].r.AskHigh;
                    var min = rangeMinMax[0].r.BidLow;
                    var range = Fibonacci.Levels(max, min).Skip(4).Take(2).ToArray();
                    CenterOfMassBuy = range.Max();
                    CenterOfMassSell = range.Min();
-                   var limeRange = rangeGreen.Skip((limeStart * 1.1).ToInt()).MinMax(r => r.r.PriceAvg);
+                   var limeRange = rangeGreen.Skip((limeStart * 1.1).ToInt()).MinMaxBy(r => r.r.PriceAvg);
                    var midLime = limeRange[midIndex].r.PriceAvg;
                    var edgeLime = edge(limeRange[edgeIndex].r);
                    var edgeGreen = edge(rangeMinMax[edgeIndex].r);
@@ -585,7 +572,7 @@ namespace HedgeHog.Alice.Store {
     public TradeDirections IsLimie() {
       var tlCount = TrendLines0Trends.Count;
       return UseRates(rates => rates.GetRange(rates.Count - tlCount, tlCount)).Select(range => {
-        var minMax = range.Select((r, i) => new { r, i }).MinMax(x => x.r.PriceAvg);
+        var minMax = range.Select((r, i) => new { r, i }).MinMaxBy(x => x.r.PriceAvg);
 
         var fibRange = Fibonacci.Levels(minMax[1].r.AskHigh, minMax[0].r.BidLow).Skip(4).Take(2).ToArray();
         CenterOfMassBuy = fibRange[1];
@@ -848,6 +835,23 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTurnOff]
     public TradeConditionDelegateHide RhSDAvgOk {
       get { return () => TradeDirectionByBool(_macd2Rsd >= MacdRsdAvg); }
+    }
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate VoltBelowOk {
+      get {
+        return () => {
+          var volt = UseRates(rates
+            => rates.BackwardsIterator()
+            .Select(GetVoltage)
+            .SkipWhile(double.IsNaN)
+            .DefaultIfEmpty(double.NaN)
+            .First()
+            )
+            .DefaultIfEmpty(double.NaN)
+            .Single();
+          return TradeDirectionByBool(volt < GetVoltageAverage());
+        };
+      }
     }
     [TradeConditionTurnOff]
     public TradeConditionDelegate SDAvgOk {

@@ -1143,7 +1143,7 @@
 
       function _isPriceChangeInFlight() {
         var secsInFlight = getSecondsBetween(new Date(), _inFlightPriceChanged);
-        if (secsInFlight > 3) openErrorNote("InFlightPriceChaneDelay", showErrorPerm("PriceChange In flight > " + secsInFlight));
+        if (secsInFlight > 3) openErrorNote("InFlightPriceChaneDelay", showError("PriceChange In flight > " + secsInFlight));
         if (secsInFlight > 6) return false;
         return _inFlightPriceChanged && secsInFlight > 0;
       }

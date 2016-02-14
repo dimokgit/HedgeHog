@@ -109,7 +109,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     private void SetVots(double volt, int averageIterations) {
-      UseRates(rates => rates.Where(r => GetVoltage(r).IsNaN()).ToList()).ForEach(rates => rates.ForEach(r => SetVoltage(r, volt)));
+      UseRates(rates => rates.Where(r => GetVoltage(r).IsNaN()).ToList())
+        .SelectMany(rates => rates).ForEach(r => SetVoltage(r, volt));
       //SetVoltage(RateLast, volt);
       var voltRates = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray();
       if(voltRates.Any()) {

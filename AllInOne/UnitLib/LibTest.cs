@@ -192,23 +192,6 @@ Privet:2.3 3.4
       });
       Task.Factory.StartNew(() => { while (true) { } }).Wait(15.FromSeconds());
     }
-    public void Cma() {
-      var rates = new List<Rate>();
-      var rand = new Random();
-      foreach (var i in Enumerable.Range(0, 2000)) {
-        var price = rand.Next(14000, 14500) / 10000.0;
-        rates.Add(new Rate() { AskHigh = price, AskLow = price, BidHigh = price, BidLow = price });
-      }
-      Stopwatch sw = Stopwatch.StartNew();
-      rates.SetCma(5);
-      Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
-      var cma1 = rates.Average(r => r.PriceCMALast);
-      sw.Restart();
-      rates.SetCMA(5);
-      Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
-      var cma2 = rates.Average(r => r.PriceCMALast);
-      Assert.AreNotEqual(cma1, cma2);
-    }
     public void Cache() {
       var key = "Dimok";
       var mc = new MemoryCache("X");

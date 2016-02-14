@@ -719,7 +719,7 @@ namespace HedgeHog {
       return std / avg;
     }
     public static double RelativeToHeightStandardDeviation(this IList<double> dbls) {
-      double min, max;
+      double min = double.NaN, max = double.NaN;
       var std = dbls.StandardDeviation(out max, out min);
       return std / (max - min);
     }
@@ -1197,7 +1197,7 @@ namespace HedgeHog {
       dt = dt.Round();
       return dt.AddMinutes(dt.Minute / period * period - dt.Minute);
     }
-    public static bool DoSetsOverlap(this double[] bsRates, params double[] bsRatesCT) {
+    public static bool DoSetsOverlap(this IList<double> bsRates, params double[] bsRatesCT) {
       return !(bsRates.Min() > bsRatesCT.Max() || bsRates.Max() < bsRatesCT.Min());
     }
 
