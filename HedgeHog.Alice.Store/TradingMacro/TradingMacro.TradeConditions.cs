@@ -819,6 +819,25 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region StDev
+
+    public TradeConditionDelegate CmaRsdUDOk {
+      get {
+        return () => {
+          VoltageFunction_ = Alice.VoltageFunction.BBRsdRatio;
+          var volt = GetLastVolt();
+          var voltHigh = GetVoltageHigh();
+          var voltLow = GetVoltageAverage();
+          var isUp = voltHigh > 0 && voltHigh > voltLow.Abs() && volt > voltHigh;
+          var isDown = voltLow < 0 && voltLow.Abs() > voltHigh.Abs() && volt < voltLow;
+          return isUp
+          ? TradeDirections.Up
+          : isDown
+          ? TradeDirections.Down
+          : TradeDirections.None;
+        };
+      }
+    }
+
     double _rhsdRatio = 0.4;
     [Category(categoryActive)]
     [WwwSetting(wwwSettingsTradingConditions)]
@@ -840,19 +859,24 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate VoltBelowOk {
       get {
         return () => {
-          var volt = UseRates(rates
-            => rates.BackwardsIterator()
-            .Select(GetVoltage)
-            .SkipWhile(double.IsNaN)
-            .DefaultIfEmpty(double.NaN)
-            .First()
-            )
-            .DefaultIfEmpty(double.NaN)
-            .Single();
+          var volt = GetLastVolt();
           return TradeDirectionByBool(volt < GetVoltageAverage());
         };
       }
     }
+
+    private double GetLastVolt() {
+      return UseRates(rates
+                  => rates.BackwardsIterator()
+                  .Select(GetVoltage)
+                  .SkipWhile(double.IsNaN)
+                  .DefaultIfEmpty(double.NaN)
+                  .First()
+                  )
+                  .DefaultIfEmpty(double.NaN)
+                  .Single();
+    }
+
     [TradeConditionTurnOff]
     public TradeConditionDelegate SDAvgOk {
       get {

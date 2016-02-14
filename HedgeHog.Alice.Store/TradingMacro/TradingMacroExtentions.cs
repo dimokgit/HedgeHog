@@ -2386,17 +2386,17 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByBBUpDownRatio() {
       if(CanTriggerTradeDirection()) {
-        _boilingerBanderAsyncAction.Push(() => {
-          (from rates in UseRates(rate => rate.Select(r => r.PriceAvg - r.PriceCMALast).Where(Lib.IsNotNaN))
-           from diff in rates
-           group diff by diff > 0 into upDown
-           select new { dir = upDown.Key, rsd = upDown.RelativeStandardDeviation() }
-           )
-           .OrderBy(x => x.dir)
-           .Buffer(2)
-           .Select(b => b[1].rsd / b[0].rsd.Abs() - 1)
-           .ForEach(stDev => { SetVots(stDev.ToPercent(), 2); });
-        });
+        //_boilingerBanderAsyncAction.Push(() => {
+        (from rates in UseRates(rate => rate.Select(r => r.PriceAvg - r.PriceCMALast).Where(Lib.IsNotNaN))
+         from diff in rates
+         group diff by diff > 0 into upDown
+         select new { dir = upDown.Key, rsd = upDown.RelativeStandardDeviation() }
+         )
+         .OrderBy(x => x.dir)
+         .Buffer(2)
+         .Select(b => b[1].rsd / b[0].rsd.Abs() - 1)
+         .ForEach(stDev => { SetVots(stDev.ToPercent(), 2); });
+        //});
       }
       return null;
     }
