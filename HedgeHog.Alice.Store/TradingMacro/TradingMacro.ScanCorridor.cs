@@ -90,7 +90,11 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorBy123(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var rates = ratesForCorridor.ToList();
       rates.Reverse();
-      var legs = (BarPeriodInt > 0 || CmaMACD == null ? DistanceByMACD2(rates, BarsCountCalc) : _macdDiastances).Select((d, i) => new { d, i }).Take(rates.Count).ToList();
+      var legs = (
+        BarPeriodInt > 0 || CmaMACD == null || _macdDiastances.IsEmpty()
+        ? MacdDistancesSmoothedReversed(rates) 
+        : _macdDiastances
+        ).Select((d, i) => new { d, i }).Take(rates.Count).ToList();
       var leg = legs.Last().d.Div(7);
       var sectionStarts = legs.DistinctUntilChanged(a => a.d.Div(leg).Floor()).ToList();
       var sections = sectionStarts.Zip(sectionStarts.Skip(1), (p, n) => new { end = n.i, start = p.i }).ToList();

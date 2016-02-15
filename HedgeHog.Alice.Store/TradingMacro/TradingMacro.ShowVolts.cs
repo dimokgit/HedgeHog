@@ -30,7 +30,11 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.BBRsd:
           return ShowVoltsByBBRsd;
         case HedgeHog.Alice.VoltageFunction.BBRsdRatio:
+          return ShowVoltsByBBUpDownRatio;
+        case HedgeHog.Alice.VoltageFunction.BBRsdRatio2:
           return ShowVoltsByBBUpDownRatio2;
+        case HedgeHog.Alice.VoltageFunction.BBRsdRatio3:
+          return ShowVoltsByBBUpDownRatio3;
         case HedgeHog.Alice.VoltageFunction.Rsd:
           return ShowVoltsByRsd;
         case HedgeHog.Alice.VoltageFunction.FractalDensity:
@@ -165,6 +169,8 @@ namespace HedgeHog.Alice.Store {
 
     Action GetRatesLengthFunction() {
       switch(RatesLengthBy) {
+        case RatesLengthFunction.None:
+          return () => { };
         case RatesLengthFunction.DistanceMin:
           return ScanRatesLengthByDistanceMin;
         case RatesLengthFunction.DistanceMinSmth:

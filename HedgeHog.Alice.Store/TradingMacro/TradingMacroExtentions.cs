@@ -2419,6 +2419,23 @@ namespace HedgeHog.Alice.Store {
       }
       return null;
     }
+    CorridorStatistics ShowVoltsByBBUpDownRatio3() {
+      if(CanTriggerTradeDirection()) {
+        //_boilingerBanderAsyncAction.Push(() => {
+        var diffs =
+          (from rates in UseRates(rates => CutCmaCorners(rates.Where(r => r.PriceCMALast.IsNotNaN()).ToList()))
+           from rate in rates.Select(r => new { u = r.AskHigh - r.PriceCMALast, d = r.PriceCMALast - r.BidLow })
+           select rate
+          ).ToArray();
+        var rsdU = diffs.Select(x => x.u).Where(d => d > 0).RelativeStandardDeviation();
+        var rsdD = diffs.Select(x => x.d).Where(d => d > 0).RelativeStandardDeviation();
+        var volt = rsdU / rsdD - 1;
+        SetVots(volt * 100, 2);
+        //.ForEach(stDev => { SetVots(stDev * 100, 2); });
+        //});
+      }
+      return null;
+    }
 
     private IEnumerable<double> CutCmaCorners() {
       return (from rates in UseRates(rate => { var l = rate.Where(r => r.PriceCMALast.IsNotNaN()).ToList(); l.Reverse(); return l; })

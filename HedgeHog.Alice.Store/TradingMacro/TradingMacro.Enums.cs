@@ -12,6 +12,8 @@ namespace HedgeHog.Alice {
     AvgLineRatio,
     BBRsd,
     BBRsdRatio,
+    BBRsdRatio2,
+    BBRsdRatio3,
     Volume,
     Rsd,
     FractalDensity,
@@ -31,6 +33,7 @@ namespace HedgeHog.Alice.Store {
     }
   }
   public enum RatesLengthFunction {
+    None = 0,
     DistanceMin,
     DistanceMinSmth,
     DistanceMin0,

@@ -836,7 +836,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate CmaRsdUDOk {
       get {
         return () => {
-          if(!new[] { Alice.VoltageFunction.BBRsdRatio }.Contains(VoltageFunction_)) {
+          if(!new[] { Alice.VoltageFunction.BBRsdRatio, Alice.VoltageFunction.BBRsdRatio2, Alice.VoltageFunction.BBRsdRatio3 }.Contains(VoltageFunction_)) {
             Log = new Exception("BBRsdRatio voltage is required");
             VoltageFunction_ = Alice.VoltageFunction.BBRsdRatio;
           }

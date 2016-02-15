@@ -138,6 +138,7 @@ namespace HedgeHog.Alice.Store {
         .Select(rs => {
           //rs.Reverse();
           var rdm = InPoints(RatesDistanceMin);
+
           _macdDiastances = Macd(rs, BarsCountCalc)
             .Pairwise((v1, v2) => v1.Abs(v2))
             .Cma(cmaPeriod)
@@ -165,8 +166,15 @@ namespace HedgeHog.Alice.Store {
           return x.count;
         });
     }
-
-    private IList<double> Macd(IList<Rate> rs, int cmaPeriodCount) {
+    IEnumerable<double> MacdDistancesSmoothedReversed(IList<Rate> rates) {
+      var cmaPeriod = CmaPeriodByRatesCount(rates.Count);
+      return Macd(rates, null)
+        .Pairwise((v1, v2) => v1.Abs(v2))
+        .Cma(cmaPeriod)
+        .Reverse()
+        .Distances();
+    }
+    private IList<double> Macd(IList<Rate> rs, int? cmaPeriodCount) {
       var cmas = GetCma(rs, cmaPeriodCount);
       var cmas2 = GetCma2(cmas, cmaPeriodCount);
       var macd = cmas.Zip(cmas2, (v1, v2) => v1.Abs(v2)).ToArray();
