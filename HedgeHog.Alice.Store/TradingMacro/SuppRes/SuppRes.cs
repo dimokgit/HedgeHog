@@ -22,9 +22,10 @@ namespace HedgeHog.Alice.Store {
     public bool IsActive {
       get { return _IsActive; }
       set {
-        if (_IsActive != value) {
+        if(_IsActive != value) {
           _IsActive = value;
-          if (!value) EntryOrderId = "";
+          if(!value)
+            EntryOrderId = "";
           OnIsActiveChanged();
         }
       }
@@ -33,7 +34,7 @@ namespace HedgeHog.Alice.Store {
     IDisposable _isGhostDisposable;
     public bool IsGhost {
       get {
-        if (_isGhostDisposable == null) {
+        if(_isGhostDisposable == null) {
           _isGhostDisposable = this.SubscribeToPropertiesChanged(sr => OnPropertyChanged("IsGhost")
             , x => x.InManual
             , x => x.IsExitOnly
@@ -47,8 +48,9 @@ namespace HedgeHog.Alice.Store {
           && TradesCount <= 0;
       }
       set {
-        if (!IsExitOnly) throw new Exception("Not an exit Level.");
-        if (value) {
+        if(!IsExitOnly)
+          throw new Exception("Not an exit Level.");
+        if(value) {
           InManual = true;
           CanTrade = true;
           TradesCount = TradesCount.Min(0);
@@ -66,7 +68,7 @@ namespace HedgeHog.Alice.Store {
     public bool CanTrade {
       get { return _CanTrade; }
       set {
-        if (_CanTrade != value) {
+        if(_CanTrade != value) {
           if(value) {
             RateCanTrade = Rate;
           }
@@ -77,7 +79,8 @@ namespace HedgeHog.Alice.Store {
           OnPropertyChanged("CanTrade");
           OnPropertyChanged("CanTradeEx");
           RaiseCanTradeChanged();
-        }
+        } else if(value)
+          RaiseCanTradeChanged();
       }
     }
     #endregion
@@ -89,14 +92,16 @@ namespace HedgeHog.Alice.Store {
     public bool CanTradeEx {
       get { return CanTrade; }
       set {
-        if (CanTradeEx == value || InManual) return;
-        CanTrade = value;
+        //if(value)DateCanTrade = 
+        if((CanTradeEx != value || value) && !InManual)
+          CanTrade = value;
       }
     }
     public double TradesCountEx {
       get { return TradesCount; }
       set {
-        if (TradesCount == value || InManual) return;
+        if(TradesCount == value || InManual)
+          return;
         TradesCount = value;
       }
     }
@@ -108,13 +113,15 @@ namespace HedgeHog.Alice.Store {
     public double RateEx {
       get { return Rate; }
       set {
-        if (Rate == value || this.InManual) return;
+        if(Rate == value || this.InManual)
+          return;
         var valuePrev = Rate;
         try {
           Rate = value;
           _rateExErrorCounter = 0;
-        } catch (Exception exc) {
-          if (_rateExErrorCounter > 100) throw;
+        } catch(Exception exc) {
+          if(_rateExErrorCounter > 100)
+            throw;
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(new Exception("Rate: " + new { Prev = valuePrev, Curr = Rate } + "", exc));
         }
       }
@@ -124,7 +131,7 @@ namespace HedgeHog.Alice.Store {
     event EventHandler<EventArgs> CanTradeChangedEvent;
     public event EventHandler<EventArgs> CanTradeChanged {
       add {
-        if (CanTradeChangedEvent == null || !CanTradeChangedEvent.GetInvocationList().Contains(value))
+        if(CanTradeChangedEvent == null || !CanTradeChangedEvent.GetInvocationList().Contains(value))
           CanTradeChangedEvent += value;
       }
       remove {
@@ -132,7 +139,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     protected void RaiseCanTradeChanged() {
-      if (CanTradeChangedEvent != null) CanTradeChangedEvent(this, new EventArgs());
+      if(CanTradeChangedEvent != null)
+        CanTradeChangedEvent(this, new EventArgs());
     }
     #endregion
 
@@ -142,7 +150,7 @@ namespace HedgeHog.Alice.Store {
     public Guid GroupId {
       get { return _GroupId; }
       set {
-        if (_GroupId != value) {
+        if(_GroupId != value) {
           _GroupId = value;
           OnPropertyChanged("GroupId");
         }
@@ -156,7 +164,7 @@ namespace HedgeHog.Alice.Store {
     public int CrossesCount {
       get { return _CrossesCount; }
       set {
-        if (_CrossesCount != value) {
+        if(_CrossesCount != value) {
           _CrossesCount = value;
           OnPropertyChanged("CrossesCount");
         }
@@ -168,7 +176,7 @@ namespace HedgeHog.Alice.Store {
     event EventHandler<EventArgs> ScanEvent;
     public event EventHandler<EventArgs> Scan {
       add {
-        if (ScanEvent == null || !ScanEvent.GetInvocationList().Contains(value))
+        if(ScanEvent == null || !ScanEvent.GetInvocationList().Contains(value))
           ScanEvent += value;
       }
       remove {
@@ -176,7 +184,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public void OnScan() {
-      if (ScanEvent != null) ScanEvent(this, new EventArgs());
+      if(ScanEvent != null)
+        ScanEvent(this, new EventArgs());
     }
     #endregion
 
@@ -184,7 +193,7 @@ namespace HedgeHog.Alice.Store {
     event EventHandler<EventArgs> SetLevelByEvent;
     public event EventHandler<EventArgs> SetLevelBy {
       add {
-        if (SetLevelByEvent == null || !SetLevelByEvent.GetInvocationList().Contains(value))
+        if(SetLevelByEvent == null || !SetLevelByEvent.GetInvocationList().Contains(value))
           SetLevelByEvent += value;
       }
       remove {
@@ -192,7 +201,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public void OnSetLevelBy() {
-      if (SetLevelByEvent != null) SetLevelByEvent(this, new EventArgs());
+      if(SetLevelByEvent != null)
+        SetLevelByEvent(this, new EventArgs());
     }
     #endregion
 
@@ -202,7 +212,7 @@ namespace HedgeHog.Alice.Store {
     public DateTime CorridorDate {
       get { return _CorridorDate; }
       set {
-        if (_CorridorDate != value) {
+        if(_CorridorDate != value) {
           _CorridorDate = value;
           OnPropertyChanged("CorridorDate");
         }
@@ -215,7 +225,7 @@ namespace HedgeHog.Alice.Store {
     public string EntryOrderId {
       get { return _EntryOrderId; }
       set {
-        if (_EntryOrderId != value) {
+        if(_EntryOrderId != value) {
           var oldId = value != RemovedOrderTag ? "" : _EntryOrderId;
           _EntryOrderId = value == RemovedOrderTag ? "" : value;
           OnEntryOrderIdChanged(_EntryOrderId, oldId);
@@ -231,7 +241,7 @@ namespace HedgeHog.Alice.Store {
     event EventHandler<TradesCountChangingEventArgs> TradesCountChangingEvent;
     public event EventHandler<TradesCountChangingEventArgs> TradesCountChanging {
       add {
-        if (TradesCountChangingEvent == null || !TradesCountChangingEvent.GetInvocationList().Contains(value))
+        if(TradesCountChangingEvent == null || !TradesCountChangingEvent.GetInvocationList().Contains(value))
           TradesCountChangingEvent += value;
       }
       remove {
@@ -239,12 +249,13 @@ namespace HedgeHog.Alice.Store {
       }
     }
     protected void RaiseTradesCountChanging(double newValue) {
-      if (TradesCountChangingEvent != null)
+      if(TradesCountChangingEvent != null)
         TradesCountChangingEvent(this, new TradesCountChangingEventArgs { NewValue = newValue, OldValue = TradesCount });
     }
     double _tradesCountPrev = double.NaN;
     partial void OnTradesCountChanging(global::System.Double value) {
-      if (_tradesCountPrev == value) return;
+      if(_tradesCountPrev == value)
+        return;
       _tradesCountPrev = TradesCount;
       RaiseTradesCountChanging(value);
     }
@@ -254,7 +265,7 @@ namespace HedgeHog.Alice.Store {
     event EventHandler<EventArgs> TradesCountChangedEvent;
     public event EventHandler<EventArgs> TradesCountChanged {
       add {
-        if (TradesCountChangedEvent == null || !TradesCountChangedEvent.GetInvocationList().Contains(value))
+        if(TradesCountChangedEvent == null || !TradesCountChangedEvent.GetInvocationList().Contains(value))
           TradesCountChangedEvent += value;
       }
       remove {
@@ -262,9 +273,11 @@ namespace HedgeHog.Alice.Store {
       }
     }
     protected void RaiseTradesCountChanged() {
-      if (_tradesCountPrev == TradesCount) return;
+      if(_tradesCountPrev == TradesCount)
+        return;
       _tradesCountPrev = TradesCount;
-      if (TradesCountChangedEvent != null) TradesCountChangedEvent(this, new EventArgs());
+      if(TradesCountChangedEvent != null)
+        TradesCountChangedEvent(this, new EventArgs());
     }
     partial void OnTradesCountChanged() {
       RaiseTradesCountChanged();
@@ -276,7 +289,7 @@ namespace HedgeHog.Alice.Store {
     event EventHandler<EntryOrderIdEventArgs> EntryOrderIdChangedEvent;
     public event EventHandler<EntryOrderIdEventArgs> EntryOrderIdChanged {
       add {
-        if (EntryOrderIdChangedEvent == null || !EntryOrderIdChangedEvent.GetInvocationList().Contains(value))
+        if(EntryOrderIdChangedEvent == null || !EntryOrderIdChangedEvent.GetInvocationList().Contains(value))
           EntryOrderIdChangedEvent += value;
       }
       remove {
@@ -284,13 +297,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
     void OnEntryOrderIdChanged(string newId, string oldId) {
-      if (EntryOrderIdChangedEvent != null) EntryOrderIdChangedEvent(this, new EntryOrderIdEventArgs(newId, oldId));
+      if(EntryOrderIdChangedEvent != null)
+        EntryOrderIdChangedEvent(this, new EntryOrderIdEventArgs(newId, oldId));
     }
 
     EventHandler _IsActiveChanged;
     public event EventHandler IsActiveChanged {
       add {
-        if (_IsActiveChanged == null || !_IsActiveChanged.GetInvocationList().Contains(value))
+        if(_IsActiveChanged == null || !_IsActiveChanged.GetInvocationList().Contains(value))
           _IsActiveChanged += value;
       }
       remove {
@@ -298,13 +312,13 @@ namespace HedgeHog.Alice.Store {
       }
     }
     protected void OnIsActiveChanged() {
-      if (_IsActiveChanged != null)
+      if(_IsActiveChanged != null)
         _IsActiveChanged(this, EventArgs.Empty);
     }
     EventHandler _rateChangedDelegate;
     public event EventHandler RateChanged {
       add {
-        if (_rateChangedDelegate == null || !_rateChangedDelegate.GetInvocationList().Contains(value))
+        if(_rateChangedDelegate == null || !_rateChangedDelegate.GetInvocationList().Contains(value))
           _rateChangedDelegate += value;
       }
       remove {
@@ -312,7 +326,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     partial void OnRateChanged() {
-      if (_rateChangedDelegate != null)
+      if(_rateChangedDelegate != null)
         _rateChangedDelegate(this, EventArgs.Empty);
     }
 
@@ -320,7 +334,7 @@ namespace HedgeHog.Alice.Store {
     public int Index {
       get { return _Index; }
       set {
-        if (_Index != value) {
+        if(_Index != value) {
           _Index = value;
           OnPropertyChanged("Index");
         }
@@ -335,10 +349,11 @@ namespace HedgeHog.Alice.Store {
     public bool IsExitOnly {
       get { return _IsExitOnly; }
       set {
-        if (_IsExitOnly != value) {
+        if(_IsExitOnly != value) {
           _IsExitOnly = value;
           OnPropertyChanged("IsExitOnly");
-          if (value) CanTrade = false;
+          if(value)
+            CanTrade = false;
         }
       }
     }
@@ -348,7 +363,8 @@ namespace HedgeHog.Alice.Store {
     public bool InManual {
       get { return _InManual; }
       set {
-        if (_InManual == value) return;
+        if(_InManual == value)
+          return;
         _InManual = value;
         ResetPricePosition();
         OnPropertyChanged("InManual");
@@ -360,10 +376,10 @@ namespace HedgeHog.Alice.Store {
     public double PricePosition {
       get { return _pricePosition; }
       set {
-        if (_pricePosition != value) {
+        if(_pricePosition != value) {
           var prev = _pricePosition;
           _pricePosition = value;
-          if (value != 0 && !double.IsNaN(value) && !double.IsNaN(prev))
+          if(value != 0 && !double.IsNaN(value) && !double.IsNaN(prev))
             RaiseCrossed(value);
         }
       }
@@ -372,7 +388,7 @@ namespace HedgeHog.Alice.Store {
 
     #region Crossed Event
     public void ClearCrossedHandlers() {
-      if (CrossedEvent != null)
+      if(CrossedEvent != null)
         CrossedEvent.GetInvocationList().ToList().ForEach(h => CrossedEvent -= h as EventHandler<CrossedEvetArgs>);
     }
     public class CrossedEvetArgs : EventArgs {
@@ -384,28 +400,29 @@ namespace HedgeHog.Alice.Store {
     event EventHandler<CrossedEvetArgs> CrossedEvent;
     public event EventHandler<CrossedEvetArgs> Crossed {
       add {
-        if (CrossedEvent == null || !CrossedEvent.GetInvocationList().Contains(value))
+        if(CrossedEvent == null || !CrossedEvent.GetInvocationList().Contains(value))
           CrossedEvent += value;
       }
       remove {
-        if (value == null) {
-          if (CrossedEvent != null)
+        if(value == null) {
+          if(CrossedEvent != null)
             CrossedEvent.GetInvocationList().Cast<EventHandler<CrossedEvetArgs>>().ForEach(d => CrossedEvent -= d);
         } else
           CrossedEvent -= value;
       }
     }
     protected void RaiseCrossed(double pricePosition) {
-      if (CrossedEvent != null) CrossedEvent(this, new CrossedEvetArgs(pricePosition));
+      if(CrossedEvent != null)
+        CrossedEvent(this, new CrossedEvetArgs(pricePosition));
     }
     #endregion
 
     double _pricePrev = double.NaN;
     public void SetPrice(double price) {
-      if (double.IsNaN(price))
+      if(double.IsNaN(price))
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(new Exception(new { type = GetType().Name, PricePosition = "is NaN." } + ""));
       else {
-        if (Rate.Between(price, _pricePrev)) {
+        if(Rate.Between(price, _pricePrev)) {
           _pricePosition = _pricePrev - Rate;
         }
         _pricePrev = price;
@@ -422,7 +439,7 @@ namespace HedgeHog.Alice.Store {
     public static bool HasTradeCorridorChanged(this IList<SuppRes> buySellLevels) {
       return buySellLevels.HasCorridorChangedImpl(sr => sr.RateTrade);
     }
-    static bool HasCorridorChangedImpl(this IList<SuppRes> buySellLevels,Func<SuppRes,double> getter) {
+    static bool HasCorridorChangedImpl(this IList<SuppRes> buySellLevels, Func<SuppRes, double> getter) {
       var bsRates = buySellLevels.Select(sr => sr.Rate).OrderBy(r => r).ToArray();
       var bsRatesCT = buySellLevels.Select(getter).OrderBy(r => r).ToArray();
       return !bsRates.DoSetsOverlap(bsRatesCT);

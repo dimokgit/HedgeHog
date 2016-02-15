@@ -20,6 +20,9 @@ namespace HedgeHog.Alice.Store {
     public delegate TradeDirections TradeConditionDelegate();
     public delegate TradeDirections TradeConditionDelegateHide();
     #region Trade Condition Helers
+    private bool IsExpired(TimeSpan slack) {
+      return BuySellLevels.Max(sr => sr.DateCanTrade) < ServerTime.Subtract(slack);
+    }
     bool IsCurrentPriceInside(params double[] levels) {
       return new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }.All(cp => cp.Between(levels[0], levels[1]));
     }
@@ -70,8 +73,8 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => BigWaveIndex);
       }
     }
-
-    public TradeConditionDelegate EdgesOk {
+    #region Edges
+    public TradeConditionDelegateHide EdgesOk {
       get {
         return () => {
           DoSetTradeStrip = false;
@@ -94,7 +97,7 @@ namespace HedgeHog.Alice.Store {
     }
     LoadRateAsyncBuffer _setEdgeLinesAsyncBuffer = new LoadRateAsyncBuffer();
 
-    public TradeConditionDelegate EdgesAOk {
+    public TradeConditionDelegateHide EdgesAOk {
       get {
         return () => {
           DoSetTradeStrip = false;
@@ -155,12 +158,14 @@ namespace HedgeHog.Alice.Store {
       var edgeDown = superEdge_(minLevelD, minLevel1).First();
       return Tuple.Create(edgeDown, edgeUp);
     }
+    #endregion
 
-    public TradeConditionDelegate Elliot123Ok {
+    #region Elliot
+    public TradeConditionDelegateHide Elliot123Ok {
       get {
         return () => {
           var angleOk = !TrendLines0Trends.IsEmpty && TrendLines0Trends.Slope.Sign() != TrendLines1Trends.Slope.Sign();
-          if(!angleOk || BuySellLevels.Max(sr => sr.DateCanTrade) < ServerTime.AddMinutes(-5)) {
+          if(!angleOk || IsExpired(5.FromMinutes())) {
             BuySellLevels.ForEach(sr => sr.CanTradeEx = false);
           }
           return !TrendLines0Trends.IsEmpty && angleOk
@@ -178,8 +183,9 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+
     [TradeConditionTurnOff]
-    public TradeConditionDelegate Elliot12Ok {
+    public TradeConditionDelegateHide Elliot12Ok {
       get {
         if(DoSetTradeStrip)
           DoSetTradeStrip = false;
@@ -254,7 +260,7 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
-
+    #endregion
 
     [TradeConditionTurnOff]
     public TradeConditionDelegateHide BigWaveOk {
@@ -564,7 +570,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegate IsLimieOk {
+    public TradeConditionDelegateHide IsLimieOk {
       get {
         return () => IsLimie();
       }
@@ -818,12 +824,22 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #endregion
 
-    #region StDev
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate Exprd {
+      get {
+        return () => TradeDirectionByBool(BuySellLevels.IfAnyCanTrade().IsEmpty() || !IsExpired(3.FromMinutes()));
+      }
+    }
 
+
+    #region StDev
     public TradeConditionDelegate CmaRsdUDOk {
       get {
         return () => {
-          VoltageFunction_ = Alice.VoltageFunction.BBRsdRatio;
+          if(!new[] { Alice.VoltageFunction.BBRsdRatio }.Contains(VoltageFunction_)) {
+            Log = new Exception("BBRsdRatio voltage is required");
+            VoltageFunction_ = Alice.VoltageFunction.BBRsdRatio;
+          }
           var volt = GetLastVolt();
           var voltHigh = GetVoltageHigh();
           var voltLow = GetVoltageAverage();
@@ -837,6 +853,7 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+
 
     double _rhsdRatio = 0.4;
     [Category(categoryActive)]
@@ -907,7 +924,7 @@ namespace HedgeHog.Alice.Store {
       return new {
         GRBHRatio = TrendHeighRatio(),
         GRBRatio_ = TrendHeighRatio(TrendLines2Trends),
-        TipRatio_ = _tipRatioCurrent.Round(1),
+        //TipRatio_ = _tipRatioCurrent.Round(1),
         LimeAngle = TrendLines0Trends.Angle.Round(1),
         GrnAngle_ = TrendLines1Trends.Angle.Round(1),
         RedAngle_ = TrendLinesTrends.Angle.Round(1),

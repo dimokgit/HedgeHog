@@ -2288,7 +2288,7 @@ namespace HedgeHog.Alice.Store {
                 //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
                 OnPropertyChanged(() => RatesRsd);
               });
-            }, false);
+            }, true);
             OnScanCorridor(RatesArray, () => {
               try {
                 RaiseShowChart();
@@ -2387,7 +2387,7 @@ namespace HedgeHog.Alice.Store {
     CorridorStatistics ShowVoltsByBBUpDownRatio() {
       if(CanTriggerTradeDirection()) {
         //_boilingerBanderAsyncAction.Push(() => {
-        (from rates in UseRates(rate => rate.Select(r => r.PriceAvg - r.PriceCMALast).Where(Lib.IsNotNaN))
+        (from rates in UseRates(rate => rate.Select(r => r.PriceAvg - r.PriceCMALast).Where(Lib.IsNotNaN).ToArray())
          from diff in rates
          group diff by diff > 0 into upDown
          select new { dir = upDown.Key, rsd = upDown.RelativeStandardDeviation() }
@@ -2395,14 +2395,70 @@ namespace HedgeHog.Alice.Store {
          .OrderBy(x => x.dir)
          .Buffer(2)
          .Select(b => b[1].rsd / b[0].rsd.Abs() - 1)
-         .ForEach(stDev => { SetVots(stDev.ToPercent(), 2); });
+         .ForEach(stDev => { SetVots(stDev * 100, 2); });
         //});
       }
       return null;
     }
-    void CalcBoilingerRsd() {
+    CorridorStatistics ShowVoltsByBBUpDownRatio2() {
+      if(CanTriggerTradeDirection()) {
+        //_boilingerBanderAsyncAction.Push(() => {
+        var diffs =
+          from rates in UseRates(rates => rates.Select(r => r.PriceAvg - r.PriceCMALast).Where(Lib.IsNotNaN).ToList())
+          from rate in CutCmaCorners(rates)
+          select rate;
+        (from diff in diffs
+         group diff by diff > 0 into upDown
+         select new { dir = upDown.Key, rsd = upDown.RelativeStandardDeviation() }
+        )
+        .OrderBy(x => x.dir)
+        .Buffer(2)
+        .Select(b => b[1].rsd / b[0].rsd.Abs() - 1)
+        .ForEach(stDev => { SetVots(stDev * 100, 2); });
+        //});
+      }
+      return null;
     }
 
+    private IEnumerable<double> CutCmaCorners() {
+      return (from rates in UseRates(rate => { var l = rate.Where(r => r.PriceCMALast.IsNotNaN()).ToList(); l.Reverse(); return l; })
+              from zip in rates.Zip(rates.Skip(1), (r1, r2) => new { r1, r2 })
+              select new {
+                r = zip.r1,
+                dir = new {
+                  d1 = zip.r1.PriceAvg.Sign(zip.r1.PriceCMALast),
+                  d2 = zip.r2.PriceAvg.Sign(zip.r2.PriceCMALast)
+                }
+              }
+       ).SkipWhile(x => x.dir.d1 == x.dir.d2)
+       .Select(x => x.r.PriceAvg - x.r.PriceCMALast);
+    }
+    private static List<Rate> CutCmaCorners(List<Rate> rates) {
+      var start = CmaCornerIndex(rates);
+      rates.Reverse();
+      var end = CmaCornerIndex(rates);
+      rates.Reverse();
+      return rates.GetRange(start, rates.Count - start - end);
+    }
+    private static int CmaCornerIndex(List<Rate> rates) {
+      return rates.Select(r => r.PriceAvg.SignUp(r.PriceCMALast))
+        .Scan(0, (d, dir) => d == 0 ? dir : dir == d ? d : 0)
+        .TakeWhile(d => d != 0)
+        .Count();
+    }
+    private static List<double> CutCmaCorners(List<double> rates) {
+      var start = CmaCornerIndex(rates);
+      rates.Reverse();
+      var end = CmaCornerIndex(rates);
+      rates.Reverse();
+      return rates.GetRange(start, rates.Count - start - end);
+    }
+    private static int CmaCornerIndex(List<double> rates) {
+      return rates
+        .Scan(0, (d, dir) => d == 0 ? dir.SignUp() : dir.SignUp() == d ? d : 0)
+        .TakeWhile(d => d != 0)
+        .Count();
+    }
 
     double CalcTicksPerSecond(IList<Rate> rates) {
       if(BarPeriod != BarsPeriodType.t1)

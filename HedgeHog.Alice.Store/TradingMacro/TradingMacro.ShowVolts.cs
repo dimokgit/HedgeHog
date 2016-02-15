@@ -30,7 +30,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.BBRsd:
           return ShowVoltsByBBRsd;
         case HedgeHog.Alice.VoltageFunction.BBRsdRatio:
-          return ShowVoltsByBBUpDownRatio;
+          return ShowVoltsByBBUpDownRatio2;
         case HedgeHog.Alice.VoltageFunction.Rsd:
           return ShowVoltsByRsd;
         case HedgeHog.Alice.VoltageFunction.FractalDensity:
