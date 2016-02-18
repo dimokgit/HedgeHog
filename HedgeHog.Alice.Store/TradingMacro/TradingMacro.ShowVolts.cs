@@ -29,6 +29,10 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByAvgLineRatio;
         case HedgeHog.Alice.VoltageFunction.BBRsd:
           return ShowVoltsByBBRsd;
+        case HedgeHog.Alice.VoltageFunction.UpDownMax:
+          return ShowVoltsByUpDownMax;
+        case HedgeHog.Alice.VoltageFunction.UpDownMax2:
+          return ShowVoltsByUpDownMax2;
         case HedgeHog.Alice.VoltageFunction.BBRsdRatio:
           return ShowVoltsByBBUpDownRatio;
         case HedgeHog.Alice.VoltageFunction.BBRsdRatio2:
@@ -37,8 +41,12 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByBBUpDownRatio3;
         case HedgeHog.Alice.VoltageFunction.Rsd:
           return ShowVoltsByRsd;
-        case HedgeHog.Alice.VoltageFunction.FractalDensity:
-          return ShowVoltsByFractalDensity;
+        case HedgeHog.Alice.VoltageFunction.UDRatioLime:
+          return () => ShowVoltsByUpDownRatioByCorridor(TrendLines0Trends);
+        case HedgeHog.Alice.VoltageFunction.UDRatioGreen:
+          return () => ShowVoltsByUpDownRatioByCorridor(TrendLines1Trends);
+        case HedgeHog.Alice.VoltageFunction.UDRatioRed:
+          return () => ShowVoltsByUpDownRatioByCorridor(TrendLinesTrends);
         case HedgeHog.Alice.VoltageFunction.Correlation:
           return ShowVoltsByCorrelation;
         case HedgeHog.Alice.VoltageFunction.StDevInsideOutRatio:
@@ -51,15 +59,6 @@ namespace HedgeHog.Alice.Store {
 
     private CorridorStatistics ShowVoltsByCorrelation() {
       var volts = InPips(WaveShort.Rates.Select(r => r.PriceAvg.Abs(r.PriceCMALast)).StandardDeviation());
-      return ShowVolts(volts, 2);
-    }
-    CorridorStatistics ShowVoltsByFractalDensity() {
-      var volts = !FractalTimes.Any() ? double.NaN
-        : (from range in new { dateMin = FractalTimes.Min(), dateMax = FractalTimes.Max() }.Yield()
-           let rates = RatesArray.SkipWhile(r => r.StartDate <= range.dateMin).TakeWhile(r => r.StartDate <= range.dateMax).ToArray()
-           select rates.Length.Div(FractalTimes.Count()).ToInt()).First();
-      RatesArray.TakeWhile(r => GetVoltage(r).IsNaN())
-        .ForEach(r => SetVoltage(r, volts));
       return ShowVolts(volts, 2);
     }
     CorridorStatistics ShowVoltsByFrameAngle() {

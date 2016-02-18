@@ -2380,7 +2380,41 @@ namespace HedgeHog.Alice.Store {
       if(CanTriggerTradeDirection()) {
         _boilingerBanderAsyncAction.Push(() =>
         UseRates(rate => rate.Select(r => r.PriceCMALast.Abs(r.PriceAvg)).Where(Lib.IsNotNaN).RelativeStandardDeviation())
-          .ForEach(stDev => { SetVots(stDev.ToPercent(), 2); }));
+          .ForEach(stDev => { SetVots(stDev * 100, 2); }));
+      }
+      return null;
+    }
+    CorridorStatistics ShowVoltsByUpDownMax() {
+      if(CanTriggerTradeDirection()) {
+        //_boilingerBanderAsyncAction.Push(() => {
+        (from rates in UseRates(rate 
+          => CutCmaCorners(rate.Where(r => r.PriceCMALast.IsNotNaN()).ToList()).Select(r => r.PriceAvg - r.PriceCMALast).ToArray())
+         from diff in rates
+         group diff by diff > 0 into upDown
+         select new { dir = upDown.Key, rsd = upDown.RelativeStandardDeviation() }
+         )
+         .OrderBy(x => x.dir)
+         .Buffer(2)
+         .Select(b => b.Max(x=>x.rsd.Abs()))
+         .ForEach(stDev => { SetVots(stDev * 100, 2); });
+        //});
+      }
+      return null;
+    }
+    CorridorStatistics ShowVoltsByUpDownMax2() {
+      if(CanTriggerTradeDirection()) {
+        //_boilingerBanderAsyncAction.Push(() => {
+        var diffs =
+          (from rates in UseRates(rates => CutCmaCorners(rates.Where(r => r.PriceCMALast.IsNotNaN()).ToList()))
+           from rate in rates.Select(r => new { u = r.AskHigh - r.PriceCMALast, d = r.PriceCMALast - r.BidLow })
+           select rate
+          ).ToArray();
+        var rsdU = diffs.Select(x => x.u).Where(d => d > 0).RelativeStandardDeviation();
+        var rsdD = diffs.Select(x => x.d).Where(d => d > 0).RelativeStandardDeviation();
+        var volt = rsdU.Max(rsdD);
+        SetVots(volt * 100, 2);
+        //.ForEach(stDev => { SetVots(stDev * 100, 2); });
+        //});
       }
       return null;
     }
@@ -2424,6 +2458,23 @@ namespace HedgeHog.Alice.Store {
         //_boilingerBanderAsyncAction.Push(() => {
         var diffs =
           (from rates in UseRates(rates => CutCmaCorners(rates.Where(r => r.PriceCMALast.IsNotNaN()).ToList()))
+           from rate in rates.Select(r => new { u = r.AskHigh - r.PriceCMALast, d = r.PriceCMALast - r.BidLow })
+           select rate
+          ).ToArray();
+        var rsdU = diffs.Select(x => x.u).Where(d => d > 0).RelativeStandardDeviation();
+        var rsdD = diffs.Select(x => x.d).Where(d => d > 0).RelativeStandardDeviation();
+        var volt = rsdU / rsdD - 1;
+        SetVots(volt * 100, 2);
+        //.ForEach(stDev => { SetVots(stDev * 100, 2); });
+        //});
+      }
+      return null;
+    }
+    CorridorStatistics ShowVoltsByUpDownRatioByCorridor(Rate.TrendLevels trendLevels) {
+      if(CanTriggerTradeDirection()) {
+        //_boilingerBanderAsyncAction.Push(() => {
+        var diffs =
+          (from rates in UseRates(rates => CutCmaCorners(rates.GetRange(trendLevels.Count).Where(r => r.PriceCMALast.IsNotNaN()).ToList()))
            from rate in rates.Select(r => new { u = r.AskHigh - r.PriceCMALast, d = r.PriceCMALast - r.BidLow })
            select rate
           ).ToArray();
@@ -3088,7 +3139,9 @@ namespace HedgeHog.Alice.Store {
 
     public double CmaPeriodByRatesCount() { return CmaPeriodByRatesCount(RatesArray.Count); }
     public double CmaPeriodByRatesCount(int count) {
-      return Math.Pow(count, PriceCmaLevels).ToInt();
+      return PriceCmaLevels >= 1
+        ? PriceCmaLevels
+        : Math.Pow(count, PriceCmaLevels).ToInt();
     }
     #region SmaPasses
     private int _CmaPasses = 1;
@@ -3600,7 +3653,7 @@ namespace HedgeHog.Alice.Store {
         lock (_ScanCoridorSubjectLocker)
           if(_ScanCoridorSubject == null) {
             _ScanCoridorSubject = new Subject<Action>();
-            _ScanCoridorSubject.SubscribeToLatestOnBGThread(a => a(), exc => Log = exc);
+            _ScanCoridorSubject.SubscribeToLatestOnBGThread(a => a(), exc => Log = exc, ThreadPriority.Highest);
           }
         return _ScanCoridorSubject;
       }

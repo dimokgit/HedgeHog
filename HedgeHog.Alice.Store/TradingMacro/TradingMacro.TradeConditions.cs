@@ -825,7 +825,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegate Exprd {
+    public TradeConditionDelegate ExprdOk {
       get {
         return () => TradeDirectionByBool(BuySellLevels.IfAnyCanTrade().IsEmpty() || !IsExpired(3.FromMinutes()));
       }
@@ -836,7 +836,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate CmaRsdUDOk {
       get {
         return () => {
-          if(!new[] { Alice.VoltageFunction.BBRsdRatio, Alice.VoltageFunction.BBRsdRatio2, Alice.VoltageFunction.BBRsdRatio3 }.Contains(VoltageFunction_)) {
+          if(!new[] { Alice.VoltageFunction.BBRsdRatio, Alice.VoltageFunction.BBRsdRatio2, Alice.VoltageFunction.BBRsdRatio3, Alice.VoltageFunction.UDRatioLime, Alice.VoltageFunction.UDRatioGreen, Alice.VoltageFunction.UDRatioRed }.Contains(VoltageFunction_)) {
             Log = new Exception("BBRsdRatio voltage is required");
             VoltageFunction_ = Alice.VoltageFunction.BBRsdRatio;
           }
@@ -878,6 +878,15 @@ namespace HedgeHog.Alice.Store {
         return () => {
           var volt = GetLastVolt();
           return TradeDirectionByBool(volt < GetVoltageAverage());
+        };
+      }
+    }
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate VoltAboveOk {
+      get {
+        return () => {
+          var volt = GetLastVolt();
+          return TradeDirectionByBool(volt > GetVoltageHigh());
         };
       }
     }
