@@ -2412,7 +2412,7 @@ namespace HedgeHog.Alice.Store {
         var rsdU = diffs.Select(x => x.u).Where(d => d > 0).RelativeStandardDeviation();
         var rsdD = diffs.Select(x => x.d).Where(d => d > 0).RelativeStandardDeviation();
         var volt = rsdU.Max(rsdD);
-        SetVots(volt * 100, 2);
+        SetVots(volt * 100, 2, CmaPeriodByRatesCount());
         //.ForEach(stDev => { SetVots(stDev * 100, 2); });
         //});
       }

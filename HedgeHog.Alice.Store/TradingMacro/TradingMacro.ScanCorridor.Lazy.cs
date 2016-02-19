@@ -108,9 +108,10 @@ namespace HedgeHog.Alice.Store {
       return corridor;
     }
 
-    private void SetVots(double volt, int averageIterations) {
+    private void SetVots(double volt, int averageIterations, double cma = 0) {
+      var volt2 = cma > 0 ? GetLastVolt().Cma(cma, volt) : volt;
       UseRates(rates => rates.Where(r => GetVoltage(r).IsNaN()).ToList())
-        .SelectMany(rates => rates).ForEach(r => SetVoltage(r, volt));
+        .SelectMany(rates => rates).ForEach(r => SetVoltage(r, volt2));
       //SetVoltage(RateLast, volt);
       var voltRates = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray();
       if(voltRates.Any()) {
