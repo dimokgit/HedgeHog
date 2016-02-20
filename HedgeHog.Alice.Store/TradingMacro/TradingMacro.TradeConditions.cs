@@ -540,15 +540,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [TradeConditionTurnOff]
-    [TradeConditionByRatio]
     public TradeConditionDelegate PigTailOk {
       get {
-        //TradeConditionsRemoveExcept<TradeConditionByRatioAttribute>(PigTailOk);
-        Log = new Exception(new { PigTailOk = new { TipRatio } } + "");
+        Func<Rate.TrendLevels, double[]> corr = tl => new[] { tl.PriceAvg2, tl.PriceAvg3 };
         return () => {
-          _tipRatioCurrent = TrendLines1Trends.PriceHeight0.Zip(TrendLines0Trends.PriceHeight0, (g, l) => g / l).DefaultIfEmpty(double.NaN).Single();
-          return TradeDirectionByBool(IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
+          var red = corr(TrendLinesTrends);
+          var green = corr(TrendLines1Trends);
+          var lime = corr(TrendLines0Trends);
+          var ok = green.All(p => p.Between(red)) && lime.All(p => p.Between(green));
+          return TradeDirectionByBool(ok);
         };
       }
     }
@@ -975,7 +975,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate GreenAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines1Trends, TrendAngleGreen); } }
     [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate RedAngOk { get { return () => TradeDirectionByAngleCondition(TrendLinesTrends, TrendAngleRed); } }
-    [TradeConditionTurnOff]
+    [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate BlueAngOk {
       get {
         return () => TrendAngleBlue1.IsNaN()

@@ -380,13 +380,13 @@ namespace HedgeHog.Alice.Store {
       return tm.TrendLinesTrendsAll.Max(tl => tl.PriceAvg2);
     }
     private double TrendLinesTrendsPriceMax1(TradingMacro tm) {
-      return tm.TrendLinesTrends.PriceAvg21.Max(tm.TrendLines2Trends.PriceAvg2, tm.TrendLines1Trends.PriceAvg2);
+      return tm.TrendLinesTrends.PriceAvg21.Max(TrendLinesTrendsPriceMax(tm));
     }
     private double TrendLinesTrendsPriceMin(TradingMacro tm) {
       return tm.TrendLinesTrendsAll.Min(tl => tl.PriceAvg3);
     }
     private double TrendLinesTrendsPriceMin1(TradingMacro tm) {
-      return tm.TrendLinesTrends.PriceAvg31.Min(tm.TrendLines2Trends.PriceAvg3, tm.TrendLines1Trends.PriceAvg3);
+      return tm.TrendLinesTrends.PriceAvg31.Min(TrendLinesTrendsPriceMin(tm));
     }
     private double TrendLinesTrendsPriceAvg(TradingMacro tm, Func<Rate.TrendLevels, double> value) {
       return tm.TrendLinesTrendsAll.Average(value);

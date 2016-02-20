@@ -368,17 +368,7 @@
               { text: "Both", value: "Both" },
               { text: "Auto", value: "Auto" }]
           },
-          TradingDistanceFunction: {
-            name: "Trading Distance", type: "options", options: [
-              { text: "BuySellLevels", value: "BuySellLevels" },
-              { text: "RatesHeight", value: "RatesHeight" },
-              { text: "Pips", value: "Pips" },
-              { text: "Green", value: "Green" },
-              { text: "Red", value: "Red" },
-              { text: "Blue", value: "Blue" },
-              { text: "Wave", value: "Wave" }
-            ]
-          },
+          TradingDistanceFunction: { name: "Trading Distance", type: "options", options: tradingMacroTakeProfitFunction() },
           TakeProfitFunction: { name: "Take Profit", type: "options", options: tradingMacroTakeProfitFunction() },
           LevelSellBy: { name: "Level Sell", type: "options", options: tradeLevelBys() },
           LevelBuyBy: { name: "Level Buy", type: "options", options: tradeLevelBys() },

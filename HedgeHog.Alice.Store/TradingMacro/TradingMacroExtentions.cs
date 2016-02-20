@@ -3473,7 +3473,10 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceMax,()=> levelMax(TrendLinesTrendsPriceMax)},
           {TradeLevelBy.PriceMin,()=> levelMin(TrendLinesTrendsPriceMin)},
 
-          {TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
+          {TradeLevelBy.PriceMax1,()=> levelMax(TrendLinesTrendsPriceMax1)},
+          {TradeLevelBy.PriceMin1,()=> levelMin(TrendLinesTrendsPriceMin1)},
+
+          { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
 
           {TradeLevelBy.LimeMax,()=> TrendLines0Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single() },
@@ -3481,6 +3484,9 @@ namespace HedgeHog.Alice.Store {
 
           {TradeLevelBy.GreenMax,()=> TrendLines1Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single() },
           {TradeLevelBy.GreenMin,()=> TrendLines1Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single() },
+
+          {TradeLevelBy.RedMax,()=> TrendLinesTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single() },
+          {TradeLevelBy.RedMin,()=> TrendLinesTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single() },
 
           {TradeLevelBy.None,()=>double.NaN}
           };
