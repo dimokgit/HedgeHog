@@ -9,6 +9,7 @@ namespace HedgeHog.Alice {
     BounceCom,
     DistanceMacd,
     StDev,
+    TrendHieghts,
     AvgLineRatio,
     BBRsd,
     UpDownMax,
@@ -164,7 +165,6 @@ namespace HedgeHog.Alice.Store {
     JumpOut = 6,
     Limit = 7,
     Friday = 8,
-    Harmonic = 9,
     CorrTouch = 10
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }

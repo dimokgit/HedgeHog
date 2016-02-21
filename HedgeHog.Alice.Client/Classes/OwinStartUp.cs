@@ -238,8 +238,8 @@ namespace HedgeHog.Alice.Client {
         hgt = string.Join("/", new[] {
           tmTrader.RatesHeightInPips.ToInt(),
           tmTrader.BuySellHeightInPips.ToInt(),
-          tmTrader.InPips(tmTrader.CenterOfMassBuy.Abs(tmTrader.CenterOfMassSell)).ToInt()
-        }),
+          tmTrader.InPips(tmTrader.CenterOfMassBuy.IfNaN(0).Abs(tmTrader.CenterOfMassSell.IfNaN(0))).ToInt()
+        }.Where(v => v > 0)),
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
         S = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
@@ -325,8 +325,8 @@ namespace HedgeHog.Alice.Client {
         throw new ArgumentException("Is empty", "nick");
       UseTradingMacro(pair, 0, tm => RemoteControlModel.SaveStrategy(tm, nick), true);
     }
-    public async Task RemoveStrategy(string name,bool permanent) {
-      await RemoteControlModel.RemoveStrategy(name,permanent);
+    public async Task RemoveStrategy(string name, bool permanent) {
+      await RemoteControlModel.RemoveStrategy(name, permanent);
     }
     public async Task UpdateStrategy(string pair, string name) {
       await UseTradingMacro(pair, 0, async tm => {
@@ -394,7 +394,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     public void SetTradeRate(string pair, bool isBuy, double price) {
-        GetTradingMacro(pair).ForEach(tm => tm.SetTradeRate(isBuy, price));
+      GetTradingMacro(pair).ForEach(tm => tm.SetTradeRate(isBuy, price));
     }
     public void ManualToggle(string pair) {
       try {

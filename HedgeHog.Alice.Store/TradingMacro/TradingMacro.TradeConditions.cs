@@ -20,7 +20,7 @@ namespace HedgeHog.Alice.Store {
     public delegate TradeDirections TradeConditionDelegate();
     public delegate TradeDirections TradeConditionDelegateHide();
     #region Trade Condition Helers
-    private bool IsExpired(TimeSpan slack) {
+    private bool IsCanTradeExpired(TimeSpan slack) {
       return BuySellLevels.Max(sr => sr.DateCanTrade) < ServerTime.Subtract(slack);
     }
     bool IsCurrentPriceInside(params double[] levels) {
@@ -57,28 +57,12 @@ namespace HedgeHog.Alice.Store {
 
     double _tipRatioCurrent = double.NaN;
 
-    #region Wave Conditions
-    int _bigWaveIndex = 0;
-    [Category(categoryTrading)]
-    [WwwSetting]
-    public int BigWaveIndex {
-      get {
-        return _bigWaveIndex;
-      }
-
-      set {
-        if(value < 0)
-          throw new Exception("BigWaveIndex must bre >= 0");
-        _bigWaveIndex = value;
-        OnPropertyChanged(() => BigWaveIndex);
-      }
-    }
     #region Edges
     public TradeConditionDelegateHide EdgesOk {
       get {
         return () => {
           DoSetTradeStrip = false;
-          var edges = UseRates(rates => rates.Select(_priceAvg).ToArray().EdgeByStDev(InPoints(0.1), BigWaveIndex))
+          var edges = UseRates(rates => rates.Select(_priceAvg).ToArray().EdgeByStDev(InPoints(0.1), 0))
           .SelectMany(x => x.ToArray())
           .ToArray();
           CenterOfMassBuy = edges[0].Item1;
@@ -123,145 +107,25 @@ namespace HedgeHog.Alice.Store {
       var fibs = Fibonacci.Levels(AvgLineMax, AvgLineMin);
       CenterOfMassBuy = fibs.Skip(1).First();
       CenterOfMassSell = fibs.TakeLast(2).First();
-      AvgLineRatio = () => edges.Select(e => e.Item2).RelativeStandardDeviation();
-    }
-
-    public TradeConditionDelegateHide EdgesA2Ok {
-      get {
-        return () => {
-          DoSetTradeStrip = false;
-          var step = InPoints(0.1);
-          var edges = UseRates(rates => rates.Select(_priceAvg).ToArray().EdgeByAverage(step))
-          .SelectMany(x => x.ToArray())
-          .ToArray();
-          var edgeMinMax = EdgesDownUp(edges, step / 3);
-          AvgLineMax = edgeMinMax.Item2.Item1;
-          AvgLineMin = edgeMinMax.Item1.Item1;
-          CenterOfMassBuy = edges[0].Item1.Max(edges.Last().Item1);
-          CenterOfMassSell = edges[0].Item1.Min(edges.Last().Item1);
-          AvgLineAvg = edges[0].Item2;
-          AvgLineRatio = () => edges.Last().Item2 / edges[0].Item2;
-          return TradeDirections.Both;
-        };
-      }
-    }
-    static Tuple<Tuple<double, double>, Tuple<double, double>> EdgesDownUp(IList<Tuple<double, double>> edges, double step) {
-      var minLevel1 = edges[0].Item1;
-      var maxAvg = edges.Last().Item2;
-      var minLevelU = minLevel1 + maxAvg;
-      var minLevelD = minLevel1 - maxAvg;
-      Func<double, double, IEnumerable<Tuple<double, double>>> superEdge_ = (min, max) => edges
-        .Where(edge => edge.Item1.Between(min, min))
-        .ToArray(edge => edge.Item1)
-        .EdgeByAverage(step);
-      var edgeUp = superEdge_(minLevel1, minLevelU).First();
-      var edgeDown = superEdge_(minLevelD, minLevel1).First();
-      return Tuple.Create(edgeDown, edgeUp);
     }
     #endregion
 
-    #region Elliot
-    public TradeConditionDelegateHide Elliot123Ok {
+    #region Wave Conditions
+    int _bigWaveIndex = 0;
+    [Category(categoryTrading)]
+    [WwwSetting]
+    public int BigWaveIndex {
       get {
-        return () => {
-          var angleOk = !TrendLines0Trends.IsEmpty && TrendLines0Trends.Slope.Sign() != TrendLines1Trends.Slope.Sign();
-          if(!angleOk || IsExpired(5.FromMinutes())) {
-            BuySellLevels.ForEach(sr => sr.CanTradeEx = false);
-          }
-          return !TrendLines0Trends.IsEmpty && angleOk
-          ? TrendLines0Trends.Sorted.Value.Select(r => r.StartDate).MinBy(d => d)
-          .Select(limeStart => {
-            var greenRange = UseRates(rates => rates.GetRange(TrendLines1Trends.Count))
-            .SelectMany(rates => rates.TakeWhile(r => r.StartDate < limeStart).MinMaxBy(r => r.BidLow, r => r.AskHigh));
-            var greenHeight = greenRange.Height();
-            var limeHeight = TrendLines0Trends.Sorted.Value.Height();
-            _tipRatioCurrent = limeHeight / greenHeight;
-            return TradeDirectionByBool(IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
-          }).SingleOrDefault()
-          : TradeDirections.None;
-          ;
-        };
+        return _bigWaveIndex;
+      }
+
+      set {
+        if(value < 0)
+          throw new Exception("BigWaveIndex must bre >= 0");
+        _bigWaveIndex = value;
+        OnPropertyChanged(() => BigWaveIndex);
       }
     }
-
-    [TradeConditionTurnOff]
-    public TradeConditionDelegateHide Elliot12Ok {
-      get {
-        if(DoSetTradeStrip)
-          DoSetTradeStrip = false;
-        var corr = MonoidsCore.ToFunc(0.0, 0.0, (buy, sell) => new[] { new { buy, sell } });
-        var corr0 = MonoidsCore.ToFunc(() => corr(0, 0).Take(0).ToArray());
-        var waveUp = MonoidsCore.ToFunc(TrendLines1Trends, TrendLines1Trends, (tg, tl) => {
-          var corrs = corr0().ToList();
-          if(tg.Slope > 0) {
-            corrs.AddRange(tl.PriceMin.Select(_ => {
-              var rangeGreen = UseRates(rates => rates.GetRange(tg.Count)).Single().Select((r, i) => new { r, i }).ToList();
-              var limeStart = rangeGreen.Count - tl.Count.Div(1.15).ToInt();
-              var rangeMinMax = rangeGreen.Take(limeStart).MinMaxBy(x => x.r.BidLow, x => x.r.AskHigh);
-              var maxRate = rangeMinMax[1];
-              var max = maxRate.r.AskHigh;
-              var min = rangeMinMax[0].r.BidLow;
-              var range = Fibonacci.Levels(max, min).Skip(4).Take(2).ToArray();
-              CenterOfMassBuy = range.Max();
-              CenterOfMassSell = range.Min();
-              var limeRange = rangeGreen.Skip((limeStart * 1.1).ToInt()).MinMaxBy(r => r.r.PriceAvg);
-              var mid = limeRange[0].r.PriceAvg;
-              var maxLime = limeRange[1].r.AskHigh;
-              var ok = mid.Between(range)
-                && maxLime < max
-                && CurrentEnterPrices().All(cp => cp.Between(min, max));
-              return ok ? corr(max, mid) : corr0();
-            }).SelectMany(c => c));
-          };
-          return corrs;
-        });
-        var waveDown = MonoidsCore.ToFunc(
-            TrendLines1Trends,
-            TrendLines1Trends,
-            (Func<Rate.TrendLevels, bool>)null,
-            0, 0
-            , (Func<Rate, double>)null
-            , (Func<double, double, bool>)null
-            , (tg, tl, cond, midIndex, edgeIndex, edge, edgeOk)
-             => {
-               var corrs = corr0().ToList();
-               if(cond(tg)) {
-                 corrs.AddRange(tl.PriceMin.Select(_ => {
-                   var rangeGreen = UseRates(rates => rates.GetRange(tg.Count)).Single().Select((r, i) => new { r, i }).ToList();
-                   var limeStart = rangeGreen.Count - tl.Count.Div(1.15).ToInt();
-                   var rangeMinMax = rangeGreen.Take(limeStart).MinMaxBy(x => x.r.BidLow, x => x.r.AskHigh);
-                   var max = rangeMinMax[1].r.AskHigh;
-                   var min = rangeMinMax[0].r.BidLow;
-                   var range = Fibonacci.Levels(max, min).Skip(4).Take(2).ToArray();
-                   CenterOfMassBuy = range.Max();
-                   CenterOfMassSell = range.Min();
-                   var limeRange = rangeGreen.Skip((limeStart * 1.1).ToInt()).MinMaxBy(r => r.r.PriceAvg);
-                   var midLime = limeRange[midIndex].r.PriceAvg;
-                   var edgeLime = edge(limeRange[edgeIndex].r);
-                   var edgeGreen = edge(rangeMinMax[edgeIndex].r);
-                   var ok = midLime.Between(range)
-                    && edgeOk(edgeLime.Max(edgeGreen), edgeGreen)
-                    && CurrentEnterPrices().All(cp => cp.Between(min, max));
-                   return ok ? corr(edgeGreen.Max(midLime), midLime.Min(edgeGreen)) : corr0();
-                 }).SelectMany(c => c));
-               };
-               return corrs;
-             });
-        return () => {
-          return waveUp(TrendLines1Trends, TrendLines0Trends)
-          .Concat(waveDown(TrendLines1Trends, TrendLines0Trends, tl => tl.Slope < 0, 1, 0, r => r.BidLow, (edge, d) => edge > d))
-          .Take(1)
-          .SelectMany(l => new[] { l.buy, l.sell })
-          .Zip(BuySellLevels, (l, sr) => new { l, sr })
-          .Do(x => x.sr.RateEx = x.l)
-          .Count() > 0
-          ? TradeDirectionByAngleSign(TrendLines1Trends.Slope)
-          : TradeDirections.None;
-        };
-      }
-    }
-    #endregion
-
     [TradeConditionTurnOff]
     public TradeConditionDelegateHide BigWaveOk {
       get {
@@ -277,32 +141,6 @@ namespace HedgeHog.Alice.Store {
           var x = twoWavess.Select(_ => TradeDirections.Both).DefaultIfEmpty(TradeDirections.None).Single();
           return IsWaveOk(predicate, BigWaveIndex) & x;
         };
-      }
-    }
-
-    [TradeConditionTurnOff]
-    public TradeConditionDelegateHide TriplettOk {
-      get {
-        Func<WaveRange, TradingMacro, bool> isBig = (wr, tm) => wr.DistanceCma > tm.WaveRangeAvg.DistanceCma / 2;
-        Func<WaveRange[], TradingMacro, bool> areBig = (wrs, tm) => wrs.Sum(wr => wr.DistanceCma) > tm.WaveRangeAvg.DistanceCma * 2;
-        Func<WaveRange, TradingMacro, bool> isSmall = (wr, tm) => wr.DistanceCma < tm.WaveRangeAvg.DistanceCma / 3;
-        Func<TradingMacro, IEnumerable<WaveRange>> bigUns = tm => tm.WaveRanges
-          .Take(3)
-          .Select((wr, i) => new { wr, i })
-          .Where(x => x.i != 1)
-          .Select(x => x.wr);
-        Func<TradingMacro, WaveRange> smallOne = tm => tm.WaveRanges[1];
-
-        return () =>
-          TradingMacroOther()
-          .Where(tm => tm.WaveRanges.Count > 2)
-          .Select(tm =>
-            areBig(bigUns(tm).ToArray(), tm) && bigUns(tm).All(wr => isBig(wr, tm)) && isSmall(smallOne(tm), tm)
-            ? this.TradeDirectionByAngleSign(tm.WaveRanges[0].Angle)
-            : TradeDirections.None
-          )
-          .DefaultIfEmpty(TradeDirections.None)
-          .Single();
       }
     }
 
@@ -532,7 +370,7 @@ namespace HedgeHog.Alice.Store {
 
     [TradeConditionTurnOff]
     [TradeConditionByRatio]
-    public TradeConditionDelegate TCbVOk {
+    public TradeConditionDelegateHide TCbVOk {
       get {
         //TradeConditionsRemoveExcept<TradeConditionByRatioAttribute>(TCbVOk);
         Log = new Exception(new { TCbVOk = new { RhSDRatio } } + "");
@@ -543,11 +381,13 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate PigTailOk {
       get {
         Func<Rate.TrendLevels, double[]> corr = tl => new[] { tl.PriceAvg2, tl.PriceAvg3 };
+        Func<double[], double[], bool> corrOk = (corr1, corr2) => corr1.All(p => p.Between(corr2));
+        Func<double[], double[], bool> corrsOk = (corr1, corr2) => corrOk(corr1, corr2) || corrOk(corr2, corr1);
         return () => {
-          var red = corr(TrendLinesTrends);
-          var green = corr(TrendLines1Trends);
-          var lime = corr(TrendLines0Trends);
-          var ok = green.All(p => p.Between(red)) && lime.All(p => p.Between(green));
+          var tls = TrendLinesTrendsAll.OrderByDescending(tl => tl.Count).ToArray();
+          var ok = tls.Zip(tls.Skip(1), (tl1, tl2) => corrsOk(corr(tl1), corr(tl2)))
+          .TakeWhile(b => b)
+          .Count() == tls.Length - 1;
           return TradeDirectionByBool(ok);
         };
       }
@@ -687,6 +527,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public TradeConditionDelegate UniAngleOk {
+      get {
+        var signs = TrendLinesTrendsAll.Where(tl => !tl.IsEmpty).Select(tl => tl.Slope.Sign()).Distinct().ToArray();
+        return () => signs.Length > 1
+          ? TradeDirections.None
+          : TradeDirectionByAngleSign(signs.SingleOrDefault());
+      }
+    }
     [TradeConditionTurnOff]
     public TradeConditionDelegate HangOk {
       get {
@@ -827,7 +675,7 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTurnOff]
     public TradeConditionDelegate ExprdOk {
       get {
-        return () => TradeDirectionByBool(BuySellLevels.IfAnyCanTrade().IsEmpty() || !IsExpired(3.FromMinutes()));
+        return () => TradeDirectionByBool(BuySellLevels.IfAnyCanTrade().IsEmpty() || !IsCanTradeExpired(3.FromMinutes()));
       }
     }
 
@@ -932,6 +780,7 @@ namespace HedgeHog.Alice.Store {
     public object WwwInfo() {
       return new {
         GRBHRatio = TrendHeighRatio(),
+        GRBHAll__ = TrendHeighRatioAll(),
         GRBRatio_ = TrendHeighRatio(TrendLines2Trends),
         //TipRatio_ = _tipRatioCurrent.Round(1),
         LimeAngle = TrendLines0Trends.Angle.Round(1),
@@ -955,7 +804,9 @@ namespace HedgeHog.Alice.Store {
         ? TradeDirections.Both
         : angle > 0
         ? TradeDirections.Down
-        : TradeDirections.Up;
+        : angle < 0
+        ? TradeDirections.Up
+        : TradeDirections.None;
     }
     TradeDirections TradeDirectionByBool(bool value) {
       return value
@@ -983,6 +834,12 @@ namespace HedgeHog.Alice.Store {
         : TrendLines2Trends.Angle.Abs().Between(TrendAngleBlue0, TrendAngleBlue1)
         ? TradeDirectionByAngleSign(TrendLines2Trends.Angle)
         : TradeDirections.None;
+      }
+    }
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate BlueAngTOOk {
+      get {
+        return () => BlueAngOk();
       }
     }
 
@@ -1048,12 +905,23 @@ namespace HedgeHog.Alice.Store {
       var blue = spread(TrendLines2.Value);
       var red = spread(TrendLines.Value);
       var green = spread(TrendLines1.Value);
-      return new[] { blue.Percentage(red), blue.Percentage(green) }.Average().Abs();
+      return new[] { blue.Percentage(red), blue.Percentage(green) }.Average();
+    }
+    public double BlueBasedRatioAll(Func<IList<Rate>, double> spread) {
+      var blue = spread(TrendLines2.Value);
+      var others = TrendLinesBRGL();
+      return others.Any(tl => tl.IsEmpty())
+        ? double.NaN
+        : others.Skip(1).Select(tl => blue.Percentage(spread(tl))).Average();
     }
 
     int TrendHeighRatio() {
       Func<IList<Rate>, double> spread = tls => tls.Take(1).Select(tl => tl.Trends.PriceAvg2 - tl.Trends.PriceAvg3).DefaultIfEmpty(double.NaN).Single();
       return BlueBasedRatio(spread).ToPercent();
+    }
+    int TrendHeighRatioAll() {
+      Func<IList<Rate>, double> spread = tls => tls.Take(1).Select(tl => tl.Trends.PriceAvg2 - tl.Trends.PriceAvg3).DefaultIfEmpty(double.NaN).Single();
+      return BlueBasedRatioAll(spread).ToPercent();
     }
     int TrendHeighRatio(Rate.TrendLevels baseLevel) {
       if(baseLevel.IsEmpty)
@@ -1353,7 +1221,10 @@ namespace HedgeHog.Alice.Store {
       return TradeConditions;
     }
     bool TradeConditionsHaveTurnOff() {
-      return TradeConditionsInfo<TradeConditionTurnOffAttribute>().Any(d => d().HasNone());
+      return TradeConditionsInfo<TradeConditionTurnOffAttribute>().Any(d => {
+        var td = d();
+        return td.HasNone() || BuyLevel.CanTrade && !td.HasUp() || SellLevel.CanTrade && !td.HasDown();
+      });
     }
     bool TradeConditionsHaveSetCorridor() {
       return TradeConditionsInfo<TradeConditionSetCorridorAttribute>().Any();
@@ -1491,10 +1362,6 @@ namespace HedgeHog.Alice.Store {
       private set;
     }
     public double AvgLineMin {
-      get;
-      private set;
-    }
-    public Func<double> AvgLineRatio {
       get;
       private set;
     }

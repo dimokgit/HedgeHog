@@ -507,6 +507,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Voltage Function")]
     [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsCorridorFuncs)]
     public VoltageFunction VoltageFunction_ {
       get { return (VoltageFunction)VoltageFunction; }
       set {
@@ -522,6 +523,7 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Scan Corridor By")]
     [Category(categoryActiveFuncs)]
     [Description("ScanCorridor By")]
+    [WwwSetting(wwwSettingsCorridorFuncs)]
     public ScanCorridorFunction ScanCorridorBy {
       get { return (ScanCorridorFunction)StDevAverageLeewayRatio; }
       set {
@@ -536,6 +538,7 @@ namespace HedgeHog.Alice.Store {
     private RatesLengthFunction _RatesLengthBy = RatesLengthFunction.TimeFrame;
     [DisplayName("Rates Length By")]
     [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsCorridorFuncs)]
     public RatesLengthFunction RatesLengthBy {
       get { return _RatesLengthBy; }
       set {
@@ -884,6 +887,9 @@ namespace HedgeHog.Alice.Store {
 
     public const string wwwSettingsCorridorCMA = "2.1 Corridor CMA";
     public const string wwwSettingsCorridorOther = "2.2 Corridor";
+
+    public const string wwwSettingsCorridorFuncs = "3 Corridor Func";
+
 
     public const string wwwSettingsTrading = "1.0 Trading";
     public const string wwwSettingsTradingCorridor = "1.1 Trading Corridor";

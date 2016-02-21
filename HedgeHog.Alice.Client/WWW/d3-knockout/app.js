@@ -372,6 +372,10 @@
           TakeProfitFunction: { name: "Take Profit", type: "options", options: tradingMacroTakeProfitFunction() },
           LevelSellBy: { name: "Level Sell", type: "options", options: tradeLevelBys() },
           LevelBuyBy: { name: "Level Buy", type: "options", options: tradeLevelBys() },
+          ScanCorridorBy: { name: "ScanCorridor", type: "options", options: scanCorridorFunction() },
+          RatesLengthBy: { name: "RatesLength", type: "options", options: ratesLengthFunction() },
+          VoltageFunction_: { name: "Voltage", type: "options", options: voltageFunction() },
+
           WaveFirstSecondRatioMin: { name: "Wave 1/2 Ratio" }
         };
         var properties = {}, meta = {};
@@ -828,9 +832,12 @@
     // #endregion
     // #endregion
     // #region Read Enums
-    this.ratesLengthFuncs = ko.observableArray();
     var tradingMacroTakeProfitFunction = this.tradingMacroTakeProfitFunction = ko.observableArray();
     var tradeLevelBys = this.tradeLevelBys = ko.observableArray();
+    var scanCorridorFunction = this.scanCorridorFunction = ko.observableArray();
+    var ratesLengthFunction = this.ratesLengthFunction = ko.observableArray();
+    var voltageFunction = this.voltageFunction = ko.observableArray();
+    
     // #endregion
     //#region WaveRanges
     var currentWareRangesChartNum = 1;
@@ -1187,7 +1194,7 @@
       })
       //#region Read Enums
       serverCall("readEnum", ["RatesLengthFunction"], function (enums) {
-        dataViewModel.ratesLengthFuncs(enums);
+        dataViewModel.ratesLengthFunction(mapEnumsForSettings(enums));
       });
       function mapEnumsForSettings(enums) {
         return Object.keys(enums).map(function (v) { return { text: v, value: v } });
@@ -1198,6 +1205,13 @@
       serverCall("readEnum", ["TradeLevelBy"], function (enums) {
         dataViewModel.tradeLevelBys(mapEnumsForSettings(enums));
       });
+      serverCall("readEnum", ["ScanCorridorFunction"], function (enums) {
+        dataViewModel.scanCorridorFunction(mapEnumsForSettings(enums));
+      });
+      serverCall("readEnum", ["VoltageFunction"], function (enums) {
+        dataViewModel.voltageFunction(mapEnumsForSettings(enums));
+      });
+
       //#endregion
       dataViewModel.readStrategies();
       //dataViewModel.readNews();

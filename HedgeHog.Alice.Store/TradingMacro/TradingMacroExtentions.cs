@@ -2375,6 +2375,11 @@ namespace HedgeHog.Alice.Store {
         }));
       return null;
     }
+    CorridorStatistics ShowVoltsByTrendHeighRatioAll() {
+      if(CanTriggerTradeDirection())
+        SetVots(TrendHeighRatioAll(), 2, CmaPeriodByRatesCount());
+      return null;
+    }
 
     CorridorStatistics ShowVoltsByBBRsd() {
       if(CanTriggerTradeDirection()) {
@@ -3458,7 +3463,10 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.Avg2GRBMax,()=>levelMax(tm=>tm.TrendLinesTrendsPriceAvg( tm,tls=>tls.PriceAvg2)) },
           {TradeLevelBy.Avg3GRBMin,()=>levelMin(tm=>tm.TrendLinesTrendsPriceAvg( tm,tls=>tls.PriceAvg3)) },
 
-          {TradeLevelBy.PriceHigh,()=> levelMax(tm=>tm.TrendLines2Trends.PriceAvg2)},
+          {TradeLevelBy.PriceAvg2,()=> levelMax(tm=>tm.TrendLinesTrends.PriceAvg2)},
+          {TradeLevelBy.PriceAvg3,()=> levelMin(tm=>tm.TrendLinesTrends.PriceAvg3)},
+
+          { TradeLevelBy.PriceHigh,()=> levelMax(tm=>tm.TrendLines2Trends.PriceAvg2)},
           {TradeLevelBy.PriceLow,()=> levelMin(tm=>tm.TrendLines2Trends.PriceAvg3)},
 
           {TradeLevelBy.PriceLimeH,()=> levelMax(tm=>tm.TrendLines0Trends.PriceAvg2)},
@@ -3768,7 +3776,7 @@ namespace HedgeHog.Alice.Store {
       return InPips(
         Enumerable.Range(0, 1)
         .Where(_ => BuyLevel != null && SellLevel != null)
-        .Select(_ => (BuyLevel.Rate.Abs(SellLevel.Rate) + PriceSpreadAverage.GetValueOrDefault() * 2) * 1.2)
+        .Select(_ => GetValueByTakeProfitFunction( TradingMacroTakeProfitFunction.BuySellLevels, 1))
         .Concat(new[] { GetValueByTakeProfitFunction(TradingDistanceFunction, TradingDistanceX) })
         .Max(pmc => pmc))
         .ToInt();

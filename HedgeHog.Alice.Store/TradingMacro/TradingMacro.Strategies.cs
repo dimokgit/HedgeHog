@@ -350,6 +350,7 @@ namespace HedgeHog.Alice.Store {
     public Rate.TrendLevels TrendLines0Trends { get { return IsTrendsEmpty(TrendLines0) ? Rate.TrendLevels.Empty : TrendLines0.Value[1].Trends; } }
     public Rate.TrendLevels TrendLinesTrends { get { return IsTrendsEmpty(TrendLines) ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
     public Rate.TrendLevels[] TrendLinesTrendsAll { get { return new[] { TrendLines0Trends, TrendLines1Trends, TrendLinesTrends, TrendLines2Trends }; } }
+    public IList<IList<Rate>> TrendLinesBRGL() { return new[] { TrendLines2.Value, TrendLines.Value, TrendLines1.Value, TrendLines0.Value }; } 
     public IEnumerable<IList<Rate.TrendLevels>> TrendLinesTrendsCrossJoin {
       get {
         return GetTrendLinesCrossJoinValues(tls => tls[1]);
