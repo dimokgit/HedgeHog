@@ -3466,6 +3466,9 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceAvg2,()=> levelMax(tm=>tm.TrendLinesTrends.PriceAvg2)},
           {TradeLevelBy.PriceAvg3,()=> levelMin(tm=>tm.TrendLinesTrends.PriceAvg3)},
 
+          {TradeLevelBy.PriceRB2,()=> levelMax(tm=>tm.TrendLinesTrends.PriceAvg2.Max( tm.TrendLines2Trends.PriceAvg2))},
+          {TradeLevelBy.PriceRB3,()=> levelMin(tm=>tm.TrendLinesTrends.PriceAvg3.Min( tm.TrendLines2Trends.PriceAvg3))},
+
           { TradeLevelBy.PriceHigh,()=> levelMax(tm=>tm.TrendLines2Trends.PriceAvg2)},
           {TradeLevelBy.PriceLow,()=> levelMin(tm=>tm.TrendLines2Trends.PriceAvg3)},
 
@@ -4066,7 +4069,7 @@ namespace HedgeHog.Alice.Store {
                 => {
                   TradingMacrosByPair().ForEach(tm =>
                   PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper
-                    , tm.BarPeriodInt, Pair, DateTime.Now.AddDays(-1), obj => { if(DoLogSaveRates) Log = new Exception(obj + ""); }));
+                    , tm.BarPeriodInt, Pair, serverTime.AddMonths(-1), obj => { if(DoLogSaveRates) Log = new Exception(obj + ""); }));
                 });
             }
             //Scheduler.Default.Schedule(a);

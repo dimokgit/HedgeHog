@@ -144,10 +144,10 @@ namespace HedgeHog.Alice.Store {
             .Cma(cmaPeriod)
             .Reverse()
             .Distances(addDistance)
-            //.Skip(BarsCount)
+            .Skip(BarsCount+1)
             .TakeWhile(i => i <= rdm)
             .ToList();
-          var count = _macdDiastances.Count;// + BarsCount;
+          var count = _macdDiastances.Count + BarsCount + 1;
           return new { count };//, length = RatesTimeSpan(rs.GetRange(0, count)) };
         })
         .Select(x => {

@@ -105,6 +105,8 @@ namespace HedgeHog.Alice.Store {
     Avg3Min,
     PriceAvg2,
     PriceAvg3,
+    PriceRB2,
+    PriceRB3,
     PriceHigh,
     PriceLow,
     RedMax,
