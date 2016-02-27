@@ -29,8 +29,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByAvgLineRatio;
         case HedgeHog.Alice.VoltageFunction.TrendHieghts:
           return ShowVoltsByTrendHeighRatioAll;
-        case HedgeHog.Alice.VoltageFunction.BBRsd:
-          return ShowVoltsByBBRsd;
+        case HedgeHog.Alice.VoltageFunction.GRBAvg1:
+          return ShowVoltsByGRBAvg1;
         case HedgeHog.Alice.VoltageFunction.UpDownMax:
           return ShowVoltsByUpDownMax;
         case HedgeHog.Alice.VoltageFunction.UpDownMax2:

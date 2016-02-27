@@ -2381,11 +2381,16 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
-    CorridorStatistics ShowVoltsByBBRsd() {
+    CorridorStatistics ShowVoltsByGRBAvg1() {
       if(CanTriggerTradeDirection()) {
-        _boilingerBanderAsyncAction.Push(() =>
-        UseRates(rate => rate.Select(r => r.PriceCMALast.Abs(r.PriceAvg)).Where(Lib.IsNotNaN).RelativeStandardDeviation())
-          .ForEach(stDev => { SetVots(stDev * 100, 2); }));
+        var avgs = TrendLinesTrendsAll.Skip(1).ToArray(tl => tl.PriceAvg1);
+        var volt = new[] { avgs, avgs }
+         .CartesianProduct()
+         .Select(c => c.ToArray())
+         .Select(c => c[0].Abs(c[1]))
+         .Where(c => c != 0)
+         .StandardDeviation();
+        SetVots(InPips(volt), 2, true);
       }
       return null;
     }

@@ -384,7 +384,7 @@ namespace HedgeHog.Alice.Store {
         Func<double[], double[], bool> corrOk = (corr1, corr2) => corr1.All(p => p.Between(corr2));
         Func<double[], double[], bool> corrsOk = (corr1, corr2) => corrOk(corr1, corr2) || corrOk(corr2, corr1);
         return () => {
-          var tls = TrendLinesTrendsAll.OrderByDescending(tl => tl.Count).ToArray();
+          var tls = TrendLinesTrendsAll.OrderByDescending(tl => tl.Count).Skip(1).ToArray();
           var ok = tls.Zip(tls.Skip(1), (tl1, tl2) => corrsOk(corr(tl1), corr(tl2)))
           .TakeWhile(b => b)
           .Count() == tls.Length - 1;

@@ -11,7 +11,7 @@ namespace HedgeHog.Alice {
     StDev,
     TrendHieghts,
     AvgLineRatio,
-    BBRsd,
+    GRBAvg1,
     UpDownMax,
     UpDownMax2,
     BBRsdRatio,
