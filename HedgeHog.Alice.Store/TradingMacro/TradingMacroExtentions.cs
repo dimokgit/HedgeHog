@@ -2377,20 +2377,31 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByTrendHeighRatioAll() {
       if(CanTriggerTradeDirection())
-        SetVots(TrendHeighRatioAll(), 2, CmaPeriodByRatesCount());
+        SetVots(TrendHeighRatioLGR(), 2, CmaPeriodByRatesCount());
       return null;
     }
 
     CorridorStatistics ShowVoltsByGRBAvg1() {
       if(CanTriggerTradeDirection()) {
-        var avgs = TrendLinesTrendsAll.Skip(1).ToArray(tl => tl.PriceAvg1);
-        var volt = new[] { avgs, avgs }
-         .CartesianProduct()
-         .Select(c => c.ToArray())
+        var avgs = TrendLinesTrendsAll.Skip(1).ToArray(tl => tl.PriceAvg1).ToArray();
+        var volt = avgs
+         .Permutation()
          .Select(c => c[0].Abs(c[1]))
-         .Where(c => c != 0)
          .StandardDeviation();
         SetVots(InPips(volt), 2, true);
+      }
+      return null;
+    }
+    CorridorStatistics ShowVoltsByGRBRatios() {
+      if(CanTriggerTradeDirection()) {
+        var perms = TrendLinesTrendsAll.Skip(1).ToArray().Permutation().ToArray();
+        var avg1s = perms
+         .Select(c => c[0].PriceAvg1.Abs(c[1].PriceAvg1))
+         .StandardDeviation();
+        var heights = perms
+         .Select(c => c[0].StDev.Abs(c[1].StDev))
+         .RelativeStandardDeviation();
+        SetVots(InPips(avg1s) * heights * 100, 2, true);
       }
       return null;
     }

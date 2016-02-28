@@ -64,6 +64,21 @@ namespace HedgeHog {
       return that.Concat(itemAsSequence);
     }
 
+    public static IEnumerable<T[]> Permutation<T>(this IList<T> source) {
+      IEnumerable<T[]> list = new T[0][];
+      for(var skip = 0; skip < source.Count - 1; skip++)
+        list = list.Concat(source.Skip(skip).Select(t => new[] { t })
+          .Scan((t1, t2) => new[] { t1[0], t2[0] }));
+      return list;
+    }
+    public static IEnumerable<IEnumerable<T>> CartesianProductSelf<T>(this IEnumerable<T> source) {
+
+      var source2 = source.Select((v, i) => new { v, i }).ToArray();
+      return new[] { source2, source2 }.CartesianProduct()
+        .Select(x => x.ToArray())
+        .Where(x => x[0].i != x[1].i)
+        .Select(x => x.Select(x2 => x2.v).ToArray());
+    }
     public static IEnumerable<IEnumerable<T>> CartesianProduct<T>(this
     IEnumerable<IEnumerable<T>> inputs) {
       return inputs.Aggregate(

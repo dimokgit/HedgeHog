@@ -110,5 +110,14 @@ namespace HedgeHog.Tests {
       var d = 1.1435765205628123;
       Assert.AreEqual(1.14, d.AutoRound(1));
     }
+
+    [TestMethod()]
+    public void Permutation() {
+      var source = new[] { 1, 2, 3, 4 };
+      int[][] target = new int[][] { new[]{ 1, 2 }, new[] { 1, 3 }, new[] { 1, 4 }, new[] { 2, 3 }, new[] { 2, 4 }, new[] { 3, 4 } };
+      var res = source.Permutation();
+      Console.WriteLine(res.ToJson());
+      Assert.IsTrue(res.Zip(target, (s, t) => s.Zip(t, (v1, v2) => v1 == v2).All(b => b)).All(b => b));
+    }
   }
 }

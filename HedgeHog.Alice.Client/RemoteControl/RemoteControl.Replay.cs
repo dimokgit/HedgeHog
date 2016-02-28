@@ -113,9 +113,11 @@ namespace HedgeHog.Alice.Client {
         } else if(ReplayArguments.IsWww) {
           ReplayArguments.LastWwwError = "";
           var strats = TaskMonad.RunSync(() => ReadStrategies(tmOriginal, (name, desc, content, uri, diff) => new { name, content, diff }));
-          var isTest = strats.First().name.ToLower().Contains("{t}");
+          Func<string, bool> isTest = s => s.ToLower().Trim().EndsWith("{t}");
           strats
-            .Where(s => isTest || s.diff.IsEmpty())
+            .Take(2)
+            .OrderByDescending(s=>isTest(s.name))
+            .Where(s => isTest(s.name) || s.diff.IsEmpty())
             .IfEmpty(() => { throw new Exception(ReplayArguments.LastWwwError = "Current settings don't match any strategy"); })
             .Take(1)
             .ForEach(strategy => {

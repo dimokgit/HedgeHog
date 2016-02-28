@@ -40,9 +40,18 @@ namespace HedgeHog.Alice.Store {
         return new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }.All(cp => isIn(cp, new[] { SellLevel.Rate, BuyLevel.Rate }));
       }
     }
+    private bool IsCurrentPriceInsideTradeLevels4 {
+      get {
+        Func<double, double[], bool> isIn = (v, levels) => {
+          var h = levels.Height() / 3;
+          return v.Between(levels.Min() + h, levels.Max() - h);
+        };
+        return new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }.All(cp => isIn(cp, new[] { SellLevel.Rate, BuyLevel.Rate }));
+      }
+    }
     private bool IsCurrentPriceInsideTradeLevels3(double slack) {
-      return 
-        !BuyLevel.CanTrade || CurrentEnterPrice(true) - slack < BuyLevel.Rate && 
+      return
+        !BuyLevel.CanTrade || CurrentEnterPrice(true) - slack < BuyLevel.Rate &&
         !SellLevel.CanTrade || CurrentEnterPrice(false) + slack > SellLevel.Rate;
     }
     private bool IsCurrentPriceInsideBlueStrip { get { return IsCurrentPriceInside(CenterOfMassSell, CenterOfMassBuy); } }
@@ -406,6 +415,11 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate IsIn2Ok {
       get {
         return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels2);
+      }
+    }
+    public TradeConditionDelegate IsIn3Ok {
+      get {
+        return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels4);
       }
     }
 
@@ -779,8 +793,8 @@ namespace HedgeHog.Alice.Store {
     #region WwwInfo
     public object WwwInfo() {
       return new {
-        GRBHRatio = TrendHeighRatio(),
-        GRBHAll__ = TrendHeighRatioAll(),
+        GRBHRatio = TrendHeighRatioGRB(),
+        LGRB__Min = TrendHeighRatioLGR().Min(TrendHeighRatioGRB()),
         GRBRatio_ = TrendHeighRatio(TrendLines2Trends),
         //TipRatio_ = _tipRatioCurrent.Round(1),
         LimeAngle = TrendLines0Trends.Angle.Round(1),
@@ -874,7 +888,7 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTurnOff]
     public TradeConditionDelegate GRBHRatioOk {
       get {
-        return () => IsTresholdAbsOk(TrendHeighRatio(), TrendHeightPerc)
+        return () => IsTresholdAbsOk(TrendHeighRatioGRB(), TrendHeightPerc)
           ? TradeDirections.Both
           : TradeDirections.None;
       }
@@ -915,14 +929,16 @@ namespace HedgeHog.Alice.Store {
         : others.Skip(1).Select(tl => blue.Percentage(spread(tl))).Average();
     }
 
-    int TrendHeighRatio() {
-      Func<IList<Rate>, double> spread = tls => tls.Take(1).Select(tl => tl.Trends.PriceAvg2 - tl.Trends.PriceAvg3).DefaultIfEmpty(double.NaN).Single();
-      return BlueBasedRatio(spread).ToPercent();
+    int TrendHeighRatioGRB() { return TrendHeighRatio(1,0); }
+    int TrendHeighRatioLGR() { return TrendHeighRatio(0,1); }
+    int TrendHeighRatio(int skip,int skipLast) {
+      Func<IList<Rate.TrendLevels>, double> spread = tls => tls[0].StDev.Percentage(tls[1].StDev);
+      return TrendsPermutationsAvgPerc(TrendLinesTrendsAll.Skip(skip).SkipLast(skipLast).ToArray(), spread);
     }
-    int TrendHeighRatioAll() {
-      Func<IList<Rate>, double> spread = tls => tls.Take(1).Select(tl => tl.Trends.PriceAvg2 - tl.Trends.PriceAvg3).DefaultIfEmpty(double.NaN).Single();
-      return BlueBasedRatioAll(spread).ToPercent();
+    private int TrendsPermutationsAvgPerc(IList<Rate.TrendLevels> tls, Func<IList<Rate.TrendLevels>, double> spread) {
+      return tls.Permutation().Select(spread).Average().ToPercent();
     }
+
     int TrendHeighRatio(Rate.TrendLevels baseLevel) {
       if(baseLevel.IsEmpty)
         return 200;

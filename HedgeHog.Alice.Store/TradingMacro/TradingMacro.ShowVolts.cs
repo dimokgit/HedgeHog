@@ -31,6 +31,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByTrendHeighRatioAll;
         case HedgeHog.Alice.VoltageFunction.GRBAvg1:
           return ShowVoltsByGRBAvg1;
+        case HedgeHog.Alice.VoltageFunction.GRBHA1:
+          return ShowVoltsByGRBRatios;
         case HedgeHog.Alice.VoltageFunction.UpDownMax:
           return ShowVoltsByUpDownMax;
         case HedgeHog.Alice.VoltageFunction.UpDownMax2:
@@ -53,8 +55,6 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByCorrelation;
         case HedgeHog.Alice.VoltageFunction.StDevInsideOutRatio:
           return ShowVoltsByStDevPercentage;
-        case HedgeHog.Alice.VoltageFunction.BounceCom:
-          return OnSetCentersOfMass;
       }
       throw new NotSupportedException(VoltageFunction_ + " not supported.");
     }
@@ -139,10 +139,6 @@ namespace HedgeHog.Alice.Store {
           }
         return _SetCentersOfMassSubject;
       }
-    }
-    CorridorStatistics OnSetCentersOfMass() {
-      SetCentersOfMassSubject.OnNext(SetCentersOfMass);
-      return ShowVoltsNone();
     }
     #endregion
     #region SetBarsCountCalc Subject
