@@ -735,6 +735,7 @@ namespace HedgeHog.Alice.Store {
       get { return () => TradeDirectionByBool(_macd2Rsd >= MacdRsdAvg); }
     }
     [TradeConditionTurnOff]
+    public TradeConditionDelegate VoltBelowTOOk { get { return () => VoltBelowOk(); } }
     public TradeConditionDelegate VoltBelowOk {
       get {
         return () => {
@@ -929,9 +930,9 @@ namespace HedgeHog.Alice.Store {
         : others.Skip(1).Select(tl => blue.Percentage(spread(tl))).Average();
     }
 
-    int TrendHeighRatioGRB() { return TrendHeighRatio(1,0); }
-    int TrendHeighRatioLGR() { return TrendHeighRatio(0,1); }
-    int TrendHeighRatio(int skip,int skipLast) {
+    int TrendHeighRatioGRB() { return TrendHeighRatio(1, 0); }
+    int TrendHeighRatioLGR() { return TrendHeighRatio(0, 1); }
+    int TrendHeighRatio(int skip, int skipLast) {
       Func<IList<Rate.TrendLevels>, double> spread = tls => tls[0].StDev.Percentage(tls[1].StDev);
       return TrendsPermutationsAvgPerc(TrendLinesTrendsAll.Skip(skip).SkipLast(skipLast).ToArray(), spread);
     }

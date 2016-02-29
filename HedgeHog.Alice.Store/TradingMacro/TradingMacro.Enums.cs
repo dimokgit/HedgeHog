@@ -12,6 +12,7 @@ namespace HedgeHog.Alice {
     AvgLineRatio,
     GRBAvg1,
     GRBHA1,
+    LGHA1,
     UpDownMax,
     UpDownMax2,
     BBRsdRatio,

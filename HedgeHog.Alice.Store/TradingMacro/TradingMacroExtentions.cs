@@ -2393,8 +2393,25 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByGRBRatios() {
+      ShowVoltsByTrendsRatios(TrendLinesTrendsAll.Skip(1));
+      return null;
+    }
+    CorridorStatistics ShowVoltsByLGRatios() {
       if(CanTriggerTradeDirection()) {
-        var perms = TrendLinesTrendsAll.Skip(1).ToArray().Permutation().ToArray();
+        var perms = TrendLinesTrendsAll.Take(2).ToArray().Permutation().ToArray();
+        var avg1s = perms
+         .Select(c => c[0].PriceAvg1.Abs(c[1].PriceAvg1))
+         .Average();
+        var heights = perms
+         .Select(c => c[0].StDev.Percentage(c[1].StDev))
+         .Average();
+        SetVots(InPips(avg1s) * heights * 100, 2, true);
+      }
+      return null;
+    }
+    void ShowVoltsByTrendsRatios(IEnumerable<Rate.TrendLevels> tls) {
+      if(CanTriggerTradeDirection()) {
+        var perms = tls.ToArray().Permutation().ToArray();
         var avg1s = perms
          .Select(c => c[0].PriceAvg1.Abs(c[1].PriceAvg1))
          .StandardDeviation();
@@ -2403,7 +2420,6 @@ namespace HedgeHog.Alice.Store {
          .RelativeStandardDeviation();
         SetVots(InPips(avg1s) * heights * 100, 2, true);
       }
-      return null;
     }
     CorridorStatistics ShowVoltsByUpDownMax() {
       if(CanTriggerTradeDirection()) {
