@@ -394,10 +394,13 @@ namespace HedgeHog.Alice.Store {
         Func<double[], double[], bool> corrsOk = (corr1, corr2) => corrOk(corr1, corr2) || corrOk(corr2, corr1);
         return () => {
           var tls = TrendLinesTrendsAll.OrderByDescending(tl => tl.Count).Skip(1).ToArray();
-          var ok = tls.Zip(tls.Skip(1), (tl1, tl2) => corrsOk(corr(tl1), corr(tl2)))
+          var ok = tls.Permutation().Select(c => corrsOk(corr(c[0]), corr(c[1])))
           .TakeWhile(b => b)
           .Count() == tls.Length - 1;
-          return TradeDirectionByBool(ok);
+          var td = TradeDirectionByBool(ok);
+          if(!HaveTrades() && td.HasAny() && BuySellLevels.IfAnyCanTrade().Any() && BuySellLevels.Any(sr => sr.TradesCount < TradeCountStart))
+            BuySellLevels.ForEach(sr => sr.TradesCount = TradeCountStart);
+          return td;
         };
       }
     }
@@ -689,7 +692,10 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTurnOff]
     public TradeConditionDelegate ExprdOk {
       get {
-        return () => TradeDirectionByBool(BuySellLevels.IfAnyCanTrade().IsEmpty() || !IsCanTradeExpired(3.FromMinutes()));
+        return () => 
+          (from s in TrendLines1Trends.Sorted
+           select TradeDirectionByBool(BuySellLevels.IfAnyCanTrade().IsEmpty() || !IsCanTradeExpired(s[0].StartDate.Subtract(s[1].StartDate).Duration()))
+          ).Value;
       }
     }
 
@@ -1309,6 +1315,9 @@ namespace HedgeHog.Alice.Store {
             BuyLevel.CanTrade = hasBuy && isPriceIn;
             SellLevel.CanTrade = hasSell && isPriceIn;
           }
+
+          if(eval.HasAny())
+            BuySellLevels.ForEach(sr => sr.DateCanTrade = ServerTime);
         });
       }
     }

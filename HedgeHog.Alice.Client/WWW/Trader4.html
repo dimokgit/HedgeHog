@@ -387,17 +387,9 @@
             <ul class="dropdown-menu multi-level">
               <li>
                 <!--                <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,1,null)" />-->
-                <input type="button" value="2" data-bind="click:setTradeLevels.bind($data,2,null)" />
-                <input type="button" value="3" data-bind="click:setTradeLevels.bind($data,3,null)" />
-                <button data-bind="click:setTradeLevels.bind($data,13,null)">
-                  <span class="glyphicon glyphicon-fullscreen"></span>
-                </button>
-                <button data-bind="click:setTradeLevels.bind($data,9,null)">
-                  <span class="glyphicon glyphicon-resize-full"></span>
-                </button>
-                <button data-bind="click:setTradeLevels.bind($data,11,null)">
-                  <span class="glyphicon glyphicon-resize-small"></span>
-                </button>
+                <input type="button" value="L" data-bind="click:setTradeLevels.bind($data,1,null)" />
+                <input type="button" value="G" data-bind="click:setTradeLevels.bind($data,2,null)" />
+                <input type="button" value="R" data-bind="click:setTradeLevels.bind($data,3,null)" />
               </li>
               <li>
                 <input type="button" value="X" data-bind="click:resetTradeLevels" title="Clear trade levels" />
@@ -513,6 +505,9 @@
           <!--#endregion-->
           <li class="nav-divider">|</li>
           <li>
+            <input type="button" value="L" data-bind="click:setTradeLevels.bind($data,1,null)" />
+            <input type="button" value="G" data-bind="click:setTradeLevels.bind($data,2,null)" />
+            <input type="button" value="R" data-bind="click:setTradeLevels.bind($data,3,null)" />
             <button>
               <span class="glyphicon glyphicon-random" data-bind="click:flipTradeLevels" title="Flip trade levels" ></span>
             </button>

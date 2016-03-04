@@ -210,7 +210,7 @@ namespace HedgeHog.Alice.Store {
 
   public enum TradeLevelsPreset {
     None = 0,
-    SuperNarrow = 1, Narrow = 2, Wide = 3, SuperWide = 4,
+    Lime = 1, Green = 2, Red = 3, SuperWide = 4,
     SuperNarrowR = 5, NarrowR = 6, WideR = 7, SuperWideR = 8,
     Corridor2 = 9, Corridor2R = 10,
     Corridor1 = 11, Corridor1R = 12,

@@ -153,7 +153,9 @@ namespace HedgeHog.Alice.Store {
     public void SetTradeLevelsPreset(TradeLevelsPreset preset, bool? isBuy) {
       Dictionary<TradeLevelsPreset, Tuple<TradeLevelBy,TradeLevelBy>> tlbs = new Dictionary<TradeLevelsPreset, Tuple<TradeLevelBy,TradeLevelBy>>(){
         {TradeLevelsPreset.None,Tuple.Create( TradeLevelBy.None, TradeLevelBy.None)},
-        {TradeLevelsPreset.Narrow,Tuple.Create( TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3)},
+        {TradeLevelsPreset.Lime,Tuple.Create( TradeLevelBy.LimeMax, TradeLevelBy.LimeMin)},
+        {TradeLevelsPreset.Green,Tuple.Create( TradeLevelBy.GreenMax, TradeLevelBy.GreenMin)},
+        {TradeLevelsPreset.Red,Tuple.Create( TradeLevelBy.RedMax, TradeLevelBy.RedMin)},
         {TradeLevelsPreset.Corridor1,Tuple.Create( TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0)},
         {TradeLevelsPreset.Corridor2,Tuple.Create( TradeLevelBy.PriceHigh, TradeLevelBy.PriceLow)},
         {TradeLevelsPreset.MinMax,Tuple.Create( TradeLevelBy.PriceMax, TradeLevelBy.PriceMin)},
