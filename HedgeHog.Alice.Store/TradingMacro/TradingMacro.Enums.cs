@@ -210,11 +210,20 @@ namespace HedgeHog.Alice.Store {
 
   public enum TradeLevelsPreset {
     None = 0,
-    Lime = 1, Green = 2, Red = 3, SuperWide = 4,
-    SuperNarrowR = 5, NarrowR = 6, WideR = 7, SuperWideR = 8,
-    Corridor2 = 9, Corridor2R = 10,
-    Corridor1 = 11, Corridor1R = 12,
-    MinMax = 13, MinMaxR = 14
+    Lime = 1,
+    Green = 2,
+    Red = 3,
+    SuperWide = 4,
+    Green23 = 5,
+    Red23 = 6,
+    Blue23 = 7,
+    NarrowR = 8,
+    WideR = 8,
+    SuperWideR = 10,
+    Corridor2R = 11,
+    Corridor1R = 12,
+    MinMax = 13,
+    MinMaxR = 14
   }
   public enum CorridorByStDevRatio {
     HPAverage = 0,

@@ -692,7 +692,7 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTurnOff]
     public TradeConditionDelegate ExprdOk {
       get {
-        return () => 
+        return () =>
           (from s in TrendLines1Trends.Sorted
            select TradeDirectionByBool(BuySellLevels.IfAnyCanTrade().IsEmpty() || !IsCanTradeExpired(s[0].StartDate.Subtract(s[1].StartDate).Duration()))
           ).Value;
@@ -701,24 +701,16 @@ namespace HedgeHog.Alice.Store {
 
 
     #region StDev
-    public TradeConditionDelegate CmaRsdUDOk {
+    public TradeConditionDelegate VLOk {
       get {
-        return () => {
-          if(!new[] { Alice.VoltageFunction.BBRsdRatio, Alice.VoltageFunction.BBRsdRatio2, Alice.VoltageFunction.BBRsdRatio3, Alice.VoltageFunction.UDRatioLime, Alice.VoltageFunction.UDRatioGreen, Alice.VoltageFunction.UDRatioRed }.Contains(VoltageFunction_)) {
-            Log = new Exception("BBRsdRatio voltage is required");
-            VoltageFunction_ = Alice.VoltageFunction.BBRsdRatio;
-          }
-          var volt = GetLastVolt();
-          var voltHigh = GetVoltageHigh();
-          var voltLow = GetVoltageAverage();
-          var isUp = voltHigh > 0 && voltHigh > voltLow.Abs() && volt > voltHigh;
-          var isDown = voltLow < 0 && voltLow.Abs() > voltHigh.Abs() && volt < voltLow;
-          return isUp
-          ? TradeDirections.Up
-          : isDown
-          ? TradeDirections.Down
-          : TradeDirections.None;
-        };
+        Log = new Exception(new { System.Reflection.MethodBase.GetCurrentMethod().Name, TrendHeightPerc } + "");
+        return () => { return TradeDirectionByTreshold(GetVoltageAverage(), TrendHeightPerc); };
+      }
+    }
+    public TradeConditionDelegate HStdOk {
+      get {
+        Log = new Exception(new { System.Reflection.MethodBase.GetCurrentMethod().Name, RhSDRatio } + "");
+        return () => { return TradeDirectionByTreshold(RatesHeight / (StDevByHeight * 4), RhSDRatio); };
       }
     }
 
@@ -740,6 +732,8 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegateHide RhSDAvgOk {
       get { return () => TradeDirectionByBool(_macd2Rsd >= MacdRsdAvg); }
     }
+
+    #region Volts
     [TradeConditionTurnOff]
     public TradeConditionDelegate VoltBelowTOOk { get { return () => VoltBelowOk(); } }
     public TradeConditionDelegate VoltBelowOk {
@@ -771,24 +765,7 @@ namespace HedgeHog.Alice.Store {
                   .DefaultIfEmpty(double.NaN)
                   .Single();
     }
-
-    [TradeConditionTurnOff]
-    public TradeConditionDelegate SDAvgOk {
-      get {
-        return () => {
-          var volt = UseRates(rates
-            => rates.BackwardsIterator()
-              .Select(GetVoltage)
-              .SkipWhile(double.IsNaN)
-              .DefaultIfEmpty(double.NaN)
-              .First()
-            )
-            .DefaultIfEmpty(double.NaN)
-            .Single();
-          return TradeDirectionByBool(volt > GetVoltageHigh());
-        };
-      }
-    }
+    #endregion
 
     public TradeConditionDelegateHide CmaRsdOk {
       get {
@@ -801,8 +778,7 @@ namespace HedgeHog.Alice.Store {
     public object WwwInfo() {
       return new {
         GRBHRatio = TrendHeighRatioGRB(),
-        LGRB__Min = TrendHeighRatioLGR().Min(TrendHeighRatioGRB()),
-        GRBRatio_ = TrendHeighRatio(TrendLines2Trends),
+        HStdRatio = (RatesHeight / (StDevByHeight * 4)).Round(1),
         //TipRatio_ = _tipRatioCurrent.Round(1),
         LimeAngle = TrendLines0Trends.Angle.Round(1),
         GrnAngle_ = TrendLines1Trends.Angle.Round(1),
@@ -834,6 +810,9 @@ namespace HedgeHog.Alice.Store {
         ? TradeDirections.Both
         : TradeDirections.None;
     }
+    TradeDirections TradeDirectionByTreshold(double value, double treshold) {
+      return TradeDirectionByBool(IsTresholdAbsOk(value, treshold));
+    }
     TradeDirections TradeDirectionByAngleCondition(Rate.TrendLevels tls, double tradingAngleRange) {
       return IsTresholdAbsOk(tls.Angle, tradingAngleRange)
         ? tradingAngleRange > 0
@@ -841,6 +820,8 @@ namespace HedgeHog.Alice.Store {
         : TradeDirections.Both
         : TradeDirections.None;
     }
+
+    #region Angles
     [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate LimeAngOk { get { return () => TradeDirectionByAngleCondition(TrendLines0Trends, TrendAngleLime); } }
     [TradeCondition(TradeConditionAttribute.Types.And)]
@@ -882,59 +863,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate LOk { get { return () => TradeDirectionsAnglecounterwise(TrendLines0Trends); } }
     [TradeConditionTradeDirection]
     public TradeConditionDelegate LROk { get { return () => TradeDirectionsAnglewise(TrendLines0Trends); } }
-
-
-    [TradeConditionTradeStrip]
-    [TradeConditionTurnOff]
-    public TradeConditionDelegate GRBRatioOk {
-      get {
-        return () => TradeDirectionByBool(IsTresholdAbsOk(TrendHeighRatio(TrendLines2Trends), TrendAnglesPerc));
-      }
-    }
-    [TradeConditionTradeStrip]
-    [TradeConditionTurnOff]
-    public TradeConditionDelegate GRBHRatioOk {
-      get {
-        return () => IsTresholdAbsOk(TrendHeighRatioGRB(), TrendHeightPerc)
-          ? TradeDirections.Both
-          : TradeDirections.None;
-      }
-    }
-    public Func<TradeDirections> AngRBRatioOk {
-      get {
-        return () => IsTresholdAbsOk(TrendLines2Trends.Angle.Percentage(TrendLinesTrends.Angle).ToPercent(), TrendAnglesPerc)
-          ? TradeDirections.Both
-          : TradeDirections.None;
-      }
-    }
-    int TrendAnglesRatio() {
-      Func<IList<Rate>, double> spread = tls => tls[1].Trends.Angle;
-      return BlueBasedRatio(spread).ToPercent();
-    }
-    int TrendPrice1Ratio() {
-      Func<IList<Rate>, double> spread = tls => tls[1].Trends.Angle;
-      var blueSpread = spread(TrendLines2.Value);
-      var redSpread = spread(TrendLines.Value);
-      var greenSpread = spread(TrendLines1.Value);
-      return BlueBasedRatio(blueSpread, redSpread, greenSpread).ToPercent();
-    }
-
-    public static double BlueBasedRatio(double blue, double red, double green) {
-      return new[] { blue.Percentage(red), blue.Percentage(green) }.Average().Abs();
-    }
-    public double BlueBasedRatio(Func<IList<Rate>, double> spread) {
-      var blue = spread(TrendLines2.Value);
-      var red = spread(TrendLines.Value);
-      var green = spread(TrendLines1.Value);
-      return new[] { blue.Percentage(red), blue.Percentage(green) }.Average();
-    }
-    public double BlueBasedRatioAll(Func<IList<Rate>, double> spread) {
-      var blue = spread(TrendLines2.Value);
-      var others = TrendLinesBRGL();
-      return others.Any(tl => tl.IsEmpty())
-        ? double.NaN
-        : others.Skip(1).Select(tl => blue.Percentage(spread(tl))).Average();
-    }
+    #endregion
 
     int TrendHeighRatioGRB() { return TrendHeighRatio(1, 0); }
     int TrendHeighRatioLGR() { return TrendHeighRatio(0, 1); }
@@ -944,20 +873,6 @@ namespace HedgeHog.Alice.Store {
     }
     private int TrendsPermutationsAvgPerc(IList<Rate.TrendLevels> tls, Func<IList<Rate.TrendLevels>, double> spread) {
       return tls.Permutation().Select(spread).Average().ToPercent();
-    }
-
-    int TrendHeighRatio(Rate.TrendLevels baseLevel) {
-      if(baseLevel.IsEmpty)
-        return 200;
-      Func<IList<Rate>, double[]> spread = tls => tls.TakeLast(1).Select(tl =>
-        new[] { tl.Trends.PriceAvg1.Abs(baseLevel.PriceAvg2), baseLevel.PriceAvg3.Abs(tl.Trends.PriceAvg1) }
-        )
-        .DefaultIfEmpty(new double[0])
-        .Single();
-      var blue = baseLevel.PriceAvg2 - baseLevel.PriceAvg1;
-      var greenLevels = spread(TrendLines1.Value).Select(gl => gl.Percentage(blue)).Max();
-      var redLevels = spread(TrendLines.Value).Select(gl => gl.Percentage(blue)).Max();
-      return greenLevels.Avg(redLevels).ToPercent();
     }
     #endregion
 
