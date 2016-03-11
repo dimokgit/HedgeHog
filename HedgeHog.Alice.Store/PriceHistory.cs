@@ -45,7 +45,8 @@ namespace HedgeHog.Alice.Store {
           var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
           if(dateStart == DateTime.MinValue && q == DateTimeOffset.MinValue)
             throw new Exception("dateStart must be provided there is no bars in database.");
-          dateStart = q.LocalDateTime;
+          var p = period == 0 ? 1 / 60.0 : period;
+          dateStart = q.LocalDateTime.Add(p.FromMinutes());
         }
         fw.GetBarsBase<Rate>(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
       } catch (Exception exc) {
@@ -57,8 +58,8 @@ namespace HedgeHog.Alice.Store {
       if (progressCallback != null) progressCallback(args.Message);
       else Debug.WriteLine("{0}", args.Message);
       var context = new ForexEntities();
-      context.Configuration.AutoDetectChangesEnabled = false;
-      context.Configuration.ValidateOnSaveEnabled = false;
+      //context.Configuration.AutoDetectChangesEnabled = false;
+      //context.Configuration.ValidateOnSaveEnabled = false;
       Action a = () =>
         args.NewRates.Distinct().Do(t => {
           context.t_Bar.Add(FillBar(period, pair, context.t_Bar.Create(), t));
