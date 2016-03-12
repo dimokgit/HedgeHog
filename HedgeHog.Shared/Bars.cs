@@ -637,126 +637,31 @@ namespace HedgeHog.Bars {
         EmptyRate = new Rate { Trends = Empty };
       }
       public bool IsEmpty { get { return Count == 0; } }
-      double _PriceAvg1 = double.NaN;
-
-      double _PriceAvg2 = double.NaN;
-      double _PriceAvg02 = double.NaN;
-      double _PriceAvg21 = double.NaN;
-      double _PriceAvg22 = double.NaN;
-
-      double _PriceAvg03 = double.NaN;
-      double _PriceAvg3 = double.NaN;
-      double _PriceAvg31 = double.NaN;
-      double _PriceAvg32 = double.NaN;
-
 
       public double Slope { get; set; }
       public double StDev { get; set; }
       public int Count { get; set; }
       public double Angle { get; set; }
 
-      public double PriceAvg1 {
-        get {
-          return _PriceAvg1;
-        }
+      public double PriceAvg1 { get; set; } = double.NaN;
 
-        set {
-          _PriceAvg1 = value;
-        }
-      }
+      public double PriceAvg2 { get; set; } = double.NaN;
+      public double PriceAvg02 { get; set; } = double.NaN;
+      public double PriceAvg21 { get; set; } = double.NaN;
+      public double PriceAvg22 { get; set; } = double.NaN;
 
-      public double PriceAvg2 {
-        get {
-          return _PriceAvg2;
-        }
+      public double PriceAvg03 { get; set; } = double.NaN;
+      public double PriceAvg3 { get; set; } = double.NaN;
+      public double PriceAvg31 { get; set; } = double.NaN;
+      public double PriceAvg32 { get; set; } = double.NaN;
 
-        set {
-          _PriceAvg2 = value;
-        }
-      }
-
-      public double PriceAvg02 {
-        get {
-          return _PriceAvg02;
-        }
-
-        set {
-          _PriceAvg02 = value;
-        }
-      }
-
-      public double PriceAvg21 {
-        get {
-          return _PriceAvg21;
-        }
-
-        set {
-          _PriceAvg21 = value;
-        }
-      }
-
-      public double PriceAvg22 {
-        get {
-          return _PriceAvg22;
-        }
-
-        set {
-          _PriceAvg22 = value;
-        }
-      }
-
-      public double PriceAvg03 {
-        get {
-          return _PriceAvg03;
-        }
-
-        set {
-          _PriceAvg03 = value;
-        }
-      }
-
-      public double PriceAvg3 {
-        get {
-          return _PriceAvg3;
-        }
-
-        set {
-          _PriceAvg3 = value;
-        }
-      }
-
-      public double PriceAvg31 {
-        get {
-          return _PriceAvg31;
-        }
-
-        set {
-          _PriceAvg31 = value;
-        }
-      }
-
-      public double PriceAvg32 {
-        get {
-          return _PriceAvg32;
-        }
-
-        set {
-          _PriceAvg32 = value;
-        }
-      }
-
-      public double Height {
-        get {
-          return _height;
-        }
-
-        set {
-          _height = value;
-        }
-      }
+      public double Height { get; set; } = double.NaN;
 
       public double[] Coeffs { get; private set; }
 
+      public IEnumerable<double> HStdRatio { get { return RateHeight.Select(rh => rh / (StDev * 4)); } }
+      public IEnumerable<double> PriceHeight { get { return PriceMax.Zip(PriceMin, (p1, p2) => p1.Abs(p2)); } }
+      public IEnumerable<double> RateHeight { get { return RateMax.Zip(RateMin, (p1, p2) => p1.PriceAvg.Abs(p2.PriceAvg)); } }
       public IEnumerable<Rate> RateMax { get { return Sorted.Value.Skip(1); } }
       public IEnumerable<double> PriceMax { get { return RateMax.Select(r => r.AskHigh); } }
       public IEnumerable<Rate> RateMin { get { return Sorted.Value.Take(1); } }
@@ -770,7 +675,6 @@ namespace HedgeHog.Bars {
       public IEnumerable<Rate> RateMin0 { get { return Sorted0.Value.Take(1); } }
       public Lazy<Rate[]> Sorted0 { get; set; } = Lazy.Create(() => new Rate[0]);
 
-      double _height = double.NaN;
       public TrendLevels(int count, double[] coeffs, double stDev) {
         this.Count = count;
         this.Slope = coeffs.LineSlope();

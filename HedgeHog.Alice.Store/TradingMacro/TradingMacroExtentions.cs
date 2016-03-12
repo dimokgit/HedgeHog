@@ -2399,7 +2399,7 @@ namespace HedgeHog.Alice.Store {
         UseRates(rates => rates.Select(GetVoltage2).StandardDeviation())
         .ForEach(volts2 => SetVots(volts2, 2, true));
       };
-      ShowVoltsByTrendsRatios(TrendLinesTrendsAll.Skip(1), doVolt);
+      ShowVoltsByTrendsRatios2(TrendLinesTrendsAll.Skip(1), doVolt);
       return null;
     }
     CorridorStatistics ShowVoltsByLGRatios() {
@@ -2415,7 +2415,7 @@ namespace HedgeHog.Alice.Store {
       }
       return null;
     }
-    void ShowVoltsByTrendsRatios(IEnumerable<Rate.TrendLevels> tls,Action<double> doVolt) {
+    void ShowVoltsByTrendsRatios(IEnumerable<Rate.TrendLevels> tls, Action<double> doVolt) {
       if(CanTriggerTradeDirection()) {
         var perms = tls.ToArray().Permutation().ToArray();
         var avg1s = perms
@@ -2425,6 +2425,15 @@ namespace HedgeHog.Alice.Store {
          .Select(c => c[0].StDev.Abs(c[1].StDev))
          .RelativeStandardDeviation();
         doVolt(InPips(avg1s) * heights * 100);
+      }
+    }
+    void ShowVoltsByTrendsRatios2(IEnumerable<Rate.TrendLevels> tls, Action<double> doVolt) {
+      if(CanTriggerTradeDirection()) {
+        var perms = tls.ToArray().Permutation().ToArray();
+        var avg1s = perms
+         .SelectMany(c => c[0].HStdRatio.Zip(c[1].HStdRatio, (r1, r2) => r1.Percentage(r2)))
+         .StandardDeviation();
+        doVolt(avg1s.ToPercent());
       }
     }
     CorridorStatistics ShowVoltsByUpDownMax() {

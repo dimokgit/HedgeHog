@@ -381,98 +381,6 @@
               </li>
             </ul>
           </li>
-          <!--#region Trade Levels-->
-          <li>
-            <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-menu-hamburger"></span></button>
-            <ul class="dropdown-menu multi-level">
-              <li>
-                <!--                <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,1,null)" />-->
-                <input type="button" value="L" class="btn-warning" data-bind="click:setTradeLevels.bind($data,1,null)" />
-                <input type="button" value="G" class="btn-success" data-bind="click:setTradeLevels.bind($data,2,null)" />
-                <input type="button" value="R" class="btn-danger" data-bind="click:setTradeLevels.bind($data,3,null)" />
-              </li>
-              <li>
-                <input type="button" value="X" data-bind="click:resetTradeLevels" title="Clear trade levels" />
-                <input type="button" value="F" data-bind="click:flipTradeLevels" title="Flip trade levels" />
-                <input type="button" value="X" data-bind="click:resetCloseLevels" title="Clear Close Levels" />
-                <input type="button" value="G" data-bind="click:setCloseLevelsToGreen" title="Set Close Levels to Green Corridor(Range)" />
-                <button data-bind="click:setCloseLevelsToGRB1" title="Set Close Levels to Green Red2 Blue">
-                  <span class="glyphicon glyphicon-fullscreen"></span>
-                </button>
-              </li>
-              <li>
-                <!--            <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,5,null)" />-->
-                <input type="button" value="2" data-bind="click:setTradeLevels.bind($data,6,null)" />
-                <input type="button" value="3" data-bind="click:setTradeLevels.bind($data,7,null)" />
-                <button data-bind="click:setTradeLevels.bind($data,14,null)">
-                  <span class="glyphicon glyphicon-fullscreen"></span>
-                </button>
-                <button data-bind="click:setTradeLevels.bind($data,10,null)">
-                  <span class="glyphicon glyphicon-resize-full"></span>
-                </button>
-                <button data-bind="click:setTradeLevels.bind($data,12,null)">
-                  <span class="glyphicon glyphicon-resize-small"></span>
-                </button>
-              </li>
-              <li role="presentation" class="divider"></li>
-              <!--Buy/Sell levels-->
-              <!--<li class="dropdown-submenu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Buy Level</a>
-                <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="true">
-                  <li><a href="#" data-bind1="text:text,click:$root.setTradeLevelBuy" style="width:100%"></a></li>
-                </ul>
-              </li>
-              <li class="dropdown-submenu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Buy Close</a>
-                <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="true">
-                  <li><a href="#" data-bind1="text:text,click:$root.setTradeCloseLevelBuy" style="width:100%"></a></li>
-                </ul>
-              </li>
-              <li role="presentation" class="divider"></li>-->
-              <!--Buy/Sell Close levels-->
-              <!--<li class="dropdown-submenu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Sell Level</a>
-                <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="false">
-                  <li><a href="#" data-bind1="text:text,click:$root.setTradeLevelSell" style="width:100%"></a></li>
-                </ul>
-              </li>
-              <li class="dropdown-submenu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Sell Close</a>
-                <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="false">
-                  <li><a href="#" data-bind1="text:text,click:$root.setTradeCloseLevelSell" style="width:100%"></a></li>
-                </ul>
-              </li>-->
-              <!--Other sub menus-->
-              <li class="dropdown-submenu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Levels</a>
-                <ul class="dropdown-menu">
-                  <li>DImok</li>
-                  <li>DImok</li>
-                  <li>
-                    <button>DImok</button>
-                  </li>
-                  <li class="dropdown-submenu">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown</a>
-                    <ul class="dropdown-menu">
-                      <li class="dropdown-submenu">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown</a>
-                        <ul class="dropdown-menu">
-                          <li><a href="#">Action</a></li>
-                          <li><a href="#">Another action</a></li>
-                          <li><a href="#">Something else here</a></li>
-                          <li class="divider"></li>
-                          <li><a href="#">Separated link</a></li>
-                          <li class="divider"></li>
-                          <li><a href="#">One more separated link</a></li>
-                        </ul>
-                      </li>
-                    </ul>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </li>
-          <!--#endregion-->
           <!--#region Other-->
           <li>
             <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">...</button>
@@ -504,10 +412,101 @@
           </li>
           <!--#endregion-->
           <li class="nav-divider">|</li>
+          <!--#region Trade Levels-->
           <li>
-            <input type="button" value="23" class="btn-success" data-bind="click:setTradeLevels.bind($data,5,null)" />
-            <input type="button" value="23" class="btn-danger" data-bind="click:setTradeLevels.bind($data,6,null)" />
-            <input type="button" value="23" class="btn-primary" data-bind="click:setTradeLevels.bind($data,7,null)" />
+            <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-menu-hamburger"></span></button>
+            <ul class="dropdown-menu multi-level">
+              <li>
+                <input type="button" value="23" class="btn-success" data-bind="click:setTradeLevels.bind($data,5,null)" />
+                <input type="button" value="23" class="btn-danger" data-bind="click:setTradeLevels.bind($data,6,null)" />
+                <input type="button" value="23" class="btn-primary" data-bind="click:setTradeLevels.bind($data,7,null)" />
+              </li>
+              <li>
+                <input type="button" value="X" data-bind="click:resetTradeLevels" title="Clear trade levels" />
+                <input type="button" value="F" data-bind="click:flipTradeLevels" title="Flip trade levels" />
+                <input type="button" value="X" data-bind="click:resetCloseLevels" title="Clear Close Levels" />
+                <input type="button" value="G" data-bind="click:setCloseLevelsToGreen" title="Set Close Levels to Green Corridor(Range)" />
+                <button data-bind="click:setCloseLevelsToGRB1" title="Set Close Levels to Green Red2 Blue">
+                  <span class="glyphicon glyphicon-fullscreen"></span>
+                </button>
+              </li>
+              <li>
+                <!--            <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,5,null)" />-->
+                <input type="button" value="2" data-bind="click:setTradeLevels.bind($data,6,null)" />
+                <input type="button" value="3" data-bind="click:setTradeLevels.bind($data,7,null)" />
+                <button data-bind="click:setTradeLevels.bind($data,14,null)">
+                  <span class="glyphicon glyphicon-fullscreen"></span>
+                </button>
+                <button data-bind="click:setTradeLevels.bind($data,10,null)">
+                  <span class="glyphicon glyphicon-resize-full"></span>
+                </button>
+                <button data-bind="click:setTradeLevels.bind($data,12,null)">
+                  <span class="glyphicon glyphicon-resize-small"></span>
+                </button>
+              </li>
+              <li role="presentation" class="divider"></li>
+              <!--Buy/Sell levels-->
+              <!--<li class="dropdown-submenu">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Buy Level</a>
+        <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="true">
+          <li><a href="#" data-bind1="text:text,click:$root.setTradeLevelBuy" style="width:100%"></a></li>
+        </ul>
+      </li>
+      <li class="dropdown-submenu">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Buy Close</a>
+        <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="true">
+          <li><a href="#" data-bind1="text:text,click:$root.setTradeCloseLevelBuy" style="width:100%"></a></li>
+        </ul>
+      </li>
+      <li role="presentation" class="divider"></li>-->
+              <!--Buy/Sell Close levels-->
+              <!--<li class="dropdown-submenu">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Sell Level</a>
+        <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="false">
+          <li><a href="#" data-bind1="text:text,click:$root.setTradeLevelSell" style="width:100%"></a></li>
+        </ul>
+      </li>
+      <li class="dropdown-submenu">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Sell Close</a>
+        <ul class="dropdown-menu" data-bind1="foreach:tradeLevelBys" data-is-buy="false">
+          <li><a href="#" data-bind1="text:text,click:$root.setTradeCloseLevelSell" style="width:100%"></a></li>
+        </ul>
+      </li>-->
+              <!--Other sub menus-->
+              <li class="dropdown-submenu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Levels</a>
+                <ul class="dropdown-menu">
+                  <li>DImok</li>
+                  <li>DImok</li>
+                  <li>
+                    <button>DImok</button>
+                  </li>
+                  <li class="dropdown-submenu">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown</a>
+                    <ul class="dropdown-menu">
+                      <li class="dropdown-submenu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown</a>
+                        <ul class="dropdown-menu">
+                          <li><a href="#">Action</a></li>
+                          <li><a href="#">Another action</a></li>
+                          <li><a href="#">Something else here</a></li>
+                          <li class="divider"></li>
+                          <li><a href="#">Separated link</a></li>
+                          <li class="divider"></li>
+                          <li><a href="#">One more separated link</a></li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <!--#endregion-->
+          <li>
+            <input type="button" value="L" class="btn-warning" data-bind="click:setTradeLevels.bind($data,1,null)" />
+            <input type="button" value="G" class="btn-success" data-bind="click:setTradeLevels.bind($data,2,null)" />
+            <input type="button" value="R" class="btn-danger" data-bind="click:setTradeLevels.bind($data,3,null)" />
             <button>
               <span class="glyphicon glyphicon-random" data-bind="click:flipTradeLevels" title="Flip trade levels" ></span>
             </button>

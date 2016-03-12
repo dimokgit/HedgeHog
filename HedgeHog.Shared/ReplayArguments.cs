@@ -1,13 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Reactive;
+using System.Reactive.Subjects;
+using ReactiveUI;
 
 namespace HedgeHog.Shared {
   public class ReplayArguments<TTradingMacro>:GalaSoft.MvvmLight.ViewModelBase {
 
     public bool IsWww { get; set; }
-    public string LastWwwError { get; set; }
+    private string lastWwwError;
+    public string LastWwwError {
+      get {
+        return lastWwwError;
+      }
+
+      set {
+        lastWwwError = value;
+        LastWwwErrorObservable.OnNext(value);
+      }
+    }
+    public Subject<string> LastWwwErrorObservable { get; set; } = new Subject<string>();
+    public ReplayArguments() {
+    }
 
     #region Session Statistics
     public class SessionStatistics {
@@ -125,5 +139,6 @@ namespace HedgeHog.Shared {
     }
 
     public Func<double> GetOriginalBalance { get; set; }
+
   }
 }

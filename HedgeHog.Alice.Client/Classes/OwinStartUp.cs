@@ -50,6 +50,7 @@ namespace HedgeHog.Alice.Client {
       var remoteControl = App.container.GetExport<RemoteControlModel>();
       IDisposable priceChanged = null;
       IDisposable tradesChanged = null;
+      IDisposable lasrWwwErrorChanged = null;
       {
         var trader = App.container.GetExportedValue<TraderModel>();
 
@@ -76,6 +77,9 @@ namespace HedgeHog.Alice.Client {
                 GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
               }
             });
+          lasrWwwErrorChanged = remoteControl.Value.ReplayArguments.LastWwwErrorObservable
+          .Where(le => !string.IsNullOrWhiteSpace(le))
+          .Subscribe(le => myHub().Clients.All.lastWwwErrorChanged(le));
         });
       }
       app.UseCors(CorsOptions.AllowAll);

@@ -1166,6 +1166,9 @@
     chat.client.addMessage = addMessage;
     chat.client.priceChanged = priceChanged;
     chat.client.tradesChanged = dataViewModel.readClosedTrades;
+    chat.client.lastWwwErrorChanged = function (le) {
+      showErrorPerm(le);
+    };
     chat.client.marketIsOpening = function (market) {
       showInfoPerm(JSON.stringify(market));
     };
