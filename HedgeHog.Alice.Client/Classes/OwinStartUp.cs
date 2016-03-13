@@ -253,7 +253,8 @@ namespace HedgeHog.Alice.Client {
         ip = remoteControl.Value.ReplayArguments.InPause ? 1 : 0,
         com = new { b = tmTrader.CenterOfMassBuy.Round(digits), s = tmTrader.CenterOfMassSell.Round(digits) },
         com2 = new { b = tmTrader.CenterOfMassBuy2.Round(digits), s = tmTrader.CenterOfMassSell2.Round(digits) },
-        com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits) }
+        com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits) },
+        tpls = tmTrader.GetTradeLevelsPreset().ToArray()
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
@@ -461,6 +462,9 @@ namespace HedgeHog.Alice.Client {
     public void SetPresetTradeLevels(string pair, TradeLevelsPreset presetLevels, object isBuy) {
       bool? b = isBuy == null ? null : (bool?)isBuy;
       UseTradingMacro(pair, tm => tm.SetTradeLevelsPreset(presetLevels, b), true);
+    }
+    public TradeLevelsPreset[] GetPresetTradeLevels(string pair) {
+      return UseTradingMacro(pair, tm => tm.GetTradeLevelsPreset().ToArray(), false);
     }
     public void SetTradeLevel(string pair, bool isBuy, int level) {
       //var l = level.GetType() == typeof(string) ? (TradeLevelBy)Enum.Parse(typeof(TradeLevelBy), level+"", false) : (TradeLevelBy)level;

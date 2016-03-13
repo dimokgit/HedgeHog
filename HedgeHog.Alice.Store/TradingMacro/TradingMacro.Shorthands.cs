@@ -150,8 +150,7 @@ namespace HedgeHog.Alice.Store {
           RaiseShowChart();
         });
     }
-    public void SetTradeLevelsPreset(TradeLevelsPreset preset, bool? isBuy) {
-      Dictionary<TradeLevelsPreset, Tuple<TradeLevelBy,TradeLevelBy>> tlbs = new Dictionary<TradeLevelsPreset, Tuple<TradeLevelBy,TradeLevelBy>>(){
+    static Dictionary<TradeLevelsPreset, Tuple<TradeLevelBy, TradeLevelBy>> tlbs = new Dictionary<TradeLevelsPreset, Tuple<TradeLevelBy, TradeLevelBy>>(){
         {TradeLevelsPreset.None,Tuple.Create( TradeLevelBy.None, TradeLevelBy.None)},
         {TradeLevelsPreset.Lime,Tuple.Create( TradeLevelBy.LimeMax, TradeLevelBy.LimeMin)},
         {TradeLevelsPreset.Green,Tuple.Create( TradeLevelBy.GreenMax, TradeLevelBy.GreenMin)},
@@ -167,6 +166,7 @@ namespace HedgeHog.Alice.Store {
         {TradeLevelsPreset.MinMaxR,Tuple.Create( TradeLevelBy.PriceMin, TradeLevelBy.PriceMax)}
 
       };
+    public void SetTradeLevelsPreset(TradeLevelsPreset preset, bool? isBuy) {
       IsTradingActive = false;
       Action setLevels =()=> CorridorStats.Rates.Where(r => !r.PriceAvg1.IsNaN())
         .Take(1)
@@ -192,6 +192,11 @@ namespace HedgeHog.Alice.Store {
           sr.Rate = price;
           RaiseShowChart();
         });
+    }
+    public IEnumerable<TradeLevelsPreset> GetTradeLevelsPreset() {
+      var bl = LevelBuyBy;
+      var sl = LevelSellBy;
+      return tlbs.Where(tlb => tlb.Value.Item1 == bl && tlb.Value.Item2 == sl).Select(tlb => tlb.Key);
     }
     public void MoveBuySellLeve(bool isBuy, double pips) {
       Func<double, double> setOrDef = l => l > 0 ? l : RatesArray.Middle();

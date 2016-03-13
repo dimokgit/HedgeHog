@@ -1503,7 +1503,6 @@ namespace HedgeHog.Alice.Store {
         _strategyExecuteOnTradeClose = null;
         _strategyOnTradeLineChanged = null;
         MagnetPrice = double.NaN;
-        var currentPosition = -1;
         var indexCurrent = 0;
         LastTrade = TradesManager.TradeFactory(Pair);
         FractalTimes = FractalTimes.Take(0);
@@ -2393,15 +2392,21 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByGRBRatios() {
-      Action<double> doVolt = volt => {
-        UseRates(rates => rates.Where(r => GetVoltage2(r).IsNaN()).ToList())
-          .SelectMany(rates => rates).ForEach(r => SetVoltage2(r, volt));
-        UseRates(rates => rates.Select(GetVoltage2).StandardDeviation())
-        .ForEach(volts2 => SetVots(volts2, 2, true));
-      };
-      ShowVoltsByTrendsRatios2(TrendLinesTrendsAll.Skip(1), doVolt);
+      ShowVoltsByHrStdTrendsRatios(TrendLinesTrendsAll.Skip(1), SetVoltsByStd);
       return null;
     }
+    CorridorStatistics ShowVoltsByGRBHstdRatios() {
+      ShowVoltsByTrendsHStdRatios(TrendLinesTrendsAll.Skip(1), SetVoltsByStd);
+      return null;
+    }
+
+    private void SetVoltsByStd(double volt) {
+      UseRates(rates => rates.Where(r => GetVoltage2(r).IsNaN()).ToList())
+        .SelectMany(rates => rates).ForEach(r => SetVoltage2(r, volt));
+      UseRates(rates => rates.Select(GetVoltage2).StandardDeviation())
+      .ForEach(volts2 => SetVots(volts2, 2, true));
+    }
+
     CorridorStatistics ShowVoltsByLGRatios() {
       if(CanTriggerTradeDirection()) {
         var perms = TrendLinesTrendsAll.Take(2).ToArray().Permutation().ToArray();
@@ -2415,7 +2420,7 @@ namespace HedgeHog.Alice.Store {
       }
       return null;
     }
-    void ShowVoltsByTrendsRatios(IEnumerable<Rate.TrendLevels> tls, Action<double> doVolt) {
+    void ShowVoltsByHrStdTrendsRatios(IEnumerable<Rate.TrendLevels> tls, Action<double> doVolt) {
       if(CanTriggerTradeDirection()) {
         var perms = tls.ToArray().Permutation().ToArray();
         var avg1s = perms
@@ -2427,7 +2432,19 @@ namespace HedgeHog.Alice.Store {
         doVolt(InPips(avg1s) * heights * 100);
       }
     }
-    void ShowVoltsByTrendsRatios2(IEnumerable<Rate.TrendLevels> tls, Action<double> doVolt) {
+    void ShowVoltsByTrendsRatios3(IEnumerable<Rate.TrendLevels> tls, Action<double> doVolt) {
+      if(CanTriggerTradeDirection()) {
+        var perms = tls.ToArray().Permutation().ToArray();
+        var avg1s = perms
+         .Select(c => c[0].PriceAvg1.Abs(c[1].PriceAvg1))
+         .StandardDeviation();
+        var heights = perms
+         .Select(c => c[0].StDev.Abs(c[1].StDev))
+         .StandardDeviation();
+        doVolt(InPips(avg1s) * InPips(heights));
+      }
+    }
+    void ShowVoltsByTrendsHStdRatios(IEnumerable<Rate.TrendLevels> tls, Action<double> doVolt) {
       if(CanTriggerTradeDirection()) {
         var perms = tls.ToArray().Permutation().ToArray();
         var avg1s = perms

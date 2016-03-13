@@ -229,6 +229,9 @@
       div.ui-dialog-content.replay.no {
         background-color: #FFBBB7;
       }
+    .setTradeLevelActive {
+      color: black;
+    }
   </style>
   <script>
     $(function () {
@@ -417,9 +420,9 @@
             <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-menu-hamburger"></span></button>
             <ul class="dropdown-menu multi-level">
               <li>
-                <input type="button" value="23" class="btn-success" data-bind="click:setTradeLevels.bind($data,5,null)" />
-                <input type="button" value="23" class="btn-danger" data-bind="click:setTradeLevels.bind($data,6,null)" />
-                <input type="button" value="23" class="btn-primary" data-bind="click:setTradeLevels.bind($data,7,null)" />
+                <input type="button" value="23" class="btn-success" data-bind="click:setTradeLevels.bind($data,5,null),css:{setTradeLevelActive:tradePresetLevel()==5}" />
+                <input type="button" value="23" class="btn-danger" data-bind="click:setTradeLevels.bind($data,6,null),css:{setTradeLevelActive:tradePresetLevel()==6}" />
+                <input type="button" value="23" class="btn-primary" data-bind="click:setTradeLevels.bind($data,7,null),css:{setTradeLevelActive:tradePresetLevel()==7}" />
               </li>
               <li>
                 <input type="button" value="X" data-bind="click:resetTradeLevels" title="Clear trade levels" />
@@ -504,9 +507,9 @@
           </li>
           <!--#endregion-->
           <li>
-            <input type="button" value="L" class="btn-warning" data-bind="click:setTradeLevels.bind($data,1,null)" />
-            <input type="button" value="G" class="btn-success" data-bind="click:setTradeLevels.bind($data,2,null)" />
-            <input type="button" value="R" class="btn-danger" data-bind="click:setTradeLevels.bind($data,3,null)" />
+            <input type="button" value="L" class="btn-warning" data-bind="click:setTradeLevels.bind($data,1,null),css:{setTradeLevelActive:tradePresetLevel()==1}" />
+            <input type="button" value="G" class="btn-success" data-bind="click:setTradeLevels.bind($data,2,null),css:{setTradeLevelActive:tradePresetLevel()==2}" />
+            <input type="button" value="R" class="btn-danger" data-bind="click:setTradeLevels.bind($data,3,null),css:{setTradeLevelActive:tradePresetLevel()==3}" />
             <button>
               <span class="glyphicon glyphicon-random" data-bind="click:flipTradeLevels" title="Flip trade levels" ></span>
             </button>

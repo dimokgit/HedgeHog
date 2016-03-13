@@ -1117,11 +1117,11 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => TrendAnglesPerc);
       }
     }
-    int _trendHeightPerc;
+    double _trendHeightPerc;
     [DisplayName("ThredA.Height.Percentage(ThredB.Height): -200 - 200")]
     [WwwSetting(Group = wwwSettingsTradingConditions)]
     [Category(categoryActive)]
-    public int TrendHeightPerc {
+    public double TrendHeightPerc {
       get {        return _trendHeightPerc;      }
       set {
         _trendHeightPerc = value;

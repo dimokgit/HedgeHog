@@ -222,8 +222,11 @@
         serverCall("flipTradeLevels", [pair], resetPlotter);
       });
     };
+    var tradePresetLevel = this.tradePresetLevel = ko.observable(0);
     this.setTradeLevels = function (l, isBuy) {
-      serverCall("setPresetTradeLevels", [pair, l, isBuy === undefined ? null : isBuy], resetPlotter);
+      serverCall("setPresetTradeLevels", [pair, l, isBuy === undefined ? null : isBuy], function () {
+        tradePresetLevel(l);
+      });
     };
     this.resetTradeLevels = function () { this.setTradeLevels(0); }.bind(this);
     function toggleIsActive(chartNum/*date, event*/) {
@@ -1127,8 +1130,12 @@
       dataViewModel.com3 = response.com3;
       delete response.com3;
 
+      dataViewModel.tradePresetLevel(response.tpls[0] || 0);
+      delete response.tpls;
+
       dataViewModel.inPause(response.ip);
       delete response.ip;
+
 
       $('#discussion').text(JSON.stringify(response).replace(/["{}]/g, ""));
 
@@ -1213,6 +1220,9 @@
       });
       serverCall("readEnum", ["VoltageFunction"], function (enums) {
         dataViewModel.voltageFunction(mapEnumsForSettings(enums));
+      });
+      serverCall("getPresetTradeLevels", [pair], function (l) {
+        dataViewModel.tradePresetLevel(l[0] || 0);
       });
 
       //#endregion

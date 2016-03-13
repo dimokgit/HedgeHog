@@ -33,8 +33,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByGRBAvg1;
         case HedgeHog.Alice.VoltageFunction.GRBHA1:
           return ShowVoltsByGRBRatios;
-        case HedgeHog.Alice.VoltageFunction.LGHA1:
-          return ShowVoltsByLGRatios;
+        case HedgeHog.Alice.VoltageFunction.GRBHStd:
+          return ShowVoltsByGRBHstdRatios;
         case HedgeHog.Alice.VoltageFunction.UpDownMax:
           return ShowVoltsByUpDownMax;
         case HedgeHog.Alice.VoltageFunction.UpDownMax2:

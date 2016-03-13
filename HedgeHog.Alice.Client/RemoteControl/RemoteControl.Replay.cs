@@ -115,11 +115,10 @@ namespace HedgeHog.Alice.Client {
           var strats = TaskMonad.RunSync(() => ReadStrategies(tmOriginal, (name, desc, content, uri, diff) => new { name, content, diff }));
           Func<string, bool> isTest = s => s.ToLower().Trim().EndsWith("{t}");
           strats
-            .Take(2)
+            .Take(1)
             .OrderByDescending(s=>isTest(s.name))
             .Where(s => isTest(s.name) || s.diff.IsEmpty())
             .IfEmpty(() => { throw new Exception(ReplayArguments.LastWwwError = "Current settings don't match any strategy"); })
-            .Take(1)
             .ForEach(strategy => {
               tmOriginal.TestFileName = strategy.name;
               var paramsDict = Lib.ReadParametersFromString(strategy.content);
