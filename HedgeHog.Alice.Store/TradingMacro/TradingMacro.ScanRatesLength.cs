@@ -141,6 +141,7 @@ namespace HedgeHog.Alice.Store {
 
           _macdDiastances = Macd(rs, BarsCountCalc)
             .Pairwise((v1, v2) => v1.Abs(v2))
+            .ToArray()
             .Cma(cmaPeriod)
             .Reverse()
             .Distances(addDistance)
@@ -170,6 +171,7 @@ namespace HedgeHog.Alice.Store {
       var cmaPeriod = CmaPeriodByRatesCount(rates.Count);
       return Macd(rates, null)
         .Pairwise((v1, v2) => v1.Abs(v2))
+        .ToArray()
         .Cma(cmaPeriod)
         .Reverse()
         .Distances();
