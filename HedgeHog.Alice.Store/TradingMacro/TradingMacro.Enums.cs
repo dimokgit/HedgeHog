@@ -6,12 +6,15 @@ using System.Text;
 namespace HedgeHog.Alice {
   public enum VoltageFunction {
     None = 0,
+    t1,
     DistanceMacd,
     StDev,
     TrendHieghts,
     AvgLineRatio,
     GRBAvg1,
     GRBHA1,
+    GRBHA1Avg,
+    GRBHMax,
     GRBHStd,
     UpDownMax,
     UpDownMax2,

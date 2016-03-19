@@ -21,6 +21,11 @@ namespace HedgeHog.Alice.Store {
       switch(VoltageFunction_) {
         case HedgeHog.Alice.VoltageFunction.None:
           return ShowVoltsNone;
+        case HedgeHog.Alice.VoltageFunction.t1:
+          return () => {
+            SetVoltsM1();
+            return null;
+          };
         case HedgeHog.Alice.VoltageFunction.Volume:
           return ShowVoltsByFrameAngle;
         case HedgeHog.Alice.VoltageFunction.StDev:
@@ -33,6 +38,10 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByGRBAvg1;
         case HedgeHog.Alice.VoltageFunction.GRBHA1:
           return ShowVoltsByGRBRatios;
+        case HedgeHog.Alice.VoltageFunction.GRBHA1Avg:
+          return ShowVoltsByGRBMins;
+        case HedgeHog.Alice.VoltageFunction.GRBHMax:
+          return ShowVoltsByGRBMins;
         case HedgeHog.Alice.VoltageFunction.GRBHStd:
           return ShowVoltsByGRBHstdRatios;
         case HedgeHog.Alice.VoltageFunction.UpDownMax:

@@ -795,6 +795,7 @@
         commonChartParts.tradeLevels = response.tradeLevels;
       var chartData2 = chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross, 0, 0, response.canBuy, response.canSell, response.waveLines);
       chartData2.tickDate = lineChartData()[0].d;
+      chartData2.tickDateEnd = lineChartData().slice(-1)[0].d;
       chartData2.com = self.com;
       chartData2.com2 = self.com2;
       chartData2.com3 = self.com3;

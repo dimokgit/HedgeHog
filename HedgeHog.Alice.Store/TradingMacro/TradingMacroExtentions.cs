@@ -1405,7 +1405,7 @@ namespace HedgeHog.Alice.Store {
       }
       Func<IList<TradingMacro>> tms = () => args.TradingMacros;
       var trader = tms().Single(tm => tm.IsTrader);
-      Func<DateTime> traderStartDate = () => trader.UseRatesInternal(ri => ri.DefaultIfEmpty(new Rate()).Last().StartDate).DefaultIfEmpty().Single();
+      var traderStartDate = MonoidsCore.ToFunc(() => trader.UseRatesInternal(ri => ri.BackwardsIterator().Take(1).ToArray()).SelectMany(rates => rates));
       if(tms().Count(tm => tm.IsTrader) > 1)
         throw new Exception("Too many traders");
       if(tms().Count(tm => tm.IsTrader) == 0)
@@ -1559,6 +1559,7 @@ namespace HedgeHog.Alice.Store {
         Rate ratePrev = null;
         bool noMoreDbRates = false;
         var isReplaying = false;
+        var minutesOffset = BarPeriodInt * 30;
         while(!args.MustStop && indexCurrent < _replayRates.Count && Strategy != Strategies.None) {
           if(isReplaying && !IsTrader)
             if(!_waitHandle.WaitOne(1000)) {
@@ -1590,7 +1591,7 @@ namespace HedgeHog.Alice.Store {
                 var rateLast = UseRatesInternal(ri => ri.Last(), 15 * 1000);
                 var dateMin = tms().First(tm => tm.IsTrader).UseRatesInternal(ri => ri.DefaultIfEmpty(() => new Rate()).Last().StartDate).DefaultIfEmpty().First();
 
-                if(rateLast.IsEmpty() || rateLast.Single().StartDate > dateMin)
+                if(rateLast.IsEmpty() || rateLast.Single().StartDate > dateMin.AddMinutes(minutesOffset))
                   continue;
               }
               if(!noMoreDbRates && indexCurrent > _replayRates.Count - BarsCountCount() * .20) {
@@ -1627,9 +1628,9 @@ namespace HedgeHog.Alice.Store {
                 #endregion
                 if(rate != null)
                   if(ri.Count == 0 || rate > ri.LastBC()) {
-                    if(isReplaying && !IsTrader && rate.StartDate > ServerTime)
+                    if(isReplaying && !IsTrader && rate.StartDate > ServerTime.AddMinutes(minutesOffset))
                       return false;
-                    if(!isReplaying && !IsTrader && rate.StartDate >= traderStartDate())
+                    if(!isReplaying && !IsTrader && traderStartDate().Any(r => rate.StartDate >= r.StartDate.AddMinutes(minutesOffset)))
                       return false;
                     ri.Add(rate);
                   } else if(args.StepBack) {
@@ -1655,7 +1656,7 @@ namespace HedgeHog.Alice.Store {
               continue;
               //} else if (RatesArraySafe.LastBC().StartDate < args.DateStart.Value) {
               //  continue;
-            } else if(!IsTrader && rate.StartDate > traderStartDate())
+            } else if(!IsTrader && traderStartDate().Any(r => rate.StartDate > r.StartDate))
               continue;
             else {
               if(!isReplaying)
@@ -2395,15 +2396,32 @@ namespace HedgeHog.Alice.Store {
       ShowVoltsByHrStdTrendsRatios(TrendLinesTrendsAll.Skip(1), SetVoltsByStd);
       return null;
     }
+    CorridorStatistics ShowVoltsByGRBMins() {
+      ShowVoltsByTrendsMins(TrendLinesTrendsAll, v => SetVoltsByStd(v * 100, TrendLines1Trends));
+      return null;
+    }
+    CorridorStatistics ShowVoltsByGRBMax() {
+      ShowVoltsByTrendsMax(TrendLinesTrendsAll, v => SetVoltsByStd(v * 100, TrendLines1Trends));
+      return null;
+    }
     CorridorStatistics ShowVoltsByGRBHstdRatios() {
       ShowVoltsByTrendsHStdRatios(TrendLinesTrendsAll.Skip(1), SetVoltsByStd);
       return null;
     }
 
     private void SetVoltsByStd(double volt) {
+      SetVoltsByStd(volt, TrendLines2Trends);
+    }
+    private void SetVoltsByStd(double volt, Rate.TrendLevels tls) {
       UseRates(rates => rates.Where(r => GetVoltage2(r).IsNaN()).ToList())
         .SelectMany(rates => rates).ForEach(r => SetVoltage2(r, volt));
-      UseRates(rates => rates.Select(GetVoltage2).StandardDeviation())
+      UseRates(rates => rates.GetRange(tls.Count).Select(GetVoltage2).StandardDeviation())
+      .ForEach(volts2 => SetVots(volts2, 2, true));
+    }
+    private void SetVoltsByRStd(double volt) {
+      UseRates(rates => rates.Where(r => GetVoltage2(r).IsNaN()).ToList())
+        .SelectMany(rates => rates).ForEach(r => SetVoltage2(r, volt));
+      UseRates(rates => rates.Select(GetVoltage2).RelativeStandardDeviation())
       .ForEach(volts2 => SetVots(volts2, 2, true));
     }
 
@@ -2419,6 +2437,27 @@ namespace HedgeHog.Alice.Store {
         SetVots(InPips(avg1s) * heights * 100, 2, true);
       }
       return null;
+    }
+    void ShowVoltsByTrendsMins(IEnumerable<Rate.TrendLevels> tls, Action<double> doVolt) {
+      if(CanTriggerTradeDirection()) {
+        var perms = tls.ToArray().Permutation().ToArray();
+        var avg1s = perms
+         .Select(c => c[0].PriceAvg1.Abs(c[1].PriceAvg1))
+         .Min();
+        var heights = perms
+         .Select(c => c[0].StDev.Abs(c[1].StDev))
+         .Min();
+        doVolt(/*InPips(avg1s) * */Math.Sqrt(InPips(heights)));
+      }
+    }
+    void ShowVoltsByTrendsMax(IEnumerable<Rate.TrendLevels> tls, Action<double> doVolt) {
+      if(CanTriggerTradeDirection()) {
+        var perms = tls.ToArray().Permutation().ToArray();
+        var heights = perms
+         .Select(c => c[0].StDev.Abs(c[1].StDev))
+         .Max();
+        doVolt(Math.Sqrt(InPips(heights)));
+      }
     }
     void ShowVoltsByHrStdTrendsRatios(IEnumerable<Rate.TrendLevels> tls, Action<double> doVolt) {
       if(CanTriggerTradeDirection()) {
@@ -2456,7 +2495,7 @@ namespace HedgeHog.Alice.Store {
     CorridorStatistics ShowVoltsByUpDownMax() {
       if(CanTriggerTradeDirection()) {
         //_boilingerBanderAsyncAction.Push(() => {
-        (from rates in UseRates(rate 
+        (from rates in UseRates(rate
           => CutCmaCorners(rate.Where(r => r.PriceCMALast.IsNotNaN()).ToList()).Select(r => r.PriceAvg - r.PriceCMALast).ToArray())
          from diff in rates
          group diff by diff > 0 into upDown
@@ -2464,7 +2503,7 @@ namespace HedgeHog.Alice.Store {
          )
          .OrderBy(x => x.dir)
          .Buffer(2)
-         .Select(b => b.Max(x=>x.rsd.Abs()))
+         .Select(b => b.Max(x => x.rsd.Abs()))
          .ForEach(stDev => { SetVots(stDev * 100, 2); });
         //});
       }
@@ -3843,7 +3882,7 @@ namespace HedgeHog.Alice.Store {
       return InPips(
         Enumerable.Range(0, 1)
         .Where(_ => BuyLevel != null && SellLevel != null)
-        .Select(_ => GetValueByTakeProfitFunction( TradingMacroTakeProfitFunction.BuySellLevels, 1))
+        .Select(_ => GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction.BuySellLevels, 1))
         .Concat(new[] { GetValueByTakeProfitFunction(TradingDistanceFunction, TradingDistanceX) })
         .Max(pmc => pmc))
         .ToInt();

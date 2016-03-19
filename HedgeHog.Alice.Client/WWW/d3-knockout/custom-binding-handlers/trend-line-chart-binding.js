@@ -68,7 +68,7 @@
   var redStrip = "redStrip";
   var doCorridorStartDate = false;
   var showLineLog = false;
-  var tpsChartNum = 0;
+  var tpsChartNum = [0,1];
   ko.bindingHandlers.lineChart = {
     init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
       "use strict";
@@ -76,7 +76,7 @@
       viewModel = bindingContext.$root;
       var chartData = ko.unwrap(valueAccessor());
       var chartNum = chartData.chartNum;
-      var hasTps = chartNum == tpsChartNum;
+      var hasTps = tpsChartNum.indexOf(chartNum) >= 0;
 
       var chartArea = calcChartArea(element);
 
@@ -106,7 +106,6 @@
           .attr("dy", ".71em")
       //.style("text-anchor", "end")
       //.text("Price ($)");
-      ;
       if (chartNum === 1) {
         addRect("tickArea", tickAreaBgColor);
       }
@@ -133,6 +132,46 @@
         svg.append("path").attr("class", "line dataTps").style("stroke", "black").style("opacity", tpsOpacity);
 
       // #region create chart elements
+
+      // create crosshairs
+      var crosshair = svg.append("g")
+        .attr("class", "line");
+      // create horizontal line
+      crosshair.append("line")
+        .attr("id", "crosshairX")
+        .attr("class", "crosshair");
+      // create vertical line
+      crosshair.append("line")
+        .attr("id", "crosshairY")
+        .attr("class", "crosshair");
+      svg.append("rect")
+        .attr("class", "overlay")
+        .attr("width", width)
+        .attr("height", height)
+        .on("mouseover", function () {
+          crosshair.style("display", null);
+        })
+        .on("mouseout", function () {
+          crosshair.style("display", "none");
+        })
+        .on("mousemove", function () {
+          var mouse = d3.mouse(this);
+          var x = mouse[0];
+          var y = mouse[1];
+          crosshair.select("#crosshairX")
+            .attr("x1", x)
+            .attr("y1", 0)
+            .attr("x2", x)
+            .attr("y2", chartArea.height);
+          crosshair.select("#crosshairY")
+            .attr("x1", 0)
+            .attr("y1", y)
+            .attr("x2", chartArea.width)
+            .attr("y2", y);
+        })
+        .on("click", function () {
+          console.log(d3.mouse(this));
+        });;
       // Trend Lines
       /*addLine(1);*/ addLine(2); addLine(3); addLine(21); addLine(31);
       addLine("1_2"); addLine("2_2"); addLine("3_2");
@@ -331,7 +370,7 @@
       var tpsHigh = chartData.tpsHigh;
       var tpsLow = chartData.tpsLow;
       var chartNum = chartData.chartNum;
-      var hasTps = chartNum == tpsChartNum;
+      var hasTps = tpsChartNum.indexOf(chartNum) >= 0;
       var canBuy = chartData.canBuy;
       var canSell = chartData.canSell;
       var com = chartData.com;
@@ -447,7 +486,7 @@
           setHLine(tpsLow, "tpsLow", colorTps, 1, "", y2);
         }
         if (chartNum === 1) {
-          setRectArea(chartData.tickDate, yDomain[1], trendLines.dates[1], yDomain[0], "tickArea");
+          setRectArea(chartData.tickDate, yDomain[1], chartData.tickDateEnd, yDomain[0], "tickArea");
         }
         if (com)
           setHorizontalStrip(com.b, com.s, greenStrip);

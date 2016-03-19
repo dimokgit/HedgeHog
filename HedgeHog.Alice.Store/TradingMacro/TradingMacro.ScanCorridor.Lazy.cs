@@ -128,5 +128,22 @@ namespace HedgeHog.Alice.Store {
         });
       }
     }
+    private void SetVoltsM1() {
+      UseRates(rates => rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNaN()).ToList()).ForEach(ratesEmpty => {
+        ratesEmpty.Reverse();
+        ratesEmpty.Select(r => r.StartDate).Take(1).ForEach(startDate => {
+          var tm = TradingMacroOther().First(t => t.IsTrader);
+          tm.UseRates(rates => rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNotNaN() && r.StartDate >= startDate).ToList()).ForEach(ratesT1 => {
+            ratesT1.Reverse();
+            (from r in ratesT1
+             group r by r.StartDate.Round() into gr
+             select new { d = gr.Key, v = gr.Select(tm.GetVoltage).Average() } into dv
+             join rateEmpty in ratesEmpty on dv.d equals rateEmpty.StartDate
+             select new { r = rateEmpty, v = dv.v }
+            ).ForEach(x => tm.SetVoltage(x.r, x.v));
+          });
+        });
+      });
+    }
   }
 }
