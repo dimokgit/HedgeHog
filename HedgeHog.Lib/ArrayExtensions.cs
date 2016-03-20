@@ -267,5 +267,41 @@ namespace HedgeHog {
       ;
     }
 
+    public static IEnumerable<U> Zip<T1, T2, U>(this IEnumerable<Tuple<DateTime, T1>> prime, IEnumerable<Tuple<DateTime, T2>> other, Func<Tuple<DateTime, T1>, Tuple<DateTime, T2>, U> map) {
+      Tuple<DateTime, T2> prev = null;
+      bool otherIsDone = false;
+      using(var iterPrime = prime.GetEnumerator()) {
+        using(var iterOther = other.GetEnumerator())
+          if(iterOther.MoveNext()) {
+            while(iterPrime.MoveNext()) {
+              while(!otherIsDone && iterOther.Current.Item1 <= iterPrime.Current.Item1) {
+                prev = iterOther.Current;
+                if(otherIsDone = !iterOther.MoveNext())
+                  break;
+                continue;
+              }
+              yield return map(iterPrime.Current, prev ?? iterOther.Current);
+            }
+          }
+      }
+    }
+    public static void Zip<T1, T2>(this IEnumerable<Tuple<DateTime, T1>> prime, IEnumerable<Tuple<DateTime, T2>> other, Action<Tuple<DateTime, T1>, Tuple<DateTime, T2>> map) {
+      Tuple<DateTime, T2> prev = null;
+      bool otherIsDone = false;
+      using(var iterPrime = prime.GetEnumerator()) {
+        using(var iterOther = other.GetEnumerator())
+          if(iterOther.MoveNext()) {
+            while(iterPrime.MoveNext()) {
+              while(!otherIsDone && iterOther.Current.Item1 <= iterPrime.Current.Item1) {
+                prev = iterOther.Current;
+                if(otherIsDone = !iterOther.MoveNext())
+                  break;
+                continue;
+              }
+              map(iterPrime.Current, prev ?? iterOther.Current);
+            }
+          }
+      }
+    }
   }
 }

@@ -2412,6 +2412,7 @@ namespace HedgeHog.Alice.Store {
     private void SetVoltsByStd(double volt) {
       SetVoltsByStd(volt, TrendLines2Trends);
     }
+    IList<Tuple<DateTime, double>> _SetVoltsByStd0 = new Tuple<DateTime, double>[0];
     private void SetVoltsByStd(double volt, Rate.TrendLevels tls) {
       UseRates(rates => rates.Where(r => GetVoltage2(r).IsNaN()).ToList())
         .SelectMany(rates => rates).ForEach(r => SetVoltage2(r, volt));

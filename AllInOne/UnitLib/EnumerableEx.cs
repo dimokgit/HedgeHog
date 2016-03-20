@@ -11,6 +11,78 @@ namespace HedgeHog.Tests {
   namespace UnitLib {
     [TestClass]
     public class EnumerableExTest {
+      public IEnumerable<U> ZipByDateTime<T1, T2, U>(IList<Tuple<DateTime, T1>> prime, IList<Tuple<DateTime, T2>> other, Func<Tuple<DateTime, T1>, Tuple<DateTime, T2>, U> map) {
+        var j = 0;
+        for(var i = 0; i < prime.Count;) {
+          var datePrime = prime[i].Item1;
+          if(j < other.Count && other[j].Item1 <= datePrime) {
+            j++;
+          } else {
+            yield return map(prime[i], other[(j - 1).Max(0)]);
+            i++;
+          }
+        }
+      }
+      [TestMethod()]
+      public void ZipByDateTime() {
+        var dateStart = DateTime.MinValue;
+        var a = new[] { 0, 1, 2, 3, 4, 5 }.Select((n, i) => Tuple.Create(dateStart.AddDays(i), n)).ToArray();
+        var b = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 }.Select((n, i) => Tuple.Create(dateStart.AddDays(i / 2.0), n)).ToArray();
+        var z = ZipByDateTime(a, b, (t1, t2) => new { t1, t2 }).ToArray();
+        var z2 = a.Zip(b, (t1, t2) => new { t1, t2 }).ToArray();
+        Assert.IsTrue(z.Select(x => x.t2.Item2).SequenceEqual(z2.Select(x => x.t2.Item2)));
+      }
+      [TestMethod()]
+      public void ZipByDateTime1() {
+        var dateStart = DateTime.MinValue.AddDays(1);
+        var dateStart2 = DateTime.MinValue;
+        var a = new[] { 0, 1, 2, 3, 4, 5 }.Select((n, i) => Tuple.Create(dateStart.AddDays(i), n)).ToArray();
+        var b = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 }.Select((n, i) => Tuple.Create(dateStart2.AddDays(i*1.5), n)).ToArray();
+        var z = ZipByDateTime(a, b, (t1, t2) => new { t1, t2 }).ToArray();
+        var z2 = a.Zip(b, (t1, t2) => new { t1, t2 }).ToArray();
+        Assert.IsTrue(z.Select(x => x.t2.Item2).SequenceEqual(z2.Select(x => x.t2.Item2)));
+      }
+      [TestMethod()]
+      public void ZipByDateTime2() {
+        var dateStart = DateTime.MinValue.AddDays(1);
+        var dateStart2 = DateTime.MinValue;
+        var a = new[] { 0, 1, 2, 3, 4, 5 }.Select((n, i) => Tuple.Create(dateStart.AddDays(i), n)).ToArray();
+        var b = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 }.Select((n, i) => Tuple.Create(dateStart2.AddDays(i / 2.0), n)).ToArray();
+        var z = ZipByDateTime(a, b, (t1, t2) => new { t1, t2 }).ToArray();
+        var z2 = a.Zip(b, (t1, t2) => new { t1, t2 }).ToArray();
+        Assert.IsTrue(z.Select(x => x.t2.Item2).SequenceEqual(z2.Select(x => x.t2.Item2)));
+      }
+      [TestMethod()]
+      public void ZipByDateTime3() {
+        var dateStart = DateTime.MinValue.AddDays(1);
+        var dateStart2 = DateTime.MinValue;
+        var a = new[] { 0, 1, 2, 3, 4, 5 }.Select((n, i) => Tuple.Create(dateStart.AddDays(i), n)).ToArray();
+        var b = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 }.Select((n, i) => Tuple.Create(dateStart2.AddDays(i / 3.0), n)).ToArray();
+        var z = ZipByDateTime(a, b, (t1, t2) => new { t1, t2 }).ToArray();
+        var z2 = a.Zip(b, (t1, t2) => new { t1, t2 }).ToArray();
+        Assert.IsTrue(z.Select(x => x.t2.Item2).SequenceEqual(z2.Select(x => x.t2.Item2)));
+      }
+      [TestMethod()]
+      public void ZipByDateTime31() {
+        var dateStart = DateTime.MinValue.AddDays(0.9);
+        var dateStart2 = DateTime.MinValue;
+        var a = new[] { 0, 1, 2, 3, 4, 5 }.Select((n, i) => Tuple.Create(dateStart.AddDays(i), n)).ToArray();
+        var b = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 }.Select((n, i) => Tuple.Create(dateStart2.AddDays(i / 3.0), n)).ToArray();
+        var z = ZipByDateTime(a, b, (t1, t2) => new { t1, t2 }).ToArray();
+        var z2 = a.Zip(b, (t1, t2) => new { t1, t2 }).ToArray();
+        Assert.IsTrue(z.Select(x => x.t2.Item2).SequenceEqual(z2.Select(x => x.t2.Item2)));
+      }
+      [TestMethod()]
+      public void ZipByDateTime4() {
+        var dateStart = DateTime.MinValue;
+        var dateStart2 = DateTime.MinValue.AddDays(1);
+        var a = new[] { 0, 1, 2, 3, 4, 5 }.Select((n, i) => Tuple.Create(dateStart.AddDays(i), n)).ToArray();
+        var b = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 }.Select((n, i) => Tuple.Create(dateStart2.AddDays(i / 3.0), n)).ToArray();
+        var z = ZipByDateTime(a, b, (t1, t2) => new { t1, t2 }).ToArray();
+        var z2 = a.Zip(b, (t1, t2) => new { t1, t2 }).ToArray();
+        Assert.IsTrue(z.Select(x => x.t2.Item2).SequenceEqual(z2.Select(x => x.t2.Item2)));
+      }
+
       [TestMethod()]
       public void GetRangeTest() {
         var a = new[] { 0, 1, 2, 3, 4, 5 };
@@ -36,7 +108,7 @@ namespace HedgeHog.Tests {
         var scan = res2.Scan(new { start = 0, end = 0 },
           (seed, a) => seed.end == 0 ? new { start = 0, end = a.i } : new { start = seed.end + 1, end = a.i });
         var ranges = scan.Skip(1).Select(a => data.GetRange(a.start, a.end - a.start + 1));
-        var res3 = ranges.Select(range => range.Average(a=>a.value))
+        var res3 = ranges.Select(range => range.Average(a => a.value))
           .ToList();
         sw.Stop();
         Console.WriteLine(new { v = "New", sw.ElapsedMilliseconds, res3.Count });
@@ -46,7 +118,7 @@ namespace HedgeHog.Tests {
         sw.Stop();
         groupDist.Count();
         Console.WriteLine(new { v = "Super", sw.ElapsedMilliseconds, groupDist.Count });
-        Assert.IsTrue(sw.ElapsedMilliseconds<100);
+        Assert.IsTrue(sw.ElapsedMilliseconds < 100);
       }
       [TestMethod()]
       public void CrossesSmoothedTest() {
