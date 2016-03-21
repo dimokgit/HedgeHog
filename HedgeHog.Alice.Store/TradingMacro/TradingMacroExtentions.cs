@@ -1552,6 +1552,8 @@ namespace HedgeHog.Alice.Store {
         _isRatesLengthStable = false;
         ResetTradeStrip = false;
         CenterOfMassBuy = CenterOfMassBuy2 = CenterOfMassSell = CenterOfMassSell2 = double.NaN;
+        _SetVoltsByStd0 = new ConcurrentQueue<Tuple<DateTime, double>>();
+        _SetVoltsByStd = new ConcurrentQueue<Tuple<DateTime, double>>();
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if(!_replayRates.Any())
@@ -1589,7 +1591,11 @@ namespace HedgeHog.Alice.Store {
             } else {
               if(isReplaying && !IsTrader && tms().Count > 1) {
                 var rateLast = UseRatesInternal(ri => ri.Last(), 15 * 1000);
-                var dateMin = tms().First(tm => tm.IsTrader).UseRatesInternal(ri => ri.DefaultIfEmpty(() => new Rate()).Last().StartDate).DefaultIfEmpty().First();
+                var dateMin = tms().First(tm => tm.IsTrader)
+                  .UseRatesInternal(ri => ri.LastOrDefault())
+                  .Where(r => r != null)
+                  .Select(r => r.StartDate)
+                  .SingleOrDefault();
 
                 if(rateLast.IsEmpty() || rateLast.Single().StartDate > dateMin.AddMinutes(minutesOffset))
                   continue;
@@ -2401,7 +2407,7 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByGRBMax() {
-      ShowVoltsByTrendsMax(TrendLinesTrendsAll, v => SetVoltsByStd(v * 100, TrendLines1Trends));
+      ShowVoltsByTrendsMax(TrendLinesTrendsAll, v => SetVoltsByStd(v * 100, TrendLinesTrends));
       return null;
     }
     CorridorStatistics ShowVoltsByGRBHstdRatios() {
@@ -2412,13 +2418,84 @@ namespace HedgeHog.Alice.Store {
     private void SetVoltsByStd(double volt) {
       SetVoltsByStd(volt, TrendLines2Trends);
     }
-    IList<Tuple<DateTime, double>> _SetVoltsByStd0 = new Tuple<DateTime, double>[0];
-    private void SetVoltsByStd(double volt, Rate.TrendLevels tls) {
-      UseRates(rates => rates.Where(r => GetVoltage2(r).IsNaN()).ToList())
-        .SelectMany(rates => rates).ForEach(r => SetVoltage2(r, volt));
-      UseRates(rates => rates.GetRange(tls.Count).Select(GetVoltage2).StandardDeviation())
-      .ForEach(volts2 => SetVots(volts2, 2, true));
+
+    class SetVoltsAveragesAsyncBuffer : AsyncBuffer<SetVoltsAveragesAsyncBuffer, Action> {
+      public SetVoltsAveragesAsyncBuffer() : base() {      }
+      protected override Action PushImpl(Action context) {
+        return context;
+      }
     }
+    SetVoltsAveragesAsyncBuffer _setVoltsAveragesAsyncBuffer = new SetVoltsAveragesAsyncBuffer();
+
+    ConcurrentQueue<Tuple<DateTime, double>> _SetVoltsByStd0 = new ConcurrentQueue<Tuple<DateTime, double>>();
+    ConcurrentQueue<Tuple<DateTime, double>> _SetVoltsByStd = new ConcurrentQueue<Tuple<DateTime, double>>();
+    private void SetVoltsByStd(double volt, Rate.TrendLevels tls) {
+      if(tls.IsEmpty)
+        return;
+      var startDate = RatesArray[RatesArray.Count - tls.Count].StartDate;
+      var endDate = ServerTime;
+      _SetVoltsByStd0.Enqueue(Tuple.Create(endDate, volt));
+      var voltsCount = (tls.Count * 1.2).Min(_SetVoltsByStd0.Count).ToInt();
+      var volts0 = _SetVoltsByStd0.ToList().GetRange(voltsCount).SkipWhile(t => t.Item1 < startDate).ToArray();
+      if(volts0.Length > tls.Count / 10.0 || volts0.Length > 300) {
+        var volts2 = volts0.StandardDeviation(t => t.Item2);
+        var cma = CmaPeriodByRatesCount();
+        _SetVoltsByStd.Enqueue(Tuple.Create(endDate, (_SetVoltsByStd.LastOrDefault() ?? Tuple.Create(DateTime.MaxValue, double.NaN)).Item2.Cma(cma, volts2)));
+        UseRates(rates => rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNaN()).ToList())
+          .ForEach(rates => {
+            rates.Reverse();
+            rates.Take(1).Select(r => r.StartDate).ForEach(sd =>
+              rates.Zip(r => r.StartDate, _SetVoltsByStd.SkipWhile(t => t.Item1 <= sd), (r, t) => SetVoltage(r, t.Item2))
+            );
+          });
+
+        UseRates(rates => {
+          rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNaN()).TakeLast(1).Select(r => r.StartDate).ForEach(sd => {
+            rates.Zip(r => r.StartDate, _SetVoltsByStd.SkipWhile(t => t.Item1 <= sd), (r, t) => SetVoltage(r, t.Item2));
+          });
+          return Unit.Default;
+        });
+        Action<DateTime, ConcurrentQueue<Tuple<DateTime, double>>> dequeByTime = (date, queue) => {
+          do {
+            Tuple<DateTime, double> t;
+            queue.TryPeek(out t);
+            if(t.Item1 >= date)
+              break;
+            queue.TryDequeue(out t);
+          } while(true);
+        };
+        dequeByTime(RatesInternal[0].StartDate, _SetVoltsByStd0);
+        dequeByTime(RatesInternal[0].StartDate, _SetVoltsByStd);
+        Action a = () => {
+          var sd = RatesArray[0].StartDate;
+          var averageIterations = 2;
+          var volts = _SetVoltsByStd.SkipWhile(t => t.Item1 < sd).ToArray(t => t.Item2);
+          var voltageAvgLow = volts.AverageByIterations(-averageIterations).Average();
+          GetVoltageAverage = () => voltageAvgLow;
+          var voltageAvgHigh = volts.AverageByIterations(averageIterations).Average();
+          GetVoltageHigh = () => voltageAvgHigh;
+        };
+        _setVoltsAveragesAsyncBuffer.Push(a);
+      }
+    }
+    private void SetVots2(double volt, int averageIterations, double cma = 0) {
+      var volt2 = cma > 0 ? GetLastVolt().Cma(cma, volt) : volt;
+      UseRates(rates => rates.Where(r => GetVoltage(r).IsNaN()).ToList())
+        .SelectMany(rates => rates).ForEach(r => SetVoltage(r, volt2));
+      //SetVoltage(RateLast, volt);
+      var voltRates = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray();
+      if(voltRates.Any()) {
+        GeneralPurposeSubject.OnNext(() => {
+          try {
+            var voltageAvgLow = voltRates.AverageByIterations(-averageIterations).DefaultIfEmpty(double.NaN).Average();
+            GetVoltageAverage = () => voltageAvgLow;
+            var voltageAvgHigh = voltRates.AverageByIterations(averageIterations).DefaultIfEmpty(double.NaN).Average();
+            GetVoltageHigh = () => voltageAvgHigh;
+          } catch(Exception exc) { Log = exc; }
+        });
+      }
+    }
+
     private void SetVoltsByRStd(double volt) {
       UseRates(rates => rates.Where(r => GetVoltage2(r).IsNaN()).ToList())
         .SelectMany(rates => rates).ForEach(r => SetVoltage2(r, volt));

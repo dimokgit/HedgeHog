@@ -303,5 +303,23 @@ namespace HedgeHog {
           }
       }
     }
+    public static void Zip<T1, T2>(this IEnumerable<T1> prime, Func<T1,DateTime> getDate, IEnumerable<Tuple<DateTime, T2>> other, Action<T1, Tuple<DateTime, T2>> map) {
+      Tuple<DateTime, T2> prev = null;
+      bool otherIsDone = false;
+      using(var iterPrime = prime.GetEnumerator()) {
+        using(var iterOther = other.GetEnumerator())
+          if(iterOther.MoveNext()) {
+            while(iterPrime.MoveNext()) {
+              while(!otherIsDone && iterOther.Current.Item1 <= getDate(iterPrime.Current)) {
+                prev = iterOther.Current;
+                if(otherIsDone = !iterOther.MoveNext())
+                  break;
+                continue;
+              }
+              map(iterPrime.Current, prev ?? iterOther.Current);
+            }
+          }
+      }
+    }
   }
 }

@@ -26,6 +26,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Performance14.psess = Performance14.psess
 		Performance15.psess = Performance15.psess
 		Performance16.psess = Performance16.psess
+		Performance17.psess = Performance17.psess
 		Performance2.psess = Performance2.psess
 		Performance3.psess = Performance3.psess
 		Performance4.psess = Performance4.psess
@@ -220,6 +221,9 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "WWW", "http://localhost:360
 	EndProjectSection
 EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug SubArray|Any CPU = Debug SubArray|Any CPU
 		Debug SubArray|Mixed Platforms = Debug SubArray|Mixed Platforms

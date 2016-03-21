@@ -744,6 +744,22 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+    public TradeConditionDelegate VltBlwLOk {
+      get { return () => { return VoltsBelowByTrendLines(TrendLines0Trends); }; }
+    }
+    public TradeConditionDelegate VltBlwGOk {
+      get { return () => { return VoltsBelowByTrendLines(TrendLines1Trends); }; }
+    }
+    public TradeConditionDelegate VltBlwROk {
+      get { return () => { return VoltsBelowByTrendLines(TrendLinesTrends); }; }
+    }
+
+    private TradeDirections VoltsBelowByTrendLines(Rate.TrendLevels tls) {
+      var d = RatesArray[RatesArray.Count - tls.Count].StartDate;
+      var volt = _SetVoltsByStd.SkipWhile(t => t.Item1 < d).Select(t => t.Item2).DefaultIfEmpty(double.NaN).Min();
+      return TradeDirectionByBool(volt < GetVoltageAverage());
+    }
+
     [TradeConditionTurnOff]
     public TradeConditionDelegate VoltAboveOk {
       get {
