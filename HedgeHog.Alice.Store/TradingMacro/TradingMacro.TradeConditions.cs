@@ -795,6 +795,7 @@ namespace HedgeHog.Alice.Store {
       return new {
         GRBHRatio = TrendHeighRatioGRB(),
         HStdRatio = (RatesHeight / (StDevByHeight * 4)).Round(1),
+        VPCorr___ = string.Join(",", _voltsPriceCorrelation.Value.Select(vp => vp.Round(2)).DefaultIfEmpty()),
         //TipRatio_ = _tipRatioCurrent.Round(1),
         LimeAngle = TrendLines0Trends.Angle.Round(1),
         GrnAngle_ = TrendLines1Trends.Angle.Round(1),
