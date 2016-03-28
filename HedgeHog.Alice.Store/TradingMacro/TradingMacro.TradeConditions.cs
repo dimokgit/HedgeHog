@@ -793,14 +793,18 @@ namespace HedgeHog.Alice.Store {
     #region WwwInfo
     public object WwwInfo() {
       return new {
-        GRBHRatio = TrendHeighRatioGRB(),
-        HStdRatio = (RatesHeight / (StDevByHeight * 4)).Round(1),
-        VPCorr___ = string.Join(",", _voltsPriceCorrelation.Value.Select(vp => vp.Round(2)).DefaultIfEmpty()),
+        //GRBHRatio = TrendHeighRatioGRB(),
+        //HStdRatio = (RatesHeight / (StDevByHeight * 4)).Round(1),
+        //VPCorr___ = string.Join(",", _voltsPriceCorrelation.Value.Select(vp => vp.Round(2)).DefaultIfEmpty()),
         //TipRatio_ = _tipRatioCurrent.Round(1),
         LimeAngle = TrendLines0Trends.Angle.Round(1),
+        LimeRsd = (1 / TrendLines0Trends.RSDByHeight.SingleOrDefault()).Round(1),
         GrnAngle_ = TrendLines1Trends.Angle.Round(1),
+        GrnRsd_ = (1 / TrendLines1Trends.RSDByHeight.SingleOrDefault()).Round(1),
         RedAngle_ = TrendLinesTrends.Angle.Round(1),
-        BlueAngle = TrendLines2Trends.Angle.Round(1)
+        RedRsd_ = (1 / TrendLinesTrends.RSDByHeight.SingleOrDefault()).Round(1),
+        BlueAngle = TrendLines2Trends.Angle.Round(1),
+        BlueRsd = (1 / TrendLines2Trends.RSDByHeight.SingleOrDefault()).Round(1)
       };
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
@@ -873,13 +877,13 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTradeDirection]
     public TradeConditionDelegate BROk { get { return () => TradeDirectionsAnglewise(TrendLines2Trends); } }
     [TradeConditionTradeDirection]
+    public TradeConditionDelegate ROk { get { return () => TradeDirectionsAnglecounterwise(TrendLinesTrends); } }
+    [TradeConditionTradeDirection]
+    public TradeConditionDelegate RROk { get { return () => TradeDirectionsAnglewise(TrendLinesTrends); } }
+    [TradeConditionTradeDirection]
     public TradeConditionDelegate GOk { get { return () => TradeDirectionsAnglecounterwise(TrendLines1Trends); } }
     [TradeConditionTradeDirection]
     public TradeConditionDelegate GROk { get { return () => TradeDirectionsAnglewise(TrendLines1Trends); } }
-    [TradeConditionTradeDirection]
-    public TradeConditionDelegate LOk { get { return () => TradeDirectionsAnglecounterwise(TrendLines0Trends); } }
-    [TradeConditionTradeDirection]
-    public TradeConditionDelegate LROk { get { return () => TradeDirectionsAnglewise(TrendLines0Trends); } }
     #endregion
 
     int TrendHeighRatioGRB() { return TrendHeighRatio(1, 0); }
@@ -906,6 +910,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     static readonly Calendar callendar = CultureInfo.GetCultureInfo("en-US").Calendar;
+    static int GetWeekOfYear(DateTime dateTime) { return callendar.GetWeekOfYear(dateTime, CalendarWeekRule.FirstDay, DayOfWeek.Sunday); }
     TimeSpan _RatesTimeSpanCache = TimeSpan.Zero;
     DateTime[] _RateForTimeSpanCache = new DateTime[0];
     private IEnumerable<TimeSpan> RatesTimeSpan() {

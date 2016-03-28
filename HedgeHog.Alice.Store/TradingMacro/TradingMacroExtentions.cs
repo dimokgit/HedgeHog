@@ -2226,7 +2226,11 @@ namespace HedgeHog.Alice.Store {
               RatePrev = ri[ri.Count - 2];
               RatePrev1 = ri[ri.Count - 3];
               UseRates(_ => RatesArray = ri.GetRange(BarsCountCalc).ToList());
-              RatesDuration = (RatesArray.Last().StartDate2 - RatesArray[0].StartDate2).TotalMinutes.ToInt();
+              var isSameWeek = GetWeekOfYear(RatesArray.Last().StartDate) == GetWeekOfYear(RatesArray[0].StartDate);
+              RatesDuration = (isSameWeek
+              ? (RatesArray.Last().StartDate2 - RatesArray[0].StartDate2)
+              : RatesArray.Duration(5.FromMinutes())
+              ).TotalMinutes.ToInt();
             });
             IsAsleep = new[] { BuyLevel.InManual, SellLevel.InManual }.All(im => !im) &&
               Trades.Length == 0 &&
@@ -2372,7 +2376,11 @@ namespace HedgeHog.Alice.Store {
       }
     }
     CorridorStatistics ShowVoltsByStDev() {
-      SetVots(StDevByHeightInPips, 2);
+      new[] { TrendLinesTrends, TrendLines1Trends }
+      .SelectMany(tls => tls.RSDByHeight)
+      .OrderByDescending(d => d)
+      .Take(1)
+      .ForEach(volt => SetVots(1 / volt, 2, true));
       return null;
     }
     CorridorStatistics ShowVoltsByAvgLineRatio() {
@@ -2423,7 +2431,12 @@ namespace HedgeHog.Alice.Store {
     private void SetVoltsByStd(double volt, Rate.TrendLevels tls) {
       UseRates(rates => rates.Where(r => GetVoltage2(r).IsNaN()).ToList())
         .SelectMany(rates => rates).ForEach(r => SetVoltage2(r, volt));
-      UseRates(rates => rates.GetRange(tls.Count).Select(GetVoltage2).StandardDeviation())
+      //UseRates(rates => rates.Select(GetVoltage2).Scan((v1, v2) => v1 == v2 ? v2 : double.NaN).TakeWhile(Lib.IsNotNaN).Count())
+      //  .Where(dc => dc < RatesArray.Count - tls.Count)
+      //  .ForEach(dc =>
+      UseRates(rates => {
+        return rates.GetRange(tls.Count).Select(GetVoltage2).StandardDeviation();
+      })
       .ForEach(volts2 => {
         SetVots(volts2, 2, true);
         _setVoltsAveragesAsyncBuffer.Push(() => {
@@ -2531,7 +2544,7 @@ namespace HedgeHog.Alice.Store {
           rates.Take(1).Select(r => r.StartDate).ForEach(sd => {
             var volts = _SetVoltsByStd.SkipWhile(t => t.Item1 <= sd).ToArray();
             rates.Zip(r => r.StartDate, volts, (r, t) => SetVoltage(r, t.Item2));
-            _voltsOk = volts.Length< _SetVoltsByStd.Count;
+            _voltsOk = volts.Length < _SetVoltsByStd.Count;
           });
         });
 
@@ -4281,11 +4294,14 @@ namespace HedgeHog.Alice.Store {
               }
             }
             {
-              UseRatesInternal(ri => ri.Reverse().TakeWhile(isNotHistory).Reverse().ToArray()).ForEach(ratesLocal => {
+              UseRatesInternal(ri => ri.BackwardsIterator().TakeWhile(isNotHistory).ToList()).ForEach(ratesLocal => {
                 if(ratesLocal == null)
                   return;
-                var ratesLocalCount = ratesLocal.Length;// RatesInternal.Reverse().TakeWhile(isNotHistory).Count();
-                if(ratesList.Count > 0)
+                ratesLocal.Reverse();
+                var ratesLocalCount = ratesLocal.Count;// RatesInternal.Reverse().TakeWhile(isNotHistory).Count();
+                if(ratesList.Count > 0) {
+                  var volts = ratesLocal.SkipWhile(r => GetVoltage(r).IsNaN()).Select(r => Tuple.Create(r.StartDate, GetVoltage(r)));
+                  ratesList.Zip(r => r.StartDate, volts, (r, t) => SetVoltage(r, t.Item2));
                   UseRatesInternal(rl => {
                     LoadRatesStartDate2 = ratesList[0].StartDate2;
                     var sd1 = ratesList.Last().StartDate;
@@ -4296,7 +4312,7 @@ namespace HedgeHog.Alice.Store {
                     rl.AddRange(rateTail);
                     return;
                   });
-                else
+                } else
                   Log = new Exception("No rates were loaded from server for " + new { Pair, BarPeriod });
               });
             }

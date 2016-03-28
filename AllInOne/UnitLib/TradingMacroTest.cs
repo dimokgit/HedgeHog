@@ -68,6 +68,18 @@ namespace UnitLib
       var tcs = new TradingMacro().GetTradeConditions();
       Assert.IsTrue(tcs != null);
     }
+    [TestMethod]
+    public void IsTradingHour() {
+      var d = DateTime.Parse("1:00");
+      var d2 = DateTime.Parse("17:00");
+      var d3 = DateTime.Parse("00:00");
+      Assert.IsTrue(TradingMacro.IsTradingHour("", d));
+      Assert.IsTrue(TradingMacro.IsTradingHour("", d3));
+      Assert.IsTrue(TradingMacro.IsTradingHour("0:29-1:01", d));
+      Assert.IsFalse(TradingMacro.IsTradingHour("0:29-1:01", d2));
+      Assert.IsTrue(TradingMacro.IsTradingHour("21:00-1:00", d));
+      Assert.IsFalse(TradingMacro.IsTradingHour("21:00-1:00", d2));
+    }
     /// <summary>
     ///A test for Fractals
     ///</summary>

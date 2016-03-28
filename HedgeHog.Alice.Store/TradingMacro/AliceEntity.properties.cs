@@ -644,8 +644,16 @@ namespace HedgeHog.Alice.Store {
       return hours[0] < hours[1] ? time.Hour.Between(hours[0], hours[1]) : !time.Hour.Between(hours[0] - 1, hours[1] + 1);
     }
     private bool IsTradingHour(DateTime time) {
-      var times = TradingHoursRange.Split('-').Select(s => DateTime.Parse(s)).ToArray();
-      return time.TimeOfDay.Between(times[0].TimeOfDay, times[1].TimeOfDay);
+      return IsTradingHour(TradingHoursRange, time);
+    }
+    public static bool IsTradingHour(string range, DateTime time) {
+      var times = range.Split('-')
+        .Where(s=>!string.IsNullOrWhiteSpace(s))
+        .DefaultIfEmpty("0:00").Select(s => DateTime.Parse(s).TimeOfDay).ToArray();
+      var tod = time.TimeOfDay;
+      return times.First() < times.Last()
+        ? tod.Between(times.First(), times.Last())
+        : tod >= times.First() || tod <= times.Last();
     }
     DayOfWeek[] TradingDays() {
       switch (TradingDaysRange) {

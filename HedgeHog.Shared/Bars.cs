@@ -659,6 +659,7 @@ namespace HedgeHog.Bars {
 
       public double[] Coeffs { get; private set; }
 
+      public IEnumerable<double> RSDByHeight { get { return RateHeight.Select(rh => StDev / rh); } }
       public IEnumerable<double> HStdRatio { get { return RateHeight.Select(rh => rh / (StDev * 4)); } }
       public IEnumerable<double> PriceHeight { get { return PriceMax.Zip(PriceMin, (p1, p2) => p1.Abs(p2)); } }
       public IEnumerable<double> RateHeight { get { return RateMax.Zip(RateMin, (p1, p2) => p1.PriceAvg.Abs(p2.PriceAvg)); } }

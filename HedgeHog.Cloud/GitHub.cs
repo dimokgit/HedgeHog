@@ -112,7 +112,7 @@ namespace HedgeHog.Cloud {
     private static IEnumerable<T> MapStrategies<T>(Gist[] gists, Func<string, string, string, Uri, int, T> map, int count = int.MaxValue) {
       return from gist in gists
              from file in gist.Files.Take(count).Select((file, i) => new { file, i })
-             select map(CleanStrategyName(file.file.Key), gist.Description, file.file.Value.Content, new Uri(file.file.Value.RawUrl), file.i);
+             select map(CleanStrategyName(file.file.Key), gist.Description, file.file.Value.Content, new Uri(gist.HtmlUrl), file.i);
     }
 
     private static async Task<string> FetchGistContent(GistFile file) {
