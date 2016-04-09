@@ -96,9 +96,9 @@ namespace HedgeHog.Alice.Store {
       Max = range.Max(r => r.PriceAvg);
       Min = range.Min(r => r.PriceAvg);
       var priceAvgs = range.ToArray(r => r.PriceAvg);
-      Distance = priceAvgs.Distances().Last() / pointSize;
+      Distance = priceAvgs.Distances().DefaultIfEmpty().Last() / pointSize;
       var lastCmas = range.ToArray(r => r.PriceCMALast);
-      DistanceCma = lastCmas.Distances().Last() / pointSize;
+      DistanceCma = lastCmas.Distances().DefaultIfEmpty().Last() / pointSize;
       TotalSeconds = EndDate.Subtract(StartDate).TotalSeconds;
       CalcTrendLine(range, pointSize, period);
       //this.Fatness = AlgLib.correlation.pearsoncorrelation(priceAvgs, lastCmas).Abs();

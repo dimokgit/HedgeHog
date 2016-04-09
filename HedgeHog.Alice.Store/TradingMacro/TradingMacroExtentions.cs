@@ -1556,6 +1556,7 @@ namespace HedgeHog.Alice.Store {
         _SetVoltsByStd1 = new ConcurrentQueue<Tuple<DateTime, double>>();
         _SetVoltsByStd = new ConcurrentQueue<Tuple<DateTime, double>>();
         _voltsOk = true;
+        _startDateM1 = null;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if(!_replayRates.Any())
@@ -1563,7 +1564,7 @@ namespace HedgeHog.Alice.Store {
         Rate ratePrev = null;
         bool noMoreDbRates = false;
         var isReplaying = false;
-        var minutesOffset = BarPeriodInt * 30;
+        var minutesOffset = BarPeriodInt * 0;
         while(!args.MustStop && indexCurrent < _replayRates.Count && Strategy != Strategies.None) {
           if(isReplaying && !IsTrader)
             if(!_waitHandle.WaitOne(1000)) {
@@ -1571,6 +1572,7 @@ namespace HedgeHog.Alice.Store {
               continue;
             }
           Rate rate = null;
+          DateTime replayDateMax = _replayRates.Last().StartDate;
           try {
             if(args.StepBack) {
               #region StepBack
@@ -1599,12 +1601,13 @@ namespace HedgeHog.Alice.Store {
                   .Select(r => r.StartDate)
                   .SingleOrDefault();
 
-                if(rateLast.IsEmpty() || rateLast.Single().StartDate > dateMin.AddMinutes(minutesOffset))
+                if(rateLast.IsEmpty() || rateLast.Single().StartDate > dateMin.AddMinutes(minutesOffset).Min(replayDateMax))
                   continue;
               }
-              if(!noMoreDbRates && indexCurrent > _replayRates.Count - BarsCountCount() * .20) {
+              Func<bool> indexCurrentIsOver = () => indexCurrent >= _replayRates.Count - 1;
+              if(!noMoreDbRates && (indexCurrent > _replayRates.Count - BarsCountCount() * .20 || indexCurrentIsOver())) {
                 var moreRates = groupTicks(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, _replayRates.Last().StartDate2.AddSeconds(1), BarsCountCount(), BarPeriodInt));
-                if(moreRates.Count < 2)
+                if(moreRates.Count == 0)
                   noMoreDbRates = true;
                 else {
                   _replayRates.AddRange(moreRates);
@@ -1614,7 +1617,7 @@ namespace HedgeHog.Alice.Store {
                   indexCurrent -= slack;
                 }
               }
-              if(indexCurrent >= _replayRates.Count - 1)
+              if(indexCurrentIsOver())
                 break;
               try {
                 rate = _replayRates[indexCurrent + 1];
@@ -1636,9 +1639,9 @@ namespace HedgeHog.Alice.Store {
                 #endregion
                 if(rate != null)
                   if(ri.Count == 0 || rate > ri.LastBC()) {
-                    if(isReplaying && !IsTrader && rate.StartDate > ServerTime.AddMinutes(minutesOffset))
+                    if(isReplaying && !IsTrader && rate.StartDate > ServerTime.AddMinutes(minutesOffset).Min(replayDateMax))
                       return false;
-                    if(!isReplaying && !IsTrader && traderStartDate().Any(r => rate.StartDate >= r.StartDate.AddMinutes(minutesOffset)))
+                    if(!isReplaying && !IsTrader && traderStartDate().Any(r => rate.StartDate >= r.StartDate.AddMinutes(minutesOffset).Min(replayDateMax)))
                       return false;
                     ri.Add(rate);
                   } else if(args.StepBack) {
@@ -2376,11 +2379,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     CorridorStatistics ShowVoltsByStDev() {
-      new[] { TrendLinesTrends, TrendLines1Trends }
-      .SelectMany(tls => tls.RSDByHeight)
-      .OrderByDescending(d => d)
-      .Take(1)
-      .ForEach(volt => SetVots(1 / volt, 2, true));
+      TrendLines2Trends.HStdRatio
+      .ForEach(volt => SetVots(volt, 2, true));
       return null;
     }
     CorridorStatistics ShowVoltsByAvgLineRatio() {
@@ -2420,11 +2420,6 @@ namespace HedgeHog.Alice.Store {
       ShowVoltsByTrendsMax(TrendLinesTrendsAll, v => SetVoltsByStd(v * 100, TrendLinesTrends));
       return null;
     }
-    CorridorStatistics ShowVoltsByGRBHstdRatios() {
-      ShowVoltsByTrendsHStdRatios(TrendLinesTrendsAll.Skip(1), SetVoltsByStd);
-      return null;
-    }
-
     private void SetVoltsByStd(double volt) {
       SetVoltsByStd(volt, TrendLines2Trends);
     }
@@ -2633,15 +2628,6 @@ namespace HedgeHog.Alice.Store {
          .Select(c => c[0].StDev.Abs(c[1].StDev))
          .StandardDeviation();
         doVolt(InPips(avg1s) * InPips(heights));
-      }
-    }
-    void ShowVoltsByTrendsHStdRatios(IEnumerable<Rate.TrendLevels> tls, Action<double> doVolt) {
-      if(CanTriggerTradeDirection()) {
-        var perms = tls.ToArray().Permutation().ToArray();
-        var avg1s = perms
-         .SelectMany(c => c[0].HStdRatio.Zip(c[1].HStdRatio, (r1, r2) => r1.Percentage(r2)))
-         .StandardDeviation();
-        doVolt(avg1s.ToPercent());
       }
     }
     CorridorStatistics ShowVoltsByUpDownMax() {

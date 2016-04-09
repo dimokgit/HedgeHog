@@ -15,7 +15,6 @@ namespace HedgeHog.Alice {
     GRBHA1,
     GRBHA1Avg,
     GRBHMax,
-    GRBHStd,
     UpDownMax,
     UpDownMax2,
     BBRsdRatio,
@@ -47,7 +46,8 @@ namespace HedgeHog.Alice.Store {
     DistanceMinSmth,
     DistanceMin0,
     TimeFrame,
-    DMTF
+    DMTF,
+    M1Wave
   }
   public enum ScanCorridorFunction {
     StDevSplits = 46,

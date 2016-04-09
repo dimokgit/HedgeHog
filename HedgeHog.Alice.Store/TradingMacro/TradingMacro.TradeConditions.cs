@@ -798,13 +798,10 @@ namespace HedgeHog.Alice.Store {
         //VPCorr___ = string.Join(",", _voltsPriceCorrelation.Value.Select(vp => vp.Round(2)).DefaultIfEmpty()),
         //TipRatio_ = _tipRatioCurrent.Round(1),
         LimeAngle = TrendLines0Trends.Angle.Round(1),
-        LimeRsd = (1 / TrendLines0Trends.RSDByHeight.SingleOrDefault()).Round(1),
         GrnAngle_ = TrendLines1Trends.Angle.Round(1),
-        GrnRsd_ = (1 / TrendLines1Trends.RSDByHeight.SingleOrDefault()).Round(1),
         RedAngle_ = TrendLinesTrends.Angle.Round(1),
-        RedRsd_ = (1 / TrendLinesTrends.RSDByHeight.SingleOrDefault()).Round(1),
         BlueAngle = TrendLines2Trends.Angle.Round(1),
-        BlueRsd = (1 / TrendLines2Trends.RSDByHeight.SingleOrDefault()).Round(1)
+        BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1)
       };
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })

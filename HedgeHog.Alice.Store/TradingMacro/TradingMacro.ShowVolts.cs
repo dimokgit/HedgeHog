@@ -42,8 +42,6 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByGRBMins;
         case HedgeHog.Alice.VoltageFunction.GRBHMax:
           return ShowVoltsByGRBMax;
-        case HedgeHog.Alice.VoltageFunction.GRBHStd:
-          return ShowVoltsByGRBHstdRatios;
         case HedgeHog.Alice.VoltageFunction.UpDownMax:
           return ShowVoltsByUpDownMax;
         case HedgeHog.Alice.VoltageFunction.UpDownMax2:
@@ -189,6 +187,8 @@ namespace HedgeHog.Alice.Store {
           return ScanRatesLengthByTimeFrame;
         case RatesLengthFunction.DMTF:
           return ScanRatesLengthByDistanceMinAndimeFrame;
+        case RatesLengthFunction.M1Wave:
+          return ScanRatesLengthByM1Wave;
         default:
           throw new NotImplementedException(new { RatesLengthFunction = RatesLengthBy, Error = "Not implemented" } + "");
       }

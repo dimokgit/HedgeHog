@@ -240,10 +240,10 @@ namespace HedgeHog.Alice.Client {
         dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"h\:mm")
           + (tm1 != null ? "," + (tm1.RatesArray.Count * tm1.BarPeriodInt).FromMinutes().TotalDays.Round(1) : ""),// + "|" + TimeSpan.FromMinutes(tm1.RatesDuration).ToString(@"h\:mm"),
         hgt = string.Join("/", new[] {
-          tmTrader.RatesHeightInPips.ToInt(),
-          tmTrader.BuySellHeightInPips.ToInt(),
-          tmTrader.InPips(tmTrader.CenterOfMassBuy.IfNaN(0).Abs(tmTrader.CenterOfMassSell.IfNaN(0))).ToInt()
-        }.Where(v => v > 0)),
+          tmTrader.RatesHeightInPips.ToInt()+"",
+          tmTrader.BuySellHeightInPips.ToInt()+"",
+          tmTrader.TrendLines2Trends.Angle.Abs().ToInt()+"°"
+        }),
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
         S = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
