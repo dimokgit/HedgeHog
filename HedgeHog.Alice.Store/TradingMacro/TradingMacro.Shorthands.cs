@@ -56,33 +56,33 @@ namespace HedgeHog.Alice.Store {
         var s = LevelSellBy;
         LevelSellBy = LevelBuyBy;
         LevelBuyBy = s;
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         Log = exc;
       }
       RaiseShowChart();
     }
 
     #region MoveWrapTradeWithNewTrade
-    private bool _MoveWrapTradeWithNewTrade = false ;
+    private bool _MoveWrapTradeWithNewTrade = false;
     [Category(categoryTrading)]
     [WwwSetting]
     public bool MoveWrapTradeWithNewTrade {
       get { return _MoveWrapTradeWithNewTrade; }
       set {
-        if (_MoveWrapTradeWithNewTrade != value) {
+        if(_MoveWrapTradeWithNewTrade != value) {
           _MoveWrapTradeWithNewTrade = value;
           OnPropertyChanged("MoveWrapTradeWithNewTrade");
         }
       }
     }
-    
+
     #endregion
     public void WrapTradeInCorridor(bool forceMove = false) {
-      if (Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove || MoveWrapTradeWithNewTrade)) {
+      if(Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove || MoveWrapTradeWithNewTrade)) {
         SuppRes.ForEach(sr => sr.ResetPricePosition());
         BuyLevel.InManual = SellLevel.InManual = true;
         double offset = HeightForWrapToCorridor();
-        if (Trades.HaveBuy()) {
+        if(Trades.HaveBuy()) {
           BuyLevel.Rate = Trades.NetOpen();
           SellLevel.Rate = BuyLevel.Rate - offset;
         } else {
@@ -94,9 +94,10 @@ namespace HedgeHog.Alice.Store {
     }
 
     private double HeightForWrapToCorridor() {
-      return TakeProfitFunction == TradingMacroTakeProfitFunction.Pips
-        ? StDevByPriceAvg
-        : CalculateTakeProfit(1);
+      return BuyLevel.Rate.Abs(SellLevel.Rate)
+        .Max(StDevByPriceAvg, TakeProfitFunction == TradingMacroTakeProfitFunction.Pips
+        ? 0
+        : CalculateTakeProfit(1));
     }
 
     public void WrapCurrentPriceInCorridor(Rate.TrendLevels tls) {
@@ -131,7 +132,7 @@ namespace HedgeHog.Alice.Store {
         .ForEach(rate => {
           IsTradingActive = false;
           LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
-          
+
         });
       RaiseShowChart();
     }
@@ -140,7 +141,7 @@ namespace HedgeHog.Alice.Store {
         .Take(1)
         .ForEach(rate => {
           IsTradingActive = false;
-          if (isBuy) {
+          if(isBuy) {
             LevelBuyBy = level;
             BuyLevel.Rate = TradeLevelFuncs[level]();
           } else {
@@ -168,22 +169,22 @@ namespace HedgeHog.Alice.Store {
       };
     public void SetTradeLevelsPreset(TradeLevelsPreset preset, bool? isBuy) {
       IsTradingActive = false;
-      Action setLevels =()=> CorridorStats.Rates.Where(r => !r.PriceAvg1.IsNaN())
-        .Take(1)
-        .ForEach(rate => {
-          BuyLevel.Rate = TradeLevelFuncs[LevelBuyBy]();
-          SellLevel.Rate = TradeLevelFuncs[LevelSellBy]();
-          BuyLevel.InManual = SellLevel.InManual = false;
-          RaiseShowChart();
-        });
-      Action<Action<TradeLevelBy>, TradeLevelBy> setTL = ( s, v) => s(v);
-      if (isBuy.GetValueOrDefault(true)) 
-        setTL( v => LevelBuyBy = v, tlbs[preset].Item1);
-      if (isBuy.GetValueOrDefault(false) == false)
-        setTL( v => LevelSellBy = v, tlbs[preset].Item2);
+      Action setLevels = () => CorridorStats.Rates.Where(r => !r.PriceAvg1.IsNaN())
+         .Take(1)
+         .ForEach(rate => {
+           BuyLevel.Rate = TradeLevelFuncs[LevelBuyBy]();
+           SellLevel.Rate = TradeLevelFuncs[LevelSellBy]();
+           BuyLevel.InManual = SellLevel.InManual = false;
+           RaiseShowChart();
+         });
+      Action<Action<TradeLevelBy>, TradeLevelBy> setTL = (s, v) => s(v);
+      if(isBuy.GetValueOrDefault(true))
+        setTL(v => LevelBuyBy = v, tlbs[preset].Item1);
+      if(isBuy.GetValueOrDefault(false) == false)
+        setTL(v => LevelSellBy = v, tlbs[preset].Item2);
       setLevels();
     }
-    public  void SetTradeRate(bool isBuy,double price) {
+    public void SetTradeRate(bool isBuy, double price) {
       BuySellLevels
         .Where(sr => sr.IsBuy == isBuy)
         .ForEach(sr => {
@@ -203,7 +204,7 @@ namespace HedgeHog.Alice.Store {
       new[] { BuyLevel, SellLevel }
         .Where(sr => sr.IsBuy == isBuy)
         .ForEach(sr => {
-          if (pips == 0) {
+          if(pips == 0) {
             sr.Rate = setOrDef(sr.IsBuy ? CenterOfMassBuy : CenterOfMassSell);
             sr.InManual = true;
           } else {

@@ -1556,7 +1556,7 @@ namespace HedgeHog.Alice.Store {
         _SetVoltsByStd1 = new ConcurrentQueue<Tuple<DateTime, double>>();
         _SetVoltsByStd = new ConcurrentQueue<Tuple<DateTime, double>>();
         _voltsOk = true;
-        _startDateM1 = null;
+        _ratesStartDate = null;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if(!_replayRates.Any())
@@ -2229,11 +2229,7 @@ namespace HedgeHog.Alice.Store {
               RatePrev = ri[ri.Count - 2];
               RatePrev1 = ri[ri.Count - 3];
               UseRates(_ => RatesArray = ri.GetRange(BarsCountCalc).ToList());
-              var isSameWeek = GetWeekOfYear(RatesArray.Last().StartDate) == GetWeekOfYear(RatesArray[0].StartDate);
-              RatesDuration = (isSameWeek
-              ? (RatesArray.Last().StartDate2 - RatesArray[0].StartDate2)
-              : RatesArray.Duration(5.FromMinutes())
-              ).TotalMinutes.ToInt();
+              RatesDuration = RatesArray.Duration(r => r.StartDate).TotalMinutes.ToInt();
             });
             IsAsleep = new[] { BuyLevel.InManual, SellLevel.InManual }.All(im => !im) &&
               Trades.Length == 0 &&

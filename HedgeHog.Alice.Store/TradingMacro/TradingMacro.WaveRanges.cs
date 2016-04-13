@@ -47,32 +47,36 @@ namespace HedgeHog.Alice.Store {
           #region Wave Stats
           Func<IList<WaveRange>, Func<WaveRange, double>, double> summ = (wrs, v) => wrs.Select(v).DefaultIfEmpty(double.NaN).Sum();
           Func<IList<WaveRange>, Func<WaveRange, double>, double> avg = (wrs, v) =>
-            summ(wrs, w => v(w) * w.DistanceCma) / summ(wrs, w => w.DistanceCma);
+            summ(wrs, w => v(w) * w.HSDRatio) / summ(wrs, w => w.HSDRatio);
           Func<IList<WaveRange>, Func<WaveRange, double>, Func<WaveRange, double>, double> avg2 = (wrs, v, d) =>
               summ(wrs, w => v(w) * d(w)) / summ(wrs, w => d(w));
           Func<Func<WaveRange, double>, double> avgUp = value => wr.Select(value).DefaultIfEmpty().ToArray().AverageByAverageUp();
           var wa = new WaveRange(1) {
-            Distance = avg2(wr, w => w.Distance, w => 1 / w.Angle.Abs()),
+            Distance = avg2(wr, w => w.Distance, w => w.HSDRatio),
             DistanceCma = avg2(wr, w => w.DistanceCma, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),
             DistanceByRegression = avg2(wr, w => w.DistanceByRegression, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),
             WorkByHeight = avg(wr, w => w.WorkByHeight),
             WorkByTime = avg(wr, w => w.WorkByTime),
-            Angle = avg2(wr, w => w.Angle.Abs(), w => w.Distance),
+            Angle = avg2(wr, w => w.Angle.Abs(), w => w.HSDRatio),
+            TotalMinutes = avg2(wr, w => w.TotalMinutes.Abs(), w => w.HSDRatio),
+            HSDRatio = avg2(wr, w => w.HSDRatio, w => w.Angle.Abs()),
             Height = avg(wr, w => w.Height),
-            StDev = avg2(wr, w => w.StDev, w => 1 / Math.Pow(w.Distance, FatnessWeightPower))
+            StDev = wr.Average(w => w.StDev)
           };
           if(wTail.TotalSeconds < 3)
             wTail = new WaveRange();
           Func<Func<WaveRange, double>, double> rsd = value => wr.Select(value).DefaultIfEmpty().Sum();
           var ws = new WaveRange(1) {
-            Distance = avg2(wr, w => w.Distance, w => w.Angle.Abs()),
+            Distance = avg2(wr, w => w.Distance, w => 1 / w.HSDRatio),
             DistanceCma = avg2(wr, w => w.DistanceCma, w => w.Distance),
             DistanceByRegression = avg2(wr, w => w.DistanceByRegression, w => w.Distance),
             WorkByHeight = rsd(w => w.WorkByHeight),
             WorkByTime = rsd(w => w.WorkByTime),
-            Angle = avg2(wr, w => w.Angle.Abs(), w => 1 / w.Distance),
+            Angle = avg2(wr, w => w.Angle.Abs(), w => 1 / w.HSDRatio),
+            TotalMinutes = avg2(wr, w => w.TotalMinutes.Abs(), w => 1 / w.HSDRatio),
+            HSDRatio = avg2(wr, w => w.HSDRatio, w => 1 / w.Angle.Abs()),
             Height = rsd(w => w.Height),
-            StDev = avg2(wr, w => w.StDev, w => Math.Pow(w.Distance, FatnessWeightPower))
+            StDev = avg2(wr, w => w.StDev, w => w.HSDRatio)
           };
           #endregion
           #region Conditions

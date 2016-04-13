@@ -23,6 +23,7 @@ namespace HedgeHog.Alice.Store {
     public double DistanceCma { get; set; }
     public double Slope { get; private set; }
     public double TotalSeconds { get; private set; }
+    public double TotalMinutes { get; set; }
     double _workByTime = double.NaN;
     public double WorkByTime {
       get { return _workByTime.IfNaN(TotalSeconds * Angle.Abs()); }
@@ -52,6 +53,11 @@ namespace HedgeHog.Alice.Store {
     public double InterseptStart { get; set; }
     public double InterseptEnd { get; set; }
     public double StDev { get; set; }
+    double _hsd = double.NaN;
+    public double HSDRatio {
+      get { return _hsd.IfNaN(StDev == 0 ? 0 : Height / (StDev * 4)); }
+      set { _hsd = value; }
+    }
     /// <summary>
     /// Number from 1 to 5 from Elliot sequence
     /// </summary>
@@ -81,9 +87,9 @@ namespace HedgeHog.Alice.Store {
       this.Range = new List<Rate>();
       this.PointSize = pointSize;
     }
-    public WaveRange(List<Rate> range, double pointSize,BarsPeriodType period)
+    public WaveRange(List<Rate> range, double pointSize, BarsPeriodType period)
       : base() {
-        this.Period = period;
+      this.Period = period;
       this.PointSize = pointSize;
       this.Range = range;
       Count = range.Count;
@@ -91,7 +97,7 @@ namespace HedgeHog.Alice.Store {
         return;
       StartDate = range[0].StartDate;
       EndDate = range.Last().StartDate;
-      if (EndDate < StartDate)
+      if(EndDate < StartDate)
         throw new InvalidOperationException("StartDate;{0} must be less then EndDate:{1}".Formater(StartDate, EndDate));
       Max = range.Max(r => r.PriceAvg);
       Min = range.Min(r => r.PriceAvg);
@@ -99,7 +105,8 @@ namespace HedgeHog.Alice.Store {
       Distance = priceAvgs.Distances().DefaultIfEmpty().Last() / pointSize;
       var lastCmas = range.ToArray(r => r.PriceCMALast);
       DistanceCma = lastCmas.Distances().DefaultIfEmpty().Last() / pointSize;
-      TotalSeconds = EndDate.Subtract(StartDate).TotalSeconds;
+      TotalSeconds = range.Duration(r => r.StartDate).TotalSeconds;
+      TotalMinutes = TotalSeconds / 60;
       CalcTrendLine(range, pointSize, period);
       //this.Fatness = AlgLib.correlation.pearsoncorrelation(priceAvgs, lastCmas).Abs();
     }
@@ -110,11 +117,13 @@ namespace HedgeHog.Alice.Store {
       return Math.Pow(Math.Abs(angle), smoothies[0]) * smoothies[1] * Math.Sign(angle);
     }
     void CalcTrendLine(List<Rate> range, double pointSize, BarsPeriodType period) {
-      if(range.Count == 0) return;
+      if(range.Count == 0)
+        return;
       var minutes = (range.Last().StartDate - range[0].StartDate).Duration().TotalMinutes;
       Func<TimeSpan, IEnumerable<double>> groupped = ts => range.GroupedDistinct(rate => rate.StartDate.AddMilliseconds(-rate.StartDate.Millisecond), g => g.Average(rate => rate.PriceAvg));
       var doubles = period == BarsPeriodType.t1 ? groupped(1.FromSeconds()).ToArray() : range.Select(r => r.PriceAvg).ToArray();
-      if(doubles.Length < 2) doubles = groupped(1.FromSeconds()).ToArray();
+      if(doubles.Length < 2)
+        doubles = groupped(1.FromSeconds()).ToArray();
       var coeffs = doubles.Linear();
       this.Slope = coeffs.LineSlope();
       this.Angle = Slope.Angle(period == BarsPeriodType.t1 ? 1.0 / 60 : (int)period, pointSize);
@@ -231,8 +240,8 @@ namespace HedgeHog.Alice.Store {
       internal set;
     }
   }
-  public static class WaveRangesMixin{
-      public static Func<WaveRange, double> BestFitProp(this WaveRange wa) {
+  public static class WaveRangesMixin {
+    public static Func<WaveRange, double> BestFitProp(this WaveRange wa) {
       Func<Func<WaveRange, double>, Func<WaveRange, double>> foo = f => f;
       var foos = new[] { foo(w => w.DistanceByRegression), foo(w => w.WorkByTime) };
       return foos.OrderBy(f => f(wa)).First();
@@ -244,7 +253,7 @@ namespace HedgeHog.Alice.Store {
     public static int Index(this IList<WaveRange> wrs, WaveRange wr, Func<WaveRange, double> value) {
       return wrs.OrderByDescending(value).ToList().IndexOf(wr);
     }
-    public static int Index(this  WaveRange wr, IList<WaveRange> wrs, Func<WaveRange, double> value) {
+    public static int Index(this WaveRange wr, IList<WaveRange> wrs, Func<WaveRange, double> value) {
       return wrs.OrderByDescending(value).ToList().IndexOf(wr);
     }
     public static IList<Tuple<WaveRange, int>> WaveRangesOrder(IList<WaveRange> wrs, Func<WaveRange, double> value) {
@@ -252,5 +261,5 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-}
+  }
 }

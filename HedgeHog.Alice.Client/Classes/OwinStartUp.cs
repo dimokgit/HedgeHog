@@ -540,29 +540,14 @@ namespace HedgeHog.Alice.Client {
     }
     public object GetWaveRanges(string pair, int chartNum) {
       var value = MonoidsCore.ToFunc(0.0, false, (v, mx) => new { v, mx });
-      var wrs = UseTradingMacro(tm => true, pair, chartNum, false)
-        .SelectMany(tm => tm.WaveRangesWithTail, (tm, wr) => new { inPips = new Func<double, double>(d => tm.InPips(d)), wr, rs = tm.WaveRanges })
-        .Select((x, i) => new {
-          i,
-          ElliotIndex = value((double)x.wr.ElliotIndex, false),
-          Angle = value(x.wr.Angle.Round(0), x.wr.Index(x.rs, wr => wr.Angle.Abs()) == 0),//.ToString("###0.0"),
-          StDev = value(x.wr.StDev.Round(2), x.wr.Index(x.rs, wr => wr.StDev) == 0),//.ToString("#0.00"),
-          Distance = value(x.wr.Distance.Round(0), x.wr.Index(x.rs, wr => wr.Distance) == 0),
-          DistanceCma = value(x.wr.DistanceCma.Round(0), x.wr.Index(x.rs, wr => wr.DistanceCma) == 0),
-          DistanceByRegression = value(x.wr.DistanceByRegression.Round(0), x.wr.Index(x.rs, wr => wr.DistanceByRegression) == 0),
-          WorkByHeight = value(x.wr.WorkByHeight.Round(0), x.wr.Index(x.rs, wr => wr.WorkByHeight) == 0),
-          x.wr.IsTail,
-          IsFOk = x.wr.IsFatnessOk,
-          IsDcOk = x.wr.IsDistanceCmaOk,
-          IsStats = false
-        })
-        .ToList();
       var wrStats = UseTradingMacro(tm => true, pair, chartNum, false)
         .Select(tm => new { wrs = new[] { tm.WaveRangeAvg, tm.WaveRangeSum }, inPips = new Func<double, double>(d => tm.InPips(d)) })
         .SelectMany(x => x.wrs, (x, wr) => new {
           i = 0,
           ElliotIndex = value(0, false),
-          Angle = value(wr.Angle.Round(0), false),
+          Angle = value(wr.Angle, false),
+          Minutes = value(wr.TotalMinutes, false),
+          HSD = value(wr.HSDRatio, false),
           StDev = value(wr.StDev.Round(2), false),
           Distance = value(wr.Distance.Round(0), false),
           DistanceCma = value(wr.DistanceCma.Round(0), false),
@@ -572,7 +557,27 @@ namespace HedgeHog.Alice.Client {
           IsFOk = false,
           IsDcOk = false,
           IsStats = true
-        });
+        })
+        .ToArray();
+      var wrs = UseTradingMacro(tm => true, pair, chartNum, false)
+        .SelectMany(tm => tm.WaveRangesWithTail, (tm, wr) => new { inPips = new Func<double, double>(d => tm.InPips(d)), wr, rs = tm.WaveRanges })
+        .Select((x, i) => new {
+          i,
+          ElliotIndex = value((double)x.wr.ElliotIndex, false),
+          Angle = value(x.wr.Angle.Round(0), x.wr.Angle.Abs() >= wrStats[0].Angle.v),//.ToString("###0.0"),
+          Minutes = value(x.wr.TotalMinutes.ToInt(), x.wr.TotalMinutes >= wrStats[0].Minutes.v),//.ToString("###0.0"),
+          HSD = value(x.wr.HSDRatio.Round(1), x.wr.HSDRatio >= wrStats[0].HSD.v),//.ToString("###0.0"),
+          StDev = value(x.wr.StDev.Round(4), x.wr.Index(x.rs, wr => wr.StDev) == 0),//.ToString("#0.00"),
+          Distance = value(x.wr.Distance.Round(0), x.wr.Distance > wrStats[0].Distance.v),
+          DistanceCma = value(x.wr.DistanceCma.Round(0), x.wr.Index(x.rs, wr => wr.DistanceCma) == 0),
+          DistanceByRegression = value(x.wr.DistanceByRegression.Round(0), x.wr.Index(x.rs, wr => wr.DistanceByRegression) == 0),
+          WorkByHeight = value(x.wr.WorkByHeight.Round(0), x.wr.Index(x.rs, wr => wr.WorkByHeight) == 0),
+          x.wr.IsTail,
+          IsFOk = x.wr.IsFatnessOk,
+          IsDcOk = x.wr.IsDistanceCmaOk,
+          IsStats = false
+        })
+        .ToList();
       #region Not Used
       Func<object, double> getProp = (o) =>
         o.GetType()

@@ -375,6 +375,8 @@
           TakeProfitFunction: { name: "Take Profit", type: "options", options: tradingMacroTakeProfitFunction() },
           LevelSellBy: { name: "Level Sell", type: "options", options: tradeLevelBys() },
           LevelBuyBy: { name: "Level Buy", type: "options", options: tradeLevelBys() },
+          LevelSellCloseBy: { name: "Level Sell Close", type: "options", options: tradeLevelBys() },
+          LevelBuyCloseBy: { name: "Level Buy Close", type: "options", options: tradeLevelBys() },
           ScanCorridorBy: { name: "ScanCorridor", type: "options", options: scanCorridorFunction() },
           RatesLengthBy: { name: "RatesLength", type: "options", options: ratesLengthFunction() },
           VoltageFunction_: { name: "Voltage", type: "options", options: voltageFunction() },

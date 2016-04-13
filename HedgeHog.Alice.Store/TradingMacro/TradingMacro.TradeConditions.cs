@@ -701,7 +701,7 @@ namespace HedgeHog.Alice.Store {
 
 
     #region StDev
-    public TradeConditionDelegate VLOk {
+    public TradeConditionDelegateHide VLOk {
       get {
         Log = new Exception(new { System.Reflection.MethodBase.GetCurrentMethod().Name, TrendHeightPerc } + "");
         return () => { return TradeDirectionByTreshold(GetVoltageAverage(), TrendHeightPerc); };
@@ -710,7 +710,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate HStdOk {
       get {
         Log = new Exception(new { System.Reflection.MethodBase.GetCurrentMethod().Name, RhSDRatio } + "");
-        return () => { return TradeDirectionByTreshold(RatesHeight / (StDevByHeight * 4), RhSDRatio); };
+        return () => { return TradeDirectionByTreshold(GetLastVolt().Max(GetVoltageHigh()), RhSDRatio); };
       }
     }
 
@@ -744,15 +744,6 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
-    public TradeConditionDelegate VltBlwLOk {
-      get { return () => { return VoltsBelowByTrendLines(TrendLines0Trends); }; }
-    }
-    public TradeConditionDelegate VltBlwGOk {
-      get { return () => { return VoltsBelowByTrendLines(TrendLines1Trends); }; }
-    }
-    public TradeConditionDelegate VltBlwROk {
-      get { return () => { return VoltsBelowByTrendLines(TrendLinesTrends); }; }
-    }
 
     private TradeDirections VoltsBelowByTrendLines(Rate.TrendLevels tls) {
       var d = RatesArray[RatesArray.Count - tls.Count].StartDate;
@@ -782,12 +773,6 @@ namespace HedgeHog.Alice.Store {
                   .Single();
     }
     #endregion
-
-    public TradeConditionDelegateHide CmaRsdOk {
-      get {
-        return () => TradeDirectionByBool(IsTresholdAbsOk(MacdRsdAvg, MacdRsdAvgLevel));
-      }
-    }
     #endregion
 
     #region WwwInfo
@@ -937,6 +922,51 @@ namespace HedgeHog.Alice.Store {
         ? TradeDirections.Both
         : TradeDirections.None;
         ;
+      }
+    }
+    public TradeConditionDelegate TFAOk {
+      get {
+        return () =>
+        TradingMacroOther()
+        .Select(tm => tm.WaveRangeSum.TotalMinutes * 2)
+        .Any(tm2 => RatesDuration >= tm2)
+        ? TradeDirections.Both
+        : TradeDirections.None;
+        ;
+      }
+    }
+    #endregion
+
+    #region M1
+    public TradeConditionDelegate M1Ok {
+      get {
+        return () => TradingMacroOther()
+        .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
+        .Select(x =>
+        x.wr.Angle.Abs() >= x.wra.Angle &&
+        x.wr.TotalMinutes >= x.wra.TotalMinutes &&
+        x.wr.HSDRatio >= x.wra.HSDRatio
+        )
+        .Select(b => b
+        ? TradeDirections.Both
+        : TradeDirections.None)
+        .FirstOrDefault();
+      }
+    }
+    public TradeConditionDelegate M1AHOk {
+      get {
+        return () => TradingMacroOther()
+        .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
+        .Select(x =>
+        x.wr.Angle.Abs() >= x.wra.Angle &&
+        x.wr.Distance < x.wra.Distance &&
+        x.wr.TotalMinutes < x.wra.TotalMinutes &&
+        x.wr.HSDRatio >= x.wra.HSDRatio
+        )
+        .Select(b => b
+        ? TradeDirections.Both
+        : TradeDirections.None)
+        .FirstOrDefault();
       }
     }
     #endregion

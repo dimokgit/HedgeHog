@@ -340,6 +340,7 @@ namespace HedgeHog.Alice.Store {
     #region LevelBuyCloseBy
     private TradeLevelBy _LevelBuyCloseBy;
     [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsTradingCorridor)]
     public TradeLevelBy LevelBuyCloseBy {
       get { return _LevelBuyCloseBy; }
       set {
@@ -353,6 +354,7 @@ namespace HedgeHog.Alice.Store {
     #region LevelSellCloseBy
     private TradeLevelBy _LevelSellCloseBy;
     [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsTradingCorridor)]
     public TradeLevelBy LevelSellCloseBy {
       get { return _LevelSellCloseBy; }
       set {

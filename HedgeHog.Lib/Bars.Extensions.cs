@@ -8,6 +8,7 @@ using System.Windows;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections.Concurrent;
+using System.Globalization;
 
 namespace HedgeHog.Bars {
   public class RsiStatistics {
@@ -914,6 +915,36 @@ namespace HedgeHog.Bars {
         else {
           var d = (rate.StartDate - prev.StartDate).Duration();
           if (d <= durationMax)
+            duration = duration.Add(d);
+          prev = rate;
+        }
+      //Debug.WriteLine("Duration:{0:n}", sw.ElapsedMilliseconds);
+      return duration;
+    }
+
+    static readonly Calendar callendar = CultureInfo.GetCultureInfo("en-US").Calendar;
+    static int GetWeekOfYear(DateTime dateTime) { return callendar.GetWeekOfYear(dateTime, CalendarWeekRule.FirstDay, DayOfWeek.Sunday); }
+
+    public static TimeSpan Duration<T>(this IList<T> rates, Func<T, DateTime> date) {
+      var dateLast = date(rates.Last());
+      var dateFirst = date(rates[0]);
+      var isSameWeek = GetWeekOfYear(dateLast) == GetWeekOfYear(dateFirst);
+      var rd = (isSameWeek
+      ? (dateLast - dateFirst)
+      : rates.DurationImpl(date, 5.FromMinutes())
+      );
+      return rd;
+    }
+    static TimeSpan DurationImpl<T>(this ICollection<T> rates,Func<T,DateTime> date, TimeSpan durationMax) {
+      var sw = Stopwatch.StartNew();
+      T prev = default(T);
+      TimeSpan duration = TimeSpan.Zero;
+      foreach(var rate in rates)
+        if(prev == null)
+          prev = rate;
+        else {
+          var d = (date(rate) - date(prev)).Duration();
+          if(d <= durationMax)
             duration = duration.Add(d);
           prev = rate;
         }

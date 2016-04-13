@@ -125,7 +125,14 @@ namespace HedgeHog.Alice.Store {
     }
 
     void ScanRatesLengthByDistanceMinSmoothed() {
-      BarsCountCalc = GetRatesLengthByDistanceMinByMacdSmoothed().DefaultIfEmpty(BarsCountCalc).Single();
+      BarsCountCalc = GetRatesLengthByDistanceMinByMacdSmoothed()
+        .Concat(BarsCountByM1())
+        .OrderBy(d => d)
+        .DefaultIfEmpty(BarsCountCalc)
+        .Take(1)
+        .Concat(new[] { BarsCount })
+        .OrderByDescending(d => d)
+        .First();
     }
     object _macdDiastancesLocker = new object();
     List<double> _macdDiastances = new List<double>();
@@ -258,19 +265,31 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    DateTime? _startDateM1;
+    DateTime[] _ratesStartDate;
+    void UnFreezeRatesStartDate() {
+      _ratesStartDate = new DateTime[0];
+    }
+    void FreezeRatesStartDate() {
+      _ratesStartDate = RatesArray.Take(1)
+        .Select(r => r.StartDate)
+        .ToArray();
+    }
     void ScanRatesLengthByM1Wave() {
       if(BarPeriod != BarsPeriodType.t1)
         throw new Exception("ScanRatesLengthByM1Wave is only supported for BarsPeriodType." + BarsPeriodType.t1);
       TradingMacroOther()
         .SelectMany(tm => tm.WaveRanges.Take(1))
-        .Select(wr => _startDateM1 = wr.StartDate)
-        .Where(_ => !BuySellLevels.Any(sr => sr.CanTrade) && !HaveTrades())
-        .DefaultIfEmpty(_startDateM1)
+        .Select(wr => wr.StartDate)
+        .Where(_ => /*!BuySellLevels.Any(sr => sr.CanTrade) &&*/ !HaveTrades())
         .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()))
         .ForEach(count => BarsCountCalc = count.Max(BarsCount));
     }
-
+    IEnumerable<int> BarsCountByM1() {
+      return TradingMacroOther()
+        .SelectMany(tm => tm.WaveRanges.Take(1))
+        .Select(wr => wr.StartDate)
+        .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()));
+    }
     private int GetRatesCountByTimeFrame(DateTime dateEnd, TimeSpan timeFrame) {
       var dateStart = dateEnd.Subtract(timeFrame);
       return UseRatesInternal(ri => ri.FuzzyIndex(dateStart, (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
