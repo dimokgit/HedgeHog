@@ -567,7 +567,7 @@ namespace HedgeHog.Alice.Client {
           Angle = value(x.wr.Angle.Round(0), x.wr.Angle.Abs() >= wrStats[0].Angle.v),//.ToString("###0.0"),
           Minutes = value(x.wr.TotalMinutes.ToInt(), x.wr.TotalMinutes >= wrStats[0].Minutes.v),//.ToString("###0.0"),
           HSD = value(x.wr.HSDRatio.Round(1), x.wr.HSDRatio >= wrStats[0].HSD.v),//.ToString("###0.0"),
-          StDev = value(x.wr.StDev.Round(4), x.wr.Index(x.rs, wr => wr.StDev) == 0),//.ToString("#0.00"),
+          StDev = value(x.wr.StDev.Round(4), x.wr.StDev >= wrStats[0].StDev.v),//.ToString("#0.00"),
           Distance = value(x.wr.Distance.Round(0), x.wr.Distance > wrStats[0].Distance.v),
           DistanceCma = value(x.wr.DistanceCma.Round(0), x.wr.Index(x.rs, wr => wr.DistanceCma) == 0),
           DistanceByRegression = value(x.wr.DistanceByRegression.Round(0), x.wr.Index(x.rs, wr => wr.DistanceByRegression) == 0),

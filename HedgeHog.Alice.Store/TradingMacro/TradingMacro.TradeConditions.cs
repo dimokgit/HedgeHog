@@ -953,14 +953,12 @@ namespace HedgeHog.Alice.Store {
         .FirstOrDefault();
       }
     }
-    public TradeConditionDelegate M1AHOk {
+    public TradeConditionDelegate M1SHOk {
       get {
         return () => TradingMacroOther()
         .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
         .Select(x =>
-        x.wr.Angle.Abs() >= x.wra.Angle &&
-        x.wr.Distance < x.wra.Distance &&
-        x.wr.TotalMinutes < x.wra.TotalMinutes &&
+        x.wr.StDev < x.wra.StDev &&
         x.wr.HSDRatio >= x.wra.HSDRatio
         )
         .Select(b => b

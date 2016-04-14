@@ -53,9 +53,20 @@ namespace HedgeHog.Alice.Store {
     public double InterseptStart { get; set; }
     public double InterseptEnd { get; set; }
     public double StDev { get; set; }
+    static double StDevForHsd(IList<Rate> rates) {
+      var dates = new[] { rates.MaxBy(r => r.PriceAvg).First().StartDate, rates.MinBy(r => r.PriceAvg).First().StartDate }
+      .OrderBy(d => d)
+      .ToArray();
+      return rates
+        .SkipWhile(r => r.StartDate < dates[0])
+        .TakeWhile(r => r.StartDate <= dates[1])
+        .ToArray(r => r.PriceAvg)
+        .StDevByRegressoin(new double[0]);
+    }
+    double _stDevForhsd = double.NaN;
     double _hsd = double.NaN;
     public double HSDRatio {
-      get { return _hsd.IfNaN(StDev == 0 ? 0 : Height / (StDev * 4)); }
+      get { return _hsd.IfNaN(StDev == 0 ? 0 : Height / (_stDevForhsd * 4)); }
       set { _hsd = value; }
     }
     /// <summary>
@@ -108,6 +119,7 @@ namespace HedgeHog.Alice.Store {
       TotalSeconds = range.Duration(r => r.StartDate).TotalSeconds;
       TotalMinutes = TotalSeconds / 60;
       CalcTrendLine(range, pointSize, period);
+      _stDevForhsd = StDevForHsd(range) / pointSize;
       //this.Fatness = AlgLib.correlation.pearsoncorrelation(priceAvgs, lastCmas).Abs();
     }
     #endregion
