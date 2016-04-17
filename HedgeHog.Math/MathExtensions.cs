@@ -711,7 +711,7 @@ namespace HedgeHog {
       return dbls.Where(d => d <= std);
     }
     public static double RelativeStandardDeviation(this IEnumerable<double> dbls) {
-      double avg,std;
+      double avg, std;
       return dbls.RelativeStandardDeviation(out std, out avg);
     }
     public static double RelativeStandardDeviation(this IEnumerable<double> dbls,out double std, out double avg) {

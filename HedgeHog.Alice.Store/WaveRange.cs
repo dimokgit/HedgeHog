@@ -66,7 +66,7 @@ namespace HedgeHog.Alice.Store {
     double _stDevForhsd = double.NaN;
     double _hsd = double.NaN;
     public double HSDRatio {
-      get { return _hsd.IfNaN(StDev == 0 ? 0 : Height / (_stDevForhsd * 4)); }
+      get { return _hsd.IfNaN(_stDevForhsd == 0 ? 0 : Height / (_stDevForhsd * 4)); }
       set { _hsd = value; }
     }
     /// <summary>

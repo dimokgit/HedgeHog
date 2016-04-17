@@ -48,7 +48,6 @@ namespace HedgeHog.Alice.Store {
       BigWaveIndex = 0;
       CanDoEntryOrders = false;
       CanDoNetLimitOrders = false;
-      FatnessWeightPower = 0.5;
       IsTakeBack = false;
       IsTrader = BarPeriod == BarsPeriodType.t1;
       IsTrender = true;

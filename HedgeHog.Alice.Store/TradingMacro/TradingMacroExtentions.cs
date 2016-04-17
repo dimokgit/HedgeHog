@@ -3434,14 +3434,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private IList<double> GetCma(IList<Rate> rates, int? count = null) {
+    private IList<double> GetCma(IList<Rate> rates, int? count = null, double? cmaPeriod = null, int? cmaPasses = null) {
       count = count ?? rates.Count;
-      var cmaPeriod = CmaPeriodByRatesCount(count.Value);
-      var cmas = rates.Cma(_priceAvg, cmaPeriod);
+      cmaPeriod = cmaPeriod ?? CmaPeriodByRatesCount(count.Value);
+      cmaPasses = cmaPasses ?? CmaPasses;
+      var cmas = rates.Cma(_priceAvg, cmaPeriod.Value);
       if(rates.Count != cmas.Count)
         throw new Exception("rates.Count != cmas.Count");
-      for(var i = CmaPasses; i > 1; i--)
-        cmas = cmas.Cma(cmaPeriod);
+      for(var i = cmaPasses; i > 1; i--)
+        cmas = cmas.Cma(cmaPeriod.Value);
       return cmas;
     }
     private IList<double> GetCma(IList<double> rates, int? count = null) {
@@ -3466,10 +3467,16 @@ namespace HedgeHog.Alice.Store {
           rates[i].PriceRsiP = cmas2[i];
       }
     }
+    private IList<Tuple<Rate, double, double>> GetCmas(IList<Rate> rates, double period, int cmaPasses) {
+      // Set primary CMA
+      var cmas = GetCma(rates, (int?)null, period, cmaPasses);
+      // Set secondary CMA
+      return rates.Zip(cmas, Tuple.Create).Zip(GetCma2(cmas), (t, c) => Tuple.Create(t.Item1, t.Item2, c)).ToList();
+    }
 
-    private IList<double> GetCma2(IList<double> cmas, int? count = null) {
+    private IList<double> GetCma2(IList<double> cmas, int? count = null,double? period = null) {
       count = count ?? cmas.Count;
-      var cmaPeriod = CmaPeriodByRatesCount(count.Value);
+      var cmaPeriod = period ?? CmaPeriodByRatesCount(count.Value);
       var cmas2 = cmas.Cma(cmaPeriod * CmaRatioForWaveLength);
       //for(var i = CmaRatioForWaveLength; i > 1; i--)
       //  cmas2 = cmas2.Cma(cmaPeriod);

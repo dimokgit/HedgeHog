@@ -945,7 +945,8 @@ namespace HedgeHog.Alice.Store {
         .Select(x =>
         x.wr.Angle.Abs() >= x.wra.Angle &&
         x.wr.TotalMinutes >= x.wra.TotalMinutes &&
-        x.wr.HSDRatio >= x.wra.HSDRatio
+        x.wr.HSDRatio >= x.wra.HSDRatio &&
+        x.wr.StDev < x.wra.StDev
         )
         .Select(b => b
         ? TradeDirections.Both
@@ -953,13 +954,13 @@ namespace HedgeHog.Alice.Store {
         .FirstOrDefault();
       }
     }
-    public TradeConditionDelegate M1SHOk {
+    public TradeConditionDelegate M1SMOk {
       get {
         return () => TradingMacroOther()
         .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
         .Select(x =>
-        x.wr.StDev < x.wra.StDev &&
-        x.wr.HSDRatio >= x.wra.HSDRatio
+        x.wr.StDev <= x.wra.StDev &&
+        (x.wr.TotalMinutes >= x.wra.TotalMinutes || x.wr.Distance >= x.wra.Distance)
         )
         .Select(b => b
         ? TradeDirections.Both
