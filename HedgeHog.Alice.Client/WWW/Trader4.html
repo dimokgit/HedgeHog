@@ -730,8 +730,8 @@
       <thead>
         <tr>
           <th>SD</th>
-          <th>M</th>
           <th>HSD</th>
+          <th>M</th>
           <th>Ds</th>
           <th>Ang</th>
           <!--<th>DR</th>
@@ -749,8 +749,8 @@
       <tbody data-bind="foreach:waveRanges">
         <tr data-bind="css:{selected:$parent.sumStartIndexById() == $index(),istail:IsTail}">
           <td><span data-bind="text:d3.format('.2f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Minutes.v),style:{fontWeight:Minutes.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.1f')(HSD.v),style:{fontWeight:HSD.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(Minutes.v),style:{fontWeight:Minutes.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v),style:{fontWeight:Distance.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
         </tr>
@@ -758,8 +758,8 @@
       <tfoot data-bind="foreach:waveRangesStats" style="background-color:gold">
         <tr>
           <td><span data-bind="text:StDev.v"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Minutes.v)"></span></td>
           <td><span data-bind="text:d3.format('.1f')(HSD.v)"></span></td>
+          <td><span data-bind="text:d3.format('.0f')(Minutes.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>
         </tr>

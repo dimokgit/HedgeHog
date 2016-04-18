@@ -2240,13 +2240,15 @@ namespace HedgeHog.Alice.Store {
             var prices = RatesArray.ToArray(_priceAvg);
             RatesHeight = prices.Height(out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
 
-            OnSetBarsCountCalc();
             if(IsAsleep) {
+              BarsCountCalc = BarsCount;
               RaiseShowChart();
               RunStrategy();
               OnScanCorridor(RatesArray, null, false);
               return RatesArray;
             }
+
+            OnSetBarsCountCalc();
 
             if(IsInVirtualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
@@ -3474,7 +3476,7 @@ namespace HedgeHog.Alice.Store {
       return rates.Zip(cmas, Tuple.Create).Zip(GetCma2(cmas), (t, c) => Tuple.Create(t.Item1, t.Item2, c)).ToList();
     }
 
-    private IList<double> GetCma2(IList<double> cmas, int? count = null,double? period = null) {
+    private IList<double> GetCma2(IList<double> cmas, int? count = null, double? period = null) {
       count = count ?? cmas.Count;
       var cmaPeriod = period ?? CmaPeriodByRatesCount(count.Value);
       var cmas2 = cmas.Cma(cmaPeriod * CmaRatioForWaveLength);
@@ -3667,6 +3669,30 @@ namespace HedgeHog.Alice.Store {
       set {
         _bbRatio = value;
       }
+    }
+    WaveSmoothBys _waveSmoothBy = WaveSmoothBys.MinDist;
+    [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsCorridorFuncs)]
+    public WaveSmoothBys WaveSmoothBy {
+      get { return _waveSmoothBy; }
+      set {
+        _waveSmoothBy = value;
+        OnPropertyChanged(() => WaveSmoothBy);
+      }
+    }
+    static Dictionary<WaveSmoothBys, Func<WaveRange, double>> _waveSmoothFuncs;
+    static Dictionary<WaveSmoothBys, Func<WaveRange, double>> WaveSmoothFuncs {
+      get {
+        return _waveSmoothFuncs ?? (_waveSmoothFuncs = new Dictionary<Store.WaveSmoothBys, Func<WaveRange, double>> {
+          {WaveSmoothBys.Distance,wr=>wr.Distance },
+          {WaveSmoothBys.Minutes,wr=>wr.TotalMinutes },
+          {WaveSmoothBys.StDev,wr=>wr.StDev },
+          {WaveSmoothBys.MinDist,wr=>wr.TotalMinutes*wr.Distance }
+        });
+      }
+    }
+    Func<WaveRange, double> WaveSmoothFunc() {
+      return WaveSmoothFuncs[WaveSmoothBy];
     }
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {

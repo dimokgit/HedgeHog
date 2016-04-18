@@ -64,7 +64,7 @@ namespace HedgeHog.Alice.Store {
           Func<Func<WaveRange, double>, double> rsd = value => wr.Select(value).DefaultIfEmpty().Sum();
           #endregion
 
-          var wrs = wr.SkipLast(1).Where(w=>!w.Distance.IsNaNOrZero()).ToArray();
+          var wrs = wr.SkipLast(wr.Count > 4 ? 1 : 0).Where(w => !w.Distance.IsNaNOrZero()).ToArray();
 
           var ws = new WaveRange(1) {
             Distance = wrs.ToArray(w => w.Distance).RelativeStandardDeviation().ToPercent(),
@@ -80,17 +80,22 @@ namespace HedgeHog.Alice.Store {
           };
 
           var wa = new WaveRange(1) {
-            Distance = avgStd(wrs, w => w.Distance) * (1 + ws.Distance / 100),
             DistanceCma = avg2(wrs, w => w.DistanceCma, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),
             DistanceByRegression = avg2(wrs, w => w.DistanceByRegression, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),
             WorkByHeight = avg(wrs, w => w.WorkByHeight),
             WorkByTime = avg(wrs, w => w.WorkByTime),
-            Angle = avgStd(wrs, w => w.Angle.Abs()),
-            TotalMinutes = avgStd(wrs, w => w.TotalMinutes) * (1 + ws.TotalMinutes / 100),
             HSDRatio = avg2(wrs, w => w.HSDRatio, w => w.TotalMinutes),
             Height = avg(wrs, w => w.Height),
             StDev = avg2(wrs, w => w.StDev, w => w.TotalMinutes)
           };
+          try {
+            wa.Distance = avgStd(wrs, w => w.Distance) * (1 + ws.Distance / 100);
+            wa.Angle = avgStd(wrs, w => w.Angle.Abs());
+            wa.TotalMinutes = avgStd(wrs, w => w.TotalMinutes) * (1 + ws.TotalMinutes / 100);
+          } catch(Exception exc) {
+            Log = exc;
+            return null;
+          }
           #endregion
           #region Conditions
           wr.ForEach(w => w.IsFatnessOk = w.StDev <= wa.StDev);
@@ -104,30 +109,40 @@ namespace HedgeHog.Alice.Store {
 
         if(!IsCorridorFrozen()) {
           var wrwt = makeWaves(rates, PriceCmaLevels, CmaPasses);
+          if(wrwt == null)
+            return;
           WaveRanges = wrwt.wr;
           WaveRangeTail = wrwt.wTail;
           WaveRangeSum = wrwt.ws;
           WaveRangeAvg = wrwt.wa;
 
           #region Adjust CmaPasses
-          //Func<WaveRange, double> stDever = wr => wr.Angle.Abs();
-          Func<WaveRange, double> stDever = wr => wr.TotalMinutes * wr.Distance;
-          var minutesStDev = stDever(WaveRangeSum);
-          var makeWaveses = MonoidsCore.ToFunc((IEnumerable<int>)null, ups => ups
-           .Where(i => i > 0)
-           .Select(cmaPasses => new { sd = stDever(makeWaves(rates, PriceCmaLevels, cmaPasses).ws), cmaPasses })
-           //.SkipWhile(x => x.sd == minutesStDev)
-           //.Take(1)
-           );
+          Action setCmaPasses = () => {
+            try {
+              Func<WaveRange, double> stDever = WaveSmoothFunc();
+              var minutesStDev = stDever(WaveRangeSum);
+              var makeWaveses = MonoidsCore.ToFunc((IEnumerable<int>)null, ups => ups
+              .Where(i => i > 0)
+              .Select(cmaPasses => new { sd = stDever(makeWaves(rates, PriceCmaLevels, cmaPasses).ws), cmaPasses }));
 
-          var up = makeWaveses(Enumerable.Range( CmaPassesMin, 125));
-          //var down = makeWaveses(Enumerable.Range(0, 100).Scan(CmaPasses, (cp,_) => cp - 1));
-          up//.Concat(down)
-            //.Where(x => x.sd < minutesStDev)
-            .MinBy(x=>x.sd)
-            .OrderByDescending(x=>x.cmaPasses)
-            .Take(1)
-            .ForEach(x => CmaPasses = x.cmaPasses);
+              var up = makeWaveses(Enumerable.Range(CmaPassesMin, 150)).ToArray();
+              var up2 = up
+                .Buffer(rates.Count.Div(100).ToInt(), 1)
+                .Select(b => new { b, avg = b.Average(x => x.sd) })
+                .OrderBy(x => x.avg)
+                .ToArray();
+              up2
+                .Take(1)
+                .SelectMany(x => x.b)
+                .MinBy(x => x.sd)
+                .OrderBy(x => x.cmaPasses)
+                .Take(1)
+                .ForEach(x => CmaPasses = x.cmaPasses);
+            }catch(Exception exc) {
+              Log = exc;
+            }
+          };
+          _addHistoryOrdersBuffer.Push(setCmaPasses);
           #endregion
         } else {
           var firstWaveRange = rates.BackwardsIterator().TakeWhile(r => r.StartDate >= WaveRanges[0].StartDate).Reverse().ToList();
@@ -148,13 +163,15 @@ namespace HedgeHog.Alice.Store {
         Log = exc;
       }
     }
+    class AdjustCmaPassesAsyncBuffer : AsyncBuffer<AdjustCmaPassesAsyncBuffer, Action> {
+      public AdjustCmaPassesAsyncBuffer() : base() {
 
-    private void AdjustPriceCma(WaveRange wrStDev) {
-      if(wrStDev.TotalMinutes > _lastTotalMinuteStDev)
-        _lastTotalMinuteStDevStep = -_lastTotalMinuteStDevStep;
-      _lastTotalMinuteStDev = wrStDev.TotalMinutes;
-      CmaPasses += _lastTotalMinuteStDevStep;
+      }
+      protected override Action PushImpl(Action context) {
+        return context;
+      }
     }
+    AdjustCmaPassesAsyncBuffer _adjustCmaPassesAsyncBuffer = new AdjustCmaPassesAsyncBuffer();
 
     #region CmaPassesMin
     private int _CmaPassesMin = 5;

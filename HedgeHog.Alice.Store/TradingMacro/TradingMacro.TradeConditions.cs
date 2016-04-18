@@ -924,17 +924,6 @@ namespace HedgeHog.Alice.Store {
         ;
       }
     }
-    public TradeConditionDelegate TFAOk {
-      get {
-        return () =>
-        TradingMacroOther()
-        .Select(tm => tm.WaveRangeSum.TotalMinutes * 2)
-        .Any(tm2 => RatesDuration >= tm2)
-        ? TradeDirections.Both
-        : TradeDirections.None;
-        ;
-      }
-    }
     #endregion
 
     #region M1
@@ -954,12 +943,13 @@ namespace HedgeHog.Alice.Store {
         .FirstOrDefault();
       }
     }
-    public TradeConditionDelegate M1SMOk {
+    [TradeConditionAsleep]
+    public TradeConditionDelegate M1SHMDOk {
       get {
         return () => TradingMacroOther()
         .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
         .Select(x =>
-        x.wr.StDev <= x.wra.StDev &&
+        (x.wr.StDev <= x.wra.StDev || x.wr.HSDRatio >= x.wra.HSDRatio) &&
         (x.wr.TotalMinutes >= x.wra.TotalMinutes || x.wr.Distance >= x.wra.Distance)
         )
         .Select(b => b

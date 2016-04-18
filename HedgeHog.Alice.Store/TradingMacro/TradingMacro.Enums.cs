@@ -140,6 +140,12 @@ namespace HedgeHog.Alice.Store {
     Avg2GRBMax,
     Avg3GRBMin
   }
+  public enum WaveSmoothBys {
+    Distance,
+    Minutes,
+    StDev,
+    MinDist
+  }
   public enum CorridorHeightMethods {
     ByMA = 0,
     ByPriceAvg = 1,

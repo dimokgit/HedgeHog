@@ -380,6 +380,7 @@
           ScanCorridorBy: { name: "ScanCorridor", type: "options", options: scanCorridorFunction() },
           RatesLengthBy: { name: "RatesLength", type: "options", options: ratesLengthFunction() },
           VoltageFunction_: { name: "Voltage", type: "options", options: voltageFunction() },
+          WaveSmoothBy: { name: "WaveSmoothBy", type: "options", options: waveSmoothByFunction() },
 
           WaveFirstSecondRatioMin: { name: "Wave 1/2 Ratio" }
         };
@@ -843,7 +844,7 @@
     var scanCorridorFunction = this.scanCorridorFunction = ko.observableArray();
     var ratesLengthFunction = this.ratesLengthFunction = ko.observableArray();
     var voltageFunction = this.voltageFunction = ko.observableArray();
-    
+    var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
     // #endregion
     //#region WaveRanges
     var currentWareRangesChartNum = 1;
@@ -1217,6 +1218,9 @@
       });
       serverCall("readEnum", ["TradeLevelBy"], function (enums) {
         dataViewModel.tradeLevelBys(mapEnumsForSettings(enums));
+      });
+      serverCall("readEnum", ["WaveSmoothBys"], function (enums) {
+        dataViewModel.waveSmoothByFunction(mapEnumsForSettings(enums));
       });
       serverCall("readEnum", ["ScanCorridorFunction"], function (enums) {
         dataViewModel.scanCorridorFunction(mapEnumsForSettings(enums));
