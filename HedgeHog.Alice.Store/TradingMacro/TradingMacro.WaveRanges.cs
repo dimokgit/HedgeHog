@@ -74,7 +74,7 @@ namespace HedgeHog.Alice.Store {
             WorkByTime = rsd(w => w.WorkByTime),
             Angle = wrs.StandardDeviation(w => w.Angle),
             TotalMinutes = wrs.ToArray(w => w.TotalMinutes).RelativeStandardDeviation().ToPercent(),
-            HSDRatio = avg2(wrs, w => w.HSDRatio, w => 1 / w.Angle.Abs()),
+            HSDRatio = avg2(wrs, w => w.HSDRatio, w => 1 / w.Distance),
             Height = rsd(w => w.Height),
             StDev = wrs.ToArray(w => w.StDev).RelativeStandardDeviation().ToPercent()
           };
@@ -84,7 +84,7 @@ namespace HedgeHog.Alice.Store {
             DistanceByRegression = avg2(wrs, w => w.DistanceByRegression, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),
             WorkByHeight = avg(wrs, w => w.WorkByHeight),
             WorkByTime = avg(wrs, w => w.WorkByTime),
-            HSDRatio = avg2(wrs, w => w.HSDRatio, w => w.TotalMinutes),
+            HSDRatio = avg2(wrs, w => w.HSDRatio, w => w.Distance),
             Height = avg(wrs, w => w.Height),
             StDev = avg2(wrs, w => w.StDev, w => w.TotalMinutes)
           };
@@ -142,7 +142,8 @@ namespace HedgeHog.Alice.Store {
               Log = exc;
             }
           };
-          _addHistoryOrdersBuffer.Push(setCmaPasses);
+          if(CmaPassesMin > 0)
+            _addHistoryOrdersBuffer.Push(setCmaPasses);
           #endregion
         } else {
           var firstWaveRange = rates.BackwardsIterator().TakeWhile(r => r.StartDate >= WaveRanges[0].StartDate).Reverse().ToList();

@@ -944,15 +944,18 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegate M1SHMDOk {
+    public TradeConditionDelegate M14Ok {
       get {
         return () => TradingMacroOther()
         .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
-        .Select(x =>
-        (x.wr.StDev <= x.wra.StDev || x.wr.HSDRatio >= x.wra.HSDRatio) &&
-        (x.wr.TotalMinutes >= x.wra.TotalMinutes || x.wr.Distance >= x.wra.Distance)
-        )
-        .Select(b => b
+        .Select(x => new[] {
+          x.wr.StDev <= x.wra.StDev,
+          x.wr.HSDRatio >= x.wra.HSDRatio,
+          x.wr.TotalMinutes >= x.wra.TotalMinutes,
+          x.wr.Angle.Abs() >= x.wra.Angle,
+          x.wr.Distance >= x.wra.Distance }
+        .Where(b=> b == true).ToArray())
+        .Select(b => b.Length>=4
         ? TradeDirections.Both
         : TradeDirections.None)
         .FirstOrDefault();
