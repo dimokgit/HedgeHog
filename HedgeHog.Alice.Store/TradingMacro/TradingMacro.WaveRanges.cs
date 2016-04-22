@@ -76,7 +76,7 @@ namespace HedgeHog.Alice.Store {
             TotalMinutes = wrs.ToArray(w => w.TotalMinutes).RelativeStandardDeviation().ToPercent(),
             HSDRatio = avg2(wrs, w => w.HSDRatio, w => 1 / w.Distance),
             Height = rsd(w => w.Height),
-            StDev = wrs.ToArray(w => w.StDev).RelativeStandardDeviation().ToPercent()
+            StDev = avg2(wrs, w => w.StDev, w => w.Distance)
           };
 
           var wa = new WaveRange(1) {
@@ -86,12 +86,12 @@ namespace HedgeHog.Alice.Store {
             WorkByTime = avg(wrs, w => w.WorkByTime),
             HSDRatio = avg2(wrs, w => w.HSDRatio, w => w.Distance),
             Height = avg(wrs, w => w.Height),
-            StDev = avg2(wrs, w => w.StDev, w => w.TotalMinutes)
+            StDev = avg2(wrs, w => w.StDev, w => 1 / w.Distance)
           };
           try {
-            wa.Distance = avgStd(wrs, w => w.Distance) * (1 + ws.Distance / 100);
+            wa.Distance = avg2(wrs,w=>w.Distance, w => w.TotalMinutes);
             wa.Angle = avgStd(wrs, w => w.Angle.Abs());
-            wa.TotalMinutes = avgStd(wrs, w => w.TotalMinutes) * (1 + ws.TotalMinutes / 100);
+            wa.TotalMinutes = avg2(wrs, w => w.TotalMinutes, w => w.Distance);
           } catch(Exception exc) {
             Log = exc;
             return null;
@@ -120,7 +120,6 @@ namespace HedgeHog.Alice.Store {
           Action setCmaPasses = () => {
             try {
               Func<WaveRange, double> stDever = WaveSmoothFunc();
-              var minutesStDev = stDever(WaveRangeSum);
               var makeWaveses = MonoidsCore.ToFunc((IEnumerable<int>)null, ups => ups
               .Where(i => i > 0)
               .Select(cmaPasses => new { sd = stDever(makeWaves(rates, PriceCmaLevels, cmaPasses).ws), cmaPasses }));
@@ -138,7 +137,7 @@ namespace HedgeHog.Alice.Store {
                 .OrderBy(x => x.cmaPasses)
                 .Take(1)
                 .ForEach(x => CmaPasses = x.cmaPasses);
-            }catch(Exception exc) {
+            } catch(Exception exc) {
               Log = exc;
             }
           };
@@ -198,7 +197,7 @@ namespace HedgeHog.Alice.Store {
       var dmas = ratesCma
         .Select((t, i) => new { t, i })
         .DistinctUntilChanged(z => z.t.Item2.Sign(z.t.Item3))
-        .Select(z => new { Price = z.t.Item2,StartDate=z.t.Item1.StartDate, z.i })
+        .Select(z => new { Price = z.t.Item2, StartDate = z.t.Item1.StartDate, z.i })
         .ToArray();
 
       var widths = dmas.Zip(dmas.Skip(1), (dma1, dma2) => (double)dma2.i - dma1.i).DefaultIfEmpty(0.0).ToArray();

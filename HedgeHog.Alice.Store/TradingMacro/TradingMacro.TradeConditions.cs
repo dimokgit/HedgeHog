@@ -12,6 +12,7 @@ using System.Dynamic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Reactive;
+using System.Reactive.Linq;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -927,6 +928,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region M1
+    [TradeConditionAsleep]
     public TradeConditionDelegate M1Ok {
       get {
         return () => TradingMacroOther()
@@ -944,23 +946,43 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegate M14Ok {
+    public TradeConditionDelegate M1SDOk {
       get {
         return () => TradingMacroOther()
         .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
-        .Select(x => new[] {
-          x.wr.StDev <= x.wra.StDev,
-          x.wr.HSDRatio >= x.wra.HSDRatio,
-          x.wr.TotalMinutes >= x.wra.TotalMinutes,
-          x.wr.Angle.Abs() >= x.wra.Angle,
-          x.wr.Distance >= x.wra.Distance }
-        .Where(b=> b == true).ToArray())
-        .Select(b => b.Length>=4
+        .Select(x =>
+          x.wr.StDev <= x.wra.StDev &&
+          x.wr.TotalMinutes >= x.wra.TotalMinutes &&
+          x.wr.Distance >= x.wra.Distance
+        )
+        .Select(b => b
         ? TradeDirections.Both
         : TradeDirections.None)
         .FirstOrDefault();
       }
     }
+    [TradeConditionAsleep]
+    public TradeConditionDelegate M1MOk {
+      get {
+        return () => NewMethod(wr => wr.TotalMinutes, (d1, d2) => d1 > d2);
+      }
+    }
+    [TradeConditionAsleep]
+    public TradeConditionDelegate M1DOk {
+      get {
+        return () => NewMethod(wr => wr.Distance, (d1, d2) => d1 > d2);
+      }
+    }
+    private TradeDirections NewMethod(Func<WaveRange, double> wa, Func<double, double, bool> comp) {
+      return TradingMacroOther()
+              .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
+              .Select(x => comp(wa(x.wr), wa(x.wra)))
+              .Select(b => b
+              ? TradeDirections.Both
+              : TradeDirections.None)
+              .FirstOrDefault();
+    }
+
     #endregion
 
     #region Outsides
@@ -1235,13 +1257,14 @@ namespace HedgeHog.Alice.Store {
     public void TradeConditionsTrigger() {
       if(IsTrader && CanTriggerTradeDirection())
         SetTradeStrip();
-      if(!IsTradingTime()) {
+      if(IsAsleep || !IsTradingTime()) {
         BuySellLevels.ForEach(sr => {
           sr.CanTrade = false;
           sr.InManual = false;
           sr.TradesCount = 0;
         });
-        Log = new Exception("IsTradingTime() == false");
+        if(!IsTradingTime())
+          Log = new Exception("IsTradingTime() == false");
         return;
       }
       if(IsTrader && CanTriggerTradeDirection() && !HaveTrades() /*&& !HasTradeDirectionTriggers*/) {
