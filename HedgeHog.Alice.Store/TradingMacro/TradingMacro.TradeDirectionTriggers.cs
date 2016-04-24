@@ -232,7 +232,7 @@ namespace HedgeHog.Alice.Store {
       var canTriggerTradeDirection = RatesLengthBy != RatesLengthFunction.DistanceMinSmth || TrendLines2Trends.Count > BarsCount && _isRatesLengthStable;
       if(IsInVirtualTrading && (!canTriggerTradeDirection || !_voltsOk))
         _canTriggerTradeDirectionSubject.OnNext(() => Log = new Exception(new { canTriggerTradeDirection, _isRatesLengthStable, _voltsOk } + ""));
-      return canTriggerTradeDirection;
+      return canTriggerTradeDirection && IsLatchOk;
     }
 
     //[TradeDirectionTrigger]

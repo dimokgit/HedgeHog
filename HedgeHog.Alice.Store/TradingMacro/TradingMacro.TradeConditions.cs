@@ -421,7 +421,7 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels2);
       }
     }
-    public TradeConditionDelegate IsIn3Ok {
+    public TradeConditionDelegateHide IsIn3Ok {
       get {
         return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels4);
       }
@@ -545,7 +545,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public TradeConditionDelegate UniAngleOk {
+    public TradeConditionDelegateHide UniAngleOk {
       get {
         var signs = TrendLinesTrendsAll.Where(tl => !tl.IsEmpty).Select(tl => tl.Slope.Sign()).Distinct().ToArray();
         return () => signs.Length > 1
@@ -925,6 +925,17 @@ namespace HedgeHog.Alice.Store {
         ;
       }
     }
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate TimeFrameM1Ok {
+      get {
+        return () => TradingMacroOther().Select(tm => 
+        tm.WaveRangeAvg.TotalMinutes < RatesDuration
+        ? TradeDirections.Both
+        : TradeDirections.None)
+        .SingleOrDefault();
+        ;
+      }
+    }
     #endregion
 
     #region M1
@@ -971,6 +982,12 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate M1DOk {
       get {
         return () => NewMethod(wr => wr.Distance, (d1, d2) => d1 > d2);
+      }
+    }
+    [TradeConditionAsleep]
+    public TradeConditionDelegate M1SOk {
+      get {
+        return () => NewMethod(wr => wr.StDev, (d1, d2) => d1 < d2);
       }
     }
     private TradeDirections NewMethod(Func<WaveRange, double> wa, Func<double, double, bool> comp) {
@@ -1057,7 +1074,7 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeConditionAsleep]
     [TradeCondition(TradeConditionAttribute.Types.Or)]
-    public TradeConditionDelegateHide Outside2Ok {
+    public TradeConditionDelegate Outside2Ok {
       get { return () => IsCurrentPriceOutsideCorridor(MySelfNext, tm => tm.TrendLines2Trends); }
     }
 

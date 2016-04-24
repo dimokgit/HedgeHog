@@ -1201,6 +1201,13 @@ namespace HedgeHog.Alice.Store {
                 var tci_ = MonoidsCore.ToFunc(() => TradeConditionsInfo((d, p, n) => new { n, v = d(), d }).ToArray());
 
                 var toai = MonoidsCore.ToFunc(() => TradeOpenActionsInfo((d, n) => new { n, d }).ToArray());
+                Action setLevels = () => {
+                  if(!TradeConditionsHaveSetCorridor())
+                    SetTradeLevelsToLevelBy(GetTradeLevel)();
+                  if(IsTrader)
+                    adjustExitLevels2();
+
+                };
                 #region FirstTime
                 if(firstTime && IsTrader) {
                   WorkflowStep = "";
@@ -1243,6 +1250,7 @@ namespace HedgeHog.Alice.Store {
                       BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
                       CorridorStartDate = null;
                     }
+                    setLevels();
                   };
                   #endregion
                   Action<Trade> canTradeByTradeCount = t =>
@@ -1264,6 +1272,7 @@ namespace HedgeHog.Alice.Store {
                   };
                 }
                 #endregion
+                setLevels();
                 if(IsTrader) {
                   exitFunc();
                   try {
@@ -1273,11 +1282,7 @@ namespace HedgeHog.Alice.Store {
                     Log = exc;
                   }
                 }
-                if(!TradeConditionsHaveSetCorridor())
-                  SetTradeLevelsToLevelBy(GetTradeLevel)();
               }
-              if(IsTrader)
-                adjustExitLevels2();
               break;
             #endregion
 

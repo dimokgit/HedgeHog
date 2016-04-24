@@ -53,6 +53,16 @@ namespace HedgeHog {
           return d + x.prev.Abs(x.next);
         });
     }
+    public static IEnumerable<Tuple<T,double>> Distances<T>(this IEnumerable<T> source,Func<T,double> map, Action<double, double> onScan = null) {
+      return source
+        .Scan(new {t=default(T),  prev = 0.0, next = 0.0 }, (prev, next) => new {t=next, prev = prev.next, next = map(next) })
+        .Skip(1)
+        .Scan(Tuple.Create(default(T), 0.0), (t, x) => {
+          if(onScan != null)
+            onScan(x.prev, x.next);
+          return Tuple.Create(x.t, t.Item2 + x.prev.Abs(x.next));
+        });
+    }
     public static IEnumerable<double[]> PrevNext(this IList<double> bars) {
       return bars.Take(bars.Count - 1).Zip(bars.Skip(1), (r1, r2) => new[] { r1, r2 });
     }
@@ -522,7 +532,7 @@ namespace HedgeHog {
       }
       return result;
     }
-    public static double[] Linear(double[] x, double[] y) {
+    public static double[] Linear(double[] x, double[] y, out alglib.lrreport lr) {
       double[,] m = new double[x.Length, 2];
       for(int i = 0; i < x.Length; i++) {
         m[i, 0] = x[i];
@@ -531,7 +541,7 @@ namespace HedgeHog {
       int info, nvars;
       double[] c;
       alglib.linearmodel lm;
-      alglib.lrreport lr;
+      //alglib.lrreport lr;
       alglib.lrbuild(m, x.Length, 1, out info, out lm, out lr);
       alglib.lrunpack(lm, out c, out nvars);
       return new[] { c[1], c[0] };

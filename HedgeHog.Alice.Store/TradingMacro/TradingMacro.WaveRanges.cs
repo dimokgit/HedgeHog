@@ -89,9 +89,9 @@ namespace HedgeHog.Alice.Store {
             StDev = avg2(wrs, w => w.StDev, w => 1 / w.Distance)
           };
           try {
-            wa.Distance = avg2(wrs,w=>w.Distance, w => w.TotalMinutes);
+            wa.Distance = avg2(wrs,w=>w.Distance, w => 1 / w.TotalMinutes);
             wa.Angle = avgStd(wrs, w => w.Angle.Abs());
-            wa.TotalMinutes = avg2(wrs, w => w.TotalMinutes, w => w.Distance);
+            wa.TotalMinutes = avg2(wrs, w => w.TotalMinutes, w => 1 / w.Distance);
           } catch(Exception exc) {
             Log = exc;
             return null;

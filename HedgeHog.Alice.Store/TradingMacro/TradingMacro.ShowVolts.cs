@@ -161,7 +161,10 @@ namespace HedgeHog.Alice.Store {
             _SetBarsCountCalcSubject = _SetBarsCountCalcSubject.InitBufferedObservable(ref o, exc => Log = exc);
             o
               .ObserveOn(new EventLoopScheduler())
-              .Subscribe(a => a());
+              .Subscribe(a => {
+                a();
+                RatesLengthLatch = false;
+              });
           }
         return _SetBarsCountCalcSubject;
       }
@@ -189,6 +192,8 @@ namespace HedgeHog.Alice.Store {
           return ScanRatesLengthByDistanceMinAndimeFrame;
         case RatesLengthFunction.M1Wave:
           return ScanRatesLengthByM1Wave;
+        case RatesLengthFunction.M1WaveAvg:
+          return ScanRatesLengthByM1WaveAvg;
         default:
           throw new NotImplementedException(new { RatesLengthFunction = RatesLengthBy, Error = "Not implemented" } + "");
       }

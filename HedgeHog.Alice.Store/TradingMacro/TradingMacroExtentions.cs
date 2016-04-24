@@ -5323,9 +5323,25 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    /// <summary>
+    ///  In minutes
+    /// </summary>
     public int RatesDuration { get; set; }
 
-    public bool IsAsleep { get; set; }
+    bool _isAsleep;
+    public bool IsAsleep {
+      get {        return _isAsleep;      }
+
+      set {
+        _isAsleep = value;
+        if(value)
+          RatesLengthLatch = ScanCorridorLatch = true;
+      }
+    }
+    public bool RatesLengthLatch { get; set; }
+    public bool ScanCorridorLatch { get; private set; }
+
+    bool IsLatchOk { get { return !(RatesLengthLatch || ScanCorridorLatch); } }
 
     public double DistanceByMASD {
       get {

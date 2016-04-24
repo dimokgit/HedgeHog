@@ -97,6 +97,11 @@ namespace HedgeHog {
         yield return lst[i];
       }
     }
+    public static IEnumerable<U> BackwardsIterator<T,U>(this IList<T> lst,Func<T,U> map) {
+      for(int i = lst.Count - 1; i >= 0; i--) {
+        yield return map(lst[i]);
+      }
+    }
     public static IEnumerable<T> TakeFirst<T>(this IList<T> lst, int count) {
       var last = (count >= 0 ? count : (lst.Count + count).Max(0)).Min(lst.Count);
       for(int i = 0; i < last; i++) {

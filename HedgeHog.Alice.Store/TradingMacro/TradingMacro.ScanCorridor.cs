@@ -149,6 +149,7 @@ namespace HedgeHog.Alice.Store {
       return ratesForCorr
         .Select(redRates => new CorridorStatistics(redRates, TrendLinesTrends.StDev, TrendLinesTrends.Coeffs, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height))
         .DefaultIfEmpty(CorridorStats)
+        .Do(x => ScanCorridorLatch = false)
         .First();
     }
 
@@ -399,6 +400,5 @@ namespace HedgeHog.Alice.Store {
 
 
     public double WaveHeightPower { get; set; }
-
   }
 }

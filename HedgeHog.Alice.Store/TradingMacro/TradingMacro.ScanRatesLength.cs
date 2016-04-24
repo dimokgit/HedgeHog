@@ -142,7 +142,7 @@ namespace HedgeHog.Alice.Store {
       Action<double, double> addDistance = (p, n) => distances.Add(p.Abs(n));
       var cmaPeriod = CmaPeriodByRatesCount(BarsCountCalc);
       var rdm = InPoints(RatesDistanceMin);
-      return UseRatesInternal(rs => rs.GetRange((BarsCountCalc*1.1).ToInt().Min(rs.Count)).ToList())
+      return UseRatesInternal(rs => rs.GetRange((BarsCountCalc * 1.1).ToInt().Min(rs.Count)).ToList())
         .Select(rs => {
           _macdDiastances = Macd(rs, BarsCountCalc)
             .Pairwise((v1, v2) => v1.Abs(v2))
@@ -150,24 +150,24 @@ namespace HedgeHog.Alice.Store {
             .Cma(cmaPeriod)
             .Reverse()
             .Distances(addDistance)
-            .Skip(BarsCount+1)
+            .Skip(BarsCount + 1)
             .TakeWhile(i => i <= rdm)
             .ToList();
           var count = _macdDiastances.Count + BarsCount + 1;
           return new { count };//, length = RatesTimeSpan(rs.GetRange(0, count)) };
         })
         .Select(x => {
-    //      TrendLines1.Value.Skip(1)
-    //        .Select(tl => tl.Trends.Count)
-    //        .Where(count => count > 0)
-    //        .ForEach(count =>
-    //          _macd2Rsd = distances.RelativeStandardDeviation() * 100);// / x.length.TotalDays;
-    ////        _macd2Rsd = distances.Skip(cmaPeriod.ToInt()).Take(count).RelativeStandardDeviation() * 100);// / x.length.TotalDays;
-    //      const double adjuster = 0;
-    //      if(x.count * adjuster > BarsCountMax) {
-    //        BarsCountMax = (BarsCountMax * adjuster).Ceiling();
-    //        Log = new Exception(new { BarsCountMax, PairIndex, Action = "Stretched" } + "");
-    //      }
+          //      TrendLines1.Value.Skip(1)
+          //        .Select(tl => tl.Trends.Count)
+          //        .Where(count => count > 0)
+          //        .ForEach(count =>
+          //          _macd2Rsd = distances.RelativeStandardDeviation() * 100);// / x.length.TotalDays;
+          ////        _macd2Rsd = distances.Skip(cmaPeriod.ToInt()).Take(count).RelativeStandardDeviation() * 100);// / x.length.TotalDays;
+          //      const double adjuster = 0;
+          //      if(x.count * adjuster > BarsCountMax) {
+          //        BarsCountMax = (BarsCountMax * adjuster).Ceiling();
+          //        Log = new Exception(new { BarsCountMax, PairIndex, Action = "Stretched" } + "");
+          //      }
           _isRatesLengthStable = RatesArray.Count.Ratio(x.count) < 1.05;
           return x.count;
         });
@@ -283,6 +283,19 @@ namespace HedgeHog.Alice.Store {
         .Where(_ => /*!BuySellLevels.Any(sr => sr.CanTrade) &&*/ !HaveTrades())
         .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()))
         .ForEach(count => BarsCountCalc = count.Max(BarsCount));
+    }
+    void ScanRatesLengthByM1WaveAvg() {
+      if(BarPeriod != BarsPeriodType.t1)
+        throw new Exception("ScanRatesLengthByM1Wave is only supported for BarsPeriodType." + BarsPeriodType.t1);
+      (from tm in TradingMacroOther()
+       let distMin = InPoints(tm.WaveRangeAvg.Distance)
+       from dates in tm.UseRatesInternal(rates => rates.BackwardsIterator()
+       .Distances(_priceAvg).SkipWhile(t => t.Item2 < distMin).Select(t => t.Item1.StartDate).Take(1))
+       from date in dates
+       from counts in UseRatesInternal(rates => rates.FuzzyIndex(date, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate)))
+       from count in counts
+       select RatesInternal.Count - count
+       ).ForEach(count => BarsCountCalc = count.Max(BarsCount));
     }
     IEnumerable<int> BarsCountByM1() {
       return TradingMacroOther()
