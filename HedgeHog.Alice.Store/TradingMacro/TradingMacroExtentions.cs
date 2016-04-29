@@ -1813,7 +1813,8 @@ namespace HedgeHog.Alice.Store {
           Values = new Dictionary<string, object> {
             { "Angle", TrendLines2Trends.Angle.Abs() },
             { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
-            { "Voltage", GetVoltageHigh() }
+            { "CmaPasses", TradingMacroOther().Select(tm=>tm.CmaPasses).Single() },
+            { "StDev", TradingMacroOther().Select(tm=>tm.WaveRanges.Select(wr=>wr.StDev).FirstOrDefault()).Single() }
           }
         });
       var ts = TradeStatisticsDictionary[trade.Id];
@@ -2253,6 +2254,8 @@ namespace HedgeHog.Alice.Store {
             if(IsInVirtualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
             #endregion
+            if(BarPeriod > BarsPeriodType.t1)
+              ScanForWaveRanges2(RatesArray);
             OnGeneralPurpose(() => {
               UseRates(rates => rates.ToList())
               .ForEach(rates => {
@@ -2266,8 +2269,6 @@ namespace HedgeHog.Alice.Store {
                 SpreadForCorridor = rates.Spread();
                 SetCma(rates);
                 _ratesHeightCma = rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax);
-                if(BarPeriod > BarsPeriodType.t1)
-                  ScanForWaveRanges(rates);
                 var leg = rates.Count.Div(10).ToInt();
                 PriceSpreadAverage = rates
                 .Buffer(leg)

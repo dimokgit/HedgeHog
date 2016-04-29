@@ -787,7 +787,8 @@ namespace HedgeHog.Alice.Store {
         GrnAngle_ = TrendLines1Trends.Angle.Round(1),
         RedAngle_ = TrendLinesTrends.Angle.Round(1),
         BlueAngle = TrendLines2Trends.Angle.Round(1),
-        BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1)
+        BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
+        CmaPasses = TradingMacroOther().Select(tm=>tm.CmaPasses).Single()
       };
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
@@ -973,6 +974,12 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionAsleep]
+    public TradeConditionDelegate M1HOk {
+      get {
+        return () => NewMethod(wr => wr.HSDRatio, (d1, d2) => d1 > d2);
+      }
+    }
+    [TradeConditionAsleep]
     public TradeConditionDelegate M1MOk {
       get {
         return () => NewMethod(wr => wr.TotalMinutes, (d1, d2) => d1 > d2);
@@ -988,6 +995,18 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate M1SOk {
       get {
         return () => NewMethod(wr => wr.StDev, (d1, d2) => d1 < d2);
+      }
+    }
+    [TradeConditionAsleep]
+    public TradeConditionDelegate M1CmaPOk {
+      get {
+        return () => TradingMacroOther().Select(tm => TradeDirectionByBool(tm.CmaPassesCalc >= tm.CmaPassesMin)).Single();
+      }
+    }
+    [TradeConditionAsleep]
+    public TradeConditionDelegate M1InFWOk {
+      get {
+        return () => TradingMacroOther().Select(tm => TradeDirectionByBool(tm.WaveRanges.Take(1).Any(wr => wr.StartDate < RatesArray[0].StartDate))).Single();
       }
     }
     private TradeDirections NewMethod(Func<WaveRange, double> wa, Func<double, double, bool> comp) {

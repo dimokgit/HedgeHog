@@ -542,6 +542,13 @@ namespace HedgeHog {
     public static double RootMeanSquare(this double d1, double d2) { return Math.Sqrt((d1 * d1 + d2 * d2) / 2); }
     public static double SquareMeanRoot(this double d1, double d2) { return Math.Pow((Math.Sqrt(d1) + Math.Sqrt(d2)) / 2, 2); }
     public static double PowerMeanPower(this double d1, double d2, double power) { return Math.Pow((Math.Pow(d1, 1 / power) + Math.Pow(d2, 1 / power)) / 2, power); }
+    public static double PowerMeanPower(this IEnumerable<int> source, double power) {
+      return source.Select(i => (double)i).PowerMeanPower(power);
+    }
+    public static double PowerMeanPower(this IEnumerable<double> source, double power) {
+      var avg = source.Select(d => Math.Pow(d, 1 / power)).Average();
+      return Math.Pow(avg, power);
+    }
 
     public static double StandardDeviation(this List<double> doubleList) {
       double average = doubleList.Average();

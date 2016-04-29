@@ -136,14 +136,17 @@ namespace HedgeHog.Alice.Store {
       CorridorLengthBlue = ratesForCorridor.Count;
       TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue), TrendLines2.Value, exc => Log = exc);
 
-      var ratesForCorr = getRate(3).Select(rate => {
+      var ratesForCorr = getRate(3)
+        .ToArray()
+        .Select(rate => {
         var redLength = rateIndex(rate);
         TrendLines = Lazy.Create(() => CalcTrendLines(redLength), TrendLines.Value, exc => Log = exc);
         var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
         redRates.Reverse();
         WaveShort.Rates = redRates;
         return redRates;
-      });
+      })
+      .ToArray();
 
       GetShowVoltageFunction()();
       return ratesForCorr

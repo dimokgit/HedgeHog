@@ -8,6 +8,16 @@ using System.Reflection;
 namespace HedgeHog.Tests {
   [TestClass()]
   public class MathExtensionsTest {
+    [TestMethod]
+    public void AverageByStDevTest() {
+      //var source = Enumerable.Range(0, 100).Select(i => (double)i);
+      double[] source = MathExtensions.Sin(100, 10000, 3, 0, 10);
+      var avgStd = source.AverageByStDev().Average();
+      var std2 = source.StandardDeviation();
+      var avg = source.Average();
+      var avgStd2 = source.Where(s => s >= avg - std2 && s <= avg + std2).Average();
+      Assert.AreEqual(avgStd, avgStd2);
+    }
     [TestMethod()]
     public void RelativeStandardDeviationTest() {
       var dbls = new double[] { 699, 1157, 2041, 2951, 2657, 3664, 3462, 2377, 3135, 2727, 2487 };
@@ -19,6 +29,9 @@ namespace HedgeHog.Tests {
       double a = 5, b = 10;
       Assert.AreEqual(7.9057, a.RootMeanSquare(b).Round(4));
       Assert.AreEqual(7.2855, a.SquareMeanRoot(b).Round(4));
+      Assert.AreEqual(7.2855, a.PowerMeanPower(b, 2).Round(4));
+      Assert.AreEqual(7.2855, new[] { a, b }.PowerMeanPower(2).Round(4));
+      Assert.AreEqual(20.9067, new[] { 5.0, 7.0,100.0 }.PowerMeanPower(3).Round(4));
     }
     [TestMethod()]
     public void DoSetsOverlapTest() {

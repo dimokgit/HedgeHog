@@ -675,7 +675,7 @@ namespace HedgeHog {
         if(min > value)
           min = value;
       }
-      avg = summ / k;
+      avg = summ / (k - 1);
       return Math.Sqrt(S / (k - 2));
     }
     public static double StandardDeviation<T>(this IEnumerable<T> valueList, Func<T, double> get) {
@@ -991,11 +991,16 @@ namespace HedgeHog {
       return adjacentCathetus * Math.Tan(angleInDegrees.Radians());
     }
 
-    public static IEnumerable<double> AverageByStDev(this IList<double> values) {
-      if(values.Count < 2)
+    public static IEnumerable<double> AverageByStDev(this IEnumerable<double> values) {
+      var avg = 0.0;
+      var stDev = values.StandardDeviation(out avg);
+
+      if(stDev.IsNaN())
         return values.DefaultIfEmpty(double.NaN);
-      var avg = values.Average();
-      var stDev = values.StDev();
+
+      //var avg = values.Average();
+      //var stDev = values.StDev();
+
       var r1 = avg - stDev;
       var r2 = avg + stDev;
       return values.Where(v => v.Between(r1, r2));
