@@ -282,8 +282,7 @@ namespace HedgeHog.Alice.Store {
               Func<WaveRange, double> stDever = WaveSmoothFunc();
               
               var makeWaveses = MonoidsCore.ToFunc((IEnumerable<int>)null, ups => 
-              Partitioner.Create( ups.ToArray(),true).AsParallel()
-              .Select(cmaPasses => new { sd = stDever(makeWaves(rates, PriceCmaLevels, cmaPasses).ws), cmaPasses }));
+                ups.Select(cmaPasses => new { sd = stDever(makeWaves(rates, PriceCmaLevels, cmaPasses).ws), cmaPasses }));
 
               var up = makeWaveses(Lib.IteratonSequence(1, 600,i=>i.Div(150).ToInt())).OrderBy(x=>x.cmaPasses).ToArray();
               var bufferCount = rates.Count.Div(100).ToInt();
@@ -291,8 +290,7 @@ namespace HedgeHog.Alice.Store {
                 .Buffer(rates.Count.Div(100).ToInt(), 1)
                 .Where(b => b.Count == bufferCount)
                 .Select(b => new { b, avg = b.Average(x => x.sd) })
-                .OrderBy(x => x.avg)
-                .ToArray();
+                .OrderBy(x => x.avg);
               up2
                 .Take(1)
                 .SelectMany(x => x.b)

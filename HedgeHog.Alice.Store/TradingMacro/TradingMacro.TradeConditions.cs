@@ -849,6 +849,15 @@ namespace HedgeHog.Alice.Store {
         return () => BlueAngOk();
       }
     }
+    public TradeConditionDelegate BPA1Ok {
+      get {
+        return () => TrendLines2Trends.Slope > 0 && TrendLines2Trends.PriceAvg1 > TrendLines1Trends.PriceAvg2
+        ? TradeDirections.Both
+        : TrendLines2Trends.Slope < 0 && TrendLines2Trends.PriceAvg1 < TrendLines1Trends.PriceAvg3
+        ? TradeDirections.Both
+        : TradeDirections.None;
+      }
+    }
 
     TradeDirections TradeDirectionsAnglewise(Rate.TrendLevels tl) {
       return tl.Slope < 0 ? TradeDirections.Down : TradeDirections.Up;
