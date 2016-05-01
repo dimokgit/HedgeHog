@@ -243,7 +243,7 @@ namespace HedgeHog.Alice.Client {
           tmTrader.RatesHeightInPips.ToInt()+"",
           tmTrader.BuySellHeightInPips.ToInt()+"",
           tmTrader.TrendLines2Trends.Angle.Abs().ToInt()+"°",
-          tm1.CmaPassesCalc+""
+          tm1.CmaPasses+""
         }),
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
@@ -548,6 +548,7 @@ namespace HedgeHog.Alice.Client {
           ElliotIndex = value(0, false),
           Angle = value(wr.Angle, false),
           Minutes = value(wr.TotalMinutes, false),
+          PPM = value(wr.PipsPerMinute, false),
           HSD = value(wr.HSDRatio, false),
           StDev = value(wr.StDev.Round(2), false),
           Distance = value(wr.Distance.Round(0), false),
@@ -567,6 +568,7 @@ namespace HedgeHog.Alice.Client {
           ElliotIndex = value((double)x.wr.ElliotIndex, false),
           Angle = value(x.wr.Angle.Round(0), x.wr.Angle.Abs() >= wrStats[0].Angle.v),//.ToString("###0.0"),
           Minutes = value(x.wr.TotalMinutes.ToInt(), x.wr.TotalMinutes >= wrStats[0].Minutes.v),//.ToString("###0.0"),
+          PPM = value(x.wr.PipsPerMinute, x.wr.PipsPerMinute >= wrStats[0].PPM.v),//.ToString("###0.0"),
           HSD = value(x.wr.HSDRatio.Round(1), x.wr.HSDRatio >= wrStats[0].HSD.v),//.ToString("###0.0"),
           StDev = value(x.wr.StDev.Round(4), x.wr.StDev < wrStats[0].StDev.v),//.ToString("#0.00"),
           Distance = value(x.wr.Distance.Round(0), x.wr.Distance > wrStats[0].Distance.v),

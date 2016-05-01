@@ -112,12 +112,11 @@ namespace HedgeHog.Alice.Store {
         throw new InvalidOperationException("StartDate;{0} must be less then EndDate:{1}".Formater(StartDate, EndDate));
       Max = range.Max(r => r.PriceAvg);
       Min = range.Min(r => r.PriceAvg);
-      var priceAvgs = range.ToArray(r => r.PriceAvg);
-      Distance = priceAvgs.Distances().DefaultIfEmpty().Last() / pointSize;
-      var lastCmas = range.ToArray(r => r.PriceCMALast);
-      DistanceCma = lastCmas.Distances().DefaultIfEmpty().Last() / pointSize;
+      Distance = range.Distances(r=>r.PriceAvg).TakeLast(1).Select(t=>t.Item2).DefaultIfEmpty().Single() / pointSize;
+      DistanceCma = range.Distances(r => r.PriceCMALast).TakeLast(1).Select(t=>t.Item2).DefaultIfEmpty().Single() / pointSize;
       TotalSeconds = range.Duration(r => r.StartDate).TotalSeconds;
       TotalMinutes = TotalSeconds / 60;
+      PipsPerMinute = Distance / TotalMinutes;
       CalcTrendLine(range, pointSize, period);
       _stDevForhsd = StDevForHsd(range) / pointSize;
       //this.Fatness = AlgLib.correlation.pearsoncorrelation(priceAvgs, lastCmas).Abs();
@@ -250,6 +249,10 @@ namespace HedgeHog.Alice.Store {
     public bool IsDistanceCmaOk {
       get;
       internal set;
+    }
+    public double PipsPerMinute {
+      get;
+      set;
     }
   }
   public static class WaveRangesMixin {

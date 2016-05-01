@@ -238,6 +238,12 @@ namespace HedgeHog {
     public static T[] AsArray<T>(this T v, int size) {
       return new T[size];
     }
+    public static IList<T> AsIList<T>(this T v, int size) {
+      return new T[size];
+    }
+    public static IList<T> AsIList<T>(this IList<T> source) {
+      return source;
+    }
     public static IList<V> BufferVertical2<T, V>(
       this IEnumerable<T> input
       , Func<T, double> getValue

@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using HedgeHog;
 using HedgeHog.Bars;
@@ -236,7 +237,8 @@ namespace HedgeHog.Alice.Store {
             TotalMinutes = wrs.ToArray(w => w.TotalMinutes).RelativeStandardDeviation().ToPercent(),
             HSDRatio = avg2(wrs, w => w.HSDRatio, w => 1 / w.Distance),
             Height = rsd(w => w.Height),
-            StDev = wrs.Select(w => w.StDev).PowerMeanPower(.1)
+            StDev = wrs.Select(w => w.StDev).PowerMeanPower(.1),
+            PipsPerMinute = RatesPipsPerMInute
           };
 
           var wa = new WaveRange(1) {
@@ -250,8 +252,9 @@ namespace HedgeHog.Alice.Store {
           };
           try {
             wa.Distance = wrs.Select(w => w.Distance).PowerMeanPower(10);
-            wa.Angle = avgStd(wrs, w => w.Angle.Abs());
+            wa.Angle = wrs.Average(w => w.Angle.Abs());
             wa.TotalMinutes = wrs.Select(w => w.TotalMinutes).PowerMeanPower(10);
+            wa.PipsPerMinute = wa.Distance / wa.TotalMinutes;
           } catch(Exception exc) {
             Log = exc;
             return null;
@@ -280,35 +283,35 @@ namespace HedgeHog.Alice.Store {
           Action setCmaPasses = () => {
             try {
               Func<WaveRange, double> stDever = WaveSmoothFunc();
-              
-              var makeWaveses = MonoidsCore.ToFunc((IEnumerable<int>)null, ups => 
-                ups.Select(cmaPasses => new { sd = stDever(makeWaves(rates, PriceCmaLevels, cmaPasses).ws), cmaPasses }));
 
-              var up = makeWaveses(Lib.IteratonSequence(1, 600,i=>i.Div(150).ToInt())).OrderBy(x=>x.cmaPasses).ToArray();
+              var makeWaveses = MonoidsCore.ToFunc((IEnumerable<int>)null, ups =>
+              Partitioner.Create(ups.ToArray(), true)
+                .AsParallel().Select(cmaPasses => new { sd = stDever(makeWaves(rates, PriceCmaLevels, cmaPasses).ws), cmaPasses }));
+
+              var up = makeWaveses(Lib.IteratonSequence(1, 600, i => i.Div(200).Ceiling())).OrderBy(x => x.cmaPasses).ToList();
               var bufferCount = rates.Count.Div(100).ToInt();
-              var up2 = up
-                .Buffer(rates.Count.Div(100).ToInt(), 1)
+              var cma = Enumerable.Range(0, up.Count - bufferCount)
+                .Select(i => up.GetRange(i, bufferCount).AsIList())
                 .Where(b => b.Count == bufferCount)
-                .Select(b => new { b, avg = b.Average(x => x.sd) })
-                .OrderBy(x => x.avg);
-              up2
-                .Take(1)
-                .SelectMany(x => x.b)
-                .MinBy(x => x.sd)
+                .Select(b => new { b, avg = b.Average(y => y.sd) })
+                .Aggregate((b1, b2) => b1.avg < b2.avg ? b1 : b2)
+                .b.MinBy(x => x.sd)
                 .OrderBy(x => x.cmaPasses)
-                .Take(1)
-                .ForEach(x => {
-                  CmaPassesCalc = x.cmaPasses;
-                  CmaPasses = CmaPassesCalc / 2;
-                  Log = new Exception(new { CmaPassesCalc } + "");
-                });
+                .First().cmaPasses;
+
+              CmaPassesCalc = cma;
+              CmaPasses = CmaPassesCalc;
             } catch(Exception exc) {
               Log = exc;
             }
           };
           if(CmaPassesMin > 0)
             //setCmaPasses();
-          _addHistoryOrdersBuffer.Push(setCmaPasses);
+            _addHistoryOrdersBuffer.Push(() => {
+              var sw = Stopwatch.StartNew();
+              setCmaPasses();
+              Log = new Exception(new { CmaPassesCalc, CmaPasses, sw.ElapsedMilliseconds } + "");
+            });
           #endregion
         } else {
           var firstWaveRange = rates.BackwardsIterator().TakeWhile(r => r.StartDate >= WaveRanges[0].StartDate).Reverse().ToList();

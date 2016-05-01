@@ -734,11 +734,13 @@
           <th>HSD</th>
           <th>M</th>
           <th>Ds</th>
+          <th>PpM</th>
           <th>Ang</th>
           <!--<th>DR</th>
           <th>Dc</th>-->
         </tr>
         <tr style="background-color:gold" data-bind="visible:false && sumStartIndex()">
+          <th></th>
           <th></th>
           <th></th>
           <th></th>
@@ -753,6 +755,7 @@
           <td><span data-bind="text:d3.format('.1f')(HSD.v),style:{fontWeight:HSD.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Minutes.v),style:{fontWeight:Minutes.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v),style:{fontWeight:Distance.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.1f')(PPM.v),style:{fontWeight:PPM.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
         </tr>
       </tbody>
@@ -762,6 +765,7 @@
           <td><span data-bind="text:d3.format('.1f')(HSD.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Minutes.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v)"></span></td>
+          <td><span data-bind="text:d3.format('.1f')(PPM.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>
         </tr>
       </tfoot>

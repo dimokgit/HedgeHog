@@ -5327,7 +5327,19 @@ namespace HedgeHog.Alice.Store {
     /// <summary>
     ///  In minutes
     /// </summary>
-    public int RatesDuration { get; set; }
+    int _ratesDuration;
+    public int RatesDuration {
+      get {
+        return _ratesDuration;
+      }
+      set {
+        _ratesDuration = value;
+        RatesPipsPerMInute = InPips(RatesArray.Distances(_priceAvg).Last().Item2) / RatesDuration;
+        OnPropertyChanged(() => RatesDuration);
+      }
+    }
+
+    double RatesPipsPerMInute { get; set; }
 
     bool _isAsleep;
     public bool IsAsleep {
