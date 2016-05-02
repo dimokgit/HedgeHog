@@ -1549,7 +1549,7 @@ namespace HedgeHog.Alice.Store {
         TradingStatistics.OriginalProfit = 0;
         _macd2Rsd = double.NaN;
         MacdRsdAvg = double.NaN;
-        _isRatesLengthStable = false;
+        IsRatesLengthStable = false;
         ResetTradeStrip = false;
         CenterOfMassBuy = CenterOfMassBuy2 = CenterOfMassSell = CenterOfMassSell2 = double.NaN;
         _SetVoltsByStd0 = new ConcurrentQueue<Tuple<DateTime, double>>();
@@ -2628,109 +2628,6 @@ namespace HedgeHog.Alice.Store {
          .StandardDeviation();
         doVolt(InPips(avg1s) * InPips(heights));
       }
-    }
-    CorridorStatistics ShowVoltsByUpDownMax() {
-      if(CanTriggerTradeDirection()) {
-        //_boilingerBanderAsyncAction.Push(() => {
-        (from rates in UseRates(rate
-          => CutCmaCorners(rate.Where(r => r.PriceCMALast.IsNotNaN()).ToList()).Select(r => r.PriceAvg - r.PriceCMALast).ToArray())
-         from diff in rates
-         group diff by diff > 0 into upDown
-         select new { dir = upDown.Key, rsd = upDown.RelativeStandardDeviation() }
-         )
-         .OrderBy(x => x.dir)
-         .Buffer(2)
-         .Select(b => b.Max(x => x.rsd.Abs()))
-         .ForEach(stDev => { SetVots(stDev * 100, 2); });
-        //});
-      }
-      return null;
-    }
-    CorridorStatistics ShowVoltsByUpDownMax2() {
-      if(CanTriggerTradeDirection()) {
-        //_boilingerBanderAsyncAction.Push(() => {
-        var diffs =
-          (from rates in UseRates(rates => CutCmaCorners(rates.Where(r => r.PriceCMALast.IsNotNaN()).ToList()))
-           from rate in rates.Select(r => new { u = r.AskHigh - r.PriceCMALast, d = r.PriceCMALast - r.BidLow })
-           select rate
-          ).ToArray();
-        var rsdU = diffs.Select(x => x.u).Where(d => d > 0).RelativeStandardDeviation();
-        var rsdD = diffs.Select(x => x.d).Where(d => d > 0).RelativeStandardDeviation();
-        var volt = rsdU.Max(rsdD);
-        SetVots(volt * 100, 2, CmaPeriodByRatesCount());
-        //.ForEach(stDev => { SetVots(stDev * 100, 2); });
-        //});
-      }
-      return null;
-    }
-    CorridorStatistics ShowVoltsByBBUpDownRatio() {
-      if(CanTriggerTradeDirection()) {
-        //_boilingerBanderAsyncAction.Push(() => {
-        (from rates in UseRates(rate => rate.Select(r => r.PriceAvg - r.PriceCMALast).Where(Lib.IsNotNaN).ToArray())
-         from diff in rates
-         group diff by diff > 0 into upDown
-         select new { dir = upDown.Key, rsd = upDown.RelativeStandardDeviation() }
-         )
-         .OrderBy(x => x.dir)
-         .Buffer(2)
-         .Select(b => b[1].rsd / b[0].rsd.Abs() - 1)
-         .ForEach(stDev => { SetVots(stDev * 100, 2); });
-        //});
-      }
-      return null;
-    }
-    CorridorStatistics ShowVoltsByBBUpDownRatio2() {
-      if(CanTriggerTradeDirection()) {
-        //_boilingerBanderAsyncAction.Push(() => {
-        var diffs =
-          from rates in UseRates(rates => rates.Select(r => r.PriceAvg - r.PriceCMALast).Where(Lib.IsNotNaN).ToList())
-          from rate in CutCmaCorners(rates)
-          select rate;
-        (from diff in diffs
-         group diff by diff > 0 into upDown
-         select new { dir = upDown.Key, rsd = upDown.RelativeStandardDeviation() }
-        )
-        .OrderBy(x => x.dir)
-        .Buffer(2)
-        .Select(b => b[1].rsd / b[0].rsd.Abs() - 1)
-        .ForEach(stDev => { SetVots(stDev * 100, 2); });
-        //});
-      }
-      return null;
-    }
-    CorridorStatistics ShowVoltsByBBUpDownRatio3() {
-      if(CanTriggerTradeDirection()) {
-        //_boilingerBanderAsyncAction.Push(() => {
-        var diffs =
-          (from rates in UseRates(rates => CutCmaCorners(rates.Where(r => r.PriceCMALast.IsNotNaN()).ToList()))
-           from rate in rates.Select(r => new { u = r.AskHigh - r.PriceCMALast, d = r.PriceCMALast - r.BidLow })
-           select rate
-          ).ToArray();
-        var rsdU = diffs.Select(x => x.u).Where(d => d > 0).RelativeStandardDeviation();
-        var rsdD = diffs.Select(x => x.d).Where(d => d > 0).RelativeStandardDeviation();
-        var volt = rsdU / rsdD - 1;
-        SetVots(volt * 100, 2);
-        //.ForEach(stDev => { SetVots(stDev * 100, 2); });
-        //});
-      }
-      return null;
-    }
-    CorridorStatistics ShowVoltsByUpDownRatioByCorridor(Rate.TrendLevels trendLevels) {
-      if(CanTriggerTradeDirection()) {
-        //_boilingerBanderAsyncAction.Push(() => {
-        var diffs =
-          (from rates in UseRates(rates => CutCmaCorners(rates.GetRange(trendLevels.Count).Where(r => r.PriceCMALast.IsNotNaN()).ToList()))
-           from rate in rates.Select(r => new { u = r.AskHigh - r.PriceCMALast, d = r.PriceCMALast - r.BidLow })
-           select rate
-          ).ToArray();
-        var rsdU = diffs.Select(x => x.u).Where(d => d > 0).RelativeStandardDeviation();
-        var rsdD = diffs.Select(x => x.d).Where(d => d > 0).RelativeStandardDeviation();
-        var volt = rsdU / rsdD - 1;
-        SetVots(volt * 100, 2);
-        //.ForEach(stDev => { SetVots(stDev * 100, 2); });
-        //});
-      }
-      return null;
     }
 
     private IEnumerable<double> CutCmaCorners() {

@@ -251,9 +251,9 @@ namespace HedgeHog.Alice.Store {
             StDev = wrs.Select(w => w.StDev).PowerMeanPower(10)
           };
           try {
-            wa.Distance = wrs.Select(w => w.Distance).PowerMeanPower(10);
+            wa.Distance = wrs.Select(w => w.Distance).PowerMeanPower(TrendHeightPerc);
             wa.Angle = wrs.Average(w => w.Angle.Abs());
-            wa.TotalMinutes = wrs.Select(w => w.TotalMinutes).PowerMeanPower(10);
+            wa.TotalMinutes = wrs.Select(w => w.TotalMinutes).PowerMeanPower(TrendHeightPerc);
             wa.PipsPerMinute = wa.Distance / wa.TotalMinutes;
           } catch(Exception exc) {
             Log = exc;

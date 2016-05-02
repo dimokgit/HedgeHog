@@ -788,7 +788,7 @@ namespace HedgeHog.Alice.Store {
         RedAngle_ = TrendLinesTrends.Angle.Round(1),
         BlueAngle = TrendLines2Trends.Angle.Round(1),
         BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
-        CmaPasses = TradingMacroOther().Select(tm=>tm.CmaPasses).Single()
+        CmaPasses = TradingMacroOther().Select(tm => tm.CmaPasses).Single()
       };
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
@@ -854,6 +854,22 @@ namespace HedgeHog.Alice.Store {
         return () => !TrendLines2Trends.PriceAvg1.Between(TrendLines1Trends.PriceAvg3, TrendLines1Trends.PriceAvg2)
         ? TradeDirections.Both
         : TradeDirections.None;
+      }
+    }
+    public TradeConditionDelegate BLPA1Ok {
+      get {
+        var func = MonoidsCore.ToFunc(() => {
+          var range = new { up = _RatesMax, down = _RatesMin };
+          var level = TrendLines2Trends.PriceAvg1;
+          var isUp = level.PositionRatio(range.down, range.up) > 0.5;
+          var height = TrendLines1Trends.StDev;
+          var levelUp = isUp ? range.up + height : range.down - height;
+          var levelDown = isUp ? range.up - height * 2 : range.down + height * 2;
+          CenterOfMassBuy = levelUp;
+          CenterOfMassSell = levelDown;
+          return level.Between(levelDown, levelUp);
+        });
+        return () => TradeDirectionByBool(func());
       }
     }
 
@@ -936,7 +952,7 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTurnOff]
     public TradeConditionDelegate TimeFrameM1Ok {
       get {
-        return () => TradingMacroOther().Select(tm => 
+        return () => TradingMacroOther().Select(tm =>
         tm.WaveRangeAvg.TotalMinutes < RatesDuration
         ? TradeDirections.Both
         : TradeDirections.None)

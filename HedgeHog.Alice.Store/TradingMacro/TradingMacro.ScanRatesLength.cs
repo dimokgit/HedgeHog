@@ -98,6 +98,10 @@ namespace HedgeHog.Alice.Store {
     double _macd2Rsd = double.NaN;
     public double MacdRsdAvg { get; set; }
     bool _isRatesLengthStable = false;
+    public bool IsRatesLengthStable {
+      get { return _isRatesLengthStable; }
+      set { _isRatesLengthStable = value; }
+    }
 
     IEnumerable<int> GetRatesLengthByDistanceMinByMacd(Func<IList<Rate>, int, Action<double, double>, IEnumerable<double>> macd) {
       var distances = new List<double>(BarsCountCalc);
@@ -119,7 +123,7 @@ namespace HedgeHog.Alice.Store {
             BarsCountMax = (BarsCountMax * adjuster).Ceiling();
             Log = new Exception(new { BarsCountMax, PairIndex, Action = "Stretched" } + "");
           }
-          _isRatesLengthStable = RatesArray.Count.Ratio(x.count) < 1.05;
+          IsRatesLengthStable = RatesArray.Count.Ratio(x.count) < 1.05;
           return x.count;
         });
     }
@@ -168,7 +172,7 @@ namespace HedgeHog.Alice.Store {
           //        BarsCountMax = (BarsCountMax * adjuster).Ceiling();
           //        Log = new Exception(new { BarsCountMax, PairIndex, Action = "Stretched" } + "");
           //      }
-          _isRatesLengthStable = RatesArray.Count.Ratio(x.count) < 1.05;
+          IsRatesLengthStable = RatesArray.Count.Ratio(x.count) < 1.05;
           return x.count;
         });
     }
@@ -241,6 +245,7 @@ namespace HedgeHog.Alice.Store {
                BarsCountCalc = count;
            });
          });
+      IsRatesLengthStable = true;
     }
 
     void ScanRatesLengthByDistanceMinAndimeFrame() {
@@ -336,6 +341,5 @@ namespace HedgeHog.Alice.Store {
       get;
       private set;
     }
-
   }
 }

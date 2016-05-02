@@ -26,8 +26,6 @@ namespace HedgeHog.Alice.Store {
             SetVoltsM1();
             return null;
           };
-        case HedgeHog.Alice.VoltageFunction.Volume:
-          return ShowVoltsByFrameAngle;
         case HedgeHog.Alice.VoltageFunction.StDev:
           return ShowVoltsByStDev;
         case HedgeHog.Alice.VoltageFunction.AvgLineRatio:
@@ -42,69 +40,23 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByGRBMins;
         case HedgeHog.Alice.VoltageFunction.GRBHMax:
           return ShowVoltsByGRBMax;
-        case HedgeHog.Alice.VoltageFunction.UpDownMax:
-          return ShowVoltsByUpDownMax;
-        case HedgeHog.Alice.VoltageFunction.UpDownMax2:
-          return ShowVoltsByUpDownMax2;
-        case HedgeHog.Alice.VoltageFunction.BBRsdRatio:
-          return ShowVoltsByBBUpDownRatio;
-        case HedgeHog.Alice.VoltageFunction.BBRsdRatio2:
-          return ShowVoltsByBBUpDownRatio2;
-        case HedgeHog.Alice.VoltageFunction.BBRsdRatio3:
-          return ShowVoltsByBBUpDownRatio3;
         case HedgeHog.Alice.VoltageFunction.Rsd:
           return ShowVoltsByRsd;
-        case HedgeHog.Alice.VoltageFunction.UDRatioLime:
-          return () => ShowVoltsByUpDownRatioByCorridor(TrendLines0Trends);
-        case HedgeHog.Alice.VoltageFunction.UDRatioGreen:
-          return () => ShowVoltsByUpDownRatioByCorridor(TrendLines1Trends);
-        case HedgeHog.Alice.VoltageFunction.UDRatioRed:
-          return () => ShowVoltsByUpDownRatioByCorridor(TrendLinesTrends);
-        case HedgeHog.Alice.VoltageFunction.Correlation:
-          return ShowVoltsByCorrelation;
-        case HedgeHog.Alice.VoltageFunction.StDevInsideOutRatio:
-          return ShowVoltsByStDevPercentage;
       }
       throw new NotSupportedException(VoltageFunction_ + " not supported.");
     }
 
-    private CorridorStatistics ShowVoltsByCorrelation() {
-      var volts = InPips(WaveShort.Rates.Select(r => r.PriceAvg.Abs(r.PriceCMALast)).StandardDeviation());
-      return ShowVolts(volts, 2);
-    }
-    CorridorStatistics ShowVoltsByFrameAngle() {
-      var frameLength = CorridorDistance;
-      RatesInternal.AsEnumerable().Reverse().Take(RatesArray.Count + CorridorDistance * 2)
-        .Integral(frameLength)
-        .AsParallel()
-        .Select(rates => new { rate = rates[0], angle = AngleFromTangent(rates.Regress(1, _priceAvg).LineSlope().Abs(), () => CalcTicksPerSecond(CorridorStats.Rates)) })
-        .ToArray()
-        .OrderByDescending(a => a.rate.StartDate)
-        .Integral(frameLength * 2)
-        .ForEach(b => SetVoltage(b[0].rate, b.Average(a => a.angle)));
-      return ShowVolts(GetVoltage(RateLast), 2);
-    }
     CorridorStatistics ShowVoltsByVolume() {
       RatesArray.AsEnumerable().Reverse().TakeWhile(r => GetVoltage(r).IsNaN())
         .ForEach(rate => { SetVoltage(rate, rate.Volume); });
       return ShowVolts(RateLast.Volume, 2);
     }
     CorridorStatistics ShowVoltsByRsd() {
-      return ShowVolts(RatesRsd, 2);
-    }
-    CorridorStatistics ShowVoltsByStDevPercentage() {
-      var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
-      var middle = WaveShort.Rates.Average(_priceAvg);
-      var levelUp = middle + corridor.StDevByHeight;
-      var levelDown = middle - corridor.StDevByHeight;
-      var prices = RatesArray.Select(_priceAvg).ToArray();
-      var stDevIn = prices.Where(p => p.Between(levelDown, levelUp)).ToArray().StDev();
-      var stDevOut = prices.Where(p => !p.Between(levelDown, levelUp)).ToArray().StDev();
-      var stDevRatio = GetVoltage(RatePrev).Cma(prices.Length / 100.0, stDevOut.Percentage(stDevIn));
-      SetVoltage(RateLast, stDevRatio);
-      var voltageAvg = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).Average();
-      GetVoltageAverage = () => voltageAvg;
-      return corridor;
+      if(IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable))
+        return UseRates(rates => rates.ToArray(_priceAvg).StDevByRegressoin())
+          .Select(rsd => ShowVolts(InPips(rsd), 2))
+          .SingleOrDefault();
+      return null;
     }
     static double CalcVolatility(IList<Rate> rates, Func<Rate, double> getValue, Func<Rate, double> line) {
       return CalcVolatility(rates.ToArray(getValue), rates.ToArray(line));

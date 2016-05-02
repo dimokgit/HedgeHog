@@ -360,6 +360,9 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_BarsCountCalc == value)
           return;
+
+        IsRatesLengthStable = RatesArray.Count.Ratio(value) < 1.05;
+
         _BarsCountCalc = value == 0 ? (int?)null : value;
         if(_BarsCountCalc.HasValue) {
           BarsCountDate = null;
