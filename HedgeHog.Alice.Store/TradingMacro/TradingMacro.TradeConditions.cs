@@ -851,9 +851,15 @@ namespace HedgeHog.Alice.Store {
     }
     public TradeConditionDelegate BPA1Ok {
       get {
-        return () => !TrendLines2Trends.PriceAvg1.Between(TrendLines1Trends.PriceAvg3, TrendLines1Trends.PriceAvg2)
-        ? TradeDirections.Both
-        : TradeDirections.None;
+        Func<IList<Rate>[]> rates = () => UseRates(ra => ra.GetRange(0, ra.Count - TrendLines0Trends.Count));
+        Func<IEnumerable<double>> max = () => rates().Select(ra => ra.Max(_priceAvg));
+        Func<IEnumerable<double>> min = () => rates().Select(ra => ra.Min(_priceAvg));
+        Func<bool> isOk = () => {
+          var isUp = TrendLines2Trends.Slope > 0;
+          var avg1 = TrendLines2Trends.PriceAvg1;
+          return isUp ? max().Any(m => avg1 > m) : min().Any(m => avg1 < m);
+        };
+        return () => TradeDirectionByBool(isOk());
       }
     }
     public TradeConditionDelegate BLPA1Ok {
@@ -863,11 +869,11 @@ namespace HedgeHog.Alice.Store {
           var level = TrendLines2Trends.PriceAvg1;
           var isUp = level.PositionRatio(range.down, range.up) > 0.5;
           var height = TrendLines1Trends.StDev;
-          var levelUp = isUp ? range.up + height : range.down - height;
-          var levelDown = isUp ? range.up - height * 2 : range.down + height * 2;
+          var levelUp = isUp ? range.up + height : range.down + height;
+          var levelDown = isUp ? range.up - height : range.down - height;
           CenterOfMassBuy = levelUp;
           CenterOfMassSell = levelDown;
-          return level.Between(levelDown, levelUp);
+          return isUp ? level >= levelDown : level <= levelUp;
         });
         return () => TradeDirectionByBool(func());
       }
@@ -964,7 +970,7 @@ namespace HedgeHog.Alice.Store {
 
     #region M1
     [TradeConditionAsleep]
-    public TradeConditionDelegate M1Ok {
+    public TradeConditionDelegateHide M1Ok {
       get {
         return () => TradingMacroOther()
         .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
@@ -999,47 +1005,47 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionAsleep]
     public TradeConditionDelegate M1HOk {
       get {
-        return () => NewMethod(wr => wr.HSDRatio, (d1, d2) => d1 > d2);
+        return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.HSDRatio);
       }
     }
     [TradeConditionAsleep]
     public TradeConditionDelegate M1MOk {
       get {
-        return () => NewMethod(wr => wr.TotalMinutes, (d1, d2) => d1 > d2);
+        return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.TotalMinutes);
       }
     }
     [TradeConditionAsleep]
     public TradeConditionDelegate M1DOk {
       get {
-        return () => NewMethod(wr => wr.Distance, (d1, d2) => d1 > d2);
+        return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.Distance);
       }
     }
     [TradeConditionAsleep]
     public TradeConditionDelegate M1SOk {
       get {
-        return () => NewMethod(wr => wr.StDev, (d1, d2) => d1 < d2);
+        return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.StDev);
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegate M1CmaPOk {
+    public TradeConditionDelegate M1PAOk {
       get {
-        return () => TradingMacroOther().Select(tm => TradeDirectionByBool(tm.CmaPassesCalc >= tm.CmaPassesMin)).Single();
+        return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.PipsPerMinute, wr => wr.Angle.Abs());
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegate M1InFWOk {
+    public TradeConditionDelegate M1AOk {
       get {
-        return () => TradingMacroOther().Select(tm => TradeDirectionByBool(tm.WaveRanges.Take(1).Any(wr => wr.StartDate < RatesArray[0].StartDate))).Single();
+        return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.HSDRatio);
       }
     }
-    private TradeDirections NewMethod(Func<WaveRange, double> wa, Func<double, double, bool> comp) {
+    private TradeDirections WaveConditions(Func<double, double, bool> comp,params Func<WaveRange, double>[] was) {
       return TradingMacroOther()
               .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
-              .Select(x => comp(wa(x.wr), wa(x.wra)))
+              .Select(x => was.All(wa=> comp(wa(x.wr), wa(x.wra))))
               .Select(b => b
               ? TradeDirections.Both
               : TradeDirections.None)
-              .FirstOrDefault();
+              .SingleOrDefault();
     }
 
     #endregion
