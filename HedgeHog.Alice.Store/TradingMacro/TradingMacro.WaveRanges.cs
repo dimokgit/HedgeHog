@@ -228,7 +228,7 @@ namespace HedgeHog.Alice.Store {
           var wrs = wr.SkipLast(wr.Count > 4 ? 1 : 0).Where(w => !w.Distance.IsNaNOrZero()).ToArray();
 
           var ws = new WaveRange(1) {
-            Distance = wrs.ToArray(w => w.Distance).RelativeStandardDeviation().ToPercent(),
+            Distance = wrs.Select(w => w.Distance).PowerMeanPower(1 / TrendHeightPerc),
             DistanceCma = avg2(wrs, w => w.DistanceCma, w => w.Distance),
             DistanceByRegression = avg2(wrs, w => w.DistanceByRegression, w => w.Distance),
             WorkByHeight = rsd(w => w.WorkByHeight),

@@ -42,6 +42,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByGRBMax;
         case HedgeHog.Alice.VoltageFunction.Rsd:
           return ShowVoltsByRsd;
+        case HedgeHog.Alice.VoltageFunction.PPM:
+          return ShowVoltsByPPM;
       }
       throw new NotSupportedException(VoltageFunction_ + " not supported.");
     }
@@ -57,6 +59,13 @@ namespace HedgeHog.Alice.Store {
           .Select(rsd => ShowVolts(InPips(rsd), 2))
           .SingleOrDefault();
       return null;
+    }
+    CorridorStatistics ShowVoltsByPPM() {
+      //if(IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable))
+        return UseRates(rates => rates.Distances(_priceAvg).Last().Item2/RatesDuration)
+        .Where(ppm=>ppm>0)
+          .Select(ppm => ShowVolts(InPips(ppm), 2))
+          .SingleOrDefault();
     }
     static double CalcVolatility(IList<Rate> rates, Func<Rate, double> getValue, Func<Rate, double> line) {
       return CalcVolatility(rates.ToArray(getValue), rates.ToArray(line));

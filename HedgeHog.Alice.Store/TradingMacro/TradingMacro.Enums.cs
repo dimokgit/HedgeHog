@@ -16,6 +16,7 @@ namespace HedgeHog.Alice {
     GRBHA1Avg,
     GRBHMax,
     Rsd,
+    PPM,
     StDevInsideOutRatio,
     HourlyStDevAvg,
     StDevSumRatio

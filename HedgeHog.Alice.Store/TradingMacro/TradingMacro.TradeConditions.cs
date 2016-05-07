@@ -1021,6 +1021,12 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionAsleep]
+    public TradeConditionDelegate M1D_Ok {
+      get {
+        return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.Distance);
+      }
+    }
+    [TradeConditionAsleep]
     public TradeConditionDelegate M1SOk {
       get {
         return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.StDev);

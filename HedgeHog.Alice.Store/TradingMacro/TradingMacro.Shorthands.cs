@@ -89,6 +89,7 @@ namespace HedgeHog.Alice.Store {
           SellLevel.Rate = Trades.NetOpen();
           BuyLevel.Rate = SellLevel.Rate + offset;
         }
+        SuppRes.ForEach(sr => sr.ResetPricePosition());
       }
       RaiseShowChart();
     }
