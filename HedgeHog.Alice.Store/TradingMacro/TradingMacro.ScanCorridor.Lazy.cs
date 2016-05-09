@@ -112,7 +112,7 @@ namespace HedgeHog.Alice.Store {
       SetVots(volt, averageIterations, cmaByRates ? CmaPeriodByRatesCount() : 0);
     }
     private void SetVots(double volt, int averageIterations, double cma = 0) {
-      var volt2 = cma > 0 ? GetLastVolt().Cma(cma, volt) : volt;
+      var volt2 = cma > 0 ? GetLastVolt().Select(v => v.Cma(cma, volt)).SingleOrDefault() : volt;
       UseRates(rates => rates.Where(r => GetVoltage(r).IsNaN()).ToList())
         .SelectMany(rates => rates).ForEach(r => SetVoltage(r, volt2));
       //SetVoltage(RateLast, volt);

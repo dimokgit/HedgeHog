@@ -708,12 +708,6 @@ namespace HedgeHog.Alice.Store {
         return () => { return TradeDirectionByTreshold(GetVoltageAverage(), TrendHeightPerc); };
       }
     }
-    public TradeConditionDelegate HStdOk {
-      get {
-        Log = new Exception(new { System.Reflection.MethodBase.GetCurrentMethod().Name, RhSDRatio } + "");
-        return () => { return TradeDirectionByTreshold(GetLastVolt().Max(GetVoltageHigh()), RhSDRatio); };
-      }
-    }
 
 
     double _rhsdRatio = 0.4;
@@ -740,8 +734,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate VoltBelowOk {
       get {
         return () => {
-          var volt = GetLastVolt();
-          return TradeDirectionByBool(volt < GetVoltageAverage());
+          return GetLastVolt(volt =>volt < GetVoltageAverage()).Select(TradeDirectionByBool).SingleOrDefault();
         };
       }
     }
@@ -756,22 +749,41 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate VoltAboveOk {
       get {
         return () => {
-          var volt = GetLastVolt();
-          return TradeDirectionByBool(volt > GetVoltageHigh());
+          return GetLastVolt(volt =>volt> GetVoltageHigh()).Select(TradeDirectionByBool).SingleOrDefault();
         };
       }
     }
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate VoltOk {
+      get {
+        return () => {
+          return GetLastVolt(volt=> volt> GetVoltageHigh()).Select(TradeDirectionByBool).SingleOrDefault();
+        };
+      }
+    }
+    public TradeConditionDelegate VltRngOk {
+      get {
+        return () => GetLastVolt(volt =>
+          VoltRange1.IsNaN()
+          ? TradeDirectionByTreshold(volt, VoltRange0)
+          : VoltRange0 < VoltRange1
+          ? TradeDirectionByBool(volt.Between(VoltRange0, VoltRange1))
+          : TradeDirectionByBool(!volt.Between(VoltRange1, VoltRange0))
+        ).SingleOrDefault();
+      }
+    }
 
-    private double GetLastVolt() {
+    private IEnumerable<double> GetLastVolt() {
       return UseRates(rates
                   => rates.BackwardsIterator()
                   .Select(GetVoltage)
                   .SkipWhile(double.IsNaN)
-                  .DefaultIfEmpty(double.NaN)
-                  .First()
+                  .Take(1)
                   )
-                  .DefaultIfEmpty(double.NaN)
-                  .Single();
+                  .SelectMany(v => v);
+    }
+    private IEnumerable<T> GetLastVolt<T>(Func<double, T> map) {
+      return GetLastVolt().Select(map);
     }
     #endregion
     #endregion
@@ -947,14 +959,7 @@ namespace HedgeHog.Alice.Store {
 
     //[TradeConditionAsleep]
     [TradeConditionTurnOff]
-    public TradeConditionDelegate TimeFrameOk {
-      get {
-        return () => TestTimeFrame()
-        ? TradeDirections.Both
-        : TradeDirections.None;
-        ;
-      }
-    }
+    public TradeConditionDelegate TimeFrameOk { get { return () => TradeDirectionByBool(TestTimeFrame()); } }
     [TradeConditionTurnOff]
     public TradeConditionDelegate TimeFrameM1Ok {
       get {
@@ -987,7 +992,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegate M1SDOk {
+    public TradeConditionDelegateHide M1SDOk {
       get {
         return () => TradingMacroOther()
         .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
@@ -1003,13 +1008,13 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegate M1HOk {
+    public TradeConditionDelegateHide M1HOk {
       get {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.HSDRatio);
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegate M1MOk {
+    public TradeConditionDelegateHide M1MOk {
       get {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.TotalMinutes);
       }
@@ -1027,7 +1032,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegate M1SOk {
+    public TradeConditionDelegateHide M1SOk {
       get {
         return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.StDev);
       }
@@ -1039,15 +1044,21 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegate M1AOk {
+    public TradeConditionDelegate M1P_Ok {
+      get {
+        return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.PipsPerMinute);
+      }
+    }
+    [TradeConditionAsleep]
+    public TradeConditionDelegateHide M1AOk {
       get {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.HSDRatio);
       }
     }
-    private TradeDirections WaveConditions(Func<double, double, bool> comp,params Func<WaveRange, double>[] was) {
+    private TradeDirections WaveConditions(Func<double, double, bool> comp, params Func<WaveRange, double>[] was) {
       return TradingMacroOther()
               .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
-              .Select(x => was.All(wa=> comp(wa(x.wr), wa(x.wra))))
+              .Select(x => was.All(wa => comp(wa(x.wr), wa(x.wra))))
               .Select(b => b
               ? TradeDirections.Both
               : TradeDirections.None)

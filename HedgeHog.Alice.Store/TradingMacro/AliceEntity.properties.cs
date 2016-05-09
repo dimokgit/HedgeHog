@@ -1109,6 +1109,32 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public double VoltRange0 { get; set; }
+    public double VoltRange1 { get; set; }
+    string _VoltRange = "0";
+    [WwwSetting(Group = wwwSettingsCorridorAngles)]
+    [Category(categoryActive)]
+    [Description("Range or single value: 15-30 or 60 or -60")]
+    public string VoltRange {
+      get { return _VoltRange; }
+      set {
+        if(_VoltRange == value)
+          return;
+
+        _VoltRange = value.Trim();
+        OnPropertyChanged(() => VoltRange);
+
+        var spans = _VoltRange.StartsWith("-")
+          ? new[] { _VoltRange }
+          : value.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+        if(spans.IsEmpty())
+          spans = new[] { "0" };
+        VoltRange0 = double.Parse(spans[0]);
+        VoltRange1 = spans.Length > 1 ? double.Parse(spans[1]) : double.NaN;
+
+      }
+    }
+
 
     int _trendAnglesPerc;
     [DisplayName("AngleR.Percentage(AngleB): -200 - 200")]

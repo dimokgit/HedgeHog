@@ -1813,7 +1813,7 @@ namespace HedgeHog.Alice.Store {
           Values = new Dictionary<string, object> {
             { "Angle", TrendLines2Trends.Angle.Abs() },
             { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
-            { "PPM", UseRates(rates=>rates.BackwardsIterator(GetVoltage).SkipWhile(Lib.IsNaN).Take(1)).SelectMany(ppm=>ppm).SingleOrDefault() },
+            { "PPM", GetLastVolt().SingleOrDefault() },
             { "StDev", TradingMacroOther().Select(tm=>tm.WaveRanges.Select(wr=>wr.StDev).FirstOrDefault()).Single() }
           }
         });

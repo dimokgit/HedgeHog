@@ -61,12 +61,19 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByPPM() {
-      //if(IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable))
-        return UseRates(rates => rates.Distances(_priceAvg).Last().Item2/RatesDuration)
-        .Where(ppm=>ppm>0)
-          .Select(ppm => ShowVolts(InPips(ppm), 2))
-          .SingleOrDefault();
+      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      Func<IEnumerable<double>> calcVolt = () => UseRates(rates => rates.Distances(_priceAvg).Last().Item2 / RatesDuration)
+            .Where(ppm => ppm > 0)
+              .Select(ppm => InPips(ppm));
+      if(!useCalc)
+        return ShowVolts(GetLastVolt().DefaultIfEmpty(() => calcVolt().Single()).Single(), 2);
+
+      return calcVolt()
+        .Select(volt => ShowVolts(useCalc ? volt : GetLastVolt().DefaultIfEmpty(volt).Single(), 2))
+        .SingleOrDefault();
     }
+
+
     static double CalcVolatility(IList<Rate> rates, Func<Rate, double> getValue, Func<Rate, double> line) {
       return CalcVolatility(rates.ToArray(getValue), rates.ToArray(line));
     }
