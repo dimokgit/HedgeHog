@@ -861,14 +861,27 @@ namespace HedgeHog.Alice.Store {
         return () => BlueAngOk();
       }
     }
+    [TradeConditionSetCorridor]
     public TradeConditionDelegate BPA1Ok {
       get {
         Func<IList<Rate>[]> rates = () => UseRates(ra => ra.GetRange(0, ra.Count - TrendLines0Trends.Count));
         Func<IEnumerable<double>> max = () => rates().Select(ra => ra.Max(_priceAvg));
         Func<IEnumerable<double>> min = () => rates().Select(ra => ra.Min(_priceAvg));
+        Func<IEnumerable<Rate.TrendLevels>> trends = () => TrendLinesTrendsAll.Skip(1);
+        Func<Func<Rate.TrendLevels,double>, IEnumerable<double>> price = getter => TrendLinesTrendsAll.Skip(1).Select(getter);
+        Action setUp = () => {
+          BuyLevel.Rate = BuyLevel.Rate.Max(price(tl => tl.PriceAvg3).Max());
+          SellLevel.Rate = SellLevel.Rate.Max(price(tl => tl.PriceAvg2).Min());
+        };
+        Action setDown = () => {
+          BuyLevel.Rate = BuyLevel.Rate.Min(price(tl => tl.PriceAvg3).Max());
+          SellLevel.Rate = SellLevel.Rate.Min(price(tl => tl.PriceAvg2).Min());
+        };
         Func<bool> isOk = () => {
           var isUp = TrendLines2Trends.Slope > 0;
           var avg1 = TrendLines2Trends.PriceAvg1;
+          if(BuySellLevels.IfAllNonManual().Any())
+            (isUp ? setUp : setDown)();
           return isUp ? max().Any(m => avg1 > m) : min().Any(m => avg1 < m);
         };
         return () => TradeDirectionByBool(isOk());
@@ -1041,6 +1054,12 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate M1PAOk {
       get {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.PipsPerMinute, wr => wr.Angle.Abs());
+      }
+    }
+    [TradeConditionAsleep]
+    public TradeConditionDelegate M1PA_Ok {
+      get {
+        return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.PipsPerMinute, wr => wr.Angle.Abs());
       }
     }
     [TradeConditionAsleep]
