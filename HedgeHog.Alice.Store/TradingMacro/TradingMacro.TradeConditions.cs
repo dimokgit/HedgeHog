@@ -870,18 +870,17 @@ namespace HedgeHog.Alice.Store {
         Func<IEnumerable<Rate.TrendLevels>> trends = () => TrendLinesTrendsAll.Skip(1);
         Func<Func<Rate.TrendLevels,double>, IEnumerable<double>> price = getter => TrendLinesTrendsAll.Skip(1).Select(getter);
         Action setUp = () => {
-          BuyLevel.Rate = BuyLevel.Rate.Max(price(tl => tl.PriceAvg3).Max());
-          SellLevel.Rate = SellLevel.Rate.Max(price(tl => tl.PriceAvg2).Min());
+          BuyLevel.RateEx = BuyLevel.Rate.Max(price(tl => tl.PriceAvg3).Average());
+          SellLevel.RateEx = SellLevel.Rate.Max(price(tl => tl.PriceAvg2).Average());
         };
         Action setDown = () => {
-          BuyLevel.Rate = BuyLevel.Rate.Min(price(tl => tl.PriceAvg3).Max());
-          SellLevel.Rate = SellLevel.Rate.Min(price(tl => tl.PriceAvg2).Min());
+          BuyLevel.RateEx = BuyLevel.Rate.Min(price(tl => tl.PriceAvg3).Average());
+          SellLevel.RateEx = SellLevel.Rate.Min(price(tl => tl.PriceAvg2).Average());
         };
         Func<bool> isOk = () => {
           var isUp = TrendLines2Trends.Slope > 0;
           var avg1 = TrendLines2Trends.PriceAvg1;
-          if(BuySellLevels.IfAllNonManual().Any())
-            (isUp ? setUp : setDown)();
+          (isUp ? setUp : setDown)();
           return isUp ? max().Any(m => avg1 > m) : min().Any(m => avg1 < m);
         };
         return () => TradeDirectionByBool(isOk());
