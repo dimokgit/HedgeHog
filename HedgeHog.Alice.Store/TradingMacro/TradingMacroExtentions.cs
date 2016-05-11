@@ -1557,6 +1557,7 @@ namespace HedgeHog.Alice.Store {
         _SetVoltsByStd = new ConcurrentQueue<Tuple<DateTime, double>>();
         _voltsOk = true;
         _ratesStartDate = null;
+        _mmaLastIsUp = null;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if(!_replayRates.Any())

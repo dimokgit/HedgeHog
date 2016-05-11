@@ -869,19 +869,51 @@ namespace HedgeHog.Alice.Store {
         Func<IEnumerable<double>> min = () => rates().Select(ra => ra.Min(_priceAvg));
         Func<IEnumerable<Rate.TrendLevels>> trends = () => TrendLinesTrendsAll.Skip(1);
         Func<Func<Rate.TrendLevels,double>, IEnumerable<double>> price = getter => TrendLinesTrendsAll.Skip(1).Select(getter);
-        Action setUp = () => {
-          BuyLevel.RateEx = BuyLevel.Rate.Max(price(tl => tl.PriceAvg3).Average());
-          SellLevel.RateEx = SellLevel.Rate.Max(price(tl => tl.PriceAvg2).Average());
-        };
-        Action setDown = () => {
-          BuyLevel.RateEx = BuyLevel.Rate.Min(price(tl => tl.PriceAvg3).Average());
-          SellLevel.RateEx = SellLevel.Rate.Min(price(tl => tl.PriceAvg2).Average());
-        };
+        var setUp = MonoidsCore.ToFunc(() => new {
+          buy = BuyLevel.Rate.Max(price(tl => tl.PriceAvg3).Average()),
+          sell = SellLevel.Rate.Max(price(tl => tl.PriceAvg2).Max())
+        });
+        var setDown = MonoidsCore.ToFunc(() => new {
+          buy = BuyLevel.Rate.Min(price(tl => tl.PriceAvg3).Min()),
+          sell = SellLevel.Rate.Min(price(tl => tl.PriceAvg2).Average())
+        });
         Func<bool> isOk = () => {
           var isUp = TrendLines2Trends.Slope > 0;
           var avg1 = TrendLines2Trends.PriceAvg1;
-          (isUp ? setUp : setDown)();
-          return isUp ? max().Any(m => avg1 > m) : min().Any(m => avg1 < m);
+          var td = isUp ? max().Any(m => avg1 > m) : min().Any(m => avg1 < m);
+          var bs = (isUp ? setUp : setDown)();
+          BuyLevel.RateEx = bs.buy;
+          SellLevel.RateEx = bs.sell;
+          return td;
+        };
+        return () => TradeDirectionByBool(isOk());
+      }
+    }
+    bool? _mmaLastIsUp = null;
+    [TradeConditionSetCorridor]
+    public TradeConditionDelegate MMAOk {
+      get {
+        Func<Func<Rate.TrendLevels, double>, IEnumerable<double>> price = getter => TrendLinesTrendsAll.Skip(1).Select(getter);
+        var setUp = MonoidsCore.ToFunc(() => new {
+          buy = BuyLevel.Rate.Max(price(tl => tl.PriceAvg2).Max()),
+          sell = SellLevel.Rate.Max(price(tl => tl.PriceAvg3).Average())
+        });
+        var setDown = MonoidsCore.ToFunc(() => new {
+          buy = BuyLevel.Rate.Min(price(tl => tl.PriceAvg2).Average()),
+          sell = SellLevel.Rate.Min(price(tl => tl.PriceAvg3).Min())
+        });
+        Func<bool> isOk = () => {
+          var isUp = TrendLines2Trends.Slope > 0;
+          if(isUp != _mmaLastIsUp)
+            BuySellLevels.ForEach(sr => {
+              sr.CanTradeEx = false;
+              sr.TradesCount = 0;
+            });
+          _mmaLastIsUp = isUp;
+          var bs = (isUp ? setUp : setDown)();
+          BuyLevel.RateEx = bs.buy;
+          SellLevel.RateEx = bs.sell;
+          return true;
         };
         return () => TradeDirectionByBool(isOk());
       }
@@ -1279,7 +1311,10 @@ namespace HedgeHog.Alice.Store {
       //}
     }
     bool HasTradeConditions { get { return TradeConditions.Any(); } }
-    void TradeConditionsReset() { TradeConditions.Clear(); }
+    void TradeConditionsReset() {
+      _mmaLastIsUp = null;
+      TradeConditions.Clear();
+    }
     public T[] GetTradeConditions<A, T>(Func<A, bool> attrPredicate, Func<TradeConditionDelegate, PropertyInfo, TradeConditionAttribute.Types, T> map) where A : Attribute {
       return (from x in this.GetPropertiesByTypeAndAttribute(() => (TradeConditionDelegate)null, attrPredicate, (v, p) => new { v, p })
               let a = x.p.GetCustomAttributes<TradeConditionAttribute>()
