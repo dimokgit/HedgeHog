@@ -1164,16 +1164,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => TrendHeightPerc);
       }
     }
-    double _macdRsdAvgLevel = 100;
-    [WwwSetting(Group = wwwSettingsTradingConditions)]
-    [Category(categoryActive)]
-    public double MacdRsdAvgLevel {
-      get {        return _macdRsdAvgLevel;      }
-      set {
-        _macdRsdAvgLevel = value;
-        OnPropertyChanged(() => MacdRsdAvgLevel);
-      }
-    }
 
 
     [DisplayName("Reset On Balance")]

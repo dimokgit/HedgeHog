@@ -33,8 +33,6 @@ namespace HedgeHog.Alice.Store {
       TradingDistanceFunction = TradingMacroTakeProfitFunction.RatesHeight;
       TradingDistanceX = 1;
       TradingRatioByPMC = true;
-      MacdRsdAvgLevel = 0;
-      RhSDRatio = 0;
       TipRatio = 0;
       TrendAnglesPerc = 0;
       TrendHeightPerc = 0;

@@ -11,6 +11,12 @@ namespace HedgeHog.Tests {
   namespace UnitLib {
     [TestClass]
     public class EnumerableExTest {
+      [TestMethod()]
+      public void SortByLambdaTest() {
+        var list = new List<int> {3,2,1 };
+        var sorted = list.SortByLambda((b1, b2) => b1 < b2);
+        Assert.IsTrue(sorted.SequenceEqual(new[] { 1, 2, 3 }));
+      }
       public IEnumerable<U> ZipByDateTime<T1, T2, U>(IList<Tuple<DateTime, T1>> prime, IList<Tuple<DateTime, T2>> other, Func<Tuple<DateTime, T1>, Tuple<DateTime, T2>, U> map) {
         var j = 0;
         for(var i = 0; i < prime.Count;) {
