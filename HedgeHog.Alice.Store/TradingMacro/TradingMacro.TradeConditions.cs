@@ -547,6 +547,11 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(GetLastVolts().ToArray().LinearSlope() < 0);
       }
     }
+    public TradeConditionDelegate VltDwOk {
+      get {
+        return () => TradeDirectionByBool(GetLastVolts().ToArray().LinearSlope() > 0);
+      }
+    }
 
     private IEnumerable<double> GetLastVolt() {
       return UseRates(rates
@@ -669,32 +674,53 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(isOk());
       }
     }
-    [TradeConditionSetCorridor]
     public TradeConditionDelegate BPA12Ok {
       get {
-        Action<SuppRes> up3 = sr=> sr.RateEx = sr.Rate.Max(TrendLevelsSorted(tl => tl.PriceAvg3, (d1, d2) => d1 < d2).Average());
-        Action<SuppRes> up2 = sr => sr.RateEx = sr.Rate.Max(TrendLevelsSorted(tl => tl.PriceAvg2, (d1, d2) => d1 > d2).Average());
-        Action<SuppRes> down3 = sr => sr.RateEx = sr.Rate.Min(TrendLevelsSorted(tl => tl.PriceAvg3, (d1, d2) => d1 < d2).Average());
-        Action<SuppRes> down2 = sr => sr.RateEx = sr.Rate.Min(TrendLevelsSorted(tl => tl.PriceAvg2, (d1, d2) => d1 > d2).Average());
-        Action setUp = () => {
-          up3(SellLevel);
-          up2(BuyLevel);
-        };
-        Action setDown = () => {
-          down3(SellLevel);
-          down2(BuyLevel);
-        };
         Func<bool> isOk = () => {
           var isUp = TrendLines2Trends.Slope > 0;
           var avg1 = TrendLines2Trends.PriceAvg1;
-          (isUp ? setUp : setDown)();
           return isUp ? avg1 > _RatesMax : avg1 < _RatesMin;
         };
         return () => TradeDirectionByBool(isOk());
       }
     }
+    [TradeConditionSetCorridor]
+    public TradeConditionDelegate PA23Ok {
+      get {
+        return () => {
+          SetTradelevelsDirectional(SellLevel, BuyLevel);
+          return TradeDirections.Both;
+        };
+      }
+    }
+    [TradeConditionSetCorridor]
+    public TradeConditionDelegate PA23ROk {
+      get {
+        return () => {
+          SetTradelevelsDirectional( BuyLevel, SellLevel);
+          return TradeDirections.Both;
+        };
+      }
+    }
+    void SetTradelevelsDirectional(SuppRes srPA2,SuppRes srPA3) {
+      Action<SuppRes> up3 = sr => sr.RateEx = sr.Rate.Max(TrendLevelsSorted(tl => tl.PriceAvg3, (d1, d2) => d1 < d2).Average());
+      Action<SuppRes> up2 = sr => sr.RateEx = sr.Rate.Max(TrendLevelsSorted(tl => tl.PriceAvg2, (d1, d2) => d1 > d2).Average());
+      Action<SuppRes> down3 = sr => sr.RateEx = sr.Rate.Min(TrendLevelsSorted(tl => tl.PriceAvg3, (d1, d2) => d1 < d2).Average());
+      Action<SuppRes> down2 = sr => sr.RateEx = sr.Rate.Min(TrendLevelsSorted(tl => tl.PriceAvg2, (d1, d2) => d1 > d2).Average());
+      Action setUp = () => {
+        up3(srPA3);
+        up2(srPA2);
+      };
+      Action setDown = () => {
+        down3(srPA3);
+        down2(srPA2);
+      };
+      var isUp = TrendLines2Trends.Slope > 0;
+      var avg1 = TrendLines2Trends.PriceAvg1;
+      (isUp ? setUp : setDown)();
+    }
 
-    private  IEnumerable<double> TrendLevelsSorted(Func<Rate.TrendLevels, double>get, Func<double, double, bool>comp) {
+    private IEnumerable<double> TrendLevelsSorted(Func<Rate.TrendLevels, double>get, Func<double, double, bool>comp) {
       Func<Func<Rate.TrendLevels, double>, Func<double, double, bool>, IEnumerable<Rate.TrendLevels>> trends =
         (getter, sort) => TrendLinesTrendsAll.Skip(1).ToList().SortByLambda((tl1, tl2) => sort(getter(tl1), getter(tl2)));
       Func<Func<Rate.TrendLevels, double>, Func<double, double, bool>, IEnumerable<double>> price =
