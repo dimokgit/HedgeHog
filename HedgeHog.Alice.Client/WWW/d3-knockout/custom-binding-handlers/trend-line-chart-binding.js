@@ -108,6 +108,7 @@
       //.text("Price ($)");
       if (chartNum === 1) {
         addRect("tickArea", tickAreaBgColor);
+        addRect("dayTailRect", tickAreaBgColor);
       }
       // coms
       addRect(redStrip, "#FAE6E6", 0.5);
@@ -487,6 +488,11 @@
         }
         if (chartNum === 1) {
           setRectArea(chartData.tickDate, yDomain[1], chartData.tickDateEnd, yDomain[0], "tickArea");
+          var tailStart = new Date(chartData.tickDateEnd);
+          tailStart = new Date(tailStart.setHours(tailStart.getHours() - 24));
+          var tailEnd = chartData.tickDate;
+          tailEnd = new Date(tailEnd.setHours(tailEnd.getHours() - 24));
+          setRectArea(tailEnd, yDomain[1], tailStart, yDomain[0], "dayTailRect");
         }
         if (com)
           setHorizontalStrip(com.b, com.s, greenStrip);

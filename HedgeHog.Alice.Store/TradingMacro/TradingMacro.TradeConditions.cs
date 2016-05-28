@@ -143,6 +143,11 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public TradeConditionDelegate InWaveOk {
+      get {
+        return () => IsWaveOk2((wr, tm) => RatesArray[0].StartDate < wr.StartDate, 1);
+      }
+    }
     private TradeDirections IsWaveOk(Func<WaveRange, TradingMacro, bool> predicate, int index) {
       return TradingMacroOther()
       .Take(1)
@@ -310,11 +315,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region After Tip
-    public TradeConditionDelegate IsInOk {
-      get {
-        return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels);
-      }
-    }
 
     public TradeConditionDelegateHide PigTailOk {
       get {
@@ -344,6 +344,11 @@ namespace HedgeHog.Alice.Store {
       }));
     }
 
+    public TradeConditionDelegateHide IsInOk {
+      get {
+        return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels);
+      }
+    }
     public TradeConditionDelegate IsIn2Ok {
       get {
         return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels2);
@@ -524,7 +529,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionTurnOff]
-    public TradeConditionDelegate VoltOk {
+    public TradeConditionDelegateHide VoltOk {
       get {
         return () => {
           return GetLastVolt(volt => volt > GetVoltageHigh()).Select(TradeDirectionByBool).SingleOrDefault();
@@ -697,12 +702,12 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate PA23ROk {
       get {
         return () => {
-          SetTradelevelsDirectional( BuyLevel, SellLevel);
+          SetTradelevelsDirectional(BuyLevel, SellLevel);
           return TradeDirections.Both;
         };
       }
     }
-    void SetTradelevelsDirectional(SuppRes srPA2,SuppRes srPA3) {
+    void SetTradelevelsDirectional(SuppRes srPA2, SuppRes srPA3) {
       Action<SuppRes> up3 = sr => sr.RateEx = sr.Rate.Max(TrendLevelsSorted(tl => tl.PriceAvg3, (d1, d2) => d1 < d2).Average());
       Action<SuppRes> up2 = sr => sr.RateEx = sr.Rate.Max(TrendLevelsSorted(tl => tl.PriceAvg2, (d1, d2) => d1 > d2).Average());
       Action<SuppRes> down3 = sr => sr.RateEx = sr.Rate.Min(TrendLevelsSorted(tl => tl.PriceAvg3, (d1, d2) => d1 < d2).Average());
@@ -720,12 +725,12 @@ namespace HedgeHog.Alice.Store {
       (isUp ? setUp : setDown)();
     }
 
-    private IEnumerable<double> TrendLevelsSorted(Func<Rate.TrendLevels, double>get, Func<double, double, bool>comp) {
+    private IEnumerable<double> TrendLevelsSorted(Func<Rate.TrendLevels, double> get, Func<double, double, bool> comp) {
       Func<Func<Rate.TrendLevels, double>, Func<double, double, bool>, IEnumerable<Rate.TrendLevels>> trends =
         (getter, sort) => TrendLinesTrendsAll.Skip(1).ToList().SortByLambda((tl1, tl2) => sort(getter(tl1), getter(tl2)));
       Func<Func<Rate.TrendLevels, double>, Func<double, double, bool>, IEnumerable<double>> price =
         (getter, sorter) => trends(getter, sorter).Select(getter).Take(2);
-      return price(get,comp);
+      return price(get, comp);
     }
 
     bool? _mmaLastIsUp = null;
@@ -969,21 +974,23 @@ namespace HedgeHog.Alice.Store {
     [Description("'Green' corridor is outside the 'Red' and 'Blue' ones")]
     public TradeConditionDelegateHide GreenOk {
       get {
+        Func<TradeDirections, TradeDirections> getTD = td => (TradeConditionsHaveTD() ? TradeDirections.Both : td);
         return () =>
           TrendLines1Trends.PriceAvg2 >= TrendLinesTrends.PriceAvg2.Max(TrendLines2Trends.PriceAvg2)
-          ? TradeDirections.Down
+          ? getTD(TradeDirections.Down)
           : TrendLines1Trends.PriceAvg3 <= TrendLinesTrends.PriceAvg3.Min(TrendLines2Trends.PriceAvg3)
-          ? TradeDirections.Up
+          ? getTD(TradeDirections.Up)
           : TradeDirections.None;
       }
     }
     public TradeConditionDelegateHide GreenExtOk {
       get {
+        Func<TradeDirections, TradeDirections> getTD = td => (TradeConditionsHaveTD() ? TradeDirections.Both : td);
         return () =>
           TrendLines1Trends.PriceAvg2 >= TrendLinesTrends.PriceAvg21.Max(TrendLines2Trends.PriceAvg2)
-          ? TradeDirections.Up
+          ? getTD(TradeDirections.Up)
           : TrendLines1Trends.PriceAvg3 <= TrendLinesTrends.PriceAvg31.Min(TrendLines2Trends.PriceAvg3)
-          ? TradeDirections.Down
+          ? getTD(TradeDirections.Down)
           : TradeDirections.None;
       }
     }
