@@ -39,7 +39,8 @@ namespace HedgeHog.Alice.Store {
     TimeFrame,
     DMTF,
     M1Wave,
-    M1WaveAvg
+    M1WaveAvg,
+    M1WaveAvg2
   }
   public enum ScanCorridorFunction {
     StDevSplits = 46,
@@ -95,10 +96,8 @@ namespace HedgeHog.Alice.Store {
     BlueAvg1,
     GreenAvg1,
     LimeAvg1,
-    Avg1Max,
-    Avg1Min,
-    Avg2Max,
-    Avg3Min,
+    PriceAvg1Max,
+    PriceAvg1Min,
     PriceAvg2,
     PriceAvg3,
     PriceRB2,
@@ -129,8 +128,8 @@ namespace HedgeHog.Alice.Store {
     MinRG,
     AvgLineMax,
     AvgLineMin,
-    Avg2GRBMax,
-    Avg3GRBMin
+    Avg22,
+    Avg23
   }
   public enum WaveSmoothBys {
     Distance,

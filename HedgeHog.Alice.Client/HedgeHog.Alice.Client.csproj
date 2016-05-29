@@ -44,7 +44,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\OneDrive\Public\Forex\Builds\Debug_RealMicro 3\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\Dev\Debug_RealMicro\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -2384,9 +2384,9 @@
   <PropertyGroup>
     <PreBuildEvent>copy "$(ProjectDir)WWW\d3-knockout\app.js" "$(ProjectDir)$(OutDir)WWW\d3-knockout\app.js"
 
-rem copy "$(ProjectDir)WWW\trader4.html" "$(OutDir)WWW\Trader4.html"
+copy "$(ProjectDir)WWW\trader4.html" "$(OutDir)WWW\Trader4.html"
 
-rem copy "$(ProjectDir)WWW\d3-knockout\custom-binding-handlers\trend-line-chart-binding.js" "$(OutDir)WWW\d3-knockout\custom-binding-handlers\trend-line-chart-binding.js"
+copy "$(ProjectDir)WWW\d3-knockout\custom-binding-handlers\trend-line-chart-binding.js" "$(OutDir)WWW\d3-knockout\custom-binding-handlers\trend-line-chart-binding.js"
 
 xcopy "$(ProjectDir)WWW\styles" "$(OutDir)WWW\styles" /s /y /i /D
 xcopy "$(ProjectDir)WWW\styles" "$(OutDir)WWW\bower" /s /y /i /D

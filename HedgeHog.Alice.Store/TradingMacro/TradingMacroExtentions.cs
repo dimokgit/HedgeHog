@@ -3593,6 +3593,13 @@ namespace HedgeHog.Alice.Store {
     Func<WaveRange, double> WaveSmoothFunc() {
       return WaveSmoothFuncs[WaveSmoothBy];
     }
+    private double TradeLevelByPA2() {
+      return TrendLevelsSorted(tl => tl.PriceAvg2, (d1, d2) => d1 > d2).Average();
+    }
+
+    private double TradeLevelByPA3() {
+      return TrendLevelsSorted(tl => tl.PriceAvg3, (d1, d2) => d1 < d2).Average();
+    }
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
       get {
@@ -3620,17 +3627,14 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.GreenAvg1,()=>level(tm=>tm.TrendLines1Trends.PriceAvg1)},
           {TradeLevelBy.LimeAvg1,()=>level(tm=>tm.TrendLines0Trends.PriceAvg1)},
 
-          {TradeLevelBy.Avg1Max,()=> TrendLinesTrendsAll.Max(tl=>tl.PriceAvg1)},
-          {TradeLevelBy.Avg1Min,()=> TrendLinesTrendsAll.Min(tl=>tl.PriceAvg1)},
-
-          { TradeLevelBy.Avg2Max,()=> TrendLinesTrendsAll.Max(tl=>tl.PriceAvg2)},
-          {TradeLevelBy.Avg3Min,()=> TrendLinesTrendsAll.Min(tl=>tl.PriceAvg3)},
+          {TradeLevelBy.PriceAvg1Max,()=> TrendLinesTrendsAll.Max(tl=>tl.PriceAvg1)},
+          {TradeLevelBy.PriceAvg1Min,()=> TrendLinesTrendsAll.Min(tl=>tl.PriceAvg1)},
 
           { TradeLevelBy.AvgLineMax,()=>AvgLineMax },
           {TradeLevelBy.AvgLineMin,()=>AvgLineMin },
 
-          {TradeLevelBy.Avg2GRBMax,()=>levelMax(tm=>tm.TrendLinesTrendsPriceAvg( tm,tls=>tls.PriceAvg2)) },
-          {TradeLevelBy.Avg3GRBMin,()=>levelMin(tm=>tm.TrendLinesTrendsPriceAvg( tm,tls=>tls.PriceAvg3)) },
+          {TradeLevelBy.Avg22,()=>levelMax(tm=>tm.TradeLevelByPA2()) },
+          {TradeLevelBy.Avg23,()=>levelMin(tm=>tm.TradeLevelByPA3()) },
 
           {TradeLevelBy.PriceAvg2,()=> levelMax(tm=>tm.TrendLinesTrends.PriceAvg2)},
           {TradeLevelBy.PriceAvg3,()=> levelMin(tm=>tm.TrendLinesTrends.PriceAvg3)},

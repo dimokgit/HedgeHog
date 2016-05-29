@@ -755,7 +755,7 @@
       openTrades(response.trades)
       //lineChartData.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
       response.waveLines.forEach(function (w, i) { w.bold = i == sumStartIndexById(); });
-      var chartData = chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross, response.tpsHigh, response.tpsLow, response.canBuy, response.canSell, response.waveLines);
+      var chartData = chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross(), response.tpsHigh, response.tpsLow, response.canBuy, response.canSell, response.waveLines);
       chartData.com = self.com;
       chartData.com2 = self.com2;
       chartData.com3 = self.com3;
@@ -796,7 +796,7 @@
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;
-      var chartData2 = chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross, 0, 0, response.canBuy, response.canSell, response.waveLines);
+      var chartData2 = chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross(), 0, 0, response.canBuy, response.canSell, response.waveLines);
       chartData2.tickDate = lineChartData()[0].d;
       chartData2.tickDateEnd = lineChartData().slice(-1)[0].d;
       chartData2.com = self.com;

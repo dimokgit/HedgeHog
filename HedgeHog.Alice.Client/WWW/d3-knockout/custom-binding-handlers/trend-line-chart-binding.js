@@ -645,36 +645,36 @@
       // #endregion
 
       //#region waveLines
-      var waveLines = chartData.waveLines || [];
-      var waveLineColor = "gray";
-      var waveLineColorOk = "limegreen";
-      var waveLineWidth = 1;
-      var wlDelta = svg.selectAll("line.waveLine").data(waveLines);
-      function waveLineDate(i) {
-        return function (d) {
-          return x(d.dates[i]);
-        };
-      }
-      function waveLineISept(i) {
-        return function (d) {
-          return y(d.isept[i]);
-        };
-      }
-      wlDelta.enter()
-        .append("line")
-        .attr("class", "waveLine");
-      wlDelta
-        .style("stroke-width", function (d) {
-          return d.bold ? 2 : 1;
-        })
-        .attr("x1", waveLineDate(0))
-        .attr("y1", waveLineISept(0))
-        .attr("x2", waveLineDate(1))
-        .attr("y2", waveLineISept(1))
-        .style("stroke", function (w) {
-          return w.color ? waveLineColorOk : waveLineColor;
-        });
-      wlDelta.exit().remove();
+        var waveLines = chartData.waveLines || [];
+        var waveLineColor = "gray";
+        var waveLineColorOk = "limegreen";
+        var waveLineWidth = 1;
+        var wlDelta = svg.selectAll("line.waveLine").data(waveLines);
+        function waveLineDate(i) {
+          return function (d) {
+            return x(d.dates[i]);
+          };
+        }
+        function waveLineISept(i) {
+          return function (d) {
+            return y(d.isept[i]);
+          };
+        }
+        wlDelta.enter()
+          .append("line")
+          .attr("class", "waveLine");
+        wlDelta
+          .style("stroke-width", function (d) {
+            return d.bold ? 2 : 1;
+          })
+          .attr("x1", waveLineDate(0))
+          .attr("y1", waveLineISept(0))
+          .attr("x2", waveLineDate(1))
+          .attr("y2", waveLineISept(1))
+          .style("stroke", function (w) {
+            return w.color ? waveLineColorOk : waveLineColor;
+          });
+        wlDelta.exit().remove();
       //#endregion
 
       d3.select(element).select("svg")

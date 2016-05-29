@@ -126,7 +126,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide BigWaveOk {
+    public TradeConditionDelegateHide BigWaveOk_Old {
       get {
         var ors = new Func<WaveRange, double>[] { wr => wr.DistanceCma };
         Func<WaveRange, TradingMacro, bool> predicate = (wr, tm) =>
@@ -146,6 +146,35 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate InWaveOk {
       get {
         return () => IsWaveOk2((wr, tm) => RatesArray[0].StartDate < wr.StartDate, 1);
+      }
+    }
+    public TradeConditionDelegate BigWaveOk {
+      get {
+        return () => IsWaveOk((wr, tm) => wr.Distance > tm.WaveRangeAvg.Distance, BigWaveIndex, 2);
+      }
+    }
+    public TradeConditionDelegate SmallWaveOk {
+      get {
+        return () => IsWaveOk((wr, tm) => wr.Distance < tm.WaveRangeAvg.Distance, 0, 1);
+      }
+    }
+    public TradeConditionDelegate CalmOk {
+      get {
+        return () => AreWavesOk((wr, tm) => wr.Distance < tm.WaveRangeAvg.Distance, 0, BigWaveIndex);
+      }
+    }
+    public TradeConditionDelegate Calm2Ok {
+      get {
+        return () => (
+          from calm in new[] {CalmOk()}
+          where calm.HasAny()
+          from tm in TradingMacroOther().Take(1)
+          let wrs = tm.WaveRanges.SkipWhile(wr => wr.IsEmpty)
+          let sum = wrs.Take(BigWaveIndex).Sum(wr => wr.Distance)
+          let distMin = tm.WaveRangeSum.Distance
+          select calm & TradeDirectionByBool(sum >= distMin))
+          .SingleOrDefault();
+        //.Take(BigWaveIndex);
       }
     }
     private TradeDirections IsWaveOk(Func<WaveRange, TradingMacro, bool> predicate, int index) {
@@ -173,6 +202,32 @@ namespace HedgeHog.Alice.Store {
       )
       .DefaultIfEmpty(TradeDirections.None)
       .Single();
+    }
+    private TradeDirections IsWaveOk(Func<WaveRange, TradingMacro, bool> predicate, int index, int count) {
+      return TradingMacroOther()
+      .Take(1)
+      .SelectMany(tm => tm.WaveRanges
+      .SkipWhile(wr => wr.IsEmpty)
+      .Skip(index)
+      .Take(count)
+      .Where(wr => predicate(wr, tm))
+      .Select(wr => TradeDirections.Both)
+      )
+      .DefaultIfEmpty(TradeDirections.None)
+      .First();
+    }
+    private TradeDirections AreWavesOk(Func<WaveRange, TradingMacro, bool> predicate, int index, int count) {
+      return TradingMacroOther()
+      .Take(1)
+      .Select(tm => tm.WaveRanges
+      .SkipWhile(wr => wr.IsEmpty)
+      .Skip(index)
+      .Take(count)
+      .All(wr => predicate(wr, tm))
+      )
+      .Select(ok => TradeDirectionByBool(ok))
+      .DefaultIfEmpty(TradeDirections.None)
+      .First();
     }
     #endregion
 
@@ -708,10 +763,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
     void SetTradelevelsDirectional(SuppRes srPA2, SuppRes srPA3) {
-      Action<SuppRes> up3 = sr => sr.RateEx = sr.Rate.Max(TrendLevelsSorted(tl => tl.PriceAvg3, (d1, d2) => d1 < d2).Average());
-      Action<SuppRes> up2 = sr => sr.RateEx = sr.Rate.Max(TrendLevelsSorted(tl => tl.PriceAvg2, (d1, d2) => d1 > d2).Average());
-      Action<SuppRes> down3 = sr => sr.RateEx = sr.Rate.Min(TrendLevelsSorted(tl => tl.PriceAvg3, (d1, d2) => d1 < d2).Average());
-      Action<SuppRes> down2 = sr => sr.RateEx = sr.Rate.Min(TrendLevelsSorted(tl => tl.PriceAvg2, (d1, d2) => d1 > d2).Average());
+      Action<SuppRes> up3 = sr => sr.RateEx = sr.Rate.Max(TradeLevelByPA3());
+      Action<SuppRes> up2 = sr => sr.RateEx = sr.Rate.Max(TradeLevelByPA2());
+      Action<SuppRes> down3 = sr => sr.RateEx = sr.Rate.Min(TradeLevelByPA3());
+      Action<SuppRes> down2 = sr => sr.RateEx = sr.Rate.Min(TradeLevelByPA2());
       Action setUp = () => {
         up3(srPA3);
         up2(srPA2);

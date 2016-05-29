@@ -23,12 +23,12 @@ namespace HedgeHog.Alice.Store {
 
     public TradeOpenAction Avg1ExitOnTrade {
       get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.Avg1Max, TradeLevelBy.Avg1Min));
+        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.PriceAvg1Max, TradeLevelBy.PriceAvg1Min));
       }
     }
     public TradeOpenAction Avg1GRBExitOnTrade {
       get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.Avg2GRBMax, TradeLevelBy.Avg3GRBMin));
+        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.Avg22, TradeLevelBy.Avg23));
       }
     }
     public TradeOpenAction GreenExitOnTrade {

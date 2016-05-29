@@ -161,7 +161,9 @@ namespace HedgeHog.Alice.Store {
         case RatesLengthFunction.M1Wave:
           return ScanRatesLengthByM1Wave;
         case RatesLengthFunction.M1WaveAvg:
-          return ScanRatesLengthByM1WaveAvg;
+          return () => ScanRatesLengthByM1WaveAvg(false);
+        case RatesLengthFunction.M1WaveAvg2:
+          return () => ScanRatesLengthByM1WaveAvg(true);
         default:
           throw new NotImplementedException(new { RatesLengthFunction = RatesLengthBy, Error = "Not implemented" } + "");
       }
