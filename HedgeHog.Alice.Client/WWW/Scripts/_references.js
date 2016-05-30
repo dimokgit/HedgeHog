@@ -25,6 +25,7 @@
 /// <reference path="jqPropertyGrid.js" />
 /// <reference path="jquery.signalR-2.1.2.js" />
 /// <reference path="jquery.signalR-2.2.0.min.js" />
+/// <reference path="jquery.ui.touch-punch.min.js" />
 /// <reference path="jquery-2.1.3.js" />
 /// <reference path="json.date-extensions.min.js" />
 /// <reference path="linq.js" />

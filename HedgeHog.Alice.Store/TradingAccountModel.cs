@@ -104,7 +104,6 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-
     #region CurrentGrossInPips
     private double _CurrentGrossInPips;
     public double CurrentGrossInPips {

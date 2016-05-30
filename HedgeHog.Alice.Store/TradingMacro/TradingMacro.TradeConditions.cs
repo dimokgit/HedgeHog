@@ -153,22 +153,19 @@ namespace HedgeHog.Alice.Store {
         return () => IsWaveOk((wr, tm) => wr.Distance > tm.WaveRangeAvg.Distance, BigWaveIndex, 2);
       }
     }
-    public TradeConditionDelegate SmallWaveOk {
-      get {
-        return () => IsWaveOk((wr, tm) => wr.Distance < tm.WaveRangeAvg.Distance, 0, 1);
-      }
-    }
     public TradeConditionDelegate CalmOk {
       get {
-        return () => AreWavesOk((wr, tm) => wr.Distance < tm.WaveRangeAvg.Distance, 0, BigWaveIndex);
+        return () => AreWavesOk((wr, tm) => 
+        wr.Distance < tm.WaveRangeAvg.Distance && wr.TotalMinutes < tm.WaveRangeAvg.TotalMinutes, 0, BigWaveIndex);
       }
     }
     public TradeConditionDelegate Calm2Ok {
       get {
         return () => (
-          from calm in new[] {CalmOk()}
+          from calm in new[] { CalmOk() }
           where calm.HasAny()
           from tm in TradingMacroOther().Take(1)
+          where tm.WaveRangeSum != null
           let wrs = tm.WaveRanges.SkipWhile(wr => wr.IsEmpty)
           let sum = wrs.Take(BigWaveIndex).Sum(wr => wr.Distance)
           let distMin = tm.WaveRangeSum.Distance

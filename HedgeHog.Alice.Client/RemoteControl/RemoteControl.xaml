@@ -106,6 +106,7 @@
                   <StackPanel>
                     <TextBlock Text="{Binding LotSizePercent,Converter={x:Static core:StringFormatConverter.Default},ConverterParameter={}{0:p0}}"/>
                     <TextBlock Text="{Binding PipAmount,Converter={x:Static core:StringFormatConverter.Default},ConverterParameter={}{0:c0}}"/>
+                    <TextBlock Text="{Binding PipAmountPercent,Converter={x:Static core:StringFormatConverter.Default},ConverterParameter={}{0:p2}}"/>
                   </StackPanel>
                 </TextBlock.ToolTip>
               </TextBlock>

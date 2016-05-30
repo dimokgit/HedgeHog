@@ -47,6 +47,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
+  <script src="Scripts/jquery.ui.touch-punch.min.js"></script>
   <script src="Scripts/shortcut.js"></script>
   <script src="Scripts/linq.js"></script>
   <script src="Scripts/json.date-extensions.min.js"></script>
@@ -271,6 +272,9 @@
         stroke: #DDDDDD;
         stroke-dasharray: 1, 1;
       }
+      table.accounting{
+
+      }
   </style>
   <script>
     $(function () {
@@ -357,14 +361,10 @@
               </li>
               <li role="presentation" class="divider"></li>
               <li>
-                <button data-bind="click:startWwwInfo.bind($data,0)" title="Tick Stats"
-                        data-toggle1="modal"
-                        data-target1="#waveRangesDialog">
+                <button data-bind="click:startWwwInfo.bind($data,0)" title="Tick Stats">
                   <span class="glyphicon glyphicon-stats"></span>
                 </button>
-                <button data-bind="click:startWaveRanges.bind($data,1)" title="Minute Waves"
-                        data-toggle1="modal"
-                        data-target1="#waveRangesDialog">
+                <button data-bind="click:startWaveRanges.bind($data,1)" title="Minute Waves">
                   <span class="glyphicon glyphicon-stats"></span>
                 </button>
                 <button data-bind="click:getTradingConditions" title="Trade Conditions"
@@ -375,6 +375,12 @@
                 <button>
                   <a href="https://gist.github.com/dimokgit" target="_blank" class="glyphicon glyphicon-book"></a>
                   <!--<a href="https://shrib.com/hedgehog?v=md" target="_blank" class="glyphicon glyphicon-book"></a>-->
+                </button>
+              </li>
+              <li role="presentation" class="divider"></li>
+              <li>
+                <button data-bind="click:startAccounting" title="Accounting">
+                  <span class="glyphicon glyphicon-piggy-bank"></span>
                 </button>
               </li>
             </ul>
@@ -725,208 +731,194 @@
     </div>
   </div>
   <!--#endregion-->
-  <!--#region WaveRanges dialog-->
-  <div data-bind="elementer:waveRangesDialog" style="display:none">
-    <table border="1" id="waveRangesDialog">
-      <thead>
+  <!--#region-->
+  <div data-bind="elementer:accountingDialog" style="display:none">
+    <table class="accounting" border="1" cellspacing="0">
+      <tbody data-bind="foreach: accounting">
         <tr>
-          <th>SD</th>
-          <th>HSD</th>
-          <th>M</th>
-          <th>Ds</th>
-          <th>PpM</th>
-          <th>Ang</th>
-          <!--<th>DR</th>
-          <th>Dc</th>-->
-        </tr>
-        <tr style="background-color:gold" data-bind="visible:false && sumStartIndex()">
-          <th></th>
-          <th></th>
-          <th></th>
-          <th></th>
-          <td><span data-bind="text:dbrSum"></span></td>
-          <td><span data-bind="text:distanceSum"></span></td>
-          <td><span data-bind="text:distanceCmaSum"></span></td>
-        </tr>
-      </thead>
-      <tbody data-bind="foreach:waveRanges">
-        <tr data-bind="css:{selected:$parent.sumStartIndexById() == $index(),istail:IsTail}">
-          <td><span data-bind="text:d3.format('.2f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.1f')(HSD.v),style:{fontWeight:HSD.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Minutes.v),style:{fontWeight:Minutes.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Distance.v),style:{fontWeight:Distance.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.1f')(PPM.v),style:{fontWeight:PPM.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
+          <td data-bind="text:n"></td>
+          <td data-bind="text:v"></td>
         </tr>
       </tbody>
-      <tfoot data-bind="foreach:waveRangesStats" style="background-color:gold">
-        <tr>
-          <td><span data-bind="text:StDev.v"></span></td>
-          <td><span data-bind="text:d3.format('.1f')(HSD.v)"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Minutes.v)"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Distance.v)"></span></td>
-          <td><span data-bind="text:d3.format('.1f')(PPM.v)"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>
-        </tr>
-      </tfoot>
     </table>
   </div>
-  <!--#endregion-->
-  <!--#region TradeDIrectionTriggers dialog-->
-  <div class="modal" id="tradeDirectionTriggersDialog" tabindex="-1" role="dialog" aria-labelledby="tradeDirectionTriggersDialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <span class="modal-title" id="myModalLabel">Trade Direction Triggers</span>
-        </div>
-        <div class="modal-body" data-bind="visible:tradeDirectionTriggersReady">
-          <table>
-            <tbody data-bind="foreach:tradeDirectionTriggers">
-              <tr>
-                <td><input type="checkbox" data-bind="checked:checked,attr:{id:'chk'+name}" /></td>
-                <td><label data-bind="text:name,attr:{for:'chk'+name}"></label></td>
-              </tr>
-            </tbody>
-          </table>
-          <button class="btn btn-primary btn-xs btn-block" data-bind="click:saveTradeDirectionTriggers" data-dismiss="modal">Save</button>
-        </div>
-      </div>
+    <!--#endregion-->
+    <!--#region WaveRanges dialog-->
+    <div data-bind="elementer:waveRangesDialog" style="display:none">
+      <table border="1" id="waveRangesDialog">
+        <thead>
+          <tr>
+            <th>SD</th>
+            <th>HSD</th>
+            <th>M</th>
+            <th>Ds</th>
+            <th>PpM</th>
+            <th>Ang</th>
+            <!--<th>DR</th>
+            <th>Dc</th>-->
+          </tr>
+          <tr style="background-color:gold" data-bind="visible:false && sumStartIndex()">
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <td><span data-bind="text:dbrSum"></span></td>
+            <td><span data-bind="text:distanceSum"></span></td>
+            <td><span data-bind="text:distanceCmaSum"></span></td>
+          </tr>
+        </thead>
+        <tbody data-bind="foreach:waveRanges">
+          <tr data-bind="css:{selected:$parent.sumStartIndexById() == $index(),istail:IsTail}">
+            <td><span data-bind="text:d3.format('.2f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
+            <td><span data-bind="text:d3.format('.1f')(HSD.v),style:{fontWeight:HSD.mx?'bold':''}"></span></td>
+            <td><span data-bind="text:d3.format('.0f')(Minutes.v),style:{fontWeight:Minutes.mx?'bold':''}"></span></td>
+            <td><span data-bind="text:d3.format('.0f')(Distance.v),style:{fontWeight:Distance.mx?'bold':''}"></span></td>
+            <td><span data-bind="text:d3.format('.1f')(PPM.v),style:{fontWeight:PPM.mx?'bold':''}"></span></td>
+            <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
+          </tr>
+        </tbody>
+        <tfoot data-bind="foreach:waveRangesStats" style="background-color:gold">
+          <tr>
+            <td><span data-bind="text:StDev.v"></span></td>
+            <td><span data-bind="text:d3.format('.1f')(HSD.v)"></span></td>
+            <td><span data-bind="text:d3.format('.0f')(Minutes.v)"></span></td>
+            <td><span data-bind="text:d3.format('.0f')(Distance.v)"></span></td>
+            <td><span data-bind="text:d3.format('.1f')(PPM.v)"></span></td>
+            <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
-  </div>
-  <!--#endregion-->
-  <!--#region TradeOpenActions dialog-->
-  <div class="modal" id="tradeOpenActionsDialog" tabindex="-1" role="dialog" aria-labelledby="tradeOpenActionsDialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <span class="modal-title" id="myModalLabel">Trade Conditions</span>
-        </div>
-        <div class="modal-body" data-bind="visible:tradeOpenActionsReady">
-          <table>
-            <tbody data-bind="foreach:tradeOpenActions">
-              <tr>
-                <td><input type="checkbox" data-bind="checked:checked,attr:{id:'chk'+name}" /></td>
-                <td><label data-bind="text:name,attr:{for:'chk'+name}"></label></td>
-              </tr>
-            </tbody>
-          </table>
-          <button class="btn btn-primary btn-xs btn-block" data-bind="click:saveTradeOpenActions" data-dismiss="modal">Save</button>
-        </div>
-        <div class="modal-footer" style="display:none">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!--#endregion-->
-  <!--#region CheatSheet-->
-  <div class="modal" id="cheatSheetDialog" tabindex="-1" role="dialog" aria-labelledby="cheatSheetDialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <span class="modal-title" id="myModalLabel">Before Trade</span>
-        </div>
-        <div class="modal-body">
-          <ul>
-            <li>Trading Hours</li>
-            <li>Take Profit Size</li>
-            <li>Double Tap</li>
-            <li>Two Corridors</li>
-            <li>Upcoming News</li>
-            <li>Do not be greedy</li>
-            <li>Should play both directions?</li>
-            <li>Should take last loss back?</li>
-            <li>
-              News: Explode | Impload<br />
-              Explode: stay away<br />
-              Implode: Trade inside direction
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!--#endregion-->
-  <!--#region News-->
-  <div class="modal" id="newsDialog" tabindex="-1" role="dialog" aria-labelledby="newsDialog" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <span class="modal-title" id="myModalLabel">News</span>
-          <a href="http://www.econoday.com/economic-calendar.aspx" target="_blank">Calendar</a>
-        </div>
-        <div class="modal-body">
-          <table border="1">
-            <!-- ko foreach: newsGrouped -->
-            <thead>
-              <tr>
-                <th colspan="10" data-bind="text:date"></th>
-              </tr>
-            </thead>
-            <tbody data-bind="foreach:values">
-              <tr data-bind="style:{fontWeight:Level == 'H'?'bold':''}">
-                <td data-bind="text:Country,style:{backgroundColor:Level == 'H'?'coral':''}"></td>
-                <td data-bind="text:Time.toLocaleTimeString()" style="text-align:right;padding-left:5px;padding-right:1px;white-space:nowrap"></td>
-                <td data-bind="text:Name"></td>
-              </tr>
-            </tbody>
-            <!-- /ko -->
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!--#endregion-->
-  <!--#region Strategies dialog-->
-  <div class="modal" data-bind="elementer:strategiesDialog" id="strategiesDialog" tabindex="-1" role="dialog" aria-labelledby="strategiesDialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-      <div class="modal-content">
-        <div class="modal-header">
-          <!--<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>-->
-          <span class="modal-title" id="myModalLabel">Strategies</span>
-          <input data-bind="textInput:strategyFilter" />
-          <button data-bind="click: clearStrategy" title="Empty Strategy">
-            <span class="glyphicon glyphicon-flash" />
-          </button>
-        </div>
-        <div class="modal-body" data-bind="foreach:strategiesFiltered">
-          <div data-bind="attr:{title:name}">
-            <input data-bind="checked:isSelected" type="checkbox" />
-            <span data-bind="text:nick,click:$parent.updateStrategy,css:{'active-strategy':isActive}"></span>
-            <a data-bind="attr:{href:uri}" target="_blank" class="glyphicon glyphicon-list"></a>
+    <!--#endregion-->
+    <!--#region TradeDIrectionTriggers dialog-->
+    <div class="modal" id="tradeDirectionTriggersDialog" tabindex="-1" role="dialog" aria-labelledby="tradeDirectionTriggersDialog" aria-hidden="true">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <span class="modal-title" id="myModalLabel">Trade Direction Triggers</span>
+          </div>
+          <div class="modal-body" data-bind="visible:tradeDirectionTriggersReady">
+            <table>
+              <tbody data-bind="foreach:tradeDirectionTriggers">
+                <tr>
+                  <td><input type="checkbox" data-bind="checked:checked,attr:{id:'chk'+name}" /></td>
+                  <td><label data-bind="text:name,attr:{for:'chk'+name}"></label></td>
+                </tr>
+              </tbody>
+            </table>
+            <button class="btn btn-primary btn-xs btn-block" data-bind="click:saveTradeDirectionTriggers" data-dismiss="modal">Save</button>
           </div>
         </div>
-        <div class="modal-footer" style="display:none">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+      </div>
+    </div>
+    <!--#endregion-->
+    <!--#region TradeOpenActions dialog-->
+    <div class="modal" id="tradeOpenActionsDialog" tabindex="-1" role="dialog" aria-labelledby="tradeOpenActionsDialog" aria-hidden="true">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <span class="modal-title" id="myModalLabel">Trade Conditions</span>
+          </div>
+          <div class="modal-body" data-bind="visible:tradeOpenActionsReady">
+            <table>
+              <tbody data-bind="foreach:tradeOpenActions">
+                <tr>
+                  <td><input type="checkbox" data-bind="checked:checked,attr:{id:'chk'+name}" /></td>
+                  <td><label data-bind="text:name,attr:{for:'chk'+name}"></label></td>
+                </tr>
+              </tbody>
+            </table>
+            <button class="btn btn-primary btn-xs btn-block" data-bind="click:saveTradeOpenActions" data-dismiss="modal">Save</button>
+          </div>
+          <div class="modal-footer" style="display:none">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  <!--#endregion-->
-  <!--#region Strategies dialog-->
-  <div class="modal" data-bind="elementer:strategyNameDialog" id="strategyNameDialog" tabindex="-1" role="dialog" aria-labelledby="strategyNameDialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <span class="modal-title" id="myModalLabel">Strategy Name</span>
+    <!--#endregion-->
+    <!--#region CheatSheet-->
+    <div class="modal" id="cheatSheetDialog" tabindex="-1" role="dialog" aria-labelledby="cheatSheetDialog" aria-hidden="true">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <span class="modal-title" id="myModalLabel">Before Trade</span>
+          </div>
+          <div class="modal-body">
+            <ul>
+              <li>Trading Hours</li>
+              <li>Take Profit Size</li>
+              <li>Double Tap</li>
+              <li>Two Corridors</li>
+              <li>Upcoming News</li>
+              <li>Do not be greedy</li>
+              <li>Should play both directions?</li>
+              <li>Should take last loss back?</li>
+              <li>
+                News: Explode | Impload<br />
+                Explode: stay away<br />
+                Implode: Trade inside direction
+              </li>
+            </ul>
+          </div>
         </div>
-        <div class="modal-body">
-          <input data-bind="value:strategyNick,elementer:strategyNameInput" style="width:100%" />
-          <div>
-            <div style="display:inline-block">
-              <button data-bind="click:setStrategy.bind(null)">Load</button>
-              <button data-bind="click:removeStrategy.bind(null,false)">Archive</button>
-            </div>
-            <div style="display:inline-block;float:right">
-              <button data-bind="click:saveStrategy.bind(null)">Save</button>
-              <button data-bind="click:removeStrategy.bind(null,true)">Remove</button>
+      </div>
+    </div>
+    <!--#endregion-->
+    <!--#region News-->
+    <div class="modal" id="newsDialog" tabindex="-1" role="dialog" aria-labelledby="newsDialog" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <span class="modal-title" id="myModalLabel">News</span>
+            <a href="http://www.econoday.com/economic-calendar.aspx" target="_blank">Calendar</a>
+            <a href="https://www.dailyfx.com/calendar" target="_blank">DailyFX</a>
+            
+          </div>
+          <div class="modal-body">
+            <table border="1">
+              <!-- ko foreach: newsGrouped -->
+              <thead>
+                <tr>
+                  <th colspan="10" data-bind="text:date"></th>
+                </tr>
+              </thead>
+              <tbody data-bind="foreach:values">
+                <tr data-bind="style:{fontWeight:Level == 'H'?'bold':''}">
+                  <td data-bind="text:Country,style:{backgroundColor:Level == 'H'?'coral':''}"></td>
+                  <td data-bind="text:Time.toLocaleTimeString()" style="text-align:right;padding-left:5px;padding-right:1px;white-space:nowrap"></td>
+                  <td data-bind="text:Name"></td>
+                </tr>
+              </tbody>
+              <!-- /ko -->
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--#endregion-->
+    <!--#region Strategies dialog-->
+    <div class="modal" data-bind="elementer:strategiesDialog" id="strategiesDialog" tabindex="-1" role="dialog" aria-labelledby="strategiesDialog" aria-hidden="true">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <!--<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>-->
+            <span class="modal-title" id="myModalLabel">Strategies</span>
+            <input data-bind="textInput:strategyFilter" />
+            <button data-bind="click: clearStrategy" title="Empty Strategy">
+              <span class="glyphicon glyphicon-flash" />
+            </button>
+          </div>
+          <div class="modal-body" data-bind="foreach:strategiesFiltered">
+            <div data-bind="attr:{title:name}">
+              <input data-bind="checked:isSelected" type="checkbox" />
+              <span data-bind="text:nick,click:$parent.updateStrategy,css:{'active-strategy':isActive}"></span>
+              <a data-bind="attr:{href:uri}" target="_blank" class="glyphicon glyphicon-list"></a>
             </div>
           </div>
           <div class="modal-footer" style="display:none">
@@ -937,9 +929,37 @@
       </div>
     </div>
     <!--#endregion-->
-    <!--#region Settings grid-->
-    <!--#endregion-->
-    <!--#endregion-->
+    <!--#region Strategies dialog-->
+    <div class="modal" data-bind="elementer:strategyNameDialog" id="strategyNameDialog" tabindex="-1" role="dialog" aria-labelledby="strategyNameDialog" aria-hidden="true">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <span class="modal-title" id="myModalLabel">Strategy Name</span>
+          </div>
+          <div class="modal-body">
+            <input data-bind="value:strategyNick,elementer:strategyNameInput" style="width:100%" />
+            <div>
+              <div style="display:inline-block">
+                <button data-bind="click:setStrategy.bind(null)">Load</button>
+                <button data-bind="click:removeStrategy.bind(null,false)">Archive</button>
+              </div>
+              <div style="display:inline-block;float:right">
+                <button data-bind="click:saveStrategy.bind(null)">Save</button>
+                <button data-bind="click:removeStrategy.bind(null,true)">Remove</button>
+              </div>
+            </div>
+            <div class="modal-footer" style="display:none">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!--#endregion-->
+      <!--#region Settings grid-->
+      <!--#endregion-->
+      <!--#endregion-->
 
 </body>
 </html>

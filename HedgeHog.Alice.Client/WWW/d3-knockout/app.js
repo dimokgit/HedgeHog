@@ -846,6 +846,42 @@
     var voltageFunction = this.voltageFunction = ko.observableArray();
     var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
     // #endregion
+    // #region GetAccounting
+    var accounting = this.accounting = ko.observableArray();
+    var accountingDialog;
+    var stopAccounting = false;
+    this.accountingDialog = function (element) {
+      var table = $(element).find("table");
+      accountingDialog = table[0];
+    };
+    function getAccounting() {
+      var args = [pair];
+      args.noNote = true;
+      serverCall("getAccounting", args,
+        function (acc) {
+          accounting(acc);
+          if (!stopAccounting)
+            setTimeout(getAccounting, 1000);
+        },
+        function (error) {
+          showErrorPerm("getAccounting: " + error);
+        });
+    }
+    this.startAccounting = function () {
+      stopAccounting = false;
+      $(accountingDialog).dialog({
+        title: "Accounting",
+        width: "auto",
+        dialogClass: "dialog-compact",
+        close: function () {
+          debugger;
+          stopAccounting = true;
+          $(this).dialog("destroy");
+        }
+      });
+      getAccounting();
+    };
+    // #endregion
     //#region WaveRanges
     var currentWareRangesChartNum = 1;
     function getWaveRanges() {

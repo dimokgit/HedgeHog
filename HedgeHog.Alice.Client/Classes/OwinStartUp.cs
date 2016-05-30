@@ -614,6 +614,24 @@ namespace HedgeHog.Alice.Client {
         .Concat(wrStats.Cast<object>())
         /*.Concat(wrStd.Cast<object>())*/.ToArray();
     }
+    public object[] GetAccounting(string pair) {
+      var row = MonoidsCore.ToFunc("", (object)null, (n, v) => new { n, v });
+      var list = new[] { row("", 0) }.Take(0).ToList();
+      var rc = remoteControl.Value;
+      var am = rc.MasterModel.AccountModel;
+      list.Add(row("BalanceOrg", am.OriginalBalance.ToString("c0")));
+      list.Add(row("Balance", am.Balance.ToString("c0")));
+      list.Add(row("Equity", am.Equity.ToString("c0")));
+      UseTradingMacro(pair, tm => {
+        var ht = tm.HaveTrades();
+        list.Add(row("CurrentLoss", am.CurrentLoss.Round(2).ToString("c0") +
+          (ht ? "/" + (am.ProfitPercent).ToString("p1") : "")
+          + "/" + (am.OriginalProfit).ToString("p1")));
+        list.Add(row("PipAmount", tm.PipAmount.ToString("c1") + "/" + tm.PipAmountPercent.ToString("p2")));
+        list.Add(row("LotSize", (tm.LotSize / 1000).ToString("n0") + "K/" + tm.LotSizePercent.ToString("p0")));
+      }, false);
+      return list.ToArray();
+    }
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
     }

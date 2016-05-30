@@ -2736,6 +2736,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    public double PipAmountPercent {
+      get { return PipAmount / Account.Balance; }
+    }
 
     [ResetOnPair]
     double _pipCost = double.NaN;
@@ -3911,11 +3914,12 @@ namespace HedgeHog.Alice.Store {
     #region LotSize
     int _BaseUnitSize = 0;
     public int BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = TradesManager.GetBaseUnitSize(Pair); } }
+    Account _account = null;
+    Account Account { get { return _account ?? (_account = TradesManager.GetAccount()); } } 
     public void SetLotSize(Account account = null) {
       if(TradesManager == null)
         return;
-      if(account == null)
-        account = TradesManager.GetAccount();
+      account = account ?? Account;
       if(account == null)
         return;
       Trade[] trades = Trades;
