@@ -110,8 +110,9 @@ namespace HedgeHog.Alice.Client {
           }
           else
           {
-          FileLogger.LogToFile(e.ToJson());
-          MessageBox.Show(e.Exception + "");
+          FileLogger.LogToFile("App_DispatcherUnhandledException");
+          FileLogger.LogToFile(e.Exception);
+          //MessageBox.Show(e.Exception + "");
         }
       } catch (ObjectDisposedException) {
         MessageBox.Show(e.Exception + "");

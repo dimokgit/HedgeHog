@@ -155,7 +155,7 @@ namespace HedgeHog.Alice.Store {
     }
     public TradeConditionDelegate CalmOk {
       get {
-        return () => AreWavesOk((wr, tm) => 
+        return () => AreWavesOk((wr, tm) =>
         wr.Distance < tm.WaveRangeAvg.Distance && wr.TotalMinutes < tm.WaveRangeAvg.TotalMinutes, 0, BigWaveIndex);
       }
     }
@@ -170,6 +170,21 @@ namespace HedgeHog.Alice.Store {
           let sum = wrs.Take(BigWaveIndex).Sum(wr => wr.Distance)
           let distMin = tm.WaveRangeSum.Distance
           select calm & TradeDirectionByBool(sum >= distMin))
+          .SingleOrDefault();
+        //.Take(BigWaveIndex);
+      }
+    }
+    public TradeConditionDelegate Calm3Ok {
+      get {
+        return () => (
+          from tm in TradingMacroOther().Take(1)
+          where tm.WaveRangeSum != null
+          let wrSum = tm.WaveRangeSum
+          let wrs = tm.WaveRanges.SkipWhile(wr => wr.IsEmpty).Take(BigWaveIndex)
+          let distOk = wrs.All(wr => wr.Distance < wrSum.Distance)
+          let distSum = wrs.Select(wr => wr.Distance).DefaultIfEmpty().Sum()
+          let ppmAvg = wrs.Select(wr => wr.PipsPerMinute).DefaultIfEmpty().Average()
+          select TradeDirectionByBool(distOk && distSum >= wrSum.Distance && ppmAvg >= wrSum.PipsPerMinute))
           .SingleOrDefault();
         //.Take(BigWaveIndex);
       }
