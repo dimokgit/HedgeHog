@@ -778,7 +778,7 @@ namespace HedgeHog.Alice.Store {
 
     #region IsTakeBack
     private bool _IsTakeBack;
-    [WwwSetting()]
+    [WwwSetting(wwwSettingsTradingProfit)]
     [Category(categoryActiveYesNo)]
     [Description("Set exit level to no-loss.")]
     public bool IsTakeBack {
@@ -903,7 +903,8 @@ namespace HedgeHog.Alice.Store {
 
     public const string wwwSettingsTrading = "1.0 Trading";
     public const string wwwSettingsTradingCorridor = "1.1 Trading Corridor";
-    public const string wwwSettingsTradingOther = "1.2 Trading Other";
+    public const string wwwSettingsTradingProfit = "1.2 Trading Profit";
+    public const string wwwSettingsTradingOther = "1.3 Trading Other";
     public const string wwwSettingsTradingConditions = "1.3 Trading Conditions";
     public const string wwwInfoAngles = "Angles";
 

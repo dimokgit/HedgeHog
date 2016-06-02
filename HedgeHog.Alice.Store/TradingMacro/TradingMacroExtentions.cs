@@ -2792,6 +2792,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region UseLastLoss
     private bool _UseLastLoss;
+    [WwwSetting(wwwSettingsTradingProfit)]
     [Category(categoryActiveYesNo)]
     public bool UseLastLoss {
       get { return _UseLastLoss; }
@@ -2800,6 +2801,7 @@ namespace HedgeHog.Alice.Store {
           if(value)
             IsTakeBack = false;
           _UseLastLoss = value;
+          Log = new Exception(new { IsTakeBack } + "");
           OnPropertyChanged("UseLastLoss");
         }
       }
