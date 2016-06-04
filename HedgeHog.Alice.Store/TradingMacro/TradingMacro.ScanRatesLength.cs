@@ -289,12 +289,13 @@ namespace HedgeHog.Alice.Store {
         .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()))
         .ForEach(count => BarsCountCalc = count.Max(BarsCount));
     }
-    void ScanRatesLengthByM1WaveAvg(bool doUseTotalMinutes) {
+    void ScanRatesLengthByM1WaveAvg(bool doUseTotalMinutes,Func<TradingMacro,WaveRange> getWr) {
       if(BarPeriod != BarsPeriodType.t1)
         throw new Exception("ScanRatesLengthByM1Wave is only supported for BarsPeriodType." + BarsPeriodType.t1);
       (from tm in TradingMacroOther()
-       let distMin = InPoints(tm.WaveRangeAvg.Distance)
-       let dateMin = ServerTime.AddMinutes(-tm.WaveRangeAvg.TotalMinutes)
+       let wr = getWr(tm)
+       let distMin = InPoints(wr.Distance)
+       let dateMin = ServerTime.AddMinutes(-wr.TotalMinutes)
        from dates in tm.UseRatesInternal(rates => rates.BackwardsIterator()
        .Distances(_priceAvg).SkipWhile(t => t.Item2 < distMin || (doUseTotalMinutes && t.Item1.StartDate >= dateMin)).Select(t => t.Item1.StartDate).Take(1))
        from date in dates

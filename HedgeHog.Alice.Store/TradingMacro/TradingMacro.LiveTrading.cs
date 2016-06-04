@@ -21,15 +21,15 @@ namespace HedgeHog.Alice.Store {
       return Trades.Any() || HasPendingOrders();
     }
     void LogTradingAction(object message) {
-      if(LogTrades)
-      Log = new Exception(message + "");
+      if(IsInVirtualTrading || LogTrades)
+        Log = new Exception(message + "");
     }
     #region Pending Action
     static MemoryCache _pendingEntryOrders;
     MemoryCache PendingEntryOrders_ {
       [MethodImpl(MethodImplOptions.Synchronized)]
       get {
-        if (_pendingEntryOrders == null)
+        if(_pendingEntryOrders == null)
           _pendingEntryOrders = new MemoryCache(Pair);
         return _pendingEntryOrders;
       }
@@ -63,8 +63,8 @@ namespace HedgeHog.Alice.Store {
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     private void CheckPendingAction(string key, Action<Action> action = null) {
-      if (!HasPendingOrders()) {
-        if (action != null) {
+      if(!HasPendingOrders()) {
+        if(action != null) {
           try {
             Action a = () => {
               var exp = IsInVirtualTrading ? ObjectCache.InfiniteAbsoluteExpiration : DateTimeOffset.Now.AddMinutes(1);
@@ -72,7 +72,7 @@ namespace HedgeHog.Alice.Store {
               AddPendingAction(key, DateTimeOffset.Now, cip);
             };
             action(a);
-          } catch (Exception exc) {
+          } catch(Exception exc) {
             ReleasePendingAction(key);
             Log = exc;
           }
@@ -100,13 +100,13 @@ namespace HedgeHog.Alice.Store {
 
     ISubject<CreateEntryOrderHelper> CreateEntryOrderSubject {
       get {
-        if (_CreateEntryOrderSubject == null) {
+        if(_CreateEntryOrderSubject == null) {
           _CreateEntryOrderSubject = new Subject<CreateEntryOrderHelper>();
           _CreateEntryOrderSubject
               .SubscribeToLatestOnBGThread(s => {
                 try {
                   CheckPendingAction("EO", (pa) => { pa(); GetFXWraper().CreateEntryOrder(s.Pair, s.IsBuy, s.Amount, s.Rate, 0, 0); });
-                } catch (Exception exc) {
+                } catch(Exception exc) {
                   Log = exc;
                 }
               }, exc => Log = exc);
@@ -126,13 +126,13 @@ namespace HedgeHog.Alice.Store {
     ISubject<string> DeleteOrderSubject {
       get {
         lock (_DeleteOrderSubjectLocker)
-          if (_DeleteOrderSubject == null) {
+          if(_DeleteOrderSubject == null) {
             _DeleteOrderSubject = new Subject<string>();
             _DeleteOrderSubject
               .Subscribe(s => {
                 try {
                   GetFXWraper().DeleteOrder(s, false);
-                } catch (Exception exc) { Log = exc; }
+                } catch(Exception exc) { Log = exc; }
               }, exc => Log = exc);
           }
         return _DeleteOrderSubject;
@@ -157,7 +157,7 @@ namespace HedgeHog.Alice.Store {
     public bool CanDoNetLimitOrders {
       get { return _CanDoNetLimitOrders && IsTrader; }
       set {
-        if (_CanDoNetLimitOrders != value) {
+        if(_CanDoNetLimitOrders != value) {
           _CanDoNetLimitOrders = value;
           OnPropertyChanged("CanDoNetLimitOrders");
         }
@@ -172,7 +172,7 @@ namespace HedgeHog.Alice.Store {
     public bool CanDoNetStopOrders {
       get { return _CanDoNetStopOrders && IsTrader; }
       set {
-        if (_CanDoNetStopOrders != value) {
+        if(_CanDoNetStopOrders != value) {
           _CanDoNetStopOrders = value;
           OnPropertyChanged("CanDoNetStopOrders");
         }
@@ -189,7 +189,8 @@ namespace HedgeHog.Alice.Store {
     public bool CanDoEntryOrders {
       get { return _CanDoEntryOrders && IsTrader; }
       set {
-        if (_CanDoEntryOrders == value) return;
+        if(_CanDoEntryOrders == value)
+          return;
         _CanDoEntryOrders = value;
         OnPropertyChanged("CanDoEntryOrders");
       }
@@ -216,7 +217,7 @@ namespace HedgeHog.Alice.Store {
     public double TakeProfitManual {
       get { return _TakeProfitManual; }
       set {
-        if (_TakeProfitManual != value) {
+        if(_TakeProfitManual != value) {
           _TakeProfitManual = value;
           OnPropertyChanged("TakeProfitManual");
         }
@@ -229,11 +230,11 @@ namespace HedgeHog.Alice.Store {
     public DateTime TradeLastChangeDate {
       get { return _TradeLastChangeDate; }
       set {
-        if (_TradeLastChangeDate != value) {
+        if(_TradeLastChangeDate != value) {
           _TradeLastChangeDate = value;
           OnPropertyChanged("TradeLastChangeDate");
           ReactiveTrades.Clear();
-          using (ReactiveTrades.SuppressChangeNotifications())
+          using(ReactiveTrades.SuppressChangeNotifications())
             Trades.ForEach(t => ReactiveTrades.Add(t));
           ReactiveTrades.Reset();
         }
@@ -259,20 +260,20 @@ namespace HedgeHog.Alice.Store {
       Action<Trade, double, double> SetTradeNet = (trade, limit, stop) => {
         //fxWraper.OnNext(() => {
         var fw = GetFXWraper();
-        if (!limit.IsNaN())
+        if(!limit.IsNaN())
           try {
-            if (fw.GetNetOrderRate(Pair, false).Abs(limit) > InPoints(1)) {
+            if(fw.GetNetOrderRate(Pair, false).Abs(limit) > InPoints(1)) {
               //Log = new Exception("FixOrderSetLimit:" + new { trade.Pair, limit = limit.Round(Digits()) });
               fw.FixOrderSetLimit(trade.Id, limit, "");
             }
-          } catch (Exception exc) { Log = exc; }
-        if (!stop.IsNaN())
+          } catch(Exception exc) { Log = exc; }
+        if(!stop.IsNaN())
           try {
-            if (fw.GetNetOrderRate(Pair, true).Abs(stop) > InPoints(1)) {
+            if(fw.GetNetOrderRate(Pair, true).Abs(stop) > InPoints(1)) {
               //Log = new Exception("FixOrderSetStop:" + new { trade.Pair, stop = stop.Round(Digits()) });
               fw.FixOrderSetStop(trade.Id, stop, "");
             }
-          } catch (Exception exc) { Log = exc; }
+          } catch(Exception exc) { Log = exc; }
         TradeLastChangeDate = DateTime.Now;
         //});
       };
@@ -316,7 +317,7 @@ namespace HedgeHog.Alice.Store {
               changeLimit(eo);
               changeRate(eo);
             });
-          } catch (Exception exc) { Log = exc; }
+          } catch(Exception exc) { Log = exc; }
         };
         #endregion
         _reactiveBuySellLevels = new[] { BuyLevel, SellLevel, BuyCloseLevel, SellCloseLevel }.CreateDerivedCollection(sr => sr);
@@ -344,10 +345,10 @@ namespace HedgeHog.Alice.Store {
       #region Net Update Implementations
       var bsCloseLevels = MonoidsCore.ToFunc(() => new[] { BuyCloseLevel, SellCloseLevel }.Where(sr => sr != null));
       Action updateTradeLimitOrders = () => {
-        Func<Trade, double[]> levelRate = trade => bsCloseLevels().Where(sr => sr.IsBuy == !trade.IsBuy).Select(sr=>sr.Rate).Take(1).ToArray();
+        Func<Trade, double[]> levelRate = trade => bsCloseLevels().Where(sr => sr.IsBuy == !trade.IsBuy).Select(sr => sr.Rate).Take(1).ToArray();
         Action<Trade> changeRate = trade => levelRate(trade)
-          .Where(_=> GetFXWraper()!=null)
-          .Where(lr=>trade.Limit.Abs(lr) > PointSize)
+          .Where(_ => GetFXWraper() != null)
+          .Where(lr => trade.Limit.Abs(lr) > PointSize)
           .ForEach(lr => SetTradeNetLimit(trade, lr));
         Trades.Take(1).ForEach(changeRate);
       };
@@ -390,8 +391,10 @@ namespace HedgeHog.Alice.Store {
           .Merge(this.WhenAny(tm => tm.CanDoNetStopOrders, tm => "CanDoNetStopOrders"))
           .Merge(this.WhenAny(tm => tm.IsTrader, tm => "IsTrader"))
           .Subscribe(_ => {
-            if (CanDoNetLimitOrders) updateTradeLimitOrders();
-            else CloseAllNetLimits();
+            if(CanDoNetLimitOrders)
+              updateTradeLimitOrders();
+            else
+              CloseAllNetLimits();
           });
       };
       // New Stop
@@ -410,8 +413,10 @@ namespace HedgeHog.Alice.Store {
           .Merge(this.WhenAny(tm => tm.CanDoNetStopOrders, tm => "CanDoNetStopOrders"))
           .Merge(this.WhenAny(tm => tm.IsTrader, tm => "IsTrader"))
           .Subscribe(_ => {
-            if (CanDoNetStopOrders) updateTradeStopOrders();
-            else CloseAllNetStops();
+            if(CanDoNetStopOrders)
+              updateTradeStopOrders();
+            else
+              CloseAllNetStops();
           });
       };
       #endregion
@@ -431,16 +436,16 @@ namespace HedgeHog.Alice.Store {
           .Sample(bsThrottleTimeSpan)
           .Subscribe(st => {// Turn on/off live entry orders
             try {
-              if (st) {// Subscribe to events in order to update live entry orders
+              if(st) {// Subscribe to events in order to update live entry orders
                 //Log = new Exception("startBuySellLevelsTracking");
                 startBuySellLevelsTracking();
-              } else if (_reactiveBuySellLevelsSubscribtion != null) {
+              } else if(_reactiveBuySellLevelsSubscribtion != null) {
                 try {
                   GetEntryOrders().ToList().ForEach(order => OnDeletingOrder(order.OrderID));
-                } catch (Exception exc) { Log = exc; }
+                } catch(Exception exc) { Log = exc; }
                 CleanReactiveBuySell(ref _reactiveBuySellLevelsSubscribtion, ref _reactiveBuySellLevels);
               }
-            } catch (Exception exc) { Log = exc; }
+            } catch(Exception exc) { Log = exc; }
           });
       #endregion
       #region Init BuySellCloseLevels
@@ -477,15 +482,15 @@ namespace HedgeHog.Alice.Store {
           .Subscribe(st => {// Turn on/off live net orders
             try {
               CleanReactiveBuySell(ref _reactiveBuySellCloseLimitSubscribtion, ref _reactiveBuySellLimitLevels);
-              if (!CanDoNetLimitOrders) {
+              if(!CanDoNetLimitOrders) {
                 //Log = new Exception("Stop Limit Tracking");
                 CloseAllNetLimits();
               }
-              if (st) {// (Re)Subscribe to events in order to update live net orders
+              if(st) {// (Re)Subscribe to events in order to update live net orders
                 //Log = new Exception("Start Limit Tracking");
                 startBuySellCloseLimitTracking();
               }
-            } catch (Exception exc) { Log = exc; }
+            } catch(Exception exc) { Log = exc; }
           });
       // Net Stop
       this.WhenAny(
@@ -499,15 +504,15 @@ namespace HedgeHog.Alice.Store {
           .Subscribe(st => {// Turn on/off live net orders
             try {
               CleanReactiveBuySell(ref _reactiveBuySellCloseStopSubscribtion, ref _reactiveBuySellStopLevels);
-              if (!CanDoNetStopOrders) {
+              if(!CanDoNetStopOrders) {
                 //Log = new Exception("Stop Stop Tracking");
                 CloseAllNetStops();
               }
-              if (st) {// (Re)Subscribe to events in order to update live net orders
+              if(st) {// (Re)Subscribe to events in order to update live net orders
                 //Log = new Exception("Start Stop Tracking");
                 startBuySellCloseStopTracking();
               }
-            } catch (Exception exc) { Log = exc; }
+            } catch(Exception exc) { Log = exc; }
           });
       #endregion
 
@@ -515,7 +520,7 @@ namespace HedgeHog.Alice.Store {
 
 
     private static void CleanReactiveBuySell<T>(ref CompositeDisposable subscribsion, ref IReactiveDerivedList<T> reaciveList) {
-      if (subscribsion != null) {
+      if(subscribsion != null) {
         subscribsion.Dispose();
         subscribsion = null;
         reaciveList.Dispose();

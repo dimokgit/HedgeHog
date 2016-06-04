@@ -234,12 +234,13 @@ namespace HedgeHog.Alice.Store {
             WorkByHeight = rsd(w => w.WorkByHeight),
             WorkByTime = rsd(w => w.WorkByTime),
             Angle = wrs.StandardDeviation(w => w.Angle),
-            TotalMinutes = wrs.ToArray(w => w.TotalMinutes).RelativeStandardDeviation().ToPercent(),
+            TotalMinutes = wrs.Select(w => w.TotalMinutes).PowerMeanPower(1 / TrendHeightPerc),
             HSDRatio = avg2(wrs, w => w.HSDRatio, w => 1 / w.Distance),
             Height = rsd(w => w.Height),
-            StDev = wrs.Select(w => w.StDev).PowerMeanPower(.1),
-            PipsPerMinute = RatesPipsPerMInute
+            StDev = wrs.Select(w => w.StDev).PowerMeanPower(.1)
           };
+          ws.PipsPerMinute = ws.Distance / ws.TotalMinutes;
+
 
           var wa = new WaveRange(1) {
             DistanceCma = avg2(wrs, w => w.DistanceCma, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),

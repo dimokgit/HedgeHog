@@ -174,20 +174,40 @@ namespace HedgeHog.Alice.Store {
         //.Take(BigWaveIndex);
       }
     }
+    [TradeConditionAsleep]
     public TradeConditionDelegate Calm3Ok {
       get {
         return () => (
-          from tm in TradingMacroOther().Take(1)
+          from tm in TradingMacroOther()
           where tm.WaveRangeSum != null
-          let wrSum = tm.WaveRangeSum
+          let wrAvg = tm.WaveRangeAvg
           let wrs = tm.WaveRanges.SkipWhile(wr => wr.IsEmpty).Take(BigWaveIndex)
-          let distOk = wrs.All(wr => wr.Distance < wrSum.Distance)
+          let distOk = wrs.All(wr => wr.Distance < wrAvg.Distance)
           let distSum = wrs.Select(wr => wr.Distance).DefaultIfEmpty().Sum()
           let ppmAvg = wrs.Select(wr => wr.PipsPerMinute).DefaultIfEmpty().Average()
-          select TradeDirectionByBool(distOk && distSum >= wrSum.Distance && ppmAvg >= wrSum.PipsPerMinute))
-          .SingleOrDefault();
+          select TradeDirectionByBool(distOk && distSum >= wrAvg.Distance && ppmAvg >= wrAvg.PipsPerMinute))
+          .FirstOrDefault();
         //.Take(BigWaveIndex);
       }
+    }
+    [TradeConditionAsleep]
+    public TradeConditionDelegate Calm4Ok {
+      get {
+        return () => Calm3Impl((wr, tm) => wr.Distance > tm.WaveRangeAvg.Distance);
+      }
+    }
+    public TradeDirections Calm3Impl(Func<WaveRange, TradingMacro, bool> condDist) {
+      return (
+        from tm in TradingMacroOther()
+        where tm.WaveRangeSum != null
+        let wrSum = tm.WaveRangeSum
+        let wrs = tm.WaveRanges.SkipWhile(wr => wr.IsEmpty).Take(BigWaveIndex)
+        let distOk = wrs.All(wr => condDist(wr, tm))
+        let distSum = wrs.Select(wr => wr.Distance).DefaultIfEmpty().Sum()
+        let ppmAvg = wrs.Select(wr => wr.PipsPerMinute).DefaultIfEmpty().Average()
+        select TradeDirectionByBool(distOk && distSum >= wrSum.Distance && ppmAvg >= wrSum.PipsPerMinute))
+        .FirstOrDefault();
+      //.Take(BigWaveIndex);
     }
     private TradeDirections IsWaveOk(Func<WaveRange, TradingMacro, bool> predicate, int index) {
       return TradingMacroOther()
@@ -1178,7 +1198,7 @@ namespace HedgeHog.Alice.Store {
 
     public TradeConditionDelegate WCOk {
       get {
-        return () => TradeDirectionByBool(HeightForWrapToCorridor() < StDevByPriceAvg * 2);
+        return () => TradeDirectionByBool(HeightForWrapToCorridor() < StDevByPriceAvg.Avg(StDevByHeight) * 4);
       }
     }
     [TradeConditionTurnOff]
