@@ -209,6 +209,37 @@ namespace HedgeHog.Alice.Store {
         .FirstOrDefault();
       //.Take(BigWaveIndex);
     }
+    [TradeConditionAsleep]
+    public TradeConditionDelegate WvDistAOk {
+      get {
+        return () => TradeDirectionByBool(CalmImpl((wr, tm) => wr.Distance < tm.WaveRangeAvg.Distance));
+      }
+    }
+    [TradeConditionAsleep]
+    public TradeConditionDelegate WvDistSOk {
+      get {
+        return () => TradeDirectionByBool(CalmImpl((wr, tm) => wr.Distance < tm.WaveRangeSum.Distance));
+      }
+    }
+    [TradeConditionAsleep]
+    public TradeConditionDelegate WvAngAOk {
+      get {
+        return () => TradeDirectionByBool(CalmImpl((wr, tm) => wr.Angle.Abs() > tm.WaveRangeAvg.Angle));
+      }
+    }
+    public bool CalmImpl(Func<WaveRange, TradingMacro, bool> cond) {
+      return CalmImpl(new[] { cond });
+    }
+    public bool CalmImpl(IEnumerable<Func<WaveRange, TradingMacro, bool>> conds) {
+      return (
+        from tm in TradingMacroOther()
+        where tm.WaveRangeAvg != null && tm.WaveRangeSum != null
+        from wr in tm.WaveRanges.SkipWhile(wr => wr.IsEmpty).Take(BigWaveIndex)
+        from cond in conds
+        select cond(wr, tm)
+        )
+        .All(b => b);
+    }
     private TradeDirections IsWaveOk(Func<WaveRange, TradingMacro, bool> predicate, int index) {
       return TradingMacroOther()
       .Take(1)
@@ -1198,7 +1229,7 @@ namespace HedgeHog.Alice.Store {
 
     public TradeConditionDelegate WCOk {
       get {
-        return () => TradeDirectionByBool(HeightForWrapToCorridor() < StDevByPriceAvg.Avg(StDevByHeight) * 4);
+        return () => TradeDirectionByBool(HeightForWrapToCorridor() < StDevByPriceAvg.Avg(StDevByHeight) * 3);
       }
     }
     [TradeConditionTurnOff]

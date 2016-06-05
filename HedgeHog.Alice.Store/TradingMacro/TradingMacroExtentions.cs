@@ -2397,29 +2397,6 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
-    CorridorStatistics ShowVoltsByGRBAvg1() {
-      if(CanTriggerTradeDirection()) {
-        var avgs = TrendLinesTrendsAll.Skip(1).ToArray(tl => tl.PriceAvg1).ToArray();
-        var volt = avgs
-         .Permutation()
-         .Select(c => c[0].Abs(c[1]))
-         .StandardDeviation();
-        SetVots(InPips(volt), 2, true);
-      }
-      return null;
-    }
-    CorridorStatistics ShowVoltsByGRBRatios() {
-      ShowVoltsByHrStdTrendsRatios(TrendLinesTrendsAll.Skip(1), SetVoltsByStd);
-      return null;
-    }
-    CorridorStatistics ShowVoltsByGRBMins() {
-      ShowVoltsByTrendsMins(TrendLinesTrendsAll, v => SetVoltsByStd(v * 100, TrendLines1Trends));
-      return null;
-    }
-    CorridorStatistics ShowVoltsByGRBMax() {
-      ShowVoltsByTrendsMax(TrendLinesTrendsAll, v => SetVoltsByStd(v * 100, TrendLinesTrends));
-      return null;
-    }
     private void SetVoltsByStd(double volt) {
       SetVoltsByStd(volt, TrendLines2Trends);
     }
@@ -3693,6 +3670,9 @@ namespace HedgeHog.Alice.Store {
           break;
         case TradingMacroTakeProfitFunction.Green:
           tp = tradeLeveBy(TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0);
+          break;
+        case TradingMacroTakeProfitFunction.Greenish:
+          tp = tradeLeveBy(TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0).Avg(tradeLeveBy(TradeLevelBy.PriceLimeH, TradeLevelBy.PriceLimeL));
           break;
         case TradingMacroTakeProfitFunction.Red:
           tp = tradeLeveBy(TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3);

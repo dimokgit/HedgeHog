@@ -32,18 +32,20 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByAvgLineRatio;
         case HedgeHog.Alice.VoltageFunction.TrendHieghts:
           return ShowVoltsByTrendHeighRatioAll;
-        case HedgeHog.Alice.VoltageFunction.GRBAvg1:
-          return ShowVoltsByGRBAvg1;
-        case HedgeHog.Alice.VoltageFunction.GRBHA1:
-          return ShowVoltsByGRBRatios;
-        case HedgeHog.Alice.VoltageFunction.GRBHA1Avg:
-          return ShowVoltsByGRBMins;
-        case HedgeHog.Alice.VoltageFunction.GRBHMax:
-          return ShowVoltsByGRBMax;
         case HedgeHog.Alice.VoltageFunction.Rsd:
           return ShowVoltsByRsd;
         case HedgeHog.Alice.VoltageFunction.PPM:
           return ShowVoltsByPPM;
+        case HedgeHog.Alice.VoltageFunction.PpmM1:
+          return () => {
+            SetVoltsByPpm();
+            return null;
+          };
+        case HedgeHog.Alice.VoltageFunction.PpmRatio:
+          return () => {
+            SetVoltsByPpmRatio();
+            return null;
+          };
       }
       throw new NotSupportedException(VoltageFunction_ + " not supported.");
     }
@@ -166,6 +168,8 @@ namespace HedgeHog.Alice.Store {
           return () => ScanRatesLengthByM1WaveAvg(true, tm => tm.WaveRangeAvg);
         case RatesLengthFunction.M1WaveAvg3:
           return () => ScanRatesLengthByM1WaveAvg(true, tm => tm.WaveRangeSum);
+        case RatesLengthFunction.M1CorrsAvg:
+          return ScanRatesLengthByM1CorridorsAvg;
         default:
           throw new NotImplementedException(new { RatesLengthFunction = RatesLengthBy, Error = "Not implemented" } + "");
       }

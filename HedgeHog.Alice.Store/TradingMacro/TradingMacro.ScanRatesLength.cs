@@ -289,11 +289,12 @@ namespace HedgeHog.Alice.Store {
         .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()))
         .ForEach(count => BarsCountCalc = count.Max(BarsCount));
     }
-    void ScanRatesLengthByM1WaveAvg(bool doUseTotalMinutes,Func<TradingMacro,WaveRange> getWr) {
+    void ScanRatesLengthByM1WaveAvg(bool doUseTotalMinutes, Func<TradingMacro, WaveRange> getWr) {
       if(BarPeriod != BarsPeriodType.t1)
         throw new Exception("ScanRatesLengthByM1Wave is only supported for BarsPeriodType." + BarsPeriodType.t1);
       (from tm in TradingMacroOther()
        let wr = getWr(tm)
+       where wr != null
        let distMin = InPoints(wr.Distance)
        let dateMin = ServerTime.AddMinutes(-wr.TotalMinutes)
        from dates in tm.UseRatesInternal(rates => rates.BackwardsIterator()
@@ -302,6 +303,16 @@ namespace HedgeHog.Alice.Store {
        from counts in UseRatesInternal(rates => rates.FuzzyIndex(date, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate)))
        from count in counts
        select RatesInternal.Count - count
+       ).ForEach(count => BarsCountCalc = count.Max(BarsCount));
+    }
+    void ScanRatesLengthByM1CorridorsAvg() {
+      if(BarPeriod != BarsPeriodType.t1)
+        throw new Exception("ScanRatesLengthByM1Wave is only supported for BarsPeriodType." + BarsPeriodType.t1);
+      (from tm in TradingMacroOther()
+       let distance = tm.TrendLinesTrendsAll.Skip(0).Select(tl => tl.StDev * 4).DefaultIfEmpty().Average()
+       select UseRatesInternal(rates => rates.BackwardsIterator().Distances(_priceAvg).SkipWhile(t => t.Item2 < distance).Count()) into counts
+       from count in counts
+       select count
        ).ForEach(count => BarsCountCalc = count.Max(BarsCount));
     }
     IEnumerable<int> BarsCountByM1() {

@@ -11,12 +11,10 @@ namespace HedgeHog.Alice {
     StDev,
     TrendHieghts,
     AvgLineRatio,
-    GRBAvg1,
-    GRBHA1,
-    GRBHA1Avg,
-    GRBHMax,
     Rsd,
     PPM,
+    PpmM1,
+    PpmRatio,
     StDevInsideOutRatio,
     HourlyStDevAvg,
     StDevSumRatio
@@ -41,7 +39,8 @@ namespace HedgeHog.Alice.Store {
     M1Wave,
     M1WaveAvg,
     M1WaveAvg2,
-    M1WaveAvg3
+    M1WaveAvg3,
+    M1CorrsAvg
   }
   public enum ScanCorridorFunction {
     StDevSplits = 46,
@@ -78,13 +77,14 @@ namespace HedgeHog.Alice.Store {
     Recorder = 1000
   }
   public enum TradingMacroTakeProfitFunction {
-    BuySellLevels = 1,
-    RatesHeight = 2,
-    Pips = 3,
-    Lime = 4,
-    Green = 5,
-    Red = 6,
-    Blue = 7,
+    BuySellLevels,
+    RatesHeight,
+    Pips,
+    Lime,
+    Green,
+    Greenish,
+    Red,
+    Blue,
     TradeHeight = 8,
     StDev = 9
   }

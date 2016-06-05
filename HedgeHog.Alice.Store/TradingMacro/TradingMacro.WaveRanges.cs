@@ -12,164 +12,6 @@ namespace HedgeHog.Alice.Store {
     double waveWidthAvgIterCnt = 2000;
     double _lastTotalMinuteStDev = double.MaxValue;
     int _lastTotalMinuteStDevStep = 1;
-    private void ScanForWaveRanges(List<Rate> rates) {
-      try {
-        #region Average Wave Height Calc
-        var makeWaves = MonoidsCore.ToFunc((List<Rate>)null, 0.0, 0, (rateses, period, cmaPasses) => {
-          List<WaveRange> wr = GetWaveRanges(rateses, period, cmaPasses);
-
-          #region Split First Wave
-          var splitIndex = wr.Take(1)
-          .Where(w => !w.IsEmpty)
-          .Select(w => w.Range.IndexOf((w.Slope > 0
-              ? w.Range.MaxBy(r => r.AskHigh)
-              : w.Range.MinBy(r => r.AskLow)
-              ).First()))
-              .DefaultIfEmpty(-1)
-              .First();
-          WaveRange wTail = new WaveRange(0);
-          wr.Take(1)
-          .Where(w => !w.IsEmpty)
-          .ToArray()
-            .Select(w => w.Count)
-            .Where(wrCount => splitIndex.Div(wrCount) > .1)
-            .Select(wrCount => {
-              var range = wr[0].Range;
-              var wr0 = range.GetRange(0, splitIndex + 1).ToList();
-              var rangeTail = range.GetRange(splitIndex + 1, range.Count - (splitIndex + 1));
-              if(rangeTail.Any() && rangeTail.Last().StartDate.Subtract(rangeTail[0].StartDate).TotalSeconds > 3)
-                return new { wr0, wrTail = new WaveRange(rangeTail, PointSize, BarPeriod) { IsTail = true } };
-              return null;
-            })
-            .Where(x => x != null)
-            .ForEach(x => {
-              wr = new[] { x.wr0 }.Select(w => new WaveRange(w, PointSize, BarPeriod)).Concat(wr.Skip(1)).ToList();
-              wTail = x.wrTail;
-            });
-          if(wTail.Count < 3 || wTail.TotalSeconds < 3)
-            wTail = new WaveRange();
-          #endregion
-
-          #region Wave Stats
-          #region Stats Funcs
-          Func<IList<WaveRange>, Func<WaveRange, double>, double> summ = (wrs0, v) => wrs0.Select(v).DefaultIfEmpty(double.NaN).Sum();
-          Func<IList<WaveRange>, Func<WaveRange, double>, double> avg = (wrs0, v) =>
-            summ(wrs0, w => v(w) * w.HSDRatio) / summ(wrs0, w => w.HSDRatio);
-          Func<IList<WaveRange>, Func<WaveRange, double>, Func<WaveRange, double>, double> avg2 = (wrs0, v, d) =>
-              summ(wrs0, w => v(w) * d(w)) / summ(wrs0, w => d(w));
-          Func<Func<WaveRange, double>, double> avgUp = value => wr.Select(value).DefaultIfEmpty().ToArray().AverageByAverageUp();
-          Func<IList<WaveRange>, Func<WaveRange, double>, double> avgStd = (wrs0, v) => {
-            var sd = wrs0.StandardDeviation(v) * 2;
-            var a = wrs0.Average(v);
-            return wrs0.Select(w => v(w).Abs()).Where(d => d.Between(a - sd, a + sd)).Average();
-          };
-          Func<Func<WaveRange, double>, double> rsd = value => wr.Select(value).DefaultIfEmpty().Sum();
-          #endregion
-
-          var wrs = wr.SkipLast(wr.Count > 4 ? 1 : 0).Where(w => !w.Distance.IsNaNOrZero()).ToArray();
-
-          var ws = new WaveRange(1) {
-            Distance = wrs.ToArray(w => w.Distance).RelativeStandardDeviation().ToPercent(),
-            DistanceCma = avg2(wrs, w => w.DistanceCma, w => w.Distance),
-            DistanceByRegression = avg2(wrs, w => w.DistanceByRegression, w => w.Distance),
-            WorkByHeight = rsd(w => w.WorkByHeight),
-            WorkByTime = rsd(w => w.WorkByTime),
-            Angle = wrs.StandardDeviation(w => w.Angle),
-            TotalMinutes = wrs.ToArray(w => w.TotalMinutes).RelativeStandardDeviation().ToPercent(),
-            HSDRatio = avg2(wrs, w => w.HSDRatio, w => 1 / w.Distance),
-            Height = rsd(w => w.Height),
-            StDev = avg2(wrs, w => w.StDev, w => w.Distance)
-          };
-
-          var wa = new WaveRange(1) {
-            DistanceCma = avg2(wrs, w => w.DistanceCma, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),
-            DistanceByRegression = avg2(wrs, w => w.DistanceByRegression, w => 1 / Math.Pow(w.Distance, 1 / 3.0)),
-            WorkByHeight = avg(wrs, w => w.WorkByHeight),
-            WorkByTime = avg(wrs, w => w.WorkByTime),
-            HSDRatio = avg2(wrs, w => w.HSDRatio, w => w.Distance),
-            Height = avg(wrs, w => w.Height),
-            StDev = avg2(wrs, w => w.StDev, w => 1 / w.Distance)
-          };
-          try {
-            wa.Distance = avg2(wrs, w => w.Distance, w => 1 / w.TotalMinutes);
-            wa.Angle = avgStd(wrs, w => w.Angle.Abs());
-            wa.TotalMinutes = avg2(wrs, w => w.TotalMinutes, w => 1 / w.Distance);
-          } catch(Exception exc) {
-            Log = exc;
-            return null;
-          }
-          #endregion
-          #region Conditions
-          wr.ForEach(w => w.IsFatnessOk = w.StDev <= wa.StDev);
-          wr.ForEach(w => w.IsDistanceCmaOk = w.DistanceCma >= wa.DistanceCma);
-          #endregion
-
-          return new { wr, wTail, wa, ws };
-        });
-
-        #endregion
-
-        if(!IsCorridorFrozen()) {
-          var wrwt = makeWaves(rates, PriceCmaLevels, CmaPasses);
-          if(wrwt == null)
-            return;
-          WaveRanges = wrwt.wr;
-          WaveRangeTail = wrwt.wTail;
-          WaveRangeSum = wrwt.ws;
-          WaveRangeAvg = wrwt.wa;
-
-          #region Adjust CmaPasses
-          Action setCmaPasses = () => {
-            try {
-              Func<WaveRange, double> stDever = WaveSmoothFunc();
-              var makeWaveses = MonoidsCore.ToFunc((IEnumerable<int>)null, ups => ups
-              .Where(i => i > 0)
-              .Select(cmaPasses => new { sd = stDever(makeWaves(rates, PriceCmaLevels, cmaPasses).ws), cmaPasses }));
-
-              var up = makeWaveses(Enumerable.Range(1, 500)).ToArray();
-              var bufferCount = rates.Count.Div(100).ToInt();
-              var up2 = up
-                .Buffer(rates.Count.Div(100).ToInt(), 1)
-                .Where(b => b.Count == bufferCount)
-                .Select(b => new { b, avg = b.Average(x => x.sd) })
-                .OrderBy(x => x.avg)
-                .ToArray();
-              up2
-                .Take(1)
-                .SelectMany(x => x.b)
-                .MinBy(x => x.sd)
-                .OrderBy(x => x.cmaPasses)
-                .Take(1)
-                .ForEach(x => {
-                  CmaPassesCalc = x.cmaPasses;
-                  Log = new Exception(new { CmaPassesCalc } + "");
-                });
-            } catch(Exception exc) {
-              Log = exc;
-            }
-          };
-          if(CmaPassesMin > 0)
-            _addHistoryOrdersBuffer.Push(setCmaPasses);
-          #endregion
-        } else {
-          var firstWaveRange = rates.BackwardsIterator().TakeWhile(r => r.StartDate >= WaveRanges[0].StartDate).Reverse().ToList();
-          WaveRanges = new[] { new WaveRange(firstWaveRange, PointSize, BarPeriod) }.Concat(WaveRanges.Skip(1)).ToList();
-          WaveRangeTail = new WaveRange(0);
-        }
-
-        Func<WaveRange, double> bfp = w => w.DistanceByRegression;// WaveRangeAvg.BestFitProp();
-        WaveFirstSecondRatio = WaveRanges.Take(1).Select(w1 => bfp(w1) / bfp(WaveRangeAvg)).FirstOrDefault();
-
-        WaveHeightAverage = WaveRangeAvg.Height;
-        WaveHeightPower = new[]{
-          WaveRangeAvg.WorkByHeight,
-          WaveRangeAvg.Height ,
-          WaveRangeAvg.DistanceByRegression
-        }.StandardDeviation();
-      } catch(Exception exc) {
-        Log = exc;
-      }
-    }
 
     private void ScanForWaveRanges2(List<Rate> rates) {
       try {
@@ -226,15 +68,16 @@ namespace HedgeHog.Alice.Store {
           #endregion
 
           var wrs = wr.SkipLast(wr.Count > 4 ? 1 : 0).Where(w => !w.Distance.IsNaNOrZero()).ToArray();
+          Func<Func<WaveRange, double>, double, double> pwmp = (w, power) => wrs.Select(w).PowerMeanPower(power);
 
           var ws = new WaveRange(1) {
-            Distance = wrs.Select(w => w.Distance).PowerMeanPower(1 / TrendHeightPerc),
+            Distance = pwmp(w => w.Distance, 1 / TrendHeightPerc),
             DistanceCma = avg2(wrs, w => w.DistanceCma, w => w.Distance),
             DistanceByRegression = avg2(wrs, w => w.DistanceByRegression, w => w.Distance),
             WorkByHeight = rsd(w => w.WorkByHeight),
             WorkByTime = rsd(w => w.WorkByTime),
-            Angle = wrs.StandardDeviation(w => w.Angle),
-            TotalMinutes = wrs.Select(w => w.TotalMinutes).PowerMeanPower(1 / TrendHeightPerc),
+            Angle = pwmp(w => w.Angle.Abs(), 1 / TrendHeightPerc),
+            TotalMinutes = pwmp(w => w.TotalMinutes, 1 / TrendHeightPerc),
             HSDRatio = avg2(wrs, w => w.HSDRatio, w => 1 / w.Distance),
             Height = rsd(w => w.Height),
             StDev = wrs.Select(w => w.StDev).PowerMeanPower(.1)
@@ -252,9 +95,9 @@ namespace HedgeHog.Alice.Store {
             StDev = wrs.Select(w => w.StDev).PowerMeanPower(10)
           };
           try {
-            wa.Distance = wrs.Select(w => w.Distance).PowerMeanPower(TrendHeightPerc);
-            wa.Angle = wrs.Average(w => w.Angle.Abs());
-            wa.TotalMinutes = wrs.Select(w => w.TotalMinutes).PowerMeanPower(TrendHeightPerc);
+            wa.Distance = pwmp(w => w.Distance,TrendHeightPerc);
+            wa.Angle = pwmp(w => w.Angle.Abs(),TrendHeightPerc);
+            wa.TotalMinutes = pwmp(w => w.TotalMinutes,TrendHeightPerc);
             wa.PipsPerMinute = wa.Distance / wa.TotalMinutes;
           } catch(Exception exc) {
             Log = exc;
