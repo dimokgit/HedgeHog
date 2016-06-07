@@ -960,8 +960,8 @@ namespace HedgeHog.Alice.Store {
                 var isVoltHigh = new Func<bool>(() => GetVoltage(RateLast) > GetVoltageHigh()).Yield()
                   .Select(f => f())
                   .Do(b => {
-                  //if (b) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                }).Memoize();
+                    //if (b) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                  }).Memoize();
                 var isVoltLow = new Func<bool>(() => GetVoltage(RateLast) < GetVoltageAverage()).Yield()
                   .Select(f => f());
                 var getUpDown = new { up = CenterOfMassBuy, down = CenterOfMassSell };
@@ -1202,7 +1202,12 @@ namespace HedgeHog.Alice.Store {
 
                 var toai = MonoidsCore.ToFunc(() => TradeOpenActionsInfo((d, n) => new { n, d }).ToArray());
                 Action setLevels = () => {
-                  if(!TradeConditionsHaveSetCorridor())
+                  if(IsAsleep) {
+                    TradingMacroOther().Take(1).ForEach(tm => {
+                      SellLevel.Rate = tm.TrendLines0Trends.PriceAvg2;
+                      BuyLevel.Rate = tm.TrendLines0Trends.PriceAvg3;
+                    });
+                  } else if(!TradeConditionsHaveSetCorridor())
                     SetTradeLevelsToLevelBy(GetTradeLevel)();
                   if(IsTrader)
                     adjustExitLevels2();

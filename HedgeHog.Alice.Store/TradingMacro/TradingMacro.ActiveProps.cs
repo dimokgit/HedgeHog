@@ -65,7 +65,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region TradeCountStart
     private int _TradeCountStart;
-    [WwwSetting(Group = wwwSettingsTradingOther)]
+    [WwwSetting(Group = wwwSettingsTradingConditions)]
     [Category(categoryActive)]
     [DisplayName("TradeCountStart")]
     [Description("Starting TradeCount for Buy/Sell Trade Lines")]

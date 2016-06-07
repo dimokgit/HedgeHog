@@ -463,10 +463,6 @@
     this.saveTradeSettings = function () {
       saveTradeSettings(tradeSettingsCurrent());
     };
-    this.setCloseLevelsToGreen = function () {
-      self.setTradeCloseLevelBuy({ value: "PriceHigh0" });
-      self.setTradeCloseLevelSell({ value: "PriceLow0" });
-    };
     this.setCloseLevelsToGRB1 = function () {
       self.setTradeCloseLevelBuy({ value: "PriceMax1" });
       self.setTradeCloseLevelSell({ value: "PriceMin1" });

@@ -289,21 +289,25 @@ namespace HedgeHog.Alice.Store {
         .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()))
         .ForEach(count => BarsCountCalc = count.Max(BarsCount));
     }
-    void ScanRatesLengthByM1WaveAvg(bool doUseTotalMinutes, Func<TradingMacro, WaveRange> getWr) {
+    void ScanRatesLengthByM1WaveAvg(bool doUseTotalMinutes, Func<TradingMacro, IEnumerable<WaveRange>> getWr) {
       if(BarPeriod != BarsPeriodType.t1)
         throw new Exception("ScanRatesLengthByM1Wave is only supported for BarsPeriodType." + BarsPeriodType.t1);
-      (from tm in TradingMacroOther()
-       let wr = getWr(tm)
-       where wr != null
-       let distMin = InPoints(wr.Distance)
-       let dateMin = ServerTime.AddMinutes(-wr.TotalMinutes)
-       from dates in tm.UseRatesInternal(rates => rates.BackwardsIterator()
-       .Distances(_priceAvg).SkipWhile(t => t.Item2 < distMin || (doUseTotalMinutes && t.Item1.StartDate >= dateMin)).Select(t => t.Item1.StartDate).Take(1))
-       from date in dates
-       from counts in UseRatesInternal(rates => rates.FuzzyIndex(date, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate)))
-       from count in counts
-       select RatesInternal.Count - count
-       ).ForEach(count => BarsCountCalc = count.Max(BarsCount));
+      try {
+        (from tm in TradingMacroOther()
+         let wr = getWr(tm)
+         where wr != null
+         let distMin = InPoints(wr.Average(w => w.Distance))
+         let dateMin = ServerTime.AddMinutes(-wr.Min(w => w.TotalMinutes))
+         from dates in tm.UseRatesInternal(rates => rates.BackwardsIterator()
+         .Distances(_priceAvg).SkipWhile(t => t.Item2 < distMin || (doUseTotalMinutes && t.Item1.StartDate >= dateMin)).Select(t => t.Item1.StartDate).Take(1))
+         from date in dates
+         from counts in UseRatesInternal(rates => rates.FuzzyIndex(date, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate)))
+         from count in counts
+         select RatesInternal.Count - count
+         ).ForEach(count => BarsCountCalc = count.Max(BarsCount));
+      }catch(Exception exc) {
+        Log = exc;
+      }
     }
     void ScanRatesLengthByM1CorridorsAvg() {
       if(BarPeriod != BarsPeriodType.t1)

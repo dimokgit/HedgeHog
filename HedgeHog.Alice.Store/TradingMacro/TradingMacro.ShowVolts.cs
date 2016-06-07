@@ -163,11 +163,11 @@ namespace HedgeHog.Alice.Store {
         case RatesLengthFunction.M1Wave:
           return ScanRatesLengthByM1Wave;
         case RatesLengthFunction.M1WaveAvg:
-          return () => ScanRatesLengthByM1WaveAvg(false, tm => tm.WaveRangeAvg);
+          return () => ScanRatesLengthByM1WaveAvg(false, tm => new[] { tm.WaveRangeAvg });
         case RatesLengthFunction.M1WaveAvg2:
-          return () => ScanRatesLengthByM1WaveAvg(true, tm => tm.WaveRangeAvg);
+          return () => ScanRatesLengthByM1WaveAvg(true, tm => new[] { tm.WaveRangeAvg });
         case RatesLengthFunction.M1WaveAvg3:
-          return () => ScanRatesLengthByM1WaveAvg(true, tm => tm.WaveRangeSum);
+          return () => ScanRatesLengthByM1WaveAvg(true, tm => new[] { tm.WaveRangeAvg, tm.WaveRangeSum });
         case RatesLengthFunction.M1CorrsAvg:
           return ScanRatesLengthByM1CorridorsAvg;
         default:

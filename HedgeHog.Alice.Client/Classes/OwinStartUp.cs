@@ -234,8 +234,8 @@ namespace HedgeHog.Alice.Client {
       var digits = tmTrader.Digits();
       return new {
         time = tm0.ServerTime.ToString(timeFormat),
-        prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 1),
-        otg = IntOrDouble(tmTrader.OpenTradesGross2InPips, 1),
+        prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 3),
+        otg = IntOrDouble(tmTrader.OpenTradesGross2InPips, 3),
         tps = tm0.TicksPerSecondAverage.Round(1),
         dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"h\:mm")
           + (tm1 != null ? "," + (tm1.RatesArray.Count * tm1.BarPeriodInt).FromMinutes().TotalDays.Round(1) : ""),// + "|" + TimeSpan.FromMinutes(tm1.RatesDuration).ToString(@"h\:mm"),

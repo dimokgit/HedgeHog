@@ -569,7 +569,7 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Trading Distance")]
     [Category(categoryActiveFuncs)]
     [Description("TradingDistanceFunction")]
-    [WwwSetting(Group = wwwSettingsTradingOther)]
+    [WwwSetting(Group = wwwSettingsTradingConditions)]
     public TradingMacroTakeProfitFunction TradingDistanceFunction {
       get { return (TradingMacroTakeProfitFunction)PowerRowOffset; }
       set {
@@ -904,8 +904,8 @@ namespace HedgeHog.Alice.Store {
     public const string wwwSettingsTrading = "1.0 Trading";
     public const string wwwSettingsTradingCorridor = "1.1 Trading Corridor";
     public const string wwwSettingsTradingProfit = "1.2 Trading Profit";
-    public const string wwwSettingsTradingOther = "1.3 Trading Other";
     public const string wwwSettingsTradingConditions = "1.3 Trading Conditions";
+    public const string wwwSettingsTradingParams = "1.4 Trading Params";
     public const string wwwInfoAngles = "Angles";
 
     #region CloseAfterTradingHours
@@ -923,7 +923,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    [WwwSetting(Group = wwwSettingsTradingOther)]
+    [WwwSetting(Group = wwwSettingsTradingConditions)]
     [Category(categoryActive)]
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
     public int TradeCountMax {
@@ -978,7 +978,7 @@ namespace HedgeHog.Alice.Store {
 
     [Category(categoryActiveYesNo)]
     [DisplayName("Trading Ratio By PMC")]
-    [WwwSetting(wwwSettingsTradingOther)]
+    [WwwSetting(wwwSettingsTradingConditions)]
     public bool TradingRatioByPMC {
       get { return TradeByAngle; }
       set { TradeByAngle = value; }
@@ -1139,7 +1139,7 @@ namespace HedgeHog.Alice.Store {
 
     int _trendAnglesPerc;
     [DisplayName("AngleR.Percentage(AngleB): -200 - 200")]
-    [WwwSetting(Group = wwwSettingsTradingConditions)]
+    [WwwSetting(Group = wwwSettingsTradingParams)]
     [Category(categoryActive)]
     public int TrendAnglesPerc {
       get { return _trendAnglesPerc; }
@@ -1156,7 +1156,7 @@ namespace HedgeHog.Alice.Store {
     }
     double _trendHeightPerc;
     [DisplayName("ThredA.Height.Percentage(ThredB.Height): -200 - 200")]
-    [WwwSetting(Group = wwwSettingsTradingConditions)]
+    [WwwSetting(Group = wwwSettingsTradingParams)]
     [Category(categoryActive)]
     public double TrendHeightPerc {
       get {        return _trendHeightPerc;      }

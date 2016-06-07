@@ -1812,9 +1812,10 @@ namespace HedgeHog.Alice.Store {
           CorridorStDev = TrendLines2Trends.Angle.Abs(),
           CorridorStDevCma = RatesTimeSpan().FirstOrDefault().TotalMinutes,
           Values = new Dictionary<string, object> {
-            { "Angle", TrendLines2Trends.Angle.Abs() },
+            { "Angle", TradingMacroTrender(tm=>tm.TrendLines2Trends.Angle.Abs()).SingleOrDefault() },
             { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
-            { "PPM", GetLastVolt().SingleOrDefault() },
+            { "PPM", TradingMacroTrender(tm=> GetLastVolt().SingleOrDefault()).SingleOrDefault() },
+            { "PpmM1", TradingMacroOther().Select(tm=>tm.WaveRangeAvg.PipsPerMinute).FirstOrDefault() },
             { "StDev", TradingMacroOther().Select(tm=>tm.WaveRanges.Select(wr=>wr.StDev).FirstOrDefault()).Single() }
           }
         });
@@ -3455,7 +3456,7 @@ namespace HedgeHog.Alice.Store {
 
     #region RatesHeightXRatio
     private double _TradingDistanceX = 1;
-    [WwwSetting(Group = wwwSettingsTradingOther)]
+    [WwwSetting(Group = wwwSettingsTradingConditions)]
     [Description("TradingDistance = RetasHeight * X")]
     [Category(categoryActiveFuncs)]
     public double TradingDistanceX {
@@ -3645,14 +3646,17 @@ namespace HedgeHog.Alice.Store {
           { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
 
-          {TradeLevelBy.LimeMax,()=> TrendLines0Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single() },
-          {TradeLevelBy.LimeMin,()=> TrendLines0Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single() },
+          {TradeLevelBy.LimeMax,()=> levelMax(tm=> tm.TrendLines0Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.LimeMin,()=> levelMin(tm=> TrendLines0Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.GreenMax,()=> TrendLines1Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single() },
-          {TradeLevelBy.GreenMin,()=> TrendLines1Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single() },
+          {TradeLevelBy.GreenMax,()=> levelMax(tm=> TrendLines1Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.GreenMin,()=> levelMin(tm=> TrendLines1Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.RedMax,()=> TrendLinesTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single() },
-          {TradeLevelBy.RedMin,()=> TrendLinesTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single() },
+          {TradeLevelBy.RedMax,()=> levelMax(tm=> TrendLinesTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.RedMin,()=> levelMin(tm=> TrendLinesTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
+
+          {TradeLevelBy.BlueMax,()=> levelMax(tm=> TrendLines2Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.BlueMin,()=> levelMin(tm=> TrendLines2Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
 
           {TradeLevelBy.None,()=>double.NaN}
           };
@@ -3897,7 +3901,7 @@ namespace HedgeHog.Alice.Store {
     int _BaseUnitSize = 0;
     public int BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = TradesManager.GetBaseUnitSize(Pair); } }
     Account _account = null;
-    Account Account { get { return _account ?? (_account = TradesManager.GetAccount()); } } 
+    Account Account { get { return _account ?? (_account = TradesManager.GetAccount()); } }
     public void SetLotSize(Account account = null) {
       if(TradesManager == null)
         return;
@@ -5231,12 +5235,14 @@ namespace HedgeHog.Alice.Store {
 
     bool _isAsleep;
     public bool IsAsleep {
-      get {        return _isAsleep;      }
+      get { return _isAsleep; }
 
       set {
         _isAsleep = value;
-        if(value)
+        if(value) {
           RatesLengthLatch = ScanCorridorLatch = true;
+          BuySellLevels.ForEach(bs => bs.ResetPricePosition());
+        }
       }
     }
     public bool RatesLengthLatch { get; set; }
