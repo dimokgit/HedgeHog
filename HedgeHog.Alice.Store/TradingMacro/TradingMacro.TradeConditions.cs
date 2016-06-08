@@ -233,7 +233,9 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionAsleep]
     public TradeConditionDelegate WvAngAOk {
       get {
-        return () => TradeDirectionByBool(CalmImpl((wr, tm) => wr.Angle.Abs() > tm.WaveRangeAvg.Angle));
+        return () => TradeDirectionByBool(
+          TradingMacroOther().Take(1).SelectMany(tm =>
+            tm.WaveRanges.Take(2).Where(wr => wr.Angle.Abs() > tm.WaveRangeAvg.Angle * 3)).IsEmpty());
       }
     }
     [TradeConditionAsleep]

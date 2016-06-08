@@ -70,13 +70,15 @@ namespace HedgeHog.Alice.Store {
           var wrs = wr.SkipLast(wr.Count > 4 ? 1 : 0).Where(w => !w.Distance.IsNaNOrZero()).ToArray();
           Func<Func<WaveRange, double>, double, double> pwmp = (w, power) => wrs.Select(w).PowerMeanPower(power);
 
+
+          var hasCalm3 = TradeConditionsHave(Calm3Ok);
           var ws = new WaveRange(1) {
             Distance = pwmp(w => w.Distance, 1 / TrendHeightPerc),
             DistanceCma = avg2(wrs, w => w.DistanceCma, w => w.Distance),
             DistanceByRegression = avg2(wrs, w => w.DistanceByRegression, w => w.Distance),
             WorkByHeight = rsd(w => w.WorkByHeight),
             WorkByTime = rsd(w => w.WorkByTime),
-            Angle = pwmp(w => w.Angle.Abs(), 1 / TrendHeightPerc),
+            Angle = hasCalm3 ? pwmp(w => w.Angle.Abs(), 1 / TrendHeightPerc) : wrs.Select(w => w.Angle.Abs()).RelativeStandardDeviation().ToPercent(),
             TotalMinutes = pwmp(w => w.TotalMinutes, 1 / TrendHeightPerc),
             HSDRatio = avg2(wrs, w => w.HSDRatio, w => 1 / w.Distance),
             Height = rsd(w => w.Height),
@@ -95,9 +97,9 @@ namespace HedgeHog.Alice.Store {
             StDev = wrs.Select(w => w.StDev).PowerMeanPower(10)
           };
           try {
-            wa.Distance = pwmp(w => w.Distance,TrendHeightPerc);
-            wa.Angle = pwmp(w => w.Angle.Abs(),TrendHeightPerc);
-            wa.TotalMinutes = pwmp(w => w.TotalMinutes,TrendHeightPerc);
+            wa.Distance = pwmp(w => w.Distance, TrendHeightPerc);
+            wa.Angle = pwmp(w => w.Angle.Abs(), TrendHeightPerc);
+            wa.TotalMinutes = pwmp(w => w.TotalMinutes, TrendHeightPerc);
             wa.PipsPerMinute = wa.Distance / wa.TotalMinutes;
           } catch(Exception exc) {
             Log = exc;

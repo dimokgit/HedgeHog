@@ -3676,7 +3676,9 @@ namespace HedgeHog.Alice.Store {
           tp = tradeLeveBy(TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0);
           break;
         case TradingMacroTakeProfitFunction.Greenish:
-          tp = tradeLeveBy(TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0).Avg(tradeLeveBy(TradeLevelBy.PriceLimeH, TradeLevelBy.PriceLimeL));
+          var tpGreen = tradeLeveBy(TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0);
+          var tpLime = tradeLeveBy(TradeLevelBy.PriceLimeH, TradeLevelBy.PriceLimeL);
+          tp = tpGreen.Min(tpLime);
           break;
         case TradingMacroTakeProfitFunction.Red:
           tp = tradeLeveBy(TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3);
