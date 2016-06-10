@@ -354,6 +354,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AsyncMessageBox.cs" />
     <Compile Include="Classes\IAccountHolder.cs" />
     <Compile Include="Classes\Market.cs" />
     <Compile Include="Classes\MarketHoursHound.cs" />

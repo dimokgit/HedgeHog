@@ -231,11 +231,19 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionAsleep]
+    [TradeConditionTurnOff]
     public TradeConditionDelegate WvAngAOk {
       get {
         return () => TradeDirectionByBool(
           TradingMacroOther().Take(1).SelectMany(tm =>
             tm.WaveRanges.Take(2).Where(wr => wr.Angle.Abs() > tm.WaveRangeAvg.Angle * 3)).IsEmpty());
+      }
+    }
+    [TradeConditionAsleep]
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate WvSDOk {
+      get {
+        return () => TradeDirectionByBool(CalmImpl(2, (wr, tm) => wr.StDev < tm.WaveRangeSum.StDev));
       }
     }
     [TradeConditionAsleep]
@@ -248,16 +256,22 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public bool CalmImpl(params Func<WaveRange, TradingMacro, bool>[] conds) {
+      return CalmImpl(BigWaveIndex, conds);
+    }
+    public bool CalmImpl(int wavesCount, params Func<WaveRange, TradingMacro, bool>[] conds) {
       return (
         from tm in TradingMacroOther().Take(1)
         where tm.WaveRangeAvg != null && tm.WaveRangeSum != null
-        from wr in tm.WaveRanges.SkipWhile(wr => wr.IsEmpty).Take(BigWaveIndex)
+        from wr in tm.WaveRanges.SkipWhile(wr => wr.IsEmpty).Take(wavesCount)
         from cond in conds
         select cond(wr, tm)
         )
         .All(b => b);
     }
-    public bool CalmImpl(Func<IEnumerable<WaveRange>, TradingMacro, bool> condTM, params Func<WaveRange, TradingMacro, bool>[] conds) {
+    public bool CalmImpl(Func<IEnumerable<WaveRange>, TradingMacro, bool> condTM,  params Func<WaveRange, TradingMacro, bool>[] conds) {
+      return CalmImpl(condTM, BigWaveIndex, conds);
+    }
+    public bool CalmImpl(Func<IEnumerable<WaveRange>, TradingMacro, bool> condTM, int wavesCount, params Func<WaveRange, TradingMacro, bool>[] conds) {
       var waves = (
         from tm in TradingMacroOther().Take(1)
         where tm.WaveRangeAvg != null && tm.WaveRangeSum != null
@@ -267,7 +281,7 @@ namespace HedgeHog.Alice.Store {
         select new { wr, tm }
         ).ToList();
       var tmRes = waves.Select(x => x.tm).Take(1).Select(tm2 => condTM(waves.Select(x => x.wr), tm2));
-      return waves.Count >= BigWaveIndex && tmRes.SingleOrDefault();
+      return waves.Count >= wavesCount && tmRes.SingleOrDefault();
     }
     private TradeDirections IsWaveOk(Func<WaveRange, TradingMacro, bool> predicate, int index) {
       return TradingMacroOther()
@@ -1255,7 +1269,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region TradingMacros
-    private IEnumerable<T> TradingMacroTrender<T>(Func<TradingMacro,T> map) {
+    private IEnumerable<T> TradingMacroTrender<T>(Func<TradingMacro, T> map) {
       return TradingMacroTrender().Select(map);
     }
     private IEnumerable<TradingMacro> TradingMacroTrender() {

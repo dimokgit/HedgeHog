@@ -1204,8 +1204,8 @@ namespace HedgeHog.Alice.Store {
                 Action setLevels = () => {
                   if(IsAsleep) {
                     TradingMacroOther().Take(1).ForEach(tm => {
-                      SellLevel.Rate = tm.TrendLines0Trends.PriceAvg2;
-                      BuyLevel.Rate = tm.TrendLines0Trends.PriceAvg3;
+                      SellLevel.Rate = tm.TrendLines2Trends.PriceAvg2;
+                      BuyLevel.Rate = tm.TrendLines2Trends.PriceAvg3;
                     });
                   } else if(!TradeConditionsHaveSetCorridor())
                     SetTradeLevelsToLevelBy(GetTradeLevel)();

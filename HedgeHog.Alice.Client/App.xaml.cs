@@ -61,9 +61,9 @@ namespace HedgeHog.Alice.Client {
           }
         } catch(CompositionException cex) {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(cex.ToJson()));
-          MessageBox.Show(cex + "");
+          AsyncMessageBox.BeginMessageBoxAsync(cex + "");
         } catch (Exception exc) {
-          MessageBox.Show(exc + "");
+          AsyncMessageBox.BeginMessageBoxAsync(exc + "");
         }
       }), System.Windows.Threading.DispatcherPriority.Background);
     }
@@ -74,14 +74,14 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(e.Exception));
       } catch { }
       if (!IsHandled(e.Exception))
-        MessageBox.Show(e.Exception.ToString());
+        AsyncMessageBox.BeginMessageBoxAsync(e.Exception.ToString());
     }
 
     void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
       try {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage((Exception)e.ExceptionObject));
       } catch { }
-      MessageBox.Show(((Exception)e.ExceptionObject).ToString());
+      AsyncMessageBox.BeginMessageBoxAsync(((Exception)e.ExceptionObject).ToString());
     }
     bool IsHandled(AggregateException e) {
       return e!=null && e.Flatten().InnerException.InnerException is System.Net.HttpListenerException;
@@ -106,16 +106,16 @@ namespace HedgeHog.Alice.Client {
               {
                   rtlException.LoaderExceptions.ToList().Select((le, i) => { message.Add("Errors[" + i + "]", le.Message); return 0; }).ToArray();
               }
-              MessageBox.Show(string.Join(Environment.NewLine + Environment.NewLine, message.Select(kv => kv.Key + ":" + kv.Value)));
+              AsyncMessageBox.BeginMessageBoxAsync(string.Join(Environment.NewLine + Environment.NewLine, message.Select(kv => kv.Key + ":" + kv.Value)));
           }
           else
           {
           FileLogger.LogToFile("App_DispatcherUnhandledException");
           FileLogger.LogToFile(e.Exception);
-          //MessageBox.Show(e.Exception + "");
+          //AsyncMessageBox.BeginMessageBoxAsync(e.Exception + "");
         }
       } catch (ObjectDisposedException) {
-        MessageBox.Show(e.Exception + "");
+        AsyncMessageBox.BeginMessageBoxAsync(e.Exception + "");
       }
       if (!(e.Exception is System.Windows.Markup.XamlParseException))
         e.Handled = true;
