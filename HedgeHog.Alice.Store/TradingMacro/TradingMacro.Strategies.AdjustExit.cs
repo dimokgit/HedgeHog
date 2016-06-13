@@ -182,12 +182,12 @@ namespace HedgeHog.Alice.Store {
       Func<double, IEnumerable<double>> rateSinceTrade = def => {
         var d = Trades.Max(t => t.Time);
         //d = d - ServerTime.Subtract(d);
-        return RatesArray
+        return TradingMacroTrender().SelectMany(tm=> tm.RatesArray
           .Take(DoAdjustExitLevelByTradeTime ? RatesArray.Count : 0)
           .Reverse()
           .TakeWhile(r => r.StartDate >= d)
           .Select(_priceAvg)
-          .DefaultIfEmpty(def);
+          .DefaultIfEmpty(def));
       };
       var buyLevel = Trades.HaveBuy() ? rateSinceTrade(BuyLevel.Rate).Min().Min(ExitByBuySellLevel ? BuyLevel.Rate : double.NaN) : BuyLevel.Rate;
       var sellLevel = Trades.HaveSell() ? rateSinceTrade(SellLevel.Rate).Max().Max(ExitByBuySellLevel ? SellLevel.Rate : double.NaN) : SellLevel.Rate;

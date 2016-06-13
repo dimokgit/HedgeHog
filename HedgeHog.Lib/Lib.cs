@@ -64,12 +64,12 @@ namespace HedgeHog {
       return that.Concat(itemAsSequence);
     }
 
-    public static IEnumerable<T[]> Permutation<T>(this IList<T> source) {
+    public static IEnumerable<Tuple<T,T>> Permutation<T>(this IList<T> source) {
       IEnumerable<T[]> list = new T[0][];
       for(var skip = 0; skip < source.Count - 1; skip++)
         list = list.Concat(source.Skip(skip).Select(t => new[] { t })
           .Scan((t1, t2) => new[] { t1[0], t2[0] }));
-      return list;
+      return list.Select(a => Tuple.Create(a[0], a[1]));
     }
     public static IEnumerable<IEnumerable<T>> CartesianProductSelf<T>(this IEnumerable<T> source) {
 

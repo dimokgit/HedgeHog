@@ -14,6 +14,7 @@ namespace HedgeHog.Alice {
     Rsd,
     PPM,
     PpmM1,
+    Equinox,
     PpmRatio,
     StDevInsideOutRatio,
     HourlyStDevAvg,
@@ -22,7 +23,7 @@ namespace HedgeHog.Alice {
 }
 namespace HedgeHog.Alice.Store {
   public static class EnumMixins {
-    public static double IfNotDirect(this TradingMacroTakeProfitFunction e,double takeProfit,Func<double,double> calc) {
+    public static double IfNotDirect(this TradingMacroTakeProfitFunction e, double takeProfit, Func<double, double> calc) {
       return e.IsDirect() ? takeProfit : calc(takeProfit);
     }
     public static bool IsDirect(this TradingMacroTakeProfitFunction e) {
@@ -85,8 +86,9 @@ namespace HedgeHog.Alice.Store {
     Greenish,
     Red,
     Blue,
-    TradeHeight = 8,
-    StDev = 9
+    TradeHeight,
+    StDev,
+    M1StDev
   }
   public enum TradeLevelBy {
     None = 0,
@@ -173,7 +175,9 @@ namespace HedgeHog.Alice.Store {
     Friday = 8,
     CorrTouch = 10
   }
-  public enum Freezing { None = 0, Freez = 1, Float = 2 }
+  public enum Freezing {
+    None = 0, Freez = 1, Float = 2
+  }
   public enum CorridorCalculationMethod {
     Height = 1,
     Price = 2,
@@ -182,10 +186,13 @@ namespace HedgeHog.Alice.Store {
     Maximum = 5,
     PriceAverage = 6,
     PowerMeanPower = 7,
-    RootMeanSquare = 8
+    RootMeanSquare = 8,
+    MinMax
   }
   [Flags]
-  public enum LevelType { CenterOfMass = 1, Magnet = 2, CoM_Magnet = CenterOfMass | Magnet }
+  public enum LevelType {
+    CenterOfMass = 1, Magnet = 2, CoM_Magnet = CenterOfMass | Magnet
+  }
   [Flags]
   public enum Strategies {
     None = 0,
@@ -193,7 +200,9 @@ namespace HedgeHog.Alice.Store {
     Hot = 2,
     Universal = Hot * 2, UniversalA = Universal + Auto
   }
-  public enum MovingAverageValues { PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3 }
+  public enum MovingAverageValues {
+    PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3
+  }
   public enum TradeCrossMethod {
     PriceCurr = -1,
     PriceAvg = 0,
@@ -201,15 +210,20 @@ namespace HedgeHog.Alice.Store {
     ChartAskBid = 2,
     PriceAvg1 = 10,
   }
-  public enum CorridorHighLowMethod { 
-    AskHighBidLow = 0, 
+  public enum CorridorHighLowMethod {
+    AskHighBidLow = 0,
     Average = 1,
     BidHighAskLow = 2,
-    BidLowAskHigh = 3, 
-    AskLowBidHigh = 4, 
-    PriceMA = 8 }
-  public enum ChartHighLowMethod { AskBidByReg = 0, Average = 1, AskBidByMA = 2, Trima = 3, Volts, Volts2, Volts3 }
-  public enum MovingAverageType { Cma = 0, FFT = 4, FFT2 = 5 }
+    BidLowAskHigh = 3,
+    AskLowBidHigh = 4,
+    PriceMA = 8
+  }
+  public enum ChartHighLowMethod {
+    AskBidByReg = 0, Average = 1, AskBidByMA = 2, Trima = 3, Volts, Volts2, Volts3
+  }
+  public enum MovingAverageType {
+    Cma = 0, FFT = 4, FFT2 = 5
+  }
 
   public enum TradeLevelsPreset {
     None = 0,

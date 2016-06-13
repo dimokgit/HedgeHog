@@ -37,10 +37,9 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.PPM:
           return ShowVoltsByPPM;
         case HedgeHog.Alice.VoltageFunction.PpmM1:
-          return () => {
-            SetVoltsByPpm();
-            return null;
-          };
+          return () => { SetVoltsByPpm(); return null; };
+        case HedgeHog.Alice.VoltageFunction.Equinox:
+          return () => { SetVoltsByEquinox(); return null; };
         case HedgeHog.Alice.VoltageFunction.PpmRatio:
           return () => {
             SetVoltsByPpmRatio();

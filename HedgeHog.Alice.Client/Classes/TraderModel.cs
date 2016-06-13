@@ -569,7 +569,7 @@ namespace HedgeHog.Alice.Client {
           _logExpandedTargetBlock = new Action(() => IsLogExpanded = false).ScheduleOnUI(10.FromSeconds());
           //);
         } catch(Exception exc) {
-          MessageBox.Show(exc + "");
+          AsyncMessageBox.BeginMessageBoxAsync(exc + "");
         }
       }
     }

@@ -42,6 +42,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     [DisplayName("Corridor StDev By")]
+    [WwwSetting(wwwSettingsCorridorFuncs)]
     [Category(categoryActiveFuncs)]
     public CorridorCalculationMethod CorridorCalcMethod {
       get { return (CorridorCalculationMethod)this.CorridorMethod; }
@@ -129,6 +130,29 @@ namespace HedgeHog.Alice.Store {
       set {
         _closedSession = value;
         OnPropertyChanged(() => TestClosedSession);
+      }
+    }
+
+    string _prevSession;
+    [DisplayName("Previous Session")]
+    [Category(categoryTestControl)]
+    [Dnr]
+    public string TestPrevSession {
+      get { return _prevSession; }
+      set {
+        _prevSession = value;
+        OnPropertyChanged(() => TestPrevSession);
+      }
+    }
+    int _testBalance = 50000;
+    [DisplayName("Starting Balance")]
+    [Category(categoryTestControl)]
+    [Dnr]
+    public int TestBalance {
+      get { return _testBalance; }
+      set {
+        _testBalance = value;
+        OnPropertyChanged(() => TestBalance);
       }
     }
 
@@ -1166,6 +1190,16 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    double _trendEquinoxPerc;
+    [WwwSetting(Group = wwwSettingsTradingParams)]
+    [Category(categoryActive)]
+    public double EquinoxPerc {
+      get { return _trendEquinoxPerc; }
+      set {
+        _trendEquinoxPerc = value;
+        OnPropertyChanged(() => EquinoxPerc);
+      }
+    }
 
     [DisplayName("Reset On Balance")]
     [Category(categoryXXX_NU)]

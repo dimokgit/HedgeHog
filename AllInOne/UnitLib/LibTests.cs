@@ -117,7 +117,7 @@ namespace HedgeHog.Tests {
       int[][] target = new int[][] { new[]{ 1, 2 }, new[] { 1, 3 }, new[] { 1, 4 }, new[] { 2, 3 }, new[] { 2, 4 }, new[] { 3, 4 } };
       var res = source.Permutation();
       Console.WriteLine(res.ToJson());
-      Assert.IsTrue(res.Zip(target, (s, t) => s.Zip(t, (v1, v2) => v1 == v2).All(b => b)).All(b => b));
+      Assert.IsTrue(res.Select(t => new[] { t.Item1, t.Item2 }).Zip(target, (s, t) => s.Zip(t, (v1, v2) => v1 == v2).All(b => b)).All(b => b));
     }
   }
 }

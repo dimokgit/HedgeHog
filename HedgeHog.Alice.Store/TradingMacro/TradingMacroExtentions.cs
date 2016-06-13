@@ -434,7 +434,10 @@ namespace HedgeHog.Alice.Store {
 
     public Guid SessionIdSuper { get; set; }
     static Guid _sessionId = Guid.NewGuid();
-    public static Guid SessionId { get { return _sessionId; } }
+    public static Guid SessionId {
+      get { return _sessionId; }
+      set { _sessionId = value; }
+    }
     public void ResetSessionId() { ResetSessionId(Guid.Empty); }
     public void ResetSessionId(Guid superId) {
       _sessionId = Guid.NewGuid();
@@ -1560,6 +1563,7 @@ namespace HedgeHog.Alice.Store {
         _mmaLastIsUp = null;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
+        vm.SetInitialBalance(args.StartingBalance);
         if(!_replayRates.Any())
           throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
         Rate ratePrev = null;
@@ -2271,7 +2275,7 @@ namespace HedgeHog.Alice.Store {
                 }
                 SpreadForCorridor = rates.Spread();
                 SetCma(rates);
-                _ratesHeightCma = rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax);
+                RatesHeightCma = rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax);
                 var leg = rates.Count.Div(10).ToInt();
                 PriceSpreadAverage = rates
                 .Buffer(leg)
@@ -2285,6 +2289,7 @@ namespace HedgeHog.Alice.Store {
                 StDevByHeight = prices.StDevByRegressoin(coeffs);
                 switch(CorridorCalcMethod) {
                   case CorridorCalculationMethod.Height:
+                  case CorridorCalculationMethod.MinMax:
                   case CorridorCalculationMethod.HeightUD:
                     RatesStDev = StDevByHeight;
                     break;
@@ -2395,7 +2400,7 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByTrendHeighRatioAll() {
       if(CanTriggerTradeDirection())
-        SetVots(TrendHeighRatioLGR(), 2, CmaPeriodByRatesCount());
+        TrendHeighRatioLGR().ForEach(i => SetVots(i, 2, CmaPeriodByRatesCount()));
       return null;
     }
 
@@ -2555,10 +2560,10 @@ namespace HedgeHog.Alice.Store {
       if(CanTriggerTradeDirection()) {
         var perms = TrendLinesTrendsAll.Take(2).ToArray().Permutation().ToArray();
         var avg1s = perms
-         .Select(c => c[0].PriceAvg1.Abs(c[1].PriceAvg1))
+         .Select(c => c.Item1.PriceAvg1.Abs(c.Item2.PriceAvg1))
          .Average();
         var heights = perms
-         .Select(c => c[0].StDev.Percentage(c[1].StDev))
+         .Select(c => c.Item1.StDev.Percentage(c.Item2.StDev))
          .Average();
         SetVots(InPips(avg1s) * heights * 100, 2, true);
       }
@@ -2568,10 +2573,10 @@ namespace HedgeHog.Alice.Store {
       if(CanTriggerTradeDirection()) {
         var perms = tls.ToArray().Permutation().ToArray();
         var avg1s = perms
-         .Select(c => c[0].PriceAvg1.Abs(c[1].PriceAvg1))
+         .Select(c => c.Item1.PriceAvg1.Abs(c.Item2.PriceAvg1))
          .Min();
         var heights = perms
-         .Select(c => c[0].StDev.Abs(c[1].StDev))
+         .Select(c => c.Item1.StDev.Abs(c.Item2.StDev))
          .Min();
         doVolt(/*InPips(avg1s) * */Math.Sqrt(InPips(heights)));
       }
@@ -2580,7 +2585,7 @@ namespace HedgeHog.Alice.Store {
       if(CanTriggerTradeDirection()) {
         var perms = tls.ToArray().Permutation().ToArray();
         var heights = perms
-         .Select(c => c[0].StDev.Abs(c[1].StDev))
+         .Select(c => c.Item1.StDev.Abs(c.Item2.StDev))
          .Max();
         doVolt(Math.Sqrt(InPips(heights)));
       }
@@ -2589,10 +2594,10 @@ namespace HedgeHog.Alice.Store {
       if(CanTriggerTradeDirection()) {
         var perms = tls.ToArray().Permutation().ToArray();
         var avg1s = perms
-         .Select(c => c[0].PriceAvg1.Abs(c[1].PriceAvg1))
+         .Select(c => c.Item1.PriceAvg1.Abs(c.Item2.PriceAvg1))
          .StandardDeviation();
         var heights = perms
-         .Select(c => c[0].StDev.Abs(c[1].StDev))
+         .Select(c => c.Item1.StDev.Abs(c.Item2.StDev))
          .RelativeStandardDeviation();
         doVolt(InPips(avg1s) * heights * 100);
       }
@@ -2601,10 +2606,10 @@ namespace HedgeHog.Alice.Store {
       if(CanTriggerTradeDirection()) {
         var perms = tls.ToArray().Permutation().ToArray();
         var avg1s = perms
-         .Select(c => c[0].PriceAvg1.Abs(c[1].PriceAvg1))
+         .Select(c => c.Item1.PriceAvg1.Abs(c.Item2.PriceAvg1))
          .StandardDeviation();
         var heights = perms
-         .Select(c => c[0].StDev.Abs(c[1].StDev))
+         .Select(c => c.Item1.StDev.Abs(c.Item2.StDev))
          .StandardDeviation();
         doVolt(InPips(avg1s) * InPips(heights));
       }
@@ -3667,9 +3672,14 @@ namespace HedgeHog.Alice.Store {
     private double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function, double xRatio) {
       var tp = double.NaN;
       Func<TradeLevelBy, TradeLevelBy, double> tradeLeveBy = (h, l) => (TradeLevelFuncs[h]() - TradeLevelFuncs[l]()) * xRatio;
+      Func<Func<TradingMacro, double>, double> useTrender = f => TradingMacroTrender(f).DefaultIfEmpty(double.NaN).Single();
       switch(function) {
         case TradingMacroTakeProfitFunction.StDev:
-          return StDevByHeight * xRatio + InPoints(CommissionInPips()) * 2;
+          return useTrender(tm => tm.StDevByHeight * xRatio + tm.InPoints(tm.CommissionInPips()) * 2);
+        case TradingMacroTakeProfitFunction.M1StDev:
+          return TradingMacroM1(tm => InPoints(tm.WaveRangeAvg.StDev) * xRatio + tm.InPoints(tm.CommissionInPips()) * 2)
+            .DefaultIfEmpty(StDevByHeight)
+            .Single();
         case TradingMacroTakeProfitFunction.Lime:
           tp = tradeLeveBy(TradeLevelBy.PriceLimeH, TradeLevelBy.PriceLimeL);
           break;
@@ -3692,7 +3702,7 @@ namespace HedgeHog.Alice.Store {
           break;
         #region RatesHeight
         case TradingMacroTakeProfitFunction.RatesHeight:
-          tp = this._ratesHeightCma * xRatio;
+          tp = useTrender(tm=>tm.RatesHeightCma * xRatio);
           break;
         #endregion
         #region BuySellLevels
@@ -5263,6 +5273,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public double RatesHeightCma {
+      get {
+        return _ratesHeightCma;
+      }
+
+      set {
+        _ratesHeightCma = value;
+      }
+    }
   }
   public static class WaveInfoExtentions {
     public static Dictionary<CorridorCalculationMethod, double> ScanWaveWithAngle<T>(this IList<T> rates, Func<T, double> price, double pointSize, CorridorCalculationMethod corridorMethod) {

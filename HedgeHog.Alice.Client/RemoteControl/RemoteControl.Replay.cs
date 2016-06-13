@@ -66,7 +66,8 @@ namespace HedgeHog.Alice.Client {
         }
 
         ReplayArguments.Initiator = tmOriginal;
-        ReplayArguments.UseSuperSession = tmOriginal.TestUseSuperSession;
+        ReplayArguments.StartingBalance = tmOriginal.TestBalance;
+        ReplayArguments.PrevSessionUid = tmOriginal.TestPrevSession;
         ReplayArguments.SuperSessionId = tmOriginal.TestSuperSessionUid.ValueOrDefault(Guid.NewGuid());
         _testParamsRaw.Clear();
         tmOriginal.TestFileName = "";
@@ -227,6 +228,8 @@ namespace HedgeHog.Alice.Client {
               }
             });
         }
+        if(!string.IsNullOrWhiteSpace(ReplayArguments.PrevSessionUid))
+          TradingMacro.SessionId = Guid.Parse(ReplayArguments.PrevSessionUid);
         var tmToRun = tm;
         tmToRun.ReplayCancelationToken = (_replayTaskCancellationToken = new CancellationTokenSource()).Token;
         var task = Task.Factory.StartNew(() => tmToRun.Replay(ReplayArguments), tmToRun.ReplayCancelationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);

@@ -116,6 +116,9 @@ namespace HedgeHog.Shared {
       set { isHedged = value; }
     }
 
+    public void SetInitialBalance(int balance) {
+      Account.Balance = Account.UsableMargin = Account.Equity = balance;
+    }
     public Account Account {
       get {
         if (_account == null) {

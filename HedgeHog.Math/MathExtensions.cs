@@ -53,9 +53,9 @@ namespace HedgeHog {
           return d + x.prev.Abs(x.next);
         });
     }
-    public static IEnumerable<Tuple<T,double>> Distances<T>(this IEnumerable<T> source,Func<T,double> map, Action<double, double> onScan = null) {
+    public static IEnumerable<Tuple<T, double>> Distances<T>(this IEnumerable<T> source, Func<T, double> map, Action<double, double> onScan = null) {
       return source
-        .Scan(new {t=default(T),  prev = 0.0, next = 0.0 }, (prev, next) => new {t=next, prev = prev.next, next = map(next) })
+        .Scan(new { t = default(T), prev = 0.0, next = 0.0 }, (prev, next) => new { t = next, prev = prev.next, next = map(next) })
         .Skip(1)
         .Scan(Tuple.Create(default(T), 0.0), (t, x) => {
           if(onScan != null)
@@ -91,7 +91,8 @@ namespace HedgeHog {
       mirror = mirror2.Concat(mirror).ToArray();
       var bins = mirror.Fft0();
       var bins1 = bins.Take(lastHarmonic).Concat(repeat(bins.Count - lastHarmonic)).ToArray();
-      double[] ifft; alglib.fftr1dinv(bins1, out ifft);
+      double[] ifft;
+      alglib.fftr1dinv(bins1, out ifft);
       return ifft.CopyToArray(prices.Count, prices.Count);
     }
 
@@ -111,7 +112,8 @@ namespace HedgeHog {
       double[] signal = signalIn.SafeArray();
       var line = signal.ToArray().Regression(1);
       IEnumerable<double> ratesFft = signal;
-      if(reversed) ratesFft = ratesFft.Reverse();
+      if(reversed)
+        ratesFft = ratesFft.Reverse();
       alglib.fftr1d(ratesFft.Zip(line, (r, l) => r - l).ToArray(), out bins);
       return bins;
     }
@@ -141,9 +143,12 @@ namespace HedgeHog {
       var c = new alglib.complex(0);
       Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(c, count); };
       return bins.Select((b, i) => {
-        if(i == 0) return b;
-        if(i < harmonic) return c;
-        if(i.Between(harmonic, harmonic + range - 1)) return b;
+        if(i == 0)
+          return b;
+        if(i < harmonic)
+          return c;
+        if(i.Between(harmonic, harmonic + range - 1))
+          return b;
         return c;
       }).ToArray();
     }
@@ -230,8 +235,10 @@ namespace HedgeHog {
       var prev = values[1];
       foreach(var curr in values.Skip(2)) {
         var s = Math.Sign(curr - prev);
-        if(s == -sign) break;
-        if(sign == 0) sign = s;
+        if(s == -sign)
+          break;
+        if(sign == 0)
+          sign = s;
         wavelette.Add(curr);
         prev = curr;
       }
@@ -326,7 +333,8 @@ namespace HedgeHog {
         .Select(a => a.first);
     }
     public static IEnumerable<T> Crosses<T>(this IList<T> list, double signal, Func<T, double> getValue) {
-      if(double.IsNaN(signal)) return new T[0];
+      if(double.IsNaN(signal))
+        return new T[0];
       return list.Crosses(Enumerable.Repeat(signal, list.Count).ToArray(), getValue);
     }
     public static IEnumerable<T> Crosses<T>(this IList<T> list, IList<double> signal, Func<T, double> getValue) {
@@ -471,7 +479,8 @@ namespace HedgeHog {
       // Variance (using corrected two-pass algorithm)
       //
       if(n != 1) {
-        v1 = 0; v2 = 0;
+        v1 = 0;
+        v2 = 0;
         for(i = 0; i <= n - 1; i++) {
           v1 = v1 + (x[i] - mean) * (x[i] - mean);
           v2 = v2 + (x[i] - mean);
@@ -517,7 +526,8 @@ namespace HedgeHog {
           double average = total / period;
           result.Add(series.Keys[i], average);
         }
-      } return result;
+      }
+      return result;
     }
     public static SortedList<T, double> MovingAverage_<T>(this SortedList<T, double> series, int period) {
       var result = new SortedList<T, double>();
@@ -549,10 +559,12 @@ namespace HedgeHog {
 
     public static void SetProperty<T>(this object o, string p, T v) {
       System.Reflection.PropertyInfo pi = o.GetType().GetProperty(p);
-      if(pi != null) pi.SetValue(o, v, new object[] { });
+      if(pi != null)
+        pi.SetValue(o, v, new object[] { });
       else {
         System.Reflection.FieldInfo fi = o.GetType().GetField(p);
-        if(fi == null) throw new NotImplementedException("Property " + p + " is not implemented in " + o.GetType().FullName + ".");
+        if(fi == null)
+          throw new NotImplementedException("Property " + p + " is not implemented in " + o.GetType().FullName + ".");
         fi.SetValue(o, v);
       }
     }
@@ -590,10 +602,12 @@ namespace HedgeHog {
         if(!propertyPredicate(pi))
           return;
       }
-      if(pi != null) pi.SetValue(o, v = convert(v, pi.PropertyType), new object[] { });
+      if(pi != null)
+        pi.SetValue(o, v = convert(v, pi.PropertyType), new object[] { });
       else {
         System.Reflection.FieldInfo fi = o.GetType().GetField(p);
-        if(fi == null) throw new MissingMemberException(t.Name, p);
+        if(fi == null)
+          throw new MissingMemberException(t.Name, p);
         fi.SetValue(o, convert(v, fi.FieldType));
       }
     }
@@ -633,8 +647,10 @@ namespace HedgeHog {
       double ret = 0, avg = 0, max = double.MinValue, min = double.MaxValue;
       if(values.Count > 0) {
         avg = values.Average(v => {
-          if(max < v) max = v;
-          if(min > v) min = v;
+          if(max < v)
+            max = v;
+          if(min > v)
+            min = v;
           return v;
         });
         double sum = values.Sum(d => (d - avg) * (d - avg));
@@ -694,8 +710,10 @@ namespace HedgeHog {
         M += (value - tmpM) / k;
         S += (value - tmpM) * (value - M);
         k++;
-        if(max < value) max = value;
-        if(min > value) min = value;
+        if(max < value)
+          max = value;
+        if(min > value)
+          min = value;
       }
       return Math.Sqrt(S / (k - 2));
     }
@@ -703,11 +721,11 @@ namespace HedgeHog {
       double avg, std;
       var rsd = dbls.RelativeStandardDeviation(out std, out avg);
       while(rsd > 1) {
-        rsd = dbls.Where(d => d < std).RelativeStandardDeviation(out std,out avg);
+        rsd = dbls.Where(d => d < std).RelativeStandardDeviation(out std, out avg);
       }
       return rsd;
     }
-    public static double RelativeStandardDeviationSmoothed(this IEnumerable<double> dbls,int smoothCount) {
+    public static double RelativeStandardDeviationSmoothed(this IEnumerable<double> dbls, int smoothCount) {
       double avg, std;
       var rsd = dbls.RelativeStandardDeviation(out std, out avg);
       while(--smoothCount >= 0) {
@@ -724,7 +742,7 @@ namespace HedgeHog {
       double avg, std;
       return dbls.RelativeStandardDeviation(out std, out avg);
     }
-    public static double RelativeStandardDeviation(this IEnumerable<double> dbls,out double std, out double avg) {
+    public static double RelativeStandardDeviation(this IEnumerable<double> dbls, out double std, out double avg) {
       std = dbls.StandardDeviation(out avg);
       return std / avg;
     }
@@ -745,7 +763,7 @@ namespace HedgeHog {
       var avg1 = dbls.Where(d => d <= avg0).DefaultIfEmpty(avg0).Average();
       return dbls.Where(d => d >= avg1).DefaultIfEmpty(avg1).Average();
     }
-    public static IList<T> AverageByAverageUp<T>(this IList<T> source,Func<T,double> projector) {
+    public static IList<T> AverageByAverageUp<T>(this IList<T> source, Func<T, double> projector) {
       var dbls = source.Select(projector).ToArray();
       var avg0 = dbls.DefaultIfEmpty(double.NaN).Average();
       var avg1 = dbls.Where(d => d <= avg0).DefaultIfEmpty(avg0).Average();
@@ -798,7 +816,8 @@ namespace HedgeHog {
         .SkipWhile(d => d.Slope.IsNaN())
         .TakeWhile(d => !d.Slope.IsNaN())
         .Aggregate((p, n) => {
-          if (n.Slope.Sign() != p.Slope.Sign()) extreams.Add(p);
+          if(n.Slope.Sign() != p.Slope.Sign())
+            extreams.Add(p);
           return n;
         });
       return extreams.OrderBy(d => d.Index).ToArray();
@@ -816,7 +835,8 @@ namespace HedgeHog {
         .TakeWhile(d => !d.slope.IsNaN())
         .DefaultIfEmpty()
         .Aggregate((p, n) => {
-          if (n.slope.Sign() != p.slope.Sign()) extreams.Add(p);
+          if(n.slope.Sign() != p.slope.Sign())
+            extreams.Add(p);
           return n;
         });
       Func<Extream<T>, Extream<T>> fill = ext => {
@@ -827,7 +847,7 @@ namespace HedgeHog {
       return extreams.Where(d => d != null).OrderBy(d => d.i).Select(d => fill(new Extream<T>(d.rate, d.slope, d.i))).ToArray();
     }
 
-    public static IEnumerable<Tuple<int, U, double>> Extreams<T,U>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, U> date) {
+    public static IEnumerable<Tuple<int, U, double>> Extreams<T, U>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, U> date) {
       return values
         .Select((rate, i) => new { y = value(rate), x = date(rate), i })
         .Where(x => !x.y.IsNaN())
@@ -885,20 +905,30 @@ namespace HedgeHog {
     public static double StDevByRegressoin(this IList<double> values, Action<double> callCC) {
       return values.StDevByRegressoin(null, callCC);
     }
+    static double[] IsCoeffs(this double[] coeffs) {
+      if(coeffs == null)
+        throw new Exception(new { coeffs } + "");
+      if(coeffs.Length != 2)
+        throw new Exception(new { coeffs = new { coeffs.Length, mustBe = 2 } } + "");
+      return coeffs;
+    }
     public static double StDevByRegressoin(this IEnumerable<double> values, int valuesCount, double[] coeffs) {
-      if (coeffs == null) throw new ArgumentNullException("coeffs");
+      if(coeffs == null)
+        throw new ArgumentNullException("coeffs");
       var line = new double[valuesCount];
       coeffs.SetRegressionPrice(0, valuesCount, (i, v) => line[i] = v);
       return line.Zip(values, (l, v) => v - l).StandardDeviation();
     }
     public static double StDevByRegressoin(this IList<double> values, double[] coeffs) {
-      if (coeffs == null || coeffs.Length == 0) coeffs = values.Linear();
+      if(coeffs == null || coeffs.Length == 0)
+        coeffs = values.Linear();
       var line = new double[values.Count];
-      coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
+      coeffs.IsCoeffs().SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       return line.Zip(values, (l, v) => v - l).StandardDeviation();
     }
     public static double StDevByRegressoin(this IList<double> values, double[] coeffs, Action<double> callCC) {
-      if (coeffs == null || coeffs.Length == 0) coeffs = values.Linear();
+      if(coeffs == null || coeffs.Length == 0)
+        coeffs = values.Linear();
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       return line.Zip(values, (l, v) => v - l).Do(callCC).StandardDeviation();
@@ -907,20 +937,40 @@ namespace HedgeHog {
       return values.HeightByRegressoin(values.Linear());
     }
     public static double HeightByRegressoin(this IList<double> values, double[] coeffs) {
-      if (coeffs == null || coeffs.Length == 0) coeffs = values.Linear();
+      if(coeffs == null || coeffs.Length == 0)
+        coeffs = values.Linear();
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       double max = double.MinValue, min = double.MaxValue;
       var n = values.Count;
-      for (var i = 0; i < n; i++) {
+      for(var i = 0; i < n; i++) {
         var v = line[i] - values[i];
-        if (max < v) max = v;
-        if (min > v) min = v;
+        if(max < v)
+          max = v;
+        if(min > v)
+          min = v;
       }
       return max - min;
     }
+    public static double[] MinMaxByRegressoin(this IList<double> values, double[] coeffs) {
+      if(coeffs == null || coeffs.Length == 0)
+        coeffs = values.Linear();
+      var line = new double[values.Count];
+      coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
+      double max = double.MinValue, min = double.MaxValue;
+      var n = values.Count;
+      for(var i = 0; i < n; i++) {
+        var v = values[i] - line[i];
+        if(max < v)
+          max = v;
+        if(min > v)
+          min = v;
+      }
+      return new[] { min, max };
+    }
     public static double HeightByRegressoin2(this IList<double> values, double[] coeffs = null) {
-      if (coeffs == null || coeffs.Length == 0) coeffs = values.Linear();
+      if(coeffs == null || coeffs.Length == 0)
+        coeffs = values.Linear();
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       var diffs = line.Zip(values, (l, v) => l - v).ToArray().GroupBy(a => a.Sign());
@@ -930,7 +980,7 @@ namespace HedgeHog {
       return IteratonSequence(start, end, NestStep);
     }
     private static IEnumerable<int> IteratonSequence(int start, int end, Func<int, int> nextStep) {
-      for (var i = start; i < end; i += nextStep(i))
+      for(var i = start; i < end; i += nextStep(i))
         yield return i;
     }
 
@@ -980,7 +1030,7 @@ namespace HedgeHog {
       return rates.Height(out min, out max);
     }
     static double Height(this IList<double> rates, out double min, out double max) {
-      if (!rates.Any())
+      if(!rates.Any())
         return min = max = double.NaN;
       min = rates.Min();
       max = rates.Max();
@@ -1021,7 +1071,7 @@ namespace HedgeHog {
     public static IEnumerable<double> AverageInRange(this IList<double> a, int high, int low) {
       double b = double.NaN, c = double.NaN;
       return a.Where(v => {
-        if (double.IsNaN(b)) {
+        if(double.IsNaN(b)) {
           b = a.AverageByIterations(high, false).Average();
           c = a.AverageByIterations(low).Average();
         }
@@ -1041,23 +1091,29 @@ namespace HedgeHog {
 
     public static IList<T> AverageByIterations_<T>(this IList<T> values, Func<T, double> getValue, Func<T, double, bool> compare, double iterations, List<double> averagesOut = null) {
       var avg = values.DefaultIfEmpty().Average(getValue);
-      if (averagesOut != null) averagesOut.Add(avg);
-      if (values.Count == 0) return values.ToArray();
-      for (int i = 0; i < iterations; i++) {
+      if(averagesOut != null)
+        averagesOut.Add(avg);
+      if(values.Count == 0)
+        return values.ToArray();
+      for(int i = 0; i < iterations; i++) {
         var vs = values.Where(r => compare(r, avg)).ToArray();
-        if (vs.Length == 0) break;
+        if(vs.Length == 0)
+          break;
         values = vs;
         avg = values.Average(getValue);
-        if (averagesOut != null) averagesOut.Insert(0, avg);
+        if(averagesOut != null)
+          averagesOut.Insert(0, avg);
       }
       return values;
     }
     public static IList<T> AverageByIterations<T>(this IList<T> values, Func<T, double> getValue, Func<double, double, bool> compare, double iterations, List<double> averagesOut = null) {
-      if (iterations == 0) return values;
+      if(iterations == 0)
+        return values;
       var avg = values.Select(getValue).DefaultIfEmpty(double.NaN).Average();
-      if (averagesOut != null) averagesOut.Insert(0, avg);
-      return values.Distinct().Count() < 2  
-        ? values 
+      if(averagesOut != null)
+        averagesOut.Insert(0, avg);
+      return values.Distinct().Count() < 2
+        ? values
         : values
         .Where(r => compare(getValue(r), avg))
         .ToArray()
@@ -1066,28 +1122,36 @@ namespace HedgeHog {
 
     public static IList<T> AverageByPercentage<T>(this IList<T> values, Func<T, double> getValue, Func<double, double, bool> compare, double iterations, List<double> averagesOut = null) {
       var avg = values.DefaultIfEmpty().Average(getValue);
-      if (averagesOut != null) averagesOut.Insert(0, avg);
+      if(averagesOut != null)
+        averagesOut.Insert(0, avg);
       var countMax = values.Count * iterations;
-      while (values.Count > countMax) {
+      while(values.Count > countMax) {
         var vs = values.Where(v => compare(getValue(v), avg)).ToArray();
-        if (vs.Count() == 0) break;
+        if(vs.Count() == 0)
+          break;
         avg = vs.Average(getValue);
-        if (averagesOut != null) averagesOut.Insert(0, avg);
+        if(averagesOut != null)
+          averagesOut.Insert(0, avg);
         values = vs;
-        if (values.Count == 1) break;
+        if(values.Count == 1)
+          break;
       }
       return values;
     }
     public static IList<T> AverageByCount<T>(this IList<T> values, Func<T, double> getValue, Func<double, double, bool> compare, double countMin, List<double> averagesOut = null) {
       var avg = values.DefaultIfEmpty().Average(getValue);
-      if (averagesOut != null) averagesOut.Insert(0, avg);
-      while (values.Count > countMin) {
+      if(averagesOut != null)
+        averagesOut.Insert(0, avg);
+      while(values.Count > countMin) {
         var vs = values.Where(v => compare(getValue(v), avg)).ToArray();
-        if (vs.Count() == 0) break;
+        if(vs.Count() == 0)
+          break;
         avg = vs.Average(getValue);
-        if (averagesOut != null) averagesOut.Insert(0, avg);
+        if(averagesOut != null)
+          averagesOut.Insert(0, avg);
         values = vs;
-        if (values.Count == 1) break;
+        if(values.Count == 1)
+          break;
       }
       return values;
     }
@@ -1096,42 +1160,51 @@ namespace HedgeHog {
       return values.Count() == 0 ? defaultValue() : values.Average();
     }
     public static double Cma(this double? MA, double Periods, double NewValue) {
-      if (!MA.HasValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
+      if(!MA.HasValue)
+        return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return MA.Value + (NewValue - MA.Value) / (Periods + 1);
     }
     public static double Cma(this double MA, double Periods, double NewValue) {
-      if (double.IsNaN(MA)) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
+      if(double.IsNaN(MA))
+        return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return MA + (NewValue - MA) / (Periods + 1);
     }
     static double Cma(double MA, double zeroValue, double Periods, double NewValue) {
-      if (MA == zeroValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
+      if(MA == zeroValue)
+        return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return Cma(MA, Periods, NewValue);
     }
 
     //public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }
     //public static bool IsMin(this DateTime d) { return d == DateTime.MinValue; }
-    public enum RoundTo { Second, Minute, MinuteFloor, MinuteCieling, Hour, HourFloor, Day, DayFloor, Month, MonthEnd, Week }
+    public enum RoundTo {
+      Second, Minute, MinuteFloor, MinuteCieling, Hour, HourFloor, Day, DayFloor, Month, MonthEnd, Week
+    }
     public static DateTimeOffset Round(this DateTimeOffset d, RoundTo rt) {
       DateTimeOffset dtRounded = new DateTimeOffset();
-      switch (rt) {
+      switch(rt) {
         case RoundTo.Second:
           dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, d.Second, d.Offset);
-          if (d.Millisecond >= 500) dtRounded = dtRounded.AddSeconds(1);
+          if(d.Millisecond >= 500)
+            dtRounded = dtRounded.AddSeconds(1);
           break;
         case RoundTo.Minute:
           dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0, d.Offset);
-          if (d.Second >= 30) dtRounded = dtRounded.AddMinutes(1);
+          if(d.Second >= 30)
+            dtRounded = dtRounded.AddMinutes(1);
           break;
         case RoundTo.MinuteFloor:
           dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0, d.Offset);
           break;
         case RoundTo.MinuteCieling:
           dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0, d.Offset);
-          if (d.Second > 0) dtRounded = dtRounded.AddMinutes(1);
+          if(d.Second > 0)
+            dtRounded = dtRounded.AddMinutes(1);
           break;
         case RoundTo.Hour:
           dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, 0, 0, d.Offset);
-          if (d.Minute >= 30) dtRounded = dtRounded.AddHours(1);
+          if(d.Minute >= 30)
+            dtRounded = dtRounded.AddHours(1);
           break;
         case RoundTo.HourFloor:
           dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, 0, 0, d.Offset);
@@ -1141,7 +1214,8 @@ namespace HedgeHog {
           break;
         case RoundTo.Day:
           dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, 0, 0, 0, d.Offset);
-          if (d.Hour >= 12) dtRounded = dtRounded.AddDays(1);
+          if(d.Hour >= 12)
+            dtRounded = dtRounded.AddDays(1);
           break;
         case RoundTo.Month:
           dtRounded = new DateTimeOffset(d.Year, d.Month, 1, 0, 0, 0, d.Offset);
@@ -1157,25 +1231,29 @@ namespace HedgeHog {
     }
     public static DateTime Round(this DateTime d, RoundTo rt) {
       DateTime dtRounded = new DateTime();
-      switch (rt) {
+      switch(rt) {
         case RoundTo.Second:
           dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, d.Minute, d.Second);
-          if (d.Millisecond >= 500) dtRounded = dtRounded.AddSeconds(1);
+          if(d.Millisecond >= 500)
+            dtRounded = dtRounded.AddSeconds(1);
           break;
         case RoundTo.Minute:
           dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0);
-          if (d.Second >= 30) dtRounded = dtRounded.AddMinutes(1);
+          if(d.Second >= 30)
+            dtRounded = dtRounded.AddMinutes(1);
           break;
         case RoundTo.MinuteFloor:
           dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0);
           break;
         case RoundTo.MinuteCieling:
           dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0);
-          if (d.Second > 0) dtRounded = dtRounded.AddMinutes(1);
+          if(d.Second > 0)
+            dtRounded = dtRounded.AddMinutes(1);
           break;
         case RoundTo.Hour:
           dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, 0, 0);
-          if (d.Minute >= 30) dtRounded = dtRounded.AddHours(1);
+          if(d.Minute >= 30)
+            dtRounded = dtRounded.AddHours(1);
           break;
         case RoundTo.HourFloor:
           dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, 0, 0);
@@ -1185,7 +1263,8 @@ namespace HedgeHog {
           break;
         case RoundTo.Day:
           dtRounded = new DateTime(d.Year, d.Month, d.Day, 0, 0, 0);
-          if (d.Hour >= 12) dtRounded = dtRounded.AddDays(1);
+          if(d.Hour >= 12)
+            dtRounded = dtRounded.AddDays(1);
           break;
         case RoundTo.Month:
           dtRounded = new DateTime(d.Year, d.Month, 1, 0, 0, 0);

@@ -559,12 +559,15 @@ namespace HedgeHog.Alice.Store {
     }
 
     private double CalcCorridorStDev(List<double> doubles, double[] coeffs) {
-      var cm = Trades.Any() ? CorridorCalculationMethod.Height : CorridorCalcMethod;
+      var cm = Trades.Any() && CorridorCalcMethod != CorridorCalculationMethod.MinMax ? CorridorCalculationMethod.Height : CorridorCalcMethod;
       switch(cm) {
         case CorridorCalculationMethod.PowerMeanPower:
           return doubles.StDevByRegressoin(coeffs).PowerMeanPower(doubles.StandardDeviation(), 100);
         case CorridorCalculationMethod.Height:
           return doubles.StDevByRegressoin(coeffs);
+        case CorridorCalculationMethod.MinMax:
+          var mm = doubles.GetRange(0, doubles.Count - 5).MinMaxByRegressoin(coeffs).Select(d => d.Abs()).Max();
+          return mm / 2;
         case CorridorCalculationMethod.RootMeanSquare:
           return doubles.StDevByRegressoin(coeffs).RootMeanSquare(doubles.StandardDeviation());
         default:

@@ -380,6 +380,7 @@
           ScanCorridorBy: { name: "ScanCorridor", type: "options", options: scanCorridorFunction() },
           RatesLengthBy: { name: "RatesLength", type: "options", options: ratesLengthFunction() },
           VoltageFunction_: { name: "Voltage", type: "options", options: voltageFunction() },
+          CorridorCalcMethod: { name: "Corr Calc", type: "options", options: corridorCalculationMethod() },
           WaveSmoothBy: { name: "WaveSmoothBy", type: "options", options: waveSmoothByFunction() },
 
           WaveFirstSecondRatioMin: { name: "Wave 1/2 Ratio" }
@@ -581,6 +582,12 @@
         title: "WWW Info",
         width: "auto",
         dialogClass: "dialog-compact",
+        dragStop: function (event, ui) {
+          $(this).dialog({
+            width: "auto",
+            height: "auto"
+          });
+        },
         close: function () {
           stopWwwInfo = true;
           $(this).dialog("destroy");
@@ -840,6 +847,7 @@
     var scanCorridorFunction = this.scanCorridorFunction = ko.observableArray();
     var ratesLengthFunction = this.ratesLengthFunction = ko.observableArray();
     var voltageFunction = this.voltageFunction = ko.observableArray();
+    var corridorCalculationMethod = this.corridorCalculationMethod = ko.observableArray()
     var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
     // #endregion
     // #region GetAccounting
@@ -869,6 +877,12 @@
         title: "Accounting",
         width: "auto",
         dialogClass: "dialog-compact",
+        dragStop: function (event, ui) {
+          $(this).dialog({
+            width: "auto",
+            height: "auto"
+          });
+        },
         close: function () {
           debugger;
           stopAccounting = true;
@@ -963,6 +977,12 @@
         title: "Wave Ranges",
         width: "auto",
         dialogClass:"dialog-compact",
+        dragStop: function (event, ui) {
+          $(this).dialog({
+            width: "auto",
+            height: "auto"
+          });
+        },
         close: function () {
           self.stopWaveRanges();
           $(this).dialog("destroy");
@@ -999,6 +1019,12 @@
         title: "Replay Controls",
         width: "auto",
         minHeight:20,
+        dragStop: function (event, ui) {
+          $(this).dialog({
+            width: "auto",
+            height: "auto"
+          });
+        },
         dialogClass: "dialog-compact"
       });
       readReplayArguments();
@@ -1260,11 +1286,17 @@
       serverCall("readEnum", ["VoltageFunction"], function (enums) {
         dataViewModel.voltageFunction(mapEnumsForSettings(enums));
       });
+      serverCall("readEnum", ["CorridorCalculationMethod"], function (enums) {
+        dataViewModel.corridorCalculationMethod(mapEnumsForSettings(enums));
+      });
+      serverCall("getPresetTradeLevels", [pair], function (l) {
+        dataViewModel.tradePresetLevel(l[0] || 0);
+      });
       serverCall("getPresetTradeLevels", [pair], function (l) {
         dataViewModel.tradePresetLevel(l[0] || 0);
       });
 
-      //#endregion
+      //#endregion 
       dataViewModel.readStrategies();
       //dataViewModel.readNews();
       $.when.apply($, [defTC,defTOC,defTDT]).done(function () {

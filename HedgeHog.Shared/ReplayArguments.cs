@@ -23,6 +23,8 @@ namespace HedgeHog.Shared {
     public ReplayArguments() {
     }
 
+    public int StartingBalance { get; set; }
+
     #region Session Statistics
     public class SessionStatistics {
       public double ProfitToLossRatio { get; set; }
@@ -36,6 +38,7 @@ namespace HedgeHog.Shared {
     #endregion
 
     #region SuperSession
+    public string PrevSessionUid { get; set; }
     public Guid SuperSessionId { get; set; }
     public bool UseSuperSession { get; set; }
     public void ResetSuperSession() { SuperSessionId = Guid.Empty; }
