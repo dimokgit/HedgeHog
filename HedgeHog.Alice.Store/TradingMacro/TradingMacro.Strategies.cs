@@ -566,7 +566,8 @@ namespace HedgeHog.Alice.Store {
         case CorridorCalculationMethod.Height:
           return doubles.StDevByRegressoin(coeffs);
         case CorridorCalculationMethod.MinMax:
-          var mm = doubles.GetRange(0, doubles.Count - 5).MinMaxByRegressoin(coeffs).Select(d => d.Abs()).Max();
+          var cmaPrices = UseRates(rates => rates.GetRange(doubles.Count)).SelectMany(rates => rates.Cma(r => r.PriceAvg, 1)).ToArray();
+          var mm = cmaPrices/*.GetRange(0, doubles.Count - 5)*/.MinMaxByRegressoin().Select(d => d.Abs()).Max();
           return mm / 2;
         case CorridorCalculationMethod.RootMeanSquare:
           return doubles.StDevByRegressoin(coeffs).RootMeanSquare(doubles.StandardDeviation());

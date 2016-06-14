@@ -952,7 +952,7 @@ namespace HedgeHog {
       }
       return max - min;
     }
-    public static double[] MinMaxByRegressoin(this IList<double> values, double[] coeffs) {
+    public static double[] MinMaxByRegressoin(this IList<double> values, double[] coeffs = null) {
       if(coeffs == null || coeffs.Length == 0)
         coeffs = values.Linear();
       var line = new double[values.Count];

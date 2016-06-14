@@ -122,6 +122,7 @@ namespace HedgeHog.Alice.Store {
             case CorridorCalculationMethod.Minimum:
               stDevDict.Add(CorridorCalculationMethod.Minimum, stDev = stDevDict.Values.Min()); break;
             case CorridorCalculationMethod.Maximum:
+            case CorridorCalculationMethod.MinMax:
               stDevDict.Add(CorridorCalculationMethod.Maximum, stDev = stDevDict.Values.Max()); break;
             case CorridorCalculationMethod.Height:
               double max = double.MinValue, min = double.MaxValue;

@@ -1033,15 +1033,27 @@ namespace HedgeHog.Alice.Store {
         Func<TradingMacro, IList<IList<TL>>> tlses = tm => new[] {
           tm.TrendLinesTrendsAll.Skip(1).ToArray(),
           tm.TrendLinesTrendsAll.Skip(0).SkipLast(1).ToArray() };
-        var exec = MonoidsCore.ToFunc((IList<TL>)null, (WaveRange)null, (tls, wr) => Equinox(tls, BuyLevel, SellLevel, wr)
-         .Take(1));
-        return () => TradingMacroTrender(tm => tm.WaveRangesWithTail.Take(1).SelectMany(wr=> tlses(tm).SelectMany(tls => exec(tls, wr))))
-        .SelectMany(x => x)
-        .MinBy(x => x.Item1)
-        .Where(x => IsTresholdAbsOk(_wwwInfoEquinox = x.Item1, EquinoxPerc))
-        .Select(x => TradeDirectionBySuppRes(x.Item2))
-        .FirstOrDefault();
+        return () => EquinoxCondition(tlses);
       }
+    }
+    public TradeConditionDelegate EqnxAllOk {
+      get {
+        Log = new Exception(new { EqnxOk = new { EquinoxPerc } } + "");
+        Func<TradingMacro, IList<IList<TL>>> tlses = tm => new[] {
+          tm.TrendLinesTrendsAll.Skip(0).ToArray() };
+        return () => EquinoxCondition(tlses);
+      }
+    }
+
+    private TradeDirections EquinoxCondition(Func<TradingMacro, IList<IList<TL>>> tlses) {
+      var exec = MonoidsCore.ToFunc((IList<TL>)null, (WaveRange)null, (tls, wr) => Equinox(tls, BuyLevel, SellLevel, wr)
+       .Take(1));
+      return TradingMacroTrender(tm => tm.WaveRangesWithTail.Take(1).SelectMany(wr => tlses(tm).SelectMany(tls => exec(tls, wr))))
+      .SelectMany(x => x)
+      .MinBy(x => x.Item1)
+      .Where(x => IsTresholdAbsOk(_wwwInfoEquinox = x.Item1, EquinoxPerc))
+      .Select(x => TradeDirectionBySuppRes(x.Item2))
+      .FirstOrDefault();
     }
     #endregion
     IEnumerable<int> TrendHeighRatioGRB() {
