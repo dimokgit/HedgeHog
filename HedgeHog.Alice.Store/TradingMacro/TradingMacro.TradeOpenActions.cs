@@ -20,6 +20,13 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+    public TradeOpenAction WrapOnTrade2 {
+      get {
+        return trade => {
+          WrapTradeInTradingDistabce(true);
+        };
+      }
+    }
 
     public TradeOpenAction Avg1ExitOnTrade {
       get {

@@ -3442,6 +3442,9 @@ namespace HedgeHog.Alice.Store {
         : tp.Max(PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2)
         );// + InPoints(CommissionInPips());
     }
+    double CalculateTradingDistance(double customRatio = double.NaN) {
+      return GetValueByTakeProfitFunction(TradingDistanceFunction, customRatio.IfNaN(TradingDistanceX));
+    }
 
 
     #region TakeProfitBSRatio

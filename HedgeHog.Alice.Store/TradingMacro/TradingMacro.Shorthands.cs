@@ -93,6 +93,22 @@ namespace HedgeHog.Alice.Store {
       }
       RaiseShowChart();
     }
+    public void WrapTradeInTradingDistabce(bool forceMove = false) {
+      if(Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove || MoveWrapTradeWithNewTrade)) {
+        SuppRes.ForEach(sr => sr.ResetPricePosition());
+        BuyLevel.InManual = SellLevel.InManual = true;
+        double offset = CalculateTradingDistance();
+        if(Trades.HaveBuy()) {
+          BuyLevel.Rate = Trades.NetOpen();
+          SellLevel.Rate = BuyLevel.Rate - offset;
+        } else {
+          SellLevel.Rate = Trades.NetOpen();
+          BuyLevel.Rate = SellLevel.Rate + offset;
+        }
+        SuppRes.ForEach(sr => sr.ResetPricePosition());
+      }
+      RaiseShowChart();
+    }
 
     private double HeightForWrapToCorridor() {
       return BuyLevel.Rate.Abs(SellLevel.Rate)
