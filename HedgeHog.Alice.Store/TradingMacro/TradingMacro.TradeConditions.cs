@@ -1048,9 +1048,10 @@ namespace HedgeHog.Alice.Store {
     private TradeDirections EquinoxCondition(Func<TradingMacro, IList<IList<TL>>> tlses) {
       var exec = MonoidsCore.ToFunc((IList<TL>)null, (WaveRange)null, (tls, wr) => Equinox(tls, BuyLevel, SellLevel, wr)
        .Take(1));
-      return TradingMacroTrender(tm => tm.WaveRangesWithTail.Take(1).SelectMany(wr => tlses(tm).SelectMany(tls => exec(tls, wr))))
+      return TradingMacroTrender(tm => TradingMacroM1(tm1=> tm1.WaveRangesWithTail.Take(1)).SelectMany(wrs => wrs.SelectMany(wr=> tlses(tm).SelectMany(tls => exec(tls, wr)))))
       .SelectMany(x => x)
-      .MinBy(x => x.Item1)
+      .OrderBy(x => x.Item1)
+      .Take(1)
       .Where(x => IsTresholdAbsOk(_wwwInfoEquinox = x.Item1, EquinoxPerc))
       .Select(x => TradeDirectionBySuppRes(x.Item2))
       .FirstOrDefault();
