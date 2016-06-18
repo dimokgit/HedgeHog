@@ -144,16 +144,12 @@ namespace HedgeHog.Alice.Store {
         var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
         redRates.Reverse();
         WaveShort.Rates = redRates;
-        return redRates;
+        return new { redRates, trend = TrendLinesTrends };
       })
       .ToArray();
 
       GetShowVoltageFunction()();
-      return ratesForCorr
-        .Select(redRates => new CorridorStatistics(redRates, TrendLinesTrends.StDev, TrendLinesTrends.Coeffs, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height, TrendLinesTrends.Height))
-        .DefaultIfEmpty(CorridorStats)
-        .Do(x => ScanCorridorLatch = false)
-        .First();
+      return ratesForCorr.Select(x=> new CorridorStatistics(this,x.redRates,x.trend.StDev,x.trend.Coeffs)).FirstOrDefault();
     }
 
     public bool IsCorridorFrozen() {

@@ -430,51 +430,6 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    private Rate[] SetTrendLines1231(IList<Rate> source, Func<double[]> getStDev, Func<double[]> getRegressionLeftRightRates, int levels) {
-      double h, l, h1, l1;
-      double[] hl = getStDev == null ? new[] { CorridorStats.StDevMin, CorridorStats.StDevMin } : getStDev();
-      h = hl[0] * 2;
-      l = hl[1] * 2;
-      if(hl.Length >= 4) {
-        h1 = hl[2];
-        l1 = hl[3];
-      } else {
-        h1 = hl[0] * 3;
-        l1 = hl[1] * 3;
-      }
-      if(CorridorStats == null || !CorridorStats.Rates.Any())
-        return new[] { new Rate(), new Rate() };
-      var rates = new[] { source.Last(), source.Skip(source.Count - CorridorStats.Rates.Count).First() };
-      var regRates = getRegressionLeftRightRates();
-
-      rates[0].PriceChartAsk = rates[0].PriceChartBid = double.NaN;
-      rates[0].PriceAvg1 = regRates[1];
-      rates[1].PriceAvg1 = regRates[0];
-
-      if(levels > 1) {
-        rates[0].PriceAvg2 = rates[0].PriceAvg1 + h;
-        rates[0].PriceAvg3 = rates[0].PriceAvg1 - l;
-        rates[1].PriceAvg2 = rates[1].PriceAvg1 + h;
-        rates[1].PriceAvg3 = rates[1].PriceAvg1 - l;
-      }
-      if(levels > 2) {
-        rates[0].PriceAvg21 = rates[0].PriceAvg1 + h1;
-        rates[0].PriceAvg31 = rates[0].PriceAvg1 - l1;
-        rates[1].PriceAvg21 = rates[1].PriceAvg1 + h1;
-        rates[1].PriceAvg31 = rates[1].PriceAvg1 - l1;
-      }
-      return rates;
-    }
-    public IList<Rate> SetTrendLines1231() {
-      return UseRates(rates => {
-        var c = CorridorStats.Rates.Count.Min(rates.Count);
-        return CalcTrendLines(CorridorStats.Rates.Count > 0
-          ? CorridorStats.Rates.Reverse<Rate>().ToList()
-          : rates.GetRange(rates.Count - c, c));
-      })
-      .DefaultIfEmpty(new[] { Rate.TrendLevels.EmptyRate, Rate.TrendLevels.EmptyRate })
-      .Single();
-    }
     public IList<Rate> CalcTrendLines(int count) {
       return UseRates(rates => {
         var c = count.Min(rates.Count);

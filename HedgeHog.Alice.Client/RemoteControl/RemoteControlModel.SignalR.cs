@@ -97,9 +97,7 @@ namespace HedgeHog.Alice.Client {
       var trendLines = tm.UseRates(rates => new {
         dates = rates.Count > 0
         ? new DateTimeOffset[]{
-          tm.BarPeriod == BarsPeriodType.m1
-          ? rates.Last().StartDate2.AddMinutes(-(tm.CorridorStats.Rates.Count - 1))
-          : trends[0].StartDate2,
+          trends[0].StartDate2,
           rates.Last().StartDate2}
         : new DateTimeOffset[0],
         close1 = trends.ToArray(t => t.Trends.PriceAvg1.Round(digits)),
@@ -115,9 +113,7 @@ namespace HedgeHog.Alice.Client {
         dates = trends2.Count == 0
         ? new DateTimeOffset[0]
         : new DateTimeOffset[]{
-          tm.BarPeriod == BarsPeriodType.m1
-          ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLengthBlue-1))
-          : trends2[0].StartDate2,
+          trends2[0].StartDate2,
           ratesLastStartDate2},
         close1 = trends2.ToArray(t => t.Trends.PriceAvg1.Round(digits)),
         close2 = trends2.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
@@ -128,9 +124,7 @@ namespace HedgeHog.Alice.Client {
         dates = trends0.Count == 0
         ? new DateTimeOffset[0]
         : new DateTimeOffset[]{
-          tm.BarPeriod == BarsPeriodType.m1
-          ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLengthLime-1))
-          : trends0[0].StartDate2,
+          trends0[0].StartDate2,
           ratesLastStartDate2},
         close2 = trends0.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends0.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
@@ -140,9 +134,7 @@ namespace HedgeHog.Alice.Client {
         dates = trends1.Count == 0
         ? new DateTimeOffset[0]
         : new DateTimeOffset[]{
-          tm.BarPeriod == BarsPeriodType.m1
-          ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLengthGreen-1))
-          : trends1[0].StartDate2,
+          trends1[0].StartDate2,
           ratesLastStartDate2},
         close2 = trends1.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends1.ToArray(t => t.Trends.PriceAvg3.Round(digits)),

@@ -80,9 +80,12 @@
   var dateMin = new Date("1/1/9999");
   var ratesInFlight = dateMin;
   var ratesInFlight2 = dateMin;
+  function keyNote(text) { return { keyNote: text } };
+  var openInFlightNote = _.throttle(showErrorPerm, 2 * 1000);
   function isInFlight(date, index) {
     var secsInFlight = getSecondsBetween(new Date(), date);
-    if (secsInFlight > 30) openErrorNote("InFlightDelay", showErrorPerm("In flight(" + index + ") > " + secsInFlight));
+    if (secsInFlight > 30)
+      openInFlightNote("In flight(" + index + ") > " + secsInFlight, keyNote("InFlightDelay"));
     if (secsInFlight > 60) return false;
     return date && secsInFlight > 0;
   }
@@ -102,7 +105,7 @@
         resetPlotter2();
       })
       .fail(function (e) {
-        showErrorPerm(e);
+        showErrorPerm(e, keyNote("askRates"));
       }).always(function () {
         ratesInFlight = dateMin;
       });
@@ -118,7 +121,7 @@
           dataViewModel.updateChart2(r);
         });
       }).fail(function (e) {
-        showErrorPerm(e);
+        showErrorPerm(e, keyNote("askRates2"));
       }).always(function () {
         ratesInFlight2 = dateMin;
       });
@@ -794,7 +797,10 @@
         ? closedTrades.map(function (ct) { return $.extend(true, {}, ct); })
         : [];
       function mapDates(v) { return v.dates; }
-      var moreDates = [].concat(response.waveLines.map(mapDates)).concat(closedTradesLocal.map(mapDates));
+      var moreDates = []
+        .concat(response.waveLines.map(mapDates))
+        .concat(closedTradesLocal.map(mapDates))
+        .concat([response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0].map(mapDates));
       var ratesAll = continuoseDates("minute", lineChartData2(), moreDates);
       var shouldUpdateData = true;
       if (response.isTrader)
@@ -1032,7 +1038,7 @@
     this.startReplay = function () {
       serverCall("startReplay", [pair, replayDateStart()], function (replayArguments) {
         if (replayArguments.LastWwwError)
-          showErrorPerm(replayArguments.LastWwwError);
+          showErrorPerm(replayArguments.LastWwwError, keyNote("startReplay"));
       });
       readReplayProcID = setInterval(readReplayArguments, 3 * 1000);
     }
@@ -1068,9 +1074,10 @@
       });
       return root;
     }
-    function chartDataFactory(data, trendLines, trendLines2, trendLines1, trendLines0, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross, tpsHigh,tpsLow, canBuy, canSell, waveLines) {
+    function chartDataFactory(data, trendLines, trendLines2, trendLines1, trendLines0, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross, tpsHigh, tpsLow, canBuy, canSell, waveLines) {
+      function shrikData(data) { return data.length > 50 ? data : [];}
       return {
-        data: data ? ko.unwrap(data) : [],
+        data: data ? shrikData(ko.unwrap(data)) : [],
         trendLines: trendLines,
         trendLines2: trendLines2,
         trendLines1: trendLines1,
@@ -1236,7 +1243,7 @@
     chat.client.priceChanged = priceChanged;
     chat.client.tradesChanged = dataViewModel.readClosedTrades;
     chat.client.lastWwwErrorChanged = function (le) {
-      showErrorPerm(le);
+      showErrorPerm(le, keyNote("lastWwwErrorChanged"));
     };
     chat.client.marketIsOpening = function (market) {
       showInfoPerm(JSON.stringify(market));
@@ -1351,7 +1358,7 @@
   function openReconnectNote(note) { openErrorNote("reconnect", note); }
   function openErrorNote(key, note) {
     closeErrorNote(key);
-    errorNotes.push([key, note]);
+    errorNotes.push([key, _.isFunction(note) ? note() : note]);
   }
   function closeErrorNote(key) {
     errorNotes.filter(function (a) { return a[0] === key; }).forEach(function (note) {
@@ -1420,7 +1427,12 @@
     return notify(message, "success", $.extend({ type: "success" }, settings));
   }
   function showError(message, settings) {
-    return notify(message, NOTE_ERROR, settings);
+    var keyNote = (settings || {}).keyNote;
+    var note = notify(message, NOTE_ERROR, settings);
+    if (!keyNote && (settings || {}).delay === 0)
+      keyNote = message + "";
+    if (keyNote) openErrorNote(keyNote, note);
+    return note;
   }
   /* jshint ignore:end */
   function showErrorPerm(message,settings) {

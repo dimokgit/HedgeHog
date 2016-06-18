@@ -45,7 +45,7 @@
       chartArea.x.domain(cha.xDomain);
       var x1 = chartArea.x(cha.xDomain[0]);
       var x2 = chartArea.x(cha.xDomain[1]);
-      if (price.ask) {
+      if (price.ask && !isNaN(x1) && !isNaN(x2)) {
         setHLine(chartArea.y, x1, x2, price.ask, "ask");
         setHLine(chartArea.y, x1, x2, price.bid, "bid");
       }

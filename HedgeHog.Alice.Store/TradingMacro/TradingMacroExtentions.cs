@@ -774,9 +774,6 @@ namespace HedgeHog.Alice.Store {
 
 
         if(value != null && RatesArray.Count > 0) {
-          CorridorAngle = TrendLinesTrends.Angle;
-          var tp = CalculateTakeProfit();
-          TakeProfitPips = InPips(tp);
           if(false && !IsGannAnglesManual)
             SetGannAngleOffset(value);
           UpdateTradingGannAngleIndex();
@@ -1819,7 +1816,7 @@ namespace HedgeHog.Alice.Store {
             { "Angle", TradingMacroTrender(tm=>tm.TrendLines2Trends.Angle.Abs()).SingleOrDefault() },
             { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
             { "PPM", TradingMacroTrender(tm=> GetLastVolt().SingleOrDefault()).SingleOrDefault() },
-            { "PpmM1", TradingMacroOther().Select(tm=>tm.WaveRangeAvg.PipsPerMinute).FirstOrDefault() },
+            { "PpmM1", TradingMacroM1(tm=>tm.WaveRangeAvg.PipsPerMinute).FirstOrDefault() },
             { "M1Angle", TradingMacroOther().Select(tm=>tm.WaveRangeAvg.Angle.Abs()).FirstOrDefault() },
             { "Equinox", _wwwInfoEquinox },
             { "StDev", TradingMacroOther().Select(tm=>tm.WaveRanges.Select(wr=>wr.StDev).FirstOrDefault()).Single() },
@@ -2278,7 +2275,7 @@ namespace HedgeHog.Alice.Store {
                 SpreadForCorridor = rates.Spread();
                 SetCma(rates);
                 RatesHeightCma = rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax);
-                var leg = rates.Count.Div(10).ToInt();
+                var leg = rates.Count.Div(10).ToInt().Max(1);
                 PriceSpreadAverage = rates
                 .Buffer(leg)
                 .Where(b => b.Count > leg * .75)
@@ -2315,7 +2312,8 @@ namespace HedgeHog.Alice.Store {
             }, true);
             OnScanCorridor(RatesArray, () => {
               try {
-                RaiseShowChart();
+                CorridorAngle = TrendLinesTrends.Angle;
+                TakeProfitPips = InPips(CalculateTakeProfit());
                 RunStrategy();
               } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
             }, IsInVirtualTrading);
@@ -3206,7 +3204,7 @@ namespace HedgeHog.Alice.Store {
       if(MaximumPositions <= trades.Positions(LotSize))
         return true;
       var td = TradingDistanceInPips;//.Max(trades.DistanceMaximum());
-      return TakeProfitPips == 0 || double.IsNaN(TradingDistance) || HasTradesByDistanceDelegate(trades, td);
+      return CalculateTakeProfit() == 0 || double.IsNaN(TradingDistance) || HasTradesByDistanceDelegate(trades, td);
     }
 
     delegate bool HasTradesByDistanceCustom(Trade[] trades, double tradingDistanceInPips);
@@ -3435,7 +3433,10 @@ namespace HedgeHog.Alice.Store {
       var rate = TradesManager.RateForPipAmount(CurrentPrice);
       return TradesManagerStatic.MoneyAndLotToPips(Pair, com, trades.Lots(), rate, PointSize);
     }
-    double CalculateTakeProfit(double customRatio = double.NaN, bool dontAdjust = true) {
+    public double CalculateTakeProfitInPips(double customRatio = double.NaN, bool dontAdjust = true) {
+      return InPips(CalculateTakeProfit(customRatio, dontAdjust));
+    }
+    public double CalculateTakeProfit(double customRatio = double.NaN, bool dontAdjust = true) {
       var tp = GetValueByTakeProfitFunction(TakeProfitFunction, customRatio.IfNaN(TakeProfitXRatio));
       return (dontAdjust
         ? tp
@@ -3553,7 +3554,7 @@ namespace HedgeHog.Alice.Store {
 
     double _bbRatio = 4;
     [Category(categoryActive)]
-    [WwwSetting]
+    //[WwwSetting]
     public double BbRatio {
       get {
         return _bbRatio;
@@ -3658,16 +3659,16 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
 
           {TradeLevelBy.LimeMax,()=> levelMax(tm=> tm.TrendLines0Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.LimeMin,()=> levelMin(tm=> TrendLines0Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.LimeMin,()=> levelMin(tm=> tm.TrendLines0Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.GreenMax,()=> levelMax(tm=> TrendLines1Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.GreenMin,()=> levelMin(tm=> TrendLines1Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.GreenMax,()=> levelMax(tm=> tm.TrendLines1Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.GreenMin,()=> levelMin(tm=> tm.TrendLines1Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.RedMax,()=> levelMax(tm=> TrendLinesTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.RedMin,()=> levelMin(tm=> TrendLinesTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.RedMax,()=> levelMax(tm=> tm.TrendLinesTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.RedMin,()=> levelMin(tm=> tm.TrendLinesTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.BlueMax,()=> levelMax(tm=> TrendLines2Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.BlueMin,()=> levelMin(tm=> TrendLines2Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.BlueMax,()=> levelMax(tm=> tm.TrendLines2Trends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.BlueMin,()=> levelMin(tm=> tm.TrendLines2Trends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
 
           {TradeLevelBy.None,()=>double.NaN}
           };
@@ -3707,7 +3708,7 @@ namespace HedgeHog.Alice.Store {
           break;
         #region RatesHeight
         case TradingMacroTakeProfitFunction.RatesHeight:
-          tp = useTrender(tm=>tm.RatesHeightCma * xRatio);
+          tp = useTrender(tm => tm.RatesHeightCma * xRatio);
           break;
         #endregion
         #region BuySellLevels

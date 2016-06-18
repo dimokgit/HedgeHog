@@ -101,9 +101,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     private CorridorStatistics ShowVolts(double volt, int averageIterations) {
+      SetVots(volt, averageIterations);
       if(!WaveShort.HasRates)
         return null;
-      SetVots(volt, averageIterations);
       var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
       return corridor;
     }
@@ -151,7 +151,10 @@ namespace HedgeHog.Alice.Store {
       SetVots(WaveRangeAvg.PipsPerMinute, 2);
     }
     private void SetVoltsByEquinox() {
-      TradingMacroTrader().Take(1).ForEach(tm => SetVots(tm._wwwInfoEquinox, 2));
+      TradingMacroTrender()
+        .Where(tm => tm.IsRatesLengthStable)
+        .Take(1)
+        .ForEach(tm => SetVots(tm._wwwInfoEquinox, 2));
     }
     private void SetVoltsByPpmRatio() {
       SetVots(WaveRangeSum.PipsPerMinute / WaveRangeAvg.PipsPerMinute, 2);

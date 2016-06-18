@@ -1363,6 +1363,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Bars Count(45,360,..)")]
     [Category(categoryActive)]
+    [WwwSetting]
     public int BarsCount {
       get { return CorridorBarMinutes; }
       set {
