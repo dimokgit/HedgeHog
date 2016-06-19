@@ -92,7 +92,7 @@ namespace HedgeHog.Alice.Store {
       rates.Reverse();
       var legs = (
         BarPeriodInt > 0 || CmaMACD == null || _macdDiastances.IsEmpty()
-        ? MacdDistancesSmoothedReversed(rates) 
+        ? MacdDistancesSmoothedReversed(rates)
         : _macdDiastances
         ).Select((d, i) => new { d, i }).Take(rates.Count).ToList();
       var leg = legs.Last().d.Div(7);
@@ -138,18 +138,19 @@ namespace HedgeHog.Alice.Store {
 
       var ratesForCorr = getRate(3)
         .ToArray()
-        .Select(rate => {
-        var redLength = rateIndex(rate);
-        TrendLines = Lazy.Create(() => CalcTrendLines(redLength), TrendLines.Value, exc => Log = exc);
-        var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
-        redRates.Reverse();
-        WaveShort.Rates = redRates;
-        return new { redRates, trend = TrendLinesTrends };
-      })
+        .Select(rate => rateIndex(rate))
+        .DefaultIfEmpty(ratesForCorridor.Count - 1)
+        .Select(redLength => {
+          TrendLines = Lazy.Create(() => CalcTrendLines(redLength), TrendLines.Value, exc => Log = exc);
+          var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
+          redRates.Reverse();
+          WaveShort.Rates = redRates;
+          return new { redRates, trend = TrendLinesTrends };
+        })
       .ToArray();
 
       GetShowVoltageFunction()();
-      return ratesForCorr.Select(x=> new CorridorStatistics(this,x.redRates,x.trend.StDev,x.trend.Coeffs)).FirstOrDefault();
+      return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();
     }
 
     public bool IsCorridorFrozen() {

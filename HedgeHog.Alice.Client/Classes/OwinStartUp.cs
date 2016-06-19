@@ -200,7 +200,8 @@ namespace HedgeHog.Alice.Client {
     public object AskChangedPrice(string pair) {
       var tm0 = UseTradingMacro(pair, tm => tm, false);
       var tm1 = UseTradingMacro(pair, 1, tm => tm, false);
-      var tmTrader = UseTradingMacro(tm => tm.IsTrader, pair, false).DefaultIfEmpty(tm0).Single();
+      var tmTrader = tm0.TradingMacroTrader().Single();
+      var tmTrender = tm0.TradingMacroTrender().Single();
       var isVertual = tmTrader.IsInVirtualTrading;
 
       #region marketHours
@@ -230,7 +231,7 @@ namespace HedgeHog.Alice.Client {
         }
       }
       #endregion
-      var timeFormat = (isVertual ? "d " : "") + "HH:mm:ss";
+      var timeFormat = (isVertual ? "MMM/d " : "") + "HH:mm:ss";
       var digits = tmTrader.Digits();
       return new {
         time = tm0.ServerTime.ToString(timeFormat),
@@ -240,9 +241,9 @@ namespace HedgeHog.Alice.Client {
         dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"h\:mm")
           + (tm1 != null ? "," + (tm1.RatesArray.Count * tm1.BarPeriodInt).FromMinutes().TotalDays.Round(1) : ""),// + "|" + TimeSpan.FromMinutes(tm1.RatesDuration).ToString(@"h\:mm"),
         hgt = string.Join("/", new[] {
-          tmTrader.RatesHeightInPips.ToInt()+"",
-          tmTrader.BuySellHeightInPips.ToInt()+"",
-          tmTrader.TrendLines2Trends.Angle.Abs().ToInt()+"°"
+          tmTrender.RatesHeightInPips.ToInt()+"",
+          tmTrender.BuySellHeightInPips.ToInt()+"",
+          tmTrender.TrendLines2Trends.Angle.Abs().ToInt()+"°"
         }),
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
@@ -623,10 +624,11 @@ namespace HedgeHog.Alice.Client {
       list.Add(row("Equity", am.Equity.ToString("c0")));
       UseTradingMacro(pair, tm => {
         var ht = tm.HaveTrades();
-        list.Add(row("CurrentLoss", am.CurrentLoss.Round(2).ToString("c0") +
+        list.Add(row("CurrentGross", am.CurrentGross.Round(2).ToString("c0") +
           (ht ? "/" + (am.ProfitPercent).ToString("p1") : "")
           + "/" + (am.OriginalProfit).ToString("p1")));
         list.Add(row("PipAmount", tm.PipAmount.ToString("c1") + "/" + tm.PipAmountPercent.ToString("p2")));
+        list.Add(row("PipsToMC", am.PipsToMC.ToString("n0")));
         list.Add(row("LotSize", (tm.LotSize / 1000).ToString("n0") + "K/" + tm.LotSizePercent.ToString("p0")));
       }, false);
       return list.ToArray();
@@ -655,9 +657,9 @@ namespace HedgeHog.Alice.Client {
     private IEnumerable<TradingMacro> GetTradingMacro(string pair, int chartNum = 0) {
       return remoteControl.Value.YieldNotNull()
         .SelectMany(rc => rc.TradingMacrosCopy)
+        .Where(tm2 => tm2.IsActive)
         .Skip(chartNum)
         .Take(1)
-        .Where(tm2 => tm2.IsActive)
         .Where(t => t.PairPlain == pair);
     }
     IEnumerable<TradingMacro> UseTradingMacro(Func<TradingMacro, bool> predicate, string pair, bool testTraderAccess) {

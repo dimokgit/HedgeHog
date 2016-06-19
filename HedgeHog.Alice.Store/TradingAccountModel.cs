@@ -116,6 +116,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public double CurrentGross {
+      get;
+      private set;
+    }
     #endregion
 
     public double OriginalBalance { get { return Balance - CurrentLoss; } }
@@ -140,6 +144,7 @@ namespace HedgeHog.Alice.Store {
         accountRow.TradingStatistics = tradingStatistics;
         accountRow.TakeProfit = tradingStatistics.TakeProfitDistanceInPips;
         accountRow.CurrentGrossInPips = tradingStatistics.CurrentGrossInPips;
+        accountRow.CurrentGross = tradingStatistics.CurrentGross;
         if (accountRow.CurrentGrossInPips >= GrossToExitInPips) {
           RaiseCloseAllTrades();
           GrossToExitInPips = null;
@@ -183,6 +188,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public bool HasProfit { get { return Net > 0; } }
+
     public void OnPropertyChanged(params Expression<Func<object>>[] propertyLamdas) {
       foreach (var pl in propertyLamdas) 
         RaisePropertyChanged(pl);

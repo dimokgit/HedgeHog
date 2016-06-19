@@ -290,5 +290,9 @@ namespace HedgeHog.Alice.Store {
 
     public double CurrentLoss { get; set; }
     public double OriginalProfit { get; set; }
+    public Func<double> GetNet {
+      get;
+      set;
+    }
   }
 }

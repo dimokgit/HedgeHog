@@ -676,6 +676,7 @@ namespace HedgeHog.Alice.Client {
     public RemoteControlModel() {
       try {
         _tradingStatistics.GetNetInPips = () => CalculateCurrentNetInPips();
+        _tradingStatistics.GetNet = () => CalculateCurrentNet();
         if(!IsInDesigh) {
           InitializeModel();
           App.container.SatisfyImportsOnce(this);
@@ -759,6 +760,11 @@ namespace HedgeHog.Alice.Client {
         .ToArray().Yield()
         .Select(_ => _.Sum(tm => tm.CurrentGrossInPips * tm.CurrentGrossLot) / _.Sum(tm => tm.CurrentGrossLot))
         .FirstOrDefault();
+    }
+    private double CalculateCurrentNet() {
+      return GetTradingMacrosForStatistics()
+        .Select(tm => tm.CurrentGross)
+        .Sum();
     }
 
     public TradingMacro[] GetTradingMacrosForStatistics() {

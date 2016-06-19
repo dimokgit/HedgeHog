@@ -1405,32 +1405,32 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region TradingMacros
-    private IEnumerable<T> TradingMacroTrender<T>(Func<TradingMacro, T> map) {
+    public IEnumerable<T> TradingMacroTrender<T>(Func<TradingMacro, T> map) {
       return TradingMacroTrender().Select(map);
     }
-    private IEnumerable<TradingMacro> TradingMacroTrender() {
+    public IEnumerable<TradingMacro> TradingMacroTrender() {
       return TradingMacrosByPair().Where(tm => tm.IsTrender);
     }
-    private IEnumerable<TradingMacro> TradingMacroTrader() {
+    public IEnumerable<TradingMacro> TradingMacroTrader() {
       return TradingMacrosByPair().Where(tm => tm.IsTrader);
     }
-    private IEnumerable<T> TradingMacroM1<T>(Func<TradingMacro, T> selector) {
+    public IEnumerable<T> TradingMacroM1<T>(Func<TradingMacro, T> selector) {
       return TradingMacrosByPair()
         .Where(tm => tm.BarPeriod > BarsPeriodType.t1)
         .OrderBy(tm => tm.BarPeriod)
         .Take(1)
         .Select(selector);
     }
-    private IEnumerable<U> TradingMacroM1<T, U>(Func<TradingMacro, IEnumerable<T>> selector, Func<IEnumerable<T>, IEnumerable<U>> many) {
+    public IEnumerable<U> TradingMacroM1<T, U>(Func<TradingMacro, IEnumerable<T>> selector, Func<IEnumerable<T>, IEnumerable<U>> many) {
       return TradingMacroM1(selector).SelectMany(many);
     }
-    private IEnumerable<TradingMacro> TradingMacroOther(Func<TradingMacro, bool> predicate) {
+    public IEnumerable<TradingMacro> TradingMacroOther(Func<TradingMacro, bool> predicate) {
       return TradingMacrosByPair().Where(predicate);
     }
-    private IEnumerable<TradingMacro> TradingMacroOther() {
+    public IEnumerable<TradingMacro> TradingMacroOther() {
       return TradingMacrosByPair().Where(tm => tm != this);
     }
-    private IEnumerable<TradingMacro> TradingMacrosByPair() {
+    public IEnumerable<TradingMacro> TradingMacrosByPair() {
       return _tradingMacros.Where(tm => tm.Pair == Pair).OrderBy(tm => PairIndex);
     }
     #endregion
@@ -1584,8 +1584,6 @@ namespace HedgeHog.Alice.Store {
           sr.InManual = false;
           sr.TradesCount = 0;
         });
-        if(!IsTradingTime())
-          Log = new Exception("IsTradingTime() == false");
         return;
       }
       if(IsTrader && CanTriggerTradeDirection() && !HaveTrades() /*&& !HasTradeDirectionTriggers*/) {
