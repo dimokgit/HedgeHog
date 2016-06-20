@@ -5267,8 +5267,6 @@ namespace HedgeHog.Alice.Store {
     public bool RatesLengthLatch { get; set; }
     public bool ScanCorridorLatch { get; private set; }
 
-    bool IsLatchOk { get { return !(RatesLengthLatch || ScanCorridorLatch); } }
-
     public double DistanceByMASD {
       get {
         return _distanceByMASD;

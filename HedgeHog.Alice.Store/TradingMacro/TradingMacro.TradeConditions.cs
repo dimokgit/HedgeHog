@@ -178,20 +178,15 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate Calm3Ok {
       get {
         return () => (
-          from tm in TradingMacroOther()
+          from tm in TradingMacroOther().Take(1)
+          where tm.WaveRangeSum != null
           let wrSum = tm.WaveRangeSum
-          let wrAvg = tm.WaveRangeSum
-          where wrAvg != null
-          let wrsd = tm.WaveRanges.SkipWhile(wr => wr.IsEmpty)
-          let rsd = _waveDistRsd = wrsd.Select(w => w.Distance).Take(BigWaveIndex).RelativeStandardDeviation()
-          let wrs = wrsd.TakeWhile(wr => wr.Distance < wrAvg.Distance).ToList()
-          where wrs.Count >= BigWaveIndex
-          where rsd < .5
+          let wrs = tm.WaveRanges.SkipWhile(wr => wr.IsEmpty).Take(BigWaveIndex)
+          let distOk = wrs.All(wr => wr.Distance < wrSum.Distance)
           let distSum = wrs.Select(wr => wr.Distance).DefaultIfEmpty().Sum()
           let ppmAvg = wrs.Select(wr => wr.PipsPerMinute).DefaultIfEmpty().Average()
-          let angAvg = wrs.Select(wr => wr.Angle.Abs()).DefaultIfEmpty().Average()
-          select TradeDirectionByBool(distSum >= wrSum.Distance && ppmAvg >= wrSum.PipsPerMinute && angAvg >= wrSum.Angle))
-          .FirstOrDefault();
+          select TradeDirectionByBool(distOk && distSum >= wrSum.Distance && ppmAvg >= wrSum.PipsPerMinute))
+          .SingleOrDefault();
         //.Take(BigWaveIndex);
       }
     }

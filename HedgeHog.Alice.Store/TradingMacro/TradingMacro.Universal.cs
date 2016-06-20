@@ -971,9 +971,13 @@ namespace HedgeHog.Alice.Store {
                 var toai = MonoidsCore.ToFunc(() => TradeOpenActionsInfo((d, n) => new { n, d }).ToArray());
                 Action setLevels = () => {
                   if(IsAsleep) {
-                    TradingMacroOther().Take(1).ForEach(tm => {
-                      SellLevel.Rate = tm.TrendLines2Trends.PriceAvg2;
-                      BuyLevel.Rate = tm.TrendLines2Trends.PriceAvg3;
+                    TradingMacrosByPair()
+                    .OrderByDescending(tm=> tm._RatesMax - tm._RatesMin)
+                    .Take(1)
+                    .ForEach(tm => {
+                      var offset = (tm._RatesMax - tm._RatesMin) / 20;
+                      SellLevel.Rate = tm._RatesMax + offset;
+                      BuyLevel.Rate = tm._RatesMin - offset;
                     });
                   } else if(!TradeConditionsHaveSetCorridor())
                     SetTradeLevelsToLevelBy(GetTradeLevel)();
