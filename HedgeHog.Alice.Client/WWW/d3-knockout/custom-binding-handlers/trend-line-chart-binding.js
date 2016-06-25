@@ -504,8 +504,8 @@
         //setTrendLine(trendLines, 1, "lightgrey");
         setTrendLine(trendLines, 2, "darkred");
         setTrendLine(trendLines, 3, "darkred");
-        setTrendLine(trendLines, 21, "darkred");
-        setTrendLine(trendLines, 31, "darkred");
+        //setTrendLine(trendLines, 21, "darkred");
+        //setTrendLine(trendLines, 31, "darkred");
 
         setTrendLine2(trendLines2, 1, 2,"lightgrey");
         setTrendLine2(trendLines2, 2, 2, "navy");

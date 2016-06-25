@@ -9,7 +9,6 @@ namespace HedgeHog.Alice {
     t1,
     DistanceMacd,
     StDev,
-    TrendHieghts,
     AvgLineRatio,
     Rsd,
     PPM,

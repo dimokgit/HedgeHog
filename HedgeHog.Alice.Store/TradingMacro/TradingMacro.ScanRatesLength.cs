@@ -271,8 +271,7 @@ namespace HedgeHog.Alice.Store {
     void ScanRatesLengthByM1Wave() {
       if(BarPeriod != BarsPeriodType.t1)
         throw new Exception("ScanRatesLengthByM1Wave is only supported for BarsPeriodType." + BarsPeriodType.t1);
-      TradingMacroOther()
-        .SelectMany(tm => tm.WaveRanges.Take(1))
+      TradingMacroM1(tm => tm.WaveRanges.Take(1), w => w)
         .Select(wr => wr.StartDate)
         .Where(_ => /*!BuySellLevels.Any(sr => sr.CanTrade) &&*/ !HaveTrades())
         .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()))
@@ -286,15 +285,21 @@ namespace HedgeHog.Alice.Store {
          let wr = getWr(tm)
          where wr != null
          let distMin = InPoints(wr.Average(w => w.Distance))
-         let dateMin = ServerTime.AddMinutes(-wr.Min(w => w.TotalMinutes))
+         let dateMin = wr.Select(w => w.TotalMinutes).OrderByDescending(m => m).Take(1).Select(m => ServerTime.AddMinutes(-m))
          from dates in tm.UseRatesInternal(rates => rates.BackwardsIterator()
-         .Distances(_priceAvg).SkipWhile(t => t.Item2 < distMin || (doUseTotalMinutes && t.Item1.StartDate >= dateMin)).Select(t => t.Item1.StartDate).Take(1))
+         .Distances(_priceAvg).SkipWhile(t => t.Item2 < distMin)
+         .Select(t => t.Item1.StartDate)
+         .Take(1)
+         .Concat(dateMin.Where(_ => doUseTotalMinutes))
+         .Concat(tm.WaveRanges.Take(1).Select(wr => wr.StartDate))
+         .OrderBy(d => d)
+         .Take(1))
          from date in dates
          from counts in UseRatesInternal(rates => rates.FuzzyIndex(date, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate)))
          from count in counts
          select RatesInternal.Count - count
          ).ForEach(count => BarsCountCalc = count.Max(BarsCount));
-      }catch(Exception exc) {
+      } catch(Exception exc) {
         Log = exc;
       }
     }

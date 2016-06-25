@@ -2398,11 +2398,6 @@ namespace HedgeHog.Alice.Store {
         }));
       return null;
     }
-    CorridorStatistics ShowVoltsByTrendHeighRatioAll() {
-      if(CanTriggerTradeDirection())
-        TrendHeighRatioLGR().ForEach(i => SetVots(i, 2, CmaPeriodByRatesCount()));
-      return null;
-    }
 
     private void SetVoltsByStd(double volt) {
       SetVoltsByStd(volt, TrendLines2Trends);

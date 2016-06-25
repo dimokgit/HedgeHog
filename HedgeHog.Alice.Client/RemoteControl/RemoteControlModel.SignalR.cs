@@ -102,9 +102,9 @@ namespace HedgeHog.Alice.Client {
         : new DateTimeOffset[0],
         close1 = trends.ToArray(t => t.Trends.PriceAvg1.Round(digits)),
         close2 = trends.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
-        close3 = trends.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
-        close21 = trends.ToArray(t => t.Trends.PriceAvg21.Round(digits)),
-        close31 = trends.ToArray(t => t.Trends.PriceAvg31.Round(digits))
+        close3 = trends.ToArray(t => t.Trends.PriceAvg3.Round(digits))
+        //close21 = trends.ToArray(t => t.Trends.PriceAvg21.Round(digits)),
+        //close31 = trends.ToArray(t => t.Trends.PriceAvg31.Round(digits))
       })
       .SingleOrDefault();
       var ratesLastStartDate2 = tm.RatesArray.Last().StartDate2;
