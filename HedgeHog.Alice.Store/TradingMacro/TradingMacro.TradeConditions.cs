@@ -983,45 +983,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region Trends Ratios
-    public TradeConditionDelegate GRHOk {
-      get {
-        Log = new Exception(new { GBHOk = new { TrendHeightPerc } } + "");
-        //if(TradeConditionsHave(GBHOk))
-        //  throw new Exception(new { GRHOk = new { GBHOk = "Is not Allowed" } } + "");
-        return () => TrendHeighRatio(1, 1)
-        .Select(i => TradeDirectionByBool(IsTresholdAbsOk(_wwwInfoGRatio = i, TrendHeightPerc)))
-        .DefaultIfEmpty()
-        .Single();
-      }
-    }
-    public TradeConditionDelegate GBHOk {
-      get {
-        Log = new Exception(new { GBHOk = new { TrendHeightPerc } } + "");
-        //if(TradeConditionsHave(GRHOk))
-        //  throw new Exception(new { GBHOk = new { GRHOk = "Is not Allowed" } } + "");
-        return () => TrendHeighRatio(tm => tm.TrendLines2Trends, tm => tm.TrendLines1Trends)
-        .Select(i => TradeDirectionByBool(IsTresholdAbsOk(_wwwInfoGRatio = i, TrendHeightPerc)))
-        .DefaultIfEmpty()
-        .Single();
-      }
-    }
-    public TradeConditionDelegate GoROk {
-      get {
-        return () => TradingMacroTrender(tm => tm.TrendLines1Trends.PriceAvg2 > tm.TrendLinesTrends.PriceAvg2 && tm.TrendLines1Trends.PriceAvg3 < tm.TrendLinesTrends.PriceAvg3)
-        .Select(TradeDirectionByBool)
-        .DefaultIfEmpty()
-        .Single();
-      }
-    }
-    public TradeConditionDelegate RBHOk {
-      get {
-        Log = new Exception(new { RBHOk = new { TrendHeightPerc } } + "");
-        return () => TrendHeighRatio(2, 0)
-        .Select(i => TradeDirectionByBool(IsTresholdAbsOk(_wwwInfoRRatio = i, TrendHeightPerc)))
-        .DefaultIfEmpty()
-        .Single();
-      }
-    }
     public TradeConditionDelegate EqnxOk {
       get {
         Log = new Exception(new { EqnxOk = new { EquinoxPerc } } + "");
@@ -1029,74 +990,79 @@ namespace HedgeHog.Alice.Store {
           tm.TrendLinesTrendsAll.Skip(1).ToArray(),
           tm.TrendLinesTrendsAll.Skip(0).SkipLast(1).ToArray() };
         Func<IEnumerable<WaveRange>> wrs = () => TradingMacroM1(tm1 => tm1.WaveRangesWithTail.Take(1), x => x);
-        return () => EquinoxCondition(tlses, wrs);
+        var paFuncs = MonoidsCore.ToFunc(() => new Tuple<Func<TL, double>, SuppRes>[] {
+        Tuple.Create<Func<TL, double>, SuppRes>(tl => tl.PriceAvg2, SellLevel),
+        Tuple.Create<Func<TL, double>, SuppRes>(tl => tl.PriceAvg3, BuyLevel) });
+        return () => EquinoxCondition(tlses, paFuncs(), wrs);
       }
     }
     public TradeConditionDelegate EqnxAllOk {
       get {
         Log = new Exception(new { EqnxAllOk = new { EquinoxPerc } } + "");
         Func<IEnumerable<WaveRange>> wrs = () => TradingMacroM1(tm1 => tm1.WaveRangesWithTail.Take(1), x => x);
+        var paFuncs = MonoidsCore.ToFunc(() => new Tuple<Func<TL, double>, SuppRes>[] {
+        Tuple.Create<Func<TL, double>, SuppRes>(tl => tl.PriceAvg2, SellLevel),
+        Tuple.Create<Func<TL, double>, SuppRes>(tl => tl.PriceAvg3, BuyLevel) });
         Func<TradingMacro, IList<IList<TL>>> tlses = tm => new[] {
           tm.TrendLinesTrendsAll.Skip(0).ToArray() };
-        return () => EquinoxCondition(tlses, wrs);
+        return () => EquinoxCondition(tlses, paFuncs(), wrs);
       }
     }
+    string _equinoxCorridors = "0,1,2,3";
     public TradeConditionDelegate EqnxLGRBOk {
       get {
-        Log = new Exception(new { EqnxPureOk = new { EquinoxPerc } } + "");
-        Func<TradingMacro, IList<IList<TL>>> tlses = tm => new[] { tm.TrendLinesTrendsAll };
-        return () => EquinoxCondition(tlses, () => new WaveRange[0]);
+        Log = new Exception(new { EqnxPureOk = new { EquinoxPerc, EquinoxCorridors } } + "");
+        Func<double, IEnumerable<int>> setWww = i => TradingMacroTrender().Select(tm => tm._wwwInfoEquinox = i.ToInt());
+
+        var paFuncs = new Func<TL, double>[] { tl => tl.PriceAvg1, tl => tl.PriceAvg2, tl => tl.PriceAvg3 };
+        Func<Func<TL, double>, Tuple<Func<TL, double>, SuppRes>> paFunc = pa => Tuple.Create(pa, (SuppRes)null);
+        var paTuples = paFuncs.Select(paf => paFunc(paf)).ToArray();
+
+        Func<TradingMacro, IList<IList<TL>>> tlses = tm => tm.EquinoxTrendLines.ToArray(tls => tls.ToArray(tl => tl()));
+        Func<double> exec = () => EquinoxValue(tlses, paTuples)
+          .Select(t => (double)t.Item1)
+          .DefaultIfEmpty(double.NaN)
+          .Max();
+        return () => setWww(exec()).Select(i => TradeDirectionByTreshold(i, EquinoxPerc)).FirstOrDefault();
       }
     }
 
-    private TradeDirections EquinoxCondition(Func<TradingMacro, IList<IList<TL>>> tlses, Func<IEnumerable<WaveRange>> waveRangesFunc) {
+
+    private TradeDirections EquinoxCondition(Func<TradingMacro, IList<IList<TL>>> tlses, IEnumerable<Tuple<Func<TL, double>, SuppRes>> paFuncs, Func<IEnumerable<WaveRange>> waveRangesFunc) {
       Action<int> setWww = i => TradingMacroTrender().ForEach(tm => tm._wwwInfoEquinox = i);
-      return EquinoxValue(tlses, waveRangesFunc)
+      return EquinoxValue(tlses, paFuncs, waveRangesFunc)
+        .Take(1)
         .Do(x => setWww(x.Item1))
         .IfEmpty(() => setWww(-1))
         .Where(x => IsTresholdAbsOk(x.Item1, EquinoxPerc))
-        .Select(x => TradeDirectionBySuppRes(x.Item2))
+        .Select(x => TradeConditionsHaveTD() ? TradeDirections.Both : TradeDirectionBySuppRes(x.Item2))
         .FirstOrDefault();
     }
-    private IEnumerable<Tuple<int, SuppRes>> EquinoxValue(Func<TradingMacro, IList<IList<TL>>> tlses, Func<IEnumerable<WaveRange>> waveRangesFunc) {
-      var exec = MonoidsCore.ToFunc((IList<TL>)null, (IEnumerable<WaveRange>)null, (tls, wr) => Equinox(tls, BuyLevel, SellLevel, wr).Take(1));
-      var wrs = waveRangesFunc();
+    private IEnumerable<Tuple<int, SuppRes>> EquinoxValue(
+      Func<TradingMacro, IList<IList<TL>>> tlses,
+      IEnumerable<Tuple<Func<TL, double>, SuppRes>> paFuncs,
+      Func<IEnumerable<WaveRange>> waveRangesFunc = null) {
+      var exec = MonoidsCore.ToFunc((IList<TL>)null, (IEnumerable<WaveRange>)null, (tls, wr) => Equinox(tls, paFuncs, wr));
+      var wrs = waveRangesFunc == null ? new WaveRange[0] : waveRangesFunc();
       return TradingMacroTrender(tm => tlses(tm).SelectMany(tls => exec(tls, wrs)))
       .SelectMany(x => x)
       .OrderBy(x => x.Item1);
     }
     #endregion
-    IEnumerable<int> TrendHeighRatioGRB() {
-      return TrendHeighRatio(1, 0);
-    }
-    IEnumerable<int> TrendHeighRatioLGR() { return TrendHeighRatio(0, 1); }
-    IEnumerable<int> TrendHeighRatio(int skip, int skipLast) {
-      Func<int, Func<TradingMacro, TL>> getTL = i => tm => tm.TrendLinesTrendsAll[i];
-      return TrendHeighRatio(Enumerable.Range(0, TrendLinesTrendsAll.Length).Skip(skip).SkipLast(skipLast).ToArray(getTL));
-    }
-    IEnumerable<int> TrendHeighRatio(params Func<TradingMacro, TL>[] tradelevels) {
-      Func<Tuple<TL, TL>, double> spread = tls => tls.Item1.StDev.Percentage(tls.Item2.StDev);
-      return TradingMacroTrender(tm => tm.TrendsPermutationsAvgPerc(tradelevels.Select(f => f(tm)).ToArray(), spread)).Take(1);
-    }
-    private int TrendsPermutationsAvgPerc(IEnumerable<TL> tls, Func<Tuple<TL, TL>, double> spread) {
-      return tls.ToList().Permutation().Select(spread).Average().ToPercent();
-    }
-    private int TrendsLikenessPerc(IEnumerable<TL> trendLines) {
-      Func<Tuple<TL, TL>, Func<TL, double>, double> spread = (tls, f) => f(tls.Item1).Abs(f(tls.Item2));
-      Func<Tuple<TL, TL>, IList<Func<TL, double>>, IEnumerable<double>> spreads = (tls, funcs) => funcs.Select(f => spread(tls, f));
-      Func<Func<TL, double>, Func<TL, double>> fd = f => f;
-      Func<Tuple<TL, TL>, double> spread23 = tls => spreads(tls, new[] { fd(tl => tl.PriceAvg2), tl => tl.PriceAvg3 }).Max();
-      Func<Tuple<TL, TL>, double> spreadSD = tls => spread(tls, tl => tl.StDev);
-      Func<Tuple<TL, TL>, double> spreadPerc = tls => spread23(tls).Percentage(spreadSD(tls));
-      return trendLines.ToList().Permutation().Select(spreadPerc).Average().ToPercent();
-    }
-    private static IEnumerable<Tuple<int, SuppRes>> Equinox(IEnumerable<TL> trendLines, SuppRes buyLevel, SuppRes sellLevel, IEnumerable<WaveRange> waveRanges) {
-      var height = trendLines.Max(tl => tl.StDev);
-      return EdgesDiff(trendLines, buyLevel, sellLevel, waveRanges)
+    private static IEnumerable<Tuple<int, SuppRes>> Equinox(
+      IEnumerable<TL> trendLines,
+      IEnumerable<Tuple<Func<TL, double>, SuppRes>> paFuncs,
+      IEnumerable<WaveRange> waveRanges) {
+      var height = trendLines.Max(tl => tl.PriceAvg2 - tl.PriceAvg3);
+      return EdgesDiff2(trendLines, paFuncs, waveRanges)
         .OrderBy(pa => pa.Item1)
         .Select(x => Tuple.Create((x.Item1 / height).ToPercent(), x.Item2));
     }
-    private static IEnumerable<Tuple<double, SuppRes>> EdgesDiff(IEnumerable<TL> trendLines, SuppRes buyLevel, SuppRes sellLevel, IEnumerable<WaveRange> waveRanges) {
+    private static IEnumerable<Tuple<double, SuppRes>> EdgesDiff2(
+      IEnumerable<TL> trendLines,
+      IEnumerable<Tuple<Func<TL, double>, SuppRes>> paFuncs,
+      IEnumerable<WaveRange> waveRanges
+      ) {
       Func<Tuple<double, double>, double> spread = dbls => dbls.Item1.Abs(dbls.Item2);
       Func<SuppRes, WaveRange, double> price = (sr, wr) => sr.IsBuy ? wr.Min : wr.Max;
       var spreadAvg = MonoidsCore.ToFunc((Func<TL, double>)null, (SuppRes)null, (f, sr) =>
@@ -1107,9 +1073,7 @@ namespace HedgeHog.Alice.Store {
         .Concat(waveRanges.Select(waveRange => price(sr, waveRange)))
         .ToArray().Permutation().Select(spread).Average(), sr
         });
-      var pa2Avg = spreadAvg(tl => tl.PriceAvg2, sellLevel);
-      var pa3Avg = spreadAvg(tl => tl.PriceAvg3, buyLevel);
-      var pas = new[] { pa2Avg, pa3Avg };
+      var pas = paFuncs.Select(t => spreadAvg(t.Item1, t.Item2));
       return pas.Where(pa => pa.spread.IsNotNaN()).Select(x => Tuple.Create(x.spread, x.sr));
     }
     #endregion
@@ -1708,6 +1672,46 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsTradingParams)]
+    [DisplayName(categoryActive)]
+    public string EquinoxCorridors {
+      get {
+        return _equinoxCorridors;
+      }
+
+      set {
+        if(_equinoxCorridors == value)
+          return;
+
+        _equinoxCorridors = value;
+        EquinoxTrendLines = EquinoxTrendLinesCalcAll(value);
+
+        OnPropertyChanged(() => EquinoxCorridors);
+      }
+    }
+
+    private IList<IList<Func<TL>>> EquinoxTrendLinesCalcAll(string indexesAll) {
+      return (from indexes in indexesAll.Split(';')
+              select EquinoxTrendLinesCalc(indexes)).ToArray();
+
+    }
+    private Func<TL>[] EquinoxTrendLinesCalc(string indexes) {
+      return (from tl in TrendLinesTrendsAll.Select((tl, i) => new { tl, i })
+              join i in indexes.Split(',').Select(int.Parse) on tl.i equals i
+              select new Func<TL>(() => TrendLinesTrendsAll[i])).ToArray();
+    }
+
+    IList<IList<Func<TL>>> _equinoxTrendLines;
+    public IList<IList<Func<TL>>> EquinoxTrendLines {
+      get {
+        return _equinoxTrendLines ?? (_equinoxTrendLines = EquinoxTrendLinesCalcAll(_equinoxCorridors));
+      }
+
+      set {
+        _equinoxTrendLines = value;
+      }
+    }
 
     #endregion
 

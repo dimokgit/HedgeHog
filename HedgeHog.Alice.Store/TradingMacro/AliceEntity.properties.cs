@@ -706,6 +706,7 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Trading Hours")]
     [Description("21:00-5:00")]
     [Category(categoryActive)]
+    [WwwSetting(wwwSettingsTradingParams)]
     public string TradingHoursRange {
       get { return CorridorIterations; }
       set {
