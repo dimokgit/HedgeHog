@@ -4108,6 +4108,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     object _innerRateArrayLocker = new object();
+    public U[] UseRates<T,U>(Func<List<Rate>, IEnumerable<T>> func,Func<IEnumerable<T>,IEnumerable<U>> many, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber]int LineNumber = 0) {
+      return UseRates(func, timeoutInMilliseconds, Caller, LastFile, LineNumber).SelectMany(many).ToArray();
+    }
     public T[] UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber]int LineNumber = 0) {
       var sw = new Stopwatch();
       if(!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds)) {

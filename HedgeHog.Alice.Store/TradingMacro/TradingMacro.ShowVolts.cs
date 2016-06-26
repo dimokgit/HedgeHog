@@ -38,11 +38,8 @@ namespace HedgeHog.Alice.Store {
           return () => { SetVoltsByPpm(); return null; };
         case HedgeHog.Alice.VoltageFunction.Equinox:
           return () => { SetVoltsByEquinox(); return null; };
-        case HedgeHog.Alice.VoltageFunction.PpmRatio:
-          return () => {
-            SetVoltsByPpmRatio();
-            return null;
-          };
+        case HedgeHog.Alice.VoltageFunction.BPA1:
+          return SetVoltsByBPA1;
       }
       throw new NotSupportedException(VoltageFunction_ + " not supported.");
     }

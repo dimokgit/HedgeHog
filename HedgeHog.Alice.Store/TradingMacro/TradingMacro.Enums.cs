@@ -14,7 +14,7 @@ namespace HedgeHog.Alice {
     PPM,
     PpmM1,
     Equinox,
-    PpmRatio,
+    BPA1,
     StDevInsideOutRatio,
     HourlyStDevAvg,
     StDevSumRatio

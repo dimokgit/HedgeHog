@@ -16,8 +16,8 @@ namespace HedgeHog {
       var d = (IDictionary<string, object>)expando;
       d[key] = value;
     }
-    public static ExpandoObject Merge(this ExpandoObject expando, object merge) {
-      return expando.Merge(merge.ToExpando());
+    public static ExpandoObject Merge(this ExpandoObject expando, object merge,Func<bool> condition ) {
+      return condition == null || condition() ? expando.Merge(merge.ToExpando()) : expando;
     }
     public static ExpandoObject Add(this ExpandoObject expando, object merge) {
       var d = expando as IDictionary<string, object>;

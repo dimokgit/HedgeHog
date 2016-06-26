@@ -749,21 +749,27 @@ namespace HedgeHog.Alice.Store {
     #region WwwInfo
     public object WwwInfo() {
       Func<Func<TradingMacro, TL>, IEnumerable<TL>> trenderLine = tl => TradingMacroTrender().Select(tl);
-      return TradingMacroTrender(tm => new {
-        //GRB_Ratio = tm._wwwInfoGRatio,
-        //RB__Ratio = tm._wwwInfoRRatio,
-        EqnxRatio = tm._wwwInfoEquinox,
-        StDevHght = InPips(tm.StDevByHeight).Round(1),
-        //HStdRatio = (RatesHeight / (StDevByHeight * 4)).Round(1),
-        //VPCorr___ = string.Join(",", _voltsPriceCorrelation.Value.Select(vp => vp.Round(2)).DefaultIfEmpty()),
-        //TipRatio_ = _tipRatioCurrent.Round(1),
-        LimeAngle = tm.TrendLines0Trends.Angle.Round(1),
-        Grn_Angle = tm.TrendLines1Trends.Angle.Round(1),
-        Red_Angle = tm.TrendLinesTrends.Angle.Round(1),
-        BlueAngle = tm.TrendLines2Trends.Angle.Round(1)
-        //BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
-        //WvDistRsd = _waveDistRsd.Round(2)
-      }).SingleOrDefault();
+      return TradingMacroTrender(tm => 
+        new {
+          //GRB_Ratio = tm._wwwInfoGRatio,
+          //RB__Ratio = tm._wwwInfoRRatio,
+
+          StDevHght = InPips(tm.StDevByHeight).Round(1),
+          //HStdRatio = (RatesHeight / (StDevByHeight * 4)).Round(1),
+          //VPCorr___ = string.Join(",", _voltsPriceCorrelation.Value.Select(vp => vp.Round(2)).DefaultIfEmpty()),
+          //TipRatio_ = _tipRatioCurrent.Round(1),
+          LimeAngle = tm.TrendLines0Trends.Angle.Round(1),
+          Grn_Angle = tm.TrendLines1Trends.Angle.Round(1),
+          Red_Angle = tm.TrendLinesTrends.Angle.Round(1),
+          BlueAngle = tm.TrendLines2Trends.Angle.Round(1)
+          //BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
+          //WvDistRsd = _waveDistRsd.Round(2)
+        }
+        .ToExpando()
+        .Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
+        .Merge(new { BPA1Tip__ = _wwwBpa1 }, () =>TradeConditionsHave(BPA12Ok))
+      )
+      .SingleOrDefault();
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
     }
@@ -864,12 +870,25 @@ namespace HedgeHog.Alice.Store {
     }
     public TradeConditionDelegate BPA12Ok {
       get {
-        Func<bool> isOk = () => {
+        Log = new Exception(new { BPA12Ok = new { TipRatio, InPercent = true, Treshold = false } } + "");
+        var scanAnon = new { r1 = (Rate)null, r2 = (Rate)null };
+        Func<Rate,int> sign = rate => rate.PriceAvg.Sign(rate.PriceCMALast);
+        var rateDist = MonoidsCore.ToFunc(scanAnon, x => sign(x.r1) == sign(x.r2));
+
+        Func<IList<Rate>> rates = () => UseRates(ra => {
+          var count = ra.BackwardsIterator()
+          .SkipWhile(r => r.PriceCMALast.IsNaN())
+          .Pairwise((r1, r2) => new { r1, r2 })
+          .TakeWhile(rateDist)
+          .Count();
+          return ra.GetRange(0, ra.Count - count);
+        }, i => i);
+        Func<double> isOk = () => {
           var isUp = TrendLines2Trends.Slope > 0;
           var avg1 = TrendLines2Trends.PriceAvg1;
-          return isUp ? avg1 > _RatesMax : avg1 < _RatesMin;
+          return _wwwBpa1 = ((isUp ? avg1 - _RatesMax : _RatesMin - avg1) / (_RatesMax - _RatesMin)).ToPercent();
         };
-        return () => TradeDirectionByBool(isOk());
+        return () => TradeDirectionByBool(isOk() > TipRatio);
       }
     }
     [TradeConditionSetCorridor]
@@ -1489,7 +1508,7 @@ namespace HedgeHog.Alice.Store {
       return TradeConditionsInfo<TradeConditionAsleepAttribute>().Any(d => d().HasNone()) || !IsTradingDay();
     }
     bool TradeConditionsHave(TradeConditionDelegate td) {
-      return TradeConditionsInfo().Any(d => d == td);
+      return TradeConditionsInfo().Any(d => d.Method == td.Method);
     }
     public IEnumerable<TradeConditionDelegate> TradeConditionsInfo<A>() where A : Attribute {
       return TradeConditionsInfo(new Func<Attribute, bool>(a => a.GetType() == typeof(A)), (d, p, ta, s) => d);
@@ -1670,6 +1689,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     IList<IList<Func<TL>>> _equinoxTrendLines;
+    private int _wwwBpa1;
+
     public IList<IList<Func<TL>>> EquinoxTrendLines {
       get {
         return _equinoxTrendLines ?? (_equinoxTrendLines = EquinoxTrendLinesCalcAll(_equinoxCorridors));
