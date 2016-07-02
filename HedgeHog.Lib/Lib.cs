@@ -545,8 +545,17 @@ namespace HedgeHog {
     public static double PowerMeanPower(this IEnumerable<int> source, double power) {
       return source.Select(i => (double)i).PowerMeanPower(power);
     }
+    public static double AverageByPosition(this IList<double> source) {
+      double l = source.Count;
+      var weights = Enumerable.Range(1, source.Count).Select(w => l / w).ToArray();
+      return source.Zip(weights, (s, w) => s * w).Sum() / weights.Sum();
+    }
     public static double PowerMeanPower(this IEnumerable<double> source, double power) {
       var avg = source.Select(d => Math.Pow(d, 1 / power)).Average();
+      return Math.Pow(avg, power);
+    }
+    public static double PowerMeanPowerByPosition(this IEnumerable<double> source, double power) {
+      var avg = source.Select(d => Math.Pow(d, 1 / power)).ToList().AverageByPosition();
       return Math.Pow(avg, power);
     }
 

@@ -145,7 +145,7 @@ namespace HedgeHog.Alice.Store {
           var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
           redRates.Reverse();
           WaveShort.Rates = redRates;
-          return new { redRates, trend = TrendLinesTrends };
+          return new { redRates, trend = TrendLinesRedTrends };
         })
       .ToArray();
 

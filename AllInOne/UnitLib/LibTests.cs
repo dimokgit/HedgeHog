@@ -114,10 +114,80 @@ namespace HedgeHog.Tests {
     [TestMethod()]
     public void Permutation() {
       var source = new[] { 1, 2, 3, 4 };
-      int[][] target = new int[][] { new[]{ 1, 2 }, new[] { 1, 3 }, new[] { 1, 4 }, new[] { 2, 3 }, new[] { 2, 4 }, new[] { 3, 4 } };
+      int[][] target = new int[][] { new[] { 1, 2 }, new[] { 1, 3 }, new[] { 1, 4 }, new[] { 2, 3 }, new[] { 2, 4 }, new[] { 3, 4 } };
       var res = source.Permutation();
       Console.WriteLine(res.ToJson());
       Assert.IsTrue(res.Select(t => new[] { t.Item1, t.Item2 }).Zip(target, (s, t) => s.Zip(t, (v1, v2) => v1 == v2).All(b => b)).All(b => b));
+    }
+
+    [TestMethod()]
+    public void AvrageByPositionTest() {
+      var source = new[] {2.5 ,
+9.63  ,
+3.52  ,
+2.64  ,
+6.06  ,
+3.76  ,
+4.56  ,
+0.84  ,
+7 ,
+3.6 ,
+0.7 ,
+3.21  ,
+1.61  ,
+11.12 ,
+2.72  ,
+2.1 ,
+2.17  ,
+1.45  ,
+2.31  ,
+1.57  ,
+1.16  ,
+2.42  ,
+1.93  ,
+1.77  ,
+1.26  ,
+1.38  ,
+1.62  ,
+3.04  ,
+5.25  ,
+5.83  ,
+3.2 ,
+1.97  ,
+6.14  ,
+3.39  ,
+2.53  ,
+5.03  ,
+5.31  ,
+5.02  ,
+3.79  ,
+12.34 ,
+5.03  ,
+2.79  ,
+4.79  ,
+6.19  ,
+9.18  ,
+9.82  ,
+5.52  ,
+9.24  ,
+14.6  ,
+7.09  ,
+12.23 ,
+16.36 ,
+11.01 ,
+25.22 ,
+16.15 ,
+62.59 ,
+15.16 ,
+21.18 ,
+5.68  ,
+6.12  ,
+7.86  ,
+4.63  ,
+27.71 
+ };
+      var wa = source.AverageByPosition();
+      Assert.AreEqual(4.840501349,wa.Round(9));
     }
   }
 }

@@ -85,14 +85,10 @@ namespace HedgeHog.Alice.Store {
   public enum TradeLevelBy {
     None = 0,
     PriceCma,
-    BoilingerUp,
-    BoilingerDown,
     PriceAvg1,
     BlueAvg1,
     GreenAvg1,
     LimeAvg1,
-    PriceAvg1Max,
-    PriceAvg1Min,
     PriceAvg2,
     PriceAvg3,
     PriceRB2,
@@ -113,11 +109,8 @@ namespace HedgeHog.Alice.Store {
     PriceLow0,
     PriceMax,
     PriceMin,
-    PriceMax1,
-    PriceMin1,
-    GreenStripH,
-    BlueStripH,
-    RedStripH,
+    PriceAvg1Max,
+    PriceAvg1Min,
     GreenStripL,
     BlueStripL,
     RedStripL,
@@ -126,7 +119,12 @@ namespace HedgeHog.Alice.Store {
     AvgLineMax,
     AvgLineMin,
     Avg22,
-    Avg23
+    Avg23,
+    BoilingerUp,
+    BoilingerDown,
+    GreenStripH,
+    BlueStripH,
+    RedStripH
   }
   public enum WaveSmoothBys {
     Distance,
@@ -229,9 +227,7 @@ namespace HedgeHog.Alice.Store {
     Blue23 = 7,
     NarrowR = 8,
     Corridor2R = 11,
-    Corridor1R = 12,
     MinMax = 13,
-    MinMaxR = 14
   }
   public enum CorridorByStDevRatio {
     HPAverage = 0,

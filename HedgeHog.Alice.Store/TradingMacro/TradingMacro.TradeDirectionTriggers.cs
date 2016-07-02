@@ -30,7 +30,7 @@ namespace HedgeHog.Alice.Store {
     #region Triggers
     [TradeDirectionTrigger]
     public void Limie() {
-      var tlCount = TrendLines0Trends.Count;
+      var tlCount = TrendLinesLimeTrends.Count;
       UseRates(rates => rates.GetRange(rates.Count - tlCount, tlCount.Div(1.05).ToInt())).ForEach(range => {
         var minMax = range.Select((r, i) => new { r, i }).MinMaxBy(x => x.r.PriceAvg);
         var fibRange = Fibonacci.Levels(minMax[1].r.AskHigh, minMax[0].r.BidLow).Skip(4).Take(2).ToArray();
@@ -85,8 +85,8 @@ namespace HedgeHog.Alice.Store {
       if(!TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
         var bs = new[] { BuyLevel, SellLevel };
         UseRates(ra => {
-          var startIndex = ra.Count - (TrendLinesTrends.Count - 10);
-          var count = TrendLinesTrends.Count - TrendLines1Trends.Count + 10;
+          var startIndex = ra.Count - (TrendLinesRedTrends.Count - 10);
+          var count = TrendLinesRedTrends.Count - TrendLinesGreenTrends.Count + 10;
           if(startIndex <= 0 || count >= startIndex)
             return new List<Rate>();
           return ra.GetRange(ra.Count - startIndex, count);
@@ -113,11 +113,11 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeDirectionTrigger]
     public void OnOkDoGreen() {
-      TradeCorridorByGRB(TrendLines1Trends);
+      TradeCorridorByGRB(TrendLinesGreenTrends);
     }
     [TradeDirectionTrigger]
     public void OnOkDoBlue() {
-      TradeCorridorByGRB(TrendLines2Trends);
+      TradeCorridorByGRB(TrendLinesBlueTrends);
     }
     [TradeDirectionTrigger]
     public void OnOkTip2() {
@@ -229,7 +229,7 @@ namespace HedgeHog.Alice.Store {
     static ISubject<Action> _canTriggerTradeDirectionSubject = new Subject<Action>();
     static IDisposable _canTriggerTradeDirectionDisp = _canTriggerTradeDirectionSubject.Sample(2.FromSeconds()).Subscribe(a => a());
     private bool CanTriggerTradeDirection() {
-      var canTriggerTradeDirection = RatesLengthBy != RatesLengthFunction.DistanceMinSmth || TrendLines2Trends.Count > BarsCount && IsRatesLengthStable;
+      var canTriggerTradeDirection = RatesLengthBy != RatesLengthFunction.DistanceMinSmth || TrendLinesBlueTrends.Count > BarsCount && IsRatesLengthStable;
       if(IsInVirtualTrading && (!canTriggerTradeDirection || !_voltsOk))
         _canTriggerTradeDirectionSubject.OnNext(() => Log = new Exception(new { canTriggerTradeDirection, IsRatesLengthStable, _voltsOk } + ""));
       return canTriggerTradeDirection;
@@ -242,9 +242,9 @@ namespace HedgeHog.Alice.Store {
         return;
       if(!TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
         var angCondsAll = new Dictionary<TradeConditionDelegate, Rate.TrendLevels> {
-          { GreenAngOk,TrendLines1Trends  },
-          { RedAngOk,TrendLinesTrends  },
-          { BlueAngOk,TrendLines2Trends  }
+          { GreenAngOk,TrendLinesGreenTrends  },
+          { RedAngOk,TrendLinesRedTrends  },
+          { BlueAngOk,TrendLinesBlueTrends  }
         };
         var angConds = from ac in angCondsAll
                        join tc in TradeConditionsInfo() on ac.Key equals tc
@@ -391,24 +391,6 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [TradeDirectionTrigger]
-    public void OnOutsideRed() {
-      TriggerOnOutside(IsCurrentPriceOutsideCorridorSelf, tm => tm.TrendLinesTrends);
-    }
-    [TradeDirectionTrigger]
-    public void OnOutsideRed2() {
-      TriggerOnOutside(IsCurrentPriceOutsideCorridor2Self, tm => tm.TrendLinesTrends);
-    }
-    [TradeDirectionTrigger]
-    public void OnOutsideGreen() {
-      Func<Func<TradingMacro, Rate.TrendLevels>, TradeDirections> f = foo =>
-        IsCurrentPriceOutsideCorridor(MySelf, foo, tl => tl.PriceAvg3, tl => tl.PriceAvg2, false);
-      TriggerOnOutside(IsCurrentPriceOutsideCorridorSelf, tm => tm.TrendLines1Trends);
-    }
-    [TradeDirectionTrigger]
-    public void OnOutsideBlue() {
-      TriggerOnOutside(IsCurrentPriceOutsideCorridorSelf, tm => tm.TrendLines2Trends);
-    }
     #endregion
 
     #region Infrastructure

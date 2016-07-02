@@ -342,52 +342,17 @@ namespace HedgeHog.Alice.Store {
     bool IsTrendsEmpty(Lazy<IList<Rate>> trends) {
       return trends == null || trends.Value.IsEmpty();
     }
-    public Rate.TrendLevels TrendLines2Trends { get { return IsTrendsEmpty(TrendLines2) ? Rate.TrendLevels.Empty : TrendLines2.Value[1].Trends; } }
-    public Rate.TrendLevels TrendLines1Trends { get { return IsTrendsEmpty(TrendLines1) ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
-    public Rate.TrendLevels TrendLines0Trends { get { return IsTrendsEmpty(TrendLines0) ? Rate.TrendLevels.Empty : TrendLines0.Value[1].Trends; } }
-    public Rate.TrendLevels TrendLinesTrends { get { return IsTrendsEmpty(TrendLines) ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
-    public Rate.TrendLevels[] TrendLinesTrendsAll { get { return new[] { TrendLines0Trends, TrendLines1Trends, TrendLinesTrends, TrendLines2Trends }; } }
-    public IList<IList<Rate>> TrendLinesBRGL() { return new[] { TrendLines2.Value, TrendLines.Value, TrendLines1.Value, TrendLines0.Value }; }
-    public IEnumerable<IList<Rate.TrendLevels>> TrendLinesTrendsCrossJoin {
-      get {
-        return GetTrendLinesCrossJoinValues(tls => tls[1]);
-      }
+    public Rate.TrendLevels TrendLinesBlueTrends { get { return IsTrendsEmpty(TrendLines2) ? Rate.TrendLevels.Empty : TrendLines2.Value[1].Trends; } }
+    public Rate.TrendLevels TrendLinesGreenTrends { get { return IsTrendsEmpty(TrendLines1) ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
+    public Rate.TrendLevels TrendLinesLimeTrends { get { return IsTrendsEmpty(TrendLines0) ? Rate.TrendLevels.Empty : TrendLines0.Value[1].Trends; } }
+    public Rate.TrendLevels TrendLinesRedTrends { get { return IsTrendsEmpty(TrendLines) ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
+    public Rate.TrendLevels[] TrendLinesTrendsAll { get { return new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesRedTrends, TrendLinesBlueTrends }; } }
+    public IEnumerable<Rate.TrendLevels> TradeTrendLines { get { return TradeTrendsInt.Select(i => TrendLinesTrendsAll[i]); } }
+    private double TradeTrendsPriceMax(TradingMacro tm) {
+      return tm.TradeTrendLines.Max(tl => tl.PriceAvg2);
     }
-    public Lazy<IList<Rate>>[][] TrendLinesCrossJoin {
-      get {
-        return new[] {
-          new[] {TrendLines2, TrendLines },
-          new[] {TrendLines2, TrendLines1 },
-          new[] {TrendLines, TrendLines1 }
-        };
-      }
-    }
-    IEnumerable<IList<T>> GetTrendLinesCrossJoinValues<T>(Func<Rate.TrendLevels[], T> map) {
-      return TrendLinesCrossJoin.Select(tls => tls.Select(tl => tl.Value.ToArray(v => v.Trends)).ToArray(x => map(x)));
-    }
-    IEnumerable<IList<T>> GetTrendLinesBlueJoinValues<T>(Func<Rate.TrendLevels[], T> map) {
-      return TrendLinesCrossJoin.Take(2).Select(tls => tls.Select(tl => tl.Value.ToArray(v => v.Trends)).ToArray(x => map(x)));
-    }
-    private double TrendLinesTrendsPriceMax(TradingMacro tm, Func<Rate.TrendLevels, double> value) {
-      return value(tm.TrendLinesTrends).Max(value(tm.TrendLines2Trends), value(tm.TrendLines1Trends));
-    }
-    private double TrendLinesTrendsPriceMin(TradingMacro tm, Func<Rate.TrendLevels, double> value) {
-      return value(tm.TrendLinesTrends).Min(value(tm.TrendLines2Trends), value(tm.TrendLines1Trends));
-    }
-    private double TrendLinesTrendsPriceMax(TradingMacro tm) {
-      return tm.TrendLinesTrendsAll.Max(tl => tl.PriceAvg2);
-    }
-    private double TrendLinesTrendsPriceMax1(TradingMacro tm) {
-      return tm.TrendLinesTrends.PriceAvg21.Max(TrendLinesTrendsPriceMax(tm));
-    }
-    private double TrendLinesTrendsPriceMin(TradingMacro tm) {
-      return tm.TrendLinesTrendsAll.Min(tl => tl.PriceAvg3);
-    }
-    private double TrendLinesTrendsPriceMin1(TradingMacro tm) {
-      return tm.TrendLinesTrends.PriceAvg31.Min(TrendLinesTrendsPriceMin(tm));
-    }
-    private double TrendLinesTrendsPriceAvg(TradingMacro tm, Func<Rate.TrendLevels, double> value) {
-      return tm.TrendLinesTrendsAll.Average(value);
+    private double TradeTrendsPriceMin(TradingMacro tm) {
+      return tm.TradeTrendLines.Min(tl => tl.PriceAvg3);
     }
 
     double GetTradeCloseLevel(bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy]().IfNaN(def); }

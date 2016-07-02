@@ -243,7 +243,7 @@ namespace HedgeHog.Alice.Client {
         hgt = string.Join("/", new[] {
           tmTrender.RatesHeightInPips.ToInt()+"",
           tmTrender.BuySellHeightInPips.ToInt()+"",
-          tmTrender.TrendLines2Trends.Angle.Abs().ToInt()+"°"
+          tmTrender.TrendLinesBlueTrends.Angle.Abs().ToInt()+"°"
         }),
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
@@ -255,7 +255,8 @@ namespace HedgeHog.Alice.Client {
         com = new { b = tmTrader.CenterOfMassBuy.Round(digits), s = tmTrader.CenterOfMassSell.Round(digits) },
         com2 = new { b = tmTrader.CenterOfMassBuy2.Round(digits), s = tmTrader.CenterOfMassSell2.Round(digits) },
         com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits) },
-        tpls = tmTrader.GetTradeLevelsPreset().ToArray()
+        tpls = tmTrader.GetTradeLevelsPreset().ToArray(),
+        tti = GetTradeTrendIndexImpl(tmTrader)
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
@@ -477,6 +478,22 @@ namespace HedgeHog.Alice.Client {
         }
       }, true);
     }
+    public void SetTradeTrendIndex(string pair, int index) {
+      UseTradingMacro(pair, tm => {
+        SetPresetTradeLevels(pair, TradeLevelsPreset.MinMax, null);
+        tm.TradeTrends = index + "";
+      }, true);
+    }
+    public int[] GetTradeTrendIndex(string pair) {
+      return UseTradingMacro(pair, tm => GetTradeTrendIndexImpl(tm), true);
+    }
+
+    private static int[] GetTradeTrendIndexImpl(TradingMacro tm) {
+      return tm.GetTradeLevelsPreset()
+            .Where(tpl => tpl == TradeLevelsPreset.MinMax)
+            .SelectMany(_ => tm.TradeTrendsInt.Take(1)).ToArray();
+    }
+
     public void SetTradeCloseLevel(string pair, bool isBuy, int level) {
       UseTradingMacro(pair, tm => {
         if(isBuy) {

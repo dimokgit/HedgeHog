@@ -226,9 +226,15 @@
       });
     };
     var tradePresetLevel = this.tradePresetLevel = ko.observable(0);
+    var tradeTrendIndex = this.tradeTrendIndex = ko.observable(0);
     this.setTradeLevels = function (l, isBuy) {
       serverCall("setPresetTradeLevels", [pair, l, isBuy === undefined ? null : isBuy], function () {
         tradePresetLevel(l);
+      });
+    };
+    this.setTradeTrendIndex = function (index) {
+      serverCall("setTradeTrendIndex", [pair, index], function () {
+        tradeTrendIndex(index);
       });
     };
     this.resetTradeLevels = function () { this.setTradeLevels(0); }.bind(this);
@@ -425,8 +431,6 @@
       this.clearChartData();
       this.clearChartData2();
     }.bind(this);
-    //this.setTradeCloseLevelBuy = setTradeCloseLevel.bind(null, true);
-    //this.setTradeCloseLevelSell = setTradeCloseLevel.bind(null, false);
     this.wrapTradeInCorridor = wrapTradeInCorridor;
     this.wrapCurrentPriceInCorridor = function (corridorIndex) { serverCall("wrapCurrentPriceInCorridor", [pair,corridorIndex], "Close levels were reset"); };
     this.moveCorridorWavesCount = moveCorridorWavesCount;
@@ -466,14 +470,6 @@
     // #region Trade Settings
     this.saveTradeSettings = function () {
       saveTradeSettings(tradeSettingsCurrent());
-    };
-    this.setCloseLevelsToGRB1 = function () {
-      self.setTradeCloseLevelBuy({ value: "PriceMax1" });
-      self.setTradeCloseLevelSell({ value: "PriceMin1" });
-    };
-    this.resetCloseLevels = function () {
-      self.setTradeCloseLevelBuy({ value: 0 });
-      self.setTradeCloseLevelSell({ value: 0 });
     };
     this.setTradeCount = setTradeCount;
     this.toggleIsActive = toggleIsActive;
@@ -1200,6 +1196,9 @@
       delete response.com3;
 
       dataViewModel.tradePresetLevel(response.tpls[0] || 0);
+      delete response.tpls;
+
+      dataViewModel.tradeTrendIndex(response.tti[0] || -1);
       delete response.tpls;
 
       dataViewModel.inPause(response.ip);

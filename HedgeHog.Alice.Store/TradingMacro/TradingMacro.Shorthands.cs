@@ -181,9 +181,7 @@ namespace HedgeHog.Alice.Store {
         {TradeLevelsPreset.MinMax,Tuple.Create( TradeLevelBy.PriceMax, TradeLevelBy.PriceMin)},
 
         {TradeLevelsPreset.NarrowR,Tuple.Create( TradeLevelBy.PriceAvg3, TradeLevelBy.PriceAvg2)},
-        {TradeLevelsPreset.Corridor2R,Tuple.Create( TradeLevelBy.PriceLow, TradeLevelBy.PriceHigh)},
-        {TradeLevelsPreset.Corridor1R,Tuple.Create( TradeLevelBy.PriceLow0, TradeLevelBy.PriceHigh0)},
-        {TradeLevelsPreset.MinMaxR,Tuple.Create( TradeLevelBy.PriceMin, TradeLevelBy.PriceMax)}
+        {TradeLevelsPreset.Corridor2R,Tuple.Create( TradeLevelBy.PriceLow, TradeLevelBy.PriceHigh)}
 
       };
     public void SetTradeLevelsPreset(TradeLevelsPreset preset, bool? isBuy) {
@@ -216,7 +214,10 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<TradeLevelsPreset> GetTradeLevelsPreset() {
       var bl = LevelBuyBy;
       var sl = LevelSellBy;
-      return tlbs.Where(tlb => tlb.Value.Item1 == bl && tlb.Value.Item2 == sl).Select(tlb => tlb.Key);
+      return tlbs.Where(tlb => 
+      tlb.Value.Item1 == bl && tlb.Value.Item2 == sl ||
+      tlb.Value.Item1 == sl && tlb.Value.Item2 == bl
+      ).Select(tlb => tlb.Key);
     }
     public void MoveBuySellLeve(bool isBuy, double pips) {
       Func<double, double> setOrDef = l => l > 0 ? l : RatesArray.Middle();

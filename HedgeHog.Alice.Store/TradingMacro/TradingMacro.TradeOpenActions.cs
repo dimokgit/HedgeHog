@@ -28,28 +28,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public TradeOpenAction Avg1ExitOnTrade {
-      get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.PriceAvg1Max, TradeLevelBy.PriceAvg1Min));
-      }
-    }
-    public TradeOpenAction Avg1GRBExitOnTrade {
-      get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.Avg22, TradeLevelBy.Avg23));
-      }
-    }
-    public TradeOpenAction GreenExitOnTrade {
-      get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0));
-      }
-    }
-
-    public TradeOpenAction RedExitOnTrade {
-      get {
-        return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3));
-      }
-    }
-
     public TradeOpenAction BlueExitOnTrade {
       get {
         return trade => Task.Delay(100).ContinueWith(_ => SetCorridorExitImpl(trade, TradeLevelBy.PriceHigh, TradeLevelBy.PriceLow));
