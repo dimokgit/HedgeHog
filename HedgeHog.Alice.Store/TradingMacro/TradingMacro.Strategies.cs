@@ -34,7 +34,6 @@ namespace HedgeHog.Alice.Store {
       TradingDistanceX = 1;
       TradingRatioByPMC = true;
       TipRatio = 0;
-      TrendAnglesPerc = 0;
       TrendHeightPerc = 0;
       TradingAngleRange = 0;
       TrendAngleBlue = "";

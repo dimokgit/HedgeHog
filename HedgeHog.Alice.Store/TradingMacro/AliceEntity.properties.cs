@@ -1162,21 +1162,30 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    int _trendAnglesPerc;
-    [DisplayName("AngleR.Percentage(AngleB): -200 - 200")]
+    double _waveStDevPower = 10;
+    [DisplayName("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]
     [WwwSetting(Group = wwwSettingsTradingParams)]
     [Category(categoryActive)]
-    public int TrendAnglesPerc {
-      get { return _trendAnglesPerc; }
+    public double WaveStDevPower {
+      get { return _waveStDevPower; }
       set {
-        if(_trendAnglesPerc == value)
+        if(_waveStDevPower == value)
           return;
-        if(!value.Between(-200, 200)) {
-          Log = new Exception(new { TrendAnglesPerc = value, MustBe = " from -200 to 200" } + "");
+        _waveStDevPower = value;
+        OnPropertyChanged(() => WaveStDevPower);
+      }
+    }
+    double _waveStDevPowerS = 0.5;
+    [DisplayName("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]
+    [WwwSetting(Group = wwwSettingsTradingParams)]
+    [Category(categoryActive)]
+    public double WaveStDevPowerS {
+      get { return _waveStDevPowerS; }
+      set {
+        if(_waveStDevPowerS == value)
           return;
-        }
-        _trendAnglesPerc = value;
-        OnPropertyChanged(() => TrendAnglesPerc);
+        _waveStDevPowerS = value;
+        OnPropertyChanged(() => WaveStDevPowerS);
       }
     }
     double _trendHeightPerc;

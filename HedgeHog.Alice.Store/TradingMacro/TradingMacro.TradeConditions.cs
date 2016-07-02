@@ -518,6 +518,20 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels2);
       }
     }
+    [TradeConditionAsleep]
+    public TradeConditionDelegate AslpM1Ok {
+      get {
+        Func<double, TL, bool> isIn = (v, levels) => {
+          var max = levels.PriceAvg2;
+          var min = levels.PriceAvg3;
+          var h = (max - min) / 6;
+          return v.Between(min + h, max - h);
+        };
+        Func<double[]> cps = () => new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
+        var x = TradingMacroM1(tm => cps().All(cp => !isIn(cp, tm.TrendLinesLimeTrends)));
+        return () => x.Select(TradeDirectionByBool).Where(td => td.HasAny()).DefaultIfEmpty().First();
+      }
+    }
 
 
     [TradeConditionTurnOff]
@@ -1135,20 +1149,13 @@ namespace HedgeHog.Alice.Store {
         .FirstOrDefault();
       }
     }
-    [TradeConditionAsleep]
-    public TradeConditionDelegateHide M1SDOk {
+    public TradeConditionDelegate M1SDOk {
       get {
-        return () => TradingMacroOther()
-        .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
-        .Select(x =>
-          x.wr.StDev <= x.wra.StDev &&
-          x.wr.TotalMinutes >= x.wra.TotalMinutes &&
-          x.wr.Distance >= x.wra.Distance
-        )
-        .Select(b => b
-        ? TradeDirections.Both
-        : TradeDirections.None)
-        .FirstOrDefault();
+        return () => TradingMacroM1(tm => tm.WaveRanges.StandardDeviation(wr => wr.StDev) < 1)
+        .Select(TradeDirectionByBool)
+        .Where(b => b.HasAny())
+        .DefaultIfEmpty()
+        .First();
       }
     }
     [TradeConditionAsleep]
@@ -1618,13 +1625,12 @@ namespace HedgeHog.Alice.Store {
     }
 
     private IList<IList<Func<TL>>> EquinoxTrendLinesCalcAll(string indexesAll) {
-      return (from indexes in indexesAll.Split(';')
+      return (from indexes in indexesAll.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
               select EquinoxTrendLinesCalc(indexes)).ToArray();
-
     }
     private Func<TL>[] EquinoxTrendLinesCalc(string indexes) {
       return (from tl in TrendLinesTrendsAll.Select((tl, i) => new { tl, i })
-              join i in indexes.Split(',').Select(int.Parse) on tl.i equals i
+              join i in SplitterInt(indexes) on tl.i equals i
               select new Func<TL>(() => TrendLinesTrendsAll[i])).ToArray();
     }
 
@@ -1679,7 +1685,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     int[] _tradeTrendsInt;
-      public int[] TradeTrendsInt {
+    public int[] TradeTrendsInt {
       get { return _tradeTrendsInt ?? (_tradeTrendsInt = SplitterInt(TradeTrends)); }
       set { _tradeTrendsInt = value; }
     }

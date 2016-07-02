@@ -80,9 +80,9 @@ namespace HedgeHog.Alice.Store {
             WorkByTime = rsd(w => w.WorkByTime),
             Angle = hasCalm3 ? pwmp(w => w.Angle.Abs(), 1 / TrendHeightPerc) : wrs.Select(w => w.Angle.Abs()).RelativeStandardDeviation().ToPercent(),
             TotalMinutes = pwmp(w => w.TotalMinutes, 1 / TrendHeightPerc),
-            HSDRatio = avg2(wrs, w => w.HSDRatio, w => 1 / w.Distance),
+            HSDRatio = wrs.StandardDeviation(w => w.StDev),//avg2(wrs, w => w.HSDRatio, w => 1 / w.Distance),
             Height = rsd(w => w.Height),
-            StDev = wrs.Select(w => w.StDev).PowerMeanPowerByPosition(TipRatio)
+            StDev = wrs.Select(w => w.StDev).PowerMeanPowerByPosition(WaveStDevPowerS)
           };
           ws.PipsPerMinute = ws.Distance / ws.TotalMinutes;
 
@@ -94,7 +94,7 @@ namespace HedgeHog.Alice.Store {
             WorkByTime = avg(wrs, w => w.WorkByTime),
             HSDRatio = avg2(wrs, w => w.HSDRatio, w => w.Distance),
             Height = avg(wrs, w => w.Height),
-            StDev = wrs.Select(w => w.StDev).PowerMeanPowerByPosition(10)
+            StDev = wrs.Select(w => w.StDev).PowerMeanPowerByPosition(WaveStDevPower)
           };
           try {
             wa.Distance = pwmp(w => w.Distance, TrendHeightPerc);

@@ -1199,7 +1199,7 @@
       delete response.tpls;
 
       dataViewModel.tradeTrendIndex(response.tti[0] || -1);
-      delete response.tpls;
+      delete response.tti;
 
       dataViewModel.inPause(response.ip);
       delete response.ip;
