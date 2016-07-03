@@ -528,8 +528,8 @@ namespace HedgeHog.Alice.Store {
           return v.Between(min + h, max - h);
         };
         Func<double[]> cps = () => new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
-        var x = TradingMacroM1(tm => cps().All(cp => !isIn(cp, tm.TrendLinesLimeTrends)));
-        return () => x.Select(TradeDirectionByBool).Where(td => td.HasAny()).DefaultIfEmpty().First();
+        var tds = TradingMacroM1(tm => OutsiderTLs(tm).SelectMany(tl=> cps().Select(cp => !isIn(cp, tl))),x=>x);
+        return () => tds.Select(TradeDirectionByBool).Where(td => td.HasAny()).DefaultIfEmpty().First();
       }
     }
 
@@ -1018,35 +1018,39 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region Trends Ratios
-    string _equinoxCorridors = "0,1,2,3";
     public TradeConditionDelegate EqnxLGRBOk {
       get {
         Log = new Exception(new { EqnxPureOk = new { EquinoxPerc, EquinoxCorridors } } + "");
         Func<double, IEnumerable<int>> setWww = i => TradingMacroTrender().Select(tm => tm._wwwInfoEquinox = i.ToInt());
 
-        var paFuncs = new Func<TL, double>[] { tl => tl.PriceAvg1, tl => tl.PriceAvg2, tl => tl.PriceAvg3 };
-        Func<Func<TL, double>, Tuple<Func<TL, double>, SuppRes>> paFunc = pa => Tuple.Create(pa, (SuppRes)null);
-        var paTuples = paFuncs.Select(paf => paFunc(paf)).ToArray();
-
-        Func<TradingMacro, IList<IList<TL>>> tlses = tm => tm.EquinoxTrendLines.ToArray(tls => tls.ToArray(tl => tl()));
-        Func<IEnumerable<int>> exec = () => EquinoxValues(tlses, paTuples)
-          .Select(t => t.Item1)
-          .TakeLast(1);
+        Func<IEnumerable<int>> exec = EquinoxCalcFunc();
         return () => exec().SelectMany(d => setWww(d).Select(i => TradeDirectionByTreshold(i, EquinoxPerc))).FirstOrDefault();
       }
     }
 
+    private Func<IEnumerable<int>> EquinoxCalcFunc() {
+
+      Func<IEnumerable<int>> exec = () => EquinoxValues(tm => tm.EquinoxTrendLines)
+        .Select(t => t.Item1)
+        .Take(1);
+      return exec;
+    }
 
     private IEnumerable<Tuple<int, SuppRes>> EquinoxValues(
-      Func<TradingMacro, IList<IList<TL>>> tlses,
-      IEnumerable<Tuple<Func<TL, double>, SuppRes>> paFuncs,
+      Func<TradingMacro, IList<IEnumerable<TL>>> tlses,
       Func<IEnumerable<WaveRange>> waveRangesFunc = null) {
-      var exec = MonoidsCore.ToFunc((IList<TL>)null, (IEnumerable<WaveRange>)null, (tls, wr) => Equinox(tls, paFuncs, wr));
-      var wrs = waveRangesFunc == null ? new WaveRange[0] : waveRangesFunc();
-      return TradingMacroTrender(tm => tlses(tm)
-      .Select(tls => exec(tls, wrs))
-      .OrderBy(x => x.Select(y => y.Item1).DefaultIfEmpty(int.MaxValue).Min()).Take(1))
-      .SelectMany(x => x)
+      return TradingMacroTrender(tm => EquinoxValuesImpl(tlses(tm), waveRangesFunc)).SelectMany(x => x);
+    }
+    private static IEnumerable<Tuple<int, SuppRes>> EquinoxValuesImpl(
+      IList<IEnumerable<TL>> tlses,
+      Func<IEnumerable<WaveRange>> waveRangesFunc = null) {
+      var paFuncs = new Func<TL, double>[] { tl => tl.PriceAvg2, tl => tl.PriceAvg3 };
+      Func<Func<TL, double>, Tuple<Func<TL, double>, SuppRes>> paFunc = pa => Tuple.Create(pa, (SuppRes)null);
+      var paTuples = paFuncs.Select(paf => paFunc(paf)).ToArray();
+      Func<IEnumerable<TL>, IEnumerable<Tuple<int, SuppRes>>> exec = (tls) => Equinox(tls, paTuples, waveRangesFunc == null ? new WaveRange[0] : waveRangesFunc());
+      return tlses
+      .Select(tls => exec(tls))
+      .Select(x => x.MaxByOrEmpty(y => y.Item1).Take(1))
       .SelectMany(x => x)
       .OrderBy(x => x.Item1);
     }
@@ -1260,7 +1264,7 @@ namespace HedgeHog.Alice.Store {
     #region Outsiders
     //[TradeConditionAsleep]
     public TradeConditionDelegate OutsideAnyOk {
-      get { return () => IsCurrentPriceOutsideCorridor(tm => tm.BarPeriod > BarsPeriodType.t1, tm => OutsidersInt.ToArray(i => tm.TrendLinesTrendsAll[i])); }
+      get { return () => IsCurrentPriceOutsideCorridor(tm => tm.BarPeriod > BarsPeriodType.t1, OutsiderTLs); }
     }
 
     TL[] OutsiderTLs(TradingMacro tm) {
@@ -1605,6 +1609,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    string _equinoxCorridors = "0,1,2,3";
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTradingParams)]
     [DisplayName(categoryActive)]
@@ -1624,20 +1629,19 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private IList<IList<Func<TL>>> EquinoxTrendLinesCalcAll(string indexesAll) {
+    private IList<IEnumerable<TL>> EquinoxTrendLinesCalcAll(string indexesAll) {
       return (from indexes in indexesAll.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
               select EquinoxTrendLinesCalc(indexes)).ToArray();
     }
-    private Func<TL>[] EquinoxTrendLinesCalc(string indexes) {
-      return (from tl in TrendLinesTrendsAll.Select((tl, i) => new { tl, i })
-              join i in SplitterInt(indexes) on tl.i equals i
-              select new Func<TL>(() => TrendLinesTrendsAll[i])).ToArray();
+    private IEnumerable<TL> EquinoxTrendLinesCalc(string indexes) {
+      return (from i in SplitterInt(indexes) 
+              select TrendLinesTrendsAll[i]);
     }
 
-    IList<IList<Func<TL>>> _equinoxTrendLines;
+    IList<IEnumerable<TL>> _equinoxTrendLines;
     private int _wwwBpa1;
 
-    public IList<IList<Func<TL>>> EquinoxTrendLines {
+    IList<IEnumerable<TL>> EquinoxTrendLines {
       get {
         return _equinoxTrendLines ?? (_equinoxTrendLines = EquinoxTrendLinesCalcAll(_equinoxCorridors));
       }

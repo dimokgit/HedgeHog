@@ -151,10 +151,10 @@ namespace HedgeHog.Alice.Store {
       SetVots(WaveRangeAvg.PipsPerMinute, 2);
     }
     private void SetVoltsByEquinox() {
-      TradingMacroTrender()
-        .Where(tm => tm.IsRatesLengthStable)
-        .Take(1)
-        .ForEach(tm => SetVots(tm._wwwInfoEquinox, 2));
+      if(IsRatesLengthStable)
+        EquinoxValuesImpl(EquinoxTrendLines)
+          .Take(1)
+          .ForEach(t => SetVots(t.Item1, 2));
     }
     private void SetVoltsByPpmRatio() {
       SetVots(WaveRangeSum.PipsPerMinute / WaveRangeAvg.PipsPerMinute, 2);

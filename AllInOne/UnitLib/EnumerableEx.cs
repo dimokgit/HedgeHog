@@ -11,6 +11,13 @@ namespace HedgeHog.Tests {
   namespace UnitLib {
     [TestClass]
     public class EnumerableExTest {
+      [TestMethod]
+      public void MaxBy() {
+        var a = new[] { 1, 2 };
+        a.MaxBy(i => i).ForEach(i => Assert.AreEqual(2, i));
+        var b = new int[0];
+        b.MaxByOrEmpty(i => i).DefaultIfEmpty(-1).ForEach(i => Assert.AreEqual(-1, i));
+      }
       [TestMethod()]
       public void SortByLambdaTest() {
         var list = new List<int> {3,2,1 };

@@ -20,6 +20,53 @@ namespace HedgeHog {
       }
     }
 
+    public static IList<TSource> MaxByOrEmpty<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) {
+      if(source == null) {
+        throw new ArgumentNullException("source");
+      }
+      if(keySelector == null) {
+        throw new ArgumentNullException("keySelector");
+      }
+      return source.MaxByOrEmpty(keySelector, Comparer<TKey>.Default);
+    }
+    public static IList<TSource> MaxByOrEmpty<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer) {
+      if(source == null) {
+        throw new ArgumentNullException("source");
+      }
+      if(keySelector == null) {
+        throw new ArgumentNullException("keySelector");
+      }
+      if(comparer == null) {
+        throw new ArgumentNullException("comparer");
+      }
+      return ExtremaBy<TSource, TKey>(source, keySelector, (TKey key, TKey minValue) => comparer.Compare(key, minValue));
+    }
+
+    private static IList<TSource> ExtremaBy<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TKey, int> compare) {
+      List<TSource> list = new List<TSource>();
+      using(IEnumerator<TSource> enumerator = source.GetEnumerator()) {
+        if(enumerator.MoveNext()) {
+          TSource current = enumerator.Current;
+          TKey arg = keySelector(current);
+          list.Add(current);
+          while(enumerator.MoveNext()) {
+            TSource current2 = enumerator.Current;
+            TKey tKey = keySelector(current2);
+            int num = compare(tKey, arg);
+            if(num == 0) {
+              list.Add(current2);
+            } else if(num > 0) {
+              list = new List<TSource>
+              {
+          current2
+        };
+              arg = tKey;
+            }
+          }
+        }
+      }
+      return list;
+    }
     public static T[] MinMaxBy<T>(this IEnumerable<T> source, Func<T, double> getter) {
       return source.MinMaxBy(getter, getter);
     }
