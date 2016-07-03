@@ -249,15 +249,6 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(ok());
       }
     }
-    [TradeConditionAsleep]
-    public TradeConditionDelegateHide WvRsdAOk {
-      get {
-        Log = new Exception(new { WvRsdAOk = new { WavesRsdPerc } } + "");
-        return () => TradingMacroOther().Select(tm =>
-        TradeDirectionByBool((_waveDistRsd = tm.WaveRanges.SkipWhile(wr => wr.IsEmpty).Select(w => w.Distance).Take(BigWaveIndex).RelativeStandardDeviation().ToPercent()) < WavesRsdPerc))
-        .FirstOrDefault();
-      }
-    }
     public bool CalmImpl(params Func<WaveRange, TradingMacro, bool>[] conds) {
       return CalmImpl(BigWaveIndex, conds);
     }
@@ -1597,7 +1588,7 @@ namespace HedgeHog.Alice.Store {
     private int _wwwInfoEquinox;
     private int _wwwInfoRRatio;
 
-    [WwwSetting]
+    [WwwSetting(wwwSettingsTradingParams)]
     [Category(categoryActiveFuncs)]
     public int WavesRsdPerc {
       get {
@@ -1612,7 +1603,7 @@ namespace HedgeHog.Alice.Store {
     string _equinoxCorridors = "0,1,2,3";
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTradingParams)]
-    [DisplayName(categoryActive)]
+    [Description("0,1,2;1,3")]
     public string EquinoxCorridors {
       get {
         return _equinoxCorridors;
@@ -1663,7 +1654,7 @@ namespace HedgeHog.Alice.Store {
     string _outsiders;
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTradingParams)]
-    [DisplayName(categoryActive)]
+    [Description("0,1,2")]
     public string Outsiders {
       get { return _outsiders; }
       set {
@@ -1677,7 +1668,7 @@ namespace HedgeHog.Alice.Store {
     string _tradeTrends = "0,1,2,3";
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTradingParams)]
-    [DisplayName(categoryActive)]
+    [Description("0,1,2")]
     public string TradeTrends {
       get { return _tradeTrends; }
       set {

@@ -1163,7 +1163,7 @@ namespace HedgeHog.Alice.Store {
 
 
     double _waveStDevPower = 10;
-    [DisplayName("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]
+    [Description("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]
     [WwwSetting(Group = wwwSettingsTradingParams)]
     [Category(categoryActive)]
     public double WaveStDevPower {
@@ -1176,8 +1176,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     double _waveStDevPowerS = 0.5;
-    [DisplayName("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]
-    [WwwSetting(Group = wwwSettingsTradingParams)]
+    [Description("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]
+    [WwwSetting]
     [Category(categoryActive)]
     public double WaveStDevPowerS {
       get { return _waveStDevPowerS; }
