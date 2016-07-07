@@ -16,6 +16,8 @@ using System.ComponentModel;
 using System.Reactive.Disposables;
 using HedgeHog.Shared.Messages;
 using System.Dynamic;
+using TL = HedgeHog.Bars.Rate.TrendLevels;
+
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
 
@@ -338,15 +340,17 @@ namespace HedgeHog.Alice.Store {
     IEnumerable<double> CurrentEnterPrices(Func<double, bool> predicate) { return CurrentEnterPrices().Where(predicate); }
     double[] CurrentEnterPrices() { return new[] { CurrentEnterPrice(false), CurrentEnterPrice(true) }; }
     double CurrentExitPrice(bool? isBuy) { return CalculateLastPrice(GetTradeExitBy(isBuy)); }
-    bool IsTrendsEmpty(Lazy<IList<Rate>> trends) {
-      return trends == null || trends.Value.IsEmpty();
+    TL IsTrendsEmpty(Lazy<IList<Rate>> trends) {
+      if(trends == null) return TL.Empty;
+      var v = trends.Value;
+      return v.IsEmpty() ? TL.Empty : v.Skip(1).Select(r => r.Trends).LastOrDefault() ?? TL.Empty;
     }
-    public Rate.TrendLevels TrendLinesBlueTrends { get { return IsTrendsEmpty(TrendLines2) ? Rate.TrendLevels.Empty : TrendLines2.Value[1].Trends; } }
-    public Rate.TrendLevels TrendLinesGreenTrends { get { return IsTrendsEmpty(TrendLines1) ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
-    public Rate.TrendLevels TrendLinesLimeTrends { get { return IsTrendsEmpty(TrendLines0) ? Rate.TrendLevels.Empty : TrendLines0.Value[1].Trends; } }
-    public Rate.TrendLevels TrendLinesRedTrends { get { return IsTrendsEmpty(TrendLines) ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
-    public Rate.TrendLevels[] TrendLinesTrendsAll { get { return new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesRedTrends, TrendLinesBlueTrends }; } }
-    public IEnumerable<Rate.TrendLevels> TradeTrendLines { get { return TradeTrendsInt.Select(i => TrendLinesTrendsAll[i]); } }
+    public TL TrendLinesBlueTrends { get { return IsTrendsEmpty(TrendLines2); } }
+    public TL TrendLinesGreenTrends { get { return IsTrendsEmpty(TrendLines1); } }
+    public TL TrendLinesLimeTrends { get { return IsTrendsEmpty(TrendLines0); } }
+    public TL TrendLinesRedTrends { get { return IsTrendsEmpty(TrendLines); } }
+    public TL[] TrendLinesTrendsAll { get { return new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesRedTrends, TrendLinesBlueTrends }; } }
+    public IEnumerable<TL> TradeTrendLines { get { return TradeTrendsInt.Select(i => TrendLinesTrendsAll[i]); } }
     private double TradeTrendsPriceMax(TradingMacro tm) {
       return tm.TradeTrendLines.Max(tl => tl.PriceAvg2);
     }
@@ -437,7 +441,7 @@ namespace HedgeHog.Alice.Store {
       if(count == 0)
         return new[] { Rate.TrendLevels.EmptyRate, Rate.TrendLevels.EmptyRate };
       var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(count - 1) };
-      rates.ForEach(r => r.Trends = new Rate.TrendLevels(corridorValues.Count, coeffs, hl) {
+      rates.ForEach(r => r.Trends = new TL(corridorValues.Count, coeffs, hl) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize)
       });
 

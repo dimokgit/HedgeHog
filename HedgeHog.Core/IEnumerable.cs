@@ -20,6 +20,9 @@ namespace HedgeHog {
       }
     }
 
+    public static IList<double> MaxByOrEmpty(this IEnumerable<double> source) {
+      return source.MaxByOrEmpty(d => d);
+    }
     public static IList<TSource> MaxByOrEmpty<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) {
       if(source == null) {
         throw new ArgumentNullException("source");
@@ -41,6 +44,32 @@ namespace HedgeHog {
       }
       return ExtremaBy<TSource, TKey>(source, keySelector, (TKey key, TKey minValue) => comparer.Compare(key, minValue));
     }
+
+    public static IList<double> MinByOrEmpty(this IEnumerable<double> source) {
+      return source.MinByOrEmpty(d => d);
+    }
+    public static IList<TSource> MinByOrEmpty<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) {
+      if(source == null) {
+        throw new ArgumentNullException("source");
+      }
+      if(keySelector == null) {
+        throw new ArgumentNullException("keySelector");
+      }
+      return source.MinByOrEmpty(keySelector, Comparer<TKey>.Default);
+    }
+    public static IList<TSource> MinByOrEmpty<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer) {
+      if(source == null) {
+        throw new ArgumentNullException("source");
+      }
+      if(keySelector == null) {
+        throw new ArgumentNullException("keySelector");
+      }
+      if(comparer == null) {
+        throw new ArgumentNullException("comparer");
+      }
+      return ExtremaBy<TSource, TKey>(source, keySelector, (TKey key, TKey minValue) => -comparer.Compare(key, minValue));
+    }
+
 
     private static IList<TSource> ExtremaBy<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TKey, int> compare) {
       List<TSource> list = new List<TSource>();

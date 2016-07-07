@@ -284,7 +284,7 @@ namespace HedgeHog.Alice.Store {
         (from tm in TradingMacroOther()
          let wr = getWr(tm)
          where wr != null
-         let distMin = InPoints(wr.Average(w => w.Distance))
+         let distMin = InPoints(wr.Where(w=>w!=null).Average(w => w.Distance))
          let dateMin = wr.Select(w => w.TotalMinutes).OrderByDescending(m => m).Take(1).Select(m => ServerTime.AddMinutes(-m))
          from dates in tm.UseRatesInternal(rates => rates.BackwardsIterator()
          .Distances(_priceAvg).SkipWhile(t => t.Item2 < distMin)

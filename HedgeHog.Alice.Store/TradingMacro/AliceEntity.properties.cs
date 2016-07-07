@@ -922,6 +922,7 @@ namespace HedgeHog.Alice.Store {
 
     public const string wwwSettingsCorridorCMA = "2.1 Corridor CMA";
     public const string wwwSettingsCorridorOther = "2.2 Corridor";
+    public const string wwwSettingsCorridorEquinox = "2.3 Equinox";
 
     public const string wwwSettingsCorridorFuncs = "3 Corridor Func";
 
@@ -1201,7 +1202,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     double _trendEquinoxPerc;
-    [WwwSetting(Group = wwwSettingsTradingParams)]
+    [WwwSetting(wwwSettingsCorridorEquinox)]
     [Category(categoryActive)]
     public double EquinoxPerc {
       get { return _trendEquinoxPerc; }

@@ -2256,6 +2256,8 @@ namespace HedgeHog.Alice.Store {
             }
 
             OnSetBarsCountCalc();
+            ScanTradeEquinox();
+            ScanOutsideEquinox();
 
             if(IsInVirtualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
@@ -3620,8 +3622,8 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceAvg1Max,()=> TradeTrendLines.Max(tl=>tl.PriceAvg1)},
           {TradeLevelBy.PriceAvg1Min,()=> TradeTrendLines.Min(tl=>tl.PriceAvg1)},
 
-          { TradeLevelBy.AvgLineMax,()=>AvgLineMax },
-          {TradeLevelBy.AvgLineMin,()=>AvgLineMin },
+          { TradeLevelBy.EquinoxMax,()=>EquinoxBasedMinMax(EquinoxTrendLines).Select(t=>t.Item2).DefaultIfEmpty(RatesMax).Single() },
+          {TradeLevelBy.EquinoxMin,()=>EquinoxBasedMinMax(EquinoxTrendLines).Select(t=>t.Item1).DefaultIfEmpty(RatesMin).Single() },
 
           {TradeLevelBy.Avg22,()=>levelMax(tm=>tm.TradeLevelByPA2(2)) },
           {TradeLevelBy.Avg23,()=>levelMin(tm=>tm.TradeLevelByPA3(2)) },

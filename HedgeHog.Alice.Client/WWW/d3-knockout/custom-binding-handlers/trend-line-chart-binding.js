@@ -476,7 +476,7 @@
         if (hasTps) {
           var line2 = d3.svg.line()
               .x(function (d) { return x(d.d); })
-              .y(function (d) { return y2(d.v); });
+              .y(function (d) { return y2(isNaN(d.v) ? 0 : d.v); });
           var isHotTps = _.last(data).v > tpsHigh || _.last(data).v < tpsLow;
           var colorTps = isHotTps ? "darkred" : "navy";
           var opacityTps = isHotTps ? tpsOpacity * 2 : tpsOpacity;

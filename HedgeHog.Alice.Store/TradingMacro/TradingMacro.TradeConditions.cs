@@ -509,21 +509,6 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels2);
       }
     }
-    [TradeConditionAsleep]
-    public TradeConditionDelegate AslpM1Ok {
-      get {
-        Func<double, TL, bool> isIn = (v, levels) => {
-          var max = levels.PriceAvg2;
-          var min = levels.PriceAvg3;
-          var h = (max - min) / 6;
-          return v.Between(min + h, max - h);
-        };
-        Func<double[]> cps = () => new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
-        var tds = TradingMacroM1(tm => OutsiderTLs(tm).SelectMany(tls => tls).Distinct().SelectMany(tl => cps().Select(cp => !isIn(cp, tl))), x => x);
-        return () => tds.Select(TradeDirectionByBool).Where(td => td.HasAny()).DefaultIfEmpty().First();
-      }
-    }
-
 
     [TradeConditionTurnOff]
     public TradeConditionDelegateHide AnglesOk {
@@ -1075,7 +1060,7 @@ namespace HedgeHog.Alice.Store {
         .Select(f)
         //.Concat(new[] { sr.Rate })
         .Concat(waveRanges.Select(waveRange => price(sr, waveRange)))
-        .ToArray().Permutation().Select(spread).Average(), sr
+        .ToArray().Permutation().Select(spread).DefaultIfEmpty(double.NaN).Average(), sr
         });
       var pas = paFuncs.Select(t => spreadAvg(t.Item1, t.Item2));
       return pas.Where(pa => pa.spread.IsNotNaN()).Select(x => Tuple.Create(x.spread, x.sr));
@@ -1160,55 +1145,46 @@ namespace HedgeHog.Alice.Store {
         .First();
       }
     }
-    [TradeConditionAsleep]
     public TradeConditionDelegateHide M1HOk {
       get {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.HSDRatio);
       }
     }
-    [TradeConditionAsleep]
     public TradeConditionDelegateHide M1MOk {
       get {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.TotalMinutes);
       }
     }
-    [TradeConditionAsleep]
     public TradeConditionDelegate M1DOk {
       get {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.Distance);
       }
     }
-    [TradeConditionAsleep]
     public TradeConditionDelegate M1D_Ok {
       get {
         return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.Distance, wr => wr.TotalMinutes);
       }
     }
-    //[TradeConditionAsleep]
     public TradeConditionDelegate M1SOk {
       get {
         return () => WaveConditions((d1, d2) => d1 > d2, (d1, d2) => d1 < d2, wr => wr.StDev);
       }
     }
-    [TradeConditionAsleep]
     public TradeConditionDelegate M1PAOk {
       get {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.PipsPerMinute, wr => wr.Angle.Abs());
       }
     }
-    [TradeConditionAsleep]
     public TradeConditionDelegate M1PA_Ok {
       get {
         return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.PipsPerMinute, wr => wr.Angle.Abs());
       }
     }
-    [TradeConditionAsleep]
     public TradeConditionDelegate M1P_Ok {
       get {
         return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.PipsPerMinute);
       }
     }
-    [TradeConditionAsleep]
     public TradeConditionDelegateHide M1AOk {
       get {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.HSDRatio);
@@ -1260,25 +1236,71 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #region Outsiders
+    [TradeConditionAsleep]
+    public TradeConditionDelegate AslpM1Ok {
+      get {
+        Func<TradingMacro, double, bool> isIn = (tm, v) =>
+          EquinoxBasedMinMax(OutsiderTLs(tm)).Any(t => {
+            var max = t.Item2;
+            var min = t.Item1;
+            var h = (max - min) / 6;
+            return v.Between(min + h, max - h);
+          });
+        
+        return () => TradingMacroM1(tm => !isIn(tm, CurrentPrice.Average)).Select(TradeDirectionByBool).SingleOrDefault();
+      }
+    }
     //[TradeConditionAsleep]
     public TradeConditionDelegate OutsideAnyOk {
       get { return () => IsCurrentPriceOutsideCorridor(tm => tm.BarPeriod > BarsPeriodType.t1, tm => OutsiderTLs(tm)); }
     }
     public TradeConditionDelegate OutEqnxOk {
       get {
-        var tds = MonoidsCore.ToFunc((TradingMacro)null, tm =>
-        EquinoxValuesImpl2(OutsiderTLs(tm))
-        .Take(1)
-        .ToArray(eqnx => eqnx.Item1.ToArray()));
-        return () => IsCurrentPriceOutsideCorridor(tm => tm.BarPeriod > BarsPeriodType.t1, tds);
+        var tpl = TradingMacroM1(tm => EquinoxBasedMinMax(OutsiderTLs(tm)));
+        return () => tpl.SelectMany(t => t)
+        .Select(t =>
+          !CurrentPrice.Average.Between(t.Item1, t.Item2) && t.Item3 < 5)
+          .Where(b => b)
+          .Select(TradeDirectionByBool)
+          .FirstOrDefault();
       }
     }
 
-    IList<IEnumerable<TL>> OutsiderTLs(TradingMacro tm) {
-      return OutsidersInt.ToArray(i => i.Select(i2 => tm.TrendLinesTrendsAll[i2]));
+    static IList<IEnumerable<TL>> OutsiderTLs(TradingMacro tm) {
+      return tm.OutsidersInt.ToArray(i => i.Select(i2 => tm.TrendLinesTrendsAll[i2]));
     }
 
     #region Helpers
+    private void ScanOutsideEquinox() {
+      EquinoxBasedMinMax(OutsiderTLs(this))
+        .ForEach(t => {
+          //_outsideMin = t.Item1;
+          //_outsideMax = t.Item2;
+        });
+    }
+
+    private void ScanTradeEquinox() {
+      EquinoxBasedMinMax(EquinoxTrendLines)
+        .ForEach(t => {
+          //_tradeEquinoxMin = t.Item1;
+          //_tradeEquinoxMax = t.Item2;
+        });
+    }
+    private static IEnumerable<Tuple<double, double, int>> EquinoxBasedMinMax(IList<IEnumerable<TL>> tlss) {
+      var tpl = EquinoxBasedTLs(tlss).ToArray();
+      var tls = tpl.SelectMany(tl => tl.Item1).ToArray();
+      var min = tls.Select(x => x.PriceAvg3).MinByOrEmpty().Take(1);
+      var max = tls.Select(x => x.PriceAvg2).MaxByOrEmpty().Take(1);
+      var perc = tpl.Select(t => t.Item2).Take(1);
+      return min.Zip(max, (mn, mx) => new { mn, mx }).Zip(perc, (mm, i) => Tuple.Create(mm.mn, mm.mx, i));
+    }
+
+    private static IEnumerableCore.Singleable<Tuple<IEnumerable<TL>, int>> EquinoxBasedTLs(IList<IEnumerable<TL>> tlss) {
+      return EquinoxValuesImpl2(tlss)
+        .Take(1)
+        .Select(eqnx => Tuple.Create(eqnx.Item1, eqnx.Item2.Item1))
+        .AsSingleable();
+    }
 
     TradeDirections IsCurrentPriceOutsideCorridor(
         Func<TradingMacro, bool> tmPredicate,
@@ -1345,6 +1367,7 @@ namespace HedgeHog.Alice.Store {
 
     #region Cross Handlers
 
+    [TradeConditionTurnOff]
     public TradeConditionDelegate WCOk {
       get {
         return () => TradeDirectionByBool(CalculateTradingDistance() < StDevByPriceAvg.Avg(StDevByHeight) * 3);
@@ -1623,7 +1646,7 @@ namespace HedgeHog.Alice.Store {
 
     string _equinoxCorridors = "0,1,2,3";
     [Category(categoryActiveFuncs)]
-    [WwwSetting(wwwSettingsTradingParams)]
+    [WwwSetting(wwwSettingsCorridorEquinox)]
     [Description("0,1,2;1,3")]
     public string EquinoxCorridors {
       get {
@@ -1635,7 +1658,6 @@ namespace HedgeHog.Alice.Store {
           return;
 
         _equinoxCorridors = value;
-        EquinoxTrendLines = EquinoxTrendLinesCalcAll(value);
 
         OnPropertyChanged(() => EquinoxCorridors);
       }
@@ -1643,46 +1665,38 @@ namespace HedgeHog.Alice.Store {
 
     private IList<IEnumerable<TL>> EquinoxTrendLinesCalcAll(string indexesAll) {
       return (from indexes in indexesAll.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
-              select EquinoxTrendLinesCalc(indexes)).ToArray();
+              select EquinoxTrendLinesCalc(indexes))
+              .Where(tls => !tls.IsEmpty())
+              .ToArray();
     }
     private IEnumerable<TL> EquinoxTrendLinesCalc(string indexes) {
       return (from i in SplitterInt(indexes)
-              select TrendLinesTrendsAll[i]);
+              let tl = TrendLinesTrendsAll[i]
+              where !tl.IsEmpty
+              select tl);
     }
 
-    IList<IEnumerable<TL>> _equinoxTrendLines;
     private int _wwwBpa1;
 
     IList<IEnumerable<TL>> EquinoxTrendLines {
       get {
-        return _equinoxTrendLines ?? (_equinoxTrendLines = EquinoxTrendLinesCalcAll(_equinoxCorridors));
-      }
-
-      set {
-        _equinoxTrendLines = value;
+        return  EquinoxTrendLinesCalcAll(_equinoxCorridors);
       }
     }
 
-    IList<IList<int>> _outsidersInt;
     public IList<IList<int>> OutsidersInt {
-      get { return _outsidersInt ?? (_outsidersInt = SplitterInts(Outsiders)); }
-      set {
-        if(_outsidersInt != null && value != null && _outsidersInt.SequenceEqual(value))
-          return;
-        _outsidersInt = value;
-      }
+      get { return SplitterInts(Outsiders); }
     }
     string _outsiders;
     [Category(categoryActiveFuncs)]
-    [WwwSetting(wwwSettingsTradingParams)]
-    [Description("0,1,2")]
+    [WwwSetting(wwwSettingsCorridorEquinox)]
+    [Description("0,1,2;1,3")]
     public string Outsiders {
       get { return _outsiders; }
       set {
         if(_outsiders == value)
           return;
         _outsiders = value;
-        OutsidersInt = SplitterInts(value);
       }
     }
 
