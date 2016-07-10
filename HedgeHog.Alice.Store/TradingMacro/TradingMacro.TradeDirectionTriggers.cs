@@ -380,9 +380,9 @@ namespace HedgeHog.Alice.Store {
 
     private void TurnOfManualCorridor() {
       new[] { BuyLevel, SellLevel }
-      .Where(sr => sr.CanTrade)
+      .Where(sr => sr.InManual)
       .Do(sr => {
-        sr.CanTrade = false;
+        sr.InManual = sr.CanTrade = false;
         if(!Trades.IsEmpty())
           sr.TradesCount = -(TradeCountMax + 1);
       })
