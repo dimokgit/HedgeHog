@@ -3640,6 +3640,9 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceLimeH,()=> levelMax(tm=>tm.TrendLinesLimeTrends.PriceAvg2)},
           {TradeLevelBy.PriceLimeL,()=> levelMin(tm=>tm.TrendLinesLimeTrends.PriceAvg3)},
 
+          {TradeLevelBy.PricePlumH,()=> levelMax(tm=>tm.TrendLinesPlumTrends.PriceAvg2)},
+          {TradeLevelBy.PricePlumL,()=> levelMin(tm=>tm.TrendLinesPlumTrends.PriceAvg3)},
+
           {TradeLevelBy.PriceHigh0,()=> levelMax(tm=>tm.TrendLinesGreenTrends.PriceAvg2)},
           {TradeLevelBy.PriceLow0,()=> levelMin(tm=>tm.TrendLinesGreenTrends.PriceAvg3)},
 
@@ -3658,6 +3661,9 @@ namespace HedgeHog.Alice.Store {
 
           {TradeLevelBy.RedMax,()=> levelMax(tm=> tm.TrendLinesRedTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
           {TradeLevelBy.RedMin,()=> levelMin(tm=> tm.TrendLinesRedTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
+
+          {TradeLevelBy.PlumMax,()=> levelMax(tm=> tm.TrendLinesPlumTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.PlumMin,()=> levelMin(tm=> tm.TrendLinesPlumTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
 
           {TradeLevelBy.BlueMax,()=> levelMax(tm=> tm.TrendLinesBlueTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
           {TradeLevelBy.BlueMin,()=> levelMin(tm=> tm.TrendLinesBlueTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
@@ -3691,6 +3697,9 @@ namespace HedgeHog.Alice.Store {
           break;
         case TradingMacroTakeProfitFunction.Red:
           tp = tradeLeveBy(TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3);
+          break;
+        case TradingMacroTakeProfitFunction.Plum:
+          tp = tradeLeveBy(TradeLevelBy.PricePlumH, TradeLevelBy.PricePlumL);
           break;
         case TradingMacroTakeProfitFunction.Blue:
           tp = tradeLeveBy(TradeLevelBy.PriceHigh, TradeLevelBy.PriceLow);

@@ -178,6 +178,7 @@
       addLine("1_2"); addLine("2_2"); addLine("3_2");
       addLine("2_1"); addLine("3_1");
       addLine("2_0"); addLine("3_0");
+      addLine("2_3"); addLine("3_3");
       // Trade lines
       function isTradeDrag() {
         return viewModel.chartArea[chartNum].inDrag;
@@ -358,10 +359,12 @@
       $(element).show();
       //#region parse data from the data-view-model
       var tradeLevels = chartData.tradeLevels;
-      var trendLines = chartData.trendLines;
-      var trendLines2 = chartData.trendLines2;
-      var trendLines1 = chartData.trendLines1;
-      var trendLines0 = chartData.trendLines0;
+      var trends = chartData.trends;
+      var trendLines = trends[2];
+      var trendLines2 = trends[3];
+      var trendLines1 = trends[1];
+      var trendLines0 = trends[0];
+      var trendLines3 = trends[4];
       var openTrades = chartData.trades;
       var openBuy = openTrades.buy, openSell = openTrades.sell;
       var closedTrades = chartData.closedTrades;
@@ -516,6 +519,9 @@
 
         setTrendLine2(trendLines0, 2, 0, "limegreen");
         setTrendLine2(trendLines0, 3, 0, "limegreen");
+
+        setTrendLine2(trendLines3, 2, 3, "plum");
+        setTrendLine2(trendLines3, 3, 3, "plum");
         // #endregion
       }
       // #endregion

@@ -93,6 +93,7 @@ namespace HedgeHog.Alice.Client {
         };
       }
       */
+
       var trends = tm.TrendLines.Value.ToList();
       var trendLines = tm.UseRates(rates => new {
         dates = trends.Count > 1
@@ -139,6 +140,17 @@ namespace HedgeHog.Alice.Client {
         close2 = trends1.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends1.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
+      var trends3 = tm.TrendLines3.Value.ToList();
+      var trendLines3 = new {
+        dates = trends3.Count == 0
+        ? new DateTimeOffset[0]
+        : new DateTimeOffset[]{
+          trends3[0].StartDate2,
+          trends3[1].StartDate2},
+        close2 = trends3.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
+        close3 = trends3.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
+      };
+
       var waveLines = tm.WaveRangesWithTail
         .ToArray(wr => new {
           dates = new[] { wr.StartDate, wr.EndDate },
@@ -163,6 +175,7 @@ namespace HedgeHog.Alice.Client {
         trendLines,
         trendLines2,
         trendLines1,
+        trendLines3,
         isTradingActive = tm.IsTradingActive,
         tradeLevels = tradeLevels,
         trades,

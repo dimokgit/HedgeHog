@@ -751,6 +751,7 @@ namespace HedgeHog.Alice.Store {
           LimeAngle = tm.TrendLinesLimeTrends.Angle.Round(1),
           Grn_Angle = tm.TrendLinesGreenTrends.Angle.Round(1),
           Red_Angle = tm.TrendLinesRedTrends.Angle.Round(1),
+          PlumAngle = tm.TrendLinesPlumTrends.Angle.Round(1),
           BlueAngle = tm.TrendLinesBlueTrends.Angle.Round(1)
           //BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
           //WvDistRsd = _waveDistRsd.Round(2)
@@ -775,9 +776,9 @@ namespace HedgeHog.Alice.Store {
       return TradeConditionsHaveTD()
         ? TradeDirections.Both
         : angle > 0
-        ? TradeDirections.Down
+        ? TradeDirections.Both
         : angle < 0
-        ? TradeDirections.Up
+        ? TradeDirections.Both
         : TradeDirections.None;
     }
     TradeDirections TradeDirectionByBool(bool value) {
@@ -811,6 +812,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate GreenAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TrendLinesGreenTrends, TrendAngleGreen); } }
     [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate RedAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TrendLinesRedTrends, TrendAngleRed); } }
+    public TradeConditionDelegate PlumAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TrendLinesPlumTrends, TrendAnglePlum); } }
     [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate BlueAngOk {
       get {
@@ -983,6 +985,13 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate BOk { get { return () => TradeDirectionsAnglecounterwise(TrendLinesBlueTrends); } }
     [TradeConditionTradeDirection]
     public TradeConditionDelegate BROk { get { return () => TradeDirectionsAnglewise(TrendLinesBlueTrends); } }
+
+    [TradeConditionTradeDirection]
+    public TradeConditionDelegate POk { get { return () => TradeDirectionsAnglecounterwise(TrendLinesPlumTrends); } }
+    [TradeConditionTradeDirection]
+    public TradeConditionDelegate PROk { get { return () => TradeDirectionsAnglewise(TrendLinesPlumTrends); } }
+
+
     [TradeConditionTradeDirection]
     public TradeConditionDelegate ROk { get { return () => TradeDirectionsAnglecounterwise(TrendLinesRedTrends); } }
     [TradeConditionTradeDirection]
@@ -1370,7 +1379,7 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTurnOff]
     public TradeConditionDelegate WCOk {
       get {
-        return () => TradeDirectionByBool(CalculateTradingDistance() < StDevByPriceAvg.Avg(StDevByHeight) * 3);
+        return () => TradeDirectionByBool(CalculateTradingDistance() < StDevByHeight * 3);
       }
     }
     [TradeConditionTurnOff]

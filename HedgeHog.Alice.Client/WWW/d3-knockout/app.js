@@ -757,7 +757,7 @@
       openTrades(response.trades)
       //lineChartData.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
       response.waveLines.forEach(function (w, i) { w.bold = i == sumStartIndexById(); });
-      var chartData = chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross(), response.tpsHigh, response.tpsLow, response.canBuy, response.canSell, response.waveLines);
+      var chartData = chartDataFactory(lineChartData, getTrends(response), response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross(), response.tpsHigh, response.tpsLow, response.canBuy, response.canSell, response.waveLines);
       chartData.com = self.com;
       chartData.com2 = self.com2;
       chartData.com3 = self.com3;
@@ -793,15 +793,16 @@
         ? closedTrades.map(function (ct) { return $.extend(true, {}, ct); })
         : [];
       function mapDates(v) { return v.dates; }
+      var trends = getTrends(response);
       var moreDates = []
         .concat(response.waveLines.map(mapDates))
         .concat(closedTradesLocal.map(mapDates))
-        .concat([response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0].map(mapDates));
+        .concat(trends.map(mapDates));
       var ratesAll = continuoseDates("minute", lineChartData2(), moreDates);
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;
-      var chartData2 = chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, response.trendLines0, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross(), 0, 0, response.canBuy, response.canSell, response.waveLines);
+      var chartData2 = chartDataFactory(ratesAll, trends, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross(), 0, 0, response.canBuy, response.canSell, response.waveLines);
       chartData2.tickDate = lineChartData()[0].d;
       chartData2.tickDateEnd = lineChartData().slice(-1)[0].d;
       chartData2.com = self.com;
@@ -813,6 +814,9 @@
       });
       self.chartData2(chartData2);
       updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
+    }
+    function getTrends(response) {
+      return [response.trendLines0, response.trendLines1, response.trendLines, response.trendLines2, response.trendLines3];
     }
     // #endregion
     // #region LastDate
@@ -1070,14 +1074,11 @@
       });
       return root;
     }
-    function chartDataFactory(data, trendLines, trendLines2, trendLines1, trendLines0, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross, tpsHigh, tpsLow, canBuy, canSell, waveLines) {
+    function chartDataFactory(data, trends, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross, tpsHigh, tpsLow, canBuy, canSell, waveLines) {
       function shrikData(data) { return data.length > 50 ? data : [];}
       return {
         data: data ? shrikData(ko.unwrap(data)) : [],
-        trendLines: trendLines,
-        trendLines2: trendLines2,
-        trendLines1: trendLines1,
-        trendLines0: trendLines0,
+        trends: trends,
         waveLines:waveLines,
         tradeLevels: tradeLevels,
         askBid: askBid || {},
@@ -1128,7 +1129,7 @@
       var i = array.indexOf(item);
       array.splice(i, 1);
     }
-    function defaultChartData(chartNum) { return chartDataFactory(lineChartData, { dates: [] }, {}, {}, {}, null, null, null, false, false, chartNum, false, 0); }
+    function defaultChartData(chartNum) { return chartDataFactory(lineChartData, [{ dates: [] }, {}, {}, {}], null, null, null, false, false, chartNum, false, 0); }
     // #endregion
   }
   // #endregion

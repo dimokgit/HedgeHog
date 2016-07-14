@@ -155,6 +155,23 @@ namespace HedgeHog.Alice.Store {
         EquinoxValuesImpl2(EquinoxTrendLines)
           .Take(1)
           .ForEach(t => SetVots(t.Item2.Item1, 2));
+      if(false) {
+        var voltsLow = GetVoltageAverage();
+        UseRates(rates => rates
+          .BackwardsIterator()
+          .SkipWhile(r => GetVoltage(r) < voltsLow)
+          .ToList()
+          .GroupedDistinct(d => GetVoltage(d) > voltsLow, l => l))
+          .ForEach(dist => {
+            var xx = (from b in dist.Buffer(2)
+                      from x in b.Take(1)
+                      from y in x.MinBy(d => GetVoltage(d)).Take(1)
+                      select y.StartDate
+            ).ToArray();
+            EquinoxDates.Clear();
+            EquinoxDates.AddRange(xx);
+          });
+      }
     }
     private void SetVoltsByPpmRatio() {
       SetVots(WaveRangeSum.PipsPerMinute / WaveRangeAvg.PipsPerMinute, 2);
@@ -162,6 +179,17 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics SetVoltsByBPA1() {
       SetVots(_wwwBpa1, 2);
       return null;
+    }
+    List<DateTime> _equinoxDates = new List<DateTime>();
+
+    public List<DateTime> EquinoxDates {
+      get {
+        return _equinoxDates;
+      }
+
+      set {
+        _equinoxDates = value;
+      }
     }
   }
 }

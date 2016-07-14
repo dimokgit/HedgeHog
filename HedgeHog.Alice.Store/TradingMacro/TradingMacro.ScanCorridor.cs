@@ -145,6 +145,7 @@ namespace HedgeHog.Alice.Store {
           var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
           redRates.Reverse();
           WaveShort.Rates = redRates;
+          TrendLines3 = Lazy.Create(() => CalcTrendLines(RatesArray.Count - redLength, redLength - CorridorLengthLime), TrendLines3.Value, exc => Log = exc);
           return new { redRates, trend = TrendLinesRedTrends };
         })
       .ToArray();
@@ -227,11 +228,15 @@ namespace HedgeHog.Alice.Store {
       get { return _trendLines2; }
       private set { _trendLines2 = value; }
     }
+    Lazy<IList<Rate>> _trendLines3 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    public Lazy<IList<Rate>> TrendLines3 {
+      get { return _trendLines3; }
+      private set { _trendLines3 = value; }
+    }
     private double MaGapMax(IList<Rate> rates) {
       return rates.Skip(rates.Count.Div(1.1).ToInt()).Max(r => r.PriceCMALast.Abs(r.PriceAvg));
     }
     #region CmaRatioForWaveLength
-    bool _scanCorridorByWaveCountMustReset;
     private double _CmaRatioForWaveLength = 0;
     [Category(categoryActive)]
     [WwwSetting(wwwSettingsCorridorCMA)]
