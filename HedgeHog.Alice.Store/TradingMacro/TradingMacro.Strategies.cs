@@ -446,10 +446,10 @@ namespace HedgeHog.Alice.Store {
       var rates = new List<Rate> { (Rate)corridorValues[0].Clone(), (Rate)corridorValues.Last().Clone() };
       if(rates.Count == 1)
         return new[] { TL.EmptyRate, TL.EmptyRate };
-      var count = UseRates(rs => (rs.Count - rs.IndexOf(corridorValues[0])).Div(corridorValues.Count.Div(doubles.Count)).ToInt()).DefaultIfEmpty().Single();
+      var count = UseRates(rs => (rs.IndexOf(corridorValues.Last()) - rs.IndexOf(corridorValues[0])).Div(corridorValues.Count.Div(doubles.Count)).ToInt()).DefaultIfEmpty().Single();
       if(count == 0)
         return new[] { TL.EmptyRate, TL.EmptyRate };
-      var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(doubles.Count - 1) };
+      var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(count - 1) };
       rates.ForEach(r => r.Trends = new TL(corridorValues.Count, coeffs, hl) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize)
       });

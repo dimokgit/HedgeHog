@@ -1255,7 +1255,7 @@ namespace HedgeHog.Alice.Store {
             var h = (max - min) / 6;
             return v.Between(min + h, max - h);
           });
-        
+
         return () => TradingMacroM1(tm => !isIn(tm, CurrentPrice.Average)).Select(TradeDirectionByBool).SingleOrDefault();
       }
     }
@@ -1689,7 +1689,7 @@ namespace HedgeHog.Alice.Store {
 
     IList<IEnumerable<TL>> EquinoxTrendLines {
       get {
-        return  EquinoxTrendLinesCalcAll(_equinoxCorridors);
+        return EquinoxTrendLinesCalcAll(_equinoxCorridors);
       }
     }
 
@@ -1727,6 +1727,24 @@ namespace HedgeHog.Alice.Store {
     public int[] TradeTrendsInt {
       get { return _tradeTrendsInt ?? (_tradeTrendsInt = SplitterInt(TradeTrends)); }
       set { _tradeTrendsInt = value; }
+    }
+
+    string _trendPlum = "0,3";
+    int[] TrendPlumInt(string s = null) { return (s ?? _trendPlum).Split(',').Select(int.Parse).ToArray(); }
+    [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsTradingParams)]
+    [Description("0(start),2(count)")]
+    public string TrendPlum {
+      get { return _trendPlum; }
+      set {
+        if(_trendPlum == value)
+          return;
+        var ints = value.Split(',');
+        if(ints.Length != 2)
+          throw new Exception(new { TrendPlum = value, Message = "Invalid value" } + "");
+        TrendPlumInt(value);
+        _trendPlum = value;
+      }
     }
 
     private IList<IList<int>> SplitterInts(string indexesAll) {
