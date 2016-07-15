@@ -93,13 +93,12 @@ namespace HedgeHog.Alice.Client {
         };
       }
       */
-
       var trends = tm.TrendLines.Value.ToList();
       var trendLines = tm.UseRates(rates => new {
         dates = trends.Count > 1
         ? new DateTimeOffset[]{
           trends[0].StartDate2,
-          rates.Last().StartDate2}
+          trends[1].StartDate2}
         : new DateTimeOffset[0],
         close1 = trends.ToArray(t => t.Trends.PriceAvg1.Round(digits)),
         close2 = trends.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
@@ -109,38 +108,42 @@ namespace HedgeHog.Alice.Client {
       })
       .SingleOrDefault();
       var ratesLastStartDate2 = tm.RatesArray.Last().StartDate2;
+
       var trends2 = tm.TrendLines2.Value.ToList();
       var trendLines2 = new {
         dates = trends2.Count == 0
         ? new DateTimeOffset[0]
         : new DateTimeOffset[]{
           trends2[0].StartDate2,
-          ratesLastStartDate2},
+          trends2[1].StartDate2},
         close1 = trends2.ToArray(t => t.Trends.PriceAvg1.Round(digits)),
         close2 = trends2.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends2.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
+
       var trends0 = tm.TrendLines0.Value.ToList();
       var trendLines0 = new {
         dates = trends0.Count == 0
         ? new DateTimeOffset[0]
         : new DateTimeOffset[]{
           trends0[0].StartDate2,
-          ratesLastStartDate2},
+          trends0[1].StartDate2},
         close2 = trends0.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends0.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
+
       var trends1 = tm.TrendLines1.Value.ToList();
       var trendLines1 = new {
         dates = trends1.Count == 0
         ? new DateTimeOffset[0]
         : new DateTimeOffset[]{
           trends1[0].StartDate2,
-          ratesLastStartDate2},
+          trends1[1].StartDate2},
         close2 = trends1.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends1.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
-      var trends3 = tm.TrendLines3.Value.ToList();
+
+      var trends3 = (tm.TrendLines3.Value ?? new Rate[0]).ToList();
       var trendLines3 = new {
         dates = trends3.Count == 0
         ? new DateTimeOffset[0]

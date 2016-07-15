@@ -112,7 +112,7 @@ namespace HedgeHog.Alice.Store {
         return zip.OrderByDescending(x => x.l).Take(1).Select(x => x.r).DefaultIfEmpty(range.Last()).Single();
       };
       Func<int, IEnumerableCore.Singleable<Rate>> getRate = start =>
-        (start < sections.Count - 1
+        (start < sections.Count
         ? sections.GetRange(start, 1).Select(a => getExtreamRate(a.start, a.end))
         : new Rate[0]).AsSingleable();
       Func<Exception, IEnumerable<int>> handler = exc => { Log = exc; return new int[0]; };
@@ -123,19 +123,26 @@ namespace HedgeHog.Alice.Store {
       };
       #endregion
 
-      var legIndexes = Enumerable.Range(0, sections.Count).SelectMany(i => getLength(i)).ToList();
+      var legIndexes = new[] { 0 }.Concat(Enumerable.Range(0, sections.Count).SelectMany(i => getLength(i))).ToList();
 
       getLength(0).ForEach(i => {
-        CorridorLengthLime = legIndexes[0];
+        CorridorLengthLime = legIndexes[1];
         TrendLines0 = Lazy.Create(() => CalcTrendLines(CorridorLengthLime), TrendLines0.Value, exc => Log = exc);
       });
 
-      getLength(1).ForEach(i => {
-        CorridorLengthGreen = legIndexes[1];
-        TrendLines1 = Lazy.Create(() => CalcTrendLines(CorridorLengthGreen), TrendLines1.Value, exc => Log = exc);
-      });
 
-      Func<int, int, IList<Rate>> calcTrendLines = (start, end) => CalcTrendLines(RatesArray.Count - legIndexes[end], legIndexes[end] - legIndexes[start]);
+      Func<int, int, IList<Rate>> calcTrendLines = (start, end) => {
+        var e = end < legIndexes.Count ? legIndexes[end] : ratesForCorridor.Count;
+        return CalcTrendLines(RatesArray.Count - e, e - legIndexes[start]);
+      };
+
+      CorridorLengthGreen = legIndexes[2];
+      TrendGreenInt().Pairwise((s, c) => new { s, e = s + c })
+        .ForEach(p => TrendLines1 = Lazy.Create(() => calcTrendLines(p.s, p.e), TrendLines1.Value, exc => Log = exc));
+
+
+      TrendRedInt().Pairwise((s, c) => new { s, e = s + c })
+        .ForEach(p => TrendLines = Lazy.Create(() => calcTrendLines(p.s, p.e), TrendLines.Value, exc => Log = exc));
 
       TrendPlumInt().Pairwise((s, c) => new { s, e = s + c })
         .ForEach(p => TrendLines3 = Lazy.Create(() => calcTrendLines(p.s, p.e), TrendLines3.Value, exc => Log = exc));
@@ -148,7 +155,6 @@ namespace HedgeHog.Alice.Store {
         .Select(rate => rateIndex(rate))
         .DefaultIfEmpty(ratesForCorridor.Count - 1)
         .Select(redLength => {
-          TrendLines = Lazy.Create(() => CalcTrendLines(redLength), TrendLines.Value, exc => Log = exc);
           var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
           redRates.Reverse();
           WaveShort.Rates = redRates;
@@ -206,7 +212,12 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    public WaveRange WaveRangeSum { get; set; }
+    WaveRange _waveRangeSum = new WaveRange(0);
+    public WaveRange WaveRangeSum {
+      get { return _waveRangeSum; }
+      set { _waveRangeSum = value ?? new WaveRange(0); }
+    }
+
     WaveRange _waveRangeAvg = new WaveRange(0);
 
     public WaveRange WaveRangeAvg {

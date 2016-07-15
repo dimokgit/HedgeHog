@@ -1729,7 +1729,7 @@ namespace HedgeHog.Alice.Store {
       set { _tradeTrendsInt = value; }
     }
 
-    string _trendPlum = "0,3";
+    string _trendPlum = "1,3";
     int[] TrendPlumInt(string s = null) { return (s ?? _trendPlum).Split(',').Select(int.Parse).ToArray(); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTradingParams)]
@@ -1744,6 +1744,42 @@ namespace HedgeHog.Alice.Store {
           throw new Exception(new { TrendPlum = value, Message = "Invalid value" } + "");
         TrendPlumInt(value);
         _trendPlum = value;
+      }
+    }
+
+    string _trendGreen = "0,2";
+    int[] TrendGreenInt(string s = null) { return (s ?? _trendGreen).Split(',').Select(int.Parse).ToArray(); }
+    [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsTradingParams)]
+    [Description("0(start),2(count)")]
+    public string TrendGreen {
+      get { return _trendGreen; }
+      set {
+        if(_trendGreen == value)
+          return;
+        var ints = value.Split(',');
+        if(ints.Length != 2)
+          throw new Exception(new { TrendGreen = value, Message = "Invalid value" } + "");
+        TrendGreenInt(value);
+        _trendGreen = value;
+      }
+    }
+
+    string _trendRed = "0,4";
+    int[] TrendRedInt(string s = null) { return (s ?? _trendRed).Split(',').Select(int.Parse).ToArray(); }
+    [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsTradingParams)]
+    [Description("0(start),2(count)")]
+    public string TrendRed {
+      get { return _trendRed; }
+      set {
+        if(_trendRed == value)
+          return;
+        var ints = value.Split(',');
+        if(ints.Length != 2)
+          throw new Exception(new { TrendRed = value, Message = "Invalid value" } + "");
+        TrendRedInt(value);
+        _trendRed = value;
       }
     }
 
