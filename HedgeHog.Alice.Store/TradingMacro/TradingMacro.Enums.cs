@@ -123,6 +123,8 @@ namespace HedgeHog.Alice.Store {
     MinRG,
     EquinoxMax,
     EquinoxMin,
+    EdgeMax,
+    EdgeMin,
     Avg22,
     Avg23,
     BoilingerUp,

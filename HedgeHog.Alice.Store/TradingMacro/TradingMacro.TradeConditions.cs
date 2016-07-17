@@ -59,6 +59,18 @@ namespace HedgeHog.Alice.Store {
     double _tipRatioCurrent = double.NaN;
 
     #region Edges
+
+    public TradeConditionDelegate E2EOk {
+      get {
+        Log = new Exception(new { E2EOk = new { EquinoxPerc } } + "");
+        return () => {
+          var edges = EquinoxEdges(EquinoxTrendLines);
+          _edgeDiffs = edges.Select(tl => tl.EdgeDiff).OrderByDescending(e => e).Take(1);
+          return _edgeDiffs.Select(ed => TradeDirectionByTreshold(ed, EquinoxPerc)).SingleOrDefault();
+        };
+      }
+    }
+
     public TradeConditionDelegateHide EdgesOk {
       get {
         return () => {
@@ -752,7 +764,11 @@ namespace HedgeHog.Alice.Store {
           Grn_Angle = tm.TrendLinesGreenTrends.Angle.Round(1),
           Red_Angle = tm.TrendLinesRedTrends.Angle.Round(1),
           PlumAngle = tm.TrendLinesPlumTrends.Angle.Round(1),
-          BlueAngle = tm.TrendLinesBlueTrends.Angle.Round(1)
+          BlueAngle = tm.TrendLinesBlueTrends.Angle.Round(1),
+          GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.Round(1),
+          Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.Round(1),
+          Red__Edge = tm.TrendLinesRedTrends.EdgeDiff.Round(1),
+          Blue_Edge = tm.TrendLinesBlueTrends.EdgeDiff.Round(1)
           //BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
           //WvDistRsd = _waveDistRsd.Round(2)
         }
@@ -1304,6 +1320,15 @@ namespace HedgeHog.Alice.Store {
       return min.Zip(max, (mn, mx) => new { mn, mx }).Zip(perc, (mm, i) => Tuple.Create(mm.mn, mm.mx, i));
     }
 
+    private static IEnumerable<TL> EquinoxEdges(IList<IEnumerable<TL>> tlss) {
+      return tlss
+        .Select(tls => tls.Where(tl => !tl.IsEmpty).ToArray())
+        .Where(tls => !tls.IsEmpty())
+        .OrderBy(tls => tls.Select(tl => tl.EdgeDiff).Average())
+        .Take(1)
+        .SelectMany(tls => tls);
+    }
+
     private static IEnumerableCore.Singleable<Tuple<IEnumerable<TL>, int>> EquinoxBasedTLs(IList<IEnumerable<TL>> tlss) {
       return EquinoxValuesImpl2(tlss)
         .Take(1)
@@ -1766,6 +1791,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     string _trendRed = "0,4";
+    private IEnumerable<double> _edgeDiffs = new double[0];
+
     int[] TrendRedInt(string s = null) { return (s ?? _trendRed).Split(',').Select(int.Parse).ToArray(); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTradingParams)]

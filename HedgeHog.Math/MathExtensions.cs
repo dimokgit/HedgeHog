@@ -968,6 +968,22 @@ namespace HedgeHog {
       }
       return new[] { min, max };
     }
+    public static double[] MinMaxByRegressoin2(this IList<double> values, double[] coeffs = null) {
+      if(coeffs == null || coeffs.Length == 0)
+        coeffs = values.Linear();
+      double max = double.MinValue, min = double.MaxValue;
+      var n = values.Count;
+      for(var i = 0; i < n; i++) {
+        var l = coeffs.RegressionValue(i);
+        var v = values[i] - l;
+        if(max < v)
+          max = v;
+        if(min > v)
+          min = v;
+      }
+      return new[] { min, max };
+    }
+
     public static double HeightByRegressoin2(this IList<double> values, double[] coeffs = null) {
       if(coeffs == null || coeffs.Length == 0)
         coeffs = values.Linear();

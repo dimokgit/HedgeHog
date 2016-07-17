@@ -674,6 +674,16 @@ namespace HedgeHog.Bars {
       public IEnumerable<double> PriceMin0 { get { return RateMin0.Select(r => r.BidLow); } }
       public IEnumerable<Rate> RateMin0 { get { return Sorted0.Value.Take(1); } }
       public Lazy<Rate[]> Sorted0 { get; set; } = Lazy.Create(() => new Rate[0]);
+      public Tuple<int, double> EdgeHigh {
+        get;
+        set;
+      }
+      public Tuple<int, double> EdgeLow {
+        get;
+        set;
+      }
+
+      public double EdgeDiff { get { return EdgeHigh.Item2.Abs(EdgeLow.Item2); } }
 
       public TrendLevels(int count, double[] coeffs, double stDev) {
         this.Count = count;

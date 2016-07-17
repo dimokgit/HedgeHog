@@ -152,26 +152,7 @@ namespace HedgeHog.Alice.Store {
     }
     private void SetVoltsByEquinox() {
       if(IsRatesLengthStable)
-        EquinoxValuesImpl2(EquinoxTrendLines)
-          .Take(1)
-          .ForEach(t => SetVots(t.Item2.Item1, 2));
-      if(false) {
-        var voltsLow = GetVoltageAverage();
-        UseRates(rates => rates
-          .BackwardsIterator()
-          .SkipWhile(r => GetVoltage(r) < voltsLow)
-          .ToList()
-          .GroupedDistinct(d => GetVoltage(d) > voltsLow, l => l))
-          .ForEach(dist => {
-            var xx = (from b in dist.Buffer(2)
-                      from x in b.Take(1)
-                      from y in x.MinBy(d => GetVoltage(d)).Take(1)
-                      select y.StartDate
-            ).ToArray();
-            EquinoxDates.Clear();
-            EquinoxDates.AddRange(xx);
-          });
-      }
+        _edgeDiffs.ForEach(v => SetVots(v, 2));
     }
     private void SetVoltsByPpmRatio() {
       SetVots(WaveRangeSum.PipsPerMinute / WaveRangeAvg.PipsPerMinute, 2);

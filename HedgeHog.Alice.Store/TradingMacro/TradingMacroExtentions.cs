@@ -1517,6 +1517,7 @@ namespace HedgeHog.Alice.Store {
         BarsCountLastDate = DateTime.MinValue;
         TradesManager.ResetClosedTrades(Pair);
         var closedSessionToLoad = TestClosedSession;
+        _edgeDiffs = new double[0];
         if(!string.IsNullOrWhiteSpace(closedSessionToLoad)) {
           var vtm = (VirtualTradesManager)TradesManager;
           var sessionUid = Guid.Parse(closedSessionToLoad);
@@ -3622,8 +3623,11 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceAvg1Max,()=> TradeTrendLines.Max(tl=>tl.PriceAvg1)},
           {TradeLevelBy.PriceAvg1Min,()=> TradeTrendLines.Min(tl=>tl.PriceAvg1)},
 
-          { TradeLevelBy.EquinoxMax,()=>EquinoxBasedMinMax(EquinoxTrendLines).Select(t=>t.Item2).DefaultIfEmpty(RatesMax).Single() },
+          {TradeLevelBy.EquinoxMax,()=>EquinoxBasedMinMax(EquinoxTrendLines).Select(t=>t.Item2).DefaultIfEmpty(RatesMax).Single() },
           {TradeLevelBy.EquinoxMin,()=>EquinoxBasedMinMax(EquinoxTrendLines).Select(t=>t.Item1).DefaultIfEmpty(RatesMin).Single() },
+
+          {TradeLevelBy.EdgeMax,()=>level(tm=> EquinoxEdges(tm.EquinoxTrendLines).Select(tl=>tl.PriceAvg2).DefaultIfEmpty(RatesMax).Max()) },
+          {TradeLevelBy.EdgeMin,()=>level(tm=> EquinoxEdges(tm.EquinoxTrendLines).Select(tl=>tl.PriceAvg3).DefaultIfEmpty(RatesMin).Min()) },
 
           {TradeLevelBy.Avg22,()=>levelMax(tm=>tm.TradeLevelByPA2(2)) },
           {TradeLevelBy.Avg23,()=>levelMin(tm=>tm.TradeLevelByPA3(2)) },
