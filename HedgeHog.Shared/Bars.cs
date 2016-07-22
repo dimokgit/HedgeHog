@@ -674,11 +674,11 @@ namespace HedgeHog.Bars {
       public IEnumerable<double> PriceMin0 { get { return RateMin0.Select(r => r.BidLow); } }
       public IEnumerable<Rate> RateMin0 { get { return Sorted0.Value.Take(1); } }
       public Lazy<Rate[]> Sorted0 { get; set; } = Lazy.Create(() => new Rate[0]);
-      public Tuple<int, double> EdgeHigh {
+      public Tuple<DateTime, double, double> EdgeHigh {
         get;
         set;
       }
-      public Tuple<int, double> EdgeLow {
+      public Tuple<DateTime, double, double> EdgeLow {
         get;
         set;
       }

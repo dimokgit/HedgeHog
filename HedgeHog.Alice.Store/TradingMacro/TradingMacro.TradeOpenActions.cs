@@ -23,7 +23,7 @@ namespace HedgeHog.Alice.Store {
     public TradeOpenAction WrapOnTrade2 {
       get {
         return trade => {
-          WrapTradeInTradingDistabce(true);
+          WrapTradeInTradingDistance(true);
         };
       }
     }

@@ -93,7 +93,7 @@ namespace HedgeHog.Alice.Store {
       }
       RaiseShowChart();
     }
-    public void WrapTradeInTradingDistabce(bool forceMove = false) {
+    public void WrapTradeInTradingDistance(bool forceMove = false) {
       if(Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove || MoveWrapTradeWithNewTrade)) {
         SuppRes.ForEach(sr => sr.ResetPricePosition());
         BuyLevel.InManual = SellLevel.InManual = true;

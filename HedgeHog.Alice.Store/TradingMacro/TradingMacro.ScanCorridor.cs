@@ -98,6 +98,9 @@ namespace HedgeHog.Alice.Store {
       var leg = legs.Last().d.Div(7);
       var sectionStarts = legs.DistinctUntilChanged(a => a.d.Div(leg).Floor()).ToList();
       var sections = sectionStarts.Zip(sectionStarts.Skip(1), (p, n) => new { end = n.i, start = p.i }).ToList();
+      if(sections.Count != 7) {
+        //Log = new Exception(new { sections = new { sections.Count } } + "");
+      }
       //var sections2 = sectionStarts.Scan(new { end=0,start=0},(p, n) => new { end = n.i, start = p.end }).ToList();
       //sections2.Count();
 
@@ -126,7 +129,6 @@ namespace HedgeHog.Alice.Store {
       var legIndexes = new[] { 0 }.Concat(Enumerable.Range(0, sections.Count).SelectMany(i => getLength(i))).ToList();
 
       getLength(0).ForEach(i => {
-        CorridorLengthLime = legIndexes[1];
         TrendLines0 = Lazy.Create(() => CalcTrendLines(CorridorLengthLime), TrendLines0.Value, exc => Log = exc);
       });
 
@@ -136,10 +138,13 @@ namespace HedgeHog.Alice.Store {
         return CalcTrendLines(RatesArray.Count - e, e - legIndexes[start]);
       };
 
+      CorridorLengthLime = legIndexes[1];
+      TrendLimeInt().Pairwise((s, c) => new { s, e = s + c })
+        .ForEach(p => TrendLines0 = Lazy.Create(() => calcTrendLines(p.s, p.e), TrendLines0.Value, exc => Log = exc));
+
       CorridorLengthGreen = legIndexes[2];
       TrendGreenInt().Pairwise((s, c) => new { s, e = s + c })
         .ForEach(p => TrendLines1 = Lazy.Create(() => calcTrendLines(p.s, p.e), TrendLines1.Value, exc => Log = exc));
-
 
       TrendRedInt().Pairwise((s, c) => new { s, e = s + c })
         .ForEach(p => TrendLines = Lazy.Create(() => calcTrendLines(p.s, p.e), TrendLines.Value, exc => Log = exc));

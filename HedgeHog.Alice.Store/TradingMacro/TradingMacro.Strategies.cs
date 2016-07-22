@@ -452,11 +452,13 @@ namespace HedgeHog.Alice.Store {
       //  return new[] { TL.EmptyRate, TL.EmptyRate };
       var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(doubles.Count - 1) };
 
+      var indexAdjust = corridorValues.Count.Div(doubles.Count).ToInt();
+      Func<int, DateTime> indexToDate = i => corridorValues[(i * indexAdjust).Min(corridorValues.Count - 1)].StartDate;
       var edges = Enumerable.Range(0, doubles.Count)
         .Select(i => new { i, l = coeffs.RegressionValue(i) - h, h = coeffs.RegressionValue(i) + h, d = doubles[i] })
         .ToList();
-      var edgeHigh = edges.OrderBy(x => x.d.Abs(x.h)).Select(x => Tuple.Create(x.i, InPips(x.d.Abs(x.h)))).First();
-      var edgeLow = edges.OrderBy(x => x.d.Abs(x.l)).Select(x => Tuple.Create(x.i, InPips(x.d.Abs(x.l)))).First();
+      var edgeHigh = edges.OrderBy(x => x.d.Abs(x.h)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Abs(x.h)), x.d)).First();
+      var edgeLow = edges.OrderBy(x => x.d.Abs(x.l)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Abs(x.l)), x.d)).First();
 
       rates.ForEach(r => r.Trends = new TL(corridorValues.Count, coeffs, hl) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize),
