@@ -655,6 +655,8 @@ namespace HedgeHog.Bars {
       public double PriceAvg31 { get; set; } = double.NaN;
       public double PriceAvg32 { get; set; } = double.NaN;
 
+      public double PriceAvgHeight { get { return PriceAvg2 - PriceAvg3; } }
+
       public double Height { get; set; } = double.NaN;
 
       public double[] Coeffs { get; private set; }

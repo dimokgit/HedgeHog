@@ -3626,8 +3626,8 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.EquinoxMax,()=>EquinoxBasedMinMax(EquinoxTrendLines).Select(t=>t.Item2).DefaultIfEmpty(RatesMax).Single() },
           {TradeLevelBy.EquinoxMin,()=>EquinoxBasedMinMax(EquinoxTrendLines).Select(t=>t.Item1).DefaultIfEmpty(RatesMin).Single() },
 
-          {TradeLevelBy.EdgeMax,()=>level(tm=> EquinoxEdges(tm.EquinoxTrendLines).Select(tl=>tl.PriceAvg2).DefaultIfEmpty(RatesMax).Max()) },
-          {TradeLevelBy.EdgeMin,()=>level(tm=> EquinoxEdges(tm.EquinoxTrendLines).Select(tl=>tl.PriceAvg3).DefaultIfEmpty(RatesMin).Min()) },
+          {TradeLevelBy.EdgeMax,()=>level(tm=> EquinoxEdge(tm.EquinoxTrendLines).Select(tl=>tl.PriceAvg2).DefaultIfEmpty(RatesMax).Max()) },
+          {TradeLevelBy.EdgeMin,()=>level(tm=> EquinoxEdge(tm.EquinoxTrendLines).Select(tl=>tl.PriceAvg3).DefaultIfEmpty(RatesMin).Min()) },
 
           {TradeLevelBy.Avg22,()=>levelMax(tm=>tm.TradeLevelByPA2(2)) },
           {TradeLevelBy.Avg23,()=>levelMin(tm=>tm.TradeLevelByPA3(2)) },

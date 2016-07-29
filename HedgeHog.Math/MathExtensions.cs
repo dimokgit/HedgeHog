@@ -190,20 +190,6 @@ namespace HedgeHog {
     public static double Ratio(this int v, double other) {
       return other.Ratio(v);
     }
-    public static double Percentage<T>(this int v, double other) {
-      return other.Percentage(v);
-    }
-    /// <summary>
-    /// (one - other) / Math.Max(one, other);
-    /// </summary>
-    /// <param name="v"></param>
-    /// <param name="other"></param>
-    /// <returns></returns>
-    public static double Percentage(this double v, double other) {
-      var max = Math.Max(Math.Abs(v), Math.Abs(other));
-      var min = Math.Min(Math.Abs(v), Math.Abs(other));
-      return (v - other).Abs() / max;
-    }
     public static ILookup<bool, double> Fractals(this IList<double> rates, int fractalLength) {
       return rates.Fractals(fractalLength, d => d, d => d);
     }

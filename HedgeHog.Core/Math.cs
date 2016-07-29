@@ -120,7 +120,22 @@ namespace HedgeHog {
       return (int)(useCeiling ? Math.Ceiling(d) : Math.Floor(d));
     }
     public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
+    public static double Percentage<T>(this int v, double other) {
+      return other.Percentage(v);
+    }
+    /// <summary>
+    /// (one - other) / Math.Max(one, other);
+    /// </summary>
+    /// <param name="v"></param>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public static double Percentage(this double v, double other) {
+      var max = Math.Max(Math.Abs(v), Math.Abs(other));
+      var min = Math.Min(Math.Abs(v), Math.Abs(other));
+      return (v - other).Abs() / max;
+    }
     public static int ToPercent(this double d) { return (int)Math.Round(d * 100, 0); }
+    public static int ToPercent(this double d,double other) { return (int)Math.Round(d.Percentage(other) * 100, 0); }
 
     #region Between
     public static bool Between(this int value, double d1, double d2) {
