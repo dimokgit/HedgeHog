@@ -917,22 +917,19 @@ namespace HedgeHog.Alice.Store {
     public const string categoryTestControl = "Test Control";
     public const string categorySession = "Session";
 
-    public const string wwwSettingsLiveOrders = "3. Live Orders";
-    public const string wwwSettingsCorridorAngles = "2.0 Corridor Angles";
-
-    public const string wwwSettingsCorridorCMA = "2.1 Corridor CMA";
-    public const string wwwSettingsCorridorOther = "2.2 Corridor";
-    public const string wwwSettingsCorridorEquinox = "2.3 Equinox";
-
-    public const string wwwSettingsCorridorFuncs = "3 Corridor Func";
-
-
     public const string wwwSettingsTrading = "1.0 Trading";
     public const string wwwSettingsTradingCorridor = "1.1 Trading Corridor";
     public const string wwwSettingsTradingProfit = "1.2 Trading Profit";
     public const string wwwSettingsTradingConditions = "1.3 Trading Conditions";
     public const string wwwSettingsTradingParams = "1.4 Trading Params";
-    public const string wwwInfoAngles = "Angles";
+
+    public const string wwwSettingsTrends = "2.0 Corridor Trends";
+    public const string wwwSettingsCorridorAngles = "2.1 Corridor Angles";
+    public const string wwwSettingsCorridorCMA = "2.2 Corridor CMA";
+    public const string wwwSettingsCorridorOther = "2.3 Corridor";
+    public const string wwwSettingsCorridorEquinox = "2.4 Equinox";
+
+    public const string wwwSettingsCorridorFuncs = "3 Corridor Func";
 
     #region CloseAfterTradingHours
     private bool _CloseAfterTradingHours;

@@ -199,7 +199,8 @@ namespace HedgeHog.Alice.Client {
     static List<DateTimeOffset> _newsDates = new List<DateTimeOffset>();
     public object AskChangedPrice(string pair) {
       var tm0 = UseTradingMacro(pair, tm => tm, false);
-      if(tm0 == null)return new { };
+      if(tm0 == null)
+        return new { };
       var tm1 = UseTradingMacro(pair, 1, tm => tm, false);
       var tmTrader = tm0.TradingMacroTrader().Single();
       var tmTrender = tm0.TradingMacroTrender().Single();
@@ -257,10 +258,18 @@ namespace HedgeHog.Alice.Client {
         com2 = new { b = tmTrader.CenterOfMassBuy2.Round(digits), s = tmTrader.CenterOfMassSell2.Round(digits) },
         com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits) },
         tpls = tmTrader.GetTradeLevelsPreset().ToArray(),
+        tts = HasMinMaxTradeLevels(tmTrader) ? tmTrader.TradeTrends : "",
         tti = GetTradeTrendIndexImpl(tmTrader)
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
+
+    private static bool HasMinMaxTradeLevels(TradingMacro tmTrader) {
+      return (from tl in new[] { TradeLevelBy.PriceMax, TradeLevelBy.PriceMin }
+              join bs in new[] { tmTrader.LevelBuyBy, tmTrader.LevelSellBy } on tl equals bs
+              select bs).Count() == 2;
+    }
+
     public bool IsInVirtual() {
       return remoteControl.Value.IsInVirtualTrading;
     }
@@ -481,8 +490,14 @@ namespace HedgeHog.Alice.Client {
     }
     public void SetTradeTrendIndex(string pair, int index) {
       UseTradingMacro(pair, tm => {
+        var hasMM = HasMinMaxTradeLevels(tm);
         SetPresetTradeLevels(pair, TradeLevelsPreset.MinMax, null);
-        tm.TradeTrends = index + "";
+        var has = tm.TradeTrendsInt.Contains(index);
+        tm.TradeTrends = has
+        ? hasMM
+        ? string.Join(",", tm.TradeTrendsInt.Where(i => i != index))
+        : tm.TradeTrends
+        : tm.TradeTrends + "," + index;
       }, true);
     }
     public int[] GetTradeTrendIndex(string pair) {

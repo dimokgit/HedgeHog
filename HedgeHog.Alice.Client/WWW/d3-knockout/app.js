@@ -126,6 +126,16 @@
         ratesInFlight2 = dateMin;
       });
   }
+  function askPriceChanged() {
+    return chat.server.askChangedPrice(pair)
+      .done(function (response) {
+        addMessage(response);
+      })
+      .fail(function (e) {
+        showErrorPerm(e, keyNote("askPriceChanged"));
+      });
+
+  }
   // #region pending request messages
   var pendingMessages = {};
   function clearPendingMessages(key) {// jshint ignore:line
@@ -226,6 +236,10 @@
       });
     };
     var tradePresetLevel = this.tradePresetLevel = ko.observable(0);
+    var tradeTrends = this.tradeTrends = ko.observable("");
+    this.tradeTrendsInt = ko.pureComputed(function () {
+      return tradeTrends().split(',').map(parseFloat);
+    });
     var tradeTrendIndex = this.tradeTrendIndex = ko.observable(0);
     this.setTradeLevels = function (l, isBuy) {
       serverCall("setPresetTradeLevels", [pair, l, isBuy === undefined ? null : isBuy], function () {
@@ -430,6 +444,7 @@
     this.refreshCharts = function () {
       this.clearChartData();
       this.clearChartData2();
+      askPriceChanged();
     }.bind(this);
     this.wrapTradeInCorridor = wrapTradeInCorridor;
     this.wrapCurrentPriceInCorridor = function (corridorIndex) { serverCall("wrapCurrentPriceInCorridor", [pair,corridorIndex], "Close levels were reset"); };
@@ -1163,53 +1178,6 @@
     // Declare a proxy to reference the hub.
     chat = $.connection.myHub;
     // #region Create functions that the hub can call to broadcast messages.
-    function addMessage(response) {
-      if (isDocHidden()) return;
-
-      delete response.tps;
-      delete response.wp;
-
-      dataViewModel.rsdMin(response.rsdMin);
-      delete response.rsdMin;
-
-      dataViewModel.rsdMin2(response.rsdMin2);
-      delete response.rsdMin2;
-
-      dataViewModel.profit(response.prf);
-      delete response.prf;
-
-      dataViewModel.openTradeGross(response.otg);
-      delete response.otg;
-
-      dataViewModel.price(response.price);
-      delete response.price;
-
-      dataViewModel.syncTradeConditionInfos(response.tci);
-      delete response.tci;
-
-      dataViewModel.com = response.com;
-      delete response.com;
-
-      dataViewModel.com2 = response.com2;
-      delete response.com2;
-
-      dataViewModel.com3 = response.com3;
-      delete response.com3;
-
-      dataViewModel.tradePresetLevel(response.tpls[0] || 0);
-      delete response.tpls;
-
-      dataViewModel.tradeTrendIndex(response.tti[0] || -1);
-      delete response.tti;
-
-      dataViewModel.inPause(response.ip);
-      delete response.ip;
-
-
-      $('#discussion').text(JSON.stringify(response).replace(/["{}]/g, ""));
-
-      resetPlotter();
-    }
     var priceChanged = (function () {
       var _inFlightPriceChanged = dateMin;
       return _priceChanged;
@@ -1339,7 +1307,6 @@
       $('#sellDown').click(function () {
         moveTradeLeve(false, -pipStep);
       });
-      $('#manualToggle').click(function () { serverCall("manualToggle", [pair]); });
       $('#sell').click(function () { serverCall("sell", [pair]); });
       $('#buy').click(function () { serverCall("buy", [pair]); });
       //$('#flipTradeLevels').click(function () { serverCall("flipTradeLevels",[pair]); });
@@ -1458,6 +1425,57 @@
       return NewValue;
     }
     return MA + (NewValue - MA) / (Periods + 1);
+  }
+
+  function addMessage(response) {
+    if (isDocHidden()) return;
+
+    delete response.tps;
+    delete response.wp;
+
+    dataViewModel.rsdMin(response.rsdMin);
+    delete response.rsdMin;
+
+    dataViewModel.rsdMin2(response.rsdMin2);
+    delete response.rsdMin2;
+
+    dataViewModel.profit(response.prf);
+    delete response.prf;
+
+    dataViewModel.openTradeGross(response.otg);
+    delete response.otg;
+
+    dataViewModel.price(response.price);
+    delete response.price;
+
+    dataViewModel.syncTradeConditionInfos(response.tci);
+    delete response.tci;
+
+    dataViewModel.com = response.com;
+    delete response.com;
+
+    dataViewModel.com2 = response.com2;
+    delete response.com2;
+
+    dataViewModel.com3 = response.com3;
+    delete response.com3;
+
+    dataViewModel.tradePresetLevel(response.tpls[0] || 0);
+    delete response.tpls;
+
+    dataViewModel.tradeTrends(response.tts || "");
+    delete response.tts;
+
+    dataViewModel.tradeTrendIndex(response.tti[0] || -1);
+    delete response.tti;
+
+    dataViewModel.inPause(response.ip);
+    delete response.ip;
+
+
+    $('#discussion').text(JSON.stringify(response).replace(/["{}]/g, ""));
+
+    resetPlotter();
   }
 
   // #region isHidden
