@@ -64,7 +64,7 @@ namespace HedgeHog {
       return that.Concat(itemAsSequence);
     }
 
-    public static IEnumerable<Tuple<T,T>> Permutation<T>(this IList<T> source) {
+    public static IEnumerable<Tuple<T, T>> Permutation<T>(this IList<T> source) {
       IEnumerable<T[]> list = new T[0][];
       for(var skip = 0; skip < source.Count - 1; skip++)
         list = list.Concat(source.Skip(skip).Select(t => new[] { t })
@@ -821,6 +821,10 @@ namespace HedgeHog {
       var part = d.Abs() - whole;
       var ret = (double)(whole + Math.Round((decimal)part, Math.Log10(part).Abs().Ceiling() + digits));
       return ret;
+    }
+    public static double AutoRound2(this double d, int digits) {
+      var digitsReal = Math.Log10(d.Abs()).Floor() + 1;
+      return d.Round((digits - digitsReal).Max(0));
     }
 
     public static double Error(this double experimantal, double original) {

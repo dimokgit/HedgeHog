@@ -109,6 +109,7 @@ namespace HedgeHog.Tests {
     public void AutoRoundTest() {
       var d = 1.1435765205628123;
       Assert.AreEqual(1.14, d.AutoRound(1));
+      Assert.AreEqual(1.14, d.AutoRound2(3));
     }
 
     [TestMethod()]

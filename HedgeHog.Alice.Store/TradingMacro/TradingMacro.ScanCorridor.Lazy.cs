@@ -161,6 +161,11 @@ namespace HedgeHog.Alice.Store {
       SetVots(_wwwBpa1, 2);
       return null;
     }
+    private CorridorStatistics SetVoltsByTradeTrendLinesAvg() {
+      if(IsRatesLengthStable)
+        SetVots(TradeTrendLinesAvg(tl => tl.StDev), 2);
+      return null;
+    }
     List<DateTime> _equinoxDates = new List<DateTime>();
 
     public List<DateTime> EquinoxDates {

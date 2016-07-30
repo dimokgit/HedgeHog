@@ -1104,16 +1104,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region Trends Ratios
-    public TradeConditionDelegate EqnxLGRBOk {
-      get {
-        Log = new Exception(new { EqnxPureOk = new { EquinoxPerc, EquinoxCorridors } } + "");
-        Func<double, IEnumerable<int>> setWww = i => TradingMacroTrender().Select(tm => tm._wwwInfoEquinox = i.ToInt());
-
-        Func<IEnumerable<int>> exec = EquinoxCalcFunc();
-        return () => exec().SelectMany(d => setWww(d).Select(i => TradeDirectionByTreshold(i, EquinoxPerc))).FirstOrDefault();
-      }
-    }
-
     private Func<IEnumerable<int>> EquinoxCalcFunc() {
 
       Func<IEnumerable<int>> exec = () => EquinoxValues(tm => tm.EquinoxTrendLines)
@@ -1752,9 +1742,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     int _wavesRsdPec = 33;
-    private int _wwwInfoGRatio;
-    private int _wwwInfoEquinox;
-    private int _wwwInfoRRatio;
 
     [WwwSetting(wwwSettingsTradingParams)]
     [Category(categoryActiveFuncs)]

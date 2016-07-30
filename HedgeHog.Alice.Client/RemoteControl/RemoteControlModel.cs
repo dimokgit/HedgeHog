@@ -720,7 +720,7 @@ namespace HedgeHog.Alice.Client {
 
     void UpdateTradingStatistics() {
       try {
-        _tradingStatistics.CurrentGross = fwMaster.GetTrades().Net2();
+        _tradingStatistics.CurrentGross = MasterModel.TradesManager.GetTrades().Net2();
 
         if(GetTradingMacros().Any(tm => !tm.UseRates(rs => rs.Count > 0).SingleOrDefault()))
           return;

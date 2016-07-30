@@ -660,8 +660,8 @@ namespace HedgeHog.Alice.Client {
         list.Add(row("CurrentGross", am.CurrentGross.Round(2).ToString("c0") +
           (ht ? "/" + (am.ProfitPercent).ToString("p1") : "")
           + "/" + (am.OriginalProfit).ToString("p1")));
-        list.Add(row("PipAmount", tm.PipAmount.ToString("c1") + "/" + tm.PipAmountPercent.ToString("p2")));
-        list.Add(row("PipsToMC", am.PipsToMC.ToString("n0")));
+        list.Add(row("PipAmount", tm.PipAmount.AutoRound2(2).ToString("c") + "/" + tm.PipAmountPercent.ToString("p2")));
+        list.Add(row("PipsToMC", (ht ? tm.MaxPipsToPMC() : am.PipsToMC).ToString("n0")));
         list.Add(row("LotSize", (tm.LotSize / 1000).ToString("n0") + "K/" + tm.LotSizePercent.ToString("p0")));
       }, false);
       return list.ToArray();

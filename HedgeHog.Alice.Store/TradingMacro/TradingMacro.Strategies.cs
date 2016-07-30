@@ -353,6 +353,15 @@ namespace HedgeHog.Alice.Store {
     public TL TrendLinesPlumTrends { get { return IsTrendsEmpty(TrendLines3); } }
     public TL[] TrendLinesTrendsAll { get { return new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesPlumTrends, TrendLinesRedTrends, TrendLinesBlueTrends }; } }
     public IEnumerable<TL> TradeTrendLines { get { return TradeTrendsInt.Select(i => TrendLinesTrendsAll[i]); } }
+    public double TradeTrendLinesAvg(Func<TL,double> selector) {
+      return TradeTrendLines.ToArray(selector)
+        .Permutation()
+        .Select(t => t.Item1.ToPercent(t.Item2))
+        .OrderBy(d=>d)
+        .Take(3)
+        .Average()
+        .ToInt();
+    }
     private double TradeTrendsPriceMax(TradingMacro tm) {
       return tm.TradeTrendLines.Max(tl => tl.PriceAvg2);
     }
