@@ -1873,6 +1873,7 @@ namespace HedgeHog.Alice.Store {
 
     #region SuppReses
 
+    bool _checkAdjustSuppResCount=true;
     void AdjustSuppResCount() {
       if(SuppResLevelsCount < 1)
         throw new Exception("SuppResLevelsCount must be at least 1.");
@@ -2230,7 +2231,6 @@ namespace HedgeHog.Alice.Store {
           var rs = rateLast.Select(rl => rl.AskHigh - rl.BidLow);
           var rs2 = RateLast == null ? 0 : RateLast.AskHigh - RateLast.BidLow;
           if(!rateLast.IsEmpty() && (rateLast.Single() != RateLast || rs.Single() != rs2 || RatesArray == null || RatesArray.Count == 0)) {
-
             #region Quick Stuff
             UseRatesInternal(ri => {
               RateLast = ri.Last();
@@ -2239,6 +2239,10 @@ namespace HedgeHog.Alice.Store {
               UseRates(_ => RatesArray = ri.GetRange(BarsCountCalc).ToList());
               RatesDuration = RatesArray.Duration(r => r.StartDate).TotalMinutes.ToInt();
             });
+            if(_checkAdjustSuppResCount) {
+              _checkAdjustSuppResCount = false;
+              AdjustSuppResCount();
+            }
             IsAsleep = new[] { BuyLevel.InManual, SellLevel.InManual }.All(im => !im) &&
               Trades.Length == 0 &&
               IsInVirtualTrading &&

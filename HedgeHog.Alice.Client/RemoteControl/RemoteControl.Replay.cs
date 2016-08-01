@@ -135,7 +135,6 @@ namespace HedgeHog.Alice.Client {
             .Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v)).ToArray()));
         }
       }
-      ReplayArguments.IsWww = false;
       TestParams.Clear();
       paramsTransformation(_testParamsRaw);
       _testParamsRaw.CartesianProduct().ForEach(tp => TestParams.Enqueue(tp.ToArray()));
@@ -223,8 +222,11 @@ namespace HedgeHog.Alice.Client {
                 tm.LoadSetting(tp);
               } catch(SetLotSizeException) {
               } catch(Exception exc) {
-                if(!(exc.InnerException is SetLotSizeException))
-                  throw new Exception("Property:" + new { tp.Key, tp.Value }, exc);
+                if(!(exc.InnerException is SetLotSizeException)) {
+                  var e2 = new Exception("Property:" + new { tp.Key, tp.Value }, exc);
+                  LogWww(e2);
+                  throw e2;
+                }
               }
             });
         }
@@ -240,6 +242,7 @@ namespace HedgeHog.Alice.Client {
             continueWith(t);
         });
         _replayTasks.Add(task);
+        ReplayArguments.IsWww = false;
       }
     }
 

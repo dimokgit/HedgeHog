@@ -262,6 +262,7 @@ namespace HedgeHog.Alice.Store {
     private double _CmaRatioForWaveLength = 0;
     [Category(categoryActive)]
     [WwwSetting(wwwSettingsCorridorCMA)]
+    [DisplayName("CmaRatioFor WL")]
     public double CmaRatioForWaveLength {
       get { return _CmaRatioForWaveLength; }
       set {

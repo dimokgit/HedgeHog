@@ -1813,8 +1813,9 @@ namespace HedgeHog.Alice.Store {
 
     string _tradeTrends = "0,1,2,3";
     [Category(categoryActiveFuncs)]
-    [WwwSetting(wwwSettingsTradingParams)]
+    [WwwSetting(wwwSettingsTradingCorridor)]
     [Description("0,1,2")]
+    [DisplayName("Trade Trends")]
     public string TradeTrends {
       get { return _tradeTrends; }
       set {

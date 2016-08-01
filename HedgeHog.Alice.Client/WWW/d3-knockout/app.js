@@ -411,7 +411,7 @@
         var properties = {}, meta = {};
         $.map(ts, function (v, n) {
           properties[n] = v.v;
-          meta[n] = { group: v.g };
+          meta[n] = { group: v.g, name: v.dn };
         });
         settingsGrid().jqPropertyGrid(properties, $.extend(true, tsMeta, meta));
       });

@@ -1200,7 +1200,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     double _trendHeightPerc;
-    [DisplayName("ThredA.Height.Percentage(ThredB.Height): -200 - 200")]
+    [Description("ThredA.Height.Percentage(ThredB.Height): -200 - 200")]
     [WwwSetting(Group = wwwSettingsTradingParams)]
     [Category(categoryActive)]
     public double TrendHeightPerc {
@@ -1382,7 +1382,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Bars Count(45,360,..)")]
+    [DisplayName("Bars Count")]
     [Category(categoryActive)]
     [WwwSetting]
     public int BarsCount {

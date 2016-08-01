@@ -359,6 +359,7 @@ namespace HedgeHog.Alice.Store {
         .Select(t => t.Item1.ToPercent(t.Item2))
         .OrderBy(d=>d)
         .Take(3)
+        .DefaultIfEmpty(0)
         .Average()
         .ToInt();
     }

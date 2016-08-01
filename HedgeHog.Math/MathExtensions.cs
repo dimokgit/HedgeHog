@@ -10,6 +10,7 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
 using System.Reflection;
+using System.ComponentModel;
 
 namespace HedgeHog {
   public static class RelativeStDevStore {
@@ -582,6 +583,9 @@ namespace HedgeHog {
       });
       var t = o.GetType();
       var pi = t.GetProperty(p);
+      if(pi == null) {
+        pi = t.GetProperties().FirstOrDefault(prop => prop.GetCustomAttributes<DisplayNameAttribute>().Any(dn => dn.DisplayName == p));
+      }
       if(propertyPredicate != null) {
         if(pi == null)
           throw new MissingMemberException(t.Name, p);

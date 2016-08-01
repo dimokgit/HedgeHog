@@ -130,7 +130,7 @@ namespace HedgeHog.Alice.Store {
 
     void ScanRatesLengthByDistanceMinSmoothed() {
       BarsCountCalc = GetRatesLengthByDistanceMinByMacdSmoothed()
-        .Concat(BarsCountByM1())
+        //.Concat(BarsCountByM1())
         .OrderBy(d => d)
         .DefaultIfEmpty(BarsCountCalc)
         .Take(1)

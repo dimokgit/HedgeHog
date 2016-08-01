@@ -22,6 +22,7 @@ using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
@@ -491,7 +492,8 @@ namespace HedgeHog.Alice.Client {
     public void SetTradeTrendIndex(string pair, int index) {
       UseTradingMacro(pair, tm => {
         var hasMM = HasMinMaxTradeLevels(tm);
-        SetPresetTradeLevels(pair, TradeLevelsPreset.MinMax, null);
+        if(!hasMM)
+          SetPresetTradeLevels(pair, TradeLevelsPreset.MinMax, null);
         var has = tm.TradeTrendsInt.Contains(index);
         tm.TradeTrends = has
         ? hasMM
@@ -552,11 +554,12 @@ namespace HedgeHog.Alice.Client {
       return UseTradingMacro(pair, chartNum, tm => {
         var e = (IDictionary<string, object>)new ExpandoObject();
         Func<object, object> convert = o => o != null && o.GetType().IsEnum ? o + "" : o;
+        Func<PropertyInfo, string> dn = pi => pi.GetCustomAttributes<DisplayNameAttribute>().Select(a => a.DisplayName).DefaultIfEmpty(pi.Name).Single();
         tm.GetPropertiesByAttibute<WwwSettingAttribute>(_ => true)
-          .Select(x => new { x.Item1.Group, p = x.Item2 })
-          .OrderBy(x => x.p.Name)
+          .Select(x => new { x.Item1.Group, p = x.Item2, dn = dn(x.Item2) })
+          .OrderBy(x => x.dn)
           .OrderBy(x => x.Group)
-          .ForEach(x => e.Add(x.p.Name, new { v = convert(x.p.GetValue(tm)), g = x.Group }));
+          .ForEach(x => e.Add(x.p.Name, new { v = convert(x.p.GetValue(tm)), g = x.Group, x.dn }));
         return e as ExpandoObject;
       }, false);
     }
@@ -721,6 +724,7 @@ namespace HedgeHog.Alice.Client {
         GetTradingMacro(pair, chartNum).ForEach(action);
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        throw;
       }
     }
     T UseTradingMacro<T>(string pair, int chartNum, Func<TradingMacro, T> func, bool testTraderAccess) {
@@ -730,7 +734,7 @@ namespace HedgeHog.Alice.Client {
         return GetTradingMacro(pair, chartNum).Select(func).DefaultIfEmpty(default(T)).First();
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        return default(T);
+        throw;
       }
     }
     T[] UseTradingMacro2<T>(string pair, int chartNum, Func<TradingMacro, bool> where, Func<TradingMacro, T> func, bool testTraderAccess) {
@@ -740,7 +744,7 @@ namespace HedgeHog.Alice.Client {
         return GetTradingMacro(pair, chartNum).Where(where).Select(func).ToArray();
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        return new T[0];
+        throw;
       }
     }
     void UseTradingMacro2(string pair, int chartNum, Action<TradingMacro> func, bool testTraderAccess) {
@@ -750,6 +754,7 @@ namespace HedgeHog.Alice.Client {
         GetTradingMacro(pair, chartNum).ForEach(func);
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        throw;
       }
     }
 

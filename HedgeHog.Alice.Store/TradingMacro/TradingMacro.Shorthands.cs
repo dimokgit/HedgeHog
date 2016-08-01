@@ -62,23 +62,8 @@ namespace HedgeHog.Alice.Store {
       RaiseShowChart();
     }
 
-    #region MoveWrapTradeWithNewTrade
-    private bool _MoveWrapTradeWithNewTrade = false;
-    [Category(categoryTrading)]
-    [WwwSetting]
-    public bool MoveWrapTradeWithNewTrade {
-      get { return _MoveWrapTradeWithNewTrade; }
-      set {
-        if(_MoveWrapTradeWithNewTrade != value) {
-          _MoveWrapTradeWithNewTrade = value;
-          OnPropertyChanged("MoveWrapTradeWithNewTrade");
-        }
-      }
-    }
-
-    #endregion
     public void WrapTradeInCorridor(bool forceMove = false) {
-      if(Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove || MoveWrapTradeWithNewTrade)) {
+      if(Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove)) {
         SuppRes.ForEach(sr => sr.ResetPricePosition());
         BuyLevel.InManual = SellLevel.InManual = true;
         double offset = HeightForWrapToCorridor();
@@ -94,7 +79,7 @@ namespace HedgeHog.Alice.Store {
       RaiseShowChart();
     }
     public void WrapTradeInTradingDistance(bool forceMove = false) {
-      if(Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove || MoveWrapTradeWithNewTrade)) {
+      if(Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove)) {
         SuppRes.ForEach(sr => sr.ResetPricePosition());
         BuyLevel.InManual = SellLevel.InManual = true;
         double offset = CalculateTradingDistance();
