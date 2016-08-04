@@ -128,11 +128,6 @@ namespace HedgeHog.Alice.Store {
 
       var legIndexes = new[] { 0 }.Concat(Enumerable.Range(0, sections.Count).SelectMany(i => getLength(i))).ToList();
 
-      getLength(0).ForEach(i => {
-        TrendLines0 = Lazy.Create(() => CalcTrendLines(CorridorLengthLime), TrendLines0.Value, exc => Log = exc);
-      });
-
-
       Func<int, int, IList<Rate>> calcTrendLines = (start, end) => {
         var e = end < legIndexes.Count ? legIndexes[end] : ratesForCorridor.Count;
         return CalcTrendLines(RatesArray.Count - e, e - legIndexes[start]);

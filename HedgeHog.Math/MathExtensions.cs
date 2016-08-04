@@ -49,8 +49,7 @@ namespace HedgeHog {
         .Scan(new { prev = 0.0, next = 0.0 }, (prev, next) => new { prev = prev.next, next })
         .Skip(1)
         .Scan(0.0, (d, x) => {
-          if(onScan != null)
-            onScan(x.prev, x.next);
+          onScan?.Invoke(x.prev, x.next);
           return d + x.prev.Abs(x.next);
         });
     }
@@ -59,8 +58,7 @@ namespace HedgeHog {
         .Scan(new { t = default(T), prev = 0.0, next = 0.0 }, (prev, next) => new { t = next, prev = prev.next, next = map(next) })
         .Skip(1)
         .Scan(Tuple.Create(default(T), 0.0), (t, x) => {
-          if(onScan != null)
-            onScan(x.prev, x.next);
+          onScan?.Invoke(x.prev, x.next);
           return Tuple.Create(x.t, t.Item2 + x.prev.Abs(x.next));
         });
     }

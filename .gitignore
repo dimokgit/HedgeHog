@@ -1,2 +1,5 @@
 *.opensdf
 *.nupkg.bak
+/AllInOne/packages
+/AllInOne/UnitLib/bin
+/AllInOne/UnitLib/obj

@@ -12,6 +12,7 @@ namespace HedgeHog.Alice {
     AvgLineRatio,
     Rsd,
     PPM,
+    PPMH,
     PpmM1,
     Equinox,
     BPA1,

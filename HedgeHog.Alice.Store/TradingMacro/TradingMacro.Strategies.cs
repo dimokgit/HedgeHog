@@ -472,8 +472,8 @@ namespace HedgeHog.Alice.Store {
 
       rates.ForEach(r => r.Trends = new TL(corridorValues.Count, coeffs, hl) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize),
-        EdgeHigh = edgeHigh,
-        EdgeLow = edgeLow
+        EdgeHigh = new[] { edgeHigh },
+        EdgeLow = new[] { edgeLow }
       });
 
 

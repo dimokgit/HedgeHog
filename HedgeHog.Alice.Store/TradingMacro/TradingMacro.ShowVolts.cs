@@ -34,6 +34,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByRsd;
         case HedgeHog.Alice.VoltageFunction.PPM:
           return ShowVoltsByPPM;
+        case HedgeHog.Alice.VoltageFunction.PPMH:
+          return ShowVoltsByPPMH;
         case HedgeHog.Alice.VoltageFunction.PpmM1:
           return () => { SetVoltsByPpm(); return null; };
         case HedgeHog.Alice.VoltageFunction.Equinox:
@@ -60,15 +62,38 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByPPM() {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
-      Func<IEnumerable<double>> calcVolt = () => UseRates(rates => rates.Distances(_priceAvg).Last().Item2 / RatesDuration)
-            .Where(ppm => ppm > 0)
-              .Select(ppm => InPips(ppm));
+      Func<IEnumerable<double>> calcVolt = ()
+        => UseRates(rates
+        => rates.Distances(_priceAvg).Last().Item2 / RatesDuration)
+        .Where(ppm => ppm > 0)
+        .Select(ppm => InPips(ppm));
       if(!useCalc)
         return ShowVolts(GetLastVolt().DefaultIfEmpty(() => calcVolt().Single()).Single(), 2);
 
       return calcVolt()
         .Select(volt => ShowVolts(useCalc ? volt : GetLastVolt().DefaultIfEmpty(volt).Single(), 2))
         .SingleOrDefault();
+    }
+
+    CorridorStatistics ShowVoltsByPPMH() {
+      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+
+      if(!useCalc)
+        return GetLastVolt()
+          .Select(v => ShowVolts(v, 2))
+          .SingleOrDefault();
+
+      Func<IEnumerable<double>> calcVolt = () => 
+        (from ppms in UseRates(rates => rates.Select(r=>r.PriceCMALast).TakeWhile(Lib.IsNotNaN).Distances()
+         .TakeLast(1)
+         .ToArray(d => d / RatesDuration))
+         from ppm in ppms
+         from hsd in TrendLinesBlueTrends.HStdRatio
+         select InPips(ppm) / hsd)
+         .Where(ppm => ppm > 0);
+
+      calcVolt().ForEach(v => SetVots(v, 2));
+      return null;
     }
 
 
@@ -103,9 +128,11 @@ namespace HedgeHog.Alice.Store {
     #region SetCentersOfMass Subject
     object _SetCentersOfMassSubjectLocker = new object();
     ISubject<Action> _SetCentersOfMassSubject;
-    ISubject<Action> SetCentersOfMassSubject {
-      get {
-        lock (_SetCentersOfMassSubjectLocker)
+    ISubject<Action> SetCentersOfMassSubject
+    {
+      get
+      {
+        lock(_SetCentersOfMassSubjectLocker)
           if(_SetCentersOfMassSubject == null) {
             _SetCentersOfMassSubject = new Subject<Action>();
             _SetCentersOfMassSubject.SubscribeToLatestOnBGThread(exc => Log = exc, ThreadPriority.Lowest);
@@ -119,9 +146,11 @@ namespace HedgeHog.Alice.Store {
     #region SetBarsCountCalc Subject
     object _SetBarsCountCalcSubjectLocker = new object();
     ISubject<Action> _SetBarsCountCalcSubject;
-    ISubject<Action> SetBarsCountCalcSubject {
-      get {
-        lock (_SetBarsCountCalcSubjectLocker)
+    ISubject<Action> SetBarsCountCalcSubject
+    {
+      get
+      {
+        lock(_SetBarsCountCalcSubjectLocker)
           if(_SetBarsCountCalcSubject == null) {
             IObservable<Action> o = null;
             _SetBarsCountCalcSubject = _SetBarsCountCalcSubject.InitBufferedObservable(ref o, exc => Log = exc);

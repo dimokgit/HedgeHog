@@ -24,7 +24,7 @@ namespace HedgeHog.Cloud {
     #region Gist Client Factory
     static GitHubClient ClientFactory() {
       var client = new GitHubClient(new ProductHeaderValue(MyApp));
-      client.Credentials = new Octokit.Credentials("dimokgit", "1Aaaaaaa");
+      client.Credentials = new Octokit.Credentials("dimokgit", "BudG0tov");
       return client;
     }
     #endregion

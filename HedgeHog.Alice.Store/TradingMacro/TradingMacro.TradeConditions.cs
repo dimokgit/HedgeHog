@@ -27,13 +27,17 @@ namespace HedgeHog.Alice.Store {
     bool IsCurrentPriceInside(params double[] levels) {
       return new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }.All(cp => cp.Between(levels[0], levels[1]));
     }
-    private bool IsCurrentPriceInsideTradeLevels {
-      get {
+    private bool IsCurrentPriceInsideTradeLevels
+    {
+      get
+      {
         return new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }.All(cp => cp.Between(SellLevel.Rate, BuyLevel.Rate));
       }
     }
-    private bool IsCurrentPriceInsideTradeLevels2 {
-      get {
+    private bool IsCurrentPriceInsideTradeLevels2
+    {
+      get
+      {
         Func<double, double[], bool> isIn = (v, levels) => {
           var h = levels.Height() / 4;
           return v.Between(levels.Min() + h, levels.Max() - h);
@@ -60,12 +64,14 @@ namespace HedgeHog.Alice.Store {
 
     #region Edges
 
-    public TradeConditionDelegate E2EOk {
-      get {
+    public TradeConditionDelegate E2EOk
+    {
+      get
+      {
         Log = new Exception(new { E2EOk = new { EquinoxPerc } } + "");
         return () => {
           var tls = TradingMacroTrender(tm => EquinoxEdge(tm.EquinoxTrendLines)).SelectMany(tl => tl).ToArray();
-          _edgeDiffs = tls.Select(tl => tl.EdgeDiff).OrderByDescending(e => e).Take(1);
+          _edgeDiffs = tls.SelectMany(tl => tl.EdgeDiff).OrderByDescending(e => e).Take(1);
           return _edgeDiffs.Select(ed => TradeDirectionByTreshold(ed, EquinoxPerc) & TradeDirectionsAnglecounterwise(tls))
           .SingleOrDefault();
         };
@@ -73,23 +79,27 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionSetCorridor]
-    public TradeConditionDelegate E2EtOk {
-      get {
+    public TradeConditionDelegate E2EtOk
+    {
+      get
+      {
         TradingMacroTrader(tm => Log = new Exception(new { E2EtOk = new { tm.EquinoxPerc, tm.PairIndex } } + "")).FirstOrDefault();
         Func<TL, TradeDirections> run = tl => {
-          var buy = tl.EdgeHigh.Item3;
-          var sell = tl.EdgeLow.Item3;
-          if(!CurrentPrice.Average.Between(sell, buy))
+          var buy = tl.EdgeHigh.Select(e => e.Item3);
+          var sell = tl.EdgeLow.Select(e => e.Item3);
+          var bs = buy.Zip(sell, (b, s) => new { b, s });
+          if(!bs.Any(x => CurrentPrice.Average.Between(x.s, x.b)))
             return TradeDirections.None;
-          _edgeDiffs = new[] { tl.EdgeDiff };
-          BuyLevel.RateEx = buy;
-          SellLevel.RateEx = sell;
+          _edgeDiffs = tl.EdgeDiff;
+          buy.ForEach(b => BuyLevel.RateEx = b);
+          ;
+          sell.ForEach(s => SellLevel.RateEx = s);
           BuySellLevels.ForEach(sr => sr.CanTradeEx = true);
           return TradeDirections.Both;
         };
         Func<IEnumerable<TradeDirections>> run2 = () => TradingMacroTrader(tm => {
           var tls = EquinoxEdge(tm.EquinoxTrendLines).ToArray();
-          tm._edgeDiffs = tls.Select(tl2 => tl2.EdgeDiff).MaxByOrEmpty(d => d).Take(1);
+          tm._edgeDiffs = tls.SelectMany(tl2 => tl2.EdgeDiff).MaxByOrEmpty(d => d).Take(1);
           var eds = (from tl in tls.OrderBy(tl => tl.EdgeDiff).Take(1)
                      from edmax in tm._edgeDiffs
                      where edmax < tm.EquinoxPerc
@@ -107,8 +117,10 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionAsleep]
-    public TradeConditionDelegate E2EMOk {
-      get {
+    public TradeConditionDelegate E2EMOk
+    {
+      get
+      {
         Func<TradingMacro, TL, IEnumerable<TL>> prevTL = (tm, tl)
           => tm.TrendLinesTrendsAll.TakeWhile(tl0 => tl0.Count < tl.Count).TakeLast(1);
 
@@ -123,10 +135,11 @@ namespace HedgeHog.Alice.Store {
           var tls = (from tls0 in tlss
                      from tl in tls0.OrderByDescending(tl => tl.EdgeDiff).Take(1)
                      from sd in sds
-                     let ed = tl.EdgeHigh.Item1.Min(tl.EdgeLow.Item1)
+                     let ed = tl.EdgeHigh.Concat(tl.EdgeLow).Min(x => x.Item1)
                      where ed > sd
-                     //let priceDiff = InPips(tl.PriceAvg2.Abs(CurrentPrice.Average).Min(tl.PriceAvg3.Abs(CurrentPrice.Average)))
-                     select new { tl, edp = 100 - tl.EdgeDiff.ToPercent(InPips(tl.PriceAvgHeight)), pdp = priceDiff(tl) }/*.EdgeDiff.Max(priceDiff / 3)*/)
+                     from diff in tl.EdgeDiff
+                       //let priceDiff = InPips(tl.PriceAvg2.Abs(CurrentPrice.Average).Min(tl.PriceAvg3.Abs(CurrentPrice.Average)))
+                     select new { tl, edp = 100 - diff.ToPercent(InPips(tl.PriceAvgHeight)), pdp = priceDiff(tl) }/*.EdgeDiff.Max(priceDiff / 3)*/)
                      .AsSingleable();
           //.ToArray();
           return new { tm, tls };
@@ -140,8 +153,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public TradeConditionDelegateHide EdgesOk {
-      get {
+    public TradeConditionDelegateHide EdgesOk
+    {
+      get
+      {
         return () => {
           var edges = UseRates(rates => rates.Select(_priceAvg).ToArray().EdgeByStDev(InPoints(0.1), 0))
           .SelectMany(x => x.ToArray())
@@ -162,8 +177,10 @@ namespace HedgeHog.Alice.Store {
     }
     LoadRateAsyncBuffer _setEdgeLinesAsyncBuffer = new LoadRateAsyncBuffer();
 
-    public TradeConditionDelegateHide EdgesAOk {
-      get {
+    public TradeConditionDelegateHide EdgesAOk
+    {
+      get
+      {
         return () => {
           return UseRates(rates => rates.Select(_priceAvg).ToArray())
           .Select(rates => {
@@ -194,12 +211,15 @@ namespace HedgeHog.Alice.Store {
     int _bigWaveIndex = 0;
     [Category(categoryTrading)]
     [WwwSetting]
-    public int BigWaveIndex {
-      get {
+    public int BigWaveIndex
+    {
+      get
+      {
         return _bigWaveIndex;
       }
 
-      set {
+      set
+      {
         if(value < 0)
           throw new Exception("BigWaveIndex must bre >= 0");
         _bigWaveIndex = value;
@@ -207,8 +227,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide BigWaveOk_Old {
-      get {
+    public TradeConditionDelegateHide BigWaveOk_Old
+    {
+      get
+      {
         var ors = new Func<WaveRange, double>[] { wr => wr.DistanceCma };
         Func<WaveRange, TradingMacro, bool> predicate = (wr, tm) =>
           //wr.Angle.Abs().ToInt() >= tm.WaveRangeAvg.Angle.ToInt() && 
@@ -224,24 +246,32 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public TradeConditionDelegate InWaveOk {
-      get {
+    public TradeConditionDelegate InWaveOk
+    {
+      get
+      {
         return () => IsWaveOk2((wr, tm) => RatesArray[0].StartDate < wr.StartDate, 1);
       }
     }
-    public TradeConditionDelegate BigWaveOk {
-      get {
+    public TradeConditionDelegate BigWaveOk
+    {
+      get
+      {
         return () => IsWaveOk((wr, tm) => wr.Distance > tm.WaveRangeAvg.Distance, BigWaveIndex, 2);
       }
     }
-    public TradeConditionDelegate CalmOk {
-      get {
+    public TradeConditionDelegate CalmOk
+    {
+      get
+      {
         return () => AreWavesOk((wr, tm) =>
         wr.Distance < tm.WaveRangeAvg.Distance && wr.TotalMinutes < tm.WaveRangeAvg.TotalMinutes, 0, BigWaveIndex);
       }
     }
-    public TradeConditionDelegate Calm2Ok {
-      get {
+    public TradeConditionDelegate Calm2Ok
+    {
+      get
+      {
         return () => (
           from calm in new[] { CalmOk() }
           where calm.HasAny()
@@ -256,8 +286,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegate Calm3Ok {
-      get {
+    public TradeConditionDelegate Calm3Ok
+    {
+      get
+      {
         return () => (
           from tm in TradingMacroOther().Take(1)
           where tm.WaveRangeSum != null
@@ -272,8 +304,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegate Calm4Ok {
-      get {
+    public TradeConditionDelegate Calm4Ok
+    {
+      get
+      {
         return () => Calm3Impl((wr, tm) => wr.Distance > tm.WaveRangeAvg.Distance);
       }
     }
@@ -291,16 +325,20 @@ namespace HedgeHog.Alice.Store {
       //.Take(BigWaveIndex);
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegateHide WvDistAOk {
-      get {
+    public TradeConditionDelegateHide WvDistAOk
+    {
+      get
+      {
         return () => TradeDirectionByBool(CalmImpl(
           (wrs, tm) => wrs.Sum(wr => wr.Distance) > tm.WaveRangeSum.Distance,
           (wr, tm) => wr.Distance < tm.WaveRangeAvg.Distance));
       }
     }
     [TradeConditionAsleep]
-    public TradeConditionDelegateHide WvDistSOk {
-      get {
+    public TradeConditionDelegateHide WvDistSOk
+    {
+      get
+      {
         return () => TradeDirectionByBool(CalmImpl(
           (wrs, tm) => wrs.Sum(wr => wr.Distance) > tm.WaveRangeSum.Distance,
           (wr, tm) => wr.Distance < tm.WaveRangeSum.Distance));
@@ -308,8 +346,10 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeConditionAsleep]
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide WvAngAOk {
-      get {
+    public TradeConditionDelegateHide WvAngAOk
+    {
+      get
+      {
         return () => TradeDirectionByBool(
           TradingMacroOther().Take(1).SelectMany(tm =>
             tm.WaveRanges.Take(2).Where(wr => wr.Angle.Abs() > tm.WaveRangeAvg.Angle * 3)).IsEmpty());
@@ -317,8 +357,10 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeConditionAsleep]
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide WvSDOk {
-      get {
+    public TradeConditionDelegateHide WvSDOk
+    {
+      get
+      {
         Func<bool> ok = () => (
          from tm in TradingMacroOther().Take(1)
          where tm.WaveRangeAvg != null && tm.WaveRangeSum != null
@@ -416,8 +458,10 @@ namespace HedgeHog.Alice.Store {
     #region Tip COnditions
 
     [TradeConditionTurnOff]
-    public Func<TradeDirections> TipOk {
-      get {
+    public Func<TradeDirections> TipOk
+    {
+      get
+      {
         return () => TrendLinesBlueTrends
           .YieldIf(p => !p.IsEmpty, p => p.Slope)
           .Select(ss => {
@@ -434,8 +478,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide Tip2Ok {
-      get {
+    public TradeConditionDelegateHide Tip2Ok
+    {
+      get
+      {
         return () => {
           _tipRatioCurrent = RatesHeightCma / BuyLevel.Rate.Abs(SellLevel.Rate);
           var td = IsTresholdAbsOk(_tipRatioCurrent, TipRatio)
@@ -466,7 +512,7 @@ namespace HedgeHog.Alice.Store {
         //var currentPrice = new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) };
         var canSetLevel = (!tlAvg.Between(SellLevel.Rate, BuyLevel.Rate) || tlHeight < bsHeight);
         if(canSetLevel)
-          lock (_rateLocker) {
+          lock(_rateLocker) {
             zip.ForEach(x => {
               var rate = x.bs;
               var rateJump = InPips(rate.Abs(x.sr.Rate));
@@ -481,8 +527,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public TradeConditionDelegateHide Tip3Ok {
-      get {
+    public TradeConditionDelegateHide Tip3Ok
+    {
+      get
+      {
         return () => {
           var bsl = new[] { BuyLevel, SellLevel };
           if(!HaveTrades())
@@ -496,9 +544,11 @@ namespace HedgeHog.Alice.Store {
     #region Properties
     [Category(categoryCorridor)]
     [WwwSetting]
-    public bool ResetTradeStrip {
+    public bool ResetTradeStrip
+    {
       get { return false; }
-      set {
+      set
+      {
         if(value)
           CenterOfMassSell = CenterOfMassBuy = CenterOfMassSell2 = CenterOfMassBuy2 = double.NaN;
       }
@@ -506,9 +556,11 @@ namespace HedgeHog.Alice.Store {
     double _tradeStripJumpRatio = 1.333333;
     [Category(categoryActive)]
     [WwwSetting]
-    public double TradeStripJumpRatio {
+    public double TradeStripJumpRatio
+    {
       get { return _tradeStripJumpRatio; }
-      set {
+      set
+      {
         if(_tradeStripJumpRatio == value)
           return;
         _tradeStripJumpRatio = value;
@@ -540,9 +592,11 @@ namespace HedgeHog.Alice.Store {
     double _tipRatio = 4;
     [Category(categoryActive)]
     [WwwSetting(wwwSettingsTradingParams)]
-    public double TipRatio {
+    public double TipRatio
+    {
       get { return _tipRatio; }
-      set {
+      set
+      {
         _tipRatio = value;
         OnPropertyChanged(() => TipRatio);
       }
@@ -552,8 +606,10 @@ namespace HedgeHog.Alice.Store {
 
     #region After Tip
 
-    public TradeConditionDelegateHide PigTailOk {
-      get {
+    public TradeConditionDelegateHide PigTailOk
+    {
+      get
+      {
         Func<TL, double[]> corr = tl => new[] { tl.PriceAvg2, tl.PriceAvg3 };
         Func<double[], double[], bool> corrOk = (corr1, corr2) => corr1.All(p => p.Between(corr2));
         Func<double[], double[], bool> corrsOk = (corr1, corr2) => corrOk(corr1, corr2) || corrOk(corr2, corr1);
@@ -580,20 +636,26 @@ namespace HedgeHog.Alice.Store {
       }));
     }
 
-    public TradeConditionDelegateHide IsInOk {
-      get {
+    public TradeConditionDelegateHide IsInOk
+    {
+      get
+      {
         return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels);
       }
     }
-    public TradeConditionDelegate IsIn2Ok {
-      get {
+    public TradeConditionDelegate IsIn2Ok
+    {
+      get
+      {
         return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels2);
       }
     }
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide AnglesOk {
-      get {
+    public TradeConditionDelegateHide AnglesOk
+    {
+      get
+      {
         Func<Func<TL, bool>, Func<TL, TL, bool>, TradeDirections, TradeDirections> aok = (signPredicate, slopeCompare, success) => {
           var cUp = TrendLinesTrendsAll.OrderByDescending(tl => tl.Count)
             .Where(signPredicate)
@@ -608,8 +670,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public TradeConditionDelegateHide UniAngleOk {
-      get {
+    public TradeConditionDelegateHide UniAngleOk
+    {
+      get
+      {
         var signs = TrendLinesTrendsAll.Where(tl => !tl.IsEmpty).Select(tl => tl.Slope.Sign()).Distinct().ToArray();
         return () => signs.Length > 1
           ? TradeDirections.None
@@ -617,8 +681,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide HangOk {
-      get {
+    public TradeConditionDelegateHide HangOk
+    {
+      get
+      {
         Func<Func<TL, bool>, Func<TL, TL, bool>, TradeDirections> aok = (signPredicate, slopeCompare) => {
           var cUp = TrendLinesTrendsAll
             .OrderByDescending(tl => tl.Count)
@@ -636,8 +702,10 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide GayGreenOk {
-      get {
+    public TradeConditionDelegateHide GayGreenOk
+    {
+      get
+      {
         Func<IEnumerable<double[]>> greenLeft = () => {
           var greenIndex = TrendLinesGreenTrends.Count - TrendLinesLimeTrends.Count;
           var greenRangeMiddle = TrendLinesGreenTrends.Coeffs.RegressionValue(greenIndex);
@@ -659,8 +727,10 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    public TradeConditionDelegate TrdCorChgOk {
-      get {
+    public TradeConditionDelegate TrdCorChgOk
+    {
+      get
+      {
         return () => {
           return TradeDirectionByBool(BuySellLevels.HasTradeCorridorChanged());
         };
@@ -695,7 +765,7 @@ namespace HedgeHog.Alice.Store {
           bsl.ForEach(sr => sr.CanTrade = false);
         var canSetLevel = (tlJumped || tlHeight < bsHeight);
         if(canSetLevel)
-          lock (_rateLocker) {
+          lock(_rateLocker) {
             zip.ForEach(x => {
               var rate = x.bs;
               var rateJump = InPips(rate.Abs(x.sr.Rate));
@@ -714,8 +784,10 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegate ExprdOk {
-      get {
+    public TradeConditionDelegate ExprdOk
+    {
+      get
+      {
         return () =>
           (from s in TrendLinesGreenTrends.Sorted
            select TradeDirectionByBool(BuySellLevels.IfAnyCanTrade().IsEmpty() || !IsCanTradeExpired(s[0].StartDate.Subtract(s[1].StartDate).Duration()))
@@ -725,8 +797,10 @@ namespace HedgeHog.Alice.Store {
 
 
     #region StDev
-    public TradeConditionDelegateHide VLOk {
-      get {
+    public TradeConditionDelegateHide VLOk
+    {
+      get
+      {
         Log = new Exception(new { System.Reflection.MethodBase.GetCurrentMethod().Name, TrendHeightPerc } + "");
         return () => { return TradeDirectionByTreshold(GetVoltageAverage(), TrendHeightPerc); };
       }
@@ -734,15 +808,18 @@ namespace HedgeHog.Alice.Store {
 
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide RhSDAvgOk {
+    public TradeConditionDelegateHide RhSDAvgOk
+    {
       get { return () => TradeDirectionByBool(_macd2Rsd >= MacdRsdAvg); }
     }
 
     #region Volts
     [TradeConditionTurnOff]
     public TradeConditionDelegate VoltBelowTOOk { get { return () => VoltBelowOk(); } }
-    public TradeConditionDelegate VoltBelowOk {
-      get {
+    public TradeConditionDelegate VoltBelowOk
+    {
+      get
+      {
         return () => {
           return GetLastVolt(volt => volt < GetVoltageAverage()).Select(TradeDirectionByBool).SingleOrDefault();
         };
@@ -756,23 +833,29 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegate VoltAboveOk {
-      get {
+    public TradeConditionDelegate VoltAboveOk
+    {
+      get
+      {
         return () => {
           return GetLastVolt(volt => volt > GetVoltageHigh()).Select(TradeDirectionByBool).SingleOrDefault();
         };
       }
     }
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide VoltOk {
-      get {
+    public TradeConditionDelegateHide VoltOk
+    {
+      get
+      {
         return () => {
           return GetLastVolt(volt => volt > GetVoltageHigh()).Select(TradeDirectionByBool).SingleOrDefault();
         };
       }
     }
-    public TradeConditionDelegate VltRngOk {
-      get {
+    public TradeConditionDelegate VltRngOk
+    {
+      get
+      {
         return () => GetLastVolt(volt =>
           VoltRange1.IsNaN()
           ? TradeDirectionByTreshold(volt, VoltRange0)
@@ -782,13 +865,17 @@ namespace HedgeHog.Alice.Store {
         ).SingleOrDefault();
       }
     }
-    public TradeConditionDelegate VltUpOk {
-      get {
+    public TradeConditionDelegate VltUpOk
+    {
+      get
+      {
         return () => TradeDirectionByBool(GetLastVolts().ToArray().LinearSlope() < 0);
       }
     }
-    public TradeConditionDelegate VltDwOk {
-      get {
+    public TradeConditionDelegate VltDwOk
+    {
+      get
+      {
         return () => TradeDirectionByBool(GetLastVolts().ToArray().LinearSlope() > 0);
       }
     }
@@ -834,10 +921,10 @@ namespace HedgeHog.Alice.Store {
           Red_Angle = tm.TrendLinesRedTrends.Angle.Round(1),
           PlumAngle = tm.TrendLinesPlumTrends.Angle.Round(1),
           BlueAngle = tm.TrendLinesBlueTrends.Angle.Round(1),
-          GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.Round(1),
-          Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.Round(1),
-          Red__Edge = tm.TrendLinesRedTrends.EdgeDiff.Round(1),
-          Blue_Edge = tm.TrendLinesBlueTrends.EdgeDiff.Round(1)
+          GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
+          Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
+          Red__Edge = tm.TrendLinesRedTrends.EdgeDiff.SingleOrDefault().Round(1),
+          Blue_Edge = tm.TrendLinesBlueTrends.EdgeDiff.SingleOrDefault().Round(1)
           //BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
           //WvDistRsd = _waveDistRsd.Round(2)
         }
@@ -899,8 +986,10 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate RedAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TrendLinesRedTrends, TrendAngleRed); } }
     public TradeConditionDelegate PlumAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TrendLinesPlumTrends, TrendAnglePlum); } }
     [TradeCondition(TradeConditionAttribute.Types.And)]
-    public TradeConditionDelegate BlueAngOk {
-      get {
+    public TradeConditionDelegate BlueAngOk
+    {
+      get
+      {
         return () => TrenderTrenLine(tm => tm.TrendLinesBlueTrends)
         .Select(tl => TrendAngleBlue1.IsNaN()
         ? TradeDirectionByAngleCondition(tm => tl, TrendAngleBlue0)
@@ -916,14 +1005,18 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegate BlueAngTOOk {
-      get {
+    public TradeConditionDelegate BlueAngTOOk
+    {
+      get
+      {
         return () => BlueAngOk();
       }
     }
     [TradeConditionSetCorridor]
-    public TradeConditionDelegate BPA1Ok {
-      get {
+    public TradeConditionDelegate BPA1Ok
+    {
+      get
+      {
         Func<IList<Rate>[]> rates = () => UseRates(ra => ra.GetRange(0, ra.Count - TrendLinesLimeTrends.Count));
         Func<IEnumerable<double>> max = () => rates().Select(ra => ra.Max(_priceAvg));
         Func<IEnumerable<double>> min = () => rates().Select(ra => ra.Min(_priceAvg));
@@ -945,8 +1038,10 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(isOk());
       }
     }
-    public TradeConditionDelegate BPA12Ok {
-      get {
+    public TradeConditionDelegate BPA12Ok
+    {
+      get
+      {
         Log = new Exception(new { BPA12Ok = new { TipRatio, InPercent = true, Treshold = false } } + "");
         var scanAnon = new { r1 = (Rate)null, r2 = (Rate)null };
         Func<Rate, int> sign = rate => rate.PriceAvg.Sign(rate.PriceCMALast);
@@ -969,8 +1064,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionSetCorridor]
-    public TradeConditionDelegate PA23Ok {
-      get {
+    public TradeConditionDelegate PA23Ok
+    {
+      get
+      {
         return () => {
           SetTradelevelsDirectional(SellLevel, BuyLevel);
           return TradeDirections.Both;
@@ -978,8 +1075,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionSetCorridor]
-    public TradeConditionDelegate PA23ROk {
-      get {
+    public TradeConditionDelegate PA23ROk
+    {
+      get
+      {
         return () => {
           SetTradelevelsDirectional(BuyLevel, SellLevel);
           return TradeDirections.Both;
@@ -1014,8 +1113,10 @@ namespace HedgeHog.Alice.Store {
 
     bool? _mmaLastIsUp = null;
     [TradeConditionSetCorridor]
-    public TradeConditionDelegateHide MMAOk {
-      get {
+    public TradeConditionDelegateHide MMAOk
+    {
+      get
+      {
         Func<Func<TL, double>, IEnumerable<double>> price = getter => TrendLinesTrendsAll.Skip(1).Select(getter);
         var setUp = MonoidsCore.ToFunc(() => new {
           buy = BuyLevel.Rate.Max(price(tl => tl.PriceAvg2).Max()),
@@ -1041,8 +1142,10 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(isOk());
       }
     }
-    public TradeConditionDelegateHide BLPA1Ok {
-      get {
+    public TradeConditionDelegateHide BLPA1Ok
+    {
+      get
+      {
         var func = MonoidsCore.ToFunc(() => {
           var range = new { up = _RatesMax, down = _RatesMin };
           var level = TrendLinesBlueTrends.PriceAvg1;
@@ -1205,8 +1308,10 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTurnOff]
     public TradeConditionDelegate TimeFrameOk { get { return () => TradeDirectionByBool(TestTimeFrame()); } }
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide TimeFrameM1Ok {
-      get {
+    public TradeConditionDelegateHide TimeFrameM1Ok
+    {
+      get
+      {
         return () => TradingMacroOther().Select(tm =>
         tm.WaveRangeAvg.TotalMinutes < RatesDuration
         ? TradeDirections.Both
@@ -1219,8 +1324,10 @@ namespace HedgeHog.Alice.Store {
 
     #region M1
     [TradeConditionAsleep]
-    public TradeConditionDelegateHide M1Ok {
-      get {
+    public TradeConditionDelegateHide M1Ok
+    {
+      get
+      {
         return () => TradingMacroOther()
         .SelectMany(tm => tm.WaveRanges.Take(1), (tm, wr) => new { wra = tm.WaveRangeAvg, wr })
         .Select(x =>
@@ -1235,8 +1342,10 @@ namespace HedgeHog.Alice.Store {
         .FirstOrDefault();
       }
     }
-    public TradeConditionDelegate M1SDOk {
-      get {
+    public TradeConditionDelegate M1SDOk
+    {
+      get
+      {
         return () => TradingMacroM1(tm => tm.WaveRanges.StandardDeviation(wr => wr.StDev) < 1)
         .Select(TradeDirectionByBool)
         .Where(b => b.HasAny())
@@ -1244,48 +1353,66 @@ namespace HedgeHog.Alice.Store {
         .First();
       }
     }
-    public TradeConditionDelegateHide M1HOk {
-      get {
+    public TradeConditionDelegateHide M1HOk
+    {
+      get
+      {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.HSDRatio);
       }
     }
-    public TradeConditionDelegateHide M1MOk {
-      get {
+    public TradeConditionDelegateHide M1MOk
+    {
+      get
+      {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.TotalMinutes);
       }
     }
-    public TradeConditionDelegate M1DOk {
-      get {
+    public TradeConditionDelegate M1DOk
+    {
+      get
+      {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.Distance);
       }
     }
-    public TradeConditionDelegate M1D_Ok {
-      get {
+    public TradeConditionDelegate M1D_Ok
+    {
+      get
+      {
         return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.Distance, wr => wr.TotalMinutes);
       }
     }
-    public TradeConditionDelegate M1SOk {
-      get {
+    public TradeConditionDelegate M1SOk
+    {
+      get
+      {
         return () => WaveConditions((d1, d2) => d1 > d2, (d1, d2) => d1 < d2, wr => wr.StDev);
       }
     }
-    public TradeConditionDelegate M1PAOk {
-      get {
+    public TradeConditionDelegate M1PAOk
+    {
+      get
+      {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.PipsPerMinute, wr => wr.Angle.Abs());
       }
     }
-    public TradeConditionDelegate M1PA_Ok {
-      get {
+    public TradeConditionDelegate M1PA_Ok
+    {
+      get
+      {
         return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.PipsPerMinute, wr => wr.Angle.Abs());
       }
     }
-    public TradeConditionDelegate M1P_Ok {
-      get {
+    public TradeConditionDelegate M1P_Ok
+    {
+      get
+      {
         return () => WaveConditions((d1, d2) => d1 < d2, wr => wr.PipsPerMinute);
       }
     }
-    public TradeConditionDelegateHide M1AOk {
-      get {
+    public TradeConditionDelegateHide M1AOk
+    {
+      get
+      {
         return () => WaveConditions((d1, d2) => d1 > d2, wr => wr.HSDRatio);
       }
     }
@@ -1312,8 +1439,10 @@ namespace HedgeHog.Alice.Store {
 
     #region Outsides
     [Description("'Green' corridor is outside the 'Red' and 'Blue' ones")]
-    public TradeConditionDelegateHide GreenOk {
-      get {
+    public TradeConditionDelegateHide GreenOk
+    {
+      get
+      {
         Func<TradeDirections, TradeDirections> getTD = td => (TradeConditionsHaveTD() ? TradeDirections.Both : td);
         return () =>
           TrendLinesGreenTrends.PriceAvg2 >= TrendLinesRedTrends.PriceAvg2.Max(TrendLinesBlueTrends.PriceAvg2)
@@ -1323,8 +1452,10 @@ namespace HedgeHog.Alice.Store {
           : TradeDirections.None;
       }
     }
-    public TradeConditionDelegateHide GreenExtOk {
-      get {
+    public TradeConditionDelegateHide GreenExtOk
+    {
+      get
+      {
         Func<TradeDirections, TradeDirections> getTD = td => (TradeConditionsHaveTD() ? TradeDirections.Both : td);
         return () =>
           TrendLinesGreenTrends.PriceAvg2 >= TrendLinesRedTrends.PriceAvg21.Max(TrendLinesBlueTrends.PriceAvg2)
@@ -1336,8 +1467,10 @@ namespace HedgeHog.Alice.Store {
     }
     #region Outsiders
     [TradeConditionAsleep]
-    public TradeConditionDelegate AslpM1Ok {
-      get {
+    public TradeConditionDelegate AslpM1Ok
+    {
+      get
+      {
         Func<TradingMacro, double, bool> isIn = (tm, v) =>
           EquinoxBasedMinMax(OutsiderTLs(tm)).Any(t => {
             var max = t.Item2;
@@ -1350,11 +1483,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
     //[TradeConditionAsleep]
-    public TradeConditionDelegate OutsideAnyOk {
+    public TradeConditionDelegate OutsideAnyOk
+    {
       get { return () => IsCurrentPriceOutsideCorridor(tm => tm.BarPeriod > BarsPeriodType.t1, tm => OutsiderTLs(tm)); }
     }
-    public TradeConditionDelegate OutEqnxOk {
-      get {
+    public TradeConditionDelegate OutEqnxOk
+    {
+      get
+      {
         var tpl = TradingMacroM1(tm => EquinoxBasedMinMax(OutsiderTLs(tm)));
         return () => tpl.SelectMany(t => t)
         .Select(t =>
@@ -1404,7 +1540,7 @@ namespace HedgeHog.Alice.Store {
       return tlss
         .Select(tls => tls.Where(tl => !tl.IsEmpty).ToArray())
         .Where(tls => !tls.IsEmpty())
-        .OrderBy(tls => tls.Select(tl => tl.EdgeDiff).Average());
+        .OrderBy(tls => tls.SelectMany(tl => tl.EdgeDiff).Average());
       //.Take(1)
       //.SelectMany(tls => tls);
     }
@@ -1482,14 +1618,18 @@ namespace HedgeHog.Alice.Store {
     #region Cross Handlers
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegate WCOk {
-      get {
+    public TradeConditionDelegate WCOk
+    {
+      get
+      {
         return () => TradeDirectionByBool(CalculateTradingDistance() < StDevByHeight * 3);
       }
     }
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide TipRatioOk {
-      get {
+    public TradeConditionDelegateHide TipRatioOk
+    {
+      get
+      {
         return () => TradeDirectionByBool(IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
       }
     }
@@ -1529,8 +1669,10 @@ namespace HedgeHog.Alice.Store {
     #region TradeConditions
     List<EventHandler<SuppRes.CrossedEvetArgs>> _crossEventHandlers = new List<EventHandler<Store.SuppRes.CrossedEvetArgs>>();
     public ReactiveUI.ReactiveList<Tuple<TradeConditionDelegate, PropertyInfo>> _TradeConditions;
-    public IList<Tuple<TradeConditionDelegate, PropertyInfo>> TradeConditions {
-      get {
+    public IList<Tuple<TradeConditionDelegate, PropertyInfo>> TradeConditions
+    {
+      get
+      {
         if(_TradeConditions == null) {
           _TradeConditions = new ReactiveUI.ReactiveList<Tuple<TradeConditionDelegate, PropertyInfo>>();
           _TradeConditions.ItemsAdded.Subscribe(tc => {
@@ -1623,7 +1765,8 @@ namespace HedgeHog.Alice.Store {
              select map(tc.d, tc.p, tca.Type, tc.s);
     }
     public void TradeConditionsTrigger() {
-      if(IsAsleep || !IsTradingTime()) {
+      var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
+      if(IsAsleep || !IsTradingTime() || !isSpreadOk(3)) {
         BuySellLevels.ForEach(sr => {
           sr.CanTrade = false;
           sr.InManual = false;
@@ -1631,7 +1774,7 @@ namespace HedgeHog.Alice.Store {
         });
         return;
       }
-      if(IsTrader && CanTriggerTradeDirection() && !HaveTrades() /*&& !HasTradeDirectionTriggers*/) {
+      if(IsTrader && CanTriggerTradeDirection() && !HaveTrades() && isSpreadOk(2) /*&& !HasTradeDirectionTriggers*/) {
         TradeConditionsEval().ForEach(eval => {
           var hasBuy = TradeDirection.HasUp() && eval.HasUp();
           var hasSell = TradeDirection.HasDown() && eval.HasDown();
@@ -1669,11 +1812,14 @@ namespace HedgeHog.Alice.Store {
 
     [Category(categoryActiveYesNo)]
     [WwwSetting(wwwSettingsTradingConditions)]
-    public bool IsTurnOnOnly {
-      get {
+    public bool IsTurnOnOnly
+    {
+      get
+      {
         return _isTurnOnOnly;
       }
-      set {
+      set
+      {
         _isTurnOnOnly = value;
       }
     }
@@ -1721,22 +1867,27 @@ namespace HedgeHog.Alice.Store {
     }
     [DisplayName("Trade Conditions")]
     [Category(categoryActiveFuncs)]
-    public string TradeConditionsSave {
+    public string TradeConditionsSave
+    {
       get { return string.Join(MULTI_VALUE_SEPARATOR, TradeConditionsInfo((tc, pi, name) => name)); }
-      set {
+      set
+      {
         TradeConditionsSet(value.Split(MULTI_VALUE_SEPARATOR[0]));
       }
     }
 
-    public double AvgLineMax {
+    public double AvgLineMax
+    {
       get;
       private set;
     }
-    public double AvgLineMin {
+    public double AvgLineMin
+    {
       get;
       private set;
     }
-    public double AvgLineAvg {
+    public double AvgLineAvg
+    {
       get;
       private set;
     }
@@ -1745,12 +1896,15 @@ namespace HedgeHog.Alice.Store {
 
     [WwwSetting(wwwSettingsTradingParams)]
     [Category(categoryActiveFuncs)]
-    public int WavesRsdPerc {
-      get {
+    public int WavesRsdPerc
+    {
+      get
+      {
         return _wavesRsdPec;
       }
 
-      set {
+      set
+      {
         _wavesRsdPec = value;
       }
     }
@@ -1759,12 +1913,15 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsCorridorEquinox)]
     [Description("0,1,2;1,3")]
-    public string EquinoxCorridors {
-      get {
+    public string EquinoxCorridors
+    {
+      get
+      {
         return _equinoxCorridors;
       }
 
-      set {
+      set
+      {
         if(_equinoxCorridors == value)
           return;
 
@@ -1789,22 +1946,27 @@ namespace HedgeHog.Alice.Store {
 
     private int _wwwBpa1;
 
-    IList<IEnumerable<TL>> EquinoxTrendLines {
-      get {
+    IList<IEnumerable<TL>> EquinoxTrendLines
+    {
+      get
+      {
         return EquinoxTrendLinesCalcAll(_equinoxCorridors);
       }
     }
 
-    public IList<IList<int>> OutsidersInt {
+    public IList<IList<int>> OutsidersInt
+    {
       get { return SplitterInts(Outsiders); }
     }
     string _outsiders;
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsCorridorEquinox)]
     [Description("0,1,2;1,3")]
-    public string Outsiders {
+    public string Outsiders
+    {
       get { return _outsiders; }
-      set {
+      set
+      {
         if(_outsiders == value)
           return;
         _outsiders = value;
@@ -1816,20 +1978,23 @@ namespace HedgeHog.Alice.Store {
     [WwwSetting(wwwSettingsTradingCorridor)]
     [Description("0,1,2")]
     [DisplayName("Trade Trends")]
-    public string TradeTrends {
+    public string TradeTrends
+    {
       get { return _tradeTrends; }
-      set {
+      set
+      {
         if(_tradeTrends == value)
           return;
         _tradeTrends = value;
         if(string.IsNullOrWhiteSpace(_tradeTrends))
           _tradeTrends = (TrendLinesTrendsAll.Length - 1).ToString();
-          TradeTrendsInt = SplitterInt(_tradeTrends);
+        TradeTrendsInt = SplitterInt(_tradeTrends);
       }
     }
 
     int[] _tradeTrendsInt;
-    public int[] TradeTrendsInt {
+    public int[] TradeTrendsInt
+    {
       get { return _tradeTrendsInt ?? (_tradeTrendsInt = SplitterInt(TradeTrends)); }
       set { _tradeTrendsInt = value; }
     }
@@ -1839,9 +2004,11 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
-    public string TrendPlum {
+    public string TrendPlum
+    {
       get { return _trendPlum; }
-      set {
+      set
+      {
         if(_trendPlum == value)
           return;
         var ints = value.Split(',');
@@ -1857,9 +2024,11 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
-    public string TrendLime {
+    public string TrendLime
+    {
       get { return _trendLime; }
-      set {
+      set
+      {
         if(_trendLime == value)
           return;
         var ints = value.Split(',');
@@ -1875,9 +2044,11 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
-    public string TrendGreen {
+    public string TrendGreen
+    {
       get { return _trendGreen; }
-      set {
+      set
+      {
         if(_trendGreen == value)
           return;
         var ints = value.Split(',');
@@ -1895,9 +2066,11 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
-    public string TrendRed {
+    public string TrendRed
+    {
       get { return _trendRed; }
-      set {
+      set
+      {
         if(_trendRed == value)
           return;
         var ints = value.Split(',');
