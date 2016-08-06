@@ -82,19 +82,22 @@ namespace HedgeHog.Alice.Store {
         return GetLastVolt()
           .Select(v => ShowVolts(v, 2))
           .SingleOrDefault();
-      Func<IEnumerable<double>> calcVolt = () => 
-        (from cmas in UseRates(rates => rates.Select(r => r.PriceCMALast).TakeWhile(Lib.IsNotNaN).ToArray())
-         let ppms = cmas.Distances()
-         .TakeLast(1)
-         .ToArray(d => d / RatesDuration)
-         let h = cmas.Height()
-         let sd = cmas.StDevByRegressoin()
-         let hsd = h/sd/4
-         from ppm in ppms
-         select InPips(ppm) / hsd)
-         .Where(ppm => ppm > 0);
+      var calcVolt = MonoidsCore.ToFunc(() =>
+       (from cmas in UseRates(rates => rates.Select(r => r.PriceCMALast).TakeWhile(Lib.IsNotNaN).ToArray())
+        let ppms = cmas.Distances()
+        .TakeLast(1)
+        .ToArray(d => d / RatesDuration)
+        let h = cmas.Height()
+        let sd = cmas.StDevByRegressoin()
+        let hsd = h / sd / 4
+        from ppm in ppms
+        select new { ppm, hsd })
+        .Where(x => x.ppm > 0));
 
-      calcVolt().ForEach(v => SetVots(v, 2));
+      calcVolt().ForEach(v => {
+        SetVots(InPips(v.ppm/v.hsd), 2);
+        SetVots(v.hsd, GetVoltage2, SetVoltage2, 2);
+      });
       return null;
     }
 

@@ -111,16 +111,22 @@ namespace HedgeHog.Alice.Store {
     private void SetVots(double volt, int averageIterations, bool cmaByRates) {
       SetVots(volt, averageIterations, cmaByRates ? CmaPeriodByRatesCount() : 0);
     }
-    private void SetVots(double volt, int averageIterations, double cma = 0) {
+    private void SetVots(double volt,  int averageIterations, double cma = 0) {
+      SetVots(volt, GetVoltage, SetVoltage, averageIterations, cma);
+    }
+
+    private void SetVots(double volt,Func<Rate,double>getVolt,Action<Rate,double>setVolt, int averageIterations, double cma = 0) {
       if(!WaveShort.HasRates || !IsRatesLengthStable)
         return;
       if(double.IsInfinity(volt) || double.IsNaN(volt))
         return;
       var volt2 = cma > 0 ? GetLastVolt().Select(v => v.Cma(cma, volt)).SingleOrDefault() : volt;
-      UseRates(rates => rates.Where(r => GetVoltage(r).IsNaN()).ToList())
-        .SelectMany(rates => rates).ForEach(r => SetVoltage(r, volt2));
+      UseRates(rates => rates.Where(r => getVolt(r).IsNaN()).ToList())
+        .SelectMany(rates => rates).ForEach(r => setVolt(r, volt2));
       //SetVoltage(RateLast, volt);
-      var voltRates = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray();
+      if(getVolt != GetVoltage)
+        return;
+      var voltRates = RatesArray.Select(getVolt).SkipWhile(v => v.IsNaN()).ToArray();
       if(voltRates.Any()) {
         GeneralPurposeSubject.OnNext(() => {
           try {

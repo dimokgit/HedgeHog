@@ -20,12 +20,14 @@ namespace HedgeHog.Alice.Client {
       string pair = tm.Pair;
       Func<Rate, double> rateHL = rate => (rate.PriceAvg >= rate.PriceCMALast ? rate.PriceHigh : rate.PriceLow).Round(digits);
       #region map
-      var lastVolt = tm.UseRates(rates => rates.BackwardsIterator().Select(tm.GetVoltage).SkipWhile(v => v.IsNaNOrZero()).FirstOrDefault()).FirstOrDefault();
+      var lastVolt = tm.GetLastVolt().DefaultIfEmpty().Memoize();
+      var lastVolt2 = tm.GetLastVolt(tm.GetVoltage2).DefaultIfEmpty().Memoize();
       var lastCma = tm.UseRates(TradingMacro.GetLastRateCma).SelectMany(cma => cma).FirstOrDefault();
       var map = MonoidsCore.ToFunc((Rate)null, rate => new {
         d = rate.StartDate2,
         c = rateHL(rate),
         v = tm.GetVoltage(rate).IfNaNOrZero(lastVolt),
+        v2 = tm.GetVoltage2(rate).IfNaNOrZero(lastVolt2),
         m = rate.PriceCMALast.IfNaNOrZero(lastCma).Round(digits)
       });
       #endregion

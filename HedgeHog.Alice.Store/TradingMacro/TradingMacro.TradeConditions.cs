@@ -880,23 +880,27 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private IEnumerable<double> GetLastVolt() {
+    public IEnumerable<double> GetLastVolt() {
+      return GetLastVolt(GetVoltage);
+    }
+    public IEnumerable<double> GetLastVolt(Func<Rate,double>getVolt) {
       return UseRates(rates
                   => rates.BackwardsIterator()
-                  .Select(GetVoltage)
+                  .Select(getVolt)
                   .SkipWhile(double.IsNaN)
                   .Take(1)
                   )
                   .SelectMany(v => v);
     }
     private IEnumerable<double> GetLastVolts() {
-      return UseRates(rates
+      return (from vs in UseRates(rates
                   => rates.BackwardsIterator()
                   .Select(GetVoltage)
                   .SkipWhile(double.IsNaN)
                   .TakeWhile(Lib.IsNotNaN)
                   )
-                  .SelectMany(v => v);
+              from v in vs
+              select v);
     }
     private IEnumerable<T> GetLastVolt<T>(Func<double, T> map) {
       return GetLastVolt().Select(map);
