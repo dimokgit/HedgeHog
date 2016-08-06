@@ -1765,8 +1765,8 @@ namespace HedgeHog.Alice.Store {
              select map(tc.d, tc.p, tca.Type, tc.s);
     }
     public void TradeConditionsTrigger() {
-      var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
-      if(IsAsleep || !IsTradingTime() || !isSpreadOk(3)) {
+      //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
+      if(IsAsleep || !IsTradingTime() ) {
         BuySellLevels.ForEach(sr => {
           sr.CanTrade = false;
           sr.InManual = false;
@@ -1774,7 +1774,7 @@ namespace HedgeHog.Alice.Store {
         });
         return;
       }
-      if(IsTrader && CanTriggerTradeDirection() && !HaveTrades() && isSpreadOk(2) /*&& !HasTradeDirectionTriggers*/) {
+      if(IsTrader && CanTriggerTradeDirection() && !HaveTrades() /*&& !HasTradeDirectionTriggers*/) {
         TradeConditionsEval().ForEach(eval => {
           var hasBuy = TradeDirection.HasUp() && eval.HasUp();
           var hasSell = TradeDirection.HasDown() && eval.HasDown();

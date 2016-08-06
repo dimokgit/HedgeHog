@@ -24,13 +24,14 @@
   }
   function calcChartArea(element) {
     var elementWidth = parseInt(d3.select(element).style("width"), 10),
-      elementHeight = calcElementHeight(elementWidth),// parseInt(d3.select(element).style("height"), 10),
-      width = elementWidth - margin.left - margin.right,
-      height = elementHeight - margin.top - margin.bottom,
-      x = d3.time.scale().range([xAxisOffset, width - xAxisOffset]),
-      y = d3.scale.linear().range([height, 0]),
-      y2 = d3.scale.linear().range([height, height * 4 / 5]);
-      return { width: width, height: height, x: x, y: y, y2: y2 };
+    elementHeight = calcElementHeight(elementWidth),// parseInt(d3.select(element).style("height"), 10),
+    width = elementWidth - margin.left - margin.right,
+    height = elementHeight - margin.top - margin.bottom,
+    x = d3.time.scale().range([xAxisOffset, width - xAxisOffset]),
+    y = d3.scale.linear().range([height, 0]),
+    y2 = d3.scale.linear().range([height, height * 4 / 5]);
+    y3 = d3.scale.linear().range([height / 5, 0]);
+    return { width: width, height: height, x: x, y: y, y2: y2, y3: y3 };
   }
   ko.bindingHandlers.lineChartPrice = {
     update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
@@ -117,21 +118,24 @@
 
       if (hasTps) {
         svg.append("g")
-            .attr("transform", "translate(" + (width) + ",0)")
-            .attr("class", "y2 axis")
-            .append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", ".71em");
+            .attr("class", "y2 axis");
         addLine("tpsHigh", "silver").style("opacity", tpsOpacity);
         addLine("tpsLow", "silver").style("opacity", tpsOpacity);
+        svg.append("g")
+            .attr("class", "y3 axis");
+
       }
       // #endregion
 
       svg.append("path").attr("class", "line data");
-      if (hasTps)
+      if (hasTps) {
         svg.append("path").attr("class", "line dataTps").style("stroke", "black").style("opacity", tpsOpacity);
-
+        svg.append("path")
+          .attr("class", "line dataTps2")
+          .style("stroke", "black")
+          .style("opacity", tpsOpacity)
+          .attr("transform", "translate(0,0)");
+      }
       // #region create chart elements
 
       // create crosshairs
@@ -392,9 +396,11 @@
           x = chartArea.x,
           y = chartArea.y,
           y2 = chartArea.y2,
+          y3 = chartArea.y3,
           xAxis = d3.svg.axis().scale(x).orient("bottom"),
           yAxis = d3.svg.axis().scale(y).orient("left"),
-          yAxis2 = hasTps ? d3.svg.axis().scale(y2).orient("right") : null;
+          yAxis2 = hasTps ? d3.svg.axis().scale(y2).orient("right") : null,
+          yAxis3 = hasTps ? d3.svg.axis().scale(y3).orient("right") : null;
           // define the graph line
       var line = d3.svg.line()
           .x(function (d) {
@@ -445,6 +451,8 @@
         y.domain(yDomain);
         var yDomain2 = d3.extent(data, function (d) { return d.v; });
         y2.domain([yDomain2[0], yDomain2[1]]);
+        var yDomain3 = d3.extent(data, function (d) { return d.v; });
+        y3.domain([yDomain3[0], yDomain3[1]]);
       // #endregion
 
       // #region transform axises
@@ -456,8 +464,10 @@
         .call(yAxis);
       if (yAxis2)
         svg.select("g.y2.axis")
-          .attr("transform", "translate(" + (0) + ",0)")
           .call(yAxis2);
+      if (yAxis3)
+        svg.select("g.y3.axis")
+          .call(yAxis3);
       // #endregion
 
       // #region add the price line to the canvas
@@ -488,6 +498,15 @@
             .attr("d", line2).style("stroke", colorTps).style("opacity", opacityTps);
           setHLine(tpsHigh, "tpsHigh", colorTps, 1, "", y2);
           setHLine(tpsLow, "tpsLow", colorTps, 1, "", y2);
+
+          var line3 = d3.svg.line()
+            .x(function (d) { return x(d.d); })
+            .y(function (d) { return y3(isNaN(d.v) ? 0 : d.v); });
+
+          svg.select("path.line.dataTps2")
+            .datum(data)
+            .attr("d", line3).style("stroke", colorTps).style("opacity", opacityTps);
+
         }
         if (chartNum === 1) {
           setRectArea(chartData.tickDate, yDomain[1], chartData.tickDateEnd, yDomain[0], "tickArea");

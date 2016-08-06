@@ -3661,20 +3661,20 @@ namespace HedgeHog.Alice.Store {
           { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
 
-          {TradeLevelBy.LimeMax,()=> levelMax(tm=> tm.TrendLinesLimeTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.LimeMin,()=> levelMin(tm=> tm.TrendLinesLimeTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.LimeMax,()=> levelMax(tm=> tm.TrendLinesLimeTrends.PriceMax.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.LimeMin,()=> levelMin(tm=> tm.TrendLinesLimeTrends.PriceMin.DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.GreenMax,()=> levelMax(tm=> tm.TrendLinesGreenTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.GreenMin,()=> levelMin(tm=> tm.TrendLinesGreenTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.GreenMax,()=> levelMax(tm=> tm.TrendLinesGreenTrends.PriceMax.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.GreenMin,()=> levelMin(tm=> tm.TrendLinesGreenTrends.PriceMin.DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.RedMax,()=> levelMax(tm=> tm.TrendLinesRedTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.RedMin,()=> levelMin(tm=> tm.TrendLinesRedTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.RedMax,()=> levelMax(tm=> tm.TrendLinesRedTrends.PriceMax.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.RedMin,()=> levelMin(tm=> tm.TrendLinesRedTrends.PriceMin.DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.PlumMax,()=> levelMax(tm=> tm.TrendLinesPlumTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.PlumMin,()=> levelMin(tm=> tm.TrendLinesPlumTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.PlumMax,()=> levelMax(tm=> tm.TrendLinesPlumTrends.PriceMax.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.PlumMin,()=> levelMin(tm=> tm.TrendLinesPlumTrends.PriceMin.DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.BlueMax,()=> levelMax(tm=> tm.TrendLinesBlueTrends.PriceMax0.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.BlueMin,()=> levelMin(tm=> tm.TrendLinesBlueTrends.PriceMin0.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.BlueMax,()=> levelMax(tm=> tm.TrendLinesBlueTrends.PriceMax.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.BlueMin,()=> levelMin(tm=> tm.TrendLinesBlueTrends.PriceMin.DefaultIfEmpty(double.NaN).Single()) },
 
           {TradeLevelBy.None,()=>double.NaN}
           };

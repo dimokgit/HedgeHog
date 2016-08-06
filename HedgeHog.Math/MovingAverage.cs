@@ -21,12 +21,19 @@ namespace HedgeHog {
       return y;
     }
 
-    private static List<double> GetCmasList(IList<double> source, double period) {
+    private static List<double> GetCmasList_Slow(IList<double> source, double period) {
       var ma = double.NaN;
       var maList = new List<double>(source.Count);
       for(var i = 0; i < source.Count; i++)
         maList.Add(ma = ma.Cma(period, source[i]));
       return maList;
+    }
+    private static List<double> GetCmasList(IList<double> source, double period) {
+      var ma = double.NaN;
+      var maList = new double[source.Count];
+      for(var i = 0; i < source.Count; i++)
+        maList[i] = (ma = ma.Cma(period, source[i]));
+      return maList.ToList();
     }
 
     public static IList<double> Cma<T>(this IEnumerable<T> rates, Func<T, double> value, double period) {
@@ -38,13 +45,13 @@ namespace HedgeHog {
     }
     public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period, Action<T, double> setMA) {
       var cmas = rates.Cma(value, period);
-      for (var i = 0; i < rates.Count; i++)
+      for(var i = 0; i < rates.Count; i++)
         setMA(rates[i], cmas[i]);
     }
 
-    public static IEnumerable<U> MovingAverage<T,U>(this IEnumerable<T> inputStream, Func<T, double> selector, int period,Func<T,double,U> map) {
+    public static IEnumerable<U> MovingAverage<T, U>(this IEnumerable<T> inputStream, Func<T, double> selector, int period, Func<T, double, U> map) {
       var ma = new MovingAverage(period);
-      foreach (var item in inputStream) {
+      foreach(var item in inputStream) {
         ma.Push(selector(item));
         yield return map(item, ma.Current);
       }
@@ -52,7 +59,7 @@ namespace HedgeHog {
 
     public static IEnumerable<double> MovingAverage(this IEnumerable<double> inputStream, int period) {
       var ma = new MovingAverage(period);
-      foreach (var item in inputStream) {
+      foreach(var item in inputStream) {
         ma.Push(item);
         yield return ma.Current;
       }
@@ -82,14 +89,14 @@ namespace HedgeHog {
       _total -= lostValue;
 
       // If not yet filled, just return. Current value should be double.NaN
-      if (!_filled) {
+      if(!_filled) {
         _current = double.NaN;
         return this;
       }
 
       // Compute the average
       double average = 0.0;
-      for (int i = 0; i < _circularBuffer.Length; i++) {
+      for(int i = 0; i < _circularBuffer.Length; i++) {
         average += _circularBuffer[i];
       }
 
@@ -100,7 +107,7 @@ namespace HedgeHog {
 
     public MovingAverage Push(double value) {
       // Apply the circular buffer
-      if (++_circIndex == _length) {
+      if(++_circIndex == _length) {
         _circIndex = 0;
       }
 
@@ -112,7 +119,7 @@ namespace HedgeHog {
       _total -= lostValue;
 
       // If not yet filled, just return. Current value should be double.NaN
-      if (!_filled && _circIndex != _length - 1) {
+      if(!_filled && _circIndex != _length - 1) {
         _current = double.NaN;
         return this;
       } else {

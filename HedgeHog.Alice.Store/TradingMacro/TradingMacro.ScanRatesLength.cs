@@ -135,7 +135,9 @@ namespace HedgeHog.Alice.Store {
         .DefaultIfEmpty(BarsCountCalc)
         .Take(1)
         .Concat(new[] { BarsCount })
+        .Concat(new[] { GetRatesCountByTimeFrame(RatesArray.Last().StartDate, TimeFrameTresholdTimeSpan) })
         .OrderByDescending(d => d)
+        .Do(count => IsRatesLengthStable = RatesArray.Count.Ratio(count) < 1.05)
         .First();
     }
     object _macdDiastancesLocker = new object();
@@ -161,7 +163,6 @@ namespace HedgeHog.Alice.Store {
           return new { count };//, length = RatesTimeSpan(rs.GetRange(0, count)) };
         })
         .Select(x => {
-          IsRatesLengthStable = RatesArray.Count.Ratio(x.count) < 1.05;
           return x.count;
         });
     }

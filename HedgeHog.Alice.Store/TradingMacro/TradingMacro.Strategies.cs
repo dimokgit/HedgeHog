@@ -485,11 +485,6 @@ namespace HedgeHog.Alice.Store {
         range.Sort(_priceAvg);
         return new[] { range[0], range.Last() };
       });
-      rates[1].Trends.Sorted0 = Lazy.Create(() => {
-        var range = corridorValues.GetRange(0.95).ToList();
-        range.Sort(_priceAvg);
-        return new[] { range[0], range.Last() };
-      });
 
       var pa1 = rates[0].Trends.PriceAvg1;
       rates[0].Trends.PriceAvg02 = pa1 + hl;

@@ -82,13 +82,15 @@ namespace HedgeHog.Alice.Store {
         return GetLastVolt()
           .Select(v => ShowVolts(v, 2))
           .SingleOrDefault();
-
       Func<IEnumerable<double>> calcVolt = () => 
-        (from ppms in UseRates(rates => rates.Select(r=>r.PriceCMALast).TakeWhile(Lib.IsNotNaN).Distances()
+        (from cmas in UseRates(rates => rates.Select(r => r.PriceCMALast).TakeWhile(Lib.IsNotNaN).ToArray())
+         let ppms = cmas.Distances()
          .TakeLast(1)
-         .ToArray(d => d / RatesDuration))
+         .ToArray(d => d / RatesDuration)
+         let h = cmas.Height()
+         let sd = cmas.StDevByRegressoin()
+         let hsd = h/sd/4
          from ppm in ppms
-         from hsd in TrendLinesBlueTrends.HStdRatio
          select InPips(ppm) / hsd)
          .Where(ppm => ppm > 0);
 

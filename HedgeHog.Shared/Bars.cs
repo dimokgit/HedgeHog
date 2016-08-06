@@ -670,12 +670,6 @@ namespace HedgeHog.Bars {
       public IEnumerable<double> PriceMin { get { return RateMin.Select(r => r.BidLow); } }
       public Lazy<Rate[]> Sorted { get; set; } = Lazy.Create(() => new Rate[0]);
 
-      public IEnumerable<double> PriceHeight0 { get { return PriceMax0.Zip(PriceMin0, (p1, p2) => p1.Abs(p2)); } }
-      public IEnumerable<double> PriceMax0 { get { return RateMax0.Select(r => r.AskHigh); } }
-      public IEnumerable<Rate> RateMax0 { get { return Sorted0.Value.Skip(1); } }
-      public IEnumerable<double> PriceMin0 { get { return RateMin0.Select(r => r.BidLow); } }
-      public IEnumerable<Rate> RateMin0 { get { return Sorted0.Value.Take(1); } }
-      public Lazy<Rate[]> Sorted0 { get; set; } = Lazy.Create(() => new Rate[0]);
       public IEnumerable<Tuple<DateTime, double, double>> EdgeHigh {
         get;
         set;
