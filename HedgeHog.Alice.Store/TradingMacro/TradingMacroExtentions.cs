@@ -1007,7 +1007,6 @@ namespace HedgeHog.Alice.Store {
       PriceQueue.Add(price, serverTime);
       OnPropertyChanged(TradingMacroMetadata.TicksPerMinuteInstant);
       OnPropertyChanged(TradingMacroMetadata.TicksPerMinute);
-      OnPropertyChanged(TradingMacroMetadata.TicksPerMinuteAverage);
       OnPropertyChanged(TradingMacroMetadata.PipsPerMinute);
       OnPropertyChanged(TradingMacroMetadata.PipsPerMinuteCmaFirst);
       OnPropertyChanged(TradingMacroMetadata.PipsPerMinuteCmaLast);
@@ -2280,7 +2279,7 @@ namespace HedgeHog.Alice.Store {
                   SetVoltageByRHSD(rates);
                 }
                 SpreadForCorridor = rates.Spread();
-                SetCma(rates);
+                SetMA(rates);
                 RatesHeightCma = rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax);
                 var leg = rates.Count.Div(10).ToInt().Max(1);
                 PriceSpreadAverage = rates
@@ -3296,32 +3295,16 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    private void SetMA() {
+    private void SetMA(IList<Rate> rates) {
       switch(MovingAverageType) {
         case Store.MovingAverageType.FFT:
-          SetMAByFtt(RatesArray, _priceAvg, (rate, d) => rate.PriceCMALast = d, PriceCmaLevels.Div(10));
+          SetMAByFft(rates, _priceAvg, (rate, d) => rate.PriceCMALast = d, PriceCmaLevels.Div(10));
           break;
         case Store.MovingAverageType.FFT2:
-          SetMAByFtt2(RatesArray, _priceAvg, (rate, d) => rate.PriceCMALast = d, PriceCmaLevels.Div(10));
+          SetMAByFft2(RatesArray, _priceAvg, (rate, d) => rate.PriceCMALast = d, PriceCmaLevels.Div(10));
           break;
         case Store.MovingAverageType.Cma:
-          if(PriceCmaLevels > 0) {
-            UseRates(rates => {
-              SetCma(rates);
-              return true;
-            });
-            //UseRates(rates => {
-            //  rates.Aggregate(double.NaN, (ma, r) => r.PriceCMALast = ma.Cma(PriceCmaLevels, r.PriceAvg));
-            //  rates.Reverse();
-            //  rates.Aggregate(double.NaN, (ma, r) => r.PriceCMALast = ma.Cma(PriceCmaLevels, r.PriceCMALast));
-            //  rates.Reverse();
-            //});
-            //RatesArray.SetCma((p, r) => r.PriceAvg - p.PriceAvg, r => {
-            //  if(r.PriceCMAOther == null)r.PriceCMAOther = new List<double>();
-            //  return r.PriceCMAOther;
-            //}, PriceCmaPeriod + CmaOffset, PriceCmaLevels + CmaOffset.ToInt());
-            //RatesArray.SetCma((p, r) => r.PriceAvg, PriceCmaLevels, PriceCmaLevels);
-          }
+          SetCma(rates);
           break;
       }
     }
@@ -3375,10 +3358,10 @@ namespace HedgeHog.Alice.Store {
       return cmas2;
     }
 
-    private static void SetMAByFtt(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate, double> setValue, double lastHarmonicRatioIndex) {
+    private static void SetMAByFft(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate, double> setValue, double lastHarmonicRatioIndex) {
       rates.Zip(rates.ToArray(getPrice).Fft(lastHarmonicRatioIndex), (rate, d) => { setValue(rate, d); return 0; }).Count();
     }
-    private static void SetMAByFtt2(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate, double> setValue, double lastHarmonicRatioIndex) {
+    private static void SetMAByFft2(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate, double> setValue, double lastHarmonicRatioIndex) {
       rates.Zip(rates.ToArray(getPrice).Fft(lastHarmonicRatioIndex).Fft(lastHarmonicRatioIndex), (rate, d) => { setValue(rate, d); return 0; }).Count();
     }
     private IEnumerable<double> GetCma<T>(IEnumerable<T> rates, Func<T, double> value, double period) {
@@ -3391,7 +3374,7 @@ namespace HedgeHog.Alice.Store {
       try {
         if(!IsActive || !isLoggedIn || !HasRates /*|| !IsTradingHours(tm.Trades, rates.Last().StartDate)*/)
           return;
-        var showChart = CorridorStats == null || CorridorStats.Rates.Count == 0;
+        var showChart = ratesForCorridor.Any();// CorridorStats == null || CorridorStats.Rates.Count == 0;
         #region Prepare Corridor
         Func<Rate, double> priceHigh = CorridorGetHighPrice();
         Func<Rate, double> priceLow = CorridorGetLowPrice();
@@ -3768,7 +3751,7 @@ namespace HedgeHog.Alice.Store {
       switch(function) {
         case ScanCorridorFunction.OneTwoThree:
           return ScanCorridorBy123;
-        case ScanCorridorFunction.Ftt:
+        case ScanCorridorFunction.Fft:
           return ScanCorridorByFft;
         case ScanCorridorFunction.StDevSplits:
           return ScanCorridorBySplitHeights;

@@ -14,6 +14,8 @@ namespace HedgeHog.Alice {
     PPM,
     PPMH,
     PpmM1,
+    AO,
+    MPH,
     Equinox,
     BPA1,
     TtlSd,
@@ -47,7 +49,7 @@ namespace HedgeHog.Alice.Store {
   public enum ScanCorridorFunction {
     StDevSplits = 46,
     StDevSplits3 = 48,
-    Ftt = 64,
+    Fft = 64,
     OneTwoThree = 5,
   }
   public enum TrailingWaveMethod {

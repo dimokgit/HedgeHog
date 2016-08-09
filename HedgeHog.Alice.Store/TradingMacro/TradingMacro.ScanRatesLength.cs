@@ -323,7 +323,7 @@ namespace HedgeHog.Alice.Store {
     private int GetRatesCountByTimeFrame(DateTime dateEnd, TimeSpan timeFrame) {
       var dateStart = dateEnd.Subtract(timeFrame);
       return UseRatesInternal(ri => ri.FuzzyIndex(dateStart, (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
-       .SelectMany(i => i, (_, i) => BarsCountCalc.Max(RatesInternal.Count - i))
+       .SelectMany(i => i, (_, i) => /*BarsCountCalc.Max(*/RatesInternal.Count - i/*)*/)
        .Single();
     }
 

@@ -36,6 +36,10 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByPPM;
         case HedgeHog.Alice.VoltageFunction.PPMH:
           return ShowVoltsByPPMH;
+        case HedgeHog.Alice.VoltageFunction.AO:
+          return ShowVoltsByAO;
+        case HedgeHog.Alice.VoltageFunction.MPH:
+          return ShowVoltsByMPH;
         case HedgeHog.Alice.VoltageFunction.PpmM1:
           return () => { SetVoltsByPpm(); return null; };
         case HedgeHog.Alice.VoltageFunction.Equinox:
@@ -83,7 +87,7 @@ namespace HedgeHog.Alice.Store {
           .Select(v => ShowVolts(v, 2))
           .SingleOrDefault();
       var calcVolt = MonoidsCore.ToFunc(() =>
-       (from cmas in UseRates(rates => rates.Select(r => r.PriceCMALast).TakeWhile(Lib.IsNotNaN).ToArray())
+       (from cmas in UseRates(rates => rates.Select(_priceAvg).ToArray())
         let ppms = cmas.Distances()
         .TakeLast(1)
         .ToArray(d => d / RatesDuration)
@@ -95,12 +99,61 @@ namespace HedgeHog.Alice.Store {
         .Where(x => x.ppm > 0));
 
       calcVolt().ForEach(v => {
-        SetVots(InPips(v.ppm/v.hsd), 2);
+        SetVots(InPips(v.ppm), 2);
         SetVots(v.hsd, GetVoltage2, SetVoltage2, 2);
       });
       return null;
     }
 
+    CorridorStatistics ShowVoltsByAO() {
+      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+
+      if(!useCalc)
+        return GetLastVolt()
+          .Select(v => ShowVolts(v, 2))
+          .SingleOrDefault();
+      var skip = 0;
+      var map = MonoidsCore.ToFunc((IList<Rate>)null, 0.0, (rate, ma) => new { rate, ma });
+
+      Func<Rate, double> select = BarPeriod >= BarsPeriodType.m1 ? _priceAvg : r => r.PriceCMALast;
+
+      CalcSma(AoPeriodFast, AoPeriodSlow, @select, GetVoltage, SetVoltage).ForEach(v => SetVots(v, 2));
+      CalcSma(AoPeriodFast2, AoPeriodSlow2, @select, GetVoltage2, SetVoltage2).ForEach(v => SetVots(v, GetVoltage2, SetVoltage2, 2));
+
+      return null;
+    }
+
+    CorridorStatistics ShowVoltsByMPH() {
+      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+
+      if(useCalc)
+        SetVots(RatesDuration / InPips(_RatesHeight), 2);
+
+      return null;
+    }
+
+
+    private IEnumerable<double> CalcSma(int periodFast, int periodSlow, Func<Rate, double> select, Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+      return UseRatesInternal(rates => {
+        var rates2 = rates.BackwardsIterator();
+
+        var cmaFast = rates2.Buffer(periodFast, 1)
+        .TakeWhile(b => getVolt(b[0]).IsNaN())
+        .Select(b => b.Average(select))
+        .ToArray();
+
+        var cmaSlow = rates2.Buffer(periodSlow, 1)
+        .TakeWhile(b => getVolt(b[0]).IsNaN())
+        .Select(b => b.Average(select))
+        .ToArray();
+
+        return rates2.Zip(cmaFast.Zip(cmaSlow, (f, s) => f - s), (r, ao) => new { r, ao })
+       .Do(x => setVolt(x.r, x.ao))
+       .ToArray()
+       .Take(1);
+      })
+        .SelectMany(v => v.Select(x => x.ao));
+    }
 
     static double CalcVolatility(IList<Rate> rates, Func<Rate, double> getValue, Func<Rate, double> line) {
       return CalcVolatility(rates.ToArray(getValue), rates.ToArray(line));
@@ -243,7 +296,78 @@ namespace HedgeHog.Alice.Store {
     }
     int _integrationPeriod { get { return CorridorHeightMax.ToInt(); } }
 
+    int _AoPeriodFast = 5;
+    int _AoPeriodSlow = 35;
+    int _AoPeriodFast2 = 15;
+    int _AoPeriodSlow2 = 55;
 
+    [WwwSetting(wwwSettingsAO)]
+    public int AoPeriodFast
+    {
+      get
+      {
+        return _AoPeriodFast;
+      }
 
+      set
+      {
+        if(_AoPeriodFast == value)
+          return;
+        _AoPeriodFast = value;
+        ResetVoltages();
+
+      }
+    }
+
+    [WwwSetting(wwwSettingsAO)]
+    public int AoPeriodSlow
+    {
+      get
+      {
+        return _AoPeriodSlow;
+      }
+
+      set
+      {
+        if(_AoPeriodSlow == value)
+          return;
+        _AoPeriodSlow = value;
+        ResetVoltages();
+      }
+    }
+
+    [WwwSetting(wwwSettingsAO)]
+    public int AoPeriodFast2
+    {
+      get
+      {
+        return _AoPeriodFast2;
+      }
+
+      set
+      {
+        if(_AoPeriodFast2 == value)
+          return;
+        _AoPeriodFast2 = value;
+        ResetVoltages();
+      }
+    }
+
+    [WwwSetting(wwwSettingsAO)]
+    public int AoPeriodSlow2
+    {
+      get
+      {
+        return _AoPeriodSlow2;
+      }
+
+      set
+      {
+        if(_AoPeriodSlow2 == value)
+          return;
+        _AoPeriodSlow2 = value;
+        ResetVoltages();
+      }
+    }
   }
 }

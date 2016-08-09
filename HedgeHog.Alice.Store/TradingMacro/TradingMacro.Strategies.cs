@@ -967,7 +967,7 @@ namespace HedgeHog.Alice.Store {
       get { return _fractalTimes; }
       set { _fractalTimes = value; }
     }
-    public int FttMax { get; set; }
+    public int FftMax { get; set; }
 
     public bool MustExitOnReverse { get; set; }
 

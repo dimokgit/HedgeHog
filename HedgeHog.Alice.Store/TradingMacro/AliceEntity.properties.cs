@@ -332,8 +332,9 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region MovingAverageType
     int _movingAverageTypeDefault = 0;
-    [DisplayName("Moving Average Type")]
+    [DisplayName("Moving Avg By")]
     [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsCorridorFuncs)]
     public MovingAverageType MovingAverageType {
       get { return (MovingAverageType)MovingAverageTypeInt.GetValueOrDefault(_movingAverageTypeDefault); }
       set {
@@ -539,10 +540,34 @@ namespace HedgeHog.Alice.Store {
       set {
         if (VoltageFunction != (int)value) {
           VoltageFunction = (int)value;
+          ResetVoltages();
           OnPropertyChanged("VoltageFunction_");
         }
       }
     }
+
+    #region VoltageFunction2
+    private VoltageFunction _voltageFunction2;
+    public VoltageFunction VoltageFunction2
+    {
+      get { return _voltageFunction2; }
+      set
+      {
+        if(_voltageFunction2 != value) {
+          _voltageFunction2 = value;
+          OnPropertyChanged("VoltageFunction2");
+        }
+      }
+    }
+
+    #endregion
+    private void ResetVoltages() {
+      UseRatesInternal(rates => rates.ForEach(r => {
+        SetVoltage(r, double.NaN);
+        SetVoltage2(r, double.NaN);
+      }));
+    }
+
     partial void OnVoltageFunctionChanged() {
       OnPropertyChanged("VoltageFunction_");
     }
@@ -928,7 +953,7 @@ namespace HedgeHog.Alice.Store {
     public const string wwwSettingsCorridorCMA = "2.2 Corridor CMA";
     public const string wwwSettingsCorridorOther = "2.3 Corridor";
     public const string wwwSettingsCorridorEquinox = "2.4 Equinox";
-
+    public const string wwwSettingsAO = "2.5 AO Periods";
     public const string wwwSettingsCorridorFuncs = "3 Corridor Func";
 
     #region CloseAfterTradingHours
@@ -953,7 +978,6 @@ namespace HedgeHog.Alice.Store {
       get { return CorridorRatioForBreakout.ToInt(); }
       set {
         CorridorRatioForBreakout = value;
-        OnPropertyChanged(Metadata.TradingMacroMetadata.CorridorCrossesMaximum);
       }
     }
 

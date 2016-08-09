@@ -111,11 +111,11 @@ namespace HedgeHog.Alice.Store {
     private void SetVots(double volt, int averageIterations, bool cmaByRates) {
       SetVots(volt, averageIterations, cmaByRates ? CmaPeriodByRatesCount() : 0);
     }
-    private void SetVots(double volt,  int averageIterations, double cma = 0) {
+    private void SetVots(double volt, int averageIterations, double cma = 0) {
       SetVots(volt, GetVoltage, SetVoltage, averageIterations, cma);
     }
 
-    private void SetVots(double volt,Func<Rate,double>getVolt,Action<Rate,double>setVolt, int averageIterations, double cma = 0) {
+    private void SetVots(double volt, Func<Rate, double> getVolt, Action<Rate, double> setVolt, int averageIterations, double cma = 0) {
       if(!WaveShort.HasRates || !IsRatesLengthStable)
         return;
       if(double.IsInfinity(volt) || double.IsNaN(volt))
@@ -147,10 +147,13 @@ namespace HedgeHog.Alice.Store {
             ratesT1.Reverse();
             (from r in ratesT1
              group r by r.StartDate.Round() into gr
-             select new { d = gr.Key, v = gr.Select(tm.GetVoltage).Average() } into dv
+             select new { d = gr.Key, v = gr.Select(tm.GetVoltage).Average(), v2 = gr.Select(tm.GetVoltage2).Average() } into dv
              join rateEmpty in ratesEmpty on dv.d equals rateEmpty.StartDate
-             select new { r = rateEmpty, v = dv.v }
-            ).ForEach(x => tm.SetVoltage(x.r, x.v));
+             select new { r = rateEmpty, dv.v, dv.v2 }
+            ).ForEach(x => {
+              tm.SetVoltage(x.r, x.v);
+              tm.SetVoltage2(x.r, x.v2);
+            });
           });
         });
       });
@@ -176,12 +179,15 @@ namespace HedgeHog.Alice.Store {
     }
     List<DateTime> _equinoxDates = new List<DateTime>();
 
-    public List<DateTime> EquinoxDates {
-      get {
+    public List<DateTime> EquinoxDates
+    {
+      get
+      {
         return _equinoxDates;
       }
 
-      set {
+      set
+      {
         _equinoxDates = value;
       }
     }

@@ -404,6 +404,8 @@
           RatesLengthBy: { name: "RatesLength", type: "options", options: ratesLengthFunction() },
           VoltageFunction_: { name: "Voltage", type: "options", options: voltageFunction() },
           CorridorCalcMethod: { name: "Corr Calc", type: "options", options: corridorCalculationMethod() },
+          MovingAverageType: { type: "options", options: movingAverageType() },
+
           WaveSmoothBy: { name: "WaveSmoothBy", type: "options", options: waveSmoothByFunction() },
 
           WaveFirstSecondRatioMin: { name: "Wave 1/2 Ratio" }
@@ -869,6 +871,9 @@
     var ratesLengthFunction = this.ratesLengthFunction = ko.observableArray();
     var voltageFunction = this.voltageFunction = ko.observableArray();
     var corridorCalculationMethod = this.corridorCalculationMethod = ko.observableArray()
+    var movingAverageType = this.movingAverageType = ko.observableArray()
+
+    
     var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
     // #endregion
     // #region GetAccounting
@@ -1263,6 +1268,9 @@
       });
       serverCall("readEnum", ["CorridorCalculationMethod"], function (enums) {
         dataViewModel.corridorCalculationMethod(mapEnumsForSettings(enums));
+      });
+      serverCall("readEnum", ["MovingAverageType"], function (enums) {
+        dataViewModel.movingAverageType(mapEnumsForSettings(enums));
       });
       serverCall("getPresetTradeLevels", [pair], function (l) {
         dataViewModel.tradePresetLevel(l[0] || 0);

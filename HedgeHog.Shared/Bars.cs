@@ -629,6 +629,7 @@ namespace HedgeHog.Bars {
   }
   [DataContract]
   public class Rate : BarBase {
+    public static readonly Rate Empty = new Rate();
     public class TrendLevels {
       public static readonly TrendLevels Empty;
       public static readonly Rate EmptyRate;

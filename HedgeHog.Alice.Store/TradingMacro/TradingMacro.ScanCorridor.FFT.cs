@@ -92,7 +92,7 @@ namespace HedgeHog.Alice.Store {
       var ratesReversed = ratesForCorridor.ReverseIfNot().ToArray();
       var FftReversed = false;
 
-      FttMax = ratesReversed.Select(_priceAvg).FftFrequency(FftReversed).ToInt();
+      FftMax = ratesReversed.Select(_priceAvg).FftFrequency(FftReversed).ToInt();
 
       var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
       var startMin = CorridorStartDate.GetValueOrDefault(ratesReversed[CorridorDistanceRatio.ToInt() - 1].StartDate);
@@ -103,7 +103,7 @@ namespace HedgeHog.Alice.Store {
       var lengthMax = !IsCorridorForwardOnly || CorridorStats.StartDate.IsMin() ? int.MaxValue : lenghForwardOnly.Value;
       WaveShort.Rates = null;
       WaveShort.Rates = startMax.IsMax() && !CorridorStartDate.HasValue
-        ? ratesReversed.Take(FttMax.Min(lengthMax)).ToArray()
+        ? ratesReversed.Take(FftMax.Min(lengthMax)).ToArray()
         : ratesReversed.SkipWhile(r => r.StartDate > startMax).TakeWhile(r => r.StartDate >= startMin).ToArray();
       var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
 

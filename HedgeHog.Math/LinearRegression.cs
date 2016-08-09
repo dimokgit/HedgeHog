@@ -37,6 +37,9 @@ namespace HedgeHog {
       return map(GetIntercept(data, out slope), slope);
     }
     static double GetSlope<T>(IList<T> yArray,Func<T,double> get, out double averageY,out double max, out double min) {
+      if(yArray == null)
+        throw new ArgumentNullException("yArray","Is null");
+      if(yArray.IsEmpty()) throw  new ArgumentException("Must not be empty","yArray");
       double n = yArray.Count;
       double sumxy = 0, sumx = 0, sumy = 0, sumx2 = 0;
       max = double.MinValue;
@@ -53,6 +56,10 @@ namespace HedgeHog {
       return ((sumxy - sumx * (averageY = sumy / n)) / (sumx2 - sumx * sumx / n));
     }
     static double GetSlope(IList<double> yArray, out double averageY) {
+      if(yArray == null)
+        throw new ArgumentNullException("yArray", "Is null");
+      if(yArray.IsEmpty())
+        throw new ArgumentException("Must not be empty", "yArray");
       double n = yArray.Count;
       double sumxy = 0, sumx = 0, sumy = 0;
       double sumx2 = 0;
@@ -65,6 +72,10 @@ namespace HedgeHog {
       return ((sumxy - sumx * (averageY = sumy / n)) / (sumx2 - sumx * sumx / n));
     }
     static double GetSlope<T>(IList<T> yArray,Func<T,double> map, out double averageY) {
+      if(yArray == null)
+        throw new ArgumentNullException("yArray", "Is null");
+      if(yArray.IsEmpty())
+        throw new ArgumentException("Must not be empty", "yArray");
       double n = yArray.Count;
       double sumxy = 0, sumx = 0, sumy = 0;
       double sumx2 = 0;
