@@ -548,6 +548,9 @@ namespace HedgeHog.Alice.Store {
 
     #region VoltageFunction2
     private VoltageFunction _voltageFunction2;
+    [DisplayName("Voltage Function 2")]
+    [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsCorridorFuncs)]
     public VoltageFunction VoltageFunction2
     {
       get { return _voltageFunction2; }

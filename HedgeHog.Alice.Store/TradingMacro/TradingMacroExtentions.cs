@@ -2259,6 +2259,8 @@ namespace HedgeHog.Alice.Store {
               return RatesArray;
             }
 
+            UseRates(rates=> { SetMA(rates); return false; });
+
             OnSetBarsCountCalc();
             ScanTradeEquinox();
             ScanOutsideEquinox();
@@ -2279,7 +2281,6 @@ namespace HedgeHog.Alice.Store {
                   SetVoltageByRHSD(rates);
                 }
                 SpreadForCorridor = rates.Spread();
-                SetMA(rates);
                 RatesHeightCma = rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax);
                 var leg = rates.Count.Div(10).ToInt().Max(1);
                 PriceSpreadAverage = rates
@@ -2315,14 +2316,14 @@ namespace HedgeHog.Alice.Store {
                 //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
                 OnPropertyChanged(() => RatesRsd);
               });
-            }, true);
+            }, false);
             OnScanCorridor(RatesArray, () => {
               try {
                 CorridorAngle = TrendLinesRedTrends.Angle;
                 TakeProfitPips = InPips(CalculateTakeProfit());
                 RunStrategy();
               } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
-            }, IsInVirtualTrading);
+            }, true);
             OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
             OnPropertyChanged(() => SpreadForCorridorInPips);

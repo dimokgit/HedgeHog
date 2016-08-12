@@ -225,8 +225,11 @@ namespace HedgeHog.Alice.Store {
     void OnSetBarsCountCalc(Action p) {
       SetBarsCountCalcSubject.OnNext(p);
     }
-    void OnSetBarsCountCalc() {
-      OnSetBarsCountCalc(GetRatesLengthFunction());
+    void OnSetBarsCountCalc(bool runSync = true) {
+      if(runSync)
+        GetRatesLengthFunction()();
+      else
+        OnSetBarsCountCalc(GetRatesLengthFunction());
     }
 
     Action GetRatesLengthFunction() {
