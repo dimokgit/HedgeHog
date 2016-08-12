@@ -257,26 +257,7 @@ namespace HedgeHog.Alice.Store {
     {
       get
       {
-        var ok = MonoidsCore.ToFunc(() =>
-          TradingMacroM1(tm => {
-            var waveFirst = tm.WaveRangesWithTail.Take(1);
-            var wavesUp = tm.WaveRanges.Skip(1).OrderByDescending(wr => wr.Max).Take(1).ToArray();
-            var wavesDown = tm.WaveRanges.Skip(1).OrderBy(wr => wr.Min).Take(2).ToArray();
-            Func<IList<Rate>, Func<Rate, double>, double> aoMax = (rates, getVolt) => rates.Max(getVolt);
-            Func<IList<Rate>, Func<Rate, double>, double> aoMin = (rates, getVolt) => rates.Min(getVolt);
-            Func<WaveRange, WaveRange, bool> slopeOk = (wr1, wr2) => wr1.Slope.Sign() == wr2.Slope.Sign();
-            Func<WaveRange,Func<IList<double>,bool>, bool> aoDown = (wr,cmp) => wr.Range.BackwardsIterator(GetVoltage).SkipWhile(Lib.IsNaN).Buffer(2).Take(1).Any(cmp);
-            var upOk = waveFirst.Zip(wavesUp, (f, u) => aoDown(f,b => b[0] < b[1]) && slopeOk(f, u) && f.Max > u.Max 
-              && aoMax(f.Range, GetVoltage) < aoMax(u.Range, GetVoltage)
-              && aoMax(f.Range, GetVoltage2) < aoMax(u.Range, GetVoltage2)
-              ).Any(b => b);
-            var downOk = waveFirst.Zip(wavesDown, (f, d) => aoDown(f, b => b[1] < b[0]) && slopeOk(f, d) && f.Min < d.Min 
-              && aoMin(f.Range, GetVoltage) > aoMin(d.Range, GetVoltage)
-              && aoMin(f.Range, GetVoltage2) > aoMin(d.Range, GetVoltage2)
-              ).Any(b => b);
-            return new { upOk, downOk };
-          }));
-        return () => ok().Select(x => x.upOk ? TradeDirections.Down : x.downOk ? TradeDirections.Up : TradeDirections.None).SingleOrDefault();
+        return () => IsWaveOk((wr, tm) => wr.Distance > tm.WaveRangeAvg.Distance, BigWaveIndex, 2);
       }
     }
     public TradeConditionDelegate CalmOk
@@ -898,45 +879,24 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(GetLastVolts().ToArray().LinearSlope() > 0);
       }
     }
-    public TradeConditionDelegate VltUp2Ok
-    {
-      get
-      {
-        return () => TradeDirectionByBool(GetLastVolts(GetVoltage2).ToArray().LinearSlope() < 0);
-      }
-    }
-    public TradeConditionDelegate VltDw2Ok
-    {
-      get
-      {
-        return () => TradeDirectionByBool(GetLastVolts(GetVoltage2).ToArray().LinearSlope() > 0);
-      }
-    }
 
-    public IEnumerable<double> GetLastVolt() {
-      return GetLastVolt(GetVoltage);
-    }
-    public IEnumerable<double> GetLastVolt(Func<Rate, double> getVolt) {
+    private IEnumerable<double> GetLastVolt() {
       return UseRates(rates
                   => rates.BackwardsIterator()
-                  .Select(getVolt)
+                  .Select(GetVoltage)
                   .SkipWhile(double.IsNaN)
                   .Take(1)
                   )
                   .SelectMany(v => v);
     }
     private IEnumerable<double> GetLastVolts() {
-      return GetLastVolts(GetVoltage);
-    }
-    private IEnumerable<double> GetLastVolts(Func<Rate, double> getVolt) {
-      return (from vs in UseRates(rates
+      return UseRates(rates
                   => rates.BackwardsIterator()
-                  .Select(getVolt)
+                  .Select(GetVoltage)
                   .SkipWhile(double.IsNaN)
                   .TakeWhile(Lib.IsNotNaN)
                   )
-              from v in vs
-              select v);
+                  .SelectMany(v => v);
     }
     private IEnumerable<T> GetLastVolt<T>(Func<double, T> map) {
       return GetLastVolt().Select(map);
@@ -1806,7 +1766,7 @@ namespace HedgeHog.Alice.Store {
     }
     public void TradeConditionsTrigger() {
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
-      if(IsAsleep || !IsTradingTime()) {
+      if(IsAsleep || !IsTradingTime() ) {
         BuySellLevels.ForEach(sr => {
           sr.CanTrade = false;
           sr.InManual = false;

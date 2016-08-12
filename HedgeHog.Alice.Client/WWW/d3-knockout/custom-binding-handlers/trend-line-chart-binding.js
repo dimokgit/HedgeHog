@@ -451,7 +451,7 @@
         y.domain(yDomain);
         var yDomain2 = d3.extent(data, function (d) { return d.v; });
         y2.domain([yDomain2[0], yDomain2[1]]);
-        var yDomain3 = d3.extent(data, function (d) { return d.v2; });
+        var yDomain3 = d3.extent(data, function (d) { return d.v; });
         y3.domain([yDomain3[0], yDomain3[1]]);
       // #endregion
 
@@ -501,7 +501,7 @@
 
           var line3 = d3.svg.line()
             .x(function (d) { return x(d.d); })
-            .y(function (d) { return y3(isNaN(d.v2) ? 0 : d.v2); });
+            .y(function (d) { return y3(isNaN(d.v) ? 0 : d.v); });
 
           svg.select("path.line.dataTps2")
             .datum(data)
