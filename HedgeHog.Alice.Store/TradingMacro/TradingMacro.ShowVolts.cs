@@ -45,7 +45,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.Equinox:
           return () => { SetVoltsByEquinox(); return null; };
         case HedgeHog.Alice.VoltageFunction.BPA1:
-          return SetVoltsByBPA1;
+          return ShowVoltsByBPA1;
         case HedgeHog.Alice.VoltageFunction.TtlSd:
           return SetVoltsByTradeTrendLinesAvg;
       }

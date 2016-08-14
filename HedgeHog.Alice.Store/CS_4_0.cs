@@ -4265,10 +4265,10 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetVoltsByEquinox"/></summary>
         public const string SetVoltsByEquinox = "SetVoltsByEquinox";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetVoltsByPpmRatio"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ShowVoltsByPpmRatio"/></summary>
         public const string SetVoltsByPpmRatio = "SetVoltsByPpmRatio";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetVoltsByBPA1"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ShowVoltsByBPA1"/></summary>
         public const string SetVoltsByBPA1 = "SetVoltsByBPA1";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetVoltsByTradeTrendLinesAvg"/></summary>

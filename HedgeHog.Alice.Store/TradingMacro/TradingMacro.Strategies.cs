@@ -357,10 +357,10 @@ namespace HedgeHog.Alice.Store {
       return TradeTrendLines.ToArray(selector)
         .Permutation()
         .Select(t => t.Item1.ToPercent(t.Item2))
-        .OrderBy(d=>d)
-        .Take(3)
+        //.OrderBy(d=>d)
+        //.Take(3)
         .DefaultIfEmpty(0)
-        .Average()
+        .PowerMeanPower(0.5)
         .ToInt();
     }
     private double TradeTrendsPriceMax(TradingMacro tm) {

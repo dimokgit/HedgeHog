@@ -165,10 +165,7 @@ namespace HedgeHog.Alice.Store {
       if(IsRatesLengthStable)
         _edgeDiffs.ForEach(v => SetVots(v, 2));
     }
-    private void SetVoltsByPpmRatio() {
-      SetVots(WaveRangeSum.PipsPerMinute / WaveRangeAvg.PipsPerMinute, 2);
-    }
-    private CorridorStatistics SetVoltsByBPA1() {
+    private CorridorStatistics ShowVoltsByBPA1() {
       SetVots(_wwwBpa1, 2);
       return null;
     }
