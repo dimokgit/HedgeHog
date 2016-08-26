@@ -21,6 +21,7 @@
 /// <reference path="../d3-knockout/view-models/data-view-model.js" />
 /// <reference path="../d3-knockout/view-models/election-data-view-model.js" />
 /// <reference path="../d3-knockout/view-models/line-data-view-model.js" />
+/// <reference path="../deployJava.js" />
 /// <reference path="bootstrap-notify.min.js" />
 /// <reference path="jqPropertyGrid.js" />
 /// <reference path="jquery.signalR-2.1.2.js" />

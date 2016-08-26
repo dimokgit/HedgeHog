@@ -24,6 +24,13 @@
       valueAccessor()(element);
     }
   };
+  ko.bindingHandlers.draggable = {
+    init: function (element, valueAccessor/*, allBindings, viewModel, bindingContext*/) {
+      $(element).draggable({
+        //handle: ".modal-header"
+      });
+    }
+  };
   //#endregion
   // #region Globals
   "use strict";

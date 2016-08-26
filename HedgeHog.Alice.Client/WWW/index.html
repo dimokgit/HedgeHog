@@ -1,0 +1,24 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+  <meta charset="utf-8" />
+  <script src="deployJava.js"></script>
+</head>
+<body>
+  <div id="__noJS">No JavaScript</div>
+  <script>
+    __noJS.style.display = "none";
+  </script>
+  <div id="__noJava" style="display:none">Java not found</div>
+<div id="__javaVersion" style="display:none">Java version is too low</div>
+</body>
+</html>
+<script>
+  var jres = deployJava.getJREs();
+  if (deployJava.versionCheck("1.6.0+") || deployJava.versionCheck("1.4") || deployJava.versionCheck("1.5.0*")) {
+    alert("Java is Enabled");
+  } else {
+    alert("Java is Not Enabled");
+  }
+</script>

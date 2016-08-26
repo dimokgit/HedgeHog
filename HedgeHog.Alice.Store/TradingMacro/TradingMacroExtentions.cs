@@ -345,6 +345,7 @@ namespace HedgeHog.Alice.Store {
             .ForEach(sr => {
               sr.CanTradeChanged += SuppRes_CanTradeChanged;
               sr.RateChanged += SuppRes_RateChanged;
+              sr.RateChanging += SuppRes_RateChanging;
               sr.Scan += SuppRes_Scan;
               sr.SetLevelBy += SuppRes_SetLevelBy;
               sr.IsActiveChanged += SuppRes_IsActiveChanged;
@@ -354,12 +355,20 @@ namespace HedgeHog.Alice.Store {
         case CollectionChangeAction.Remove:
           ((Store.SuppRes)e.Element).CanTradeChanged -= SuppRes_CanTradeChanged;
           ((Store.SuppRes)e.Element).RateChanged -= SuppRes_RateChanged;
+          ((Store.SuppRes)e.Element).RateChanging -= SuppRes_RateChanging;
           ((Store.SuppRes)e.Element).Scan -= SuppRes_Scan;
           ((Store.SuppRes)e.Element).SetLevelBy -= SuppRes_SetLevelBy;
           ((Store.SuppRes)e.Element).IsActiveChanged -= SuppRes_IsActiveChanged;
           ((Store.SuppRes)e.Element).EntryOrderIdChanged -= SuppRes_EntryOrderIdChanged;
           break;
       }
+    }
+
+    private void SuppRes_RateChanging(object sender, SuppRes.RateChangingEventArgs e) {
+      var jump = e.Next.Abs(e.Prev);
+      var sr = (SuppRes)sender;
+      if(sr.CanTrade && jump / RatesHeight > .20)
+        sr.CanTrade = false;
     }
 
     void SuppRes_SetLevelBy(object sender, EventArgs e) {

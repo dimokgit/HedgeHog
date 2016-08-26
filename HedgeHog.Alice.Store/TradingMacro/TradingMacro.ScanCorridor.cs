@@ -89,6 +89,17 @@ namespace HedgeHog.Alice.Store {
     #endregion
     private CorridorStatistics ScanCorridorBy123(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var rates = ratesForCorridor.ToList();
+      var ri = new { r = (Rate)null, i = 0 };
+      var miner = MonoidsCore.ToFunc(ri, r => r.r.BidLow);
+      var maxer = MonoidsCore.ToFunc(ri, r => r.r.AskHigh);
+      var groupMap = MonoidsCore.ToFunc(ri.Yield().ToList(), range => new {
+        rmm = range.MinMaxBy(miner, r => r.r.AskHigh),
+        a = range.Average(r => r.r.PriceAvg)
+      });
+      var grouped = rates
+        .Select((r, i) => new { r, i })
+        .ToList()
+        .GroupedDistinct(r => r.r.StartDate.AddMilliseconds(-r.r.StartDate.Millisecond), groupMap);
       rates.Reverse();
       var legs = (
         BarPeriodInt > 0 || CmaMACD == null || _macdDiastances.IsEmpty()
@@ -105,6 +116,47 @@ namespace HedgeHog.Alice.Store {
       //sections2.Count();
 
       #region Funcs
+
+      Func<int, IList<Rate>> bs = perc => {
+        var digits = Digits();
+        var grouped2 = grouped.ToList();
+        var distances = grouped2.Distances(x => x.a).Select((t, i) => new { t, i }).ToList();
+        var distChunc = distances.Last().t.Item2 / 100.0 * perc;
+        var res = Partitioner.Create(Enumerable.Range(0, distances.Count).ToArray(), true)
+        .AsParallel()
+        .Select(i => {
+          var distStart = distances[i].t.Item2;
+          var i2 = i + 1;
+          var min = distances[i].t.Item1.rmm[0];
+          var max = distances[i].t.Item1.rmm[1];
+          while(i2 < distances.Count && distances[i2].t.Item2 - distStart <= distChunc) {
+            if(miner(distances[i2].t.Item1.rmm[0]) < miner(min))
+              min = distances[i2].t.Item1.rmm[0];
+            if(maxer(distances[i2].t.Item1.rmm[1]) > maxer(max))
+              max = distances[i2].t.Item1.rmm[1];
+            i2++;
+          }
+          var isOut = i2 >= distances.Count;
+          var start = grouped2[i].rmm.Min(r => r.i);
+          var end = grouped2[i2].rmm.Max(r => r.i);
+          var count = end - start;
+          //var mines = new[] { i, i2 }.Select(i0 => maxer(grouped2[i0].rmm[0])).ToArray();
+          //var maxes = new[] { i, i2 }.Select(i0 => maxer(grouped2[i0].rmm[1])).ToArray();
+          var height = (maxer(max).Max(maxer(grouped2[i].rmm[1]), maxer(grouped2[i2].rmm[1]))
+          - miner(min).Min(miner(grouped2[i].rmm[0]), miner(grouped2[i2].rmm[0]))).Round(digits);
+          return new { start, count, height, isOut, i, i2 };
+        })
+        .TakeWhile(x => !x.isOut)
+        .MinBy(x => x.height)
+        .ToArray();
+        return res
+        .OrderBy(x => grouped2.GetRange(x.i, x.i2 - x.i).LinearSlope(y => y.a).Abs())
+        .Take(1)
+        .Select(x => CalcTrendLines(x.start, x.count))
+        .SelectMany(x => x)
+        .ToList();
+      };
+
       Func<Rate, int> rateIndex = rate => rates.FuzzyFind(rate, (r, r1, r2) => r.StartDate.Between(r1.StartDate, r2.StartDate));
       Func<int, int, Rate> getExtreamRate = (start, end) => {
         var offset = ((end - start) * 0.3).ToInt();
@@ -129,6 +181,8 @@ namespace HedgeHog.Alice.Store {
       var legIndexes = new[] { 0 }.Concat(Enumerable.Range(0, sections.Count).SelectMany(i => getLength(i))).ToList();
 
       Func<int, int, IList<Rate>> calcTrendLines = (start, end) => {
+        if(start >= 10 && start <= end)
+          return bs(start);
         var e = end < legIndexes.Count ? legIndexes[end] : ratesForCorridor.Count;
         return CalcTrendLines(RatesArray.Count - e, e - legIndexes[start]);
       };
@@ -204,9 +258,9 @@ namespace HedgeHog.Alice.Store {
     List<WaveRange> _waveRanges = new List<WaveRange>();
     public List<WaveRange> WaveRangesGRB { get; set; }
     public List<WaveRange> WaveRanges {
-      get { lock (_waveRangesLocker) return _waveRanges; }
+      get { lock(_waveRangesLocker) return _waveRanges; }
       set {
-        lock (_waveRangesLocker) {
+        lock(_waveRangesLocker) {
           _waveRanges = value;
           WaveRangesGRB = value.Take(_greenRedBlue.Sum()).ToList();
         }

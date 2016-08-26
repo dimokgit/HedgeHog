@@ -105,10 +105,6 @@ namespace HedgeHog.Alice.Store {
         TradesCount = value;
       }
     }
-    partial void OnRateChanging(double value) {
-      if(value != Rate && CanTrade)
-        RateCanTrade = Rate;
-    }
     int _rateExErrorCounter = 0;// This is to ammend some wierd bug in IEntityChangeTracker.EntityMemberChanged or something that it calls
     public double RateEx {
       get { return Rate; }
@@ -330,6 +326,39 @@ namespace HedgeHog.Alice.Store {
         _rateChangedDelegate(this, EventArgs.Empty);
     }
 
+
+    #region RateChanging Event
+    public class RateChangingEventArgs {
+      public double Prev { get; set; }
+      public double Next { get; set; }
+      public RateChangingEventArgs(double prev,double next) {
+        Prev = prev;
+        Next = next;
+      }
+    }
+
+    event EventHandler<RateChangingEventArgs> RateChangingEvent;
+    public event EventHandler<RateChangingEventArgs>  RateChanging
+    {
+      add
+      {
+        if (RateChangingEvent == null || !RateChangingEvent.GetInvocationList().Contains(value))
+          RateChangingEvent += value;
+      }
+      remove
+      {
+        RateChangingEvent -= value;
+      }
+    }
+    partial void OnRateChanging(double next) {
+      RateChangingEvent?.Invoke(this, new RateChangingEventArgs(Rate, next));
+      if(next != Rate && CanTrade)
+        RateCanTrade = Rate;
+
+    }
+    #endregion
+
+
     private int _Index;
     public int Index {
       get { return _Index; }
@@ -431,6 +460,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public DateTime? TradeDate { get; set; }
+
   }
   public static class SuppResMixins {
     public static bool HasCanTradeCorridorChanged(this IList<SuppRes> buySellLevels) {

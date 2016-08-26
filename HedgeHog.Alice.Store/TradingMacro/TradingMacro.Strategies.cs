@@ -17,6 +17,7 @@ using System.Reactive.Disposables;
 using HedgeHog.Shared.Messages;
 using System.Dynamic;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
+using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
