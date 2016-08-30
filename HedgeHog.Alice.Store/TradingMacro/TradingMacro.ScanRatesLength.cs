@@ -272,9 +272,8 @@ namespace HedgeHog.Alice.Store {
     void ScanRatesLengthByM1Wave() {
       if(BarPeriod != BarsPeriodType.t1)
         throw new Exception("ScanRatesLengthByM1Wave is only supported for BarsPeriodType." + BarsPeriodType.t1);
-      TradingMacroM1(tm => tm.WaveRanges.Take(1), w => w)
-        .Select(wr => wr.StartDate)
-        .Where(_ => /*!BuySellLevels.Any(sr => sr.CanTrade) &&*/ !HaveTrades())
+      TradingMacroM1(tm => tm.WaveRangeAvg)
+        .Select(wr => ServerTime.AddMinutes(-wr.TotalMinutes))
         .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()))
         .ForEach(count => BarsCountCalc = count.Max(BarsCount));
     }

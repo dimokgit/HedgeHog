@@ -96,10 +96,10 @@ namespace HedgeHog.Alice.Store {
         rmm = range.MinMaxBy(miner, r => r.r.AskHigh),
         a = range.Average(r => r.r.PriceAvg)
       });
-      var grouped = rates
+      var grouped = Lazy.Create(() => ratesForCorridor
         .Select((r, i) => new { r, i })
         .ToList()
-        .GroupedDistinct(r => r.r.StartDate.AddMilliseconds(-r.r.StartDate.Millisecond), groupMap);
+        .GroupedDistinct(r => r.r.StartDate.AddMilliseconds(-r.r.StartDate.Millisecond), groupMap));
       rates.Reverse();
       var legs = (
         BarPeriodInt > 0 || CmaMACD == null || _macdDiastances.IsEmpty()
@@ -119,7 +119,7 @@ namespace HedgeHog.Alice.Store {
 
       Func<int, IList<Rate>> bs = perc => {
         var digits = Digits();
-        var grouped2 = grouped.ToList();
+        var grouped2 = grouped.Value.ToList();
         var distances = grouped2.Distances(x => x.a).Select((t, i) => new { t, i }).ToList();
         var distChunc = distances.Last().t.Item2 / 100.0 * perc;
         var res = Partitioner.Create(Enumerable.Range(0, distances.Count).ToArray(), true)
@@ -150,7 +150,8 @@ namespace HedgeHog.Alice.Store {
         .MinBy(x => x.height)
         .ToArray();
         return res
-        .OrderBy(x => grouped2.GetRange(x.i, x.i2 - x.i).LinearSlope(y => y.a).Abs())
+        .OrderByDescending(x => x.start)
+        //.OrderBy(x => grouped2.GetRange(x.i, x.i2 - x.i).LinearSlope(y => y.a).Abs())
         .Take(1)
         .Select(x => CalcTrendLines(x.start, x.count))
         .SelectMany(x => x)

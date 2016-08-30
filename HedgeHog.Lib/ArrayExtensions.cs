@@ -183,7 +183,6 @@ namespace HedgeHog {
     public static IEnumerable<Tuple<double, double>> EdgeByStDev(this double[] values, double step, int smootheCount) {
       if(values.Length < 3)
         return new[] { new Tuple<double, double>(double.NaN, 0.0) };
-      Func<double, double, double> calcRatio = (d1, d2) => d1 < d2 ? d1 / d2 : d2 / d1;
       var min = values.Min();
       var max = values.Max();
       var steps = max.Sub(min).Div(step).ToInt();
