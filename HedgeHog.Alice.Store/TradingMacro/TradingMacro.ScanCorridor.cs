@@ -148,7 +148,13 @@ namespace HedgeHog.Alice.Store {
         })
         .TakeWhile(x => !x.isOut)
         .MinBy(x => x.height)
-        .ToArray();
+        .ToArray()
+        .AsEnumerable();
+
+        res = UseFlatTrends
+        ? res.OrderBy(x => grouped2.GetRange(x.i, x.i2 - x.i).LinearSlope(y => y.a).Abs())
+        : res.OrderByDescending(x => x.start);
+
         return res
         .OrderByDescending(x => x.start)
         //.OrderBy(x => grouped2.GetRange(x.i, x.i2 - x.i).LinearSlope(y => y.a).Abs())

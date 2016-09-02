@@ -158,6 +158,7 @@ namespace HedgeHog.Alice.Store {
         {TradeLevelsPreset.Lime,Tuple.Create( TradeLevelBy.LimeMax, TradeLevelBy.LimeMin)},
         {TradeLevelsPreset.Green,Tuple.Create( TradeLevelBy.GreenMax, TradeLevelBy.GreenMin)},
         {TradeLevelsPreset.Red,Tuple.Create( TradeLevelBy.RedMax, TradeLevelBy.RedMin)},
+        {TradeLevelsPreset.Plum,Tuple.Create( TradeLevelBy.PlumMax, TradeLevelBy.PlumMin)},
         {TradeLevelsPreset.Blue,Tuple.Create( TradeLevelBy.BlueMax, TradeLevelBy.BlueMin)},
         {TradeLevelsPreset.Lime23,Tuple.Create( TradeLevelBy.PriceLimeH, TradeLevelBy.PriceLimeL)},
         {TradeLevelsPreset.Green23,Tuple.Create( TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0)},

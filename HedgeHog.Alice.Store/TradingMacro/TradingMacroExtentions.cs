@@ -3515,7 +3515,7 @@ namespace HedgeHog.Alice.Store {
           if(!value && !TradingMacrosByPair().Any(tm => tm.IsTrender))
             tmo.Take(1).DefaultIfEmpty(this)
               .ForEach(tm => tm.IsTrender = true);
-          //else tmo.ForEach(tm => tm.IsTrender = false);
+          else if(value) tmo.ForEach(tm => tm.IsTrender = false);
         }
       }
     }
@@ -3688,8 +3688,14 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.Lime:
           tp = tradeLeveBy(TradeLevelBy.PriceLimeH, TradeLevelBy.PriceLimeL);
           break;
+        case TradingMacroTakeProfitFunction.LimeMM:
+          tp = tradeLeveBy(TradeLevelBy.LimeMax, TradeLevelBy.LimeMin);
+          break;
         case TradingMacroTakeProfitFunction.Green:
           tp = tradeLeveBy(TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0);
+          break;
+        case TradingMacroTakeProfitFunction.GreenMM:
+          tp = tradeLeveBy(TradeLevelBy.GreenMax, TradeLevelBy.GreenMin);
           break;
         case TradingMacroTakeProfitFunction.Greenish:
           var tpGreen = tradeLeveBy(TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0);
@@ -3699,8 +3705,14 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.Red:
           tp = tradeLeveBy(TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3);
           break;
+        case TradingMacroTakeProfitFunction.RedMM:
+          tp = tradeLeveBy(TradeLevelBy.RedMax, TradeLevelBy.RedMin);
+          break;
         case TradingMacroTakeProfitFunction.Plum:
           tp = tradeLeveBy(TradeLevelBy.PricePlumH, TradeLevelBy.PricePlumL);
+          break;
+        case TradingMacroTakeProfitFunction.PlumMM:
+          tp = tradeLeveBy(TradeLevelBy.PlumMax, TradeLevelBy.PlumMin);
           break;
         case TradingMacroTakeProfitFunction.Blue:
           tp = tradeLeveBy(TradeLevelBy.PriceHigh, TradeLevelBy.PriceLow);

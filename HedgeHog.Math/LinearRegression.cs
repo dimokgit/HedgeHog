@@ -94,7 +94,7 @@ namespace HedgeHog {
         return double.NaN;
       }
       if (data.Count == 1) {
-        slope = double.NaN;
+        slope = 0;
         return data[0];
       }
 

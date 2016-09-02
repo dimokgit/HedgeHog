@@ -130,6 +130,10 @@
     .nav-divider.thin{
       width:2px;
     }
+    .dropdown-menu.multi-level.md{
+      min-width:190px;
+      padding-left:5px;
+    }
 
     /*#endregion */
 
@@ -458,13 +462,14 @@
           <!--#region Trade Levels-->
           <li>
             <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-menu-hamburger"></span></button>
-            <ul class="dropdown-menu multi-level">
+            <ul class="dropdown-menu multi-level md">
               <li>
                 <input type="button" value="M" data-bind="click:setTradeLevels.bind($data,13,null),css:{setTradeLevelActive:tradePresetLevel()==13}" title="Set trade levels to min/max" />
                 <input type="button" value="L" class="btn-warning" data-bind="click:setTradeLevels.bind($data,1,null),css:{setTradeLevelActive:tradePresetLevel()==1}" />
                 <input type="button" value="G" class="btn-success" data-bind="click:setTradeLevels.bind($data,2,null),css:{setTradeLevelActive:tradePresetLevel()==2}" />
-                <input type="button" value="R" class="btn-plum" data-bind="click:setTradeLevels.bind($data,3,null),css:{setTradeLevelActive:tradePresetLevel()==3}" />
-                <input type="button" value="B" class="btn-danger" data-bind="click:setTradeLevels.bind($data,4,null),css:{setTradeLevelActive:tradePresetLevel()==4}" />
+                <input type="button" value="R" class="btn-danger" data-bind="click:setTradeLevels.bind($data,3,null),css:{setTradeLevelActive:tradePresetLevel()==3}" />
+                <input type="button" value="P" class="btn-plum" data-bind="click:setTradeLevels.bind($data,10,null),css:{setTradeLevelActive:tradePresetLevel()==10}" />
+                <input type="button" value="B" class="btn-primary" data-bind="click:setTradeLevels.bind($data,4,null),css:{setTradeLevelActive:tradePresetLevel()==4}" />
               </li>
               <li style="display:none">
                 <input type="button" value="X" data-bind="click:resetTradeLevels" title="Clear trade levels" />
@@ -511,11 +516,11 @@
           </li>
           <li class="nav-divider thin"></li>
           <li>
-            <input type="button" value="P" class="btn-plum" data-bind="click:setTradeTrendIndex.bind($data,2),css:{setTradeLevelActive:tradeTrendsInt().indexOf(2)>=0}" />
+            <input type="button" value="R" class="btn-danger" data-bind="click:setTradeTrendIndex.bind($data,3),css:{setTradeLevelActive:tradeTrendsInt().indexOf(3)>=0}" />
           </li>
           <li class="nav-divider thin"></li>
           <li>
-            <input type="button" value="R" class="btn-danger" data-bind="click:setTradeTrendIndex.bind($data,3),css:{setTradeLevelActive:tradeTrendsInt().indexOf(3)>=0}" />
+            <input type="button" value="P" class="btn-plum" data-bind="click:setTradeTrendIndex.bind($data,2),css:{setTradeLevelActive:tradeTrendsInt().indexOf(2)>=0}" />
           </li>
           <li class="nav-divider thin"></li>
           <li>

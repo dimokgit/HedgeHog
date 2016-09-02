@@ -1865,6 +1865,21 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region UseFlatTrends
+    private bool _UseFlatTrends;
+    [Category(categoryActiveYesNo)]
+    [WwwSetting(wwwSettingsTrends)]
+    public bool UseFlatTrends {
+      get { return _UseFlatTrends; }
+      set {
+        if(_UseFlatTrends != value) {
+          _UseFlatTrends = value;
+          OnPropertyChanged("UseFlatTrends");
+        }
+      }
+    }
+
+    #endregion
     string _tradeTrends = "0,1,2,3";
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTradingCorridor)]

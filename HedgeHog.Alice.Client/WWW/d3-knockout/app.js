@@ -248,9 +248,9 @@
       return tradeTrends().split(',').map(parseFloat);
     });
     var tradeTrendIndex = this.tradeTrendIndex = ko.observable(0);
-    this.setTradeLevels = function (l, isBuy) {
-      serverCall("setPresetTradeLevels", [pair, l, isBuy === undefined ? null : isBuy], function () {
-        tradePresetLevel(l);
+    this.setTradeLevels = function (level, isBuy) {
+      serverCall("setPresetTradeLevels", [pair, level, isBuy === undefined ? null : isBuy], function () {
+        tradePresetLevel(level);
       });
     };
     this.setTradeTrendIndex = function (index) {
@@ -410,6 +410,7 @@
           ScanCorridorBy: { name: "ScanCorridor", type: "options", options: scanCorridorFunction() },
           RatesLengthBy: { name: "RatesLength", type: "options", options: ratesLengthFunction() },
           VoltageFunction_: { name: "Voltage", type: "options", options: voltageFunction() },
+          VoltageFunction2: { name: "Voltage 2", type: "options", options: voltageFunction() },
           CorridorCalcMethod: { name: "Corr Calc", type: "options", options: corridorCalculationMethod() },
           MovingAverageType: { type: "options", options: movingAverageType() },
 

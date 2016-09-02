@@ -112,8 +112,8 @@ namespace HedgeHog.Alice.Store {
         throw new InvalidOperationException("StartDate;{0} must be less then EndDate:{1}".Formater(StartDate, EndDate));
       Max = range.Max(r => r.PriceAvg);
       Min = range.Min(r => r.PriceAvg);
-      Distance = range.Distances(r=>r.PriceAvg).TakeLast(1).Select(t=>t.Item2).DefaultIfEmpty().Single() / pointSize;
-      DistanceCma = range.Distances(r => r.PriceCMALast).TakeLast(1).Select(t=>t.Item2).DefaultIfEmpty().Single() / pointSize;
+      Distance = range.Distances(r => r.PriceAvg).TakeLast(1).Select(t => t.Item2).DefaultIfEmpty().Single() / pointSize;
+      DistanceCma = range.Distances(r => r.PriceCMALast).TakeLast(1).Select(t => t.Item2).DefaultIfEmpty().Single() / pointSize;
       TotalSeconds = range.Duration(r => r.StartDate).TotalSeconds;
       TotalMinutes = TotalSeconds / 60;
       PipsPerMinute = Distance / TotalMinutes;
@@ -133,7 +133,7 @@ namespace HedgeHog.Alice.Store {
       var minutes = (range.Last().StartDate - range[0].StartDate).Duration().TotalMinutes;
       Func<TimeSpan, IEnumerable<double>> groupped = ts => range.GroupedDistinct(rate => rate.StartDate.AddMilliseconds(-rate.StartDate.Millisecond), g => g.Average(rate => rate.PriceAvg));
       var doubles = period == BarsPeriodType.t1 ? groupped(1.FromSeconds()).ToArray() : range.Select(r => r.PriceAvg).ToArray();
-      if(doubles.Length < 2)
+      if(doubles.Length < 2 && range.Count > 1)
         doubles = groupped(1.FromSeconds()).ToArray();
       var coeffs = doubles.Linear();
       this.Slope = coeffs.LineSlope();
