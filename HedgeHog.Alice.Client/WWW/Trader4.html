@@ -246,11 +246,17 @@
       background-color: darkorchid;
       border-color: darkorchid;
     }
+    .btn-olive {
+      color: #fff;
+      background-color: olive;
+      border-color: olive;
+    }
 
     .btn-primary.setTradeLevelActive,
     .btn-warning.setTradeLevelActive,
     .btn-danger.setTradeLevelActive,
     .btn-plum.setTradeLevelActive,
+    .btn-olive.setTradeLevelActive,
     .btn-success.setTradeLevelActive {
       color: black;
     }
@@ -465,7 +471,7 @@
             <ul class="dropdown-menu multi-level md">
               <li>
                 <input type="button" value="M" data-bind="click:setTradeLevels.bind($data,13,null),css:{setTradeLevelActive:tradePresetLevel()==13}" title="Set trade levels to min/max" />
-                <input type="button" value="L" class="btn-warning" data-bind="click:setTradeLevels.bind($data,1,null),css:{setTradeLevelActive:tradePresetLevel()==1}" />
+                <input type="button" value="L" class="btn-olive" data-bind="click:setTradeLevels.bind($data,1,null),css:{setTradeLevelActive:tradePresetLevel()==1}" />
                 <input type="button" value="G" class="btn-success" data-bind="click:setTradeLevels.bind($data,2,null),css:{setTradeLevelActive:tradePresetLevel()==2}" />
                 <input type="button" value="R" class="btn-danger" data-bind="click:setTradeLevels.bind($data,3,null),css:{setTradeLevelActive:tradePresetLevel()==3}" />
                 <input type="button" value="P" class="btn-plum" data-bind="click:setTradeLevels.bind($data,10,null),css:{setTradeLevelActive:tradePresetLevel()==10}" />
@@ -508,7 +514,7 @@
           <!--#endregion-->
           <li class="nav-divider thin"></li>
           <li>
-            <button type="button" class="btn-warning" data-bind="click:setTradeTrendIndex.bind($data,0),css:{setTradeLevelActive:tradeTrendsInt().indexOf(0)>=0}">L</button>
+            <button type="button" class="btn-olive" data-bind="click:setTradeTrendIndex.bind($data,0),css:{setTradeLevelActive:tradeTrendsInt().indexOf(0)>=0}">L</button>
           </li>
           <li class="nav-divider thin"></li>
           <li>

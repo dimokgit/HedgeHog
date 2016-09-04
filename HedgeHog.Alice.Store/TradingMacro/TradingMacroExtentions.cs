@@ -367,8 +367,11 @@ namespace HedgeHog.Alice.Store {
     private void SuppRes_RateChanging(object sender, SuppRes.RateChangingEventArgs e) {
       var jump = e.Next.Abs(e.Prev);
       var sr = (SuppRes)sender;
-      if(sr.CanTrade && jump / RatesHeight > .20)
+      if(sr.CanTrade && jump / RatesHeight > .15) {
         sr.CanTrade = false;
+        sr.TradesCount = 0;
+        sr.ResetPricePosition();
+      }
     }
 
     void SuppRes_SetLevelBy(object sender, EventArgs e) {

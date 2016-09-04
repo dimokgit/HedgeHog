@@ -465,14 +465,14 @@
       if (yAxis2)
         svg.select("g.y2.axis")
           .call(yAxis2);
+      var y3Axis = svg.select("g.y3.axis");
       if (yAxis3)
-        svg.select("g.y3.axis")
-          .call(yAxis3);
+        y3Axis.call(yAxis3);
       // #endregion
 
       // #region add the price line to the canvas
       if (shouldUpdateData) {
-        if (chartNum === 1 && showLineLog) 
+        if (chartNum === 1 && showLineLog)
           var lineLogDate = new Date();
         svg.select("path.line.data").remove();
         svg.append("path").attr("class", "line data")
@@ -499,13 +499,18 @@
           setHLine(tpsHigh, "tpsHigh", colorTps, 1, "", y2);
           setHLine(tpsLow, "tpsLow", colorTps, 1, "", y2);
 
-          var line3 = d3.svg.line()
-            .x(function (d) { return x(d.d); })
-            .y(function (d) { return y3(isNaN(d.v2) ? 0 : d.v2); });
+          var hasTps2 = data.some(function (d) { return d.v2 > 0; });
+          if (hasTps2) {
+            var line3 = d3.svg.line()
+              .x(function (d) { return x(d.d); })
+              .y(function (d) { return y3(isNaN(d.v2) ? 0 : d.v2); });
 
-          svg.select("path.line.dataTps2")
-            .datum(data)
-            .attr("d", line3).style("stroke", colorTps).style("opacity", opacityTps);
+            svg.select("path.line.dataTps2")
+              .datum(data)
+              .attr("d", line3).style("stroke", colorTps).style("opacity", opacityTps);
+            y3Axis.style("display", "");
+          } else
+            y3Axis.style("display", "none");
 
         }
         if (chartNum === 1) {
@@ -529,18 +534,19 @@
         //setTrendLine(trendLines, 21, "darkred");
         //setTrendLine(trendLines, 31, "darkred");
 
-        setTrendLine2(trendLines2, 1, 2,"lightgrey");
+        setTrendLine2(trendLines2, 1, 2, "lightgrey");
         setTrendLine2(trendLines2, 2, 2, "navy");
         setTrendLine2(trendLines2, 3, 2, "navy");
 
         setTrendLine2(trendLines1, 2, 1, "green");
         setTrendLine2(trendLines1, 3, 1, "green");
 
-        setTrendLine2(trendLines0, 2, 0, "limegreen");
-        setTrendLine2(trendLines0, 3, 0, "limegreen");
+        setTrendLine2(trendLines0, 2, 0, "olive");
+        setTrendLine2(trendLines0, 3, 0, "olive");
 
-        setTrendLine2(trendLines3, 2, 3, "plum");
-        setTrendLine2(trendLines3, 3, 3, "plum");
+        var colorPlum = "darkorchid";
+        setTrendLine2(trendLines3, 2, 3, colorPlum);
+        setTrendLine2(trendLines3, 3, 3, colorPlum);
         // #endregion
       }
       // #endregion
@@ -559,7 +565,8 @@
             })
           ;
         }
-      }
+      } else
+        svg.selectAll("path.nextWave").style("display", "none");
       // #endregion
       // #endregion
 
@@ -771,6 +778,9 @@
           //.duration(animationDuration);    
         }
       }
+      function selectRect(rectName) {
+        return svg.select("rect." + rectName);
+      }
       function setRectArea(date1, level1, date2, level2, rectName) {
         svg.select("rect." + rectName)
           //.style("stroke", rectColour)  // colour the line
@@ -783,9 +793,10 @@
         var dates = [data[0].d, data[data.length - 1].d];
         var bottom = Math.min(y(level1), y(level2));
         var height = Math.abs(y(level1) - y(level2));
-        if(isNaN(bottom)||isNaN(height))return;
-        svg.select("rect." + rectName)
+        if (isNaN(bottom) || isNaN(height)) return selectRect(rectName).style("display", "none");
+        selectRect(rectName)
           //.style("stroke", rectColour)  // colour the line
+          .style("display", "")
           .attr("x", x(dates[0])) // x position of the first end of the line
           .attr("y", bottom) // y position of the first end of the line
           .attr("width", x(dates[1]) - x(dates[0])) // x position of the second end of the line

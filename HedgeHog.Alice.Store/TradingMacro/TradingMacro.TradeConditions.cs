@@ -62,13 +62,31 @@ namespace HedgeHog.Alice.Store {
 
     public TradeConditionDelegate TLHOk {
       get {
-        return () => {
-          var greenDates = TrendLines1.Value.Select(tl=>tl.StartDate).ToArray();
-          var limeDates = TrendLines0.Value.Select(tl=>tl.StartDate).ToArray();
+        TradingMacroTrader(tm => Log = new Exception(new { TLHOk = new { tm.TipRatio } } + "")).Count();
+        Func<IEnumerable<double>, IEnumerable<double>> abs = (rs) => rs.Scan((d1, d2) => InPips(d1.Abs(d2)));
+        Func<IList<double>, IEnumerable<double>, bool> testInside = (outer, inner) => inner.All(d => d.Between(outer[0], outer[1]));
+        Func<TL, IList<double>> priceMinMax = tl => tl.PriceMin.Concat(tl.PriceMax).ToArray();
+        Func<TradingMacro, TL[]> trendFlats = tm => tm.TrendLinesFlat.OrderByDescending(tl => tl.Count).ToArray();
+        Func<TradingMacro, TradeDirections> ok = tm => {
+          var flats = trendFlats(tm);
+          var isInside = flats.Pairwise((tl1, tl2) => testInside(priceMinMax(tl1), priceMinMax(tl2))).All(b => b);
+          if(!isInside)
+            return TradeDirections.None;
+          var perms = flats.Permutation((tl1, tl2) => new { absMin = abs(tl1.PriceMin.Concat(tl2.PriceMin)), absMax = abs(tl1.PriceMax.Concat(tl2.PriceMax)) }).ToArray();
+          var pipTres = InPips(tm.RatesHeight * tm.TipRatio);
+          var upAvg = perms.SelectMany(p => p.absMax).DefaultIfEmpty(double.NaN).Distinct().Average();
+          var downAvg = perms.SelectMany(p => p.absMin).DefaultIfEmpty(double.NaN).Distinct().Average();
+          var upOk = upAvg <= pipTres ? TradeDirections.Up : TradeDirections.None;
+          var downOk = downAvg <= pipTres ? TradeDirections.Down : TradeDirections.None;
+          return upOk | downOk;
+          var greenDates = TrendLines1.Value.Select(tl => tl.StartDate).ToArray();
+          var limeDates = TrendLines0.Value.Select(tl => tl.StartDate).ToArray();
           return limeDates.All(d => d.Between(greenDates[0], greenDates[1]))
           ? TradeDirections.Both
           : TradeDirections.None;
         };
+        return () => TradingMacroTrender(ok).DefaultIfEmpty().Aggregate((td1, td2) => td1 | td2);
+          
       }
     }
 
@@ -452,20 +470,24 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionTurnOff]
     public TradeConditionDelegate TipOk {
       get {
+        Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
         TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + "")).FirstOrDefault();
-        Func<SuppRes, double, TradeDirections> ok = (tradeLevel, extream) => {
-          var tip = (extream - tradeLevel.Rate).Abs();
-          var tipRatio = tip / RatesHeight;
-          return tipRatio <= TipRatio
-            ? tradeLevel.IsBuy
+        Func<TradingMacro, double, Func<double>, TradeDirections> ok = (tm,tradeLevel, extream) => {
+          var tip = (extream() - tradeLevel).Abs();
+          var tipRatio = tip / tm.RatesHeight;
+          return tipRatio <= tipRatioTres(tm)
             ? TradeDirections.Both
-            : TradeDirections.Both
             : TradeDirections.None;
         };
-        var extreams = MonoidsCore.ToFunc(() => new[] { _RatesMax, _RatesMin });
-        return () => BuySellLevels
-            .SelectMany(bs => extreams().Select(ex => new { bs, ex }))
-            .Aggregate(TradeDirections.None, (td, a) => td | ok(a.bs, a.ex));
+        var extreams = MonoidsCore.ToFunc((TradingMacro)null, (tm) => new Func<double> [] {()=> tm.RatesMax, ()=>tm.RatesMin });
+        Func<TradingMacro, IEnumerable<double>> tradeLevels = tm
+          => new[] { tm.TrendLinesFlat.SelectMany(tl => tl.PriceMax).Average(), tm.TrendLinesFlat.SelectMany(tl => tl.PriceMin).Average() };
+        Func<TradeDirections> ok2 = () => (from tm in TradingMacroTrender()
+                                           from bs in tradeLevels(tm)
+                                           from ex in extreams(tm)
+                                           select new { bs, ex, tm }
+                                           ).Aggregate(TradeDirections.None, (td, a) => td | ok(a.tm, a.bs, a.ex));
+        return () => ok2();
       }
     }
 

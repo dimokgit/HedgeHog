@@ -71,6 +71,13 @@ namespace HedgeHog {
           .Scan((t1, t2) => new[] { t1[0], t2[0] }));
       return list.Select(a => Tuple.Create(a[0], a[1]));
     }
+    public static IEnumerable<U> Permutation<T, U>(this IList<T> source, Func<T, T, U> map) {
+      IEnumerable<T[]> list = new T[0][];
+      for(var skip = 0; skip < source.Count - 1; skip++)
+        list = list.Concat(source.Skip(skip).Select(t => new[] { t })
+          .Scan((t1, t2) => new[] { t1[0], t2[0] }));
+      return list.Select(a => map(a[0], a[1]));
+    }
     public static IEnumerable<IEnumerable<T>> CartesianProductSelf<T>(this IEnumerable<T> source) {
 
       var source2 = source.Select((v, i) => new { v, i }).ToArray();
