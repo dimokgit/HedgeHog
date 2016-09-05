@@ -365,13 +365,18 @@ namespace HedgeHog.Alice.Store {
     }
 
     private void SuppRes_RateChanging(object sender, SuppRes.RateChangingEventArgs e) {
-      var jump = e.Next.Abs(e.Prev);
       var sr = (SuppRes)sender;
-      if(sr.CanTrade && jump / RatesHeight > .15) {
-        sr.CanTrade = false;
-        sr.TradesCount = 0;
-        sr.ResetPricePosition();
-      }
+      if(sr.IsExitOnly)
+        return;
+      var jump = e.Next.Abs(e.Prev);
+      TradingMacroTrender()
+        .Where(tm => jump / tm.RatesHeight > .15)
+        .Take(1)
+        .ForEach(_ => {
+          sr.CanTrade = false;
+          sr.TradesCount = 0;
+          sr.ResetPricePosition();
+        });
     }
 
     void SuppRes_SetLevelBy(object sender, EventArgs e) {
@@ -962,14 +967,14 @@ namespace HedgeHog.Alice.Store {
         this.maxCount = maxCount;
       }
       private IEnumerable<Price> GetQueue(double period) {
-        lock (priceStackByPair) {
+        lock(priceStackByPair) {
           if(period <= 1)
             period = (priceStackByPair.Count * period).ToInt();
           return priceStackByPair.Take(period.ToInt());
         }
       }
       public void Add(Price price, DateTime serverTime) {
-        lock (priceStackByPair) {
+        lock(priceStackByPair) {
           var queue = priceStackByPair;
           if((price.Time - serverTime).Duration() < TimeSpan.FromMinutes(1)) {
             if(queue.Count > maxCount)
@@ -983,7 +988,7 @@ namespace HedgeHog.Alice.Store {
       }
 
       public DateTime LastTickTime() {
-        lock (priceStackByPair) {
+        lock(priceStackByPair) {
           return priceStackByPair.Count == 0 ? DateTime.MaxValue : priceStackByPair.Max(p => p.Time);
         }
       }
@@ -1142,7 +1147,7 @@ namespace HedgeHog.Alice.Store {
     static List<Trade> _tradesFromReport;
     List<Trade> tradesFromReport {
       get {
-        lock (_tradesFromReportLock) {
+        lock(_tradesFromReportLock) {
           if(_tradesFromReport == null)
             _tradesFromReport = GetFXWraper().GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now);
         }
@@ -2080,7 +2085,7 @@ namespace HedgeHog.Alice.Store {
     object supportsLocker = new object();
     public SuppRes[] Supports {
       get {
-        lock (supportsLocker) {
+        lock(supportsLocker) {
           return IndexSuppReses(SuppRes.Where(sr => sr.IsSupport).OrderBy(a => a.Rate).ToArray());
         }
       }
@@ -2088,7 +2093,7 @@ namespace HedgeHog.Alice.Store {
     object resistancesLocker = new object();
     public SuppRes[] Resistances {
       get {
-        lock (resistancesLocker)
+        lock(resistancesLocker)
           return IndexSuppReses(SuppRes.Where(sr => !sr.IsSupport).OrderBy(a => a.Rate).ToArray());
       }
     }
@@ -2271,7 +2276,7 @@ namespace HedgeHog.Alice.Store {
               return RatesArray;
             }
 
-            UseRates(rates=> { SetMA(rates); return false; });
+            UseRates(rates => { SetMA(rates); return false; });
 
             OnSetBarsCountCalc();
             ScanTradeEquinox();
@@ -3518,7 +3523,8 @@ namespace HedgeHog.Alice.Store {
           if(!value && !TradingMacrosByPair().Any(tm => tm.IsTrender))
             tmo.Take(1).DefaultIfEmpty(this)
               .ForEach(tm => tm.IsTrender = true);
-          else if(value) tmo.ForEach(tm => tm.IsTrender = false);
+          else if(value)
+            tmo.ForEach(tm => tm.IsTrender = false);
         }
       }
     }
@@ -3816,7 +3822,7 @@ namespace HedgeHog.Alice.Store {
     ISubject<Action> _GeneralPurposeSubject;
     ISubject<Action> GeneralPurposeSubject {
       get {
-        lock (_GeneralPurposeSubjectLocker)
+        lock(_GeneralPurposeSubjectLocker)
           if(_GeneralPurposeSubject == null) {
             _GeneralPurposeSubject = new Subject<Action>();
             _GeneralPurposeSubject.SubscribeToLatestOnBGThread(exc => Log = exc, ThreadPriority.Normal);
@@ -3839,7 +3845,7 @@ namespace HedgeHog.Alice.Store {
     ISubject<Action> _NewsSubject;
     ISubject<Action> NewsSubject {
       get {
-        lock (_NewsSubjectLocker)
+        lock(_NewsSubjectLocker)
           if(_NewsSubject == null) {
             _NewsSubject = new Subject<Action>();
             _NewsSubject.SubscribeWithoutOverlap(a => a(), Scheduler.Default);
@@ -3865,7 +3871,7 @@ namespace HedgeHog.Alice.Store {
     ISubject<Action> _ScanCoridorSubject;
     ISubject<Action> ScanCoridorSubject {
       get {
-        lock (_ScanCoridorSubjectLocker)
+        lock(_ScanCoridorSubjectLocker)
           if(_ScanCoridorSubject == null) {
             _ScanCoridorSubject = new Subject<Action>();
             _ScanCoridorSubject.SubscribeToLatestOnBGThread(a => a(), exc => Log = exc, ThreadPriority.Highest);
@@ -4188,7 +4194,7 @@ namespace HedgeHog.Alice.Store {
         if(UseRatesInternal(ri => { ri.AddRange(dbRates); return true; }).IsEmpty())
           return;
       }
-      lock (_loadRatesLoader)
+      lock(_loadRatesLoader)
         try {
           {
             InfoTooltip = "Loading Rates";
@@ -4959,7 +4965,7 @@ namespace HedgeHog.Alice.Store {
     ISubject<Action> _FireOnNotIsTradingActiveSubject;
     ISubject<Action> FireOnNotIsTradingActiveSubject {
       get {
-        lock (_FireOnNotIsTradingActiveSubjectLocker)
+        lock(_FireOnNotIsTradingActiveSubjectLocker)
           if(_FireOnNotIsTradingActiveSubject == null) {
             _FireOnNotIsTradingActiveSubject = new Subject<Action>();
             _FireOnNotIsTradingActiveSubject

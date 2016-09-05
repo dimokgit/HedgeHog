@@ -414,7 +414,7 @@ namespace HedgeHog.Alice.Store {
 
     public IList<Rate> CalcTrendLines(int start, int count) {
       return UseRates(rates => {
-        return rates.GetRange(start, count.Min(rates.Count-start));
+        return rates.GetRange(start, count.Min(rates.Count-start).Max(0));
       })
       .Select(rates => CalcTrendLines(rates, count))
       .DefaultIfEmpty(new[] { TL.EmptyRate, TL.EmptyRate })

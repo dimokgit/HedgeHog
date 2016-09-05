@@ -40,6 +40,10 @@ namespace HedgeHog {
       if(yArray == null)
         throw new ArgumentNullException("yArray","Is null");
       if(yArray.IsEmpty()) throw  new ArgumentException("Must not be empty","yArray");
+      if(yArray.Count == 1) {
+        min = max = averageY = get(yArray[0]);
+        return 0;
+      }
       double n = yArray.Count;
       double sumxy = 0, sumx = 0, sumy = 0, sumx2 = 0;
       max = double.MinValue;
@@ -59,7 +63,11 @@ namespace HedgeHog {
       if(yArray == null)
         throw new ArgumentNullException("yArray", "Is null");
       if(yArray.IsEmpty())
-        return averageY = double.NaN;
+        throw new ArgumentException("Must not be empty", "yArray");
+      if(yArray.Count == 1) {
+        averageY = yArray[0];
+        return 0;
+      }
       double n = yArray.Count;
       double sumxy = 0, sumx = 0, sumy = 0;
       double sumx2 = 0;

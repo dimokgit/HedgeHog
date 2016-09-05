@@ -106,7 +106,7 @@ namespace HedgeHog.Alice.Store {
         ? MacdDistancesSmoothedReversed(rates)
         : _macdDiastances
         ).Select((d, i) => new { d, i }).Take(rates.Count).ToList();
-      var leg = legs.Last().d.Div(7);
+      var leg = legs.TakeLast(1).Select(l => l.d.Div(7)).DefaultIfEmpty(1).Single();
       var sectionStarts = legs.DistinctUntilChanged(a => a.d.Div(leg).Floor()).ToList();
       var sections = sectionStarts.Zip(sectionStarts.Skip(1), (p, n) => new { end = n.i, start = p.i }).ToList();
       if(sections.Count != 7) {
@@ -120,7 +120,9 @@ namespace HedgeHog.Alice.Store {
       Func<int, IList<Rate>> bs = perc => {
         var digits = Digits();
         var grouped2 = grouped.Value.ToList();
-        var distances = grouped2.Distances(x => x.a).Select((t, i) => new { t, i }).ToList();
+        if(grouped2.Count <= 1)
+          return new List<Rate>();
+        var distances =  grouped2.Distances(x => x.a).Select((t, i) => new { t, i }).ToList();
         var distChunc = distances.Last().t.Item2 / 100.0 * perc;
         var res = Partitioner.Create(Enumerable.Range(0, distances.Count).ToArray(), true)
         .AsParallel()
@@ -147,7 +149,7 @@ namespace HedgeHog.Alice.Store {
           return new { start, count, height, isOut, i, i2 };
         })
         .TakeWhile(x => !x.isOut)
-        .MinBy(x => x.height)
+        .MinByOrEmpty(x => x.height)
         .ToArray()
         .AsEnumerable();
 

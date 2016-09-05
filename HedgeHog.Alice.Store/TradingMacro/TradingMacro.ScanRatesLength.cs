@@ -144,8 +144,6 @@ namespace HedgeHog.Alice.Store {
     List<double> _macdDiastances = new List<double>();
 
     IEnumerable<int> GetRatesLengthByDistanceMinByMacdSmoothed() {
-      var distances = new List<double>(BarsCountCalc);
-      Action<double, double> addDistance = (p, n) => distances.Add(p.Abs(n));
       var cmaPeriod = CmaPeriodByRatesCount(BarsCountCalc);
       var rdm = InPoints(RatesDistanceMin);
       return UseRatesInternal(rs => rs.GetRange((BarsCountCalc * 1.1).ToInt().Min(rs.Count)).ToList())
@@ -155,7 +153,7 @@ namespace HedgeHog.Alice.Store {
             .ToArray()
             .Cma(cmaPeriod)
             .Reverse()
-            .Distances(addDistance)
+            .Distances()
             .Skip(BarsCount + 1)
             .TakeWhile(i => i <= rdm)
             .ToList();

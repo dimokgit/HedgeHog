@@ -471,11 +471,11 @@
             <ul class="dropdown-menu multi-level md">
               <li>
                 <input type="button" value="M" data-bind="click:setTradeLevels.bind($data,13,null),css:{setTradeLevelActive:tradePresetLevel()==13}" title="Set trade levels to min/max" />
-                <input type="button" value="L" class="btn-olive" data-bind="click:setTradeLevels.bind($data,1,null),css:{setTradeLevelActive:tradePresetLevel()==1}" />
-                <input type="button" value="G" class="btn-success" data-bind="click:setTradeLevels.bind($data,2,null),css:{setTradeLevelActive:tradePresetLevel()==2}" />
-                <input type="button" value="R" class="btn-danger" data-bind="click:setTradeLevels.bind($data,3,null),css:{setTradeLevelActive:tradePresetLevel()==3}" />
-                <input type="button" value="P" class="btn-plum" data-bind="click:setTradeLevels.bind($data,10,null),css:{setTradeLevelActive:tradePresetLevel()==10}" />
-                <input type="button" value="B" class="btn-primary" data-bind="click:setTradeLevels.bind($data,4,null),css:{setTradeLevelActive:tradePresetLevel()==4}" />
+                <button type="button" class="btn-olive" data-bind="click:setTradeTrendIndex.bind($data,0),css:{setTradeLevelActive:tradeTrendsInt().indexOf(0)>=0}">L</button>
+                <button type="button" class="btn-success" data-bind="click:setTradeTrendIndex.bind($data,1),css:{setTradeLevelActive:tradeTrendsInt().indexOf(1)>=0}">G</button>
+                <input type="button" value="R" class="btn-danger" data-bind="click:setTradeTrendIndex.bind($data,3),css:{setTradeLevelActive:tradeTrendsInt().indexOf(3)>=0}" />
+                <input type="button" value="P" class="btn-plum" data-bind="click:setTradeTrendIndex.bind($data,2),css:{setTradeLevelActive:tradeTrendsInt().indexOf(2)>=0}" />
+                <input type="button" value="B" class="btn-primary" data-bind="click:setTradeTrendIndex.bind($data,4),css:{setTradeLevelActive:tradeTrendsInt().indexOf(4)>=0}" />
               </li>
               <li style="display:none">
                 <input type="button" value="X" data-bind="click:resetTradeLevels" title="Clear trade levels" />
@@ -514,23 +514,23 @@
           <!--#endregion-->
           <li class="nav-divider thin"></li>
           <li>
-            <button type="button" class="btn-olive" data-bind="click:setTradeTrendIndex.bind($data,0),css:{setTradeLevelActive:tradeTrendsInt().indexOf(0)>=0}">L</button>
+            <input type="button" value="L" class="btn-olive" data-bind="click:setTradeLevels.bind($data,1,null),css:{setTradeLevelActive:tradePresetLevel()==1}" />
           </li>
           <li class="nav-divider thin"></li>
           <li>
-            <button type="button" class="btn-success" data-bind="click:setTradeTrendIndex.bind($data,1),css:{setTradeLevelActive:tradeTrendsInt().indexOf(1)>=0}">G</button>
+            <input type="button" value="G" class="btn-success" data-bind="click:setTradeLevels.bind($data,2,null),css:{setTradeLevelActive:tradePresetLevel()==2}" />
           </li>
           <li class="nav-divider thin"></li>
           <li>
-            <input type="button" value="R" class="btn-danger" data-bind="click:setTradeTrendIndex.bind($data,3),css:{setTradeLevelActive:tradeTrendsInt().indexOf(3)>=0}" />
+            <input type="button" value="R" class="btn-danger" data-bind="click:setTradeLevels.bind($data,3,null),css:{setTradeLevelActive:tradePresetLevel()==3}" />
           </li>
           <li class="nav-divider thin"></li>
           <li>
-            <input type="button" value="P" class="btn-plum" data-bind="click:setTradeTrendIndex.bind($data,2),css:{setTradeLevelActive:tradeTrendsInt().indexOf(2)>=0}" />
+            <input type="button" value="P" class="btn-plum" data-bind="click:setTradeLevels.bind($data,10,null),css:{setTradeLevelActive:tradePresetLevel()==10}" />
           </li>
           <li class="nav-divider thin"></li>
           <li>
-            <input type="button" value="B" class="btn-primary" data-bind="click:setTradeTrendIndex.bind($data,4),css:{setTradeLevelActive:tradeTrendsInt().indexOf(4)>=0}" />
+            <input type="button" value="B" class="btn-primary" data-bind="click:setTradeLevels.bind($data,4,null),css:{setTradeLevelActive:tradePresetLevel()==4}" />
           </li>
           <li class="nav-divider thin"></li>
           <li>
@@ -661,7 +661,7 @@
   <!--#region Dialogs-->
   <!--#region Settings dialog-->
   <div class="modal" id="settingsDialog" tabindex="-1" role="dialog" aria-labelledby="settingsDialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm" data-bind="draggable:">
+    <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header" style="display:none">
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>

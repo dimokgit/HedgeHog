@@ -481,7 +481,7 @@ namespace HedgeHog.Alice.Store {
         };
         var extreams = MonoidsCore.ToFunc((TradingMacro)null, (tm) => new Func<double> [] {()=> tm.RatesMax, ()=>tm.RatesMin });
         Func<TradingMacro, IEnumerable<double>> tradeLevels = tm
-          => new[] { tm.TrendLinesFlat.SelectMany(tl => tl.PriceMax).Average(), tm.TrendLinesFlat.SelectMany(tl => tl.PriceMin).Average() };
+          => new[] { tm.TrendLinesFlat.SelectMany(tl => tl.PriceMax).DefaultIfEmpty(double.NaN).Average(), tm.TrendLinesFlat.SelectMany(tl => tl.PriceMin).DefaultIfEmpty(double.NaN).Average() };
         Func<TradeDirections> ok2 = () => (from tm in TradingMacroTrender()
                                            from bs in tradeLevels(tm)
                                            from ex in extreams(tm)
