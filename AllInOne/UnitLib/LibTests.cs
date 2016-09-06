@@ -120,6 +120,49 @@ namespace HedgeHog.Tests {
       Console.WriteLine(res.ToJson());
       Assert.IsTrue(res.Select(t => new[] { t.Item1, t.Item2 }).Zip(target, (s, t) => s.Zip(t, (v1, v2) => v1 == v2).All(b => b)).All(b => b));
     }
+    [TestMethod()]
+    public void CartesianProduct() {
+      {
+        var len = 3;
+        var source = new[] { 1, 2, 3, 4 };
+        var res  = source.Permutation( len);
+        int[][] target = new int[][] { new[] { 1, 2, 3 }, new[] { 1, 2, 4 }, new[] { 1, 3, 4 }, new[] { 2, 3, 4 } };
+        Console.WriteLine("source:" + source.ToJson());
+        Console.WriteLine("result:" + res.ToJson());
+        Assert.IsTrue(res.Zip(target, (r, t) => t.SequenceEqual(r)).All(b => b));
+      }
+      { 
+        var len = 4;
+        var source = new[] { 1, 2, 3, 4, 5 };
+        var res = source.Permutation( len);
+        Console.WriteLine(source.ToJson());
+        Console.WriteLine(res.ToJson());
+        //Assert.IsTrue(res.Zip(target, (r, t) => t.SequenceEqual(t)).All(b => b));
+      }
+      {
+        var len = 5;
+        var source = new[] { 1, 2, 3, 4, 5, 6 };
+        int[][] target = new int[][] { new[] { 1, 2, 3, 4, 5 }, new[] { 1, 2, 3, 4, 6 }, new[] { 1, 2, 3, 5, 6 }, new[] { 1, 2, 4, 5, 6 }, new[] { 1, 3, 4, 5, 6 }, new[] { 2, 3, 4, 5, 6 } };
+        var res = source.Permutation(len);
+        Console.WriteLine(source.ToJson());
+        Console.WriteLine(res.ToJson());
+        Assert.IsTrue(res.Zip(target, (r, t) => t.SequenceEqual(r)).All(b => b));
+      }
+    }
+
+    /*
+     * Test Name:	CartesianProduct
+Test Outcome:	Passed
+Result StandardOutput:	
+source:[1,2,3,4]
+result:[[1,2,3],[1,2,4],[1,3,4],[2,3,4]]
+[1,2,3,4,5]
+[[1,2,3,4],[1,2,3,5],[1,2,4,5],[1,3,4,5],[2,3,4,5]]
+[1,2,3,4,5,6]
+[],[1,2,3,4,6]
+
+*/
+
 
     [TestMethod()]
     public void AvrageByPositionTest() {
@@ -185,10 +228,10 @@ namespace HedgeHog.Tests {
 6.12  ,
 7.86  ,
 4.63  ,
-27.71 
+27.71
  };
       var wa = source.AverageByPosition();
-      Assert.AreEqual(4.840501349,wa.Round(9));
+      Assert.AreEqual(4.840501349, wa.Round(9));
     }
   }
 }

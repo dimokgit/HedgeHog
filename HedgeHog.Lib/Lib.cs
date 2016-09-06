@@ -78,6 +78,18 @@ namespace HedgeHog {
           .Scan((t1, t2) => new[] { t1[0], t2[0] }));
       return list.Select(a => map(a[0], a[1]));
     }
+    public static IEnumerable<IEnumerable<T>> Permutation<T>(this IEnumerable<T> source, int len) {
+      var source2 = source.Select((n, i) => new { n, i }).ToArray();
+      var source3 = Enumerable.Range(0, len).Select(j => source2.Skip(j).Take(2).ToArray())/*.Take(len)*/.ToArray();
+      var t = new []{ new { n = default(T), i = 0 } };
+      var comp = MonoidsCore.ToFunc( t , t , (a1, a2) => a1.Select(z => z.n).SequenceEqual(a2.Select(z => z.n)));
+      return source3.CartesianProduct()
+        .Select(x => x.OrderBy(i1 => i1.i).Distinct().ToArray())
+        .Where(x => x.Count() == len)
+        .Distinct(LambdaComparer.Factory(comp))
+        .Select(x => x.Select(z => z.n));
+
+    }
     public static IEnumerable<IEnumerable<T>> CartesianProductSelf<T>(this IEnumerable<T> source) {
 
       var source2 = source.Select((v, i) => new { v, i }).ToArray();
