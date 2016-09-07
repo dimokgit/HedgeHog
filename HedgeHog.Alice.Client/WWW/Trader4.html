@@ -542,7 +542,7 @@
             <button data-bind="click:manualToggle">
               <span class="glyphicon glyphicon-hand-right"></span>
             </button>
-            <button id="toggleIsActive" data-bind="click:toggleIsActive.bind($data,0)">
+            <button id="toggleIsActive" data-bind="click:toggleIsActive.bind($data,0),style:{backgroundColor: isTradingActive()? '':'gold'}">
               <span class="glyphicon glyphicon-off"></span>
             </button>
           </li>

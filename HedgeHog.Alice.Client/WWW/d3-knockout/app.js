@@ -755,6 +755,7 @@
     var updateChartIntervalAverages = [ko.observable(), ko.observable()];
     var updateChartCmas = [ko.observable(), ko.observable()];
     this.stats = { ucia: updateChartIntervalAverages, ucCmas: updateChartCmas };
+    this.isTradingActive = isTradingActive = ko.observable(true);
     function updateChart(response) {
       if (!response || !response.length) return;
       if (response.length > 1) throw JSON.stringify(new { "response.length": response.length });
@@ -782,6 +783,7 @@
       openTrades(response.trades)
       //lineChartData.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
       response.waveLines.forEach(function (w, i) { w.bold = i == sumStartIndexById(); });
+      isTradingActive(response.isTradingActive);
       var chartData = chartDataFactory(lineChartData, getTrends(response), response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross(), response.tpsHigh, response.tpsLow, response.canBuy, response.canSell, response.waveLines);
       chartData.com = self.com;
       chartData.com2 = self.com2;

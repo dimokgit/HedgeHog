@@ -412,29 +412,29 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    public IList<Rate> CalcTrendLines(int start, int count) {
+    public IList<Rate> CalcTrendLines(int start, int count, Func<TL, TL> map) {
       return UseRates(rates => {
         return rates.GetRange(start, count.Min(rates.Count-start).Max(0));
       })
-      .Select(rates => CalcTrendLines(rates, count))
+      .Select(rates => CalcTrendLines(rates, count,map))
       .DefaultIfEmpty(new[] { TL.EmptyRate, TL.EmptyRate })
       .Single();
     }
-    public IList<Rate> CalcTrendLines(int count) {
+    public IList<Rate> CalcTrendLines(int count, Func<TL, TL> map) {
       return UseRates(rates => {
         var c = count.Min(rates.Count);
         return rates.GetRange(rates.Count - c, c);
       })
-      .Select(rates => CalcTrendLines(rates, count))
+      .Select(rates => CalcTrendLines(rates, count,map))
       .DefaultIfEmpty(new[] { TL.EmptyRate, TL.EmptyRate })
       .Single();
     }
-    public IList<Rate> CalcTrendLines(List<Rate> source, int count) {
-      var c = count.Min(source.Count);
+    public IList<Rate> CalcTrendLines(List<Rate> source, int count, Func<TL, TL> map) {
+      var c = count.Min(source.Count).Max(0);
       var range = source.Count == count ? source : source.GetRange(source.Count - c, c);
-      return CalcTrendLines(range);
+      return CalcTrendLines(range,map);
     }
-    public IList<Rate> CalcTrendLines(List<Rate> corridorValues) {
+    public IList<Rate> CalcTrendLines(List<Rate> corridorValues,Func<TL,TL> map) {
       if(corridorValues.Count == 0)
         return new[] { TL.EmptyRate, TL.EmptyRate };
       if(corridorValues[0] == null) {
@@ -472,11 +472,11 @@ namespace HedgeHog.Alice.Store {
       var edgeHigh = edges.OrderBy(x => x.d.Abs(x.h)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Abs(x.h)), x.d)).First();
       var edgeLow = edges.OrderBy(x => x.d.Abs(x.l)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Abs(x.l)), x.d)).First();
 
-      rates.ForEach(r => r.Trends = new TL(corridorValues.Count, coeffs, hl) {
+      rates.ForEach(r => r.Trends = map(new TL(corridorValues.Count, coeffs, hl) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize),
         EdgeHigh = new[] { edgeHigh },
         EdgeLow = new[] { edgeLow }
-      });
+      }));
 
 
       rates[0].Trends.PriceAvg1 = regRates[0];

@@ -934,8 +934,8 @@ namespace HedgeHog {
     }
     #endregion
 
-    public static T FirstOrLast<T>(this IEnumerable<T> e, bool last) {
-      return last ? e.Last() : e.First();
+    public static IEnumerable<T> FirstOrLast<T>(this IEnumerable<T> e, bool last,int count = 1) {
+      return last ? e.TakeLast(count) : e.Take(count);
     }
     public static T[] FirstAndLast<T>(this IList<T> e) {
       return new[] { e[0], e[e.Count - 1] };

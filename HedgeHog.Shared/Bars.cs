@@ -637,6 +637,7 @@ namespace HedgeHog.Bars {
         Empty = new TrendLevels(0, new[] { double.NaN, double.NaN }, double.NaN);
         EmptyRate = new Rate { Trends = Empty };
       }
+      public string Color { get; set; }
       public bool IsEmpty { get { return Count == 0; } }
 
       public double Slope { get; set; }

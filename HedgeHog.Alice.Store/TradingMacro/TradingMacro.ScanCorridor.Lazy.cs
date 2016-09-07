@@ -67,11 +67,12 @@ namespace HedgeHog.Alice.Store {
         });
       if(postProcess != null)
         postProcess();
+      Func<TradeLevelsPreset, Func<Rate.TrendLevels, Rate.TrendLevels>> tagTL = ( pl) => tl => { tl.Color = pl + ""; return tl; };
       if(WaveShort.HasRates) {
-        TrendLines1 = Lazy.Create(() => CalcTrendLines(CorridorLengthGreen), TrendLines1.Value, exc => Log = exc);
+        TrendLines1 = Lazy.Create(() => CalcTrendLines(CorridorLengthGreen,tagTL(TradeLevelsPreset.Lime)), TrendLines1.Value, exc => Log = exc);
         var trendRates = WaveShort.Rates.Reverse().ToList();
-        TrendLines = Lazy.Create(() => CalcTrendLines(trendRates), TrendLines.Value, exc => Log = exc);
-        TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue), TrendLines2.Value, exc => Log = exc);
+        TrendLines = Lazy.Create(() => CalcTrendLines(trendRates,tagTL(TradeLevelsPreset.Red)), TrendLines.Value, exc => Log = exc);
+        TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue, tagTL(TradeLevelsPreset.Blue)), TrendLines2.Value, exc => Log = exc);
       }
       return (showVolts ?? GetShowVoltageFunction())();
     }
