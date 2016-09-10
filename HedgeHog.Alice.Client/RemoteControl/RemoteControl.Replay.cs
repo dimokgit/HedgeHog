@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Reactive.Threading;
 using System.Reactive.Concurrency;
 using System.Text;
 using System.Threading;
@@ -15,6 +16,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using Gala = GalaSoft.MvvmLight.Command;
+using HedgeHog;
+using System.Reactive.Threading.Tasks;
 
 namespace HedgeHog.Alice.Client {
   public partial class RemoteControlModel {
@@ -28,7 +31,9 @@ namespace HedgeHog.Alice.Client {
             .Select(c => c == 0);
           //var o2 = this.ObservableForProperty(vm => true, false, false).Select(x => x.Value).ObserveOn(RxApp.MainThreadScheduler);
           _StartReplayCommand = ReactiveCommand.Create(o, RxApp.MainThreadScheduler);
-          _StartReplayCommand.Subscribe(StartReplay);
+          _StartReplayCommand
+            .SelectMany(tm => StartReplay(tm).ToObservable())
+            .Subscribe();
         }
         return _StartReplayCommand;
       }
@@ -47,7 +52,7 @@ namespace HedgeHog.Alice.Client {
       Log = exc;
     }
     public ReactiveList<Task> _replayTasks = new ReactiveList<Task>();
-    void StartReplay(object tm) {
+    async Task StartReplay(object tm) {
       TradingMacro tmOriginal = (TradingMacro)tm;
       if(!IsLoggedIn) {
         LogWww(new Exception("Must login first."));
@@ -74,11 +79,11 @@ namespace HedgeHog.Alice.Client {
 
         if(ReplayArguments.UseSuperSession) {
           #region getDateFromSuperSession
-          Func<DateTime> getDateFromSuperSession = () => {
+          Func<Task<DateTime>> getDateFromSuperSession = async  () =>  {
             try {
               var sessions = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
               if(sessions.Any())
-                FillTestParams(tmOriginal, tpr => SetTestCorridorDistanceRatio(tpr, sessions));
+                await FillTestParams(tmOriginal, tpr => SetTestCorridorDistanceRatio(tpr, sessions));
               else
                 throw new Exception("Either ReplayArguments.DateStart or valid Supersession Uid must be provided.");
               return sessions.Min(s => s.DateStart.Value).AddDays(5);
@@ -88,15 +93,15 @@ namespace HedgeHog.Alice.Client {
             }
           };
           #endregion
-          ReplayArguments.DateStart = ReplayArguments.DateStart ?? getDateFromSuperSession();
+          ReplayArguments.DateStart = ReplayArguments.DateStart ?? await getDateFromSuperSession();
         }
-        FillTestParams(tmOriginal, pt => { });
+        await FillTestParams(tmOriginal, pt => { });
         Log = new Exception("Starting testing with {0} sets.".Formater(TestParams.Count));
         StartReplayInternal(tmOriginal, TestParams.Any() ? TestParams.Dequeue() : null, task => { ContinueReplayWith(tmOriginal, TestParams); });
       } catch(Exception exc) { Log = exc; }
     }
     char[] _testParamValuesSeparators = new[] { '^', '\t' };
-    void FillTestParams(TradingMacro tmOriginal, Action<IList<KeyValuePair<string, object>[]>> paramsTransformation) {
+    async Task FillTestParams(TradingMacro tmOriginal, Action<IList<KeyValuePair<string, object>[]>> paramsTransformation) {
       var c = _testParamValuesSeparators;
       if(!_testParamsRaw.Any()) {
         if(!ReplayArguments.IsWww && tmOriginal.UseTestFile) {
@@ -115,19 +120,20 @@ namespace HedgeHog.Alice.Client {
           ReplayArguments.LastWwwError = "";
           var strats = TaskMonad.RunSync(() => ReadStrategies(tmOriginal, (name, desc, content, uri, diff) => new { name, content, diff }));
           Func<string, bool> isTest = s => s.ToLower().Trim().EndsWith("{t}");
-          strats
+          await strats.Select(s=>s.First())
             .Take(2)
             .OrderByDescending(s=>isTest(s.name))
             .Where(s => isTest(s.name) || s.diff.IsEmpty())
             .IfEmpty(() => { throw new Exception(ReplayArguments.LastWwwError = "Current settings don't match any strategy"); })
-            .ForEach(strategy => {
+            .Select(strategy => {
               tmOriginal.TestFileName = strategy.name;
               var paramsDict = Lib.ReadParametersFromString(strategy.content);
               _testParamsRaw.AddRange(
               paramsDict
                 .Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v))
                 .ToArray()));
-            });
+              return tmOriginal.LoadActiveSettings(strategy.name, TradingMacro.ActiveSettingsStore.Gist);
+            }).WhenAll();
         } else {
           var testParams = tmOriginal.GetPropertiesByAttibute<CategoryAttribute>(a => a.Category == TradingMacro.categoryTest);
           var paramsDict = testParams.ToDictionary(p => p.Item2.Name.Substring(4), p => p.Item2.GetValue(tmOriginal, null).ToString().ParseParamRange());

@@ -60,41 +60,70 @@ namespace HedgeHog.Alice.Store {
 
     #region Edges
 
-    [TradeConditionSetCorridorAttribute]
     public TradeConditionDelegate TLHOk {
       get {
         TradingMacroTrader(tm => Log = new Exception(new { TLHOk = new { tm.TipRatio } } + "")).Count();
         Func<IEnumerable<double>, IEnumerable<double>> abs = (rs) => rs.Scan((d1, d2) => InPips(d1.Abs(d2)));
         Func<IList<double>, IEnumerable<double>, bool> testInside = (outer, inner) => inner.All(d => d.Between(outer[0], outer[1]));
         Func<TL, IList<double>> priceMinMax = tl => tl.PriceMin.Concat(tl.PriceMax).ToArray();
-        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => tm.TrendLinesFlat.OrderByDescending(tl => tl.Count).Permutation(3).ToArray();
+        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
         var ok = MonoidsCore.ToFunc((TradingMacro)null, (IEnumerable<TL>)null, (tm, flats) => {
-        //var flats = trendFlats(tm);
-        var isInside = flats.Pairwise((tl1, tl2) => testInside(priceMinMax(tl1), priceMinMax(tl2))).All(b => b);
-        if(!isInside)
-          return new { td = TradeDirections.None, flat = flats.Last() };
-        var perms = flats.ToArray().Permutation((tl1, tl2) => new { absMin = abs(tl1.PriceMin.Concat(tl2.PriceMin)), absMax = abs(tl1.PriceMax.Concat(tl2.PriceMax)) }).ToArray();
-        var pipTres = InPips(tm.RatesHeight * tm.TipRatio);
-        var upAvg = perms.SelectMany(p => p.absMax).DefaultIfEmpty(double.NaN).Distinct().Average();
-        var downAvg = perms.SelectMany(p => p.absMin).DefaultIfEmpty(double.NaN).Distinct().Average();
-        var upOk = upAvg <= pipTres ? TradeDirections.Up : TradeDirections.None;
-        var downOk = downAvg <= pipTres ? TradeDirections.Down : TradeDirections.None;
-        var useLast = GetTradeLevelsPreset().Any(tlp => tlp == TradeLevelsPreset.Lime);
+          //var flats = trendFlats(tm);
+          var isInside = flats.Pairwise((tl1, tl2) => testInside(priceMinMax(tl1), priceMinMax(tl2))).All(b => b);
+          if(!isInside)
+            return new { td = TradeDirections.None, flat = flats.Last() };
+          var perms = flats.ToArray().Permutation((tl1, tl2) => new { absMin = abs(tl1.PriceMin.Concat(tl2.PriceMin)), absMax = abs(tl1.PriceMax.Concat(tl2.PriceMax)) }).ToArray();
+          var pipTres = InPips(tm.RatesHeight * tm.TipRatio);
+          var upAvg = perms.SelectMany(p => p.absMax).DefaultIfEmpty(double.NaN).Distinct().Average();
+          var downAvg = perms.SelectMany(p => p.absMin).DefaultIfEmpty(double.NaN).Distinct().Average();
+          var upOk = upAvg <= pipTres ? TradeDirections.Both : TradeDirections.None;
+          var downOk = downAvg <= pipTres ? TradeDirections.Both : TradeDirections.None;
+          var useLast = GetTradeLevelsPreset().Any(tlp => tlp == TradeLevelsPreset.Lime);
           return new { td = upOk | downOk, flat = flats.FirstOrLast(useLast).Single() };
         });
         return () => TradingMacroTrender(tm => trendFlats(tm).Select(f => ok(tm, f)))
         .SelectMany(x => x)
         .Where(x => x.td.HasAny())
-        .Do(x => {
-          x.flat.PriceMax.ForEach(r => BuyLevel.RateEx = r);
-          x.flat.PriceMin.ForEach(r => SellLevel.RateEx = r);
-        })
+        //.Do(x => {
+        //  x.flat.PriceMax.ForEach(r => BuyLevel.RateEx = r);
+        //  x.flat.PriceMin.ForEach(r => SellLevel.RateEx = r);
+        //})
         .Select(x => x.td)
         .DefaultIfEmpty()
         .Aggregate((td1, td2) => td1 | td2);
 
       }
     }
+
+    public TradeConditionDelegate TLH2Ok {
+      get {
+        TradingMacroTrader(tm => Log = new Exception(new { TLHOk = new { tm.TipRatio } } + "")).Count();
+        Func<IEnumerable<double>, IEnumerable<double>> abs = (rs) => rs.Scan((d1, d2) => InPips(d1.Abs(d2)));
+        Func<IList<double>, IEnumerable<double>, bool> testInside = (outer, inner) => inner.All(d => d.Between(outer[0], outer[1]));
+        Func<TL, IList<double>> priceMinMax = tl => tl.PriceMin.Concat(tl.PriceMax).ToArray();
+        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
+        var ok = MonoidsCore.ToFunc((TradingMacro)null, (IEnumerable<TL>)null, (tm, flats) => {
+          //var flats = trendFlats(tm);
+          var isInside = flats.Pairwise((tl1, tl2) => testInside(priceMinMax(tl1), priceMinMax(tl2))).All(b => b);
+          if(!isInside)
+            return TradeDirections.None;
+          ;
+          var perms = flats.ToArray().Permutation((tl1, tl2) => new { absMin = abs(tl1.PriceMin.Concat(tl2.PriceMin)), absMax = abs(tl1.PriceMax.Concat(tl2.PriceMax)) }).ToArray();
+          var pipTres = InPips(tm.RatesHeight * tm.TipRatio);
+          var upAvg = perms.SelectMany(p => p.absMax).DefaultIfEmpty(double.NaN).Distinct().Average();
+          var downAvg = perms.SelectMany(p => p.absMin).DefaultIfEmpty(double.NaN).Distinct().Average();
+          var upOk = upAvg <= pipTres;
+          var downOk = downAvg <= pipTres;
+          return upOk != downOk ? TradeDirections.Both : TradeDirections.None;
+        });
+        return () => TradingMacroTrender(tm => trendFlats(tm).Select(f => ok(tm, f)))
+        .SelectMany(x => x)
+        .DefaultIfEmpty()
+        .Aggregate((td1, td2) => td1 | td2);
+
+      }
+    }
+
 
     public TradeConditionDelegate E2EOk {
       get {
@@ -496,6 +525,7 @@ namespace HedgeHog.Alice.Store {
         return () => ok2();
       }
     }
+    [TradeConditionSetCorridor]
     public TradeConditionDelegate TipFlatOk {
       get {
         Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
@@ -508,16 +538,26 @@ namespace HedgeHog.Alice.Store {
             : TradeDirections.None;
         };
         var extreams = MonoidsCore.ToFunc((TradingMacro)null, (tm) => new Func<double>[] { () => tm.RatesMax, () => tm.RatesMin });
-        Func<TradingMacro, IEnumerable<IEnumerable<double>>> tradeLevels = (tm) => {
-          var flatses = tm.TrendLinesFlat.OrderByDescending(tl=>tl.Count).Permutation(3);
-          return flatses.Select(flats => new[] { flats.SelectMany(tl => tl.PriceMax).DefaultIfEmpty(double.NaN).Average(), flats.SelectMany(tl => tl.PriceMin).DefaultIfEmpty(double.NaN).Average() });
-        };
+        var tradeLevels = MonoidsCore.ToFunc((TradingMacro)null, (tm) => {
+          var flatses = tm.TrendLinesFlat.OrderByDescending(tl => tl.Count).Permutation(3);
+          return flatses.Select(flats => new[] { new { flats, avg = flats.SelectMany(tl => tl.PriceMax).DefaultIfEmpty(double.NaN).Average() }, new { flats, avg = flats.SelectMany(tl => tl.PriceMin).DefaultIfEmpty(double.NaN).Average() } });
+        });
+
         Func<TradeDirections> ok2 = () => (from tm in TradingMacroTrender()
                                            from bss in tradeLevels(tm)
                                            from bs in bss
                                            from ex in extreams(tm)
-                                           select new { bs, ex, tm }
-                                           ).Aggregate(TradeDirections.None, (td, a) => td | ok(a.tm, a.bs, a.ex));
+                                           select new { bs.flats, td = ok(tm, bs.avg, ex) }
+                                           ).Where(x => x.td.HasAny())
+                                           .TakeLast(1)
+                                           .Do(x => {
+                                             var useLast = GetTradeLevelsPreset().Any(tlp => tlp == TradeLevelsPreset.Lime);
+                                             var flat = x.flats.FirstOrLast(useLast).Single();
+                                             flat.PriceMax.ForEach(r => BuyLevel.RateEx = r);
+                                             flat.PriceMin.ForEach(r => SellLevel.RateEx = r);
+                                           })
+                                           .Select(x => x.td)
+                                           .LastOrDefault();
         return () => ok2();
       }
     }

@@ -471,6 +471,12 @@ namespace HedgeHog {
       return that.GetType().GetMethods().Where(mi => mi.GetCustomAttributes<A>().Any());
     }
 
+    public static IEnumerable<U> GetPropertiesByAttibute<A,U>(this object that,Func<A> attr, Func<A, PropertyInfo,U> map) where A : Attribute {
+      return from p in that.GetType().GetProperties()
+             from a in p.GetCustomAttributes(false).OfType<A>().Take(1)
+             select map(a, p);
+    }
+
     public static IEnumerable<Tuple<A, PropertyInfo>> GetPropertiesByAttibute<A>(this object that, Func<A, bool> predicate) where A : Attribute {
       var type = that.GetType();
       foreach(var p in type.GetProperties()) {

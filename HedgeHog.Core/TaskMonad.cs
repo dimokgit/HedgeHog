@@ -8,6 +8,24 @@ using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static class TaskMonad {
+    public static Task<T[]> WhenAll<T>(this IEnumerable<Task<T>> source) {
+      return Task.WhenAll(source);
+    }
+    public static Task WhenAll(this IEnumerable<Task> source) {
+      return Task.WhenAll(source);
+    }
+    public static async Task WhenAllSequiential(this IEnumerable<Task> tasks) {
+      foreach(var task in tasks) {
+        await task;
+      }
+    }
+    public static async Task<IList<T>> WhenAllSequiential<T>(this IEnumerable<Task<T>> tasks) {
+      List<T> list = new List<T>();
+      foreach(var task in tasks) {
+        list.Add(await task);
+      }
+      return list;
+    }
     public static Task<T> Unit<T>(this T value) {
       return Task.FromResult(value);
     }

@@ -131,13 +131,22 @@ namespace HedgeHog.Tests {
         Console.WriteLine("result:" + res.ToJson());
         Assert.IsTrue(res.Zip(target, (r, t) => t.SequenceEqual(r)).All(b => b));
       }
-      { 
+      {
         var len = 4;
         var source = new[] { 1, 2, 3, 4, 5 };
-        var res = source.Permutation( len);
+        var res = source.Permutation(len);
         Console.WriteLine(source.ToJson());
         Console.WriteLine(res.ToJson());
         //Assert.IsTrue(res.Zip(target, (r, t) => t.SequenceEqual(t)).All(b => b));
+      }
+      {
+        var len = 4;
+        var source = new[] { 1, 2, 3, 4 };
+        int[][] target = new int[][] { new[] { 1, 2, 3, 4 } };
+        var res = source.Permutation(len);
+        Console.WriteLine(source.ToJson());
+        Console.WriteLine(res.ToJson());
+        Assert.IsTrue(res.Zip(target, (r, t) => r.SequenceEqual(t)).All(b => b));
       }
       {
         var len = 5;

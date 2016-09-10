@@ -17,7 +17,7 @@ using System.Reactive.Disposables;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
-    public bool HaveTrades() {
+      public bool HaveTrades() {
       return Trades.Any() || HasPendingOrders();
     }
     void LogTradingAction(object message) {

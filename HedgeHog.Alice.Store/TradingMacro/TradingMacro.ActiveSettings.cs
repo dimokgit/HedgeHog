@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -51,13 +52,16 @@ namespace HedgeHog.Alice.Store {
     }
 
     public IEnumerable<string> GetActiveSettings(bool excludeNotStrategy = false) {
+      var exclude = new[] { "UID", "EntityKey", "SuppRes" };
+      var cat = this.GetPropertiesByAttibute(() => (CategoryAttribute)null, (c, pi) => new { c.Category, pi,s=0 });
+      var dm = this.GetPropertiesByAttibute(() => (DataMemberAttribute)null, (c, pi) => new { Category="DataMember", pi,s=1 });
       return
-        from setting in this.GetPropertiesByAttibute<CategoryAttribute>(a => true)
-        where IsNotDnr(setting.Item2) && (!excludeNotStrategy || IsStrategy(setting.Item2))
-        group setting by setting.Item1.Category into g
-        orderby g.Key
-        from g2 in new[] { "//{0}//".Formater(g.Key) }
-        .Concat(g.Select(p => "{0}={1}".Formater(p.Item2.Name, p.Item2.GetValue(this, null))).OrderBy(s => s))
+        from setting in cat.Concat(dm).Distinct(x=>x.pi)
+        where IsNotDnr(setting.pi) && (!excludeNotStrategy || IsStrategy(setting.pi)) && !exclude.Contains(setting.pi.Name)
+        group setting by new { setting.Category, setting.s } into g
+        orderby g.Key.s,g.Key.Category
+        from g2 in new[] { "//{0}//".Formater(g.Key.Category) }
+        .Concat(g.Select(p => "{0}={1}".Formater(p.pi.Name, p.pi.GetValue(this, null))).OrderBy(s => s))
         .Concat(new[] { Lib.TestParametersRowDelimiter })
         select g2;
     }
@@ -123,7 +127,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public void LoadSetting<T>(KeyValuePair<string, T> tp) {
-      this.SetProperty(tp.Key, (object)tp.Value, p => p != null && IsNotDnr(p));
+      this.SetProperty(tp.Key, (object)tp.Value, p => p != null && IsNotDnr(p) && HasNot<DataMemberAttribute>(p));
     }
 
     private static bool IsNotDnr(PropertyInfo p) {
@@ -131,6 +135,9 @@ namespace HedgeHog.Alice.Store {
     }
     private static bool IsStrategy(PropertyInfo p) {
       return p.GetCustomAttribute<IsNotStrategyAttribute>() == null;
+    }
+    private static bool HasNot<A>(PropertyInfo p)where A:Attribute {
+      return p.GetCustomAttribute<A>() == null;
     }
   }
 }

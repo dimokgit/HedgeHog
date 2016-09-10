@@ -728,7 +728,8 @@
     }.bind(this);
     var readStrategies = this.readStrategies = function readStrategies() {
       return serverCall("readStrategies", [pair], function (strategies) {
-        this.strategies(strategies.map(function (s) {
+        this.strategies(strategies.map(function (s2) {
+          var s = s2[0];
           return {
             nick: s.nick,
             name: s.diff.join("\n") || s.name,
