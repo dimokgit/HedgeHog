@@ -18,12 +18,58 @@ using HedgeHog.Shared.Messages;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using ReactiveUI;
+using System.Text;
+using System.Windows.Interop;
+using System.Windows.Controls.Primitives;
+using System.Reactive.Linq;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
   /// Interaction logic for DockingWindow.xaml
   /// </summary>
   public partial class DockingWindow : WindowModel {
+    static readonly string TELERIK_TITLE="Telerik UI for WPF Trial";
+
+    [DllImport("user32.dll")]
+    static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+    /// <summary>
+    /// Find window by Caption only. Note you must pass IntPtr.Zero as the first parameter.
+    /// </summary>
+    [DllImport("user32.dll", EntryPoint = "FindWindow", SetLastError = true)]
+    static extern IntPtr FindWindowByCaption(IntPtr ZeroOnly, string lpWindowName);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    static extern IntPtr SendMessage(IntPtr hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
+
+    const UInt32 WM_CLOSE = 0x0010;
+
+    private string GetActiveWindowTitle() {
+      const int nChars = 256;
+      StringBuilder Buff = new StringBuilder(nChars);
+      IntPtr handle = GetForegroundWindow();
+
+      if(GetWindowText(handle, Buff, nChars) > 0) {
+        return Buff.ToString();
+      }
+      return null;
+    }
+    static bool CloseTrialWindow() {
+      IntPtr windowPtr = FindWindowByCaption(IntPtr.Zero, TELERIK_TITLE);
+      if(windowPtr == IntPtr.Zero) {
+        return false;
+      }
+
+      SendMessage(windowPtr, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+      return true;
+    }
+
     #region Attached Properties
     #region IsCharterContainer
     /// <summary>
@@ -187,8 +233,15 @@ namespace HedgeHog.Alice.Client {
     [DllImport("user32.dll")]
     public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, uint dwExtraInfo);
 
+    IDisposable _noTelerikDisposable;
     void NoTelerik() {
-      DispatcherScheduler.Current.Schedule(0.FromSeconds(), () => keybd_event((byte)0x1B, 0, 0, 0));
+      var dateUntil = DateTimeOffset.Now.AddMinutes(1);
+      _noTelerikDisposable = Observable.Interval( TimeSpan.FromSeconds(0.1))
+        .TakeUntil(dateUntil)
+        .Subscribe(_=> {
+          if(CloseTrialWindow())
+            _noTelerikDisposable.Dispose();
+        },()=> { _noTelerikDisposable = null; });
     }
 
     #region RootVisual Event Handlers
@@ -208,7 +261,9 @@ namespace HedgeHog.Alice.Client {
         paneGroup.AddItem(pane, Telerik.Windows.Controls.Docking.DockPosition.Right) ;
         pane.IsHidden = false;
       });
+      NoTelerik();
     }
+
 
     void RootVisual_ElementCleaning(object sender, LayoutSerializationEventArgs e) {
       var pane = e.AffectedElement as RadPane;
@@ -432,7 +487,6 @@ namespace HedgeHog.Alice.Client {
       }));
     }
     public void AddCharter(CharterControl charter) {
-      NoTelerik();
       var pane = FindChartPaneByName(charter.Name);
       var createPane = pane == null;
       if (pane == null) {
