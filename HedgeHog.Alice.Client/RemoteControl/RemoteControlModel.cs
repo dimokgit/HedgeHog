@@ -36,6 +36,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using Gala = GalaSoft.MvvmLight.Command;
 using System.Text.RegularExpressions;
+using HedgeHog.Shared.Messages;
 
 namespace HedgeHog.Alice.Client {
   [Export]
@@ -698,6 +699,9 @@ namespace HedgeHog.Alice.Client {
           MasterModel.MasterTradeAccountChanged += MasterModel_MasterTradeAccountChanged;
           MasterModel.NeedTradingStatistics += MasterModel_NeedTradingStatistics;
           MasterModel.TradingMacroNameChanged += new EventHandler<EventArgs>(MasterModel_TradingMacroNameChanged);
+
+          MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveTradingMacros());
+
         }
       } catch(Exception exc) {
         Log = exc;

@@ -17,6 +17,7 @@ using System.Reactive.Concurrency;
 using System.Threading;
 using System.Data.Entity.Core.Objects;
 using System.Data.Entity.Infrastructure;
+using System.IO;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage : Models.ModelBase {
@@ -44,6 +45,10 @@ namespace HedgeHog.Alice.Store {
         return _databasePath;
       }
       set { _databasePath = value; }
+    }
+
+    public static string ActiveSettingsPath(string path) {
+      return Path.IsPathRooted(path) ? path : Path.Combine(Lib.CurrentDirectory, "Settings", path);
     }
 
     public class GenericRow<T> {
@@ -196,6 +201,18 @@ namespace HedgeHog.Alice.Store {
 
     public static void UseAliceContextSaveChanges() {
       UseAliceContext(c => { }, true);
+    }
+    public static void SaveJson<T>(T source, string path) {
+      var settingsPath = ActiveSettingsPath(path);
+      var dir = Path.GetDirectoryName(settingsPath);
+      Directory.CreateDirectory(dir);
+      var json = Newtonsoft.Json.JsonConvert.SerializeObject(source, Newtonsoft.Json.Formatting.Indented);
+      File.WriteAllText(settingsPath, json);
+
+    }
+    public static T LoadJson<T>(string path) {
+      var json = File.ReadAllText(ActiveSettingsPath(path));
+      return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public static void UseAliceContext(Action<AliceEntities> action, bool saveChanges = false) {

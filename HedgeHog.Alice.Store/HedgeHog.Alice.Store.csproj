@@ -15,6 +15,8 @@
     <TargetFrameworkProfile />
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\AllInOne\</SolutionDir>
     <RestorePackages>true</RestorePackages>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -110,6 +112,10 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
       <HintPath>..\..\..\..\..\..\WINDOWS\assembly\GAC\Microsoft.Vbe.Interop\12.0.0.0__71e9bce111e9429c\Microsoft.Vbe.Interop.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Octokit, Version=0.22.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\Octokit.0.22.0\lib\net45\Octokit.dll</HintPath>
       <Private>True</Private>
@@ -204,6 +210,7 @@
     <Compile Include="TradingMacro\Exceptions.cs" />
     <Compile Include="TradingMacro\ScanCorridor\ScanCorridorByFftMA.cs" />
     <Compile Include="TradingMacro\SuppRes\SuppRes.cs" />
+    <Compile Include="TradingMacro\SuppRes\SuppResEF.cs" />
     <Compile Include="TradingMacro\SuppRes\SuppResExtentions.cs" />
     <Compile Include="TradingMacro\TradeConditionType.cs" />
     <Compile Include="TradingMacro\TradingMacro.ActiveProps.cs" />
@@ -380,6 +387,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="CopyTradingMacro.sql" />
+    <Content Include="FodyWeavers.xml" />
     <Content Include="TradingMacro\StrategyEnterMiddleMan.txt" />
   </ItemGroup>
   <ItemGroup />

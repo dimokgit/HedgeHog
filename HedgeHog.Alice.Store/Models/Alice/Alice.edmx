@@ -17,16 +17,6 @@
           <Property Name="StopOrderID" Type="int" Nullable="false" />
           <Property Name="Pair" Type="nvarchar" MaxLength="7" />
         </EntityType>
-        <EntityType Name="SuppRes">
-          <Key>
-            <PropertyRef Name="UID" />
-          </Key>
-          <Property Name="Rate" Type="float" Nullable="false" />
-          <Property Name="IsSupport" Type="bit" Nullable="false" />
-          <Property Name="TradingMacroID" Type="uniqueidentifier" Nullable="false" />
-          <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
-          <Property Name="TradesCount" Type="float" Nullable="false" />
-        </EntityType>
         <EntityType Name="TradingAccount">
           <Key>
             <PropertyRef Name="Id" />
@@ -136,7 +126,6 @@
         </EntityType>
         <EntityContainer Name="AliceModelStoreContainer">
           <EntitySet Name="OrderTemplate" EntityType="Self.OrderTemplate" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="SuppRes" EntityType="Self.SuppRes" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="TradingAccount" EntityType="Self.TradingAccount" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="TradingMacro" EntityType="Self.TradingMacro" Schema="dbo" store:Type="Tables" />
         </EntityContainer>
@@ -148,11 +137,6 @@
           <EntitySet Name="TradingAccounts" EntityType="AliceModel.TradingAccount" />
           <EntitySet Name="TradingMacroes" EntityType="AliceModel.TradingMacro" />
           <EntitySet Name="OrderTemplates" EntityType="AliceModel.OrderTemplate" />
-          <EntitySet Name="SuppRes" EntityType="AliceModel.SuppRes" />
-          <AssociationSet Name="TradingMacro_SuppRes" Association="AliceModel.TradingMacro_SuppRes">
-            <End Role="TradingMacro" EntitySet="TradingMacroes" />
-            <End Role="SuppRes" EntitySet="SuppRes" />
-          </AssociationSet>
         </EntityContainer>
         <EntityType Name="TradingAccount">
           <Key>
@@ -236,7 +220,6 @@
           <Property Type="Double" Name="SpreadShortToLongTreshold" Nullable="false" />
           <Property Type="Double" Name="SupportPriceStore" />
           <Property Type="Double" Name="ResistancePriceStore" />
-          <NavigationProperty Name="SuppRes" Relationship="AliceModel.TradingMacro_SuppRes" FromRole="TradingMacro" ToRole="SuppRes" />
           <Property Type="Int32" Name="SuppResLevelsCount" Nullable="false" />
           <Property Type="Boolean" Name="DoStreatchRates" Nullable="false" />
           <Property Type="Boolean" Name="IsSuppResManual" Nullable="false" />
@@ -274,29 +257,6 @@
           <Property Type="Int32" Name="StopOrderID" Nullable="false" />
           <Property Type="String" Name="Pair" MaxLength="7" FixedLength="false" Unicode="true" />
         </EntityType>
-        <EntityType Name="SuppRes">
-          <Key>
-            <PropertyRef Name="UID" />
-          </Key>
-          <Property Type="Double" Name="Rate" Nullable="false" />
-          <Property Type="Boolean" Name="IsSupport" Nullable="false" />
-          <Property Type="Guid" Name="TradingMacroID" Nullable="false" />
-          <Property Type="Guid" Name="UID" Nullable="false" />
-          <NavigationProperty Name="TradingMacro" Relationship="AliceModel.TradingMacro_SuppRes" FromRole="SuppRes" ToRole="TradingMacro" />
-          <Property Type="Double" Name="TradesCount" Nullable="false" />
-        </EntityType>
-        <Association Name="TradingMacro_SuppRes">
-          <End Type="AliceModel.TradingMacro" Role="TradingMacro" Multiplicity="1" />
-          <End Type="AliceModel.SuppRes" Role="SuppRes" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="TradingMacro">
-              <PropertyRef Name="UID" />
-            </Principal>
-            <Dependent Role="SuppRes">
-              <PropertyRef Name="TradingMacroID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -313,17 +273,6 @@
                 <ScalarProperty Name="Limit" ColumnName="Limit" />
                 <ScalarProperty Name="Stop" ColumnName="Stop" />
                 <ScalarProperty Name="ID" ColumnName="ID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="SuppRes">
-            <EntityTypeMapping TypeName="IsTypeOf(AliceModel.SuppRes)">
-              <MappingFragment StoreEntitySet="SuppRes">
-                <ScalarProperty Name="TradesCount" ColumnName="TradesCount" />
-                <ScalarProperty Name="UID" ColumnName="UID" />
-                <ScalarProperty Name="TradingMacroID" ColumnName="TradingMacroID" />
-                <ScalarProperty Name="IsSupport" ColumnName="IsSupport" />
-                <ScalarProperty Name="Rate" ColumnName="Rate" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -458,15 +407,10 @@
     </edmx:Options>
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <edmx:Diagram Name="Alice" ZoomLevel="39">
+      <edmx:Diagram Name="Alice" ZoomLevel="85">
         <edmx:EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
-        <edmx:EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="4.875" Height="0.4" IsExpanded="false" />
+        <edmx:EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="4.875" Height="0.4" IsExpanded="true" />
         <edmx:EntityTypeShape EntityType="AliceModel.OrderTemplate" Width="1.5" PointX="7.375" PointY="0.75" Height="1.9210009765624996" />
-        <edmx:EntityTypeShape EntityType="AliceModel.SuppRes" Width="1.5" PointX="5.375" PointY="5.375" Height="2.1725878906249996" />
-        <edmx:AssociationConnector Association="AliceModel.TradingMacro_SuppRes">
-          <edmx:ConnectorPoint PointX="4.6249999999999973" PointY="5.275" />
-          <edmx:ConnectorPoint PointX="5.375" PointY="5.375" />
-        </edmx:AssociationConnector>
       </edmx:Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

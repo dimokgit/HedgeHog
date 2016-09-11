@@ -460,7 +460,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public DateTime? TradeDate { get; set; }
-
+    public TradingMacro TradingMacro { get; internal set; }
   }
   public static class SuppResMixins {
     public static bool HasCanTradeCorridorChanged(this IList<SuppRes> buySellLevels) {

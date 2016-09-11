@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.Entity.Core.Objects.DataClasses;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    string ActiveSettingsPath() { return Lib.CurrentDirectory + "\\Settings\\{0}({1})_Last.txt".Formater(Pair.Replace("/", ""), PairIndex); }
+    string ActiveSettingsPath() { return Path.Combine(Lib.CurrentDirectory, "Settings\\{0}({1})_Last.txt".Formater(Pair.Replace("/", ""), PairIndex)); }
     void SaveActiveSettings() {
       try {
         string path = ActiveSettingsPath();
@@ -51,17 +52,30 @@ namespace HedgeHog.Alice.Store {
       await Cloud.GitHub.GistStrategyAddOrUpdate(path, fullName, settings.ToArray());
     }
 
+    static string[] _excludeDataMembers = new[] {
+      Lib.GetLambda<TradingMacro>(tm=>tm.TradingMacroName),
+      Lib.GetLambda<TradingMacro>(tm=>tm.TradingGroup),
+      Lib.GetLambda<TradingMacro>(tm=>tm.PairIndex)
+    }
+    .Select(s=>s.ToLower()).ToArray();
+    bool IsMemberExcluded(string name) { return _excludeDataMembers.Contains(name.ToLower()); }
+
     public IEnumerable<string> GetActiveSettings(bool excludeNotStrategy = false) {
-      var exclude = new[] { "UID", "EntityKey", "SuppRes" };
-      var cat = this.GetPropertiesByAttibute(() => (CategoryAttribute)null, (c, pi) => new { c.Category, pi,s=0 });
-      var dm = this.GetPropertiesByAttibute(() => (DataMemberAttribute)null, (c, pi) => new { Category="DataMember", pi,s=1 });
+      var cat = this.GetPropertiesByAttibute(() => (CategoryAttribute)null, (c, pi) => new { c.Category, pi, s = 0 });
+      var dm = this.GetPropertiesByAttibute(() => (EdmScalarPropertyAttribute)null, (c, pi) => new { Category = "DataMember", pi, s = 1, key = c.EntityKeyProperty })
+        .Where(x => !x.key && !IsMemberExcluded(x.pi.Name))
+        .Select(x => new { x.Category, x.pi, x.s });
       return
-        from setting in cat.Concat(dm).Distinct(x=>x.pi)
-        where IsNotDnr(setting.pi) && (!excludeNotStrategy || IsStrategy(setting.pi)) && !exclude.Contains(setting.pi.Name)
+        from setting in cat.Concat(dm).Distinct(x => x.pi)
+        where IsNotDnr(setting.pi) && (!excludeNotStrategy || IsStrategy(setting.pi))
         group setting by new { setting.Category, setting.s } into g
-        orderby g.Key.s,g.Key.Category
+        orderby g.Key.s, g.Key.Category
         from g2 in new[] { "//{0}//".Formater(g.Key.Category) }
-        .Concat(g.Select(p => "{0}={1}".Formater(p.pi.Name, p.pi.GetValue(this, null))).OrderBy(s => s))
+        .Concat(g
+        .Select(p => new { p, v = p.pi.GetValue(this, null) })
+        .Where(x => x.v != null)
+        .Select(x => "{0}={1}".Formater(x.p.pi.Name, x.v))
+        .OrderBy(s => s))
         .Concat(new[] { Lib.TestParametersRowDelimiter })
         select g2;
     }
@@ -74,7 +88,7 @@ namespace HedgeHog.Alice.Store {
         case ActiveSettingsStore.Gist:
           TradingMacrosByPair()
             .Zip(await Lib.ReadTestParametersFromGist(path), (tm, settings) => new { tm, settings })
-            .ForEach(x => x.tm.LoadActiveSettings(x.settings));
+            .ForEach(x => x.tm.LoadActiveSettings(x.settings, path + "[" + x.tm.PairIndex + "]"));
           break;
         case ActiveSettingsStore.Local:
           LoadActiveSettings(path);
@@ -85,10 +99,10 @@ namespace HedgeHog.Alice.Store {
     }
     public void LoadActiveSettings(string path) {
       var settings = Lib.ReadTestParameters(path);
-      LoadActiveSettings(settings);
+      LoadActiveSettings(settings, path);
     }
 
-    public void LoadActiveSettings(Dictionary<string, string> settings) {
+    public void LoadActiveSettings(Dictionary<string, string> settings, string source) {
       try {
         settings.ForEach(tp => {
           try {
@@ -97,7 +111,7 @@ namespace HedgeHog.Alice.Store {
             Log = new Exception(new { tp.Key, tp.Value } + "", exc);
           }
         });
-        Log = new Exception("{0} Settings loaded.".Formater(Pair));
+        Log = new Exception("{0}[{2}] Settings loaded from {1}.".Formater(Pair, source, PairIndex));
       } catch(Exception exc) {
         Log = exc;
       }
@@ -127,7 +141,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     public void LoadSetting<T>(KeyValuePair<string, T> tp) {
-      this.SetProperty(tp.Key, (object)tp.Value, p => p != null && IsNotDnr(p) && HasNot<DataMemberAttribute>(p));
+      if(!IsMemberExcluded(tp.Key))
+        this.SetProperty(tp.Key, (object)tp.Value, p => p != null && IsNotDnr(p));
     }
 
     private static bool IsNotDnr(PropertyInfo p) {
@@ -136,7 +151,7 @@ namespace HedgeHog.Alice.Store {
     private static bool IsStrategy(PropertyInfo p) {
       return p.GetCustomAttribute<IsNotStrategyAttribute>() == null;
     }
-    private static bool HasNot<A>(PropertyInfo p)where A:Attribute {
+    private static bool HasNot<A>(PropertyInfo p) where A : Attribute {
       return p.GetCustomAttribute<A>() == null;
     }
   }

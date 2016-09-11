@@ -37,6 +37,12 @@ using System.Data.Entity.Core.Objects.DataClasses;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
+    List<SuppRes> _suppRes = new List<SuppRes>();
+    public List<SuppRes> SuppRes {
+      get {
+        return _suppRes;
+      }
+    }
 
     #region Subjechiss
     static TimeSpan THROTTLE_INTERVAL = TimeSpan.FromSeconds(1);
@@ -268,7 +274,7 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => WaveShortDistanceInPips);
         _broadcastCorridorDateChanged();
       };
-      SuppRes.AssociationChanged += new CollectionChangeEventHandler(SuppRes_AssociationChanged);
+      //SuppRes.AssociationChanged += new CollectionChangeEventHandler(SuppRes_AssociationChanged);
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<RequestPairForHistoryMessage>(this
         , a => {
           Debugger.Break();
@@ -2013,16 +2019,15 @@ namespace HedgeHog.Alice.Store {
 
     #region Supports/Resistances
     #region Add
-    public SuppRes AddSupport(double rate) { return AddSuppRes(rate, true); }
-    public SuppRes AddResistance(double rate) { return AddSuppRes(rate, false); }
     public SuppRes AddBuySellRate(double rate, bool isBuy) { return AddSuppRes(rate, !isBuy); }
     public SuppRes AddSuppRes(double rate, bool isSupport) {
       try {
         var srs = (isSupport ? Supports : Resistances);
         var index = srs.Select(a => a.Index).DefaultIfEmpty(0).Max() + 1;
         var sr = new SuppRes { Rate = rate, IsSupport = isSupport, TradingMacroID = UID, UID = Guid.NewGuid(), TradingMacro = this, Index = index, TradesCount = srs.Select(a => a.TradesCount).DefaultIfEmpty().Max() };
-        GlobalStorage.UseAliceContext(c => c.SuppRes.AddObject(sr));
-        GlobalStorage.UseAliceContext(c => c.SaveChanges());
+        SuppRes.Add(sr);
+        //GlobalStorage.UseAliceContext(c => c.SuppRes.AddObject(sr));
+        //GlobalStorage.UseAliceContext(c => c.SaveChanges());
         return sr;
       } catch(Exception exc) {
         Log = exc;

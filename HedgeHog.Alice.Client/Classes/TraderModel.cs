@@ -287,7 +287,7 @@ namespace HedgeHog.Alice.Client {
     public string[] TradingMacrosCases {
       get {
         try {
-          return GlobalStorage.UseAliceContext(c => c.TradingMacroes.Select(tm => tm.TradingMacroName).Distinct()).ToArray();
+          return new string[0];// GlobalStorage.UseAliceContext(c => c.TradingMacroes.Select(tm => tm.TradingMacroName).Distinct()).ToArray();
         } catch(Exception exc) {
           Log = exc;
           return null;
@@ -329,10 +329,12 @@ namespace HedgeHog.Alice.Client {
     }
 
     ListCollectionView _tradingAccountsList;
+    TradingAccount[] _tradingAccounts;
     public ListCollectionView TradingAccountsList {
       get {
         if(_tradingAccountsList == null) {
-          _TradingAccountsSet = new ObservableCollection<Store.TradingAccount>(GlobalStorage.UseAliceContext(c => c.TradingAccounts));
+          _tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
+          _TradingAccountsSet = new ObservableCollection<Store.TradingAccount>(_tradingAccounts);
           foreach(var ta in _TradingAccountsSet)
             ta.PropertyChanged += new PropertyChangedEventHandler(ta_PropertyChanged);
           _TradingAccountsSet.CollectionChanged += _TradingAccountsSet_CollectionChanged;
@@ -873,10 +875,12 @@ namespace HedgeHog.Alice.Client {
         return _SaveTradingSlavesCommand;
       }
     }
+    static string _accountsPath = "Accounts.json";
     void SaveTradingSlaves() {
       try {
-        GlobalStorage.UseAliceContextSaveChanges();
-        Log = new Exception("Slave accounts were saved");
+        //GlobalStorage.UseAliceContextSaveChanges();
+        GlobalStorage.SaveJson(_tradingAccounts, _accountsPath);
+        Log = new Exception("Trade accounts were saved");
       } catch(Exception exc) {
         Log = exc;
         MessageBox.Show(exc + "");
@@ -1371,6 +1375,8 @@ namespace HedgeHog.Alice.Client {
           PriceChangeSubscribtion.YieldNotNull().ForEach(d => d.Dispose());
         };
         #endregion
+
+        MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveTradingSlaves());
 
         //if (false) {
         //  Using_FetchServerTrades = () => Using(FetchServerTrades);

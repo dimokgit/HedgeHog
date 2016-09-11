@@ -18,6 +18,9 @@ using FXW = Order2GoAddIn.FXCoreWrapper;
 using System.Runtime.CompilerServices;
 using System.Collections.Concurrent;
 using GalaSoft.MvvmLight.Command;
+using System.Data.Entity.Core.Objects;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace HedgeHog.Alice.Store {
   public class RemoteControlModelBase : HedgeHog.Models.ModelBase {
@@ -66,22 +69,45 @@ namespace HedgeHog.Alice.Store {
 
 
     #region TradingMacros
+
+    public static TradingMacro[] ReadTradingMacros() {
+      var searchPath = GlobalStorage.ActiveSettingsPath(TradingMacrosPath("*", "*", "*", "*"));
+      var paths = Directory.GetFiles(Path.GetDirectoryName(searchPath),Path.GetFileName(searchPath));
+      return paths.ToArray(path => GlobalStorage.LoadJson<TradingMacro>(path));
+    }
+    static string WrapPair(string pair) {
+      return pair.Replace("/", "");
+    }
+    static string UnWrapPair(string pair) {
+      return Regex.Replace(pair, @"(\w3)(\w3)", "$1/$2");
+    }
+    public void SaveTradingMacros() {
+      TradingMacros.ForEach(tm => GlobalStorage.SaveJson(tm, TradingMacrosPath(tm.TradingMacroName, tm.Pair, tm.TradingGroup, tm.PairIndex)));
+    }
     protected void ResetTradingMacros() {
       //_tradingMacrosCopy = TradingMacros.ToArray();
       RaisePropertyChanged(() => TradingMacrosCopy);
     }
 
-    protected IQueryable<TradingMacro> _TradingMacros;
-    public IQueryable<TradingMacro> TradingMacros {
+    protected delegate void Context_ObjectMaterializedDelegate(object sender, ObjectMaterializedEventArgs e);
+    Context_ObjectMaterializedDelegate Context_ObjectMaterializer;
+
+    protected static readonly string _tradingMacrosPath = "TradingMacros\\{0}+{1}_{2}_{3}.json";
+    protected static string TradingMacrosPath(string name, string pair,object group, object index) { return _tradingMacrosPath.Formater(name, WrapPair(pair), group, index); }
+    protected IList<TradingMacro> _TradingMacros;
+    public IList<TradingMacro> TradingMacros {
       get {
         try {
-          if (_TradingMacros == null)
-            _TradingMacros = !IsInDesigh
-              ? GlobalStorage.UseAliceContext(Context => Context.TradingMacroes
-              .Where(tm => tm.TradingMacroName == MasterModel.TradingMacroName)
-              .OrderBy(tm => tm.TradingGroup)
-              .ThenBy(tm => tm.PairIndex))
-              : new[] { new TradingMacro() }.AsQueryable();
+          if(_TradingMacros == null)
+            _TradingMacros = ReadTradingMacros();
+              //!IsInDesigh
+              //? GlobalStorage.UseAliceContext(Context => Context.TradingMacroes
+              //.Where(tm => tm.TradingMacroName == MasterModel.TradingMacroName)
+              //.OrderBy(tm => tm.TradingMacroName)
+              //.ThenBy(tm => tm.TradingGroup)
+              //.ThenBy(tm => tm.PairIndex)
+              //.ToArray())
+              //: new[] { new TradingMacro() };
           return _TradingMacros;
         } catch (Exception exc) {
           Debug.Fail(exc.ToString());
