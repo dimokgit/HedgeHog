@@ -163,6 +163,7 @@ namespace HedgeHog.Alice.Store {
     public static bool IsLocalDB { get { return false; } }
     static AliceEntities Context {
       get {
+        return null;
         lock (contextLocker)
           if (_context == null)
             if (!IsLocalDB) {

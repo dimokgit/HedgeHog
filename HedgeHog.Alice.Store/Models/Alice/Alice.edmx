@@ -5,18 +5,6 @@
     <!-- SSDL content -->
     <edmx:StorageModels>
     <Schema Namespace="AliceModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
-        <EntityType Name="OrderTemplate">
-          <Key>
-            <PropertyRef Name="ID" />
-          </Key>
-          <Property Name="ID" Type="int" Nullable="false" />
-          <Property Name="Stop" Type="int" Nullable="false" />
-          <Property Name="Limit" Type="int" Nullable="false" />
-          <Property Name="Price" Type="float" Nullable="false" />
-          <Property Name="Lot" Type="int" Nullable="false" />
-          <Property Name="StopOrderID" Type="int" Nullable="false" />
-          <Property Name="Pair" Type="nvarchar" MaxLength="7" />
-        </EntityType>
         <EntityType Name="TradingAccount">
           <Key>
             <PropertyRef Name="Id" />
@@ -125,7 +113,6 @@
           <Property Name="VoltageFunction" Type="int" Nullable="false" />
         </EntityType>
         <EntityContainer Name="AliceModelStoreContainer">
-          <EntitySet Name="OrderTemplate" EntityType="Self.OrderTemplate" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="TradingAccount" EntityType="Self.TradingAccount" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="TradingMacro" EntityType="Self.TradingMacro" Schema="dbo" store:Type="Tables" />
         </EntityContainer>
@@ -136,7 +123,6 @@
         <EntityContainer Name="AliceEntities" annotation:LazyLoadingEnabled="true" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation">
           <EntitySet Name="TradingAccounts" EntityType="AliceModel.TradingAccount" />
           <EntitySet Name="TradingMacroes" EntityType="AliceModel.TradingMacro" />
-          <EntitySet Name="OrderTemplates" EntityType="AliceModel.OrderTemplate" />
         </EntityContainer>
         <EntityType Name="TradingAccount">
           <Key>
@@ -245,37 +231,12 @@
           <Property Type="Double" Name="ResetOnBalance" />
           <Property Type="Int32" Name="VoltageFunction" Nullable="false" />
         </EntityType>
-        <EntityType Name="OrderTemplate">
-          <Key>
-            <PropertyRef Name="ID" />
-          </Key>
-          <Property Type="Int32" Name="ID" Nullable="false" />
-          <Property Type="Int32" Name="Stop" Nullable="false" />
-          <Property Type="Int32" Name="Limit" Nullable="false" />
-          <Property Type="Double" Name="Price" Nullable="false" />
-          <Property Type="Int32" Name="Lot" Nullable="false" />
-          <Property Type="Int32" Name="StopOrderID" Nullable="false" />
-          <Property Type="String" Name="Pair" MaxLength="7" FixedLength="false" Unicode="true" />
-        </EntityType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
     <edmx:Mappings>
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
         <EntityContainerMapping StorageEntityContainer="AliceModelStoreContainer" CdmEntityContainer="AliceEntities">
-          <EntitySetMapping Name="OrderTemplates">
-            <EntityTypeMapping TypeName="IsTypeOf(AliceModel.OrderTemplate)">
-              <MappingFragment StoreEntitySet="OrderTemplate">
-                <ScalarProperty Name="Pair" ColumnName="Pair" />
-                <ScalarProperty Name="StopOrderID" ColumnName="StopOrderID" />
-                <ScalarProperty Name="Lot" ColumnName="Lot" />
-                <ScalarProperty Name="Price" ColumnName="Price" />
-                <ScalarProperty Name="Limit" ColumnName="Limit" />
-                <ScalarProperty Name="Stop" ColumnName="Stop" />
-                <ScalarProperty Name="ID" ColumnName="ID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="TradingAccounts">
             <EntityTypeMapping TypeName="IsTypeOf(AliceModel.TradingAccount)">
               <MappingFragment StoreEntitySet="TradingAccount">
@@ -410,7 +371,6 @@
       <edmx:Diagram Name="Alice" ZoomLevel="85">
         <edmx:EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
         <edmx:EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="4.875" Height="0.4" IsExpanded="true" />
-        <edmx:EntityTypeShape EntityType="AliceModel.OrderTemplate" Width="1.5" PointX="7.375" PointY="0.75" Height="1.9210009765624996" />
       </edmx:Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

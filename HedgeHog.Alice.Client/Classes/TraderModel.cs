@@ -333,7 +333,6 @@ namespace HedgeHog.Alice.Client {
     public ListCollectionView TradingAccountsList {
       get {
         if(_tradingAccountsList == null) {
-          _tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
           _TradingAccountsSet = new ObservableCollection<Store.TradingAccount>(_tradingAccounts);
           foreach(var ta in _TradingAccountsSet)
             ta.PropertyChanged += new PropertyChangedEventHandler(ta_PropertyChanged);
@@ -1205,7 +1204,7 @@ namespace HedgeHog.Alice.Client {
 
     public string[] TradingAccounts {
       get {
-        return GlobalStorage.UseAliceContext(c => c.TradingAccounts.Select(ta => ta.AccountId).ToArray().Distinct()).ToArray();
+        return _tradingAccounts.Select(ta => ta.AccountId).ToArray().Distinct().ToArray();
       }
     }
 
@@ -1276,6 +1275,7 @@ namespace HedgeHog.Alice.Client {
         _default = this;
         Initialize();
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
+        _tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
         #region FXCM
         fwMaster = new FXW(this.CoreFX, CommissionByTrade);
         TradesManagerStatic.AccountCurrency = MasterAccount.Currency;

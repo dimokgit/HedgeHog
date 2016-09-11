@@ -387,10 +387,6 @@
     <Compile Include="RemoteControl\ButtonImage.xaml.cs">
       <DependentUpon>ButtonImage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="RemoteControl\OrderTemplates.xaml.cs">
-      <DependentUpon>OrderTemplates.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="RemoteControl\OrderTemplatesModel.cs" />
     <Compile Include="RemoteControl\RemoteControl.Replay.cs" />
     <Compile Include="RemoteControl\RemoteControl.xaml.cs">
       <DependentUpon>RemoteControl.xaml</DependentUpon>
@@ -425,23 +421,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="MainWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="MainWindow.xaml.cs">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
     <Page Include="RemoteControl\ButtonImage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="RemoteControl\OrderTemplates.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

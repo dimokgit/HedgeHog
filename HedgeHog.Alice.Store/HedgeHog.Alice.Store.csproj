@@ -194,6 +194,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Alice.edmx</DependentUpon>
     </Compile>
+    <Compile Include="Models\TradingAccount.cs" />
     <Compile Include="Model\Model1.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
