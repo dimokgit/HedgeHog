@@ -306,18 +306,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-
-    ObservableCollection<TradingAccount> slaveAccounts = new ObservableCollection<TradingAccount>();
-
-    public ObservableCollection<TradingAccount> SlaveAccounts {
-      get {
-        if(slaveAccounts.Count == 0)
-          GlobalStorage.GetTradingAccounts().ToList().ForEach(ta => slaveAccounts.Add(ta));
-        return slaveAccounts;
-      }
-      set { slaveAccounts = value; }
-    }
-
     bool _ShowAllAccountsFilter = false;
     public bool ShowAllAccountsFilter {
       get { return _ShowAllAccountsFilter; }

@@ -131,7 +131,6 @@ namespace HedgeHog.Alice.Client {
 
     private void Application_Exit(object sender, ExitEventArgs e) {
       if (GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic) return;
-      GlobalStorage.UseAliceContext(c => c.SaveChanges());
       if (GlobalStorage.IsLocalDB) {
         var Connection = GlobalStorage.UseAliceContext(c => c.Connection);
         var newName = Path.Combine(

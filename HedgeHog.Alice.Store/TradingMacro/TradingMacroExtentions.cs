@@ -2085,7 +2085,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     private static string GetSuppResRateErrorMessage(double rate) {
-      return "Rate " + rate + " is not unique in " + Metadata.AliceEntitiesMetadata.SuppRes + " table";
+      return "Rate " + rate + " is not unique in SuppRes table";
     }
     object supportsLocker = new object();
     public SuppRes[] Supports {

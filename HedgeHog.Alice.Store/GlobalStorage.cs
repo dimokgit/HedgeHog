@@ -253,10 +253,6 @@ namespace HedgeHog.Alice.Store {
       return dlg.FileName;
     }
 
-    public static TradingAccount[] GetTradingAccounts() {
-      if (GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic) return new TradingAccount[] { };
-      return Context.TradingAccounts.ToArray();
-    }
     public static List<Rate> GetRateFromDBByDateRange(string pair, DateTime startDate, DateTime endDate, int minutesPerBar) {
       return GlobalStorage.UseForexContext(c => {
         var q = c.t_Bar

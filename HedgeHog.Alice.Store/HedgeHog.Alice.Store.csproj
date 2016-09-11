@@ -230,6 +230,7 @@
     <Compile Include="TradingMacro\TradingMacro.TradeDirectionTriggers.cs" />
     <Compile Include="TradingMacro\TradingMacro.TradeOpenActions.cs" />
     <Compile Include="TradingMacro\TradingMacro.WaveRanges.cs" />
+    <Compile Include="TradingMacro\TradingMacroEF.cs" />
     <Compile Include="TradingMacro\TradingMacroExtentions.cs" />
     <Compile Include="TradingMacro\TradingMacro.Strategies.cs" />
     <Compile Include="TradingMacro\TradingStatistics.cs" />
