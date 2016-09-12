@@ -598,6 +598,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_RatesLengthBy != value) {
           _RatesLengthBy = value;
+          BarsCountCalc = 0;
           OnPropertyChanged("RatesLengthBy");
         }
       }

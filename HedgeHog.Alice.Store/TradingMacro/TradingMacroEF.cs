@@ -7,8 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace HedgeHog.Alice.Store {
+  //[JsonObject(MemberSerialization.OptOut)]
   public partial class TradingMacro : EntityObject {
     #region Factory Method
 

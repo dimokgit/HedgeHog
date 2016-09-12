@@ -21,6 +21,7 @@ using GalaSoft.MvvmLight.Command;
 using System.Data.Entity.Core.Objects;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Runtime.ExceptionServices;
 
 namespace HedgeHog.Alice.Store {
   public class RemoteControlModelBase : HedgeHog.Models.ModelBase {
@@ -92,14 +93,17 @@ namespace HedgeHog.Alice.Store {
     protected delegate void Context_ObjectMaterializedDelegate(object sender, ObjectMaterializedEventArgs e);
     Context_ObjectMaterializedDelegate Context_ObjectMaterializer;
 
+    protected virtual void Context_ObjectMaterialized(object sender, ObjectMaterializedEventArgs e) { throw new NotImplementedException(); }
     protected static readonly string _tradingMacrosPath = "TradingMacros\\{0}+{1}_{2}_{3}.json";
     protected static string TradingMacrosPath(string name, string pair,object group, object index) { return _tradingMacrosPath.Formater(name, WrapPair(pair), group, index); }
     protected IList<TradingMacro> _TradingMacros;
     public IList<TradingMacro> TradingMacros {
       get {
         try {
-          if(_TradingMacros == null)
+          if(_TradingMacros == null) {
             _TradingMacros = ReadTradingMacros();
+            _TradingMacros.ForEach(tm => Context_ObjectMaterialized(tm, null));
+          }
               //!IsInDesigh
               //? GlobalStorage.UseAliceContext(Context => Context.TradingMacroes
               //.Where(tm => tm.TradingMacroName == MasterModel.TradingMacroName)
@@ -110,27 +114,19 @@ namespace HedgeHog.Alice.Store {
               //: new[] { new TradingMacro() };
           return _TradingMacros;
         } catch (Exception exc) {
-          Debug.Fail(exc.ToString());
-          return null;
+          Log = exc;
+          ExceptionDispatchInfo.Capture(exc).Throw();
+          throw;
         }
       }
     }
     List<TradingMacro> _tradingMacrosCopy = new List<TradingMacro>();
     public TradingMacro[] TradingMacrosCopy {
       get {
-        if (MasterModel.TradingMacroName == "") {
-          MessageBox.Show("Master Trading account mast have TradingMacroName.");
-          return new TradingMacro[0];
-        } else {
-          if (_tradingMacrosCopy.Count == 0)
-            _tradingMacrosCopy = TradingMacros.ToList();
-          var isAnySelected = false;// _tradingMacrosCopy.Any(tm => tm.IsSelectedInUI);
-          return _tradingMacrosCopy.Where(tm => IsInVirtualTrading && isAnySelected ? tm.IsSelectedInUI : (TradingMacroFilter(tm) || ShowAllMacrosFilter)).ToArray();
-        }
+        if(_tradingMacrosCopy.Count == 0)
+          _tradingMacrosCopy = TradingMacros.ToList();
+        return _tradingMacrosCopy.ToArray();
       }
-    }
-    protected bool TradingMacroFilter(TradingMacro tm) {
-      return tm.TradingMacroName == MasterModel.TradingMacroName;
     }
 
     protected void TradingMacrosCopy_Add(TradingMacro tm) {
@@ -154,9 +150,8 @@ namespace HedgeHog.Alice.Store {
     protected IList<TradingMacro> GetTradingMacros(string pair = "") {
       pair = pair.ToLower();
       if (!_tradingMacrosDictionary.ContainsKey(pair))
-        _tradingMacrosDictionary.Add(pair, TradingMacrosCopy.Where(tm => new[] { tm.Pair.ToLower(), "" }.Contains(pair) && tm.IsActive && TradingMacroFilter(tm)).OrderBy(tm => tm.PairIndex).ToList());
+        _tradingMacrosDictionary.Add(pair, TradingMacrosCopy.Where(tm => new[] { tm.Pair.ToLower(), "" }.Contains(pair) && tm.IsActive).OrderBy(tm => tm.PairIndex).ToList());
       return _tradingMacrosDictionary.ContainsKey(pair) ? _tradingMacrosDictionary[pair] : new TradingMacro[0];
-      return TradingMacrosCopy.Where(tm => new[] { tm.Pair, "" }.Contains(pair) && tm.IsActive && TradingMacroFilter(tm)).OrderBy(tm => tm.PairIndex).ToList();
     }
     #endregion
 

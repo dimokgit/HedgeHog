@@ -22,6 +22,7 @@ using System.Text;
 using System.Windows.Interop;
 using System.Windows.Controls.Primitives;
 using System.Reactive.Linq;
+using System.Runtime.ExceptionServices;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -196,10 +197,10 @@ namespace HedgeHog.Alice.Client {
       try {
         App.container.SatisfyImportsOnce(this);
       } catch (CompositionException exc) {
-        var ie = exc.InnerException;
+        var ie = exc.RootCauses.Select(rc => rc.InnerException).FirstOrDefault() ?? exc.InnerException;
         while (ie.InnerException != null)
           ie = ie.InnerException;
-        throw ie;
+        ExceptionDispatchInfo.Capture(ie).Throw();
       }
       StyleManager.ApplicationTheme = new VistaTheme();
       InitializeComponent();

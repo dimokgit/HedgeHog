@@ -32,7 +32,6 @@ namespace HedgeHog.Alice.Store {
       tradingAccount.TradeRatio = tradeRatio;
       tradingAccount.Commission = commission;
       tradingAccount.IsActive = isActive;
-      tradingAccount.TradingMacroName = tradingMacroName;
       tradingAccount.Currency = currency;
       return tradingAccount;
     }
@@ -231,27 +230,6 @@ namespace HedgeHog.Alice.Store {
     private global::System.Boolean _IsActive;
     partial void OnIsActiveChanging(global::System.Boolean value);
     partial void OnIsActiveChanged();
-
-    /// <summary>
-    /// No Metadata Documentation available.
-    /// </summary>
-    [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
-    [DataMemberAttribute()]
-    public global::System.String TradingMacroName {
-      get {
-        return _TradingMacroName;
-      }
-      set {
-        OnTradingMacroNameChanging(value);
-        ReportPropertyChanging("TradingMacroName");
-        _TradingMacroName = StructuralObject.SetValidValue(value, false, "TradingMacroName");
-        ReportPropertyChanged("TradingMacroName");
-        OnTradingMacroNameChanged();
-      }
-    }
-    private global::System.String _TradingMacroName;
-    partial void OnTradingMacroNameChanging(global::System.String value);
-    partial void OnTradingMacroNameChanged();
 
     /// <summary>
     /// No Metadata Documentation available.

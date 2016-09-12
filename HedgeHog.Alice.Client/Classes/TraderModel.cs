@@ -366,7 +366,8 @@ namespace HedgeHog.Alice.Client {
 
     private bool FilterTradingAccounts(object o) {
       var ta = o as TradingAccount;
-      return new[] { ta.AccountId, ta.MasterId }.Contains(TradingAccount) || ShowAllAccountsFilter;
+      return ta.IsActive || ShowAllAccountsFilter;
+      //return new[] { ta.AccountId, ta.MasterId }.Contains(TradingAccount) || ShowAllAccountsFilter;
     }
 
     ObservableCollection<TradingAccount> _TradingAccountsSet;
@@ -1264,6 +1265,11 @@ namespace HedgeHog.Alice.Client {
         Initialize();
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
         _tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
+        var activeTradeAccounts = _tradingAccounts.Count(ta => ta.IsActive);
+        if(activeTradeAccounts != 1) {
+          Log = new Exception(new { activeTradeAccounts } + "");
+          throw new Exception("No Trading Account found.");
+        }
         #region FXCM
         fwMaster = new FXW(this.CoreFX, CommissionByTrade);
         TradesManagerStatic.AccountCurrency = MasterAccount.Currency;
@@ -1701,7 +1707,6 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
-    public override string TradingMacroName { get { return MasterAccount == null ? "" : MasterAccount.TradingMacroName; } }
     double CommissionByLot(int lot) {
       return MasterAccount == null
         ? 0

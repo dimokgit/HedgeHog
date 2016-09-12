@@ -4240,17 +4240,18 @@ namespace HedgeHog.Alice.Store {
               periodsBack = 0;
             var groupTicks = BarPeriodCalc == BarsPeriodType.s1;
             LoadRatesImpl(GetFXWraper(), Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
-            if(BarPeriod != BarsPeriodType.t1) {
-              var rateLastDate = ratesList.Last().StartDate;
-              var delay = ServerTime.Subtract(rateLastDate).Duration();
-              var delayMax = 1.0.Max(BarPeriodInt).FromMinutes();
-              if(delay > delayMax) {
-                if(delay > (delayMax + delayMax))
-                  Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
-                ratesList.RemoveAt(ratesList.Count - 1);
-                LoadRatesImpl(GetFXWraper(), Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
-              }
-            }
+            if(BarPeriod != BarsPeriodType.t1)
+              ratesList.TakeLast(1).ForEach(r => {
+                var rateLastDate = r.StartDate;
+                var delay = ServerTime.Subtract(rateLastDate).Duration();
+                var delayMax = 1.0.Max(BarPeriodInt).FromMinutes();
+                if(delay > delayMax) {
+                  if(delay > (delayMax + delayMax))
+                    Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
+                  ratesList.RemoveAt(ratesList.Count - 1);
+                  LoadRatesImpl(GetFXWraper(), Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
+                }
+              });
             {
               UseRatesInternal(ri => ri.BackwardsIterator().TakeWhile(isNotHistory).ToList()).ForEach(ratesLocal => {
                 if(ratesLocal == null)

@@ -21,7 +21,6 @@ namespace HedgeHog.Alice.Store {
     public abstract TradingAccountModel AccountModel { get; }
     public abstract ITradesManager TradesManager { get; }
     public abstract Exception Log { get; set; }
-    public abstract string TradingMacroName { get; }
     public abstract double CurrentLoss { set; }
     public abstract void AddCosedTrade(Trade trade);
     public abstract double CommissionByTrade(Trade trades);

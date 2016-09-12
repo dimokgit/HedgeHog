@@ -803,8 +803,8 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    void Context_ObjectMaterialized(object sender, ObjectMaterializedEventArgs e) {
-      var tm = e.Entity as TradingMacro;
+    protected override void Context_ObjectMaterialized(object sender, ObjectMaterializedEventArgs e) {
+      var tm = (sender as TradingMacro) ?? (e.Entity as TradingMacro);
       if(tm == null)
         return;
       tm.PropertyChanged += TradingMacro_PropertyChanged;
@@ -892,7 +892,7 @@ namespace HedgeHog.Alice.Client {
 
         if(e.PropertyName == TradingMacroMetadata.CurrentLoss) {
           MasterModel.CurrentLoss = CurrentLoss;
-          GlobalStorage.UseAliceContext(c => { }, true);
+          //GlobalStorage.UseAliceContext(c => { }, true);
         }
         if(e.PropertyName == TradingMacroMetadata.SyncAll) {
           if(tm.SyncAll) {
@@ -1478,7 +1478,7 @@ namespace HedgeHog.Alice.Client {
     }
     Dictionary<TradingMacro, IDisposable> _syncDisposables = new Dictionary<TradingMacro, IDisposable>();
     private void InitTradingMacro(TradingMacro tm, bool unwind = false) {
-      var isFilterOk = TradingMacroFilter(tm) && tm.IsActive;
+      var isFilterOk = tm.IsActive;
       if(!unwind && isFilterOk) {
         tm.TradingStatistics = _tradingStatistics;
         tm.IpPort = MasterModel.IpPort;
