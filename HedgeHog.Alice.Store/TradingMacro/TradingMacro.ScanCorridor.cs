@@ -253,7 +253,7 @@ namespace HedgeHog.Alice.Store {
       #region Funcs
 
       Func<TradeLevelsPreset, Func<Rate.TrendLevels, Rate.TrendLevels>> tagTL = (pl) => tl => { tl.Color = pl + ""; return tl; };
-      Func<int, TradeLevelsPreset,bool,int, Tuple<IList<Rate>,int>> bs = (perc, pl,isMin,skip) => {
+      Func<int, TradeLevelsPreset, bool, int, Tuple<IList<Rate>, int>> bs = (perc, pl, isMin, skip) => {
         var digits = Digits();
         var grouped2 = grouped(skip).ToList();
         var def = Tuple.Create(new Rate[0].AsIList(), 0);
@@ -299,7 +299,7 @@ namespace HedgeHog.Alice.Store {
         .OrderByDescending(x => x.start)
         //.OrderBy(x => grouped2.GetRange(x.i, x.i2 - x.i).LinearSlope(y => y.a).Abs())
         .Take(1)
-        .Select(x => Tuple.Create(CalcTrendLines(x.start, x.count, tagTL(pl)),x.start))
+        .Select(x => Tuple.Create(CalcTrendLines(x.start, x.count, tagTL(pl)), x.start))
         .DefaultIfEmpty(def)
         .Single();
       };
@@ -308,26 +308,27 @@ namespace HedgeHog.Alice.Store {
 
 
       int? skipFirst = null;
-      Func<int, bool, TradeLevelsPreset, IList<Rate>> calcTrendLines = (start, isMin, pl) => {
-        var x =bs(start, pl, isMin,skipFirst.GetValueOrDefault(0));
+      Func<int, bool, TradeLevelsPreset, int, IList<Rate>> calcTrendLines = (start, isMin, pl, skip) => {
+        var x = bs(start, pl, isMin, skip);
         if(!skipFirst.HasValue)
           skipFirst = x.Item2;
         return x.Item1;
       };
 
       TrendRedInt().Pairwise((s, c) => new { s })
-        .ForEach(p => TrendLines = Lazy.Create(() => calcTrendLines(p.s, false, TradeLevelsPreset.Red), TrendLines.Value, exc => Log = exc));
+        .Select(p => calcTrendLines(p.s, false, TradeLevelsPreset.Red, 0))
+        .ForEach(tl => TrendLines = Lazy.Create(() => tl, TrendLines.Value, exc => Log = exc));
 
       //CorridorLengthLime = legIndexes[1];
-      TrendLimeInt().Pairwise((s, c) => new { s })
-        .ForEach(p => TrendLines0 = Lazy.Create(() => calcTrendLines(p.s, true, TradeLevelsPreset.Lime), TrendLines0.Value, exc => Log = exc));
+      TrendLimeInt().Pairwise((s, c) => new { s, skip = skipFirst.GetValueOrDefault() })
+        .ForEach(p => TrendLines0 = Lazy.Create(() => calcTrendLines(p.s, true, TradeLevelsPreset.Lime, p.skip), TrendLines0.Value, exc => Log = exc));
 
       //CorridorLengthGreen = legIndexes[2];
-      TrendGreenInt().Pairwise((s, c) => new { s })
-        .ForEach(p => TrendLines1 = Lazy.Create(() => calcTrendLines(p.s, true, TradeLevelsPreset.Green), TrendLines1.Value, exc => Log = exc));
+      TrendGreenInt().Pairwise((s, c) => new { s, skip = skipFirst.GetValueOrDefault() })
+        .ForEach(p => TrendLines1 = Lazy.Create(() => calcTrendLines(p.s, true, TradeLevelsPreset.Green, p.skip), TrendLines1.Value, exc => Log = exc));
 
-      TrendPlumInt().Pairwise((s, c) => new { s })
-        .ForEach(p => TrendLines3 = Lazy.Create(() => calcTrendLines(p.s, true, TradeLevelsPreset.Plum), TrendLines3.Value, exc => Log = exc));
+      TrendPlumInt().Pairwise((s, c) => new { s, skip = skipFirst.GetValueOrDefault() })
+        .ForEach(p => TrendLines3 = Lazy.Create(() => calcTrendLines(p.s, true, TradeLevelsPreset.Plum, p.skip), TrendLines3.Value, exc => Log = exc));
 
       CorridorLengthBlue = ratesForCorridor.Count;
       TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue, tagTL(TradeLevelsPreset.Blue)), TrendLines2.Value, exc => Log = exc);
@@ -337,7 +338,7 @@ namespace HedgeHog.Alice.Store {
           var redRates = RatesArray.GetRange(RatesArray.Count - 2, 2);
           redRates.Reverse();
           WaveShort.Rates = redRates;
-          return new { redRates, trend = new { StDev=0,Coeffs=new[] {0.0,0.0 } } };
+          return new { redRates, trend = new { StDev = 0, Coeffs = new[] { 0.0, 0.0 } } };
         })
       .ToArray();
 

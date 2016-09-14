@@ -976,13 +976,15 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    int _TradeCountMax= 0;
     [WwwSetting(Group = wwwSettingsTradingConditions)]
     [Category(categoryActive)]
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
     public int TradeCountMax {
-      get { return CorridorRatioForBreakout.ToInt(); }
+      get { return _TradeCountMax; }
       set {
-        CorridorRatioForBreakout = value;
+        _TradeCountMax = value;
+        OnPropertyChanged("TradeCountMax");
       }
     }
 

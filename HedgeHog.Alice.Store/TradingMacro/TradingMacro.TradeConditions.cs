@@ -97,7 +97,7 @@ namespace HedgeHog.Alice.Store {
 
     public TradeConditionDelegate TLH2Ok {
       get {
-        TradingMacroTrader(tm => Log = new Exception(new { TLHOk = new { tm.TipRatio } } + "")).Count();
+        TradingMacroTrader(tm => Log = new Exception(new { TLH2Ok = new { tm.TipRatio } } + "")).Count();
         Func<IEnumerable<double>, IEnumerable<double>> abs = (rs) => rs.Scan((d1, d2) => InPips(d1.Abs(d2)));
         Func<IList<double>, IEnumerable<double>, bool> testInside = (outer, inner) => inner.All(d => d.Between(outer[0], outer[1]));
         Func<TL, IList<double>> priceMinMax = tl => tl.PriceMin.Concat(tl.PriceMax).ToArray();

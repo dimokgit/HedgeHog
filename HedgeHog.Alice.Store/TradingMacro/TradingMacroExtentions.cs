@@ -342,12 +342,14 @@ namespace HedgeHog.Alice.Store {
         case CollectionChangeAction.Add:
           ((Store.SuppRes)e.Element).CanTradeChanged += SuppRes_CanTradeChanged;
           ((Store.SuppRes)e.Element).RateChanged += SuppRes_RateChanged;
+          ((Store.SuppRes)e.Element).RateChanging += SuppRes_RateChanging;
           ((Store.SuppRes)e.Element).Scan += SuppRes_Scan;
+          ((Store.SuppRes)e.Element).SetLevelBy += SuppRes_SetLevelBy;
           ((Store.SuppRes)e.Element).IsActiveChanged += SuppRes_IsActiveChanged;
           ((Store.SuppRes)e.Element).EntryOrderIdChanged += SuppRes_EntryOrderIdChanged;
           break;
         case CollectionChangeAction.Refresh:
-          ((EntityCollection<SuppRes>)sender).ToList()
+          ((IEnumerable<SuppRes>)sender).ToList()
             .ForEach(sr => {
               sr.CanTradeChanged += SuppRes_CanTradeChanged;
               sr.RateChanged += SuppRes_RateChanged;
@@ -372,10 +374,10 @@ namespace HedgeHog.Alice.Store {
 
     private void SuppRes_RateChanging(object sender, SuppRes.RateChangingEventArgs e) {
       var sr = (SuppRes)sender;
-      if(sr.IsExitOnly)
+      if(sr.IsExitOnly || e.Prev == e.Next)
         return;
       var jump = e.Next.Abs(e.Prev);
-      TradingMacroTrender()
+      TradingMacroTrader()
         .Where(tm => jump / tm.RatesHeight > .15)
         .Take(1)
         .ForEach(_ => {
@@ -2027,6 +2029,7 @@ namespace HedgeHog.Alice.Store {
         var index = srs.Select(a => a.Index).DefaultIfEmpty(0).Max() + 1;
         var sr = new SuppRes { Rate = rate, IsSupport = isSupport, TradingMacroID = UID, UID = Guid.NewGuid(), TradingMacro = this, Index = index, TradesCount = srs.Select(a => a.TradesCount).DefaultIfEmpty().Max() };
         SuppRes.Add(sr);
+        SuppRes_AssociationChanged(SuppRes, new CollectionChangeEventArgs(CollectionChangeAction.Add, sr));
         //GlobalStorage.UseAliceContext(c => c.SuppRes.AddObject(sr));
         //GlobalStorage.UseAliceContext(c => c.SaveChanges());
         return sr;
