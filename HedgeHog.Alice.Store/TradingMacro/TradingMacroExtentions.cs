@@ -1581,6 +1581,7 @@ namespace HedgeHog.Alice.Store {
         _voltsOk = true;
         _ratesStartDate = null;
         _mmaLastIsUp = null;
+        _ratesArrayCoeffs = new double[0];
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         vm.SetInitialBalance(args.StartingBalance);
@@ -2312,9 +2313,9 @@ namespace HedgeHog.Alice.Store {
                 .Average();
                 OnRatesArrayChaged();
                 AdjustSuppResCount();
-                var coeffs = prices.Linear();
+                _ratesArrayCoeffs = prices.Linear();
                 StDevByPriceAvg = prices.StandardDeviation();
-                StDevByHeight = prices.StDevByRegressoin(coeffs);
+                StDevByHeight = prices.StDevByRegressoin(_ratesArrayCoeffs);
                 switch(CorridorCalcMethod) {
                   case CorridorCalculationMethod.Height:
                   case CorridorCalculationMethod.MinMax:
@@ -2333,7 +2334,7 @@ namespace HedgeHog.Alice.Store {
                   default:
                     throw new Exception(new { CorridorCalcMethod } + " is not supported.");
                 }
-                Angle = AngleFromTangent(coeffs.LineSlope(), () => CalcTicksPerSecond(rates));
+                Angle = AngleFromTangent(_ratesArrayCoeffs.LineSlope(), () => CalcTicksPerSecond(rates));
                 CalcBoilingerBand();
                 //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
                 OnPropertyChanged(() => RatesRsd);
@@ -3787,6 +3788,8 @@ namespace HedgeHog.Alice.Store {
       switch(function) {
         case ScanCorridorFunction.OneTwoThree:
           return ScanCorridorBy123;
+        case ScanCorridorFunction.OneToFour:
+          return ScanCorridorBy1234;
         case ScanCorridorFunction.Fft:
           return ScanCorridorByFft;
         case ScanCorridorFunction.StDevSplits:
@@ -5285,6 +5288,8 @@ namespace HedgeHog.Alice.Store {
     double RatesPipsPerMInute { get; set; }
 
     bool _isAsleep;
+    private double[] _ratesArrayCoeffs = new double[0];
+
     public bool IsAsleep {
       get { return _isAsleep; }
 

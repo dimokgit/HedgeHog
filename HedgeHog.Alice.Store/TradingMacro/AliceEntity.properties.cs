@@ -574,15 +574,16 @@ namespace HedgeHog.Alice.Store {
     partial void OnVoltageFunctionChanged() {
       OnPropertyChanged("VoltageFunction_");
     }
+    ScanCorridorFunction _ScanCorridorBy;
     [DisplayName("Scan Corridor By")]
     [Category(categoryActiveFuncs)]
     [Description("ScanCorridor By")]
     [WwwSetting(wwwSettingsCorridorFuncs)]
     public ScanCorridorFunction ScanCorridorBy {
-      get { return (ScanCorridorFunction)StDevAverageLeewayRatio; }
+      get { return _ScanCorridorBy; }
       set {
-        if (StDevAverageLeewayRatio != (int)value) {
-          StDevAverageLeewayRatio = (int)value;
+        if (_ScanCorridorBy != value) {
+          _ScanCorridorBy = value;
           OnPropertyChanged("ScanCorridorBy");
         }
       }

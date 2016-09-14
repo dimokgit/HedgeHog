@@ -251,7 +251,7 @@ namespace HedgeHog.Alice.Client {
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
         S = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
-        price = new { ask = tm0.CurrentPrice.Ask, bid = tm0.CurrentPrice.Bid },
+        price = tmTrader.CurrentPrice.YieldNotNull().Select(cp=> new { ask = cp.Ask, bid = cp.Bid }).DefaultIfEmpty(new object()).Single(),
         tci = GetTradeConditionsInfo(tmTrader),
         wp = tmTrader.WaveHeightPower.Round(1),
         ip = remoteControl.Value.ReplayArguments.InPause ? 1 : 0,

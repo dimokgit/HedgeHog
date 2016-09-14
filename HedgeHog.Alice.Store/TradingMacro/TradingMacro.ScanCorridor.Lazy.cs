@@ -65,15 +65,7 @@ namespace HedgeHog.Alice.Store {
           CorridorLengthGreen = ratesReversed.TakeWhile(r => r.StartDate >= _corridorStartDate1).Count();
           CorridorLengthBlue = ratesReversed.TakeWhile(r => r.StartDate >= _corridorStartDate2).Count();
         });
-      if(postProcess != null)
-        postProcess();
-      Func<TradeLevelsPreset, Func<Rate.TrendLevels, Rate.TrendLevels>> tagTL = ( pl) => tl => { tl.Color = pl + ""; return tl; };
-      if(WaveShort.HasRates) {
-        TrendLines1 = Lazy.Create(() => CalcTrendLines(CorridorLengthGreen,tagTL(TradeLevelsPreset.Lime)), TrendLines1.Value, exc => Log = exc);
-        var trendRates = WaveShort.Rates.Reverse().ToList();
-        TrendLines = Lazy.Create(() => CalcTrendLines(trendRates,tagTL(TradeLevelsPreset.Red)), TrendLines.Value, exc => Log = exc);
-        TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue, tagTL(TradeLevelsPreset.Blue)), TrendLines2.Value, exc => Log = exc);
-      }
+      postProcess?.Invoke();
       return (showVolts ?? GetShowVoltageFunction())();
     }
     IList<Rate> TryGetTrendLines(Func<IList<Rate>> calc, IList<Rate> defaultList) {

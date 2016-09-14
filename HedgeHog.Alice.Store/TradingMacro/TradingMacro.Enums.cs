@@ -51,6 +51,7 @@ namespace HedgeHog.Alice.Store {
     StDevSplits3 = 48,
     Fft = 64,
     OneTwoThree = 5,
+    OneToFour = 6,
   }
   public enum TrailingWaveMethod {
     SimpleMoveBO = 4,

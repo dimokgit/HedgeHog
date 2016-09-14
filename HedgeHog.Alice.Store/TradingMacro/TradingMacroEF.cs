@@ -266,7 +266,6 @@ namespace HedgeHog.Alice.Store {
     /// No Metadata Documentation available.
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
-    [DataMemberAttribute()]
     public global::System.Double CurrentLoss {
       get {
         return _CurrentLoss;
@@ -1841,7 +1840,6 @@ namespace HedgeHog.Alice.Store {
     /// No Metadata Documentation available.
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
-    [DataMemberAttribute()]
     public global::System.Double StDevAverageLeewayRatio {
       get {
         return _StDevAverageLeewayRatio;
