@@ -18,6 +18,7 @@ using System.Windows.Input;
 using Gala = GalaSoft.MvvmLight.Command;
 using HedgeHog;
 using System.Reactive.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace HedgeHog.Alice.Client {
   public partial class RemoteControlModel {

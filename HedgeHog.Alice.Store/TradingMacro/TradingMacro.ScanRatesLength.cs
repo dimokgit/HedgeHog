@@ -135,7 +135,7 @@ namespace HedgeHog.Alice.Store {
         .DefaultIfEmpty(BarsCountCalc)
         .Take(1)
         .Concat(new[] { BarsCount })
-        .Concat(new[] { GetRatesCountByTimeFrame(RatesArray.Last().StartDate, TimeFrameTresholdTimeSpan) })
+        .Concat(GetRatesCountByTimeFrame( TimeFrameTresholdTimeSpan))
         .OrderByDescending(d => d)
         .Do(count => IsRatesLengthStable = RatesArray.Count.Ratio(count) < 1.05)
         .First();
@@ -282,7 +282,7 @@ namespace HedgeHog.Alice.Store {
         (from tm in TradingMacroOther()
          let wr = getWr(tm)
          where wr != null
-         let distMin = InPoints(wr.Where(w=>w!=null).Average(w => w.Distance))
+         let distMin = InPoints(wr.Where(w => w != null).Average(w => w.Distance))
          let dateMin = wr.Select(w => w.TotalMinutes).OrderByDescending(m => m).Take(1).Select(m => ServerTime.AddMinutes(-m))
          from dates in tm.UseRatesInternal(rates => rates.BackwardsIterator()
          .Distances(_priceAvg).SkipWhile(t => t.Item2 < distMin)
@@ -317,11 +317,10 @@ namespace HedgeHog.Alice.Store {
         .Select(wr => wr.StartDate)
         .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()));
     }
-    private int GetRatesCountByTimeFrame(DateTime dateEnd, TimeSpan timeFrame) {
-      var dateStart = dateEnd.Subtract(timeFrame);
-      return UseRatesInternal(ri => ri.FuzzyIndex(dateStart, (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
+    private int[] GetRatesCountByTimeFrame(TimeSpan timeFrame) {
+      return UseRatesInternal(ri => ri.FuzzyIndex( ri.Last().StartDate.Subtract(timeFrame), (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
        .SelectMany(i => i, (_, i) => /*BarsCountCalc.Max(*/RatesInternal.Count - i/*)*/)
-       .Single();
+       .ToArray();
     }
 
     DateTime __barsCountLastDate = DateTime.MinValue;

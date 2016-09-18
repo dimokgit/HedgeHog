@@ -20,6 +20,8 @@ using System.Data.Entity.Infrastructure;
 using System.IO;
 using System.Reflection;
 using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage : Models.ModelBase {
@@ -222,10 +224,28 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public static void SaveJson<T>(T source, string path) {
+      SaveJson(source, path, null, null);
+    }
+    public static void SaveJson<T>(T source, string path, JsonConverter converter) {
+      SaveJson(source, path, null, converter);
+    }
+    public static void SaveJson<T>(T source, string path, IContractResolver contractResolver) {
+      SaveJson(source, path, contractResolver, null);
+    }
+    public static void SaveJson<T>(T source, string path, IContractResolver contractResolver, JsonConverter converter) {
+      var settings = new Newtonsoft.Json.JsonSerializerSettings();
+      if(contractResolver != null)
+        settings.ContractResolver = contractResolver;
+      if(converter != null)
+        settings.Converters.Add(converter);
+      settings.Converters.Add(new StringEnumConverter());
+      SaveJson(JsonConvert.SerializeObject(source, Newtonsoft.Json.Formatting.Indented, settings), path);
+
+    }
+    public static void SaveJson(string json, string path) {
       var settingsPath = ActiveSettingsPath(path);
       var dir = Path.GetDirectoryName(settingsPath);
       Directory.CreateDirectory(dir);
-      var json = Newtonsoft.Json.JsonConvert.SerializeObject(source, Newtonsoft.Json.Formatting.Indented);
       File.WriteAllText(settingsPath, json);
 
     }

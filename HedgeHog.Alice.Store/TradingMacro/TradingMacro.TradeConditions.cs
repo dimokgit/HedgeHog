@@ -714,9 +714,15 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels);
       }
     }
+    bool _isIn2Ok;
     public TradeConditionDelegate IsIn2Ok {
       get {
-        return () => TradeDirectionByBool(IsCurrentPriceInsideTradeLevels2);
+        return () => BuySellLevels.IfAnyCanTrade()
+        .Select(_ => _isIn2Ok)
+        .Where(b => b)
+        .DefaultIfEmpty(IsCurrentPriceInsideTradeLevels2)
+        .Select(b => TradeDirectionByBool(_isIn2Ok = b))
+        .Single();
       }
     }
 

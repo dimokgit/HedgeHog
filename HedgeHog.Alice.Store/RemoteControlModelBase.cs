@@ -22,6 +22,9 @@ using System.Data.Entity.Core.Objects;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Runtime.ExceptionServices;
+using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json;
+using System.Runtime.Serialization;
 
 namespace HedgeHog.Alice.Store {
   public class RemoteControlModelBase : HedgeHog.Models.ModelBase {
@@ -82,8 +85,35 @@ namespace HedgeHog.Alice.Store {
     static string UnWrapPair(string pair) {
       return Regex.Replace(pair, @"(\w3)(\w3)", "$1/$2");
     }
+
+    public class DynamicContractResolver : DefaultContractResolver {
+
+      public DynamicContractResolver() {
+      }
+
+      protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization) {
+        IList<JsonProperty> properties = base.CreateProperties(type, memberSerialization);
+
+        // only serializer properties that start with the specified character
+        var saveAttrs = new Type[] { typeof(DataMemberAttribute), typeof(WwwSettingAttribute) };
+        Func<PropertyInfo, bool> ok = pi => {
+          var attrs = pi.GetCustomAttributes().ToArray();
+          var should = (from a in attrs
+                        join sa in saveAttrs on a.GetType() equals sa
+                        select true);
+          return should.Any();
+        };
+        var activeSettings = TradingMacro.GetActiveProprties(true, (pi, category) => new { pi, category });
+        return (from s in activeSettings
+                join p in properties on s.pi.Name equals p.PropertyName
+                orderby s.category,s.pi.Name
+                select p).ToList();
+
+      }
+    }
+
     public void SaveTradingMacros() {
-      TradingMacros.ForEach(tm => GlobalStorage.SaveJson(tm, TradingMacrosPath(tm.TradingMacroName, tm.Pair, tm.TradingGroup, tm.PairIndex)));
+      TradingMacros.ForEach(tm => GlobalStorage.SaveJson(tm.Serialize(false), TradingMacrosPath(tm.TradingMacroName, tm.Pair, tm.TradingGroup, tm.PairIndex)));
     }
     protected void ResetTradingMacros() {
       //_tradingMacrosCopy = TradingMacros.ToArray();

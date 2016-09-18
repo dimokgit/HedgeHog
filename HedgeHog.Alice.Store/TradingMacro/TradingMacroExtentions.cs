@@ -34,8 +34,12 @@ using System.ComponentModel.Composition;
 using ReactiveUI;
 using HedgeHog.NewsCaster;
 using System.Data.Entity.Core.Objects.DataClasses;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using System.Runtime.Serialization;
 
 namespace HedgeHog.Alice.Store {
+  [JsonObject(MemberSerialization.OptOut)]
   public partial class TradingMacro {
     List<SuppRes> _suppRes = new List<SuppRes>();
     public List<SuppRes> SuppRes {
@@ -319,7 +323,7 @@ namespace HedgeHog.Alice.Store {
         }
       });
       IsTradingActive = IsInVirtualTrading;
-      MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveActiveSettings());
+      //MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveActiveSettings());
     }
 
     ~TradingMacro() {
@@ -332,7 +336,6 @@ namespace HedgeHog.Alice.Store {
       } else {
         Log = new Exception(new { _TradesManager } + "");
       }
-      SaveActiveSettings();
     }
     #endregion
 
