@@ -705,7 +705,7 @@ namespace HedgeHog.Alice.Store {
         .Select(a => (double)System.Linq.Dynamic.DynamicExpression.ParseLambda(new ParameterExpression[0], typeof(double), a).Compile().DynamicInvoke())
         .ToList();
     }
-    List<double> _gannAngles;
+    List<double> _gannAngles = new List<double>();
     public List<double> GannAnglesArray { get { return _gannAngles; } }
 
     public double Slope { get { return CorridorStats == null ? 0 : CorridorStats.Slope; } }
@@ -1714,8 +1714,9 @@ namespace HedgeHog.Alice.Store {
                 continue;
               //TradesManager.RaisePriceChanged(Pair, RateLast);
               var d = Stopwatch.StartNew();
+              
               if(rate != null) {
-                if(ratePrev == null || ratePrev.StartDate.Second != rate.StartDate.Second) {
+                if(ratePrev == null || BarPeriod > BarsPeriodType.t1 || ratePrev.StartDate.Second != rate.StartDate.Second) {
                   if(!IsTrader && tms().First().BarPeriod == BarPeriod)
                     while(rate.StartDate.AddSeconds(1) < ServerTime && indexCurrent < _replayRates.Count)
                       UseRatesInternal(ri => ri.Add(rate = _replayRates[indexCurrent++]));
@@ -2277,8 +2278,7 @@ namespace HedgeHog.Alice.Store {
               TradeConditionsHaveAsleep();
             //if (IsAsleep)
             //ResetBarsCountCalc();
-            var prices = RatesArray.ToArray(_priceAvg);
-            RatesHeight = prices.Height(out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
+            RatesHeight = RatesArray.Height(r => r.AskHigh, r => r.BidLow, out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
 
             if(IsAsleep) {
               BarsCountCalc = BarsCount;
@@ -2319,6 +2319,7 @@ namespace HedgeHog.Alice.Store {
                 .Average();
                 OnRatesArrayChaged();
                 AdjustSuppResCount();
+                var prices = RatesArray.ToArray(_priceAvg);
                 _ratesArrayCoeffs = prices.Linear();
                 StDevByPriceAvg = prices.StandardDeviation();
                 StDevByHeight = prices.StDevByRegressoin(_ratesArrayCoeffs);

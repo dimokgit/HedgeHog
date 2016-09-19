@@ -11,7 +11,7 @@ using HedgeHog.Shared;
 namespace HedgeHog.Alice.Client {
   partial class RemoteControlModel {
 
-    public object ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
+    public object[] ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
       var digits = tm.Digits();
       if(dateEnd > tm.LoadRatesStartDate2)
         dateEnd = tm.LoadRatesStartDate2;
@@ -33,7 +33,7 @@ namespace HedgeHog.Alice.Client {
       #endregion
 
       if(tm.RatesArray.Count == 0 || tm.IsTrader && tm.BuyLevel == null)
-        return new { rates = new int[0] };
+        return new []{ new { rates = new int[0] } };
 
       var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
       var tpsHigh = tmTrader.GetVoltageHigh();
@@ -42,10 +42,10 @@ namespace HedgeHog.Alice.Client {
 
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd/* && !tm.GetVoltage(r).IsNaNOrZero()*/).ToList()).FirstOrDefault();
       if(ratesForChart == null)
-        return new { };
+        return new object[0];
       var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart/* && !tm.GetVoltage(r).IsNaNOrZero()*/).ToList()).FirstOrDefault();
       if(ratesForChart2 == null)
-        return new { };
+        return new object[0];
 
       double cmaPeriod = tm.CmaPeriodByRatesCount();
       if(tm.BarPeriod == BarsPeriodType.t1) {
@@ -171,7 +171,7 @@ namespace HedgeHog.Alice.Client {
       getTrades(false).Take(1).ForEach(_ => trades.Add(new { sell = tradeFoo(false) }));
       var price = tmg.GetPrice(pair);
       var askBid = new { ask = price.Ask.Round(digits), bid = price.Bid.Round(digits) };
-      var ret = tm.UseRates(ratesArray => ratesArray.Take(1).ToArray()).ToArray(_ => new {
+      var ret = tm.UseRates(ratesArray => ratesArray.Take(1).ToArray(), x => x).ToArray(_ => new {
         rates = getRates(ratesForChart),
         rates2 = getRates(ratesForChart2),
         ratesCount = tm.RatesArray.Count,
@@ -192,7 +192,8 @@ namespace HedgeHog.Alice.Client {
         isTrader = tm.IsTrader,
         canBuy = tmTrader.CanOpenTradeByDirection(true),
         canSell = tmTrader.CanOpenTradeByDirection(false),
-        waveLines
+        waveLines,
+        barPeriod = tm.BarPeriodInt
       });
       return ret;
     }

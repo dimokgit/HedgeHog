@@ -253,6 +253,10 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Http.Formatting, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNet.WebApi.Client.5.2.3\lib\net45\System.Net.Http.Formatting.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Reactive.Core, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -287,6 +291,10 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Web.Http, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNet.WebApi.Core.5.2.3\lib\net45\System.Web.Http.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Windows.Controls.Input.Toolkit">
       <HintPath>..\AllInOne\packages\WPFToolkit.3.5.50211.1\lib\System.Windows.Controls.Input.Toolkit.dll</HintPath>
     </Reference>
@@ -365,12 +373,16 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="AsyncMessageBox.cs" />
+    <Compile Include="Classes\Filters\BasicAuthenticationFilter.cs" />
+    <Compile Include="Classes\Security\BasicAuthenticationIdentity.cs" />
     <Compile Include="Classes\IAccountHolder.cs" />
     <Compile Include="Classes\Market.cs" />
     <Compile Include="Classes\MarketHoursHound.cs" />
     <Compile Include="Classes\MyHubPipelineModul.cs" />
     <Compile Include="Classes\OwinStartUp.cs" />
     <Compile Include="Classes\ReportModel.cs" />
+    <Compile Include="Classes\Security\LoginStatus.cs" />
+    <Compile Include="Classes\Security\Win32Logon.cs" />
     <Compile Include="Classes\Static.cs" />
     <Compile Include="Classes\StyleSelectors.cs" />
     <Compile Include="Classes\TradeRequestManager.cs" />

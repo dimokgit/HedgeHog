@@ -114,7 +114,7 @@ namespace HedgeHog.Alice.Store {
           var downAvg = perms.SelectMany(p => p.absMin).DefaultIfEmpty(double.NaN).Distinct().Average();
           var upOk = upAvg <= pipTres;
           var downOk = downAvg <= pipTres;
-          return upOk != downOk ? TradeDirections.Both : TradeDirections.None;
+          return upOk && downOk ? TradeDirections.Both : TradeDirections.None;
         });
         return () => TradingMacroTrender(tm => trendFlats(tm).Select(f => ok(tm, f)))
         .SelectMany(x => x)
@@ -983,13 +983,14 @@ namespace HedgeHog.Alice.Store {
           //TipRatio_ = _tipRatioCurrent.Round(1),
           LimeAngle = tm.TrendLinesLimeTrends.Angle.Round(1),
           Grn_Angle = tm.TrendLinesGreenTrends.Angle.Round(1),
-          Red_Angle = tm.TrendLinesRedTrends.Angle.Round(1),
           PlumAngle = tm.TrendLinesPlumTrends.Angle.Round(1),
+          Red_Angle = tm.TrendLinesRedTrends.Angle.Round(1),
           BlueAngle = tm.TrendLinesBlueTrends.Angle.Round(1),
-          GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
-          Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
-          Red__Edge = tm.TrendLinesRedTrends.EdgeDiff.SingleOrDefault().Round(1),
-          Blue_Edge = tm.TrendLinesBlueTrends.EdgeDiff.SingleOrDefault().Round(1)
+          BarCntSmt = BarCountSmoothed
+          //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
+          //Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
+          //Red__Edge = tm.TrendLinesRedTrends.EdgeDiff.SingleOrDefault().Round(1),
+          //Blue_Edge = tm.TrendLinesBlueTrends.EdgeDiff.SingleOrDefault().Round(1)
           //BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
           //WvDistRsd = _waveDistRsd.Round(2)
         }

@@ -276,6 +276,7 @@ namespace HedgeHog.Alice.Store {
           return onCanTradeLocal(canTrade);
         };
         Func<bool> isTradingHourLocal = () => IsTradingHour() && IsTradingDay();
+        Func<bool> isLastRateHeightOk = () => RateLast.Yield().All(rl => (rl.AskHigh - rl.BidLow) / RatesHeight < 0.05);
         Func<SuppRes, bool> suppResCanTrade = (sr) =>
           !CanDoEntryOrders && IsTradingActive &&
           isTradingHourLocal() &&
@@ -284,7 +285,8 @@ namespace HedgeHog.Alice.Store {
           !HasTradesByDistance(isBuyR(sr)) &&
           canTradeLocal(sr) &&
           IsPriceSpreadOk &&
-          !IsEndOfWeek();
+          !IsEndOfWeek() &&
+          isLastRateHeightOk();
         Func<bool> isProfitOk = () => Trades.HaveBuy() && RateLast.BidHigh > BuyCloseLevel.Rate ||
           Trades.HaveSell() && RateLast.AskLow < SellCloseLevel.Rate;
         #endregion

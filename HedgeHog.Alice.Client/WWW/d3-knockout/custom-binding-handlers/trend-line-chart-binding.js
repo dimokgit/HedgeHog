@@ -1,4 +1,4 @@
-/// <reference path="../../bower/bower_components/d3/d3.js" />
+/// <reference path="../../bower_components/d3/d3.js" />
 /// <reference path="../../Scripts/linq.js" />
 /// <reference path="../../bower/bower_components/underscore/underscore.js" />
 // jscs:disable
@@ -27,10 +27,10 @@
     elementHeight = calcElementHeight(elementWidth),// parseInt(d3.select(element).style("height"), 10),
     width = elementWidth - margin.left - margin.right,
     height = elementHeight - margin.top - margin.bottom,
-    x = d3.time.scale().range([xAxisOffset, width - xAxisOffset]),
-    y = d3.scale.linear().range([height, 0]),
-    y2 = d3.scale.linear().range([height, height * 4 / 5]);
-    y3 = d3.scale.linear().range([height / 5, 0]);
+    x = d3.scaleTime().range([xAxisOffset, width - xAxisOffset]),
+    y = d3.scaleLinear().range([height, 0]),
+    y2 = d3.scaleLinear().range([height, height * 4 / 5]);
+    y3 = d3.scaleLinear().range([height / 5, 0]);
     return { width: width, height: height, x: x, y: y, y2: y2, y3: y3 };
   }
   ko.bindingHandlers.lineChartPrice = {
@@ -190,10 +190,10 @@
       function setTradeDrag(inDrag) {
         viewModel.chartArea[chartNum].inDrag = inDrag;;
       }
-      var drag = d3.behavior.drag()
+      var drag = d3.drag()
         .on("drag", dragmove)
-        .on("dragstart", dragstart)
-        .on("dragend", dragend);
+        .on("start", dragstart)
+        .on("end", dragend);
       function dragmove(d) {
         var vm = viewModel.chartArea[chartNum].cha;
         var line = d3.select(this);
@@ -226,27 +226,26 @@
       setTradeLine("buyEnter", "darkred", "buy",drag); setTradeLine("sellEnter", "darkblue", "sell", drag);
       setTradeLine("buyClose", "darkblue"); setTradeLine("sellClose", "darkred");
       //#region Corridor StartDate
-      if (doCorridorStartDate) {
-        addLine("corridorStart");
-        svg
-          .append("path")
-          .attr("id", "clearStartDate")
-          .attr("d", d3.svg.symbol().type("circle").size(150))
-          .on("click", chartData.toggleStartDate.bind(chartData, chartData.chartNum))
-        ;
-      }
-      //#endregion
-      svg.selectAll("path.nextWave")
-          .data([10, 20])
-          .enter()
-          .append("path")
-          .attr("class", "nextWave")
-          .attr("d", d3.svg.symbol().type("circle").size(150))
-          .attr("transform", "rotate(-90)")
-          .on("click", function (d, i) {
-            chartData.moveCorridorWavesCount(chartData.chartNum, i === 0 ? 1 : -1);
-          })
-      ;
+      //if (doCorridorStartDate) {
+      //  addLine("corridorStart");
+      //  svg
+      //    .append("path")
+      //    .attr("id", "clearStartDate")
+      //    .attr("d", d3.symbolCircle.size(svg, 150))
+      //    .on("click", chartData.toggleStartDate.bind(chartData, chartData.chartNum))
+      //  ;
+      //}
+      ////#endregion
+      //svg.selectAll("path.nextWave")
+      //    .data([10, 20])
+      //    .enter()
+      //    .append("path")
+      //    .attr("class", "nextWave")
+      //    .attr("d", d3.symbolCircle.draw(svg, 150))
+      //    .attr("transform", "rotate(-90)")
+      //    .on("click", function (d, i) {
+      //      chartData.moveCorridorWavesCount(chartData.chartNum, i === 0 ? 1 : -1);
+      //    });
       addLine("ask", "steelblue", 1, "2,2");
       addLine("bid", "steelblue", 1, "2,2"); 
       addLine("trade");
@@ -397,12 +396,12 @@
           y = chartArea.y,
           y2 = chartArea.y2,
           y3 = chartArea.y3,
-          xAxis = d3.svg.axis().scale(x).orient("bottom"),
-          yAxis = d3.svg.axis().scale(y).orient("left"),
-          yAxis2 = hasTps ? d3.svg.axis().scale(y2).orient("right") : null,
-          yAxis3 = hasTps ? d3.svg.axis().scale(y3).orient("right") : null;
+          xAxis = d3.axisBottom().scale(x),
+          yAxis = d3.axisLeft().scale(y),
+          yAxis2 = hasTps ? d3.axisRight().scale(y2): null,
+          yAxis3 = hasTps ? d3.axisRight().scale(y3) : null;
           // define the graph line
-      var line = d3.svg.line()
+      var line = d3.line()
           .x(function (d) {
             return x(d.d);
           })
@@ -487,7 +486,7 @@
         //  .datum(data)
         //  .attr("d", line1);
         if (hasTps) {
-          var line2 = d3.svg.line()
+          var line2 = d3.line()
               .x(function (d) { return x(d.d); })
               .y(function (d) { return y2(isNaN(d.v) ? 0 : d.v); });
           var isHotTps = _.last(data).v > tpsHigh || _.last(data).v < tpsLow;
@@ -630,7 +629,8 @@
             var upDown = (ct.isBuy ? ud[u] : ud[d]);
             return {
               x: ct.dates[time], y: ct[level],
-              shape: "triangle-" + upDown,
+              shape: d3.symbolTriangle,// "triangle-" + upDown,
+              rotate: upDown === "up" ? "0" : "180",
               fill: !isOpen ? "white" : "white",
               stroke: paint,
               strokeWidth: !isOpen ? 3 : 2,
@@ -657,7 +657,7 @@
             .append("path")
             .attr("class", closedTradesPath)
             .attr("d", function (d) {
-              return d3.svg.symbol().type(d.shape).size(d.size)();
+              return d3.symbol().type(d.shape).size(d.size)();
             })
             .style("fill", function (ct) { return ct.fill; })
             .style("stroke", function (ct) { return ct.stroke; })
@@ -669,7 +669,7 @@
               return ct.stroke;
             })
             .attr("transform", function (d) {
-              return "translate(" + x(d.x) + "," + (y(d.y) + d.offsetSign * (openAltitude / 2 + d.strokeWidth)) + ")";
+              return "translate(" + x(d.x) + "," + (y(d.y) + d.offsetSign * (openAltitude / 2 + d.strokeWidth)) + ") rotate("+d.rotate+")";
             });
 
         })();

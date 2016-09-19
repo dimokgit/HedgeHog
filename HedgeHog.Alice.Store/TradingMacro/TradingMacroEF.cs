@@ -520,6 +520,7 @@ namespace HedgeHog.Alice.Store {
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
     [DataMemberAttribute()]
+    [IsNotStrategy]
     public global::System.Int32 PairIndex {
       get {
         return _PairIndex;
@@ -541,6 +542,7 @@ namespace HedgeHog.Alice.Store {
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
     [DataMemberAttribute()]
+    [IsNotStrategy]
     public global::System.Int32 TradingGroup {
       get {
         return _TradingGroup;
@@ -604,6 +606,7 @@ namespace HedgeHog.Alice.Store {
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
     [DataMemberAttribute()]
+    [IsNotStrategy]
     public global::System.String TradingMacroName {
       get {
         return _TradingMacroName;
@@ -1317,7 +1320,7 @@ namespace HedgeHog.Alice.Store {
     /// No Metadata Documentation available.
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = true)]
-    [DataMemberAttribute()]
+    [Dnr]
     public Nullable<global::System.Double> GannAnglesOffset {
       get {
         return _GannAnglesOffset;
@@ -1339,6 +1342,7 @@ namespace HedgeHog.Alice.Store {
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
     [DataMemberAttribute()]
+    [Dnr]
     public global::System.String GannAngles {
       get {
         return _GannAngles;
@@ -1360,6 +1364,7 @@ namespace HedgeHog.Alice.Store {
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
     [DataMemberAttribute()]
+    [Dnr]
     public global::System.Boolean IsGannAnglesManual {
       get {
         return _IsGannAnglesManual;
@@ -1381,6 +1386,7 @@ namespace HedgeHog.Alice.Store {
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = true)]
     [DataMemberAttribute()]
+    [Dnr]
     public Nullable<global::System.DateTime> GannAnglesAnchorDate {
       get {
         return _GannAnglesAnchorDate;

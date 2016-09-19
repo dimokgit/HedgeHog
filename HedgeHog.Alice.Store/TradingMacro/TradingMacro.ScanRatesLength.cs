@@ -134,8 +134,11 @@ namespace HedgeHog.Alice.Store {
         .OrderBy(d => d)
         .DefaultIfEmpty(BarsCountCalc)
         .Take(1)
+        .Do(count=>BarCountSmoothed=count)
         .Concat(new[] { BarsCount })
-        .Concat(GetRatesCountByTimeFrame( TimeFrameTresholdTimeSpan))
+        .Concat(BarPeriod > BarsPeriodType.t1 
+          ? new[] { (TimeFrameTresholdTimeSpan.TotalMinutes / BarPeriodInt).ToInt()}
+          : GetRatesCountByTimeFrame(TimeFrameTresholdTimeSpan))
         .OrderByDescending(d => d)
         .Do(count => IsRatesLengthStable = RatesArray.Count.Ratio(count) < 1.05)
         .First();
@@ -330,6 +333,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     double _crossCountRatioForCorridorLength = 1;
+    private int _BarCountSmoothed;
+
     //[WwwSetting(wwwSettingsCorridorCMA)]
     //[Category(categoryActive)]
     public double CrossCountRatioForCorridorLength {
@@ -348,6 +353,18 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<double> CmaMACD {
       get;
       private set;
+    }
+
+    public int BarCountSmoothed {
+      get {
+        return _BarCountSmoothed;
+      }
+
+      set {
+        if(_BarCountSmoothed == value)return;
+        _BarCountSmoothed = value;
+        OnPropertyChanged("BarCountSmoothed");
+      }
     }
   }
 }

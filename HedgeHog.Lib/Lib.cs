@@ -21,6 +21,7 @@ using System.IO;
 using System.Collections.Concurrent;
 using HedgeHog;
 using System.Web.Script.Serialization;
+using Newtonsoft.Json.Converters;
 
 namespace ControlExtentions {
   public static class AAA {
@@ -34,7 +35,9 @@ namespace ControlExtentions {
 namespace HedgeHog {
   public static partial class Lib {
     public static string ToJson(this object obj) {
-      return Newtonsoft.Json.JsonConvert.SerializeObject(obj);
+      var settings = new Newtonsoft.Json.JsonSerializerSettings();
+      settings.Converters.Add(new StringEnumConverter());
+      return Newtonsoft.Json.JsonConvert.SerializeObject(obj, settings);
     }
     public static double WeightedAverage<T>(this IList<T> values, Func<T, double> value, Func<T, double> weight) {
       return values.Sum(a => value(a) * weight(a)) / values.Sum(a => weight(a));

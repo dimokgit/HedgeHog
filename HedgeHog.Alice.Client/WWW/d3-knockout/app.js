@@ -1,4 +1,5 @@
 /// <reference path="../Scripts/linq.js" />
+/// <reference path="../bower_components/d3/d3.js" />
 // jscs:disable
 /// <reference path="../scripts/traverse.js" />
 /// <reference path="../Scripts/pnotify.custom.min.js" />
@@ -87,7 +88,7 @@
   var dateMin = new Date("1/1/9999");
   var ratesInFlight = dateMin;
   var ratesInFlight2 = dateMin;
-  function keyNote(text) { return { keyNote: text } };
+  function keyNote(text) { return typeof text === "string" ? { keyNote: text } : text.keyNote; };
   var openInFlightNote = _.throttle(showErrorPerm, 2 * 1000);
   function isInFlight(date, index) {
     var secsInFlight = getSecondsBetween(new Date(), date);
@@ -103,7 +104,7 @@
     if (!isConnected() || isInFlight(ratesInFlight,0))
       return;
     ratesInFlight = new Date();
-    chat.server.askRates(1200, dataViewModel.firstDate().toISOString(), dataViewModel.lastDate().toISOString(), pair, 0)
+    chat.server.askRates(1200, dataViewModel.firstDate().toISOString(), dataViewModel.lastDate().toISOString(), pair, 't1')
       .done(function (response) {
         Enumerable.from(response)
         .forEach(function (r) {
@@ -121,7 +122,7 @@
     if (!isConnected() || isInFlight(ratesInFlight2,2))
       return;
     ratesInFlight2 = new Date();
-    chat.server.askRates(1200, dataViewModel.firstDate2().toISOString(), dataViewModel.lastDate2().toISOString(), pair, 1)
+    chat.server.askRates(1200, dataViewModel.firstDate2().toISOString(), dataViewModel.lastDate2().toISOString(), pair, 'M1')
       .done(function (response) {
         Enumerable.from(response)
         .forEach(function (r) {
@@ -758,9 +759,6 @@
     this.stats = { ucia: updateChartIntervalAverages, ucCmas: updateChartCmas };
     this.isTradingActive = isTradingActive = ko.observable(true);
     function updateChart(response) {
-      if (!response || !response.length) return;
-      if (response.length > 1) throw JSON.stringify(new { "response.length": response.length });
-      response = response[0];
       var d = new Date();
       updateChartIntervalAverages[0](cma(updateChartIntervalAverages[0](), 10, getSecondsBetween(new Date(), ratesInFlight)));
       prepResponse(response);
@@ -793,10 +791,6 @@
       updateChartCmas[0](cma(updateChartCmas[0](), 10, getSecondsBetween(new Date(), d)));
     }
     function updateChart2(response) {
-      if (!response || !response.length) return;
-      if (response.length > 1) throw JSON.stringify(new { "response.length": response.length });
-      response = response[0];
-
       var d = new Date();
       updateChartIntervalAverages[1](cma(updateChartIntervalAverages[1](), 10, getSecondsBetween(new Date(), ratesInFlight2)));
       prepResponse(response);
@@ -1044,7 +1038,7 @@
     }
     function readReplayArguments() {
       serverCall("readReplayArguments", withNoNote(pair), function (ra) {
-        replayDateStart(d3.time.format("%m/%d/%y %H:%M")(new Date(ra.DateStart)));
+        replayDateStart(d3.timeFormat("%m/%d/%y %H:%M")(new Date(ra.DateStart)));
         isReplayOn(ra.isReplayOn);
         if (ra.isReplayOn && !readReplayProcID)
           readReplayProcID = setInterval(readReplayArguments, 5 * 1000);
@@ -1414,7 +1408,7 @@
   }
   function showError(message, settings) {
     var keyNote = (settings || {}).keyNote;
-    var note = notify(message, NOTE_ERROR, settings);
+    var note = notify((keyNote ? keyNote + ":" : "") + message, NOTE_ERROR, settings);
     if (!keyNote && (settings || {}).delay === 0)
       keyNote = message + "";
     if (keyNote) openErrorNote(keyNote, note);

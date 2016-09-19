@@ -42,11 +42,11 @@
   <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
   <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.0/js/bootstrap-toggle.min.js"></script>
-  <script src="http://d3js.org/d3.v3.js" charset="utf-8"></script>
-  <script src="http://techanjs.org/techan.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
+  <script src="bower_components/d3/d3.min.js"></script>
+  <!--<script src="Scripts/techan.min.js"></script>-->
   <script src="Scripts/jquery.ui.touch-punch.min.js"></script>
   <script src="Scripts/shortcut.js"></script>
   <script src="Scripts/linq.js"></script>
@@ -127,12 +127,14 @@
       font-size: inherit;
       line-height: none;
     }
-    .nav-divider.thin{
-      width:2px;
+
+    .nav-divider.thin {
+      width: 2px;
     }
-    .dropdown-menu.multi-level.md{
-      min-width:190px;
-      padding-left:5px;
+
+    .dropdown-menu.multi-level.md {
+      min-width: 190px;
+      padding-left: 5px;
     }
 
     /*#endregion */
@@ -246,20 +248,21 @@
       background-color: darkorchid;
       border-color: darkorchid;
     }
+
     .btn-olive {
       color: #fff;
       background-color: olive;
       border-color: olive;
     }
 
-    .btn-primary.setTradeLevelActive,
-    .btn-warning.setTradeLevelActive,
-    .btn-danger.setTradeLevelActive,
-    .btn-plum.setTradeLevelActive,
-    .btn-olive.setTradeLevelActive,
-    .btn-success.setTradeLevelActive {
-      color: black;
-    }
+      .btn-primary.setTradeLevelActive,
+      .btn-warning.setTradeLevelActive,
+      .btn-danger.setTradeLevelActive,
+      .btn-plum.setTradeLevelActive,
+      .btn-olive.setTradeLevelActive,
+      .btn-success.setTradeLevelActive {
+        color: black;
+      }
 
     .line .crosshair {
       fill: none;
@@ -416,7 +419,7 @@
             <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">...</button>
             <ul class="dropdown-menu multi-level">
               <li>
-                <input type="button" value=" Buy " id="buy" />
+                <input type="button" value=' Buy ' id="buy" />
                 <input type="button" value=" Sell " id="sell" />
                 <button data-bind="click:toggleQuickTrade">
                   <span class="glyphicon glyphicon-exclamation-sign"></span>
@@ -634,11 +637,11 @@
     <span id="profit" data-bind="text:profit,css:{profit:profit()>0,loss:profit()<0}"></span>
     <span id="openTradeGross" data-bind="text:openTradeGross,css:{profit:openTradeGross()>0,loss:openTradeGross()<0},visible:openTradeGross()!=0"></span>
     <span id="discussion"></span>
-    <span data-bind="visible:tradeConditionInfosAnd().length">&#x262D</span>
+    <span data-bind="visible:tradeConditionInfosAnd().length">&#x262D;</span>
     <!-- ko foreach: tradeConditionInfosAnd -->
     <span class="trade-condition" data-bind="text:key().slice(0,-2),css:{on:value()}"></span>
     <!-- /ko -->
-    <span data-bind="visible:tradeConditionInfosOr().length">&#x262D</span>
+    <span data-bind="visible:tradeConditionInfosOr().length">&#x262D;</span>
     <!-- ko foreach: tradeConditionInfosOr -->
     <span class="trade-condition or" data-bind="text:key().slice(0,-2),css:{on:value()}"></span>
     <!-- /ko -->
@@ -949,10 +952,11 @@
         </div>
       </div>
     </div>
-    <!--#endregion-->
-    <!--#region Settings grid-->
-    <!--#endregion-->
-    <!--#endregion-->
+  </div>
+  <!--#endregion-->
+  <!--#region Settings grid-->
+  <!--#endregion-->
+  <!--#endregion-->
 
 </body>
 </html>
