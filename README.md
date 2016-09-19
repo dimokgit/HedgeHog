@@ -1,3 +1,3 @@
 # HedgeHog
 
-Trading platform that keeps you away from trading.
+Trading platform that keeps me away from trading.
