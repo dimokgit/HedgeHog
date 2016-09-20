@@ -89,11 +89,12 @@
   var ratesInFlight = dateMin;
   var ratesInFlight2 = dateMin;
   function keyNote(text) { return typeof text === "string" ? { keyNote: text } : text.keyNote; };
-  var openInFlightNote = _.throttle(showErrorPerm, 2 * 1000);
+  var openInFlightNote = _.throttle(showError, 2 * 1000);
+  var openInFlightNotePerm = _.throttle(showErrorPerm, 2 * 1000);
   function isInFlight(date, index) {
     var secsInFlight = getSecondsBetween(new Date(), date);
     if (secsInFlight > 30)
-      openInFlightNote("In flight(" + index + ") > " + secsInFlight, keyNote("InFlightDelay"));
+      openInFlightNotePerm("In flight(" + index + ") > " + secsInFlight, keyNote("InFlightDelay"));
     if (secsInFlight > 60) return false;
     return date && secsInFlight > 0;
   }
@@ -414,7 +415,8 @@
           VoltageFunction2: { name: "Voltage 2", type: "options", options: voltageFunction() },
           CorridorCalcMethod: { name: "Corr Calc", type: "options", options: corridorCalculationMethod() },
           MovingAverageType: { type: "options", options: movingAverageType() },
-          BarPeriod: { name:"Bars Period", type: "options", options: barsPeriodType() },
+          BarPeriod: { name: "Bars Period", type: "options", options: barsPeriodType() },
+          Strategy: { type: "options", options: strategyType() },
 
           //
 
@@ -881,7 +883,7 @@
     var corridorCalculationMethod = this.corridorCalculationMethod = ko.observableArray()
     var movingAverageType = this.movingAverageType = ko.observableArray()
     var barsPeriodType = this.barsPeriodType = ko.observableArray()
-    
+    var strategyType = this.strategyType = ko.observableArray();
     
     var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
     // #endregion
@@ -1198,7 +1200,7 @@
 
       function _isPriceChangeInFlight() {
         var secsInFlight = getSecondsBetween(new Date(), _inFlightPriceChanged);
-        if (secsInFlight > 3) openErrorNote("InFlightPriceChaneDelay", showError("PriceChange In flight > " + secsInFlight));
+        if (secsInFlight > 3) openInFlightNote("PriceChange In flight > " + secsInFlight, keyNote("InFlightPriceChaneDelay"));
         if (secsInFlight > 6) return false;
         return _inFlightPriceChanged && secsInFlight > 0;
       }
@@ -1283,6 +1285,9 @@
       });
       serverCall("readEnum", ["BarsPeriodType"], function (enums) {
         dataViewModel.barsPeriodType(mapEnumsForSettings(enums));
+      });
+      serverCall("readEnum", ["Strategies"], function (enums) {
+        dataViewModel.strategyType(mapEnumsForSettings(enums));
       });
       serverCall("getPresetTradeLevels", [pair], function (l) {
         dataViewModel.tradePresetLevel(l[0] || 0);

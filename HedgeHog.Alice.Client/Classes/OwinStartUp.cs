@@ -474,7 +474,7 @@ namespace HedgeHog.Alice.Client {
       UseTradingMacro(pair, chartNum, tm => tm.RatesStDevMinInPips = pips);
     }
     public object[] AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair, BarsPeriodType chartNum) {
-      var a = UseTradingMacro(pair, tm=>tm.BarPeriod== chartNum
+      var a = UseTradingMacro(pair, tm => tm.BarPeriod == chartNum
         , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
       return a.SelectMany(x => x).ToArray();
 
@@ -569,7 +569,7 @@ namespace HedgeHog.Alice.Client {
       return GlobalStorage.UseForexContext(c => c.Event__News.Where(en => en.Time > date && countries.Contains(en.Country)).ToArray());
     }
     public Dictionary<string, int> ReadEnum(string enumName) {
-      return 
+      return
         typeof(TradingMacro).Assembly.GetTypes()
         .Concat(typeof(HedgeHog.Bars.Rate).Assembly.GetTypes())
         .Where(t => t.Name.ToLower() == enumName.ToLower())
@@ -597,6 +597,7 @@ namespace HedgeHog.Alice.Client {
         Func<object, object> convert = o => o != null && o.GetType().IsEnum ? o + "" : o;
         Func<PropertyInfo, string> dn = pi => pi.GetCustomAttributes<DisplayNameAttribute>().Select(a => a.DisplayName).DefaultIfEmpty(pi.Name).Single();
         tm.GetPropertiesByAttibute<WwwSettingAttribute>(_ => true)
+          .Where(x => !x.Item1.Group.ToLower().StartsWith("hide"))
           .Select(x => new { x.Item1.Group, p = x.Item2, dn = dn(x.Item2) })
           .OrderBy(x => x.dn)
           .OrderBy(x => x.Group)

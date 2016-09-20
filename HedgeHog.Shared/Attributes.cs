@@ -11,18 +11,23 @@ namespace HedgeHog {
   public sealed class IsNotStrategyAttribute : Attribute {  }
   [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
   public class WwwAttribute : Attribute {
-    public string Group { get; set; }
+    public string Group { get; set; } = "";
     public WwwAttribute(string group) {
-      this.Group = group;
+      Group = group;
     }
     public WwwAttribute() {
 
     }
   }
   public class WwwSettingAttribute : WwwAttribute {
+    public bool Hide { get; private set; }
     public WwwSettingAttribute() : base() {
     }
-    public WwwSettingAttribute(string group):base(group) {
+    public WwwSettingAttribute(string group) : base(group) {
+
+    }
+    public WwwSettingAttribute(string group,bool hide) : base(group) {
+      Hide = hide;
 
     }
   }

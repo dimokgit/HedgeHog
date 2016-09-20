@@ -599,7 +599,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_RatesLengthBy != value) {
           _RatesLengthBy = value;
-          BarsCountCalc = 0;
+          BarsCountCalc = BarCountSmoothed = 0;
           OnPropertyChanged("RatesLengthBy");
         }
       }
@@ -957,8 +957,9 @@ namespace HedgeHog.Alice.Store {
     public const string wwwSettingsCorridorAngles = "2.1 Corridor Angles";
     public const string wwwSettingsCorridorCMA = "2.2 Corridor CMA";
     public const string wwwSettingsCorridorOther = "2.3 Corridor";
-    public const string wwwSettingsCorridorEquinox = "2.4 Equinox";
-    public const string wwwSettingsAO = "2.5 AO Periods";
+    public const string wwwSettingsCorridorEquinox = "hide 2.4 Equinox";
+    public const string wwwSettingsAO = "hide 2.5 AO Periods";
+    public const string wwwSettingsBars = "4 Bars";
     public const string wwwSettingsCorridorFuncs = "3 Corridor Func";
 
     #region CloseAfterTradingHours
@@ -1219,7 +1220,6 @@ namespace HedgeHog.Alice.Store {
     }
     double _waveStDevPowerS = 0.5;
     [Description("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]
-    [WwwSetting]
     [Category(categoryActive)]
     public double WaveStDevPowerS {
       get { return _waveStDevPowerS; }
@@ -1403,7 +1403,7 @@ namespace HedgeHog.Alice.Store {
     public int BarPeriodInt { get { return (int)BarPeriod; } }
     [DisplayName("Bars Period")]
     [Category(categoryActiveFuncs)]
-    [WwwSetting]
+    [WwwSetting(wwwSettingsBars)]
     public BarsPeriodType BarPeriod {
       get { return (BarsPeriodType)LimitBar; }
       set {
@@ -1416,7 +1416,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Bars Count")]
     [Category(categoryActive)]
-    [WwwSetting]
+    [WwwSetting(wwwSettingsBars)]
     public int BarsCount {
       get { return CorridorBarMinutes; }
       set {
@@ -1432,7 +1432,7 @@ namespace HedgeHog.Alice.Store {
     private int _BarsCountMax;
     [Category(categoryActive)]
     [Description("BarsCountCount = BarsCountMax < 20 ? BarsCount * BarsCountMax : BarsCountMax;")]
-    [WwwSetting]
+    [WwwSetting(wwwSettingsBars)]
     public int BarsCountMax {
       get { return _BarsCountMax < 1 ? BarsCountMax = 0 : _BarsCountMax; }
       set {

@@ -133,9 +133,9 @@ namespace HedgeHog.Alice.Store {
           var min = distances[i].t.Item1.rmm[0];
           var max = distances[i].t.Item1.rmm[1];
           while(i2 < distances.Count && distances[i2].t.Item2 - distStart <= distChunc) {
-            if(miner(distances[i2].t.Item1.rmm[0]) < miner(min))
+            if(distances[i2].t.Item1.rmm[0].r.BidLow < min.r.BidLow)
               min = distances[i2].t.Item1.rmm[0];
-            if(maxer(distances[i2].t.Item1.rmm[1]) > maxer(max))
+            else if(distances[i2].t.Item1.rmm[1].r.AskHigh > max.r.AskHigh)
               max = distances[i2].t.Item1.rmm[1];
             i2++;
           }
@@ -191,6 +191,8 @@ namespace HedgeHog.Alice.Store {
       var legIndexes = new[] { 0 }.Concat(Enumerable.Range(0, sections.Count).SelectMany(i => getLength(i))).ToList();
 
       Func<int, int, TradeLevelsPreset, IList<Rate>> calcTrendLines = (start, end, pl) => {
+        if(end <= 0)
+          return CalcTrendLines(0, tagTL(pl));
         if(start > 7)
           return bs(start, pl);
         var e = end < legIndexes.Count ? legIndexes[end] : ratesForCorridor.Count;

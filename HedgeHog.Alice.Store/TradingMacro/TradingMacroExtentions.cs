@@ -2353,7 +2353,7 @@ namespace HedgeHog.Alice.Store {
                 TakeProfitPips = InPips(CalculateTakeProfit());
                 RunStrategy();
               } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
-            }, true);
+            }, IsInVirtualTrading);
             OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
             OnPropertyChanged(() => SpreadForCorridorInPips);
@@ -2933,6 +2933,7 @@ namespace HedgeHog.Alice.Store {
 
     private Strategies _Strategy;
     [Category(categorySession)]
+    [WwwSetting]
     [Dnr]
     public Strategies Strategy {
       get {

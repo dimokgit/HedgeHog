@@ -186,10 +186,8 @@ namespace HedgeHog.Alice.Store {
     #region SetCentersOfMass Subject
     object _SetCentersOfMassSubjectLocker = new object();
     ISubject<Action> _SetCentersOfMassSubject;
-    ISubject<Action> SetCentersOfMassSubject
-    {
-      get
-      {
+    ISubject<Action> SetCentersOfMassSubject {
+      get {
         lock(_SetCentersOfMassSubjectLocker)
           if(_SetCentersOfMassSubject == null) {
             _SetCentersOfMassSubject = new Subject<Action>();
@@ -204,10 +202,8 @@ namespace HedgeHog.Alice.Store {
     #region SetBarsCountCalc Subject
     object _SetBarsCountCalcSubjectLocker = new object();
     ISubject<Action> _SetBarsCountCalcSubject;
-    ISubject<Action> SetBarsCountCalcSubject
-    {
-      get
-      {
+    ISubject<Action> SetBarsCountCalcSubject {
+      get {
         lock(_SetBarsCountCalcSubjectLocker)
           if(_SetBarsCountCalcSubject == null) {
             IObservable<Action> o = null;
@@ -305,15 +301,12 @@ namespace HedgeHog.Alice.Store {
     int _AoPeriodSlow2 = 55;
 
     [WwwSetting(wwwSettingsAO)]
-    public int AoPeriodFast
-    {
-      get
-      {
+    public int AoPeriodFast {
+      get {
         return _AoPeriodFast;
       }
 
-      set
-      {
+      set {
         if(_AoPeriodFast == value)
           return;
         _AoPeriodFast = value;
@@ -323,15 +316,12 @@ namespace HedgeHog.Alice.Store {
     }
 
     [WwwSetting(wwwSettingsAO)]
-    public int AoPeriodSlow
-    {
-      get
-      {
+    public int AoPeriodSlow {
+      get {
         return _AoPeriodSlow;
       }
 
-      set
-      {
+      set {
         if(_AoPeriodSlow == value)
           return;
         _AoPeriodSlow = value;
@@ -340,15 +330,12 @@ namespace HedgeHog.Alice.Store {
     }
 
     [WwwSetting(wwwSettingsAO)]
-    public int AoPeriodFast2
-    {
-      get
-      {
+    public int AoPeriodFast2 {
+      get {
         return _AoPeriodFast2;
       }
 
-      set
-      {
+      set {
         if(_AoPeriodFast2 == value)
           return;
         _AoPeriodFast2 = value;
@@ -357,15 +344,12 @@ namespace HedgeHog.Alice.Store {
     }
 
     [WwwSetting(wwwSettingsAO)]
-    public int AoPeriodSlow2
-    {
-      get
-      {
+    public int AoPeriodSlow2 {
+      get {
         return _AoPeriodSlow2;
       }
 
-      set
-      {
+      set {
         if(_AoPeriodSlow2 == value)
           return;
         _AoPeriodSlow2 = value;

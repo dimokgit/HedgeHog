@@ -129,7 +129,7 @@ namespace HedgeHog.Alice.Store {
       get {
         Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
         var ok = MonoidsCore.ToFunc((TradingMacro)null, (tm) =>
-          tm.TrendLinesFlat.OrderBy(tl => tl.EndDate).ThenBy(tl=>tl.Count).TakeLast(1)
+          tm.TrendLinesFlat.OrderBy(tl => tl.EndDate).ThenBy(tl => tl.Count).TakeLast(1)
           .Select(tlBig => {
             tlBig.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
             tlBig.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
@@ -148,13 +148,16 @@ namespace HedgeHog.Alice.Store {
       get {
         Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
         var ok = MonoidsCore.ToFunc((TradingMacro)null, (tm) => {
-          var tlBig = tm.TrendLinesFlat.OrderBy(tl => tl.Count).Last();
-          var dateBig = tlBig.EndDate;
-          var dateLast = tm.TrendLinesFlat.OrderBy(tl => tl.Count).SkipLast(1).Select(tl => tl.EndDate).Max();
-          var rateDate = tm.RatesArray[tm.RatesArray.Count - tlbs.Count].StartDate;
-          return dateBig > dateLast && dateBig > rateDate ? TradeDirections.Both : TradeDirections.None;
+          var flats = tm.TrendLinesFlat.OrderBy(tl => tl.Count).ToArray();
+          return from tlBig in flats.TakeLast(1)
+                 from tlLast in flats.SkipLast(1).MaxByOrEmpty(tl => tl.EndDate)
+                 let rateDate = tm.RatesArray[tm.RatesArray.Count - tlBig.Count].StartDate
+                 let tlBigIsLast = tlBig.EndDate > tlLast.EndDate
+                 let tlBigIsFresh = tlBig.EndDate > rateDate
+                 select tlBigIsLast && tlBigIsFresh ? TradeDirections.Both : TradeDirections.None;
         });
         return () => TradingMacroTrender(tm => ok(tm))
+        .SelectMany(x => x)
         .DefaultIfEmpty()
         .Aggregate((td1, td2) => td1 | td2);
 
@@ -298,7 +301,6 @@ namespace HedgeHog.Alice.Store {
     #region Wave Conditions
     int _bigWaveIndex = 0;
     [Category(categoryTrading)]
-    [WwwSetting]
     public int BigWaveIndex {
       get {
         return _bigWaveIndex;
@@ -661,7 +663,6 @@ namespace HedgeHog.Alice.Store {
 
     #region Properties
     [Category(categoryCorridor)]
-    [WwwSetting]
     public bool ResetTradeStrip {
       get { return false; }
       set {
@@ -671,7 +672,6 @@ namespace HedgeHog.Alice.Store {
     }
     double _tradeStripJumpRatio = 1.333333;
     [Category(categoryActive)]
-    [WwwSetting]
     public double TradeStripJumpRatio {
       get { return _tradeStripJumpRatio; }
       set {
@@ -1023,7 +1023,7 @@ namespace HedgeHog.Alice.Store {
           PlumAngle = tm.TrendLinesPlumTrends.Angle.Round(1),
           Red_Angle = tm.TrendLinesRedTrends.Angle.Round(1),
           BlueAngle = tm.TrendLinesBlueTrends.Angle.Round(1),
-          BarCntSmt = BarCountSmoothed
+          BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count
           //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Red__Edge = tm.TrendLinesRedTrends.EdgeDiff.SingleOrDefault().Round(1),
@@ -1948,7 +1948,7 @@ namespace HedgeHog.Alice.Store {
 
     string _equinoxCorridors = "0,1,2,3";
     [Category(categoryActiveFuncs)]
-    [WwwSetting(wwwSettingsCorridorEquinox)]
+    //[WwwSetting(wwwSettingsCorridorEquinox)]
     [Description("0,1,2;1,3")]
     public string EquinoxCorridors {
       get {
@@ -1991,7 +1991,7 @@ namespace HedgeHog.Alice.Store {
     }
     string _outsiders;
     [Category(categoryActiveFuncs)]
-    [WwwSetting(wwwSettingsCorridorEquinox)]
+    //[WwwSetting(wwwSettingsCorridorEquinox)]
     [Description("0,1,2;1,3")]
     public string Outsiders {
       get { return _outsiders; }
