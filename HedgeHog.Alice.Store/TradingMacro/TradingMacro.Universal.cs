@@ -285,8 +285,7 @@ namespace HedgeHog.Alice.Store {
           !HasTradesByDistance(isBuyR(sr)) &&
           canTradeLocal(sr) &&
           IsPriceSpreadOk &&
-          !IsEndOfWeek() &&
-          isLastRateHeightOk();
+          !IsEndOfWeek();
         Func<bool> isProfitOk = () => Trades.HaveBuy() && RateLast.BidHigh > BuyCloseLevel.Rate ||
           Trades.HaveSell() && RateLast.AskLow < SellCloseLevel.Rate;
         #endregion

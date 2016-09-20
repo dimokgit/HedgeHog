@@ -1403,6 +1403,7 @@ namespace HedgeHog.Alice.Store {
     public int BarPeriodInt { get { return (int)BarPeriod; } }
     [DisplayName("Bars Period")]
     [Category(categoryActiveFuncs)]
+    [WwwSetting]
     public BarsPeriodType BarPeriod {
       get { return (BarsPeriodType)LimitBar; }
       set {
@@ -1431,6 +1432,7 @@ namespace HedgeHog.Alice.Store {
     private int _BarsCountMax;
     [Category(categoryActive)]
     [Description("BarsCountCount = BarsCountMax < 20 ? BarsCount * BarsCountMax : BarsCountMax;")]
+    [WwwSetting]
     public int BarsCountMax {
       get { return _BarsCountMax < 1 ? BarsCountMax = 0 : _BarsCountMax; }
       set {

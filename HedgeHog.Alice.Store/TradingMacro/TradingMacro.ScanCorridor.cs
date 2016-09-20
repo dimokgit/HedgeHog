@@ -191,7 +191,7 @@ namespace HedgeHog.Alice.Store {
       var legIndexes = new[] { 0 }.Concat(Enumerable.Range(0, sections.Count).SelectMany(i => getLength(i))).ToList();
 
       Func<int, int, TradeLevelsPreset, IList<Rate>> calcTrendLines = (start, end, pl) => {
-        if(start >= 10 && start <= end)
+        if(start > 7)
           return bs(start, pl);
         var e = end < legIndexes.Count ? legIndexes[end] : ratesForCorridor.Count;
         return CalcTrendLines(RatesArray.Count - e, e - legIndexes[start], tagTL(pl));

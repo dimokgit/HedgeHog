@@ -88,7 +88,7 @@
         svg = d3.select(element).append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
-        .on("dblclick", chartData.togglePause.bind(chartData, chartData.chartNum))
+        .on("dblclick", chartData.togglePause.bind(chartData, 0))
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
       // #endregion

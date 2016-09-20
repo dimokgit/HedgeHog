@@ -124,6 +124,43 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [TradeConditionSetCorridor]
+    public TradeConditionDelegate TLHTCOk {
+      get {
+        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
+        var ok = MonoidsCore.ToFunc((TradingMacro)null, (tm) =>
+          tm.TrendLinesFlat.OrderBy(tl => tl.EndDate).ThenBy(tl=>tl.Count).TakeLast(1)
+          .Select(tlBig => {
+            tlBig.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
+            tlBig.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
+            var rateDate = tm.RatesArray[tm.RatesArray.Count - tlBig.Count].StartDate;
+            return tlBig.EndDate > rateDate ? TradeDirections.Both : TradeDirections.None;
+          })
+        );
+        return () => TradingMacroTrender(tm => ok(tm))
+        .SelectMany(x => x)
+        .DefaultIfEmpty()
+        .Aggregate((td1, td2) => td1 | td2);
+      }
+    }
+
+    public TradeConditionDelegate TLH3Ok {
+      get {
+        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
+        var ok = MonoidsCore.ToFunc((TradingMacro)null, (tm) => {
+          var tlBig = tm.TrendLinesFlat.OrderBy(tl => tl.Count).Last();
+          var dateBig = tlBig.EndDate;
+          var dateLast = tm.TrendLinesFlat.OrderBy(tl => tl.Count).SkipLast(1).Select(tl => tl.EndDate).Max();
+          var rateDate = tm.RatesArray[tm.RatesArray.Count - tlbs.Count].StartDate;
+          return dateBig > dateLast && dateBig > rateDate ? TradeDirections.Both : TradeDirections.None;
+        });
+        return () => TradingMacroTrender(tm => ok(tm))
+        .DefaultIfEmpty()
+        .Aggregate((td1, td2) => td1 | td2);
+
+      }
+    }
+
 
     public TradeConditionDelegate E2EOk {
       get {
@@ -1980,6 +2017,11 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
+    int[] TrendInts(IEnumerable<int> ints) {
+      return ints.Concat(new[] { -1 }).Take(2).ToArray();
+    }
+
     string _tradeTrends = "0,1,2,3";
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTradingCorridor)]
@@ -2004,7 +2046,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     string _trendPlum = "1,3";
-    int[] TrendPlumInt(string s = null) { return (s ?? _trendPlum).Split(',').Select(int.Parse).ToArray(); }
+    int[] TrendPlumInt(string s = null) { return TrendInts((s ?? _trendPlum).Split(',').Select(int.Parse)); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
@@ -2013,8 +2055,8 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_trendPlum == value)
           return;
-        var ints = value.Split(',');
-        if(ints.Length != 2)
+        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        if(ints.Length == 0)
           throw new Exception(new { TrendPlum = value, Message = "Invalid value" } + "");
         TrendPlumInt(value);
         _trendPlum = value;
@@ -2022,7 +2064,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     string _trendLime = "0,1";
-    int[] TrendLimeInt(string s = null) { return (s ?? _trendLime).Split(',').Select(int.Parse).ToArray(); }
+    int[] TrendLimeInt(string s = null) { return TrendInts((s ?? _trendLime).Split(',').Select(int.Parse)); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
@@ -2031,8 +2073,8 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_trendLime == value)
           return;
-        var ints = value.Split(',');
-        if(ints.Length != 2)
+        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        if(ints.Length == 0)
           throw new Exception(new { TrendLime = value, Message = "Invalid value" } + "");
         TrendLimeInt(value);
         _trendLime = value;
@@ -2040,7 +2082,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     string _trendGreen = "0,2";
-    int[] TrendGreenInt(string s = null) { return (s ?? _trendGreen).Split(',').Select(int.Parse).ToArray(); }
+    int[] TrendGreenInt(string s = null) { return TrendInts((s ?? _trendGreen).Split(',').Select(int.Parse)); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
@@ -2049,8 +2091,8 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_trendGreen == value)
           return;
-        var ints = value.Split(',');
-        if(ints.Length != 2)
+        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        if(ints.Length == 0)
           throw new Exception(new { TrendGreen = value, Message = "Invalid value" } + "");
         TrendGreenInt(value);
         _trendGreen = value;
@@ -2060,7 +2102,7 @@ namespace HedgeHog.Alice.Store {
     string _trendRed = "0,4";
     private IEnumerable<double> _edgeDiffs = new double[0];
 
-    int[] TrendRedInt(string s = null) { return (s ?? _trendRed).Split(',').Select(int.Parse).ToArray(); }
+    int[] TrendRedInt(string s = null) { return TrendInts((s ?? _trendRed).Split(',').Select(int.Parse)); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
@@ -2069,8 +2111,8 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_trendRed == value)
           return;
-        var ints = value.Split(',');
-        if(ints.Length != 2)
+        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        if(ints.Length == 0)
           throw new Exception(new { TrendRed = value, Message = "Invalid value" } + "");
         TrendRedInt(value);
         _trendRed = value;

@@ -175,11 +175,18 @@ namespace HedgeHog.Alice.Store {
       Local, Gist
     }
     public async Task LoadActiveSettings(string path, ActiveSettingsStore store) {
+      /*
+              if(strategiesAll.Length != activeSettings.Length)
+        throw new Exception(new { strategiesAll = new { strategiesAll.Length }, activeSettings = new { activeSettings.Length } } + "" );
+*/
       switch(store) {
         case ActiveSettingsStore.Gist:
-          TradingMacrosByPair()
-            .Zip(await Lib.ReadTestParametersFromGist(path), (tm, settings) => new { tm, settings })
-            .ForEach(x => x.tm.LoadActiveSettings(x.settings, path + "[" + x.tm.PairIndex + "]"));
+          var tms = TradingMacrosByPair().ToList();
+          var strategies = (await Lib.ReadTestParametersFromGist(path)).ToList();
+          if(tms.Count != strategies.Count)
+            throw new Exception(new { strategies = new { strategies.Count }, tms = new { tms.Count } } + "");
+          tms.Zip(strategies, (tm, settings) => new { tm, settings })
+          .ForEach(x => x.tm.LoadActiveSettings(x.settings, path + "[" + x.tm.PairIndex + "]"));
           break;
         case ActiveSettingsStore.Local:
           LoadActiveSettings(path);

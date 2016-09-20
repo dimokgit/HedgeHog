@@ -479,7 +479,7 @@ namespace HedgeHog.Alice.Store {
       var edgeHigh = edges.OrderBy(x => x.d.Abs(x.h)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Abs(x.h)), x.d)).First();
       var edgeLow = edges.OrderBy(x => x.d.Abs(x.l)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Abs(x.l)), x.d)).First();
 
-      rates.ForEach(r => r.Trends = map(new TL(corridorValues.Count, coeffs, hl) {
+      rates.ForEach(r => r.Trends = map(new TL(corridorValues.Count, coeffs, hl,corridorValues.First().StartDate,corridorValues.Last().StartDate) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize),
         EdgeHigh = new[] { edgeHigh },
         EdgeLow = new[] { edgeLow }

@@ -569,7 +569,9 @@ namespace HedgeHog.Alice.Client {
       return GlobalStorage.UseForexContext(c => c.Event__News.Where(en => en.Time > date && countries.Contains(en.Country)).ToArray());
     }
     public Dictionary<string, int> ReadEnum(string enumName) {
-      return typeof(TradingMacro).Assembly.GetTypes()
+      return 
+        typeof(TradingMacro).Assembly.GetTypes()
+        .Concat(typeof(HedgeHog.Bars.Rate).Assembly.GetTypes())
         .Where(t => t.Name.ToLower() == enumName.ToLower())
         .SelectMany(et => Enum.GetNames(et), (et, e) => new { name = e, value = (int)Enum.Parse(et, e, true) })
         .IfEmpty(() => { throw new Exception(new { enumName, message = "Not Found" } + ""); })

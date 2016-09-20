@@ -414,6 +414,9 @@
           VoltageFunction2: { name: "Voltage 2", type: "options", options: voltageFunction() },
           CorridorCalcMethod: { name: "Corr Calc", type: "options", options: corridorCalculationMethod() },
           MovingAverageType: { type: "options", options: movingAverageType() },
+          BarPeriod: { name:"Bars Period", type: "options", options: barsPeriodType() },
+
+          //
 
           WaveSmoothBy: { name: "WaveSmoothBy", type: "options", options: waveSmoothByFunction() },
 
@@ -877,7 +880,8 @@
     var voltageFunction = this.voltageFunction = ko.observableArray();
     var corridorCalculationMethod = this.corridorCalculationMethod = ko.observableArray()
     var movingAverageType = this.movingAverageType = ko.observableArray()
-
+    var barsPeriodType = this.barsPeriodType = ko.observableArray()
+    
     
     var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
     // #endregion
@@ -1276,6 +1280,9 @@
       });
       serverCall("readEnum", ["MovingAverageType"], function (enums) {
         dataViewModel.movingAverageType(mapEnumsForSettings(enums));
+      });
+      serverCall("readEnum", ["BarsPeriodType"], function (enums) {
+        dataViewModel.barsPeriodType(mapEnumsForSettings(enums));
       });
       serverCall("getPresetTradeLevels", [pair], function (l) {
         dataViewModel.tradePresetLevel(l[0] || 0);

@@ -9,7 +9,7 @@ namespace HedgeHog.Alice.Client {
   partial class RemoteControlModel {
     public static async Task<IEnumerable<IEnumerable<T>>> ReadStrategies<T>(TradingMacro tmTrader, Func<string, string, string, Uri, string[], T> map) {
       var localMap = MonoidsCore.ToFunc("", "", "", (Uri)null, (name, description, content, uri) => new { name, description, content, uri });
-      var strategiesAll = await Cloud.GitHub.GistStrategies(localMap);
+      var strategiesAll = (await Cloud.GitHub.GistStrategies(localMap)).ToArray();
       var activeSettings = tmTrader.TradingMacrosByPair().ToArray(tm => tm.Serialize(true));
       return (from strategies in strategiesAll
               let diffs = strategies.Zip(activeSettings, (strategy, activeSetting) => TradingMacro.ActiveSettingsDiff(strategy.content, activeSetting).ToDictionary())
