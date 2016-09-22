@@ -66,7 +66,7 @@ namespace HedgeHog.Alice.Store {
         Func<IEnumerable<double>, IEnumerable<double>> abs = (rs) => rs.Scan((d1, d2) => InPips(d1.Abs(d2)));
         Func<IList<double>, IEnumerable<double>, bool> testInside = (outer, inner) => inner.All(d => d.Between(outer[0], outer[1]));
         Func<TL, IList<double>> priceMinMax = tl => tl.PriceMin.Concat(tl.PriceMax).ToArray();
-        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
+        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat/*.Permutation(3)*/.Reverse() };
         var ok = MonoidsCore.ToFunc((TradingMacro)null, (IEnumerable<TL>)null, (tm, flats) => {
           //var flats = trendFlats(tm);
           var isInside = flats.Pairwise((tl1, tl2) => testInside(priceMinMax(tl1), priceMinMax(tl2))).All(b => b);
@@ -101,7 +101,7 @@ namespace HedgeHog.Alice.Store {
         Func<IEnumerable<double>, IEnumerable<double>> abs = (rs) => rs.Scan((d1, d2) => InPips(d1.Abs(d2)));
         Func<IList<double>, IEnumerable<double>, bool> testInside = (outer, inner) => inner.All(d => d.Between(outer[0], outer[1]));
         Func<TL, IList<double>> priceMinMax = tl => tl.PriceMin.Concat(tl.PriceMax).ToArray();
-        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
+        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.Reverse()/*.Permutation(3)*/ };
         var ok = MonoidsCore.ToFunc((TradingMacro)null, (IEnumerable<TL>)null, (tm, flats) => {
           //var flats = trendFlats(tm);
           var isInside = flats.Pairwise((tl1, tl2) => testInside(priceMinMax(tl1), priceMinMax(tl2))).All(b => b);
@@ -124,22 +124,29 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    static bool IsTLFresh(TradingMacro tm, TL tl) {
+      var rateDate = tm.RatesArray[tm.RatesArray.Count - tl.Count].StartDate;
+      return tl.EndDate > rateDate;
+
+    }
     [TradeConditionSetCorridor]
     public TradeConditionDelegate TLHTCOk {
       get {
-        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
+        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat/*.Permutation(3)*/.Reverse() };
         var ok = MonoidsCore.ToFunc((TradingMacro)null, (tm) =>
-          tm.TrendLinesFlat.OrderBy(tl => tl.EndDate).ThenBy(tl => tl.Count).TakeLast(1)
-          .Select(tlBig => {
-            tlBig.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
-            tlBig.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
-            var rateDate = tm.RatesArray[tm.RatesArray.Count - tlBig.Count].StartDate;
-            return tlBig.EndDate > rateDate ? TradeDirections.Both : TradeDirections.None;
-          })
-        );
+          from tlRed in tm.TrendLinesFlat.TakeLast(1)
+          from tlBig in tm.TrendLinesFlat.SkipLast(1).OrderByDescending(tl => tl.EndDate).ThenByDescending(tl => tl.Count).Take(1)
+          let isBigOutRed = tlBig.StartDate > tlRed.EndDate
+          select new { tlBig, td = isBigOutRed && IsTLFresh(tm, tlRed) ? TradeDirections.Both : TradeDirections.None }
+          );
         return () => TradingMacroTrender(tm => ok(tm))
         .SelectMany(x => x)
+        .Do(x => {
+          x.tlBig.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
+          x.tlBig.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
+        })
         .DefaultIfEmpty()
+        .Select(x => x.td)
         .Aggregate((td1, td2) => td1 | td2);
       }
     }
@@ -148,10 +155,10 @@ namespace HedgeHog.Alice.Store {
       get {
         Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
         var ok = MonoidsCore.ToFunc((TradingMacro)null, (tm) => {
-          var flats = tm.TrendLinesFlat.OrderBy(tl => tl.Count).ToArray();
+          var flats = tm.TrendLinesFlat;
           return from tlBig in flats.TakeLast(1)
                  from tlLast in flats.SkipLast(1).MaxByOrEmpty(tl => tl.EndDate)
-                 let rateDate = tm.RatesArray[tm.RatesArray.Count - tlBig.Count].StartDate
+                 let rateDate = tm.RatesArray[tm.RatesArray.Count - tlBig.Count / 2].StartDate
                  let tlBigIsLast = tlBig.EndDate > tlLast.EndDate
                  let tlBigIsFresh = tlBig.EndDate > rateDate
                  select tlBigIsLast && tlBigIsFresh ? TradeDirections.Both : TradeDirections.None;

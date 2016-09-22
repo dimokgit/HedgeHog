@@ -179,7 +179,7 @@
         });;
       // Trend Lines
       /*addLine(1);*/ addLine(2); addLine(3); addLine(21); addLine(31);
-      addLine("1_2"); addLine("2_2"); addLine("3_2");
+      addLine("1_2 trend"); addLine("2_2"); addLine("3_2");
       addLine("2_1"); addLine("3_1");
       addLine("2_0"); addLine("3_0");
       addLine("2_3"); addLine("3_3");
@@ -809,6 +809,7 @@
           if (line && !line.some(function (v) { return isNaN(v); }))
             svg.select("line.line" + lineNumber + "_" + trendIndex)
               .style("visibility", "visible")
+              .style("stroke-width", 1.5)
               .style("stroke", lineColour)  // colour the line
               .attr("x1", x(dates[0])) // x position of the first end of the line
               .attr("y1", y(line[0])) // y position of the first end of the line
