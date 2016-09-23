@@ -117,6 +117,12 @@ namespace HedgeHog.Alice.Client {
 
             return context.Response.WriteAsync("privet:" + DateTimeOffset.Now);
           }
+          if(context.Request.Path.Value.ToLower().StartsWith("/logon")) {
+            var host = context.Request.Uri.DnsSafeHost;
+            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            context.Response.Headers.Add("WWW-Authenticate", new[] { string.Format("Basic realm=\"{0}\"", host) });
+
+          }
           if(context.Request.Path.Value.ToLower().StartsWith("/who")) {
             var user = context.Authentication.User;
             return context.Response.WriteAsync(user == null

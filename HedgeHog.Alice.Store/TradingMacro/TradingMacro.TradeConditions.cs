@@ -159,7 +159,8 @@ namespace HedgeHog.Alice.Store {
           return from tlBig in flats.TakeLast(1)
                  from tlLast in flats.SkipLast(1).MaxByOrEmpty(tl => tl.EndDate)
                  let rateDate = tm.RatesArray[tm.RatesArray.Count - tlBig.Count / 2].StartDate
-                 let tlBigIsLast = tlBig.EndDate > tlLast.EndDate
+                 let bigTimeSpan = (tlBig.EndDate - tlBig.StartDate).TotalMinutes
+                 let tlBigIsLast = tlBig.EndDate > tlLast.EndDate.AddMinutes(bigTimeSpan / 10)
                  let tlBigIsFresh = tlBig.EndDate > rateDate
                  select tlBigIsLast && tlBigIsFresh ? TradeDirections.Both : TradeDirections.None;
         });
