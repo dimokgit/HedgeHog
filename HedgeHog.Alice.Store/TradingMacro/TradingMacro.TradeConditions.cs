@@ -171,6 +171,37 @@ namespace HedgeHog.Alice.Store {
 
       }
     }
+    [TradeConditionSetCorridor]
+    public TradeConditionDelegate TLH4Ok {
+      get {
+        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
+        var ok = MonoidsCore.ToFunc((TradingMacro)null, (TL)null, (TL)null, (tm, flat1, flat2) => {
+          var offset = flat1.EndDate.Subtract(flat1.StartDate).TotalMinutes / 20;
+          var dateRange = new[] { flat1.EndDate.AddMinutes(-offset), flat1.EndDate.AddMinutes(offset) };
+          var isLatesFlat = tm.TrendLinesFlat.OrderByDescending(tl => tl.EndDate).Take(1).Any(tl => tl == flat2);
+          var td = isLatesFlat &&
+          flat2.StartDate.Between(dateRange[0], dateRange[1])
+          ? TradeDirections.Both
+          : TradeDirections.None;
+          return new { tl = flat1, td };
+        });
+        return () => TradingMacroTrender(tm => tm.TrendLinesFlat
+        .CartesianProductSelf()
+        .Select(flats => new { flats, tm }))
+        .SelectMany(x => x.Select(y => ok(y.tm, y.flats[0], y.flats[1])))
+        .Where(x => x.td.HasAny())
+        .OrderByDescending(x => x.tl.EndDate)
+        .Take(1)
+        .Do(x => {
+          x.tl.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
+          x.tl.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
+        })
+        .Select(x => x.td)
+        .DefaultIfEmpty()
+        .Single();
+
+      }
+    }
 
 
     public TradeConditionDelegate E2EOk {
@@ -2026,6 +2057,33 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    static Rate[] _trenLinesEmptyRates = new Rate[] { new Rate { Trends = Rate.TrendLevels.Empty }, new Rate { Trends = Rate.TrendLevels.Empty } };
+    Lazy<IList<Rate>> _trendLines = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    public Lazy<IList<Rate>> TrendLines {
+      get { return _trendLines; }
+      private set { _trendLines = value; }
+    }
+    Lazy<IList<Rate>> _trendLines0 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    public Lazy<IList<Rate>> TrendLines0 {
+      get { return _trendLines0; }
+      private set { _trendLines0 = value; }
+    }
+    Lazy<IList<Rate>> _trendLines1 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    public Lazy<IList<Rate>> TrendLines1 {
+      get { return _trendLines1; }
+      private set { _trendLines1 = value; }
+    }
+    Lazy<IList<Rate>> _trendLines2 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    public Lazy<IList<Rate>> TrendLines2 {
+      get { return _trendLines2; }
+      private set { _trendLines2 = value; }
+    }
+    Lazy<IList<Rate>> _trendLines3 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    public Lazy<IList<Rate>> TrendLines3 {
+      get { return _trendLines3; }
+      private set { _trendLines3 = value; }
+    }
+
     int[] TrendInts(IEnumerable<int> ints) {
       return ints.Concat(new[] { -1 }).Take(2).ToArray();
     }
@@ -2108,8 +2166,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     string _trendRed = "0,4";
-    private IEnumerable<double> _edgeDiffs = new double[0];
-
     int[] TrendRedInt(string s = null) { return TrendInts((s ?? _trendRed).Split(',').Select(int.Parse)); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
@@ -2124,6 +2180,24 @@ namespace HedgeHog.Alice.Store {
           throw new Exception(new { TrendRed = value, Message = "Invalid value" } + "");
         TrendRedInt(value);
         _trendRed = value;
+      }
+    }
+
+    string _trendBlue = "0,7";
+    int[] TrendBlueInt(string s = null) { return TrendInts((s ?? _trendBlue).Split(',').Select(int.Parse)); }
+    [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsTrends)]
+    [Description("0(start),2(count)")]
+    public string TrendBlue {
+      get { return _trendBlue; }
+      set {
+        if(_trendBlue == value)
+          return;
+        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        if(ints.Length == 0)
+          throw new Exception(new { TrendBlue = value, Message = "Invalid value" } + "");
+        TrendBlueInt(value);
+        _trendBlue = value;
       }
     }
 
@@ -2144,5 +2218,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #endregion
+    private IEnumerable<double> _edgeDiffs = new double[0];
   }
 }

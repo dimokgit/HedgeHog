@@ -1292,9 +1292,6 @@
       serverCall("getPresetTradeLevels", [pair], function (l) {
         dataViewModel.tradePresetLevel(l[0] || 0);
       });
-      serverCall("getPresetTradeLevels", [pair], function (l) {
-        dataViewModel.tradePresetLevel(l[0] || 0);
-      });
 
       //#endregion 
       dataViewModel.readStrategies();

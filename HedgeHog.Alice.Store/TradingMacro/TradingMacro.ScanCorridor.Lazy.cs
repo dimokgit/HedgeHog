@@ -64,6 +64,7 @@ namespace HedgeHog.Alice.Store {
         _corridorsTask.Run(() => {
           CorridorLengthGreen = ratesReversed.TakeWhile(r => r.StartDate >= _corridorStartDate1).Count();
           CorridorLengthBlue = ratesReversed.TakeWhile(r => r.StartDate >= _corridorStartDate2).Count();
+          throw new Exception("Obsolete code entered");
         });
       postProcess?.Invoke();
       return (showVolts ?? GetShowVoltageFunction())();

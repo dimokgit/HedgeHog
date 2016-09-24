@@ -93,8 +93,7 @@ namespace HedgeHog {
         .Select(x => x.Select(z => z.n));
 
     }
-    public static IEnumerable<IEnumerable<T>> CartesianProductSelf<T>(this IEnumerable<T> source) {
-
+    public static IEnumerable<IList<T>> CartesianProductSelf<T>(this IEnumerable<T> source) {
       var source2 = source.Select((v, i) => new { v, i }).ToArray();
       return new[] { source2, source2 }.CartesianProduct()
         .Select(x => x.ToArray())

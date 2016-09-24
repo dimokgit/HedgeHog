@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using System.Reflection;
 using Westwind.Web.WebApi;
 using HedgeHog.Bars;
+using Microsoft.Owin.Security;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
@@ -114,20 +115,35 @@ namespace HedgeHog.Alice.Client {
             ? AuthenticationSchemes.Anonymous
             : AuthenticationSchemes.Basic;
             httpListener().AuthenticationSchemes = scheme;
-
-            return context.Response.WriteAsync("privet:" + DateTimeOffset.Now);
+            return context.Response.WriteAsync(new { httpListener().AuthenticationSchemes } + "");
           }
           if(context.Request.Path.Value.ToLower().StartsWith("/logon")) {
+            if(context.Authentication.User != null) {
+              context.Response.Redirect("/who");
+              return context.Response.WriteAsync(UserToString(httpListener, context.Authentication.User));
+            }
+            if(httpListener().AuthenticationSchemes == AuthenticationSchemes.Anonymous)
+              return context.Response.WriteAsync(new { AuthenticationSchemes.Anonymous } + "");
             var host = context.Request.Uri.DnsSafeHost;
             context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
             context.Response.Headers.Add("WWW-Authenticate", new[] { string.Format("Basic realm=\"{0}\"", host) });
-
+            return Task.FromResult("");
+          }
+          if(context.Request.Path.Value.ToLower().StartsWith("/logoff")) {
+            if(httpListener().AuthenticationSchemes == AuthenticationSchemes.Anonymous) {
+              context.Response.Redirect("/who");
+              return context.Response.WriteAsync(new { AuthenticationSchemes.Anonymous } + "");
+            }
+            var host = context.Request.Uri.DnsSafeHost;
+            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            context.Response.Headers.Add("WWW-Authenticate", new[] { string.Format("Basic realm=\"{0}\"", host) });
+            return Task.FromResult("");
           }
           if(context.Request.Path.Value.ToLower().StartsWith("/who")) {
             var user = context.Authentication.User;
             return context.Response.WriteAsync(user == null
               ? "Anonymous"
-              : new { User = user.Identity.Name, user.Identity.AuthenticationType, httpListener().AuthenticationSchemes, IsTrader = user.IsInRole("Traders") }.ToJson());
+              : UserToString(httpListener, user));
           }
           var path = context.Request.Path.Value.ToLower().Substring(1);
           var rc = remoteControl.Value;
@@ -150,6 +166,16 @@ namespace HedgeHog.Alice.Client {
         }
         return next();
       });
+      app.Map("/login2", map => {
+        map.Run(ctx => {
+          if(ctx.Authentication.User == null ||
+          !ctx.Authentication.User.Identity.IsAuthenticated) {
+            var authenticationProperties = new AuthenticationProperties();
+            ctx.Authentication.Challenge(authenticationProperties, new[] { AuthenticationSchemes.Negotiate + "" });
+          }
+          return Task.FromResult("");
+        });
+      });
       //app.Use((context, next) => {
       //  return new GZipMiddleware(d => next()).Invoke(context.Environment);
       //});
@@ -163,6 +189,10 @@ namespace HedgeHog.Alice.Client {
         if(!exc.Message.StartsWith("Counter"))
           throw;
       }
+    }
+
+    private static string UserToString(Func<HttpListener> httpListener, System.Security.Claims.ClaimsPrincipal user) {
+      return new { User = user.Identity.Name, user.Identity.AuthenticationType, httpListener().AuthenticationSchemes, IsTrader = user.IsInRole("Traders") }.ToJson();
     }
   }
   [BasicAuthenticationFilter]
@@ -276,7 +306,7 @@ namespace HedgeHog.Alice.Client {
         com = new { b = tmTrader.CenterOfMassBuy.Round(digits), s = tmTrader.CenterOfMassSell.Round(digits) },
         com2 = new { b = tmTrader.CenterOfMassBuy2.Round(digits), s = tmTrader.CenterOfMassSell2.Round(digits) },
         com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits) },
-        tpls = tmTrader.GetTradeLevelsPreset().ToArray(),
+        tpls = tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
         tts = HasMinMaxTradeLevels(tmTrader) ? tmTrender.TradeTrends : "",
         tti = GetTradeTrendIndexImpl(tmTrader, tmTrender)
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })

@@ -158,6 +158,12 @@ namespace HedgeHog.Tests {
         Assert.IsTrue(res.Zip(target, (r, t) => t.SequenceEqual(r)).All(b => b));
       }
     }
+    [TestMethod]
+    public void CartesianProductSelf() {
+      var source = new[] { 1, 2, 3, 4 };
+      var result = source.CartesianProductSelf();
+      Console.WriteLine(result.ToJson());
+    }
 
     /*
      * Test Name:	CartesianProduct
