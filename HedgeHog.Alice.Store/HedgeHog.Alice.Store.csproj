@@ -279,6 +279,7 @@
     <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Chunks.cs" />
     <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Lazy.cs" />
     <Compile Include="TradingMacro\TradingMacro.Strategies.AdjustExit.cs" />
+    <Compile Include="TradingMacro\TradingMacro.TradeTrends.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EnumerableHH\HedgeHog.EnumerableHH.csproj">

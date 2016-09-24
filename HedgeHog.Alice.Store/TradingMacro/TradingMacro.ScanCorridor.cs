@@ -192,9 +192,9 @@ namespace HedgeHog.Alice.Store {
       var legIndexes = new[] { 0 }.Concat(Enumerable.Range(0, sections.Count).SelectMany(i => getLength(i))).ToList();
 
       Func<int, int, TradeLevelsPreset, IList<Rate>> calcTrendLines = (start, end, pl) => {
-        if(end <= 0)
+        if(start == 0 && end <= 0)
           return CalcTrendLines(0, tagTL(pl));
-        if(start > 7)
+        if(end < 0)
           return bs(start, pl);
         var e = end < legIndexes.Count ? legIndexes[end] : ratesForCorridor.Count;
         return CalcTrendLines(RatesArray.Count - e, e - legIndexes[start], tagTL(pl));
@@ -323,9 +323,9 @@ namespace HedgeHog.Alice.Store {
         .Select(p => calcTrendLines(p.s, true, TradeLevelsPreset.Red, 0))
         .ForEach(tl => TrendLines2 = Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc));
 
-      Action<int[],Action<Lazy<IList<Rate>>>,Lazy<IList<Rate>>, TradeLevelsPreset> doTL = (ints,tl,tlDef,color)=>
-            ints.Pairwise((s, c) => new { s, skip = skipFirst.Value })
-        .ForEach(p => tl(Lazy.Create(() => calcTrendLines(p.s, true, color, p.skip), tlDef.Value, exc => Log = exc)));
+      Action<int[], Action<Lazy<IList<Rate>>>, Lazy<IList<Rate>>, TradeLevelsPreset> doTL = (ints, tl, tlDef, color) =>
+              ints.Pairwise((s, c) => new { s, skip = skipFirst.Value })
+          .ForEach(p => tl(Lazy.Create(() => calcTrendLines(p.s, true, color, p.skip), tlDef.Value, exc => Log = exc)));
 
       doTL(TrendLimeInt(), tl => TrendLines0 = tl, TrendLines0, TradeLevelsPreset.Lime);
       doTL(TrendGreenInt(), tl => TrendLines1 = tl, TrendLines1, TradeLevelsPreset.Green);

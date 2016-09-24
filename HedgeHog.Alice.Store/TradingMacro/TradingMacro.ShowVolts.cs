@@ -32,6 +32,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByAvgLineRatio;
         case HedgeHog.Alice.VoltageFunction.Rsd:
           return ShowVoltsByRsd;
+        case HedgeHog.Alice.VoltageFunction.TLH:
+          return ShowVoltsByTLH;
         case HedgeHog.Alice.VoltageFunction.PPM:
           return ShowVoltsByPPM;
         case HedgeHog.Alice.VoltageFunction.PPMH:
@@ -129,6 +131,12 @@ namespace HedgeHog.Alice.Store {
       if(useCalc)
         SetVots(RatesDuration / InPips(_RatesHeight), 2);
 
+      return null;
+    }
+    CorridorStatistics ShowVoltsByTLH() {
+      var v = TrendLinesFlat.Select(tl => tl.StDev).ToArray().Permutation((s1, s2) => s1.Ratio(s2)).DefaultIfEmpty().Average();
+      if(v.IsNotNaN())
+        ShowVolts(v, 2);
       return null;
     }
 

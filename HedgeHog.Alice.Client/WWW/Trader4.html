@@ -59,7 +59,6 @@
   <!--<script src='https://cdn.rawgit.com/ValYouW/jqPropertyGrid/9218bbd5df05bf7efe58591f434ea27ece11a045/jqPropertyGrid.js'></script>-->
   <script src='Scripts/jqPropertyGrid.js'></script>
   <script src='d3-knockout/custom-binding-handlers/trend-line-chart-binding.js'></script>
-  <script src='d3-knockout/app.js'></script>
   <!--#endregion-->
 
   <style type="text/css">
@@ -709,6 +708,33 @@
     </div>
   </div>
   <!--#endregion-->
+  <!--#region Strategies dialog-->
+  <div class="modal" data-bind="elementer:strategiesDialog" id="strategiesDialog" tabindex="-1" role="dialog" aria-labelledby="strategiesDialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <!--<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>-->
+          <span class="modal-title" id="myModalLabel">Strategies</span>
+          <input data-bind="textInput:strategyFilter" />
+          <button data-bind="click: clearStrategy" title="Empty Strategy">
+            <span class="glyphicon glyphicon-flash" />
+          </button>
+        </div>
+        <div class="modal-body" data-bind="foreach:strategiesFiltered">
+          <div data-bind="attr:{title:name}">
+            <input data-bind="checked:isSelected" type="checkbox" />
+            <span data-bind="text:nick,click:$parent.updateStrategy,css:{'active-strategy':isActive}"></span>
+            <a data-bind="attr:{href:uri}" target="_blank" class="glyphicon glyphicon-list"></a>
+          </div>
+        </div>
+        <div class="modal-footer" style="display:none">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--#endregion-->
   <!--#region wwwInfo-->
   <div data-bind="elementer:wwwInfoDialog" style="display:none">
     <pre data-bind="text:wwwInfo"></pre>
@@ -896,37 +922,14 @@
         </div>
       </div>
     </div>
+    <!--#endregion-->
+    <!--#region Settings grid-->
+    <!--#endregion-->
+    <!--#endregion-->
   </div>
-  <!--#endregion-->
+
   <!--#region Strategies dialog-->
-  <div class="modal" data-bind="elementer:strategiesDialog" id="strategiesDialog" tabindex="-1" role="dialog" aria-labelledby="strategiesDialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-      <div class="modal-content">
-        <div class="modal-header">
-          <!--<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>-->
-          <span class="modal-title" id="myModalLabel">Strategies</span>
-          <input data-bind="textInput:strategyFilter" />
-          <button data-bind="click: clearStrategy" title="Empty Strategy">
-            <span class="glyphicon glyphicon-flash" />
-          </button>
-        </div>
-        <div class="modal-body" data-bind="foreach:strategiesFiltered">
-          <div data-bind="attr:{title:name}">
-            <input data-bind="checked:isSelected" type="checkbox" />
-            <span data-bind="text:nick,click:$parent.updateStrategy,css:{'active-strategy':isActive}"></span>
-            <a data-bind="attr:{href:uri}" target="_blank" class="glyphicon glyphicon-list"></a>
-          </div>
-        </div>
-        <div class="modal-footer" style="display:none">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!--#endregion-->
-  <!--#region Strategies dialog-->
-  <div class="modal" data-bind="elementer:strategyNameDialog" id="strategyNameDialog" tabindex="-1" role="dialog" aria-labelledby="strategyNameDialog" aria-hidden="true">
+  <div data-bind="elementer:strategyNameDialog" class="modal" tabindex="-1" role="dialog" aria-labelledby="strategyNameDialog" aria-hidden="true">
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header">
@@ -954,9 +957,6 @@
     </div>
   </div>
   <!--#endregion-->
-  <!--#region Settings grid-->
-  <!--#endregion-->
-  <!--#endregion-->
-
 </body>
+<script src='d3-knockout/app.js'></script>
 </html>

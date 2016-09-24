@@ -126,7 +126,7 @@ namespace HedgeHog.Alice.Store {
 
     static bool IsTLFresh(TradingMacro tm, TL tl) {
       var rateDate = tm.RatesArray[tm.RatesArray.Count - tl.Count].StartDate;
-      return tl.EndDate > rateDate;
+      return !tl.IsEmpty && tl.EndDate > rateDate && tl.StartDate > tm.LastTrade.TimeClose;
 
     }
     [TradeConditionSetCorridor]
@@ -174,16 +174,16 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionSetCorridor]
     public TradeConditionDelegate TLH4Ok {
       get {
-        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
         var ok = MonoidsCore.ToFunc((TradingMacro)null, (TL)null, (TL)null, (tm, flat1, flat2) => {
-          var offset = flat1.EndDate.Subtract(flat1.StartDate).TotalMinutes / 20;
+          var offset = flat2.TimeSpan.TotalMinutes.Max(flat1.TimeSpan.TotalMinutes) * 0.5;
           var dateRange = new[] { flat1.EndDate.AddMinutes(-offset), flat1.EndDate.AddMinutes(offset) };
           var isLatesFlat = tm.TrendLinesFlat.OrderByDescending(tl => tl.EndDate).Take(1).Any(tl => tl == flat2);
-          var td = isLatesFlat &&
+          var td = flat2.StDev > flat1.StDev &&
+          IsTLFresh(tm, flat2) &&
           flat2.StartDate.Between(dateRange[0], dateRange[1])
           ? TradeDirections.Both
           : TradeDirections.None;
-          return new { tl = flat1, td };
+          return new { tl = flat2, td };
         });
         return () => TradingMacroTrender(tm => tm.TrendLinesFlat
         .CartesianProductSelf()
@@ -200,6 +200,29 @@ namespace HedgeHog.Alice.Store {
         .DefaultIfEmpty()
         .Single();
 
+      }
+    }
+
+    public TradeConditionDelegate TLFOk {
+      get {
+        Func<TradingMacro, IList<TL>, double, IEnumerable<DateTime>> startDate = (tm, flats, percent) =>
+             flats
+             .Take(1)
+             .Select(tl => tl.Count)
+             .Select(count => tm.RatesArray[tm.RatesArray.Count - (count * percent).ToInt()].StartDate);
+        Func<TradingMacro, IList<TL>> tls = tm => tm.TrendLinesTrendsAll.Where(TL.NotEmpty).ToList();
+        return () => (from tm in TradingMacroTrender()
+                      from tr in TradingMacroTrader()
+                      let flats = tls(tm)
+                      where flats.Min(tl => tl.StartDate) > tr.LastTrade.TimeClose
+                      from sd in startDate(tm, flats, 0.5)
+                      where flats.All(tl => tl.EndDate > sd)
+                      select true)
+        .Select(ok => ok
+        ? TradeDirections.Both
+        : TradeDirections.None)
+        .DefaultIfEmpty()
+        .Aggregate((td1, td2) => td1 | td2);
       }
     }
 
@@ -2057,149 +2080,6 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    static Rate[] _trenLinesEmptyRates = new Rate[] { new Rate { Trends = Rate.TrendLevels.Empty }, new Rate { Trends = Rate.TrendLevels.Empty } };
-    Lazy<IList<Rate>> _trendLines = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
-    public Lazy<IList<Rate>> TrendLines {
-      get { return _trendLines; }
-      private set { _trendLines = value; }
-    }
-    Lazy<IList<Rate>> _trendLines0 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
-    public Lazy<IList<Rate>> TrendLines0 {
-      get { return _trendLines0; }
-      private set { _trendLines0 = value; }
-    }
-    Lazy<IList<Rate>> _trendLines1 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
-    public Lazy<IList<Rate>> TrendLines1 {
-      get { return _trendLines1; }
-      private set { _trendLines1 = value; }
-    }
-    Lazy<IList<Rate>> _trendLines2 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
-    public Lazy<IList<Rate>> TrendLines2 {
-      get { return _trendLines2; }
-      private set { _trendLines2 = value; }
-    }
-    Lazy<IList<Rate>> _trendLines3 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
-    public Lazy<IList<Rate>> TrendLines3 {
-      get { return _trendLines3; }
-      private set { _trendLines3 = value; }
-    }
-
-    int[] TrendInts(IEnumerable<int> ints) {
-      return ints.Concat(new[] { -1 }).Take(2).ToArray();
-    }
-
-    string _tradeTrends = "0,1,2,3";
-    [Category(categoryActiveFuncs)]
-    [WwwSetting(wwwSettingsTradingCorridor)]
-    [Description("0,1,2")]
-    [DisplayName("Trade Trends")]
-    public string TradeTrends {
-      get { return _tradeTrends; }
-      set {
-        if(_tradeTrends == value)
-          return;
-        _tradeTrends = value;
-        if(string.IsNullOrWhiteSpace(_tradeTrends))
-          _tradeTrends = (TrendLinesTrendsAll.Length - 1).ToString();
-        TradeTrendsInt = SplitterInt(_tradeTrends);
-      }
-    }
-
-    int[] _tradeTrendsInt;
-    public int[] TradeTrendsInt {
-      get { return _tradeTrendsInt ?? (_tradeTrendsInt = SplitterInt(TradeTrends)); }
-      set { _tradeTrendsInt = value; }
-    }
-
-    string _trendPlum = "1,3";
-    int[] TrendPlumInt(string s = null) { return TrendInts((s ?? _trendPlum).Split(',').Select(int.Parse)); }
-    [Category(categoryActiveFuncs)]
-    [WwwSetting(wwwSettingsTrends)]
-    [Description("0(start),2(count)")]
-    public string TrendPlum {
-      get { return _trendPlum; }
-      set {
-        if(_trendPlum == value)
-          return;
-        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        if(ints.Length == 0)
-          throw new Exception(new { TrendPlum = value, Message = "Invalid value" } + "");
-        TrendPlumInt(value);
-        _trendPlum = value;
-      }
-    }
-
-    string _trendLime = "0,1";
-    int[] TrendLimeInt(string s = null) { return TrendInts((s ?? _trendLime).Split(',').Select(int.Parse)); }
-    [Category(categoryActiveFuncs)]
-    [WwwSetting(wwwSettingsTrends)]
-    [Description("0(start),2(count)")]
-    public string TrendLime {
-      get { return _trendLime; }
-      set {
-        if(_trendLime == value)
-          return;
-        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        if(ints.Length == 0)
-          throw new Exception(new { TrendLime = value, Message = "Invalid value" } + "");
-        TrendLimeInt(value);
-        _trendLime = value;
-      }
-    }
-
-    string _trendGreen = "0,2";
-    int[] TrendGreenInt(string s = null) { return TrendInts((s ?? _trendGreen).Split(',').Select(int.Parse)); }
-    [Category(categoryActiveFuncs)]
-    [WwwSetting(wwwSettingsTrends)]
-    [Description("0(start),2(count)")]
-    public string TrendGreen {
-      get { return _trendGreen; }
-      set {
-        if(_trendGreen == value)
-          return;
-        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        if(ints.Length == 0)
-          throw new Exception(new { TrendGreen = value, Message = "Invalid value" } + "");
-        TrendGreenInt(value);
-        _trendGreen = value;
-      }
-    }
-
-    string _trendRed = "0,4";
-    int[] TrendRedInt(string s = null) { return TrendInts((s ?? _trendRed).Split(',').Select(int.Parse)); }
-    [Category(categoryActiveFuncs)]
-    [WwwSetting(wwwSettingsTrends)]
-    [Description("0(start),2(count)")]
-    public string TrendRed {
-      get { return _trendRed; }
-      set {
-        if(_trendRed == value)
-          return;
-        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        if(ints.Length == 0)
-          throw new Exception(new { TrendRed = value, Message = "Invalid value" } + "");
-        TrendRedInt(value);
-        _trendRed = value;
-      }
-    }
-
-    string _trendBlue = "0,7";
-    int[] TrendBlueInt(string s = null) { return TrendInts((s ?? _trendBlue).Split(',').Select(int.Parse)); }
-    [Category(categoryActiveFuncs)]
-    [WwwSetting(wwwSettingsTrends)]
-    [Description("0(start),2(count)")]
-    public string TrendBlue {
-      get { return _trendBlue; }
-      set {
-        if(_trendBlue == value)
-          return;
-        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        if(ints.Length == 0)
-          throw new Exception(new { TrendBlue = value, Message = "Invalid value" } + "");
-        TrendBlueInt(value);
-        _trendBlue = value;
-      }
-    }
 
     private IList<IList<int>> SplitterInts(string indexesAll) {
       return (from indexes in indexesAll.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)

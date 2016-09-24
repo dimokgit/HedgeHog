@@ -633,6 +633,7 @@ namespace HedgeHog.Bars {
     public class TrendLevels {
       public static readonly TrendLevels Empty;
       public static readonly Rate EmptyRate;
+      public static readonly Func<TrendLevels, bool> NotEmpty = tl => !tl.IsEmpty;
       static TrendLevels() {
         Empty = new TrendLevels(0, new[] { double.NaN, double.NaN }, double.NaN, DateTime.MaxValue, DateTime.MaxValue);
         EmptyRate = new Rate { Trends = Empty };
@@ -679,14 +680,15 @@ namespace HedgeHog.Bars {
       public IEnumerable<Tuple<DateTime, double, double>> EdgeLow {
         get;
         set;
-      }  = new Tuple<DateTime, double, double>[0];
+      } = new Tuple<DateTime, double, double>[0];
 
       public IEnumerable<double> EdgeDiff { get { return EdgeHigh.SelectMany(h => EdgeLow.Select(l => h.Item2.Abs(l.Item2))); } }
 
       public DateTime StartDate { get; private set; }
       public DateTime EndDate { get; private set; }
+      public TimeSpan TimeSpan { get { return EndDate - StartDate; } }
 
-      public TrendLevels(int count, double[] coeffs, double stDev,DateTime startDate,DateTime endDate) {
+      public TrendLevels(int count, double[] coeffs, double stDev, DateTime startDate, DateTime endDate) {
         this.Count = count;
         this.Slope = coeffs.LineSlope();
         this.Coeffs = coeffs;

@@ -207,7 +207,7 @@ namespace HedgeHog.Alice.Store {
     ISubject<Action> _CorridorDistanceSubject;
     ISubject<Action> CorridorDistanceSubject {
       get {
-        lock (_CorridorDistanceSubjectLocker)
+        lock(_CorridorDistanceSubjectLocker)
           if(_CorridorDistanceSubject == null) {
             _CorridorDistanceSubject = new Subject<Action>();
             _CorridorDistanceSubject.SubscribeWithoutOverlap<Action>(a => a());
@@ -352,14 +352,14 @@ namespace HedgeHog.Alice.Store {
     public TL TrendLinesLimeTrends { get { return IsTrendsEmpty(TrendLines0); } }
     public TL TrendLinesRedTrends { get { return IsTrendsEmpty(TrendLines); } }
     public TL TrendLinesPlumTrends { get { return IsTrendsEmpty(TrendLines3); } }
-    public TL[] TrendLinesTrendsAll { get { return new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesPlumTrends, TrendLinesRedTrends, TrendLinesBlueTrends }; } }
-    public TL[] TrendLinesFlat {
+    public TL[] TrendLinesTrendsAll {
       get {
-        return new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesPlumTrends, TrendLinesRedTrends }.Where(tl => !tl.IsEmpty).ToArray();
+        return new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesPlumTrends, TrendLinesRedTrends, TrendLinesBlueTrends };
       }
     }
+    public TL[] TrendLinesFlat { get { return TrendLinesTrendsAll.SkipLast(1).Where(tl => !tl.IsEmpty).ToArray(); } }
     public IEnumerable<TL> TradeTrendLines { get { return TradeTrendsInt.Select(i => TrendLinesTrendsAll[i]); } }
-    public double TradeTrendLinesAvg(Func<TL,double> selector) {
+    public double TradeTrendLinesAvg(Func<TL, double> selector) {
       return TradeTrendLines.ToArray(selector)
         .Permutation()
         .Select(t => t.Item1.ToPercent(t.Item2))
@@ -418,9 +418,9 @@ namespace HedgeHog.Alice.Store {
 
     public IList<Rate> CalcTrendLines(int start, int count, Func<TL, TL> map) {
       return UseRates(rates => {
-        return rates.GetRange(start, count.Min(rates.Count-start).Max(0));
+        return rates.GetRange(start, count.Min(rates.Count - start).Max(0));
       })
-      .Select(rates => CalcTrendLines(rates, count,map))
+      .Select(rates => CalcTrendLines(rates, count, map))
       .DefaultIfEmpty(new[] { TL.EmptyRate, TL.EmptyRate })
       .Single();
     }
@@ -429,16 +429,16 @@ namespace HedgeHog.Alice.Store {
         var c = count.Min(rates.Count);
         return count == 0 ? new List<Rate>() : rates.GetRange(rates.Count - c, c);
       })
-      .Select(rates => CalcTrendLines(rates, count,map))
+      .Select(rates => CalcTrendLines(rates, count, map))
       .DefaultIfEmpty(new[] { TL.EmptyRate, TL.EmptyRate })
       .Single();
     }
     public IList<Rate> CalcTrendLines(List<Rate> source, int count, Func<TL, TL> map) {
       var c = count.Min(source.Count).Max(0);
       var range = source.Count == count ? source : source.GetRange(source.Count - c, c);
-      return CalcTrendLines(range,map);
+      return CalcTrendLines(range, map);
     }
-    public IList<Rate> CalcTrendLines(List<Rate> corridorValues,Func<TL,TL> map) {
+    public IList<Rate> CalcTrendLines(List<Rate> corridorValues, Func<TL, TL> map) {
       if(corridorValues.Count == 0)
         return new[] { TL.EmptyRate, TL.EmptyRate };
       if(corridorValues[0] == null) {
@@ -476,7 +476,7 @@ namespace HedgeHog.Alice.Store {
       var edgeHigh = edges.OrderBy(x => x.d.Abs(x.h)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Abs(x.h)), x.d)).First();
       var edgeLow = edges.OrderBy(x => x.d.Abs(x.l)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Abs(x.l)), x.d)).First();
 
-      rates.ForEach(r => r.Trends = map(new TL(corridorValues.Count, coeffs, hl,corridorValues.First().StartDate,corridorValues.Last().StartDate) {
+      rates.ForEach(r => r.Trends = map(new TL(corridorValues.Count, coeffs, hl, corridorValues.First().StartDate, corridorValues.Last().StartDate) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize),
         EdgeHigh = new[] { edgeHigh },
         EdgeLow = new[] { edgeLow }
