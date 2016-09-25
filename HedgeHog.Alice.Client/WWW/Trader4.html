@@ -645,10 +645,10 @@
     <span class="trade-condition or" data-bind="text:key().slice(0,-2),css:{on:value()}"></span>
     <!-- /ko -->
     <!-- ko with: stats-->
-    <span data-bind="text:Math.round(ucia[0]()*100,2)/100"></span>/
-    <span data-bind="text:Math.round(ucia[1]()*100,2)/100,visible:ucia[1]()"></span>|
-    <span data-bind="text:Math.round(ucCmas[0]()*100,2)/100"></span>/
-    <span data-bind="text:Math.round(ucCmas[1]()*100,2)/100,visible:ucCmas[1]()"></span>
+    <span data-bind="text:Math.round(ucia[0]()*100,1)/100,visible:ucia[0]()"></span>/
+    <span data-bind="text:Math.round(ucia[1]()*100,1)/100,visible:ucia[1]()"></span>|
+    <span data-bind="text:Math.round(ucCmas[0]()*100,1)/100,visible:ucCmas[0]()"></span>/
+    <span data-bind="text:Math.round(ucCmas[1]()*100,1)/100,visible:ucCmas[1]()"></span>
     <!-- /ko -->
     <div style="width:4em;height:1.5em;position:absolute;left:0;top:0;display:none">
       <input data-bind="value:rsdMin" style="width:1.5em;" />

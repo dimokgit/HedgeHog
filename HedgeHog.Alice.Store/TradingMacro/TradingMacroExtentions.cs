@@ -2306,7 +2306,7 @@ namespace HedgeHog.Alice.Store {
                   Log = new Exception(new { BarsCount, Error = "Too low" } + "");
                   return;
                 }
-                if(VoltageFunction_ == Alice.VoltageFunction.DistanceMacd) {
+                if(VoltageFunction == Alice.VoltageFunction.DistanceMacd) {
                   SetVoltageByRHSD(rates);
                 }
                 SpreadForCorridor = rates.Spread();

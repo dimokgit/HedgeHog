@@ -532,16 +532,17 @@ namespace HedgeHog.Alice.Store {
     }
 
 
+    VoltageFunction _voltageFunction;
     [DisplayName("Voltage Function")]
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsCorridorFuncs)]
-    public VoltageFunction VoltageFunction_ {
-      get { return (VoltageFunction)VoltageFunction; }
+    public VoltageFunction VoltageFunction {
+      get { return _voltageFunction; }
       set {
-        if (VoltageFunction != (int)value) {
-          VoltageFunction = (int)value;
+        if (_voltageFunction != value) {
+          _voltageFunction = value;
           ResetVoltages();
-          OnPropertyChanged("VoltageFunction_");
+          OnPropertyChanged("VoltageFunction");
         }
       }
     }
@@ -571,9 +572,6 @@ namespace HedgeHog.Alice.Store {
       }));
     }
 
-    partial void OnVoltageFunctionChanged() {
-      OnPropertyChanged("VoltageFunction_");
-    }
     ScanCorridorFunction _ScanCorridorBy;
     [DisplayName("Scan Corridor By")]
     [Category(categoryActiveFuncs)]

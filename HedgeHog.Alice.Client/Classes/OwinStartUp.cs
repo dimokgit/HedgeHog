@@ -294,7 +294,7 @@ namespace HedgeHog.Alice.Client {
         hgt = string.Join("/", new[] {
           tmTrender.RatesHeightInPips.ToInt()+"",
           tmTrader.BuySellHeightInPips.ToInt()+"",
-          tmTrender.TrendLinesBlueTrends.Angle.Abs().ToInt()+"°"
+          tmTrender.TrendLinesBlueTrends.Angle.Abs().Round(1)+"°"
         }),
         rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,

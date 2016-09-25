@@ -1,24 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using HedgeHog;
 using HedgeHog.Bars;
-using System.Diagnostics;
-using System.Reactive;
-using System.Reactive.Threading;
 using System.Reactive.Concurrency;
 using System.Threading;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
-using System.ComponentModel;
-using System.Collections.Concurrent;
+using TL = HedgeHog.Bars.Rate.TrendLevels;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
     Func<CorridorStatistics> GetShowVoltageFunction() {
-      switch(VoltageFunction_) {
+      switch(VoltageFunction) {
         case HedgeHog.Alice.VoltageFunction.None:
           return ShowVoltsNone;
         case HedgeHog.Alice.VoltageFunction.t1:
@@ -51,7 +46,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.TtlSd:
           return SetVoltsByTradeTrendLinesAvg;
       }
-      throw new NotSupportedException(VoltageFunction_ + " not supported.");
+      throw new NotSupportedException(VoltageFunction + " not supported.");
     }
 
     CorridorStatistics ShowVoltsByVolume() {
@@ -134,7 +129,7 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByTLH() {
-      var v = TrendLinesFlat.Select(tl => tl.StDev).ToArray().Permutation((s1, s2) => s1.Ratio(s2)).DefaultIfEmpty().Average();
+      var v = TrendLinesTrendsAll.Where(TL.NotEmpty).Select(tl => tl.StDev).ToArray().Permutation((s1, s2) => s1.Ratio(s2)).DefaultIfEmpty().Average();
       if(v.IsNotNaN())
         ShowVolts(v, 2);
       return null;

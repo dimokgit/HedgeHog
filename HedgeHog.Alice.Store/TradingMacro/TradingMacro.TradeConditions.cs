@@ -205,19 +205,16 @@ namespace HedgeHog.Alice.Store {
 
     public TradeConditionDelegate TLFOk {
       get {
-        Func<TradingMacro, IList<TL>, double, IEnumerable<DateTime>> startDate = (tm, flats, percent) =>
-             flats
-             .Take(1)
-             .Select(tl => tl.Count)
-             .Select(count => tm.RatesArray[tm.RatesArray.Count - (count * percent).ToInt()].StartDate);
-        Func<TradingMacro, IList<TL>> tls = tm => tm.TrendLinesTrendsAll.Where(TL.NotEmpty).ToList();
+        Func<TL, DateTime[]> tlDates = tl => new[] { tl.StartDate, tl.EndDate };
         return () => (from tm in TradingMacroTrender()
                       from tr in TradingMacroTrader()
-                      let flats = tls(tm)
+                      let flats = tm.TrendLinesFlat
                       where flats.Min(tl => tl.StartDate) > tr.LastTrade.TimeClose
-                      from sd in startDate(tm, flats, 0.5)
-                      where flats.All(tl => tl.EndDate > sd)
-                      select true)
+                      from tlLast in flats.TakeLast(1)
+                      where IsTLFresh(tm, tlLast)
+                      let sd = tlDates(tlLast)
+                      select flats.SkipLast(1).Select(tlDates).All(se => se.Any(tld => tld.Between(sd[0], sd[1])))
+                      )
         .Select(ok => ok
         ? TradeDirections.Both
         : TradeDirections.None)

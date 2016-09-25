@@ -762,6 +762,9 @@
     var updateChartIntervalAverages = [ko.observable(), ko.observable()];
     var updateChartCmas = [ko.observable(), ko.observable()];
     this.stats = { ucia: updateChartIntervalAverages, ucCmas: updateChartCmas };
+    this.mustShowStata = ko.pureComputed(function () {
+      return 
+    });
     this.isTradingActive = isTradingActive = ko.observable(true);
     function updateChart(response) {
       var d = new Date();
