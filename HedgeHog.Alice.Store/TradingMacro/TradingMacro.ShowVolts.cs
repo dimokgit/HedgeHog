@@ -13,7 +13,10 @@ using TL = HedgeHog.Bars.Rate.TrendLevels;
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
     Func<CorridorStatistics> GetShowVoltageFunction() {
-      switch(VoltageFunction) {
+      return GetShowVoltageFunction(VoltageFunction);
+    }
+    Func<CorridorStatistics> GetShowVoltageFunction(VoltageFunction voltageFunction, int voltIndex = 0) {
+      switch(voltageFunction) {
         case HedgeHog.Alice.VoltageFunction.None:
           return ShowVoltsNone;
         case HedgeHog.Alice.VoltageFunction.t1:
@@ -30,7 +33,9 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.TLH:
           return ShowVoltsByTLH;
         case HedgeHog.Alice.VoltageFunction.PPM:
-          return ShowVoltsByPPM;
+          return voltIndex == 0
+            ? (Func<CorridorStatistics>)ShowVoltsByPPM
+            : () => ShowVoltsByPPM(GetVoltage2, SetVoltage2);
         case HedgeHog.Alice.VoltageFunction.PPMH:
           return ShowVoltsByPPMH;
         case HedgeHog.Alice.VoltageFunction.AO:
@@ -62,6 +67,9 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByPPM() {
+      return ShowVoltsByPPM(null, null);
+    }
+    CorridorStatistics ShowVoltsByPPM(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
       Func<IEnumerable<double>> calcVolt = ()
         => UseRates(rates
@@ -69,10 +77,10 @@ namespace HedgeHog.Alice.Store {
         .Where(ppm => ppm > 0)
         .Select(ppm => InPips(ppm));
       if(!useCalc)
-        return ShowVolts(GetLastVolt().DefaultIfEmpty(() => calcVolt().Single()).Single(), 2);
+        return ShowVolts(GetLastVolt().DefaultIfEmpty(() => calcVolt().Single()).Single(), 2, getVolt, setVolt);
 
       return calcVolt()
-        .Select(volt => ShowVolts(useCalc ? volt : GetLastVolt().DefaultIfEmpty(volt).Single(), 2))
+        .Select(volt => ShowVolts(useCalc ? volt : GetLastVolt().DefaultIfEmpty(volt).Single(), 2, getVolt, setVolt))
         .SingleOrDefault();
     }
 
@@ -129,7 +137,12 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByTLH() {
-      var v = TrendLinesTrendsAll.Where(TL.NotEmpty).Select(tl => tl.StDev).ToArray().Permutation((s1, s2) => s1.Ratio(s2)).DefaultIfEmpty().Average();
+      var v = TrendLinesTrendsAll.Where(TL.NotEmpty)
+        .SelectMany(tl => tl.Sorted.Value.Pairwise((r1, r2) => new { min = r1.PriceAvg, max = r2.PriceAvg, h = r2.PriceAvg - r1.PriceAvg }))
+        .ToArray()
+        .Permutation((pah1, pah2) => pah1.min.Abs(pah2.min).Max(pah1.max.Abs(pah2.max)).ToPercent(pah1.h.Max(pah2.h)))
+        .DefaultIfEmpty()
+        .Average();
       if(v.IsNotNaN())
         ShowVolts(v, 2);
       return null;

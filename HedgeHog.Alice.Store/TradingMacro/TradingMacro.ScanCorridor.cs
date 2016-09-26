@@ -230,6 +230,7 @@ namespace HedgeHog.Alice.Store {
       .ToArray();
 
       GetShowVoltageFunction()();
+      GetShowVoltageFunction(VoltageFunction2,1)();
       return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();
     }
 
@@ -342,124 +343,7 @@ namespace HedgeHog.Alice.Store {
       .ToArray();
 
       GetShowVoltageFunction()();
-      return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();
-    }
-    private CorridorStatistics ScanCorridorBy1234_(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ri = new { r = (Rate)null, i = 0 };
-      var miner = MonoidsCore.ToFunc(ri, r => r.r.BidLow);
-      var maxer = MonoidsCore.ToFunc(ri, r => r.r.AskHigh);
-      var groupMap = MonoidsCore.ToFunc(ri.Yield().ToList(), range => new {
-        rmm = range.MinMaxBy(miner, r => r.r.AskHigh),
-        a = range.Average(r => r.r.PriceAvg)
-      });
-      var groupMap2 = MonoidsCore.ToFunc(ri, r => new {
-        rmm = new[] { r, r },
-        a = r.r.PriceAvg
-      });
-      var rates = MonoidsCore.ToFunc(0, 0, (skip, count) => ratesForCorridor.SafeList().GetRange(skip, count).Select((r, i) => new { r, i }));
-      var grouped = MonoidsCore.ToFunc(0, 0, (skip, count) =>
-       BarPeriod == BarsPeriodType.t1
-       ? rates(skip, count).ToList().GroupedDistinct(r => r.r.StartDate.AddMilliseconds(-r.r.StartDate.Millisecond), groupMap)
-       : rates(skip, count).Select(groupMap2));
-      //var sections2 = sectionStarts.Scan(new { end=0,start=0},(p, n) => new { end = n.i, start = p.end }).ToList();
-      //sections2.Count();
-
-      #region Funcs
-
-      Func<TradeLevelsPreset, Func<Rate.TrendLevels, Rate.TrendLevels>> tagTL = (pl) => tl => { tl.Color = pl + ""; return tl; };
-      var anonDef = new { rates = (IList<Rate>)null, skip = 0, count = 0 };
-      var def = MonoidsCore.ToFunc((IList<Rate>)null, 0, 0, (rts, skip, count) => new { rates = rts, skip, count });
-      var bs = MonoidsCore.ToFunc(0, TradeLevelsPreset.Lime, false, 0, 0, (perc, pl, isMin, skip, count) => {
-        var digits = Digits();
-        var grouped2 = grouped(skip, count).ToList();
-        if(grouped2.Count <= 1)
-          return anonDef;
-        var distances = grouped2.Distances(x => x.a).Select((t, i) => new { t, i }).ToList();
-        var distChunc = distances.Last().t.Item2 / 100.0 * perc;
-        var res = Partitioner.Create(Enumerable.Range(0, distances.Count).ToArray(), true)
-        .AsParallel()
-        .Select(i => {
-          var distStart = distances[i].t.Item2;
-          var i2 = i + 1;
-          var min = distances[i].t.Item1.rmm[0];
-          var max = distances[i].t.Item1.rmm[1];
-          while(i2 < distances.Count && distances[i2].t.Item2 - distStart <= distChunc) {
-            if(miner(distances[i2].t.Item1.rmm[0]) < miner(min))
-              min = distances[i2].t.Item1.rmm[0];
-            if(maxer(distances[i2].t.Item1.rmm[1]) > maxer(max))
-              max = distances[i2].t.Item1.rmm[1];
-            i2++;
-          }
-          var isOut = i2 >= distances.Count;
-          var start = grouped2[i].rmm.Min(r => r.i);
-          var end = grouped2[i2].rmm.Max(r => r.i);
-          //var mines = new[] { i, i2 }.Select(i0 => maxer(grouped2[i0].rmm[0])).ToArray();
-          //var maxes = new[] { i, i2 }.Select(i0 => maxer(grouped2[i0].rmm[1])).ToArray();
-          var height = (maxer(max).Max(maxer(grouped2[i].rmm[1]), maxer(grouped2[i2].rmm[1]))
-          - miner(min).Min(miner(grouped2[i].rmm[0]), miner(grouped2[i2].rmm[0]))).Round(digits);
-          return new { start = start + skip, count = end - start, height, isOut, i, i2 };
-        })
-        .TakeWhile(x => !x.isOut).AsEnumerable();
-
-        res = isMin
-        ? res.MinByOrEmpty(x => x.height)
-        : res.MaxByOrEmpty(x => x.height);
-
-        res = UseFlatTrends
-        ? res.OrderBy(x => grouped2.GetRange(x.i, x.i2 - x.i).LinearSlope(y => y.a).Abs())
-        : res.OrderByDescending(x => x.start);
-
-        return res
-        .OrderByDescending(x => x.start)
-        //.OrderBy(x => grouped2.GetRange(x.i, x.i2 - x.i).LinearSlope(y => y.a).Abs())
-        .Take(1)
-        .Select(x => def(CalcTrendLines(x.start, x.count, tagTL(pl)), x.start, x.count))
-        .DefaultIfEmpty(anonDef)
-        .Single();
-      });
-
-      #endregion
-
-
-      int? skipFirst = null;
-      int? countFirst = null;
-      Func<int, bool, TradeLevelsPreset, int, int, IList<Rate>> calcTrendLines = (start, isMin, pl, skip, count) => {
-        var x = bs(start, pl, isMin, skip, count);
-        if(!skipFirst.HasValue) {
-          skipFirst = x.skip;
-          countFirst = RatesArray.Count - x.skip;// x.count;
-        }
-        return x.rates;
-      };
-
-      TrendRedInt().Pairwise((s, c) => new { s })
-        .Select(p => calcTrendLines(p.s, true, TradeLevelsPreset.Red, 0, ratesForCorridor.Count))
-        .ForEach(tl => TrendLines = Lazy.Create(() => tl, TrendLines.Value, exc => Log = exc));
-
-      //CorridorLengthLime = legIndexes[1];
-      TrendLimeInt().Pairwise((s, c) => new { s, skip = skipFirst.Value, count = countFirst.Value })
-        .ForEach(p => TrendLines0 = Lazy.Create(() => calcTrendLines(p.s, true, TradeLevelsPreset.Lime, p.skip, p.count), TrendLines0.Value, exc => Log = exc));
-
-      //CorridorLengthGreen = legIndexes[2];
-      TrendGreenInt().Pairwise((s, c) => new { s, skip = skipFirst.Value, count = countFirst.Value })
-        .ForEach(p => TrendLines1 = Lazy.Create(() => calcTrendLines(p.s, true, TradeLevelsPreset.Green, p.skip, p.count), TrendLines1.Value, exc => Log = exc));
-
-      TrendPlumInt().Pairwise((s, c) => new { s, skip = skipFirst.Value, count = countFirst.Value })
-        .ForEach(p => TrendLines3 = Lazy.Create(() => calcTrendLines(p.s, true, TradeLevelsPreset.Plum, p.skip, p.count), TrendLines3.Value, exc => Log = exc));
-
-      CorridorLengthBlue = ratesForCorridor.Count;
-      TrendLines2 = Lazy.Create(() => CalcTrendLines(CorridorLengthBlue, tagTL(TradeLevelsPreset.Blue)), TrendLines2.Value, exc => Log = exc);
-
-      var ratesForCorr = _ratesArrayCoeffs.Take(1)
-        .Select(_ => {
-          var redRates = RatesArray.GetRange(RatesArray.Count - 2, 2);
-          redRates.Reverse();
-          WaveShort.Rates = redRates;
-          return new { redRates, trend = new { StDev = 0, Coeffs = new[] { 0.0, 0.0 } } };
-        })
-      .ToArray();
-
-      GetShowVoltageFunction()();
+      GetShowVoltageFunction(VoltageFunction2, 1)();
       return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();
     }
 

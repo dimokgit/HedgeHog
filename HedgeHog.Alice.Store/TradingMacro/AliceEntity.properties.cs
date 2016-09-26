@@ -41,14 +41,15 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    CorridorCalculationMethod _CorridorCalcMethod;
     [DisplayName("Corridor StDev By")]
     [WwwSetting(wwwSettingsCorridorFuncs)]
     [Category(categoryActiveFuncs)]
     public CorridorCalculationMethod CorridorCalcMethod {
-      get { return (CorridorCalculationMethod)this.CorridorMethod; }
+      get { return _CorridorCalcMethod; }
       set {
-        if (this.CorridorMethod != (int)value) {
-          this.CorridorMethod = (int)value;
+        if (_CorridorCalcMethod != value) {
+          _CorridorCalcMethod = value;
           OnPropertyChanged(TradingMacroMetadata.CorridorCalcMethod);
         }
       }

@@ -763,7 +763,10 @@ namespace HedgeHog.Alice.Client {
       return UseTradingMacro(pair, tm => tm.ToggleCanTrade(isBuy)).ToArray();
     }
     public void SetCanTrade(string pair, bool canTrade, bool isBuy) {
-      GetTradingMacro(pair).ForEach(tm => tm.SetCanTrade(canTrade, isBuy));
+      GetTradingMacro(pair).ForEach(tm => {
+        tm.BuySellLevels.ForEach(sr => sr.InManual = true);
+        tm.SetCanTrade(canTrade, isBuy);
+      });
     }
     private void GetTradingMacro(string pair, Action<TradingMacro> action) {
       GetTradingMacro(pair)

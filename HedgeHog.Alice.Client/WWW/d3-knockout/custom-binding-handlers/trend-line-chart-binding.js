@@ -500,7 +500,7 @@
 
           var hasTps2 = data.some(function (d) { return d.v2 > 0; });
           if (hasTps2) {
-            var line3 = d3.svg.line()
+            var line3 = d3.line()
               .x(function (d) { return x(d.d); })
               .y(function (d) { return y3(isNaN(d.v2) ? 0 : d.v2); });
 

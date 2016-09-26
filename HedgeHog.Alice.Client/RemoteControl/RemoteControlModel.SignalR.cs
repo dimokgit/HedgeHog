@@ -49,7 +49,10 @@ namespace HedgeHog.Alice.Client {
 
       double cmaPeriod = tm.CmaPeriodByRatesCount();
       if(tm.BarPeriod == BarsPeriodType.t1) {
-        Action<IList<Rate>, Rate> volts = (gr, r) => tm.SetVoltage(r, gr.Select(tm.GetVoltage).Where(v => v.IsNotNaN()).DefaultIfEmpty(0).Average());
+        Action<IList<Rate>, Rate> volts = (gr, r) => {
+          tm.SetVoltage(r, gr.Select(tm.GetVoltage).Where(v => v.IsNotNaN()).DefaultIfEmpty(0).Average());
+          tm.SetVoltage2(r, gr.Select(tm.GetVoltage2).Where(v => v.IsNotNaN()).DefaultIfEmpty(0).Average());
+        };
         cmaPeriod /= tm.TicksPerSecondAverage;
         if(ratesForChart.Count > 1)
           ratesForChart = TradingMacro.GroupTicksToSeconds(ratesForChart, volts).ToList();

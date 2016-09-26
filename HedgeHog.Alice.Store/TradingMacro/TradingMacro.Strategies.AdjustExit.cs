@@ -114,8 +114,8 @@ namespace HedgeHog.Alice.Store {
             var takeProfitLocal = TakeProfitFunction.IfNotDirect(takeProfitPips, 
               tp => (tp + (UseLastLoss ? LastTradeLossInPips.Abs() : 0)).Max(takeBackInPips).Min(ratesHeightInPips));
             Func<bool, double> levelByNetOpenAndTakeProfit = isBuy => isBuy
-              ? Trades.IsBuy(isBuy).NetOpen() + InPoints(takeProfitLocal) - ellasic
-              : Trades.IsBuy(isBuy).NetOpen() - InPoints(takeProfitLocal) + ellasic;
+              ? Trades.IsBuy(isBuy).NetOpen() + InPoints(takeProfitLocal)
+              : Trades.IsBuy(isBuy).NetOpen() - InPoints(takeProfitLocal);
             Func<bool, double> getTradeCloseLevel = isBuy => !IsTakeBack
               ? GetTradeCloseLevel(isBuy)
               : isBuy
@@ -138,7 +138,7 @@ namespace HedgeHog.Alice.Store {
                 .Min(levelByNetOpenAndTakeProfit(true))
                 .Min(levelByDefault(true))
                 , priceAvgMax
-              }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First()
+              }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First() - ellasic
               ;
               if(signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
                 buyCloseLevel.ResetPricePosition();
@@ -157,7 +157,7 @@ namespace HedgeHog.Alice.Store {
                 .Max(levelByNetOpenAndTakeProfit(false))
                 .Max(levelByDefault(false))
                 , priceAvgMin
-              }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First()
+              }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First() + ellasic
               ;
               if(sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())
                 sellCloseLevel.ResetPricePosition();

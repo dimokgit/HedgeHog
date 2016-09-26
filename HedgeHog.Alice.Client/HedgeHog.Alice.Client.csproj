@@ -392,6 +392,11 @@
     <Compile Include="Commands\DelegateCommand.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="CS_4_0.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CS_4_0.tt</DependentUpon>
+    </Compile>
     <Compile Include="DockingWindow.xaml.cs">
       <DependentUpon>DockingWindow.xaml</DependentUpon>
     </Compile>

@@ -94,8 +94,8 @@ namespace HedgeHog.Alice.Store {
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
-    private CorridorStatistics ShowVolts(double volt, int averageIterations) {
-      SetVots(volt, averageIterations);
+    private CorridorStatistics ShowVolts(double volt, int averageIterations, Func<Rate, double> getVolt = null, Action<Rate, double> setVolt = null) {
+      SetVots(volt, getVolt ?? GetVoltage, setVolt ?? SetVoltage, averageIterations);
       if(!WaveShort.HasRates)
         return null;
       var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
@@ -114,7 +114,7 @@ namespace HedgeHog.Alice.Store {
         return;
       if(double.IsInfinity(volt) || double.IsNaN(volt))
         return;
-      var volt2 = cma > 0 ? GetLastVolt().Select(v => v.Cma(cma, volt)).SingleOrDefault() : volt;
+      var volt2 = cma > 0 ? GetLastVolt(getVolt).Select(v => v.Cma(cma, volt)).SingleOrDefault() : volt;
       UseRates(rates => rates.Where(r => getVolt(r).IsNaN()).ToList())
         .SelectMany(rates => rates).ForEach(r => setVolt(r, volt2));
       //SetVoltage(RateLast, volt);
@@ -170,15 +170,12 @@ namespace HedgeHog.Alice.Store {
     }
     List<DateTime> _equinoxDates = new List<DateTime>();
 
-    public List<DateTime> EquinoxDates
-    {
-      get
-      {
+    public List<DateTime> EquinoxDates {
+      get {
         return _equinoxDates;
       }
 
-      set
-      {
+      set {
         _equinoxDates = value;
       }
     }

@@ -370,7 +370,7 @@ namespace HedgeHog.Alice.Client {
       var pairIndex = GetTradingMacros().Select(aTM => aTM.PairIndex).DefaultIfEmpty().Max() + 1;
       var tmNew = TradingMacro.CreateTradingMacro(
         tm.Pair, tm.TradingRatio, Guid.NewGuid(), (int)tm.BarPeriod, tm.CurrentLoss, tm.ReverseOnProfit,
-        tm.FreezLimit, tm.CorridorMethod, tm.FreezeStop, tm.FibMax, tm.FibMin, tm.CorridornessMin, tm.CorridorIterationsIn,
+        tm.FreezLimit, tm.FreezeStop, tm.FibMax, tm.FibMin, tm.CorridornessMin, tm.CorridorIterationsIn,
         tm.CorridorIterationsOut, tm.CorridorIterations, tm.CorridorBarMinutes, pairIndex, tm.TradingGroup, tm.MaximumPositions,
         tradingMacroName != null,
         tradingMacroName ?? tm.TradingMacroName,

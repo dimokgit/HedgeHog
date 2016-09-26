@@ -411,7 +411,7 @@
           LevelBuyCloseBy: { name: "Level Buy Close", type: "options", options: tradeLevelBys() },
           ScanCorridorBy: { name: "ScanCorridor", type: "options", options: scanCorridorFunction() },
           RatesLengthBy: { name: "RatesLength", type: "options", options: ratesLengthFunction() },
-          VoltageFunction_: { name: "Voltage", type: "options", options: voltageFunction() },
+          VoltageFunction: { name: "Voltage", type: "options", options: voltageFunction() },
           VoltageFunction2: { name: "Voltage 2", type: "options", options: voltageFunction() },
           CorridorCalcMethod: { name: "Corr Calc", type: "options", options: corridorCalculationMethod() },
           MovingAverageType: { type: "options", options: movingAverageType() },
