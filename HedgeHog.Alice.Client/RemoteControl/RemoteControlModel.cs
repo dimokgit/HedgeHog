@@ -1107,7 +1107,7 @@ namespace HedgeHog.Alice.Client {
             /*9*/, tm.CorridorStats.Rates.Count.Div(tm.CorridorDistance).ToInt()
             /*10*/, tm.WorkflowStep
           );
-          //if (!tm.IsAsleep) 
+          if (tm.TrendLines.Value!=null) 
           {
             charter.SetTrendLines(tm.TrendLines.Value.OrderBarsDescending().ToArray(), tm.CorridorStartDate.HasValue);
             charter.SetTrendLines2(tm.TrendLines2.Value);

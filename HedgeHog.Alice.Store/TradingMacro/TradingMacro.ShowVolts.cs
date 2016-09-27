@@ -75,11 +75,12 @@ namespace HedgeHog.Alice.Store {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
       Func<IEnumerable<double>> calcVolt = ()
         => UseRates(rates
-        => rates.BackwardsIterator().Take(TrendLinesBlueTrends.Count).Distances(_priceAvg).Last().Item2 / TrendLinesBlueTrends.TimeSpan.TotalMinutes)
+        => rates.BackwardsIterator().Take(TrendLinesBlueTrends.Count).Distances(_priceAvg).TakeLast(1).Select(l => l.Item2 / TrendLinesBlueTrends.TimeSpan.TotalMinutes))
+        .SelectMany(x => x)
         .Where(ppm => ppm > 0)
         .Select(ppm => InPips(ppm));
       if(!useCalc)
-        return ShowVolts(GetLastVolt().DefaultIfEmpty(() => calcVolt().Single()).Single(), 2, getVolt, setVolt);
+        return GetLastVolt().Concat(calcVolt()).Take(1).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault();
 
       return calcVolt()
         .Select(volt => ShowVolts(useCalc ? volt : GetLastVolt().DefaultIfEmpty(volt).Single(), 2, getVolt, setVolt))

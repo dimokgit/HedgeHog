@@ -750,13 +750,20 @@ namespace HedgeHog.Alice.Client {
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
     }
+    [BasicAuthenticationFilter]
     public void SetTradeCount(string pair, int tradeCount) {
       GetTradingMacro(pair, tm => tm.SetTradeCount(tradeCount));
     }
+    [BasicAuthenticationFilter]
     public void StopTrades(string pair) { SetCanTradeImpl(pair, false, null); }
+    [BasicAuthenticationFilter]
     public void StartTrades(string pair, bool isBuy) { SetCanTrade(pair, true, isBuy); }
     void SetCanTradeImpl(string pair, bool canTrade, bool? isBuy) {
-      GetTradingMacro(pair).ForEach(tm => tm.SetCanTrade(canTrade, isBuy));
+      GetTradingMacro(pair).ForEach(tm => {
+        if(!isBuy.HasValue)
+          tm.BuySellLevels.ForEach(sr => sr.InManual = canTrade);
+        tm.SetCanTrade(canTrade, isBuy);
+      });
     }
     [BasicAuthenticationFilter]
     public bool[] ToggleCanTrade(string pair, bool isBuy) {
@@ -764,7 +771,7 @@ namespace HedgeHog.Alice.Client {
     }
     public void SetCanTrade(string pair, bool canTrade, bool isBuy) {
       GetTradingMacro(pair).ForEach(tm => {
-        tm.BuySellLevels.ForEach(sr => sr.InManual = true);
+        tm.BuySellLevels.ForEach(sr => sr.InManual = canTrade);
         tm.SetCanTrade(canTrade, isBuy);
       });
     }

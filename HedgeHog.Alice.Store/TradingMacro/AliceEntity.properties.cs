@@ -32,7 +32,7 @@ namespace HedgeHog.Alice.Store {
     public int MonthsOfHistory {
       get { return _MonthsOfHistory; }
       set {
-        if (_MonthsOfHistory != value) {
+        if(_MonthsOfHistory != value) {
           _MonthsOfHistory = value;
           OnPropertyChanged(TradingMacroMetadata.MonthsOfHistory);
         }
@@ -48,7 +48,7 @@ namespace HedgeHog.Alice.Store {
     public CorridorCalculationMethod CorridorCalcMethod {
       get { return _CorridorCalcMethod; }
       set {
-        if (_CorridorCalcMethod != value) {
+        if(_CorridorCalcMethod != value) {
           _CorridorCalcMethod = value;
           OnPropertyChanged(TradingMacroMetadata.CorridorCalcMethod);
         }
@@ -63,7 +63,7 @@ namespace HedgeHog.Alice.Store {
     public bool DoLogSaveRates {
       get { return _DoLogSaveRates; }
       set {
-        if (_DoLogSaveRates != value) {
+        if(_DoLogSaveRates != value) {
           _DoLogSaveRates = value;
           OnPropertyChanged("DoLogSaveRates");
         }
@@ -92,7 +92,7 @@ namespace HedgeHog.Alice.Store {
     public string TestRatesHeightMinimum {
       get { return _TestRatesHeightMinimum; }
       set {
-        if (_TestRatesHeightMinimum != value) {
+        if(_TestRatesHeightMinimum != value) {
           _TestRatesHeightMinimum = value;
           OnPropertyChanged("TestRatesHeightMinimum");
         }
@@ -116,7 +116,7 @@ namespace HedgeHog.Alice.Store {
     public string TestFileName {
       get { return _TestFileName; }
       set {
-        if (_TestFileName != value) {
+        if(_TestFileName != value) {
           _TestFileName = value;
           OnPropertyChanged("TestFileName");
         }
@@ -163,7 +163,7 @@ namespace HedgeHog.Alice.Store {
     public string TestBarsCount {
       get { return _TestBarsCount; }
       set {
-        if (_TestBarsCount != value) {
+        if(_TestBarsCount != value) {
           _TestBarsCount = value;
           OnPropertyChanged("TestBarsCount");
         }
@@ -176,7 +176,7 @@ namespace HedgeHog.Alice.Store {
     public string TestCorrelationMinimum {
       get { return _TestCorrelationMinimum; }
       set {
-        if (_TestCorrelationMinimum != value) {
+        if(_TestCorrelationMinimum != value) {
           _TestCorrelationMinimum = value;
           OnPropertyChanged("TestCorrelationMinimum");
         }
@@ -190,7 +190,7 @@ namespace HedgeHog.Alice.Store {
     public string TestCorridorDistanceRatio {
       get { return _TestCorridorDistanceRatio; }
       set {
-        if (_TestCorridorDistanceRatio != value) {
+        if(_TestCorridorDistanceRatio != value) {
           _TestCorridorDistanceRatio = value;
           OnPropertyChanged("TestCorridorDistanceRatio");
         }
@@ -203,7 +203,7 @@ namespace HedgeHog.Alice.Store {
     public string TestWaveStDevRatio {
       get { return _TestWaveStDevRatio; }
       set {
-        if (_TestWaveStDevRatio != value) {
+        if(_TestWaveStDevRatio != value) {
           _TestWaveStDevRatio = value;
           OnPropertyChanged("TestWaveStDevRatio");
         }
@@ -216,7 +216,7 @@ namespace HedgeHog.Alice.Store {
     public string TestDistanceIterations {
       get { return _TestDistanceIterations; }
       set {
-        if (_TestDistanceIterations != value) {
+        if(_TestDistanceIterations != value) {
           _TestDistanceIterations = value;
           OnPropertyChanged("TestDistanceIterations");
         }
@@ -243,7 +243,7 @@ namespace HedgeHog.Alice.Store {
     public string TestPriceCmaLevels {
       get { return _TestPriceCmaLevels; }
       set {
-        if (_TestPriceCmaLevels != value) {
+        if(_TestPriceCmaLevels != value) {
           _TestPriceCmaLevels = value;
           OnPropertyChanged("TestPriceCmaLevels");
         }
@@ -261,10 +261,13 @@ namespace HedgeHog.Alice.Store {
       }
       set {
         Guid v = Guid.Empty;
-        if (string.IsNullOrWhiteSpace(value)) v = Guid.NewGuid();
-        else if (value == "0") v = 0.Guid();
-        else Guid.TryParse(value, out v);
-        if (_TestSuperSessionUid != v) {
+        if(string.IsNullOrWhiteSpace(value))
+          v = Guid.NewGuid();
+        else if(value == "0")
+          v = 0.Guid();
+        else
+          Guid.TryParse(value, out v);
+        if(_TestSuperSessionUid != v) {
           _TestSuperSessionUid = v;
           OnPropertyChanged("TestSuperSessionUid_");
           OnPropertyChanged("TestSuperSessionUid");
@@ -280,7 +283,7 @@ namespace HedgeHog.Alice.Store {
     public string TestProfitToLossExitRatio {
       get { return _TestProfitToLossExitRatio; }
       set {
-        if (_TestProfitToLossExitRatio != value) {
+        if(_TestProfitToLossExitRatio != value) {
           _TestProfitToLossExitRatio = value;
           OnPropertyChanged("TestProfitToLossExitRatio");
         }
@@ -293,7 +296,7 @@ namespace HedgeHog.Alice.Store {
     public bool TurnOffOnProfit {
       get { return _TurnOffOnProfit; }
       set {
-        if (_TurnOffOnProfit != value) {
+        if(_TurnOffOnProfit != value) {
           _TurnOffOnProfit = value;
           OnPropertyChanged("TurnOffOnProfit");
         }
@@ -307,7 +310,7 @@ namespace HedgeHog.Alice.Store {
     public bool DoNews {
       get { return _DoNews; }
       set {
-        if (_DoNews != value) {
+        if(_DoNews != value) {
           _DoNews = value;
           OnPropertyChanged("DoNews");
         }
@@ -323,7 +326,7 @@ namespace HedgeHog.Alice.Store {
     public double PriceCmaLevels_ {
       get { return PriceCmaLevels; }
       set {
-        if (PriceCmaLevels != value) {
+        if(PriceCmaLevels != value) {
           PriceCmaLevels = value;
           OnPropertyChanged(TradingMacroMetadata.PriceCmaLevels_);
         }
@@ -339,7 +342,7 @@ namespace HedgeHog.Alice.Store {
     public MovingAverageType MovingAverageType {
       get { return (MovingAverageType)MovingAverageTypeInt.GetValueOrDefault(_movingAverageTypeDefault); }
       set {
-        if (_MovingAverageTypeInt.GetValueOrDefault(_movingAverageTypeDefault) != (int)value) {
+        if(_MovingAverageTypeInt.GetValueOrDefault(_movingAverageTypeDefault) != (int)value) {
           MovingAverageTypeInt = (int)value;
           OnPropertyChanged(TradingMacroMetadata.MovingAverageType);
         }
@@ -355,7 +358,7 @@ namespace HedgeHog.Alice.Store {
     public TradeLevelBy LevelBuyBy {
       get { return _LevelBuyBy; }
       set {
-        if (_LevelBuyBy != value) {
+        if(_LevelBuyBy != value) {
           _LevelBuyBy = value;
           OnPropertyChanged("LevelBuyBy");
         }
@@ -370,7 +373,7 @@ namespace HedgeHog.Alice.Store {
     public TradeLevelBy LevelBuyCloseBy {
       get { return _LevelBuyCloseBy; }
       set {
-        if (_LevelBuyCloseBy != value) {
+        if(_LevelBuyCloseBy != value) {
           _LevelBuyCloseBy = value;
           OnPropertyChanged("LevelBuyCloseBy");
         }
@@ -384,7 +387,7 @@ namespace HedgeHog.Alice.Store {
     public TradeLevelBy LevelSellCloseBy {
       get { return _LevelSellCloseBy; }
       set {
-        if (_LevelSellCloseBy != value) {
+        if(_LevelSellCloseBy != value) {
           _LevelSellCloseBy = value;
           OnPropertyChanged("LevelSellCloseBy");
         }
@@ -400,7 +403,7 @@ namespace HedgeHog.Alice.Store {
     public TradeLevelBy LevelSellBy {
       get { return _LevelSellBy; }
       set {
-        if (_LevelSellBy != value) {
+        if(_LevelSellBy != value) {
           _LevelSellBy = value;
           OnPropertyChanged("LevelSellBy");
         }
@@ -414,7 +417,7 @@ namespace HedgeHog.Alice.Store {
     public CorridorByStDevRatio CorridorByStDevRatioFunc {
       get { return _CorridorByStDevRatioFunc; }
       set {
-        if (_CorridorByStDevRatioFunc != value) {
+        if(_CorridorByStDevRatioFunc != value) {
           _CorridorByStDevRatioFunc = value;
           OnPropertyChanged("CorridorByStDevRatioFunc");
         }
@@ -425,7 +428,7 @@ namespace HedgeHog.Alice.Store {
     public CorridorByStDevRatio CorridorByStDevRatioFunc2 {
       get { return _CorridorByStDevRatioFunc2; }
       set {
-        if (_CorridorByStDevRatioFunc2 != value) {
+        if(_CorridorByStDevRatioFunc2 != value) {
           _CorridorByStDevRatioFunc2 = value;
           OnPropertyChanged("CorridorByStDevRatioFunc2");
         }
@@ -439,7 +442,7 @@ namespace HedgeHog.Alice.Store {
     public bool UseVoltage {
       get { return _UseVoltage; }
       set {
-        if (_UseVoltage != value) {
+        if(_UseVoltage != value) {
           _UseVoltage = value;
           OnPropertyChanged("UseVoltage");
         }
@@ -469,7 +472,7 @@ namespace HedgeHog.Alice.Store {
     public bool? ForceOpenTrade {
       get { return _ForceOpenTrade; }
       set {
-        if (_ForceOpenTrade != value) {
+        if(_ForceOpenTrade != value) {
           _ForceOpenTrade = value;
           OnPropertyChanged(TradingMacroMetadata.ForceOpenTrade);
         }
@@ -486,7 +489,7 @@ namespace HedgeHog.Alice.Store {
     public CorridorHighLowMethod CorridorCrossHighLowMethod {
       get { return (CorridorHighLowMethod)CorridorCrossHighLowMethodInt; }
       set {
-        if (CorridorCrossHighLowMethodInt != (int)value) {
+        if(CorridorCrossHighLowMethodInt != (int)value) {
           CorridorCrossHighLowMethodInt = (int)value;
           OnPropertyChanged(TradingMacroMetadata.CorridorCrossHighLowMethod);
         }
@@ -501,7 +504,7 @@ namespace HedgeHog.Alice.Store {
     public double CorridorLengthMinimum_ {
       get { return CorridorLengthMinimum; }
       set {
-        if (CorridorLengthMinimum != value) {
+        if(CorridorLengthMinimum != value) {
           CorridorLengthMinimum = value;
           OnPropertyChanged(TradingMacroMetadata.CorridorLengthMinimum_);
         }
@@ -540,7 +543,7 @@ namespace HedgeHog.Alice.Store {
     public VoltageFunction VoltageFunction {
       get { return _voltageFunction; }
       set {
-        if (_voltageFunction != value) {
+        if(_voltageFunction != value) {
           _voltageFunction = value;
           ResetVoltages();
           OnPropertyChanged("VoltageFunction");
@@ -553,11 +556,9 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Voltage Function 2")]
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsCorridorFuncs)]
-    public VoltageFunction VoltageFunction2
-    {
+    public VoltageFunction VoltageFunction2 {
       get { return _voltageFunction2; }
-      set
-      {
+      set {
         if(_voltageFunction2 != value) {
           _voltageFunction2 = value;
           OnPropertyChanged("VoltageFunction2");
@@ -581,7 +582,7 @@ namespace HedgeHog.Alice.Store {
     public ScanCorridorFunction ScanCorridorBy {
       get { return _ScanCorridorBy; }
       set {
-        if (_ScanCorridorBy != value) {
+        if(_ScanCorridorBy != value) {
           _ScanCorridorBy = value;
           OnPropertyChanged("ScanCorridorBy");
         }
@@ -612,7 +613,7 @@ namespace HedgeHog.Alice.Store {
     public TrailingWaveMethod TrailingDistanceFunction {
       get { return (TrailingWaveMethod)this.FreezLimit; }
       set {
-        if (this.FreezLimit != (int)value) {
+        if(this.FreezLimit != (int)value) {
           this.FreezLimit = (int)value;
           OnPropertyChanged("TrailingDistanceFunction");
         }
@@ -648,7 +649,8 @@ namespace HedgeHog.Alice.Store {
     public bool DoShowTradeOnChart {
       get { return TradeOnCrossOnly; }
       set {
-        if (TradeOnCrossOnly == value) return;
+        if(TradeOnCrossOnly == value)
+          return;
         TradeOnCrossOnly = value;
         OnPropertyChanged(() => DoShowTradeOnChart);
       }
@@ -658,7 +660,7 @@ namespace HedgeHog.Alice.Store {
     GannAngles _GannAnglesList;
     public GannAngles GannAnglesList {
       get {
-        if (_GannAnglesList == null) {
+        if(_GannAnglesList == null) {
           _GannAnglesList = new GannAngles(GannAngles);
           _GannAnglesList.PropertyChanged += (o, p) => {
             GannAngles = o.ToString();
@@ -682,7 +684,8 @@ namespace HedgeHog.Alice.Store {
     public bool UsePrevHeight {
       get { return StrictTradeClose; }
       set {
-        if(StrictTradeClose == value)return;
+        if(StrictTradeClose == value)
+          return;
         StrictTradeClose = value;
         OnPropertyChanged(() => UsePrevHeight);
       }
@@ -703,7 +706,7 @@ namespace HedgeHog.Alice.Store {
     }
     public static bool IsTradingHour(string range, DateTime time) {
       var times = range.Split('-')
-        .Where(s=>!string.IsNullOrWhiteSpace(s))
+        .Where(s => !string.IsNullOrWhiteSpace(s))
         .DefaultIfEmpty("0:00").Select(s => DateTime.Parse(s).TimeOfDay).ToArray();
       var tod = time.TimeOfDay;
       return times.First() < times.Last()
@@ -711,14 +714,21 @@ namespace HedgeHog.Alice.Store {
         : tod >= times.First() || tod <= times.Last();
     }
     DayOfWeek[] TradingDays() {
-      switch (TradingDaysRange) {
-        case WeekDays.Full: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
-        case WeekDays.MoTh: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
-        case WeekDays.MoTuFr: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
-        case WeekDays.TuFr: return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
-        case WeekDays.TuTh: return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
-        case WeekDays.SuFr: return new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
-        case WeekDays.SuTh: return new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
+      switch(TradingDaysRange) {
+        case WeekDays.Full:
+          return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
+        case WeekDays.MoTh:
+          return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
+        case WeekDays.MoTuFr:
+          return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
+        case WeekDays.TuFr:
+          return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
+        case WeekDays.TuTh:
+          return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
+        case WeekDays.SuFr:
+          return new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
+        case WeekDays.SuTh:
+          return new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
       }
       throw new NotImplementedException(new { TradingDaysRange } + "");
     }
@@ -739,7 +749,8 @@ namespace HedgeHog.Alice.Store {
     public string TradingHoursRange {
       get { return CorridorIterations; }
       set {
-        if (CorridorIterations == value) return;
+        if(CorridorIterations == value)
+          return;
         CorridorIterations = value;
         OnPropertyChanged(() => TradingHoursRange);
       }
@@ -750,7 +761,8 @@ namespace HedgeHog.Alice.Store {
     public WeekDays TradingDaysRange {
       get { return (WeekDays)CorridorRatioForRange; }
       set {
-        if (CorridorRatioForRange == (int)value) return;
+        if(CorridorRatioForRange == (int)value)
+          return;
         CorridorRatioForRange = (int)value;
         OnPropertyChanged(() => TradingDaysRange);
       }
@@ -761,7 +773,8 @@ namespace HedgeHog.Alice.Store {
     public int SuppResLevelsCount_ {
       get { return SuppResLevelsCount; }
       set {
-        if (SuppResLevelsCount == value) return;
+        if(SuppResLevelsCount == value)
+          return;
         SuppResLevelsCount = value;
         OnPropertyChanged(TradingMacroMetadata.SuppResLevelsCount_);
       }
@@ -772,7 +785,7 @@ namespace HedgeHog.Alice.Store {
     public double CorrelationMinimum {
       get { return StDevToSpreadRatio; }
       set {
-        if (StDevToSpreadRatio != value) {
+        if(StDevToSpreadRatio != value) {
           StDevToSpreadRatio = value;
           OnPropertyChanged(() => CorrelationMinimum);
         }
@@ -785,7 +798,7 @@ namespace HedgeHog.Alice.Store {
     public double ProfitToLossExitRatio_ {
       get { return ProfitToLossExitRatio; }
       set {
-        if (ProfitToLossExitRatio != value) {
+        if(ProfitToLossExitRatio != value) {
           ProfitToLossExitRatio = value;
           OnPropertyChanged(TradingMacroMetadata.ProfitToLossExitRatio_);
         }
@@ -798,7 +811,7 @@ namespace HedgeHog.Alice.Store {
     public double CorridorDistanceRatio {
       get { return CorridorStDevRatioMax; }
       set {
-        if (CorridorStDevRatioMax != value) {
+        if(CorridorStDevRatioMax != value) {
           CorridorStDevRatioMax = value;
           OnPropertyChanged(() => CorridorDistanceRatio);
           OnPropertyChanged(() => CorridorDistance);
@@ -811,7 +824,7 @@ namespace HedgeHog.Alice.Store {
     public int ExtreamCloseOffset_ {
       get { return ExtreamCloseOffset; }
       set {
-        if (ExtreamCloseOffset != value) {
+        if(ExtreamCloseOffset != value) {
           ExtreamCloseOffset = value;
           OnPropertyChanged("ExtreamCloseOffset");
         }
@@ -823,7 +836,7 @@ namespace HedgeHog.Alice.Store {
     public double CanTradeLocalRatio {
       get { return CurrentLossInPipsCloseAdjustment; }
       set {
-        if (CurrentLossInPipsCloseAdjustment != value) {
+        if(CurrentLossInPipsCloseAdjustment != value) {
           CurrentLossInPipsCloseAdjustment = value;
           OnPropertyChanged("CanTradeLocalRatio");
         }
@@ -838,7 +851,7 @@ namespace HedgeHog.Alice.Store {
     public bool IsTakeBack {
       get { return _IsTakeBack; }
       set {
-        if (_IsTakeBack != value) {
+        if(_IsTakeBack != value) {
           if(value) {
             UseLastLoss = false;
           }
@@ -854,7 +867,7 @@ namespace HedgeHog.Alice.Store {
     public double CorridorBigToSmallRatio_ {
       get { return CorridorBigToSmallRatio; }
       set {
-        if (CorridorBigToSmallRatio != value) {
+        if(CorridorBigToSmallRatio != value) {
           CorridorBigToSmallRatio = value;
           OnPropertyChanged("CorridorBigToSmallRatio_");
         }
@@ -900,7 +913,8 @@ namespace HedgeHog.Alice.Store {
     public bool CloseOnProfitOnly_ {
       get { return CloseOnProfitOnly; }
       set {
-        if (CloseOnProfitOnly == value) return;
+        if(CloseOnProfitOnly == value)
+          return;
         CloseOnProfitOnly = value;
         OnPropertyChanged(Metadata.TradingMacroMetadata.CloseOnProfitOnly_);
       }
@@ -911,7 +925,8 @@ namespace HedgeHog.Alice.Store {
     public bool ReverseStrategy_ {
       get { return ReverseStrategy; }
       set {
-        if (ReverseStrategy == value) return;
+        if(ReverseStrategy == value)
+          return;
         ReverseStrategy = value;
         OnPropertyChanged(Metadata.TradingMacroMetadata.ReverseStrategy_);
       }
@@ -967,7 +982,7 @@ namespace HedgeHog.Alice.Store {
     public bool CloseAfterTradingHours {
       get { return _CloseAfterTradingHours; }
       set {
-        if (_CloseAfterTradingHours != value) {
+        if(_CloseAfterTradingHours != value) {
           _CloseAfterTradingHours = value;
           OnPropertyChanged("CloseAfterTradingHours");
           SaveActiveSettings();
@@ -993,7 +1008,8 @@ namespace HedgeHog.Alice.Store {
     public double CorridorHeightMax {
       get { return FibMin; }
       set {
-        if (FibMin == value) return;
+        if(FibMin == value)
+          return;
         FibMin = value;
         OnPropertyChanged("CorridorHeightMax");
       }
@@ -1005,7 +1021,8 @@ namespace HedgeHog.Alice.Store {
     public bool IsCorridorForwardOnly {
       get { return ReversePower; }
       set {
-        if (ReversePower == value) return;
+        if(ReversePower == value)
+          return;
         ReversePower = value;
         OnPropertyChanged(() => IsCorridorForwardOnly);
       }
@@ -1016,7 +1033,7 @@ namespace HedgeHog.Alice.Store {
     [Description("Ex:Exit <= TakeProfit * X")]
     public double TakeProfitLimitRatio {
       get {
-        if (RangeRatioForTradeStop < 1) {
+        if(RangeRatioForTradeStop < 1) {
           RangeRatioForTradeStop = 1;
           Log = new Exception("TakeProfitLimitRatio is less then 1. It is being set to 1.".Formater(TakeProfitLimitRatio));
           OnPropertyChanged(() => TakeProfitLimitRatio);
@@ -1024,7 +1041,8 @@ namespace HedgeHog.Alice.Store {
         return RangeRatioForTradeStop;
       }
       set {
-        if (RangeRatioForTradeStop == value) return;
+        if(RangeRatioForTradeStop == value)
+          return;
         RangeRatioForTradeStop = value;
         OnPropertyChanged(() => TakeProfitLimitRatio);
       }
@@ -1044,7 +1062,8 @@ namespace HedgeHog.Alice.Store {
     public bool TradeOnBOW {
       get { return TradeByFirstWave.GetValueOrDefault(); }
       set {
-        if (TradeByFirstWave == value) return;
+        if(TradeByFirstWave == value)
+          return;
         TradeByFirstWave = value;
         OnPropertyChanged(() => TradeOnBOW);
       }
@@ -1070,7 +1089,8 @@ namespace HedgeHog.Alice.Store {
     public ChartHighLowMethod ChartHighMethod {
       get { return (ChartHighLowMethod)LongMAPeriod; }
       set {
-        if (LongMAPeriod == (int)value) return;
+        if(LongMAPeriod == (int)value)
+          return;
         LongMAPeriod = (int)value;
         OnPropertyChanged(() => ChartHighMethod);
       }
@@ -1092,7 +1112,8 @@ namespace HedgeHog.Alice.Store {
     public double TradingAngleRange_ {
       get { return TradingAngleRange; }
       set {
-        if (TradingAngleRange == value) return;
+        if(TradingAngleRange == value)
+          return;
         TradingAngleRange = value;
         OnPropertyChanged(() => TradingAngleRange_);
       }
@@ -1166,8 +1187,8 @@ namespace HedgeHog.Alice.Store {
         _trendAngleBlue = value.Trim();
         OnPropertyChanged(() => TrendAngleBlue);
 
-        var spans = _trendAngleBlue.StartsWith("-") 
-          ? new[] { _trendAngleBlue } 
+        var spans = _trendAngleBlue.StartsWith("-")
+          ? new[] { _trendAngleBlue }
           : value.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
         if(spans.IsEmpty())
           spans = new[] { "0" };
@@ -1189,17 +1210,17 @@ namespace HedgeHog.Alice.Store {
         if(_VoltRange == value)
           return;
 
-        _VoltRange = value.Trim();
+        _VoltRange = (value ?? "").Trim();
         OnPropertyChanged(() => VoltRange);
 
-        int[] spans;
+        double[] spans;
         if(!_VoltRange.TryFromJson(out spans))
-          spans = _VoltRange.Split('.').Select(s => int.Parse(s)).ToArray();
-        
-        if(spans.IsEmpty())
-          spans = new[] { 0 };
+          spans = _VoltRange.Split('-').Select(s => double.Parse(s)).ToArray();
+
+        if(spans == null || spans.IsEmpty())
+          spans = new[] { 0.0 };
         VoltRange0 = spans[0];
-        VoltRange1 = spans.Length > 1 ? spans[1] : double.NaN;
+        VoltRange1 = spans.Concat(double.NaN).Take(2).Last();
 
       }
     }
@@ -1235,7 +1256,7 @@ namespace HedgeHog.Alice.Store {
     [WwwSetting(Group = wwwSettingsTradingParams)]
     [Category(categoryActive)]
     public double TrendHeightPerc {
-      get {        return _trendHeightPerc;      }
+      get { return _trendHeightPerc; }
       set {
         _trendHeightPerc = value;
         OnPropertyChanged(() => TrendHeightPerc);
@@ -1258,7 +1279,8 @@ namespace HedgeHog.Alice.Store {
     public double ResetOnBalance_ {
       get { return ResetOnBalance.GetValueOrDefault(0); }
       set {
-        if (ResetOnBalance == value) return;
+        if(ResetOnBalance == value)
+          return;
         ResetOnBalance = value;
         OnPropertyChanged(TradingMacroMetadata.ResetOnBalance_);
       }
@@ -1282,10 +1304,13 @@ namespace HedgeHog.Alice.Store {
     Func<Rate, double> GetTradeEnterBy(bool? isBuy) { return _getTradeBy(TradeEnterBy, isBuy); }
     Func<Rate, double> GetTradeExitBy(bool? isBuy) { return _getTradeBy(TradeExitBy, isBuy.HasValue ? !isBuy : null); }
     Func<Rate, double> _getTradeBy(TradeCrossMethod method, bool? isBuy = null) {
-      switch (method) {
-        case TradeCrossMethod.PriceAvg: return r => r.PriceAvg;
-        case TradeCrossMethod.PriceAvg1: return r => r.PriceAvg1;
-        case TradeCrossMethod.PriceCMA: return r => r.PriceCMALast;
+      switch(method) {
+        case TradeCrossMethod.PriceAvg:
+          return r => r.PriceAvg;
+        case TradeCrossMethod.PriceAvg1:
+          return r => r.PriceAvg1;
+        case TradeCrossMethod.PriceCMA:
+          return r => r.PriceCMALast;
         case TradeCrossMethod.ChartAskBid:
           return !isBuy.HasValue
           ? r => r.PriceChartAsk.Avg(r.PriceChartBid)
@@ -1293,8 +1318,12 @@ namespace HedgeHog.Alice.Store {
           ? r => r.PriceChartAsk
           : new Func<Rate, double>(r => r.PriceChartBid);
         case TradeCrossMethod.PriceCurr:
-          if (!isBuy.HasValue) return _ => CurrentPrice.Average;
-          if (isBuy.Value) return _ => CurrentPrice.Ask; else return _ => CurrentPrice.Bid;
+          if(!isBuy.HasValue)
+            return _ => CurrentPrice.Average;
+          if(isBuy.Value)
+            return _ => CurrentPrice.Ask;
+          else
+            return _ => CurrentPrice.Bid;
       }
       throw new NotSupportedException(method.GetType().Name + "." + method + " is not supported");
     }
@@ -1304,7 +1333,7 @@ namespace HedgeHog.Alice.Store {
     public TradeCrossMethod TradeEnterBy {
       get { return _tradeEnterByCalc.DefaultIfEmpty((TradeCrossMethod)BarPeriodsHigh).Single(); }
       set {
-        if (BarPeriodsHigh != (int)value) {
+        if(BarPeriodsHigh != (int)value) {
           BarPeriodsHigh = (int)value;
           OnPropertyChanged(() => TradeEnterBy);
         }
@@ -1315,7 +1344,7 @@ namespace HedgeHog.Alice.Store {
     public TradeCrossMethod TradeExitBy {
       get { return (TradeCrossMethod)BarPeriodsLow; }
       set {
-        if (BarPeriodsLow != (int)value) {
+        if(BarPeriodsLow != (int)value) {
           BarPeriodsLow = (int)value;
           OnPropertyChanged(() => TradeExitBy);
         }
@@ -1328,7 +1357,8 @@ namespace HedgeHog.Alice.Store {
     public TurnOffFunctions TurnOffFunction {
       get { return (TurnOffFunctions)CorridorIterationsIn; }
       set {
-        if (CorridorIterationsIn == (int)value) return;
+        if(CorridorIterationsIn == (int)value)
+          return;
         CorridorIterationsIn = (int)value;
         OnPropertyChanged("TurnOffFunction");
       }
@@ -1368,7 +1398,8 @@ namespace HedgeHog.Alice.Store {
     public bool ShowParabola {
       get { return _ShowTrendLines; }
       set {
-        if (_ShowTrendLines == value) return;
+        if(_ShowTrendLines == value)
+          return;
         _ShowTrendLines = value;
         OnPropertyChanged(() => ShowParabola);
       }
@@ -1381,7 +1412,7 @@ namespace HedgeHog.Alice.Store {
     public int MaximumPositions_ {
       get { return MaximumPositions; }
       set {
-        if (MaximumPositions != value) {
+        if(MaximumPositions != value) {
           MaximumPositions = value;
           OnPropertyChanged(TradingMacroMetadata.MaximumPositions_);
         }
@@ -1394,7 +1425,8 @@ namespace HedgeHog.Alice.Store {
     public BarsPeriodType BarPeriodCalc {
       get { return _barPeriodCalc; }
       set {
-        if (_barPeriodCalc == value) return;
+        if(_barPeriodCalc == value)
+          return;
         _barPeriodCalc = value;
         RatesInternal.Clear();
         OnPropertyChanged("BarPeriodCalc");
@@ -1407,7 +1439,7 @@ namespace HedgeHog.Alice.Store {
     public BarsPeriodType BarPeriod {
       get { return (BarsPeriodType)LimitBar; }
       set {
-        if (LimitBar != (int)value) {
+        if(LimitBar != (int)value) {
           LimitBar = (int)value;
           OnPropertyChanged(TradingMacroMetadata.BarPeriod);
         }
@@ -1420,7 +1452,7 @@ namespace HedgeHog.Alice.Store {
     public int BarsCount {
       get { return CorridorBarMinutes; }
       set {
-        if (CorridorBarMinutes != value) {
+        if(CorridorBarMinutes != value) {
           CorridorBarMinutes = value;
           BarsCountCalc = value;
           OnPropertyChanged(TradingMacroMetadata.BarsCount);
@@ -1436,11 +1468,11 @@ namespace HedgeHog.Alice.Store {
     public int BarsCountMax {
       get { return _BarsCountMax < 1 ? BarsCountMax = 0 : _BarsCountMax; }
       set {
-        if (value < 1) {
+        if(value < 1) {
           Log = new Exception("BarsCountMax reset from " + _BarsCountMax + " to 10");
           value = 10;
         }
-        if (_BarsCountMax != value) {
+        if(_BarsCountMax != value) {
           _BarsCountMax = value;
           OnPropertyChanged("BarsCountMax");
         }
@@ -1457,7 +1489,7 @@ namespace HedgeHog.Alice.Store {
     public bool CanTradeAlwaysOn {
       get { return _CanTradeAlwaysOn; }
       set {
-        if (_CanTradeAlwaysOn != value) {
+        if(_CanTradeAlwaysOn != value) {
           _CanTradeAlwaysOn = value;
           OnPropertyChanged("CanTradeAlwaysOn");
         }
@@ -1472,7 +1504,7 @@ namespace HedgeHog.Alice.Store {
     public double CurrentLoss_ {
       get { return CurrentLoss; }
       set {
-        if (CurrentLoss != value) {
+        if(CurrentLoss != value) {
           CurrentLoss = value;
           OnPropertyChanged(TradingMacroMetadata.CurrentLoss_);
           GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => OnPropertyChanged(TradingMacroMetadata.CurrentGross));
@@ -1487,7 +1519,7 @@ namespace HedgeHog.Alice.Store {
     public double TradingRatio_ {
       get { return TradingRatio; }
       set {
-        if (TradingRatio != value) {
+        if(TradingRatio != value) {
           TradingRatio = value;
           OnPropertyChanged(TradingMacroMetadata.TradingRatio_);
         }
@@ -1505,7 +1537,7 @@ namespace HedgeHog.Alice.Store {
     public bool IsAutoSync {
       get { return _IsAutoSync; }
       set {
-        if (_IsAutoSync != value) {
+        if(_IsAutoSync != value) {
           _IsAutoSync = value;
           OnPropertyChanged(TradingMacroMetadata.IsAutoSync);
         }
@@ -1519,7 +1551,7 @@ namespace HedgeHog.Alice.Store {
     public bool SyncAll {
       get { return _SyncAll; }
       set {
-        if (_SyncAll != value) {
+        if(_SyncAll != value) {
           _SyncAll = value;
           OnPropertyChanged(TradingMacroMetadata.SyncAll);
         }
@@ -1533,7 +1565,7 @@ namespace HedgeHog.Alice.Store {
     public int LoadRatesSecondsWarning_ {
       get { return LoadRatesSecondsWarning; }
       set {
-        if (LoadRatesSecondsWarning != value) {
+        if(LoadRatesSecondsWarning != value) {
           LoadRatesSecondsWarning = value;
           OnPropertyChanged(() => LoadRatesSecondsWarning_);
         }
@@ -1544,7 +1576,7 @@ namespace HedgeHog.Alice.Store {
     public DateTime? LastProfitStartDate {
       get { return _LastProfitStartDate; }
       set {
-        if (_LastProfitStartDate != value) {
+        if(_LastProfitStartDate != value) {
           _LastProfitStartDate = value;
           OnPropertyChanged("LastProfitStartDate");
         }
@@ -1558,7 +1590,7 @@ namespace HedgeHog.Alice.Store {
     public ExitFunctions ExitFunction {
       get { return (ExitFunctions)VolumeTresholdIterations; }
       set {
-        if (VolumeTresholdIterations != (int)value) {
+        if(VolumeTresholdIterations != (int)value) {
           VolumeTresholdIterations = (int)value;
           OnPropertyChanged("ExitFunction");
         }
@@ -1571,7 +1603,7 @@ namespace HedgeHog.Alice.Store {
     double TradeDistanceInPips {
       get { return _TradeDistanceInPips; }
       set {
-        if (_TradeDistanceInPips != value) {
+        if(_TradeDistanceInPips != value) {
           _TradeDistanceInPips = value;
           OnPropertyChanged(TradingMacroMetadata.TradeDistanceInPips);
         }
@@ -1582,7 +1614,7 @@ namespace HedgeHog.Alice.Store {
     public int CalculatedLotSize {
       get { return _CalculatedLotSize; }
       set {
-        if (_CalculatedLotSize != value) {
+        if(_CalculatedLotSize != value) {
           _CalculatedLotSize = value;
           OnPropertyChanged(TradingMacroMetadata.CalculatedLotSize);
         }
@@ -1592,7 +1624,7 @@ namespace HedgeHog.Alice.Store {
     public Freezing FreezeStopType {
       get { return (Freezing)this.FreezeStop; }
       set {
-        if (this.FreezeStop != (int)value) {
+        if(this.FreezeStop != (int)value) {
           this.FreezeStop = (int)value;
           OnPropertyChanged(TradingMacroMetadata.FreezeStopType);
         }
@@ -1603,7 +1635,7 @@ namespace HedgeHog.Alice.Store {
     public double VolumeShort {
       get { return _VolumeShort; }
       set {
-        if (_VolumeShort != value) {
+        if(_VolumeShort != value) {
           _VolumeShort = value;
           OnPropertyChanged(TradingMacroMetadata.VolumeShort);
           VolumeShortToLongRatio = VolumeShort / VolumeLong;
@@ -1614,7 +1646,7 @@ namespace HedgeHog.Alice.Store {
     public double VolumeLong {
       get { return _VolumeLong; }
       set {
-        if (_VolumeLong != value) {
+        if(_VolumeLong != value) {
           _VolumeLong = value;
           OnPropertyChanged(TradingMacroMetadata.VolumeLong);
           VolumeShortToLongRatio = VolumeShort / VolumeLong;
@@ -1626,7 +1658,7 @@ namespace HedgeHog.Alice.Store {
     public double VolumeShortToLongRatio {
       get { return _VolumeShortToLongRatio; }
       set {
-        if (_VolumeShortToLongRatio != value) {
+        if(_VolumeShortToLongRatio != value) {
           _VolumeShortToLongRatio = value;
           OnPropertyChanged(TradingMacroMetadata.VolumeShortToLongRatio);
         }
@@ -1638,7 +1670,7 @@ namespace HedgeHog.Alice.Store {
     public bool ShowProperties {
       get { return _ShowProperties; }
       set {
-        if (_ShowProperties != value) {
+        if(_ShowProperties != value) {
           _ShowProperties = value;
           OnPropertyChanged(TradingMacroMetadata.ShowProperties);
         }
@@ -1650,7 +1682,8 @@ namespace HedgeHog.Alice.Store {
     public DateTime LastRatePullTime {
       get { return _lastRatePullTime; }
       set {
-        if (_lastRatePullTime == value) return;
+        if(_lastRatePullTime == value)
+          return;
         _lastRatePullTime = value;
         OnPropertyChanged(TradingMacroMetadata.LastRatePullTime);
       }
@@ -1661,7 +1694,8 @@ namespace HedgeHog.Alice.Store {
     public double Angle {
       get { return _angle; }
       set {
-        if (_angle == value) return;
+        if(_angle == value)
+          return;
         _angle = value;
         OnPropertyChanged(TradingMacroMetadata.Angle);
         OnPropertyChanged(TradingMacroMetadata.AngleInRadians);
@@ -1674,7 +1708,7 @@ namespace HedgeHog.Alice.Store {
     public double BarHeightHigh {
       get { return _BarHeightHigh; }
       set {
-        if (_BarHeightHigh != value) {
+        if(_BarHeightHigh != value) {
           _BarHeightHigh = value;
           OnPropertyChanged(TradingMacroMetadata.BarHeightHigh);
         }
@@ -1685,7 +1719,8 @@ namespace HedgeHog.Alice.Store {
     public double? StopAmount {
       get { return _StopAmount; }
       set {
-        if (_StopAmount == value) return;
+        if(_StopAmount == value)
+          return;
         _StopAmount = value;
         OnPropertyChanged(TradingMacroMetadata.StopAmount);
       }
@@ -1694,7 +1729,8 @@ namespace HedgeHog.Alice.Store {
     public double? LimitAmount {
       get { return _LimitAmount; }
       set {
-        if (_LimitAmount == value) return;
+        if(_LimitAmount == value)
+          return;
         _LimitAmount = value;
         OnPropertyChanged(TradingMacroMetadata.LimitAmount);
       }
@@ -1704,7 +1740,8 @@ namespace HedgeHog.Alice.Store {
     public double? NetInPips {
       get { return _netInPips; }
       set {
-        if (_netInPips == value) return;
+        if(_netInPips == value)
+          return;
         _netInPips = value;
         OnPropertyChanged(TradingMacroMetadata.NetInPips);
       }
@@ -1714,7 +1751,7 @@ namespace HedgeHog.Alice.Store {
     public double SlackInPips {
       get { return _SlackInPips; }
       set {
-        if (_SlackInPips != value) {
+        if(_SlackInPips != value) {
           _SlackInPips = value;
           OnPropertyChanged(TradingMacroMetadata.SlackInPips);
         }
@@ -1725,7 +1762,7 @@ namespace HedgeHog.Alice.Store {
     public double CurrentLossPercent {
       get { return _CurrentLossPercent; }
       set {
-        if (_CurrentLossPercent != value) {
+        if(_CurrentLossPercent != value) {
           _CurrentLossPercent = value;
           OnPropertyChanged(TradingMacroMetadata.CurrentLossPercent);
         }
@@ -1736,14 +1773,15 @@ namespace HedgeHog.Alice.Store {
     public bool IsSelectedInUI {
       get { return _IsSelectedInUI; }
       set {
-        if (_IsSelectedInUI == value) return;
+        if(_IsSelectedInUI == value)
+          return;
         _IsSelectedInUI = value;
         OnPropertyChanged(TradingMacroMetadata.IsSelectedInUI);
       }
     }
     public DateTime ServerTime {
       get {
-        return TradesManager == null || !TradesManager.IsLoggedIn 
+        return TradesManager == null || !TradesManager.IsLoggedIn
           ? DateTime.MinValue
           : TradesManager.ServerTime;
       }
@@ -1756,14 +1794,15 @@ namespace HedgeHog.Alice.Store {
       }
       set {
         _currentPrice = value;
-        if (RateLast != null && !double.IsNaN(RateLast.PriceAvg1)) {
+        if(RateLast != null && !double.IsNaN(RateLast.PriceAvg1)) {
           //if(!IsInVitualTrading)
           //  RateLast.AddTick(_currentPrice);
           RateLast.SetPriceChart();
         }
         OnPropertyChanged(TradingMacroMetadata.CurrentPrice);
         var currentSpread = RoundPrice(this._currentSpread.Cma(10, this._currentPrice.Spread));
-        if (currentSpread == this._currentSpread) return;
+        if(currentSpread == this._currentSpread)
+          return;
         this._currentSpread = currentSpread;
         SetPriceSpreadOk();
       }
@@ -1773,7 +1812,8 @@ namespace HedgeHog.Alice.Store {
     public double BalanceOnStop {
       get { return _balanceOnStop; }
       set {
-        if (_balanceOnStop == value) return;
+        if(_balanceOnStop == value)
+          return;
         _balanceOnStop = value;
         OnPropertyChanged(TradingMacroMetadata.BalanceOnStop);
       }
@@ -1783,7 +1823,8 @@ namespace HedgeHog.Alice.Store {
     public double BalanceOnLimit {
       get { return _balanceOnLimit; }
       set {
-        if (_balanceOnLimit == value) return;
+        if(_balanceOnLimit == value)
+          return;
         _balanceOnLimit = value;
         OnPropertyChanged(TradingMacroMetadata.BalanceOnLimit);
       }
@@ -1808,7 +1849,7 @@ namespace HedgeHog.Alice.Store {
     public bool CanShowNews {
       get { return _CanShowNews; }
       set {
-        if (_CanShowNews != value) {
+        if(_CanShowNews != value) {
           _CanShowNews = value;
           OnPropertyChanged("CanShowNews");
         }
@@ -1829,13 +1870,13 @@ namespace HedgeHog.Alice.Store {
     }
     public void SetLevelsBy(SuppRes suppRes = null) {
       var rate = RateLast;
-      if ((suppRes ?? BuyLevel) == BuyLevel)
+      if((suppRes ?? BuyLevel) == BuyLevel)
         SetLevelBy(BuyLevel, rate, tl => LevelBuyBy = tl);
-      if ((suppRes ?? BuyCloseLevel) == BuyCloseLevel)
+      if((suppRes ?? BuyCloseLevel) == BuyCloseLevel)
         SetLevelBy(BuyCloseLevel, rate, tl => LevelBuyCloseBy = tl);
-      if ((suppRes ?? SellLevel) == SellLevel)
+      if((suppRes ?? SellLevel) == SellLevel)
         SetLevelBy(SellLevel, rate, tl => LevelSellBy = tl);
-      if ((suppRes ?? SellCloseLevel) == SellCloseLevel)
+      if((suppRes ?? SellCloseLevel) == SellCloseLevel)
         SetLevelBy(SellCloseLevel, rate, tl => LevelSellCloseBy = tl);
     }
     private void SetLevelBy(SuppRes suppRes, Rate rate, Action<TradeLevelBy> setLevel) {

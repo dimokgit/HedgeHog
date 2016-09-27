@@ -186,7 +186,11 @@ namespace HedgeHog.Alice.Store {
           if(tms.Count != strategies.Count)
             throw new Exception(new { strategies = new { strategies.Count }, tms = new { tms.Count } } + "");
           tms.Zip(strategies, (tm, settings) => new { tm, settings })
-          .ForEach(x => x.tm.LoadActiveSettings(x.settings, path + "[" + x.tm.PairIndex + "]"));
+            .Do(x=> {
+              if(x.tm.BarPeriod + "" != x.settings[Lib.GetLambda(() => BarPeriod)])
+                throw new Exception(new { x.tm.BarPeriod, BarPeriod2 = x.settings[Lib.GetLambda(() => BarPeriod)] } + "");
+            })
+            .ForEach(x => x.tm.LoadActiveSettings(x.settings, path + "[" + x.tm.PairIndex + "]"));
           break;
         case ActiveSettingsStore.Local:
           LoadActiveSettings(path);
