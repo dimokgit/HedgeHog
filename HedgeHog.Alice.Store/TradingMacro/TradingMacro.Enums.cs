@@ -22,7 +22,8 @@ namespace HedgeHog.Alice {
     StDevInsideOutRatio,
     HourlyStDevAvg,
     StDevSumRatio,
-    TLH
+    TLH,
+    TLA
   }
 }
 namespace HedgeHog.Alice.Store {

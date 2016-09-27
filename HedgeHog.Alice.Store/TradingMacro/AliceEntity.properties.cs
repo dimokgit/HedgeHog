@@ -1179,7 +1179,7 @@ namespace HedgeHog.Alice.Store {
 
     public double VoltRange0 { get; set; }
     public double VoltRange1 { get; set; }
-    string _VoltRange = "0";
+    string _VoltRange = "[0]";
     [WwwSetting(Group = wwwSettingsCorridorAngles)]
     [Category(categoryActive)]
     [Description("Range or single value: 15-30 or 60 or -60")]
@@ -1192,13 +1192,14 @@ namespace HedgeHog.Alice.Store {
         _VoltRange = value.Trim();
         OnPropertyChanged(() => VoltRange);
 
-        var spans = _VoltRange.StartsWith("-")
-          ? new[] { _VoltRange }
-          : value.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+        int[] spans;
+        if(!_VoltRange.TryFromJson(out spans))
+          spans = _VoltRange.Split('.').Select(s => int.Parse(s)).ToArray();
+        
         if(spans.IsEmpty())
-          spans = new[] { "0" };
-        VoltRange0 = double.Parse(spans[0]);
-        VoltRange1 = spans.Length > 1 ? double.Parse(spans[1]) : double.NaN;
+          spans = new[] { 0 };
+        VoltRange0 = spans[0];
+        VoltRange1 = spans.Length > 1 ? spans[1] : double.NaN;
 
       }
     }

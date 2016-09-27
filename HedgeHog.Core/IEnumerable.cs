@@ -259,6 +259,7 @@ namespace HedgeHog {
     #endregion
 
     #region Yield
+    public static U With<T, U>(this T v, Func<T, U> m) { return m(v); }
     public static IEnumerable<U> Yield<T, U>(this T v, Func<T, U> m) { yield return m(v); }
     public static IEnumerable<object> YieldObject(this object v) { yield return v; }
     public static IEnumerable<T> Yield<T>(this T v) { yield return v; }

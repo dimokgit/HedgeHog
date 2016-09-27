@@ -39,6 +39,20 @@ namespace HedgeHog {
       settings.Converters.Add(new StringEnumConverter());
       return Newtonsoft.Json.JsonConvert.SerializeObject(obj, settings);
     }
+    public static T FromJson<T>(this string json) {
+      var settings = new Newtonsoft.Json.JsonSerializerSettings();
+      settings.Converters.Add(new StringEnumConverter());
+      return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json, settings);
+    }
+    public static bool TryFromJson<T>(this string json,out T v) {
+      try {
+        v = json.FromJson<T>();
+        return true;
+      } catch {
+        v = default(T);
+        return false;
+      }
+    }
     public static double WeightedAverage<T>(this IList<T> values, Func<T, double> value, Func<T, double> weight) {
       return values.Sum(a => value(a) * weight(a)) / values.Sum(a => weight(a));
     }
@@ -84,8 +98,8 @@ namespace HedgeHog {
     public static IEnumerable<IEnumerable<T>> Permutation<T>(this IEnumerable<T> source, int len) {
       var source2 = source.Select((n, i) => new { n, i }).ToArray();
       var source3 = Enumerable.Range(0, len).Select(j => source2.Skip(j).Take(2).ToArray())/*.Take(len)*/.ToArray();
-      var t = new []{ new { n = default(T), i = 0 } };
-      var comp = MonoidsCore.ToFunc( t , t , (a1, a2) => a1.Select(z => z.n).SequenceEqual(a2.Select(z => z.n)));
+      var t = new[] { new { n = default(T), i = 0 } };
+      var comp = MonoidsCore.ToFunc(t, t, (a1, a2) => a1.Select(z => z.n).SequenceEqual(a2.Select(z => z.n)));
       return source3.CartesianProduct()
         .Select(x => x.OrderBy(i1 => i1.i).Distinct().ToArray())
         .Where(x => x.Count() == len)
@@ -583,8 +597,8 @@ namespace HedgeHog {
       return source.Zip(weights, (s, w) => s * w).Sum() / weights.Sum();
     }
     public static double PowerMeanPower(this IEnumerable<double> source, double power) {
-      var avg = source.Select(d => Math.Pow(d, 1 / power)).Average();
-      return Math.Pow(avg, power);
+      var avg = source.Select(d => Math.Pow(d.Abs(), 1 / power) * d.Sign()).Average();
+      return Math.Pow(avg.Abs(), power)*avg.Sign();
     }
     public static double PowerMeanPowerByPosition(this IEnumerable<double> source, double power) {
       var avg = source.Select(d => Math.Pow(d, 1 / power)).ToList().AverageByPosition();
@@ -947,7 +961,7 @@ namespace HedgeHog {
     }
     #endregion
 
-    public static IEnumerable<T> FirstOrLast<T>(this IEnumerable<T> e, bool last,int count = 1) {
+    public static IEnumerable<T> FirstOrLast<T>(this IEnumerable<T> e, bool last, int count = 1) {
       return last ? e.TakeLast(count) : e.Take(count);
     }
     public static T[] FirstAndLast<T>(this IList<T> e) {

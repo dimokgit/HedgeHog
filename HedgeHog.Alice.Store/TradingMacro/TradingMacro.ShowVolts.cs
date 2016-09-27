@@ -32,6 +32,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByRsd;
         case HedgeHog.Alice.VoltageFunction.TLH:
           return ShowVoltsByTLH;
+        case HedgeHog.Alice.VoltageFunction.TLA:
+          return ShowVoltsByTLA;
         case HedgeHog.Alice.VoltageFunction.PPM:
           return voltIndex == 0
             ? (Func<CorridorStatistics>)ShowVoltsByPPM
@@ -73,7 +75,7 @@ namespace HedgeHog.Alice.Store {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
       Func<IEnumerable<double>> calcVolt = ()
         => UseRates(rates
-        => rates.Distances(_priceAvg).Last().Item2 / RatesDuration)
+        => rates.BackwardsIterator().Take(TrendLinesBlueTrends.Count).Distances(_priceAvg).Last().Item2 / TrendLinesBlueTrends.TimeSpan.TotalMinutes)
         .Where(ppm => ppm > 0)
         .Select(ppm => InPips(ppm));
       if(!useCalc)
@@ -144,6 +146,16 @@ namespace HedgeHog.Alice.Store {
         .DefaultIfEmpty()
         .Average();
       if(v.IsNotNaN())
+        ShowVolts(v, 2);
+      return null;
+    }
+    CorridorStatistics ShowVoltsByTLA() {
+      var useCalc = IsRatesLengthStable;
+      var v = TrendLinesTrendsAll.Where(TL.NotEmpty)
+        .Select(tl => tl.Angle)
+        .DefaultIfEmpty(double.NaN)
+        .PowerMeanPower(2);
+      if(useCalc && v.IsNotNaN())
         ShowVolts(v, 2);
       return null;
     }

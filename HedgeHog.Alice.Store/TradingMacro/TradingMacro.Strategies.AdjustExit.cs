@@ -18,6 +18,7 @@ namespace HedgeHog.Alice.Store {
 
     #region EllasticRange
     private int _EllasticRange = 5;
+    [WwwSetting(wwwSettingsTradingProfit)]
     [Category(categoryTrading)]
     public int EllasticRange {
       get { return _EllasticRange; }

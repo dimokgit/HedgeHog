@@ -124,8 +124,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    static bool IsTLFresh(TradingMacro tm, TL tl) {
-      var rateDate = tm.RatesArray[tm.RatesArray.Count - tl.Count].StartDate;
+    static bool IsTLFresh(TradingMacro tm, TL tl, double percentage = 1) {
+      var rateDate = tm.RatesArray[tm.RatesArray.Count - tl.Count.Div(percentage).ToInt()].StartDate;
       return !tl.IsEmpty && tl.EndDate > rateDate && tl.StartDate > tm.LastTrade.TimeClose;
 
     }
@@ -205,13 +205,13 @@ namespace HedgeHog.Alice.Store {
 
     public TradeConditionDelegate TLFOk {
       get {
-        Func<TL, DateTime[]> tlDates = tl => new[] { tl.StartDate, tl.EndDate };
+        Func<TL, DateTime[]> tlDates = tl => (tl.TimeSpan.TotalMinutes / 10).With(t => new[] { tl.StartDate.AddMinutes(-t), tl.EndDate.AddMinutes(t) });
         return () => (from tm in TradingMacroTrender()
                       from tr in TradingMacroTrader()
                       let flats = tm.TrendLinesFlat
                       where flats.Min(tl => tl.StartDate) > tr.LastTrade.TimeClose
                       from tlLast in flats.TakeLast(1)
-                      where IsTLFresh(tm, tlLast)
+                      where IsTLFresh(tm, tlLast, 0.5)
                       let sd = tlDates(tlLast)
                       select flats.SkipLast(1).Select(tlDates).All(se => se.Any(tld => tld.Between(sd[0], sd[1])))
                       )
@@ -818,6 +818,17 @@ namespace HedgeHog.Alice.Store {
         .Where(b => b)
         .DefaultIfEmpty(IsCurrentPriceInsideTradeLevels2)
         .Select(b => TradeDirectionByBool(_isIn2Ok = b))
+        .Single();
+      }
+    }
+    bool _isOut2Ok;
+    public TradeConditionDelegate IsOut2Ok {
+      get {
+        return () => BuySellLevels.IfAnyCanTrade()
+        .Select(_ => _isOut2Ok)
+        .Where(b => b)
+        .DefaultIfEmpty(IsCurrentPriceInsideTradeLevels2)
+        .Select(b => TradeDirectionByBool(_isOut2Ok = b))
         .Single();
       }
     }
