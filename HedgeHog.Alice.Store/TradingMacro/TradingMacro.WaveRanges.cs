@@ -160,8 +160,9 @@ namespace HedgeHog.Alice.Store {
             });
           #endregion
         } else {
-          var firstWaveRange = rates.BackwardsIterator().TakeWhile(r => r.StartDate >= WaveRanges[0].StartDate).Reverse().ToList();
-          WaveRanges = new[] { new WaveRange(firstWaveRange, PointSize, BarPeriod) }.Concat(WaveRanges.Skip(1)).ToList();
+          var firstWaveRange = WaveRanges.Take(1).Select(wr =>
+            rates.BackwardsIterator().TakeWhile(r => r.StartDate >= wr.StartDate).Reverse().ToList());
+          WaveRanges = firstWaveRange.Select(wr => new WaveRange(wr, PointSize, BarPeriod)).Concat(WaveRanges.Skip(1)).ToList();
           WaveRangeTail = new WaveRange(0);
         }
 

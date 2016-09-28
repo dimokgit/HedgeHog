@@ -266,6 +266,12 @@ namespace HedgeHog {
     public static IEnumerable<U> Yield<T, U>(this T v, Func<T, U> m) { yield return m(v); }
     public static IEnumerable<object> YieldObject(this object v) { yield return v; }
     public static IEnumerable<T> Yield<T>(this T v) { yield return v; }
+    public static IEnumerable<U> YieldNutNull<T,U>(this T v,Func<T,U> map) {
+      if(v == null)
+        yield break;
+      else
+      yield return map(v);
+    }
     public static IEnumerable<T> YieldNotNull<T>(this T v) { return v.YieldNotNull(true); }
     public static IEnumerable<T> YieldNotNull<T>(this T v, bool? condition) {
       if(v == null)
