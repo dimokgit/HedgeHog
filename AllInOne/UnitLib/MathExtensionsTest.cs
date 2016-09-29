@@ -31,6 +31,7 @@ namespace HedgeHog.Tests {
       Assert.AreEqual(7.2855, a.SquareMeanRoot(b).Round(4));
       Assert.AreEqual(7.2855, a.PowerMeanPower(b, 2).Round(4));
       Assert.AreEqual(7.2855, new[] { a, b }.PowerMeanPower(2).Round(4));
+      Assert.AreEqual(7.9057, new[] { a, b }.PowerMeanPower(.5).Round(4));
       Assert.AreEqual(20.9067, new[] { 5.0, 7.0,100.0 }.PowerMeanPower(3).Round(4));
     }
     [TestMethod()]

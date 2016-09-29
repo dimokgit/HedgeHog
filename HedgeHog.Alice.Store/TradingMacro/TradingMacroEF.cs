@@ -814,7 +814,6 @@ namespace HedgeHog.Alice.Store {
     /// No Metadata Documentation available.
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = true)]
-    [DataMemberAttribute()]
     public Nullable<global::System.DateTime> CorridorStartDate {
       get {
         return _CorridorStartDate;

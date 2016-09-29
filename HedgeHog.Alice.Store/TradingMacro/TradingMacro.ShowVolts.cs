@@ -9,6 +9,7 @@ using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
+using static HedgeHog.IEnumerableCore;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -152,15 +153,18 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByTLA() {
       var useCalc = IsRatesLengthStable;
-      var v = TrendLinesTrendsAll.Where(TL.NotEmpty)
-        .Select(tl => tl.Angle)
-        .DefaultIfEmpty(double.NaN)
-        .PowerMeanPower(2);
-      if(useCalc && v.IsNotNaN())
-        ShowVolts(v, 2);
+      if(useCalc)
+        TLsAngle().ForEach(v => ShowVolts(v, 2));
       return null;
     }
 
+    private Singleable<double> TLsAngle() {
+      return new[] { TrendLinesTrendsAll.Where(TL.NotEmpty) }
+        .Where(tls=>tls.Any())
+        .Select(tls=> tls.Select(tl => tl.Angle))
+        .Select(a=> a.PowerMeanPower(2))
+        .AsSingleable();
+    }
 
     private IEnumerable<double> CalcSma(int periodFast, int periodSlow, Func<Rate, double> select, Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       return UseRatesInternal(rates => {

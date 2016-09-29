@@ -209,17 +209,17 @@ namespace HedgeHog.Alice.Store {
         return () => (from tm in TradingMacroTrender()
                       from tr in TradingMacroTrader()
                       let flats = tm.TrendLinesFlat
-                      where flats.Min(tl => tl.StartDate) > tr.LastTrade.TimeClose
+                      from tlMin in flats.MinByOrEmpty(tl => tl.StartDate).Take(1)
+                      where tlMin.StartDate > tr.LastTrade.TimeClose
                       from tlLast in flats.TakeLast(1)
                       where IsTLFresh(tm, tlLast, 0.5)
                       let sd = tlDates(tlLast)
                       select flats.SkipLast(1).Select(tlDates).All(se => se.Any(tld => tld.Between(sd[0], sd[1])))
                       )
-        .Select(ok => ok
-        ? TradeDirections.Both
-        : TradeDirections.None)
-        .DefaultIfEmpty()
-        .Aggregate((td1, td2) => td1 | td2);
+                      .Where(ok => ok)
+                      .Select(_ => TradeDirections.Both)
+                      .DefaultIfEmpty()
+                      .Aggregate((td1, td2) => td1 | td2);
       }
     }
 
@@ -850,12 +850,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public TradeConditionDelegateHide UniAngleOk {
+    public TradeConditionDelegate UniAngleOk {
       get {
-        var signs = TrendLinesTrendsAll.Where(tl => !tl.IsEmpty).Select(tl => tl.Slope.Sign()).Distinct().ToArray();
-        return () => signs.Length > 1
-          ? TradeDirections.None
-          : TradeDirectionByAngleSign(signs.SingleOrDefault());
+        Func<TradingMacro, IEnumerable<double>> signs = tm => tm.TrendLinesTrendsAll.Where(TL.NotEmpty).Select(tl => tl.Slope).Scan((a1, a2) => a1.SignUp() == a2.SignUp() ? a2 : double.NaN);
+        return () => TradingMacroTrender(signs).SelectMany(x => x)
+        .SkipWhile(Lib.IsNotNaN)
+        .Any()
+        ? TradeDirections.None
+        : TradeDirections.Both;
       }
     }
     [TradeConditionTurnOff]
