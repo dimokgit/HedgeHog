@@ -787,11 +787,13 @@ namespace HedgeHog.Alice.Client {
     }
 
     private IEnumerable<TradingMacro> GetTradingMacros(string pair) {
-      return remoteControl.Value.YieldNotNull()
-        .SelectMany(rc => rc.TradingMacrosCopy)
+      return remoteControl.Value?
+        .TradingMacrosCopy
         .Where(tm => tm.IsActive && tm.PairPlain == pair)
         .OrderBy(tm => tm.TradingGroup)
-        .ThenBy(tm => tm.PairIndex);
+        .ThenBy(tm => tm.PairIndex)
+        .AsEnumerable()  
+        ?? new TradingMacro[0];
     }
 
     IEnumerable<TradingMacro> UseTradingMacro(Func<TradingMacro, bool> predicate, string pair) {

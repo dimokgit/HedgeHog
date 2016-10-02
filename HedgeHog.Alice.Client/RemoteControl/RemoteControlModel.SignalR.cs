@@ -98,7 +98,8 @@ namespace HedgeHog.Alice.Client {
         };
       }
       */
-      var trends = tm.TrendLines.Value.ToList();
+      Func<Lazy<IList<Rate>>, IList<Rate>> safeTLs = tls => tls.Value ?? new List<Rate>();
+      var trends = safeTLs(tm.TrendLines);
       var trendLines = tm.UseRates(rates => new {
         dates = trends.Count > 1
         ? new DateTimeOffset[]{
@@ -114,7 +115,7 @@ namespace HedgeHog.Alice.Client {
       .SingleOrDefault();
       var ratesLastStartDate2 = tm.RatesArray.Last().StartDate2;
 
-      var trends2 = tm.TrendLines2.Value.ToList();
+      var trends2 = safeTLs(tm.TrendLines2);
       var trendLines2 = new {
         dates = trends2.Count == 0
         ? new DateTimeOffset[0]
@@ -126,7 +127,7 @@ namespace HedgeHog.Alice.Client {
         close3 = trends2.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
 
-      var trends0 = tm.TrendLines0.Value.ToList();
+      var trends0 = safeTLs(tm.TrendLines0);
       var trendLines0 = new {
         dates = trends0.Count == 0
         ? new DateTimeOffset[0]
@@ -137,7 +138,7 @@ namespace HedgeHog.Alice.Client {
         close3 = trends0.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
 
-      var trends1 = tm.TrendLines1.Value.ToList();
+      var trends1 = safeTLs(tm.TrendLines1);
       var trendLines1 = new {
         dates = trends1.Count == 0
         ? new DateTimeOffset[0]
@@ -148,7 +149,7 @@ namespace HedgeHog.Alice.Client {
         close3 = trends1.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
 
-      var trends3 = (tm.TrendLines3.Value ?? new Rate[0]).ToList();
+      var trends3 = safeTLs(tm.TrendLines3);
       var trendLines3 = new {
         dates = trends3.Count == 0
         ? new DateTimeOffset[0]

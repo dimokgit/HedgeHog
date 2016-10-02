@@ -2345,12 +2345,12 @@ namespace HedgeHog.Alice.Store {
                 //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
                 OnPropertyChanged(() => RatesRsd);
               });
+              RunStrategy();
             }, false);
             OnScanCorridor(RatesArray, () => {
               try {
                 CorridorAngle = TrendLinesRedTrends.Angle;
                 TakeProfitPips = InPips(CalculateTakeProfit());
-                RunStrategy();
               } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
             }, IsInVirtualTrading);
             OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);

@@ -58,24 +58,7 @@ namespace HedgeHog.Alice.Store {
     OneToFive = 7,
   }
   public enum TrailingWaveMethod {
-    SimpleMoveBO = 4,
     SimpleMove = 5,
-    SimpleMoveRng = 6,
-    ManualRange = 10,
-    GreenStrip = 11,
-    StDevAngle = -14,
-    BigGap = -20,
-    FrameAngle = 81,
-    FrameAngle2 = 82,
-    FrameAngle3 = 83,
-    FrameAngle31 = 84,
-    FrameAngle4 = 86,
-    StDevFlat = 87,
-    StDevFlat2 = 88,
-    StDevFlat3 = 89,
-    LongCross = 80,
-    LongLine = 160,
-    Recorder = 1000
   }
   public enum TradingMacroTakeProfitFunction {
     BuySellLevels,

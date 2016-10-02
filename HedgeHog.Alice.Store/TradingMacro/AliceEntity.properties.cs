@@ -896,14 +896,18 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    bool _ExitByBuySellLevel=true;
     [DisplayName("Exit By BuySell Level")]
     [Category(categoryActiveYesNo)]
     [Description("(X ? _buySell:eve.Rate : trade.Open) + takeProfit ")]
+    [WwwSetting(wwwSettingsTradingProfit)]
     public bool ExitByBuySellLevel {
-      get { return CloseOnProfit; }
+      get { return _ExitByBuySellLevel; }
       set {
-        CloseOnProfit = value;
-        OnPropertyChanged(() => ExitByBuySellLevel);
+        if(_ExitByBuySellLevel != value) {
+          _ExitByBuySellLevel = value;
+          OnPropertyChanged(() => ExitByBuySellLevel);
+        }
       }
     }
 
@@ -1215,7 +1219,7 @@ namespace HedgeHog.Alice.Store {
 
         double[] spans;
         if(!_VoltRange.TryFromJson(out spans))
-          spans = _VoltRange.Split('-').Select(s => double.Parse(s)).ToArray();
+          spans = _VoltRange.Splitter('-').Select(s => double.Parse(s)).ToArray();
 
         if(spans == null || spans.IsEmpty())
           spans = new[] { 0.0 };

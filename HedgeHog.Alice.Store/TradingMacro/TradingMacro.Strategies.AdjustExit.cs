@@ -112,7 +112,7 @@ namespace HedgeHog.Alice.Store {
             var ratesShort = RatesArray.CopyLast(5);
             var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy - PointSize / 10);
             var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell + PointSize / 10);
-            var takeProfitLocal = TakeProfitFunction.IfNotDirect(takeProfitPips, 
+            var takeProfitLocal = TakeProfitFunction.IfNotDirect(takeProfitPips,
               tp => (tp + (UseLastLoss ? LastTradeLossInPips.Abs() : 0)).Max(takeBackInPips).Min(ratesHeightInPips));
             Func<bool, double> levelByNetOpenAndTakeProfit = isBuy => isBuy
               ? Trades.IsBuy(isBuy).NetOpen() + InPoints(takeProfitLocal)
@@ -182,13 +182,15 @@ namespace HedgeHog.Alice.Store {
     private void AdjustExitLevelsByTradeTime(Action<double, double> adjustExitLevels) {
       Func<double, IEnumerable<double>> rateSinceTrade = def => {
         var d = Trades.Max(t => t.Time);
-        //d = d - ServerTime.Subtract(d);
-        return TradingMacroTrender().SelectMany(tm=> tm.RatesArray
-          .Take(DoAdjustExitLevelByTradeTime ? RatesArray.Count : 0)
-          .Reverse()
-          .TakeWhile(r => r.StartDate >= d)
-          .Select(_priceAvg)
-          .DefaultIfEmpty(def));
+        d = d - ServerTime.Subtract(d);
+        return TradingMacroTrender(tm
+          => tm.UseRates(rates
+          => rates.BackwardsIterator()
+            .TakeWhile(r => r.StartDate >= d)
+            .Select(_priceAvg)))
+            .SelectMany(x => x)
+            .SelectMany(x => x)
+            .DefaultIfEmpty(def);
       };
       var buyLevel = Trades.HaveBuy() ? rateSinceTrade(BuyLevel.Rate).Min().Min(ExitByBuySellLevel ? BuyLevel.Rate : double.NaN) : BuyLevel.Rate;
       var sellLevel = Trades.HaveSell() ? rateSinceTrade(SellLevel.Rate).Max().Max(ExitByBuySellLevel ? SellLevel.Rate : double.NaN) : SellLevel.Rate;
