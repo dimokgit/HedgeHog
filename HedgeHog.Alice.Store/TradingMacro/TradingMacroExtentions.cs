@@ -37,7 +37,7 @@ using System.Data.Entity.Core.Objects.DataClasses;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Runtime.Serialization;
-
+using TL = HedgeHog.Bars.Rate.TrendLevels;
 namespace HedgeHog.Alice.Store {
   [JsonObject(MemberSerialization.OptOut)]
   public partial class TradingMacro {
@@ -2291,7 +2291,6 @@ namespace HedgeHog.Alice.Store {
             UseRates(rates => { SetMA(rates); return false; });
 
             OnSetBarsCountCalc();
-            ScanTradeEquinox();
             ScanOutsideEquinox();
 
             if(IsInVirtualTrading)
@@ -2333,10 +2332,10 @@ namespace HedgeHog.Alice.Store {
                     RatesStDev = StDevByPriceAvg;
                     break;
                   case CorridorCalculationMethod.PowerMeanPower:
-                    RatesStDev = StDevByPriceAvg.PowerMeanPower(StDevByHeight, 100);
+                    RatesStDev = StDevByPriceAvg.RootMeanPower(StDevByHeight, 100);
                     break;
                   case CorridorCalculationMethod.RootMeanSquare:
-                    RatesStDev = StDevByPriceAvg.RootMeanSquare(StDevByHeight);
+                    RatesStDev = StDevByPriceAvg.SquareMeanRoot(StDevByHeight);
                     break;
                   default:
                     throw new Exception(new { CorridorCalcMethod } + " is not supported.");
@@ -3624,6 +3623,8 @@ namespace HedgeHog.Alice.Store {
         Func<Func<TradingMacro, double>, double> level = f => f(tmt.Where(tm => tm.IsTrader).DefaultIfEmpty(tmt.First()).First());
         Func<Func<TradingMacro, double>, double> levelMax = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMax).Max().IfNaN(maxDefault);
         Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMin).Min().IfNaN(minDefault);
+        Func<IEnumerable<double>, int, IEnumerable<double>> comm = (ps, sign) => ps.Select(p => p + InPoints(CommissionInPips()) * sign);
+        //Func<Func<TL, IEnumerable<double>>, int, IEnumerable<double>> commTL = (ps, sign) => ps().Select(p => p + InPoints(CommissionInPips()) * sign);
         if(_TradeLevelFuncs == null)
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           {
@@ -3642,12 +3643,6 @@ namespace HedgeHog.Alice.Store {
 
           {TradeLevelBy.PriceAvg1Max,()=> TradeTrendLines.Max(tl=>tl.PriceAvg1)},
           {TradeLevelBy.PriceAvg1Min,()=> TradeTrendLines.Min(tl=>tl.PriceAvg1)},
-
-          {TradeLevelBy.EquinoxMax,()=>EquinoxBasedMinMax(EquinoxTrendLines).Select(t=>t.Item2).DefaultIfEmpty(RatesMax).Single() },
-          {TradeLevelBy.EquinoxMin,()=>EquinoxBasedMinMax(EquinoxTrendLines).Select(t=>t.Item1).DefaultIfEmpty(RatesMin).Single() },
-
-          {TradeLevelBy.EdgeMax,()=>level(tm=> EquinoxEdge(tm.EquinoxTrendLines).Select(tl=>tl.PriceAvg2).DefaultIfEmpty(RatesMax).Max()) },
-          {TradeLevelBy.EdgeMin,()=>level(tm=> EquinoxEdge(tm.EquinoxTrendLines).Select(tl=>tl.PriceAvg3).DefaultIfEmpty(RatesMin).Min()) },
 
           {TradeLevelBy.Avg22,()=>levelMax(tm=>tm.TradeLevelByPA2(2)) },
           {TradeLevelBy.Avg23,()=>levelMin(tm=>tm.TradeLevelByPA3(2)) },
@@ -3677,20 +3672,20 @@ namespace HedgeHog.Alice.Store {
           { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
 
-          {TradeLevelBy.LimeMax,()=> levelMax(tm=> tm.TrendLinesLimeTrends.PriceMax.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.LimeMin,()=> levelMin(tm=> tm.TrendLinesLimeTrends.PriceMin.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.LimeMax,()=> levelMax(tm=> comm(tm.TrendLinesLimeTrends.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.LimeMin,()=> levelMin(tm=> comm(tm.TrendLinesLimeTrends.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.GreenMax,()=> levelMax(tm=> tm.TrendLinesGreenTrends.PriceMax.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.GreenMin,()=> levelMin(tm=> tm.TrendLinesGreenTrends.PriceMin.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.GreenMax,()=> levelMax(tm=> comm(tm.TrendLinesGreenTrends.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.GreenMin,()=> levelMin(tm=> comm(tm.TrendLinesGreenTrends.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.RedMax,()=> levelMax(tm=> tm.TrendLinesRedTrends.PriceMax.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.RedMin,()=> levelMin(tm=> tm.TrendLinesRedTrends.PriceMin.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.RedMax,()=> levelMax(tm=> comm(tm.TrendLinesRedTrends.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.RedMin,()=> levelMin(tm=> comm(tm.TrendLinesRedTrends.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.PlumMax,()=> levelMax(tm=> tm.TrendLinesPlumTrends.PriceMax.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.PlumMin,()=> levelMin(tm=> tm.TrendLinesPlumTrends.PriceMin.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.PlumMax,()=> levelMax(tm=> comm(tm.TrendLinesPlumTrends.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.PlumMin,()=> levelMin(tm=> comm(tm.TrendLinesPlumTrends.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.BlueMax,()=> levelMax(tm=> tm.TrendLinesBlueTrends.PriceMax.DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.BlueMin,()=> levelMin(tm=> tm.TrendLinesBlueTrends.PriceMin.DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.BlueMax,()=> levelMax(tm=> comm(tm.TrendLinesBlueTrends.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.BlueMin,()=> levelMin(tm=> comm(tm.TrendLinesBlueTrends.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
 
           {TradeLevelBy.None,()=>double.NaN}
           };
@@ -3798,6 +3793,8 @@ namespace HedgeHog.Alice.Store {
           return ScanCorridorBy123;
         case ScanCorridorFunction.OneToFour:
           return ScanCorridorBy1234;
+        case ScanCorridorFunction.OneToFive:
+          return ScanCorridorBy12345;
         case ScanCorridorFunction.Fft:
           return ScanCorridorByFft;
         case ScanCorridorFunction.StDevSplits:

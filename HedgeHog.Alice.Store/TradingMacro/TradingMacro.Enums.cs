@@ -23,7 +23,8 @@ namespace HedgeHog.Alice {
     HourlyStDevAvg,
     StDevSumRatio,
     TLH,
-    TLA
+    TLA,
+    TLAR
   }
 }
 namespace HedgeHog.Alice.Store {
@@ -54,6 +55,7 @@ namespace HedgeHog.Alice.Store {
     Fft = 64,
     OneTwoThree = 5,
     OneToFour = 6,
+    OneToFive = 7,
   }
   public enum TrailingWaveMethod {
     SimpleMoveBO = 4,

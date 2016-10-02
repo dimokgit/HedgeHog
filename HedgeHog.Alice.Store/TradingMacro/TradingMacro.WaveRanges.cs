@@ -68,7 +68,7 @@ namespace HedgeHog.Alice.Store {
           #endregion
 
           var wrs = wr.SkipLast(wr.Count > 4 ? 1 : 0).Where(w => !w.Distance.IsNaNOrZero()).ToArray();
-          Func<Func<WaveRange, double>, double, double> pwmp = (w, power) => wrs.Select(w).PowerMeanPower(power);
+          Func<Func<WaveRange, double>, double, double> pwmp = (w, power) => wrs.Select(w).RootMeanPower(power);
 
 
           var hasCalm3 = TradeConditionsHave(Calm3Ok);
@@ -82,7 +82,7 @@ namespace HedgeHog.Alice.Store {
             TotalMinutes = pwmp(w => w.TotalMinutes, 1 / TrendHeightPerc),
             HSDRatio = wrs.Select(w => w.StDev).RelativeStandardDeviation().ToPercent(),//avg2(wrs, w => w.HSDRatio, w => 1 / w.Distance),
             Height = rsd(w => w.Height),
-            StDev = wrs.Select(w => w.StDev).PowerMeanPowerByPosition(WaveStDevPowerS)
+            StDev = wrs.Select(w => w.StDev).RootMeanPowerByPosition(WaveStDevPowerS)
           };
           ws.PipsPerMinute = ws.Distance / ws.TotalMinutes;
 
@@ -94,7 +94,7 @@ namespace HedgeHog.Alice.Store {
             WorkByTime = avg(wrs, w => w.WorkByTime),
             HSDRatio = avg2(wrs, w => w.HSDRatio, w => w.Distance),
             Height = avg(wrs, w => w.Height),
-            StDev = wrs.Select(w => w.StDev).PowerMeanPowerByPosition(WaveStDevPower)
+            StDev = wrs.Select(w => w.StDev).RootMeanPowerByPosition(WaveStDevPower)
           };
           try {
             wa.Distance = pwmp(w => w.Distance, TrendHeightPerc);

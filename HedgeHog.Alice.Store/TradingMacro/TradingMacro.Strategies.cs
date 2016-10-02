@@ -354,10 +354,10 @@ namespace HedgeHog.Alice.Store {
     public TL TrendLinesPlumTrends { get { return IsTrendsEmpty(TrendLines3); } }
     public TL[] TrendLinesTrendsAll {
       get {
-        return new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesPlumTrends, TrendLinesRedTrends, TrendLinesBlueTrends };
+        return new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesPlumTrends, TrendLinesRedTrends, TrendLinesBlueTrends }.Where(TL.NotEmpty).ToArray();
       }
     }
-    public TL[] TrendLinesFlat { get { return TrendLinesTrendsAll.SkipLast(1).Where(tl => !tl.IsEmpty).ToArray(); } }
+    public TL[] TrendLinesFlat { get { return TrendLinesTrendsAll.SkipLast(1).ToArray(); } }
     public IEnumerable<TL> TradeTrendLines { get { return TradeTrendsInt.Select(i => TrendLinesTrendsAll[i]); } }
     public double TradeTrendLinesAvg(Func<TL, double> selector) {
       return TradeTrendLines.ToArray(selector)
@@ -366,7 +366,7 @@ namespace HedgeHog.Alice.Store {
         //.OrderBy(d=>d)
         //.Take(3)
         .DefaultIfEmpty(0)
-        .PowerMeanPower(0.5)
+        .RootMeanPower(0.5)
         .ToInt();
     }
     private double TradeTrendsPriceMax(TradingMacro tm) {
@@ -518,7 +518,7 @@ namespace HedgeHog.Alice.Store {
       var cm = Trades.Any() && CorridorCalcMethod != CorridorCalculationMethod.MinMax ? CorridorCalculationMethod.Height : CorridorCalcMethod;
       switch(cm) {
         case CorridorCalculationMethod.PowerMeanPower:
-          return doubles.StDevByRegressoin(coeffs).PowerMeanPower(doubles.StandardDeviation(), 100);
+          return doubles.StDevByRegressoin(coeffs).RootMeanPower(doubles.StandardDeviation(), 100);
         case CorridorCalculationMethod.Height:
           return doubles.StDevByRegressoin(coeffs);
         case CorridorCalculationMethod.MinMax:
@@ -526,7 +526,7 @@ namespace HedgeHog.Alice.Store {
           var mm = doubles.MinMaxByRegressoin2(coeffs).Select(d => d.Abs()).Max();
           return mm / 2;
         case CorridorCalculationMethod.RootMeanSquare:
-          return doubles.StDevByRegressoin(coeffs).RootMeanSquare(doubles.StandardDeviation());
+          return doubles.StDevByRegressoin(coeffs).SquareMeanRoot(doubles.StandardDeviation());
         default:
           throw new NotSupportedException(new { CorridorCalcMethod, Error = "Nosupported by CalcCorridorStDev" } + "");
       }

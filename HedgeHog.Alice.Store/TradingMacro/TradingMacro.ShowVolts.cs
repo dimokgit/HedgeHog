@@ -35,6 +35,10 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByTLH;
         case HedgeHog.Alice.VoltageFunction.TLA:
           return ShowVoltsByTLA;
+        case HedgeHog.Alice.VoltageFunction.TLAR:
+          return voltIndex == 0
+            ? MonoidsCore.ToFunc(() => ShowVoltsByTLAR(null, null))
+            : () => ShowVoltsByTLAR(GetVoltage2, SetVoltage2);
         case HedgeHog.Alice.VoltageFunction.PPM:
           return voltIndex == 0
             ? (Func<CorridorStatistics>)ShowVoltsByPPM
@@ -157,12 +161,24 @@ namespace HedgeHog.Alice.Store {
         TLsAngle().ForEach(v => ShowVolts(v, 2));
       return null;
     }
+    CorridorStatistics ShowVoltsByTLAR(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+      var useCalc = IsRatesLengthStable;
+      if(useCalc)
+        TLsAngleRatio().ForEach(v => ShowVolts(v, 2, getVolt, setVolt));
+      return null;
+    }
 
     private Singleable<double> TLsAngle() {
+      return new[] { TrendLinesTrendsAll }
+        .Where(tls => tls.Any())
+        .Select(a => a.AverageWeighted(tl => tl.Angle, tl => tl.Distance))
+        .AsSingleable();
+    }
+    private Singleable<double> TLsAngleRatio() {
       return new[] { TrendLinesTrendsAll.Where(TL.NotEmpty) }
-        .Where(tls=>tls.Any())
-        .Select(tls=> tls.Select(tl => tl.Angle))
-        .Select(a=> a.PowerMeanPower(2))
+        .Where(tls => tls.Any())
+        .Select(tls => tls.Select(tl => tl.Angle).ToList())
+        .Select(a => a.Permutation((a1, a2) => (a1-a2).Abs()).Average())
         .AsSingleable();
     }
 

@@ -125,7 +125,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     static bool IsTLFresh(TradingMacro tm, TL tl, double percentage = 1) {
-      var rateDate = tm.RatesArray[tm.RatesArray.Count - tl.Count.Div(percentage).ToInt()].StartDate;
+      var rateDate = tm.RatesArray[tm.RatesArray.Count - (tl.Count* percentage).ToInt()].StartDate;
       return !tl.IsEmpty && tl.EndDate > rateDate && tl.StartDate > tm.LastTrade.TimeClose;
 
     }
@@ -208,12 +208,17 @@ namespace HedgeHog.Alice.Store {
         Func<TL, DateTime[]> tlDates = tl => (tl.TimeSpan.TotalMinutes / 10).With(t => new[] { tl.StartDate.AddMinutes(-t), tl.EndDate.AddMinutes(t) });
         return () => (from tm in TradingMacroTrender()
                       from tr in TradingMacroTrader()
-                      let flats = tm.TrendLinesFlat
+
+                      let flats = tm.TrendLinesTrendsAll.Where(TL.NotEmpty).ToList()
+                      where flats.Any()
+
                       from tlMin in flats.MinByOrEmpty(tl => tl.StartDate).Take(1)
                       where tlMin.StartDate > tr.LastTrade.TimeClose
-                      from tlLast in flats.TakeLast(1)
-                      where IsTLFresh(tm, tlLast, 0.5)
-                      let sd = tlDates(tlLast)
+
+                      from tlFirst in flats.Take(1)
+                      where IsTLFresh(tm, tlFirst, 0.5)
+
+                      from sd in flats.TakeLast(1).Select(tlLast=> tlDates(tlLast))
                       select flats.SkipLast(1).Select(tlDates).All(se => se.Any(tld => tld.Between(sd[0], sd[1])))
                       )
                       .Where(ok => ok)
@@ -223,89 +228,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-
-    public TradeConditionDelegate E2EOk {
-      get {
-        Log = new Exception(new { E2EOk = new { EquinoxPerc } } + "");
-        return () => {
-          var tls = TradingMacroTrender(tm => EquinoxEdge(tm.EquinoxTrendLines)).SelectMany(tl => tl).ToArray();
-          _edgeDiffs = tls.SelectMany(tl => tl.EdgeDiff).OrderByDescending(e => e).Take(1);
-          return _edgeDiffs.Select(ed => TradeDirectionByTreshold(ed, EquinoxPerc) & TradeDirectionsAnglecounterwise(tls))
-          .SingleOrDefault();
-        };
-      }
-    }
-
-    [TradeConditionSetCorridor]
-    public TradeConditionDelegate E2EtOk {
-      get {
-        TradingMacroTrader(tm => Log = new Exception(new { E2EtOk = new { tm.EquinoxPerc, tm.PairIndex } } + "")).FirstOrDefault();
-        Func<TL, TradeDirections> run = tl => {
-          var buy = tl.EdgeHigh.Select(e => e.Item3);
-          var sell = tl.EdgeLow.Select(e => e.Item3);
-          var bs = buy.Zip(sell, (b, s) => new { b, s });
-          if(!bs.Any(x => CurrentPrice.Average.Between(x.s, x.b)))
-            return TradeDirections.None;
-          _edgeDiffs = tl.EdgeDiff;
-          buy.ForEach(b => BuyLevel.RateEx = b);
-          ;
-          sell.ForEach(s => SellLevel.RateEx = s);
-          BuySellLevels.ForEach(sr => sr.CanTradeEx = true);
-          return TradeDirections.Both;
-        };
-        Func<IEnumerable<TradeDirections>> run2 = () => TradingMacroTrader(tm => {
-          var tls = EquinoxEdge(tm.EquinoxTrendLines).ToArray();
-          tm._edgeDiffs = tls.SelectMany(tl2 => tl2.EdgeDiff).MaxByOrEmpty(d => d).Take(1);
-          var eds = (from tl in tls.OrderBy(tl => tl.EdgeDiff).Take(1)
-                     from edmax in tm._edgeDiffs
-                     where edmax < tm.EquinoxPerc
-                     where !HaveTrades()
-                     select tl)
-                     .ToArray();
-          return eds
-          .Select(run);
-        })
-        .SelectMany(tl => tl);
-        var def = MonoidsCore.ToFunc(() => (BuyLevel.CanTrade ? TradeDirections.Up : TradeDirections.None) |
-          (SellLevel.CanTrade ? TradeDirections.Down : TradeDirections.None));
-        return () => run2().DefaultIfEmpty(def()).Single();
-      }
-    }
-
-    [TradeConditionAsleep]
-    public TradeConditionDelegate E2EMOk {
-      get {
-        Func<TradingMacro, TL, IEnumerable<TL>> prevTL = (tm, tl)
-          => tm.TrendLinesTrendsAll.TakeWhile(tl0 => tl0.Count < tl.Count).TakeLast(1);
-
-        TradingMacroM1(tm => Log = new Exception(new { E2EMOk = new { tm.EquinoxPerc, tm.PairIndex } } + "")).FirstOrDefault();
-
-        var run = MonoidsCore.ToFunc(() => TradingMacroM1(tm => {
-          var tlss = EquinoxEdges(tm.EquinoxTrendLines);//.OrderByDescending(tl => tl.EdgeDiff).Take(1).ToArray();
-          IEnumerable<DateTime> sds = tm.WaveRanges.Take(2).Skip(1).Select(w => w.EndDate.AddMinutes(-(w.EndDate - w.StartDate).TotalMinutes / 2));
-          //tm._edgeDiffs = tls.Select(tl => tl.EdgeDiff);
-          Func<TL, int> priceDiff = tl => 100 - tl.PriceAvg2.Abs(CurrentPrice.Average).Min(tl.PriceAvg3.Abs(CurrentPrice.Average))
-            .ToPercent(tl.PriceAvgHeight);
-          var tls = (from tls0 in tlss
-                     from tl in tls0.OrderByDescending(tl => tl.EdgeDiff).Take(1)
-                     from sd in sds
-                     let ed = tl.EdgeHigh.Concat(tl.EdgeLow).Min(x => x.Item1)
-                     where ed > sd
-                     from diff in tl.EdgeDiff
-                       //let priceDiff = InPips(tl.PriceAvg2.Abs(CurrentPrice.Average).Min(tl.PriceAvg3.Abs(CurrentPrice.Average)))
-                     select new { tl, edp = 100 - diff.ToPercent(InPips(tl.PriceAvgHeight)), pdp = priceDiff(tl) }/*.EdgeDiff.Max(priceDiff / 3)*/)
-                     .AsSingleable();
-          //.ToArray();
-          return new { tm, tls };
-        }));
-
-        return () => run()
-        .Do(x => x.tm._edgeDiffs = x.tls.Select(tl => (double)tl.edp))
-        .SelectMany(x => x.tls, (x, tl) => new { x.tm, tl.edp, tl.pdp })
-        //.Where(x => IsTresholdAbsOk(x.pdp.Div(3), x.tm.EquinoxPerc))
-        .Select(x => TradeDirectionByTreshold(x.edp, x.tm.EquinoxPerc)).SingleOrDefault();
-      }
-    }
 
     public TradeConditionDelegateHide EdgesOk {
       get {
@@ -1366,14 +1288,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region Trends Ratios
-    private Func<IEnumerable<int>> EquinoxCalcFunc() {
-
-      Func<IEnumerable<int>> exec = () => EquinoxValues(tm => tm.EquinoxTrendLines)
-        .Select(t => t.Item1)
-        .Take(1);
-      return exec;
-    }
-
     private IEnumerable<Tuple<int, SuppRes>> EquinoxValues(
       Func<TradingMacro, IList<IEnumerable<TL>>> tlses,
       Func<IEnumerable<WaveRange>> waveRangesFunc = null) {
@@ -1403,10 +1317,10 @@ namespace HedgeHog.Alice.Store {
       IEnumerable<TL> trendLines,
       IEnumerable<Tuple<Func<TL, double>, SuppRes>> paFuncs,
       IEnumerable<WaveRange> waveRanges) {
-      var height = trendLines.Max(tl => tl.PriceAvg2 - tl.PriceAvg3);
+      var heights = trendLines.Select(tl => tl.PriceAvg2 - tl.PriceAvg3).MaxByOrEmpty();
       return EdgesDiff2(trendLines, paFuncs, waveRanges)
         .OrderBy(pa => pa.Item1)
-        .Select(x => Tuple.Create((x.Item1 / height).ToPercent(), x.Item2));
+        .SelectMany(x =>heights.Select(height=> Tuple.Create((x.Item1 / height).ToPercent(), x.Item2)));
     }
     private static IEnumerable<Tuple<double, SuppRes>> EdgesDiff2(
       IEnumerable<TL> trendLines,
@@ -1628,7 +1542,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     static IList<IEnumerable<TL>> OutsiderTLs(TradingMacro tm) {
-      return tm.OutsidersInt.ToArray(i => i.Select(i2 => tm.TrendLinesTrendsAll[i2]));
+      return tm.OutsidersInt.ToArray(i => i.SelectMany(i2 => tm.TrendLinesTrendsAll.Skip(i2).Take(1)));
     }
 
     #region Helpers
@@ -1640,13 +1554,6 @@ namespace HedgeHog.Alice.Store {
         });
     }
 
-    private void ScanTradeEquinox() {
-      EquinoxBasedMinMax(EquinoxTrendLines)
-        .ForEach(t => {
-          //_tradeEquinoxMin = t.Item1;
-          //_tradeEquinoxMax = t.Item2;
-        });
-    }
     private static IEnumerable<Tuple<double, double, int>> EquinoxBasedMinMax(IList<IEnumerable<TL>> tlss) {
       var tpl = EquinoxBasedTLs(tlss).ToArray();
       var tls = tpl.SelectMany(tl => tl.Item1).ToArray();
@@ -2037,26 +1944,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private IList<IEnumerable<TL>> EquinoxTrendLinesCalcAll(string indexesAll) {
-      return (from indexes in indexesAll.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
-              select EquinoxTrendLinesCalc(indexes))
-              .Where(tls => !tls.IsEmpty())
-              .ToArray();
-    }
-    private IEnumerable<TL> EquinoxTrendLinesCalc(string indexes) {
-      return (from i in SplitterInt(indexes)
-              let tl = TrendLinesTrendsAll[i]
-              where !tl.IsEmpty
-              select tl);
-    }
-
     private int _wwwBpa1;
 
-    IList<IEnumerable<TL>> EquinoxTrendLines {
-      get {
-        return EquinoxTrendLinesCalcAll(_equinoxCorridors);
-      }
-    }
 
     public IList<IList<int>> OutsidersInt {
       get { return SplitterInts(Outsiders); }

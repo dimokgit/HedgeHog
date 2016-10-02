@@ -130,12 +130,16 @@ namespace HedgeHog {
     /// <param name="other"></param>
     /// <returns></returns>
     public static double Percentage(this double v, double other) {
-      var max = Math.Max(Math.Abs(v), Math.Abs(other));
-      var min = Math.Min(Math.Abs(v), Math.Abs(other));
-      return (v - other).Abs() / max;
+      return (from va in new[] { v.Abs() }
+              from othera in new[] { other.Abs() }
+              select va.Abs(othera) / Math.Max(va, othera))
+              .Single();
+    }
+    public static double PercentageFast(this double v, double other) {
+      return v.Abs().With(va => other.Abs(), (va, oa) => va.Abs(oa) / Math.Max(va, oa));
     }
     public static int ToPercent(this double d) { return (int)Math.Round(d * 100, 0); }
-    public static int ToPercent(this double d,double other) { return (int)Math.Round(d.Percentage(other) * 100, 0); }
+    public static int ToPercent(this double d, double other) { return (int)Math.Round(d.Percentage(other) * 100, 0); }
 
     #region Between
     public static bool Between(this int value, double d1, double d2) {

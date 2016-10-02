@@ -6,8 +6,8 @@ using System.Threading.Tasks.Dataflow;
 using System.Threading.Tasks;
 using HedgeHog.Shared.Messages;
 using HedgeHog.Shared;
-using System.Reactive;
 using System.Windows.Threading;
+using System.Reactive;
 using System.Reactive.Concurrency;
 
 namespace HedgeHog {

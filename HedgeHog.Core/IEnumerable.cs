@@ -260,6 +260,8 @@ namespace HedgeHog {
 
     #region Yield
     public static U With<T, U>(this T v, Func<T, U> m) { return m(v); }
+    public static V With<T, U, V>(this T v, Func<T, U> m, Func<T, U, V> r) { return r(v, m(v)); }
+    public static void With<T>(this T v, Action<T> m) { m(v); }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<T> value) { return source.Concat(value.Yield()); }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, T value) { return source.Concat(value.Yield()); }
     public static IEnumerable<U> Yield<U>(this  Func<U> m) { yield return m(); }

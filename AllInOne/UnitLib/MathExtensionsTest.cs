@@ -27,12 +27,12 @@ namespace HedgeHog.Tests {
     [TestMethod()]
     public void RootMeanSquareTest() {
       double a = 5, b = 10;
-      Assert.AreEqual(7.9057, a.RootMeanSquare(b).Round(4));
-      Assert.AreEqual(7.2855, a.SquareMeanRoot(b).Round(4));
-      Assert.AreEqual(7.2855, a.PowerMeanPower(b, 2).Round(4));
-      Assert.AreEqual(7.2855, new[] { a, b }.PowerMeanPower(2).Round(4));
-      Assert.AreEqual(7.9057, new[] { a, b }.PowerMeanPower(.5).Round(4));
-      Assert.AreEqual(20.9067, new[] { 5.0, 7.0,100.0 }.PowerMeanPower(3).Round(4));
+      Assert.AreEqual(7.9057, a.SquareMeanRoot(b).Round(4));
+      Assert.AreEqual(7.2855, a.RootMeanSquare(b).Round(4));
+      Assert.AreEqual(7.2855, a.RootMeanPower(b, 2).Round(4));
+      Assert.AreEqual(7.2855, new[] { a, b }.RootMeanPower(2).Round(4));
+      Assert.AreEqual(7.9057, new[] { a, b }.RootMeanPower(.5).Round(4));
+      Assert.AreEqual(20.9067, new[] { 5.0, 7.0,100.0 }.RootMeanPower(3).Round(4));
     }
     [TestMethod()]
     public void DoSetsOverlapTest() {

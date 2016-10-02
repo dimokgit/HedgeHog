@@ -577,6 +577,9 @@ namespace HedgeHog {
       Sample
     }
 
+    public static double AverageWeighted<T>(this IList<T> values, Func<T,double> avg,Func<T,double> weight) {
+      return values.Select(v => avg(v) * weight(v)).Sum() / values.Sum(weight);
+    }
     public static double MeanAverage(this IList<double> values, int iterations = 3) {
       var valueLow = values.AverageByIterations(iterations, true);
       var valueHight = values.AverageByIterations(iterations, false);
@@ -585,22 +588,22 @@ namespace HedgeHog {
       return values.Except(valueLow.Concat(valueHight)).DefaultIfEmpty(values.Average()).Average();
     }
 
-    public static double RootMeanSquare(this double d1, double d2) { return Math.Sqrt((d1 * d1 + d2 * d2) / 2); }
-    public static double SquareMeanRoot(this double d1, double d2) { return Math.Pow((Math.Sqrt(d1) + Math.Sqrt(d2)) / 2, 2); }
-    public static double PowerMeanPower(this double d1, double d2, double power) { return Math.Pow((Math.Pow(d1, 1 / power) + Math.Pow(d2, 1 / power)) / 2, power); }
-    public static double PowerMeanPower(this IEnumerable<int> source, double power) {
-      return source.Select(i => (double)i).PowerMeanPower(power);
+    public static double SquareMeanRoot(this double d1, double d2) { return Math.Sqrt((d1 * d1 + d2 * d2) / 2); }
+    public static double RootMeanSquare(this double d1, double d2) { return Math.Pow((Math.Sqrt(d1) + Math.Sqrt(d2)) / 2, 2); }
+    public static double RootMeanPower(this double d1, double d2, double power) { return Math.Pow((Math.Pow(d1, 1 / power) + Math.Pow(d2, 1 / power)) / 2, power); }
+    public static double RootMeanPower(this IEnumerable<int> source, double power) {
+      return source.Select(i => (double)i).RootMeanPower(power);
     }
     public static double AverageByPosition(this IList<double> source) {
       double l = source.Count;
       var weights = Enumerable.Range(1, source.Count).Select(w => l / w).ToArray();
       return source.Zip(weights, (s, w) => s * w).Sum() / weights.Sum();
     }
-    public static double PowerMeanPower(this IEnumerable<double> source, double power) {
+    public static double RootMeanPower(this IEnumerable<double> source, double power) {
       var avg = source.Select(d => Math.Pow(d.Abs(), 1 / power) * d.Sign()).Average();
       return Math.Pow(avg.Abs(), power)*avg.Sign();
     }
-    public static double PowerMeanPowerByPosition(this IEnumerable<double> source, double power) {
+    public static double RootMeanPowerByPosition(this IEnumerable<double> source, double power) {
       var avg = source.Select(d => Math.Pow(d, 1 / power)).ToList().AverageByPosition();
       return Math.Pow(avg, power);
     }

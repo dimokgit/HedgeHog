@@ -639,6 +639,7 @@ namespace HedgeHog.Bars {
         EmptyRate = new Rate { Trends = Empty };
       }
       public string Color { get; set; }
+      public double Distance { get; set; }
       public bool IsEmpty { get { return Count == 0; } }
 
       public double Slope { get; set; }
