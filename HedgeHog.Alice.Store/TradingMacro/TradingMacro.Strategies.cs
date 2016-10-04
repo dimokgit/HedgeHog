@@ -354,7 +354,10 @@ namespace HedgeHog.Alice.Store {
     public TL TrendLinesPlumTrends { get { return IsTrendsEmpty(TrendLines3); } }
     public TL[] TrendLinesTrendsAll {
       get {
-        return new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesPlumTrends, TrendLinesRedTrends, TrendLinesBlueTrends };
+        var ints = new[] { TrendLime, TrendGreen, TrendPlum,TrendRed, TrendBlue }
+        .Select(string.IsNullOrWhiteSpace);
+        var trends= new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesPlumTrends, TrendLinesRedTrends, TrendLinesBlueTrends };
+        return ints.Zip(trends, Tuple.Create).Where(t => !t.Item1).Select(t => t.Item2).ToArray();
       }
     }
     public TL[] TrendLinesFlat { get { return TrendLinesTrendsAll.SkipLast(1).ToArray(); } }

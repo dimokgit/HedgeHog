@@ -36,7 +36,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     int[] TrendInts(IEnumerable<int> ints) {
-      return ints.Concat(new[] { -1 }).Take(2).ToArray();
+      return ints.Concat(new[] { 0, -1 }).Take(2).ToArray();
     }
 
     string _tradeTrends = "0,1,2,3";
@@ -63,7 +63,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     string _trendPlum = "1,3";
-    int[] TrendPlumInt(string s = null) { return TrendInts((s ?? _trendPlum).Split(',').Select(int.Parse)); }
+    int[] TrendPlumInt(string s = null) { return TrendInts((s ?? _trendPlum).Splitter(',').Select(int.Parse)); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
@@ -72,16 +72,12 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_trendPlum == value)
           return;
-        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        if(ints.Length == 0)
-          throw new Exception(new { TrendPlum = value, Message = "Invalid value" } + "");
-        TrendPlumInt(value);
-        _trendPlum = value;
+        TrendPlumInt(_trendPlum = value);
       }
     }
 
     string _trendLime = "0,1";
-    int[] TrendLimeInt(string s = null) { return TrendInts((s ?? _trendLime).Split(',').Select(int.Parse)); }
+    int[] TrendLimeInt(string s = null) { return TrendInts((s ?? _trendLime).Splitter(',').Select(int.Parse)); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
@@ -90,16 +86,12 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_trendLime == value)
           return;
-        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        if(ints.Length == 0)
-          throw new Exception(new { TrendLime = value, Message = "Invalid value" } + "");
-        TrendLimeInt(value);
-        _trendLime = value;
+        TrendLimeInt(_trendLime = value);
       }
     }
 
     string _trendGreen = "0,2";
-    int[] TrendGreenInt(string s = null) { return TrendInts((s ?? _trendGreen).Split(',').Select(int.Parse)); }
+    int[] TrendGreenInt(string s = null) { return TrendInts((s ?? _trendGreen).Splitter(',').Select(int.Parse)); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
@@ -108,16 +100,12 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_trendGreen == value)
           return;
-        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        if(ints.Length == 0)
-          throw new Exception(new { TrendGreen = value, Message = "Invalid value" } + "");
-        TrendGreenInt(value);
-        _trendGreen = value;
+        TrendGreenInt(_trendGreen = value);
       }
     }
 
     string _trendRed = "0,4";
-    int[] TrendRedInt(string s = null) { return TrendInts((s ?? _trendRed).Split(',').Select(int.Parse)); }
+    int[] TrendRedInt(string s = null) { return TrendInts((s ?? _trendRed).Splitter(',').Select(int.Parse)); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
@@ -126,16 +114,12 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_trendRed == value)
           return;
-        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        if(ints.Length == 0)
-          throw new Exception(new { TrendRed = value, Message = "Invalid value" } + "");
-        TrendRedInt(value);
-        _trendRed = value;
+        TrendRedInt(_trendRed = value);
       }
     }
 
     string _trendBlue = "0,7";
-    int[] TrendBlueInt(string s = null) { return TrendInts((s ?? _trendBlue).Split(',').Select(int.Parse)); }
+    int[] TrendBlueInt(string s = null) { return TrendInts((s ?? _trendBlue).Splitter(',').Select(int.Parse)); }
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [Description("0(start),2(count)")]
@@ -144,11 +128,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_trendBlue == value)
           return;
-        var ints = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-        if(ints.Length == 0)
-          throw new Exception(new { TrendBlue = value, Message = "Invalid value" } + "");
-        TrendBlueInt(value);
-        _trendBlue = value;
+        TrendBlueInt(_trendBlue = value);
       }
     }
   }

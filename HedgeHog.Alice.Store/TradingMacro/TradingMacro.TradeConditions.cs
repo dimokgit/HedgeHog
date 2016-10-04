@@ -242,7 +242,13 @@ namespace HedgeHog.Alice.Store {
                       from tlFirst in flats.Take(1)
                       where IsTLFresh(tm, tlFirst, 0.5)
 
-                      select flats.SkipLast(1).Reverse().Pairwise((tl1, tl2) => tl2.EndDate > tl1.EndDate).All(b => b)
+                      let datesOk = flats.Reverse().Pairwise((tl1, tl2) => tl2.StartDate.Between(tl1.StartDate, tl1.EndDate))
+                      let chainOk = flats.Reverse()
+                        .Pairwise((tl1, tl2)
+                        => tl2.PriceMax.Concat(tl2.PriceMin).Average().With(avg2
+                        => tl1.PriceMax.Zip(tl1.PriceMin).All(t
+                        => avg2.Between(t.Item1, t.Item2))))
+                      select datesOk.Concat(chainOk).All(b => b)
                       )
                       .Where(ok => ok)
                       .Select(_ => TradeDirections.Both)
