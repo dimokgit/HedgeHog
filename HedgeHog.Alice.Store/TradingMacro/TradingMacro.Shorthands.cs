@@ -102,9 +102,6 @@ namespace HedgeHog.Alice.Store {
         : CalculateTakeProfit(1));
     }
 
-    public void WrapCurrentPriceInCorridor(Rate.TrendLevels tls) {
-      WrapCurrentPriceInCorridor(tls.Count);
-    }
     public void WrapCurrentPriceInCorridor(int count) {
       UseRates(ra => ra.GetRange(ra.Count - count, count)).ForEach(rates => {
         if(rates.Any()) {

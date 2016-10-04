@@ -171,6 +171,7 @@ namespace HedgeHog.Alice.Store {
     private Singleable<double> TLsAngle() {
       return new[] { TrendLinesTrendsAll }
         .Where(tls => tls.Any())
+        .Where(tls => tls.All(TL.NotEmpty))
         .Select(a => a.AverageWeighted(tl => tl.Angle, tl => tl.Distance))
         .AsSingleable();
     }
@@ -299,8 +300,6 @@ namespace HedgeHog.Alice.Store {
           return () => ScanRatesLengthByM1WaveAvg(true, tm => new[] { tm.WaveRangeAvg });
         case RatesLengthFunction.M1WaveAvg3:
           return () => ScanRatesLengthByM1WaveAvg(true, tm => new[] { tm.WaveRangeAvg, tm.WaveRangeSum });
-        case RatesLengthFunction.M1CorrsAvg:
-          return ScanRatesLengthByM1CorridorsAvg;
         default:
           throw new NotImplementedException(new { RatesLengthFunction = RatesLengthBy, Error = "Not implemented" } + "");
       }

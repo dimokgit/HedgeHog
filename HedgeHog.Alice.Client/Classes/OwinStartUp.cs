@@ -26,6 +26,7 @@ using System.Reflection;
 using Westwind.Web.WebApi;
 using HedgeHog.Bars;
 using Microsoft.Owin.Security;
+using Microsoft.AspNet.SignalR.Hubs;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
@@ -181,7 +182,7 @@ namespace HedgeHog.Alice.Client {
       //});
       // SignalR
       try {
-        //GlobalHost.HubPipeline.AddModule(;
+        GlobalHost.HubPipeline.AddModule(new MyHubPipelineModule());
         var hubConfiguration = new HubConfiguration();
         hubConfiguration.EnableDetailedErrors = true;
         app.MapSignalR(hubConfiguration);
@@ -195,6 +196,18 @@ namespace HedgeHog.Alice.Client {
       return new { User = user.Identity.Name, user.Identity.AuthenticationType, httpListener().AuthenticationSchemes, IsTrader = user.IsInRole("Traders") }.ToJson();
     }
   }
+
+  public class MyHubPipelineModule : HubPipelineModule {
+    protected override void OnIncomingError(ExceptionContext exceptionContext, IHubIncomingInvokerContext invokerContext) {
+      MethodDescriptor method = invokerContext.MethodDescriptor;
+      var args = string.Join(", ", invokerContext.Args);
+      var log = $"{method.Hub.Name}.{method.Name}({args}) threw the following uncaught exception: {exceptionContext.Error}";
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new LogMessage(log)));
+
+      base.OnIncomingError(exceptionContext, invokerContext);
+    }
+  }
+
   [BasicAuthenticationFilter]
   public class MyHub : Hub {
     class SendChartBuffer : AsyncBuffer<SendChartBuffer, Action> {
@@ -494,10 +507,6 @@ namespace HedgeHog.Alice.Client {
       UseTradingMacro(pair, tm => tm.WrapTradeInCorridor());
     }
     [BasicAuthenticationFilter]
-    public void WrapCurrentPriceInCorridor(string pair, int corridorIndex) {
-      UseTradingMacro(pair, tm => tm.WrapCurrentPriceInCorridor(tm.TrendLinesTrendsAll[corridorIndex]));
-    }
-    [BasicAuthenticationFilter]
     public void Buy(string pair) {
       UseTradingMacro(pair, tm => tm.OpenTrade(true, tm.LotSizeByLossBuy, "web"));
     }
@@ -787,12 +796,12 @@ namespace HedgeHog.Alice.Client {
     }
 
     private IEnumerable<TradingMacro> GetTradingMacros(string pair) {
-      return remoteControl.Value?
+      return remoteControl?.Value?
         .TradingMacrosCopy
         .Where(tm => tm.IsActive && tm.PairPlain == pair)
         .OrderBy(tm => tm.TradingGroup)
         .ThenBy(tm => tm.PairIndex)
-        .AsEnumerable()  
+        .AsEnumerable()
         ?? new TradingMacro[0];
     }
 

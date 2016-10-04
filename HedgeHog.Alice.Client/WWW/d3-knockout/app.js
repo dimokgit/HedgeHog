@@ -463,7 +463,6 @@
       askPriceChanged();
     }.bind(this);
     this.wrapTradeInCorridor = wrapTradeInCorridor;
-    this.wrapCurrentPriceInCorridor = function (corridorIndex) { serverCall("wrapCurrentPriceInCorridor", [pair,corridorIndex], "Close levels were reset"); };
     this.moveCorridorWavesCount = moveCorridorWavesCount;
     this.tradeConditions = ko.observableArray([]);
     var closedTrades = [];

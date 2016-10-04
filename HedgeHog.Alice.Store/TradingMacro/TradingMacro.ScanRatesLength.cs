@@ -303,16 +303,6 @@ namespace HedgeHog.Alice.Store {
         Log = exc;
       }
     }
-    void ScanRatesLengthByM1CorridorsAvg() {
-      if(BarPeriod != BarsPeriodType.t1)
-        throw new Exception("ScanRatesLengthByM1Wave is only supported for BarsPeriodType." + BarsPeriodType.t1);
-      (from tm in TradingMacroOther()
-       let distance = tm.TrendLinesTrendsAll.Skip(0).Select(tl => tl.StDev * 4).DefaultIfEmpty().Average()
-       select UseRatesInternal(rates => rates.BackwardsIterator().Distances(_priceAvg).SkipWhile(t => t.Item2 < distance).Count()) into counts
-       from count in counts
-       select count
-       ).ForEach(count => BarsCountCalc = count.Max(BarsCount));
-    }
     IEnumerable<int> BarsCountByM1() {
       return TradingMacroOther()
         .SelectMany(tm => tm.WaveRanges.Take(1))

@@ -816,7 +816,7 @@ namespace HedgeHog {
       }
     }
     public void SetTrendLines1(IList<Rate> rates) {
-      if (!rates.Any()) return;
+      if (!(rates?.Any()).GetValueOrDefault()) return;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
         TrendLine2_1 = TrendLine3_1 = rates;
       });

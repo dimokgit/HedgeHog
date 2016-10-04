@@ -125,7 +125,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     static bool IsTLFresh(TradingMacro tm, TL tl, double percentage = 1) {
-      var rateDate = tm.RatesArray[tm.RatesArray.Count - (tl.Count* percentage).ToInt()].StartDate;
+      var rateDate = tm.RatesArray[tm.RatesArray.Count - (tl.Count * percentage).ToInt()].StartDate;
       return !tl.IsEmpty && tl.EndDate > rateDate && tl.StartDate > tm.LastTrade.TimeClose;
 
     }
@@ -209,8 +209,8 @@ namespace HedgeHog.Alice.Store {
         return () => (from tm in TradingMacroTrender()
                       from tr in TradingMacroTrader()
 
-                      let flats = tm.TrendLinesTrendsAll.Where(TL.NotEmpty).ToList()
-                      where flats.Any()
+                      where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
+                      let flats = tm.TrendLinesTrendsAll
 
                       from tlMin in flats.MinByOrEmpty(tl => tl.StartDate).Take(1)
                       where tlMin.StartDate > tr.LastTrade.TimeClose
@@ -218,7 +218,7 @@ namespace HedgeHog.Alice.Store {
                       from tlFirst in flats.Take(1)
                       where IsTLFresh(tm, tlFirst, 0.5)
 
-                      from sd in flats.TakeLast(1).Select(tlLast=> tlDates(tlLast))
+                      from sd in flats.TakeLast(1).Select(tlLast => tlDates(tlLast))
                       select flats.SkipLast(1).Select(tlDates).All(se => se.Any(tld => tld.Between(sd[0], sd[1])))
                       )
                       .Where(ok => ok)
@@ -227,6 +227,30 @@ namespace HedgeHog.Alice.Store {
                       .Aggregate((td1, td2) => td1 | td2);
       }
     }
+
+    public TradeConditionDelegate TLF2Ok {
+      get {
+        return () => (from tm in TradingMacroTrender()
+                      from tr in TradingMacroTrader()
+
+                      where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
+                      let flats = tm.TrendLinesTrendsAll
+
+                      from tlMin in flats.MinByOrEmpty(tl => tl.StartDate).Take(1)
+                      where tlMin.StartDate > tr.LastTrade.TimeClose
+
+                      from tlFirst in flats.Take(1)
+                      where IsTLFresh(tm, tlFirst, 0.5)
+
+                      select flats.SkipLast(1).Reverse().Pairwise((tl1, tl2) => tl2.EndDate > tl1.EndDate).All(b => b)
+                      )
+                      .Where(ok => ok)
+                      .Select(_ => TradeDirections.Both)
+                      .DefaultIfEmpty()
+                      .Aggregate((td1, td2) => td1 | td2);
+      }
+    }
+
 
 
     public TradeConditionDelegateHide EdgesOk {
@@ -1320,7 +1344,7 @@ namespace HedgeHog.Alice.Store {
       var heights = trendLines.Select(tl => tl.PriceAvg2 - tl.PriceAvg3).MaxByOrEmpty();
       return EdgesDiff2(trendLines, paFuncs, waveRanges)
         .OrderBy(pa => pa.Item1)
-        .SelectMany(x =>heights.Select(height=> Tuple.Create((x.Item1 / height).ToPercent(), x.Item2)));
+        .SelectMany(x => heights.Select(height => Tuple.Create((x.Item1 / height).ToPercent(), x.Item2)));
     }
     private static IEnumerable<Tuple<double, SuppRes>> EdgesDiff2(
       IEnumerable<TL> trendLines,

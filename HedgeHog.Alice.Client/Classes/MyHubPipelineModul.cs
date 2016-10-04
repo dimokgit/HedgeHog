@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Client {
-  public class MyHubPipelineModule : HubPipelineModule {
+  public class MyHubPipelineModule2 : HubPipelineModule {
     protected override void OnIncomingError(ExceptionContext exceptionContext, IHubIncomingInvokerContext invokerContext) {
       dynamic caller = invokerContext.Hub.Clients.Caller;
       caller.ExceptionHandler(exceptionContext.Error.Message);
