@@ -12,6 +12,19 @@ namespace HedgeHog.Tests {
     [TestClass]
     public class EnumerableExTest {
       [TestMethod]
+      public void Singleable() {
+        var a0 = new int[0].AsSingleable();
+        Assert.AreEqual(0, a0.Count());
+        var a1 = new[] { 1 }.AsSingleable();
+        Assert.AreEqual(1, a1.Count());
+        try {
+          var a2 = new[] { 1, 2 }.AsSingleable().Count();
+        } catch(InvalidOperationException) {
+          return;
+        }
+        Assert.Fail("InvalidOperationException has not been caught.");
+      }
+      [TestMethod]
       public void MaxBy() {
         var a = new[] { 1, 2 };
         a.MaxBy(i => i).ForEach(i => Assert.AreEqual(2, i));
