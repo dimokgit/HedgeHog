@@ -11,6 +11,7 @@ using System.Reactive.Concurrency;
 using System.Reflection;
 using ReactiveUI;
 using static HedgeHog.MonoidsCore;
+using static HedgeHog.IEnumerableCore;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -264,7 +265,7 @@ namespace HedgeHog.Alice.Store {
 
       #region Funcs
 
-      Func<TradeLevelsPreset,double, Func<Rate.TrendLevels, Rate.TrendLevels>> tagTL = (pl,dist) => tl => {
+      Func<TradeLevelsPreset, double, Func<Rate.TrendLevels, Rate.TrendLevels>> tagTL = (pl, dist) => tl => {
         tl.Color = pl + "";
         tl.Distance = dist;
         return tl;
@@ -275,7 +276,7 @@ namespace HedgeHog.Alice.Store {
         var digits = Digits();
         var grouped2 = grouped(skip).ToList();
         if(grouped2.Count <= 1)
-          return anonDef;
+          return new[] { anonDef }.Take(0).AsSingleable();
         var distances = grouped2.Distances(x => x.a).Select((t, i) => new { t, i }).ToList();
         var distChunc = distanceTotal / 100.0 * perc;
         var res = Partitioner.Create(Enumerable.Range(0, distances.Count).ToArray(), true)
@@ -298,8 +299,9 @@ namespace HedgeHog.Alice.Store {
           //var mines = new[] { i, i2 }.Select(i0 => maxer(grouped2[i0].rmm[0])).ToArray();
           //var maxes = new[] { i, i2 }.Select(i0 => maxer(grouped2[i0].rmm[1])).ToArray();
           var height = (maxer(max).Max(maxer(grouped2[i].rmm[1]), maxer(grouped2[i2].rmm[1]))
-          - miner(min).Min(miner(grouped2[i].rmm[0]), miner(grouped2[i2].rmm[0]))).Round(digits);
-          return new { start = start + skip, count = end - start, height, isOut, i, i2,dist = distChunc };
+          - miner(min).Min(miner(grouped2[i].rmm[0]), miner(grouped2[i2].rmm[0])))
+          .Round(digits);
+          return new { start = start + skip, count = end - start, height, isOut, i, i2, dist = distChunc };
         })
         .TakeWhile(x => !x.isOut).AsEnumerable();
 
@@ -312,37 +314,42 @@ namespace HedgeHog.Alice.Store {
         : res.OrderByDescending(x => x.start);
 
         return res
-        .OrderByDescending(x => x.start)
-        //.OrderBy(x => grouped2.GetRange(x.i, x.i2 - x.i).LinearSlope(y => y.a).Abs())
         .Take(1)
-        .Select(x => def(CalcTrendLines(x.start, x.count, tagTL(pl,x.dist)), x.start, x.count,x.dist))
-        .DefaultIfEmpty(anonDef)
-        .Single();
+        .Select(x => def(CalcTrendLines(x.start, x.count, tagTL(pl, x.dist)), x.start, x.count, x.dist))
+        .AsSingleable();
       });
 
       #endregion
 
 
       int? skipFirst = null;
-      Func<int, bool, TradeLevelsPreset, int, IList<Rate>> calcTrendLines = (start, isMin, pl, skip) => {
-        var x = bs(start, pl, isMin, skip);
-        if(!skipFirst.HasValue || skipAll) {
-          skipFirst = x.skip;
-        }
-        return x.rates;
+      Func<int, bool, TradeLevelsPreset, int, Singleable<IList<Rate>>> calcTrendLines = (start, isMin, pl, skip) => {
+        return bs(start, pl, isMin, skip)
+        .Do(x => {
+          if(!skipFirst.HasValue || skipAll) {
+            skipFirst = x.skip;
+          }
+        })
+        .Select(x => x.rates)
+        .AsSingleable();
       };
+
       TrendBlueInt().Pairwise((s, c) => new { s })
-        .Select(p => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, 0))
+        .SelectMany(p => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, 0))
         .ForEach(tl => TrendLines2 = Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc));
 
-      Action<int[], Action<Lazy<IList<Rate>>>, Lazy<IList<Rate>>, TradeLevelsPreset> doTL = (ints, tl, tlDef, color) =>
-        ints.Pairwise((s, c) => new { s, skip = skipFirst.Value })
-        .ForEach(p => calcTrendLines(p.s, true, color, p.skip).With(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc))));
+      Func<int[], Action<Lazy<IList<Rate>>>, Lazy<IList<Rate>>, TradeLevelsPreset,Singleable<IList<Rate>>> doTL = (ints, tl, tlDef, color) 
+        => ints.Pairwise((s, c) => new { s, skip = skipFirst.Value })
+        .SelectMany(p => calcTrendLines(p.s, true, color, p.skip))
+        .Do(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc)))
+        .AsSingleable();
 
-      doTL(TrendRedInt(), tl => TrendLines = tl, TrendLines, TradeLevelsPreset.Red);
-      doTL(TrendPlumInt(), tl => TrendLines3 = tl, TrendLines3, TradeLevelsPreset.Plum);
-      doTL(TrendGreenInt(), tl => TrendLines1 = tl, TrendLines1, TradeLevelsPreset.Green);
-      doTL(TrendLimeInt(), tl => TrendLines0 = tl, TrendLines0, TradeLevelsPreset.Lime);
+      (from tlr in doTL(TrendRedInt(), tl => TrendLines = tl, TrendLines, TradeLevelsPreset.Red)
+       from tlp in doTL(TrendPlumInt(), tl => TrendLines3 = tl, TrendLines3, TradeLevelsPreset.Plum)
+       from tlg in doTL(TrendGreenInt(), tl => TrendLines1 = tl, TrendLines1, TradeLevelsPreset.Green)
+       from tll in doTL(TrendLimeInt(), tl => TrendLines0 = tl, TrendLines0, TradeLevelsPreset.Lime)
+       select true
+       ).Count();
 
       var ratesForCorr = _ratesArrayCoeffs.Take(1)
         .Select(_ => {

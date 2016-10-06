@@ -8,15 +8,25 @@ using System.Threading.Tasks;
 namespace HedgeHog {
   public static class IEnumerableCore {
     public class Singleable<T> : IEnumerable<T> {
-      private IEnumerable<T> _source;
+      private readonly IEnumerable<T> source;
       public Singleable(IEnumerable<T> sourse) {
-        this._source = sourse;
+        source = sourse;
       }
       IEnumerator IEnumerable.GetEnumerator() {
-        return _source.GetEnumerator();
+        return MyEnumerator();
       }
       IEnumerator<T> IEnumerable<T>.GetEnumerator() {
-        return _source.GetEnumerator();
+        return MyEnumerator();
+      }
+
+      IEnumerator<T> MyEnumerator() {
+        if(source == null)
+          throw new ArgumentNullException(nameof(source));
+        var e = source.GetEnumerator();
+        if(e.MoveNext())
+          yield return e.Current;
+        if(e.MoveNext())
+          throw new InvalidOperationException("Singleable has more then 1 element.");
       }
     }
 

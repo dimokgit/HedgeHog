@@ -126,7 +126,8 @@ namespace HedgeHog.Alice.Store {
 
     static bool IsTLFresh(TradingMacro tm, TL tl, double percentage = 1) {
       var index = tm.RatesArray.Count - (tl.Count * percentage).ToInt();
-      if(index >= tm.RatesArray.Count) return false;
+      if(index >= tm.RatesArray.Count)
+        return false;
       var rateDate = tm.RatesArray[index].StartDate;
       return !tl.IsEmpty && tl.EndDate > rateDate && tl.StartDate > tm.LastTrade.TimeClose;
 
@@ -206,6 +207,10 @@ namespace HedgeHog.Alice.Store {
       tl.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
       tl.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
     }
+    void SetBSfromTLR(TL tl) {
+      tl.RateMax.ForEach(max => SellLevel.RateEx = max.AskHigh);
+      tl.RateMin.ForEach(min => BuyLevel.RateEx = min.BidLow);
+    }
 
     public TradeConditionDelegate TLFOk {
       get {
@@ -238,22 +243,26 @@ namespace HedgeHog.Alice.Store {
         TradingMacroTrader(tm => Log = new Exception(new { TLF2Ok = new { tm.WavesRsdPerc } } + "")).Count();
         return () => (from tm in TradingMacroTrender()
                       from tr in TradingMacroTrader()
-
-                      let flats = tm.TrendLinesTrendsAll.Where(TL.NotEmpty).ToArray()
-
-                      from tlMin in flats.OrderBy(tl => tl.StartDate).Take(1)
+                      // No empty TLs
+                      where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
+                      let flats = tm.TrendLinesTrendsAll
+                      // No recent trade
+                      from tlMin in flats.SkipLast(1).OrderBy(tl => tl.StartDate).Take(1)
                       where tlMin.StartDate > tr.LastTrade.TimeClose
-
-                      let fresh = flats.Where(tl => IsTLFresh(tm, tl, WavesRsdPerc/100.0)).ToList()
-                      where fresh.Count > 2
-
+                      // All lined up forwards
+                      where flats.SkipLast(1).Pairwise().All(t => t.Item1.EndDate > t.Item2.EndDate)
+                      // First TL is fresh
+                      where flats.Take(1).Any(tl => IsTLFresh(tm, tl, WavesRsdPerc / 100.0))
+                      // Lime is outside Blue
                       from bigMM in flats.TakeLast(1).SelectMany(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise())
-                      let chainOk = fresh.Where(tl
+                      where flats.Take(1).Where(tl
                          => tl.PriceMax.Concat(tl.PriceMin).Any(p => !p.Between(bigMM.Item1, bigMM.Item2)))
-                      select chainOk.ToArray()
+                         .Any()
+                      select flats.Take(1)
                       )
-                      .Where(ok => ok.Length > 2)
-                      .Do(tls => tls.OrderBy(tl => tl.PriceHeight.SingleOrDefault()).TakeLast(1).ForEach(SetBSfromTL))
+                      .Concat()
+                      .AsSingleable()
+                      .Do(SetBSfromTLR)
                       .Select(_ => TradeDirections.Both)
                       .LastOrDefault();
       }
