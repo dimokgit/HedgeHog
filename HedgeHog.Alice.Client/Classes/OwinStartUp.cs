@@ -202,7 +202,7 @@ namespace HedgeHog.Alice.Client {
       MethodDescriptor method = invokerContext.MethodDescriptor;
       var args = string.Join(", ", invokerContext.Args);
       var log = $"{method.Hub.Name}.{method.Name}({args}) threw the following uncaught exception: {exceptionContext.Error}";
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new LogMessage(log)));
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(log));
 
       base.OnIncomingError(exceptionContext, invokerContext);
     }

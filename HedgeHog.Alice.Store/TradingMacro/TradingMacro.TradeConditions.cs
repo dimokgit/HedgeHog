@@ -125,7 +125,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     static bool IsTLFresh(TradingMacro tm, TL tl, double percentage = 1) {
-      var rateDate = tm.RatesArray[tm.RatesArray.Count - (tl.Count * percentage).ToInt()].StartDate;
+      var index = tm.RatesArray.Count - (tl.Count * percentage).ToInt();
+      if(index >= tm.RatesArray.Count) return false;
+      var rateDate = tm.RatesArray[index].StartDate;
       return !tl.IsEmpty && tl.EndDate > rateDate && tl.StartDate > tm.LastTrade.TimeClose;
 
     }
@@ -192,15 +194,17 @@ namespace HedgeHog.Alice.Store {
         .Where(x => x.td.HasAny())
         .OrderByDescending(x => x.tl.EndDate)
         .Take(1)
-        .Do(x => {
-          x.tl.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
-          x.tl.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
-        })
+        .Do(x => SetBSfromTL(x.tl))
         .Select(x => x.td)
         .DefaultIfEmpty()
         .Single();
 
       }
+    }
+
+    void SetBSfromTL(TL tl) {
+      tl.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
+      tl.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
     }
 
     public TradeConditionDelegate TLFOk {
@@ -228,32 +232,30 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [TradeConditionSetCorridor]
     public TradeConditionDelegate TLF2Ok {
       get {
+        TradingMacroTrader(tm => Log = new Exception(new { TLF2Ok = new { tm.WavesRsdPerc } } + "")).Count();
         return () => (from tm in TradingMacroTrender()
                       from tr in TradingMacroTrader()
 
-                      where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
-                      let flats = tm.TrendLinesTrendsAll
+                      let flats = tm.TrendLinesTrendsAll.Where(TL.NotEmpty).ToArray()
 
-                      from tlMin in flats.MinByOrEmpty(tl => tl.StartDate).Take(1)
+                      from tlMin in flats.OrderBy(tl => tl.StartDate).Take(1)
                       where tlMin.StartDate > tr.LastTrade.TimeClose
 
-                      from tlFirst in flats.Take(1)
-                      where IsTLFresh(tm, tlFirst, 0.5)
+                      let fresh = flats.Where(tl => IsTLFresh(tm, tl, WavesRsdPerc/100.0)).ToList()
+                      where fresh.Count > 2
 
-                      let datesOk = flats.Reverse().Pairwise((tl1, tl2) => tl2.StartDate.Between(tl1.StartDate, tl1.EndDate))
-                      let chainOk = flats.Reverse()
-                        .Pairwise((tl1, tl2)
-                        => tl2.PriceMax.Concat(tl2.PriceMin).Average().With(avg2
-                        => tl1.PriceMax.Zip(tl1.PriceMin).All(t
-                        => avg2.Between(t.Item1, t.Item2))))
-                      select datesOk.Concat(chainOk).All(b => b)
+                      from bigMM in flats.TakeLast(1).SelectMany(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise())
+                      let chainOk = fresh.Where(tl
+                         => tl.PriceMax.Concat(tl.PriceMin).Any(p => !p.Between(bigMM.Item1, bigMM.Item2)))
+                      select chainOk.ToArray()
                       )
-                      .Where(ok => ok)
+                      .Where(ok => ok.Length > 2)
+                      .Do(tls => tls.OrderBy(tl => tl.PriceHeight.SingleOrDefault()).TakeLast(1).ForEach(SetBSfromTL))
                       .Select(_ => TradeDirections.Both)
-                      .DefaultIfEmpty()
-                      .Aggregate((td1, td2) => td1 | td2);
+                      .LastOrDefault();
       }
     }
 
