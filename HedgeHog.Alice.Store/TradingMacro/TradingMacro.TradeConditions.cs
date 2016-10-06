@@ -247,7 +247,7 @@ namespace HedgeHog.Alice.Store {
                       where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
                       let flats = tm.TrendLinesTrendsAll
                       // No recent trade
-                      from tlMin in flats.SkipLast(1).OrderBy(tl => tl.StartDate).Take(1)
+                      from tlMin in flats.OrderBy(tl => tl.StartDate).Take(1)
                       where tlMin.StartDate > tr.LastTrade.TimeClose
                       // All lined up forwards
                       where flats.SkipLast(1).Pairwise().All(t => t.Item1.EndDate > t.Item2.EndDate)
