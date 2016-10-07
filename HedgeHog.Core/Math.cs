@@ -153,6 +153,9 @@ namespace HedgeHog {
     public static bool Between(this DateTime value, DateTimeOffset d1, DateTimeOffset d2) {
       return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
     }
+    public static bool Between(this double value, Tuple<double,double> tuple) {
+      return value.Between(tuple.Item1, tuple.Item2); 
+    }
     public static bool Between(this DateTimeOffset value, DateTimeOffset d1, DateTimeOffset d2) {
       return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
     }

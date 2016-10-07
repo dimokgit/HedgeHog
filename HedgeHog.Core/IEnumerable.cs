@@ -30,7 +30,7 @@ namespace HedgeHog {
       }
     }
 
-    public static string[] Splitter(this string s,params char[] split) { return s.Split(split, StringSplitOptions.RemoveEmptyEntries); }
+    public static string[] Splitter(this string s, params char[] split) { return s.Split(split, StringSplitOptions.RemoveEmptyEntries); }
     public static IList<double> MaxByOrEmpty(this IEnumerable<double> source) {
       return source.MaxByOrEmpty(d => d);
     }
@@ -184,7 +184,7 @@ namespace HedgeHog {
         yield return lst[i];
       }
     }
-    public static IEnumerable<U> BackwardsIterator<T,U>(this IList<T> lst,Func<T,U> map) {
+    public static IEnumerable<U> BackwardsIterator<T, U>(this IList<T> lst, Func<T, U> map) {
       for(int i = lst.Count - 1; i >= 0; i--) {
         yield return map(lst[i]);
       }
@@ -217,8 +217,17 @@ namespace HedgeHog {
       }
     }
     #region IfEmpty
+    public static T AverageOrNaN<T>(this IEnumerable<double> enumerable,Func<double,T> map) {
+      return map(enumerable.AverageOrNaN());
+    }
+    public static double AverageOrNaN(this IEnumerable<double> enumerable) {
+      return enumerable.DefaultIfEmpty(double.NaN).Average();
+    }
+    public static IEnumerable<double> NaNIfEmpty(this IEnumerable<double> enumerable) {
+      return enumerable.DefaultIfEmpty(double.NaN);
+    }
     public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
-          Action emptyAction) {
+            Action emptyAction) {
 
       var isEmpty = true;
       foreach(var e in enumerable) {
@@ -271,7 +280,7 @@ namespace HedgeHog {
 
     #region Yield
     public static U With<T, U>(this T v, Predicate<T> @if, Func<T, U> then, Func<T, U> @else) {
-     return @if(v) ? then(v) : @else(v);
+      return @if(v) ? then(v) : @else(v);
     }
     public static U With<T, U>(this T v, Func<T, U> m) { return m(v); }
     public static V With<T, U, V>(this T v, Func<T, U> m, Func<T, U, V> r) { return r(v, m(v)); }
@@ -279,15 +288,15 @@ namespace HedgeHog {
     public static IEnumerable<Tuple<T, T>> Zip<T>(this IEnumerable<T> source, IEnumerable<T> other) { return source.Zip(other, Tuple.Create); }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<T> value) { return source.Concat(value.Yield()); }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, T value) { return source.Concat(value.Yield()); }
-    public static IEnumerable<U> Yield<U>(this  Func<U> m) { yield return m(); }
+    public static IEnumerable<U> Yield<U>(this Func<U> m) { yield return m(); }
     public static IEnumerable<U> Yield<T, U>(this T v, Func<T, U> m) { yield return m(v); }
     public static IEnumerable<object> YieldObject(this object v) { yield return v; }
     public static IEnumerable<T> Yield<T>(this T v) { yield return v; }
-    public static IEnumerable<U> YieldNutNull<T,U>(this T v,Func<T,U> map) {
+    public static IEnumerable<U> YieldNutNull<T, U>(this T v, Func<T, U> map) {
       if(v == null)
         yield break;
       else
-      yield return map(v);
+        yield return map(v);
     }
     public static IEnumerable<T> YieldNotNull<T>(this T v) { return v.YieldNotNull(true); }
     public static IEnumerable<T> YieldNotNull<T>(this T v, bool? condition) {

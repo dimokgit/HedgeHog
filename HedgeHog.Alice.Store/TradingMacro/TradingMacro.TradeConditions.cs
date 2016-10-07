@@ -207,9 +207,9 @@ namespace HedgeHog.Alice.Store {
       tl.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
       tl.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
     }
-    void SetBSfromTLR(TL tl) {
-      tl.RateMax.ForEach(max => SellLevel.RateEx = max.AskHigh);
-      tl.RateMin.ForEach(min => BuyLevel.RateEx = min.BidLow);
+    void SetBSfromTL(TL tl, Func<TL, double> buy, Func<TL, double> sell) {
+      SellLevel.RateEx = sell(tl);
+      BuyLevel.RateEx = buy(tl);
     }
 
     public TradeConditionDelegate TLFOk {
@@ -241,9 +241,11 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate TLF2Ok {
       get {
         TradingMacroTrader(tm => Log = new Exception(new { TLF2Ok = new { tm.WavesRsdPerc } } + "")).Count();
+        //Action<SuppRes> setBuy = (sr) => tl => sr.RateEx = tl.PriceAvg3;
+        Func<SuppRes, Action<TL>> setSell = (sr) => tl => sr.RateEx = tl.PriceAvg2;
         return () => (from tm in TradingMacroTrender()
                       from tr in TradingMacroTrader()
-                      // No empty TLs
+                        // No empty TLs
                       where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
                       let flats = tm.TrendLinesTrendsAll
                       // No recent trade
@@ -255,15 +257,17 @@ namespace HedgeHog.Alice.Store {
                       where flats.Take(1).Any(tl => IsTLFresh(tm, tl, WavesRsdPerc / 100.0))
                       // Lime is outside Blue
                       from bigMM in flats.TakeLast(1).SelectMany(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise())
-                      where flats.Take(1).Where(tl
-                         => tl.PriceMax.Concat(tl.PriceMin).Any(p => !p.Between(bigMM.Item1, bigMM.Item2)))
-                         .Any()
-                      select flats.Take(1)
+                      where flats.Take(1).Any(tl => tl.PriceMax.Concat(tl.PriceMin).AverageOrNaN(p => !p.Between(bigMM)))
+
+                      from tl in flats.Take(1)
+                      let td =
+                        (tl.PriceMin.Any(p => !p.Between(bigMM)) ? TradeDirections.Up : TradeDirections.None) |
+                        (tl.PriceMax.Any(p => !p.Between(bigMM)) ? TradeDirections.Down : TradeDirections.None)
+                      select new { tl, td }
                       )
-                      .Concat()
                       .AsSingleable()
-                      .Do(SetBSfromTLR)
-                      .Select(_ => TradeDirections.Both)
+                      .Do(x => SetBSfromTL(x.tl, tl => tl.PriceAvg3, tl => tl.PriceAvg2))
+                      .Select(x => x.td)
                       .LastOrDefault();
       }
     }
