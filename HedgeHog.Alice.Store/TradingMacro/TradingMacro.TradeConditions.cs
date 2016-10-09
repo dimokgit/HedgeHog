@@ -128,7 +128,7 @@ namespace HedgeHog.Alice.Store {
 
     static bool IsTLFresh(TradingMacro tm, TL tl, double percentage = 1) {
       var index = tm.RatesArray.Count - (tl.Count * percentage).ToInt();
-      if(index >= tm.RatesArray.Count)
+      if(index >= tm.RatesArray.Count || index < 0)
         return false;
       var rateDate = tm.RatesArray[index].StartDate;
       return !tl.IsEmpty && tl.EndDate > rateDate && tl.StartDate > tm.LastTrade.TimeClose;
@@ -265,7 +265,7 @@ namespace HedgeHog.Alice.Store {
               select bs).Count() == 2;
     }
 
-    [TradeConditionSetCorridor]
+    [TradeConditionCanSetCorridor]
     public TradeConditionDelegate TLF2Ok {
       get {
         TradingMacroTrader(tm => Log = new Exception(new { TLF2Ok = new { tm.WavesRsdPerc } } + "")).Count();
@@ -294,9 +294,8 @@ namespace HedgeHog.Alice.Store {
                       select td 
                       )
                       .AsSingleable()
-                      .DefaultIfEmpty()
-                      .Do(x => SetBSfromTL( tl => tl.PriceAvg3, tl => tl.PriceAvg2))
-                      .Last();
+                      //.Do(x => SetBSfromTL( tl => tl.PriceAvg3, tl => tl.PriceAvg2))
+                      .LastOrDefault();
       }
     }
 
@@ -1844,6 +1843,13 @@ namespace HedgeHog.Alice.Store {
     bool TradeConditionsHaveSetCorridor() {
       return TradeConditionsInfo<TradeConditionSetCorridorAttribute>().Any();
     }
+    Singleable<TradeDirections> TradeConditionsCanSetCorridor() {
+      return TradeConditionsInfo<TradeConditionCanSetCorridorAttribute>()
+        .Select(d => d())
+        .Scan(TradeDirections.Both, (td1, td2) => td1 & td2)
+        .TakeLast(1)
+        .AsSingleable();
+    }
     IEnumerable<TradeDirections> TradeConditionsTradeStrip() {
       return TradeConditionsInfo<TradeConditionTradeStripAttribute>().Select(d => d());
     }
@@ -1855,6 +1861,9 @@ namespace HedgeHog.Alice.Store {
     }
     bool TradeConditionsHave(TradeConditionDelegate td) {
       return TradeConditionsInfo().Any(d => d.Method == td.Method);
+    }
+    IEnumerable<TradeDirections> TradeConditionHasAny(TradeConditionDelegate td) {
+      return TradeConditionsInfo().Where(d => d.Method == td.Method).Select(d => d());
     }
     public IEnumerable<TradeConditionDelegate> TradeConditionsInfo<A>() where A : Attribute {
       return TradeConditionsInfo(new Func<Attribute, bool>(a => a.GetType() == typeof(A)), (d, p, ta, s) => d);

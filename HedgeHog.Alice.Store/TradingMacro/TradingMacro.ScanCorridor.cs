@@ -12,6 +12,7 @@ using System.Reflection;
 using ReactiveUI;
 using static HedgeHog.MonoidsCore;
 using static HedgeHog.IEnumerableCore;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -345,7 +346,9 @@ namespace HedgeHog.Alice.Store {
          .Do(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc)))
          .AsSingleable();
 
-      (from tlr in doTL(TrendRedInt(), tl => TrendLines = tl, TrendLines, TradeLevelsPreset.Red)
+      (from td in TradeConditionHasAny(BlueAngOk).DefaultIfEmpty( TradeDirections.Both)
+       where td.HasAny()
+       from tlr in doTL(TrendRedInt(), tl => TrendLines = tl, TrendLines, TradeLevelsPreset.Red)
        from tlp in doTL(TrendPlumInt(), tl => TrendLines3 = tl, TrendLines3, TradeLevelsPreset.Plum)
        from tlg in doTL(TrendGreenInt(), tl => TrendLines1 = tl, TrendLines1, TradeLevelsPreset.Green)
        from tll in doTL(TrendLimeInt(), tl => TrendLines0 = tl, TrendLines0, TradeLevelsPreset.Lime)

@@ -124,7 +124,7 @@ namespace HedgeHog.Alice.Client {
       get { return _IsInVirtualTrading; }
       set {
         if(_IsInVirtualTrading != value) {
-          if(!_IsInVirtualTrading)
+          if(!_IsInVirtualTrading && CoreFX.IsLoggedIn)
             CoreFX.Logout();
           _IsInVirtualTrading = value;
           RaisePropertyChangedCore();
@@ -1371,6 +1371,9 @@ namespace HedgeHog.Alice.Client {
         #endregion
 
         MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveTradingSlaves());
+        this.WhenAnyValue(tm => tm.IsInVirtualTrading)
+          .Where(b => b)
+          .Subscribe(isiv => Login(MasterAccount));
 
         //if (false) {
         //  Using_FetchServerTrades = () => Using(FetchServerTrades);

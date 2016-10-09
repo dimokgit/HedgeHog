@@ -505,8 +505,7 @@ namespace HedgeHog.Alice.Store {
           }
           switch(TrailingDistanceFunction) {
             #region SimpleMove
-            case TrailingWaveMethod.SimpleMove:
-              {
+            case TrailingWaveMethod.SimpleMove: {
                 var conditions = MonoidsCore.ToFunc(() => new { TrailingDistanceFunction });
                 var tci_ = MonoidsCore.ToFunc(() => TradeConditionsInfo((d, p, n) => new { n, v = d(), d }).ToArray());
 
@@ -514,7 +513,7 @@ namespace HedgeHog.Alice.Store {
                 Action setLevels = () => {
                   if(IsAsleep) {
                     TradingMacrosByPair()
-                    .OrderByDescending(tm=> tm._RatesMax - tm._RatesMin)
+                    .OrderByDescending(tm => tm._RatesMax - tm._RatesMin)
                     .Take(1)
                     .ForEach(tm => {
                       var offset = (tm._RatesMax - tm._RatesMin) / 20;
@@ -522,7 +521,9 @@ namespace HedgeHog.Alice.Store {
                       BuyLevel.Rate = tm._RatesMin - offset;
                     });
                   } else if(!TradeConditionsHaveSetCorridor())
-                    SetTradeLevelsToLevelBy(GetTradeLevel)();
+                    TradeConditionsCanSetCorridor()
+                    .Where(td => td.HasAny())
+                    .ForEach(_ => SetTradeLevelsToLevelBy(GetTradeLevel)());
                   if(IsTrader)
                     adjustExitLevels2();
 
@@ -603,7 +604,7 @@ namespace HedgeHog.Alice.Store {
                 }
               }
               break;
-            #endregion
+              #endregion
           }
           if(firstTime) {
             firstTime = false;
