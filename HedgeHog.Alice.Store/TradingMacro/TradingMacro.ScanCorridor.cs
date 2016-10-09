@@ -286,7 +286,8 @@ namespace HedgeHog.Alice.Store {
           var i2 = i + 1;
           var min = distances[i].t.Item1.rmm[0];
           var max = distances[i].t.Item1.rmm[1];
-          while(i2 < distances.Count && distances[i2].t.Item2 - distStart <= distChunc) {
+          var distCurr = double.NaN;
+          while(i2 < distances.Count && (distCurr = distances[i2].t.Item2 - distStart) < distChunc) {
             if(distances[i2].t.Item1.rmm[0].r.BidLow < min.r.BidLow)
               min = distances[i2].t.Item1.rmm[0];
             if(distances[i2].t.Item1.rmm[1].r.AskHigh > max.r.AskHigh)
@@ -300,8 +301,8 @@ namespace HedgeHog.Alice.Store {
           //var maxes = new[] { i, i2 }.Select(i0 => maxer(grouped2[i0].rmm[1])).ToArray();
           var height = (maxer(max).Max(maxer(grouped2[i].rmm[1]), maxer(grouped2[i2].rmm[1]))
           - miner(min).Min(miner(grouped2[i].rmm[0]), miner(grouped2[i2].rmm[0])))
-          .Round(digits);
-          return new { start = start + skip, count = end - start, height, isOut, i, i2, dist = distChunc };
+          .RoundBySqrt(digits - 1);
+          return new { start = start + skip, count = end - start, height, isOut, i, i2, dist = distCurr };
         })
         .TakeWhile(x => !x.isOut).AsEnumerable();
 
@@ -338,11 +339,11 @@ namespace HedgeHog.Alice.Store {
         .SelectMany(p => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, 0))
         .ForEach(tl => TrendLines2 = Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc));
 
-      Func<int[], Action<Lazy<IList<Rate>>>, Lazy<IList<Rate>>, TradeLevelsPreset,Singleable<IList<Rate>>> doTL = (ints, tl, tlDef, color) 
-        => ints.Pairwise((s, c) => new { s, skip = skipFirst.Value })
-        .SelectMany(p => calcTrendLines(p.s, true, color, p.skip))
-        .Do(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc)))
-        .AsSingleable();
+      Func<int[], Action<Lazy<IList<Rate>>>, Lazy<IList<Rate>>, TradeLevelsPreset, Singleable<IList<Rate>>> doTL = (ints, tl, tlDef, color)
+         => ints.Pairwise((s, c) => new { s, skip = skipFirst.Value })
+         .SelectMany(p => calcTrendLines(p.s, true, color, p.skip))
+         .Do(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc)))
+         .AsSingleable();
 
       (from tlr in doTL(TrendRedInt(), tl => TrendLines = tl, TrendLines, TradeLevelsPreset.Red)
        from tlp in doTL(TrendPlumInt(), tl => TrendLines3 = tl, TrendLines3, TradeLevelsPreset.Plum)

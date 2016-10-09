@@ -14,6 +14,8 @@ using System.Runtime.CompilerServices;
 using System.Reactive;
 using System.Reactive.Linq;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
+using static HedgeHog.IEnumerableCore;
+
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
 
@@ -207,9 +209,13 @@ namespace HedgeHog.Alice.Store {
       tl.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
       tl.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
     }
-    void SetBSfromTL(TL tl, Func<TL, double> buy, Func<TL, double> sell) {
-      SellLevel.RateEx = sell(tl);
-      BuyLevel.RateEx = buy(tl);
+    void SetBSfromTL(Func<TL, double> buy, Func<TL, double> sell) {
+      TrendLevelByTradeLevel()
+        .IfEmpty(() => new Exception($"{nameof(TrendLevelByTradeLevel)} returned zero Trend Lines."))
+        .ForEach(tl => {
+          SellLevel.RateEx = sell(tl);
+          BuyLevel.RateEx = buy(tl);
+        });
     }
 
     public TradeConditionDelegate TLFOk {
@@ -237,6 +243,28 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+
+    private Singleable<TL> TrendLevelByTradeLevel() {
+      var levelBys = new[] {
+        new[] { TradeLevelBy.LimeMax, TradeLevelBy.LimeMin},
+        new[] { TradeLevelBy.GreenMax, TradeLevelBy.GreenMin },
+        new[] { TradeLevelBy.PlumMax, TradeLevelBy.PlumMin },
+        new[] { TradeLevelBy.RedMax, TradeLevelBy.RedMin },
+        new[] { TradeLevelBy.BlueMax, TradeLevelBy.BlueMin }
+      };
+      return levelBys
+        .Select((lbs, i) => new { i, ok = HasTradeLevelBy(lbs) })
+        .SkipWhile(x => !x.ok)
+        .Take(1)
+        .Select(x => TrendLinesTrendsAll[x.i])
+        .AsSingleable();
+    }
+    private bool HasTradeLevelBy(IList<TradeLevelBy> tradeLevelBys) {
+      return (from tl in tradeLevelBys
+              join bs in new[] { LevelBuyBy, LevelSellBy } on tl equals bs
+              select bs).Count() == 2;
+    }
+
     [TradeConditionSetCorridor]
     public TradeConditionDelegate TLF2Ok {
       get {
@@ -249,7 +277,7 @@ namespace HedgeHog.Alice.Store {
                       where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
                       let flats = tm.TrendLinesTrendsAll
                       // No recent trade
-                      from tlMin in flats.OrderBy(tl => tl.StartDate).Take(1)
+                      from tlMin in flats.SkipLast(1).OrderBy(tl => tl.StartDate).Take(1)
                       where tlMin.StartDate > tr.LastTrade.TimeClose
                       // All lined up forwards
                       where flats.SkipLast(1).Pairwise().All(t => t.Item1.EndDate > t.Item2.EndDate)
@@ -261,14 +289,14 @@ namespace HedgeHog.Alice.Store {
 
                       from tl in flats.Take(1)
                       let td =
-                        (tl.PriceMin.Any(p => !p.Between(bigMM)) ? TradeDirections.Up : TradeDirections.None) |
-                        (tl.PriceMax.Any(p => !p.Between(bigMM)) ? TradeDirections.Down : TradeDirections.None)
-                      select new { tl, td }
+                        (bigMM.Map((min, _) => tl.PriceMin.Any(p => p < min)) ? TradeDirections.Up : TradeDirections.None) |
+                        (bigMM.Map((_, max) => tl.PriceMax.Any(p => p > max)) ? TradeDirections.Down : TradeDirections.None)
+                      select td 
                       )
                       .AsSingleable()
-                      .Do(x => SetBSfromTL(x.tl, tl => tl.PriceAvg3, tl => tl.PriceAvg2))
-                      .Select(x => x.td)
-                      .LastOrDefault();
+                      .DefaultIfEmpty()
+                      .Do(x => SetBSfromTL( tl => tl.PriceAvg3, tl => tl.PriceAvg2))
+                      .Last();
       }
     }
 
@@ -1330,6 +1358,10 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate GOk { get { return () => TradeDirectionsAnglecounterwise(TrendLinesGreenTrends); } }
     [TradeConditionTradeDirection]
     public TradeConditionDelegate GROk { get { return () => TradeDirectionsAnglewise(TrendLinesGreenTrends); } }
+    [TradeConditionTradeDirection]
+    public TradeConditionDelegate LOk { get { return () => TradeDirectionsAnglecounterwise(TrendLinesLimeTrends); } }
+    [TradeConditionTradeDirection]
+    public TradeConditionDelegate LROk { get { return () => TradeDirectionsAnglewise(TrendLinesLimeTrends); } }
     #endregion
 
     #region Trends Ratios

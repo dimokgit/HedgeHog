@@ -3559,10 +3559,9 @@ namespace HedgeHog.Alice.Store {
     }
     BolingerBanderAsyncBuffer _boilingerBanderAsyncAction = new BolingerBanderAsyncBuffer();
 
-    double _boilingerStDev;
+    Lazy<double[]> _boilingerStDev = Lazy.Create(()=> new double[0]);
     void CalcBoilingerBand() {
-      UseRates(rate => rate.Select(r => r.PriceCMALast.Abs(r.PriceAvg)).StandardDeviation())
-        .ForEach(stDev => { _boilingerStDev = stDev; });
+      _boilingerStDev = Lazy.Create(() => UseRates(rate => rate.Select(r => r.PriceCMALast.Abs(r.PriceAvg)).StandardDeviation()));
     }
 
     public static IEnumerable<double> GetLastRateCma(List<Rate> rate) {
@@ -3629,10 +3628,10 @@ namespace HedgeHog.Alice.Store {
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           {
           {TradeLevelBy.BoilingerUp,()=>level(tm=> {
-            return GetLastRateCma(RatesArray).Select(cma=>cma+_boilingerStDev*BbRatio).DefaultIfEmpty(double.NaN).Single();
+            return _boilingerStDev.Value.SelectMany(bb=> GetLastRateCma(RatesArray).Select(cma=>cma+bb*BbRatio).DefaultIfEmpty(double.NaN)).Single();
           })},
           {TradeLevelBy.BoilingerDown,()=>level(tm=> {
-            return GetLastRateCma(RatesArray).Select(cma=>cma-_boilingerStDev*BbRatio).DefaultIfEmpty(double.NaN).Single();
+            return _boilingerStDev.Value.SelectMany(bb=> GetLastRateCma(RatesArray).Select(cma=>cma-bb*BbRatio).DefaultIfEmpty(double.NaN)).Single();
           })},
 
             { TradeLevelBy.PriceCma,()=>level(tm=>tm.UseRates(GetLastRateCma).SelectMany(cma=>cma).DefaultIfEmpty(double.NaN).Single()) },
