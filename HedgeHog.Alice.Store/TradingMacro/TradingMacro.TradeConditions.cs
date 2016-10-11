@@ -291,7 +291,41 @@ namespace HedgeHog.Alice.Store {
                       let td =
                         (bigMM.Map((min, _) => tl.PriceMin.Any(p => p < min)) ? TradeDirections.Up : TradeDirections.None) |
                         (bigMM.Map((_, max) => tl.PriceMax.Any(p => p > max)) ? TradeDirections.Down : TradeDirections.None)
-                      select td 
+                      select td
+                      )
+                      .AsSingleable()
+                      //.Do(x => SetBSfromTL( tl => tl.PriceAvg3, tl => tl.PriceAvg2))
+                      .LastOrDefault();
+      }
+    }
+
+    [TradeConditionCanSetCorridor]
+    public TradeConditionDelegate TLF3Ok {
+      get {
+        TradingMacroTrader(tm => Log = new Exception(new { TLF3Ok = new { tm.WavesRsdPerc } } + "")).Count();
+        //Action<SuppRes> setBuy = (sr) => tl => sr.RateEx = tl.PriceAvg3;
+        Func<SuppRes, Action<TL>> setSell = (sr) => tl => sr.RateEx = tl.PriceAvg2;
+        return () => (from tm in TradingMacroTrender()
+                      from tr in TradingMacroTrader()
+                        // No empty TLs
+                      where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
+                      let flats = tm.TrendLinesTrendsAll
+                      // No recent trade
+                      from tlMin in flats.SkipLast(1).OrderBy(tl => tl.StartDate).Take(1)
+                      where tlMin.StartDate > tr.LastTrade.TimeClose
+                      // All lined up forwards
+                      where flats.SkipLast(1).Pairwise().All(t => t.Item1.EndDate > t.Item2.EndDate)
+                      // First TL is fresh
+                      where flats.Take(1).Any(tl => IsTLFresh(tm, tl, WavesRsdPerc / 100.0))
+                      // Lime is wider Blue
+                      from bigMM in flats.TakeLast(1).SelectMany(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise((min,max)=>new { min, max }))
+                      where flats.Take(1).Any(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise((min, max) => (max - min) > bigMM.max -bigMM.min).Any(b => b))
+
+                      from tl in flats.Take(1)
+                      let td =
+                        ((tl.PriceMin.Any(p => p <bigMM.min)) ? TradeDirections.Up : TradeDirections.None) |
+                        ((tl.PriceMax.Any(p => p > bigMM.max)) ? TradeDirections.Down : TradeDirections.None)
+                      select td
                       )
                       .AsSingleable()
                       //.Do(x => SetBSfromTL( tl => tl.PriceAvg3, tl => tl.PriceAvg2))

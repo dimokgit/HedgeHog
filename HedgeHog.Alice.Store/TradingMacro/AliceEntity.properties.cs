@@ -74,6 +74,7 @@ namespace HedgeHog.Alice.Store {
     bool _loadHistoryRealTime;
     [Category(categoryXXX)]
     [IsNotStrategy]
+    [Dnr]
     public bool LoadHistoryRealTime {
       get {
         return _loadHistoryRealTime;
