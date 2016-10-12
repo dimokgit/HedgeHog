@@ -274,23 +274,22 @@ namespace HedgeHog.Alice.Store {
         return () => (from tm in TradingMacroTrender()
                       from tr in TradingMacroTrader()
                         // No empty TLs
-                      where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
                       let flats = tm.TrendLinesTrendsAll
                       // No recent trade
                       from tlMin in flats.SkipLast(1).OrderBy(tl => tl.StartDate).Take(1)
                       where tlMin.StartDate > tr.LastTrade.TimeClose
                       // All lined up forwards
                       where flats.SkipLast(1).Pairwise().All(t => t.Item1.EndDate > t.Item2.EndDate)
-                      // First TL is fresh
-                      where flats.Take(1).Any(tl => IsTLFresh(tm, tl, WavesRsdPerc / 100.0))
-                      // Lime is outside Blue
+                      from tlSmall in flats.Take(1)
+                        // First TL is fresh
+                      where IsTLFresh(tm, tlSmall, WavesRsdPerc / 100.0)
+                      // Small is outside Big
                       from bigMM in flats.TakeLast(1).SelectMany(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise())
-                      where flats.Take(1).Any(tl => tl.PriceMax.Concat(tl.PriceMin).AverageOrNaN(p => !p.Between(bigMM)))
+                      where tlSmall.PriceMax.Concat(tlSmall.PriceMin).All(p => !p.Between(bigMM))
 
-                      from tl in flats.Take(1)
                       let td =
-                        (bigMM.Map((min, _) => tl.PriceMin.Any(p => p < min)) ? TradeDirections.Up : TradeDirections.None) |
-                        (bigMM.Map((_, max) => tl.PriceMax.Any(p => p > max)) ? TradeDirections.Down : TradeDirections.None)
+                        (bigMM.Map((min, _) => tlSmall.PriceMin.Any(p => p < min)) ? TradeDirections.Up : TradeDirections.None) |
+                        (bigMM.Map((_, max) => tlSmall.PriceMax.Any(p => p > max)) ? TradeDirections.Down : TradeDirections.None)
                       select td
                       )
                       .AsSingleable()
@@ -318,12 +317,12 @@ namespace HedgeHog.Alice.Store {
                       // First TL is fresh
                       where flats.Take(1).Any(tl => IsTLFresh(tm, tl, WavesRsdPerc / 100.0))
                       // Lime is wider Blue
-                      from bigMM in flats.TakeLast(1).SelectMany(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise((min,max)=>new { min, max }))
-                      where flats.Take(1).Any(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise((min, max) => (max - min) > bigMM.max -bigMM.min).Any(b => b))
+                      from bigMM in flats.TakeLast(1).SelectMany(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise((min, max) => new { min, max }))
+                      where flats.Take(1).Any(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise((min, max) => (max - min) > bigMM.max - bigMM.min).Any(b => b))
 
                       from tl in flats.Take(1)
                       let td =
-                        ((tl.PriceMin.Any(p => p <bigMM.min)) ? TradeDirections.Up : TradeDirections.None) |
+                        ((tl.PriceMin.Any(p => p < bigMM.min)) ? TradeDirections.Up : TradeDirections.None) |
                         ((tl.PriceMax.Any(p => p > bigMM.max)) ? TradeDirections.Down : TradeDirections.None)
                       select td
                       )
@@ -1882,6 +1881,7 @@ namespace HedgeHog.Alice.Store {
         .Select(d => d())
         .Scan(TradeDirections.Both, (td1, td2) => td1 & td2)
         .TakeLast(1)
+        .DefaultIfEmpty(TradeDirections.Both)
         .AsSingleable();
     }
     IEnumerable<TradeDirections> TradeConditionsTradeStrip() {
@@ -1945,8 +1945,8 @@ namespace HedgeHog.Alice.Store {
           var isPriceIn = new[] { CurrentEnterPrice(false), this.CurrentEnterPrice(true) }.All(cp => cp.Between(SellLevel.Rate, BuyLevel.Rate));
 
           if(BuyLevel.CanTrade && SellLevel.CanTrade && canTradeBuy != canTradeSell) {
-            BuyLevel.CanTrade = hasBuy && isPriceIn;
-            SellLevel.CanTrade = hasSell && isPriceIn;
+            BuyLevel.CanTradeEx = hasBuy && isPriceIn;
+            SellLevel.CanTradeEx = hasSell && isPriceIn;
           }
 
           if(eval.HasAny())
