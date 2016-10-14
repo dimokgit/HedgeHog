@@ -310,20 +310,23 @@ namespace HedgeHog.Alice.Store {
                       where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
                       let flats = tm.TrendLinesTrendsAll
                       // No recent trade
-                      from tlMin in flats.SkipLast(1).OrderBy(tl => tl.StartDate).Take(1)
-                      where tlMin.StartDate > tr.LastTrade.TimeClose
+                      //from tlMin in flats.SkipLast(1).OrderBy(tl => tl.StartDate).Take(1)
+                      //where tlMin.StartDate > tr.LastTrade.TimeClose
                       // All lined up forwards
                       where flats.SkipLast(1).Pairwise().All(t => t.Item1.EndDate > t.Item2.EndDate)
                       // First TL is fresh
                       where flats.Take(1).Any(tl => IsTLFresh(tm, tl, WavesRsdPerc / 100.0))
+                      from tlSmall in flats.Take(1)
+                      from tlBig in flats.TakeLast(1)
+                        // Small is outside Big
+                      from bigMM in tlBig.PriceMin.Concat(tlBig.PriceMax).Pairwise((min, max) => new { min, max })
+                      where !tlSmall.PriceMax.Concat(tlSmall.PriceMin).Average().Between(bigMM.min, bigMM.max)
                       // Lime is wider Blue
-                      from bigMM in flats.TakeLast(1).SelectMany(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise((min, max) => new { min, max }))
-                      where flats.Take(1).Any(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise((min, max) => (max - min) > bigMM.max - bigMM.min).Any(b => b))
+                      where tlSmall.PriceAvg2 - tlSmall.PriceAvg3 > tlBig.PriceAvg2 - tlBig.PriceAvg3
 
-                      from tl in flats.Take(1)
                       let td =
-                        ((tl.PriceMin.Any(p => p < bigMM.min)) ? TradeDirections.Up : TradeDirections.None) |
-                        ((tl.PriceMax.Any(p => p > bigMM.max)) ? TradeDirections.Down : TradeDirections.None)
+                        ((tlSmall.PriceMin.Any(p => p < bigMM.min)) ? TradeDirections.Up : TradeDirections.None) |
+                        ((tlSmall.PriceMax.Any(p => p > bigMM.max)) ? TradeDirections.Down : TradeDirections.None)
                       select td
                       )
                       .AsSingleable()
