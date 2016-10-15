@@ -187,7 +187,7 @@ namespace HedgeHog.Alice.Store {
           => tm.UseRates(rates
           => rates.BackwardsIterator()
             .TakeWhile(r => r.StartDate >= d)
-            .Select(_priceAvg)))
+            .Select(GetPriceMA)))
             .SelectMany(x => x)
             .SelectMany(x => x)
             .DefaultIfEmpty(def);

@@ -146,9 +146,9 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByTLH(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       var v = TrendLinesTrendsAll.Where(TL.NotEmpty)
-        .SelectMany(tl => tl.Sorted.Value.Pairwise((r1, r2) =>  r2.PriceAvg - r1.PriceAvg ))
+        .Select(tl => tl.PriceMin.Concat(tl.PriceMax).ToArray())
         .ToArray()
-        .Permutation((h1, h2) => h1.ToPercent(h2))
+        .Permutation((h1, h2) => h1.OverlapRatio(h2).ToPercent())
         .DefaultIfEmpty()
         .Average();
       if(v.IsNotNaN())

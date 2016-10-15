@@ -341,12 +341,12 @@ namespace HedgeHog.Alice.Store {
         .ForEach(tl => TrendLines2 = Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc));
 
       Func<int[], Action<Lazy<IList<Rate>>>, Lazy<IList<Rate>>, TradeLevelsPreset, Singleable<IList<Rate>>> doTL = (ints, tl, tlDef, color)
-         => ints.Pairwise((s, c) => new { s, skip = skipFirst.Value })
-         .SelectMany(p => calcTrendLines(p.s, true, color, p.skip))
+         => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.Value, isMin = s > 0 })
+         .SelectMany(p => calcTrendLines(p.s, p.isMin, color, p.skip))
          .Do(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc)))
          .AsSingleable();
 
-      (from td in TradeConditionHasAny(BlueAngOk).DefaultIfEmpty( TradeDirections.Both)
+      (from td in TradeConditionHasAny(BlueAngOk).DefaultIfEmpty(TradeDirections.Both)
        where td.HasAny()
        from tlr in doTL(TrendRedInt(), tl => TrendLines = tl, TrendLines, TradeLevelsPreset.Red)
        from tlp in doTL(TrendPlumInt(), tl => TrendLines3 = tl, TrendLines3, TradeLevelsPreset.Plum)

@@ -131,7 +131,7 @@ namespace HedgeHog.Alice.Store {
       if(index >= tm.RatesArray.Count || index < 0)
         return false;
       var rateDate = tm.RatesArray[index].StartDate;
-      return !tl.IsEmpty && tl.EndDate > rateDate && tl.StartDate > tm.LastTrade.TimeClose;
+      return !tl.IsEmpty && tl.EndDate > rateDate;
 
     }
     [TradeConditionSetCorridor]
@@ -334,8 +334,6 @@ namespace HedgeHog.Alice.Store {
                       .LastOrDefault();
       }
     }
-
-
 
     public TradeConditionDelegateHide EdgesOk {
       get {

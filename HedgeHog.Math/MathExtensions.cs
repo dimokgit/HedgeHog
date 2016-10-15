@@ -176,7 +176,16 @@ namespace HedgeHog {
       var overlap = high2.Max(low2).Min(high1.Max(low1)) - low1.Min(high1).Max(low2.Min(high2));
       return overlap / heightAvg;
     }
-
+    public static double OverlapRatio(this IEnumerable<double> range, IEnumerable<double> rangeOther) {
+      return range.ToArray().OverlapRatio(rangeOther.ToArray());
+    }
+    public static double OverlapRatio(this IList<double> range, IList<double> rangeOther) {
+      if(range?.Count != 2)
+        throw new Exception(new { source = new { range?.Count } } + "");
+      if(rangeOther?.Count != 2)
+        throw new Exception(new { source = new { rangeOther?.Count } } + "");
+      return OverlapRatio(range.Min(), range.Max(), rangeOther.Min(), rangeOther.Max());
+    }
     /// <summary>
     /// Ratio between Max(a,b)/Min(a,b)
     /// </summary>
