@@ -978,8 +978,9 @@ namespace HedgeHog.Alice.Store {
     public const string wwwSettingsCorridorOther = "2.3 Corridor";
     public const string wwwSettingsCorridorEquinox = "hide 2.4 Equinox";
     public const string wwwSettingsAO = "hide 2.5 AO Periods";
-    public const string wwwSettingsBars = "4 Bars";
     public const string wwwSettingsCorridorFuncs = "3 Corridor Func";
+    public const string wwwSettingsVoltage = "4 Voltage";
+    public const string wwwSettingsBars = "5 Bars";
 
     #region CloseAfterTradingHours
     private bool _CloseAfterTradingHours;
@@ -1206,7 +1207,7 @@ namespace HedgeHog.Alice.Store {
     public double VoltRange0 { get; set; }
     public double VoltRange1 { get; set; }
     string _VoltRange = "[0]";
-    [WwwSetting(Group = wwwSettingsCorridorAngles)]
+    [WwwSetting(Group = wwwSettingsVoltage)]
     [Category(categoryActive)]
     [Description("Range or single value: 15-30 or 60 or -60")]
     public string VoltRange {
@@ -1216,7 +1217,6 @@ namespace HedgeHog.Alice.Store {
           return;
 
         _VoltRange = (value ?? "").Trim();
-        OnPropertyChanged(() => VoltRange);
 
         double[] spans;
         if(!_VoltRange.TryFromJson(out spans))
@@ -1227,9 +1227,41 @@ namespace HedgeHog.Alice.Store {
         VoltRange0 = spans[0];
         VoltRange1 = spans.Concat(double.NaN).Take(2).Last();
 
+        OnPropertyChanged(() => VoltRange);
       }
     }
 
+    #region VoltAvgRange
+    private double _VoltAvgRange;
+    [WwwSetting(Group = wwwSettingsVoltage)]
+    [Category(categoryActive)]
+    public double VoltAvgRange {
+      get { return _VoltAvgRange; }
+      set {
+        if(_VoltAvgRange != value) {
+          _VoltAvgRange = value;
+          OnPropertyChanged(nameof(VoltAvgRange));
+        }
+      }
+    }
+
+    #endregion
+    #region VoltAvgIter
+    private int _VoltAverageIterations = 2;
+    [Description("Volt Avg Iter")]
+    [WwwSetting(Group = wwwSettingsVoltage)]
+    [Category(categoryActive)]
+    public int VoltAverageIterations {
+      get { return _VoltAverageIterations; }
+      set {
+        if(_VoltAverageIterations != value) {
+          _VoltAverageIterations = value;
+          OnPropertyChanged(nameof(VoltsAvgIterations));
+        }
+      }
+    }
+
+    #endregion
 
     double _waveStDevPower = 10;
     [Description("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]

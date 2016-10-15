@@ -95,21 +95,21 @@ namespace HedgeHog.Alice.Store {
     }
 
     private CorridorStatistics ShowVolts(double volt, int averageIterations, Func<Rate, double> getVolt = null, Action<Rate, double> setVolt = null) {
-      SetVots(volt, getVolt ?? GetVoltage, setVolt ?? SetVoltage, averageIterations);
+      SetVolts(volt, getVolt ?? GetVoltage, setVolt ?? SetVoltage, averageIterations);
       if(!WaveShort.HasRates)
         return null;
       var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
       return corridor;
     }
 
-    private void SetVots(double volt, int averageIterations, bool cmaByRates) {
-      SetVots(volt, averageIterations, cmaByRates ? CmaPeriodByRatesCount() : 0);
+    private void SetVolts(double volt, bool cmaByRates) {
+      SetVots(volt, cmaByRates ? CmaPeriodByRatesCount() : 0);
     }
-    private void SetVots(double volt, int averageIterations, double cma = 0) {
-      SetVots(volt, GetVoltage, SetVoltage, averageIterations, cma);
+    private void SetVots(double volt, double cma = 0) {
+      SetVolts(volt, GetVoltage, SetVoltage, cma);
     }
 
-    private void SetVots(double volt, Func<Rate, double> getVolt, Action<Rate, double> setVolt, int averageIterations, double cma = 0) {
+    private void SetVolts(double volt, Func<Rate, double> getVolt, Action<Rate, double> setVolt, double cma = 0) {
       if(!WaveShort.HasRates || !IsRatesLengthStable)
         return;
       if(double.IsInfinity(volt) || double.IsNaN(volt))
@@ -124,9 +124,9 @@ namespace HedgeHog.Alice.Store {
       if(voltRates.Any()) {
         GeneralPurposeSubject.OnNext(() => {
           try {
-            var voltageAvgLow = voltRates.AverageByIterations(-averageIterations).DefaultIfEmpty(double.NaN).Average();
+            var voltageAvgLow = voltRates.AverageByIterations(-VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
             GetVoltageAverage = () => voltageAvgLow;
-            var voltageAvgHigh = voltRates.AverageByIterations(averageIterations).DefaultIfEmpty(double.NaN).Average();
+            var voltageAvgHigh = voltRates.AverageByIterations(VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
             GetVoltageHigh = () => voltageAvgHigh;
           } catch(Exception exc) { Log = exc; }
         });

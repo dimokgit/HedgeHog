@@ -113,7 +113,7 @@ namespace HedgeHog.Alice.Store {
 
       calcVolt().ForEach(v => {
         SetVots(InPips(v.ppm), 2);
-        SetVots(v.hsd, GetVoltage2, SetVoltage2, 2);
+        SetVolts(v.hsd, GetVoltage2, SetVoltage2, 2);
       });
       return null;
     }
@@ -131,7 +131,7 @@ namespace HedgeHog.Alice.Store {
       Func<Rate, double> select = BarPeriod >= BarsPeriodType.m1 ? _priceAvg : r => r.PriceCMALast;
 
       CalcSma(AoPeriodFast, AoPeriodSlow, @select, GetVoltage, SetVoltage).ForEach(v => SetVots(v, 2));
-      CalcSma(AoPeriodFast2, AoPeriodSlow2, @select, GetVoltage2, SetVoltage2).ForEach(v => SetVots(v, GetVoltage2, SetVoltage2, 2));
+      CalcSma(AoPeriodFast2, AoPeriodSlow2, @select, GetVoltage2, SetVoltage2).ForEach(v => SetVolts(v, GetVoltage2, SetVoltage2, 2));
 
       return null;
     }
@@ -152,7 +152,7 @@ namespace HedgeHog.Alice.Store {
         .DefaultIfEmpty()
         .Average();
       if(v.IsNotNaN())
-        ShowVolts(v, 2, getVolt, setVolt);
+        ShowVolts(v, VoltAverageIterations, getVolt, setVolt);
       return null;
     }
     CorridorStatistics ShowVoltsByTLA(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {

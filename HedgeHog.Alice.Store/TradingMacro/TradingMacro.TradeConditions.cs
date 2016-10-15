@@ -1054,6 +1054,7 @@ namespace HedgeHog.Alice.Store {
         ).SingleOrDefault();
       }
     }
+    public TradeConditionDelegate VltAvgOk => () => TradeDirectionByTreshold(GetVoltageHigh(), VoltAvgRange);
     public TradeConditionDelegate VltUpOk {
       get {
         return () => TradeDirectionByBool(GetLastVolts().ToArray().LinearSlope() < 0);

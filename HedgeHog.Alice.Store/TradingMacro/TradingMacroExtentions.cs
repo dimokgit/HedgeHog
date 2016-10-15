@@ -2423,7 +2423,7 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByStDev() {
       TrendLinesBlueTrends.HStdRatio
-      .ForEach(volt => SetVots(volt, 2, true));
+      .ForEach(volt => SetVolts(volt, true));
       return null;
     }
     CorridorStatistics ShowVoltsByAvgLineRatio() {
@@ -2448,7 +2448,7 @@ namespace HedgeHog.Alice.Store {
         return rates.GetRange(tls.Count).Select(GetVoltage2).StandardDeviation();
       })
       .ForEach(volts2 => {
-        SetVots(volts2, 2, true);
+        SetVolts(volts2, true);
         _setVoltsAveragesAsyncBuffer.Push(() => {
           _voltsPriceCorrelation = Lazy.Create(() => UseRates(rates => {
             var z = rates.Where(r => _priceAvg(r).IsNotNaN() && GetVoltage(r).IsNotNaN()).ToArray();
@@ -2462,7 +2462,7 @@ namespace HedgeHog.Alice.Store {
       UseRates(rates => rates.Where(r => GetVoltage2(r).IsNaN()).ToList())
         .SelectMany(rates => rates).ForEach(r => SetVoltage2(r, volt));
       UseRates(rates => rates.Select(GetVoltage2).RelativeStandardDeviation())
-      .ForEach(volts2 => SetVots(volts2, 2, true));
+      .ForEach(volts2 => SetVolts(volts2, true));
     }
 
     Lazy<double[]> _voltsPriceCorrelation = new Lazy<double[]>(() => new[] { 0.0, 0.0 });
@@ -2596,7 +2596,7 @@ namespace HedgeHog.Alice.Store {
         var heights = perms
          .Select(c => c.Item1.StDev.Percentage(c.Item2.StDev))
          .Average();
-        SetVots(InPips(avg1s) * heights * 100, 2, true);
+        SetVolts(InPips(avg1s) * heights * 100, true);
       }
       return null;
     }
