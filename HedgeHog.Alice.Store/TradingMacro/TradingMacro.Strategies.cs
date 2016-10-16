@@ -347,21 +347,33 @@ namespace HedgeHog.Alice.Store {
       var v = trends.Value;
       return v == null || v.IsEmpty() ? TL.Empty : v.Skip(1).Select(r => r.Trends).LastOrDefault() ?? TL.Empty;
     }
-    public TL TrendLinesBlueTrends { get { return IsTrendsEmpty(TrendLines2); } }
-    public TL TrendLinesGreenTrends { get { return IsTrendsEmpty(TrendLines1); } }
-    public TL TrendLinesLimeTrends { get { return IsTrendsEmpty(TrendLines0); } }
-    public TL TrendLinesRedTrends { get { return IsTrendsEmpty(TrendLines); } }
-    public TL TrendLinesPlumTrends { get { return IsTrendsEmpty(TrendLines3); } }
+    public TL TLBlue { get { return IsTrendsEmpty(TrendLines2); } }
+    public TL TLGreen { get { return IsTrendsEmpty(TrendLines1); } }
+    public TL TLLime { get { return IsTrendsEmpty(TrendLines0); } }
+    public TL TLRed { get { return IsTrendsEmpty(TrendLines); } }
+    public TL TLPlum { get { return IsTrendsEmpty(TrendLines3); } }
+    public IEnumerable<Tuple<TL,bool>> TrendLinesMinMax {
+      get {
+        var ints = new Func<string>[] { () => TrendLime, () => TrendGreen, () => TrendPlum, () => TrendRed, () => TrendBlue }
+          .Select(a => !string.IsNullOrWhiteSpace(a()));
+        var minMaxs = new Func<string,int[]> [] { TrendLimeInt, TrendGreenInt, TrendPlumInt, TrendRedInt, TrendBlueInt }
+          .Select(i => i(null)[0] > 0);
+        var trends = new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
+        var isOk = MonoidsCore.ToFunc((bool ok, TL tl) => new { ok, tl });
+        var isMin = MonoidsCore.ToFunc(isOk(false, null), false, (x, min) => new { x.ok, x.tl, min });
+        return ints.Zip(trends, isOk).Zip(minMaxs, isMin).Where(t => t.ok).Select(t => Tuple.Create(t.tl, t.min));
+      }
+    }
     public TL[] TrendLinesTrendsAll {
       get {
         var ints = new[] { TrendLime, TrendGreen, TrendPlum, TrendRed, TrendBlue }.Select(string.IsNullOrWhiteSpace);
-        var trends= new[] { TrendLinesLimeTrends, TrendLinesGreenTrends, TrendLinesPlumTrends, TrendLinesRedTrends, TrendLinesBlueTrends };
-        var isOk = MonoidsCore.ToFunc((bool ok, TL tl) => new { ok=!ok, tl });
+        var trends = new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
+        var isOk = MonoidsCore.ToFunc((bool ok, TL tl) => new { ok = !ok, tl });
         return ints.Zip(trends, isOk).Where(t => t.ok).Select(t => t.tl).ToArray();
       }
     }
     public TL[] TrendLinesFlat { get { return TrendLinesTrendsAll.SkipLast(1).ToArray(); } }
-    public IEnumerable<TL> TradeTrendLines { get { return  TradeTrendsInt.Select(i => TrendLinesTrendsAll[i]); } }
+    public IEnumerable<TL> TradeTrendLines { get { return TradeTrendsInt.Select(i => TrendLinesTrendsAll[i]); } }
     public double TradeTrendLinesAvg(Func<TL, double> selector) {
       return TradeTrendLines.ToArray(selector)
         .Permutation()

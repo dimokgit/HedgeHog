@@ -3584,19 +3584,19 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.IsTrendsEmpty"/></summary>
         public const string IsTrendsEmpty = "IsTrendsEmpty";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesBlueTrends"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TLBlue"/></summary>
         public const string TrendLinesBlueTrends = "TrendLinesBlueTrends";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesGreenTrends"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TLGreen"/></summary>
         public const string TrendLinesGreenTrends = "TrendLinesGreenTrends";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesLimeTrends"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TLLime"/></summary>
         public const string TrendLinesLimeTrends = "TrendLinesLimeTrends";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesRedTrends"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TLRed"/></summary>
         public const string TrendLinesRedTrends = "TrendLinesRedTrends";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesPlumTrends"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TLPlum"/></summary>
         public const string TrendLinesPlumTrends = "TrendLinesPlumTrends";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesTrendsAll"/></summary>
@@ -8553,19 +8553,19 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro._waveMiddle"/></summary>
         public static PropertyPath _waveMiddlePath { get { return new PropertyPath("_waveMiddle"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesBlueTrends"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TLBlue"/></summary>
         public static PropertyPath TrendLinesBlueTrendsPath { get { return new PropertyPath("TrendLinesBlueTrends"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesGreenTrends"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TLGreen"/></summary>
         public static PropertyPath TrendLinesGreenTrendsPath { get { return new PropertyPath("TrendLinesGreenTrends"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesLimeTrends"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TLLime"/></summary>
         public static PropertyPath TrendLinesLimeTrendsPath { get { return new PropertyPath("TrendLinesLimeTrends"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesRedTrends"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TLRed"/></summary>
         public static PropertyPath TrendLinesRedTrendsPath { get { return new PropertyPath("TrendLinesRedTrends"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesPlumTrends"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TLPlum"/></summary>
         public static PropertyPath TrendLinesPlumTrendsPath { get { return new PropertyPath("TrendLinesPlumTrends"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendLinesTrendsAll"/></summary>

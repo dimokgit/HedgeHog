@@ -80,7 +80,7 @@ namespace HedgeHog.Alice.Store {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
       Func<IEnumerable<double>> calcVolt = ()
         => UseRates(rates
-        => rates.BackwardsIterator().Take(TrendLinesBlueTrends.Count).Distances(GetPriceMA).TakeLast(1).Select(l => l.Item2 / TrendLinesBlueTrends.TimeSpan.TotalMinutes))
+        => rates.BackwardsIterator().Take(TLBlue.Count).Distances(GetPriceMA).TakeLast(1).Select(l => l.Item2 / TLBlue.TimeSpan.TotalMinutes))
         .Concat()
         .Where(ppm => ppm > 0)
         .Select(ppm => InPips(ppm));
@@ -145,7 +145,10 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByTLH(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      var v = TrendLinesTrendsAll.Where(TL.NotEmpty)
+      var v = TrendLinesMinMax
+        .Where(t => t.Item2)
+        .Select(t => t.Item1)
+        .Where(tl=>tl.Color != TradeLevelsPreset.Blue+"")
         .Select(tl => tl.PriceMin.Concat(tl.PriceMax).ToArray())
         .ToArray()
         .Permutation((h1, h2) => h1.OverlapRatio(h2).ToPercent())
@@ -179,7 +182,7 @@ namespace HedgeHog.Alice.Store {
       return new[] { TrendLinesTrendsAll.Where(TL.NotEmpty) }
         .Where(tls => tls.Any())
         .Select(tls => tls.Select(tl => tl.Angle).ToList())
-        .Select(a => a.Permutation((a1, a2) => (a1-a2).Abs()).Average())
+        .Select(a => a.Permutation((a1, a2) => (a1 - a2).Abs()).Average())
         .AsSingleable();
     }
 

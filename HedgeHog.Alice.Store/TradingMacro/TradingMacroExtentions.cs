@@ -1840,10 +1840,10 @@ namespace HedgeHog.Alice.Store {
     public TradeStatistics SetTradeStatistics(Trade trade) {
       if(!TradeStatisticsDictionary.ContainsKey(trade.Id))
         TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics() {
-          CorridorStDev = TrendLinesBlueTrends.Angle.Abs(),
+          CorridorStDev = TLBlue.Angle.Abs(),
           CorridorStDevCma = RatesTimeSpan().FirstOrDefault().TotalMinutes,
           Values = new Dictionary<string, object> {
-            { "Angle", TradingMacroTrender(tm=>tm.TrendLinesBlueTrends.Angle.Abs()).SingleOrDefault() },
+            { "Angle", TradingMacroTrender(tm=>tm.TLBlue.Angle.Abs()).SingleOrDefault() },
             { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
             { "PPM", TradingMacroTrader(tm=> GetLastVolt().SingleOrDefault()).SingleOrDefault() },
             { "PpmM1", TradingMacroM1(tm=>tm.WaveRangeAvg.PipsPerMinute).FirstOrDefault() },
@@ -2349,7 +2349,7 @@ namespace HedgeHog.Alice.Store {
             }, false);
             OnScanCorridor(RatesArray, () => {
               try {
-                CorridorAngle = TrendLinesRedTrends.Angle;
+                CorridorAngle = TLRed.Angle;
                 TakeProfitPips = InPips(CalculateTakeProfit());
               } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
             }, IsInVirtualTrading);
@@ -2422,7 +2422,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     CorridorStatistics ShowVoltsByStDev() {
-      TrendLinesBlueTrends.HStdRatio
+      TLBlue.HStdRatio
       .ForEach(volt => SetVolts(volt, true));
       return null;
     }
@@ -2436,7 +2436,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     private void SetVoltsByStd(double volt) {
-      SetVoltsByStd(volt, TrendLinesBlueTrends);
+      SetVoltsByStd(volt, TLBlue);
     }
     private void SetVoltsByStd(double volt, Rate.TrendLevels tls) {
       UseRates(rates => rates.Where(r => GetVoltage2(r).IsNaN()).ToList())
@@ -3614,7 +3614,7 @@ namespace HedgeHog.Alice.Store {
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
       get {
-        var tmt = TradingMacroOther(tm => !tm.IsAsleep && tm.IsTrender && !tm.TrendLinesRedTrends.IsEmpty).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
+        var tmt = TradingMacroOther(tm => !tm.IsAsleep && tm.IsTrender && !tm.TLRed.IsEmpty).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
         if(!IsTrader)
           throw new Exception(new { TradeLevelFuncs = new { IsTrader } } + "");
         Func<double> maxDefault = () => UseRates(rates => rates.Max(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
@@ -3636,9 +3636,9 @@ namespace HedgeHog.Alice.Store {
 
             { TradeLevelBy.PriceCma,()=>level(tm=>tm.UseRates(GetLastRateCma).SelectMany(cma=>cma).DefaultIfEmpty(double.NaN).Single()) },
           {TradeLevelBy.PriceAvg1,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg1)},
-          {TradeLevelBy.BlueAvg1,()=>level(tm=>tm.TrendLinesBlueTrends.PriceAvg1)},
-          {TradeLevelBy.GreenAvg1,()=>level(tm=>tm.TrendLinesGreenTrends.PriceAvg1)},
-          {TradeLevelBy.LimeAvg1,()=>level(tm=>tm.TrendLinesLimeTrends.PriceAvg1)},
+          {TradeLevelBy.BlueAvg1,()=>level(tm=>tm.TLBlue.PriceAvg1)},
+          {TradeLevelBy.GreenAvg1,()=>level(tm=>tm.TLGreen.PriceAvg1)},
+          {TradeLevelBy.LimeAvg1,()=>level(tm=>tm.TLLime.PriceAvg1)},
 
           {TradeLevelBy.PriceAvg1Max,()=> TradeTrendLines.Max(tl=>tl.PriceAvg1)},
           {TradeLevelBy.PriceAvg1Min,()=> TradeTrendLines.Min(tl=>tl.PriceAvg1)},
@@ -3646,23 +3646,23 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.Avg22,()=>levelMax(tm=>tm.TradeLevelByPA2(2)) },
           {TradeLevelBy.Avg23,()=>levelMin(tm=>tm.TradeLevelByPA3(2)) },
 
-          {TradeLevelBy.PriceAvg2,()=> levelMax(tm=>tm.TrendLinesRedTrends.PriceAvg2)},
-          {TradeLevelBy.PriceAvg3,()=> levelMin(tm=>tm.TrendLinesRedTrends.PriceAvg3)},
+          {TradeLevelBy.PriceAvg2,()=> levelMax(tm=>tm.TLRed.PriceAvg2)},
+          {TradeLevelBy.PriceAvg3,()=> levelMin(tm=>tm.TLRed.PriceAvg3)},
 
-          {TradeLevelBy.PriceRB2,()=> levelMax(tm=>tm.TrendLinesRedTrends.PriceAvg2.Max( tm.TrendLinesBlueTrends.PriceAvg2))},
-          {TradeLevelBy.PriceRB3,()=> levelMin(tm=>tm.TrendLinesRedTrends.PriceAvg3.Min( tm.TrendLinesBlueTrends.PriceAvg3))},
+          {TradeLevelBy.PriceRB2,()=> levelMax(tm=>tm.TLRed.PriceAvg2.Max( tm.TLBlue.PriceAvg2))},
+          {TradeLevelBy.PriceRB3,()=> levelMin(tm=>tm.TLRed.PriceAvg3.Min( tm.TLBlue.PriceAvg3))},
 
-          { TradeLevelBy.PriceHigh,()=> levelMax(tm=>tm.TrendLinesBlueTrends.PriceAvg2)},
-          {TradeLevelBy.PriceLow,()=> levelMin(tm=>tm.TrendLinesBlueTrends.PriceAvg3)},
+          { TradeLevelBy.PriceHigh,()=> levelMax(tm=>tm.TLBlue.PriceAvg2)},
+          {TradeLevelBy.PriceLow,()=> levelMin(tm=>tm.TLBlue.PriceAvg3)},
 
-          {TradeLevelBy.PriceLimeH,()=> levelMax(tm=>tm.TrendLinesLimeTrends.PriceAvg2)},
-          {TradeLevelBy.PriceLimeL,()=> levelMin(tm=>tm.TrendLinesLimeTrends.PriceAvg3)},
+          {TradeLevelBy.PriceLimeH,()=> levelMax(tm=>tm.TLLime.PriceAvg2)},
+          {TradeLevelBy.PriceLimeL,()=> levelMin(tm=>tm.TLLime.PriceAvg3)},
 
-          {TradeLevelBy.PricePlumH,()=> levelMax(tm=>tm.TrendLinesPlumTrends.PriceAvg2)},
-          {TradeLevelBy.PricePlumL,()=> levelMin(tm=>tm.TrendLinesPlumTrends.PriceAvg3)},
+          {TradeLevelBy.PricePlumH,()=> levelMax(tm=>tm.TLPlum.PriceAvg2)},
+          {TradeLevelBy.PricePlumL,()=> levelMin(tm=>tm.TLPlum.PriceAvg3)},
 
-          {TradeLevelBy.PriceHigh0,()=> levelMax(tm=>tm.TrendLinesGreenTrends.PriceAvg2)},
-          {TradeLevelBy.PriceLow0,()=> levelMin(tm=>tm.TrendLinesGreenTrends.PriceAvg3)},
+          {TradeLevelBy.PriceHigh0,()=> levelMax(tm=>tm.TLGreen.PriceAvg2)},
+          {TradeLevelBy.PriceLow0,()=> levelMin(tm=>tm.TLGreen.PriceAvg3)},
 
 
           {TradeLevelBy.PriceMax,()=> levelMax(TradeTrendsPriceMax)},
@@ -3671,20 +3671,20 @@ namespace HedgeHog.Alice.Store {
           { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
 
-          {TradeLevelBy.LimeMax,()=> levelMax(tm=> comm(tm.TrendLinesLimeTrends.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.LimeMin,()=> levelMin(tm=> comm(tm.TrendLinesLimeTrends.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.LimeMax,()=> levelMax(tm=> comm(tm.TLLime.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.LimeMin,()=> levelMin(tm=> comm(tm.TLLime.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.GreenMax,()=> levelMax(tm=> comm(tm.TrendLinesGreenTrends.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.GreenMin,()=> levelMin(tm=> comm(tm.TrendLinesGreenTrends.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.GreenMax,()=> levelMax(tm=> comm(tm.TLGreen.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.GreenMin,()=> levelMin(tm=> comm(tm.TLGreen.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.RedMax,()=> levelMax(tm=> comm(tm.TrendLinesRedTrends.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.RedMin,()=> levelMin(tm=> comm(tm.TrendLinesRedTrends.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.RedMax,()=> levelMax(tm=> comm(tm.TLRed.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.RedMin,()=> levelMin(tm=> comm(tm.TLRed.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.PlumMax,()=> levelMax(tm=> comm(tm.TrendLinesPlumTrends.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.PlumMin,()=> levelMin(tm=> comm(tm.TrendLinesPlumTrends.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.PlumMax,()=> levelMax(tm=> comm(tm.TLPlum.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.PlumMin,()=> levelMin(tm=> comm(tm.TLPlum.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.BlueMax,()=> levelMax(tm=> comm(tm.TrendLinesBlueTrends.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.BlueMin,()=> levelMin(tm=> comm(tm.TrendLinesBlueTrends.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.BlueMax,()=> levelMax(tm=> comm(tm.TLBlue.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.BlueMin,()=> levelMin(tm=> comm(tm.TLBlue.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
 
           {TradeLevelBy.None,()=>double.NaN}
           };

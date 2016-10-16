@@ -228,7 +228,7 @@ namespace HedgeHog.Alice.Store {
           var redRates = RatesArray.GetRange(RatesArray.Count - redLength, redLength);
           redRates.Reverse();
           WaveShort.Rates = redRates;
-          return new { redRates, trend = TrendLinesRedTrends };
+          return new { redRates, trend = TLRed };
         })
       .ToArray();
 
@@ -245,18 +245,18 @@ namespace HedgeHog.Alice.Store {
     }
     private CorridorStatistics ScanCorridorBy12345(bool skipAll, IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ri = new { r = (Rate)null, i = 0 };
-      var miner = MonoidsCore.ToFunc(ri, r => r.r.BidLow);
-      var maxer = MonoidsCore.ToFunc(ri, r => r.r.AskHigh);
-      var groupMap = MonoidsCore.ToFunc(ri.Yield().ToList(), range => new {
+      var miner = ToFunc(ri, r => r.r.BidLow);
+      var maxer = ToFunc(ri, r => r.r.AskHigh);
+      var groupMap = ToFunc(ri.Yield().ToList(), range => new {
         rmm = range.MinMaxBy(miner, r => r.r.AskHigh),
         a = range.Average(r => r.r.PriceAvg)
       });
-      var groupMap2 = MonoidsCore.ToFunc(ri, r => new {
+      var groupMap2 = ToFunc(ri, r => new {
         rmm = new[] { r, r },
         a = r.r.PriceAvg
       });
-      var rates = MonoidsCore.ToFunc(0, skip => ratesForCorridor.Skip(skip).Select((r, i) => new { r, i }));
-      var grouped = MonoidsCore.ToFunc(0, (skip) =>
+      var rates = ToFunc(0, skip => ratesForCorridor.Skip(skip).Select((r, i) => new { r, i }));
+      var grouped = ToFunc(0, (skip) =>
        BarPeriod == BarsPeriodType.t1
        ? rates(skip).ToList().GroupedDistinct(r => r.r.StartDate.AddMilliseconds(-r.r.StartDate.Millisecond), groupMap)
        : rates(skip).Select(groupMap2));
@@ -291,7 +291,7 @@ namespace HedgeHog.Alice.Store {
           while(i2 < distances.Count && (distCurr = distances[i2].t.Item2 - distStart) < distChunc) {
             if(distances[i2].t.Item1.rmm[0].r.BidLow < min.r.BidLow)
               min = distances[i2].t.Item1.rmm[0];
-            if(distances[i2].t.Item1.rmm[1].r.AskHigh > max.r.AskHigh)
+            else if(distances[i2].t.Item1.rmm[1].r.AskHigh > max.r.AskHigh)
               max = distances[i2].t.Item1.rmm[1];
             i2++;
           }

@@ -785,8 +785,10 @@
       });
       lineChartData.push.apply(lineChartData, rates);
       lineChartData.unshift.apply(lineChartData, rates2);
-      tradeLevels(response.tradeLevels);
-      openTrades(response.trades)
+      if (response.isTrader) {
+        tradeLevels(response.tradeLevels);
+        openTrades(response.trades);
+      }
       //lineChartData.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
       response.waveLines.forEach(function (w, i) { w.bold = i == sumStartIndexById(); });
       isTradingActive(response.isTradingActive);
@@ -818,6 +820,10 @@
       });
       lineChartData2.push.apply(lineChartData2, rates);
       lineChartData2.unshift.apply(lineChartData2, rates2);
+      if (response.isTrader) {
+        tradeLevels(response.tradeLevels);
+        openTrades(response.trades);
+      }
       var closedTradesLocal = mustShowClosedTrades2()
         ? closedTrades.map(function (ct) { return $.extend(true, {}, ct); })
         : [];

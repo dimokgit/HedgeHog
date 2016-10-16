@@ -30,7 +30,7 @@ namespace HedgeHog.Alice.Store {
     #region Triggers
     [TradeDirectionTrigger]
     public void Limie() {
-      var tlCount = TrendLinesLimeTrends.Count;
+      var tlCount = TLLime.Count;
       UseRates(rates => rates.GetRange(rates.Count - tlCount, tlCount.Div(1.05).ToInt())).ForEach(range => {
         var minMax = range.Select((r, i) => new { r, i }).MinMaxBy(x => x.r.PriceAvg);
         var fibRange = Fibonacci.Levels(minMax[1].r.AskHigh, minMax[0].r.BidLow).Skip(4).Take(2).ToArray();
@@ -85,8 +85,8 @@ namespace HedgeHog.Alice.Store {
       if(!TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
         var bs = new[] { BuyLevel, SellLevel };
         UseRates(ra => {
-          var startIndex = ra.Count - (TrendLinesRedTrends.Count - 10);
-          var count = TrendLinesRedTrends.Count - TrendLinesGreenTrends.Count + 10;
+          var startIndex = ra.Count - (TLRed.Count - 10);
+          var count = TLRed.Count - TLGreen.Count + 10;
           if(startIndex <= 0 || count >= startIndex)
             return new List<Rate>();
           return ra.GetRange(ra.Count - startIndex, count);
@@ -113,11 +113,11 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeDirectionTrigger]
     public void OnOkDoGreen() {
-      TradeCorridorByGRB(TrendLinesGreenTrends);
+      TradeCorridorByGRB(TLGreen);
     }
     [TradeDirectionTrigger]
     public void OnOkDoBlue() {
-      TradeCorridorByGRB(TrendLinesBlueTrends);
+      TradeCorridorByGRB(TLBlue);
     }
     [TradeDirectionTrigger]
     public void OnOkTip2() {
@@ -229,7 +229,7 @@ namespace HedgeHog.Alice.Store {
     static ISubject<Action> _canTriggerTradeDirectionSubject = new Subject<Action>();
     static IDisposable _canTriggerTradeDirectionDisp = _canTriggerTradeDirectionSubject.Sample(2.FromSeconds()).Subscribe(a => a());
     private bool CanTriggerTradeDirection() {
-      var canTriggerTradeDirection = RatesLengthBy != RatesLengthFunction.DistanceMinSmth || TrendLinesBlueTrends.Count > BarsCount && IsRatesLengthStable;
+      var canTriggerTradeDirection = RatesLengthBy != RatesLengthFunction.DistanceMinSmth || TLBlue.Count > BarsCount && IsRatesLengthStable;
       if(IsInVirtualTrading && (!canTriggerTradeDirection || !_voltsOk))
         _canTriggerTradeDirectionSubject.OnNext(() => Log = new Exception(new { canTriggerTradeDirection, IsRatesLengthStable, _voltsOk } + ""));
       return canTriggerTradeDirection;
@@ -242,9 +242,9 @@ namespace HedgeHog.Alice.Store {
         return;
       if(!TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
         var angCondsAll = new Dictionary<TradeConditionDelegate, Rate.TrendLevels> {
-          { GreenAngOk,TrendLinesGreenTrends  },
-          { RedAngOk,TrendLinesRedTrends  },
-          { BlueAngOk,TrendLinesBlueTrends  }
+          { GreenAngOk,TLGreen  },
+          { RedAngOk,TLRed  },
+          { BlueAngOk,TLBlue  }
         };
         var angConds = from ac in angCondsAll
                        join tc in TradeConditionsInfo() on ac.Key equals tc

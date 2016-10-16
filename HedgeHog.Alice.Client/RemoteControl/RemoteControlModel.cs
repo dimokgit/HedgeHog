@@ -1097,7 +1097,7 @@ namespace HedgeHog.Alice.Client {
             string.Format(":{0}×[{1}]{2}°{3:n0}‡{4:n0}∆[{5}/{6}][{7}/{8}][{10}]"///↨↔
             /*0*/, tm.BarPeriod
             /*1*/, tm.RatesArray.Count + "," + tm.TicksPerSecondAverage.Round(1)
-            /*2*/, tm.TrendLinesBlueTrends.Angle.Round(2) + "/" + tm.CorridorAngle.Round(2) + "/" + tm.TrendLinesGreenTrends.Angle.Round(2)
+            /*2*/, tm.TLBlue.Angle.Round(2) + "/" + tm.CorridorAngle.Round(2) + "/" + tm.TLGreen.Angle.Round(2)
             /*3*/, tm.RatesHeightInPips
             /*4*/, tm.CorridorStats.HeightByRegressionInPips
             /*5*/, IntOrDouble(tm.StDevByHeightInPips, 5)
