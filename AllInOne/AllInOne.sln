@@ -227,9 +227,6 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "WWW", "http://localhost:360
 	EndProjectSection
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug SubArray|Any CPU = Debug SubArray|Any CPU
 		Debug SubArray|Mixed Platforms = Debug SubArray|Mixed Platforms

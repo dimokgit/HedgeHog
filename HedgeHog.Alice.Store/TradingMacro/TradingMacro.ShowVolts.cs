@@ -146,14 +146,16 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByTLH(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       var v = TrendLinesMinMax
-        .Where(t => t.Item2)
-        .Select(t => t.Item1)
-        .Where(tl=>tl.Color != TradeLevelsPreset.Blue+"")
+        .Select(t => t.Map((tl, isMin) => new { tl, isMin }))
+        .Where(t => t.isMin)
+        .Select(t => t.tl)
+        .Where(tl => tl.Color != TradeLevelsPreset.Blue + "")
         .Select(tl => tl.PriceMin.Concat(tl.PriceMax).ToArray())
         .ToArray()
         .Permutation((h1, h2) => h1.OverlapRatio(h2).ToPercent())
         .DefaultIfEmpty()
-        .Average();
+        .Average()
+        .Max(0);
       if(v.IsNotNaN())
         ShowVolts(v, VoltAverageIterations, getVolt, setVolt);
       return null;
