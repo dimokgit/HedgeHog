@@ -24,7 +24,7 @@ $releaseNotes = ""
 
 # Specify a specific Configuration and/or Platform to only create a NuGet package when building the project with this Configuration and/or Platform.
 #	e.g. $configuration = "Release"
-#		 $platform = "Any CPU"
+#		 $platform = "AnyCPU"
 $configuration = ""
 $platform = ""
 
@@ -35,12 +35,19 @@ $platform = ""
 $packProperties = ""
 
 # Specify any NuGet Pack options to pass to nuget.exe.
-#	e.g. $packOptions = "-IncludeReferencedProjects"
+#	e.g. $packOptions = "-Symbols"
+#	e.g. $packOptions = "-IncludeReferencedProjects -Symbols"
 # Do not specify a "-Version" (use $versionNumber above), "-OutputDirectory", or "-NonInteractive", as these are already provided.
 # Do not specify any "-Properties" here; instead use the $packProperties variable above.
 # Do not specify "-Build", as this may result in an infinite build loop.
 # NuGet Pack options that can be specified: http://docs.nuget.org/docs/reference/command-line-reference#Pack_Command_Options
+# Use "-Symbols" to also create a symbols package. When pushing your package, the symbols package will automatically be detected and pushed as well: https://www.symbolsource.org/Public/Wiki/Publishing
 $packOptions = "-Symbols"
+
+# Specify $true if the generated .nupkg file should be renamed to include the Configuration and Platform that was used to build the project, $false if not.
+#	e.g. If $true, MyProject.1.1.5.6.nupkg might be renamed to MyProject.1.1.5.6.Debug.AnyCPU.nupkg
+#	e.g. If $true, MyProject.1.1.5.6-beta1.nupkg might re renamed to MyProject.1.1.5.6-beta1.Release.x86.nupkg
+$appendConfigurationAndPlatformToNuGetPackageFileName = $true
 
 
 #------------------------------------------------
@@ -48,10 +55,10 @@ $packOptions = "-Symbols"
 #------------------------------------------------
 
 # The NuGet gallery to upload to. If not provided, the DefaultPushSource in your NuGet.config file is used (typically nuget.org).
-$sourceToUploadTo = ""
+$sourceToUploadTo = "http://nugetserverhedgehig.azurewebsites.net"
 
 # The API Key to use to upload the package to the gallery. If not provided and a system-level one does not exist for the specified Source, you will be prompted for it.
-$apiKey = "363997b2-7eb9-4721-9825-9bedef8e9f87"
+$apiKey = "localstore"
 
 # Specify any NuGet Push options to pass to nuget.exe.
 #	e.g. $pushOptions = "-Timeout 120"

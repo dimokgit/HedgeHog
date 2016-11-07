@@ -368,7 +368,7 @@ namespace HedgeHog.Alice.Store {
       get {
         var ints = new[] { TrendLime, TrendGreen, TrendPlum, TrendRed, TrendBlue }.Select(string.IsNullOrWhiteSpace);
         var trends = new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
-        var isOk = MonoidsCore.ToFunc((bool ok, TL tl) => new { ok = !ok, tl });
+        var isOk = MonoidsCore.ToFunc((bool isEmpty, TL tl) => new { ok = !isEmpty, tl });
         return ints.Zip(trends, isOk).Where(t => t.ok).Select(t => t.tl).ToArray();
       }
     }

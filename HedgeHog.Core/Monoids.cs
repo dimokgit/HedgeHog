@@ -19,64 +19,34 @@ namespace HedgeHog {
       return new Lazy<T>(projector);
     }
     #region ToFunc
-    public static Func<T> ToFunc<T>(this T value) {
-      return () => value;
+    public static Func<T> ToFunc<T>(this T value) { return () => value; }
+    public static Func<T> ToFunc<T>(Func<T> anon) {
+      return anon;
     }
-    public static Func<U1, T> ToFunc<T, U1>(this T value, U1 input, Func<U1, T> projector) {
-      return projector;
-    }
-    public static Func<T> ToFunc<T>(Func<T> projector) {
-      return projector;
-    }
-    public static Func<U1, T> ToFunc<T, U1>(U1 input, Func<U1, T> projector) {
-      return projector;
-    }
-    public static Func<U1, T> ToFunc<T, U1>(Func<U1, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, T> ToFunc<T, U1, U2>(U1 input, U2 input2, Func<U1, U2, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, T> ToFunc<T, U1, U2>(Func<U1, U2, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, T> ToFunc<T, U1, U2, U3>(U1 input, U2 input2, U3 input3, Func<U1, U2, U3, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, T> ToFunc<T, U1, U2, U3>(Func<U1, U2, U3, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, U4, T> ToFunc<T, U1, U2, U3, U4>(U1 input, U2 input2, U3 input3, U4 input4, Func<U1, U2, U3, U4, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, U4, T> ToFunc<T, U1, U2, U3, U4>(Func<U1, U2, U3, U4, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, U4, U5, T> ToFunc<T, U1, U2, U3, U4, U5>(U1 u1, U2 u2, U3 u3, U4 u4, U5 u5, Func<U1, U2, U3, U4, U5, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, U4, U5, U6, T> ToFunc<T, U1, U2, U3, U4, U5, U6>(U1 u1, U2 u2, U3 u3, U4 u4, U5 u5, U6 u6, Func<U1, U2, U3, U4, U5, U6, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, U4, U5, U6, U7, T> ToFunc<T, U1, U2, U3, U4, U5, U6, U7>(U1 u1, U2 u2, U3 u3, U4 u4, U5 u5, U6 u6, U7 u7, Func<U1, U2, U3, U4, U5, U6, U7, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, U4, U5, U6, U7, U8, T> ToFunc<T, U1, U2, U3, U4, U5, U6, U7, U8>(U1 u1, U2 u2, U3 u3, U4 u4, U5 u5, U6 u6, U7 u7, U8 u8, Func<U1, U2, U3, U4, U5, U6, U7, U8, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, T> ToFunc<T, U1, U2>(this T value, U1 input, U2 input2, Func<U1, U2, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, T> ToFunc<T, U1, U2, U3>(this T value, U1 input, U2 input2, U3 input3, Func<U1, U2, U3, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, T> ToFunc<T, U1, U2, U3>(this T value, U1 input, U2 input2, U3 input3) {
-      return (u1, u2, u3) => value;
-    }
+
+    public static Func<T1, T> ToFunc<T1, T>(T1 t1, Func<T1, T> anon) { return anon; }
+    public static Func<U1, T> ToFunc<U1, T>(Func<U1, T> projector) { return projector; }
+
+    public static Func<T1, T2, T> ToFunc<T1, T2, T>(T1 t1, T2 t2, Func<T1, T2, T> anon) { return anon; }
+    public static Func<U1, U2, T> ToFunc<T, U1, U2>(Func<U1, U2, T> projector) { return projector; }
+
+    public static Func<T1, T2, T3, T> ToFunc<T1, T2, T3, T>(T1 t1, T2 t2, T3 t3, Func<T1, T2, T3, T> anon) { return anon; }
+    public static Func<U1, U2, U3, T> ToFunc<T, U1, U2, U3>(Func<U1, U2, U3, T> projector) { return projector; }
+
+    public static Func<T1, T2, T3, T4, T> ToFunc<T1, T2, T3, T4, T>(T1 t1, T2 t2, T3 t3, T4 t4, Func<T1, T2, T3, T4, T> anon) { return anon; }
+    public static Func<U1, U2, U3, U4, T> ToFunc<T, U1, U2, U3, U4>(Func<U1, U2, U3, U4, T> projector) { return projector; }
+    public static Func<T1, T2, T3, T4, T5, T> ToFunc<T1, T2, T3, T4, T5, T>(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, Func<T1, T2, T3, T4, T5, T> anon) { return anon; }
+    public static Func<U1, U2, U3, U4, U5, T> ToFunc<T, U1, U2, U3, U4, U5>(Func<U1, U2, U3, U4, U5, T> projector) { return projector; }
+
+    public static Func<T1, T2, T3, T4, T5, T6, T> ToFunc<T1, T2, T3, T4, T5, T6, T>(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, Func<T1, T2, T3, T4, T5, T6, T> anon) { return anon; }
+    public static Func<U1, U2, U3, U4, U5, U6, T> ToFunc<T, U1, U2, U3, U4, U5, U6>(Func<U1, U2, U3, U4, U5, U6, T> projector) { return projector; }
+
+    public static Func<T1, T2, T3, T4, T5, T6, T7, T> ToFunc<T1, T2, T3, T4, T5, T6, T7, T>(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, Func<T1, T2, T3, T4, T5, T6, T7, T> anon) { return anon; }
+    public static Func<U1, U2, U3, U4, U5, U6, U7, T> ToFunc<T, U1, U2, U3, U4, U5, U6, U7>(Func<U1, U2, U3, U4, U5, U6, U7, T> projector) { return projector; }
+
+    public static Func<T1, T2, T3, T4, T5, T6, T7, T8, T> ToFunc<T1, T2, T3, T4, T5, T6, T7, T8, T>(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8, Func<T1, T2, T3, T4, T5, T6, T7, T8, T> anon) { return anon; }
+    public static Func<U1, U2, U3, U4, U5, U6, U7, U8, T> ToFunc<T, U1, U2, U3, U4, U5, U6, U7, U8>(Func<U1, U2, U3, U4, U5, U6, U7, U8, T> projector) { return projector; }
     #endregion
 
-    public static object ToFunc(bool p1, int p2, double p3, object p4) {
-      throw new NotImplementedException();
-    }
   }
 }

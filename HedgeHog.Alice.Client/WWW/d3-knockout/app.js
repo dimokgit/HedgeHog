@@ -38,7 +38,8 @@
   // enable global JSON date parsing
   //JSON.useDateParser();
   var chat;
-  var pair = "usdjpy";
+  var pair = getQueryVariable("pair") || "usdjpy";
+
   var NOTE_ERROR = "error";
   function settingsGrid() { return $("#settingsGrid"); }
   $(function () {
@@ -1308,7 +1309,7 @@
         ko.applyBindings(dataViewModel);
       });
       serverCall("readTitleRoot", [], function (t) {
-        document.title = t;
+        document.title = t + "::" + pair;
       });
       //#endregion
 
@@ -1528,6 +1529,17 @@
       return document[hidden];
     };
   })();
+  function getQueryVariable(variable) {
+    var query = window.location.search.substring(1);
+    var vars = query.split('&');
+    for (var i = 0; i < vars.length; i++) {
+      var pair = vars[i].split('=');
+      if (decodeURIComponent(pair[0]).toLowerCase() == variable.toLowerCase()) {
+        return decodeURIComponent(pair[1]);
+      }
+    }
+    console.log('Query variable %s not found', variable);
+  }
   // #endregion
   // #endregion
 })();

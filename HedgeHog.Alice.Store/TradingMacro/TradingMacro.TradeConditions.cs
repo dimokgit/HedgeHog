@@ -335,6 +335,27 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public TradeConditionDelegate AFOk {
+      get {
+        Func<TradingMacro, IEnumerable<TL>> tlsForward = tm => tm.TrendLinesTrendsAll.SkipLast(1);
+        return () => AllTLsForwardOk(tlsForward);
+      }
+    }
+
+    private TradeDirections AllTLsForwardOk(Func<TradingMacro, IEnumerable<TL>> tlsForward) {
+      return (from tm in TradingMacroTrender()
+              where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
+              where TLsAllForward(tlsForward(tm))
+              select TradeDirections.Both
+                    )
+                    .AsSingleable()
+                    .LastOrDefault();
+    }
+
+    private static bool TLsAllForward(IEnumerable<TL> tls) {
+      return tls.Pairwise().All(t => t.Item1.StartDate >= t.Item2.EndDate);
+    }
+
     public TradeConditionDelegate RPGOk {
       get {
         TradingMacroTrader(tm => Log = new Exception(new { TLF3Ok = new { tm.WavesRsdPerc } } + "")).Count();
