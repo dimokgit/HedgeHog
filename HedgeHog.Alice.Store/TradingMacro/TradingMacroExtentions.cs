@@ -1714,7 +1714,7 @@ namespace HedgeHog.Alice.Store {
                 continue;
               //TradesManager.RaisePriceChanged(Pair, RateLast);
               var d = Stopwatch.StartNew();
-              
+
               if(rate != null) {
                 if(ratePrev == null || BarPeriod > BarsPeriodType.t1 || ratePrev.StartDate.Second != rate.StartDate.Second) {
                   if(!IsTrader && tms().First().BarPeriod == BarPeriod)
@@ -1837,6 +1837,13 @@ namespace HedgeHog.Alice.Store {
       foreach(var trade in trades)
         SetTradeStatistics(trade);
     }
+    static IEnumerable<double> PPMFromEnd(TradingMacro tm, double size) {
+      return tm.UseRates(rates => {
+        var rs = rates.GetRange(size);
+        return new { rs, da = rs.Select(tm.GetPriceMA).Where(d => !d.IsNaN()).Distances().Average() };
+      })
+      .Select(x => x.da / x.rs.Last().StartDate.Subtract(x.rs[0].StartDate).Duration().TotalMinutes);
+    }
     public TradeStatistics SetTradeStatistics(Trade trade) {
       if(!TradeStatisticsDictionary.ContainsKey(trade.Id))
         TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics() {
@@ -1845,7 +1852,7 @@ namespace HedgeHog.Alice.Store {
           Values = new Dictionary<string, object> {
             { "Angle", TradingMacroTrender(tm=>tm.TLBlue.Angle.Abs()).SingleOrDefault() },
             { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
-            { "PPM", TradingMacroTrader(tm=> GetLastVolt().SingleOrDefault()).SingleOrDefault() },
+            { "PPM", TradingMacroTrender(tm=> PPMFromEnd(tm,-0.25),x=>x).SingleOrDefault() },
             { "PpmM1", TradingMacroM1(tm=>tm.WaveRangeAvg.PipsPerMinute).FirstOrDefault() },
             { "M1Angle", TradingMacroM1(tm=>tm.WaveRangeAvg.Angle.Abs()).FirstOrDefault() },
             //{ "Equinox", _wwwInfoEquinox },
@@ -3794,6 +3801,8 @@ namespace HedgeHog.Alice.Store {
           return ScanCorridorBy1234;
         case ScanCorridorFunction.OneToFive:
           return ScanCorridorBy12345;
+        case ScanCorridorFunction.AllFive:
+          return ScanCorridorByAll5;
         case ScanCorridorFunction.Fft:
           return ScanCorridorByFft;
         case ScanCorridorFunction.StDevSplits:
@@ -5236,17 +5245,17 @@ namespace HedgeHog.Alice.Store {
       get { return _lineMA; }
       set { _lineMA = value; }
     }
+    [Category(categoryActive)]
+    [WwwSetting(wwwSettingsCorridorCMA)]
     public double RatesHeightMin {
       get { return _RatesHeightMin; }
       set {
         if(_RatesHeightMin != value) {
           _RatesHeightMin = value;
-          OnPropertyChanged("RatesHeightMin");
-          OnPropertyChanged("RatesHeightMinInPips");
+          OnPropertyChanged(nameof(RatesHeightMin));
         }
       }
     }
-    public double RatesHeightMinInPips { get { return InPips(RatesHeightMin); } }
     #endregion
 
     #region RatesDistanceMin

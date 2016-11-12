@@ -145,13 +145,11 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByTLH(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      var isForward = TLsAllForward(TrendLinesTrendsAll.SkipLast(1));
       var v = TrendLinesMinMax
-        .Where(_ => isForward)
         .Select(t => t.Map((tl, isMin) => new { tl, isMin }))
-        //.Where(t => t.isMin)
+        .Where(t => t.isMin)
         .Select(t => t.tl)
-        .Where(tl => tl.Color != TradeLevelsPreset.Blue + "")
+        //.Where(tl => tl.Color != TradeLevelsPreset.Blue + "")
         .Select(tl => new[] { tl.PriceAvg3, tl.PriceAvg2 })
         .ToArray()
         .Permutation((h1, h2) => h1.OverlapRatio(h2).ToPercent())
@@ -297,6 +295,8 @@ namespace HedgeHog.Alice.Store {
           return ScanRatesLengthByDistanceMin0;
         case RatesLengthFunction.TimeFrame:
           return ScanRatesLengthByTimeFrame;
+        case RatesLengthFunction.MinHeight:
+          return ScanRatesLengthByMinHeight;
         case RatesLengthFunction.DMTF:
           return ScanRatesLengthByDistanceMinAndimeFrame;
         case RatesLengthFunction.M1Wave:

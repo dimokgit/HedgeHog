@@ -243,12 +243,15 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorBy12345(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       return ScanCorridorBy12345(true, ratesForCorridor, priceHigh, priceLow);
     }
-    private CorridorStatistics ScanCorridorBy12345(bool skipAll, IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+    private CorridorStatistics ScanCorridorByAll5(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      return ScanCorridorBy12345(null, ratesForCorridor, priceHigh, priceLow);
+    }
+    private CorridorStatistics ScanCorridorBy12345(bool? skipAll, IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ri = new { r = (Rate)null, i = 0 };
       var miner = ToFunc(ri, r => r.r.BidLow);
       var maxer = ToFunc(ri, r => r.r.AskHigh);
-      var groupMap = ToFunc(ri.Yield().ToList(), range => new {
-        rmm = range.MinMaxBy(miner, r => r.r.AskHigh),
+      var groupMap = ToFunc(ri.Yield().ToArray().AsIList(), range => new {
+        rmm = range.MinMaxBy(miner, maxer),
         a = range.Average(r => r.r.PriceAvg)
       });
       var groupMap2 = ToFunc(ri, r => new {
@@ -256,9 +259,11 @@ namespace HedgeHog.Alice.Store {
         a = r.r.PriceAvg
       });
       var rates = ToFunc(0, skip => ratesForCorridor.Skip(skip).Select((r, i) => new { r, i }));
+      var sampleMin = 2000;
+      var buffrerSize = (ratesForCorridor.Count / sampleMin).Max(1);
       var grouped = ToFunc(0, (skip) =>
        BarPeriod == BarsPeriodType.t1
-       ? rates(skip).ToList().GroupedDistinct(r => r.r.StartDate.AddMilliseconds(-r.r.StartDate.Millisecond), groupMap)
+       ? rates(skip).Buffer(buffrerSize).Select(groupMap)
        : rates(skip).Select(groupMap2));
       var distanceTotal = grouped(0).Distances(x => x.a).Last().Item2;
       //var sections2 = sectionStarts.Scan(new { end=0,start=0},(p, n) => new { end = n.i, start = p.end }).ToList();
@@ -328,7 +333,7 @@ namespace HedgeHog.Alice.Store {
       Func<int, bool, TradeLevelsPreset, int, Singleable<IList<Rate>>> calcTrendLines = (start, isMin, pl, skip) => {
         return bs(start, pl, isMin, skip)
         .Do(x => {
-          if(!skipFirst.HasValue || skipAll) {
+          if(skipAll.HasValue && (!skipFirst.HasValue || skipAll.Value)) {
             skipFirst = x.skip;
           }
         })
@@ -341,7 +346,7 @@ namespace HedgeHog.Alice.Store {
         .ForEach(tl => TrendLines2 = Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc));
 
       Func<int[], Action<Lazy<IList<Rate>>>, Lazy<IList<Rate>>, TradeLevelsPreset, Singleable<IList<Rate>>> doTL = (ints, tl, tlDef, color)
-         => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.Value, isMin = s > 0 })
+         => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.GetValueOrDefault(), isMin = s > 0 })
          .SelectMany(p => calcTrendLines(p.s, p.isMin, color, p.skip))
          .Do(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc)))
          .AsSingleable();

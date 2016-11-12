@@ -46,7 +46,8 @@ namespace HedgeHog.Alice.Store {
     M1Wave,
     M1WaveAvg,
     M1WaveAvg2,
-    M1WaveAvg3
+    M1WaveAvg3,
+    MinHeight
   }
   public enum ScanCorridorFunction {
     StDevSplits = 46,
@@ -55,6 +56,7 @@ namespace HedgeHog.Alice.Store {
     OneTwoThree = 5,
     OneToFour = 6,
     OneToFive = 7,
+    AllFive = 8,
   }
   public enum TrailingWaveMethod {
     SimpleMove = 5,

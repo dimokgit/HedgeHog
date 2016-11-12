@@ -129,19 +129,31 @@ namespace HedgeHog.Alice.Store {
     }
 
     void ScanRatesLengthByDistanceMinSmoothed() {
-      BarsCountCalc = GetRatesLengthByDistanceMinByMacdSmoothed()
+      Func<int, double[]> bcByM1 = count => {
+        var bc = (from rates in UseRatesInternal(ri => ri.GetRange(count))
+                  let ts = rates.Last().StartDate.Subtract(rates.First().StartDate).Duration()
+                  select RatesHeightByM1TimeFrame(ts));
+        return bc.ToArray();
+      };
+      var x = GetRatesLengthByDistanceMinByMacdSmoothed()
         //.Concat(BarsCountByM1())
         .OrderBy(d => d)
         .DefaultIfEmpty(BarsCountCalc)
         .Take(1)
-        .Do(count=>BarCountSmoothed=count)
+        .Do(count => BarCountSmoothed = count)
         .Concat(new[] { BarsCount })
-        .Concat(BarPeriod > BarsPeriodType.t1 
-          ? new[] { (TimeFrameTresholdTimeSpan.TotalMinutes / BarPeriodInt).ToInt()}
+        //.Concat(BarsCountByMinHeight(RatesHeightByM1TimeFrame()))
+        .Concat(BarPeriod > BarsPeriodType.t1
+          ? new[] { (TimeFrameTresholdTimeSpan.TotalMinutes / BarPeriodInt).ToInt() }
           : GetRatesCountByTimeFrame(TimeFrameTresholdTimeSpan))
         .OrderByDescending(d => d)
         .Do(count => IsRatesLengthStable = RatesArray.Count.Ratio(count) < 1.05)
-        .First();
+        .Take(1)
+        .SelectMany(count => new[] { count }.Concat(bcByM1(count).SelectMany(rhm => BarsCountByMinHeight(rhm))))
+        .OrderByDescending(d => d)
+        .Take(1)
+        .ToArray();
+      x.ForEach(count => BarsCountCalc = count);
     }
     object _macdDiastancesLocker = new object();
     List<double> _macdDiastances = new List<double>();
@@ -225,17 +237,39 @@ namespace HedgeHog.Alice.Store {
       if(BarPeriod != BarsPeriodType.t1)
         BarsCountCalc = TimeFrameTresholdTimeSpan.TotalMinutes.ToInt();
       else
-           UseRatesInternal(ri => {
-             var dateStart = ri.Last().StartDate.Subtract(TimeFrameTresholdTimeSpan);
-             return ri.FuzzyIndex(dateStart, (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)).DefaultIfEmpty(0);
-           })
-           .SelectMany(i => i)
-           .ForEach(i => {
-             var count = RatesInternal.Count - i;
-             if(count >= BarsCount)
-               BarsCountCalc = count;
-           });
+        UseRatesInternal(ri => {
+          var dateStart = ri.Last().StartDate.Subtract(TimeFrameTresholdTimeSpan);
+          return ri.FuzzyIndex(dateStart, (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)).DefaultIfEmpty(0);
+        })
+        .SelectMany(i => i)
+        .ForEach(i => {
+          var count = RatesInternal.Count - i;
+          if(count >= BarsCount)
+            BarsCountCalc = count;
+        });
       IsRatesLengthStable = true;
+    }
+    void ScanRatesLengthByMinHeight() {
+      BarsCountByMinHeight(InPoints(RatesHeight)).ForEach(count => BarsCountCalc = count);
+      IsRatesLengthStable = true;
+    }
+
+    private IEnumerable<int> BarsCountByMinHeight(double ratesHeightMin) {
+      return UseRatesInternal(ri =>
+        ri.BackwardsIterator()
+        .Scan(new { min = double.MaxValue, max = double.MinValue }, (x, y) => new { min = x.min.Min(y.PriceAvg), max = x.max.Max(y.PriceAvg) })
+        .TakeWhile(x => x.max - x.min < ratesHeightMin)
+        .Count()
+      )
+      .Where(count => count >= BarsCount);
+    }
+    private double RatesHeightByM1TimeFrame(TimeSpan timeFrame) {
+      var bc = (from tm in TradingMacroM1()
+                from urs in tm.UseRatesInternal(ri => ri.Buffer(timeFrame.TotalMinutes.ToInt(), 1))
+                from rates in urs
+                select rates.Height())
+                .Average();
+      return bc;
     }
 
     void ScanRatesLengthByDistanceMinAndimeFrame() {
@@ -310,7 +344,7 @@ namespace HedgeHog.Alice.Store {
         .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()));
     }
     private int[] GetRatesCountByTimeFrame(TimeSpan timeFrame) {
-      return UseRatesInternal(ri => ri.FuzzyIndex( ri.Last().StartDate.Subtract(timeFrame), (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
+      return UseRatesInternal(ri => ri.FuzzyIndex(ri.Last().StartDate.Subtract(timeFrame), (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
        .SelectMany(i => i, (_, i) => /*BarsCountCalc.Max(*/RatesInternal.Count - i/*)*/)
        .ToArray();
     }
@@ -350,7 +384,8 @@ namespace HedgeHog.Alice.Store {
       }
 
       set {
-        if(_BarCountSmoothed == value)return;
+        if(_BarCountSmoothed == value)
+          return;
         _BarCountSmoothed = value;
         OnPropertyChanged("BarCountSmoothed");
       }
