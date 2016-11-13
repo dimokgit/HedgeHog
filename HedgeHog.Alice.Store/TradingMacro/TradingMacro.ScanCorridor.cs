@@ -258,7 +258,8 @@ namespace HedgeHog.Alice.Store {
         rmm = new[] { r, r },
         a = r.r.PriceAvg
       });
-      var rates = ToFunc(0, skip => ratesForCorridor.Skip(skip).Select((r, i) => new { r, i }));
+      var firstMinute = ratesForCorridor[0].StartDate.Round( MathExtensions.RoundTo.MinuteCieling);
+      var rates = ToFunc(0, skip => ratesForCorridor.Skip(skip).Select((r, i) => new { r, i }).SkipWhile(r => r.r.StartDate < firstMinute));
       var sampleMin = 2000;
       var buffrerSize = (ratesForCorridor.Count / sampleMin).Max(1);
       var grouped = ToFunc(0, (skip) =>

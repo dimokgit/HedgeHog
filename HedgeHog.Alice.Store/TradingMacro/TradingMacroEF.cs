@@ -473,8 +473,6 @@ namespace HedgeHog.Alice.Store {
     /// <summary>
     /// No Metadata Documentation available.
     /// </summary>
-    [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
-    [DataMemberAttribute()]
     public global::System.Int32 CorridorBarMinutes {
       get {
         return _CorridorBarMinutes;

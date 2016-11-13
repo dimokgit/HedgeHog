@@ -75,6 +75,7 @@ namespace HedgeHog.Alice.Store {
     Plum,
     PlumMM,
     Blue,
+    BlueMM,
     TradeHeight,
     StDev,
     M1StDev

@@ -1483,14 +1483,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    private int _barsCount;
     [DisplayName("Bars Count")]
     [Category(categoryActive)]
     [WwwSetting(wwwSettingsBars)]
     public int BarsCount {
-      get { return CorridorBarMinutes; }
+      get { return _barsCount; }
       set {
-        if(CorridorBarMinutes != value) {
-          CorridorBarMinutes = value;
+        if(_barsCount != value) {
+          _barsCount = value;
           BarsCountCalc = value;
           OnPropertyChanged(TradingMacroMetadata.BarsCount);
         }
@@ -1928,6 +1929,7 @@ namespace HedgeHog.Alice.Store {
     public string PairPlain { get { return Pair.ToLower().Replace("/", ""); } }
 
     bool _FitRatesToPlotter;
+
     [Category(categoryCorridor)]
     public bool FitRatesToPlotter {
       get { return _FitRatesToPlotter; }

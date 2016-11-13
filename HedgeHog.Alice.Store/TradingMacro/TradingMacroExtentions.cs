@@ -241,7 +241,6 @@ namespace HedgeHog.Alice.Store {
     static NewsCasterModel _newsCaster { get { return NewsCasterModel.Default; } }
 
     public TradingMacro() {
-      Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategies.Universal;
       this.ObservableForProperty(tm => tm.Pair, false, false)
         .Where(oc => !string.IsNullOrWhiteSpace(oc.Value) && !IsInVirtualTrading)
         .Throttle(1.FromSeconds())
@@ -322,7 +321,6 @@ namespace HedgeHog.Alice.Store {
           Scheduler.Default.Schedule(10.FromSeconds(), () => SnapshotArguments.IsTarget = true);
         }
       });
-      IsTradingActive = IsInVirtualTrading;
       //MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveActiveSettings());
     }
 
@@ -1259,6 +1257,7 @@ namespace HedgeHog.Alice.Store {
         }
       }
       RaisePositionsChanged();
+      Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategies.Universal;
       IsTradingActive = IsInVirtualTrading;
     }
 
@@ -3740,6 +3739,9 @@ namespace HedgeHog.Alice.Store {
           break;
         case TradingMacroTakeProfitFunction.Blue:
           tp = tradeLeveBy(TradeLevelBy.PriceHigh, TradeLevelBy.PriceLow);
+          break;
+        case TradingMacroTakeProfitFunction.BlueMM:
+          tp = tradeLeveBy(TradeLevelBy.BlueMax, TradeLevelBy.BlueMin);
           break;
         case TradingMacroTakeProfitFunction.Pips:
           tp = InPoints(xRatio);
