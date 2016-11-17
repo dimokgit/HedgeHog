@@ -59,6 +59,10 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -79,6 +83,7 @@
     <Compile Include="Common.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="FullGroupJoin.cs" />
+    <Compile Include="FuzzyIndex.cs" />
     <Compile Include="IEnumerable.cs" />
     <Compile Include="LazyMonad.cs" />
     <Compile Include="Math.cs" />

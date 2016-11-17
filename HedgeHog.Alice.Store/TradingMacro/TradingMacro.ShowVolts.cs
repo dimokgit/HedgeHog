@@ -45,8 +45,12 @@ namespace HedgeHog.Alice.Store {
             : () => ShowVoltsByPPM(GetVoltage2, SetVoltage2);
         case HedgeHog.Alice.VoltageFunction.PPMH:
           return ShowVoltsByPPMH;
-        case HedgeHog.Alice.VoltageFunction.AO:
-          return ShowVoltsByAO;
+        case HedgeHog.Alice.VoltageFunction.TFH:
+          return voltIndex == 0
+            ? (Func<CorridorStatistics>) ShowVoltsByFrameAverage
+            : () => ShowVoltsByFrameAverage(GetVoltage2, SetVoltage2);
+        //case HedgeHog.Alice.VoltageFunction.AO:
+        //  return ShowVoltsByAO;
         case HedgeHog.Alice.VoltageFunction.MPH:
           return ShowVoltsByMPH;
         case HedgeHog.Alice.VoltageFunction.PpmM1:
@@ -115,6 +119,20 @@ namespace HedgeHog.Alice.Store {
         SetVots(InPips(v.ppm), 2);
         SetVolts(v.hsd, GetVoltage2, SetVoltage2, 2);
       });
+      return null;
+    }
+
+    CorridorStatistics ShowVoltsByFrameAverage() {
+      return ShowVoltsByFrameAverage(GetVoltage, SetVoltage);
+    }
+    CorridorStatistics ShowVoltsByFrameAverage(Func<Rate, double> getVolt=null, Action<Rate, double> setVolt=null) {
+      var useCalc = IsRatesLengthStable;
+      if(!useCalc)
+        return GetLastVolt(getVolt)
+          .Select(v => ShowVolts(v, 2,getVolt,setVolt))
+          .SingleOrDefault();
+      var calcVolt = RatesHeightByFrameAverage(new[] { this }, 0.0625);
+      SetVolts(InPips(calcVolt), getVolt, setVolt, 2);
       return null;
     }
 

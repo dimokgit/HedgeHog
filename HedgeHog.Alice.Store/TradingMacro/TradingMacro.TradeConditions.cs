@@ -1987,7 +1987,7 @@ namespace HedgeHog.Alice.Store {
         });
         return;
       }
-      if(IsTrader && CanTriggerTradeDirection() && !HaveTrades() /*&& !HasTradeDirectionTriggers*/) {
+      if(IsRatesLengthStable && IsTrader && CanTriggerTradeDirection() && !HaveTrades() /*&& !HasTradeDirectionTriggers*/) {
         TradeConditionsEval().ForEach(eval => {
           var hasBuy = TradeDirection.HasUp() && eval.HasUp();
           var hasSell = TradeDirection.HasDown() && eval.HasDown();

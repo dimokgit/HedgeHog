@@ -635,7 +635,7 @@ namespace HedgeHog.Bars {
       public static readonly Rate EmptyRate;
       public static readonly Func<TrendLevels, bool> NotEmpty = tl => !tl.IsEmpty;
       static TrendLevels() {
-        Empty = new TrendLevels(0, new[] { double.NaN, double.NaN }, double.NaN, DateTime.MaxValue, DateTime.MaxValue);
+        Empty = new TrendLevels(new Rate[0], new[] { double.NaN, double.NaN }, double.NaN, DateTime.MaxValue, DateTime.MaxValue);
         EmptyRate = new Rate { Trends = Empty };
       }
       public string Color { get; set; }
@@ -689,8 +689,11 @@ namespace HedgeHog.Bars {
       public DateTime EndDate { get; private set; }
       public TimeSpan TimeSpan { get { return EndDate - StartDate; } }
 
-      public TrendLevels(int count, double[] coeffs, double stDev, DateTime startDate, DateTime endDate) {
-        this.Count = count;
+      public IList<Rate> Rates { get; private set; }
+
+      public TrendLevels(IList<Rate> rates, double[] coeffs, double stDev, DateTime startDate, DateTime endDate) {
+        this.Rates = rates;
+        this.Count = rates.Count;
         this.Slope = coeffs.LineSlope();
         this.Coeffs = coeffs;
         this.StDev = stDev;

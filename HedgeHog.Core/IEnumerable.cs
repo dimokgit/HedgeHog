@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HedgeHog {
-  public static class IEnumerableCore {
+  public static partial class IEnumerableCore {
     public class Singleable<T> : IEnumerable<T> {
       private readonly IEnumerable<T> source;
       public Singleable(IEnumerable<T> sourse) {
@@ -175,6 +175,16 @@ namespace HedgeHog {
       var a = new T[count];
       Array.Copy(source.ToArray(), a, count);
       return a;
+    }
+    public static IList<T> GetRange<T>(this List<T> source, DateTime start,DateTime end,Func<T,DateTime> toDate) {
+      Func<DateTime, int[]> index = date => source.FuzzyIndex(date, (d, r1, r2) => d.Between(toDate(r1), toDate(r2)));
+      var i1 = index(start.Max(toDate(source[0])));
+      var i2 = index(end.Min(toDate(source.Last())));
+      return (from s in i1
+              from e in i2
+              select source.GetRange(s, e-s+1))
+              .DefaultIfEmpty(new List<T>())
+              .First();
     }
     public static Singleable<T> AsSingleable<T>(this IEnumerable<T> source) {
       return new Singleable<T>(source);

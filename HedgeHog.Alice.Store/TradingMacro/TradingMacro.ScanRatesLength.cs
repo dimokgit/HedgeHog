@@ -149,7 +149,7 @@ namespace HedgeHog.Alice.Store {
         .OrderByDescending(d => d)
         .Do(count => IsRatesLengthStable = RatesArray.Count.Ratio(count) < 1.05)
         .Take(1)
-        .SelectMany(count => new[] { count }.Concat(bcByM1(count).SelectMany(rhm => BarsCountByMinHeight(rhm))))
+        .SelectMany(count => new[] { count })//.Concat(bcByM1(count).SelectMany(rhm => BarsCountByMinHeight(rhm))))
         .OrderByDescending(d => d)
         .Take(1)
         .ToArray();
@@ -264,12 +264,33 @@ namespace HedgeHog.Alice.Store {
       .Where(count => count >= BarsCount);
     }
     private double RatesHeightByM1TimeFrame(TimeSpan timeFrame) {
-      var bc = (from tm in TradingMacroM1()
-                from urs in tm.UseRatesInternal(ri => ri.Buffer(timeFrame.TotalMinutes.ToInt(), 1))
-                from rates in urs
+      return RatesHeightByFrameAverage(TradingMacroM1(), _ => timeFrame.TotalMinutes.ToInt());
+    }
+    private double RatesHeightByFrameAverage(IEnumerable<TradingMacro> tms, double frameSizeRatio) {
+      return RatesHeightByFrameAverage(new[] { this }, rates => (rates.Count * frameSizeRatio).ToInt());
+    }
+    private static double RatesHeightByFrameAverage(IEnumerable<TradingMacro> tms, Func<IList<Rate>, int> frameSize) {
+      Func<IList<Rate>, IEnumerable<IList<Rate>>> buffer = ri => {
+        var size = frameSize(ri);
+        return ri.Buffer(size, 1).Where(b => b.Count == size);
+      };
+      var bc = (from tm in tms
+                from tl in tm.TrendLinesTrendsAll.TakeLast(1)
+                from rates in buffer(tl.Rates)
                 select rates.Height())
                 .Average();
       return bc;
+    }
+    private static double RatesHeightByFrameAverageRatio(IEnumerable<TradingMacro> tms, Func<IList<Rate>, int> frameSize) {
+      Func<IList<Rate>, IEnumerable<IList<Rate>>> buffer = ri => {
+        var size = frameSize(ri);
+        return ri.Buffer(size, 1).Where(b => b.Count == size);
+      };
+      var bc = (from tm in tms
+                from tl in tm.TrendLinesTrendsAll.TakeLast(1)
+                let avg = buffer(tl.Rates).Select(rs => rs.Height()).Average()
+                select avg / tl.Rates.Height());
+      return bc.LastOrDefault();
     }
 
     void ScanRatesLengthByDistanceMinAndimeFrame() {

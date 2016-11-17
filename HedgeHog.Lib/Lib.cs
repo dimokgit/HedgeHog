@@ -34,25 +34,6 @@ namespace ControlExtentions {
 }
 namespace HedgeHog {
   public static partial class Lib {
-    public static string ToJson(this object obj) {
-      var settings = new Newtonsoft.Json.JsonSerializerSettings();
-      settings.Converters.Add(new StringEnumConverter());
-      return Newtonsoft.Json.JsonConvert.SerializeObject(obj, settings);
-    }
-    public static T FromJson<T>(this string json) {
-      var settings = new Newtonsoft.Json.JsonSerializerSettings();
-      settings.Converters.Add(new StringEnumConverter());
-      return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json, settings);
-    }
-    public static bool TryFromJson<T>(this string json,out T v) {
-      try {
-        v = json.FromJson<T>();
-        return true;
-      } catch {
-        v = default(T);
-        return false;
-      }
-    }
     public static double WeightedAverage<T>(this IList<T> values, Func<T, double> value, Func<T, double> weight) {
       return values.Sum(a => value(a) * weight(a)) / values.Sum(a => weight(a));
     }

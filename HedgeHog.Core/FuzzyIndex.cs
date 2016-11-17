@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HedgeHog {
-  public static partial class MathExtensions {
+  public static partial class IEnumerableCore {
     static int FuzzyFind(this IList<double> sortedList, double value) {
       return FuzzyFind(sortedList, value, 0, sortedList.Count - 1);
     }
