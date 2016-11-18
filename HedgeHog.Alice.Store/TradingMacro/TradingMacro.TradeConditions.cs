@@ -1111,6 +1111,18 @@ namespace HedgeHog.Alice.Store {
         ).SingleOrDefault();
       }
     }
+    public TradeConditionDelegate VltRng2Ok {
+      get {
+        return () => GetLastVolt(GetVoltage2)
+        .Select(volt =>
+          VoltRange_21.IsNaN()
+          ? TradeDirectionByTreshold(volt, VoltRange_20)
+          : VoltRange_20 < VoltRange_21
+          ? TradeDirectionByBool(volt.Between(VoltRange_20, VoltRange_21))
+          : TradeDirectionByBool(!volt.Between(VoltRange_21, VoltRange_20))
+        ).SingleOrDefault();
+      }
+    }
     public TradeConditionDelegate VltAvgOk => () => TradeDirectionByTreshold(GetVoltageHigh(), VoltAvgRange);
     public TradeConditionDelegate VltUpOk {
       get {

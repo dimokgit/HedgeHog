@@ -1231,6 +1231,34 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public double VoltRange_20 { get; set; }
+    public double VoltRange_21 { get; set; }
+    string _VoltRange_2 = "[0]";
+    [WwwSetting(Group = wwwSettingsVoltage)]
+    [Category(categoryActive)]
+    [Description("Range or single value: 15-30 or 60 or -60")]
+    public string VoltRange_2 {
+      get { return _VoltRange_2; }
+      set {
+        if(_VoltRange_2 == value)
+          return;
+
+        _VoltRange_2 = (value ?? "").Trim();
+
+        double[] spans;
+        if(!_VoltRange_2.TryFromJson(out spans))
+          spans = _VoltRange_2.Splitter('-').Select(s => double.Parse(s)).ToArray();
+
+        if(spans == null || spans.IsEmpty())
+          spans = new[] { 0.0 };
+        VoltRange_20 = spans[0];
+        VoltRange_21 = spans.Concat(double.NaN).Take(2).Last();
+
+        OnPropertyChanged(() => VoltRange_2);
+      }
+    }
+
+
     #region VoltAvgRange
     private double _VoltAvgRange;
     [WwwSetting(Group = wwwSettingsVoltage)]
