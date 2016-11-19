@@ -13,7 +13,7 @@ using ReactiveUI;
 using static HedgeHog.MonoidsCore;
 using static HedgeHog.IEnumerableCore;
 using HedgeHog.Shared;
-
+using TLS = System.Lazy<System.Collections.Generic.IList<HedgeHog.Bars.Rate>>;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     #region ScanCorridor Extentions
@@ -258,7 +258,7 @@ namespace HedgeHog.Alice.Store {
         rmm = new[] { r, r },
         a = r.r.PriceAvg
       });
-      var firstMinute = ratesForCorridor[0].StartDate.Round( MathExtensions.RoundTo.MinuteCieling);
+      var firstMinute = ratesForCorridor[0].StartDate.Round(MathExtensions.RoundTo.MinuteCieling);
       var rates = ToFunc(0, skip => ratesForCorridor.Skip(skip).Select((r, i) => new { r, i }).SkipWhile(r => r.r.StartDate < firstMinute));
       var sampleMin = 2000;
       var buffrerSize = (ratesForCorridor.Count / sampleMin).Max(1);
@@ -342,22 +342,29 @@ namespace HedgeHog.Alice.Store {
         .AsSingleable();
       };
 
+      Func<TLS, TLS, bool> isNewTL = (tlOld, tlNew) =>
+        IsTrendsEmpty(tlOld).With(tl => tl.IsEmpty ||
+        IsTrendsEmpty(tlNew).With(tl2 => !tl2.IsEmpty && tl.EndDate < tl2.EndDate));
+      Action<TLS, TLS, Action> setTLs = (tlOld, tlNew, setter) => { if(isNewTL(tlOld, tlNew)) setter(); };
+
       TrendBlueInt().Pairwise((s, c) => new { s })
         .SelectMany(p => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, 0))
-        .ForEach(tl => TrendLines2 = Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc));
+        .Select(tl => Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc))
+        .ForEach(tl => setTLs(TrendLines2, tl, () => TrendLines2 = tl));
 
-      Func<int[], Action<Lazy<IList<Rate>>>, Lazy<IList<Rate>>, TradeLevelsPreset, Singleable<IList<Rate>>> doTL = (ints, tl, tlDef, color)
+      Func<int[], Action<TLS>, TLS, TradeLevelsPreset, Singleable<IList<Rate>>> doTL = (ints, tl, tlDef, color)
          => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.GetValueOrDefault(), isMin = s > 0 })
          .SelectMany(p => calcTrendLines(p.s, p.isMin, color, p.skip))
          .Do(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc)))
          .AsSingleable();
 
+
       (from td in TradeConditionHasAny(BlueAngOk).DefaultIfEmpty(TradeDirections.Both)
        where td.HasAny()
-       from tlr in doTL(TrendRedInt(), tl => TrendLines = tl, TrendLines, TradeLevelsPreset.Red)
-       from tlp in doTL(TrendPlumInt(), tl => TrendLines3 = tl, TrendLines3, TradeLevelsPreset.Plum)
-       from tlg in doTL(TrendGreenInt(), tl => TrendLines1 = tl, TrendLines1, TradeLevelsPreset.Green)
-       from tll in doTL(TrendLimeInt(), tl => TrendLines0 = tl, TrendLines0, TradeLevelsPreset.Lime)
+       from tlr in doTL(TrendRedInt(), tl => setTLs(TrendLines, tl, () => TrendLines = tl), TrendLines, TradeLevelsPreset.Red)
+       from tlp in doTL(TrendPlumInt(), tl => setTLs(TrendLines3, tl, () => TrendLines3 = tl), TrendLines3, TradeLevelsPreset.Plum)
+       from tlg in doTL(TrendGreenInt(), tl => setTLs(TrendLines1, tl, () => TrendLines1 = tl), TrendLines1, TradeLevelsPreset.Green)
+       from tll in doTL(TrendLimeInt(), tl => setTLs(TrendLines0, tl, () => TrendLines0 = tl), TrendLines0, TradeLevelsPreset.Lime)
        select true
        ).Count();
 

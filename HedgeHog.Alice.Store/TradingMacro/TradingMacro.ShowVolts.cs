@@ -43,11 +43,13 @@ namespace HedgeHog.Alice.Store {
           return voltIndex == 0
             ? (Func<CorridorStatistics>)ShowVoltsByPPM
             : () => ShowVoltsByPPM(GetVoltage2, SetVoltage2);
+        case HedgeHog.Alice.VoltageFunction.PPMB:
+          return voltIndex == 0 ? (Func<CorridorStatistics>)ShowVoltsByPPMB : ShowVoltsByPPMB2;
         case HedgeHog.Alice.VoltageFunction.PPMH:
           return ShowVoltsByPPMH;
         case HedgeHog.Alice.VoltageFunction.TFH:
           return voltIndex == 0
-            ? (Func<CorridorStatistics>) ShowVoltsByFrameAverage
+            ? (Func<CorridorStatistics>)ShowVoltsByFrameAverage
             : () => ShowVoltsByFrameAverage(GetVoltage2, SetVoltage2);
         //case HedgeHog.Alice.VoltageFunction.AO:
         //  return ShowVoltsByAO;
@@ -96,6 +98,22 @@ namespace HedgeHog.Alice.Store {
         .SingleOrDefault();
     }
 
+    CorridorStatistics ShowVoltsByPPMB() { return ShowVoltsByPPMB(GetVoltage, SetVoltage); }
+    CorridorStatistics ShowVoltsByPPMB2() { return ShowVoltsByPPMB(GetVoltage2, SetVoltage2); }
+    CorridorStatistics ShowVoltsByPPMB(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      Func<IEnumerable<double>> calcVolt = ()
+        => TLBlue.Rates.Distances(_priceAvg).TakeLast(1).Select(l => l.Item2 / TLBlue.TimeSpan.TotalMinutes)
+        .Where(ppm => ppm > 0)
+        .Select(ppm => InPips(ppm));
+      if(!useCalc)
+        return GetLastVolt().Concat(calcVolt()).Take(1).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault();
+
+      return calcVolt()
+        .Select(volt => ShowVolts(useCalc ? volt : GetLastVolt().DefaultIfEmpty(volt).Single(), 2, getVolt, setVolt))
+        .SingleOrDefault();
+    }
+
     CorridorStatistics ShowVoltsByPPMH() {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
 
@@ -125,11 +143,11 @@ namespace HedgeHog.Alice.Store {
     CorridorStatistics ShowVoltsByFrameAverage() {
       return ShowVoltsByFrameAverage(GetVoltage, SetVoltage);
     }
-    CorridorStatistics ShowVoltsByFrameAverage(Func<Rate, double> getVolt=null, Action<Rate, double> setVolt=null) {
+    CorridorStatistics ShowVoltsByFrameAverage(Func<Rate, double> getVolt = null, Action<Rate, double> setVolt = null) {
       var useCalc = IsRatesLengthStable;
       if(!useCalc)
         return GetLastVolt(getVolt)
-          .Select(v => ShowVolts(v, 2,getVolt,setVolt))
+          .Select(v => ShowVolts(v, 2, getVolt, setVolt))
           .SingleOrDefault();
       var calcVolt = RatesHeightByFrameAverage(new[] { this }, 0.0625);
       SetVolts(InPips(calcVolt), getVolt, setVolt, 2);
