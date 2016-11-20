@@ -252,11 +252,13 @@ namespace HedgeHog.Alice.Store {
         new[] { TradeLevelBy.RedMax, TradeLevelBy.RedMin },
         new[] { TradeLevelBy.BlueMax, TradeLevelBy.BlueMin }
       };
+      var trends = new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
+
       return levelBys
         .Select((lbs, i) => new { i, ok = HasTradeLevelBy(lbs) })
         .SkipWhile(x => !x.ok)
         .Take(1)
-        .Select(x => TrendLinesTrendsAll[x.i])
+        .Select(x => trends[x.i])
         .AsSingleable();
     }
     private bool HasTradeLevelBy(IList<TradeLevelBy> tradeLevelBys) {
@@ -992,6 +994,23 @@ namespace HedgeHog.Alice.Store {
       get {
         return () => {
           return TradeDirectionByBool(BuySellLevels.HasTradeCorridorChanged());
+        };
+      }
+    }
+    public TradeConditionDelegate TCCrsOk {
+      get {
+        return () => {
+          var ok = MonoidsCore.ToFunc(() => 
+             (from startDate in TrendLevelByTradeLevel().Select(tl => tl.StartDate)
+              let rates = RatesArray.GetRange(startDate, DateTime.MaxValue, r => r.StartDate)
+              let bsMinMax = BuySellLevels.Select(bs => bs.Rate).OrderBy(d => d).ToArray()
+              let hasUp = rates.Any(r => r.PriceAvg > bsMinMax[1])
+              let hasDown = rates.Any(r => r.PriceAvg < bsMinMax[0])
+              select hasUp || hasDown
+              ).DefaultIfEmpty()
+              .AsSingleable()
+          );
+          return TradeDirectionByBool(ok().SingleOrDefault());
         };
       }
     }

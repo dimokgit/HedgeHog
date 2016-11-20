@@ -132,22 +132,24 @@ namespace HedgeHog.Alice.Store {
         });
       }
     }
-    private void SetVoltsM1() {
-      UseRates(rates => rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNaN()).ToList()).ForEach(ratesEmpty => {
+    private void SetVoltsM1() { SetVoltsM1(GetVoltage, tm => tm.GetVoltage, tm => tm.SetVoltage); }
+    private void SetVoltsM1_2() { SetVoltsM1(GetVoltage2, tm => tm.GetVoltage2, tm => tm.SetVoltage2); }
+    private void SetVoltsM1(
+      Func<Rate, double> getVolt,
+      Func<TradingMacro, Func<Rate, double>> getVoltM1,
+      Func<TradingMacro, Action<Rate, double>> setVoltM1) {
+      UseRates(rates => rates.BackwardsIterator().TakeWhile(r => getVolt(r).IsNaN()).ToList()).ForEach(ratesEmpty => {
         ratesEmpty.Reverse();
         ratesEmpty.Select(r => r.StartDate).Take(1).ForEach(startDate => {
           var tm = TradingMacroOther().First(t => t.IsTrader);
-          tm.UseRates(rates => rates.BackwardsIterator().TakeWhile(r => GetVoltage(r).IsNotNaN() && r.StartDate >= startDate).ToList()).ForEach(ratesT1 => {
+          tm.UseRates(rates => rates.BackwardsIterator().TakeWhile(r => getVoltM1(tm)(r).IsNotNaN() && r.StartDate >= startDate).ToList()).ForEach(ratesT1 => {
             ratesT1.Reverse();
             (from r in ratesT1
              group r by r.StartDate.Round() into gr
-             select new { d = gr.Key, v = gr.Select(tm.GetVoltage).Average(), v2 = gr.Select(tm.GetVoltage2).Average() } into dv
+             select new { d = gr.Key, v = gr.Select(getVoltM1(tm)).Average() } into dv
              join rateEmpty in ratesEmpty on dv.d equals rateEmpty.StartDate
-             select new { r = rateEmpty, dv.v, dv.v2 }
-            ).ForEach(x => {
-              tm.SetVoltage(x.r, x.v);
-              tm.SetVoltage2(x.r, x.v2);
-            });
+             select new { r = rateEmpty, dv.v }
+            ).ForEach(x => setVoltM1(tm)(x.r, x.v));
           });
         });
       });

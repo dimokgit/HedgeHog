@@ -176,13 +176,13 @@ namespace HedgeHog {
       Array.Copy(source.ToArray(), a, count);
       return a;
     }
-    public static IList<T> GetRange<T>(this List<T> source, DateTime start,DateTime end,Func<T,DateTime> toDate) {
+    public static IList<T> GetRange<T>(this List<T> source, DateTime start, DateTime end, Func<T, DateTime> toDate) {
       Func<DateTime, int[]> index = date => source.FuzzyIndex(date, (d, r1, r2) => d.Between(toDate(r1), toDate(r2)));
       var i1 = index(start.Max(toDate(source[0])));
       var i2 = index(end.Min(toDate(source.Last())));
       return (from s in i1
               from e in i2
-              select source.GetRange(s, e-s+1))
+              select source.GetRange(s, e - s + 1))
               .DefaultIfEmpty(new List<T>())
               .First();
     }
@@ -227,7 +227,7 @@ namespace HedgeHog {
       }
     }
     #region IfEmpty
-    public static T AverageOrNaN<T>(this IEnumerable<double> enumerable,Func<double,T> map) {
+    public static T AverageOrNaN<T>(this IEnumerable<double> enumerable, Func<double, T> map) {
       return map(enumerable.AverageOrNaN());
     }
     public static double AverageOrNaN(this IEnumerable<double> enumerable) {
@@ -297,6 +297,12 @@ namespace HedgeHog {
     public static void With<T>(this T v, Action<T> m) { m(v); }
     public static IEnumerable<Tuple<T, T>> Zip<T>(this IEnumerable<T> source, IEnumerable<T> other) { return source.Zip(other, Tuple.Create); }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<T> value) { return source.Concat(value.Yield()); }
+    public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<IEnumerable<T>> value) {
+      foreach(var v in source)
+        yield return v;
+      foreach(var v in value())
+        yield return v;
+    }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, T value) { return source.Concat(value.Yield()); }
     public static IEnumerable<U> Yield<U>(this Func<U> m) { yield return m(); }
     public static IEnumerable<U> Yield<T, U>(this T v, Func<T, U> m) { yield return m(v); }

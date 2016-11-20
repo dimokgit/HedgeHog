@@ -24,7 +24,7 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsNone;
         case HedgeHog.Alice.VoltageFunction.t1:
           return () => {
-            SetVoltsM1();
+            (voltIndex == 0 ? (Action)SetVoltsM1 : SetVoltsM1_2)();
             return null;
           };
         case HedgeHog.Alice.VoltageFunction.StDev:
@@ -40,11 +40,9 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.TLAR:
           return () => ShowVoltsByTLAR(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.PPM:
-          return voltIndex == 0
-            ? (Func<CorridorStatistics>)ShowVoltsByPPM
-            : () => ShowVoltsByPPM(GetVoltage2, SetVoltage2);
+          return () => ShowVoltsByPPM(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.PPMB:
-          return voltIndex == 0 ? (Func<CorridorStatistics>)ShowVoltsByPPMB : ShowVoltsByPPMB2;
+          return () => ShowVoltsByPPMB(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.PPMH:
           return ShowVoltsByPPMH;
         case HedgeHog.Alice.VoltageFunction.TFH:
@@ -79,9 +77,6 @@ namespace HedgeHog.Alice.Store {
           .SingleOrDefault();
       return null;
     }
-    CorridorStatistics ShowVoltsByPPM() {
-      return ShowVoltsByPPM(null, null);
-    }
     CorridorStatistics ShowVoltsByPPM(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
       Func<IEnumerable<double>> calcVolt = ()
@@ -98,14 +93,19 @@ namespace HedgeHog.Alice.Store {
         .SingleOrDefault();
     }
 
-    CorridorStatistics ShowVoltsByPPMB() { return ShowVoltsByPPMB(GetVoltage, SetVoltage); }
-    CorridorStatistics ShowVoltsByPPMB2() { return ShowVoltsByPPMB(GetVoltage2, SetVoltage2); }
+    Tuple<DateTime,DateTime,double> _tlBlue = new Tuple<DateTime, DateTime,double>(DateTime.MinValue,DateTime.MaxValue,double.NaN);
     CorridorStatistics ShowVoltsByPPMB(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      Func<DateTime, DateTime, double[]> getmemoize = (ds, de) => _tlBlue.Item1 == ds && _tlBlue.Item2 == de ? new[] { _tlBlue.Item3 } : new double[0];
+      Func<DateTime, DateTime, double, double> setmemoize = (ds, de, v) => { _tlBlue = Tuple.Create(ds, de, v); return v; };
       Func<IEnumerable<double>> calcVolt = ()
-        => TLBlue.Rates.Distances(_priceAvg).TakeLast(1).Select(l => l.Item2 / TLBlue.TimeSpan.TotalMinutes)
+        => getmemoize(TLBlue.StartDate, TLBlue.EndDate)
+        .Concat(() => TLBlue.Rates.Cma(_priceAvg, 1)
+        .Distances().TakeLast(1)
+        .Select(l => l / TLBlue.TimeSpan.TotalMinutes)
         .Where(ppm => ppm > 0)
-        .Select(ppm => InPips(ppm));
+        .Select(ppm => setmemoize(TLBlue.StartDate, TLBlue.EndDate, InPips(ppm))))
+        .Take(1);
       if(!useCalc)
         return GetLastVolt().Concat(calcVolt()).Take(1).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault();
 

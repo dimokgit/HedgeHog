@@ -346,18 +346,22 @@ namespace HedgeHog.Alice.Store {
         IsTrendsEmpty(tlOld).With(tl => tl.IsEmpty ||
         IsTrendsEmpty(tlNew).With(tl2 => !tl2.IsEmpty && tl.EndDate < tl2.EndDate));
       Action<TLS, TLS, Action> setTLs = (tlOld, tlNew, setter) => { if(isNewTL(tlOld, tlNew)) setter(); };
+      Func<TLS, int[]> skipByTL = tls => IsTrendsEmpty(tls).With(tl => tl.IsEmpty
+        ? new int[0]
+        : ratesForCorridor.FuzzyIndex(tl.StartDate, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate)))
+          .Select(i => (i * 0.9).ToInt())
+          .ToArray();
 
       TrendBlueInt().Pairwise((s, c) => new { s })
-        .SelectMany(p => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, 0))
+        .SelectMany(p => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, skipByTL(TrendLines2).SingleOrDefault()))
         .Select(tl => Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc))
         .ForEach(tl => setTLs(TrendLines2, tl, () => TrendLines2 = tl));
 
       Func<int[], Action<TLS>, TLS, TradeLevelsPreset, Singleable<IList<Rate>>> doTL = (ints, tl, tlDef, color)
-         => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.GetValueOrDefault(), isMin = s > 0 })
+         => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.GetValueOrDefault(skipByTL(tlDef).SingleOrDefault()), isMin = s > 0 })
          .SelectMany(p => calcTrendLines(p.s, p.isMin, color, p.skip))
          .Do(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc)))
          .AsSingleable();
-
 
       (from td in TradeConditionHasAny(BlueAngOk).DefaultIfEmpty(TradeDirections.Both)
        where td.HasAny()
