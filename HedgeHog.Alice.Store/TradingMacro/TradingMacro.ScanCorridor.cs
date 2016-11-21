@@ -246,6 +246,7 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorByAll5(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       return ScanCorridorBy12345(null, ratesForCorridor, priceHigh, priceLow);
     }
+    private bool _mustResetAllTrendLevels;
     private CorridorStatistics ScanCorridorBy12345(bool? skipAll, IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ri = new { r = (Rate)null, i = 0 };
       var miner = ToFunc(ri, r => r.r.BidLow);
@@ -343,8 +344,10 @@ namespace HedgeHog.Alice.Store {
       };
 
       Func<TLS, TLS, bool> isNewTL = (tlOld, tlNew) =>
+      _mustResetAllTrendLevels || (
+        IsRatesLengthStable &&
         IsTrendsEmpty(tlOld).With(tl => tl.IsEmpty ||
-        IsTrendsEmpty(tlNew).With(tl2 => !tl2.IsEmpty && tl.EndDate < tl2.EndDate));
+        IsTrendsEmpty(tlNew).With(tl2 => !tl2.IsEmpty && tl.EndDate < tl2.EndDate)));
       Action<TLS, TLS, Action> setTLs = (tlOld, tlNew, setter) => { if(isNewTL(tlOld, tlNew)) setter(); };
       Func<TLS, int[]> skipByTL = tls => IsTrendsEmpty(tls).With(tl => tl.IsEmpty
         ? new int[0]
@@ -353,13 +356,17 @@ namespace HedgeHog.Alice.Store {
           .ToArray();
 
       TrendBlueInt().Pairwise((s, c) => new { s })
-        .SelectMany(p => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, skipByTL(TrendLines2).SingleOrDefault()))
+        .SelectMany(p =>
+          calcTrendLines(p.s, true, TradeLevelsPreset.Blue, skipByTL(TrendLines2).SingleOrDefault())
+          .Concat(() => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, 0))
+          )
+        .Take(1)
         .Select(tl => Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc))
         .ForEach(tl => setTLs(TrendLines2, tl, () => TrendLines2 = tl));
 
       Func<int[], Action<TLS>, TLS, TradeLevelsPreset, Singleable<IList<Rate>>> doTL = (ints, tl, tlDef, color)
          => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.GetValueOrDefault(skipByTL(tlDef).SingleOrDefault()), isMin = s > 0 })
-         .SelectMany(p => calcTrendLines(p.s, p.isMin, color, p.skip))
+         .SelectMany(p => calcTrendLines(p.s, p.isMin, color, p.skip).Concat(() => calcTrendLines(p.s, p.isMin, color, 0)).Take(1))
          .Do(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc)))
          .AsSingleable();
 
@@ -372,6 +379,7 @@ namespace HedgeHog.Alice.Store {
        select true
        ).Count();
 
+      _mustResetAllTrendLevels = false;
       var ratesForCorr = _ratesArrayCoeffs.Take(1)
         .Select(_ => {
           var redRates = RatesArray.GetRange(RatesArray.Count - 2, 2);

@@ -10,6 +10,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Subjects;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
 using static HedgeHog.IEnumerableCore;
+using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -94,17 +95,21 @@ namespace HedgeHog.Alice.Store {
     }
 
     Tuple<DateTime,DateTime,double> _tlBlue = new Tuple<DateTime, DateTime,double>(DateTime.MinValue,DateTime.MaxValue,double.NaN);
+
     CorridorStatistics ShowVoltsByPPMB(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+
       Func<DateTime, DateTime, double[]> getmemoize = (ds, de) => _tlBlue.Item1 == ds && _tlBlue.Item2 == de ? new[] { _tlBlue.Item3 } : new double[0];
       Func<DateTime, DateTime, double, double> setmemoize = (ds, de, v) => { _tlBlue = Tuple.Create(ds, de, v); return v; };
+
       Func<IEnumerable<double>> calcVolt = ()
-        => getmemoize(TLBlue.StartDate, TLBlue.EndDate)
-        .Concat(() => TLBlue.Rates.Cma(_priceAvg, 1)
+        => TLBlue.PPMB
+        .IfEmpty(() => TLBlue.PPMB = TLBlue.Rates.Cma(_priceAvg, 1)
         .Distances().TakeLast(1)
         .Select(l => l / TLBlue.TimeSpan.TotalMinutes)
         .Where(ppm => ppm > 0)
-        .Select(ppm => setmemoize(TLBlue.StartDate, TLBlue.EndDate, InPips(ppm))))
+        .Select(ppm => setmemoize(TLBlue.StartDate, TLBlue.EndDate, InPips(ppm)))
+        .ToArray())
         .Take(1);
       if(!useCalc)
         return GetLastVolt().Concat(calcVolt()).Take(1).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault();
@@ -114,9 +119,29 @@ namespace HedgeHog.Alice.Store {
         .SingleOrDefault();
     }
 
+    CorridorStatistics ShowVoltsByUDB(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      Func<DateTime, DateTime, double[]> getmemoize = (ds, de) => _tlBlue.Item1 == ds && _tlBlue.Item2 == de ? new[] { _tlBlue.Item3 } : new double[0];
+      Func<DateTime, DateTime, double, double> setmemoize = (ds, de, v) => { _tlBlue = Tuple.Create(ds, de, v); return v; };
+      Func<TL, IEnumerable<double>> calcVolt = tl
+        => getmemoize(tl.StartDate, tl.EndDate)
+        .Concat(() => tl.Rates.Cma(_priceAvg, 1)
+        .Distances().TakeLast(1)
+        .Select(l => l / tl.TimeSpan.TotalMinutes)
+        .Where(ppm => ppm > 0)
+        .Select(ppm => setmemoize(tl.StartDate, tl.EndDate, InPips(ppm))))
+        .Take(1);
+      if(!useCalc)
+        return GetLastVolt().Concat(calcVolt(TLBlue)).Take(1).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault();
+
+      return calcVolt(TLBlue)
+        .Select(volt => ShowVolts(useCalc ? volt : GetLastVolt().DefaultIfEmpty(volt).Single(), 2, getVolt, setVolt))
+        .SingleOrDefault();
+    }
+
+
     CorridorStatistics ShowVoltsByPPMH() {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
-
       if(!useCalc)
         return GetLastVolt()
           .Select(v => ShowVolts(v, 2))
@@ -186,12 +211,11 @@ namespace HedgeHog.Alice.Store {
         .Where(t => t.isMin)
         .Select(t => t.tl)
         //.Where(tl => tl.Color != TradeLevelsPreset.Blue + "")
-        .Select(tl => new[] { tl.PriceAvg3, tl.PriceAvg2 })
+        .Select(tl => tl.PriceMin.Concat( tl.PriceMax) )
         .ToArray()
         .Permutation((h1, h2) => h1.OverlapRatio(h2).ToPercent())
         .DefaultIfEmpty()
-        .Average()
-        .Max(0);
+        .Average();
       if(v.IsNotNaN())
         ShowVolts(v, VoltAverageIterations, getVolt, setVolt);
       return null;

@@ -339,9 +339,34 @@ namespace HedgeHog.Alice.Store {
 
     public TradeConditionDelegate AFOk {
       get {
-        Func<TradingMacro, IEnumerable<TL>> tlsForward = tm => tm.TrendLinesTrendsAll.SkipLast(1);
+        Func<TradingMacro, IEnumerable<TL>> tlsForward = tm => tm.TrendLinesTrendsAll;
         return () => AllTLsForwardOk(tlsForward);
       }
+    }
+    public TradeConditionDelegate AFDOk {
+      get {
+        Func<TradingMacro, TL[]> tlsForward = tm => tm.TrendLinesTrendsAll;
+        Func<TL[], TL[]> tlsFirstLast = tls => tls.MinMaxBy(tl => tl.StartDate.Ticks);
+        Func<TL[], Func<TL, IEnumerable<double>>, Func<double, double, bool>, TradeDirections, IEnumerable<TradeDirections>> tdOk = (tls, getter, comp, td)
+                => tls
+                .Pairwise(TLMinMaxOk(getter, comp))
+                .Concat()
+                .Where(b => b).Select(_ => TradeDirections.Down);
+        Func<TL[], IEnumerable<TradeDirections>> tdOkMin = tls => tdOk(tls, tl => tl.PriceMin, (first, last) => first > last, TradeDirections.Up);
+        Func<TL[], IEnumerable<TradeDirections>> tdOkMax = tls => tdOk(tls, tl => tl.PriceMax, (first, last) => first < last, TradeDirections.Down);
+        Func<TradingMacro, IEnumerable<TradeDirections>> okTM = tm => tlsFirstLast(tlsForward(tm)).With(tls => tdOkMax(tls).Concat(tdOkMin(tls)));
+        Func<IEnumerable<TradeDirections>> ok = () => TradingMacroTrender(okTM).Concat();
+        return () => AllTLsForwardOk(tlsForward).HasAny()
+        ? ok().Aggregate(TradeDirections.None, (a, td) => a | td)
+        : TradeDirections.None;
+      }
+    }
+
+    private static Func<TL, TL, IEnumerable<bool>> TLMinMaxOk(Func<TL, IEnumerable<double>> price, Func<double, double, bool> comp) {
+      return (tl1, tl2) => TLMinMaxOk(tl1, tl2, price, comp);
+    }
+    private static IEnumerable<bool> TLMinMaxOk(TL tl1, TL tl2, Func<TL, IEnumerable<double>> price, Func<double, double, bool> comp) {
+      return price(tl1).Concat(price(tl2)).Pairwise(comp);
     }
 
     private TradeDirections AllTLsForwardOk(Func<TradingMacro, IEnumerable<TL>> tlsForward) {
@@ -1000,7 +1025,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate TCCrsOk {
       get {
         return () => {
-          var ok = MonoidsCore.ToFunc(() => 
+          var ok = MonoidsCore.ToFunc(() =>
              (from startDate in TrendLevelByTradeLevel().Select(tl => tl.StartDate)
               let rates = RatesArray.GetRange(startDate, DateTime.MaxValue, r => r.StartDate)
               let bsMinMax = BuySellLevels.Select(bs => bs.Rate).OrderBy(d => d).ToArray()
@@ -1145,22 +1170,30 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate VltAvgOk => () => TradeDirectionByTreshold(GetVoltageHigh(), VoltAvgRange);
     public TradeConditionDelegate VltUpOk {
       get {
-        return () => TradeDirectionByBool(GetLastVolts().ToArray().LinearSlope() < 0);
+        return () => TradeDirectionByBool(VoltOkBySlope(s => s < 0));
       }
     }
+
+    private bool VoltOkBySlope(Func<double, bool> slopeCondition) {
+      return VoltOkBySlope(GetVoltage, slopeCondition);
+    }
+    private bool VoltOkBySlope(Func<Rate, double> volter, Func<double, bool> slopeCondition) {
+      return GetLastVolts(volter).ToArray().With(vs => vs.Length > 0 && slopeCondition(vs.LinearSlope()));
+    }
+
     public TradeConditionDelegate VltDwOk {
       get {
-        return () => TradeDirectionByBool(GetLastVolts().ToArray().LinearSlope() > 0);
+        return () => TradeDirectionByBool(VoltOkBySlope(d => d > 0));
       }
     }
     public TradeConditionDelegate VltUp2Ok {
       get {
-        return () => TradeDirectionByBool(GetLastVolts(GetVoltage2).ToArray().LinearSlope() < 0);
+        return () => TradeDirectionByBool(VoltOkBySlope(GetVoltage2, s => s < 0));
       }
     }
     public TradeConditionDelegate VltDw2Ok {
       get {
-        return () => TradeDirectionByBool(GetLastVolts(GetVoltage2).ToArray().LinearSlope() > 0);
+        return () => TradeDirectionByBool(VoltOkBySlope(GetVoltage2, s => s > 0));
       }
     }
 

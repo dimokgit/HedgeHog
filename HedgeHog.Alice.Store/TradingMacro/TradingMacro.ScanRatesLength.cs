@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -247,7 +248,7 @@ namespace HedgeHog.Alice.Store {
           if(count >= BarsCount)
             BarsCountCalc = count;
         });
-      IsRatesLengthStable = true;
+      Task.Delay(1000).ContinueWith(_ => IsRatesLengthStable = true);
     }
     void ScanRatesLengthByMinHeight() {
       BarsCountByMinHeight(InPoints(RatesHeight)).ForEach(count => BarsCountCalc = count);

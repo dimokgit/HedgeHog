@@ -631,6 +631,12 @@ namespace HedgeHog.Bars {
   public class Rate : BarBase {
     public static readonly Rate Empty = new Rate();
     public class TrendLevels {
+      #region Voltages
+      public void ResetVoltages() {
+        PPMB = new double[0];
+      }
+      public double[] PPMB = new double[0];
+      #endregion
       public static readonly TrendLevels Empty;
       public static readonly Rate EmptyRate;
       public static readonly Func<TrendLevels, bool> NotEmpty = tl => !tl.IsEmpty;
