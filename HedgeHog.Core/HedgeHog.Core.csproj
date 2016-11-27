@@ -82,6 +82,7 @@
     <Compile Include="Box.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="Converters.cs" />
+    <Compile Include="Enums.cs" />
     <Compile Include="FullGroupJoin.cs" />
     <Compile Include="FuzzyIndex.cs" />
     <Compile Include="IEnumerable.cs" />

@@ -210,10 +210,11 @@ namespace HedgeHog.Alice.Store {
         .Select(t => t.Map((tl, isMin) => new { tl, isMin }))
         .Where(t => t.isMin)
         .Select(t => t.tl)
+        .OrderBy(tl => tl.StartDate)
         //.Where(tl => tl.Color != TradeLevelsPreset.Blue + "")
         .Select(tl => tl.PriceMin.Concat( tl.PriceMax) )
         .ToArray()
-        .Permutation((h1, h2) => h1.OverlapRatio(h2).ToPercent())
+        .Pairwise((h1, h2) => h1.OverlapRatio(h2).ToPercent())
         .DefaultIfEmpty()
         .Average();
       if(v.IsNotNaN())

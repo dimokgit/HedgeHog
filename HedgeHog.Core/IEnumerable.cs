@@ -289,6 +289,15 @@ namespace HedgeHog {
     #endregion
 
     #region Yield
+    public static void If(this bool v, Action then) {
+      if( v) then();
+    }
+    public static void If(this bool v, Action then, Action @else) {
+      if(v)
+        then();
+      else
+        @else();
+    }
     public static U With<T, U>(this T v, Predicate<T> @if, Func<T, U> then, Func<T, U> @else) {
       return @if(v) ? then(v) : @else(v);
     }

@@ -3,16 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using HedgeHog.Bars;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
-using System.Reflection;
 using ReactiveUI;
 using static HedgeHog.MonoidsCore;
 using static HedgeHog.IEnumerableCore;
 using HedgeHog.Shared;
+using TL = HedgeHog.Bars.Rate.TrendLevels;
 using TLS = System.Lazy<System.Collections.Generic.IList<HedgeHog.Bars.Rate>>;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -248,6 +246,8 @@ namespace HedgeHog.Alice.Store {
     }
     private bool _mustResetAllTrendLevels;
     private CorridorStatistics ScanCorridorBy12345(bool? skipAll, IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      bool mustResetAllTrendLevels = _mustResetAllTrendLevels;
+      _mustResetAllTrendLevels = false;
       var ri = new { r = (Rate)null, i = 0 };
       var miner = ToFunc(ri, r => r.r.BidLow);
       var maxer = ToFunc(ri, r => r.r.AskHigh);
@@ -279,12 +279,16 @@ namespace HedgeHog.Alice.Store {
         return tl;
       };
       var def = ToFunc((IList<Rate> rts, int skip, int count, double dist) => new { rates = rts, skip, count, dist });
-      var anonDef = def(null, 0, 0, 0.0);
-      var bs = ToFunc((int perc, TradeLevelsPreset pl, bool isMin, int skip) => {
+      var anonDef = def(new Rate[0], 0, 0, 0.0);
+      var bs = ToFunc((int perc, TradeLevelsPreset pl, bool isMin, int[][] skips) => {
+        if(perc <= 0)
+          return new[] { anonDef }.AsSingleable();
+        var skip = skips.Where(s => s.Length == 1).Concat().ToArray();
         var digits = Digits();
-        var grouped2 = grouped(skip).ToList();
+        var grouped2 = grouped(skip.FirstOrDefault()).ToList();
         if(grouped2.Count <= 1)
           return new[] { anonDef }.Take(0).AsSingleable();
+        var skipRanges = skip.Any() ? new int[0][] : skips.Where(sr => sr.Any()).ToArray();
         var distances = grouped2.Distances(x => x.a).Select((t, i) => new { t, i }).ToList();
         var distChunc = distanceTotal / 100.0 * perc;
         var res = Partitioner.Create(Enumerable.Range(0, distances.Count).ToArray(), true)
@@ -310,9 +314,12 @@ namespace HedgeHog.Alice.Store {
           var height = (maxer(max).Max(maxer(grouped2[i].rmm[1]), maxer(grouped2[i2].rmm[1]))
           - miner(min).Min(miner(grouped2[i].rmm[0]), miner(grouped2[i2].rmm[0])))
           .RoundBySqrt(digits - 1);
-          return new { start = start + skip, count = end - start, height, isOut, i, i2, dist = distCurr };
+          return new { start = start + skip.FirstOrDefault(), count = end - start, startEnd = new[] { start, end }, height, isOut, i, i2, dist = distCurr };
         })
-        .TakeWhile(x => !x.isOut).AsEnumerable();
+        .TakeWhile(x => !x.isOut)
+        .Where(x => (from sr in skipRanges where x.startEnd.DoSetsOverlap(sr) select 0).IsEmpty())
+        .Where(x => skipRanges.Concat().Where(i => i.Between(x.startEnd[0], x.startEnd[1])).IsEmpty())
+        .AsEnumerable();
 
         res = isMin
         ? res.MinByOrEmpty(x => x.height)
@@ -330,44 +337,59 @@ namespace HedgeHog.Alice.Store {
 
       #endregion
 
-
-      int? skipFirst = null;
-      Func<int, bool, TradeLevelsPreset, int, Singleable<IList<Rate>>> calcTrendLines = (start, isMin, pl, skip) => {
+      var skipEmpty = new int[0][];
+      var skipFirst = skipEmpty;
+      Func<int, bool, TradeLevelsPreset, int[][], Singleable<IList<Rate>>> calcTrendLines = (start, isMin, pl, skip) => {
         return bs(start, pl, isMin, skip)
         .Do(x => {
-          if(skipAll.HasValue && (!skipFirst.HasValue || skipAll.Value)) {
-            skipFirst = x.skip;
-          }
+          if(x.rates.Any())
+            if(skipAll.HasValue) {
+              if(!skipFirst.Any() || skipAll.Value)
+                skipFirst = new[] { new[] { x.skip } };
+            }
         })
         .Select(x => x.rates)
         .AsSingleable();
       };
 
       Func<TLS, TLS, bool> isNewTL = (tlOld, tlNew) =>
-      _mustResetAllTrendLevels || (
+      mustResetAllTrendLevels || (
         IsRatesLengthStable &&
         IsTrendsEmpty(tlOld).With(tl => tl.IsEmpty ||
         IsTrendsEmpty(tlNew).With(tl2 => !tl2.IsEmpty && tl.EndDate < tl2.EndDate)));
-      Action<TLS, TLS, Action> setTLs = (tlOld, tlNew, setter) => { if(isNewTL(tlOld, tlNew)) setter(); };
-      Func<TLS, int[]> skipByTL = tls => IsTrendsEmpty(tls).With(tl => tl.IsEmpty
-        ? new int[0]
-        : ratesForCorridor.FuzzyIndex(tl.StartDate, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate)))
-          .Select(i => (i * 0.9).ToInt())
-          .ToArray();
+      Action<TLS, TLS, Action> setTLs = (tlOld, tlNew, setter) => {
+        if(isNewTL(tlOld, tlNew)) {
+          setter();
+        }
+      };
+      Func<TL, int[]> tlStartIndex0 = tl => ratesForCorridor.FuzzyIndex(tl.StartDate, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate));
+      var tlStartIndex = tlStartIndex0.Memoize(tl => tl.StartDate);
+      Func<TLS, int[]> skipByTL = tls => IsTrendsEmpty(tls)
+      .With(tl => tl.IsEmpty ? new int[0] : tlStartIndex(tl))
+      .Select(i => (i * 0.9).ToInt())
+      .ToArray();
 
       TrendBlueInt().Pairwise((s, c) => new { s })
+        .Where(x => x.s > 0)
         .SelectMany(p =>
-          calcTrendLines(p.s, true, TradeLevelsPreset.Blue, skipByTL(TrendLines2).SingleOrDefault())
-          .Concat(() => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, 0))
+          calcTrendLines(p.s, true, TradeLevelsPreset.Blue, new[] { skipByTL(TrendLines2) })
+          .Concat(() => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, skipEmpty))
           )
+        .DefaultIfEmpty(new Rate[0])
         .Take(1)
         .Select(tl => Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc))
         .ForEach(tl => setTLs(TrendLines2, tl, () => TrendLines2 = tl));
 
+      Func<TL, TL[]> tlsPrev = tl => TrendLinesTrendsAll.Skip(TrendLinesTrendsAll.ToList().IndexOf(tl) + 1).ToArray();
+      Func<TL, int[]> tlRange = tl => tlStartIndex(tl).With(ii => ii.Select(i => new[] { i, i + tl.Count }).Concat()).ToArray();
+      Func<IEnumerable<TL>, int[][]> tlRangesPrev = tls => tls.Select(tl => tlRange(tl)).ToArray();
+      Func<TLS, int[][]> tlRanges = tls => IsTrendsEmpty2(tls).SelectMany(tl => tlRangesPrev(tlsPrev(tl))).ToArray();
       Func<int[], Action<TLS>, TLS, TradeLevelsPreset, Singleable<IList<Rate>>> doTL = (ints, tl, tlDef, color)
-         => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.GetValueOrDefault(skipByTL(tlDef).SingleOrDefault()), isMin = s > 0 })
-         .SelectMany(p => calcTrendLines(p.s, p.isMin, color, p.skip).Concat(() => calcTrendLines(p.s, p.isMin, color, 0)).Take(1))
+         => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.IfEmpty(() => tlRanges(tlDef)).DefaultIfEmpty(skipByTL(tlDef)).ToArray(), isMin = s > 0 })
+         .Where(x => x.s > 0)
+         .SelectMany(p => calcTrendLines(p.s, p.isMin, color, p.skip).Concat(() => calcTrendLines(p.s, p.isMin, color, skipEmpty)).Take(1))
          .Do(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc)))
+         .DefaultIfEmpty(new Rate[0])
          .AsSingleable();
 
       (from td in TradeConditionHasAny(BlueAngOk).DefaultIfEmpty(TradeDirections.Both)
@@ -379,7 +401,12 @@ namespace HedgeHog.Alice.Store {
        select true
        ).Count();
 
-      _mustResetAllTrendLevels = false;
+      TrendLinesTrendsAll
+        .Permutation((tl1, tl2) => tlRange(tl1).IsEmpty() || tlRange(tl2).IsEmpty() || tlRange(tl1).DoSetsOverlap(tlRange(tl2)))
+        .Where(b => b)
+        .Take(1)
+        .ForEach(_ => _mustResetAllTrendLevels = true);
+
       var ratesForCorr = _ratesArrayCoeffs.Take(1)
         .Select(_ => {
           var redRates = RatesArray.GetRange(RatesArray.Count - 2, 2);

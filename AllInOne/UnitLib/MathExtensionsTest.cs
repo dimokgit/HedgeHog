@@ -41,10 +41,12 @@ namespace HedgeHog.Tests {
       var set3 = new double[] { 5, 9 };
       var set4 = new double[] { 0, 1 };
       var set5 = new double[] { 1, 3 };
+      var set6 = new double[] { 1, 9 };
       Assert.IsTrue(set1.DoSetsOverlap(set2));
       Assert.IsTrue(set1.DoSetsOverlap(set5));
       Assert.IsFalse(set1.DoSetsOverlap(set3));
       Assert.IsFalse(set1.DoSetsOverlap(set4));
+      Assert.IsTrue(set1.DoSetsOverlap(set6));
     }
   }
 }

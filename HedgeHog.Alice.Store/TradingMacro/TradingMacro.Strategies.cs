@@ -341,22 +341,32 @@ namespace HedgeHog.Alice.Store {
     IEnumerable<double> CurrentEnterPrices(Func<double, bool> predicate) { return CurrentEnterPrices().Where(predicate); }
     double[] CurrentEnterPrices() { return new[] { CurrentEnterPrice(false), CurrentEnterPrice(true) }; }
     double CurrentExitPrice(bool? isBuy) { return CalculateLastPrice(GetTradeExitBy(isBuy)); }
+
     TL IsTrendsEmpty(Lazy<IList<Rate>> trends) {
       if(trends == null)
         return TL.Empty;
       var v = trends.Value;
       return v == null || v.IsEmpty() ? TL.Empty : v.Skip(1).Select(r => r.Trends).LastOrDefault() ?? TL.Empty;
     }
+    IEnumerable<TL> IsTrendsEmpty2(Lazy<IList<Rate>> trends) {
+      if(trends == null)
+        yield break;
+      var v = trends.Value;
+      if(v == null || v.IsEmpty())
+        yield break;
+      foreach(var tl in v.Skip(1).Select(r => r.Trends).Where(tl => !tl.IsEmpty))
+        yield return tl;
+    }
     public TL TLBlue { get { return IsTrendsEmpty(TrendLines2); } }
     public TL TLGreen { get { return IsTrendsEmpty(TrendLines1); } }
     public TL TLLime { get { return IsTrendsEmpty(TrendLines0); } }
     public TL TLRed { get { return IsTrendsEmpty(TrendLines); } }
     public TL TLPlum { get { return IsTrendsEmpty(TrendLines3); } }
-    public IEnumerable<Tuple<TL,bool>> TrendLinesMinMax {
+    public IEnumerable<Tuple<TL, bool>> TrendLinesMinMax {
       get {
         var ints = new Func<string>[] { () => TrendLime, () => TrendGreen, () => TrendPlum, () => TrendRed, () => TrendBlue }
           .Select(a => !string.IsNullOrWhiteSpace(a()));
-        var minMaxs = new Func<string,int[]> [] { TrendLimeInt, TrendGreenInt, TrendPlumInt, TrendRedInt, TrendBlueInt }
+        var minMaxs = new Func<string, int[]>[] { TrendLimeInt, TrendGreenInt, TrendPlumInt, TrendRedInt, TrendBlueInt }
           .Select(i => i(null)[0] > 0);
         var trends = new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
         var isOk = MonoidsCore.ToFunc((bool ok, TL tl) => new { ok, tl });

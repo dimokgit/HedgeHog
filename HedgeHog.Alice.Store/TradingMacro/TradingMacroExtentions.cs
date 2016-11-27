@@ -1589,6 +1589,7 @@ namespace HedgeHog.Alice.Store {
         _ratesStartDate = null;
         _mmaLastIsUp = null;
         _ratesArrayCoeffs = new double[0];
+        _mustResetAllTrendLevels = true;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         vm.SetInitialBalance(args.StartingBalance);

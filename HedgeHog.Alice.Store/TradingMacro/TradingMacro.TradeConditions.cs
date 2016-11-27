@@ -5,13 +5,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Dynamic;
 using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Reactive;
 using System.Reactive.Linq;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
 using static HedgeHog.IEnumerableCore;
@@ -60,8 +55,17 @@ namespace HedgeHog.Alice.Store {
 
     double _tipRatioCurrent = double.NaN;
 
-    #region Edges
-
+    #region TLS
+    [TradeConditionCanSetCorridor]
+    public TradeConditionDelegate TLLOk {
+      get {
+        Func<TL[]> tls = () => TradingMacroTrender(tm => tm.TrendLinesTrendsAll).Concat().OrderByDescending(tl => tl.EndDate).Take(1).ToArray();
+        //Func<TL, bool> tlOk = tl => tl.Color != TrendLevelsPreset.Blue + "";
+        return () => tls()
+        .Where(tl => !tl.IsEmpty)
+        .Do(SetBSfromTL).Select(_ => TradeDirections.Both).DefaultIfEmpty().Single();
+      }
+    }
     public TradeConditionDelegate TLHOk {
       get {
         TradingMacroTrader(tm => Log = new Exception(new { TLHOk = new { tm.TipRatio } } + "")).Count();
@@ -206,8 +210,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     void SetBSfromTL(TL tl) {
-      tl.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
-      tl.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
+      var rateLevels = TradeLevelByTrendLine(tl).SelectMany(lbs => lbs.Select(lb => TradeLevelFuncs[lb]())).ToArray();
+      BuyLevel.RateEx = rateLevels[0];
+      SellLevel.RateEx = rateLevels[1];
     }
     void SetBSfromTL(Func<TL, double> buy, Func<TL, double> sell) {
       TrendLevelByTradeLevel()
@@ -242,28 +247,42 @@ namespace HedgeHog.Alice.Store {
                       .Aggregate((td1, td2) => td1 | td2);
       }
     }
-
-
-    private Singleable<TL> TrendLevelByTradeLevel() {
-      var levelBys = new[] {
+    static TradeLevelBy[][] _levelBysForTrendLines = new[] {
         new[] { TradeLevelBy.LimeMax, TradeLevelBy.LimeMin},
         new[] { TradeLevelBy.GreenMax, TradeLevelBy.GreenMin },
         new[] { TradeLevelBy.PlumMax, TradeLevelBy.PlumMin },
         new[] { TradeLevelBy.RedMax, TradeLevelBy.RedMin },
         new[] { TradeLevelBy.BlueMax, TradeLevelBy.BlueMin }
       };
-      var trends = new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
 
-      return levelBys
+    private static Singleable<TradeLevelBy[]> TradeLevelByTrendLine(TL tl) {
+      return _levelBysForTrendLines
+        .Select((lbs, i) => new { i, ok = HasTradeLevelBy(lbs, tl.Color) })
+        .SkipWhile(x => !x.ok)
+        .Take(1)
+        .Select(x => _levelBysForTrendLines[x.i])
+        .AsSingleable();
+    }
+
+    private Singleable<TL> TrendLevelByTradeLevel() {
+      var trends = new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
+      return _levelBysForTrendLines
         .Select((lbs, i) => new { i, ok = HasTradeLevelBy(lbs) })
         .SkipWhile(x => !x.ok)
         .Take(1)
         .Select(x => trends[x.i])
         .AsSingleable();
     }
+    private static bool HasTradeLevelBy(IList<TradeLevelBy> tradeLevelBys, string color) {
+      var lbs = new[] { "Max", "Min" }.Select(lb => EnumUtils.Parse<TradeLevelBy>(color + lb));
+      return HasTradeLevelBy(tradeLevelBys, lbs);
+    }
     private bool HasTradeLevelBy(IList<TradeLevelBy> tradeLevelBys) {
+      return HasTradeLevelBy(tradeLevelBys, new[] { LevelBuyBy, LevelSellBy });
+    }
+    private static bool HasTradeLevelBy(IList<TradeLevelBy> tradeLevelBys, IEnumerable<TradeLevelBy> levelBys) {
       return (from tl in tradeLevelBys
-              join bs in new[] { LevelBuyBy, LevelSellBy } on tl equals bs
+              join bs in levelBys on tl equals bs
               select bs).Count() == 2;
     }
 
@@ -347,11 +366,13 @@ namespace HedgeHog.Alice.Store {
       get {
         Func<TradingMacro, TL[]> tlsForward = tm => tm.TrendLinesTrendsAll;
         Func<TL[], TL[]> tlsFirstLast = tls => tls.MinMaxBy(tl => tl.StartDate.Ticks);
-        Func<TL[], Func<TL, IEnumerable<double>>, Func<double, double, bool>, TradeDirections, IEnumerable<TradeDirections>> tdOk = (tls, getter, comp, td)
-                => tls
-                .Pairwise(TLMinMaxOk(getter, comp))
-                .Concat()
-                .Where(b => b).Select(_ => TradeDirections.Down);
+        Func<TL[], Func<TL, IEnumerable<double>>, Func<double, double, bool>, TradeDirections, IEnumerable<TradeDirections>> tdOk
+          = (tls, getter, comp, td)
+          => tls
+          .Pairwise(TLMinMaxOk(getter, comp))
+          .Concat()
+          .Where(b => b)
+          .Select(_ => td);
         Func<TL[], IEnumerable<TradeDirections>> tdOkMin = tls => tdOk(tls, tl => tl.PriceMin, (first, last) => first > last, TradeDirections.Up);
         Func<TL[], IEnumerable<TradeDirections>> tdOkMax = tls => tdOk(tls, tl => tl.PriceMax, (first, last) => first < last, TradeDirections.Down);
         Func<TradingMacro, IEnumerable<TradeDirections>> okTM = tm => tlsFirstLast(tlsForward(tm)).With(tls => tdOkMax(tls).Concat(tdOkMin(tls)));
@@ -382,7 +403,9 @@ namespace HedgeHog.Alice.Store {
     private static bool TLsAllForward(IEnumerable<TL> tls) {
       return tls.Pairwise().All(t => t.Item1.StartDate >= t.Item2.EndDate);
     }
+    #endregion
 
+    #region Edges
     public TradeConditionDelegate RPGOk {
       get {
         TradingMacroTrader(tm => Log = new Exception(new { TLF3Ok = new { tm.WavesRsdPerc } } + "")).Count();
@@ -1090,9 +1113,9 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate ExprdOk {
       get {
         return () =>
-          (from s in TLGreen.Sorted
-           select TradeDirectionByBool(BuySellLevels.IfAnyCanTrade().IsEmpty() || !IsCanTradeExpired(s[0].StartDate.Subtract(s[1].StartDate).Duration()))
-          ).Value;
+          (from tl in TrendLinesTrendsAll.Take(1)
+           select TradeDirectionByBool(BuySellLevels.IfAnyCanTrade().IsEmpty() || !IsCanTradeExpired(tl.TimeSpan))
+          ).SingleOrDefault();
       }
     }
 
@@ -2084,9 +2107,8 @@ namespace HedgeHog.Alice.Store {
         });
       }
     }
-    bool _isTurnOnOnly = false;
-    private double _waveDistRsd;
 
+    bool _isTurnOnOnly = false;
     [Category(categoryActiveYesNo)]
     [WwwSetting(wwwSettingsTradingConditions)]
     public bool IsTurnOnOnly {

@@ -1307,6 +1307,9 @@ namespace HedgeHog {
     public static bool DoSetsOverlap(this IList<double> bsRates, params double[] bsRatesCT) {
       return !(bsRates.Min() > bsRatesCT.Max() || bsRates.Max() < bsRatesCT.Min());
     }
+    public static bool DoSetsOverlap(this IList<int> bsRates, params int[] bsRatesCT) {
+      return !(bsRates.Min() > bsRatesCT.Max() || bsRates.Max() < bsRatesCT.Min());
+    }
 
   }
 }
