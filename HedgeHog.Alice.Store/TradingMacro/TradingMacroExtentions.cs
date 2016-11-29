@@ -1856,6 +1856,7 @@ namespace HedgeHog.Alice.Store {
             { "Angle", TradingMacroTrender(tm=>tm.TLBlue.Angle.Abs()).SingleOrDefault() },
             { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
             { "PPM", TradingMacroTrender(tm=> PPMFromEnd(tm,-0.25),x=>x).SingleOrDefault() },
+            { "Voltage", TradingMacroTrender(tm=> tm.GetLastVolt()).Concat().SingleOrDefault() },
             { "PpmM1", TradingMacroM1(tm=>tm.WaveRangeAvg.PipsPerMinute).FirstOrDefault() },
             { "M1Angle", TradingMacroM1(tm=>tm.WaveRangeAvg.Angle.Abs()).FirstOrDefault() },
             //{ "Equinox", _wwwInfoEquinox },

@@ -56,14 +56,36 @@ namespace HedgeHog.Alice.Store {
     double _tipRatioCurrent = double.NaN;
 
     #region TLS
-    [TradeConditionCanSetCorridor]
-    public TradeConditionDelegate TLLOk {
+    public TradeConditionDelegate FreshOk {
       get {
-        Func<TL[]> tls = () => TradingMacroTrender(tm => tm.TrendLinesTrendsAll).Concat().OrderByDescending(tl => tl.EndDate).Take(1).ToArray();
+        Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
+          tm.TrendLinesTrendsAll.OrderByDescending(tl => tl.EndDate)
+          .Where(tl => !tl.IsEmpty && IsTLFresh(tm, tl))
+          .Take(1)
+          .Where(tl => IsTLFresh(tm, tl)))
+        .Concat()
+        .AsSingleable();
         //Func<TL, bool> tlOk = tl => tl.Color != TrendLevelsPreset.Blue + "";
         return () => tls()
-        .Where(tl => !tl.IsEmpty)
-        .Do(SetBSfromTL).Select(_ => TradeDirections.Both).DefaultIfEmpty().Single();
+          .Select(_ => TradeDirections.Both)
+          .SingleOrDefault();
+      }
+    }
+    [TradeConditionSetCorridor]
+    public TradeConditionDelegate TLLOk {
+      get {
+        Func<bool> isReverse = () => (LevelBuyBy + "").EndsWith("Min") && (LevelSellBy + "").EndsWith("Max") ? true : false;
+        Func<TL[], TL[]> tls1 = tls => tls.Where(tl => !tl.IsEmpty).OrderByDescending(tl => tl.EndDate).Take(1).ToArray();
+        //Func<TL, bool> tlOk = tl => tl.Color != TrendLevelsPreset.Blue + "";
+        return () => (from tm in TradingMacroTrender()
+                      let tls = tm.TrendLinesTrendsAll
+                      from tl in tls1(tls)
+                      select new { tls, tl }
+                      )
+                      .Do(x => SetBSfromTLs(x.tl, x.tls, isReverse()))
+                      .Select(_ => TradeDirections.Both)
+                      .DefaultIfEmpty()
+                      .Single();
       }
     }
     public TradeConditionDelegate TLHOk {
@@ -213,6 +235,19 @@ namespace HedgeHog.Alice.Store {
       var rateLevels = TradeLevelByTrendLine(tl).SelectMany(lbs => lbs.Select(lb => TradeLevelFuncs[lb]())).ToArray();
       BuyLevel.RateEx = rateLevels[0];
       SellLevel.RateEx = rateLevels[1];
+    }
+    void SetBSfromTLs(TL tl, IEnumerable<TL> tls, bool reverse) {
+      var rateLevels = TradeLevelByTrendLine(tl).SelectMany(lbs => lbs.Select(lb => TradeLevelFuncs[lb]())).ToArray();
+      var half = tls.Select(tlo => TradeLevelByTrendLine(tlo).SelectMany(lbs => lbs.Select(lb => TradeLevelFuncs[lb]())).ToArray())
+        .OrderBy(mm => mm.Height())
+        .TakeLast(1)
+        .Concat()
+        .ToArray()
+        .Height() / 2;
+      var mean = rateLevels.Average();
+      var sign = reverse ? -1 : 1;
+      BuyLevel.RateEx = mean + half * sign;
+      SellLevel.RateEx = mean - half * sign;
     }
     void SetBSfromTL(Func<TL, double> buy, Func<TL, double> sell) {
       TrendLevelByTradeLevel()
@@ -840,19 +875,28 @@ namespace HedgeHog.Alice.Store {
       get {
         Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
         TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + "")).FirstOrDefault();
-        return () => {
-          _tipRatioCurrent = (from tm in TradingMacroTrender()
-                              let rmm = new[] { tm.RatesMin, tm.RatesMax }
-                              from bs in BuySellLevels.Select(x => x.Rate)
-                              from rm in rmm
-                              let bsrm = new[] { bs, rm }
-                              select bsrm.OverlapRatio(rmm)
-                              ).Min();
-          return IsTresholdAbsOk(_tipRatioCurrent, TipRatio)
-            ? TradeDirections.Both
-            : TradeDirections.None;
-        };
+        Func<TradingMacro, Tuple<double, SuppRes>, bool> isTreshOk = (tm,t) => IsTresholdAbsOk(_tipRatioCurrent = t.Item1, tipRatioTres(tm));
+        return () =>
+          (from tm in TradingMacroTrender()
+           from t in BSTipOverlap(tm)
+           where isTreshOk(tm,t)
+           select t.Item2.IsBuy ? TradeDirections.Up : TradeDirections.Down
+          )
+          .SingleOrDefault();
       }
+    }
+
+    private Singleable<Tuple<double, SuppRes>> BSTipOverlap(TradingMacro tmTrender) {
+      return (from bs in BuySellLevels//.Select(x => x.Rate)
+              let rmm = new[] { tmTrender.RatesMin, tmTrender.RatesMax }
+              from rm in rmm
+              let bsrm = new[] { bs.Rate, rm }
+              let r = bsrm.OverlapRatio(rmm)
+              orderby r
+              select Tuple.Create(r, bs)
+              )
+              .Take(1)
+              .AsSingleable();
     }
 
     #region Properties

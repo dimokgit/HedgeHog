@@ -26,7 +26,8 @@ namespace HedgeHog.Alice {
     StDevSumRatio,
     TLH,
     TLA,
-    TLAR
+    TLAR,
+    BSTip
   }
 }
 namespace HedgeHog.Alice.Store {

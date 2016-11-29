@@ -28,6 +28,8 @@ namespace HedgeHog.Alice.Store {
             (voltIndex == 0 ? (Action)SetVoltsM1 : SetVoltsM1_2)();
             return null;
           };
+        case HedgeHog.Alice.VoltageFunction.BSTip:
+          return () => ShowVoltsByBSTip(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.StDev:
           return ShowVoltsByStDev;
         case HedgeHog.Alice.VoltageFunction.AvgLineRatio:
@@ -212,7 +214,7 @@ namespace HedgeHog.Alice.Store {
         .Select(t => t.tl)
         .OrderBy(tl => tl.StartDate)
         //.Where(tl => tl.Color != TradeLevelsPreset.Blue + "")
-        .Select(tl => tl.PriceMin.Concat( tl.PriceMax) )
+        .Select(tl => tl.PriceMin.Concat(tl.PriceMax))
         .ToArray()
         .Pairwise((h1, h2) => h1.OverlapRatio(h2).ToPercent())
         .DefaultIfEmpty()
@@ -231,6 +233,12 @@ namespace HedgeHog.Alice.Store {
       var useCalc = IsRatesLengthStable;
       if(useCalc)
         TLsAngleRatio().ForEach(v => ShowVolts(v, 2, getVolt, setVolt));
+      return null;
+    }
+    CorridorStatistics ShowVoltsByBSTip(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+      var useCalc = IsRatesLengthStable;
+      if(useCalc)
+        BSTipOverlap(this).ForEach(v => ShowVolts(v.Item1, 2, getVolt, setVolt));
       return null;
     }
 
