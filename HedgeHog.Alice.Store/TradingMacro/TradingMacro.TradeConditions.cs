@@ -56,21 +56,41 @@ namespace HedgeHog.Alice.Store {
     double _tipRatioCurrent = double.NaN;
 
     #region TLS
+
+    #region Fresh
     public TradeConditionDelegate FreshOk {
       get {
+        TradingMacroTrader(tm => Log = new Exception(new { FreshOk = new { tm.WavesRsdPerc } } + "")).FirstOrDefault();
         Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
           tm.TrendLinesTrendsAll.OrderByDescending(tl => tl.EndDate)
-          .Where(tl => !tl.IsEmpty && IsTLFresh(tm, tl))
+          .Where(tl => !tl.IsEmpty && IsTLFresh(tm, tl, tm.WavesRsdPerc))
           .Take(1)
           .Where(tl => IsTLFresh(tm, tl)))
         .Concat()
         .AsSingleable();
-        //Func<TL, bool> tlOk = tl => tl.Color != TrendLevelsPreset.Blue + "";
         return () => tls()
           .Select(_ => TradeDirections.Both)
           .SingleOrDefault();
       }
     }
+    public TradeConditionDelegate FrshTrdOk {
+      get {
+        Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
+          tm.TrendLevelByTradeLevel()
+          .Where(tl => !tl.IsEmpty)
+          .IfEmpty(() => { throw new Exception(nameof(TrendLevelByTradeLevel) + "() returned empty handed."); })
+          .Where(tl => IsTLFresh(tm, tl)))
+          .Concat()
+          .AsSingleable();
+        return () => tls()
+          .Select(_ => TradeDirections.Both)
+          .SingleOrDefault();
+      }
+    }
+    #endregion
+
+    #region TLs
+
     [TradeConditionSetCorridor]
     public TradeConditionDelegate TLLOk {
       get {
@@ -390,7 +410,9 @@ namespace HedgeHog.Alice.Store {
                       .LastOrDefault();
       }
     }
+    #endregion
 
+    #region All Forward
     public TradeConditionDelegate AFOk {
       get {
         Func<TradingMacro, IEnumerable<TL>> tlsForward = tm => tm.TrendLinesTrendsAll;
@@ -438,6 +460,8 @@ namespace HedgeHog.Alice.Store {
     private static bool TLsAllForward(IEnumerable<TL> tls) {
       return tls.Pairwise().All(t => t.Item1.StartDate >= t.Item2.EndDate);
     }
+    #endregion
+
     #endregion
 
     #region Edges
@@ -871,19 +895,31 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region BSTip
     public TradeConditionDelegate BSTipOk {
       get {
-        Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
-        TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + "")).FirstOrDefault();
-        Func<TradingMacro, Tuple<double, SuppRes>, bool> isTreshOk = (tm,t) => IsTresholdAbsOk(_tipRatioCurrent = t.Item1, tipRatioTres(tm));
-        return () =>
-          (from tm in TradingMacroTrender()
-           from t in BSTipOverlap(tm)
-           where isTreshOk(tm,t)
-           select t.Item2.IsBuy ? TradeDirections.Up : TradeDirections.Down
-          )
-          .SingleOrDefault();
+        var ok = BSTipImpl(r => r);
+        return () => ok();
       }
+    }
+    public TradeConditionDelegate BSTipROk {
+      get {
+        var ok = BSTipImpl(r => !r);
+        return () => ok();
+      }
+    }
+
+    private TradeConditionDelegate BSTipImpl(Func<bool, bool> order) {
+      Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
+      TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + "")).FirstOrDefault();
+      Func<TradingMacro, Tuple<double, SuppRes>, bool> isTreshOk = (tm, t) => IsTresholdAbsOk(_tipRatioCurrent = t.Item1, tipRatioTres(tm));
+      return () =>
+        (from tm in TradingMacroTrender()
+         from t in BSTipOverlap(tm)
+         where isTreshOk(tm, t)
+         select order(t.Item2.IsBuy) ? TradeDirections.Up : TradeDirections.Down
+        )
+        .SingleOrDefault();
     }
 
     private Singleable<Tuple<double, SuppRes>> BSTipOverlap(TradingMacro tmTrender) {
@@ -898,6 +934,7 @@ namespace HedgeHog.Alice.Store {
               .Take(1)
               .AsSingleable();
     }
+    #endregion
 
     #region Properties
     [Category(categoryCorridor)]

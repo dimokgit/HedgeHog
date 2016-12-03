@@ -3635,6 +3635,10 @@ namespace HedgeHog.Alice.Store {
         Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMin).Min().IfNaN(minDefault);
         Func<IEnumerable<double>, int, IEnumerable<double>> comm = (ps, sign) => ps.Select(p => p + InPoints(CommissionInPips()) * sign);
         //Func<Func<TL, IEnumerable<double>>, int, IEnumerable<double>> commTL = (ps, sign) => ps().Select(p => p + InPoints(CommissionInPips()) * sign);
+        Func<TL, double> offsetByCR = tl => tl.PriceAvg2.Abs(tl.PriceAvg3) * (CorridorSDRatio - 1) / 2;
+        Func<TL, Func<TL, IEnumerable<double>>, int, double> comm2 = (tl, price, sigh) => comm(price(tl).Select(p => p + offsetByCR(tl) * sigh), sigh).DefaultIfEmpty(double.NaN).Single();
+        Func<TL, double> comm2Max = tl => comm2(tl, tl2 => tl2.PriceMax, 1);
+        Func<TL, double> comm2Min = tl => comm2(tl, tl2 => tl2.PriceMin, -1);
         if(_TradeLevelFuncs == null)
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           {
@@ -3682,20 +3686,20 @@ namespace HedgeHog.Alice.Store {
           { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
 
-          {TradeLevelBy.LimeMax,()=> levelMax(tm=> comm(tm.TLLime.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.LimeMin,()=> levelMin(tm=> comm(tm.TLLime.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.LimeMax,()=> levelMax(tm=> comm2Max(tm.TLLime)) },
+          {TradeLevelBy.LimeMin,()=> levelMin(tm=> comm2Min(tm.TLLime)) },
 
-          {TradeLevelBy.GreenMax,()=> levelMax(tm=> comm(tm.TLGreen.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.GreenMin,()=> levelMin(tm=> comm(tm.TLGreen.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.GreenMax,()=> levelMax(tm=> comm2Max(tm.TLGreen)) },
+          {TradeLevelBy.GreenMin,()=> levelMin(tm=> comm2Min(tm.TLGreen)) },
 
-          {TradeLevelBy.RedMax,()=> levelMax(tm=> comm(tm.TLRed.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.RedMin,()=> levelMin(tm=> comm(tm.TLRed.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.RedMax,()=> levelMax(tm=> comm2Max(tm.TLRed)) },
+          {TradeLevelBy.RedMin,()=> levelMin(tm=> comm2Min(tm.TLRed)) },
 
-          {TradeLevelBy.PlumMax,()=> levelMax(tm=> comm(tm.TLPlum.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.PlumMin,()=> levelMin(tm=> comm(tm.TLPlum.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.PlumMax,()=> levelMax(tm=> comm2Max(tm.TLPlum)) },
+          {TradeLevelBy.PlumMin,()=> levelMin(tm=> comm2Min(tm.TLPlum)) },
 
-          {TradeLevelBy.BlueMax,()=> levelMax(tm=> comm(tm.TLBlue.PriceMax,1).DefaultIfEmpty(double.NaN).Single()) },
-          {TradeLevelBy.BlueMin,()=> levelMin(tm=> comm(tm.TLBlue.PriceMin,-1).DefaultIfEmpty(double.NaN).Single()) },
+          {TradeLevelBy.BlueMax,()=> levelMax(tm=> comm2Max(tm.TLBlue)) },
+          {TradeLevelBy.BlueMin,()=> levelMin(tm=> comm2Min(tm.TLBlue)) },
 
           {TradeLevelBy.None,()=>double.NaN}
           };
