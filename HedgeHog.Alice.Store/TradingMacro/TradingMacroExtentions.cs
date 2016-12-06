@@ -249,9 +249,9 @@ namespace HedgeHog.Alice.Store {
           LoadActiveSettings();
           SubscribeToEntryOrderRelatedEvents();
         });
-      this.ObservableForProperty(tm => tm.CorridorSDRatio)
+      this.WhenAnyValue(tm => tm.CorridorSDRatio, tm => tm.IsRatesLengthStable)
+        //.Distinct()
         .Subscribe(_ => { _mustResetAllTrendLevels = true; OnScanCorridor(RatesArray, () => { }, false); });
-
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy != Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)
         .Subscribe(nc => {

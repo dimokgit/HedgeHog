@@ -102,7 +102,10 @@ namespace HedgeHog.Alice.Store {
     bool _isRatesLengthStable = false;
     public bool IsRatesLengthStable {
       get { return _isRatesLengthStable; }
-      set { _isRatesLengthStable = value; }
+      set {
+        _isRatesLengthStable = value;
+        OnPropertyChanged(nameof(IsRatesLengthStable));
+      }
     }
 
     IEnumerable<int> GetRatesLengthByDistanceMinByMacd(Func<IList<Rate>, int, Action<double, double>, IEnumerable<double>> macd) {

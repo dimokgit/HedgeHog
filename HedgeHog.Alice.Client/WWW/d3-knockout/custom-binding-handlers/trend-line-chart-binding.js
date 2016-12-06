@@ -217,7 +217,7 @@
         var price = y.invert(y1);
         var isBuy = line.node().buySell;
         if (isBuy === undefined) return alert(JSON.stringify({ isBuy: isBuy }));
-        viewModel.setTradeRate(isBuy == "buy", price);
+        viewModel.setTradeRate(isBuy === "buy", price);
 
       }
       function setTradeLine(name, color, key,drag) {
@@ -528,8 +528,8 @@
           setHorizontalStrip(com3.b, com3.s, redStrip);
         // #region add trend corridor
         //setTrendLine(trendLines, 1, "lightgrey");
-        setTrendLine(trendLines, 2, "darkred");
-        setTrendLine(trendLines, 3, "darkred");
+        setTrendLine2(trendLines, 2, "darkred");
+        setTrendLine2(trendLines, 3, "darkred");
         //setTrendLine(trendLines, 21, "darkred");
         //setTrendLine(trendLines, 31, "darkred");
 

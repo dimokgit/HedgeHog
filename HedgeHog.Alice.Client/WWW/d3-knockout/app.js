@@ -1304,6 +1304,7 @@
 
       //#endregion 
       dataViewModel.readStrategies();
+      dataViewModel.readClosedTrades();
       //dataViewModel.readNews();
       $.when.apply($, [defTC,defTOC,defTDT]).done(function () {
         ko.applyBindings(dataViewModel);
