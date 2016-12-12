@@ -63,7 +63,7 @@ namespace HedgeHog.Alice.Store {
         TradingMacroTrader(tm => Log = new Exception(new { FreshOk = new { tm.WavesRsdPerc } } + "")).FirstOrDefault();
         Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
           tm.TrendLinesTrendsAll.OrderByDescending(tl => tl.EndDate)
-          .Where(tl => !tl.IsEmpty && IsTLFresh(tm, tl, tm.WavesRsdPerc))
+          .Where(tl => !tl.IsEmpty && IsTLFresh(tm, tl, tm.WavesRsdPerc / 100.0))
           .Take(1)
           .Where(tl => IsTLFresh(tm, tl)))
         .Concat()
@@ -98,7 +98,7 @@ namespace HedgeHog.Alice.Store {
         Func<TL[], TL[]> tls1 = tls => tls.Where(tl => !tl.IsEmpty).OrderByDescending(tl => tl.EndDate).Take(1).ToArray();
         //Func<TL, bool> tlOk = tl => tl.Color != TrendLevelsPreset.Blue + "";
         return () => (from tm in TradingMacroTrender()
-                      let tls = tm.TrendLinesTrendsAll
+                      let tls = tm.TrendLinesTrendsAll.Where(tl => !tl.IsEmpty).ToArray()
                       from tl in tls1(tls)
                       select new { tls, tl }
                       )

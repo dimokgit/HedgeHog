@@ -278,7 +278,7 @@ namespace HedgeHog.Alice.Client {
       #endregion
 
       #region News
-      if(DateTime.Now.Subtract(_newsReadLastDate).TotalMinutes > 1) {
+      if(tmTrader.DoNews && DateTime.Now.Subtract(_newsReadLastDate).TotalMinutes > 1) {
         _newsReadLastDate = DateTime.Now;
         var now = DateTimeOffset.UtcNow;
         var then = now.AddMinutes(60);

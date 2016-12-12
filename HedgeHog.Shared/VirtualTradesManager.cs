@@ -19,9 +19,10 @@ namespace HedgeHog.Shared {
       get {
         if (_offersCollection == null || _baseUnits == null) {
           var offers = new ForexEntities().t_Offer;
-          var dbOffers = offers.Select(o => new Offer() {
-            Pair = o.Pair, Digits = o.Digits, MMR = o.MMR, PipCost = o.PipCost, PointSize = o.PipSize, ContractSize = o.BaseUnitSize
-          }).ToArray();
+          var dbOffers = new[] { new Offer { Pair = "USD/JPY", Digits = 3, MMR = 40, PipCost = 0.9, PointSize = 0.01, ContractSize = 1000 } };
+          //  offers.Select(o => new Offer() {
+          //  Pair = o.Pair, Digits = o.Digits, MMR = o.MMR, PipCost = o.PipCost, PointSize = o.PipSize, ContractSize = o.BaseUnitSize
+          //}).ToArray();
           _offersCollection = new ObservableCollection<Offer>(dbOffers);
           _baseUnits = offers.ToArray().ToDictionary(o => o.Pair, o => o.BaseUnitSize);
         }
