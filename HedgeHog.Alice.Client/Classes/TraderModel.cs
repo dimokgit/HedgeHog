@@ -1266,9 +1266,13 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
         _tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
         var activeTradeAccounts = _tradingAccounts.Count(ta => ta.IsActive);
-        if(activeTradeAccounts != 1) {
+        if(activeTradeAccounts == 0) {
           Log = new Exception(new { activeTradeAccounts } + "");
           throw new Exception("No Trading Account found.");
+        }
+        if(activeTradeAccounts > 1) {
+          Log = new Exception(new { activeTradeAccounts } + "");
+          throw new Exception("Multiple Trading Accounts found.");
         }
         #region FXCM
         fwMaster = new FXW(this.CoreFX, CommissionByTrade);

@@ -373,7 +373,9 @@ namespace HedgeHog.Alice.Client {
     }
 
     private static Dictionary<string, Dictionary<string, bool>> GetTradeConditionsInfo(TradingMacro tm) {
-      return tm.TradeConditionsInfo((d, p, t, c) => new { c, t, d = d() })
+      return !tm.IsRatesLengthStable
+        ? new Dictionary<string, Dictionary<string, bool>>()
+        : tm.TradeConditionsInfo((d, p, t, c) => new { c, t, d = d() })
         .GroupBy(x => x.t)
         .Select(g => new { g.Key, d = g.ToDictionary(x => x.c, x => x.d.HasAny()) })
         .ToDictionary(x => x.Key + "", x => x.d);

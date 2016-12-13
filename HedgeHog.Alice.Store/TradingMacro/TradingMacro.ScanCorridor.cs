@@ -372,7 +372,7 @@ namespace HedgeHog.Alice.Store {
       TrendBlueInt().Pairwise((s, c) => new { s })
         .Where(x => x.s > 0)
         .SelectMany(p =>
-          calcTrendLines(p.s, true, TradeLevelsPreset.Blue, new[] { skipByTL(TrendLines2) })
+          calcTrendLines(p.s, true, TradeLevelsPreset.Blue, mustResetAllTrendLevels ? new int[0][] : new[] { skipByTL(TrendLines2) })
           .Concat(() => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, skipEmpty))
           )
         .DefaultIfEmpty(new Rate[0])

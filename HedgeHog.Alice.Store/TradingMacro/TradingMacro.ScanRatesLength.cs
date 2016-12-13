@@ -103,6 +103,8 @@ namespace HedgeHog.Alice.Store {
     public bool IsRatesLengthStable {
       get { return _isRatesLengthStable; }
       set {
+        if(_isRatesLengthStable == value)
+          return;
         _isRatesLengthStable = value;
         OnPropertyChanged(nameof(IsRatesLengthStable));
       }

@@ -249,8 +249,8 @@ namespace HedgeHog.Alice.Store {
           LoadActiveSettings();
           SubscribeToEntryOrderRelatedEvents();
         });
-      this.WhenAnyValue(tm => tm.CorridorSDRatio, tm => tm.IsRatesLengthStable)
-        //.Distinct()
+      this.WhenAnyValue(tm => tm.CorridorSDRatio, tm => tm.IsRatesLengthStable, tm => tm.TrendBlue, tm => tm.TrendRed, tm => tm.TrendPlum, tm => tm.TrendGreen, tm => tm.TrendLime)
+        .Where(t => t.Item2)
         .Subscribe(_ => { _mustResetAllTrendLevels = true; OnScanCorridor(RatesArray, () => { }, false); });
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy != Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)
@@ -3906,6 +3906,10 @@ namespace HedgeHog.Alice.Store {
       ScanCoridorSubject.OnNext(p);
     }
     void OnScanCorridor(List<Rate> rates, Action callback, bool runSync) {
+      if(!IsRatesLengthStable) {
+        Log = new Exception(new { IsRatesLengthStable } + "");
+        return;
+      }
       if(runSync)
         ScanCorridor(rates, callback);
       else
@@ -3950,7 +3954,7 @@ namespace HedgeHog.Alice.Store {
               var newsEventsCurrent = NewsCasterModel.SavedNews.AsParallel().Where(ne => ne.Time.DateTime.Between(dateStart, dateEnd)).ToArray();
               NewEventsCurrent.Except(newsEventsCurrent).ToList().ForEach(ne => NewEventsCurrent.Remove(ne));
               NewEventsCurrent.AddRange(newsEventsCurrent.Except(NewEventsCurrent).ToArray());
-            }catch(Exception exc) {
+            } catch(Exception exc) {
               Log = exc;
             }
           });
@@ -4350,6 +4354,8 @@ namespace HedgeHog.Alice.Store {
       fw.GetBars(pair, periodMinutes, periodsBack, startDate, endDate, ratesList, z => {
         if(groupToSeconds)
           Log = new Exception(new { GetDars = new { z.Message } } + "");
+        if(DoLogSaveRates)
+          Log = new Exception(z.Message);
       }, true, map);
     }
 

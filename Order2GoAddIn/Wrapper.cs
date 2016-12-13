@@ -589,16 +589,18 @@ namespace Order2GoAddIn {
       Func<bool> doContinue = () => (endDate == TradesManagerStatic.FX_DATE_NOW || startDate != TradesManagerStatic.FX_DATE_NOW && startDate < endDate) || (periodsBack > 0 && ticks.Count() < periodsBack);
       while (doContinue()) {
         try {
+          DateTime timer = DateTime.Now;
           var t = getBars();
+          var sw = DateTime.Now - timer;
           t.RemoveAll(b => b.StartDate < startDate);
           if (t.Count() == 0) break;
           var ticksNew = t.Except(ticks).ToList();
           if (ticksNew.Count == 0) break;
           ticks.AddRange(ticksNew);
           var tickMinDate = ticks.Min(b => b.StartDate);
-          var msg = "Bars[" + pair + "]<" + period + ">:" + ticks.Count() + " @ " + endDate;
+          var msg = "Bars[" + pair + "]<" + period + ">:" + ticks.Count() + " @ " + endDate + "::" + sw.TotalSeconds.Round(3);
           var rlc = new RateLoadingCallbackArgs<TBar>(msg, ticksNew);
-          if (callBack != null) callBack(rlc);
+          callBack?.Invoke(rlc);
           if (rlc.IsProcessed) ticks.Clear();
           if (endDate == TradesManagerStatic.FX_DATE_NOW || endDate > tickMinDate) {
             endDate = tickMinDate;

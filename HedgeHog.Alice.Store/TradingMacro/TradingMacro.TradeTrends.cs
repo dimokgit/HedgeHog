@@ -8,28 +8,28 @@ using HedgeHog.Bars;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    static Rate[] _trenLinesEmptyRates = new Rate[] { new Rate { Trends = Rate.TrendLevels.Empty }, new Rate { Trends = Rate.TrendLevels.Empty } };
-    Lazy<IList<Rate>> _trendLines = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    static Lazy<IList<Rate>> _trenLinesEmptyRates = new Lazy<IList<Rate>>(()=> new Rate[] { new Rate { Trends = Rate.TrendLevels.Empty }, new Rate { Trends = Rate.TrendLevels.Empty } });
+    Lazy<IList<Rate>> _trendLines = _trenLinesEmptyRates;
     public Lazy<IList<Rate>> TrendLines {
       get { return _trendLines; }
       private set { _trendLines = value; }
     }
-    Lazy<IList<Rate>> _trendLines0 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    Lazy<IList<Rate>> _trendLines0 = _trenLinesEmptyRates;
     public Lazy<IList<Rate>> TrendLines0 {
       get { return _trendLines0; }
       private set { _trendLines0 = value; }
     }
-    Lazy<IList<Rate>> _trendLines1 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    Lazy<IList<Rate>> _trendLines1 = _trenLinesEmptyRates;
     public Lazy<IList<Rate>> TrendLines1 {
       get { return _trendLines1; }
       private set { _trendLines1 = value; }
     }
-    Lazy<IList<Rate>> _trendLines2 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    Lazy<IList<Rate>> _trendLines2 = _trenLinesEmptyRates;
     public Lazy<IList<Rate>> TrendLines2 {
       get { return _trendLines2; }
       private set { _trendLines2 = value; }
     }
-    Lazy<IList<Rate>> _trendLines3 = new Lazy<IList<Rate>>(() => _trenLinesEmptyRates);
+    Lazy<IList<Rate>> _trendLines3 = _trenLinesEmptyRates;
     public Lazy<IList<Rate>> TrendLines3 {
       get { return _trendLines3; }
       private set { _trendLines3 = value; }
@@ -38,7 +38,52 @@ namespace HedgeHog.Alice.Store {
     int[] TrendInts(IEnumerable<int> ints) {
       return ints.Concat(new[] { 0, -1 }).Take(2).ToArray();
     }
+    static int[][] _trendsCountByRange =new int[][] {
+      new[]{ 33,2 },
+      new[]{ 20,3 },
+      new[]{ 14,4 },
+      new[]{ 11,5 },
+    };
+    Action<string>[] _trendSetters {
+      get {
+        return new Action<string>[] {
+              (r)=>TrendBlue=r+"",
+              (r)=>TrendRed=r+"",
+              (r)=>TrendPlum=r+"",
+              (r)=>TrendGreen=r+"",
+              (r)=>TrendLime=r+""
+      };
+      }
+    }
 
+    #region TrendsAll
+    private int _TrendsAll = 0;
+    [Category(categoryActiveFuncs)]
+    [WwwSetting(wwwSettingsTrends)]
+    [DisplayName("Trends ALL")]
+    public int TrendsAll {
+      get { return _TrendsAll; }
+      set {
+        Action<int[]> setTrends = ii => {
+          var ratio = ii[0] + "";
+          var count = ii[1];
+          _trendSetters
+            .Select((ts, i) => new { ts, i })
+            .ForEach(x => x.ts(x.i < count ? ratio : ""));
+        };
+        if(_TrendsAll != value) {
+          _TrendsAll = value;
+          _trendsCountByRange
+            .Where(i => value > 0 && value <= i[0])
+            .TakeLast(1)
+            .Select(ii => new[] { value, ii[1] })
+            .ForEach(setTrends);
+          OnPropertyChanged(nameof(TrendsAll));
+        }
+      }
+    }
+
+    #endregion
     string _tradeTrends = "0,1,2,3";
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTradingCorridor)]
@@ -73,6 +118,8 @@ namespace HedgeHog.Alice.Store {
         if(_trendPlum == value)
           return;
         TrendPlumInt(_trendPlum = value);
+        TrendLines3 = _trenLinesEmptyRates;
+        OnPropertyChanged(nameof(TrendPlum));
       }
     }
 
@@ -87,6 +134,8 @@ namespace HedgeHog.Alice.Store {
         if(_trendLime == value)
           return;
         TrendLimeInt(_trendLime = value);
+        TrendLines0 = _trenLinesEmptyRates;
+        OnPropertyChanged(nameof(TrendLime));
       }
     }
 
@@ -101,6 +150,8 @@ namespace HedgeHog.Alice.Store {
         if(_trendGreen == value)
           return;
         TrendGreenInt(_trendGreen = value);
+        TrendLines1 = _trenLinesEmptyRates;
+        OnPropertyChanged(nameof(TrendGreen));
       }
     }
 
@@ -115,6 +166,8 @@ namespace HedgeHog.Alice.Store {
         if(_trendRed == value)
           return;
         TrendRedInt(_trendRed = value);
+        TrendLines = _trenLinesEmptyRates;
+        OnPropertyChanged(nameof(TrendRed));
       }
     }
 
@@ -129,6 +182,8 @@ namespace HedgeHog.Alice.Store {
         if(_trendBlue == value)
           return;
         TrendBlueInt(_trendBlue = value);
+        TrendLines2 = _trenLinesEmptyRates;
+        OnPropertyChanged(nameof(TrendBlue));
       }
     }
   }
