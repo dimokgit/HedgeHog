@@ -178,7 +178,7 @@
           console.log(d3.mouse(this));
         });;
       // Trend Lines
-      /*addLine(1);*/ addLine(2); addLine(3); addLine(21); addLine(31);
+      /*addLine(1);*/ addLine("2_"); addLine("3_"); addLine(21); addLine(31);
       addLine("1_2 trend"); addLine("2_2"); addLine("3_2");
       addLine("2_1"); addLine("3_1");
       addLine("2_0"); addLine("3_0");
@@ -528,8 +528,8 @@
           setHorizontalStrip(com3.b, com3.s, redStrip);
         // #region add trend corridor
         //setTrendLine(trendLines, 1, "lightgrey");
-        setTrendLine2(trendLines, 2, "darkred");
-        setTrendLine2(trendLines, 3, "darkred");
+        setTrendLine2(trendLines, 2,"", "darkred");
+        setTrendLine2(trendLines, 3,"", "darkred");
         //setTrendLine(trendLines, 21, "darkred");
         //setTrendLine(trendLines, 31, "darkred");
 
@@ -803,21 +803,21 @@
           .attr("height", height);// y position of the second end of the line
       }
       function setTrendLine2(trendLines, lineNumber, trendIndex, lineColour) {
+        var svgLine = svg.select("line.line" + lineNumber + "_" + trendIndex);
         var dates = (trendLines || {}).dates;
-        if (dates && dates.length) {
-          var line = trendLines["close" + lineNumber];
-          if (line && !line.some(function (v) { return isNaN(v); }))
-            svg.select("line.line" + lineNumber + "_" + trendIndex)
-              .style("visibility", "visible")
-              .style("stroke-width", 1.5)
-              .style("stroke", lineColour)  // colour the line
-              .attr("x1", x(dates[0])) // x position of the first end of the line
-              .attr("y1", y(line[0])) // y position of the first end of the line
-              .attr("x2", x(dates[1])) // x position of the second end of the line
-              .attr("y2", y(line[1]));// y position of the second end of the line
+        var line = trendLines["close" + lineNumber];
+        if (dates && dates.length && line && line.length && !line.some(function (v) { return isNaN(v); })) {
+          svgLine
+            .style("visibility", "visible")
+            .style("stroke-width", 1.5)
+            .style("stroke", lineColour)  // colour the line
+            .attr("x1", x(dates[0])) // x position of the first end of the line
+            .attr("y1", y(line[0])) // y position of the first end of the line
+            .attr("x2", x(dates[1])) // x position of the second end of the line
+            .attr("y2", y(line[1]));// y position of the second end of the line
           //.duration(animationDuration);    
         } else
-          svg.select("line.line" + lineNumber + "_" + trendIndex).style("visibility", "hidden");
+          svgLine.style("visibility", "hidden");
       }
       // #endregion
     }
