@@ -1057,10 +1057,7 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActiveYesNo)]
     [DisplayName("Trading Ratio By PMC")]
     [WwwSetting(wwwSettingsTradingConditions)]
-    public bool TradingRatioByPMC {
-      get { return TradeByAngle; }
-      set { TradeByAngle = value; }
-    }
+    public bool TradingRatioByPMC { get; set; }
 
     [Category(categoryXXX_NU)]
     [DisplayName("Trade On BOW")]

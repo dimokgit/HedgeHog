@@ -90,6 +90,33 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region TLs
+    public TradeConditionDelegate Two1Ok {
+      get {
+        TradingMacroTrender(tm => Log = new Exception(new { Two1Ok = new { tm.TrendAngleLime } } + "")).FirstOrDefault();
+        Func<TradingMacro, TL[]> tls = tm =>
+          tm.TrendLinesTrendsAll
+          .Where(tl => !tl.IsEmpty)
+          .OrderBy(tl => tl.EndDate)
+          .TakeLast(3)
+          .ToArray();
+        Func<TL, double[]> tlMM = tl => tl.PriceMax.Concat(tl.PriceMin).ToArray();
+        var ok = MonoidsCore.ToFunc((TradingMacro tm) => {
+          var tl3 = tls(tm);
+          if(tl3.Length != 3)
+            return false;
+          var tl3MM = tl3.Select(tl => tlMM(tl)).ToArray();
+          var tl2OLOk = tl3MM[0].OverlapRatio(tl3MM[1]) > 0.5;
+          var tmn = tl3.Take(2).Max(tl => tl.TimeSpan.TotalMinutes);
+          var tmn01 = (tl3[1].StartDate - tl3[0].EndDate).TotalMinutes;
+          var tl2DateOk = tl2OLOk || tmn01 < tmn / 20;
+          var tl2Date2Ok = tmn01 < tmn;
+          var tl3AnglOk = tl3.Last().Angle.Abs() < tm.TrendAngleLime;
+          return  tl2DateOk && tl2Date2Ok && tl3AnglOk;
+        });
+        return () => TradingMacroTrender(tm => TradeDirectionByBool(ok(tm))).SingleOrDefault();
+      }
+    }
+
 
     [TradeConditionSetCorridor]
     public TradeConditionDelegate TLLOk {
@@ -102,7 +129,7 @@ namespace HedgeHog.Alice.Store {
                       from tl in tls1(tls)
                       select new { tls, tl }
                       )
-                      .Do(x => SetBSfromTLs(x.tl, x.tls, isReverse()))
+                      .Do(x => SetBSfromTL(x.tl, isReverse()))//, x.tls, isReverse()))
                       .Select(_ => TradeDirections.Both)
                       .DefaultIfEmpty()
                       .Single();
@@ -251,10 +278,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    void SetBSfromTL(TL tl) {
+    void SetBSfromTL(TL tl, bool isReversed = false) {
       var rateLevels = TradeLevelByTrendLine(tl).SelectMany(lbs => lbs.Select(lb => TradeLevelFuncs[lb]())).ToArray();
-      BuyLevel.RateEx = rateLevels[0];
-      SellLevel.RateEx = rateLevels[1];
+      BuyLevel.RateEx = rateLevels[isReversed ? 1 : 0];
+      SellLevel.RateEx = rateLevels[isReversed ? 0 : 1];
     }
     void SetBSfromTLs(TL tl, IEnumerable<TL> tls, bool reverse) {
       var rateLevels = TradeLevelByTrendLine(tl).SelectMany(lbs => lbs.Select(lb => TradeLevelFuncs[lb]())).ToArray();

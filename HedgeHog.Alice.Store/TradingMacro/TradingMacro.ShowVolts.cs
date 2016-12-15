@@ -38,6 +38,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByRsd;
         case HedgeHog.Alice.VoltageFunction.TLH:
           return () => ShowVoltsByTLH(getVolts, setVolts);
+        case HedgeHog.Alice.VoltageFunction.TLH3:
+          return () => ShowVoltsByTLH3(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLA:
           return () => ShowVoltsByTLA(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLAR:
@@ -221,6 +223,28 @@ namespace HedgeHog.Alice.Store {
         .Average();
       if(v.IsNotNaN())
         ShowVolts(v, VoltAverageIterations, getVolt, setVolt);
+      return null;
+    }
+    CorridorStatistics ShowVoltsByTLH3(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+      Func<TL, double[]> tlMM = tl => tl.PriceMax.Concat(tl.PriceMin).ToArray();
+      var tl3 = TrendLinesNotEmpty
+          .OrderBy(tl => tl.EndDate)
+          .TakeLast(3)
+          .ToArray();
+      Func<TL, DateTime[]> dateRange = tl => {
+        var slack = (tl.TimeSpan.TotalMinutes * .1).FromMinutes();
+        return new[] { tl.StartDate.Add(slack), tl.EndDate.Subtract(slack) };
+      };
+      var dateOverlapOk = !tl3.Permutation().Any(t => dateRange(t.Item1).DoSetsOverlap(dateRange(t.Item2)));
+      var tl3MM = tl3.Select(tl => tlMM(tl)).ToArray();
+      var overlap = (from tlmm1 in tl3MM.TakeLast(1)
+                     from tlmm2 in tl3MM.Take(2)
+                     where IsRatesLengthStable && dateOverlapOk
+                     let ol = tlmm1.OverlapRatio(tlmm2)
+                     orderby ol
+                     select ol.ToPercent()
+                     ).Take(1);
+      overlap.ForEach(v => ShowVolts(v, VoltAverageIterations, getVolt, setVolt));
       return null;
     }
     CorridorStatistics ShowVoltsByTLA(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {

@@ -128,6 +128,7 @@
       // #endregion
 
       svg.append("path").attr("class", "line data");
+      svg.append("path").attr("class", "line data bid");
       if (hasTps) {
         svg.append("path").attr("class", "line dataTps").style("stroke", "black").style("opacity", tpsOpacity);
         svg.append("path")
@@ -167,16 +168,21 @@
             .attr("x1", x)
             .attr("y1", 0)
             .attr("x2", x)
-            .attr("y2", chartArea.height);
+            .attr("y2", calcChartArea(element).height);
           crosshair.select("#crosshairY")
             .attr("x1", 0)
             .attr("y1", y)
-            .attr("x2", chartArea.width)
+            .attr("x2", calcChartArea(element).width)
             .attr("y2", y);
         })
         .on("click", function () {
           console.log(d3.mouse(this));
         });;
+      $(window).resize(function () {
+        svg.select("rect.overlay")
+          .attr("width", calcChartArea(element).width)
+          .attr("height", calcChartArea(element).height);
+      });
       // Trend Lines
       /*addLine(1);*/ addLine("2_"); addLine("3_"); addLine(21); addLine(31);
       addLine("1_2 trend"); addLine("2_2"); addLine("3_2");
@@ -325,7 +331,7 @@
       }
       var data = ko.unwrap(chartData.data);
       //function roundDate(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()); }
-      var bufferCount = Math.floor(chartData.data.length / $(element).width());
+      var bufferCount = 1;//Math.floor(chartData.data.length / $(element).width());
       //var startDate = roundDate(chartData.data[0].d);
       //var leftTail = Enumerable
       //  .from(lineChart.data.toArray())
@@ -346,7 +352,9 @@
       //  })
       //  .toArray();
       //var data = leftTail.toArray().concat(chartData.data);
-      var __data__ = Enumerable
+      var __data__ = bufferCount === 1
+        ? data
+        : Enumerable
         .from(data)
         .buffer(bufferCount)
         .select(function (a) {
@@ -400,14 +408,25 @@
           yAxis = d3.axisLeft().scale(y),
           yAxis2 = hasTps ? d3.axisRight().scale(y2): null,
           yAxis3 = hasTps ? d3.axisRight().scale(y3) : null;
-          // define the graph line
+      // define the graph line
+      function lineYc(d) {
+        return y(d.c);
+      }
+      function lineYa(d) {
+        return y(d.a);
+      }
+      function lineYb(d) {
+        return y(d.b);
+      }
+      function lineXd(d) {
+        return x(d.d);
+        }
       var line = d3.line()
-          .x(function (d) {
-            return x(d.d);
-          })
-          .y(function (d) {
-            return y(d.c);
-          });
+          .x(lineXd)
+          .y(chartNum === 0 ? lineYa : lineYc);
+      var lineBid = chartNum===1?null: d3.line()
+          .x(lineXd)
+          .y(lineYb);
       //setCma(data, "c", "ma", cmaPeriod);
       //var _ma, line1 = d3.svg.line()
       //    .x(function (d) { return x(d.d); })
@@ -473,11 +492,17 @@
       if (shouldUpdateData) {
         if (chartNum === 1 && showLineLog)
           var lineLogDate = new Date();
-        svg.select("path.line.data").remove();
-        svg.append("path").attr("class", "line data")
+        //svg.select("path.line.data").remove();
+        //svg.append("path").attr("class", "line data")
+        svg.select("path.line.data")
           .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue")
           .datum(bufferCount >= 3 ? __data__.toArray() : data)
           .attr("d", line);
+        if(lineBid)
+        svg.select("path.line.data.bid")
+          .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue")
+          .datum(bufferCount >= 3 ? __data__.toArray() : data)
+          .attr("d", lineBid);
         if (lineLogDate) {
           var lineLogDate2 = new Date(new Date() - lineLogDate);
           console.log("lineLogDate[" + chartNum + "]: " + (lineLogDate2.getSeconds() * 1000 + lineLogDate2.getMilliseconds()) / 1000 + " sec");

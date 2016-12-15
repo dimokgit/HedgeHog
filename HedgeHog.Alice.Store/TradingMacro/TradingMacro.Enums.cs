@@ -25,6 +25,7 @@ namespace HedgeHog.Alice {
     HourlyStDevAvg,
     StDevSumRatio,
     TLH,
+    TLH3,
     TLA,
     TLAR,
     BSTip

@@ -249,8 +249,19 @@ namespace HedgeHog.Alice.Store {
           LoadActiveSettings();
           SubscribeToEntryOrderRelatedEvents();
         });
-      this.WhenAnyValue(tm => tm.CorridorSDRatio, tm => tm.IsRatesLengthStable, tm => tm.TrendBlue, tm => tm.TrendRed, tm => tm.TrendPlum, tm => tm.TrendGreen, tm => tm.TrendLime)
-        .Where(t => t.Item2)
+
+      this.WhenAnyValue(
+        tm => tm.CorridorSDRatio,
+        tm => tm.IsRatesLengthStable,
+        tm => tm.TrendBlue,
+        tm => tm.TrendRed,
+        tm => tm.TrendPlum,
+        tm => tm.TrendGreen,
+        tm => tm.TrendLime,
+        tm => tm.TimeFrameTreshold,
+        (v1, rls, v3, v4, v5, v6, v7, v8) => new { v1, rls, v3, v4, v5, v6, v7, v8 }
+        )
+        .Where(x => x.rls)
         .Subscribe(_ => { _mustResetAllTrendLevels = true; OnScanCorridor(RatesArray, () => { }, false); });
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy != Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)
@@ -1225,9 +1236,11 @@ namespace HedgeHog.Alice.Store {
           Debugger.Break();
         else
           Log = new Exception(new { getTradesManager } + "");
-      this._TradesManager = () => getTradesManager();
-      this.TradesManager.TradeClosed += TradeCloseHandler;
-      this.TradesManager.TradeAdded += TradeAddedHandler;
+      _TradesManager = () => getTradesManager();
+      TradesManager.TradeClosed -= TradeCloseHandler;
+      TradesManager.TradeClosed += TradeCloseHandler;
+      TradesManager.TradeAdded -= TradeAddedHandler;
+      TradesManager.TradeAdded += TradeAddedHandler;
       var fw = GetFXWraper();
       var digits = TradesManager.GetDigits(Pair);
       var a = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>
@@ -3626,7 +3639,7 @@ namespace HedgeHog.Alice.Store {
         Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMin).Min().IfNaN(minDefault);
         Func<IEnumerable<double>, int, IEnumerable<double>> comm = (ps, sign) => ps.Select(p => p + InPoints(CommissionInPips()) * sign);
         //Func<Func<TL, IEnumerable<double>>, int, IEnumerable<double>> commTL = (ps, sign) => ps().Select(p => p + InPoints(CommissionInPips()) * sign);
-        Func<TL, double> offsetByCR = tl => tl.PriceAvg2.Abs(tl.PriceAvg3) * (CorridorSDRatio - 1) / 2;
+        Func<TL, double> offsetByCR = tl => tl.PriceAvg2.Abs(tl.PriceAvg3).Div(CorridorSDRatio) * (CorridorSDRatio - 1) / 2;
         Func<TL, Func<TL, IEnumerable<double>>, int, double> comm2 = (tl, price, sigh) => comm(price(tl).Select(p => p + offsetByCR(tl) * sigh), sigh).DefaultIfEmpty(double.NaN).Single();
         Func<TL, double> comm2Max = tl => comm2(tl, tl2 => tl2.PriceMax, 1);
         Func<TL, double> comm2Min = tl => comm2(tl, tl2 => tl2.PriceMin, -1);

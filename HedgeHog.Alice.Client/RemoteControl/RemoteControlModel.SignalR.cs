@@ -28,7 +28,9 @@ namespace HedgeHog.Alice.Client {
         c = rateHL(rate),
         v = tm.GetVoltage(rate).IfNaNOrZero(lastVolt),
         v2 = tm.GetVoltage2(rate).IfNaNOrZero(lastVolt2),
-        m = rate.PriceCMALast.IfNaNOrZero(lastCma).Round(digits)
+        m = rate.PriceCMALast.IfNaNOrZero(lastCma).Round(digits),
+        a = rate.AskHigh.Round(digits),
+        b = rate.BidLow.Round(digits)
       });
       #endregion
 

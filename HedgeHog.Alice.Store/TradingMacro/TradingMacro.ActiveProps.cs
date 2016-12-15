@@ -41,12 +41,12 @@ namespace HedgeHog.Alice.Store {
         if(_timeFrameTreshold == value)
           return;
         _timeFrameTreshold = value;
-        OnPropertyChanged("TimeFrameTreshold");
         var spans = value.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
         if(spans.IsEmpty())
           spans = new[] { "0:00" };
         TimeFrameTresholdTimeSpan = TimeSpan.Parse(spans[0]);
         TimeFrameTresholdTimeSpan2 = spans.Length > 1 ? TimeSpan.Parse(spans[1]) : TimeSpan.Zero;
+        OnPropertyChanged(nameof(TimeFrameTreshold));
       }
     }
     #region Rsd

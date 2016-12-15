@@ -19,6 +19,7 @@
  * Send - method fired from server to sen info to clien
  */
 (function () {
+  var devVersion = "(v2)";
   //#region ko binding
   ko.bindingHandlers.elementer = {
     init: function (element, valueAccessor/*, allBindings, viewModel, bindingContext*/) {
@@ -35,6 +36,30 @@
   //#endregion
   // #region Globals
   "use strict";
+  if (!Array.prototype.find) {
+    Object.defineProperty(Array.prototype, "find", {
+      value: function (predicate) {
+        if (this === null) {
+          throw new TypeError('Array.prototype.find called on null or undefined');
+        }
+        if (typeof predicate !== 'function') {
+          throw new TypeError('predicate must be a function');
+        }
+        var list = Object(this);
+        var length = list.length >>> 0;
+        var thisArg = arguments[1];
+        var value;
+
+        for (var i = 0; i < length; i++) {
+          value = list[i];
+          if (predicate.call(thisArg, value, i, list)) {
+            return value;
+          }
+        }
+        return undefined;
+      }
+    });
+  }
   // enable global JSON date parsing
   //JSON.useDateParser();
   var chat;
@@ -94,9 +119,9 @@
   var openInFlightNotePerm = _.throttle(showErrorPerm, 2 * 1000);
   function isInFlight(date, index) {
     var secsInFlight = getSecondsBetween(new Date(), date);
-    if (secsInFlight > 30)
+    if (secsInFlight > 3)
       openInFlightNotePerm("In flight(" + index + ") > " + secsInFlight, keyNote("InFlightDelay"));
-    if (secsInFlight > 60) return false;
+    if (secsInFlight > 6) return false;
     return date && secsInFlight > 0;
   }
   function isConnected() {
@@ -945,6 +970,7 @@
       args.noNote = true;
       serverCall("getWaveRanges", args,
         function (wrs) {
+          debugger;
           wrs.forEach(function (wr) {
           });
           waveRanges(wrs);
@@ -1310,7 +1336,7 @@
         ko.applyBindings(dataViewModel);
       });
       serverCall("readTitleRoot", [], function (t) {
-        document.title = t + "::" + pair;
+        document.title = t + devVersion + "::" + pair;
       });
       //#endregion
 

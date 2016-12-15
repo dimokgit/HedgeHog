@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HedgeHog.Bars;
+using TL = HedgeHog.Bars.Rate.TrendLevels;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -55,6 +56,7 @@ namespace HedgeHog.Alice.Store {
       };
       }
     }
+    IEnumerable<TL> TrendLinesNotEmpty { get { return TrendLinesTrendsAll.Where(tl => !tl.IsEmpty); } }
 
     #region TrendsAll
     private int _TrendsAll = 0;
