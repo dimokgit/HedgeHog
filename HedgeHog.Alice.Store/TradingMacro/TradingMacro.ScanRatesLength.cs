@@ -288,7 +288,7 @@ namespace HedgeHog.Alice.Store {
       var counts = Enumerable.Range(countStart,rates.Count- countStart)
         .ToArray()
         .FuzzyIndex(stDevMin, (sd,p1, p2) => sd.Between(csd(p1),csd(p2)));
-      return counts;
+      return counts.DefaultIfEmpty(rates.Count).ToArray();
     }
     private double RatesHeightByM1TimeFrame(TimeSpan timeFrame) {
       return RatesHeightByFrameAverage(TradingMacroM1(), _ => timeFrame.TotalMinutes.ToInt());

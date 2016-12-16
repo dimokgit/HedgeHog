@@ -75,11 +75,12 @@ namespace HedgeHog.Alice.Store {
     }
     public TradeConditionDelegate FrshTrdOk {
       get {
+        TradingMacroTrader(tm => Log = new Exception(new { FrshTrdOk = new { tm.WavesRsdPerc } } + "")).FirstOrDefault();
         Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
           tm.TrendLevelByTradeLevel()
           .Where(tl => !tl.IsEmpty)
           .IfEmpty(() => { throw new Exception(nameof(TrendLevelByTradeLevel) + "() returned empty handed."); })
-          .Where(tl => IsTLFresh(tm, tl)))
+          .Where(tl => IsTLFresh(tm, tl, tm.WavesRsdPerc / 100.0)))
           .Concat()
           .AsSingleable();
         return () => tls()
@@ -2359,7 +2360,19 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    #region UseMinuteTrends
+    private bool _UseMinuteTrends;
+    public bool UseMinuteTrends {
+      get { return _UseMinuteTrends; }
+      set {
+        if(_UseMinuteTrends != value) {
+          _UseMinuteTrends = value;
+          OnPropertyChanged(nameof(UseMinuteTrends));
+        }
+      }
+    }
 
+    #endregion
 
     private IList<IList<int>> SplitterInts(string indexesAll) {
       return (from indexes in indexesAll.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
