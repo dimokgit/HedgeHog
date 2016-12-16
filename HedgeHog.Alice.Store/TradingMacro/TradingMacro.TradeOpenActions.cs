@@ -27,6 +27,14 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+    public TradeOpenAction WrapOnTrade3 {
+      get {
+        return trade => {
+          BuySellLevels.SetInManual(true);
+          WrapTradeInCorridor(true, false);
+        };
+      }
+    }
 
     public TradeOpenAction BlueExitOnTrade {
       get {

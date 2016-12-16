@@ -94,6 +94,9 @@ namespace HedgeHog.Alice.Store {
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
+    private CorridorStatistics ShowVolts(double volt,  Func<Rate, double> getVolt = null, Action<Rate, double> setVolt = null) {
+      return ShowVolts(volt, VoltAverageIterations, getVolt, setVolt);
+    }
     private CorridorStatistics ShowVolts(double volt, int averageIterations, Func<Rate, double> getVolt = null, Action<Rate, double> setVolt = null) {
       SetVolts(volt, getVolt ?? GetVoltage, setVolt ?? SetVoltage, averageIterations);
       if(!WaveShort.HasRates)

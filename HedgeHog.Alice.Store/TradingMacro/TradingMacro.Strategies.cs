@@ -474,12 +474,14 @@ namespace HedgeHog.Alice.Store {
       var minutes = (corridorValues.Last().StartDate - corridorValues[0].StartDate).Duration().TotalMinutes;
       var isTicks = BarPeriod == BarsPeriodType.t1;
       var angleBM = isTicks ? 1 / 60.0 : 1.0;
-      var groupped = corridorValues.GroupedDistinct(r => r.StartDate.AddMilliseconds(-r.StartDate.Millisecond), range => range.Average(_priceAvg));
+      Func<IList<Rate>, Tuple<double, double,double>> price = rl => Tuple.Create(rl.Max(r => r.AskHigh), rl.Min(r => r.BidLow),rl.Average(_priceAvg));
+      Func<Rate, Tuple<double, double,double>> price0 = r => Tuple.Create(r.AskHigh, r.BidLow, r.PriceAvg);
+      var groupped = corridorValues.GroupedDistinct(r => r.StartDate.AddMilliseconds(-r.StartDate.Millisecond), price);
       double h, l, h1, l1;
-      var doubles = isTicks && BarPeriodCalc != BarsPeriodType.s1 ? groupped.ToList() : corridorValues.ToList(r => r.PriceAvg);
+      var doubles = isTicks && BarPeriodCalc != BarsPeriodType.s1 ? groupped.ToList() : corridorValues.ToList(price0);
       if(doubles.Count < 5)
         return new List<Rate>();
-      var coeffs = doubles.Linear();
+      var coeffs = doubles.Select(t=>t.Item3).ToArray().Linear();
       var hl = CalcCorridorStDev(doubles, coeffs) * CorridorSDRatio;
       h = hl * 2;
       l = hl * 2;
@@ -498,8 +500,8 @@ namespace HedgeHog.Alice.Store {
       var edges = Enumerable.Range(0, doubles.Count)
         .Select(i => new { i, l = coeffs.RegressionValue(i) - h, h = coeffs.RegressionValue(i) + h, d = doubles[i] })
         .ToList();
-      var edgeHigh = edges.OrderBy(x => x.d.Abs(x.h)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Abs(x.h)), x.d)).First();
-      var edgeLow = edges.OrderBy(x => x.d.Abs(x.l)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Abs(x.l)), x.d)).First();
+      var edgeHigh = edges.OrderBy(x => x.d.Item1.Abs(x.h)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Item1.Abs(x.h)), x.d.Item1)).First();
+      var edgeLow = edges.OrderBy(x => x.d.Item2.Abs(x.l)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Item2.Abs(x.l)), x.d.Item2)).First();
 
       rates.ForEach(r => r.Trends = map(new TL(corridorValues, coeffs, hl, corridorValues.First().StartDate, corridorValues.Last().StartDate) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize),
@@ -539,19 +541,24 @@ namespace HedgeHog.Alice.Store {
       return rates;
     }
 
-    private double CalcCorridorStDev(List<double> doubles, double[] coeffs) {
+    private double CalcCorridorStDev(List<Tuple<double,double,double>> doubles, double[] coeffs) {
       var cm = Trades.Any() && CorridorCalcMethod != CorridorCalculationMethod.MinMax ? CorridorCalculationMethod.Height : CorridorCalcMethod;
+      var ds=  doubles.Select(r => r.Item3);
       switch(cm) {
         case CorridorCalculationMethod.PowerMeanPower:
-          return doubles.StDevByRegressoin(coeffs).RootMeanPower(doubles.StandardDeviation(), 100);
+          
+          return ds.ToArray().StDevByRegressoin(coeffs).RootMeanPower(ds.StandardDeviation(), 100);
         case CorridorCalculationMethod.Height:
-          return doubles.StDevByRegressoin(coeffs);
+          return ds.ToArray().StDevByRegressoin(coeffs);
         case CorridorCalculationMethod.MinMax:
           //var cmaPrices = UseRates(rates => rates.GetRange(doubles.Count)).SelectMany(rates => rates.Cma(r => r.PriceAvg, 1)).ToArray();
-          var mm = doubles.MinMaxByRegressoin2(coeffs).Select(d => d.Abs()).Max();
+          var mm = ds.ToArray().MinMaxByRegressoin2(coeffs).Select(d => d.Abs()).Max();
           return mm / 2;
+        case CorridorCalculationMethod.MinMaxMM:
+          var mm2 = doubles.MinMaxByRegressoin2(t => t.Item2, t => t.Item1, coeffs).Select(d => d.Abs()).Max();
+          return mm2 / 2;
         case CorridorCalculationMethod.RootMeanSquare:
-          return doubles.StDevByRegressoin(coeffs).SquareMeanRoot(doubles.StandardDeviation());
+          return ds.ToArray().StDevByRegressoin(coeffs).SquareMeanRoot(ds.StandardDeviation());
         default:
           throw new NotSupportedException(new { CorridorCalcMethod, Error = "Nosupported by CalcCorridorStDev" } + "");
       }

@@ -25,7 +25,9 @@ namespace HedgeHog.Alice {
     HourlyStDevAvg,
     StDevSumRatio,
     TLH,
+    TLH2,
     TLH3,
+    TLHR,
     TLA,
     TLAR,
     BSTip
@@ -46,12 +48,12 @@ namespace HedgeHog.Alice.Store {
     DistanceMinSmth,
     DistanceMin0,
     TimeFrame,
-    DMTF,
     M1Wave,
     M1WaveAvg,
     M1WaveAvg2,
     M1WaveAvg3,
-    MinHeight
+    MinHeight,
+    StDevMin
   }
   public enum ScanCorridorFunction {
     StDevSplits = 46,
@@ -185,7 +187,8 @@ namespace HedgeHog.Alice.Store {
     PriceAverage = 6,
     PowerMeanPower = 7,
     RootMeanSquare = 8,
-    MinMax
+    MinMax,
+    MinMaxMM
   }
   [Flags]
   public enum LevelType {

@@ -2314,7 +2314,7 @@ namespace HedgeHog.Alice.Store {
 
             UseRates(rates => { SetMA(rates); return false; });
 
-            OnSetBarsCountCalc();
+            OnSetBarsCountCalc(false);
             ScanOutsideEquinox();
 
             if(IsInVirtualTrading)
@@ -2349,6 +2349,7 @@ namespace HedgeHog.Alice.Store {
                 switch(CorridorCalcMethod) {
                   case CorridorCalculationMethod.Height:
                   case CorridorCalculationMethod.MinMax:
+                  case CorridorCalculationMethod.MinMaxMM:
                   case CorridorCalculationMethod.HeightUD:
                     RatesStDev = StDevByHeight;
                     break;
@@ -3639,7 +3640,7 @@ namespace HedgeHog.Alice.Store {
         Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMin).Min().IfNaN(minDefault);
         Func<IEnumerable<double>, int, IEnumerable<double>> comm = (ps, sign) => ps.Select(p => p + InPoints(CommissionInPips()) * sign);
         //Func<Func<TL, IEnumerable<double>>, int, IEnumerable<double>> commTL = (ps, sign) => ps().Select(p => p + InPoints(CommissionInPips()) * sign);
-        Func<TL, double> offsetByCR = tl => tl.PriceAvg2.Abs(tl.PriceAvg3).Div(CorridorSDRatio) * (CorridorSDRatio - 1) / 2;
+        Func<TL, double> offsetByCR = tl => tl.PriceHeight.Select(ph => ph * (CorridorSDRatio - 1) / 2).SingleOrDefault();
         Func<TL, Func<TL, IEnumerable<double>>, int, double> comm2 = (tl, price, sigh) => comm(price(tl).Select(p => p + offsetByCR(tl) * sigh), sigh).DefaultIfEmpty(double.NaN).Single();
         Func<TL, double> comm2Max = tl => comm2(tl, tl2 => tl2.PriceMax, 1);
         Func<TL, double> comm2Min = tl => comm2(tl, tl2 => tl2.PriceMin, -1);

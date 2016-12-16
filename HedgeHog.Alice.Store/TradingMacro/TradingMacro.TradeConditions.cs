@@ -1368,6 +1368,7 @@ namespace HedgeHog.Alice.Store {
           //RB__Ratio = tm._wwwInfoRRatio,
 
           StDevHght = InPips(tm.StDevByHeight).Round(1),
+          SDTradeTL = InPips(tm.TrendLevelByTradeLevel().Select(tl=>tl.StDev).SingleOrDefault()).Round(1),
           //HStdRatio = (RatesHeight / (StDevByHeight * 4)).Round(1),
           //VPCorr___ = string.Join(",", _voltsPriceCorrelation.Value.Select(vp => vp.Round(2)).DefaultIfEmpty()),
           //TipRatio_ = _tipRatioCurrent.Round(1),

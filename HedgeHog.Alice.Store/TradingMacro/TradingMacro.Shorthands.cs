@@ -62,11 +62,11 @@ namespace HedgeHog.Alice.Store {
       RaiseShowChart();
     }
 
-    public void WrapTradeInCorridor(bool forceMove = false) {
+    public void WrapTradeInCorridor(bool forceMove = false,bool useTakeProfit = true) {
       if(Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove)) {
         SuppRes.ForEach(sr => sr.ResetPricePosition());
         BuyLevel.InManual = SellLevel.InManual = true;
-        double offset = HeightForWrapToCorridor();
+        double offset = HeightForWrapToCorridor(useTakeProfit);
         if(Trades.HaveBuy()) {
           BuyLevel.Rate = Trades.NetOpen();
           SellLevel.Rate = BuyLevel.Rate - offset;
@@ -95,9 +95,9 @@ namespace HedgeHog.Alice.Store {
       RaiseShowChart();
     }
 
-    private double HeightForWrapToCorridor() {
+    private double HeightForWrapToCorridor(bool useTakeProfit) {
       return BuyLevel.Rate.Abs(SellLevel.Rate)
-        .Max(StDevByPriceAvg, TakeProfitFunction == TradingMacroTakeProfitFunction.Pips
+        .Max(StDevByPriceAvg, TakeProfitFunction == TradingMacroTakeProfitFunction.Pips || !useTakeProfit
         ? 0
         : CalculateTakeProfit(1));
     }
