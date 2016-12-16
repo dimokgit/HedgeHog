@@ -391,6 +391,7 @@
       var com = chartData.com;
       var com2 = chartData.com2;
       var com3 = chartData.com3;
+      var showNegativeVolts = !!eval(viewModel.showNegativeVolts());
       // #endregion
 
       // #region adjust svg and axis'
@@ -453,6 +454,9 @@
       function sbchnum(value) {
         return chartNum ? value : yDomain[1];
       }
+      function tipValue(v) {
+        return isNaN(v) ? 0 : showNegativeVolts ? v : Math.max(v, 0);
+      }
       yDomain = d3.extent([yDomain[0], yDomain[1]
         , sbchnum(tradeLevels && canBuy ? tradeLevels.buy : yDomain[1])
         , sbchnum(tradeLevels && canSell ? tradeLevels.sell : yDomain[1])
@@ -467,7 +471,7 @@
         var vOffset = (yDomain[1] - yDomain[0]) / 20;
         viewModel.chartArea[chartNum].yDomain = yDomain = [yDomain[0] - vOffset, yDomain[1] + vOffset];
         y.domain(yDomain);
-        var yDomain2 = d3.extent(data, function (d) { return d.v; });
+        var yDomain2 = d3.extent(data, function (d) { return tipValue(d.v); });
         y2.domain([yDomain2[0], yDomain2[1]]);
         var yDomain3 = d3.extent(data, function (d) { return d.v2; });
         y3.domain([yDomain3[0], yDomain3[1]]);
@@ -513,7 +517,9 @@
         if (hasTps) {
           var line2 = d3.line()
               .x(function (d) { return x(d.d); })
-              .y(function (d) { return y2(isNaN(d.v) ? 0 : d.v); });
+              .y(function (d) {
+                return y2(tipValue(d.v));
+              });
           var isHotTps = _.last(data).v > tpsHigh || _.last(data).v < tpsLow;
           var colorTps = isHotTps ? "darkred" : "navy";
           var opacityTps = isHotTps ? tpsOpacity * 2 : tpsOpacity;
@@ -740,7 +746,7 @@
       // #region Locals
       function setHLine(level, levelName, levelColour, width, dasharray, yTrans) {
         var line = svg.select("line.line" + levelName);
-        if (level)
+        if (level && !isNaN(level))
           return line
             .style("stroke", levelColour)  // colour the line
             .style("stroke-width", width)  // colour the line
@@ -830,7 +836,7 @@
       function setTrendLine2(trendLines, lineNumber, trendIndex, lineColour) {
         var svgLine = svg.select("line.line" + lineNumber + "_" + trendIndex);
         var dates = (trendLines || {}).dates;
-        var line = trendLines["close" + lineNumber];
+        var line = trendLines ? trendLines["close" + lineNumber] : null;
         if (dates && dates.length && line && line.length && !line.some(function (v) { return isNaN(v); })) {
           svgLine
             .style("visibility", "visible")

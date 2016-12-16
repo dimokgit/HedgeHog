@@ -1817,8 +1817,7 @@ namespace HedgeHog.Alice.Store {
     public static List<TBar> GroupTicksToSeconds<TBar>(List<TBar> rates, Action<IList<TBar>, TBar> map) where TBar : BarBase, new() {
       return rates.GroupedDistinct(rate => rate.StartDate.AddMilliseconds(-rate.StartDate.Millisecond), (gt) => {
         var tBar = GroupToRate(gt);
-        if(map != null)
-          map(gt, tBar);
+        map?.Invoke(gt, tBar);
         return tBar;
       }).ToList();
     }

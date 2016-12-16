@@ -255,6 +255,7 @@
     this.clearChartData = function () { lineChartData(lineChartDataEmpty()); }
     var lineChartData2 = ko.observableArray(lineChartDataEmpty());
     this.clearChartData2 = function () { lineChartData2(lineChartDataEmpty()); }
+
     // #region Server proxies
     function wrapTradeInCorridor() {
       serverCall("wrapTradeInCorridor", [pair], "<b>Close levels were reset to None.</b>");
@@ -308,6 +309,7 @@
       serverCall("manualToggle", [pair]);
     }
     // #endregion
+
     // #region Buy/Sell
     this.isQuickTrade = ko.observable(false);
     this.toggleQuickTrade = function () {
@@ -329,6 +331,7 @@
       return !openTrades().sell;
     });
     // #endregion
+
     // #region Start Stop Trades
     var tradeLevels = ko.observable({});
     this.showStopTrades = ko.pureComputed(function () {
@@ -351,6 +354,7 @@
     }
 
     // #endregion
+
     function moveCorridorWavesCount(chartIndex, step) {
       if (chartIndex !== 0) return alert("chartIndex:" + chartIndex + " is not supported");
       var name = "PriceCmaLevels_";
@@ -474,9 +478,9 @@
       serverCall("setRsdTreshold", [pair, chartNum, rsd]);
     }
     // #endregion
-    // #endregion
 
     // #region Public
+
     // #region Server enums
     this.toggleStartDate = toggleStartDate.bind(null, 0);
     this.rsdMin = ko.observable();
@@ -523,6 +527,7 @@
       });
     }
     // #endregion
+
     // #region Trade Settings
     this.saveTradeSettings = function () {
       saveTradeSettings(tradeSettingsCurrent());
@@ -623,6 +628,33 @@
         }).value();
     });
     // #endregion
+
+    // #region wwwSettings
+    var wwwSettingsElement;
+    this.wwwSettingsDialog = function (element) {
+      wwwSettingsElement = element;
+    }
+    var wwwSettingsGridElement;
+    this.wwwSettingsGrid = function (element) {
+      wwwSettingsGridElement = element;
+    }
+    this.showNegativeVolts = ko.observable(true);
+    this.wwwSettingProperties = ko.pureComputed(function () {
+      function gettype(v) { return typeof v === "boolean" ? "checkbox" : "text" }
+      return [
+          { n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) }
+      ];
+    });
+    this.showWwwSettings = function () {
+      $(wwwSettingsElement).dialog({
+        title: "WWW Settings", width: "auto", dialogClass: "dialog-compact",
+        dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
+        close: function () { $(this).dialog("destroy"); }
+      });
+      //$(wwwSettingsGridElement).jqPropertyGrid(properties);
+    };
+    // #endregion
+
     // #region WwwInfo
     var wwwInfoElement;
     var currentWwwInfoChartNum;
@@ -1198,7 +1230,6 @@
     function defaultChartData(chartNum) { return chartDataFactory(lineChartData, [{ dates: [] }, {}, {}, {}], null, null, null, false, false, chartNum, false, 0); }
     // #endregion
   }
-  // #endregion
 
   // #region Init SignalR hub
   var host = location.host.match(/localhost/i) ? "ruleover.com:91" : location.host;

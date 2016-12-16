@@ -231,23 +231,23 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByTLHn(int tlCount, Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       Func<TL, double[]> tlMM = tl => tl.PriceMax.Concat(tl.PriceMin).ToArray();
-      var tl3 = TrendLinesTrendsAll.OrderBy(tl => tl.EndDate).TakeLast(tlCount).ToArray();
-      if(tl3.Any(tl => tl.IsEmpty))
-        return null;
-      Func<TL, DateTime[]> dateRange = tl => {
-        var slack = (tl.TimeSpan.TotalMinutes * .1).FromMinutes();
-        return new[] { tl.StartDate.Add(slack), tl.EndDate.Subtract(slack) };
-      };
-      var dateOverlapOk = !tl3.Permutation().Any(t => dateRange(t.Item1).DoSetsOverlap(dateRange(t.Item2)));
-      var tl3MM = tl3.Select(tl => tlMM(tl)).ToArray();
-      var overlap = (from tlmm1 in tl3MM.TakeLast(1)
-                     from tlmm2 in tl3MM.Take(2)
-                     where tl3.Length == tlCount && IsRatesLengthStable && dateOverlapOk
-                     let ol = tlmm1.OverlapRatio(tlmm2)
-                     orderby ol
-                     select ol.ToPercent()
-                     ).Take(1);
-      overlap.ForEach(v => ShowVolts(v, VoltAverageIterations, getVolt, setVolt));
+      var tl3 = TrendLinesTrendsAll.OrderBy(tl => tl.EndDate).TakeLast(tlCount+1).ToArray();
+      if(!tl3.Any(tl => tl.IsEmpty) || tl3.Length == tlCount + 1 || !IsRatesLengthStable) {
+        Func<TL, DateTime[]> dateRange = tl => {
+          var slack = (tl.TimeSpan.TotalMinutes * .1).FromMinutes();
+          return new[] { tl.StartDate.Add(slack), tl.EndDate.Subtract(slack) };
+        };
+        var dateOverlapOk = !tl3.Permutation().Any(t => dateRange(t.Item1).DoSetsOverlap(dateRange(t.Item2)));
+        var tl3MM = tl3.Select(tl => tlMM(tl)).ToArray();
+        var overlap = (from tlmm1 in tl3MM.TakeLast(1)
+                       from tlmm2 in tl3MM.Take(tlCount)
+                       where dateOverlapOk
+                       let ol = tlmm1.OverlapRatio(tlmm2)
+                       select ol
+                       ).ToArray();
+        if(overlap.Any())
+          ShowVolts(overlap.Average().ToPercent(), VoltAverageIterations, getVolt, setVolt);
+      }
       return null;
     }
     CorridorStatistics ShowVoltsByTLHR(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {

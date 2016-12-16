@@ -265,7 +265,9 @@ namespace HedgeHog.Alice.Store {
       var buffrerSize = (ratesForCorridor.Count / sampleMin).Max(1);
       var grouped = ToFunc(0, (skip) =>
        BarPeriod == BarsPeriodType.t1
+       ? !UseMinuteTrends
        ? rates(skip).Buffer(buffrerSize).Select(groupMap)
+       : rates(skip).ToList().GroupedDistinct(r => r.r.StartDate.AddMilliseconds(-r.r.StartDate.Millisecond), groupMap)
        : rates(skip).Select(groupMap2));
       var distanceTotal = grouped(0).Distances(x => x.a).Last().Item2;
       //var sections2 = sectionStarts.Scan(new { end=0,start=0},(p, n) => new { end = n.i, start = p.end }).ToList();

@@ -299,6 +299,11 @@
 
     table.accounting {
     }
+
+    #wwwSettingsDialog.ui-dialog-content{
+      min-height:0 !important;
+      padding:0;
+    }
   </style>
   <script>
     $(function () {
@@ -406,6 +411,10 @@
                 <button data-bind="click:startAccounting" title="Accounting">
                   <span class="glyphicon glyphicon-piggy-bank"></span>
                 </button>
+                <button data-bind="click:showWwwSettings" title="Www Settings">
+                  <span class="glyphicon glyphicon-piggy-bank"></span>
+                </button>
+                
               </li>
             </ul>
           </li>
@@ -737,6 +746,18 @@
   <!--#region wwwInfo-->
   <div data-bind="elementer:wwwInfoDialog" style="display:none">
     <pre data-bind="text:wwwInfo"></pre>
+  </div>
+  <!--#endregion-->
+  <!--#region wwwSettings-->
+  <div data-bind="elementer:wwwSettingsDialog" id="wwwSettingsDialog" style="display:none">
+    <div data-bind="elementer:wwwSettingsGrid">
+      <table data-bind="foreach:wwwSettingProperties">
+        <tr>
+          <td data-bind="text:n"></td>
+          <td><input data-bind="value:v" /></td>
+        </tr>
+      </table>
+    </div>
   </div>
   <!--#endregion-->
   <!--#region replayDialog-->
