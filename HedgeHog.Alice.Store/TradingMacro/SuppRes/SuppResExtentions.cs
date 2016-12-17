@@ -5,11 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 using HedgeHog;
 namespace HedgeHog.Alice.Store {
-  using SuppRessesList = IList<IList<SuppRes>>;
+  using static IEnumerableCore;
+  using SuppRessesList = IEnumerableCore.Singleable<IList<SuppRes>>;
   public static class SuppResExtentions {
-    static readonly SuppRessesList Empty = new List<IList<SuppRes>>();
+    static readonly Singleable<IList<SuppRes>> Empty = new Singleable<IList<SuppRes>>(new[] { (new SuppRes[0]) }.Take(0).ToList());
     public static SuppRessesList ToSupressesList(this IList<SuppRes> s) {
-      return new[] { s };
+      return new[] { s }.AsSingleable();
     }
 
     public static SuppRes[] Active(this IEnumerable<SuppRes> supReses, bool isBuy) {
@@ -22,7 +23,7 @@ namespace HedgeHog.Alice.Store {
       return supReses.Where(sr => sr.IsBuy == isBuy).ToArray();
     }
     public static SuppRessesList If(this IList<SuppRes> supReses, Func<IList<SuppRes>, bool> condition) {
-      return condition(supReses) ? new[]{ supReses }: Empty;
+      return condition(supReses) ? supReses.ToSupressesList()  : Empty;
     }
     public static SuppRessesList If(this IList<SuppRes> supReses, Func<bool> condition) {
       return condition() ? supReses.ToSupressesList() : Empty;
@@ -53,7 +54,7 @@ namespace HedgeHog.Alice.Store {
     }
     public static double Height(this IList<SuppRes> supReses) {
       return supReses.Count == 2
-        ? supReses[0].Rate.Max(supReses[1].Rate) 
+        ? supReses[0].Rate.Max(supReses[1].Rate)
         : supReses.Max(sr => sr.Rate).Abs(supReses.Min(sr => sr.Rate));
     }
 

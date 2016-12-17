@@ -112,7 +112,7 @@ namespace HedgeHog.Alice.Store {
           var tl2DateOk = tl2OLOk || tmn01 < tmn / 20;
           var tl2Date2Ok = tmn01 < tmn;
           var tl3AnglOk = tl3.Last().Angle.Abs() < tm.TrendAngleLime;
-          return  tl2DateOk && tl2Date2Ok && tl3AnglOk;
+          return tl2DateOk && tl2Date2Ok && tl3AnglOk;
         });
         return () => TradingMacroTrender(tm => TradeDirectionByBool(ok(tm))).SingleOrDefault();
       }
@@ -1276,16 +1276,26 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+    TradeDirections _VROk;
+    public TradeConditionDelegate VROk {
+      get {
+        //BuySellLevels.IfAnyCanTrade()
+        return () => _VROk = BuySellLevels.IfAnyCanTrade().Select(_ => _VROk).Concat(VltRngImpl).FirstOrDefault();
+      }
+    }
     public TradeConditionDelegate VltRngOk {
       get {
-        return () => GetLastVolt(volt =>
+        return () => VltRngImpl().SingleOrDefault();
+      }
+    }
+    IEnumerable<TradeDirections> VltRngImpl() {
+      return GetLastVolt(volt =>
           VoltRange1.IsNaN()
           ? TradeDirectionByTreshold(volt, VoltRange0)
           : VoltRange0 < VoltRange1
           ? TradeDirectionByBool(volt.Between(VoltRange0, VoltRange1))
           : TradeDirectionByBool(!volt.Between(VoltRange1, VoltRange0))
-        ).SingleOrDefault();
-      }
+        );
     }
     public TradeConditionDelegate VltRng2Ok {
       get {
@@ -1369,7 +1379,7 @@ namespace HedgeHog.Alice.Store {
           //RB__Ratio = tm._wwwInfoRRatio,
 
           StDevHght = InPips(tm.StDevByHeight).Round(1),
-          SDTradeTL = InPips(tm.TrendLevelByTradeLevel().Select(tl=>tl.StDev).SingleOrDefault()).Round(1),
+          SDTradeTL = InPips(tm.TrendLevelByTradeLevel().Select(tl => tl.StDev).SingleOrDefault()).Round(1),
           //HStdRatio = (RatesHeight / (StDevByHeight * 4)).Round(1),
           //VPCorr___ = string.Join(",", _voltsPriceCorrelation.Value.Select(vp => vp.Round(2)).DefaultIfEmpty()),
           //TipRatio_ = _tipRatioCurrent.Round(1),
@@ -1387,7 +1397,7 @@ namespace HedgeHog.Alice.Store {
           //WvDistRsd = _waveDistRsd.Round(2)
         }
         .ToExpando()
-        .Add(TradeConditionsHave(nameof(BSTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { })
+        .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { })
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
       //.Merge(new { BPA1Tip__ = _wwwBpa1 }, () =>TradeConditionsHave(BPA12Ok))
       )
@@ -2156,8 +2166,8 @@ namespace HedgeHog.Alice.Store {
     bool TradeConditionsHave(TradeConditionDelegate td) {
       return TradeConditionsInfo().Any(d => d.Method == td.Method);
     }
-    bool TradeConditionsHave(string td) {
-      return TradeConditionsInfo().Any(d => d.Method.Name.Contains(td));
+    bool TradeConditionsHave(params string[] tds) {
+      return TradeConditionsInfo().Any(d => tds.Any(td => d.Method.Name.Contains(td)));
     }
     IEnumerable<TradeDirections> TradeConditionHasAny(TradeConditionDelegate td) {
       return TradeConditionsInfo().Where(d => d.Method == td.Method).Select(d => d());
