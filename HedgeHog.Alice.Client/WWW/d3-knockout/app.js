@@ -638,7 +638,7 @@
     this.wwwSettingsGrid = function (element) {
       wwwSettingsGridElement = element;
     }
-    this.showNegativeVolts = ko.observable(true);
+    this.showNegativeVolts = ko.observable(-10000);
     this.wwwSettingProperties = ko.pureComputed(function () {
       function gettype(v) { return typeof v === "boolean" ? "checkbox" : "text" }
       return [

@@ -30,7 +30,9 @@ namespace HedgeHog.Alice {
     TLHR,
     TLA,
     TLAR,
-    BSTip
+    BSTip,
+    TLW3,
+    TLW4
   }
 }
 namespace HedgeHog.Alice.Store {

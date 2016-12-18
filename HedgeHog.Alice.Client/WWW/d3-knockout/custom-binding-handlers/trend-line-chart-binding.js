@@ -391,7 +391,7 @@
       var com = chartData.com;
       var com2 = chartData.com2;
       var com3 = chartData.com3;
-      var showNegativeVolts = !!eval(viewModel.showNegativeVolts());
+      var showNegativeVolts = parseInt(viewModel.showNegativeVolts());
       // #endregion
 
       // #region adjust svg and axis'
@@ -455,7 +455,7 @@
         return chartNum ? value : yDomain[1];
       }
       function tipValue(v) {
-        return isNaN(v) ? 0 : showNegativeVolts ? v : Math.max(v, 0);
+        return isNaN(v) ? 0 : Math.max(v, showNegativeVolts);
       }
       yDomain = d3.extent([yDomain[0], yDomain[1]
         , sbchnum(tradeLevels && canBuy ? tradeLevels.buy : yDomain[1])
