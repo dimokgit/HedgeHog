@@ -1811,10 +1811,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public static List<TBar> GroupTicksToSeconds<TBar>(List<TBar> rates) where TBar : BarBase, new() {
+    public static List<TBar> GroupTicksToSeconds<TBar>(List<TBar> rates) where TBar : Rate, new() {
       return GroupTicksToSeconds(rates, null);
     }
-    public static List<TBar> GroupTicksToSeconds<TBar>(List<TBar> rates, Action<IList<TBar>, TBar> map) where TBar : BarBase, new() {
+    public static List<TBar> GroupTicksToSeconds<TBar>(List<TBar> rates, Action<IList<TBar>, TBar> map) where TBar : Rate, new() {
       return rates.GroupedDistinct(rate => rate.StartDate.AddMilliseconds(-rate.StartDate.Millisecond), (gt) => {
         var tBar = GroupToRate(gt);
         map?.Invoke(gt, tBar);
@@ -1822,8 +1822,8 @@ namespace HedgeHog.Alice.Store {
       }).ToList();
     }
 
-    public static TBar GroupToRate<TBar>(IList<TBar> gt, Action<IList<Rate>, TBar> map = null) where TBar : BarBase, new() {
-      return new TBar() {
+    public static TBar GroupToRate<TBar>(IList<TBar> gt, Action<IList<Rate>, TBar> map = null) where TBar : Rate, new() {
+      var rate= new TBar() {
         StartDate2 = gt[0].StartDate2,
         AskOpen = gt.First().AskOpen,
         AskClose = gt.Last().AskClose,
@@ -1833,8 +1833,10 @@ namespace HedgeHog.Alice.Store {
         BidClose = gt.Last().BidClose,
         BidHigh = gt.Max(t => t.BidHigh),
         BidLow = gt.Min(t => t.BidLow),
-        PriceCMALast = gt.Average(r => r.PriceCMALast)
+        PriceCMALast = gt.Average(r => r.PriceCMALast),
+        DistanceHistory = double.NaN
       };
+      return rate;
     }
 
     private void ReplayEvents() {

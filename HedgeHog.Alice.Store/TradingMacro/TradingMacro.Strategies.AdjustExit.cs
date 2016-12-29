@@ -104,7 +104,9 @@ namespace HedgeHog.Alice.Store {
             var takeProfitPips = InPips(calculateTakeProfit);
             var currentGrossOthers = _tradingStatistics.TradingMacros.Where(tm => tm != this).Sum(tm => tm.CurrentGross);
             var currentGrossOthersInPips = TradesManager.MoneyAndLotToPips(currentGrossOthers, CurrentGrossLot, Pair);
-            var ellasic = RatesArray.CopyLast(EllasticRange).Average(_priceAvg).Abs(RateLast.PriceAvg);
+            var ellasic = TakeProfitFunction == TradingMacroTakeProfitFunction.Pips 
+            ? 0 
+            : RatesArray.CopyLast(EllasticRange).Average(_priceAvg).Abs(RateLast.PriceAvg);
             var ratesHeightInPips = new[] {
               LimitProfitByRatesHeight? TradingDistance :double.NaN
             }.Min(m => InPips(m));

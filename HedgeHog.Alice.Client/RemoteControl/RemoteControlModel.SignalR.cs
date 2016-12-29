@@ -20,22 +20,24 @@ namespace HedgeHog.Alice.Client {
       string pair = tm.Pair;
       Func<Rate, double> rateHL = rate => (rate.PriceAvg >= rate.PriceCMALast ? rate.PriceHigh : rate.PriceLow).Round(digits);
       #region map
-      var lastVolt = tm.GetLastVolt().DefaultIfEmpty().Memoize();
-      var lastVolt2 = tm.GetLastVolt(tm.GetVoltage2).DefaultIfEmpty().Memoize();
+      var doShowVolt = tm.VoltageFunction != VoltageFunction.None;
+      var doShowVolt2 = tm.VoltageFunction2 != VoltageFunction.None;
+      var lastVolt = tm.GetLastVolt().Memoize();
+      var lastVolt2 = tm.GetLastVolt(tm.GetVoltage2).Memoize();
       var lastCma = tm.UseRates(TradingMacro.GetLastRateCma).SelectMany(cma => cma).FirstOrDefault();
       var map = MonoidsCore.ToFunc((Rate)null, rate => new {
         d = rate.StartDate2,
         c = rateHL(rate),
-        v = tm.GetVoltage(rate).IfNaNOrZero(lastVolt),
-        v2 = tm.GetVoltage2(rate).IfNaNOrZero(lastVolt2),
+        v = doShowVolt ? tm.GetVoltage(rate).IfNaNOrZero(lastVolt) : 0,
+        v2 = doShowVolt2 ? tm.GetVoltage2(rate).IfNaNOrZero(lastVolt2) : 0,
         m = rate.PriceCMALast.IfNaNOrZero(lastCma).Round(digits),
         a = rate.AskHigh.Round(digits),
         b = rate.BidLow.Round(digits)
       });
       #endregion
-
-      if(tm.RatesArray.Count == 0 || tm.IsTrader && tm.BuyLevel == null)
-        return new []{ new { rates = new int[0] } };
+      var exit = doShowVolt && lastVolt.IsEmpty() || doShowVolt2 && lastVolt2.IsEmpty();
+      if(exit || tm.RatesArray.Count == 0 || tm.IsTrader && tm.BuyLevel == null)
+        return new[] { new { rates = new int[0] } };
 
       var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
       var tpsHigh = tmTrader.GetVoltageHigh();
@@ -52,8 +54,10 @@ namespace HedgeHog.Alice.Client {
       double cmaPeriod = tm.CmaPeriodByRatesCount();
       if(tm.BarPeriod == BarsPeriodType.t1) {
         Action<IList<Rate>, Rate> volts = (gr, r) => {
-          tm.SetVoltage(r, gr.Select(tm.GetVoltage).Where(v => v.IsNotNaN()).DefaultIfEmpty(0).Average());
-          tm.SetVoltage2(r, gr.Select(tm.GetVoltage2).Where(v => v.IsNotNaN()).DefaultIfEmpty(0).Average());
+          if(doShowVolt)
+            tm.SetVoltage(r, gr.Select(tm.GetVoltage).Where(v => v.IsNotNaN()).DefaultIfEmpty(lastVolt.First()).Average());
+          if(doShowVolt2)
+            tm.SetVoltage2(r, gr.Select(tm.GetVoltage2).Where(v => v.IsNotNaN()).DefaultIfEmpty(lastVolt2.First()).Average());
         };
         cmaPeriod /= tm.TicksPerSecondAverage;
         if(ratesForChart.Count > 1)

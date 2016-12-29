@@ -92,14 +92,38 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByPPM(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      Func<Rate, double> price = _priceAvg;
       Func<IEnumerable<double>> calcVolt = ()
         => UseRates(rates
-        => rates.BackwardsIterator().Take(TLBlue.Count).Distances(GetPriceMA).TakeLast(1).Select(l => l.Item2 / TLBlue.TimeSpan.TotalMinutes))
-        .Concat()
+        => {
+          var range0 = rates
+          .BackwardsIterator()
+          .Take(rates.Count.Div(4).ToInt())
+          ;
+          var range = range0
+          .Pairwise()
+          .Select(t => new { d = price(t.Item1).Abs(price(t.Item2)), ts = (t.Item1.StartDate - t.Item2.StartDate).TotalMinutes })
+          .ToArray();
+          var tsa = range.Average(x => x.ts).Max(BarPeriod <= BarsPeriodType.t1 ? 1 : BarPeriodInt) * 3;
+          range = range.Where(x => x.ts < tsa).ToArray();
+          var dMax = range
+          .AverageByPercentage(x => x.d, (v, a) => v >= a, 0.05)
+          .Min(x => x.d);
+          range = range.Where(x => x.d <= dMax).ToArray();
+          var d = range.Sum(x => x.d);
+          var ts = range.Sum(x => x.ts);
+          var dist = range0.Distances(price).Last();
+          var ts1 = range0.First().StartDate - dist.Item1.StartDate;
+          var d2 = dist.Item2 / ts1.TotalMinutes;
+          if(d == 0)
+            return 0;
+          return d / ts;
+        }
+        )
         .Where(ppm => ppm > 0)
         .Select(ppm => InPips(ppm));
       if(!useCalc)
-        return GetLastVolt().Concat(calcVolt()).Take(1).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault();
+        return GetLastVolt().Take(1).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault();
 
       return calcVolt()
         .Select(volt => ShowVolts(useCalc ? volt : GetLastVolt().DefaultIfEmpty(volt).Single(), 2, getVolt, setVolt))
@@ -235,7 +259,7 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByTLHn(int tlCount, Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       Func<TL, double[]> tlMM = tl => tl.PriceMax.Concat(tl.PriceMin).ToArray();
-      var tl3 = TrendLinesTrendsAll.OrderBy(tl => tl.EndDate).TakeLast(tlCount+1).ToArray();
+      var tl3 = TrendLinesTrendsAll.OrderBy(tl => tl.EndDate).TakeLast(tlCount + 1).ToArray();
       if(!tl3.Any(tl => tl.IsEmpty) && tl3.Length == tlCount + 1 && IsRatesLengthStable) {
         Func<TL, DateTime[]> dateRange = tl => {
           var slack = (tl.TimeSpan.TotalMinutes * .1).FromMinutes();

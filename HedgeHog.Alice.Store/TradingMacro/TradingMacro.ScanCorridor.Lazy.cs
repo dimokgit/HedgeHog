@@ -117,7 +117,7 @@ namespace HedgeHog.Alice.Store {
         return;
       if(double.IsInfinity(volt) || double.IsNaN(volt))
         return;
-      var volt2 = cma > 0 ? GetLastVolt(getVolt).Select(v => v.Cma(cma, volt)).SingleOrDefault() : volt;
+      var volt2 = cma > 0 ? GetLastVolt(getVolt).Select(v => v.Cma(cma, volt)).DefaultIfEmpty(volt).SingleOrDefault() : volt;
       UseRates(rates => rates.Where(r => getVolt(r).IsNaN()).ToList())
         .SelectMany(rates => rates).ForEach(r => setVolt(r, volt2));
       //SetVoltage(RateLast, volt);

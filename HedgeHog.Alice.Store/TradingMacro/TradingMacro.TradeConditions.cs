@@ -202,10 +202,10 @@ namespace HedgeHog.Alice.Store {
 
     static bool IsTLFresh(TradingMacro tm, TL tl, double percentage = 1) {
       var index = tm.RatesArray.Count - (tl.Count * percentage.Abs()).ToInt();
-      if(index >= tm.RatesArray.Count || index < 0)
+      if(tl.IsEmpty || index >= tm.RatesArray.Count || index < 0)
         return false;
       var rateDate = tm.RatesArray[index].StartDate;
-      return !tl.IsEmpty && percentage >= 0 ? tl.EndDate >= rateDate : tl.EndDate <= rateDate;
+      return percentage >= 0 ? tl.EndDate >= rateDate : tl.EndDate <= rateDate;
 
     }
     [TradeConditionSetCorridor]
