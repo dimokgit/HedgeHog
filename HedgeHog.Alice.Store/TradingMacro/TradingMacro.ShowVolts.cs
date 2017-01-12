@@ -112,11 +112,6 @@ namespace HedgeHog.Alice.Store {
           range = range.Where(x => x.d <= dMax).ToArray();
           var d = range.Sum(x => x.d);
           var ts = range.Sum(x => x.ts);
-          var dist = range0.Distances(price).Last();
-          var ts1 = range0.First().StartDate - dist.Item1.StartDate;
-          var d2 = dist.Item2 / ts1.TotalMinutes;
-          if(d == 0)
-            return 0;
           return d / ts;
         }
         )

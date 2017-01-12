@@ -575,6 +575,7 @@ namespace HedgeHog.Alice.Store {
       _inPips = null;
       _pointSize = double.NaN;
       _BaseUnitSize = 0;
+      _mmr = 0;
       Log = new Exception("v_BlackoutTime is not availible");
       //GlobalStorage.UseForexContext(f => {
       //  this._blackoutTimes = f.v_BlackoutTime.ToArray();
@@ -1823,7 +1824,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public static TBar GroupToRate<TBar>(IList<TBar> gt, Action<IList<Rate>, TBar> map = null) where TBar : Rate, new() {
-      var rate= new TBar() {
+      var rate = new TBar() {
         StartDate2 = gt[0].StartDate2,
         AskOpen = gt.First().AskOpen,
         AskClose = gt.Last().AskClose,
@@ -3639,7 +3640,7 @@ namespace HedgeHog.Alice.Store {
         Func<Func<TradingMacro, double>, double> level = f => f(tmt.Where(tm => tm.IsTrader).DefaultIfEmpty(tmt.First()).First());
         Func<Func<TradingMacro, double>, double> levelMax = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMax).Max().IfNaN(maxDefault);
         Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMin).Min().IfNaN(minDefault);
-        Func<IEnumerable<double>, int, IEnumerable<double>> comm = (ps, sign) => ps.Select(p => p + InPoints(CommissionInPips()) * sign);
+        Func<IEnumerable<double>, int, IEnumerable<double>> comm = (ps, sign) => ps.Select(p => p + 0 * InPoints(CommissionInPips()) * sign);
         //Func<Func<TL, IEnumerable<double>>, int, IEnumerable<double>> commTL = (ps, sign) => ps().Select(p => p + InPoints(CommissionInPips()) * sign);
         Func<TL, double> offsetByCR = tl => tl.PriceHeight.Select(ph => ph * (CorridorSDRatio - 1) / 2).SingleOrDefault();
         Func<TL, Func<TL, IEnumerable<double>>, int, double> comm2 = (tl, price, sigh) => comm(price(tl).Select(p => p + offsetByCR(tl) * sigh), sigh).DefaultIfEmpty(double.NaN).Single();
@@ -3987,7 +3988,9 @@ namespace HedgeHog.Alice.Store {
 
     #region LotSize
     int _BaseUnitSize = 0;
+    double _mmr = 0;
     public int BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = TradesManager.GetBaseUnitSize(Pair); } }
+    public double MMR { get { return _mmr > 0 ? _mmr : _mmr = TradesManager.GetOffer(Pair).MMR; } }
     Account _account = null;
     Account Account { get { return _account ?? (_account = TradesManager.GetAccount()); } }
     public void SetLotSize(Account account = null) {
@@ -4026,6 +4029,10 @@ namespace HedgeHog.Alice.Store {
       } catch(Exception exc) { throw new SetLotSizeException("", exc); }
     }
 
+    public double PipsToPMCByLot { get { return PipsToPMCByLotCalc(); } }
+    double PipsToPMCByLotCalc() {
+      return TradesManagerStatic.PipToMarginCall(LotSizeByLossBuy, 0, Account.Equity, MMR, BaseUnitSize, PipAmount);
+    }
     public int MaxPipsToPMC() {
       return InPips(
         Enumerable.Range(0, 1)
@@ -4043,7 +4050,7 @@ namespace HedgeHog.Alice.Store {
         , account.Equity / tms.Count(tm => tm.TradingRatioByPMC)
         , BaseUnitSize
         , GetPipCost()
-        , TradesManager.GetOffer(Pair).MMR);
+        , MMR);
     }
 
     private double GetPipCost() {

@@ -856,6 +856,8 @@
       chartData.com3 = self.com3;
       self.chartData(chartData);
       updateChartCmas[0](cma(updateChartCmas[0](), 10, getSecondsBetween(new Date(), d)));
+      dataViewModel.price(response.askBid);
+
     }
     function updateChart2(response) {
       var d = new Date();
@@ -907,6 +909,7 @@
       });
       self.chartData2(chartData2);
       updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
+      dataViewModel.price(response.askBid);
     }
     function getTrends(response) {
       return [response.trendLines0, response.trendLines1, response.trendLines, response.trendLines2, response.trendLines3];

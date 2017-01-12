@@ -40,6 +40,7 @@ namespace HedgeHog.Alice.Store {
       return ints.Concat(new[] { 0, -1 }).Take(2).ToArray();
     }
     static int[][] _trendsCountByRange =new int[][] {
+      new[]{ 100,1 },
       new[]{ 33,2 },
       new[]{ 20,3 },
       new[]{ 14,4 },
@@ -56,7 +57,71 @@ namespace HedgeHog.Alice.Store {
       };
       }
     }
+    TL IsTrendsEmpty(Lazy<IList<Rate>> trends) {
+      if(trends == null)
+        return TL.Empty;
+      var v = trends.Value;
+      return v == null || v.IsEmpty() ? TL.Empty : v.Skip(1).Select(r => r.Trends).LastOrDefault() ?? TL.Empty;
+    }
+    IEnumerable<TL> IsTrendsEmpty2(Lazy<IList<Rate>> trends) {
+      if(trends == null)
+        yield break;
+      var v = trends.Value;
+      if(v == null || v.IsEmpty())
+        yield break;
+      foreach(var tl in v.Skip(1).Select(r => r.Trends).Where(tl => !tl.IsEmpty))
+        yield return tl;
+    }
     IEnumerable<TL> TrendLinesNotEmpty { get { return TrendLinesTrendsAll.Where(tl => !tl.IsEmpty); } }
+
+    public TL TLBlue { get { return IsTrendsEmpty(TrendLines2); } }
+    public TL TLGreen { get { return IsTrendsEmpty(TrendLines1); } }
+    public TL TLLime { get { return IsTrendsEmpty(TrendLines0); } }
+    public TL TLRed { get { return IsTrendsEmpty(TrendLines); } }
+    public TL TLPlum { get { return IsTrendsEmpty(TrendLines3); } }
+    public IEnumerable<Tuple<TL, bool>> TrendLinesMinMax {
+      get {
+        var ints = new Func<string>[] { () => TrendLime, () => TrendGreen, () => TrendPlum, () => TrendRed, () => TrendBlue }
+          .Select(a => !string.IsNullOrWhiteSpace(a()));
+        var minMaxs = new Func<string, int[]>[] { TrendLimeInt, TrendGreenInt, TrendPlumInt, TrendRedInt, TrendBlueInt }
+          .Select(i => i(null)[0] > 0);
+        var trends = new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
+        var isOk = MonoidsCore.ToFunc((bool ok, TL tl) => new { ok, tl });
+        var isMin = MonoidsCore.ToFunc(isOk(false, null), false, (x, min) => new { x.ok, x.tl, min });
+        return ints.Zip(trends, isOk).Zip(minMaxs, isMin).Where(t => t.ok).Select(t => Tuple.Create(t.tl, t.min));
+      }
+    }
+    TL[] Trends { get { return new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue }; } }
+    public TL[] TrendLinesTrendsAll {
+      get {
+        var ints = new[] { TrendLime, TrendGreen, TrendPlum, TrendRed, TrendBlue }.Select(string.IsNullOrWhiteSpace);
+        var isOk = MonoidsCore.ToFunc((bool isEmpty, TL tl) => new { ok = !isEmpty, tl });
+        return ints.Zip(Trends, isOk).Where(t => t.ok).Select(t => t.tl).ToArray();
+      }
+    }
+    public TL[] TrendLinesFlat { get { return TrendLinesTrendsAll.SkipLast(1).ToArray(); } }
+    public IEnumerable<TL> TradeTrendLines {
+      get {
+        return TradeTrendsInt.Select(i => Trends[i])
+          .DefaultIfEmpty(() => TrendLinesTrendsAll.OrderByDescending(tl => tl.EndDate).First());
+      }
+    }
+    public double TradeTrendLinesAvg(Func<TL, double> selector) {
+      return TradeTrendLines.ToArray(selector)
+        .Permutation()
+        .Select(t => t.Item1.ToPercent(t.Item2))
+        //.OrderBy(d=>d)
+        //.Take(3)
+        .DefaultIfEmpty(0)
+        .RootMeanPower(0.5)
+        .ToInt();
+    }
+    private double TradeTrendsPriceMax(TradingMacro tm) {
+      return tm.TradeTrendLines.Max(tl => tl.PriceAvg2);
+    }
+    private double TradeTrendsPriceMin(TradingMacro tm) {
+      return tm.TradeTrendLines.Min(tl => tl.PriceAvg3);
+    }
 
     #region TrendsAll
     private int _TrendsAll = 0;
@@ -98,7 +163,7 @@ namespace HedgeHog.Alice.Store {
           return;
         _tradeTrends = value;
         if(string.IsNullOrWhiteSpace(_tradeTrends))
-          _tradeTrends = (TrendLinesTrendsAll.Length - 1).ToString();
+          _tradeTrends = "";
         TradeTrendsInt = SplitterInt(_tradeTrends);
       }
     }

@@ -42,9 +42,12 @@ namespace HedgeHog.UI {
     }
     #region Methods
     Color GetEventColor(DateTimeOffset time) {
-      if (time.Between(DateTimeOffset.Now.AddHours(2), DateTimeOffset.Now.AddMinutes(15))) return Colors.Yellow;
-      if (time.Between(DateTimeOffset.Now.AddMinutes(15), DateTimeOffset.Now.AddMinutes(-15))) return Colors.LimeGreen;
-      if (DateTimeOffset.Now.Between(time.AddMinutes(15), time.AddMinutes(45))) return Colors.GreenYellow;
+      if(time.Between(DateTimeOffset.Now.AddHours(2), DateTimeOffset.Now.AddMinutes(15)))
+        return Colors.Yellow;
+      if(time.Between(DateTimeOffset.Now.AddMinutes(15), DateTimeOffset.Now.AddMinutes(-15)))
+        return Colors.LimeGreen;
+      if(DateTimeOffset.Now.Between(time.AddMinutes(15), time.AddMinutes(45)))
+        return Colors.GreenYellow;
       return Colors.Transparent;
     }
     private void UpdateNewsColor() {
@@ -56,7 +59,8 @@ namespace HedgeHog.UI {
       });
     }
     private void FetchNews(DateTime? date = null) {
-      if (newsObserver != null) return;
+      if(newsObserver != null)
+        return;
       try {
         //ProcessNews(NewsHound.MyFxBook.Fetch());
         var dateStart = DateTime.Now.AddDays(-7).Round(MathExtensions.RoundTo.Week).AddDays(1);// DateTime.Parse("1/2/2012");
@@ -72,7 +76,7 @@ namespace HedgeHog.UI {
           newsObserver = null;
           Log = new FetchNewsException("News Done.");
         });
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         newsObserver = null;
         Log = new FetchNewsException("", exc);
       }
@@ -82,20 +86,21 @@ namespace HedgeHog.UI {
       newsObserver = null;
       var newNews = events.Select(evt => new NewsContainer(evt))
         .Except(News, new LambdaComparer<NewsContainer>((l, r) => l.Event.Level == r.Event.Level && l.Event.Name == r.Event.Name && l.Event.Time == r.Event.Time));
-      ForexStorage.UseForexContext(c => {
-        var dateLast = c.Event__News.Max(e => e.Time);
-        newNews.ToList().Select(evt => evt.Event)
-          //.Where(evt => evt.Time > dateLast)
-          .ForEach(evt => {
-            c.Event__News.Add(new Event__News() {
-              Level = (evt.Level + "").Substring(0, 1),
-              Country = evt.Country,
-              Name = evt.Name,
-              Time = evt.Time
+      if(_useDb)
+        ForexStorage.UseForexContext(c => {
+          var dateLast = c.Event__News.Max(e => e.Time);
+          newNews.ToList().Select(evt => evt.Event)
+            //.Where(evt => evt.Time > dateLast)
+            .ForEach(evt => {
+              c.Event__News.Add(new Event__News() {
+                Level = (evt.Level + "").Substring(0, 1),
+                Country = evt.Country,
+                Name = evt.Name,
+                Time = evt.Time
+              });
+              c.SaveConcurrent();
             });
-            c.SaveConcurrent();
-          });
-      }, (c, exc) => Log = exc);
+        }, (c, exc) => Log = exc);
       ReactiveUI.RxApp.MainThreadScheduler.Schedule(() => {
         newNews.ForEach(evt => News.Add(evt));
         NewsView.GroupDescriptions.Clear();
@@ -112,7 +117,7 @@ namespace HedgeHog.UI {
     ICommand _ShowNewsEventSnapshotCommand;
     public ICommand ShowNewsEventSnapshotCommand {
       get {
-        if (_ShowNewsEventSnapshotCommand == null) {
+        if(_ShowNewsEventSnapshotCommand == null) {
           _ShowNewsEventSnapshotCommand = new GalaSoft.MvvmLight.Command.RelayCommand<NewsContainer>(ShowNewsEventSnapshot, (nc) => true);
         }
 
@@ -137,7 +142,7 @@ namespace HedgeHog.UI {
     public int AutoTradeOffset {
       get { return _AutoTradeOffset; }
       set {
-        if (_AutoTradeOffset != value) {
+        if(_AutoTradeOffset != value) {
           _AutoTradeOffset = value;
           RaisePropertyChanged("AutoTradeOffset");
         }
@@ -150,7 +155,7 @@ namespace HedgeHog.UI {
     public bool DoShowAll {
       get { return _DoShowAll; }
       set {
-        if (_DoShowAll != value) {
+        if(_DoShowAll != value) {
           _DoShowAll = value;
           OnPropertyChanged("DoShowAll");
           NewsView.Filter = DoShowAll ? null : _hideNewsFilter;
@@ -239,39 +244,42 @@ namespace HedgeHog.UI {
       NewsView.Filter = _hideNewsFilter;
       //Observable.Interval(1.FromMinutes(), DispatcherScheduler.Current).StartWith(0).Subscribe(l => UpdateNewsColor());
       System.Reactive.Concurrency.TaskPoolScheduler.Default.Schedule(0.FromMinutes(), a => {
-        if (News.Count == 0)
+        if(News.Count == 0)
           FetchNews();
         else {
           var maxDate = News.Max(evt => evt.Event.Time).Date;
-          if (maxDate.DayOfWeek != DayOfWeek.Friday && maxDate == DateTime.Now.Date)
+          if(maxDate.DayOfWeek != DayOfWeek.Friday && maxDate == DateTime.Now.Date)
             FetchNews(DateTime.Now.Date.AddDays(1));
-          else UpdateNewsColor();
+          else
+            UpdateNewsColor();
         }
         a(10.FromMinutes());
       });
       //ProcessNews(NewsHound.MyFxBook.Fetch());
     }
+    static bool _useDb;
     static NewsCasterModel() {
-      SavedNews = ForexStorage.UseForexContext(c => c.Event__News.ToArray()
-        .Select(ne => new NewsEvent() {
-          Country = ne.Country,
-          Level = (NewsEventLevel)Enum.Parse(typeof(NewsEventLevel), ne.Level),
-          Name = ne.Name,
-          Time = ne.Time
-        }).ToArray(),
-          (c, e) => {
-            Default.Log = e;
-            SavedNews = new NewsEvent[0];
-          });
+      if(_useDb)
+        SavedNews = ForexStorage.UseForexContext(c => c.Event__News.ToArray()
+          .Select(ne => new NewsEvent() {
+            Country = ne.Country,
+            Level = (NewsEventLevel)Enum.Parse(typeof(NewsEventLevel), ne.Level),
+            Name = ne.Name,
+            Time = ne.Time
+          }).ToArray(),
+            (c, e) => {
+              Default.Log = e;
+              SavedNews = new NewsEvent[0];
+            });
     }
     #region Countdown Subject
     object _CountdownSubjectLocker = new object();
     System.Reactive.Subjects.ISubject<NewsContainer> _CountdownSubject;
-    public static IList<NewsEvent> SavedNews { get; private set; }
+    public static IList<NewsEvent> SavedNews { get; private set; } = new List<NewsEvent>();
     public System.Reactive.Subjects.ISubject<NewsContainer> CountdownSubject {
       get {
-        lock (_CountdownSubjectLocker)
-          if (_CountdownSubject == null) {
+        lock(_CountdownSubjectLocker)
+          if(_CountdownSubject == null) {
             _CountdownSubject = new System.Reactive.Subjects.Subject<NewsContainer>();
           }
         return _CountdownSubject;
@@ -280,7 +288,7 @@ namespace HedgeHog.UI {
     #endregion
 
     void _news_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-      switch (e.Action) {
+      switch(e.Action) {
         case NotifyCollectionChangedAction.Add:
           e.NewItems.Cast<NewsContainer>().ForEach(nc => {
             nc.ObservableForProperty(c => c.Countdown)

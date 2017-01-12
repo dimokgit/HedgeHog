@@ -1462,10 +1462,11 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Init ...
+    bool _useDb;
     private void InitInstruments() {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(new Action(() => {
         try {
-          if(Instruments.Count == 0)
+          if(_useDb && Instruments.Count == 0)
             TradesManager.GetOffers().Select(o => o.Pair).ToList().ForEach(i => Instruments.Add(i));
         } catch(Exception exc) {
           Log = exc;
