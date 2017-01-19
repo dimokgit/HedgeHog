@@ -3579,16 +3579,19 @@ namespace HedgeHog.Alice.Store {
 
     Lazy<double[]> _boilingerStDev = Lazy.Create(()=> new double[0]);
     void CalcBoilingerBand() {
-      _boilingerStDev = Lazy.Create(() => UseRates(rate => rate.Select(r => r.PriceCMALast.Abs(r.PriceAvg)).StandardDeviation()));
+      _boilingerStDev = Lazy.Create(() => UseRates(rate => {
+        double avg;
+        return rate.Select(r => r.PriceCMALast.Abs(r.PriceAvg)).StandardDeviation(out avg)*BbRatio + avg;
+      }));
     }
 
     public static IEnumerable<double> GetLastRateCma(List<Rate> rate) {
       return rate.BackwardsIterator().Select(r => r.PriceCMALast).SkipWhile(double.IsNaN).Take(1);
     }
 
-    double _bbRatio = 4;
+    double _bbRatio = 2;
     [Category(categoryActive)]
-    //[WwwSetting]
+    [WwwSetting(wwwSettingsCorridorAngles)]
     public double BbRatio {
       get {
         return _bbRatio;
@@ -3650,10 +3653,10 @@ namespace HedgeHog.Alice.Store {
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           {
           {TradeLevelBy.BoilingerUp,()=>level(tm=> {
-            return _boilingerStDev.Value.SelectMany(bb=> GetLastRateCma(RatesArray).Select(cma=>cma+bb*BbRatio).DefaultIfEmpty(double.NaN)).Single();
+            return _boilingerStDev.Value.SelectMany(bb=> GetLastRateCma(RatesArray).Select(cma=>cma+bb).DefaultIfEmpty(double.NaN)).Single();
           })},
           {TradeLevelBy.BoilingerDown,()=>level(tm=> {
-            return _boilingerStDev.Value.SelectMany(bb=> GetLastRateCma(RatesArray).Select(cma=>cma-bb*BbRatio).DefaultIfEmpty(double.NaN)).Single();
+            return _boilingerStDev.Value.SelectMany(bb=> GetLastRateCma(RatesArray).Select(cma=>cma-bb).DefaultIfEmpty(double.NaN)).Single();
           })},
 
             { TradeLevelBy.PriceCma,()=>level(tm=>tm.UseRates(GetLastRateCma).SelectMany(cma=>cma).DefaultIfEmpty(double.NaN).Single()) },
@@ -4233,7 +4236,7 @@ namespace HedgeHog.Alice.Store {
     }
     public void UseRatesInternal(Action<ReactiveList<Rate>> action) {
       Func<ReactiveList<Rate>, Unit> f = rates => { action(rates); return Unit.Default; };
-      UseRatesInternal<Unit>(f).Count();
+      UseRatesInternal(f).Count();
     }
     static object _loadRatesLoader = new object();
     public void LoadRates(Action before = null) {
@@ -4641,6 +4644,8 @@ namespace HedgeHog.Alice.Store {
     public Store.SuppRes BuyLevel {
       get {
         if(!HasBuyLevel)
+          AdjustSuppResCount();
+        if(!HasBuyLevel)
           throw new Exception("There are no Resistance levels.");
         return Resistance0().First();
       }
@@ -4659,6 +4664,8 @@ namespace HedgeHog.Alice.Store {
     public Store.SuppRes SellLevel {
       get {
         if(!HasSellLevel)
+          AdjustSuppResCount();
+        if(!HasBuyLevel)
           throw new Exception("There are no Support levels.");
         return Support0().First();
       }

@@ -549,7 +549,9 @@ namespace HedgeHog.Alice.Client {
           //ReactiveUI.MessageBus.Current.SendMessage<WwwWarningMessage>(new WwwWarningMessage(exc.Message));
 
           lastLogTime = DateTime.Now;
-          RaisePropertyChanged(() => LogText, () => IsLogExpanded, () => IsLogPinned);
+          RaisePropertyChanged(nameof(LogText));
+          RaisePropertyChanged(nameof(IsLogExpanded));
+          RaisePropertyChanged(nameof(IsLogPinned));
           IsLogExpanded = true;
           if(_logExpandedTargetBlock != null) {
             _logExpandedTargetBlock.Dispose();

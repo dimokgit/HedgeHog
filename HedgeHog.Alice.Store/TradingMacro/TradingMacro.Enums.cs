@@ -11,6 +11,7 @@ namespace HedgeHog.Alice {
     StDev,
     AvgLineRatio,
     Rsd,
+    BBSD,
     PPM,
     PPMB,
     PPMH,
@@ -31,6 +32,7 @@ namespace HedgeHog.Alice {
     TLA,
     TLAR,
     BSTip,
+    TLW2,
     TLW3,
     TLW4
   }

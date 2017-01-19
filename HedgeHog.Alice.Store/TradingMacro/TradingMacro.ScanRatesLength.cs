@@ -265,7 +265,7 @@ namespace HedgeHog.Alice.Store {
       var countStart = (RatesArray.Count * 0.9).Max(BarsCount).ToInt();
       UseRatesInternal(ri => BarsCountByStDevByReg(ri, 0, InPoints(RatesHeightMin)))
         .Concat()
-        .Concat(GetRatesByTimeFrame())
+        .Concat(GetRatesByTimeFrame().Concat(BarsCount))
         .OrderByDescending(c => c)
         .Take(1)
         .ForEach(count => SetRatesLengthStable(count).With(c => BarsCountCalc = c.Ratio(BarsCountCalc) > 1.01 ? c : BarsCountCalc));

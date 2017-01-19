@@ -372,10 +372,10 @@ namespace HedgeHog.Alice.Store {
       .ToArray();
 
       TrendBlueInt().Pairwise((s, c) => new { s })
-        .Where(x => x.s > 0)
+        .Where(x => x.s != 0)
         .SelectMany(p =>
-          calcTrendLines(p.s, p.s > 0, TradeLevelsPreset.Blue, mustResetAllTrendLevels ? new int[0][] : new[] { skipByTL(TrendLines2) })
-          .Concat(() => calcTrendLines(p.s, true, TradeLevelsPreset.Blue, skipEmpty))
+          calcTrendLines(p.s.Abs(), p.s > 0, TradeLevelsPreset.Blue, mustResetAllTrendLevels ? new int[0][] : new[] { skipByTL(TrendLines2) })
+          .Concat(() => calcTrendLines(p.s.Abs(), true, TradeLevelsPreset.Blue, skipEmpty))
           )
         .DefaultIfEmpty(new Rate[0])
         .Take(1)
@@ -480,9 +480,6 @@ namespace HedgeHog.Alice.Store {
     public WaveRange WaveRangeAvg {
       get { return _waveRangeAvg; }
       set { _waveRangeAvg = value ?? new WaveRange(0); }
-    }
-    private double MaGapMax(IList<Rate> rates) {
-      return rates.Skip(rates.Count.Div(1.1).ToInt()).Max(r => r.PriceCMALast.Abs(r.PriceAvg));
     }
     #region CmaRatioForWaveLength
     private double _CmaRatioForWaveLength = 0;
@@ -611,13 +608,15 @@ namespace HedgeHog.Alice.Store {
           return;
 
         IsRatesLengthStable = RatesArray.Count.Ratio(value) < 1.05;
-
-        _BarsCountCalc = value == 0 ? (int?)null : value;
+        var newBarsCount = value == 0 ? (int?)null : value;
+        if(_BarsCountCalc < BarsCount)
+          throw new Exception(new { newBarsCount, Is = "Less Then", BarsCount } + "");
+        OnPropertyChanged("BarsCountCalc");
+        _BarsCountCalc = newBarsCount;
         if(_BarsCountCalc.HasValue) {
           BarsCountDate = null;
           //Log = new Exception(new { BarsCountCalc, BarsCountDate } + "");
         }
-        OnPropertyChanged("BarsCountCalc");
       }
     }
 
