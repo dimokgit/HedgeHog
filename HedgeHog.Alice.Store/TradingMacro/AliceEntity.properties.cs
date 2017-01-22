@@ -997,6 +997,19 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
+    bool _IsContinuousTrading;
+    [WwwSetting(Group = wwwSettingsTradingConditions)]
+    [Category(categoryActive)]
+    [Description("buySellLevels.CanTrade can be set even when Trades.Count > 0")]
+    public bool IsContinuousTrading {
+      get { return _IsContinuousTrading; }
+      set {
+        _IsContinuousTrading = value;
+        OnPropertyChanged(nameof(IsContinuousTrading));
+      }
+    }
+
     int _TradeCountMax= 0;
     [WwwSetting(Group = wwwSettingsTradingConditions)]
     [Category(categoryActive)]
@@ -1174,10 +1187,44 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public double TrendAngleLast0 { get; set; }
+    public double TrendAngleLast1 { get; set; }
+    string _trendAngleLast = "";
+    [WwwSetting(Group = wwwSettingsCorridorAngles)]
+    [Category(categoryActive)]
+    [Description("Range or single value: 15-30 or 60 or -60")]
+    public string TrendAngleLast {
+      get { return _trendAngleLast; }
+      set {
+        if(_trendAngleLast == value)
+          return;
+        var spans = ParseJsonRange<double>(_trendAngleLast = value?.Trim() ?? "");
+        TrendAngleLast0 = spans[0];
+        TrendAngleLast1 = spans.Skip(1).DefaultIfEmpty(double.NaN).Last();
+        OnPropertyChanged(nameof(TrendAngleLast));
+      }
+    }
+    public double TrendAnglePrev0 { get; set; }
+    public double TrendAnglePrev1 { get; set; }
+    string _trendAnglePrev = "";
+    [WwwSetting(Group = wwwSettingsCorridorAngles)]
+    [Category(categoryActive)]
+    [Description("Range or single value: 15-30 or 60 or -60")]
+    public string TrendAnglePrev {
+      get { return _trendAnglePrev; }
+      set {
+        if(_trendAnglePrev == value)
+          return;
+        var spans = ParseJsonRange<double>(_trendAnglePrev = value.Trim());
+        TrendAnglePrev0 = spans[0];
+        TrendAnglePrev1 = spans.Skip(1).DefaultIfEmpty(double.NaN).Last();
+        OnPropertyChanged(nameof(TrendAnglePrev));
+      }
+    }
 
     public double TrendAngleBlue0 { get; set; }
     public double TrendAngleBlue1 { get; set; }
-    string _trendAngleBlue = "0";
+    string _trendAngleBlue = "";
     [WwwSetting(Group = wwwSettingsCorridorAngles)]
     [Category(categoryActive)]
     [Description("Range or single value: 15-30 or 60 or -60")]
@@ -1186,18 +1233,10 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_trendAngleBlue == value)
           return;
-
-        _trendAngleBlue = value.Trim();
-        OnPropertyChanged(() => TrendAngleBlue);
-
-        var spans = _trendAngleBlue.StartsWith("-")
-          ? new[] { _trendAngleBlue }
-          : value.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
-        if(spans.IsEmpty())
-          spans = new[] { "0" };
-        TrendAngleBlue0 = double.Parse(spans[0]);
-        TrendAngleBlue1 = spans.Length > 1 ? double.Parse(spans[1]) : double.NaN;
-
+        var spans = ParseJsonRange<double>(_trendAngleBlue = value.Trim());
+        TrendAngleBlue0 = spans[0];
+        TrendAngleBlue1 = spans.Skip(1).DefaultIfEmpty(double.NaN).Last();
+        OnPropertyChanged(nameof(TrendAngleBlue));
       }
     }
 
@@ -1212,20 +1251,22 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_VoltRange == value)
           return;
-
-        _VoltRange = (value ?? "").Trim();
-
-        double[] spans;
-        if(!_VoltRange.TryFromJson(out spans))
-          spans = _VoltRange.Splitter('-').Select(s => double.Parse(s)).ToArray();
-
-        if(spans == null || spans.IsEmpty())
-          spans = new[] { 0.0 };
+        var spans = ParseJsonRange<double>(_VoltRange = (value ?? "").Trim());
         VoltRange0 = spans[0];
         VoltRange1 = spans.Concat(double.NaN).Take(2).Last();
-
-        OnPropertyChanged(() => VoltRange);
+        OnPropertyChanged(nameof(VoltRange));
       }
+    }
+
+    public static T[] ParseJsonRange<T>(string range) {
+      T[] spans = null;
+      var ranges = new[] { range, $"[{range}]" };
+      if(!ranges.Any(r => r.TryFromJson(out spans)))
+        throw new Exception(new { range, Is = "Not Json" } + "");
+
+      if((spans?.IsEmpty()).GetValueOrDefault(true))
+        spans = new[] { default(T) };
+      return spans;
     }
 
     public double VoltRange_20 { get; set; }
@@ -1239,19 +1280,11 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_VoltRange_2 == value)
           return;
-
-        _VoltRange_2 = (value ?? "").Trim();
-
-        double[] spans;
-        if(!_VoltRange_2.TryFromJson(out spans))
-          spans = _VoltRange_2.Splitter('-').Select(s => double.Parse(s)).ToArray();
-
-        if(spans == null || spans.IsEmpty())
-          spans = new[] { 0.0 };
+        var spans = ParseJsonRange<double>(_VoltRange_2 = (value ?? "").Trim());
         VoltRange_20 = spans[0];
         VoltRange_21 = spans.Concat(double.NaN).Take(2).Last();
 
-        OnPropertyChanged(() => VoltRange_2);
+        OnPropertyChanged(nameof(VoltRange_2));
       }
     }
 

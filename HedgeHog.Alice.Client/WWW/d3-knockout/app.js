@@ -660,7 +660,8 @@
     var currentWwwInfoChartNum;
     var stopWwwInfo;
     this.wwwInfoDialog = function (element) {
-      wwwInfoElement = element;
+      var table = $(element).find("table");
+      wwwInfoElement = table[0];
     }
     this.startWwwInfo = function (chartNum) {
       currentWwwInfoChartNum = chartNum;
@@ -689,17 +690,12 @@
       serverCall("getWwwInfo", args, function (info) {
         wwwInfoRaw(info);
         if (!stopWwwInfo)
-          setTimeout(getWwwInfo.bind(null, chartNum), 400);
+          setTimeout(getWwwInfo.bind(null, chartNum), 1000);
       });
     }
     var wwwInfoRaw = ko.observable();
     this.wwwInfo = ko.pureComputed(function () {
-      return (((JSON.stringify(wwwInfoRaw(), null, 2) || "")
-        .match(/^\{\s*([\s\S]+)\s*\}$/) || [])[1] || "")
-        .replace(/\{/g, "")
-        .replace(/\},*\s*/g, "")
-        .replace(/\s*$/, "")
-        .replace(/\s+"/g, "\n\"");
+      return $.map(wwwInfoRaw(), function (v, n) { return { n: n, v: v }; });
     });
     // #endregion
     // #region Info bar

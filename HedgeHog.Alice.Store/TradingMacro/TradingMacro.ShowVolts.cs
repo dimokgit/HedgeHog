@@ -60,6 +60,8 @@ namespace HedgeHog.Alice.Store {
           return () => ShowVoltsByPPM(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.PPMB:
           return () => ShowVoltsByPPMB(getVolts, setVolts);
+        case HedgeHog.Alice.VoltageFunction.TLsAngleAvg:
+          return () => ShowVoltsByTLsAngleAvg(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.PPMH:
           return ShowVoltsByPPMH;
         case HedgeHog.Alice.VoltageFunction.TFH:
@@ -247,6 +249,16 @@ namespace HedgeHog.Alice.Store {
 
       return null;
     }
+    CorridorStatistics ShowVoltsByTLsAngleAvg(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+      return IsRatesLengthStableGlobal()
+        ? ShowVolts(TLAngleAvg(), 2, getVolt, setVolt)
+        : null;
+    }
+
+    private bool IsRatesLengthStableGlobal() {
+      return TradingMacrosByPair().All(tm => tm.IsRatesLengthStable);
+    }
+
     CorridorStatistics ShowVoltsByTLHn(int tlCount, Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       Func<TL, double[]> tlMM = tl => tl.PriceMax.Concat(tl.PriceMin).ToArray();
       var tl3 = TrendLinesTrendsAll.OrderBy(tl => tl.EndDate).TakeLast(tlCount + 1).ToArray();

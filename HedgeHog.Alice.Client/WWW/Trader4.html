@@ -304,6 +304,16 @@
       min-height:0 !important;
       padding:0;
     }
+    div.wwwInfo{
+      font-size:inherit;
+      padding:0;
+    }
+    div.wwwInfo.ui-dialog.ui-dialog-content{
+      padding:0;
+    }
+    div.wwwInfo table tr td{
+      text-align:right;
+    }
   </style>
   <script>
     $(function () {
@@ -744,8 +754,17 @@
   </div>
   <!--#endregion-->
   <!--#region wwwInfo-->
-  <div data-bind="elementer:wwwInfoDialog" style="display:none">
-    <pre data-bind="text:wwwInfo"></pre>
+  <div data-bind="elementer:wwwInfoDialog" class="wwwInfo" style="display:none;padding:0">
+    <table border="1" cellspacing="0">
+      <tbody data-bind="foreach:wwwInfo">
+        <tr>
+          <td data-bind="text:n"></td>
+          <td>:</td>
+          <td data-bind="text:v"></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
   <!--#endregion-->
   <!--#region wwwSettings-->

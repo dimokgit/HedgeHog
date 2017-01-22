@@ -259,7 +259,8 @@ namespace HedgeHog.Alice.Store {
         tm => tm.TrendGreen,
         tm => tm.TrendLime,
         tm => tm.TimeFrameTreshold,
-        (v1, rls, v3, v4, v5, v6, v7, v8) => new { v1, rls, v3, v4, v5, v6, v7, v8 }
+        tm => tm.CorridorCalcMethod,
+        (v1, rls, v3, v4, v5, v6, v7, v8, v9) => new { v1, rls, v3, v4, v5, v6, v7, v8, v9 }
         )
         .Where(x => x.rls)
         .Subscribe(_ => { _mustResetAllTrendLevels = true; OnScanCorridor(RatesArray, () => { }, false); });
@@ -3579,10 +3580,11 @@ namespace HedgeHog.Alice.Store {
 
     Lazy<double[]> _boilingerStDev = Lazy.Create(()=> new double[0]);
     void CalcBoilingerBand() {
+      _boilingerBanderAsyncAction.Push(() =>
       _boilingerStDev = Lazy.Create(() => UseRates(rate => {
         double avg;
-        return rate.Select(r => r.PriceCMALast.Abs(r.PriceAvg)).StandardDeviation(out avg)*BbRatio + avg;
-      }));
+        return rate.Select(r => r.PriceCMALast.Abs(r.AskHigh).Max(r.PriceCMALast.Abs(r.BidLow))).StandardDeviation(out avg) * BbRatio + avg;
+      })));
     }
 
     public static IEnumerable<double> GetLastRateCma(List<Rate> rate) {
@@ -3720,12 +3722,15 @@ namespace HedgeHog.Alice.Store {
       var tp = double.NaN;
       Func<TradeLevelBy, TradeLevelBy, double> tradeLeveBy = (h, l) => (TradeLevelFuncs[h]() - TradeLevelFuncs[l]()) * xRatio;
       Func<Func<TradingMacro, double>, double> useTrender = f => TradingMacroTrender(f).DefaultIfEmpty(double.NaN).Single();
+      Func<Func<TradingMacro, double>, double> useTrenderComm = f => TradingMacroTrender(tm => f(tm) + tm.InPoints(tm.CommissionInPips()) * 2).DefaultIfEmpty(double.NaN).Single();
       switch(function) {
         case TradingMacroTakeProfitFunction.StDev:
-          return useTrender(tm => tm.StDevByHeight * xRatio + tm.InPoints(tm.CommissionInPips()) * 2);
+          return useTrenderComm(tm => tm.StDevByHeight * xRatio);
+        case TradingMacroTakeProfitFunction.StDevP:
+          return useTrenderComm(tm => tm.StDevByPriceAvg * xRatio);
         case TradingMacroTakeProfitFunction.M1StDev:
           return TradingMacroM1(tm => InPoints(tm.WaveRangeAvg.StDev) * xRatio + tm.InPoints(tm.CommissionInPips()) * 2)
-            .DefaultIfEmpty(StDevByHeight)
+            .DefaultIfEmpty(StDevByHeight + InPoints(CommissionInPips()) * 2)
             .Single();
         case TradingMacroTakeProfitFunction.Lime:
           tp = tradeLeveBy(TradeLevelBy.PriceLimeH, TradeLevelBy.PriceLimeL);

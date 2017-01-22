@@ -8,6 +8,12 @@ using TL = HedgeHog.Bars.Rate.TrendLevels;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
+    static bool IsTresholdRangeOk(double value,params double[] treshold) {
+      var t = treshold.Where(Lib.IsNotNaN).ToArray();
+      return t.Length == 1 || treshold[0] == treshold[1]
+        ? IsTresholdAbsOk(value, t[0])
+        : treshold[0] < treshold[1] ? value.Between(treshold) : !value.Between(treshold[1], treshold[0]);
+    }
     static bool IsTresholdOk(double value, double treshold) {
       return treshold >= 0 ? value >= treshold : value < -treshold;
     }

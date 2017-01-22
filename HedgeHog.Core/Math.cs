@@ -142,6 +142,8 @@ namespace HedgeHog {
       return Math.Min(d1, d2) <= value && value <= Math.Max(d1, d2);
     }
     public static bool Between(this double value, double[] dd) {
+      if(dd.Length != 2)
+        throw new Exception(new { dd = new { dd.Length, Expected = 2 } } + "");
       return value.Between(dd[0], dd[1]);
     }
     public static bool Between(this double value, double d1, double d2) {

@@ -17,6 +17,7 @@ namespace HedgeHog.Alice {
     PPMH,
     PpmM1,
     TFH,
+    TLsAngleAvg,
     //AO,
     MPH,
     Equinox,
@@ -88,6 +89,7 @@ namespace HedgeHog.Alice.Store {
     BlueMM,
     TradeHeight,
     StDev,
+    StDevP,
     M1StDev
   }
   public enum TradeLevelBy {

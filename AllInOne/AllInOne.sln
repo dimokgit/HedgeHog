@@ -234,9 +234,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.CoreTests", "..\HedgeHog.CoreTests\HedgeHog.CoreTests.csproj", "{BCA76A7A-18D9-4776-BC77-C2015807F3A0}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug SubArray|Any CPU = Debug SubArray|Any CPU
 		Debug SubArray|Mixed Platforms = Debug SubArray|Mixed Platforms

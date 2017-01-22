@@ -24,6 +24,11 @@ namespace HedgeHog {
       merge.GetType().GetProperties().ForEach(p => d[p.Name] = p.GetValue(merge));
       return expando;
     }
+    public static ExpandoObject Add(this ExpandoObject expando, IDictionary<string,object> merge) {
+      var d = expando as IDictionary<string, object>;
+      merge.ForEach(p => d[p.Key] = p.Value);
+      return expando;
+    }
     public static ExpandoObject Merge(this ExpandoObject expando, ExpandoObject merge) {
       var e = new ExpandoObject();
       var d = (IDictionary<string, object>)e;

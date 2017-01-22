@@ -580,7 +580,7 @@ namespace HedgeHog {
       var weights = Enumerable.Range(1, source.Count).Select(w => l / w).ToArray();
       return source.Zip(weights, (s, w) => s * w).Sum() / weights.Sum();
     }
-    public static double RootMeanPower(this IEnumerable<double> source, double power) {
+    public static double RootMeanPower(this IEnumerable<double> source, double power = 2) {
       var avg = source.Select(d => Math.Pow(d.Abs(), 1 / power) * d.Sign()).Average();
       return Math.Pow(avg.Abs(), power)*avg.Sign();
     }
