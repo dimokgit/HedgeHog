@@ -1363,7 +1363,9 @@ namespace HedgeHog.Alice.Store {
         return new {
           StDevHght = tm.StDevByHeightInPips.Round(1),
           StDvPrice = tm.StDevByPriceAvgInPips.Round(1),
-          StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault()).Round(1),
+          StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
+          BolngrAvg= InPips(_boilingerAvg,1),
+          ProfitPip = CalculateTakeProfitInPips().Round(1),
           TlsAngAvg = tm.TLAngleAvg().Round()
           //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),

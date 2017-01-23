@@ -39,13 +39,6 @@ namespace HedgeHog.Alice.Store {
     int[] TrendInts(IEnumerable<int> ints) {
       return ints.Concat(new[] { 0, -1 }).Take(2).ToArray();
     }
-    static int[][] _trendsCountByRange =new int[][] {
-      new[]{ 100,1 },
-      new[]{ 33,2 },
-      new[]{ 20,3 },
-      new[]{ 14,4 },
-      new[]{ 11,5 },
-    };
     Action<string>[] _trendSetters {
       get {
         return new Action<string>[] {
@@ -124,28 +117,18 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region TrendsAll
-    private int _TrendsAll = 0;
     [Category(categoryActiveFuncs)]
     [WwwSetting(wwwSettingsTrends)]
     [DisplayName("Trends ALL")]
     public int TrendsAll {
-      get { return _TrendsAll; }
+      get { return 0; }
       set {
-        Action<int[]> setTrends = ii => {
-          var ratio = ii[0] + "";
-          var count = ii[1];
-          _trendSetters
-            .Select((ts, i) => new { ts, i })
-            .ForEach(x => x.ts(x.i < count ? ratio : ""));
-        };
-        if(_TrendsAll != value) {
-          _TrendsAll = value;
-          _trendsCountByRange
-            .Where(i => value > 0 && value <= i[0])
-            .TakeLast(1)
-            .Select(ii => new[] { value, ii[1] })
-            .ForEach(setTrends);
-          OnPropertyChanged(nameof(TrendsAll));
+        if(0 != value) {
+          var s = value.Sign();
+          var i = value.Abs();
+          var c = (100.0 / (i * 2 + 1)).Floor() * s;
+          _trendSetters.Take(i).ForEach(a => a(c + ""));
+          _trendSetters.Skip(i).ForEach(a => a(""));
         }
       }
     }

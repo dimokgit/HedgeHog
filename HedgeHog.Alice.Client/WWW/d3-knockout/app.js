@@ -687,11 +687,16 @@
     function getWwwInfo(chartNum) {
       var args =[pair, chartNum];
       args.noNote = true;
-      serverCall("getWwwInfo", args, function (info) {
-        wwwInfoRaw(info);
-        if (!stopWwwInfo)
-          setTimeout(getWwwInfo.bind(null, chartNum), 1000);
-      });
+      serverCall("getWwwInfo", args,
+        function (info) {
+          wwwInfoRaw(info);
+          if (!stopWwwInfo)
+            setTimeout(getWwwInfo.bind(null, chartNum), 1000);
+        },
+        function () {
+          showErrorPerm("getWwwInfo: " + error);
+          setTimeout(getWwwInfo.bind(null, chartNum), 5000);
+        });
     }
     var wwwInfoRaw = ko.observable();
     this.wwwInfo = ko.pureComputed(function () {
@@ -971,6 +976,7 @@
         },
         function (error) {
           showErrorPerm("getAccounting: " + error);
+          setTimeout(getAccounting, 5000);
         });
     }
     this.startAccounting = function () {

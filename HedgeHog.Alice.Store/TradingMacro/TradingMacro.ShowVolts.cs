@@ -160,7 +160,7 @@ namespace HedgeHog.Alice.Store {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
       if(!useCalc)
         return GetLastVolt().Take(1).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault();
-      return _boilingerStDev.Value?.Select(v => ShowVolts(InPips(v), 2, getVolt, setVolt)).SingleOrDefault();
+      return _boilingerStDev.Value?.Select(v => ShowVolts(InPips(_boilingerAvg), 2, getVolt, setVolt)).SingleOrDefault();
     }
 
     CorridorStatistics ShowVoltsByUDB(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {

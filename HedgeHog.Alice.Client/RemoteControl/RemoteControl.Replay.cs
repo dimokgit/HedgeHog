@@ -23,15 +23,15 @@ using Newtonsoft.Json.Linq;
 namespace HedgeHog.Alice.Client {
   public partial class RemoteControlModel {
     #region StartReplayCommand
-    ReactiveCommand<object> _StartReplayCommand;
-    public ReactiveCommand<object> StartReplayCommand {
+    ReactiveUI.Legacy.ReactiveCommand<object> _StartReplayCommand;
+    public ReactiveUI.Legacy.ReactiveCommand<object> StartReplayCommand {
       get {
         if(_StartReplayCommand == null) {
           var o = this.WhenAnyObservable(x => x._replayTasks.CountChanged)
             .StartWith(0)
             .Select(c => c == 0);
           //var o2 = this.ObservableForProperty(vm => true, false, false).Select(x => x.Value).ObserveOn(RxApp.MainThreadScheduler);
-          _StartReplayCommand = ReactiveCommand.Create(o, RxApp.MainThreadScheduler);
+          _StartReplayCommand = ReactiveUI.Legacy.ReactiveCommand.Create(o, RxApp.MainThreadScheduler);
           _StartReplayCommand
             .SelectMany(tm => StartReplay(tm).ToObservable())
             .Subscribe();

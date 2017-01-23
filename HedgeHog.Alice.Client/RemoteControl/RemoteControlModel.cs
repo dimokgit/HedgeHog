@@ -37,6 +37,7 @@ using System.Windows.Threading;
 using Gala = GalaSoft.MvvmLight.Command;
 using System.Text.RegularExpressions;
 using HedgeHog.Shared.Messages;
+using ReactiveUI.Legacy;
 
 namespace HedgeHog.Alice.Client {
   [Export]
@@ -279,24 +280,25 @@ namespace HedgeHog.Alice.Client {
 
 
     #region LoadTradingSettings
-    ReactiveCommand<object> _LoadTradingSettingsCommand;
-    public ReactiveCommand<object> LoadTradingSettingsCommand {
+    ReactiveCommand<object,Unit> _LoadTradingSettingsCommand;
+    public ReactiveCommand<object,Unit> LoadTradingSettingsCommand {
       get {
         if(_LoadTradingSettingsCommand == null) {
-          _LoadTradingSettingsCommand = ReactiveCommand.Create();
-          _LoadTradingSettingsCommand.Subscribe(LoadTradingSettings);
+          _LoadTradingSettingsCommand = ReactiveUI.ReactiveCommand.CreateFromObservable<object,Unit>(LoadTradingSettings);
+          //_LoadTradingSettingsCommand.Subscribe(LoadTradingSettings);
         }
 
         return _LoadTradingSettingsCommand;
       }
     }
-    void LoadTradingSettings(object _) {
+    IObservable<Unit> LoadTradingSettings(object _) {
+      var ret = Observable.Return(Unit.Default);
       var tm = (TradingMacro)_;
       try {
         var od = new Microsoft.Win32.OpenFileDialog() { FileName = "Params_" + tm.Pair.Replace("/", ""), DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
         var odRes = od.ShowDialog();
         if(!odRes.GetValueOrDefault())
-          return;
+          return ret;
         var settings = Lib.ReadTestParameters(od.FileName);
         settings.ForEach(tp => {
           try {
@@ -307,9 +309,10 @@ namespace HedgeHog.Alice.Client {
         });
       } catch(Exception exc) {
         Log = exc;
-        return;
+        return ret;
       }
       Log = new Exception("Settings loaded.");
+      return ret;
     }
     #endregion
 
@@ -318,7 +321,7 @@ namespace HedgeHog.Alice.Client {
     public ReactiveCommand<object> SaveTradingSettingsCommand {
       get {
         if(_SaveTradingSettingsCommand == null) {
-          _SaveTradingSettingsCommand = ReactiveCommand.Create();
+          _SaveTradingSettingsCommand = ReactiveUI.Legacy.ReactiveCommand.Create();
           _SaveTradingSettingsCommand.Subscribe(OnSaveTradingSettings);
         }
 
@@ -346,7 +349,7 @@ namespace HedgeHog.Alice.Client {
     public ReactiveCommand<object> CopyTradingMacroCommand {
       get {
         if(_CopyTradingMacroCommand == null) {
-          _CopyTradingMacroCommand = ReactiveCommand.Create();
+          _CopyTradingMacroCommand = ReactiveUI.Legacy.ReactiveCommand.Create();
           ;
           _CopyTradingMacroCommand.Subscribe(CopyTradingMacros);
         }
@@ -414,7 +417,7 @@ namespace HedgeHog.Alice.Client {
     public ReactiveCommand<object> ClearCurrentLossCommand {
       get {
         if(_ClearCurrentLossCommand == null) {
-          _ClearCurrentLossCommand = ReactiveCommand.Create();
+          _ClearCurrentLossCommand = ReactiveUI.Legacy.ReactiveCommand.Create();
           _ClearCurrentLossCommand.Subscribe(_ => ClearCurrentLoss());
         }
 
@@ -432,7 +435,7 @@ namespace HedgeHog.Alice.Client {
     public ReactiveCommand<object> DeleteTradingMacroCommand {
       get {
         if(_DeleteTradingMacroCommand == null) {
-          _DeleteTradingMacroCommand = ReactiveCommand.Create();
+          _DeleteTradingMacroCommand = ReactiveUI.Legacy.ReactiveCommand.Create();
           _DeleteTradingMacroCommand.Subscribe(DeleteTradingMacro);
           //new Gala.RelayCommand<object>(DeleteTradingMacro, (tm) => tm is TradingMacro);
         }
@@ -456,7 +459,7 @@ namespace HedgeHog.Alice.Client {
     public ReactiveCommand<object> PriceHistoryCommand {
       get {
         if(_PriceHistoryCommand == null) {
-          _PriceHistoryCommand = ReactiveCommand.CreateAsyncTask<object>(PriceHistory);
+          _PriceHistoryCommand = ReactiveUI.Legacy.ReactiveCommand.CreateAsyncTask<object>(PriceHistory);
           _PriceHistoryCommand.ThrownExceptions.Subscribe(exc => MessageBox.Show(exc + ""));
         }
 
@@ -493,7 +496,7 @@ namespace HedgeHog.Alice.Client {
     public ReactiveCommand<object> ClosePairCommand {
       get {
         if(_ClosePairCommand == null) {
-          _ClosePairCommand = ReactiveCommand.Create();
+          _ClosePairCommand = ReactiveUI.Legacy.ReactiveCommand.Create();
           _ClosePairCommand.Subscribe(ClosePair);
         }
 
@@ -514,7 +517,7 @@ namespace HedgeHog.Alice.Client {
     public ReactiveCommand<object> BuyCommand {
       get {
         if(_BuyCommand == null) {
-          _BuyCommand = ReactiveCommand.Create();
+          _BuyCommand = ReactiveUI.Legacy.ReactiveCommand.Create();
           _BuyCommand.Subscribe(Buy);
         }
 
@@ -539,7 +542,7 @@ namespace HedgeHog.Alice.Client {
     public ReactiveCommand<object> SellCommand {
       get {
         if(_SellCommand == null) {
-          _SellCommand = ReactiveCommand.Create();
+          _SellCommand = ReactiveUI.Legacy.ReactiveCommand.Create();
           _SellCommand.Subscribe(Sell);
         }
 
@@ -620,7 +623,7 @@ namespace HedgeHog.Alice.Client {
     public ReactiveCommand<object> ToggleCloseAtZeroCommand {
       get {
         if(_ToggleCloseAtZeroCommand == null) {
-          _ToggleCloseAtZeroCommand = ReactiveCommand.Create();
+          _ToggleCloseAtZeroCommand = ReactiveUI.Legacy.ReactiveCommand.Create();
           _ToggleCloseAtZeroCommand.Subscribe(ToggleCloseAtZero);
         }
 

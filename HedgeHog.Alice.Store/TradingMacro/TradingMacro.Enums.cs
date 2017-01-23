@@ -90,6 +90,7 @@ namespace HedgeHog.Alice.Store {
     TradeHeight,
     StDev,
     StDevP,
+    BBand,
     M1StDev
   }
   public enum TradeLevelBy {

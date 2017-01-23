@@ -1205,6 +1205,9 @@ namespace HedgeHog.Alice.Store {
 
     delegate double InPipsDelegate(string pair, double? price);
     InPipsDelegate _inPips;
+    public double InPips(double? d, int round) {
+      return InPips(d).Round(round);
+    }
     public double InPips(double? d) {
       if(_inPips == null && TradesManager != null)
         _inPips = TradesManager.InPips;
@@ -3579,12 +3582,12 @@ namespace HedgeHog.Alice.Store {
     BolingerBanderAsyncBuffer _boilingerBanderAsyncAction = new BolingerBanderAsyncBuffer();
 
     Lazy<double[]> _boilingerStDev = Lazy.Create(()=> new double[0]);
+    double _boilingerAvg=double.NaN;
     void CalcBoilingerBand() {
       _boilingerBanderAsyncAction.Push(() =>
-      _boilingerStDev = Lazy.Create(() => UseRates(rate => {
-        double avg;
-        return rate.Select(r => r.PriceCMALast.Abs(r.AskHigh).Max(r.PriceCMALast.Abs(r.BidLow))).StandardDeviation(out avg) * BbRatio + avg;
-      })));
+      _boilingerStDev = Lazy.Create(() => UseRates(rate =>
+        rate.Select(r => r.PriceCMALast.Abs(r.AskHigh).Max(r.PriceCMALast.Abs(r.BidLow))).StandardDeviation(out _boilingerAvg) * BbRatio + _boilingerAvg
+      )));
     }
 
     public static IEnumerable<double> GetLastRateCma(List<Rate> rate) {
@@ -3726,6 +3729,8 @@ namespace HedgeHog.Alice.Store {
       switch(function) {
         case TradingMacroTakeProfitFunction.StDev:
           return useTrenderComm(tm => tm.StDevByHeight * xRatio);
+        case TradingMacroTakeProfitFunction.BBand:
+          return useTrenderComm(tm => tm._boilingerStDev.Value.Single() * xRatio);
         case TradingMacroTakeProfitFunction.StDevP:
           return useTrenderComm(tm => tm.StDevByPriceAvg * xRatio);
         case TradingMacroTakeProfitFunction.M1StDev:
@@ -4201,6 +4206,7 @@ namespace HedgeHog.Alice.Store {
       return UseRates(func, timeoutInMilliseconds, Caller, LastFile, LineNumber).SelectMany(many).ToArray();
     }
     public T[] UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber]int LineNumber = 0) {
+      return new[] { func(RatesArray) };
       var sw = new Stopwatch();
       if(!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds)) {
         var message = new { Pair, PairIndex, Method = "UseRates", Caller, timeoutInMilliseconds } + "";

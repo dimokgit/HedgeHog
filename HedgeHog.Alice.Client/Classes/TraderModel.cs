@@ -30,6 +30,8 @@ using System.Threading.Tasks.Dataflow;
 using HedgeHog.Shared.Messages;
 using ReactiveUI;
 using System.Reactive;
+using ReactiveUI.Legacy;
+
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -600,7 +602,7 @@ namespace HedgeHog.Alice.Client {
     public ReactiveCommand<object> LoginCommand {
       get {
         if(_LoginCommand == null) {
-          _LoginCommand = ReactiveCommand.Create();
+          _LoginCommand = ReactiveUI.Legacy.ReactiveCommand.Create();
           _LoginCommand.Subscribe(Login);
         }
 
