@@ -1221,6 +1221,24 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(nameof(TrendAnglePrev));
       }
     }
+    public double TrendAnglePrev20 { get; set; }
+    public double TrendAnglePrev21 { get; set; }
+    string _trendAnglePrev2 = "";
+    [WwwSetting(Group = wwwSettingsCorridorAngles)]
+    [Category(categoryActive)]
+    [Description("Range or single value: 15-30 or 60 or -60")]
+    public string TrendAnglePrev2 {
+      get { return _trendAnglePrev2; }
+      set {
+        if(_trendAnglePrev2 == value)
+          return;
+        var spans = ParseJsonRange<double>(_trendAnglePrev2 = value.Trim());
+        TrendAnglePrev20 = spans[0];
+        TrendAnglePrev21 = spans.Skip(1).DefaultIfEmpty(double.NaN).Last();
+        OnPropertyChanged(nameof(TrendAnglePrev2));
+      }
+    }
+
 
     public double TrendAngleBlue0 { get; set; }
     public double TrendAngleBlue1 { get; set; }

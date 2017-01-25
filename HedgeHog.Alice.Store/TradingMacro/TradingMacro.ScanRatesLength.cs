@@ -268,7 +268,6 @@ namespace HedgeHog.Alice.Store {
       IsRatesLengthStable = true;
     }
     void ScanRatesLengthByStDevReg() {
-      var countStart = (RatesArray.Count * 0.9).Max(BarsCount).ToInt();
       UseRatesInternal(ri => BarsCountByStDevByReg(ri, 0, InPoints(RatesHeightMin)))
         .Concat()
         .Concat(GetRatesByTimeFrame().Concat(BarsCount))

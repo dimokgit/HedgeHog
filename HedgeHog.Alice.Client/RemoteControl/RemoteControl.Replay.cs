@@ -125,7 +125,7 @@ namespace HedgeHog.Alice.Client {
             .Take(2)
             .OrderByDescending(s=>isTest(s.name))
             .Where(s => isTest(s.name) || s.diff.IsEmpty())
-            .IfEmpty(() => { throw new Exception(ReplayArguments.LastWwwError = "Current settings don't match any strategy"); })
+            .IfEmpty(() => { LogWww( new Exception(ReplayArguments.LastWwwError = "Current settings don't match any strategy")); })
             .Select(strategy => {
               tmOriginal.TestFileName = strategy.name;
               var paramsDict = Lib.ReadParametersFromString(strategy.content);

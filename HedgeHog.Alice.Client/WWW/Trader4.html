@@ -311,7 +311,7 @@
     div.wwwInfo.ui-dialog.ui-dialog-content{
       padding:0;
     }
-    div.wwwInfo table tbody tr td{
+    table.wwwInfo tbody tr td{
       text-align:right;
     }
   </style>
@@ -755,7 +755,7 @@
   <!--#endregion-->
   <!--#region wwwInfo-->
   <div data-bind="elementer:wwwInfoDialog" class="wwwInfo" style="display:none;padding:0">
-    <table border="1" cellspacing="0">
+    <table border="1" cellspacing="0" class="wwwInfo">
       <tbody data-bind="foreach:wwwInfo">
         <tr>
           <td data-bind="text:n"></td>
