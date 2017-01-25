@@ -125,6 +125,7 @@ namespace HedgeHog.Alice.Store {
         .SingleOrDefault();
       }
     }
+    
     [TradeConditionSetCorridor]
     public TradeConditionDelegate TLLOk {
       get {

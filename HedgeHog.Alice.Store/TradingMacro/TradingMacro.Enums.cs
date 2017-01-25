@@ -35,7 +35,8 @@ namespace HedgeHog.Alice {
     BSTip,
     TLW2,
     TLW3,
-    TLW4
+    TLW4,
+    TLDur
   }
 }
 namespace HedgeHog.Alice.Store {

@@ -588,7 +588,9 @@ namespace HedgeHog {
       var avg = source.Select(d => Math.Pow(d, 1 / power)).ToList().AverageByPosition();
       return Math.Pow(avg, power);
     }
-
+    public static double SquareMeanRoot(this IEnumerable<double> source) {
+      return source.RootMeanPower(0.5);
+    }
     public static double StandardDeviation(this List<double> doubleList) {
       double average = doubleList.Average();
       double sumOfDerivation = 0;
