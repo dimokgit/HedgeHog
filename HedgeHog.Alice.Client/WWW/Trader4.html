@@ -256,13 +256,10 @@
       border-color: olive;
     }
 
-      .btn-primary.setTradeLevelActive,
-      .btn-warning.setTradeLevelActive,
-      .btn-danger.setTradeLevelActive,
-      .btn-plum.setTradeLevelActive,
-      .btn-olive.setTradeLevelActive,
-      .btn-success.setTradeLevelActive {
+      input[type='button'].setTradeLevelActive
+      {
         color: black;
+        font-weight:bold;
       }
 
     .line .crosshair {
@@ -488,12 +485,15 @@
             <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-menu-hamburger"></span></button>
             <ul class="dropdown-menu multi-level md">
               <li>
-                <input type="button" value="M" data-bind="click:setTradeLevels.bind($data,13,null),css:{setTradeLevelActive:tradePresetLevel()==13}" title="Set trade levels to min/max" />
+                <input type="button" value="M" data-bind="click:setTradeLevels.bind($data,13,null),css:{setTradeLevelActive:tradePresetLevel()=='MinMax'}" title="Set trade levels to min/max" />
                 <button type="button" class="btn-olive" data-bind="click:setTradeTrendIndex.bind($data,0),css:{setTradeLevelActive:tradeTrendsInt().indexOf(0)>=0}">L</button>
                 <button type="button" class="btn-success" data-bind="click:setTradeTrendIndex.bind($data,1),css:{setTradeLevelActive:tradeTrendsInt().indexOf(1)>=0}">G</button>
                 <input type="button" value="P" class="btn-plum" data-bind="click:setTradeTrendIndex.bind($data,2),css:{setTradeLevelActive:tradeTrendsInt().indexOf(2)>=0}" />
                 <input type="button" value="R" class="btn-danger" data-bind="click:setTradeTrendIndex.bind($data,3),css:{setTradeLevelActive:tradeTrendsInt().indexOf(3)>=0}" />
                 <input type="button" value="B" class="btn-primary" data-bind="click:setTradeTrendIndex.bind($data,4),css:{setTradeLevelActive:tradeTrendsInt().indexOf(4)>=0}" />
+              </li>
+              <li>
+                <input type="button" value="B" data-bind="click:setTradeLevels.bind($data,'BBand',null),css:{setTradeLevelActive:tradePresetLevel()=='BBand'}" title="Set trade levels to min/max" />
               </li>
               <li style="display:none">
                 <input type="button" value="X" data-bind="click:resetTradeLevels" title="Clear trade levels" />

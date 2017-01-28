@@ -2377,7 +2377,7 @@ namespace HedgeHog.Alice.Store {
                 OnPropertyChanged(() => RatesRsd);
               });
               RunStrategy();
-            }, false);
+            }, IsInVirtualTrading);
             OnScanCorridor(RatesArray, () => {
               try {
                 CorridorAngle = TLRed.Angle;

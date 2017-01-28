@@ -64,6 +64,8 @@ namespace HedgeHog.Alice.Store {
           return () => ShowVoltsByTLsAngleAvg(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLDur:
           return () => ShowVoltsByTLDuration(getVolts, setVolts);
+        case HedgeHog.Alice.VoltageFunction.TLDur2:
+          return () => ShowVoltsByTLDuration2(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.PPMH:
           return ShowVoltsByPPMH;
         case HedgeHog.Alice.VoltageFunction.TFH:
@@ -261,6 +263,11 @@ namespace HedgeHog.Alice.Store {
         ? LastTrendLineDurationPercentage().Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault()
         : null;
     }
+    CorridorStatistics ShowVoltsByTLDuration2(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+      return IsRatesLengthStableGlobal()
+        ? LastTrendLineDurationPercentage2(TrendLinesByDate,2).With(v => ShowVolts(v, 2, getVolt, setVolt))
+        : null;
+    }
 
     private bool IsRatesLengthStableGlobal() {
       return TradingMacrosByPair().All(tm => tm.IsRatesLengthStable);
@@ -343,10 +350,16 @@ namespace HedgeHog.Alice.Store {
     }
 
     IEnumerable<int> LastTrendLineDurationPercentage() => LastTrendLineDurationPercentage(TrendLinesByDate);
-    static IEnumerable < int> LastTrendLineDurationPercentage(IEnumerable<TL> tls) =>
+    static IEnumerable<int> LastTrendLineDurationPercentage(IList<TL> tls) =>
       from tlLast in tls.TakeLast(1)
       let tla = tls.SkipLast(1).Select(tl => tl.TimeSpan.TotalMinutes).SquareMeanRoot()
       select tlLast.TimeSpan.TotalMinutes.Div(tla).ToPercent();
+
+    static int LastTrendLineDurationPercentage2(IList<TL> tls, int skip) =>
+      tls.TakeLast(skip).Select(tl => tl.TimeSpan.TotalMinutes).RootMeanPower().With(tlLast => {
+        var tla = tls.SkipLast(1).Select(tl => tl.TimeSpan.TotalMinutes).SquareMeanRoot();
+        return tlLast.Div(tla).ToPercent();
+      });
 
     private Singleable<double> TLsAngle() {
       return new[] { TrendLinesTrendsAll }

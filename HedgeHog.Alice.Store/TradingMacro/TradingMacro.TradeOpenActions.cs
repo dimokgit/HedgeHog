@@ -15,7 +15,6 @@ namespace HedgeHog.Alice.Store {
     public TradeOpenAction WrapOnTrade {
       get {
         return trade => {
-          BuySellLevels.SetInManual(true);
           WrapTradeInCorridor(true);
         };
       }
@@ -30,7 +29,6 @@ namespace HedgeHog.Alice.Store {
     public TradeOpenAction WrapOnTrade3 {
       get {
         return trade => {
-          BuySellLevels.SetInManual(true);
           WrapTradeInCorridor(true, false);
         };
       }

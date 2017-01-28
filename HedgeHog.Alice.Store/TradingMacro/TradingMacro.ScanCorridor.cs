@@ -263,12 +263,12 @@ namespace HedgeHog.Alice.Store {
       var rates = ToFunc(0, skip => ratesForCorridor.Skip(skip).Select((r, i) => new { r, i }).SkipWhile(r => r.r.StartDate < firstMinute));
       var sampleMin = 2000;
       var buffrerSize = (ratesForCorridor.Count / sampleMin).Max(1);
-      var grouped = ToFunc(0, (skip) =>
-       BarPeriod == BarsPeriodType.t1
+      var grouped = ToFunc((int skip) =>
+       (BarPeriod == BarsPeriodType.t1
        ? !UseMinuteTrends
        ? rates(skip).Buffer(buffrerSize).Select(groupMap)
        : rates(skip).ToList().GroupedDistinct(r => r.r.StartDate.AddMilliseconds(-r.r.StartDate.Millisecond), groupMap)
-       : rates(skip).Select(groupMap2));
+       : rates(skip).Select(groupMap2)).ToList()).Memoize();
       var distanceTotal = grouped(0).Distances(x => x.a).Last().Item2;
       //var sections2 = sectionStarts.Scan(new { end=0,start=0},(p, n) => new { end = n.i, start = p.end }).ToList();
       //sections2.Count();
@@ -287,7 +287,7 @@ namespace HedgeHog.Alice.Store {
           return new[] { anonDef }.AsSingleable();
         var skip = skips.Where(s => s.Length == 1).Concat().ToArray();
         var digits = Digits();
-        var grouped2 = grouped(skip.FirstOrDefault()).ToList();
+        var grouped2 = grouped(skip.FirstOrDefault());
         if(grouped2.Count <= 1)
           return new[] { anonDef }.Take(0).AsSingleable();
         var skipRanges = skip.Any() ? new int[0][] : skips.Where(sr => sr.Any()).ToArray();

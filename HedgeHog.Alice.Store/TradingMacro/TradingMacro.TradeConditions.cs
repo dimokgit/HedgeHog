@@ -81,9 +81,10 @@ namespace HedgeHog.Alice.Store {
         TradingMacroTrader(tm => Log = new Exception(new { FreshOk = new { tm.WavesRsdPerc } } + "")).FirstOrDefault();
         Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
           tm.TrendLinesTrendsAll.OrderByDescending(tl => tl.EndDate)
-          .Where(tl => !tl.IsEmpty && IsTLFresh(tm, tl, tm.WavesRsdPerc / 100.0))
           .Take(1)
-          .Where(tl => IsTLFresh(tm, tl)))
+          .Where(tl => !tl.IsEmpty && IsTLFresh(tm, tl, tm.WavesRsdPerc / 100.0))
+          //.Where(tl => IsTLFresh(tm, tl))
+          )
         .Concat()
         .AsSingleable();
         return () => tls()
@@ -120,12 +121,12 @@ namespace HedgeHog.Alice.Store {
                                select new { tlSlow, ok = tlSlow == tlLast }
            ));
         return () => ok()
-        .Do(x=> SetBSfromTL(x.tlSlow, isReverse()))
+        .Do(x => SetBSfromTL(x.tlSlow, isReverse()))
         .Select(x => TradeDirectionByBool(x.ok))
         .SingleOrDefault();
       }
     }
-    
+
     [TradeConditionSetCorridor]
     public TradeConditionDelegate TLLOk {
       get {
@@ -1401,7 +1402,7 @@ namespace HedgeHog.Alice.Store {
           //StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
           //BolngrAvg= InPips(_boilingerAvg,1),
           ProfitPip = CalculateTakeProfitInPips().Round(1),
-          TlsAngAvg = tls.Sum(tl => tl.TimeSpan.TotalMinutes).With(ts=> (ts/tm.RatesDuration).ToString("p0")+","+ts.FromMinutes().ToString("h\\:mm")),
+          TlsAngAvg = tls.Select(tl => tl.TimeSpan.TotalMinutes).SquareMeanRoot().With(ts => (ts * tls.Length / tm.RatesDuration).ToString("p0") + "," + ts.FromMinutes().ToString("h\\:mm")),
           //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Red__Edge = tm.TrendLinesRedTrends.EdgeDiff.SingleOrDefault().Round(1),
@@ -1410,7 +1411,7 @@ namespace HedgeHog.Alice.Store {
           //WvDistRsd = _waveDistRsd.Round(2)
         }
         .ToExpando()
-        .Add(angles.ToDictionary(x => x.l, x =>(object) x.t))
+        .Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         .Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
         .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { });
       }

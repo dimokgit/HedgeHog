@@ -36,7 +36,8 @@ namespace HedgeHog.Alice {
     TLW2,
     TLW3,
     TLW4,
-    TLDur
+    TLDur,
+    TLDur2
   }
 }
 namespace HedgeHog.Alice.Store {
@@ -248,6 +249,7 @@ namespace HedgeHog.Alice.Store {
     NarrowR = 8,
     Corridor2R = 11,
     MinMax = 13,
+    BBand = 14,
   }
   public enum CorridorByStDevRatio {
     HPAverage = 0,
