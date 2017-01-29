@@ -116,7 +116,7 @@
   var ratesInFlight2 = dateMin;
   function keyNote(text) { return typeof text === "string" ? { keyNote: text } : text.keyNote; };
   var openInFlightNote = _.throttle(showError, 2 * 1000);
-  var openInFlightNotePerm = _.throttle(showErrorPerm, 2 * 1000);
+  var openInFlightNotePerm = _.throttle(showWarning, 2 * 1000);
   function isInFlight(date, index) {
     var secsInFlight = getSecondsBetween(new Date(), date);
     if (secsInFlight > 3)

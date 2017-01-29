@@ -17,7 +17,7 @@ namespace HedgeHog.Alice {
     PPMH,
     PpmM1,
     TFH,
-    TLsAngleAvg,
+    TLsTimeAvg,
     //AO,
     MPH,
     Equinox,
@@ -126,6 +126,8 @@ namespace HedgeHog.Alice.Store {
     PriceLow0,
     PriceMax,
     PriceMin,
+    TrendMax,
+    TrendMin,
     PriceAvg1Max,
     PriceAvg1Min,
     GreenStripL,
@@ -250,6 +252,7 @@ namespace HedgeHog.Alice.Store {
     Corridor2R = 11,
     MinMax = 13,
     BBand = 14,
+    TLMinMax = 15,
   }
   public enum CorridorByStDevRatio {
     HPAverage = 0,

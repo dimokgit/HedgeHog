@@ -165,6 +165,7 @@ namespace HedgeHog.Alice.Store {
 
         {TradeLevelsPreset.NarrowR,Tuple.Create( TradeLevelBy.PriceAvg3, TradeLevelBy.PriceAvg2)},
         {TradeLevelsPreset.BBand,Tuple.Create( TradeLevelBy.BoilingerUp, TradeLevelBy.BoilingerDown)},
+        {TradeLevelsPreset.TLMinMax,Tuple.Create( TradeLevelBy.TrendMax, TradeLevelBy.TrendMin)},
         {TradeLevelsPreset.Corridor2R,Tuple.Create( TradeLevelBy.PriceLow, TradeLevelBy.PriceHigh)}
 
       };

@@ -115,14 +115,14 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate TLSOk {
       get {
         var ok = ToFunc(() => (from tm in TradingMacroTrender()
-                               let tls = tm.TrendLinesTrendsAll
-                               from tlSlow in tls.OrderByDescending(tl => tl.TimeSpan.TotalMinutes).Take(1)
-                               from tlLast in tls.OrderByDescending(tl => tl.EndDate).Take(1)
-                               select new { tlSlow, ok = tlSlow == tlLast }
+                               from tl in tm.TrendLinesTrendsAll
+                               orderby tl.TimeSpan.TotalMinutes descending
+                               select tl
            ));
         return () => ok()
-        .Do(x => SetBSfromTL(x.tlSlow, isReverse()))
-        .Select(x => TradeDirectionByBool(x.ok))
+        .Take(1)
+        .Do(tl => SetBSfromTL(tl, isReverse()))
+        .Select(x => TradeDirections.Both)
         .SingleOrDefault();
       }
     }
@@ -1386,9 +1386,19 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region WwwInfo
-    double TLAngleAvg() {
-      return TrendLinesTrendsAll.Select(tl => tl.Angle.Abs()).RootMeanPower();
+    int[] TLTimeAvg() {
+      if(TrendLinesTrendsAll.Any(tl => tl.IsEmpty))
+        return new int[0];
+      var tls = TrendLinesTrendsAll;
+      var timeRatio = TLsTimeAverage(tls) * tls.Length / RatesDuration;
+      var rangesSum = TrendRanges.Sum(tr => tr[0].Abs()) / 100.0;
+      return new[] { (timeRatio / rangesSum - 1).ToPercent() };
     }
+
+    private static double TLsTimeAverage(TL[] tls) {
+      return tls.Select(tl => tl.TimeSpan.TotalMinutes).SquareMeanRoot();
+    }
+
     public object WwwInfo() {
       Func<Func<TradingMacro, TL>, IEnumerable<TL>> trenderLine = tl => TradingMacroTrender().Select(tl);
       return TradingMacroTrender(tm => {
@@ -1402,7 +1412,7 @@ namespace HedgeHog.Alice.Store {
           //StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
           //BolngrAvg= InPips(_boilingerAvg,1),
           ProfitPip = CalculateTakeProfitInPips().Round(1),
-          TlsAngAvg = tls.Select(tl => tl.TimeSpan.TotalMinutes).SquareMeanRoot().With(ts => (ts * tls.Length / tm.RatesDuration).ToString("p0") + "," + ts.FromMinutes().ToString("h\\:mm")),
+          TlsAngAvg = TLsTimeAverage(tls).With(ts => (ts * tls.Length / tm.RatesDuration).ToString("p0") + "," + ts.FromMinutes().ToString("h\\:mm")),
           //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Red__Edge = tm.TrendLinesRedTrends.EdgeDiff.SingleOrDefault().Round(1),

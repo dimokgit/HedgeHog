@@ -60,8 +60,8 @@ namespace HedgeHog.Alice.Store {
           return () => ShowVoltsByPPM(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.PPMB:
           return () => ShowVoltsByPPMB(getVolts, setVolts);
-        case HedgeHog.Alice.VoltageFunction.TLsAngleAvg:
-          return () => ShowVoltsByTLsAngleAvg(getVolts, setVolts);
+        case HedgeHog.Alice.VoltageFunction.TLsTimeAvg:
+          return () => ShowVoltsByTLsTimeAvg(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLDur:
           return () => ShowVoltsByTLDuration(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLDur2:
@@ -253,9 +253,9 @@ namespace HedgeHog.Alice.Store {
 
       return null;
     }
-    CorridorStatistics ShowVoltsByTLsAngleAvg(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+    CorridorStatistics ShowVoltsByTLsTimeAvg(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       return IsRatesLengthStableGlobal()
-        ? ShowVolts(TLAngleAvg(), 2, getVolt, setVolt)
+        ? TLTimeAvg().Select(v=> ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault()
         : null;
     }
     CorridorStatistics ShowVoltsByTLDuration(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {

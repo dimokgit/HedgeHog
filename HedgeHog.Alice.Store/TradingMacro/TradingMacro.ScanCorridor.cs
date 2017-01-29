@@ -28,6 +28,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     private const string MULTI_VALUE_SEPARATOR = ";";
+    private const double TLsOverlap = 0.9;
     #region VoltsAvgIterations
     private int _VoltsAvgIterations;
     [Category(categoryCorridor)]
@@ -368,7 +369,7 @@ namespace HedgeHog.Alice.Store {
       var tlStartIndex = tlStartIndex0.Memoize(tl => tl.StartDate);
       Func<TLS, int[]> skipByTL = tls => IsTrendsEmpty(tls)
       .With(tl => tl.IsEmpty ? new int[0] : tlStartIndex(tl))
-      .Select(i => (i * 0.9).ToInt())
+      .Select(i => (i * TLsOverlap).ToInt())
       .ToArray();
 
       TrendBlueInt().Pairwise((s, c) => new { s })

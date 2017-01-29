@@ -3586,7 +3586,9 @@ namespace HedgeHog.Alice.Store {
     void CalcBoilingerBand() {
       _boilingerBanderAsyncAction.Push(() =>
       _boilingerStDev = Lazy.Create(() => UseRates(rate =>
-        rate.Select(r => r.PriceCMALast.Abs(r.AskHigh).Max(r.PriceCMALast.Abs(r.BidLow))).StandardDeviation(out _boilingerAvg) * BbRatio + _boilingerAvg
+        rate.Select(r => r.PriceCMALast.Abs(r.AskHigh).Max(r.PriceCMALast.Abs(r.BidLow)))
+        .Where(Lib.IsNotNaN)
+        .StandardDeviation(out _boilingerAvg) * BbRatio + _boilingerAvg
       )));
     }
 
@@ -3695,8 +3697,11 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceLow0,()=> levelMin(tm=>tm.TLGreen.PriceAvg3)},
 
 
-          {TradeLevelBy.PriceMax,()=> levelMax(TradeTrendsPriceMax)},
-          {TradeLevelBy.PriceMin,()=> levelMin(TradeTrendsPriceMin)},
+          {TradeLevelBy.PriceMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceAvg2))},
+          {TradeLevelBy.PriceMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceAvg2))},
+
+          {TradeLevelBy.TrendMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceMax.Single()))},
+          {TradeLevelBy.TrendMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceMin.Single()))},
 
           { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
