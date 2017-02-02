@@ -249,10 +249,17 @@ namespace HedgeHog.Alice.Store {
       File.WriteAllText(settingsPath, json);
 
     }
-    public static T LoadJson<T>(string path) {
+    public static T LoadJson<T>(string path, List<Exception> errors = null) {
       var json = File.ReadAllText(ActiveSettingsPath(path));
-      return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
+      return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings {
+        Error = (s, e) => {
+          e.ErrorContext.Handled = true;
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(e.ErrorContext.Error);
+          errors.Add(e.ErrorContext.Error);
+        }
+      });
     }
+
     #endregion
     [MethodImpl(MethodImplOptions.Synchronized)]
     public static void UseAliceContext(Action<AliceEntities> action, bool saveChanges = false) {

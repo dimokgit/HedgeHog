@@ -698,21 +698,30 @@ namespace HedgeHog.Alice.Store {
     private bool IsTradingDay(DateTime time) {
       return TradingDays().Contains(time.DayOfWeek);
     }
-    private bool IsTradingHour_Old(DateTime time) {
-      var hours = TradingHoursRange.Split('-').Select(s => DateTime.Parse(s).Hour).ToArray();
-      return hours[0] < hours[1] ? time.Hour.Between(hours[0], hours[1]) : !time.Hour.Between(hours[0] - 1, hours[1] + 1);
-    }
     private bool IsTradingHour(DateTime time) {
-      return IsTradingHour(TradingHoursRange, time);
+      return IsTradingHour2(TradingHoursRange, time);
     }
     public static bool IsTradingHour(string range, DateTime time) {
       var times = range.Split('-')
         .Where(s => !string.IsNullOrWhiteSpace(s))
         .DefaultIfEmpty("0:00").Select(s => DateTime.Parse(s).TimeOfDay).ToArray();
       var tod = time.TimeOfDay;
+      return IsTimeSpanRangeOk(times, tod);
+    }
+
+    private static bool IsTimeSpanRangeOk(TimeSpan[] times, TimeSpan tod) {
       return times.First() < times.Last()
         ? tod.Between(times.First(), times.Last())
         : tod >= times.First() || tod <= times.Last();
+    }
+
+    public static bool IsTradingHour2(string range, DateTime time) {
+      string[][] ranges;
+      if(range.TryFromJson(out ranges)) {
+        var timeSpans = ranges?.Select(r => r.Select(t => TimeSpan.Parse(t)).ToArray());
+        return timeSpans?.Any(ts=>IsTimeSpanRangeOk(ts,time.TimeOfDay)) ?? true;
+      }
+      return IsTradingHour(range,time);
     }
     DayOfWeek[] TradingDays() {
       switch(TradingDaysRange) {

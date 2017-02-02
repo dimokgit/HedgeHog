@@ -19,6 +19,7 @@
  * Send - method fired from server to sen info to clien
  */
 (function () {
+  var isMobile = /Mobi/.test(navigator.userAgent);
   var devVersion = "(v2)";
   //#region ko binding
   ko.bindingHandlers.elementer = {
@@ -639,6 +640,10 @@
       wwwSettingsGridElement = element;
     }
     this.showNegativeVolts = ko.observable(-10000);
+    this.showNegativeVoltsParsed = ko.pureComputed(function () {
+      var e = eval(this.showNegativeVolts());
+      return Array.isArray(e) ? e : [e];
+    },this);
     this.wwwSettingProperties = ko.pureComputed(function () {
       function gettype(v) { return typeof v === "boolean" ? "checkbox" : "text" }
       return [
@@ -1488,6 +1493,7 @@
     return notify(message, "success", $.extend({ type: "success" }, settings));
   }
   function showError(message, settings) {
+    if (isMobile) return showWarning(message, settings);
     var keyNote = (settings || {}).keyNote;
     var note = notify((keyNote ? keyNote + ":" : "") + message, NOTE_ERROR, settings);
     if (!keyNote && (settings || {}).delay === 0)
@@ -1497,7 +1503,8 @@
   }
   /* jshint ignore:end */
   function showErrorPerm(message,settings) {
-    return showError(message, $.extend({ delay: 0,hide:false }, settings));
+    if (isMobile) return showWarning(message, settings);
+    return showError(message, $.extend({ delay: 0, hide: false }, settings));
   }
   function dateAdd(date, interval, units) {
     var ret = new Date(date); //don't change original date

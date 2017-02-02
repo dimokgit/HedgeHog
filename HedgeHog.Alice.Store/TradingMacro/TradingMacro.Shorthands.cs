@@ -62,7 +62,24 @@ namespace HedgeHog.Alice.Store {
       RaiseShowChart();
     }
 
-    public void WrapTradeInCorridor(bool forceMove = false,bool useTakeProfit = true) {
+    public void WrapTradeInCorridorEdge() {
+      if(Trades.Any()) {
+        SuppRes.ForEach(sr => sr.ResetPricePosition());
+        BuyLevel.InManual = SellLevel.InManual = true;
+        var sd = TrendLinesByDate.Last().StartDate;
+        var rates = RatesArray.BackwardsIterator().TakeWhile(r => r.StartDate >= sd);
+        if(Trades.HaveBuy()) {
+          SellLevel.Rate = rates.Min(r => r.BidLow);
+          BuyLevel.Rate = Trades.NetOpen();
+        } else {
+          BuyLevel.Rate = rates.Max(r => r.AskHigh);
+          SellLevel.Rate = Trades.NetOpen();
+        }
+        SuppRes.ForEach(sr => sr.ResetPricePosition());
+      }
+      RaiseShowChart();
+    }
+    public void WrapTradeInCorridor(bool forceMove = false, bool useTakeProfit = true) {
       if(Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove)) {
         SuppRes.ForEach(sr => sr.ResetPricePosition());
         BuyLevel.InManual = SellLevel.InManual = true;
@@ -199,7 +216,7 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<TradeLevelsPreset> GetTradeLevelsPreset() {
       var bl = LevelBuyBy;
       var sl = LevelSellBy;
-      return tlbs.Where(tlb => 
+      return tlbs.Where(tlb =>
       tlb.Value.Item1 == bl && tlb.Value.Item2 == sl ||
       tlb.Value.Item1 == sl && tlb.Value.Item2 == bl
       ).Select(tlb => tlb.Key);

@@ -382,35 +382,40 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    public IList<Rate> CalcTrendLines(int start, int count, Func<TL, TL> map) {
+    public IList<Rate> CalcTrendLines(int start, int count, Func<TL, TL> map, bool useExtremas = false) {
       return UseRates(rates => {
         return rates.GetRange(start, count.Min(rates.Count - start).Max(0));
       })
-      .Select(rates => CalcTrendLines(rates, count, map))
+      .Select(rates => CalcTrendLines(rates, count, map, useExtremas))
       .DefaultIfEmpty(new[] { TL.EmptyRate, TL.EmptyRate })
       .Single();
     }
-    public IList<Rate> CalcTrendLines(int count, Func<TL, TL> map) {
+    public IList<Rate> CalcTrendLines(int count, Func<TL, TL> map, bool useExtremas = false) {
       return UseRates(rates => {
         var c = count.Min(rates.Count);
         return count == 0 ? new List<Rate>() : rates.GetRange(rates.Count - c, c);
       })
-      .Select(rates => CalcTrendLines(rates, count, map))
+      .Select(rates => CalcTrendLines(rates, count, map, useExtremas))
       .DefaultIfEmpty(new[] { TL.EmptyRate, TL.EmptyRate })
       .Single();
     }
-    public IList<Rate> CalcTrendLines(List<Rate> source, int count, Func<TL, TL> map) {
+    public IList<Rate> CalcTrendLines(List<Rate> source, int count, Func<TL, TL> map, bool useExtremas = false) {
       var c = count.Min(source.Count).Max(0);
       var range = source.Count == count ? source : source.GetRange(source.Count - c, c);
-      return CalcTrendLines(range, map);
+      return CalcTrendLines(range, map, useExtremas);
     }
-    public IList<Rate> CalcTrendLines(List<Rate> corridorValues, Func<TL, TL> map) {
+    public IList<Rate> CalcTrendLines(List<Rate> corridorValues, Func<TL, TL> map, bool useExtremas = false) {
       if(corridorValues.Count == 0)
         return new[] { TL.EmptyRate, TL.EmptyRate };
       if(corridorValues[0] == null) {
         Log = new Exception("corridorValues[0] == null");
         return new[] { TL.EmptyRate, TL.EmptyRate };
       }
+
+      var up = Lazy.Create(() => corridorValues.Select((r, i) => new { r, i }).MaxBy(r => r.r.AskHigh).First().i);
+      var down = Lazy.Create(() => corridorValues.Select((r, i) => new { r, i }).MinBy(r => r.r.BidLow).First().i);
+      if(useExtremas)
+        corridorValues = corridorValues.GetRange(up.Value.Min(down.Value), up.Value.Abs(down.Value));
 
       var minutes = (corridorValues.Last().StartDate - corridorValues[0].StartDate).Duration().TotalMinutes;
       var isTicks = BarPeriod == BarsPeriodType.t1;
@@ -447,7 +452,9 @@ namespace HedgeHog.Alice.Store {
       rates.ForEach(r => r.Trends = map(new TL(corridorValues, coeffs, hl, corridorValues.First().StartDate, corridorValues.Last().StartDate) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize),
         EdgeHigh = new[] { edgeHigh },
-        EdgeLow = new[] { edgeLow }
+        EdgeLow = new[] { edgeLow },
+        StartIndex = up.Value.Min(down.Value),
+        EndIndex = up.Value.Max(down.Value)
       }));
 
 
@@ -481,7 +488,7 @@ namespace HedgeHog.Alice.Store {
       rates[1].Trends.PriceAvg32 = pa1 - l * 2;
       return rates;
     }
-
+    // TODO: MinMaxMM
     private double CalcCorridorStDev(List<Tuple<double, double, double>> doubles, double[] coeffs) {
       var cm = Trades.Any() && CorridorCalcMethod != CorridorCalculationMethod.MinMax ? CorridorCalculationMethod.Height : CorridorCalcMethod;
       var ds = doubles.Select(r => r.Item3);

@@ -71,13 +71,17 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    ReplayArguments<TradingMacro> _replayArguments = new ReplayArguments<TradingMacro>();
+    public ReplayArguments<TradingMacro> ReplayArguments {
+      get { return _replayArguments; }
+    }
 
     #region TradingMacros
 
-    public static TradingMacro[] ReadTradingMacros() {
+    public static TradingMacro[] ReadTradingMacros(List<Exception> errors) {
       var searchPath = GlobalStorage.ActiveSettingsPath(TradingMacrosPath("*", "*", "*", "*"));
       var paths = Directory.GetFiles(Path.GetDirectoryName(searchPath),Path.GetFileName(searchPath));
-      return paths.ToArray(path => GlobalStorage.LoadJson<TradingMacro>(path));
+      return paths.ToArray(path => GlobalStorage.LoadJson<TradingMacro>(path, errors));
     }
     static string WrapPair(string pair) {
       return pair.Replace("/", "");
@@ -131,7 +135,9 @@ namespace HedgeHog.Alice.Store {
       get {
         try {
           if(_TradingMacros == null) {
-            _TradingMacros = ReadTradingMacros();
+            var errors = new List<Exception>();
+            _TradingMacros = ReadTradingMacros(errors);
+            errors.ForEach(e => ReplayArguments.LastWwwErrorObservable.OnNext(e.Message));
             _TradingMacros.ForEach(tm => Context_ObjectMaterialized(tm, null));
           }
               //!IsInDesigh

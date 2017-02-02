@@ -334,7 +334,11 @@ namespace HedgeHog.Alice.Store {
 
         return res
         .Take(1)
-        .Select(x => def(CalcTrendLines(x.start, x.count, tagTL(pl, x.dist)), x.start, x.count, x.dist))
+        .Select(x => {
+          var tlRates = CalcTrendLines(x.start, x.count, tagTL(pl, x.dist), !isMin);
+          var tl = IsTrendsEmpty(tlRates);
+          return def(tlRates, x.start, x.count, x.dist);
+        })
         .AsSingleable();
       });
 
@@ -391,8 +395,8 @@ namespace HedgeHog.Alice.Store {
          => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.IfEmpty(() => tlRanges(tlDef)).DefaultIfEmpty(skipByTL(tlDef)).ToArray(), isMin = s > 0 })
          .Where(x => x.s > 0)
          .SelectMany(p => calcTrendLines(p.s, p.isMin, color, p.skip).Concat(() => calcTrendLines(p.s, p.isMin, color, skipEmpty)).Take(1))
-         .Do(ctl => tl(Lazy.Create(() => ctl, tlDef.Value, exc => Log = exc)))
-         .DefaultIfEmpty(new Rate[0])
+         .IfEmpty(() => tlDef.Value.AsIList())
+         .Do(ctl => tl(Lazy.Create(() => ctl)))
          .AsSingleable();
 
       (from td in TradeConditionHasAny(BlueAngOk).DefaultIfEmpty(TradeDirections.Both)

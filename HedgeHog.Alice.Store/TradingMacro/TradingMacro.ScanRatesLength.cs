@@ -249,10 +249,10 @@ namespace HedgeHog.Alice.Store {
 
     void ScanRatesLengthByTimeFrame() {
       if(BarPeriod != BarsPeriodType.t1)
-        BarsCountCalc = TimeFrameTresholdTimeSpan.TotalMinutes.ToInt();
+        BarsCountCalc = RatesTimeSpanMinimum.TotalMinutes.ToInt();
       else
         UseRatesInternal(ri => {
-          var dateStart = ri.Last().StartDate.Subtract(TimeFrameTresholdTimeSpan);
+          var dateStart = ri.Last().StartDate.Subtract(RatesTimeSpanMinimum);
           return ri.FuzzyIndex(dateStart, (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)).DefaultIfEmpty(0);
         })
         .SelectMany(i => i)
@@ -327,7 +327,7 @@ namespace HedgeHog.Alice.Store {
 
     int[] GetRatesLengthsByTimeFrameRange() {
       if(BarPeriod != BarsPeriodType.t1)
-        return new[] { TimeFrameTresholdTimeSpan.TotalMinutes.ToInt(), TimeFrameTresholdTimeSpan.TotalMinutes.ToInt() };
+        return new[] { RatesTimeSpanMinimum.TotalMinutes.ToInt(), RatesTimeSpanMinimum.TotalMinutes.ToInt() };
       else {
         Func<DateTime, TimeSpan, int> getCount = (dateEnd, timeFrame) =>
           UseRatesInternal(ri => ri.FuzzyIndex(dateEnd.Subtract(timeFrame), (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
@@ -393,12 +393,14 @@ namespace HedgeHog.Alice.Store {
     }
     int[] GetRatesByTimeFrame() {
       return BarPeriod > BarsPeriodType.t1
-          ? new[] { (TimeFrameTresholdTimeSpan.TotalMinutes / BarPeriodInt).ToInt() }
-          : GetRatesCountByTimeFrame(TimeFrameTresholdTimeSpan);
+          ? new[] { (RatesTimeSpanMinimum.TotalMinutes / BarPeriodInt).ToInt() }
+          : GetRatesCountByTimeFrame(RatesTimeSpanMinimum);
     }
     private int[] GetRatesCountByTimeFrame(TimeSpan timeFrame) {
       return UseRatesInternal(ri => ri.FuzzyIndex(ri.Last().StartDate.Subtract(timeFrame), (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)))
-       .SelectMany(i => i, (_, i) => /*BarsCountCalc.Max(*/RatesInternal.Count - i/*)*/)
+        .Concat()
+        .Select(i => RatesInternal.Count - i)
+        .DefaultIfEmpty(RatesInternal.Count)
        .ToArray();
     }
 

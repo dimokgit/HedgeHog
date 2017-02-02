@@ -391,7 +391,7 @@
       var com = chartData.com;
       var com2 = chartData.com2;
       var com3 = chartData.com3;
-      var showNegativeVolts = parseInt(viewModel.showNegativeVolts());
+      var showNegativeVolts = viewModel.showNegativeVoltsParsed();
       // #endregion
 
       // #region adjust svg and axis'
@@ -455,7 +455,7 @@
         return chartNum ? value : yDomain[1];
       }
       function tipValue(v) {
-        return isNaN(v) ? 0 : Math.max(v, showNegativeVolts);
+        return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts[0]),  showNegativeVolts[1] || 100000);
       }
       yDomain = d3.extent([yDomain[0], yDomain[1]
         , sbchnum(tradeLevels && canBuy ? tradeLevels.buy : yDomain[1])
@@ -559,24 +559,24 @@
           setHorizontalStrip(com3.b, com3.s, redStrip);
         // #region add trend corridor
         //setTrendLine(trendLines, 1, "lightgrey");
-        setTrendLine2(trendLines, 2,"", "darkred");
-        setTrendLine2(trendLines, 3,"", "darkred");
+        setTrendLine2(trendLines, 2, "", "darkred", trendLines.sel);
+        setTrendLine2(trendLines, 3, "", "darkred", trendLines.sel);
         //setTrendLine(trendLines, 21, "darkred");
         //setTrendLine(trendLines, 31, "darkred");
 
         setTrendLine2(trendLines2, 1, 2, "lightgrey");
-        setTrendLine2(trendLines2, 2, 2, "navy");
-        setTrendLine2(trendLines2, 3, 2, "navy");
+        setTrendLine2(trendLines2, 2, 2, "navy", trendLines2.sel);
+        setTrendLine2(trendLines2, 3, 2, "navy", trendLines2.sel);
 
-        setTrendLine2(trendLines1, 2, 1, "green");
-        setTrendLine2(trendLines1, 3, 1, "green");
+        setTrendLine2(trendLines1, 2, 1, "green", trendLines1.sel);
+        setTrendLine2(trendLines1, 3, 1, "green", trendLines1.sel);
 
-        setTrendLine2(trendLines0, 2, 0, "olive");
-        setTrendLine2(trendLines0, 3, 0, "olive");
+        setTrendLine2(trendLines0, 2, 0, "olive", trendLines0.sel);
+        setTrendLine2(trendLines0, 3, 0, "olive", trendLines0.sel);
 
         var colorPlum = "darkorchid";
-        setTrendLine2(trendLines3, 2, 3, colorPlum);
-        setTrendLine2(trendLines3, 3, 3, colorPlum);
+        setTrendLine2(trendLines3, 2, 3, colorPlum, trendLines3.sel);
+        setTrendLine2(trendLines3, 3, 3, colorPlum, trendLines3.sel);
         // #endregion
       }
       // #endregion
@@ -833,14 +833,14 @@
           .attr("width", x(dates[1]) - x(dates[0])) // x position of the second end of the line
           .attr("height", height);// y position of the second end of the line
       }
-      function setTrendLine2(trendLines, lineNumber, trendIndex, lineColour) {
+      function setTrendLine2(trendLines, lineNumber, trendIndex, lineColour, isBold) {
         var svgLine = svg.select("line.line" + lineNumber + "_" + trendIndex);
         var dates = (trendLines || {}).dates;
         var line = trendLines ? trendLines["close" + lineNumber] : null;
         if (dates && dates.length && line && line.length && !line.some(function (v) { return isNaN(v); })) {
           svgLine
             .style("visibility", "visible")
-            .style("stroke-width", 1.5)
+            .style("stroke-width", isBold ? 3 : 1.5)
             .style("stroke", lineColour)  // colour the line
             .attr("x1", x(dates[0])) // x position of the first end of the line
             .attr("y1", y(line[0])) // y position of the first end of the line

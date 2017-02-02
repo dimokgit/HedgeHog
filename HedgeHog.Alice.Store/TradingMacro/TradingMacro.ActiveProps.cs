@@ -49,6 +49,24 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(nameof(TimeFrameTreshold));
       }
     }
+    #region RatesLengthMinutesMin
+    TimeSpan RatesTimeSpanMinimum => TimeSpan.Parse(RatesMinutesMin);
+    private string _RatesMinutesMin="2:00:00";
+    [Category(categoryActive)]
+    [WwwSetting(wwwSettingsTradingCorridor)]
+    public string RatesMinutesMin {
+      get { return _RatesMinutesMin; }
+      set {
+        if(_RatesMinutesMin != value) {
+          var ts = string.IsNullOrWhiteSpace(value) ? "0:00" : value;
+          TimeSpan.Parse(ts);
+          _RatesMinutesMin = ts;
+          OnPropertyChanged(nameof(RatesMinutesMin));
+        }
+      }
+    }
+
+    #endregion
     #region Rsd
     private double _Rsd;
     [Category(categoryXXX)]

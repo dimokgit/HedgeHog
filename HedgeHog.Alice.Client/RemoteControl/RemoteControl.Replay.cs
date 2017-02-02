@@ -39,10 +39,6 @@ namespace HedgeHog.Alice.Client {
         return _StartReplayCommand;
       }
     }
-    ReplayArguments<TradingMacro> _replayArguments = new ReplayArguments<TradingMacro>();
-    public ReplayArguments<TradingMacro> ReplayArguments {
-      get { return _replayArguments; }
-    }
 
     public bool ToggleReplayPause() {
       return ReplayArguments.InPause = !ReplayArguments.InPause;

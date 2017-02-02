@@ -647,6 +647,7 @@ namespace HedgeHog.Bars {
       public string Color { get; set; }
       public double Distance { get; set; }
       public bool IsEmpty { get { return Count == 0; } }
+      public bool IsSelected { get; set; }
 
       public double Slope { get; set; }
       public double StDev { get; set; }
@@ -696,6 +697,8 @@ namespace HedgeHog.Bars {
       public TimeSpan TimeSpan { get { return EndDate - StartDate; } }
 
       public IList<Rate> Rates { get; private set; }
+      public int EndIndex { get; set; }
+      public int StartIndex { get; set; }
 
       public TrendLevels(IList<Rate> rates, double[] coeffs, double stDev, DateTime startDate, DateTime endDate) {
         this.Rates = rates;

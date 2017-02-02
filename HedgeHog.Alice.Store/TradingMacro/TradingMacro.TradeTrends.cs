@@ -52,13 +52,18 @@ namespace HedgeHog.Alice.Store {
     }
     TL[] Trends => new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
     int[][] TrendRanges => new[] { TrendLimeInt(), TrendGreenInt(), TrendPlumInt(), TrendRedInt(), TrendBlueInt() };
-    TL IsTrendsEmpty(Lazy<IList<Rate>> trends) {
+    public static TL IsTrendsEmpty(Lazy<IList<Rate>> trends) {
       if(trends == null)
         return TL.Empty;
       var v = trends.Value;
+      return IsTrendsEmpty(v);
+    }
+
+    public static TL IsTrendsEmpty(IList<Rate> v) {
       return v == null || v.IsEmpty() ? TL.Empty : v.Skip(1).Select(r => r.Trends).LastOrDefault() ?? TL.Empty;
     }
-    IEnumerable<TL> IsTrendsEmpty2(Lazy<IList<Rate>> trends) {
+
+    public static IEnumerable<TL> IsTrendsEmpty2(Lazy<IList<Rate>> trends) {
       if(trends == null)
         yield break;
       var v = trends.Value;
@@ -109,10 +114,13 @@ namespace HedgeHog.Alice.Store {
         .RootMeanPower(0.5)
         .ToInt();
     }
-    private Func<TradingMacro,double> TradeTrendsPriceMax(Func<TL,double> price) {
-      return tm=>tm.TradeTrendLines.Select(price).OrderByDescending(d=>d).DefaultIfEmpty(double.NaN).First();
+    private static Func<TradingMacro, double> TradeTrendPrice(Func<TL, double> price) {
+      return tm => tm.TradeTrendLines.Select(price).Single();
     }
-    private Func<TradingMacro,double> TradeTrendsPriceMin(Func<TL, double> price) {
+    private static Func<TradingMacro, double> TradeTrendsPriceMax(Func<TL, double> price) {
+      return tm => tm.TradeTrendLines.Select(price).OrderByDescending(d => d).DefaultIfEmpty(double.NaN).First();
+    }
+    private static Func<TradingMacro,double> TradeTrendsPriceMin(Func<TL, double> price) {
       return tm=>tm.TradeTrendLines.Select(price).OrderBy(d => d).DefaultIfEmpty(double.NaN).First();
     }
 

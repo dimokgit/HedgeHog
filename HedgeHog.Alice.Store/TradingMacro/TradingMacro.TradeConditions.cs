@@ -107,24 +107,58 @@ namespace HedgeHog.Alice.Store {
           .SingleOrDefault();
       }
     }
+    public TradeConditionDelegate THOk {
+      get {
+        return () => TradeDirectionByBool(IsTradingHour());
+      }
+    }
+
     #endregion
 
     #region TLs
+    public TradeConditionDelegate SlowOk {
+      get {
+        var ok = ToFunc(() => (from tm in TradingMacroTrender()
+                               from tlLast in tm.TrendLinesByDate.TakeLast(1)
+                               from tlSlow in tm.TrendLinesTrendsAll.OrderByDescending(tl => tl.TimeSpan.TotalMinutes).Take(1)
+                               select new { tlSlow, ok = tlLast == tlSlow, tls = tm.TrendLinesTrendsAll }
+           ));
+        return () => ok()
+      .Do(x => setSelected(x.tls, x.tlSlow))
+      .Select(x => TradeDirectionByBool(x.ok))
+      .SingleOrDefault();
+      }
+    }
     bool isReverse() => (LevelBuyBy + "").EndsWith("Min") && (LevelSellBy + "").EndsWith("Max") ? true : false;
     [TradeConditionSetCorridor]
     public TradeConditionDelegate TLSOk {
       get {
-        var ok = ToFunc(() => (from tm in TradingMacroTrender()
-                               from tl in tm.TrendLinesTrendsAll
-                               orderby tl.TimeSpan.TotalMinutes descending
-                               select tl
-           ));
-        return () => ok()
-        .Take(1)
-        .Do(tl => SetBSfromTL(tl, isReverse()))
-        .Select(x => TradeDirections.Both)
-        .SingleOrDefault();
+        var ok = TLSImpl(100);
+        return () => ok();
       }
+    }
+    [TradeConditionSetCorridor]
+    public TradeConditionDelegateHide TLS2Ok {
+      get {
+        var ok = TLSImpl(3);
+        return () => ok();
+      }
+    }
+
+    static void setSelected(IEnumerable<TL> tls, TL tlSelected) => tls.ForEach(tl0 => tl0.IsSelected = tlSelected == tl0);
+
+    private TradeConditionDelegate TLSImpl(int skip = 0) {
+      var ok = ToFunc(() => (from tm in TradingMacroTrender()
+                             from x in tm.TrendLinesByDate.Select((tl, i) => new { tl, i })
+                             orderby x.tl.TimeSpan.TotalMinutes descending
+                             select new { x.tl, x.i, tm }
+         ));
+      return () => ok()
+      .Take(1)
+      .Do(x => SetBSfromTL(x.tl, isReverse()))
+      .Do(x => setSelected(x.tm.TrendLinesTrendsAll, x.tl))
+      .Select(x => TradeDirectionByBool(x.i <= skip))
+      .SingleOrDefault();
     }
 
     [TradeConditionSetCorridor]
@@ -157,6 +191,7 @@ namespace HedgeHog.Alice.Store {
                     select new { tls, tl }
                     )
                     .Do(x => SetBSfromTL(x.tl, isReverse()))//, x.tls, isReverse()))
+                    .Do(x => setSelected(x.tls, x.tl))
                     .Select(_ => TradeDirections.Both)
                     .DefaultIfEmpty()
                     .Single();
@@ -1047,21 +1082,17 @@ namespace HedgeHog.Alice.Store {
 
     #region After Tip
 
-    public TradeConditionDelegateHide PigTailOk {
+    public TradeConditionDelegate PigTailOk {
       get {
-        Func<TL, double[]> corr = tl => new[] { tl.PriceAvg2, tl.PriceAvg3 };
-        Func<double[], double[], bool> corrOk = (corr1, corr2) => corr1.All(p => p.Between(corr2));
-        Func<double[], double[], bool> corrsOk = (corr1, corr2) => corrOk(corr1, corr2) || corrOk(corr2, corr1);
-        return () => {
-          var tls = TrendLinesTrendsAll.OrderByDescending(tl => tl.Count).Skip(1).ToArray();
-          var ok = tls.Permutation().Select(c => corrsOk(corr(c.Item1), corr(c.Item2)))
-          .TakeWhile(b => b)
-          .Count() == tls.Length - 1;
-          var td = TradeDirectionByBool(ok);
-          if(!HaveTrades() && td.HasAny() && BuySellLevels.IfAnyCanTrade().Any() && BuySellLevels.Any(sr => sr.TradesCount < TradeCountStart))
-            BuySellLevels.ForEach(sr => sr.TradesCount = TradeCountStart);
-          return td;
-        };
+        Func<bool> ok = () => (
+            from tm in TradingMacroTrender().AsSingleable()
+            from tl in TradeTrendLines.AsSingleable()
+            let ed = tl.EndDate
+            let offset = tl.PriceAvg3.Abs(tl.PriceAvg2) * 0.1
+            from r in RatesArray.BackwardsIterator().TakeWhile(r0 => r0.StartDate > ed)
+            select r.PriceAvg.Between(tl.PriceAvg3 - offset, tl.PriceAvg2 + offset)
+            ).All(b => b);
+        return () => TradeDirectionByBool(ok());
       }
     }
 
@@ -2191,7 +2222,7 @@ namespace HedgeHog.Alice.Store {
     }
     public void TradeConditionsTrigger() {
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
-      if(IsAsleep || !IsTradingTime()) {
+      if(IsAsleep) {
         BuySellLevels.ForEach(sr => {
           sr.CanTrade = false;
           sr.InManual = false;

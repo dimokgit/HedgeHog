@@ -3639,6 +3639,7 @@ namespace HedgeHog.Alice.Store {
     private double TradeLevelByPA3(int takeCount) {
       return TrendLevelsSorted(tl => tl.PriceAvg3, (d1, d2) => d1 < d2, takeCount).Average();
     }
+    bool IsCrossFriendly => LevelBuyBy == TradeLevelBy.PriceAvg1Min;
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
       get {
@@ -3667,13 +3668,15 @@ namespace HedgeHog.Alice.Store {
           })},
 
             { TradeLevelBy.PriceCma,()=>level(tm=>tm.UseRates(GetLastRateCma).SelectMany(cma=>cma).DefaultIfEmpty(double.NaN).Single()) },
+
           {TradeLevelBy.PriceAvg1,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg1)},
+
           {TradeLevelBy.BlueAvg1,()=>level(tm=>tm.TLBlue.PriceAvg1)},
           {TradeLevelBy.GreenAvg1,()=>level(tm=>tm.TLGreen.PriceAvg1)},
           {TradeLevelBy.LimeAvg1,()=>level(tm=>tm.TLLime.PriceAvg1)},
 
-          {TradeLevelBy.PriceAvg1Max,()=> TradeTrendLines.Max(tl=>tl.PriceAvg1)},
-          {TradeLevelBy.PriceAvg1Min,()=> TradeTrendLines.Min(tl=>tl.PriceAvg1)},
+          {TradeLevelBy.PriceAvg1Max,()=>levelMax(TradeTrendsPriceMax(tl=>tl.PriceAvg1))},
+          {TradeLevelBy.PriceAvg1Min,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceAvg1))},
 
           {TradeLevelBy.Avg22,()=>levelMax(tm=>tm.TradeLevelByPA2(2)) },
           {TradeLevelBy.Avg23,()=>levelMin(tm=>tm.TradeLevelByPA3(2)) },
@@ -3698,7 +3701,7 @@ namespace HedgeHog.Alice.Store {
 
 
           {TradeLevelBy.PriceMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceAvg2))},
-          {TradeLevelBy.PriceMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceAvg2))},
+          {TradeLevelBy.PriceMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceAvg3))},
 
           {TradeLevelBy.TrendMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceMax.Single()))},
           {TradeLevelBy.TrendMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceMin.Single()))},

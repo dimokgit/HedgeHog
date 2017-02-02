@@ -106,7 +106,7 @@ namespace HedgeHog.Alice.Client {
       */
       Func<Lazy<IList<Rate>>, IList<Rate>> safeTLs = tls => tls.Value ?? new List<Rate>();
       var trends = safeTLs(tm.TrendLines);
-      var trendLines = tm.UseRates(rates => new {
+      var trendLines = new {
         dates = trends.Count > 1
         ? new DateTimeOffset[]{
           trends[0].StartDate2,
@@ -114,11 +114,11 @@ namespace HedgeHog.Alice.Client {
         : new DateTimeOffset[0],
         close1 = trends.ToArray(t => t.Trends.PriceAvg1.Round(digits)),
         close2 = trends.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
-        close3 = trends.ToArray(t => t.Trends.PriceAvg3.Round(digits))
+        close3 = trends.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
+        sel = TradingMacro.IsTrendsEmpty(trends).IsSelected
         //close21 = trends.ToArray(t => t.Trends.PriceAvg21.Round(digits)),
         //close31 = trends.ToArray(t => t.Trends.PriceAvg31.Round(digits))
-      })
-      .SingleOrDefault();
+      };
       var ratesLastStartDate2 = tm.RatesArray.Last().StartDate2;
 
       var trends2 = safeTLs(tm.TrendLines2);
@@ -131,6 +131,7 @@ namespace HedgeHog.Alice.Client {
         close1 = trends2.ToArray(t => t.Trends.PriceAvg1.Round(digits)),
         close2 = trends2.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends2.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
+        sel = TradingMacro.IsTrendsEmpty(trends2).IsSelected
       };
 
       var trends0 = safeTLs(tm.TrendLines0);
@@ -142,6 +143,7 @@ namespace HedgeHog.Alice.Client {
           trends0[1].StartDate2},
         close2 = trends0.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends0.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
+        sel = TradingMacro.IsTrendsEmpty(trends0).IsSelected
       };
 
       var trends1 = safeTLs(tm.TrendLines1);
@@ -153,6 +155,7 @@ namespace HedgeHog.Alice.Client {
           trends1[1].StartDate2},
         close2 = trends1.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends1.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
+        sel = TradingMacro.IsTrendsEmpty(trends1).IsSelected
       };
 
       var trends3 = safeTLs(tm.TrendLines3);
@@ -164,6 +167,7 @@ namespace HedgeHog.Alice.Client {
           trends3[1].StartDate2},
         close2 = trends3.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends3.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
+        sel = TradingMacro.IsTrendsEmpty(trends3).IsSelected
       };
 
       var waveLines = tm.WaveRangesWithTail

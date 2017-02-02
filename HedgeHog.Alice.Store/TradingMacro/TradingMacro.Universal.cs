@@ -293,7 +293,7 @@ namespace HedgeHog.Alice.Store {
         #region SuppRes Event Handlers
         Func<bool> isCrossActive = () => _buySellLevels.Any(sr => !sr.CanTrade) || BuyLevel.Rate.Abs(SellLevel.Rate) > InPoints(1);
         Func<SuppRes, bool> isCrossDisabled = sr =>
-          !isCrossActive() ||
+          //!isCrossActive() ||
           !IsTradingActive ||
           !IsPrimaryMacro ||
           (!sr.IsExitOnly && !sr.InManual && !CanOpenTradeByDirection(sr.IsBuy));

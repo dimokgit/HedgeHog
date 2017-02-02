@@ -33,6 +33,13 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+    public TradeOpenAction WrapOnTradeEdge {
+      get {
+        return trade => {
+          WrapTradeInCorridorEdge();
+        };
+      }
+    }
 
     public TradeOpenAction BlueExitOnTrade {
       get {
