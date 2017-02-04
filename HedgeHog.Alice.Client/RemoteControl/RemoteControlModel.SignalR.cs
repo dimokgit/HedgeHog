@@ -22,8 +22,8 @@ namespace HedgeHog.Alice.Client {
       #region map
       var doShowVolt = tm.VoltageFunction != VoltageFunction.None;
       var doShowVolt2 = tm.VoltageFunction2 != VoltageFunction.None;
-      var lastVolt = tm.GetLastVolt().Memoize();
-      var lastVolt2 = tm.GetLastVolt(tm.GetVoltage2).Memoize();
+      var lastVolt = tm.GetLastVolt().DefaultIfEmpty().Memoize();
+      var lastVolt2 = tm.GetLastVolt(tm.GetVoltage2).DefaultIfEmpty().Memoize();
       var lastCma = tm.UseRates(TradingMacro.GetLastRateCma).SelectMany(cma => cma).FirstOrDefault();
       var map = MonoidsCore.ToFunc((Rate)null, rate => new {
         d = rate.StartDate2,
@@ -35,7 +35,7 @@ namespace HedgeHog.Alice.Client {
         b = rate.BidLow.Round(digits)
       });
       #endregion
-      var exit = doShowVolt && lastVolt.IsEmpty() || doShowVolt2 && lastVolt2.IsEmpty();
+      var exit = false;// doShowVolt && lastVolt.IsEmpty() || doShowVolt2 && lastVolt2.IsEmpty();
       if(exit || tm.RatesArray.Count == 0 || tm.IsTrader && tm.BuyLevel == null)
         return new[] { new { rates = new int[0] } };
 

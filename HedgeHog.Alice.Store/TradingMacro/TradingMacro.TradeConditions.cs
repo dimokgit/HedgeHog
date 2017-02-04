@@ -261,8 +261,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    bool IsTLFresh(TL tl, double percentage = 1) {
+      return IsTLFresh(this, tl, percentage);
+    }
+    //
+    static bool IsTLFresh(TradingMacro tm, TL tl) {
+      return IsTLFresh(tm, tl, tm.WavesRsdPerc / 100.0);
+    }
     static bool IsTLFresh(TradingMacro tm, TL tl, double percentage = 1) {
-      var index = tm.RatesArray.Count - (tl.Count * percentage.Abs()).ToInt();
+      var index = tm.RatesArray.Count - (tl.Count * percentage.Abs()).ToInt() - 1;
       if(tl.IsEmpty || index >= tm.RatesArray.Count || index < 0)
         return false;
       var rateDate = tm.RatesArray[index].StartDate;
@@ -1418,15 +1425,20 @@ namespace HedgeHog.Alice.Store {
 
     #region WwwInfo
     int[] TLTimeAvg() {
-      if(TrendLinesTrendsAll.Any(tl => tl.IsEmpty))
+      var tls = TrendLinesByDate;
+      if(TrendLinesTrendsAll.Any(tl => tl.IsEmpty) || tls.TakeLast(1).Any(tl => !IsTLFresh(tl, 0.05)))
         return new int[0];
-      var tls = TrendLinesTrendsAll;
-      var timeRatio = TLsTimeAverage(tls) * tls.Length / RatesDuration;
-      var rangesSum = TrendRanges.Sum(tr => tr[0].Abs()) / 100.0;
+      return TLsTimeRatio(this);
+    }
+
+    private static int[] TLsTimeRatio(TradingMacro tm) {
+      var tls = tm.TrendLinesByDate;
+      var timeRatio = TLsTimeAverage(tls) * tls.Count / tm.RatesDuration;
+      var rangesSum = tm.TrendRanges.Sum(tr => tr[0].Abs()) / 100.0;
       return new[] { (timeRatio / rangesSum - 1).ToPercent() };
     }
 
-    private static double TLsTimeAverage(TL[] tls) {
+    private static double TLsTimeAverage(IList<TL> tls) {
       return tls.Select(tl => tl.TimeSpan.TotalMinutes).SquareMeanRoot();
     }
 
@@ -1443,7 +1455,7 @@ namespace HedgeHog.Alice.Store {
           //StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
           //BolngrAvg= InPips(_boilingerAvg,1),
           ProfitPip = CalculateTakeProfitInPips().Round(1),
-          TlsAngAvg = TLsTimeAverage(tls).With(ts => (ts * tls.Length / tm.RatesDuration).ToString("p0") + "," + ts.FromMinutes().ToString("h\\:mm")),
+          TlTimeAvg = TLsTimeRatio(tm).Select(tr=>tr.ToString("n0") + "%," + TLsTimeAverage(tls).FromMinutes().ToString("h\\:mm")),
           //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Red__Edge = tm.TrendLinesRedTrends.EdgeDiff.SingleOrDefault().Round(1),
@@ -1486,11 +1498,8 @@ namespace HedgeHog.Alice.Store {
     }
     TradeDirections TradeDirectionByAngleCondition(Func<TradingMacro, TL> tls, double tradingAngleRange) {
       return TrenderTrenLine(tls)
-        .Select(tl =>
-        IsTresholdAbsOk(tl.Angle, tradingAngleRange)
-        ? TradeDirections.Both
-        : TradeDirections.Both
-        ).First();
+        .Select(tl => TradeDirectionByBool(IsTresholdAbsOk(tl.Angle, tradingAngleRange)))
+        .First();
     }
 
     #region Angles
