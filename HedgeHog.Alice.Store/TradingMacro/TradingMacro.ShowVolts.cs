@@ -487,6 +487,8 @@ namespace HedgeHog.Alice.Store {
           return ScanRatesLengthByStDevReg;
         case RatesLengthFunction.MinHeight:
           return ScanRatesLengthByMinHeight;
+        case RatesLengthFunction.MinBBSD:
+          return ScanRatesLengthByBBSD;
         case RatesLengthFunction.M1Wave:
           return ScanRatesLengthByM1Wave;
         case RatesLengthFunction.M1WaveAvg:

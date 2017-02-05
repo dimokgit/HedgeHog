@@ -934,19 +934,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Reverse Strategy")]
-    [Category(categoryXXX)]
-    public bool ReverseStrategy_ {
-      get { return ReverseStrategy; }
-      set {
-        if(ReverseStrategy == value)
-          return;
-        ReverseStrategy = value;
-        OnPropertyChanged(Metadata.TradingMacroMetadata.ReverseStrategy_);
-      }
-    }
-
-
     [DisplayName("Adjust Exit By Time")]
     [Category(categoryActiveYesNo)]
     [Description("Adjust exit level according to price movements since Trade started.")]

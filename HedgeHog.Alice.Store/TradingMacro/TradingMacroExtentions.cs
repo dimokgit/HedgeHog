@@ -3585,11 +3585,23 @@ namespace HedgeHog.Alice.Store {
     double _boilingerAvg=double.NaN;
     void CalcBoilingerBand() {
       _boilingerBanderAsyncAction.Push(() =>
-      _boilingerStDev = Lazy.Create(() => UseRates(rate =>
-        rate.Select(r => r.PriceCMALast.Abs(r.AskHigh).Max(r.PriceCMALast.Abs(r.BidLow)))
-        .Where(Lib.IsNotNaN)
-        .StandardDeviation(out _boilingerAvg) * BbRatio + _boilingerAvg
-      )));
+      _boilingerStDev = Lazy.Create(() => BoilingerBandCacl(out _boilingerAvg)));
+    }
+
+    private double[] BoilingerBandCacl() {
+      double _boilingerAvg;
+      return BoilingerBandCacl(out _boilingerAvg);
+    }
+    private double[] BoilingerBandCacl(out double _boilingerAvg) {
+      var avg = double.NaN;
+      try {
+        return UseRates(rate =>
+                rate.Select(r => r.PriceCMALast.Abs(r.AskHigh).Max(r.PriceCMALast.Abs(r.BidLow)))
+                .Where(Lib.IsNotNaN)
+                .StandardDeviation(out avg) * BbRatio + avg);
+      } finally {
+        _boilingerAvg = avg;
+      }
     }
 
     public static IEnumerable<double> GetLastRateCma(List<Rate> rate) {

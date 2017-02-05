@@ -113,6 +113,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    double RiskRewardRatio() {
+      return CalculateTakeProfit() / BuyLevel.Rate.Abs(SellLevel.Rate);
+    }
+    public TradeConditionDelegate RsRwOk {
+      get {
+        return () => TradeDirectionByTreshold(RiskRewardRatio() * 100, RiskRewardThresh);
+      }
+    }
     #endregion
 
     #region TLs
@@ -129,7 +137,9 @@ namespace HedgeHog.Alice.Store {
       .SingleOrDefault();
       }
     }
-    bool isReverse() => (LevelBuyBy + "").EndsWith("Min") && (LevelSellBy + "").EndsWith("Max") ? true : false;
+    static string[] _minTradeLevelSuffix =new[] {"Min","Down" };
+    static string[] _maxTradeLevelSuffix =new[] {"Max","Up" };
+    bool isReverse => _minTradeLevelSuffix.Any(ml => (LevelBuyBy + "").EndsWith(ml)) && _maxTradeLevelSuffix.Any(ml => (LevelSellBy + "").EndsWith(ml));
     [TradeConditionSetCorridor]
     public TradeConditionDelegate TLSOk {
       get {
@@ -155,7 +165,7 @@ namespace HedgeHog.Alice.Store {
          ));
       return () => ok()
       .Take(1)
-      .Do(x => SetBSfromTL(x.tl, isReverse()))
+      .Do(x => SetBSfromTL(x.tl, isReverse))
       .Do(x => setSelected(x.tm.TrendLinesTrendsAll, x.tl))
       .Select(x => TradeDirectionByBool(x.i <= skip))
       .SingleOrDefault();
@@ -190,7 +200,7 @@ namespace HedgeHog.Alice.Store {
                     from tl in tls1(tls)
                     select new { tls, tl }
                     )
-                    .Do(x => SetBSfromTL(x.tl, isReverse()))//, x.tls, isReverse()))
+                    .Do(x => SetBSfromTL(x.tl, isReverse))//, x.tls, isReverse()))
                     .Do(x => setSelected(x.tls, x.tl))
                     .Select(_ => TradeDirections.Both)
                     .DefaultIfEmpty()
@@ -1450,11 +1460,12 @@ namespace HedgeHog.Alice.Store {
         var tlText = ToFunc((TL tl) => new { l = "Ang" + tl.Color, t = $"{tl.Angle.Abs().Round()},{tl.TimeSpan.ToString("h\\:mm")}" });
         var angles = tls.Select(tlText).ToArray();
         return new {
-          StDevHght = tm.StDevByHeightInPips.Round(1),
+          StDvHght = tm.StDevByHeightInPips.Round(1),
           StDvPrice = tm.StDevByPriceAvgInPips.Round(1),
           //StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
           //BolngrAvg= InPips(_boilingerAvg,1),
           ProfitPip = CalculateTakeProfitInPips().Round(1),
+          RiskRewrd = RiskRewardRatio().ToPercent()+"%",
           TlTimeAvg = TLsTimeRatio(tm).Select(tr=>tr.ToString("n0") + "%," + TLsTimeAverage(tls).FromMinutes().ToString("h\\:mm")),
           //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
@@ -2359,6 +2370,20 @@ namespace HedgeHog.Alice.Store {
 
       set {
         _wavesRsdPec = value;
+      }
+    }
+    int _riskRewardThresh=100;
+    [WwwSetting(wwwSettingsTradingParams)]
+    [Category(categoryActiveFuncs)]
+    public int RiskRewardThresh {
+      get {
+        return _riskRewardThresh;
+      }
+
+      set {
+        if(_riskRewardThresh == value)return;
+        _riskRewardThresh = value;
+        OnPropertyChanged(nameof(RiskRewardThresh));
       }
     }
 

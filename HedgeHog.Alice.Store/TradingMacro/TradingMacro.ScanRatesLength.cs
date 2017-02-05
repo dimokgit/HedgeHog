@@ -8,7 +8,7 @@ using TL = HedgeHog.Bars.Rate.TrendLevels;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    static bool IsTresholdRangeOk(double value,params double[] treshold) {
+    static bool IsTresholdRangeOk(double value, params double[] treshold) {
       var t = treshold.Where(Lib.IsNotNaN).ToArray();
       return t.Length == 1 || treshold[0] == treshold[1]
         ? IsTresholdAbsOk(value, t[0])
@@ -267,6 +267,12 @@ namespace HedgeHog.Alice.Store {
       BarsCountByMinHeight(InPoints(RatesHeight)).ForEach(count => BarsCountCalc = count);
       IsRatesLengthStable = true;
     }
+    void ScanRatesLengthByBBSD() {
+      var bbsd = InPoints(RatesHeightMin);
+      BoilingerBandCacl()
+        .Where(b => b.Ratio(bbsd) > 1.01)
+        .ForEach(b => BarsCountCalc = (BarsCountCalc / Math.Sqrt(b / bbsd)).ToInt().Max(BarsCount));
+    }
     void ScanRatesLengthByStDevReg() {
       UseRatesInternal(ri => BarsCountByStDevByReg(ri, 0, InPoints(RatesHeightMin)))
         .Concat()
@@ -290,9 +296,9 @@ namespace HedgeHog.Alice.Store {
       var digits = this.Digits();
       Func<int, double> csd_ = i => prices.GetRange(0, i).StDevByRegressoin().Round(digits);
       var csd = csd_.Memoize();
-      var counts = Enumerable.Range(countStart,rates.Count- countStart)
+      var counts = Enumerable.Range(countStart, rates.Count - countStart)
         .ToArray()
-        .FuzzyIndex(stDevMin, (sd,p1, p2) => sd.Between(csd(p1),csd(p2)));
+        .FuzzyIndex(stDevMin, (sd, p1, p2) => sd.Between(csd(p1), csd(p2)));
       return counts.DefaultIfEmpty(rates.Count).ToArray();
     }
     private double RatesHeightByM1TimeFrame(TimeSpan timeFrame) {

@@ -692,15 +692,16 @@
     function getWwwInfo(chartNum) {
       var args =[pair, chartNum];
       args.noNote = true;
+      var foo = getWwwInfo.bind(null, chartNum);
       serverCall("getWwwInfo", args,
         function (info) {
           wwwInfoRaw(info);
           if (!stopWwwInfo)
-            setTimeout(getWwwInfo.bind(null, chartNum), 1000);
+            setTimeout(foo, 1000);
         },
-        function () {
-          showErrorPerm("getWwwInfo: " + error);
-          setTimeout(getWwwInfo.bind(null, chartNum), 5000);
+        function (error) {
+          showWarning("getWwwInfo: " + error);
+          setTimeout(foo, 5000);
         });
     }
     var wwwInfoRaw = ko.observable();

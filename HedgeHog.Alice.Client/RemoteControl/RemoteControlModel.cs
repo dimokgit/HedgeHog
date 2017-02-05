@@ -382,7 +382,7 @@ namespace HedgeHog.Alice.Client {
         tm.CorridorPeriodsLength, tm.CorridorRatioForRange, tm.CorridorRatioForBreakout, tm.RangeRatioForTradeLimit,
         tm.TradeByAngle, tm.ProfitToLossExitRatio, tm.PowerRowOffset, tm.RangeRatioForTradeStop,
         tm.ReversePower, tm.CorrelationTreshold, tm.CloseOnProfitOnly, tm.CloseOnOpen, tm.StreachTradingDistance,
-        tm.CloseAllOnProfit, tm.ReverseStrategy, tm.TradeAndAngleSynced, tm.TradingAngleRange, tm.CloseByMomentum, tm.TradeByRateDirection,
+        tm.CloseAllOnProfit, tm.TradeAndAngleSynced, tm.TradingAngleRange, tm.CloseByMomentum, tm.TradeByRateDirection,
         tm.GannAngles, tm.IsGannAnglesManual, tm.SpreadShortToLongTreshold,
         tm.SuppResLevelsCount, tm.DoStreatchRates, tm.IsSuppResManual, tm.TradeOnCrossOnly, tm.TakeProfitFunctionInt,
         tm.DoAdjustTimeframeByAllowedLot, tm.IsColdOnTrades, tm.CorridorCrossesCountMinimum, tm.StDevToSpreadRatio,

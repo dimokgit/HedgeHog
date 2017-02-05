@@ -60,7 +60,8 @@ namespace HedgeHog.Alice.Store {
     M1WaveAvg2,
     M1WaveAvg3,
     MinHeight,
-    StDevMin
+    StDevMin,
+    MinBBSD
   }
   public enum ScanCorridorFunction {
     StDevSplits = 46,
