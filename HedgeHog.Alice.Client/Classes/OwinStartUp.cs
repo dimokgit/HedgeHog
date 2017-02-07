@@ -747,16 +747,20 @@ namespace HedgeHog.Alice.Client {
       list.Add(row("BalanceOrg", am.OriginalBalance.ToString("c0")));
       list.Add(row("Balance", am.Balance.ToString("c0")));
       list.Add(row("Equity", am.Equity.ToString("c0")));
-      UseTradingMacro(pair, tm => {
+      var more = UseTraderMacro(pair, tm => {
         var ht = tm.HaveTrades();
-        list.Add(row("CurrentGross", am.CurrentGross.Round(2).ToString("c0") +
+        var list2 = new[] { row("", 0) }.Take(0).ToList();
+        list2.Add(row("CurrentGross", am.CurrentGross.AutoRound2("$", 2) +
           (ht ? "/" + (am.ProfitPercent).ToString("p1") : "")
           + "/" + (am.OriginalProfit).ToString("p1")));
-        list.Add(row("PipAmount", tm.PipAmount.AutoRound2(2).ToString("c") + "/" + tm.PipAmountPercent.ToString("p2")));
-        list.Add(row("PipsToMC", (!ht ? tm.PipsToPMCByLot : am.PipsToMC).ToString("n0")));
-        list.Add(row("LotSize", (tm.LotSize / 1000).ToString("n0") + "K/" + tm.LotSizePercent.ToString("p0")));
-      });
-      return list.ToArray();
+        if(tm.LastTradeLoss != 0)
+          list2.Add(row("Last Loss", tm.LastTradeLoss.AutoRound2("$", 2)));
+        list2.Add(row("PipAmount", tm.PipAmount.AutoRound2("$", 2) + "/" + tm.PipAmountPercent.ToString("p2")));
+        list2.Add(row("PipsToMC", (!ht ? tm.PipsToPMCByLot : am.PipsToMC).ToString("n0")));
+        list2.Add(row("LotSize", (tm.LotSize / 1000.0).Floor() + "K/" + tm.LotSizePercent.ToString("p0")));
+        return list2;
+      }).Concat();
+      return list.Concat(more).ToArray();
     }
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
@@ -824,6 +828,9 @@ namespace HedgeHog.Alice.Client {
     void UseTradingMacro(string pair, Action<TradingMacro> action) {
       UseTradingMacro(pair, 0, action);
     }
+    void UseTraderMacro(string pair, Action<TradingMacro> action) {
+      UseTradingMacro(pair, tm => tm.IsTrader, action);
+    }
     void UseTradingMacro(string pair, Func<TradingMacro, bool> where, Action<TradingMacro> action) {
       GetTradingMacros(pair)
         .Where(where)
@@ -849,6 +856,9 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
       }
+    }
+    T[] UseTraderMacro<T>(string pair, Func<TradingMacro, T> func) {
+      return UseTradingMacro2(pair, tm => tm.IsTrader, func);
     }
     T[] UseTradingMacro2<T>(string pair, Func<TradingMacro, bool> where, Func<TradingMacro, T> func) {
       try {

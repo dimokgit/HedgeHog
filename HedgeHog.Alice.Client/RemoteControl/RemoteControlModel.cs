@@ -1271,8 +1271,8 @@ namespace HedgeHog.Alice.Client {
         var pair = trade.Pair;
         var tm = GetTradingMacros(pair).First();
         tm.LastTrade = trade;
-        var totalGross = trade.NetPL;
-        tm.LastTradeLossInPips = tm.InPips(totalGross).Min(0);
+        var totalGross = trade.NetPL2;
+        tm.LastTradeLoss = totalGross.Min(0);
         tm.RunningBalance += totalGross;
         tm.CurrentLoss = tm.CurrentLoss + totalGross;
         OnZeroPositiveLoss(tm);

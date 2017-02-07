@@ -18,6 +18,7 @@ namespace HedgeHog.Alice {
     PpmM1,
     TFH,
     TLsTimeAvg,
+    RiskReward,
     //AO,
     MPH,
     Equinox,

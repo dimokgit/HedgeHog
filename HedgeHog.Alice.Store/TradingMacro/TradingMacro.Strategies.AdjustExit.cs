@@ -104,6 +104,7 @@ namespace HedgeHog.Alice.Store {
             var takeProfitPips = InPips(calculateTakeProfit);
             var currentGrossOthers = _tradingStatistics.TradingMacros.Where(tm => tm != this).Sum(tm => tm.CurrentGross);
             var currentGrossOthersInPips = TradesManager.MoneyAndLotToPips(currentGrossOthers, CurrentGrossLot, Pair);
+            var lastLoss = TradesManager.MoneyAndLotToPips(LastTradeLoss.Abs(), CurrentGrossLot, Pair);
             var ellasic = TakeProfitFunction == TradingMacroTakeProfitFunction.Pips 
             ? 0 
             : RatesArray.CopyLast(EllasticRange).Average(_priceAvg).Abs(RateLast.PriceAvg);
@@ -115,7 +116,7 @@ namespace HedgeHog.Alice.Store {
             var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy - PointSize / 10);
             var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell + PointSize / 10);
             var takeProfitLocal = TakeProfitFunction.IfNotDirect(takeProfitPips,
-              tp => (tp + (UseLastLoss ? LastTradeLossInPips.Abs() : 0)).Max(takeBackInPips).Min(ratesHeightInPips));
+              tp => (tp + (UseLastLoss ? lastLoss : 0)).Max(takeBackInPips).Min(ratesHeightInPips));
             Func<bool, double> levelByNetOpenAndTakeProfit = isBuy => isBuy
               ? Trades.IsBuy(isBuy).NetOpen() + InPoints(takeProfitLocal)
               : Trades.IsBuy(isBuy).NetOpen() - InPoints(takeProfitLocal);

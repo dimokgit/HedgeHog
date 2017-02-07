@@ -1559,7 +1559,7 @@ namespace HedgeHog.Alice.Store {
         ResetTakeProfitManual();
         StDevByHeight = double.NaN;
         StDevByPriceAvg = double.NaN;
-        LastTradeLossInPips = 0;
+        LastTradeLoss = 0;
         LoadRatesStartDate2 = DateTimeOffset.MinValue;
         BarsCountLastDate = DateTime.MinValue;
         TradesManager.ResetClosedTrades(Pair);
@@ -2813,15 +2813,15 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region LastTradeLossInPips
-    private double _LastTradeLossInPips;
+    private double _LastTradeLoss;
     [Category(categoryTrading)]
     [IsNotStrategy]
-    public double LastTradeLossInPips {
-      get { return _LastTradeLossInPips; }
+    public double LastTradeLoss {
+      get { return _LastTradeLoss; }
       set {
-        if(_LastTradeLossInPips != value) {
-          _LastTradeLossInPips = value;
-          OnPropertyChanged("LastTradeLossInPips");
+        if(_LastTradeLoss != value) {
+          _LastTradeLoss = value;
+          OnPropertyChanged(nameof(LastTradeLoss));
         }
       }
     }
@@ -3581,24 +3581,26 @@ namespace HedgeHog.Alice.Store {
     }
     BolingerBanderAsyncBuffer _boilingerBanderAsyncAction = new BolingerBanderAsyncBuffer();
 
-    Lazy<double[]> _boilingerStDev = Lazy.Create(()=> new double[0]);
+    public IEnumerable<double> BBWithRatio => _boilingerStDev.Value.Select(t => t.Item1 * BbRatio + t.Item2);
+    Lazy<Tuple<double,double>[]> _boilingerStDev = Lazy.Create(()=> new Tuple<double,double>[0]);
     double _boilingerAvg=double.NaN;
     void CalcBoilingerBand() {
       _boilingerBanderAsyncAction.Push(() =>
       _boilingerStDev = Lazy.Create(() => BoilingerBandCacl(out _boilingerAvg)));
     }
 
-    private double[] BoilingerBandCacl() {
+    private Tuple<double, double>[] BoilingerBandCacl() {
       double _boilingerAvg;
       return BoilingerBandCacl(out _boilingerAvg);
     }
-    private double[] BoilingerBandCacl(out double _boilingerAvg) {
+    private Tuple<double, double>[] BoilingerBandCacl(out double _boilingerAvg) {
       var avg = double.NaN;
       try {
         return UseRates(rate =>
+        Tuple.Create(
                 rate.Select(r => r.PriceCMALast.Abs(r.AskHigh).Max(r.PriceCMALast.Abs(r.BidLow)))
                 .Where(Lib.IsNotNaN)
-                .StandardDeviation(out avg) * BbRatio + avg);
+                .StandardDeviation(out avg), avg));
       } finally {
         _boilingerAvg = avg;
       }
@@ -3673,10 +3675,10 @@ namespace HedgeHog.Alice.Store {
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           {
           {TradeLevelBy.BoilingerUp,()=>level(tm=> {
-            return _boilingerStDev.Value.SelectMany(bb=> GetLastRateCma(RatesArray).Select(cma=>cma+bb).DefaultIfEmpty(double.NaN)).Single();
+            return BBWithRatio.SelectMany(bb=> GetLastRateCma(RatesArray).Select(cma=>cma+bb).DefaultIfEmpty(double.NaN)).Single();
           })},
           {TradeLevelBy.BoilingerDown,()=>level(tm=> {
-            return _boilingerStDev.Value.SelectMany(bb=> GetLastRateCma(RatesArray).Select(cma=>cma-bb).DefaultIfEmpty(double.NaN)).Single();
+            return BBWithRatio.SelectMany(bb=> GetLastRateCma(RatesArray).Select(cma=>cma-bb).DefaultIfEmpty(double.NaN)).Single();
           })},
 
             { TradeLevelBy.PriceCma,()=>level(tm=>tm.UseRates(GetLastRateCma).SelectMany(cma=>cma).DefaultIfEmpty(double.NaN).Single()) },
@@ -3750,7 +3752,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.StDev:
           return useTrenderComm(tm => tm.StDevByHeight * xRatio);
         case TradingMacroTakeProfitFunction.BBand:
-          return useTrenderComm(tm => tm._boilingerStDev.Value.Single() * xRatio);
+          return useTrenderComm(tm => tm.BBWithRatio.SingleOrDefault() * xRatio);
         case TradingMacroTakeProfitFunction.StDevP:
           return useTrenderComm(tm => tm.StDevByPriceAvg * xRatio);
         case TradingMacroTakeProfitFunction.M1StDev:

@@ -558,7 +558,7 @@ namespace HedgeHog {
       Sample
     }
 
-    public static double AverageWeighted<T>(this IList<T> values, Func<T,double> avg,Func<T,double> weight) {
+    public static double AverageWeighted<T>(this IList<T> values, Func<T, double> avg, Func<T, double> weight) {
       return values.Select(v => avg(v) * weight(v)).Sum() / values.Sum(weight);
     }
     public static double MeanAverage(this IList<double> values, int iterations = 3) {
@@ -582,7 +582,7 @@ namespace HedgeHog {
     }
     public static double RootMeanPower(this IEnumerable<double> source, double power = 2) {
       var avg = source.Select(d => Math.Pow(d.Abs(), 1 / power) * d.Sign()).Average();
-      return Math.Pow(avg.Abs(), power)*avg.Sign();
+      return Math.Pow(avg.Abs(), power) * avg.Sign();
     }
     public static double RootMeanPowerByPosition(this IEnumerable<double> source, double power) {
       var avg = source.Select(d => Math.Pow(d, 1 / power)).ToList().AverageByPosition();
@@ -857,6 +857,12 @@ namespace HedgeHog {
       var ret = (double)(whole + Math.Round((decimal)part, Math.Log10(part).Abs().Ceiling() + digits));
       return ret;
     }
+    public static string AutoRound2(this double d, string prefix, int digits, string suffix = "") {
+      return prefix + d.AutoRound2(digits, suffix);
+    }
+    public static string AutoRound2(this double d, int digits, string suffix) {
+      return d.AutoRound2(digits) + suffix;
+    }
     public static double AutoRound2(this double d, int digits) {
       var digitsReal = Math.Log10(d.Abs()).Floor() + 1;
       return d.Round((digits - digitsReal).Max(0));
@@ -864,7 +870,7 @@ namespace HedgeHog {
     public static double? RoundBySample(this double v, double sample) {
       return Math.Round(v / sample, 1) * sample;
     }
-    public static double? RoundBySqrt(this double v,int decimals) {
+    public static double? RoundBySqrt(this double v, int decimals) {
       return Math.Round(Math.Sqrt(v), decimals);
     }
 

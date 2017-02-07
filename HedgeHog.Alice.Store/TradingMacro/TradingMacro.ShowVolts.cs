@@ -62,6 +62,8 @@ namespace HedgeHog.Alice.Store {
           return () => ShowVoltsByPPMB(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLsTimeAvg:
           return () => ShowVoltsByTLsTimeAvg(getVolts, setVolts);
+        case HedgeHog.Alice.VoltageFunction.RiskReward:
+          return () => ShowVoltsByRiskReward(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLDur:
           return () => ShowVoltsByTLDuration(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLDur2:
@@ -164,7 +166,7 @@ namespace HedgeHog.Alice.Store {
       var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
       if(!useCalc)
         return GetLastVolt().Take(1).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault();
-      return _boilingerStDev.Value?.Select(v => ShowVolts(InPips(_boilingerAvg), 2, getVolt, setVolt)).SingleOrDefault();
+      return _boilingerStDev.Value?.Select(v => ShowVolts(v.Item1.Div(v.Item2).ToPercent(), 2, getVolt, setVolt)).SingleOrDefault();
     }
 
     CorridorStatistics ShowVoltsByUDB(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
@@ -255,7 +257,12 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByTLsTimeAvg(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       return IsRatesLengthStableGlobal()
-        ? TLTimeAvg().Select(v=> ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault()
+        ? TLTimeAvg().Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault()
+        : null;
+    }
+    CorridorStatistics ShowVoltsByRiskReward(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+      return IsRatesLengthStableGlobal()
+        ? RiskRewardRatio().YieldIf(Lib.IsNotNaN).Select(v => ShowVolts(v.ToPercent(), 2, getVolt, setVolt)).SingleOrDefault()
         : null;
     }
     CorridorStatistics ShowVoltsByTLDuration(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
