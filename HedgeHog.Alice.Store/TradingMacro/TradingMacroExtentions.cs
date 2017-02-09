@@ -1942,7 +1942,7 @@ namespace HedgeHog.Alice.Store {
           RemoveSuppRes(SuppRes.Where(sr => sr.IsSupport == isSupport).Last());
           raiseChart = true;
         }
-        while(SuppRes.Where(sr => sr.IsSupport == isSupport).Count() < SuppResLevelsCount) {
+        while(RatesArray.Any() && SuppRes.Count(sr => sr.IsSupport == isSupport) < SuppResLevelsCount) {
           AddSuppRes(RatesArray.Average(r => r.PriceAvg), isSupport);
           raiseChart = true;
         }

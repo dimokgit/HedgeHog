@@ -225,8 +225,8 @@ namespace Order2GoAddIn {
       },
       null, TimeSpan.Zero, silenceInterval);
     }
-    public bool LogOn(string user, string password, bool isDemo) {
-      return LogOn(user, password, "", isDemo);
+    public bool LogOn(string user,string accountSubId, string password, bool isDemo) {
+      return LogOn(user,accountSubId, password, "", isDemo);
     }
     public bool ReLogin() {
       Logout();
@@ -235,14 +235,15 @@ namespace Order2GoAddIn {
     object loginLocker = new object();
     public bool LogOn() {
       lock (loginLocker) {
-        return LogOn(user, password, URL, isDemo);
+        return LogOn(user,accountSubId, password, URL, isDemo);
       }
     }
-    public bool LogOn(string user, string password, string url, bool isDemo) {
+    public bool LogOn(string user,string accountSubId, string password, string url, bool isDemo) {
       if (!IsLoggedIn || IsInVirtualTrading) {
         this.user = user.Trim();
         this.password = password;
         this.isDemo = isDemo;
+        this.accountSubId = accountSubId;
         this.URL = url + "" != "" ? url : DefaultUrl;
         Logout();
         try {
@@ -315,6 +316,8 @@ namespace Order2GoAddIn {
         //RaisePropertyChanged(SessionStatusPropertyName, oldValue, value, true);
       }
     }
+
+    public string accountSubId { get; private set; }
   }
   public class LoggedInEventArgs : EventArgs {
     public bool IsInVirtualTrading { get; set; }

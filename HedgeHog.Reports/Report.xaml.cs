@@ -99,7 +99,7 @@ namespace HedgeHog.Reports {
       var password = "1234";
       var isDemo = true;
       var logOff = false;
-      logOff = !fw.IsLoggedIn && fw.CoreFX.LogOn(accountId, password, isDemo);
+      logOff = !fw.IsLoggedIn && fw.CoreFX.LogOn(accountId,"", password, isDemo);
       if (fw.IsLoggedIn) {
         try {// Load Report
           var trades = fw.GetTradesFromReport(DateTime.Now.AddMonths(-1), DateTime.Now.AddDays(1).Date);

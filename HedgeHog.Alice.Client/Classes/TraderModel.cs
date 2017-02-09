@@ -611,7 +611,7 @@ namespace HedgeHog.Alice.Client {
     }
     void Login(object tradingAccount) {
       var ta = tradingAccount as TradingAccount;
-      LoginAsync(ta.AccountId, ta.Password, ta.IsDemo);
+      LoginAsync(ta.AccountId, ta.AccountSubId, ta.Password, ta.IsDemo);
     }
 
     #endregion
@@ -897,7 +897,7 @@ namespace HedgeHog.Alice.Client {
       try {
         string account, password;
         FXCM.Lib.GetNewAccount(out account, out password);
-        if(Login(account, password, true)) {
+        if(Login(account,"", password, true)) {
           li.Account = account;
           li.Password = password;
           li.IsDemo = true;
@@ -1116,11 +1116,11 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void AccountLogin(LoginInfo li) {
-      LoginAsync(li.Account, li.Password, li.IsDemo);
+      LoginAsync(li.Account,"", li.Password, li.IsDemo);
     }
 
-    private void LoginAsync(string account, string password, bool isDemo) {
-      new Action(() => Login(account, password, isDemo)).ScheduleOnUI();
+    private void LoginAsync(string account, string accountSubId, string password, bool isDemo) {
+      new Action(() => Login(account,accountSubId, password, isDemo)).ScheduleOnUI();
     }
 
     #endregion
@@ -1463,13 +1463,13 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region FXCM
-    bool Login(string tradingAccount, string tradingPassword, bool tradingDemo) {
+    bool Login(string tradingAccount,string accountSubId, string tradingPassword, bool tradingDemo) {
       try {
         if(CoreFX.IsLoggedIn)
           CoreFX.Logout();
         IsInLogin = true;
         CoreFX.IsInVirtualTrading = IsInVirtualTrading;
-        if(CoreFX.LogOn(tradingAccount, tradingPassword, tradingDemo)) {
+        if(CoreFX.LogOn(tradingAccount,accountSubId, tradingPassword, tradingDemo)) {
           RaiseSlaveLoginRequestEvent();
           OnInvokeSyncronize(TradesManager.GetAccount());
           return true;

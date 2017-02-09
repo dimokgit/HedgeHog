@@ -124,6 +124,9 @@ namespace HedgeHog.Alice.Store {
     partial void OnAccountIdChanging(global::System.String value);
     partial void OnAccountIdChanged();
 
+    [DataMemberAttribute()]
+    public string AccountSubId { get; set; }
+
     /// <summary>
     /// No Metadata Documentation available.
     /// </summary>

@@ -394,11 +394,8 @@ namespace Order2GoAddIn {
     #region Properties
     public bool IsInTest { get; set; }
     private string _pair = "";
-    public string PriceFormat {
-      get { return "{0:0." + "".PadRight(Digits(), '0') + "}"; }
-    }
     public event EventHandler PairChanged;
-    public string Pair {
+    public string Pair_ {
       get { return _pair; }
       set {
         if (_pair == value) return;
@@ -460,7 +457,6 @@ namespace Order2GoAddIn {
       if (coreFX == null) throw new NullReferenceException("coreFx parameter can npt be null.");
       this.CoreFX = coreFX;
       IsLoggedIn = coreFX.IsLoggedIn;
-      if (pair != null) this.Pair = pair;
       this.CoreFX.LoggedIn += coreFX_LoggedInEvent;
       this.CoreFX.LoggedOff += coreFX_LoggedOffEvent;
       this.CoreFX.LoggingOff += CoreFX_LoggingOff;
@@ -782,7 +778,8 @@ namespace Order2GoAddIn {
     public Account GetAccount_Slow() {
       Stopwatch sw = Stopwatch.StartNew();
       try {
-        var row = GetRows(TABLE_ACCOUNTS).First();
+        var id = CoreFX.accountSubId;
+        var row = GetRows(TABLE_ACCOUNTS).First(a => string.IsNullOrEmpty(id) || (a.CellValue(FIELD_ACCOUNTID) + "").EndsWith(id));
         //Debug.WriteLine("GetAccount1:{0} ms", sw.Elapsed.TotalMilliseconds);
         var trades = new Trade[] { };
         var account = new Account() {
@@ -873,10 +870,6 @@ namespace Order2GoAddIn {
                       select Math.Abs(t0.Open - t1.Open)).Max(d => d);
       return distance;
     }
-    public int CanTrade2(bool buy, double minDelta, int totalLots, bool unisex) {
-      double price = GetOffer(buy);
-      return CanTrade(GetTrades(), buy, minDelta, totalLots, unisex);
-    }
     public int CanTrade(Trade[] otherTrades, bool buy, double minDelta, int totalLots, bool unisex) {
       var minLoss = (from t in otherTrades
                      where (unisex || t.Buy == buy)
@@ -885,26 +878,6 @@ namespace Order2GoAddIn {
       var hasProfitTrades = otherTrades.Where(t => t.Buy == buy && t.PL > 0).Count() > 0;
       var tradeInterval = (otherTrades.Select(t => t.Time).DefaultIfEmpty().Max() - ServerTime).Duration();
       return minLoss.Between(-minDelta, 1) || hasProfitTrades || tradeInterval.TotalSeconds < 10 ? 0 : totalLots;
-    }
-    public double GetDollarsPerHour() {
-      var ret = from t in GetRows(TABLE_CLOSED)
-                where t.CellValue(FIELD_INSTRUMENT) + "" == Pair
-                orderby t.CellValue(FIELD_CLOSETIME)
-                select t;
-      if (ret.Count() < 2) return 0;
-      double dollars = ret.Sum(r => (double)r.CellValue(FIELD_GROSSPL));
-      DateTime timeFirst = (DateTime)ret.First().CellValue(FIELD_CLOSETIME);
-      DateTime timeLast = (DateTime)ret.Last().CellValue(FIELD_CLOSETIME);
-      return dollars / timeLast.Subtract(timeFirst).TotalSeconds * 60 * 60;
-    }
-    public double GetAverageProfit(bool buy) {
-      var ret = from t in GetRows(TABLE_CLOSED)
-                where t.CellValue(FIELD_INSTRUMENT) + "" == Pair &&
-                IsBuy(t.CellValue("BS")) == buy &&
-                (double)t.CellValue(FIELD_PL) > 0
-                select t;
-      if (ret.Count() < 1) return 0;
-      return ret.Average(r => (double)r.CellValue(FIELD_PL));
     }
 
     #endregion
@@ -961,12 +934,6 @@ namespace Order2GoAddIn {
     #endregion
 
     #region GetSummary
-    public Summary GetSummary() {
-      var ret = GetSummary(Pair);
-      ret.PriceCurrent = GetPrice();
-      ret.PointSize = GetPipSize(Pair);
-      return ret;
-    }
     public Summary[] GetSummaries(Trade[] trades) {
       try {
         var rowsSumm = GetRows(TABLE_SUMMARY);
@@ -1252,11 +1219,6 @@ namespace Order2GoAddIn {
       return order.Status != "S" && (IsFIFO(order.Pair) ? order.IsNetOrder || order.OCOBulkID > 0 : _stopLimitOrderTypes.Contains(order.Type));
     }
     bool IsEntryOrderFilter(Order order) { return order.OCOBulkID == 0 && string.IsNullOrWhiteSpace(order.PrimaryOrderID) && !order.IsNetOrder; }
-    public double GetOffer(bool buy) {
-      if (!IsLoggedIn) return double.NaN;
-      var offer = GetOffers().FirstOrDefault(o => o.Pair == Pair);
-      return offer == null ? double.NaN : buy ? offer.Ask : offer.Bid;
-    }
     Func<Order, string> _ordersOrderBy = o => o.OrderID;
     string GetNetStopOrderId(string pair) {
       object stopId, limitId;
@@ -1558,7 +1520,6 @@ namespace Order2GoAddIn {
     Price GetCurrentPrice(string pair) { return !currentPrices.ContainsKey(pair) ? GetPriceInternal(pair) : currentPrices[pair]; }
     void SetCurrentPrice(Price price) { currentPrices[price.Pair] = price; }
     #endregion
-    public Price GetPrice() { return GetPrice(Pair); }
     public Price GetPrice(string pair, bool useInternal) { return useInternal ? GetPriceInternal(pair) : GetCurrentPrice(pair); }
     public Price GetPrice(string pair) { return GetCurrentPrice(pair); }
     Price GetPriceInternal(string pair) {
@@ -1832,9 +1793,6 @@ namespace Order2GoAddIn {
     ObservableCollection<PendingOrder> _pendingOrders = new ObservableCollection<PendingOrder>();
     public ObservableCollection<PendingOrder> PendingOrders { get { return _pendingOrders; } set { _pendingOrders = value; } }
 
-    public void FixOrderOpen(bool buy, int lots, double takeProfit, double stopLoss, string remark) {
-      FixOrderOpen(Pair, buy, lots, takeProfit, stopLoss, remark);
-    }
     static private object globalOrderPending = new object();
     public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
       return OpenTrade(pair, buy, lots, takeProfit, stopLoss, price == null ? 0 : buy ? price.Ask : price.Bid, remark);
@@ -1961,11 +1919,6 @@ namespace Order2GoAddIn {
           return null;
         }
       }
-    }
-    public void FixOrderClose(bool buy, bool last) {
-      var trade = GetTrade(buy, last);
-      if (trade != null)
-        FixOrderClose(trade.Id, Desk.FIX_CLOSEMARKET, GetPrice());
     }
     public object[] FixOrdersClose(params string[] tradeIds) {
       var ordersList = new List<object>();
@@ -2187,48 +2140,14 @@ namespace Order2GoAddIn {
     }
 
 
-    public void FixOrderDeleteLimits(int pipsLost, double pipsToProfit) {
-      var ret = from t in GetRows(TABLE_TRADES)
-                where (t.CellValue(FIELD_INSTRUMENT) + "") == Pair &&
-                      (double)t.CellValue(FIELD_PL) < pipsLost
-                select t.CellValue("TradeID") + "";
-      object a, b;
-      foreach (var tID in ret)
-        try {
-          Desk.CreateFixOrder(Desk.FIX_LIMIT, tID, 0, 0, "", "", "", true, 0, "", out a, out b);
-        } catch (Exception exception) {
-          RaiseError(exception);
-        }
-      var ret1 = from t in GetRows(TABLE_TRADES)
-                 where (t.CellValue(FIELD_INSTRUMENT) + "") == Pair &&
-                   (double)t.CellValue(FIELD_LIMIT) > 0 &&
-                   Math.Round(Math.Abs((double)t.CellValue(FIELD_OPEN) - (double)t.CellValue(FIELD_LIMIT)), Digits()) < Math.Round(pipsToProfit * GetPipSize(Pair), Digits())
-                 select new {
-                   TradeID = t.CellValue("TradeID") + "",
-                   Open = (double)t.CellValue(FIELD_OPEN),
-                   Limit = (double)t.CellValue(FIELD_OPEN) + pipsToProfit * GetPipSize(Pair) * (IsBuy(t.CellValue("BS")) ? 1 : -1)
-                 };
-      foreach (var t in ret1)
-        try {
-          Desk.CreateFixOrder(Desk.FIX_LIMIT, t.TradeID, t.Limit, 0, "", "", "", true, 0, "", out a, out b);
-        } catch { }
-    }
     #endregion
 
     #endregion
 
     #region Pips/Points Converters
     public double Round(string pair, double value, int digitOffset = 0) { return Math.Round(value, GetDigits(pair) + digitOffset); }
-    public double InPips(int level, double? price, int roundTo) { return Math.Round(InPips(level, price), roundTo); }
-    public double InPips(int level, double? price) {
-      if (level == 0) return price.GetValueOrDefault();
-      return InPips(--level, price / GetPipSize(Pair));
-    }
-    public double InPips(double? price, int roundTo) { return Math.Round(InPips(price), roundTo); }
-    public double InPips(double? price) { return (price / GetPipSize(Pair)).GetValueOrDefault(); }
     public double InPips(string pair, double? price) { return (price / GetPipSize(pair)).GetValueOrDefault(); }
 
-    public double InPoints(double? price) { return (price * GetPipSize(Pair)).GetValueOrDefault(); }
     public double InPoints(string pair, double? price) { return TradesManagerStatic.InPoins(this, pair, price); }
 
     C.ConcurrentDictionary<string, double> pointSizeDictionary = new C.ConcurrentDictionary<string, double>() /*{ { "EUR/USD", .0001 } }*/;
@@ -2267,7 +2186,6 @@ namespace Order2GoAddIn {
         GetOffers().ToList().ForEach(o => digitDictionary[o.Pair] = o.Digits);
       return digitDictionary[pair];
     }
-    public int Digits() { return GetDigits(Pair); }
 
     public double PipsToMarginCall { get { return PipsToMarginCallCore(accountInternal); } }
     public double PipsToMarginCallCore(Account account) {
@@ -2713,23 +2631,12 @@ namespace Order2GoAddIn {
     }
     #endregion
 
-    public double PointSize() { return GetPipSize(Pair); }
 
     dynamic _tradingSettingsProvider;
     dynamic TradingSettingsProvider {
       get {
         if (_tradingSettingsProvider == null && Desk != null) _tradingSettingsProvider = Desk.TradingSettingsProvider;
         return _tradingSettingsProvider;
-      }
-    }
-    public int MinimumQuantity {
-      get {
-        if (!IsLoggedIn) return 0;
-        //if (TradingSettingsProvider == null) return 10000;
-        if (_minimumQuantity == 0) {
-          _minimumQuantity = TradingSettingsProvider.GetMinQuantity(Pair, AccountID);
-        }
-        return _minimumQuantity;
       }
     }
     private C.ConcurrentDictionary<string, int> _baseUnitSize = new C.ConcurrentDictionary<string, int>();
@@ -2809,7 +2716,6 @@ namespace Order2GoAddIn {
 
     C.ConcurrentDictionary<string, double> leverages = new C.ConcurrentDictionary<string, double>();
 
-    public double Leverage() { return Leverage(Pair); }
     public double Leverage(string pair) {
       if (!IsLoggedIn) return 0;
       Func<string, double> addLeverage = p => {
