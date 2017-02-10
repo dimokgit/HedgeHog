@@ -53,7 +53,6 @@ namespace HedgeHog.Alice.Store {
       IsTrender = true;
       LimitProfitByRatesHeight = false;
       ForceOpenTrade = false;
-      TradeStripJumpRatio = 1.5;
     }
 
     bool IsTradingHour() { return IsTradingHour(ServerTime); }

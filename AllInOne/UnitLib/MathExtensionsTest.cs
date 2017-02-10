@@ -32,21 +32,25 @@ namespace HedgeHog.Tests {
       Assert.AreEqual(7.2855, a.RootMeanPower(b, 2).Round(4));
       Assert.AreEqual(7.2855, new[] { a, b }.RootMeanPower(2).Round(4));
       Assert.AreEqual(7.9057, new[] { a, b }.RootMeanPower(.5).Round(4));
-      Assert.AreEqual(20.9067, new[] { 5.0, 7.0,100.0 }.RootMeanPower(3).Round(4));
+      Assert.AreEqual(20.9067, new[] { 5.0, 7.0, 100.0 }.RootMeanPower(3).Round(4));
     }
     [TestMethod()]
     public void DoSetsOverlapTest() {
-      var set1 = new double[] { 2, 4 };
-      var set2 = new double[] { 3, 4 };
-      var set3 = new double[] { 5, 9 };
-      var set4 = new double[] { 0, 1 };
-      var set5 = new double[] { 1, 3 };
-      var set6 = new double[] { 1, 9 };
+      var set1 = new double[] { 200, 400 };
+      var set2 = new double[] { 300, 400 };
+      var set3 = new double[] { 500, 900 };
+      var set4 = new double[] { 0, 100 };
+      var set5 = new double[] { 100, 300 };
+      var set6 = new double[] { 100, 900 };
       Assert.IsTrue(set1.DoSetsOverlap(set2));
       Assert.IsTrue(set1.DoSetsOverlap(set5));
+      Assert.IsFalse(set1.DoSetsOverlap(0.1,set3));
+      Assert.IsTrue(set1.DoSetsOverlap(0.5,set3));
       Assert.IsFalse(set1.DoSetsOverlap(set3));
       Assert.IsFalse(set1.DoSetsOverlap(set4));
       Assert.IsTrue(set1.DoSetsOverlap(set6));
+      Assert.IsTrue(set4.DoSetsOverlap(0, set6));
+      Assert.IsFalse(set4.DoSetsOverlap(-0.1, set6));
     }
   }
 }
@@ -217,7 +221,7 @@ namespace UnitLib {
       var csv = values.Csv();
       TestContext.WriteLine(csv);
       double step = 0.01;
-      var actual = Lib.EdgeByStDev(values, step,0);
+      var actual = Lib.EdgeByStDev(values, step, 0);
       Assert.AreEqual(0.62352314519258079, actual.First().Item1);
     }
     [TestMethod()]

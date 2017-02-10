@@ -389,18 +389,18 @@ namespace HedgeHog.Alice.Store {
     }
 
     private void SuppRes_RateChanging(object sender, SuppRes.RateChangingEventArgs e) {
+      if(!IsTrader)
+        return;
       var sr = (SuppRes)sender;
       if(sr.IsExitOnly || e.Prev == e.Next)
         return;
       var jump = e.Next.Abs(e.Prev);
-      TradingMacroTrader()
-        .Where(tm => jump / tm.RatesHeight > .15)
-        .Take(1)
-        .ForEach(_ => {
-          sr.CanTrade = false;
-          sr.TradesCount = 0;
-          sr.ResetPricePosition();
-        });
+      if(jump / BuySellHeight > .15) 
+        sr.ResetPricePosition();
+      if(jump / RatesHeight > .15) {
+        sr.CanTrade = false;
+        sr.TradesCount = 0;
+      }
     }
 
     void SuppRes_SetLevelBy(object sender, EventArgs e) {
@@ -810,10 +810,6 @@ namespace HedgeHog.Alice.Store {
       get { return _CorridorStats ?? new CorridorStatistics(); }
       set {
         _CorridorStats = value;
-        if(_CorridorStats != null) {
-          _CorridorStats.PeriodsJumped += CorridorStats_PeriodsJumped;
-        }
-
 
         if(value != null && RatesArray.Count > 0) {
           if(false && !IsGannAnglesManual)
@@ -829,10 +825,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    void CorridorStats_PeriodsJumped(object sender, EventArgs e) {
-      if(false && HasCorridor)
-        ForceOpenTrade = CorridorStats.Slope < 0;
-    }
     public void UpdateTradingGannAngleIndex() {
       if(CorridorStats == null)
         return;

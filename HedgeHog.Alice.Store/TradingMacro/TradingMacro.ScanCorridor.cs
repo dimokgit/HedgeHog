@@ -247,7 +247,7 @@ namespace HedgeHog.Alice.Store {
     }
     private bool _mustResetAllTrendLevels;
     private CorridorStatistics ScanCorridorBy12345(bool? skipAll, IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      bool mustResetAllTrendLevels = _mustResetAllTrendLevels;
+      bool mustResetAllTrendLevels = true || _mustResetAllTrendLevels;
       _mustResetAllTrendLevels = false;
       var ri = new { r = (Rate)null, i = 0 };
       var miner = ToFunc(ri, r => r.r.BidLow);
@@ -373,7 +373,6 @@ namespace HedgeHog.Alice.Store {
       var tlStartIndex = tlStartIndex0.Memoize(tl => tl.StartDate);
       Func<TLS, int[]> skipByTL = tls => IsTrendsEmpty(tls)
       .With(tl => tl.IsEmpty ? new int[0] : tlStartIndex(tl))
-      .Select(i => (i * TLsOverlap).ToInt())
       .ToArray();
 
       TrendBlueInt().Pairwise((s, c) => new { s })
@@ -386,9 +385,9 @@ namespace HedgeHog.Alice.Store {
         .Take(1)
         .Select(tl => Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc))
         .ForEach(tl => setTLs(TrendLines2, tl, () => TrendLines2 = tl));
-
+      var overlapSlack = TLsOverlap - 1;
       Func<TL, TL[]> tlsPrev = tl => TrendLinesTrendsAll.Skip(TrendLinesTrendsAll.ToList().IndexOf(tl) + 1).ToArray();
-      Func<TL, int[]> tlRange = tl => tlStartIndex(tl).With(ii => ii.Select(i => new[] { i, i + tl.Count }).Concat()).ToArray();
+      Func<TL, int[]> tlRange = tl => tlStartIndex(tl).With(ii => ii.Select(i => new[] { i, i + tl.Count }.SlackRange(overlapSlack)).Concat()).ToArray();
       Func<IEnumerable<TL>, int[][]> tlRangesPrev = tls => tls.Select(tl => tlRange(tl)).ToArray();
       Func<TLS, int[][]> tlRanges = tls => IsTrendsEmpty2(tls).SelectMany(tl => tlRangesPrev(tlsPrev(tl))).ToArray();
       Func<int[], Action<TLS>, TLS, TradeLevelsPreset, Singleable<IList<Rate>>> doTL = (ints, tl, tlDef, color)
@@ -409,7 +408,7 @@ namespace HedgeHog.Alice.Store {
        ).Count();
 
       TrendLinesTrendsAll
-        .Permutation((tl1, tl2) => tlRange(tl1).IsEmpty() || tlRange(tl2).IsEmpty() || tlRange(tl1).DoSetsOverlap(tlRange(tl2)))
+        .Permutation((tl1, tl2) => tlRange(tl1).IsEmpty() || tlRange(tl2).IsEmpty() || tlRange(tl1).DoSetsOverlap(overlapSlack, tlRange(tl2)))
         .Where(b => b)
         .Take(1)
         .ForEach(_ => _mustResetAllTrendLevels = true);

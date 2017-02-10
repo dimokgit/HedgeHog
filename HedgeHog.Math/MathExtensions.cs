@@ -980,7 +980,7 @@ namespace HedgeHog {
       }
       return new[] { min, max };
     }
-    public static double[] MinMaxByRegressoin2<T>(this IList<T> values,Func<T,double> minGet, Func<T, double> maxGet, double[] coeffs) {
+    public static double[] MinMaxByRegressoin2<T>(this IList<T> values, Func<T, double> minGet, Func<T, double> maxGet, double[] coeffs) {
       if(coeffs == null || coeffs.Length == 0)
         throw new ArgumentNullException(nameof(coeffs));
       if(coeffs.Length == 0)
@@ -1321,6 +1321,37 @@ namespace HedgeHog {
     public static DateTime Round(this DateTime dt, int period) {
       dt = dt.Round();
       return dt.AddMinutes(dt.Minute / period * period - dt.Minute);
+    }
+    public static bool DoSetsOverlap(this IList<int> bsRates, double slack, params int[] bsRatesCT) {
+      return bsRates.Select(i => (double)i).ToArray().DoSetsOverlap(slack, bsRatesCT.Select(i => (double)i).ToArray());
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="bsRates"></param>
+    /// <param name="slack">Positive slack used to extend, negative - visa versa</param>
+    /// <param name="bsRatesCT"></param>
+    /// <returns></returns>
+    public static bool DoSetsOverlap(this IList<double> bsRates, double slack, params double[] bsRatesCT) {
+      var min = bsRates.Min();
+      var max = bsRates.Max();
+      var maxCT = bsRatesCT.Max();
+      var minCT = bsRatesCT.Min();
+      var offset = (min - max) * slack;
+      var offsetCT = (minCT - maxCT) * slack;
+      return !(min + offset > maxCT - offsetCT || max - offset < minCT + offsetCT);
+    }
+    public static IList<double> SlackRange(this IList<double> bsRates, double slack) {
+      var min = bsRates.Min();
+      var max = bsRates.Max();
+      var offset = (min - max) * slack;
+      return new[] { min + offset, max - offset };
+    }
+    public static IList<int> SlackRange(this IList<int> bsRates, double slack) {
+      var min = bsRates.Min();
+      var max = bsRates.Max();
+      var offset = (min - max) * slack;
+      return new[] { (min + offset).ToInt(), (max - offset).ToInt() };
     }
     public static bool DoSetsOverlap(this IList<double> bsRates, params double[] bsRatesCT) {
       return !(bsRates.Min() > bsRatesCT.Max() || bsRates.Max() < bsRatesCT.Min());

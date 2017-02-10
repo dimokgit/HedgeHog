@@ -62,6 +62,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    bool TradeOpenActionsHaveWrapCorridor => TradeOpenActionsInfo((toa, name) => name.ToLower().Contains("wrapontrade")).Any();
+
     TradeOpenAction[] _tradeOpenActions = new TradeOpenAction[0];
     void OnTradeConditionsReset() { _tradeOpenActions = new TradeOpenAction[0]; }
     public TradeOpenAction[] GetTradeOpenActions() {
@@ -81,7 +83,7 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<T> TradeOpenActionsAllInfo<T>(Func<TradeOpenAction, string, T> map) {
       return TradeOpenActionsInfo(GetTradeOpenActions(), map);
     }
-    public IEnumerable<T> TradeOpenActionsInfo<T>(IList<TradeOpenAction> tradeOpenActions, Func<TradeOpenAction, string, T> map) {
+    private static IEnumerable<T> TradeOpenActionsInfo<T>(IList<TradeOpenAction> tradeOpenActions, Func<TradeOpenAction, string, T> map) {
       return tradeOpenActions.Select(tc => map(tc, ParseTradeConditionNameFromMethod(tc.Method)));
     }
     [DisplayName("Trade Actions")]

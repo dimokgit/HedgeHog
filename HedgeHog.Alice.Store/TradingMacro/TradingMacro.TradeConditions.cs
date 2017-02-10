@@ -80,7 +80,7 @@ namespace HedgeHog.Alice.Store {
       get {
         TradingMacroTrader(tm => Log = new Exception(new { FreshOk = new { tm.WavesRsdPerc } } + "")).FirstOrDefault();
         Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
-          tm.TrendLinesTrendsAll.OrderByDescending(tl => tl.EndDate)
+          tm.TradeTrendLines
           .Take(1)
           .Where(tl => !tl.IsEmpty && IsTLFresh(tm, tl, tm.WavesRsdPerc / 100.0))
           //.Where(tl => IsTLFresh(tm, tl))
@@ -96,7 +96,7 @@ namespace HedgeHog.Alice.Store {
       get {
         TradingMacroTrader(tm => Log = new Exception(new { FrshTrdOk = new { tm.WavesRsdPerc } } + "")).FirstOrDefault();
         Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
-          tm.TrendLevelByTradeLevel()
+          tm.TradeTrendLines
           .Where(tl => !tl.IsEmpty)
           .IfEmpty(() => { throw new Exception(nameof(TrendLevelByTradeLevel) + "() returned empty handed."); })
           .Where(tl => IsTLFresh(tm, tl, tm.WavesRsdPerc / 100.0)))
@@ -113,8 +113,9 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    double RiskRewardDenominator => (TradeOpenActionsHaveWrapCorridor ? HeightForWrapToCorridor(false) : BuyLevel.Rate.Abs(SellLevel.Rate));
     double RiskRewardRatio() {
-      return CalculateTakeProfit() / BuyLevel.Rate.Abs(SellLevel.Rate);
+      return CalculateTakeProfit() / RiskRewardDenominator;
     }
     public TradeConditionDelegate RsRwOk {
       get {
@@ -1051,17 +1052,6 @@ namespace HedgeHog.Alice.Store {
           CenterOfMassSell = CenterOfMassBuy = CenterOfMassSell2 = CenterOfMassBuy2 = double.NaN;
       }
     }
-    double _tradeStripJumpRatio = 1.333333;
-    [Category(categoryActive)]
-    public double TradeStripJumpRatio {
-      get { return _tradeStripJumpRatio; }
-      set {
-        if(_tradeStripJumpRatio == value)
-          return;
-        _tradeStripJumpRatio = value;
-        OnPropertyChanged(() => TradeStripJumpRatio);
-      }
-    }
     #endregion
 
     private void CanTrade_TurnOffByAngle(TL tl) {
@@ -1442,8 +1432,12 @@ namespace HedgeHog.Alice.Store {
     }
 
     private static int[] TLsTimeRatio(TradingMacro tm) {
+      double timeAvg;
+      return TLsTimeRatio(tm, out timeAvg);
+    }
+    private static int[] TLsTimeRatio(TradingMacro tm, out double timeAvg) {
       var tls = tm.TrendLinesByDate;
-      var timeRatio = TLsTimeAverage(tls) * tls.Count / tm.RatesDuration;
+      var timeRatio = (timeAvg = TLsTimeAverage(tls)) * tls.Count / tm.RatesDuration;
       var rangesSum = tm.TrendRanges.Sum(tr => tr[0].Abs()) / 100.0;
       return new[] { (timeRatio / rangesSum - 1).ToPercent() };
     }
@@ -1459,14 +1453,14 @@ namespace HedgeHog.Alice.Store {
         Func<TL, int> index = tl => tls.TakeWhile(tl0 => tl0 != tl).Count() + 1;
         var tlText = ToFunc((TL tl) => new { l = "Ang" + tl.Color, t = $"{tl.Angle.Abs().Round()},{tl.TimeSpan.ToString("h\\:mm")}" });
         var angles = tls.Select(tlText).ToArray();
+        double tlsTimeAvg;
         return new {
-          StDvHght = tm.StDevByHeightInPips.Round(1),
-          StDvPrice = tm.StDevByPriceAvgInPips.Round(1),
+          StDevHP = tm.StDevByHeightInPips.Round(1) + "/" + tm.StDevByPriceAvgInPips.Round(1),
           //StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
           //BolngrAvg= InPips(_boilingerAvg,1),
           ProfitPip = CalculateTakeProfitInPips().Round(1),
-          RiskRewrd = RiskRewardRatio().ToPercent()+"%",
-          TlTimeAvg = TLsTimeRatio(tm).Select(tr=>tr.ToString("n0") + "%," + TLsTimeAverage(tls).FromMinutes().ToString("h\\:mm")),
+          RiskRewrd = RiskRewardRatio().ToPercent() + "%/" + InPips(RiskRewardDenominator).Round(1),
+          TlTimeAvg = TLsTimeRatio(tm, out tlsTimeAvg).Select(tr => tr.ToString("n0") + "%," + tlsTimeAvg.FromMinutes().ToString("h\\:mm")),
           //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Red__Edge = tm.TrendLinesRedTrends.EdgeDiff.SingleOrDefault().Round(1),
@@ -2381,7 +2375,8 @@ namespace HedgeHog.Alice.Store {
       }
 
       set {
-        if(_riskRewardThresh == value)return;
+        if(_riskRewardThresh == value)
+          return;
         _riskRewardThresh = value;
         OnPropertyChanged(nameof(RiskRewardThresh));
       }

@@ -357,7 +357,7 @@ namespace HedgeHog.Alice.Client {
 
     void ta_PropertyChanged(object sender, PropertyChangedEventArgs e) {
       if(sender == TradingMaster) {
-        if(e.PropertyName == TradingAccountMetadata.TradingMacroName)
+        if(e.PropertyName ==  "TradingMacroName")
           RaiseTradingMacroNameChanged();
       }
     }

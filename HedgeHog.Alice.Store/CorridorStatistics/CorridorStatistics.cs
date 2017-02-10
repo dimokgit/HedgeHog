@@ -199,22 +199,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
 
-    #region PeriodsJumped Event
-    event EventHandler<EventArgs> PeriodsJumpedEvent;
-    public event EventHandler<EventArgs> PeriodsJumped {
-      add {
-        if (PeriodsJumpedEvent == null || !PeriodsJumpedEvent.GetInvocationList().Contains(value))
-          PeriodsJumpedEvent += value;
-      }
-      remove {
-        PeriodsJumpedEvent -= value;
-      }
-    }
-    protected void RaisePeriodsJumped() {
-      if (PeriodsJumpedEvent != null) PeriodsJumpedEvent(this, new EventArgs());
-    }
-    #endregion
-
     public int Iterations { get; set; }
 
     public CorridorStatistics() {

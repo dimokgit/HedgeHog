@@ -98,12 +98,9 @@ namespace HedgeHog.Alice.Store {
     }
     IList<TL> TrendLinesByDate => TrendLinesTrendsAll.OrderBy(tl => tl.EndDate).ToArray();
     public TL[] TrendLinesFlat { get { return TrendLinesTrendsAll.SkipLast(1).ToArray(); } }
-    public IEnumerable<TL> TradeTrendLines {
-      get {
-        return TradeTrendsInt.Select(i => Trends[i])
+    public IEnumerable<TL> TradeTrendLines =>
+        TradeTrendsInt.Select(i => Trends[i])
           .IfEmpty(() => TrendLinesTrendsAll.Where(tl => !tl.IsEmpty).OrderByDescending(tl => tl.EndDate).Take(1));
-      }
-    }
     public double TradeTrendLinesAvg(Func<TL, double> selector) {
       return TradeTrendLines.ToArray(selector)
         .Permutation()

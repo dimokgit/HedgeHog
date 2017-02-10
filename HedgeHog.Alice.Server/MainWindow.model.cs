@@ -181,7 +181,7 @@ namespace HedgeHog.Alice.Server {
     }
     void Login(LoginInfo li) {
       try {
-        coreFX.LogOn(li.Account,li.Password,li.IsDemo);
+        coreFX.LogOn(li.Account,"",li.Password,li.IsDemo);
       } catch (Exception exc) {
         Log = exc;
       }
