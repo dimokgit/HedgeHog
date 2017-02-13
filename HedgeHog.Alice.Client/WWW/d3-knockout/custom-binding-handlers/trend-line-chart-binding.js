@@ -529,7 +529,7 @@
           setHLine(tpsHigh, "tpsHigh", colorTps, 1, "", y2);
           setHLine(tpsLow, "tpsLow", colorTps, 1, "", y2);
 
-          var hasTps2 = data.some(function (d) { return d.v2 > 0; });
+          var hasTps2 = data.some(function (d) { return d.v2 !== 0; });
           if (hasTps2) {
             var line3 = d3.line()
               .x(function (d) { return x(d.d); })

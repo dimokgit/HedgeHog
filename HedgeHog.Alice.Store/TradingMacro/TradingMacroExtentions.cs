@@ -395,7 +395,7 @@ namespace HedgeHog.Alice.Store {
       if(sr.IsExitOnly || e.Prev == e.Next)
         return;
       var jump = e.Next.Abs(e.Prev);
-      if(jump / BuySellHeight > .15) 
+      if(jump / BuySellHeight > .15)
         sr.ResetPricePosition();
       if(jump / RatesHeight > .15) {
         sr.CanTrade = false;
@@ -2272,8 +2272,8 @@ namespace HedgeHog.Alice.Store {
     public List<Rate> RatesArraySafe {
       get {
         try {
-          if(!SnapshotArguments.IsTarget && UseRatesInternal(ri => ri.Count).DefaultIfEmpty(0).Single() < Math.Max(1, BarsCountCalc)) {
-            //Log = new RatesAreNotReadyException();
+          if(!SnapshotArguments.IsTarget && RatesInternal.Count < Math.Max(1, BarsCount)) {
+            Log = new Exception(new { RatesInternal = new { RatesInternal.Count }, LessThen = new { BarsCount } } + "");
             return new List<Rate>();
           }
 
@@ -3522,13 +3522,17 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_IsTrader != value) {
           _IsTrader = value;
-          OnPropertyChanged("IsTrader");
           var tmo = TradingMacroOther();
           if(!value)
-            tmo.Take(1).ForEach(tm => tm.IsTrader = true);
+            tmo
+              .Where(tm => tm.IsTrader)
+              .IfEmpty(() => tmo)
+              .Take(1)
+              .ForEach(tm => tm.IsTrader = true);
           else
             tmo.ForEach(tm => tm.IsTrader = false);
         }
+        OnPropertyChanged(nameof(IsTrader));
       }
     }
 
@@ -3590,7 +3594,7 @@ namespace HedgeHog.Alice.Store {
       try {
         return UseRates(rate =>
         Tuple.Create(
-                rate.Select(r => r.PriceCMALast.Abs(r.AskHigh).Max(r.PriceCMALast.Abs(r.BidLow)))
+                rate.Select(r => r.PriceCMALast.Abs(r.PriceAvg))
                 .Where(Lib.IsNotNaN)
                 .StandardDeviation(out avg), avg));
       } finally {
@@ -3950,7 +3954,7 @@ namespace HedgeHog.Alice.Store {
     }
     void OnScanCorridor(List<Rate> rates, Action callback, bool runSync) {
       if(!IsRatesLengthStable) {
-        Log = new Exception(new { IsRatesLengthStable } + "");
+        _canTriggerTradeDirectionSubject.OnNext(() => Log = new Exception(new { IsRatesLengthStable } + ""));
         return;
       }
       if(runSync)

@@ -272,7 +272,7 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByTLDuration2(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       return IsRatesLengthStableGlobal()
-        ? LastTrendLineDurationPercentage2(TrendLinesByDate,2).With(v => ShowVolts(v, 2, getVolt, setVolt))
+        ? LastTrendLineDurationPercentage2(TrendLinesByDate, 2).With(v => ShowVolts(v, 2, getVolt, setVolt))
         : null;
     }
 
@@ -320,12 +320,10 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByTLWn(int tlCount, Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       var tl3 = TrendLinesTrendsAll.OrderBy(tl => tl.EndDate).TakeLast(tlCount).ToArray();
+      var dateMin = tl3.Min(tl => tl.StartDate);
       if(!tl3.Any(tl => tl.IsEmpty) && tl3.Length == tlCount && IsRatesLengthStable) {
-        Func<TL, DateTime[]> dateRange = tl => {
-          var slack = (tl.TimeSpan.TotalMinutes * .1).FromMinutes();
-          return new[] { tl.StartDate.Add(slack), tl.EndDate.Subtract(slack) };
-        };
-        var dateOverlapOk = !tl3.Permutation().Any(t => dateRange(t.Item1).DoSetsOverlap(dateRange(t.Item2)));
+        Func<TL, double[]> dateRange = tl => new[] { tl.StartDate, tl.EndDate }.ToArray(d => (d - dateMin).TotalMinutes);
+        var dateOverlapOk = !tl3.Permutation().Any(t => dateRange(t.Item1).DoSetsOverlap(TLsOverlap - 1, dateRange(t.Item2)));
         if(dateOverlapOk) {
           var dateZero = tl3[0].StartDate;
           Func<DateTime, double> date0 = d => d.Subtract(dateZero).TotalMinutes;

@@ -270,7 +270,7 @@ namespace HedgeHog.Alice.Store {
     void ScanRatesLengthByBBSD() {
       var bbsd = InPoints(RatesHeightMin);
       BoilingerBandCacl()
-        .Select(t => t.Item1 + t.Item2)
+        .Select(t => t.Item1)
         .Where(b => b.Ratio(bbsd) > 1.01)
         .ForEach(b => BarsCountCalc = (BarsCountCalc / Math.Sqrt(b / bbsd)).ToInt().Max(BarsCount));
     }

@@ -612,13 +612,13 @@ namespace HedgeHog.Alice.Store {
           return;
 
         IsRatesLengthStable = RatesArray.Count.Ratio(value) < 1.05;
-        var newBarsCount = value == 0 ? (int?)null : value;
-        if(_BarsCountCalc < BarsCount)
-          throw new Exception(new { newBarsCount, Is = "Less Then", BarsCount } + "");
+        var newBarsCount = value == 0 ? (int?)null : value.Min(RatesInternal.Count);
         OnPropertyChanged("BarsCountCalc");
         _BarsCountCalc = newBarsCount;
         if(_BarsCountCalc.HasValue) {
           BarsCountDate = null;
+          if(_barsCount < BarsCount)
+            throw new Exception(new { newBarsCount, Is = "Less Then", BarsCount } + "");
           //Log = new Exception(new { BarsCountCalc, BarsCountDate } + "");
         }
       }

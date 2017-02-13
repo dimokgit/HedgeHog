@@ -1424,6 +1424,12 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region WwwInfo
+    T[] TLsAreFresh<T>(Func<T> func,double freshPerc=0.05) {
+      var tls = TrendLinesByDate;
+      if(tls.Any(tl => tl.IsEmpty) || tls.TakeLast(1).Any(tl => !IsTLFresh(tl, freshPerc)))
+        return new T[0];
+      return new[] { func() };
+    }
     int[] TLTimeAvg() {
       var tls = TrendLinesByDate;
       if(TrendLinesTrendsAll.Any(tl => tl.IsEmpty) || tls.TakeLast(1).Any(tl => !IsTLFresh(tl, 0.05)))
@@ -1454,6 +1460,9 @@ namespace HedgeHog.Alice.Store {
         var tlText = ToFunc((TL tl) => new { l = "Ang" + tl.Color, t = $"{tl.Angle.Abs().Round()},{tl.TimeSpan.ToString("h\\:mm")}" });
         var angles = tls.Select(tlText).ToArray();
         double tlsTimeAvg;
+        var showBBSD = new[] { VoltageFunction, VoltageFunction2 }.Contains(VoltageFunction.BBSD) ||
+          new[] { TradeLevelBy.BoilingerDown, TradeLevelBy.BoilingerUp }.Contains(LevelBuyBy) ||
+          TakeProfitFunction == TradingMacroTakeProfitFunction.BBand;
         return new {
           StDevHP = tm.StDevByHeightInPips.Round(1) + "/" + tm.StDevByPriceAvgInPips.Round(1),
           //StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
@@ -1469,6 +1478,7 @@ namespace HedgeHog.Alice.Store {
           //WvDistRsd = _waveDistRsd.Round(2)
         }
         .ToExpando()
+        .Add(showBBSD ? (object)new { BoilBand = _boilingerStDev.Value.Select(t => string.Format("{0:n2}:{1:n2}", InPips(t.Item1),InPips(t.Item2))) } : new { })
         .Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         .Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
         .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { });
@@ -1792,6 +1802,48 @@ namespace HedgeHog.Alice.Store {
         });
       var pas = paFuncs.Select(t => spreadAvg(t.Item1, t.Item2));
       return pas.Where(pa => pa.spread.IsNotNaN()).Select(x => Tuple.Create(x.spread, x.sr));
+    }
+    #endregion
+
+    #region TradingPriceRange
+    public TradeConditionDelegate PrRngOk {
+      get {
+        return () => TradeDirectionByBool(IsTradingPriceInRange(TradingPriceRange, CurrentPrice.Average));
+      }
+    }
+
+    string _tradingPriceRange;
+    [DisplayName("Trading Price")]
+    [Description("1.17-1.19")]
+    [Category(categoryActive)]
+    [WwwSetting(wwwSettingsTradingParams)]
+    public string TradingPriceRange {
+      get { return _tradingPriceRange; }
+      set {
+        if(_tradingPriceRange == value)
+          return;
+        if(string.IsNullOrWhiteSpace(value))
+        IsTradingPriceInRange(value ?? "", 0);
+        _tradingPriceRange = value ?? "";
+        OnPropertyChanged(nameof(TradingPriceRange));
+      }
+    }
+
+    public static bool IsTradingPriceInRange(string rangeText, double price) {
+      string[][] ranges;
+      if(rangeText.TryFromJson(out ranges)) {
+        var timeSpans = ranges?.Select(r => r.Select(t => double.Parse(t)).ToArray());
+        return timeSpans?.Any(ts => IsPriceRangeOk(ts, price)) ?? true;
+      }
+      double range;
+      if(double.TryParse(rangeText, out range))
+        return IsTresholdAbsOk(price, range);
+      throw new Exception(new { rangeText, error="format" } + "");
+    }
+    private static bool IsPriceRangeOk(double[] times, double tod) {
+      return times.First() < times.Last()
+        ? tod.Between(times.First(), times.Last())
+        : tod >= times.First() || tod <= times.Last();
     }
     #endregion
 
