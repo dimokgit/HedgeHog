@@ -272,7 +272,11 @@ namespace HedgeHog.Alice.Store {
       BoilingerBandCacl()
         .Select(t => t.Item1)
         .Where(b => b.Ratio(bbsd) > 1.01)
-        .ForEach(b => BarsCountCalc = (BarsCountCalc / Math.Sqrt(b / bbsd)).ToInt().Max(BarsCount));
+        .Select(b => (BarsCountCalc / Math.Sqrt(b / bbsd)).ToInt())
+        .Concat(GetRatesByTimeFrame().Concat(BarsCount))
+        .OrderByDescending(c => c)
+        .Take(1)
+        .ForEach(count => SetRatesLengthStable(count).With(c => BarsCountCalc = c.Ratio(BarsCountCalc) > 1.01 ? c : BarsCountCalc));
     }
     void ScanRatesLengthByStDevReg() {
       UseRatesInternal(ri => BarsCountByStDevByReg(ri, 0, InPoints(RatesHeightMin)))

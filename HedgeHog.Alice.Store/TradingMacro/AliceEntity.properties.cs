@@ -11,6 +11,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Linq.Expressions;
 using ReactiveUI;
+using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -601,7 +602,8 @@ namespace HedgeHog.Alice.Store {
         if(_RatesLengthBy != value) {
           _RatesLengthBy = value;
           BarsCountCalc = BarCountSmoothed = 0;
-          OnPropertyChanged("RatesLengthBy");
+          Task.Delay(1000).ContinueWith(t => IsRatesLengthStable = _RatesLengthBy == RatesLengthFunction.None);
+          OnPropertyChanged(nameof(RatesLengthBy));
         }
       }
     }

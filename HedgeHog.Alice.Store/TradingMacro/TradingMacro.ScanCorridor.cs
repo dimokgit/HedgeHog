@@ -253,7 +253,7 @@ namespace HedgeHog.Alice.Store {
       var miner = ToFunc(ri, r => r.r.BidLow);
       var maxer = ToFunc(ri, r => r.r.AskHigh);
       var groupMap = ToFunc(ri.Yield().ToArray().AsIList(), range => new {
-        rmm = range.MinMaxBy(miner, maxer),
+        rmm = range.MinMaxBy(r=>r.r.BidLow, r=>r.r.AskHigh),
         a = range.Average(r => r.r.PriceAvg)
       });
       var groupMap2 = ToFunc(ri, r => new {
@@ -386,7 +386,11 @@ namespace HedgeHog.Alice.Store {
         .Select(tl => Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc))
         .ForEach(tl => setTLs(TrendLines2, tl, () => TrendLines2 = tl));
       var overlapSlack = TLsOverlap - 1;
-      Func<TL, TL[]> tlsPrev = tl => TrendLinesTrendsAll.Skip(TrendLinesTrendsAll.ToList().IndexOf(tl) + 1).ToArray();
+      Func<TL, bool> isTLMinMax = tl => TrendLinesMinMax.Single(t => t.Item1 == tl).Item2;
+      Func<TL, TL[]> tlsPrev = tl => TrendLinesTrendsAll
+        .Skip(TrendLinesTrendsAll.ToList().IndexOf(tl) + 1)
+        .SkipWhile(tl0 => isTLMinMax(tl0) != isTLMinMax(tl))
+        .ToArray();
       Func<TL, int[]> tlRange = tl => tlStartIndex(tl).With(ii => ii.Select(i => new[] { i, i + tl.Count }.SlackRange(overlapSlack)).Concat()).ToArray();
       Func<IEnumerable<TL>, int[][]> tlRangesPrev = tls => tls.Select(tl => tlRange(tl)).ToArray();
       Func<TLS, int[][]> tlRanges = tls => IsTrendsEmpty2(tls).SelectMany(tl => tlRangesPrev(tlsPrev(tl))).ToArray();

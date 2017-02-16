@@ -2287,6 +2287,7 @@ namespace HedgeHog.Alice.Store {
               RateLast = ri.Last();
               RatePrev = ri[ri.Count - 2];
               RatePrev1 = ri[ri.Count - 3];
+              OnSetBarsCountCalc(true);
               UseRates(_ => RatesArray = ri.GetRange(BarsCountCalc).ToList());
               RatesDuration = RatesArray.Duration(r => r.StartDate).TotalMinutes.ToInt();
             });
@@ -2312,7 +2313,6 @@ namespace HedgeHog.Alice.Store {
 
             UseRates(rates => { SetMA(rates); return false; });
 
-            OnSetBarsCountCalc(false);
             ScanOutsideEquinox();
 
             if(IsInVirtualTrading)
@@ -3954,10 +3954,10 @@ namespace HedgeHog.Alice.Store {
     }
     void OnScanCorridor(List<Rate> rates, Action callback, bool runSync) {
       if(!IsRatesLengthStable) {
-        _canTriggerTradeDirectionSubject.OnNext(() => Log = new Exception(new { IsRatesLengthStable } + ""));
+        _canTriggerTradeDirectionSubject.OnNext(() => Log = new Exception(new { OnScanCorridor = new { IsRatesLengthStable } } + ""));
         return;
       }
-      if(runSync)
+      if(true || runSync)
         ScanCorridor(rates, callback);
       else
         OnScanCorridor(() => ScanCorridor(rates, callback));
