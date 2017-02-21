@@ -16,6 +16,9 @@
     <SGenUseProxyTypes>false</SGenUseProxyTypes>
     <ConnectionString>
     </ConnectionString>
+    <FileUpgradeFlags>40</FileUpgradeFlags>
+    <UpgradeBackupLocation>C:\Users\dimon\Documents\GitHubVisualStudio\HedgeHog\AllInOne\SQL_DateFuncs\Backup\</UpgradeBackupLocation>
+    <OldToolsVersion>4.0</OldToolsVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
