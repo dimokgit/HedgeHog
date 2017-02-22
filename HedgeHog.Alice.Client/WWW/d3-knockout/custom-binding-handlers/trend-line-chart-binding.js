@@ -392,6 +392,7 @@
       var com2 = chartData.com2;
       var com3 = chartData.com3;
       var showNegativeVolts = viewModel.showNegativeVoltsParsed();
+      var showNegativeVolts2 = viewModel.showNegativeVolts2Parsed();
       // #endregion
 
       // #region adjust svg and axis'
@@ -455,7 +456,10 @@
         return chartNum ? value : yDomain[1];
       }
       function tipValue(v) {
-        return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts[0]),  showNegativeVolts[1] || 100000);
+        return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts[0]), showNegativeVolts[1] || 100000);
+      }
+      function tipValue2(v) {
+        return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts2[0]), showNegativeVolts2[1] || 100000);
       }
       yDomain = d3.extent([yDomain[0], yDomain[1]
         , sbchnum(tradeLevels && canBuy ? tradeLevels.buy : yDomain[1])
@@ -473,7 +477,7 @@
         y.domain(yDomain);
         var yDomain2 = d3.extent(data, function (d) { return tipValue(d.v); });
         y2.domain([yDomain2[0], yDomain2[1]]);
-        var yDomain3 = d3.extent(data, function (d) { return d.v2; });
+        var yDomain3 = d3.extent(data, function (d) { return tipValue2(d.v2); });
         y3.domain([yDomain3[0], yDomain3[1]]);
       // #endregion
 
@@ -533,7 +537,7 @@
           if (hasTps2) {
             var line3 = d3.line()
               .x(function (d) { return x(d.d); })
-              .y(function (d) { return y3(isNaN(d.v2) ? 0 : d.v2); });
+              .y(function (d) { return y3(isNaN(d.v2) ? 0 :tipValue2(d.v2)); });
 
             svg.select("path.line.dataTps2")
               .datum(data)

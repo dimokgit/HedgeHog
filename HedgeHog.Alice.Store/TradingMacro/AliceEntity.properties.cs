@@ -712,16 +712,24 @@ namespace HedgeHog.Alice.Store {
     }
 
     private static bool IsTimeSpanRangeOk(TimeSpan[] times, TimeSpan tod) {
-      return times.First() < times.Last()
+      return !IsTimeRangeReversed(times)
         ? tod.Between(times.First(), times.Last())
         : tod >= times.First() || tod <= times.Last();
+    }
+
+    private static bool IsTimeRangeReversed(TimeSpan[] times) {
+      return times.First() > times.Last();
     }
 
     public static bool IsTradingHour2(string range, DateTime time) {
       string[][] ranges;
       if(range.TryFromJson(out ranges)) {
-        var timeSpans = ranges?.Select(r => r.Select(t => TimeSpan.Parse(t)).ToArray());
-        return timeSpans?.Any(ts=>IsTimeSpanRangeOk(ts,time.TimeOfDay)) ?? true;
+        if(range == null)
+          return true;
+        var timeSpans = ranges.Select(r => r.Select(t => TimeSpan.Parse(t)).ToArray());
+        var ands = timeSpans.Where(tsr => !IsTimeRangeReversed(tsr)).Select(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay)).DefaultIfEmpty(true).Any(b=>b);
+        var ors = timeSpans.Where(tsr => IsTimeRangeReversed(tsr)).All(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay));
+        return ands && ors;
       }
       return IsTradingHour(range,time);
     }
@@ -1269,7 +1277,7 @@ namespace HedgeHog.Alice.Store {
           return;
         var spans = ParseJsonRange<double>(_VoltRange = (value ?? "").Trim());
         VoltRange0 = spans[0];
-        VoltRange1 = spans.Concat(double.NaN).Take(2).Last();
+        VoltRange1 = spans.Concat(new[] { double.NaN }).Take(2).Last();
         OnPropertyChanged(nameof(VoltRange));
       }
     }
@@ -1298,7 +1306,7 @@ namespace HedgeHog.Alice.Store {
           return;
         var spans = ParseJsonRange<double>(_VoltRange_2 = (value ?? "").Trim());
         VoltRange_20 = spans[0];
-        VoltRange_21 = spans.Concat(double.NaN).Take(2).Last();
+        VoltRange_21 = spans.Concat(new[] { double.NaN }).Take(2).Last();
 
         OnPropertyChanged(nameof(VoltRange_2));
       }
@@ -1352,6 +1360,7 @@ namespace HedgeHog.Alice.Store {
     }
     double _waveStDevPowerS = 0.5;
     [Description("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]
+    [WwwSetting(Group = wwwSettingsTradingParams)]
     [Category(categoryActive)]
     public double WaveStDevPowerS {
       get { return _waveStDevPowerS; }

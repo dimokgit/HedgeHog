@@ -312,7 +312,6 @@ namespace HedgeHog {
       foreach(var v in value())
         yield return v;
     }
-    public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, T value) { return source.Concat(value.Yield()); }
     public static IEnumerable<U> Yield<U>(this Func<U> m) { yield return m(); }
     public static IEnumerable<U> Yield<T, U>(this T v, Func<T, U> m) { yield return m(v); }
     public static IEnumerable<object> YieldObject(this object v) { yield return v; }

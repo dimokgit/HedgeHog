@@ -61,7 +61,9 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.PPMB:
           return () => ShowVoltsByPPMB(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLsTimeAvg:
-          return () => ShowVoltsByTLsTimeAvg(getVolts, setVolts);
+          return () => ShowVoltsByTLsTimeAvg(true,getVolts, setVolts);
+        case HedgeHog.Alice.VoltageFunction.TLsTimeMax:
+          return () => ShowVoltsByTLsTimeAvg(false, getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.RiskReward:
           return () => ShowVoltsByRiskReward(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLDur:
@@ -255,9 +257,9 @@ namespace HedgeHog.Alice.Store {
 
       return null;
     }
-    CorridorStatistics ShowVoltsByTLsTimeAvg(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+    CorridorStatistics ShowVoltsByTLsTimeAvg(bool useMin,Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       return IsRatesLengthStableGlobal()
-        ? TLTimeAvg().Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault()
+        ? TLTimeAvg(useMin).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault()
         : null;
     }
     CorridorStatistics ShowVoltsByRiskReward(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
@@ -323,15 +325,15 @@ namespace HedgeHog.Alice.Store {
       var dateMin = tl3.Min(tl => tl.StartDate);
       if(!tl3.Any(tl => tl.IsEmpty) && tl3.Length == tlCount && IsRatesLengthStable) {
         Func<TL, double[]> dateRange = tl => new[] { tl.StartDate, tl.EndDate }.ToArray(d => (d - dateMin).TotalMinutes);
-        var dateOverlapOk = !tl3.Permutation().Any(t => dateRange(t.Item1).DoSetsOverlap(TLsOverlap - 1, dateRange(t.Item2)));
-        if(dateOverlapOk) {
+        //var dateOverlapOk = !tl3.Permutation().Any(t => dateRange(t.Item1).DoSetsOverlap(TLsOverlap - 1, dateRange(t.Item2)));
+        //if(dateOverlapOk) {
           var dateZero = tl3[0].StartDate;
           Func<DateTime, double> date0 = d => d.Subtract(dateZero).TotalMinutes;
           Func<TL, double[]> tlTMs = tl => new[] { date0(tl.StartDate), date0(tl.EndDate) };
           var tl3MM = tl3.Select(tl => tlTMs(tl)).ToArray();
           var overlap = tl3MM.Pairwise((tm1, tm2) => tm1.OverlapRatio(tm2)).Average().ToPercent();
           ShowVolts(overlap, VoltAverageIterations, getVolt, setVolt);
-        }
+        //}
       }
       return null;
     }
@@ -495,7 +497,9 @@ namespace HedgeHog.Alice.Store {
         case RatesLengthFunction.MinBBSD:
           return ScanRatesLengthByBBSD;
         case RatesLengthFunction.M1Wave:
-          return ScanRatesLengthByM1Wave;
+          return () => ScanRatesLengthByM1Wave(tm => tm.WaveRangeAvg);
+        case RatesLengthFunction.M1WaveS:
+          return () => ScanRatesLengthByM1Wave(tm => tm.WaveRangeSum);
         case RatesLengthFunction.M1WaveAvg:
           return () => ScanRatesLengthByM1WaveAvg(false, tm => new[] { tm.WaveRangeAvg });
         case RatesLengthFunction.M1WaveAvg2:

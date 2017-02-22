@@ -157,10 +157,12 @@ namespace HedgeHog.Alice.Client {
           StartReplayInternal(tm, testParams.Dequeue(), t => { ContinueReplayWith(tm, testParams); });
         } else if(ReplayArguments.UseSuperSession) {
           var super = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
-          FillTestParams(tm, tpr => SetTestCorridorDistanceRatio(tpr, super));
+          FillTestParams(tm, tpr => SetTestCorridorDistanceRatio(tpr, super)).Wait();
           ReplayArguments.SuperSessionId = Guid.NewGuid();
           ReplayArguments.DateStart = ReplayArguments.DateStart.Value.AddDays(6);
           StartReplayInternal(tm, TestParams.Any() ? TestParams.Dequeue() : null, task => { ContinueReplayWith(tm, TestParams); });
+        }else {
+          ReplayArguments.LastWwwErrorObservable.OnNext("Replay done");
         }
       } catch(Exception exc) { Log = exc; }
     }

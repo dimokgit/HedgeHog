@@ -39,6 +39,22 @@ namespace HedgeHog {
         return r;
       };
     }
+    public static Func<A, R> Create<A, R, K>(Func<A, R> f, Func<A, K> key) {
+      return f.Memoize(key);
+    }
+    public static Func<A, R> CreateLast<A, R, K>(Func<A, R> f, Func<A, K> key) {
+      return f.MemoizeLast(key);
+    }
+    public static Func<A, R> MemoizeLast<A, R, K>(this Func<A, R> f, Func<A, K> key) {
+      var cache = new Tuple<K, R>[0];
+      return a => {
+        K k = key(a);
+        var r = cache.Where(t=>EqualityComparer<K>.Default.Equals(t.Item1,k)).ToArray();
+        if(r.Length==0) 
+          r = cache = new[] { Tuple.Create(k, f(a)) };
+        return r[0].Item2;
+      };
+    }
     static Func<Tuple<A, B>, R> Tuplify<A, B, R>(this Func<A, B, R> f) {
       return t => f(t.Item1, t.Item2);
     }

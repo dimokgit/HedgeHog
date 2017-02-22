@@ -240,7 +240,9 @@ namespace HedgeHog.Alice.Store {
     [Import]
     static NewsCasterModel _newsCaster { get { return NewsCasterModel.Default; } }
 
+    Func<IList<Rate>, List<RateGroup>> GroupRates { get; }
     public TradingMacro() {
+      GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates)).MemoizeLast(r => r[0].StartDate);
       this.ObservableForProperty(tm => tm.Pair, false, false)
         .Where(oc => !string.IsNullOrWhiteSpace(oc.Value) && !IsInVirtualTrading)
         .Throttle(1.FromSeconds())
@@ -1776,6 +1778,7 @@ namespace HedgeHog.Alice.Store {
           }
         }
         Log = new Exception("Replay for PairIndex:{0}[{1}] done.".Formater(PairIndex, BarPeriod));
+        
       } catch(Exception exc) {
         Log = exc;
       } finally {
@@ -1858,6 +1861,8 @@ namespace HedgeHog.Alice.Store {
       })
       .Select(x => x.da / x.rs.Last().StartDate.Subtract(x.rs[0].StartDate).Duration().TotalMinutes);
     }
+    IEnumerable<double> M1SD => TradingMacroM1(tm => tm.WaveRanges.Select(wr => wr.StDev).FirstOrDefault());
+    IEnumerable<double> M1SDA => TradingMacroM1(tm => tm.WaveRangeAvg.StDev);
     public TradeStatistics SetTradeStatistics(Trade trade) {
       if(!TradeStatisticsDictionary.ContainsKey(trade.Id))
         TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics() {
@@ -1866,13 +1871,14 @@ namespace HedgeHog.Alice.Store {
           Values = new Dictionary<string, object> {
             { "Angle", TradingMacroTrender(tm=>tm.TLBlue.Angle.Abs()).SingleOrDefault() },
             { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
-            { "PPM", TradingMacroTrender(tm=> PPMFromEnd(tm,-0.25),x=>x).SingleOrDefault() },
+            { "PPM", InPips(TradingMacroTrender(tm=> PPMFromEnd(tm,-0.25)).Concat().SingleOrDefault()) },
             { "Voltage", TradingMacroTrender(tm=> tm.GetLastVolt()).Concat().SingleOrDefault() },
-            { "PpmM1", TradingMacroM1(tm=>tm.WaveRangeAvg.PipsPerMinute).FirstOrDefault() },
+            { "Voltage2", TradingMacroTrender(tm=> tm.GetLastVolt(GetVoltage2)).Concat().SingleOrDefault() },
+            { "PpmM1", TradingMacroM1(tm=>InPips(tm.WaveRangeAvg.PipsPerMinute)).FirstOrDefault() },
             { "M1Angle", TradingMacroM1(tm=>tm.WaveRangeAvg.Angle.Abs()).FirstOrDefault() },
             //{ "Equinox", _wwwInfoEquinox },
-            { "StDev", TradingMacroM1(tm=>tm.WaveRanges.Select(wr=>wr.StDev).FirstOrDefault()).SingleOrDefault() },
-            { "StDevAvg", TradingMacroM1(tm=>tm.WaveRangeAvg.StDev).SingleOrDefault() }
+            { "StDev", M1SD.SingleOrDefault() },
+            { "StDevAvg", M1SDA.SingleOrDefault() }
           }
         });
       var ts = TradeStatisticsDictionary[trade.Id];

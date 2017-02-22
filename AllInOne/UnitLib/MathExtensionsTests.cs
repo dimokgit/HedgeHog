@@ -26,5 +26,21 @@ namespace HedgeHog.Tests {
       var steps = Lib.IteratonSequence(1, 500).ToArray();
       Assert.IsNotNull(steps);
     }
+
+    [TestMethod()]
+    public void DistancesTest() {
+      DistanceImpl(100,3);
+      DistanceImpl(100,2);
+      DistanceImpl(100,1);
+    }
+
+    private static void DistanceImpl(int count, int buffer) {
+      var seq = Enumerable.Range(0, count).Select(i => Tuple.Create(i + "", i)).ToArray();
+      Assert.AreEqual(count - 1, seq.Distances(t => t.Item2).Last().Item2);
+      var seq2 = seq.Buffer(buffer, buffer - 1)
+        .TakeWhile(b => b.Count > 1)
+        .Select(b => new { item = b[0].Item1, dist = b.Distances(t => t.Item2).Last().Item2 }).ToArray();
+      Assert.AreEqual(count - 1, seq2.Sum(x => x.dist));
+    }
   }
 }

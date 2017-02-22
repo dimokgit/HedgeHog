@@ -668,7 +668,7 @@ namespace HedgeHog.Alice.Client {
               Log = exc;
             }
           });
-
+          TradingMacrosCopy.Any();
           //GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<bool>(this, typeof(VirtualTradesManager), vt => { MessageBox.Show("VirtualTradesManager:" + vt); });
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Window>(this, typeof(WindowState), IsMinimized);
           MasterModel.CoreFX.LoggedIn += CoreFX_LoggedInEvent;

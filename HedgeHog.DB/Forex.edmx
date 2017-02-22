@@ -1120,7 +1120,7 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
     </edmx:Options>
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <edmx:Diagram Name="Forex" ZoomLevel="70">
+      <edmx:Diagram Name="Forex" ZoomLevel="105">
         <edmx:EntityTypeShape EntityType="ForexModel.v_Pair" Width="1.5" PointX="2.75" PointY="5.75" Height="1.4279589843749996" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_Offer" Width="1.5" PointX="5.75" PointY="3.75" Height="1.7566536458333317" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_Stat" Width="1.5" PointX="4.75" PointY="6.75" Height="2.0853483072916674" />

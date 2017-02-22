@@ -640,14 +640,20 @@
       wwwSettingsGridElement = element;
     }
     this.showNegativeVolts = ko.observable(-10000);
+    this.showNegativeVolts2 = ko.observable(-10000);
     this.showNegativeVoltsParsed = ko.pureComputed(function () {
       var e = eval(this.showNegativeVolts());
       return Array.isArray(e) ? e : [e];
-    },this);
+    }, this);
+    this.showNegativeVolts2Parsed = ko.pureComputed(function () {
+      var e = eval(this.showNegativeVolts2());
+      return Array.isArray(e) ? e : [e];
+    }, this);
     this.wwwSettingProperties = ko.pureComputed(function () {
       function gettype(v) { return typeof v === "boolean" ? "checkbox" : "text" }
       return [
-          { n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) }
+          { n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
+          { n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
       ];
     });
     this.showWwwSettings = function () {

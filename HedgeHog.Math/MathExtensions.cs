@@ -62,6 +62,14 @@ namespace HedgeHog {
           return Tuple.Create(x.t, t.Item2 + x.prev.Abs(x.next));
         });
     }
+    public static IEnumerable<Tuple<T, double>> RunningSum<T>(this IEnumerable<T> source, Func<T, double> map) {
+      return source
+        .Scan(new { t = default(T), next = 0.0 }, (prev, next) => new { t = next, next = map(next) })
+        .Skip(1)
+        .Scan(Tuple.Create(default(T), 0.0), (t, x) => {
+          return Tuple.Create(x.t, t.Item2 + x.next);
+        });
+    }
     public static IEnumerable<double[]> PrevNext(this IList<double> bars) {
       return bars.Take(bars.Count - 1).Zip(bars.Skip(1), (r1, r2) => new[] { r1, r2 });
     }

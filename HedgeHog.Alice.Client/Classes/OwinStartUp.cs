@@ -734,10 +734,11 @@ namespace HedgeHog.Alice.Client {
       //    var dbls = wrs.Select(wr => getProp(p.GetValue(wr)).Abs()).ToArray();
       //    return value(dbls.StandardDeviation() / dbls.Height(), false);
       //  }));
-      return wrs.Cast<object>()
+      var res = wrs.Cast<object>()
         //.Concat(wra.Cast<object>())
         .Concat(wrStats.Cast<object>())
         /*.Concat(wrStd.Cast<object>())*/.ToArray();
+      return res;
     }
     public object[] GetAccounting(string pair) {
       var row = MonoidsCore.ToFunc("", (object)null, (n, v) => new { n, v });

@@ -106,7 +106,7 @@ namespace HedgeHog.Alice.Store {
             var currentGrossOthersInPips = TradesManager.MoneyAndLotToPips(currentGrossOthers, CurrentGrossLot, Pair);
             var lastLoss = TradesManager.MoneyAndLotToPips(LastTradeLoss.Abs(), CurrentGrossLot, Pair);
             var ellasticRange = EllasticRange < 5 ? EllasticRange * RatesArray.Count / RatesDuration : EllasticRange;
-            var ellasic = TakeProfitFunction == TradingMacroTakeProfitFunction.Pips 
+            var ellasic = TakeProfitFunction == TradingMacroTakeProfitFunction.Pips || EllasticRange == 0
             ? 0 
             : RatesArray.CopyLast(ellasticRange).Average(_priceAvg).Abs(RateLast.PriceAvg);
             var ratesHeightInPips = new[] {
@@ -192,8 +192,8 @@ namespace HedgeHog.Alice.Store {
           => rates.BackwardsIterator()
             .TakeWhile(r => r.StartDate >= d)
             .Select(GetPriceMA)))
-            .SelectMany(x => x)
-            .SelectMany(x => x)
+            .Concat()
+            .Concat()
             .DefaultIfEmpty(def);
       };
       var buyLevel = Trades.HaveBuy() ? rateSinceTrade(BuyLevel.Rate).Min().Min(ExitByBuySellLevel ? BuyLevel.Rate : double.NaN) : BuyLevel.Rate;

@@ -273,7 +273,8 @@ namespace HedgeHog.Alice.Store {
         .Select(t => t.Item1)
         .Where(b => b.Ratio(bbsd) > 1.01)
         .Select(b => (BarsCountCalc / Math.Sqrt(b / bbsd)).ToInt())
-        .Concat(GetRatesByTimeFrame().Concat(BarsCount))
+        .Concat(GetRatesByTimeFrame())
+        .Concat(new[] { BarsCount })
         .OrderByDescending(c => c)
         .Take(1)
         .ForEach(count => SetRatesLengthStable(count).With(c => BarsCountCalc = c.Ratio(BarsCountCalc) > 1.01 ? c : BarsCountCalc));
@@ -281,7 +282,8 @@ namespace HedgeHog.Alice.Store {
     void ScanRatesLengthByStDevReg() {
       UseRatesInternal(ri => BarsCountByStDevByReg(ri, 0, InPoints(RatesHeightMin)))
         .Concat()
-        .Concat(GetRatesByTimeFrame().Concat(BarsCount))
+        .Concat(GetRatesByTimeFrame())
+        .Concat(new[] { BarsCount })
         .OrderByDescending(c => c)
         .Take(1)
         .ForEach(count => SetRatesLengthStable(count).With(c => BarsCountCalc = c.Ratio(BarsCountCalc) > 1.01 ? c : BarsCountCalc));
@@ -362,10 +364,10 @@ namespace HedgeHog.Alice.Store {
         .Select(r => r.StartDate)
         .ToArray();
     }
-    void ScanRatesLengthByM1Wave() {
+    void ScanRatesLengthByM1Wave(Func<TradingMacro,WaveRange> wave) {
       if(BarPeriod != BarsPeriodType.t1)
         throw new Exception("ScanRatesLengthByM1Wave is only supported for BarsPeriodType." + BarsPeriodType.t1);
-      TradingMacroM1(tm => tm.WaveRangeAvg)
+      TradingMacroM1(wave)
         .Select(wr => ServerTime.AddMinutes(-wr.TotalMinutes))
         .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()))
         .ForEach(count => BarsCountCalc = count.Max(BarsCount));
