@@ -584,11 +584,18 @@ namespace HedgeHog {
       var avg = source.Select(d => Math.Pow(d.Abs(), 1 / power) * d.Sign()).Average();
       return Math.Pow(avg.Abs(), power) * avg.Sign();
     }
+    public static double? RootMeanPower(this IEnumerable<double?> source, double power = 2) {
+      var avg = source.Select(d => (double?)Math.Pow(d.Value.Abs(), 1 / power) * d.Value.Sign()).Average();
+      return avg.HasValue ? Math.Pow(avg.Value.Abs(), power) * avg.Value.Sign() : (double?)null;
+    }
     public static double RootMeanPowerByPosition(this IEnumerable<double> source, double power) {
       var avg = source.Select(d => Math.Pow(d, 1 / power)).ToList().AverageByPosition();
       return Math.Pow(avg, power);
     }
     public static double SquareMeanRoot(this IEnumerable<double> source) {
+      return source.RootMeanPower(0.5);
+    }
+    public static double? SquareMeanRoot(this IEnumerable<double?> source) {
       return source.RootMeanPower(0.5);
     }
     public static double StandardDeviation(this List<double> doubleList) {

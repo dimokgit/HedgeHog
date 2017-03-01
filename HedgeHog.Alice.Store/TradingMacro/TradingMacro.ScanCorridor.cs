@@ -237,13 +237,13 @@ namespace HedgeHog.Alice.Store {
       return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();
     }
 
-    private CorridorStatistics ScanCorridorBy1234(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+    private CorridorStatistics ScanCorridorBy1234(List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       return ScanCorridorBy12345(false, ratesForCorridor, priceHigh, priceLow);
     }
-    private CorridorStatistics ScanCorridorBy12345(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+    private CorridorStatistics ScanCorridorBy12345(List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       return ScanCorridorBy12345(true, ratesForCorridor, priceHigh, priceLow);
     }
-    private CorridorStatistics ScanCorridorByAll5(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+    private CorridorStatistics ScanCorridorByAll5(List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       return ScanCorridorBy12345(null, ratesForCorridor, priceHigh, priceLow);
     }
 
@@ -251,6 +251,8 @@ namespace HedgeHog.Alice.Store {
       public IList<Tuple<Rate, int>> Range { get; }
       public Tuple<Rate, int>[] MinMax { get; }
       public double Avg { get; }
+      public double Min { get; }
+      public double Max { get; }
       public int Index { get; }
       public DateTime StartDate { get; }
       public double Distance { get; private set; }
@@ -265,6 +267,8 @@ namespace HedgeHog.Alice.Store {
           Range = range;
           MinMax = range.MinMaxBy(r => r.Item1.BidLow, r => r.Item1.AskHigh);
           Avg = range.Average(r => r.Item1.PriceAvg);
+          Min = MinMax[0].Item1.BidLow;
+          Max = MinMax[1].Item1.AskHigh;
           Index = range[0].Item2;
           StartDate = range[0].Item1.StartDate;
           Distance = range.Distances(r => r.Item1.PriceAvg).Last().Item2;
@@ -286,7 +290,7 @@ namespace HedgeHog.Alice.Store {
       return grouped;
     }
 
-    private CorridorStatistics ScanCorridorBy12345(bool? skipAll, IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+    private CorridorStatistics ScanCorridorBy12345(bool? skipAll, List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       bool mustResetAllTrendLevels = true || _mustResetAllTrendLevels;
       _mustResetAllTrendLevels = false;
       List<RateGroup> grouped = GroupRates(ratesForCorridor);

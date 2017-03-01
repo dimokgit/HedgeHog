@@ -18,39 +18,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Forex-Azure.scmp = Forex-Azure.scmp
 		HedgeHog.ico = HedgeHog.ico
 		Local.testsettings = Local.testsettings
-		Performance1.psess = Performance1.psess
-		Performance10.psess = Performance10.psess
-		Performance11.psess = Performance11.psess
-		Performance12.psess = Performance12.psess
-		Performance13.psess = Performance13.psess
-		Performance14.psess = Performance14.psess
-		Performance15.psess = Performance15.psess
-		Performance16.psess = Performance16.psess
-		Performance17.psess = Performance17.psess
-		Performance18.psess = Performance18.psess
-		Performance19.psess = Performance19.psess
-		Performance2.psess = Performance2.psess
-		Performance20.psess = Performance20.psess
-		Performance21.psess = Performance21.psess
-		Performance22.psess = Performance22.psess
-		Performance23.psess = Performance23.psess
-		Performance24.psess = Performance24.psess
-		Performance25.psess = Performance25.psess
-		Performance26.psess = Performance26.psess
-		Performance27.psess = Performance27.psess
-		Performance28.psess = Performance28.psess
-		Performance29.psess = Performance29.psess
-		Performance3.psess = Performance3.psess
-		Performance30.psess = Performance30.psess
-		Performance31.psess = Performance31.psess
-		Performance32.psess = Performance32.psess
-		Performance33.psess = Performance33.psess
-		Performance4.psess = Performance4.psess
-		Performance5.psess = Performance5.psess
-		Performance6.psess = Performance6.psess
-		Performance7.psess = Performance7.psess
-		Performance8.psess = Performance8.psess
-		Performance9.psess = Performance9.psess
 		..\ta-lib-0.4.0-msvc\TA-Lib-Core.dll = ..\ta-lib-0.4.0-msvc\TA-Lib-Core.dll
 		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
 	EndProjectSection
@@ -239,9 +206,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.CoreTests", "..\HedgeHog.CoreTests\HedgeHog.CoreTests.csproj", "{BCA76A7A-18D9-4776-BC77-C2015807F3A0}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug SubArray|Any CPU = Debug SubArray|Any CPU
 		Debug SubArray|Mixed Platforms = Debug SubArray|Mixed Platforms

@@ -242,7 +242,7 @@ namespace HedgeHog.Alice.Store {
 
     Func<IList<Rate>, List<RateGroup>> GroupRates { get; }
     public TradingMacro() {
-      GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates)).MemoizeLast(r => r[0].StartDate);
+      GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates)).MemoizeLast(r => r.Last().StartDate);
       this.ObservableForProperty(tm => tm.Pair, false, false)
         .Where(oc => !string.IsNullOrWhiteSpace(oc.Value) && !IsInVirtualTrading)
         .Throttle(1.FromSeconds())
@@ -1874,7 +1874,7 @@ namespace HedgeHog.Alice.Store {
             { "PPM", InPips(TradingMacroTrender(tm=> PPMFromEnd(tm,-0.25)).Concat().SingleOrDefault()) },
             { "Voltage", TradingMacroTrender(tm=> tm.GetLastVolt()).Concat().SingleOrDefault() },
             { "Voltage2", TradingMacroTrender(tm=> tm.GetLastVolt(GetVoltage2)).Concat().SingleOrDefault() },
-            { "PpmM1", TradingMacroM1(tm=>InPips(tm.WaveRangeAvg.PipsPerMinute)).FirstOrDefault() },
+            { "PpmM1", TradingMacroM1(tm=>tm.WaveRangeAvg.PipsPerMinute).FirstOrDefault() },
             { "M1Angle", TradingMacroM1(tm=>tm.WaveRangeAvg.Angle.Abs()).FirstOrDefault() },
             //{ "Equinox", _wwwInfoEquinox },
             { "StDev", M1SD.SingleOrDefault() },
@@ -3703,8 +3703,8 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceRB2,()=> levelMax(tm=>tm.TLRed.PriceAvg2.Max( tm.TLBlue.PriceAvg2))},
           {TradeLevelBy.PriceRB3,()=> levelMin(tm=>tm.TLRed.PriceAvg3.Min( tm.TLBlue.PriceAvg3))},
 
-          { TradeLevelBy.PriceHigh,()=> levelMax(tm=>tm.TLBlue.PriceAvg2)},
-          {TradeLevelBy.PriceLow,()=> levelMin(tm=>tm.TLBlue.PriceAvg3)},
+          { TradeLevelBy.PriceHigh,()=> levelMax(tm=>tm.TLBlue.PriceAvg1+tm.TLBlue.StDev*2)},
+          {TradeLevelBy.PriceLow,()=> levelMin(tm=>tm.TLBlue.PriceAvg1-tm.TLBlue.StDev*2)},
 
           {TradeLevelBy.PriceLimeH,()=> levelMax(tm=>tm.TLLime.PriceAvg2)},
           {TradeLevelBy.PriceLimeL,()=> levelMin(tm=>tm.TLLime.PriceAvg3)},

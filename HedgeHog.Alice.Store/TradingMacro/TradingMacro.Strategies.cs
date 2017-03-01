@@ -427,7 +427,8 @@ namespace HedgeHog.Alice.Store {
       if(doubles.Count < 5)
         return new List<Rate>();
       var coeffs = doubles.Select(t => t.Item3).ToArray().Linear();
-      var hl = CalcCorridorStDev(doubles, coeffs) * CorridorSDRatio;
+      var stDev = CalcCorridorStDev(doubles, coeffs);
+      var hl = stDev * CorridorSDRatio;
       h = hl * 2;
       l = hl * 2;
       h1 = hl * 3;
@@ -448,12 +449,10 @@ namespace HedgeHog.Alice.Store {
       var edgeHigh = edges.OrderBy(x => x.d.Item1.Abs(x.h)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Item1.Abs(x.h)), x.d.Item1)).First();
       var edgeLow = edges.OrderBy(x => x.d.Item2.Abs(x.l)).Select(x => Tuple.Create(indexToDate(x.i), InPips(x.d.Item2.Abs(x.l)), x.d.Item2)).First();
 
-      rates.ForEach(r => r.Trends = map(new TL(corridorValues, coeffs, hl, corridorValues.First().StartDate, corridorValues.Last().StartDate) {
+      rates.ForEach(r => r.Trends = map(new TL(corridorValues, coeffs, stDev, corridorValues.First().StartDate, corridorValues.Last().StartDate) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize),
         EdgeHigh = new[] { edgeHigh },
-        EdgeLow = new[] { edgeLow },
-        StartIndex = up.Value.Min(down.Value),
-        EndIndex = up.Value.Max(down.Value)
+        EdgeLow = new[] { edgeLow }
       }));
 
 
@@ -491,6 +490,7 @@ namespace HedgeHog.Alice.Store {
     private double CalcCorridorStDev(List<Tuple<double, double, double>> doubles, double[] coeffs) {
       var cm = Trades.Any() && CorridorCalcMethod != CorridorCalculationMethod.MinMax ? CorridorCalculationMethod.Height : CorridorCalcMethod;
       var ds = doubles.Select(r => r.Item3);
+
       switch(cm) {
         case CorridorCalculationMethod.PowerMeanPower:
 

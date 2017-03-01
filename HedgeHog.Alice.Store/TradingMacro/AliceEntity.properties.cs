@@ -635,15 +635,18 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    TradingMacroTakeProfitFunction _TakeProfitFunction = default(TradingMacroTakeProfitFunction);
     [DisplayName("Take Profit")]
     [Category(categoryActiveFuncs)]
     [Description("TakeProfitFunction")]
     [WwwSetting(Group = wwwSettingsTrading)]
     public TradingMacroTakeProfitFunction TakeProfitFunction {
-      get { return (TradingMacroTakeProfitFunction)TakeProfitFunctionInt; }
+      get {  return _TakeProfitFunction; }
       set {
-        TakeProfitFunctionInt = (int)value;
-        OnPropertyChanged(TradingMacroMetadata.TakeProfitFunction);
+        if(TakeProfitFunction == value)
+          return;
+        _TakeProfitFunction = value;
+          OnPropertyChanged(nameof(TakeProfitFunction));
       }
     }
 

@@ -290,11 +290,9 @@ namespace HedgeHog.Alice.Store {
           var slack = (tl.TimeSpan.TotalMinutes * .1).FromMinutes();
           return new[] { tl.StartDate.Add(slack), tl.EndDate.Subtract(slack) };
         };
-        var dateOverlapOk = !tl3.Permutation().Any(t => dateRange(t.Item1).DoSetsOverlap(dateRange(t.Item2)));
         var tl3MM = tl3.Select(tl => tlMM(tl)).ToArray();
         var overlap = (from tlmm1 in tl3MM.TakeLast(1)
                        from tlmm2 in tl3MM.Take(tlCount)
-                       where dateOverlapOk
                        let ol = tlmm1.OverlapRatio(tlmm2)
                        select ol
                        ).ToArray();

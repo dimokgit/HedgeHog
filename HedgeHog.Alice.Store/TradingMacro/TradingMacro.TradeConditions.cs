@@ -1445,23 +1445,21 @@ namespace HedgeHog.Alice.Store {
       return TLsTimeRatio(tm, useMin, out timeAvg);
     }
     private static int[] TLsTimeRatio(TradingMacro tm, bool useMin, out double timeAvg) {
-      var tls = tm.TrendLinesMinMax.Where(t => t.Item2 == useMin).Select(t => t.Item1).ToList();
-      var timeRatio = (timeAvg = TLsTimeAverage(tls)) * tls.Count / tm.RatesDuration;
-      var rangesSum = tm.TrendRanges.Where(i => i.FirstOrDefault() > 0).Sum(tr => tr[0]) / 100.0;
-      return new[] { (timeRatio / rangesSum - 1).ToPercent() };
+      var tls = tm.TrendLinesMinMax.Where(t => t.Item2 == useMin).Select(t => new { tl = t.Item1,perc=t.Item3.Abs() }).ToList();
+      var timeRatio = (timeAvg = TLsTimeAverage(tls.Select(x=>x.tl)).GetValueOrDefault(double.NaN)) * tls.Count / tm.RatesDuration;
+      var rangesSum = tls.Sum(x => (int?)x.perc) / 100.0;
+      return timeRatio.IsNaN() || !rangesSum.HasValue ? new int[0] : new[] { (timeRatio / rangesSum.Value - 1).ToPercent() };
     }
 
-    private static double TLsTimeAverage(IList<TL> tls) {
-      return tls.Select(tl => tl.TimeSpan.TotalMinutes).SquareMeanRoot();
+    private static double? TLsTimeAverage(IEnumerable<TL> tls) {
+      return tls.Select(tl => (double?)tl.TimeSpan.TotalMinutes).SquareMeanRoot();
     }
 
     public object WwwInfo() {
       Func<Func<TradingMacro, TL>, IEnumerable<TL>> trenderLine = tl => TradingMacroTrender().Select(tl);
       return TradingMacroTrender(tm => {
-        var tls = tm.TrendLinesTrendsAll.OrderByDescending(tl => tl.EndDate).ToArray();
-        Func<TL, int> index = tl => tls.TakeWhile(tl0 => tl0 != tl).Count() + 1;
         var tlText = ToFunc((TL tl) => new { l = "Ang" + tl.Color, t = $"{tl.Angle.Abs().Round()},{tl.TimeSpan.ToString("h\\:mm")}" });
-        var angles = tls.Select(tlText).ToArray();
+        var angles = tm.TrendLinesTrendsAll.Select(tlText).ToArray();
         var showBBSD = new[] { VoltageFunction, VoltageFunction2 }.Contains(VoltageFunction.BBSD) ||
           new[] { TradeLevelBy.BoilingerDown, TradeLevelBy.BoilingerUp }.Contains(LevelBuyBy) ||
           TakeProfitFunction == TradingMacroTakeProfitFunction.BBand;
