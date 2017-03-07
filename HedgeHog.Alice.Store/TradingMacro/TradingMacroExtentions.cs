@@ -4399,7 +4399,6 @@ namespace HedgeHog.Alice.Store {
     [MethodImpl(MethodImplOptions.Synchronized)]
     void LoadRatesImpl(Order2GoAddIn.FXCoreWrapper fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool groupToSeconds) {
       Func<List<Rate>, List<Rate>> map = groupToSeconds ? TradingMacro.GroupTicksToSeconds<Rate> : (Func<List<Rate>, List<Rate>>)null;
-      var fetchRates = ratesList.Count() == 0;
       if(ratesList.Count() == -1) {
         if(periodMinutes > 0)
           ratesList.AddRange(fw.GetBarsFromHistory(pair, periodMinutes, TradesManagerStatic.FX_DATE_NOW, endDate).Except(ratesList));
