@@ -7,69 +7,29 @@ using System.Text;
 
 namespace IBApp {
   public class HistoricalDataMessage : IBMessage {
-    protected int requestId;
-    protected string date;
-    protected double open;
-    protected double high;
-    protected double low;
-    protected double close;
-    protected int volume;
-    protected int count;
-    protected double wap;
-    protected bool hasGaps;
 
-    public int RequestId {
-      get { return requestId; }
-      set { requestId = value; }
-    }
+    public int RequestId { get; set; }
 
-    public string Date {
-      get { return date; }
-      set { date = value; }
-    }
+    public DateTime Date { get; set; }
 
-    public double Open {
-      get { return open; }
-      set { open = value; }
-    }
+    public double Open { get; set; }
 
 
-    public double High {
-      get { return high; }
-      set { high = value; }
-    }
+  public double High { get; set; }
 
-    public double Low {
-      get { return low; }
-      set { low = value; }
-    }
+  public double Low { get; set; }
 
-    public double Close {
-      get { return close; }
-      set { close = value; }
-    }
+    public double Close { get; set; }
 
-    public int Volume {
-      get { return volume; }
-      set { volume = value; }
-    }
+    public int Volume { get; set; }
 
-    public int Count {
-      get { return count; }
-      set { count = value; }
-    }
+    public int Count { get; set; }
 
-    public double Wap {
-      get { return wap; }
-      set { wap = value; }
-    }
+    public double Wap { get; set; }
 
-    public bool HasGaps {
-      get { return hasGaps; }
-      set { hasGaps = value; }
-    }
+    public bool HasGaps { get; set; }
 
-    public HistoricalDataMessage(int reqId, string date, double open, double high, double low, double close, int volume, int count, double WAP, bool hasGaps) {
+    public HistoricalDataMessage(int reqId, DateTime date, double open, double high, double low, double close, int volume, int count, double WAP, bool hasGaps) {
       Type = MessageType.HistoricalData;
       RequestId = reqId;
       Date = date;

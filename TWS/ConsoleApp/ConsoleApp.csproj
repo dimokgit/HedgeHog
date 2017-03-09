@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Contracts.cs" />
     <Compile Include="IBClient.cs" />
     <Compile Include="Messages\ErrorMessage.cs" />
     <Compile Include="Messages\HistoricalDataEndMessage.cs" />

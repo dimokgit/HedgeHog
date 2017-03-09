@@ -5,38 +5,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace IBApp
-{
-    public class HistoricalDataEndMessage : IBMessage
-    {
-        private int requestId;
-        private string startDate;
-        private string endDate;
+namespace IBApp {
+  public class HistoricalDataEndMessage : IBMessage {
+    public string StartDate { get; }
+    public int RequestId { get; }
+    public string EndDate { get; }
 
-        public string StartDate
-        {
-            get { return startDate; }
-            set { startDate = value; }
-        }
-
-        public int RequestId
-        {
-            get { return requestId; }
-            set { requestId = value; }
-        }
-        
-        public string EndDate
-        {
-            get { return endDate; }
-            set { endDate = value; }
-        }
-
-        public HistoricalDataEndMessage(int requestId, string startDate, string endDate)
-        {
-            Type = MessageType.HistoricalDataEnd;
-            RequestId = requestId;
-            StartDate = startDate;
-            EndDate = endDate;
-        }
+    public HistoricalDataEndMessage(int requestId, string startDate, string endDate) {
+      Type = MessageType.HistoricalDataEnd;
+      RequestId = requestId;
+      StartDate = startDate;
+      EndDate = endDate;
     }
+    public override string ToString() {
+      return new { Type, RequestId, StartDate, EndDate } + "";
+    }
+  }
 }
