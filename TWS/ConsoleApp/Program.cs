@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -24,16 +27,16 @@ namespace ConsoleApp {
 
       var usdJpi = ContractSamples.FxContract("usd/jpy");
       Connect(ibClient, signal, 4001, "", 2);
-      Action<Action> load = a =>
-       new HistoryLoader(ibClient, usdJpi, 1, DateTime.Now, TimeSpan.FromHours(3), 1800, TimeInit.S, BarSize._1_secs,
+      var dateEnd = DateTime.Parse("2017-03-08 12:00");
+      var count = 0;
+      new HistoryLoader(ibClient, usdJpi, 1, dateEnd, TimeSpan.FromHours(40), TimeUnit.S, BarSize._1_secs,
          list => {
-           HandleMessage(new { list = new { list.Count, last = list.Last() } } + "");
-           a();
+           HandleMessage(new { list = new { list.Count, first = list.First().Date, last = list.Last().Date } } + "");
          },
+         dates => HandleMessage(new { dateStart = dates[0], dateEnd = dates[1], reqCount = ++count } + ""),
          exc => HandleError(exc));
 
       //load(() => load(() => { }));
-      load(() => { });
 
       HandleMessage("Press any key ...");
       Console.ReadKey();
@@ -43,7 +46,7 @@ namespace ConsoleApp {
       Console.ReadKey();
     }
 
-    struct HistoryLoader {
+    class HistoryLoader {
       #region Fields
       public const int HISTORICAL_ID_BASE = 30000000;
       private readonly List<HistoricalDataMessage> _list;
@@ -52,85 +55,164 @@ namespace ConsoleApp {
       private readonly IBClient _ibClient;
       private readonly Contract _contract;
       private readonly DateTime _dateStart;
-      private readonly TimeInit _timeUnit;
+      private  DateTime _endDate;
+      private readonly TimeUnit _timeUnit;
       private readonly BarSize _barSize;
+      private readonly TimeSpan _duration;
       private readonly Action<IList<HistoricalDataMessage>> _done;
-      private readonly int _chunkSize;
       private readonly Action<Exception> _error;
+      private TimeSpan _localDelay;
+      public bool Done { get; private set; }
       #endregion
 
-      public HistoryLoader(IBClient ibClient, Contract contract, int currentTicker, DateTime endDate, TimeSpan duration, int chunkSize, TimeInit timeUnit, BarSize barSize, Action<IList<HistoricalDataMessage>> done, Action<Exception> error) {
+      #region Pacer
+      public class FixedSizedQueue<T> : ConcurrentQueue<T> {
+        private readonly object syncObject = new object();
+
+        public int Size { get; private set; }
+
+        public FixedSizedQueue(int size) {
+          Size = size;
+        }
+
+        public new void Enqueue(T obj) {
+          base.Enqueue(obj);
+          lock(syncObject) {
+            while(base.Count > Size) {
+              T outObj;
+              base.TryDequeue(out outObj);
+            }
+          }
+        }
+      }
+      static FixedSizedQueue<DateTime> GetPacer(HistoryLoader hl) {
+        return pacer.GetOrAdd(hl._barSize, bs => new FixedSizedQueue<DateTime>(60));
+      }
+      static void AddToPacer(HistoryLoader hl) {
+        GetPacer(hl).Enqueue(DateTime.Now);
+      }
+      static TimeSpan GetPacerDelay(HistoryLoader hl) {
+        var que = GetPacer(hl);
+        if(!que.Any() || que.Count < que.Size)
+          return TimeSpan.Zero;
+        return TimeSpan.FromMinutes(60) - (DateTime.Now - que.First());
+      }
+      static TimeSpan MaxTimeSpan(TimeSpan ts1, TimeSpan ts2) => TimeSpan.FromTicks(Math.Max(ts1.Ticks, ts2.Ticks));
+      static ConcurrentDictionary<BarSize,FixedSizedQueue<DateTime>> pacer=new ConcurrentDictionary<BarSize, FixedSizedQueue<DateTime>>();
+      #endregion
+
+      static Subject<HistoryLoader> _subject=new Subject<HistoryLoader>();
+      static void LoadNext(HistoryLoader hl) => _subject.OnNext(hl);
+      static TimeSpan DEFAULT_DELAY=TimeSpan.FromSeconds(0.3);
+      static void HistoryLoader2() {
+        _subject
+          //.Do(hr=>)
+          .GroupBy(hl => hl._barSize)
+          .SelectMany(hl => hl.Delay(DEFAULT_DELAY))
+          .Subscribe(a => a.RequestHistoryDataChunk());
+      }
+
+      static HistoryLoader() {
+        _subject
+          //.Do(hr=>)
+          .SelectMany(hl => Observable.Return(hl).Delay(DEFAULT_DELAY+hl._localDelay))
+          .Subscribe(a => a.RequestHistoryDataChunk());
+      }
+      public HistoryLoader(IBClient ibClient, Contract contract, int currentTicker, DateTime endDate, TimeSpan duration, TimeUnit timeUnit, BarSize barSize, Action<IList<HistoricalDataMessage>> done, Action<DateTime?[]> dataEnd, Action<Exception> error) {
         _ibClient = ibClient;
         _contract = contract;
         _reqId = currentTicker + HISTORICAL_ID_BASE;
         _list = new List<HistoricalDataMessage>();
         _list2 = new List<HistoricalDataMessage>();
         _dateStart = endDate.Subtract(duration);
+        _endDate = endDate;
         _timeUnit = timeUnit;
         _barSize = barSize;
-        _chunkSize = chunkSize;
+        _duration = duration;
         _done = done;
+        _dataEnd = dataEnd;
         _error = error;
+        _localDelay = TimeSpan.Zero;
+        Done = false;
         Init();
-        RequestHistoryDataChunk(_ibClient, _contract, _reqId, endDate, _chunkSize, _timeUnit, _barSize);
+        var me = this;
+        _subject.OnNext(this);
       }
 
       void Init() {
+        _ibClient.Error += HandlePacer;
         _ibClient.HistoricalData += IbClient_HistoricalData;
         _ibClient.HistoricalDataEnd += IbClient_HistoricalDataEnd;
       }
+
+      private void HandlePacer(int arg1, int arg2, string arg3, Exception arg4) {
+        if(arg2 != 162)
+          return;
+         _localDelay += TimeSpan.FromSeconds(2);
+        _error(new Exception(new { _localDelay } + ""));
+        LoadNext(this);
+      }
+
       void CleanUp() {
         _ibClient.HistoricalData -= IbClient_HistoricalData;
         _ibClient.HistoricalDataEnd -= IbClient_HistoricalDataEnd;
+        Done = true;
       }
       private void IbClient_HistoricalDataEnd(int reqId, string startDateTWS, string endDateTWS) {
         if(reqId != _reqId)
           return;
         _list.InsertRange(0, _list2);
-        _list2.Clear();
-        var dateStart = startDateTWS.FromTWSString();
-        if(dateStart <= _dateStart) {
+        _endDate = _list[0].Date;
+        if(_endDate <= _dateStart) {
           CleanUp();
           _done(_list);
-        } else
-          RequestHistoryDataChunk(_ibClient, _contract, _reqId, dateStart, _chunkSize, _timeUnit, _barSize);
+        } else {
+          _dataEnd(new[] { _list2.FirstOrDefault()?.Date, _list2.LastOrDefault()?.Date });
+          var me = this;
+          _list2.Clear();
+          _subject.OnNext(this);
+        }
       }
-
-
       private void IbClient_HistoricalData(int reqId, string date, double open, double high, double low, double close, int volume, int count, double WAP, bool hasGaps) {
         if(reqId == _reqId)
           _list2.Add(new HistoricalDataMessage(reqId, date.FromTWSString(), open, high, low, close, volume, count, WAP, hasGaps));
       }
-
-      private void RequestHistoryDataChunk(IBClient ibClient, Contract contract, int currentTicker, DateTime endDateTime, int duration, TimeInit timeUnit, BarSize barSize) {
+      private void RequestHistoryDataChunk() {
         try {
-          string barSizeSetting = (barSize + "").Replace("_", " ").Trim();
+          string barSizeSetting = (_barSize + "").Replace("_", " ").Trim();
           string whatToShow = "MIDPOINT";
-          var endTimeWTS = endDateTime.ToTWSString().FromTWSString();
-          ibClient.ClientSocket.reqHistoricalData(currentTicker, contract, endDateTime.ToTWSString(), duration + "", barSizeSetting, whatToShow, 0, 1, new List<TagValue>());
+          _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, 0, 1, new List<TagValue>());
+          _localDelay = TimeSpan.Zero;
         } catch(Exception exc) {
           _error(exc);
           CleanUp();
         }
       }
+      static Dictionary<BarSize, Dictionary<TimeUnit, int[]>> BarSizeRanges=new Dictionary<BarSize, Dictionary<TimeUnit, int[]>> {
+        [BarSize._1_secs]= new Dictionary<TimeUnit, int[]> {
+          [TimeUnit.S] = new[] { 60, 1800 }
+        },
+        [BarSize._1_min]= new Dictionary<TimeUnit, int[]> {
+          [TimeUnit.S] = new[] { 60, 28800 },
+          [TimeUnit.M] = new[] { 1, 1 }
+        }
+      };
+      private readonly Action<DateTime?[]> _dataEnd;
+
+      static string Duration(BarSize barSize, TimeUnit timeUnit, TimeSpan timeSpan) {
+        var interval = (int)(timeUnit == TimeUnit.S ? timeSpan.TotalSeconds : timeSpan.TotalMinutes);
+        var range = BarSizeRanges[barSize][timeUnit];
+        var duration = Math.Min(Math.Max(interval, range[0]), range[1]);
+        return duration + " " + timeUnit;
+      }
     }
 
-    enum TimeInit { S, D, W, M, Y }
+    enum TimeUnit { S, D, W, M, Y }
     enum BarSize {
-      _1_secs,
-      _5_secs,
-      _15_secs,
-      _30_secs,
-      _1_min,
-      _2_mins,
-      _3_mins,
-      _5_mins,
-      _15_mins,
-      _30_mins,
-      _1_hour,
-      _1_day
+      _1_secs, _5_secs, _15_secs, _30_secs, _1_min, _2_mins,
+      _3_mins, _5_mins, _15_mins, _30_mins, _1_hour, _1_day
     }
-
+    //Dictionary<BarSize,int>
 
     private static void Connect(IBClient ibClient, EReaderSignal signal, int port, string host, int clientId) {
 
@@ -165,7 +247,7 @@ namespace ConsoleApp {
 
 
     private static void HandleMessage(string message) {
-      Console.WriteLine(message);
+      Console.WriteLine(DateTime.Now + ": " + message);
     }
     private static void HandleMessage(HistoricalDataMessage historicalDataEndMessage) {
       HandleMessage(historicalDataEndMessage + "");
