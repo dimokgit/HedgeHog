@@ -247,11 +247,6 @@
     <None Include="packages.config" />
     <Compile Include="CorridorStatistics\CorridorStaticBaseExtentions.cs" />
     <Compile Include="CorridorStatistics\CorridorStatistics.cs" />
-    <Compile Include="CS_4_0.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>CS_4_0.tt</DependentUpon>
-    </Compile>
     <Compile Include="Events.cs" />
     <Compile Include="GannAnglesEdit.xaml.cs">
       <DependentUpon>GannAnglesEdit.xaml</DependentUpon>
@@ -353,10 +348,6 @@
   <ItemGroup>
     <None Include="App.Config">
       <SubType>Designer</SubType>
-    </None>
-    <None Include="CS_4_0.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>CS_4_0.cs</LastGenOutput>
     </None>
     <None Include="Properties\DataSources\AliceEntities.datasource" />
     <None Include="Properties\DataSources\ForexEntities.datasource" />

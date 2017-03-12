@@ -448,19 +448,19 @@ namespace Order2GoAddIn {
     #endregion
 
     #region Constructor
-    PropertyObserver<CoreFX> _coreFxObserver;
-    public CoreFX CoreFX { get; set; }
+    PropertyObserver<ICoreFX> _coreFxObserver;
+    public ICoreFX CoreFX { get; set; }
     //public FXCoreWrapper() : this(new CoreFX(), null, null) { }
     //public FXCoreWrapper(CoreFX coreFX) : this(coreFX, null, null) { }
-    public FXCoreWrapper(CoreFX coreFX, Func<Trade, double> commissionByTrade) : this(coreFX, null, commissionByTrade) { }
-    public FXCoreWrapper(CoreFX coreFX, string pair, Func<Trade, double> commissionByTrade) {
+    public FXCoreWrapper(ICoreFX coreFX, Func<Trade, double> commissionByTrade) : this(coreFX, null, commissionByTrade) { }
+    public FXCoreWrapper(ICoreFX coreFX, string pair, Func<Trade, double> commissionByTrade) {
       if (coreFX == null) throw new NullReferenceException("coreFx parameter can npt be null.");
       this.CoreFX = coreFX;
       IsLoggedIn = coreFX.IsLoggedIn;
       this.CoreFX.LoggedIn += coreFX_LoggedInEvent;
       this.CoreFX.LoggedOff += coreFX_LoggedOffEvent;
       this.CoreFX.LoggingOff += CoreFX_LoggingOff;
-      _coreFxObserver = new PropertyObserver<CoreFX>(this.CoreFX)
+      _coreFxObserver = new PropertyObserver<ICoreFX>(CoreFX)
         .RegisterHandler(cfx => cfx.SessionStatus, h => this.RaiseSessionStatusChanged(h.SessionStatus));
       PendingOrders.CollectionChanged += PendingOrders_CollectionChanged;
       this.CommissionByTrade = commissionByTrade;
@@ -504,7 +504,7 @@ namespace Order2GoAddIn {
 
     public FXCore.TradeDeskAut Desk {
       get {
-        return CoreFX == null ? null : CoreFX.Desk;
+        return CoreFX == null ? null : ((CoreFX)CoreFX).Desk;
       }
     }
     #endregion
@@ -778,7 +778,7 @@ namespace Order2GoAddIn {
     public Account GetAccount_Slow() {
       Stopwatch sw = Stopwatch.StartNew();
       try {
-        var id = CoreFX.accountSubId;
+        var id = ((CoreFX)CoreFX).accountSubId;
         var row = GetRows(TABLE_ACCOUNTS).First(a => string.IsNullOrEmpty(id) || (a.CellValue(FIELD_ACCOUNTID) + "").EndsWith(id));
         //Debug.WriteLine("GetAccount1:{0} ms", sw.Elapsed.TotalMilliseconds);
         var trades = new Trade[] { };
@@ -1495,7 +1495,7 @@ namespace Order2GoAddIn {
     C.ConcurrentDictionary<string, FXCore.TableAut> tableIndices = new C.ConcurrentDictionary<string, FXCore.TableAut>();
     [CLSCompliant(false)]
     public FXCore.TableAut GetTable(string TableName, bool updateTable = false) {
-      return CoreFX.Table(TableName);
+      return ((CoreFX)CoreFX).Table(TableName);
       if (!IsLoggedIn) return null;
       if (updateTable && tableIndices.ContainsKey(TableName)) {
         FXCore.TableAut t;

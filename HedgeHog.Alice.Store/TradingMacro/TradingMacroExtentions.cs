@@ -10,7 +10,6 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Collections.Specialized;
 using System.Windows;
-using HedgeHog.Alice.Store.Metadata;
 using System.Linq.Expressions;
 using System.Windows.Input;
 using Gala = GalaSoft.MvvmLight.Command;
@@ -584,9 +583,9 @@ namespace HedgeHog.Alice.Store {
       //  this._blackoutTimes = f.v_BlackoutTime.ToArray();
       //});
       _pendingEntryOrders = new MemoryCache(Pair);
-      OnPropertyChanged(TradingMacroMetadata.CompositeName);
+      OnPropertyChanged(nameof(CompositeName));
     }
-    partial void OnLimitBarChanged() { OnPropertyChanged(TradingMacroMetadata.CompositeName); }
+    partial void OnLimitBarChanged() { OnPropertyChanged(nameof(CompositeName)); }
 
     public bool IsBlackoutTime {
       get {
@@ -702,7 +701,7 @@ namespace HedgeHog.Alice.Store {
           //  Debugger.Break();
         }
       }
-      OnPropertyChanged(Metadata.TradingMacroMetadata.GannAnglesOffset_);
+      OnPropertyChanged(nameof(GannAnglesOffset_));
     }
 
     private static int GetGannIndex(Rate rateLast, double slope) {
@@ -760,7 +759,7 @@ namespace HedgeHog.Alice.Store {
     void cs_PropertyChanged(object sender, PropertyChangedEventArgs e) {
       var cs = (sender as CorridorStatistics);
       switch(e.PropertyName) {
-        case Metadata.CorridorStatisticsMetadata.StartDate:
+        case "StartDate":
           if(!IsGannAnglesManual)
             SetGannAngleOffset(cs);
           break;
@@ -821,8 +820,8 @@ namespace HedgeHog.Alice.Store {
         //}
 
         #region PropertyChanged
-        OnPropertyChanged(TradingMacroMetadata.CorridorStats);
-        OnPropertyChanged(TradingMacroMetadata.HasCorridor);
+        OnPropertyChanged(nameof(CorridorStats));
+        OnPropertyChanged(nameof(HasCorridor));
         #endregion
       }
     }
@@ -965,8 +964,8 @@ namespace HedgeHog.Alice.Store {
         if(_overlap5 == value)
           return;
         _overlap5 = value;
-        OnPropertyChanged(TradingMacroMetadata.Overlap5);
-        OnPropertyChanged(TradingMacroMetadata.OverlapTotal);
+        OnPropertyChanged(nameof(Overlap5));
+        OnPropertyChanged(nameof(OverlapTotal));
       }
     }
     #endregion
@@ -1041,15 +1040,15 @@ namespace HedgeHog.Alice.Store {
     }
     public void TicksPerMinuteSet(Price price, DateTime serverTime) {
       PriceQueue.Add(price, serverTime);
-      OnPropertyChanged(TradingMacroMetadata.TicksPerMinuteInstant);
-      OnPropertyChanged(TradingMacroMetadata.TicksPerMinute);
-      OnPropertyChanged(TradingMacroMetadata.PipsPerMinute);
-      OnPropertyChanged(TradingMacroMetadata.PipsPerMinuteCmaFirst);
-      OnPropertyChanged(TradingMacroMetadata.PipsPerMinuteCmaLast);
-      OnPropertyChanged(TradingMacroMetadata.CurrentGross);
-      OnPropertyChanged(TradingMacroMetadata.CurrentGrossInPips);
-      OnPropertyChanged(TradingMacroMetadata.OpenTradesGross);
-      OnPropertyChanged(TradingMacroMetadata.OpenTradesGross2);
+      OnPropertyChanged(nameof(TicksPerMinuteInstant));
+      OnPropertyChanged(nameof(TicksPerMinute));
+      OnPropertyChanged(nameof(PipsPerMinute));
+      OnPropertyChanged(nameof(PipsPerMinuteCmaFirst));
+      OnPropertyChanged(nameof(PipsPerMinuteCmaLast));
+      OnPropertyChanged(nameof(CurrentGross));
+      OnPropertyChanged(nameof(CurrentGrossInPips));
+      OnPropertyChanged(nameof(OpenTradesGross));
+      OnPropertyChanged(nameof(OpenTradesGross2));
       SyncSubject.OnNext(this);
     }
     #endregion
@@ -1253,7 +1252,7 @@ namespace HedgeHog.Alice.Store {
             if(!TradesManager.IsInTest && !IsInPlayback)
               AddCurrentTick(pce.EventArgs.Price);
             TicksPerMinuteSet(pce.EventArgs.Price, ServerTime);
-            OnPropertyChanged(TradingMacroMetadata.PipsPerPosition);
+            OnPropertyChanged(nameof(PipsPerPosition));
           } catch(Exception exc) { Log = exc; }
         });
       if(!IsInVirtualTrading)
@@ -1840,9 +1839,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     private void ReplayEvents() {
-      OnPropertyChanged(TradingMacroMetadata.CurrentGross);
-      OnPropertyChanged(TradingMacroMetadata.CurrentGrossInPips);
-      OnPropertyChanged(TradingMacroMetadata.OpenTradesGross);
+      OnPropertyChanged(nameof(CurrentGross));
+      OnPropertyChanged(nameof(CurrentGrossInPips));
+      OnPropertyChanged(nameof(OpenTradesGross));
     }
 
 
@@ -1922,7 +1921,7 @@ namespace HedgeHog.Alice.Store {
           if(Math.Sign(ca) != Math.Sign(_CorridorAngle) && _corridorDirectionChanged != null)
             _corridorDirectionChanged(this, EventArgs.Empty);
           _CorridorAngle = ca;
-          OnPropertyChanged(TradingMacroMetadata.CorridorAngle);
+          OnPropertyChanged(nameof(CorridorAngle));
         }
       }
     }
@@ -2382,10 +2381,10 @@ namespace HedgeHog.Alice.Store {
                 TakeProfitPips = InPips(CalculateTakeProfit());
               } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
             }, IsInVirtualTrading);
-            OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
+            OnPropertyChanged(nameof(TradingDistanceInPips));
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
             OnPropertyChanged(() => SpreadForCorridorInPips);
-            OnPropertyChanged(TradingMacroMetadata.TradingTimeState);
+            OnPropertyChanged(nameof(TradingTimeState));
           }
           if(!IsInVirtualTrading && sw.Elapsed > TimeSpan.FromSeconds(5)) {
             //var s = string.Join(Environment.NewLine, timeSpanDict.Select(kv => " " + kv.Key + ":" + kv.Value));
@@ -2855,8 +2854,8 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_Profitability != value) {
           _Profitability = value;
-          OnPropertyChanged(Metadata.TradingMacroMetadata.Profitability);
-          OnPropertyChanged(Metadata.TradingMacroMetadata.ProfitabilityRatio);
+          OnPropertyChanged(nameof(Profitability));
+          OnPropertyChanged(nameof(ProfitabilityRatio));
         }
       }
     }
@@ -2961,7 +2960,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_Strategy != value) {
           _Strategy = value;
-          OnPropertyChanged(TradingMacroMetadata.Strategy);
+          OnPropertyChanged(nameof(Strategy));
           Task.Run(() => {
             _broadcastCorridorDateChanged();
           });
@@ -2973,7 +2972,7 @@ namespace HedgeHog.Alice.Store {
       get { return _ShowPopup; }
       set {
         _ShowPopup = value;
-        OnPropertyChanged(TradingMacroMetadata.ShowPopup);
+        OnPropertyChanged(nameof(ShowPopup));
       }
     }
     private string _PopupText;
@@ -2983,7 +2982,7 @@ namespace HedgeHog.Alice.Store {
         if(_PopupText != value) {
           _PopupText = value;
           ShowPopup = value != "";
-          OnPropertyChanged(TradingMacroMetadata.PopupText);
+          OnPropertyChanged(nameof(PopupText));
         }
       }
     }
@@ -4472,25 +4471,25 @@ namespace HedgeHog.Alice.Store {
         return;
       //_propertyChangedTaskDispencer.RunOrEnqueue(property, () => {
       switch(property) {
-        case TradingMacroMetadata.IsTradingActive:
+        case nameof(IsTradingActive):
           SuppRes.ToList().ForEach(sr => sr.ResetPricePosition());
           break;
-        case TradingMacroMetadata.TradingDistanceFunction:
-        case TradingMacroMetadata.CurrentLoss:
+        case nameof(TradingDistanceFunction):
+        case nameof(CurrentLoss):
           _tradingDistanceMax = 0;
           SetLotSize();
           break;
-        case TradingMacroMetadata.Pair:
-          goto case TradingMacroMetadata.BarsCount;
-        case TradingMacroMetadata.UsePrevHeight:
+        case nameof(Pair):
+          goto case nameof(BarsCount);
+        case nameof(UsePrevHeight):
           ResetBarsCountCalc();
-          goto case TradingMacroMetadata.BarsCount;
-        case TradingMacroMetadata.VoltsFrameLength:
-        case TradingMacroMetadata.CorridorDistanceRatio:
+          goto case nameof(BarsCount);
+        case nameof(VoltsFrameLength):
+        case nameof(CorridorDistanceRatio):
           CorridorStats = null;
           CorridorStartDate = null;
-          goto case TradingMacroMetadata.TakeProfitFunction;
-        case TradingMacroMetadata.BarsCount:
+          goto case nameof(TakeProfitFunction);
+        case nameof(BarsCount):
           if(!IsInVirtualTrading) {
             OnLoadRates(() => UseRatesInternal(ri => ri.Clear()));
           } else {
@@ -4502,32 +4501,32 @@ namespace HedgeHog.Alice.Store {
             new[] { _setVoltsSubscriber }.Where(a => a != null).ForEach(a => a.Dispose());
           }
           break;
-        case TradingMacroMetadata.RatesInternal:
+        case nameof(RatesInternal):
           RatesArraySafe.Count();
           break;
-        case TradingMacroMetadata.Strategy:
-        case TradingMacroMetadata.TrailingDistanceFunction:
+        case nameof(Strategy):
+        case nameof(TrailingDistanceFunction):
           _strategyExecuteOnTradeClose = null;
           _strategyExecuteOnTradeOpen = null;
           CloseAtZero = false;
           _tradingDistanceMax = 0;
-          goto case TradingMacroMetadata.TakeProfitFunction;
-        case TradingMacroMetadata.TakeProfitFunction:
+          goto case nameof(TakeProfitFunction);
+        case nameof(TakeProfitFunction):
           if(RatesArray.Count > 0)
             OnScanCorridor(RatesArray, () => {
               RaiseShowChart();
               RunStrategy();
             }, true);
           break;
-        case TradingMacroMetadata.CorridorCalcMethod:
-        case TradingMacroMetadata.CorridorCrossHighLowMethod:
-        case TradingMacroMetadata.CorridorCrossesCountMinimum:
-        case TradingMacroMetadata.CorridorHighLowMethod:
-        case TradingMacroMetadata.TradingAngleRange:
-        case TradingMacroMetadata.StDevAverageLeewayRatio:
-        case TradingMacroMetadata.StDevTresholdIterations:
-        case TradingMacroMetadata.MovingAverageType:
-        case TradingMacroMetadata.PriceCmaLevels:
+        case nameof(CorridorCalcMethod):
+        case nameof(CorridorCrossHighLowMethod):
+        case nameof(CorridorCrossesCountMinimum):
+        case nameof(CorridorHighLowMethod):
+        case nameof(TradingAngleRange):
+        case nameof(StDevAverageLeewayRatio):
+        case nameof(StDevTresholdIterations):
+        case nameof(MovingAverageType):
+        case nameof(PriceCmaLevels):
           try {
             if(RatesArray.Any()) {
               RatesArray.Clear();
@@ -4537,7 +4536,7 @@ namespace HedgeHog.Alice.Store {
             Log = exc;
           }
           break;
-        case TradingMacroMetadata.SuppResLevelsCount_:
+        case nameof(SuppResLevelsCount_):
           AdjustSuppResCount();
           break;
       }
@@ -4579,7 +4578,7 @@ namespace HedgeHog.Alice.Store {
       get { return _InfoTooltip; }
       set {
         _InfoTooltip = value;
-        OnPropertyChanged(TradingMacroMetadata.InfoTooltip);
+        OnPropertyChanged(nameof(InfoTooltip));
       }
     }
 
@@ -4589,8 +4588,8 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_TakeProfitDistance != value) {
           _TakeProfitDistance = value;
-          OnPropertyChanged(TradingMacroMetadata.TakeProfitDistance);
-          OnPropertyChanged(TradingMacroMetadata.TakeProfitDistanceInPips);
+          OnPropertyChanged(nameof(TakeProfitDistance));
+          OnPropertyChanged(nameof(TakeProfitDistanceInPips));
         }
       }
     }

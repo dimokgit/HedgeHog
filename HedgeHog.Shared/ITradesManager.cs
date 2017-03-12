@@ -22,13 +22,20 @@ namespace HedgeHog.Shared {
   }
 
   public interface ICoreFX: INotifyPropertyChanged {
-    bool IsInVirtualTrading { get; set; }
-    bool IsLoggedIn { get; }
     bool LogOn(string user, string accountSubId, string password, bool isDemo);
     void Logout();
+    bool ReLogin();
+    void SetOfferSubscription(string pair);
+
     event EventHandler<LoggedInEventArgs>  LoggedIn;
     event LoginErrorHandler LoginError;
     event EventHandler<LoggedInEventArgs> LoggedOff;
+    event EventHandler<LoggedInEventArgs> LoggingOff;
+
+    bool IsInVirtualTrading { get; set; }
+    bool IsLoggedIn { get; }
+    TradingServerSessionStatus SessionStatus { get; set; }
+    DateTime ServerTime { get; }
   }
   public interface ITradesManager {
     bool IsLoggedIn { get; }

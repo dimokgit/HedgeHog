@@ -1,6 +1,5 @@
 ﻿using HedgeHog;
 using HedgeHog.Alice.Store;
-using HedgeHog.Alice.Store.Metadata;
 using HedgeHog.Bars;
 using HedgeHog.Charter;
 using HedgeHog.Shared;
@@ -186,7 +185,7 @@ namespace HedgeHog.Alice.Client {
       var tm = GetTradingMacro((CharterControl)sender);
       tm.IsTradingActive = false;
       tm.CorridorStopDate = e.NewPosition;
-      tm.OnPropertyChangedCore(TradingMacroMetadata.CorridorStartDate);
+      tm.OnPropertyChangedCore(nameof(tm.CorridorStartDate));
     }
 
     void charterNew_LineTimeShortChanged(object sender, PositionChangedBaseEventArgs<DateTime> e) {
@@ -845,11 +844,11 @@ namespace HedgeHog.Alice.Client {
       try {
         var tm = sender as TradingMacro;
 
-        if(e.PropertyName == TradingMacroMetadata.IsActive) {
+        if(e.PropertyName == nameof(tm.IsActive)) {
           _tradingMacrosDictionary.Clear();
           ScheduleInitTradingMacro(tm);
         }
-        if(e.PropertyName == TradingMacroMetadata.CurrentPrice) {
+        if(e.PropertyName == nameof(tm.CurrentPrice)) {
           try {
             if(tm.IsActive && tm.HasRates && !IsInVirtualTrading) {
               if(!_isMinimized) {
@@ -873,31 +872,31 @@ namespace HedgeHog.Alice.Client {
         }
 
 
-        if(e.PropertyName == TradingMacroMetadata.GannAngles_) {
+        if(e.PropertyName ==nameof(tm.GannAngles_)) {
           tm.SetGannAngles();
           AddShowChart(tm);
         }
 
-        if(e.PropertyName == TradingMacroMetadata.Log) {
+        if(e.PropertyName == nameof(tm.Log)) {
           Log = tm.Log;
         }
 
         switch(e.PropertyName) {
-          case TradingMacroMetadata.Pair:
-          case TradingMacroMetadata.TradingRatio:
+          case nameof(tm.Pair):
+          case nameof(tm.TradingRatio):
             tm.SetLotSize(TradesManager.GetAccount());
             break;
         }
-        if(e.PropertyName == TradingMacroMetadata.CorridorIterations)
+        if(e.PropertyName == nameof(tm.CorridorIterations))
           tm.CorridorStatsArray.Clear();
-        if(e.PropertyName == TradingMacroMetadata.IsActive && ShowAllMacrosFilter)
+        if(e.PropertyName == nameof(tm.IsActive) && ShowAllMacrosFilter)
           RaisePropertyChanged(() => TradingMacrosCopy);
 
-        if(e.PropertyName == TradingMacroMetadata.CurrentLoss) {
+        if(e.PropertyName == nameof(tm.CurrentLoss)) {
           MasterModel.CurrentLoss = CurrentLoss;
           //GlobalStorage.UseAliceContext(c => { }, true);
         }
-        if(e.PropertyName == TradingMacroMetadata.SyncAll) {
+        if(e.PropertyName == nameof(tm.SyncAll)) {
           if(tm.SyncAll) {
             var categories = new[] { TradingMacro.categoryActive, TradingMacro.categoryActiveFuncs, TradingMacro.categoryActiveYesNo, TradingMacro.categoryTrading, TradingMacro.categoryCorridor };
             tm.SyncAll = false;
@@ -911,7 +910,7 @@ namespace HedgeHog.Alice.Client {
                 p.SetValue(t, p.GetValue(tm, null), null);
           }
         }
-        if(e.PropertyName != TradingMacroMetadata.IsAutoSync && tm.IsAutoSync) {
+        if(e.PropertyName != nameof(tm.IsAutoSync) && tm.IsAutoSync) {
           var property = tm.GetType().GetProperty(e.PropertyName);
           if(property == null)
             Debug.Fail("Property " + e.PropertyName + " does not exist.");

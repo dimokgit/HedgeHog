@@ -25,7 +25,6 @@ using O2G = Order2GoAddIn;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
 using NotifyCollectionChangedWrapper;
-using HedgeHog.Alice.Store.Metadata;
 using System.Threading.Tasks.Dataflow;
 using HedgeHog.Shared.Messages;
 using ReactiveUI;
@@ -72,7 +71,7 @@ namespace HedgeHog.Alice.Client {
 
 
     #region FXCM
-    public override CoreFX CoreFX { get; } = new CoreFX();
+    public override ICoreFX CoreFX { get; } = new CoreFX();
     FXW fwMaster;
 
     public override FXW FWMaster {
