@@ -1282,7 +1282,7 @@ namespace HedgeHog.Alice.Store {
       CalcTakeProfitDistance();
     }
 
-    void CoreFX_LoggingOffEvent(object sender, Order2GoAddIn.LoggedInEventArgs e) {
+    void CoreFX_LoggingOffEvent(object sender, LoggedInEventArgs e) {
       var fw = GetFXWraper();
       if(fw == null)
         return;

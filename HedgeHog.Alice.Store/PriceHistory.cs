@@ -18,7 +18,7 @@ namespace HedgeHog.Alice.Store {
   public static class PriceHistory {
     public static void LoadBars(FXCoreWrapper fw, string pairToLoad, Action<object> progressCallback = null) {
       var pairsToLoad = new RequestPairForHistoryMessage();
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<RequestPairForHistoryMessage>(pairsToLoad);
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(pairsToLoad);
       foreach (var pair in pairsToLoad.Pairs)
         AddTicks(fw, pair.Item2, pair.Item1, DateTime.Now.AddYears(-1), progressCallback);
     }

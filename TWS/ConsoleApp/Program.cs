@@ -61,63 +61,12 @@ namespace ConsoleApp {
       private readonly TimeSpan _duration;
       private readonly Action<IList<HistoricalDataMessage>> _done;
       private readonly Action<Exception> _error;
-      private TimeSpan _localDelay;
+      private readonly Action<DateTime?[]> _dataEnd;
+      private TimeSpan _delay;
       public bool Done { get; private set; }
       #endregion
 
-      #region Pacer
-      public class FixedSizedQueue<T> : ConcurrentQueue<T> {
-        private readonly object syncObject = new object();
-
-        public int Size { get; private set; }
-
-        public FixedSizedQueue(int size) {
-          Size = size;
-        }
-
-        public new void Enqueue(T obj) {
-          base.Enqueue(obj);
-          lock(syncObject) {
-            while(base.Count > Size) {
-              T outObj;
-              base.TryDequeue(out outObj);
-            }
-          }
-        }
-      }
-      static FixedSizedQueue<DateTime> GetPacer(HistoryLoader hl) {
-        return pacer.GetOrAdd(hl._barSize, bs => new FixedSizedQueue<DateTime>(60));
-      }
-      static void AddToPacer(HistoryLoader hl) {
-        GetPacer(hl).Enqueue(DateTime.Now);
-      }
-      static TimeSpan GetPacerDelay(HistoryLoader hl) {
-        var que = GetPacer(hl);
-        if(!que.Any() || que.Count < que.Size)
-          return TimeSpan.Zero;
-        return TimeSpan.FromMinutes(60) - (DateTime.Now - que.First());
-      }
-      static TimeSpan MaxTimeSpan(TimeSpan ts1, TimeSpan ts2) => TimeSpan.FromTicks(Math.Max(ts1.Ticks, ts2.Ticks));
-      static ConcurrentDictionary<BarSize,FixedSizedQueue<DateTime>> pacer=new ConcurrentDictionary<BarSize, FixedSizedQueue<DateTime>>();
-      #endregion
-
-      static Subject<HistoryLoader> _subject=new Subject<HistoryLoader>();
-      static void LoadNext(HistoryLoader hl) => _subject.OnNext(hl);
-      static TimeSpan DEFAULT_DELAY=TimeSpan.FromSeconds(0.3);
-      static void HistoryLoader2() {
-        _subject
-          //.Do(hr=>)
-          .GroupBy(hl => hl._barSize)
-          .SelectMany(hl => hl.Delay(DEFAULT_DELAY))
-          .Subscribe(a => a.RequestHistoryDataChunk());
-      }
-
-      static HistoryLoader() {
-        _subject
-          //.Do(hr=>)
-          .SelectMany(hl => Observable.Return(hl).Delay(DEFAULT_DELAY+hl._localDelay))
-          .Subscribe(a => a.RequestHistoryDataChunk());
-      }
+      #region ctor
       public HistoryLoader(IBClient ibClient, Contract contract, int currentTicker, DateTime endDate, TimeSpan duration, TimeUnit timeUnit, BarSize barSize, Action<IList<HistoricalDataMessage>> done, Action<DateTime?[]> dataEnd, Action<Exception> error) {
         _ibClient = ibClient;
         _contract = contract;
@@ -132,11 +81,11 @@ namespace ConsoleApp {
         _done = done;
         _dataEnd = dataEnd;
         _error = error;
-        _localDelay = TimeSpan.Zero;
+        _delay = TimeSpan.Zero;
         Done = false;
         Init();
         var me = this;
-        _subject.OnNext(this);
+        RequestHistoryDataChunk();
       }
 
       void Init() {
@@ -144,23 +93,25 @@ namespace ConsoleApp {
         _ibClient.HistoricalData += IbClient_HistoricalData;
         _ibClient.HistoricalDataEnd += IbClient_HistoricalDataEnd;
       }
-
-      private void HandlePacer(int arg1, int arg2, string arg3, Exception arg4) {
-        if(arg2 != 162)
-          return;
-         _localDelay += TimeSpan.FromSeconds(2);
-        _error(new Exception(new { _localDelay } + ""));
-        LoadNext(this);
-      }
-
       void CleanUp() {
         _ibClient.HistoricalData -= IbClient_HistoricalData;
         _ibClient.HistoricalDataEnd -= IbClient_HistoricalDataEnd;
         Done = true;
       }
+      #endregion
+
+      #region Event Handlers
+      private void HandlePacer(int arg1, int arg2, string arg3, Exception arg4) {
+        if(arg2 != 162)
+          return;
+        _delay += TimeSpan.FromSeconds(2);
+        _error(new Exception(new { _delay } + ""));
+        RequestNextDataChunk();
+      }
       private void IbClient_HistoricalDataEnd(int reqId, string startDateTWS, string endDateTWS) {
         if(reqId != _reqId)
           return;
+        _delay = TimeSpan.Zero;
         _list.InsertRange(0, _list2);
         _endDate = _list[0].Date;
         if(_endDate <= _dateStart) {
@@ -170,24 +121,31 @@ namespace ConsoleApp {
           _dataEnd(new[] { _list2.FirstOrDefault()?.Date, _list2.LastOrDefault()?.Date });
           var me = this;
           _list2.Clear();
-          _subject.OnNext(this);
+          RequestNextDataChunk();
         }
       }
       private void IbClient_HistoricalData(int reqId, string date, double open, double high, double low, double close, int volume, int count, double WAP, bool hasGaps) {
         if(reqId == _reqId)
           _list2.Add(new HistoricalDataMessage(reqId, date.FromTWSString(), open, high, low, close, volume, count, WAP, hasGaps));
       }
+      #endregion
+
+      private void RequestNextDataChunk() {
+        Task.Delay(_delay).ContinueWith(t => RequestHistoryDataChunk());
+      }
+
+
       private void RequestHistoryDataChunk() {
         try {
           string barSizeSetting = (_barSize + "").Replace("_", " ").Trim();
           string whatToShow = "MIDPOINT";
           _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, 0, 1, new List<TagValue>());
-          _localDelay = TimeSpan.Zero;
         } catch(Exception exc) {
           _error(exc);
           CleanUp();
         }
       }
+
       static Dictionary<BarSize, Dictionary<TimeUnit, int[]>> BarSizeRanges=new Dictionary<BarSize, Dictionary<TimeUnit, int[]>> {
         [BarSize._1_secs]= new Dictionary<TimeUnit, int[]> {
           [TimeUnit.S] = new[] { 60, 1800 }
@@ -197,7 +155,6 @@ namespace ConsoleApp {
           [TimeUnit.M] = new[] { 1, 1 }
         }
       };
-      private readonly Action<DateTime?[]> _dataEnd;
 
       static string Duration(BarSize barSize, TimeUnit timeUnit, TimeSpan timeSpan) {
         var interval = (int)(timeUnit == TimeUnit.S ? timeSpan.TotalSeconds : timeSpan.TotalMinutes);

@@ -392,11 +392,6 @@
     <Compile Include="Commands\DelegateCommand.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="CS_4_0.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>CS_4_0.tt</DependentUpon>
-    </Compile>
     <Compile Include="DockingWindow.xaml.cs">
       <DependentUpon>DockingWindow.xaml</DependentUpon>
     </Compile>
@@ -548,10 +543,6 @@
     </EmbeddedResource>
     <None Include="app.config">
       <SubType>Designer</SubType>
-    </None>
-    <None Include="CS_4_0.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>CS_4_0.cs</LastGenOutput>
     </None>
     <None Include="HedgeHog.Alice.Client_TemporaryKey.pfx" />
     <None Include="packages.config">

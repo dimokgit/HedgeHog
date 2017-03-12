@@ -54,7 +54,7 @@ namespace HedgeHog.Alice.Client {
     static private TraderModel _default;
     static public TraderModel Default {
       get {
-        lock (_defaultLocker)
+        lock(_defaultLocker)
           if(_default == null)
             _default = new TraderModel();
         return _default;
@@ -72,8 +72,7 @@ namespace HedgeHog.Alice.Client {
 
 
     #region FXCM
-    private Order2GoAddIn.CoreFX _coreFX = new Order2GoAddIn.CoreFX();
-    public override Order2GoAddIn.CoreFX CoreFX { get { return _coreFX; } }
+    public override CoreFX CoreFX { get; } = new CoreFX();
     FXW fwMaster;
 
     public override FXW FWMaster {
@@ -357,7 +356,7 @@ namespace HedgeHog.Alice.Client {
 
     void ta_PropertyChanged(object sender, PropertyChangedEventArgs e) {
       if(sender == TradingMaster) {
-        if(e.PropertyName ==  "TradingMacroName")
+        if(e.PropertyName == "TradingMacroName")
           RaiseTradingMacroNameChanged();
       }
     }
@@ -517,7 +516,7 @@ namespace HedgeHog.Alice.Client {
     DateTime lastLogTime = DateTime.MinValue;
     public string LogText {
       get {
-        lock (_logQueue) {
+        lock(_logQueue) {
           return string.Join(Environment.NewLine, _logQueue.Reverse());
         }
       }
@@ -536,7 +535,7 @@ namespace HedgeHog.Alice.Client {
           //var comExc = exc as System.Runtime.InteropServices.COMException;
           //if (comExc != null && comExc.ErrorCode == -2147467259)
           //  AccountLogin(new LoginInfo(TradingAccount, TradingPassword, TradingDemo));
-          lock (_logQueue) {
+          lock(_logQueue) {
             while(_logQueue.Count > 150)
               _logQueue.Dequeue();
             var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss.fff] ") + value.GetExceptionShort() });
@@ -897,7 +896,7 @@ namespace HedgeHog.Alice.Client {
       try {
         string account, password;
         FXCM.Lib.GetNewAccount(out account, out password);
-        if(Login(account,"", password, true)) {
+        if(Login(account, "", password, true)) {
           li.Account = account;
           li.Password = password;
           li.IsDemo = true;
@@ -1116,11 +1115,11 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void AccountLogin(LoginInfo li) {
-      LoginAsync(li.Account,"", li.Password, li.IsDemo);
+      LoginAsync(li.Account, "", li.Password, li.IsDemo);
     }
 
     private void LoginAsync(string account, string accountSubId, string password, bool isDemo) {
-      new Action(() => Login(account,accountSubId, password, isDemo)).ScheduleOnUI();
+      new Action(() => Login(account, accountSubId, password, isDemo)).ScheduleOnUI();
     }
 
     #endregion
@@ -1234,7 +1233,6 @@ namespace HedgeHog.Alice.Client {
 
     #region Ctor
     Schedulers.ThreadScheduler.CommandDelegate Using_FetchServerTrades;
-    MvvmFoundation.Wpf.PropertyObserver<CoreFX> _coreFXObserver;
     IObservable<EventPattern<PriceChangedEventArgs>> _priceChanged;
     public IObservable<EventPattern<PriceChangedEventArgs>> PriceChanged {
       get { return _priceChanged; }
@@ -1262,7 +1260,7 @@ namespace HedgeHog.Alice.Client {
 
     TimeSpan _throttleInterval = TimeSpan.FromSeconds(1);
     TraderModel() {
-      lock (_defaultLocker) {
+      lock(_defaultLocker) {
         if(_default != null)
           throw new InvalidOperationException();
         _default = this;
@@ -1279,10 +1277,10 @@ namespace HedgeHog.Alice.Client {
           throw new Exception("Multiple Trading Accounts found.");
         }
         #region FXCM
-        fwMaster = new FXW(this.CoreFX, CommissionByTrade);
+        fwMaster = new FXW(CoreFX, CommissionByTrade);
         TradesManagerStatic.AccountCurrency = MasterAccount.Currency;
         virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, CommissionByTrade);
-        this.CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
+        CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
         //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)
         //.RegisterHandler(c=>c.SessionStatus,c=>SessionStatus = c.SessionStatus);
         PriceChanged = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h);
@@ -1463,13 +1461,13 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region FXCM
-    bool Login(string tradingAccount,string accountSubId, string tradingPassword, bool tradingDemo) {
+    bool Login(string tradingAccount, string accountSubId, string tradingPassword, bool tradingDemo) {
       try {
         if(CoreFX.IsLoggedIn)
           CoreFX.Logout();
         IsInLogin = true;
         CoreFX.IsInVirtualTrading = IsInVirtualTrading;
-        if(CoreFX.LogOn(tradingAccount,accountSubId, tradingPassword, tradingDemo)) {
+        if(CoreFX.LogOn(tradingAccount, accountSubId, tradingPassword, tradingDemo)) {
           RaiseSlaveLoginRequestEvent();
           OnInvokeSyncronize(TradesManager.GetAccount());
           return true;

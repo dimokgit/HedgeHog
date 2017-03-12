@@ -10,8 +10,26 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Windows;
 using System.Text.RegularExpressions;
+using System.ComponentModel;
 
 namespace HedgeHog.Shared {
+  public delegate void LoginErrorHandler(Exception exc);
+  public class LoggedInEventArgs : EventArgs {
+    public bool IsInVirtualTrading { get; set; }
+    public LoggedInEventArgs(bool isInVirtualTrading) {
+      IsInVirtualTrading = isInVirtualTrading;
+    }
+  }
+
+  public interface ICoreFX: INotifyPropertyChanged {
+    bool IsInVirtualTrading { get; set; }
+    bool IsLoggedIn { get; }
+    bool LogOn(string user, string accountSubId, string password, bool isDemo);
+    void Logout();
+    event EventHandler<LoggedInEventArgs>  LoggedIn;
+    event LoginErrorHandler LoginError;
+    event EventHandler<LoggedInEventArgs> LoggedOff;
+  }
   public interface ITradesManager {
     bool IsLoggedIn { get; }
     bool IsInTest { get; set; }

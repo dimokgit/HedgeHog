@@ -12,10 +12,10 @@ using HedgeHog;
 
 
 namespace Order2GoAddIn {
-  public class CoreFX :GalaSoft.MvvmLight.ViewModelBase, IDisposable{
+  public class CoreFX :GalaSoft.MvvmLight.ViewModelBase,ICoreFX, IDisposable{
     public bool IsInVirtualTrading { get; set; }
     FXCore.CoreAut mCore = new FXCore.CoreAut();
-    public FXCore.TradeDeskAut _mDesk;
+    FXCore.TradeDeskAut _mDesk;
     public FXCore.TradeDeskAut Desk {
       get {
         if (_mDesk == null)
@@ -23,7 +23,6 @@ namespace Order2GoAddIn {
         return _mDesk;
       }
     }
-    public delegate void LoginErrorHandler(Exception exc);
     public event LoginErrorHandler LoginError;
     private void RaiseLoginError(Exception exc) {
       if (LoginError != null) LoginError(exc);
@@ -318,11 +317,5 @@ namespace Order2GoAddIn {
     }
 
     public string accountSubId { get; private set; }
-  }
-  public class LoggedInEventArgs : EventArgs {
-    public bool IsInVirtualTrading { get; set; }
-    public LoggedInEventArgs(bool isInVirtualTrading) {
-      this.IsInVirtualTrading = isInVirtualTrading;
-    }
   }
 }
