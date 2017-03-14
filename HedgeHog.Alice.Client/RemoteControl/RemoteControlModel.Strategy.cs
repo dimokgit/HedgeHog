@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HedgeHog.Alice.Store;
+using HedgeHog.Core;
 
 namespace HedgeHog.Alice.Client {
   partial class RemoteControlModel {

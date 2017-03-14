@@ -46,9 +46,9 @@ namespace HedgeHog.Reports {
       }
     }
     #endregion
-    FXCoreWrapper _fw;
+    ITradesManager _fw;
     [Import]
-    FXCoreWrapper fw {
+    ITradesManager fw {
       get { return _fw; }
       set { _fw = value; }
     }
@@ -58,7 +58,7 @@ namespace HedgeHog.Reports {
     #endregion
 
     #region Ctor
-    public Report(FXCoreWrapper fw) {
+    public Report(ITradesManager fw) {
       this.fw = fw;
       try {
         InitializeComponent();
@@ -72,13 +72,13 @@ namespace HedgeHog.Reports {
 
       InitializeComponent();
       if (fw != null)
-        fw.CoreFX.LoginError += CoreFX_LoginError;
+        ((FXCoreWrapper)fw).CoreFX.LoginError += CoreFX_LoginError;
     }
 
     ~Report() {
       try {
         if (fw != null)
-          fw.CoreFX.LoginError -= CoreFX_LoginError;
+          ((FXCoreWrapper)fw).CoreFX.LoginError -= CoreFX_LoginError;
       } catch { }
     }
     #endregion
@@ -99,11 +99,11 @@ namespace HedgeHog.Reports {
       var password = "1234";
       var isDemo = true;
       var logOff = false;
-      logOff = !fw.IsLoggedIn && fw.CoreFX.LogOn(accountId,"", password, isDemo);
+      logOff = !fw.IsLoggedIn && ((FXCoreWrapper)fw).CoreFX.LogOn(accountId,"", password, isDemo);
       if (fw.IsLoggedIn) {
         try {// Load Report
-          var trades = fw.GetTradesFromReport(DateTime.Now.AddMonths(-1), DateTime.Now.AddDays(1).Date);
-          if (logOff) fw.CoreFX.Logout();
+          var trades = ((FXCoreWrapper)fw).GetTradesFromReport(DateTime.Now.AddMonths(-1), DateTime.Now.AddDays(1).Date);
+          if (logOff) ((FXCoreWrapper)fw).CoreFX.Logout();
           // Load data by setting the CollectionViewSource.Source property:
           tradeViewSource.Source = trades;
         } catch (Exception exc) {

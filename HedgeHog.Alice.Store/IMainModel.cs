@@ -17,7 +17,7 @@ namespace HedgeHog.Alice.Store {
     public abstract event EventHandler<EventArgs> StepForward;
     public abstract event EventHandler<EventArgs> TradingMacroNameChanged;
     public abstract ICoreFX CoreFX { get; }
-    public abstract Order2GoAddIn.FXCoreWrapper FWMaster { get; }
+    public abstract ITradesManager FWMaster { get; }
     public abstract TradingAccountModel AccountModel { get; }
     public abstract ITradesManager TradesManager { get; }
     public abstract Exception Log { get; set; }

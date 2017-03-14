@@ -90,10 +90,13 @@ namespace HedgeHog.Shared {
     void CloseTradeAsync(Trade trade);
     void CloseTradesAsync(Trade[] trades);
 
+    void ChangeEntryOrderPeggedStop(string orderId, double rate);
     object FixOrderClose(string tradeId, int mode, Price price, int lot);
     object FixOrderClose(string tradeId);
     object[] FixOrdersClose(params string[] tradeIds);
+    bool DeleteOrder(string orderId);
 
+    string CreateEntryOrder(string pair, bool isBuy, int amount, double rate, double stop, double limit);
     PendingOrder FixCreateLimit(string tradeId, double limit, string remark);
     void FixOrderSetStop(string tradeId, double stopLoss, string remark);
     #endregion
@@ -110,6 +113,7 @@ namespace HedgeHog.Shared {
     event EventHandler<ErrorEventArgs> Error;
     event EventHandler<RequestEventArgs> RequestFailed;
     event OrderRemovedEventHandler OrderRemoved;
+    event EventHandler<OrderEventArgs> OrderChanged;
     #endregion
 
     #region Orders
@@ -120,6 +124,7 @@ namespace HedgeHog.Shared {
     void ChangeOrderAmount(string orderId, int lot);
     void ChangeEntryOrderPeggedLimit(string orderId, double rate);
     void RefreshOrders();
+    void FixOrderSetLimit(string tradeId, double takeProfit, string remark);
     #endregion
 
     #region Account

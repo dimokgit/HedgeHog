@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 using System.Reflection;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using FXW = Order2GoAddIn.FXCoreWrapper;
+using FXW = HedgeHog.Shared.ITradesManager;
 using System.Runtime.CompilerServices;
 using System.Collections.Concurrent;
 using GalaSoft.MvvmLight.Command;
@@ -35,7 +35,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     protected bool IsInDesigh { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
-    protected Order2GoAddIn.FXCoreWrapper fwMaster { get { return MasterModel.FWMaster; } }
+    protected FXW fwMaster { get { return MasterModel.FWMaster; } }
 
     TraderModelBase _MasterModel;
     [Import]

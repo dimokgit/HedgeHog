@@ -92,12 +92,6 @@ namespace HedgeHog {
     public static Dictionary<string, T> ToIgnoreCaseDictionary<U, T>(this IEnumerable<U> values, Func<U, string> keySelector, Func<U, T> valueSelector) {
       return new Dictionary<string, T>(values.ToDictionary(keySelector, valueSelector), StringComparer.OrdinalIgnoreCase);
     }
-    public static Dictionary<string, object> ToDictionary(this object instance) {
-      return instance.GetType().GetProperties().ToDictionary(p => p.Name, p => p.GetValue(instance));
-    }
-    public static Dictionary<TKey, TValue> ToDictionary<TKey,TValue>(this IEnumerable<KeyValuePair<TKey,TValue>> instance) {
-      return instance.ToDictionary(p => p.Key, p => p.Value);
-    }
     public static IList<string> HasDuplicates(this Enum me) {
       var type = me.GetType();
       return Enum.GetNames(type)

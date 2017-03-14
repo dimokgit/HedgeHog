@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client {

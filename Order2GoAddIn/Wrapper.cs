@@ -1697,6 +1697,10 @@ namespace Order2GoAddIn {
     public void DeleteOrder(Order order) {
       DeleteOrder(order.OrderID);
     }
+
+    public bool DeleteOrder(string orderId) {
+      return DeleteOrder(orderId, true);
+    }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public bool DeleteOrder(string orderId, bool async = true) {
       try {

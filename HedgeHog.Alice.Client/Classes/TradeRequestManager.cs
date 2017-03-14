@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using FXW = Order2GoAddIn.FXCoreWrapper;
 using System.Threading;
 using HedgeHog.Shared;
 using HedgeHog.Alice.Store;
@@ -20,8 +18,8 @@ namespace HedgeHog.Alice.Client {
 
     #region Ctor
     Schedulers.ThreadScheduler openQueueScheduler;
-    public FXW fw { get; set; }
-    public TradeRequestManager(FXW fw) {
+    public ITradesManager fw { get; set; }
+    public TradeRequestManager(ITradesManager fw) {
       this.fw = fw;
       openQueueScheduler = new Schedulers.ThreadScheduler((s, e) => RaiseTradeRequestManagerEvent(e.Exception));
     }
@@ -92,7 +90,7 @@ namespace HedgeHog.Alice.Client {
       try {
         string orderId = "", tradeId = "";
         while (true) {
-          fw.FixOrderOpen(pair, buy, lots, 0, 0, serverTradeID);
+          fw.CreateEntryOrder(pair, buy, lots, 0, 0, 0);
           if (string.IsNullOrWhiteSpace(orderId))
             GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(new Action(() => {
               pendingTrade.GetUnKnown().ErrorMessage = "Waiting";

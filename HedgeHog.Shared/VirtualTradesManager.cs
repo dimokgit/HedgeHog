@@ -378,6 +378,7 @@ namespace HedgeHog.Shared {
 
 
     public event TradeRemovedEventHandler TradeRemoved;
+    public event EventHandler<OrderEventArgs> OrderChanged;
 
     private ConcurrentDictionary<string, Price> PriceCurrent = new ConcurrentDictionary<string,Price>();
     void OnTradeRemoved(Trade trade) {
@@ -516,6 +517,22 @@ namespace HedgeHog.Shared {
 
 
     public void RefreshOrders() {
+      throw new NotImplementedException();
+    }
+
+    public string CreateEntryOrder(string pair, bool isBuy, int amount, double rate, double stop, double limit) {
+      throw new NotImplementedException();
+    }
+
+    public void ChangeEntryOrderPeggedStop(string orderId, double rate) {
+      throw new NotImplementedException();
+    }
+
+    bool ITradesManager.DeleteOrder(string orderId) {
+      throw new NotImplementedException();
+    }
+
+    public void FixOrderSetLimit(string tradeId, double takeProfit, string remark) {
       throw new NotImplementedException();
     }
   }

@@ -16,7 +16,7 @@ using System.Runtime.CompilerServices;
 
 namespace HedgeHog.Alice.Store {
   public static class PriceHistory {
-    public static void LoadBars(FXCoreWrapper fw, string pairToLoad, Action<object> progressCallback = null) {
+    public static void LoadBars(ITradesManager fw, string pairToLoad, Action<object> progressCallback = null) {
       var pairsToLoad = new RequestPairForHistoryMessage();
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(pairsToLoad);
       foreach (var pair in pairsToLoad.Pairs)
@@ -24,7 +24,7 @@ namespace HedgeHog.Alice.Store {
     }
     static Task saveTicksTask;
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public static void AddTicks(FXCoreWrapper fw, int period, string pair, DateTime dateStart, Action<object> progressCallback) {
+    public static void AddTicks(ITradesManager fw, int period, string pair, DateTime dateStart, Action<object> progressCallback) {
       try {
         #region callback
         ActionBlock<Action> saveTickActionBlock = new ActionBlock<Action>(a => a());
@@ -40,7 +40,7 @@ namespace HedgeHog.Alice.Store {
             var dateMin = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Min(b => (DateTimeOffset?)b.StartDate);
             if (!dateMin.HasValue) dateMin = DateTimeOffset.Now;
             var dateEnd = dateMin.Value.Subtract(offset).DateTime;
-            fw.GetBarsBase<Rate>(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
+            ((FXCoreWrapper)fw).GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
           }
           var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
           if(dateStart == DateTime.MinValue && q == DateTimeOffset.MinValue)
@@ -48,7 +48,7 @@ namespace HedgeHog.Alice.Store {
           var p = period == 0 ? 1 / 60.0 : period;
           dateStart = q.LocalDateTime.Add(p.FromMinutes());
         }
-        fw.GetBarsBase<Rate>(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
+        ((FXCoreWrapper)fw).GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }

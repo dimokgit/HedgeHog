@@ -19,7 +19,7 @@ using HedgeHog.Alice.Store;
 using HedgeHog.DB;
 using HedgeHog.Shared;
 using Order2GoAddIn;
-using FXW = Order2GoAddIn.FXCoreWrapper;
+using FXW = HedgeHog.Shared.ITradesManager;
 using Gala = GalaSoft.MvvmLight.Command;
 using O2G = Order2GoAddIn;
 using System.Reactive.Linq;
@@ -72,7 +72,7 @@ namespace HedgeHog.Alice.Client {
 
     #region FXCM
     public override ICoreFX CoreFX { get; } = new CoreFX();
-    FXW fwMaster;
+    ITradesManager fwMaster;
 
     public override FXW FWMaster {
       get { return fwMaster; }
@@ -90,7 +90,7 @@ namespace HedgeHog.Alice.Client {
       get { return virtualTrader; }
       set { virtualTrader = value; }
     }
-    public override ITradesManager TradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)FWMaster; } }
+    public override FXW TradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)FWMaster; } }
 
     private TradingServerSessionStatus _SessionStatus = TradingServerSessionStatus.Disconnected;
     public TradingServerSessionStatus SessionStatus {
@@ -780,7 +780,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void IncreaseEntryRate(Order order) {
-      fwMaster.ChangeOrderRate(order.OrderID, order.Rate + order.PointSize);
+      fwMaster.ChangeOrderRate(order, order.Rate + order.PointSize);
     }
 
     ICommand _DecreaseEntryRateCommand;
@@ -794,7 +794,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void DecreaseEntryRate(Order order) {
-      fwMaster.ChangeOrderRate(order.OrderID, order.Rate - order.PointSize);
+      fwMaster.ChangeOrderRate(order, order.Rate - order.PointSize);
     }
 
     ICommand _CancelEntryOrderCommand;
@@ -1276,7 +1276,7 @@ namespace HedgeHog.Alice.Client {
           throw new Exception("Multiple Trading Accounts found.");
         }
         #region FXCM
-        fwMaster = new FXW(CoreFX, CommissionByTrade);
+        fwMaster = new FXCoreWrapper(CoreFX, CommissionByTrade);
         TradesManagerStatic.AccountCurrency = MasterAccount.Currency;
         virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, CommissionByTrade);
         CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
@@ -1503,11 +1503,10 @@ namespace HedgeHog.Alice.Client {
     private void RunPriceChanged(PriceChangedEventArgs e) {
       string pair = e.Price.Pair;
       try {
-        var fw = TradesManager as FXW;
         var a = e.Account;
         a.Trades = TradesManager.GetTrades();
         if(a.Trades.Any(t => t.Pair == pair) || a.Trades.Length == 0) {
-          a.Orders = fw == null ? TradesManager.GetOrders("") : fw.GetEntryOrders("");
+          a.Orders = TradesManager.GetOrders("");
           OnInvokeSyncronize(a);
         }
       } catch(Exception exc) { Log = exc; }
