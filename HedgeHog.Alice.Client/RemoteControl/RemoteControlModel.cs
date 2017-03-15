@@ -640,13 +640,10 @@ namespace HedgeHog.Alice.Client {
     #region Ctor
     void CleanEntryOrders() {
       try {
-        var fw = TradesManager as FXCoreWrapper;
-        if(fw == null)
-          return;
         var trades = TradesManager.GetTrades();
         foreach(var order in TradesManager.GetOrders(""))
           if(!trades.Any(t => t.Pair == order.Pair))
-            fw.DeleteOrder(order.OrderID);
+            TradesManager.DeleteOrder(order.OrderID);
       } catch(Exception exc) {
         Log = exc;
       }
@@ -952,7 +949,7 @@ namespace HedgeHog.Alice.Client {
           InitTradingMacro(tm);
           if(!IsInVirtualTrading) {
             (sender as CoreFX).SetOfferSubscription(tm.Pair);
-            tm.CurrentPrice = TradesManager.GetPrice(tm.Pair);
+            //tm.CurrentPrice = TradesManager.GetPrice(tm.Pair);
           }
           tm.CurrentLot = tm.Trades.Sum(t => t.Lots);
           if(!IsInVirtualTrading) {

@@ -144,6 +144,7 @@
     <Compile Include="Exception.cs" />
     <Compile Include="Extenssions.cs" />
     <Compile Include="ITradesManager.cs" />
+    <Compile Include="LoginInfo.cs" />
     <Compile Include="LogMessage.cs" />
     <Compile Include="NewOldEventArgs.cs" />
     <Compile Include="Offer.cs" />
@@ -170,10 +171,6 @@
     <ProjectReference Include="..\HedgeHog.DB\HedgeHog.DB.csproj">
       <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>
       <Name>HedgeHog.DB</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
-      <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
-      <Name>HedgeHog.Math</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

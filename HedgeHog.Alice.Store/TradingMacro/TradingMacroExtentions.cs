@@ -37,6 +37,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Runtime.Serialization;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
+using static HedgeHog.MathCore;
+
 namespace HedgeHog.Alice.Store {
   [JsonObject(MemberSerialization.OptOut)]
   public partial class TradingMacro {
@@ -344,9 +346,8 @@ namespace HedgeHog.Alice.Store {
       if(string.IsNullOrWhiteSpace(Pair))
         return;
       if(_TradesManager != null) {
-        var fw = TradesManager as Order2GoAddIn.FXCoreWrapper;
-        if(fw != null && fw.IsLoggedIn)
-          fw.DeleteOrders(fw.GetEntryOrders(Pair, true));
+        if(TradesManager != null && TradesManager.IsLoggedIn)
+          TradesManager.DeleteOrders(Pair);
       } else {
         Log = new Exception(new { _TradesManager } + "");
       }
@@ -453,7 +454,7 @@ namespace HedgeHog.Alice.Store {
         var suppRes = (SuppRes)sender;
         var fw = GetFXWraper();
         if(fw != null && !suppRes.IsActive) {
-          fw.GetEntryOrders(Pair, true).IsBuy(suppRes.IsBuy).ToList()
+          fw.GetOrders(Pair).IsBuy(suppRes.IsBuy).ToList()
             .ForEach(o => fw.DeleteOrder(o.OrderID));
         }
       } catch(Exception exc) {
@@ -544,8 +545,8 @@ namespace HedgeHog.Alice.Store {
       }
       IList<DB.s_GetBarStats_Result> _stats;
       IList<DB.s_GetBarStats_Result> GetStats(DateTime date) {
-        this.MonthLow = date.Round(MathExtensions.RoundTo.Day).AddDays(-3);
-        this.MonthHigh = date.Round(MathExtensions.RoundTo.Day);
+        this.MonthLow = date.Round(RoundTo.Day).AddDays(-3);
+        this.MonthHigh = date.Round(RoundTo.Day);
         return _stats ?? (_stats = _dbStats.Where(s => s.StopDateMonth.Value.Between(MonthLow, MonthHigh)).ToArray());
       }
       double _heightMin = double.NaN;
@@ -1162,12 +1163,12 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     static object _tradesFromReportLock = new object();
-    static List<Trade> _tradesFromReport;
+    static List<Trade> _tradesFromReport = new List<Trade>();
     List<Trade> tradesFromReport {
       get {
         lock(_tradesFromReportLock) {
           if(_tradesFromReport == null)
-            _tradesFromReport = GetFXWraper().GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now);
+            _tradesFromReport = new List<Trade>();// GetFXWraper().GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now);
         }
         return _tradesFromReport;
       }
@@ -1285,7 +1286,7 @@ namespace HedgeHog.Alice.Store {
       var fw = GetFXWraper();
       if(fw == null)
         return;
-      fw.GetEntryOrders(Pair, true).ToList().ForEach(o => fw.DeleteOrder(o.OrderID, false));
+      fw.DeleteOrders(Pair);
     }
 
     void TradesManager_OrderAdded(object sender, OrderEventArgs e) {
@@ -1487,7 +1488,7 @@ namespace HedgeHog.Alice.Store {
         SetPlayBackInfo(true, args.DateStart.GetValueOrDefault(), args.DelayInSeconds.FromSeconds());
         var dateStartDownload = AddWorkingDays(args.DateStart.Value, -(BarsCountCount() / 1440.0).Ceiling());
         var actionBlock = new ActionBlock<Action>(a => a());
-        Action<Order2GoAddIn.FXCoreWrapper.RateLoadingCallbackArgs<Rate>> cb = callBackArgs => PriceHistory.SaveTickCallBack(BarPeriodInt, Pair, o => Log = new Exception(o + ""), actionBlock, callBackArgs);
+        Action<RateLoadingCallbackArgs<Rate>> cb = callBackArgs => PriceHistory.SaveTickCallBack(BarPeriodInt, Pair, o => Log = new Exception(o + ""), actionBlock, callBackArgs);
         var fw = GetFXWraper();
         if(fw != null)
           PriceHistory.AddTicks(fw, BarPeriodInt, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-BarsCountCount() * 2)), o => Log = new Exception(o + ""));
@@ -3106,13 +3107,13 @@ namespace HedgeHog.Alice.Store {
       });
     }
 
-    private Order2GoAddIn.FXCoreWrapper GetFXWraper(bool failTradesManager = true) {
+    private ITradesManager GetFXWraper(bool failTradesManager = true) {
       if(TradesManager == null)
         if(failTradesManager)
           FailTradesManager();
         else
           Log = new Exception("Request to TradesManager failed. TradesManager is null.");
-      return TradesManager as Order2GoAddIn.FXCoreWrapper;
+      return TradesManager;
     }
 
     private static void FailTradesManager() {
@@ -3217,8 +3218,7 @@ namespace HedgeHog.Alice.Store {
 
     #region GetEntryOrders
     private Order[] GetEntryOrders() {
-      Order2GoAddIn.FXCoreWrapper fw = GetFXWraper(false);
-      return fw == null ? new Order[0] : fw.GetEntryOrders(Pair);
+      return TradesManager?.GetOrders(Pair) ?? new Order[0];
     }
     private Order[] GetEntryOrders(bool isBuy) {
       return GetEntryOrders().IsBuy(isBuy);
@@ -4370,7 +4370,7 @@ namespace HedgeHog.Alice.Store {
               _addHistoryOrdersBuffer.Push(()
                 => {
                   TradingMacrosByPair().ForEach(tm =>
-                  PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper
+                  PriceHistory.AddTicks(TradesManager
                     , tm.BarPeriodInt, Pair, serverTime.AddMonths(-1), obj => { if(DoLogSaveRates) Log = new Exception(obj + ""); }));
                 });
             }
@@ -4396,7 +4396,7 @@ namespace HedgeHog.Alice.Store {
     public DateTimeOffset LoadRatesStartDate2 { get; set; }
     #region Overrides
     [MethodImpl(MethodImplOptions.Synchronized)]
-    void LoadRatesImpl(Order2GoAddIn.FXCoreWrapper fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool groupToSeconds) {
+    void LoadRatesImpl(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool groupToSeconds) {
       Func<List<Rate>, List<Rate>> map = groupToSeconds ? TradingMacro.GroupTicksToSeconds<Rate> : (Func<List<Rate>, List<Rate>>)null;
       if(ratesList.Count() == -1) {
         if(periodMinutes > 0)

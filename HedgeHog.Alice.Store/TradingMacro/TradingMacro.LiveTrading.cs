@@ -131,7 +131,7 @@ namespace HedgeHog.Alice.Store {
             _DeleteOrderSubject
               .Subscribe(s => {
                 try {
-                  GetFXWraper().DeleteOrder(s, false);
+                  GetFXWraper().DeleteOrder(s);
                 } catch(Exception exc) { Log = exc; }
               }, exc => Log = exc);
           }

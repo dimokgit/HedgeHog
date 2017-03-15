@@ -20,6 +20,15 @@ namespace HedgeHog.Shared {
       IsInVirtualTrading = isInVirtualTrading;
     }
   }
+  public class RateLoadingCallbackArgs<TBar> where TBar : Rate {
+    public bool IsProcessed { get; set; }
+    public string Message { get; set; }
+    public ICollection<TBar> NewRates { get; set; }
+    public RateLoadingCallbackArgs(string message, ICollection<TBar> newBars) {
+      this.Message = message;
+      this.NewRates = newBars;
+    }
+  }
 
   public interface ICoreFX: INotifyPropertyChanged {
     bool LogOn(string user, string accountSubId, string password, bool isDemo);
@@ -38,6 +47,7 @@ namespace HedgeHog.Shared {
     DateTime ServerTime { get; }
   }
   public interface ITradesManager {
+    ICoreFX CoreFX { get; set; }
     bool IsLoggedIn { get; }
     bool IsInTest { get; set; }
     bool IsHedged { get; }
@@ -125,6 +135,11 @@ namespace HedgeHog.Shared {
     void ChangeEntryOrderPeggedLimit(string orderId, double rate);
     void RefreshOrders();
     void FixOrderSetLimit(string tradeId, double takeProfit, string remark);
+    void DeleteOrders(string pair);
+    double GetNetOrderRate(string pair, bool isStop, bool getFromInternal = false);
+    void ChangeEntryOrderLot(string orderId, int lot);
+    void ChangeEntryOrderRate(string orderId, double rate);
+    Order GetNetLimitOrder(Trade trade, bool getFromInternal = false);
     #endregion
 
     #region Account
@@ -132,6 +147,8 @@ namespace HedgeHog.Shared {
     //Account GetAccount(bool includeOtherInfo);
     #endregion
 
+    void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map);
+    void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate;
     Func<Trade, double> CommissionByTrade { get; }
     double CommissionByTrades(params Trade[] trades);
     IList<Rate> GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate);

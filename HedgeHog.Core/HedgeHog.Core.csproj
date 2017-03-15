@@ -93,6 +93,7 @@
     <Compile Include="Monoids.cs" />
     <Compile Include="Persistance.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Reflection.cs" />
     <Compile Include="TaskMonad.cs" />
     <Compile Include="Tuple.cs" />
   </ItemGroup>

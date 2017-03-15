@@ -417,13 +417,6 @@
       <DependentUpon>Alice.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\Controls\AccountInfo.cs" />
-    <Compile Include="UI\Controls\Account\AccountLogin.xaml.cs">
-      <DependentUpon>AccountLogin.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="UI\Controls\Account\View\SlaveAccount.xaml.cs">
-      <DependentUpon>SlaveAccount.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="UI\Controls\Account\View\SlaveAccountModel.cs" />
     <Compile Include="UI\Overrides\DataGrid_D.cs" />
     <Page Include="Dictionary1.xaml">
       <SubType>Designer</SubType>
@@ -451,14 +444,6 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="UI\Alice.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="UI\Controls\Account\AccountLogin.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="UI\Controls\Account\View\SlaveAccount.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -691,10 +676,6 @@
     <ProjectReference Include="..\HedgeHog.NewsCaster\HedgeHog.NewsCaster.csproj">
       <Project>{9F58E055-714C-46DC-A8D3-17C531452152}</Project>
       <Name>HedgeHog.NewsCaster</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HedgeHog.Reports\HedgeHog.Reports.csproj">
-      <Project>{2CE09483-D616-4AF8-8581-998A368F39B4}</Project>
-      <Name>HedgeHog.Reports</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>

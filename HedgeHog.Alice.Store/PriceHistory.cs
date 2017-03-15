@@ -28,7 +28,7 @@ namespace HedgeHog.Alice.Store {
       try {
         #region callback
         ActionBlock<Action> saveTickActionBlock = new ActionBlock<Action>(a => a());
-        Action<FXCoreWrapper.RateLoadingCallbackArgs<Rate>> showProgress = (args) => {
+        Action<RateLoadingCallbackArgs<Rate>> showProgress = (args) => {
           SaveTickCallBack(period, pair, progressCallback, saveTickActionBlock, args);
           args.IsProcessed = true;
         };
@@ -40,7 +40,7 @@ namespace HedgeHog.Alice.Store {
             var dateMin = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Min(b => (DateTimeOffset?)b.StartDate);
             if (!dateMin.HasValue) dateMin = DateTimeOffset.Now;
             var dateEnd = dateMin.Value.Subtract(offset).DateTime;
-            ((FXCoreWrapper)fw).GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
+            fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
           }
           var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
           if(dateStart == DateTime.MinValue && q == DateTimeOffset.MinValue)
@@ -48,13 +48,13 @@ namespace HedgeHog.Alice.Store {
           var p = period == 0 ? 1 / 60.0 : period;
           dateStart = q.LocalDateTime.Add(p.FromMinutes());
         }
-        ((FXCoreWrapper)fw).GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
+        fw.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
 
-    public static void SaveTickCallBack(int period, string pair, Action<object> progressCallback, ActionBlock<Action> saveTickActionBlock, FXCoreWrapper.RateLoadingCallbackArgs<Rate> args) {
+    public static void SaveTickCallBack(int period, string pair, Action<object> progressCallback, ActionBlock<Action> saveTickActionBlock, RateLoadingCallbackArgs<Rate> args) {
       if (progressCallback != null) progressCallback(args.Message);
       else Debug.WriteLine("{0}", args.Message);
       var context = new ForexEntities();

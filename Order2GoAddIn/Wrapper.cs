@@ -547,15 +547,6 @@ namespace Order2GoAddIn {
     //  return GetBarsBase(pair, period, startDate, TradesManagedStatic.FX_DATE_NOW,callBack);
     //}
 
-    public class RateLoadingCallbackArgs<TBar> where TBar : Rate {
-      public bool IsProcessed { get; set; }
-      public string Message { get; set; }
-      public ICollection<TBar> NewRates { get; set; }
-      public RateLoadingCallbackArgs(string message, ICollection<TBar> newBars) {
-        this.Message = message;
-        this.NewRates = newBars;
-      }
-    }
     public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate {
       if (map == null) map = l => l;
       if (period >= 1) {

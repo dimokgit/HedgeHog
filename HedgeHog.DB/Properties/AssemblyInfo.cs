@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("HedgeHog.DB")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("HedgeHog DB")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("HOME")]
 [assembly: AssemblyProduct("HedgeHog.DB")]
-[assembly: AssemblyCopyright("Copyright © HOME 2011")]
+[assembly: AssemblyCopyright("Copyright © HOME 2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

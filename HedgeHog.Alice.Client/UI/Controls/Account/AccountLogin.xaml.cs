@@ -13,6 +13,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using HedgeHog.Alice.Store;
 using System.ComponentModel.Composition;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client.UI.Controls {
   /// <summary>
@@ -110,17 +111,6 @@ namespace HedgeHog.Alice.Client.UI.Controls {
   public class AccountLoginRelayCommand : GalaSoft.MvvmLight.Command.RelayCommand<LoginInfo> {
     public AccountLoginRelayCommand(Action<LoginInfo> a) : base(a) { }
     public AccountLoginRelayCommand(Action<LoginInfo> a, Func<LoginInfo,bool> p) : base(a, p) { }
-  }
-  public class LoginInfo{
-    public string Account { get; set; }
-    public string Password { get; set; }
-    public bool IsDemo { get; set; }
-    public bool Canceled { get; set; }
-    public LoginInfo(string account,string password,bool isDemo) {
-      this.Account = account;
-      this.Password = password;
-      this.IsDemo = isDemo;
-    }
   }
 #endregion
 }

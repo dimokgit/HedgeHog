@@ -430,6 +430,16 @@ namespace HedgeHog.Shared {
       set;
     }
 
+    public ICoreFX CoreFX {
+      get {
+        throw new NotImplementedException();
+      }
+
+      set {
+        throw new NotImplementedException();
+      }
+    }
+
     #endregion
 
     #region ITradesManager Members
@@ -533,6 +543,34 @@ namespace HedgeHog.Shared {
     }
 
     public void FixOrderSetLimit(string tradeId, double takeProfit, string remark) {
+      throw new NotImplementedException();
+    }
+
+    public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate {
+      throw new NotImplementedException();
+    }
+
+    public void DeleteOrders(string pair) {
+      throw new NotImplementedException();
+    }
+
+    public double GetNetOrderRate(string pair, bool isStop, bool getFromInternal = false) {
+      throw new NotImplementedException();
+    }
+
+    public void ChangeEntryOrderLot(string orderId, int lot) {
+      throw new NotImplementedException();
+    }
+
+    public void ChangeEntryOrderRate(string orderId, double rate) {
+      throw new NotImplementedException();
+    }
+
+    public Order GetNetLimitOrder(Trade trade, bool getFromInternal = false) {
+      throw new NotImplementedException();
+    }
+
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
       throw new NotImplementedException();
     }
   }

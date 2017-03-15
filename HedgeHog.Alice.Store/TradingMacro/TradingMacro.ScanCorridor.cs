@@ -13,6 +13,8 @@ using HedgeHog.Shared;
 using RI = System.Tuple<HedgeHog.Bars.Rate, int>;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
 using TLS = System.Lazy<System.Collections.Generic.IList<HedgeHog.Bars.Rate>>;
+using static HedgeHog.MathCore;
+
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     #region ScanCorridor Extentions
@@ -468,7 +470,7 @@ namespace HedgeHog.Alice.Store {
         rmm = new[] { r, r },
         a = r.r.PriceAvg
       });
-      var firstMinute = ratesForCorridor[0].StartDate.Round(MathExtensions.RoundTo.MinuteCieling);
+      var firstMinute = ratesForCorridor[0].StartDate.Round(RoundTo.MinuteCieling);
       var rates = ToFunc(0, skip => ratesForCorridor.Skip(skip).Select((r, i) => new { r, i }).SkipWhile(r => r.r.StartDate < firstMinute));
       var sampleMin = 2000;
       var buffrerSize = (ratesForCorridor.Count / sampleMin).Max(1);

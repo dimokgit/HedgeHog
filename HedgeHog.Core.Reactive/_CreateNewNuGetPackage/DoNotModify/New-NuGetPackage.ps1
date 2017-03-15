@@ -154,7 +154,7 @@
 
 	.NOTES
 	Author: Daniel Schroeder
-	Version: 1.5.4
+	Version: 1.5.8
 	
 	This script is designed to be called from PowerShell or ran directly from Windows Explorer.
 	If this script is ran without the $NuSpecFilePath, $ProjectFilePath, and $PackageFilePath parameters, it will automatically search for a .nuspec, project, or package file in the 
@@ -177,7 +177,7 @@ param
 
 	[parameter(Position=2,Mandatory=$false,HelpMessage="The new version number to use for the NuGet Package.",ParameterSetName="PackUsingNuSpec")]
     [parameter(Position=2,Mandatory=$false,HelpMessage="The new version number to use for the NuGet Package.",ParameterSetName="PackUsingProject")]
-	[ValidatePattern('(?i)(^(\d{1,5}(\.\d{1,5}){1,3})$)|(^(\d{1,5}\.\d{1,5}\.\d{1,5}-[a-zA-Z0-9\-\.\+]+)$)|(^(\$version\$)$)|(^$)')]	# This validation is duplicated in the Update-NuSpecFile function, so update it in both places.
+	[ValidatePattern('(?i)(^(\d+(\.\d+){1,3})$)|(^(\d+\.\d+\.\d+-[a-zA-Z0-9\-\.\+]+)$)|(^(\$version\$)$)|(^$)')]	# This validation is duplicated in the Update-NuSpecFile function, so update it in both places. This regex does not represent Sematic Versioning, but the versioning that NuGet.exe allows.
 	[Alias("Version")]
 	[Alias("V")]
 	[string] $VersionNumber,
@@ -294,6 +294,7 @@ $TF_EXE_NO_PENDING_CHANGES_MESSAGE = 'There are no pending changes.'
 $TF_EXE_KEYWORD_IN_PENDING_CHANGES_MESSAGE = 'change\(s\)'	# Escape regular expression characters.
 
 # NuGet.exe output strings.
+$NUGET_EXE_VERSION_NUMBER_REGEX = [regex] "(?i)(NuGet Version: (?<Version>\d+\.\d+\.\d+\.\d+).)"
 $NUGET_EXE_SUCCESSFULLY_CREATED_PACKAGE_MESSAGE_REGEX = [regex] "(?i)(Successfully created package '(?<FilePath>.*?)'.)"
 $NUGET_EXE_SUCCESSFULLY_PUSHED_PACKAGE_MESSAGE = 'Your package was pushed.'
 $NUGET_EXE_SUCCESSFULLY_SAVED_API_KEY_MESSAGE = "The API Key '{0}' was saved for '{1}'."
@@ -311,8 +312,8 @@ trap [Exception]
 	
 	if (!$NoPromptForInputOnError)
 	{
-		# If we should prompt directly from Powershell.
-		if ($UsePowershellPrompts)
+		# If we should prompt directly from PowerShell.
+		if ($UsePowerShellPrompts)
 		{
 			Write-Host "Press any key to continue ..."
 			$x = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyUp")
@@ -341,7 +342,7 @@ function Update-NuSpecFile
 {
 	Write-Verbose "Starting process to update the nuspec file '$NuSpecFilePath'..."
 
-    # If we dont' have a NuSpec file to update, throw an error that something went wrong.
+    # If we don't have a NuSpec file to update, throw an error that something went wrong.
     if (!(Test-Path $NuSpecFilePath))
     {
         throw "The Update-NuSpecFile function was called with an invalid NuSpecFilePath; this should not happen. There must be a bug in this script."
@@ -389,8 +390,8 @@ function Update-NuSpecFile
 		{
 			$promptMessage = 'Enter the NuGet package version number to use (x.x[.x.x] or $version$ if packing a project file)'
 			
-			# If we should prompt directly from Powershell.
-			if ($UsePowershellPrompts)
+			# If we should prompt directly from PowerShell.
+			if ($UsePowerShellPrompts)
 			{
 				$VersionNumber = Read-Host "$promptMessage. Current value in the .nuspec file is:`n$currentVersionNumber`n"
 			}
@@ -402,9 +403,8 @@ function Update-NuSpecFile
 		}
 		
 		# The script's parameter validation does not seem to be enforced (probably because this is inside a function), so re-enforce it here.
-        # This validation is duplicated in the script's parameter validation, so update it in both places.
-		$rxVersionNumberValidation = [regex] '(?i)(^(\d{1,5}(\.\d{1,5}){1,3})$)|(^(\d{1,5}\.\d{1,5}\.\d{1,5}-[a-zA-Z0-9\-\.\+]+)$)|(^(\$version\$)$)|(^$)'
-		
+		$rxVersionNumberValidation = [regex] '(?i)(^(\d+(\.\d+){1,3})$)|(^(\d+\.\d+\.\d+-[a-zA-Z0-9\-\.\+]+)$)|(^(\$version\$)$)|(^$)'	# This validation is duplicated in the Update-NuSpecFile function, so update it in both places. This regex does not represent Sematic Versioning, but the versioning that NuGet.exe allows.
+
 		# If the user cancelled the prompt or did not provide a valid version number, exit the script.
 		if ((Test-StringIsNullOrWhitespace $VersionNumber) -or !$rxVersionNumberValidation.IsMatch($VersionNumber))
 		{
@@ -434,8 +434,8 @@ function Update-NuSpecFile
 		{
 			$promptMessage = "Please enter the release notes to include in the new NuGet package"
 			
-			# If we should prompt directly from Powershell.
-			if ($UsePowershellPrompts)
+			# If we should prompt directly from PowerShell.
+			if ($UsePowerShellPrompts)
 			{
 				$ReleaseNotes = Read-Host "$promptMessage. Current value in the .nuspec file is:`n$currentReleaseNotes`n"
 			}
@@ -444,13 +444,13 @@ function Update-NuSpecFile
 			{
 				$ReleaseNotes = Read-MultiLineInputBoxDialog -Message "$promptMessage`:" -WindowTitle "Enter Release Notes For New Package" -DefaultText $currentReleaseNotes
 			}
+			
+			# If the user cancelled the release notes prompt, exit the script.
+			if ($ReleaseNotes -eq $null)
+			{ 
+				throw "User cancelled the Release Notes prompt, so exiting script."
+			}
 		}		
-	}
-	
-	# If the user cancelled the release notes prompt, exit the script.
-	if ($ReleaseNotes -eq $null)
-	{ 
-		throw "User cancelled the Release Notes prompt, so exiting script."
 	}
 
 	# Insert the given Release Notes into the .nuspec file if some were provided, and they are different than the current ones.
@@ -719,7 +719,7 @@ function Get-TfExecutablePath
 {	
 	# Get the latest visual studio IDE path.
 	$vsIdePath = "" 
-	$vsCommonToolsPaths = @($env:VS120COMNTOOLS,$env:VS110COMNTOOLS,$env:VS100COMNTOOLS)
+	$vsCommonToolsPaths = @($env:VS140COMNTOOLS,$env:VS120COMNTOOLS,$env:VS110COMNTOOLS,$env:VS100COMNTOOLS)
 	$vsCommonToolsPaths = @($VsCommonToolsPaths | Where-Object {$_ -ne $null})
 		
 	# Loop through each version from largest to smallest.
@@ -795,11 +795,12 @@ function Tfs-IsItemCheckedOut
     }
 	
 	# Construct the status command to run.
-	$tfCheckoutCommand = "& ""$tfPath"" status ""$Path"""
-	if ($Recursive) { $tfCheckoutCommand += " /recursive" }
+	$tfStatusCommand = "& ""$tfPath"" status ""$Path"""
+	if ($Recursive) { $tfStatusCommand += " /recursive" }
 	
 	# Check the file out of TFS, capturing the output and errors.
-	$status = (Invoke-Expression -Command $tfCheckoutCommand 2>&1)
+	Write-Verbose "About to run command '$tfStatusCommand'."
+	$status = (Invoke-Expression -Command $tfStatusCommand 2>&1)
 
     # Get the escaped path of the file or directory to search the status output for.
     $escapedPath = $Path.Replace('\', '\\')
@@ -953,8 +954,8 @@ try
 		# If we didn't find a clear .nuspec, project, or package file to use, prompt for one.
 		if ((Test-StringIsNullOrWhitespace $NuSpecFilePath) -and (Test-StringIsNullOrWhitespace $ProjectFilePath) -and (Test-StringIsNullOrWhitespace $PackageFilePath))
 		{
-			# If we should prompt directly from Powershell.
-			if ($UsePowershellPrompts)
+			# If we should prompt directly from PowerShell.
+			if ($UsePowerShellPrompts)
 			{
 				# Construct the prompt message with all of the supported project extensions.
 				# $promptmessage should end up looking like: "Enter the path to the .nuspec or project file (.csproj, .vbproj, .fsproj) to pack, or the package file (.nupkg) to push"
@@ -1012,8 +1013,8 @@ try
                     {
 					    $promptMessage = "The selected .nuspec file appears to be associated with the project file:`n`n$projectPath`n`nIt is generally preferred to pack the project file, and the .nuspec file will automatically get picked up.`nDo you want to pack the project file instead?"
 				
-					    # If we should prompt directly from Powershell.
-					    if ($UsePowershellPrompts)
+					    # If we should prompt directly from PowerShell.
+					    if ($UsePowerShellPrompts)
 					    {
 						    $promptMessage += " (Yes|No|Cancel)"
 						    $answer = Read-Host $promptMessage
@@ -1110,8 +1111,55 @@ try
     }
 	
 	# Get and display the version of NuGet.exe that will be used. If NuGet.exe is not found an exception will be thrown automatically.
-	$nuGetVersionString = (& $NuGetExecutableFilePath)[0]	# The first line of the NuGet help info contains the version number.
-	Write-Verbose "Using $($nuGetVersionString)."
+	# Create the command to use to get the Nuget Help info.
+    $helpCommand = "& ""$NuGetExecutableFilePath"""
+
+	# Get the NuGet.exe Help output.
+    Write-Verbose "About to run Help command '$helpCommand'."
+    $helpOutput = (Invoke-Expression -Command $helpCommand | Out-String).Trim()	
+	
+	# If no Help output was retrieved, the NuGet.exe likely returned an error.
+	if (Test-StringIsNullOrWhitespace $helpOutput)
+	{
+		# Get the error information returned by NuGet.exe, and throw an error that we could not run NuGet.exe as expected.
+		$helpError = (Invoke-Expression -Command $helpCommand 2>&1 | Out-String).Trim()	
+		throw "NuGet information could not be retrieved by running '$NuGetExecutableFilePath'.`r`n`r`nRunning '$NuGetExecutableFilePath' returns the following information:`r`n`r`n$helpError"
+	}
+	
+	# Display the version of the NuGet.exe. This information is the first line of the NuGet Help output.
+	$nuGetVersionLine = ($helpOutput -split "`r`n")[0]
+	Write-Verbose "Using $($nuGetVersionLine)."
+	
+	# Force NuGet.exe to output English so that we can properly parse and match against it's output.
+	# The -ForceEnglishOutput switch was only added in NuGet.exe v3.5, so default to using it, and remove it if the version is less than v3.5.
+	$nuGetForceEnglishOutputSwitch = " -ForceEnglishOutput"
+	$PackOptions += $nuGetForceEnglishOutputSwitch
+	[array]$nuGetVersionParts = $null
+    $nugetVersionMatch = $NUGET_EXE_VERSION_NUMBER_REGEX.Match($nuGetVersionLine)
+    if ($nugetVersionMatch.Success)
+    {
+		# Get the version of NuGet.exe being used.
+	    $nuGetVersionString = $nugetVersionMatch.Groups["Version"].Value
+		
+		if (!(Test-StringIsNullOrWhitespace $nuGetVersionString))
+		{
+			# If we are using a version of NuGet.exe less than v3.5, remove the switch to force English output.
+			$nuGetVersionParts = $nuGetVersionString -split "\."
+			if ($nuGetVersionParts.Count -ge 2)
+			{
+				if ($nuGetVersionParts[0] -le 2 -or ($nuGetVersionParts[0] -eq 3 -and $nuGetVersionParts[1] -lt 5))
+				{
+					$PackOptions = $PackOptions.Replace($nuGetForceEnglishOutputSwitch, [string]::Empty)
+				}
+			}
+		}
+    }
+	
+	# If we weren't actually able to determine which version of NuGet.exe is being used, display a warning.
+	if ($nuGetVersionParts -eq $null -or $nuGetVersionParts.Count -lt 2)
+    {
+	    Write-Warning "Could not determine which version of NuGet.exe is being used."
+    }
 	
 	# Declare the backup directory to create the NuGet Package in, as not all code paths will set it (i.e. when pushing an existing package), but we check it later.
 	$defaultDirectoryPathToPutNuGetPackageIn = $null
@@ -1221,14 +1269,17 @@ try
 	{
         $sourceToPushPackageTo = $match.Groups["Source"].Value
             
-        # Strip off any quotes around the address.
+        # Strip off any single or double quotes around the address.
         $sourceToPushPackageTo = $sourceToPushPackageTo.Trim([char[]]@("'", '"'))
 	}
-    # Else they did not provide an explicit source to push to.
+    # Else they did not provide an explicit source to push to, so set it to the default.
 	else
 	{
-		# So assume they are pushing to the typical default source.
+		# Assume they are pushing to the typical default source.
         $sourceToPushPackageTo = $DEFAULT_NUGET_SOURCE_TO_PUSH_TO
+		
+		# Update the PushOptions to include the default source (as -Source is now a required parameter as of NuGet.exe v3.4).
+		$PushOptions += " -Source $sourceToPushPackageTo"
 	}
 
 	# If the switch to push the package to the gallery was not provided and we are allowed to prompt, prompt the user if they want to push the package.
@@ -1236,8 +1287,8 @@ try
 	{
 		$promptMessage = "Do you want to push this package:`n'$nuGetPackageFilePath'`nto the NuGet Gallery '$sourceToPushPackageTo'?"
 		
-		# If we should prompt directly from Powershell.
-		if ($UsePowershellPrompts)
+		# If we should prompt directly from PowerShell.
+		if ($UsePowerShellPrompts)
 		{
 			$promptMessage += " (Yes|No)"
 			$answer = Read-Host $promptMessage
@@ -1271,8 +1322,8 @@ try
             {
                 $promptMessage = "It appears that you do not have an API key saved on this PC for the source to push the package to '$sourceToPushPackageTo'.`n`nYou must provide an API key to push this package to the NuGet Gallery.`n`nPlease enter your API key"
 		
-		        # If we should prompt directly from Powershell.
-		        if ($UsePowershellPrompts)
+		        # If we should prompt directly from PowerShell.
+		        if ($UsePowerShellPrompts)
 		        {
 			        $apiKey = Read-Host $promptMessage
 		        }
@@ -1299,7 +1350,7 @@ try
 		$pushCommand = $pushCommand -ireplace ';', '`;'		# Escape any semicolons so they are not interpreted as the start of a new command.
 
         # Push the package to the gallery.
-		Write-Verbose "About to run Push command '$pushCommand'."
+		Write-Verbose "About to run Push command '$pushCommand'." -Verbose
 		$pushOutput = (Invoke-Expression -Command $pushCommand | Out-String).Trim()
 		
 		# Write the output of the above command to the Verbose stream.
@@ -1344,7 +1395,7 @@ try
 				$promptMessage = "Do you want to save the API key you provided on this PC so that you don't have to enter it again next time?"
 			
 				# If we should prompt directly from PowerShell.
-				if ($UsePowershellPrompts)
+				if ($UsePowerShellPrompts)
 				{
 					$promptMessage += " (Yes|No)"
 					$answer = Read-Host $promptMessage
@@ -1410,12 +1461,16 @@ finally
 				Tfs-Undo -Path $NuSpecFilePath
 				
 				# Also reset the file's LastWriteTime so that MSBuild does not always rebuild the project because it thinks the .nuspec file was modified after the project's .pdb file.
-				# We first have to make sure the file is writable before trying to set the LastWriteTime, and then restore the Read-Only attribute if it was set before.
-				$nuspecFileInfo = New-Object System.IO.FileInfo($NuSpecFilePath)
-				$nuspecFileIsReadOnly = $nuspecFileInfo.IsReadOnly
-				$nuspecFileInfo.IsReadOnly = $false
-				[System.IO.File]::SetLastWriteTime($NuSpecFilePath, $script:nuSpecLastWriteTimeBeforeCheckout)
-				if ($nuspecFileIsReadOnly) { $nuspecFileInfo.IsReadOnly = $true }
+				# If we recorded the NuSpec file's last write time, then reset it.
+				if ($script:nuSpecLastWriteTimeBeforeCheckout -ne $null)
+				{
+					# We first have to make sure the file is writable before trying to set the LastWriteTime, and then restore the Read-Only attribute if it was set before.
+					$nuspecFileInfo = New-Object System.IO.FileInfo($NuSpecFilePath)
+					$nuspecFileIsReadOnly = $nuspecFileInfo.IsReadOnly
+					$nuspecFileInfo.IsReadOnly = $false
+					[System.IO.File]::SetLastWriteTime($NuSpecFilePath, $script:nuSpecLastWriteTimeBeforeCheckout)
+					if ($nuspecFileIsReadOnly) { $nuspecFileInfo.IsReadOnly = $true }
+				}
 			}
 		}
 	}

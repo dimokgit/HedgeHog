@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using FXW = Order2GoAddIn.FXCoreWrapper;
+using FXW = HedgeHog.Shared.ITradesManager;
 
 namespace HedgeHog.Alice.Client.Models {
   public class AccountModelBase : HedgeHog.Models.ModelBase {

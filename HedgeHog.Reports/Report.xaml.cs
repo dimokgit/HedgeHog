@@ -72,13 +72,13 @@ namespace HedgeHog.Reports {
 
       InitializeComponent();
       if (fw != null)
-        ((FXCoreWrapper)fw).CoreFX.LoginError += CoreFX_LoginError;
+        fw.CoreFX.LoginError += CoreFX_LoginError;
     }
 
     ~Report() {
       try {
         if (fw != null)
-          ((FXCoreWrapper)fw).CoreFX.LoginError -= CoreFX_LoginError;
+          fw.CoreFX.LoginError -= CoreFX_LoginError;
       } catch { }
     }
     #endregion

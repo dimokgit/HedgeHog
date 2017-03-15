@@ -172,5 +172,134 @@ namespace HedgeHog {
       return (baseValue - other).Abs() / baseValue.Abs();
     }
 
+    public enum RoundTo {
+      Second, Minute, MinuteFloor, MinuteCieling, Hour, HourFloor, Day, DayFloor, Month, MonthEnd, Week
+    }
+    public static DateTimeOffset Round(this DateTimeOffset d, RoundTo rt) {
+      DateTimeOffset dtRounded = new DateTimeOffset();
+      switch(rt) {
+        case RoundTo.Second:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, d.Second, d.Offset);
+          if(d.Millisecond >= 500)
+            dtRounded = dtRounded.AddSeconds(1);
+          break;
+        case RoundTo.Minute:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0, d.Offset);
+          if(d.Second >= 30)
+            dtRounded = dtRounded.AddMinutes(1);
+          break;
+        case RoundTo.MinuteFloor:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0, d.Offset);
+          break;
+        case RoundTo.MinuteCieling:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0, d.Offset);
+          if(d.Second > 0)
+            dtRounded = dtRounded.AddMinutes(1);
+          break;
+        case RoundTo.Hour:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, 0, 0, d.Offset);
+          if(d.Minute >= 30)
+            dtRounded = dtRounded.AddHours(1);
+          break;
+        case RoundTo.HourFloor:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, 0, 0, d.Offset);
+          break;
+        case RoundTo.DayFloor:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, 0, 0, 0, d.Offset);
+          break;
+        case RoundTo.Day:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, 0, 0, 0, d.Offset);
+          if(d.Hour >= 12)
+            dtRounded = dtRounded.AddDays(1);
+          break;
+        case RoundTo.Month:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, 1, 0, 0, 0, d.Offset);
+          break;
+        case RoundTo.MonthEnd:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, 1, 0, 0, 0, d.Offset).AddMonths(1).AddDays(-1);
+          break;
+        case RoundTo.Week:
+          dtRounded = d.AddDays(-(int)d.DayOfWeek).Date;
+          break;
+      }
+      return dtRounded;
+    }
+    public static DateTime Round(this DateTime d, RoundTo rt) {
+      DateTime dtRounded = new DateTime();
+      switch(rt) {
+        case RoundTo.Second:
+          dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, d.Minute, d.Second);
+          if(d.Millisecond >= 500)
+            dtRounded = dtRounded.AddSeconds(1);
+          break;
+        case RoundTo.Minute:
+          dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0);
+          if(d.Second >= 30)
+            dtRounded = dtRounded.AddMinutes(1);
+          break;
+        case RoundTo.MinuteFloor:
+          dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0);
+          break;
+        case RoundTo.MinuteCieling:
+          dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0);
+          if(d.Second > 0)
+            dtRounded = dtRounded.AddMinutes(1);
+          break;
+        case RoundTo.Hour:
+          dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, 0, 0);
+          if(d.Minute >= 30)
+            dtRounded = dtRounded.AddHours(1);
+          break;
+        case RoundTo.HourFloor:
+          dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, 0, 0);
+          break;
+        case RoundTo.DayFloor:
+          dtRounded = new DateTime(d.Year, d.Month, d.Day, 0, 0, 0);
+          break;
+        case RoundTo.Day:
+          dtRounded = new DateTime(d.Year, d.Month, d.Day, 0, 0, 0);
+          if(d.Hour >= 12)
+            dtRounded = dtRounded.AddDays(1);
+          break;
+        case RoundTo.Month:
+          dtRounded = new DateTime(d.Year, d.Month, 1, 0, 0, 0);
+          break;
+        case RoundTo.MonthEnd:
+          dtRounded = new DateTime(d.Year, d.Month, 1, 0, 0, 0).AddMonths(1).AddDays(-1);
+          break;
+        case RoundTo.Week:
+          dtRounded = d.AddDays(-(int)d.DayOfWeek).Date;
+          break;
+      }
+      return dtRounded;
+    }
+    public static DateTimeOffset Round(this DateTimeOffset dt) { return new DateTimeOffset(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0, dt.Offset); }
+    public static DateTimeOffset Round_(this DateTimeOffset dt) { return dt.AddSeconds(-dt.Second).AddMilliseconds(-dt.Millisecond); }
+    public static DateTimeOffset Round(this DateTimeOffset dt, int minutes) {
+      dt = dt.Round();
+      return dt.AddMinutes(dt.Minute / minutes * minutes - dt.Minute);
+    }
+
+    public static DateTime Round(this DateTime dt) { return DateTime.SpecifyKind(new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0), dt.Kind); }
+    public static DateTime Round_(this DateTime dt) { return dt.AddSeconds(-dt.Second).AddMilliseconds(-dt.Millisecond); }
+    public static DateTime Round(this DateTime dt, int period) {
+      dt = dt.Round();
+      return dt.AddMinutes(dt.Minute / period * period - dt.Minute);
+    }
+    /// <summary>
+    /// Returns Slope from regression coeffisients array of two values
+    /// </summary>
+    /// <param name="coeffs"></param>
+    /// <returns></returns>
+    public static double LineSlope(this double[] coeffs) {
+      if(coeffs.Length != 2)
+        throw new IndexOutOfRangeException();
+      return coeffs[1];
+    }
+    public static double LineValue(this double[] coeffs) {
+      if(coeffs.Length != 2)
+        throw new IndexOutOfRangeException();
+      return coeffs[0];
+    }
   }
 }
