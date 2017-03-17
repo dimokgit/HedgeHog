@@ -26,10 +26,11 @@ namespace ConsoleApp {
       //ibClient.HistoricalDataEnd += (reqId, startDate, endDate) => HandleMessage(new HistoricalDataEndMessage(reqId, startDate, endDate));
 
       var usdJpi = ContractSamples.FxContract("usd/jpy");
-      Connect(ibClient, signal, 4001, "", 2);
+      var gold = ContractSamples.Commodity("XAUUSD");
+      Connect(ibClient, signal, 7497, "", 2);
       var dateEnd = DateTime.Parse("2017-03-08 12:00");
       var count = 0;
-      new HistoryLoader(ibClient, usdJpi, 1, dateEnd, TimeSpan.FromHours(40), TimeUnit.S, BarSize._1_secs,
+      new HistoryLoader(ibClient, gold, 1, dateEnd, TimeSpan.FromHours(4), TimeUnit.S, BarSize._1_secs,
          list => {
            HandleMessage(new { list = new { list.Count, first = list.First().Date, last = list.Last().Date } } + "");
          },
@@ -46,6 +47,7 @@ namespace ConsoleApp {
       Console.ReadKey();
     }
 
+    #region HistoryLoader
     class HistoryLoader {
       #region Fields
       public const int HISTORICAL_ID_BASE = 30000000;
@@ -130,6 +132,7 @@ namespace ConsoleApp {
       }
       #endregion
 
+      #region Request Data
       private void RequestNextDataChunk() {
         Task.Delay(_delay).ContinueWith(t => RequestHistoryDataChunk());
       }
@@ -145,7 +148,9 @@ namespace ConsoleApp {
           CleanUp();
         }
       }
+      #endregion
 
+      #region Duration Helpers
       static Dictionary<BarSize, Dictionary<TimeUnit, int[]>> BarSizeRanges=new Dictionary<BarSize, Dictionary<TimeUnit, int[]>> {
         [BarSize._1_secs]= new Dictionary<TimeUnit, int[]> {
           [TimeUnit.S] = new[] { 60, 1800 }
@@ -162,7 +167,9 @@ namespace ConsoleApp {
         var duration = Math.Min(Math.Max(interval, range[0]), range[1]);
         return duration + " " + timeUnit;
       }
+      #endregion
     }
+    #endregion
 
     enum TimeUnit { S, D, W, M, Y }
     enum BarSize {

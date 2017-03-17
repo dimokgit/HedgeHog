@@ -6,7 +6,6 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using HedgeHog.Bars;
 using System.Diagnostics;
-using HedgeHog.DB;
 using ReactiveUI;
 using System.Collections.Concurrent;
 
@@ -18,7 +17,6 @@ namespace HedgeHog.Shared {
     ObservableCollection<Offer> offersCollection {
       get {
         if (_offersCollection == null || _baseUnits == null) {
-          var offers = new ForexEntities().t_Offer;
           var dbOffers = new[] {
             new Offer { Pair = "USD/JPY", Digits = 3, MMR = 40, PipCost = 0.9, PointSize = 0.01, ContractSize = 1000 },
             new Offer { Pair = "EUR/USD", Digits = 5, MMR = 40, PipCost = 1, PointSize = 0.0001, ContractSize = 1000 }
@@ -27,7 +25,7 @@ namespace HedgeHog.Shared {
           //  Pair = o.Pair, Digits = o.Digits, MMR = o.MMR, PipCost = o.PipCost, PointSize = o.PipSize, ContractSize = o.BaseUnitSize
           //}).ToArray();
           _offersCollection = new ObservableCollection<Offer>(dbOffers);
-          _baseUnits = offers.ToArray().ToDictionary(o => o.Pair, o => o.BaseUnitSize);
+          _baseUnits = dbOffers.ToArray().ToDictionary(o => o.Pair, o => o.ContractSize);
         }
         return _offersCollection;
       }

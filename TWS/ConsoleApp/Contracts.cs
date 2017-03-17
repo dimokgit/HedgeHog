@@ -21,9 +21,23 @@ namespace IBApp {
    */
   public class ContractSamples {
     public static Contract FxContract(string pair) {
-      var pair2 = (from Match m in Regex.Matches(Regex.Replace(pair, @"\W*", ""),@"\w{3}") select m.Value).ToArray();
+      var pair2 = (from Match m in Regex.Matches(Regex.Replace(pair, @"\W*", ""), @"\w{3}") select m.Value).ToArray();
       return FxPair(pair2[0], pair2[1]);
     }
+    public static Contract CommodityContract(string commodity) {
+      return Commodity(commodity);
+    }
+    public static Contract Commodity(string symbol) {
+      //EXSTART::usstock::csharp
+      Contract contract = new Contract();
+      contract.Symbol = symbol;
+      contract.SecType = "CMDTY";
+      contract.Currency = "USD";
+      contract.Exchange = "SMART";
+      //EXEND
+      return contract;
+    }
+
     /*
      * Usually, the easiest way to define a Stock/CASH contract is through these four attributes.
      */

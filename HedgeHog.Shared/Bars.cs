@@ -6,8 +6,6 @@ using HedgeHog.Shared;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
-using HedgeHog.DB;
-using System.Data.Entity.Core.Objects.DataClasses;
 [assembly: CLSCompliant(true)]
 namespace HedgeHog.Bars {
   public enum FractalType {
