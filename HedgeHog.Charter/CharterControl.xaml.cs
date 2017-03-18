@@ -42,6 +42,7 @@ using System.Threading;
 using System.Windows.Interactivity;
 using Microsoft.Expression.Interactivity.Layout;
 using HedgeHog.Metadata;
+using static HedgeHog.ReflectionCore;
 using System.IO;
 
 namespace HedgeHog {
@@ -1890,8 +1891,8 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       var tradeSegment = new SegmentEx() { StrokeThickness = 1 };
       plotter.Children.Add(tradeSegment);
       tradeSegment.SetBinding(Segment.StartPointProperty, new Binding("Position") { Source = _tradeLineStopDraggablePoint });
-      tradeSegment.SetBinding(Segment.EndPointProperty, new Binding(Lib.GetLambda(() => TradeLineEndPoint)));
-      tradeSegment.SetBinding(Segment.ToolTipProperty, new Binding(Lib.GetLambda(() => TradeLineSlope)));
+      tradeSegment.SetBinding(Segment.EndPointProperty, new Binding(GetLambda(() => TradeLineEndPoint)));
+      tradeSegment.SetBinding(Segment.ToolTipProperty, new Binding(GetLambda(() => TradeLineSlope)));
       tradeSegment.EndPositionChanged += (s, e) => { RaiseTradeLineChanged(e.NewPosition, e.OldPosition); };
       tradeSegment.SetBinding(Segment.VisibilityProperty, showTradeStuffBinding);
       #endregion

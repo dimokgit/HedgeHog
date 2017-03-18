@@ -36,6 +36,7 @@ namespace HedgeHog.Alice.Store {
       get {
         if(_isGhostDisposable == null) {
           _isGhostDisposable = this.SubscribeToPropertiesChanged(sr => OnPropertyChanged("IsGhost")
+          ,ReactiveUI.RxApp.MainThreadScheduler
             , x => x.InManual
             , x => x.IsExitOnly
             , x => x.CanTrade

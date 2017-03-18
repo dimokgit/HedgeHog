@@ -170,24 +170,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     public static bool IsLocalDB { get { return false; } }
-    static AliceEntities Context {
-      get {
-        return null;
-        lock(contextLocker)
-          if(_context == null)
-            if(!IsLocalDB) {
-              _context = new AliceEntities();
-              _context.ObjectMaterialized += new System.Data.Entity.Core.Objects.ObjectMaterializedEventHandler(_context_ObjectMaterialized);
-            } else
-              if(false && GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic)
-              _context = new AliceEntities("metadata=res://*/Models.Alice.csdl|res://*/Models.Alice.ssdl|res://*/Models.Alice.msl;provider=System.Data.SqlServerCe.3.5;provider connection string=\"Data Source=Store\\Alice.sdf\"");
-            else if(true)
-              _context = new AliceEntities();
-            else
-              InitAliceEntityContext();
-        return _context;
-      }
-    }
     #region AliceMaterializer Subject
     static object _AliceMaterializerSubjectLocker = new object();
     static ISubject<ObjectMaterializedEventArgs> _AliceMaterializerSubject;
@@ -207,11 +189,6 @@ namespace HedgeHog.Alice.Store {
 
     static void _context_ObjectMaterialized(object sender, System.Data.Entity.Core.Objects.ObjectMaterializedEventArgs e) {
       OnAliceMaterializer(e);
-    }
-    public static AliceEntities AliceContext { get { return Context; } }
-
-    public static void UseAliceContextSaveChanges() {
-      UseAliceContext(c => { }, true);
     }
 
     #region JSON
@@ -261,44 +238,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    public static void UseAliceContext(Action<AliceEntities> action, bool saveChanges = false) {
-      if(Context == null)
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new Exception(new { Context } + ""));
-      else
-        try {
-          action(Context);
-          if(saveChanges)
-            Context.SaveChanges();
-        } catch(Exception exc) {
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
-          throw;
-        }
-    }
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    public static T UseAliceContext<T>(Func<AliceEntities, T> action, bool saveChanges = false) {
-      if(Context == null) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new Exception(new { Context } + ""));
-        return default(T);
-      } else
-        try {
-          var r = action(Context);
-          if(saveChanges)
-            Context.SaveChanges();
-          return r;
-        } catch(Exception exc) {
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
-          throw;
-        }
-    }
-    private static AliceEntities InitAliceEntityContext() {
-      var path = DatabasePath;
-      var context = new AliceEntities();
-      var storeConn = ((System.Data.Entity.Core.EntityClient.EntityConnection)(context.Connection)).StoreConnection;
-      storeConn.ConnectionString = "Data Source=" + path;// +"\\Store\\Alice.sdf";
-      return context;
-    }
-
     public static string OpenDataBasePath() {
       var dlg = new Microsoft.Win32.OpenFileDialog();
       dlg.FileName = "Alice";

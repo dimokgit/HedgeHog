@@ -33,18 +33,34 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ReactiveUI, Version=7.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\reactiveui-core.7.2.0\lib\Net45\ReactiveUI.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Splat, Version=1.6.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\Splat.1.6.2\lib\Net45\Splat.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Reactive.Core, Version=3.0.1000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
-      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\System.Reactive.Core.3.1.1\lib\net45\System.Reactive.Core.dll</HintPath>
+    <Reference Include="System.Reactive.Core, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="System.Reactive.Interfaces, Version=3.0.1000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
-      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\System.Reactive.Interfaces.3.1.1\lib\net45\System.Reactive.Interfaces.dll</HintPath>
+    <Reference Include="System.Reactive.Interfaces, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\Rx-Interfaces.2.2.5\lib\net45\System.Reactive.Interfaces.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="System.Reactive.Linq, Version=3.0.1000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
-      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\System.Reactive.Linq.3.1.1\lib\net45\System.Reactive.Linq.dll</HintPath>
+    <Reference Include="System.Reactive.Linq, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\Rx-Linq.2.2.5\lib\net45\System.Reactive.Linq.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Reactive.PlatformServices, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\Rx-PlatformServices.2.2.5\lib\net45\System.Reactive.PlatformServices.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Reactive.Windows.Threading, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\Rx-XAML.2.2.5\lib\net45\System.Reactive.Windows.Threading.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Xml.Linq" />
@@ -53,10 +69,12 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Contracts.cs" />
     <Compile Include="IBClient.cs" />
+    <Compile Include="IBClientCore.cs" />
     <Compile Include="Messages\ErrorMessage.cs" />
     <Compile Include="Messages\HistoricalDataEndMessage.cs" />
     <Compile Include="Messages\HistoricalDataMessage.cs" />
@@ -70,7 +88,19 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="D:\TWS API\source\csharpclient\client\CSharpAPI.csproj">
+    <ProjectReference Include="..\..\HedgeHog.Core.Reactive\HedgeHog.Core.Reactive.csproj">
+      <Project>{edc8fa19-6e01-4997-84ba-ee5881fb3a52}</Project>
+      <Name>HedgeHog.Core.Reactive</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\HedgeHog.Core\HedgeHog.Core.csproj">
+      <Project>{0ff063e1-e910-4d16-976b-15bc31d11159}</Project>
+      <Name>HedgeHog.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\HedgeHog.Shared\HedgeHog.Shared.csproj">
+      <Project>{22e8af73-0298-40e9-bbfe-6ba069c17c86}</Project>
+      <Name>HedgeHog.Shared</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CSharpAPI\CSharpAPI.csproj">
       <Project>{8ede0744-96c2-40b0-a8dc-37df79370203}</Project>
       <Name>CSharpAPI</Name>
     </ProjectReference>

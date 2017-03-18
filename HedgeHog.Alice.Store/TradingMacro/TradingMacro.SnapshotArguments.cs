@@ -6,6 +6,7 @@ using HedgeHog;
 using Gala = GalaSoft.MvvmLight.Command;
 using System.Windows.Input;
 using System.Diagnostics;
+using static HedgeHog.ReflectionCore;
 
 namespace HedgeHog.Alice.Store {
   public class SnapshotArguments : GalaSoft.MvvmLight.ViewModelBase {
@@ -17,7 +18,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_DateStart != value) {
           _DateStart = value;
-          RaisePropertyChanged(Lib.GetLambda(() => DateStart));
+          RaisePropertyChanged(GetLambda(() => DateStart));
           if (_DateStart == null) DateEnd = null;
         }
       }
@@ -31,7 +32,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_DateEnd != value) {
           _DateEnd = value;
-          RaisePropertyChanged(Lib.GetLambda(() => DateEnd));
+          RaisePropertyChanged(GetLambda(() => DateEnd));
         }
       }
     }

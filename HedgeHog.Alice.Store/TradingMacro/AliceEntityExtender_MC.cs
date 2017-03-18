@@ -7,6 +7,7 @@ using System.Data.Entity.Core.Objects;
 
 namespace HedgeHog.Alice.Store {
   public partial class AliceEntities {
+    /*
     [MethodImpl(MethodImplOptions.Synchronized)]
     public override int SaveChanges(System.Data.Entity.Core.Objects.SaveOptions options) {
         try {
@@ -28,7 +29,6 @@ namespace HedgeHog.Alice.Store {
           return 0;
         }
     }
-
     private void InitGuidField<TEntity>(Func<TEntity, Guid> getField, Action<TEntity, Guid> setField) {
       var d = ObjectStateManager.GetObjectStateEntries(System.Data.Entity.EntityState.Added).ToArray();
       var f = d.Select(o => o.Entity).ToArray();
@@ -39,6 +39,7 @@ namespace HedgeHog.Alice.Store {
       var j = f.OfType<TEntity>().Where(e => getField(e) == new Guid()).ToList();
       j.ForEach(e => { });
     }
+    */
   }
 
   public class SessionInfoAttribute : Attribute {

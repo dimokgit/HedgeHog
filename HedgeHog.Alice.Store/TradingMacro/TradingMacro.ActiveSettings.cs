@@ -12,7 +12,7 @@ using MoreLinq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
-
+using static HedgeHog.ReflectionCore;
 namespace HedgeHog.Alice.Store {
   public class TradingMacroSerializer : JsonConverter {
     readonly bool excludeNotStrategy;
@@ -105,9 +105,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     static string[] _excludeDataMembers = new[] {
-      Lib.GetLambda<TradingMacro>(tm=>tm.TradingMacroName),
-      Lib.GetLambda<TradingMacro>(tm=>tm.TradingGroup),
-      Lib.GetLambda<TradingMacro>(tm=>tm.PairIndex)
+      GetLambda<TradingMacro>(tm=>tm.TradingMacroName),
+      GetLambda<TradingMacro>(tm=>tm.TradingGroup),
+      GetLambda<TradingMacro>(tm=>tm.PairIndex)
     }
     .Select(s=>s.ToLower()).ToArray();
     static bool IsMemberExcluded(string name) { return _excludeDataMembers.Contains(name.ToLower()); }

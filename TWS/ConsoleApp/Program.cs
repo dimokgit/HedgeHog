@@ -11,23 +11,24 @@ using System.Threading;
 using System.Threading.Tasks;
 using IBApi;
 using IBApp;
-
+using HedgeHog;
 namespace ConsoleApp {
   class Program {
     static void Main(string[] args) {
       int _nextValidId = 0;
-      var signal = new EReaderMonitorSignal();
-      var ibClient = new IBClient(signal);
-      ibClient.Error += HandleError;
+      var ibClient = IBClientCore.Create();
+      ibClient.LoginError += HandleError;
+      ibClient.ErrorEx += HandleError;
       ibClient.NextValidId += id => _nextValidId = id;
       ibClient.CurrentTime += time => HandleMessage("Current Time: " + time + "\n");
+      ibClient.SubscribeToPropertyChanged(ibc => ibc.SessionStatus, ibc => HandleMessage(new { ibc.SessionStatus } + ""));
 
       //ibClient.HistoricalData += (reqId, date, open, high, low, close, volume, count, WAP, hasGaps) => HandleMessage(new HistoricalDataMessage(reqId, date, open, high, low, close, volume, count, WAP, hasGaps));
       //ibClient.HistoricalDataEnd += (reqId, startDate, endDate) => HandleMessage(new HistoricalDataEndMessage(reqId, startDate, endDate));
 
       var usdJpi = ContractSamples.FxContract("usd/jpy");
       var gold = ContractSamples.Commodity("XAUUSD");
-      Connect(ibClient, signal, 7497, "", 2);
+      ibClient.Connect(7497, "", 2);
       var dateEnd = DateTime.Parse("2017-03-08 12:00");
       var count = 0;
       new HistoryLoader(ibClient, gold, 1, dateEnd, TimeSpan.FromHours(4), TimeUnit.S, BarSize._1_secs,
@@ -178,27 +179,9 @@ namespace ConsoleApp {
     }
     //Dictionary<BarSize,int>
 
-    private static void Connect(IBClient ibClient, EReaderSignal signal, int port, string host, int clientId) {
-
-      if(host == null || host.Equals(""))
-        host = "127.0.0.1";
-      try {
-        ibClient.ClientId = clientId;
-        ibClient.ClientSocket.eConnect(host, port, ibClient.ClientId);
-
-        var reader = new EReader(ibClient.ClientSocket, signal);
-
-        reader.Start();
-
-        new Thread(() => { while(ibClient.ClientSocket.IsConnected()) { signal.waitForSignal(); reader.processMsgs(); } }) { IsBackground = true }.Start();
-      } catch(Exception) {
-        HandleMessage(new ErrorMessage(-1, -1, "Please check your connection attributes.") + "");
-      }
-    }
-
 
     static void HandleError(Exception ex) {
-      HandleError(0, 0, "", ex);
+      HandleError(-1, -1, "", ex);
     }
     static void HandleError(int id, int errorCode, string str, Exception ex) {
       if(ex != null)

@@ -6,7 +6,7 @@ using HedgeHog.Bars;
 using System.Diagnostics;
 using HedgeHog;
 using HedgeHog.Shared;
-using System.Reactive.Subjects;
+//using System.Reactive.Subjects;
 using NotifyCollectionChangedWrapper;
 using System.Collections.ObjectModel;
 

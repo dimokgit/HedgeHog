@@ -41,9 +41,6 @@ namespace HedgeHog.Charter.FileMetadata.Metadata
             /// <summary>BitmapImage for the file.</summary>
             public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Charter;component/App.xaml")); } }
 
-            /// <summary>Represents x:Key="Locator"/></summary>
-            public static string LocatorKey { get { return "Locator"; } }
-
 
     }
 
@@ -159,20 +156,6 @@ namespace HedgeHog.Charter.FileMetadata.Metadata
 
             /// <summary>BitmapImage for the file.</summary>
             public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Charter;component/GraggableLine.xaml")); } }
-
-
-    }
-
-    /// <summary>Metadata for File MVVMLight.Nuget.Readme.txt</summary>
-    public static class MVVMLightNugetReadmeTxt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Charter;component/MVVMLight.Nuget.Readme.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Charter;component/MVVMLight.Nuget.Readme.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Charter;component/MVVMLight.Nuget.Readme.txt")); } }
 
 
     }
@@ -380,10 +363,25 @@ namespace HedgeHog.Metadata
         
     }
 
+    /// <summary>Metadata for class <see cref="HedgeHog.extensions"/></summary>
+    public static class extensionsMetadata
+    {
+        
+    }
+
     /// <summary>Metadata for class <see cref="HedgeHog.CharterControl"/></summary>
     public static class CharterControlMetadata
     {
-                /// <summary>Metadata for class <see cref="HedgeHog.CharterControl.ColorPalette"/></summary>
+                /// <summary>Refers to method <see cref="HedgeHog.CharterControl.MenuItem_Click"/></summary>
+        public const string MenuItem_Click = "MenuItem_Click";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.AlwaysOn_Click"/></summary>
+        public const string AlwaysOn_Click = "AlwaysOn_Click";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.OnSetDefaultTradeLevels"/></summary>
+        public const string OnSetDefaultTradeLevels = "OnSetDefaultTradeLevels";
+
+        /// <summary>Metadata for class <see cref="HedgeHog.CharterControl.ColorPalette"/></summary>
         public static class ColorPaletteMetadata
         {
                         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.ColorPalette.BackgroundDefault"/></summary>
@@ -554,14 +552,26 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedDataSource1"/></summary>
         public const string animatedDataSource1 = "animatedDataSource1";
 
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedDataSource2"/></summary>
+        public const string animatedDataSource2 = "animatedDataSource2";
+
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedPriceBidY"/></summary>
         public const string animatedPriceBidY = "animatedPriceBidY";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedPriceAskY"/></summary>
+        public const string animatedPriceAskY = "animatedPriceAskY";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedDataSourceBid"/></summary>
         public const string animatedDataSourceBid = "animatedDataSourceBid";
 
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedDataSourceAsk"/></summary>
+        public const string animatedDataSourceAsk = "animatedDataSourceAsk";
+
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedPrice1Y"/></summary>
         public const string animatedPrice1Y = "animatedPrice1Y";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedPrice2Y"/></summary>
+        public const string animatedPrice2Y = "animatedPrice2Y";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedVoltTimeX"/></summary>
         public const string animatedVoltTimeX = "animatedVoltTimeX";
@@ -590,9 +600,6 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.viewPortContainer"/></summary>
         public const string viewPortContainer = "viewPortContainer";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorHeightMultiplier"/></summary>
-        public const string CorridorHeightMultiplier = "CorridorHeightMultiplier";
-
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.PriceBarValue"/></summary>
         public const string PriceBarValue = "PriceBarValue";
 
@@ -607,6 +614,12 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassSell"/></summary>
         public const string CenterOfMassSell = "CenterOfMassSell";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassBuy2"/></summary>
+        public const string CenterOfMassBuy2 = "CenterOfMassBuy2";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassSell2"/></summary>
+        public const string CenterOfMassSell2 = "CenterOfMassSell2";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PriceLineGraph"/></summary>
         public const string PriceLineGraph = "PriceLineGraph";
@@ -640,6 +653,15 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.VoltageHigh"/></summary>
         public const string VoltageHigh = "VoltageHigh";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._voltageLow"/></summary>
+        public const string _voltageLow = "_voltageLow";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.voltageLow"/></summary>
+        public const string voltageLow = "voltageLow";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.VoltageLow"/></summary>
+        public const string VoltageLow = "VoltageLow";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._voltageAverage"/></summary>
         public const string _voltageAverage = "_voltageAverage";
@@ -709,6 +731,36 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassHLineLow"/></summary>
         public const string CenterOfMassHLineLow = "CenterOfMassHLineLow";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.centerOfMassBrush2"/></summary>
+        public const string centerOfMassBrush2 = "centerOfMassBrush2";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.centerOfMassStrokeThickness2"/></summary>
+        public const string centerOfMassStrokeThickness2 = "centerOfMassStrokeThickness2";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.centerOfMassStrokeDashArray2"/></summary>
+        public const string centerOfMassStrokeDashArray2 = "centerOfMassStrokeDashArray2";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.CenterOfMassFactory2"/></summary>
+        public const string CenterOfMassFactory2 = "CenterOfMassFactory2";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._centerOfMassHLineHigh2"/></summary>
+        public const string _centerOfMassHLineHigh2 = "_centerOfMassHLineHigh2";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.centerOfMassHLineHigh2"/></summary>
+        public const string centerOfMassHLineHigh2 = "centerOfMassHLineHigh2";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassHLineHigh2"/></summary>
+        public const string CenterOfMassHLineHigh2 = "CenterOfMassHLineHigh2";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._centerOfMassHLineLow2"/></summary>
+        public const string _centerOfMassHLineLow2 = "_centerOfMassHLineLow2";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.centerOfMassHLineLow2"/></summary>
+        public const string centerOfMassHLineLow2 = "centerOfMassHLineLow2";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassHLineLow2"/></summary>
+        public const string CenterOfMassHLineLow2 = "CenterOfMassHLineLow2";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.magnetPrice"/></summary>
         public const string magnetPrice = "magnetPrice";
@@ -830,8 +882,56 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._trendLinesY"/></summary>
         public const string _trendLinesY = "_trendLinesY";
 
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetMATrendLines"/></summary>
+        public const string SetMATrendLines = "SetMATrendLines";
+
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetTrendLines"/></summary>
         public const string SetTrendLines = "SetTrendLines";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine_2"/></summary>
+        public const string trendLine_2 = "trendLine_2";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine_2"/></summary>
+        public const string TrendLine_2 = "TrendLine_2";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine2_2"/></summary>
+        public const string trendLine2_2 = "trendLine2_2";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine2_2"/></summary>
+        public const string TrendLine2_2 = "TrendLine2_2";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine3_2"/></summary>
+        public const string trendLine3_2 = "trendLine3_2";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine3_2"/></summary>
+        public const string TrendLine3_2 = "TrendLine3_2";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetTrendLines2"/></summary>
+        public const string SetTrendLines2 = "SetTrendLines2";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine2_1"/></summary>
+        public const string trendLine2_1 = "trendLine2_1";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine2_1"/></summary>
+        public const string TrendLine2_1 = "TrendLine2_1";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine3_1"/></summary>
+        public const string trendLine3_1 = "trendLine3_1";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine3_1"/></summary>
+        public const string TrendLine3_1 = "TrendLine3_1";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetTrendLines1"/></summary>
+        public const string SetTrendLines1 = "SetTrendLines1";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._trendLineMA"/></summary>
+        public const string _trendLineMA = "_trendLineMA";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.trendLineMA"/></summary>
+        public const string trendLineMA = "trendLineMA";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLineMA"/></summary>
+        public const string TrendLineMA = "TrendLineMA";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine"/></summary>
         public const string trendLine = "trendLine";
@@ -935,6 +1035,24 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawLevels"/></summary>
         public const string DrawLevels = "DrawLevels";
 
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.InitHLines{TLine}"/></summary>
+        public const string InitHLines = "InitHLines";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.OnOtherLevelAdded{TLine}"/></summary>
+        public const string OnOtherLevelAdded = "OnOtherLevelAdded";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.OnOtherLevelRemoved{TLine}"/></summary>
+        public const string OnOtherLevelRemoved = "OnOtherLevelRemoved";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.NewMethod"/></summary>
+        public const string NewMethod = "NewMethod";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawHorizontalLines"/></summary>
+        public const string DrawHorizontalLines = "DrawHorizontalLines";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.IsLevelInChartRange"/></summary>
+        public const string IsLevelInChartRange = "IsLevelInChartRange";
+
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.InitVLines{TLine}"/></summary>
         public const string InitVLines = "InitVLines";
 
@@ -944,20 +1062,38 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.OnOtherTimeRemoved{TLine}"/></summary>
         public const string OnOtherTimeRemoved = "OnOtherTimeRemoved";
 
-        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawVertivalLines"/></summary>
-        public const string DrawVertivalLines = "DrawVertivalLines";
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.IsDateInChartRange"/></summary>
+        public const string IsDateInChartRange = "IsDateInChartRange";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._newsTimes"/></summary>
-        public const string _newsTimes = "_newsTimes";
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.LevelUpHLines"/></summary>
+        public const string LevelUpHLines = "LevelUpHLines";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.newsTimes"/></summary>
-        public const string newsTimes = "newsTimes";
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._LevelsUp"/></summary>
+        public const string _LevelsUp = "_LevelsUp";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.newsVLines"/></summary>
-        public const string newsVLines = "newsVLines";
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LevelsUp"/></summary>
+        public const string LevelsUp = "LevelsUp";
 
-        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawNewsLines"/></summary>
-        public const string DrawNewsLines = "DrawNewsLines";
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawLevelUpLines"/></summary>
+        public const string DrawLevelUpLines = "DrawLevelUpLines";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawDateLinesFunctor"/></summary>
+        public const string DrawDateLinesFunctor = "DrawDateLinesFunctor";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawLines"/></summary>
+        public const string DrawLines = "DrawLines";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._NewsTimes"/></summary>
+        public const string _NewsTimes = "_NewsTimes";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.NewsTimes"/></summary>
+        public const string NewsTimes = "NewsTimes";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.NewsTimesVLines"/></summary>
+        public const string NewsTimesVLines = "NewsTimesVLines";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.DrawNewsTimes"/></summary>
+        public const string DrawNewsTimes = "DrawNewsTimes";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._TradeTimes"/></summary>
         public const string _TradeTimes = "_TradeTimes";
@@ -968,8 +1104,14 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.TradeTimesVLines"/></summary>
         public const string TradeTimesVLines = "TradeTimesVLines";
 
-        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawTradeTimes"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.DrawTradeTimes"/></summary>
         public const string DrawTradeTimes = "DrawTradeTimes";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._NYSessions"/></summary>
+        public const string _NYSessions = "_NYSessions";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.NYSessions"/></summary>
+        public const string NYSessions = "NYSessions";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._NYTimes"/></summary>
         public const string _NYTimes = "_NYTimes";
@@ -983,17 +1125,29 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawNYTimes"/></summary>
         public const string DrawNYTimes = "DrawNYTimes";
 
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._londonSessions"/></summary>
+        public const string _londonSessions = "_londonSessions";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LondonSessions"/></summary>
+        public const string LondonSessions = "LondonSessions";
+
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._LondonTimes"/></summary>
-        public const string _LindonTimes = "_LindonTimes";
+        public const string _LondonTimes = "_LondonTimes";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LondonTimes"/></summary>
-        public const string LindonTimes = "LindonTimes";
+        public const string LondonTimes = "LondonTimes";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.LondonTimesVLines"/></summary>
-        public const string LindonTimesVLines = "LindonTimesVLines";
+        public const string LondonTimesVLines = "LondonTimesVLines";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawLindonTimes"/></summary>
         public const string DrawLindonTimes = "DrawLindonTimes";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._tokyoSessions"/></summary>
+        public const string _tokyoSessions = "_tokyoSessions";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.tokyoSessions"/></summary>
+        public const string tokyoSessions = "tokyoSessions";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._TokyoTimes"/></summary>
         public const string _TokyoTimes = "_TokyoTimes";
@@ -1007,14 +1161,14 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawTokyoTimes"/></summary>
         public const string DrawTokyoTimes = "DrawTokyoTimes";
 
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetVerticalRanges"/></summary>
+        public const string SetVerticalRanges = "SetVerticalRanges";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.InitSessionVerticalRange"/></summary>
+        public const string InitSessionVerticalRange = "InitSessionVerticalRange";
+
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.Corridors_Closing"/></summary>
         public const string Corridors_Closing = "Corridors_Closing";
-
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.ds"/></summary>
-        public const string ds = "ds";
-
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.dsVoltsPoly"/></summary>
-        public const string dsVoltsPoly = "dsVoltsPoly";
 
         /// <summary>Metadata for class <see cref="HedgeHog.CharterControl.DraggablePointInfo"/></summary>
         public static class DraggablePointInfoMetadata
@@ -1091,9 +1245,6 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._isShiftDown"/></summary>
         public const string _isShiftDown = "_isShiftDown";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._dragPointPositionChanged"/></summary>
-        public const string _dragPointPositionChanged = "_dragPointPositionChanged";
-
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetBuySellRates"/></summary>
         public const string SetBuySellRates = "SetBuySellRates";
 
@@ -1154,11 +1305,23 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._tradingHorisontalRange"/></summary>
         public const string _tradingHorisontalRange = "_tradingHorisontalRange";
 
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._tradingHorisontalRange2"/></summary>
+        public const string _tradingHorisontalRange2 = "_tradingHorisontalRange2";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._londonSessionHorisontalRange"/></summary>
+        public const string _londonSessionHorisontalRange = "_londonSessionHorisontalRange";
+
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.GetDifference"/></summary>
         public const string GetDifference = "GetDifference";
 
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._getPingLocker"/></summary>
+        public const string _getPingLocker = "_getPingLocker";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.GetPng"/></summary>
+        public const string GetPng = "GetPng";
+
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.InitPlotter"/></summary>
-        public const string CreateCurrencyDataSource = "CreateCurrencyDataSource";
+        public const string InitPlotter = "InitPlotter";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._DoShowTradingLine"/></summary>
         public const string _DoShowTradingLine = "_DoShowTradingLine";
@@ -1250,6 +1413,9 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.GetPriceStartDateContinuous"/></summary>
         public const string GetPriceStartDateContinuous = "GetPriceStartDateContinuous";
 
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.ConvertStartDateToContiniousDouble"/></summary>
+        public const string ConvertStartDateToContiniousDouble = "ConvertStartDateToContiniousDouble";
+
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.corridorStartDateScheduler"/></summary>
         public const string corridorStartDateScheduler = "corridorStartDateScheduler";
 
@@ -1301,6 +1467,12 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.AddTicks"/></summary>
         public const string AddTicks = "AddTicks";
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.ChartAreaWidth"/></summary>
+        public const string ChartAreaWidth = "ChartAreaWidth";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetVerticalRange"/></summary>
+        public const string SetVerticalRange = "SetVerticalRange";
+
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._SetLastPointSubjectLocker"/></summary>
         public const string _SetLastPointSubjectLocker = "_SetLastPointSubjectLocker";
 
@@ -1328,6 +1500,9 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._roundTo"/></summary>
         public const string _roundTo = "_roundTo";
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.RoundTo"/></summary>
+        public const string RoundTo = "RoundTo";
+
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetGannAngles"/></summary>
         public const string SetGannAngles = "SetGannAngles";
 
@@ -1348,6 +1523,9 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceMA"/></summary>
         public const string GetPriceMA = "GetPriceMA";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceMA2"/></summary>
+        public const string GetPriceMA2 = "GetPriceMA2";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CalculateLastPrice"/></summary>
         public const string CalculateLastPrice = "CalculateLastPrice";
@@ -1398,9 +1576,6 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.infoBox"/></summary>
         public static PropertyPath infoBoxPath { get { return new PropertyPath("infoBox"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorHeightMultiplier"/></summary>
-        public static PropertyPath CorridorHeightMultiplierPath { get { return new PropertyPath("CorridorHeightMultiplier"); } }
-
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceHigh"/></summary>
         public static PropertyPath GetPriceHighPath { get { return new PropertyPath("GetPriceHigh"); } }
 
@@ -1413,6 +1588,12 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassSell"/></summary>
         public static PropertyPath CenterOfMassSellPath { get { return new PropertyPath("CenterOfMassSell"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassBuy2"/></summary>
+        public static PropertyPath CenterOfMassBuy2Path { get { return new PropertyPath("CenterOfMassBuy2"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassSell2"/></summary>
+        public static PropertyPath CenterOfMassSell2Path { get { return new PropertyPath("CenterOfMassSell2"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PriceLineGraph"/></summary>
         public static PropertyPath PriceLineGraphPath { get { return new PropertyPath("PriceLineGraph"); } }
 
@@ -1424,6 +1605,12 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.VoltageHigh"/></summary>
         public static PropertyPath VoltageHighPath { get { return new PropertyPath("VoltageHigh"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.voltageLow"/></summary>
+        public static PropertyPath voltageLowPath { get { return new PropertyPath("voltageLow"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.VoltageLow"/></summary>
+        public static PropertyPath VoltageLowPath { get { return new PropertyPath("VoltageLow"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.voltageAverage"/></summary>
         public static PropertyPath voltageAveragePath { get { return new PropertyPath("voltageAverage"); } }
@@ -1457,6 +1644,18 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassHLineLow"/></summary>
         public static PropertyPath CenterOfMassHLineLowPath { get { return new PropertyPath("CenterOfMassHLineLow"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.centerOfMassHLineHigh2"/></summary>
+        public static PropertyPath centerOfMassHLineHigh2Path { get { return new PropertyPath("centerOfMassHLineHigh2"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassHLineHigh2"/></summary>
+        public static PropertyPath CenterOfMassHLineHigh2Path { get { return new PropertyPath("CenterOfMassHLineHigh2"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.centerOfMassHLineLow2"/></summary>
+        public static PropertyPath centerOfMassHLineLow2Path { get { return new PropertyPath("centerOfMassHLineLow2"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassHLineLow2"/></summary>
+        public static PropertyPath CenterOfMassHLineLow2Path { get { return new PropertyPath("CenterOfMassHLineLow2"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.MagnetPrice"/></summary>
         public static PropertyPath MagnetPricePath { get { return new PropertyPath("MagnetPrice"); } }
@@ -1509,6 +1708,27 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GannLine"/></summary>
         public static PropertyPath GannLinePath { get { return new PropertyPath("GannLine"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine_2"/></summary>
+        public static PropertyPath TrendLine_2Path { get { return new PropertyPath("TrendLine_2"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine2_2"/></summary>
+        public static PropertyPath TrendLine2_2Path { get { return new PropertyPath("TrendLine2_2"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine3_2"/></summary>
+        public static PropertyPath TrendLine3_2Path { get { return new PropertyPath("TrendLine3_2"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine2_1"/></summary>
+        public static PropertyPath TrendLine2_1Path { get { return new PropertyPath("TrendLine2_1"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine3_1"/></summary>
+        public static PropertyPath TrendLine3_1Path { get { return new PropertyPath("TrendLine3_1"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.trendLineMA"/></summary>
+        public static PropertyPath trendLineMAPath { get { return new PropertyPath("trendLineMA"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLineMA"/></summary>
+        public static PropertyPath TrendLineMAPath { get { return new PropertyPath("TrendLineMA"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine"/></summary>
         public static PropertyPath TrendLinePath { get { return new PropertyPath("TrendLine"); } }
 
@@ -1545,17 +1765,35 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PlotterScheduler"/></summary>
         public static PropertyPath PlotterSchedulerPath { get { return new PropertyPath("PlotterScheduler"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.newsTimes"/></summary>
-        public static PropertyPath newsTimesPath { get { return new PropertyPath("newsTimes"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LevelsUp"/></summary>
+        public static PropertyPath LevelsUpPath { get { return new PropertyPath("LevelsUp"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.NewsTimes"/></summary>
+        public static PropertyPath NewsTimesPath { get { return new PropertyPath("NewsTimes"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.DrawNewsTimes"/></summary>
+        public static PropertyPath DrawNewsTimesPath { get { return new PropertyPath("DrawNewsTimes"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TradeTimes"/></summary>
         public static PropertyPath TradeTimesPath { get { return new PropertyPath("TradeTimes"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.DrawTradeTimes"/></summary>
+        public static PropertyPath DrawTradeTimesPath { get { return new PropertyPath("DrawTradeTimes"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.NYSessions"/></summary>
+        public static PropertyPath NYSessionsPath { get { return new PropertyPath("NYSessions"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.NYTimes"/></summary>
         public static PropertyPath NYTimesPath { get { return new PropertyPath("NYTimes"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LondonSessions"/></summary>
+        public static PropertyPath LondonSessionsPath { get { return new PropertyPath("LondonSessions"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LondonTimes"/></summary>
-        public static PropertyPath LindonTimesPath { get { return new PropertyPath("LindonTimes"); } }
+        public static PropertyPath LondonTimesPath { get { return new PropertyPath("LondonTimes"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.tokyoSessions"/></summary>
+        public static PropertyPath tokyoSessionsPath { get { return new PropertyPath("tokyoSessions"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TokyoTimes"/></summary>
         public static PropertyPath TokyoTimesPath { get { return new PropertyPath("TokyoTimes"); } }
@@ -1587,14 +1825,23 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PipSize"/></summary>
         public static PropertyPath PipSizePath { get { return new PropertyPath("PipSize"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.ChartAreaWidth"/></summary>
+        public static PropertyPath ChartAreaWidthPath { get { return new PropertyPath("ChartAreaWidth"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.SetLastPointSubject"/></summary>
         public static PropertyPath SetLastPointSubjectPath { get { return new PropertyPath("SetLastPointSubject"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.RoundTo"/></summary>
+        public static PropertyPath RoundToPath { get { return new PropertyPath("RoundTo"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.SelectedGannAngleIndex"/></summary>
         public static PropertyPath SelectedGannAngleIndexPath { get { return new PropertyPath("SelectedGannAngleIndex"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceMA"/></summary>
         public static PropertyPath GetPriceMAPath { get { return new PropertyPath("GetPriceMA"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceMA2"/></summary>
+        public static PropertyPath GetPriceMA2Path { get { return new PropertyPath("GetPriceMA2"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CalculateLastPrice"/></summary>
         public static PropertyPath CalculateLastPricePath { get { return new PropertyPath("CalculateLastPrice"); } }
@@ -2086,31 +2333,6 @@ namespace HedgeHog.Charter.FileMetadata.Themes.Metadata
             /// <summary>BitmapImage for the file.</summary>
             public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Charter;component/Themes/Generic.xaml")); } }
 
-
-    }
-
-}
-
-namespace HedgeHog.Charter.ViewModel.Metadata
-{
-    /// <summary>Metadata for class <see cref="HedgeHog.Charter.ViewModel.MainViewModel"/></summary>
-    public static class MainViewModelMetadata
-    {
-        
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Charter.ViewModel.ViewModelLocator"/></summary>
-    public static class ViewModelLocatorMetadata
-    {
-                /// <summary>Refers to property <see cref="HedgeHog.Charter.ViewModel.ViewModelLocator.Main"/></summary>
-        public const string Main = "Main";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Charter.ViewModel.ViewModelLocator.Cleanup"/></summary>
-        public const string Cleanup = "Cleanup";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.Charter.ViewModel.ViewModelLocator.Main"/></summary>
-        public static PropertyPath MainPath { get { return new PropertyPath("Main"); } }
 
     }
 

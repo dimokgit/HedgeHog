@@ -30,6 +30,7 @@ using HedgeHog.Shared.Messages;
 using ReactiveUI;
 using System.Reactive;
 using ReactiveUI.Legacy;
+using static HedgeHog.ReflectionCore;
 
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
@@ -144,7 +145,7 @@ namespace HedgeHog.Alice.Client {
         if(_IpPortActual != value) {
           _IpPortActual = value;
           RaisePropertyChangedCore();
-          OnPropertyChanged(Lib.GetLambda(() => TitleRoot));
+          OnPropertyChanged(GetLambda(() => TitleRoot));
         }
       }
     }
@@ -380,10 +381,10 @@ namespace HedgeHog.Alice.Client {
       var ta = e.NewItems[0] as TradingAccount;
       switch(e.Action) {
         case NotifyCollectionChangedAction.Add:
-          GlobalStorage.UseAliceContext(c => c.TradingAccounts.AddObject(ta));
+          throw new NotImplementedException("_TradingAccountsSet_CollectionChanged");
           break;
         case NotifyCollectionChangedAction.Remove:
-          GlobalStorage.UseAliceContext(c => c.TradingAccounts.DeleteObject(ta));
+          throw new NotImplementedException("_TradingAccountsSet_CollectionChanged");
           break;
       }
     }
@@ -833,7 +834,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void DeleteTradingAccount(object ta) {
-      GlobalStorage.UseAliceContext(c => c.TradingAccounts.DeleteObject(ta as TradingAccount));
+      throw new NotImplementedException("DeleteTradingAccount");
       SaveTradingSlaves();
     }
 
@@ -877,10 +878,9 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void AddNewSlaveAccount() {
+      throw new NotImplementedException();
       string account, password;
       FXCM.Lib.GetNewAccount(out account, out password);
-      GlobalStorage.UseAliceContext(c => c.TradingAccounts.AddObject(
-        new TradingAccount() { AccountId = account, Password = password, IsDemo = true, IsMaster = false, TradeRatio = "1:1" }));
       SaveTradingSlaves();
     }
     #endregion
@@ -1183,7 +1183,7 @@ namespace HedgeHog.Alice.Client {
       get { return _priceChanged; }
       set {
         _priceChanged = value;
-        OnPropertyChanged(Lib.GetLambda<TraderModel>(tm => tm.PriceChanged));
+        OnPropertyChanged(GetLambda<TraderModel>(tm => tm.PriceChanged));
       }
     }
     private IObservable<EventPattern<TradeEventArgs>> _tradeAdded;
@@ -1191,7 +1191,7 @@ namespace HedgeHog.Alice.Client {
       get { return _tradeAdded; }
       set {
         _tradeAdded = value;
-        OnPropertyChanged(Lib.GetLambda<TraderModel>(tm => tm.TradeAdded));
+        OnPropertyChanged(GetLambda<TraderModel>(tm => tm.TradeAdded));
       }
     }
     private IObservable<EventPattern<MasterTradeEventArgs>> _tradeRemoved;
@@ -1199,7 +1199,7 @@ namespace HedgeHog.Alice.Client {
       get { return _tradeRemoved; }
       set {
         _tradeRemoved = value;
-        OnPropertyChanged(Lib.GetLambda<TraderModel>(tm => tm.TradeRemoved));
+        OnPropertyChanged(GetLambda<TraderModel>(tm => tm.TradeRemoved));
       }
     }
 
@@ -1365,12 +1365,12 @@ namespace HedgeHog.Alice.Client {
       //else DatabasePath = GlobalStorage.DatabasePath;
 
       ServerTradesList = new ListCollectionView(ServerTrades = new NotifyCollectionChangedWrapper<Trade>(new ObservableCollection<Trade>()));
-      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Trade>(t => t.Pair), ListSortDirection.Ascending));
-      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Trade>(t => t.Time), ListSortDirection.Descending));
+      ServerTradesList.SortDescriptions.Add(new SortDescription(GetLambda<Trade>(t => t.Pair), ListSortDirection.Ascending));
+      ServerTradesList.SortDescriptions.Add(new SortDescription(GetLambda<Trade>(t => t.Time), ListSortDirection.Descending));
 
       OrdersList = new ListCollectionView(orders = new NotifyCollectionChangedWrapper<Order>(new ObservableCollection<Order>()));
-      OrdersList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Order>(t => t.Pair), ListSortDirection.Ascending));
-      OrdersList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Order>(t => t.IsBuy), ListSortDirection.Descending));
+      OrdersList.SortDescriptions.Add(new SortDescription(GetLambda<Order>(t => t.Pair), ListSortDirection.Ascending));
+      OrdersList.SortDescriptions.Add(new SortDescription(GetLambda<Order>(t => t.IsBuy), ListSortDirection.Descending));
 
       ClosedTradesList = new ListCollectionView(ClosedTrades = new NotifyCollectionChangedWrapper<Trade>(new ObservableCollection<Trade>()));
       ClosedTradesList.SortDescriptions.Add(new SortDescription("Time", ListSortDirection.Descending));

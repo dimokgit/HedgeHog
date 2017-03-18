@@ -14,8 +14,8 @@ using System.Linq.Expressions;
 using System.Windows.Input;
 using Gala = GalaSoft.MvvmLight.Command;
 using System.Reactive.Linq;
-using System.Reactive.Concurrency;
-using System.Reactive.Subjects;
+//using System.Reactive.Concurrency;
+//using System.Reactive.Subjects;
 using System.Web;
 using System.Web.Caching;
 using System.IO;
@@ -38,6 +38,9 @@ using Newtonsoft.Json.Serialization;
 using System.Runtime.Serialization;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
 using static HedgeHog.MathCore;
+using static HedgeHog.ReflectionCore;
+using System.Reactive.Subjects;
+using System.Reactive.Concurrency;
 
 namespace HedgeHog.Alice.Store {
   [JsonObject(MemberSerialization.OptOut)]
@@ -1219,7 +1222,7 @@ namespace HedgeHog.Alice.Store {
         .Scan(0, (t, tm) => t + (g.Compile()(tm) ? 1 : 0))
         .SkipWhile(c => c <= 1)
         .Take(1)
-        .ForEach(c => { throw new Exception(Lib.GetLambda(g) + " is set in more then one TradingMacro"); });
+        .ForEach(c => { throw new Exception(GetLambda(g) + " is set in more then one TradingMacro"); });
       check(tm => tm.IsTrader);
       //check(tm => tm.IsTrender);
       TradingMacrosByPair()
@@ -2100,7 +2103,6 @@ namespace HedgeHog.Alice.Store {
     private void RemoveSuppRes(Store.SuppRes suppRes) {
       if(suppRes != null) {
         SuppRes.Remove(suppRes);
-        GlobalStorage.UseAliceContext(c => c.DeleteObject(suppRes));
       }
     }
     #endregion
@@ -4429,8 +4431,8 @@ namespace HedgeHog.Alice.Store {
 
     protected void OnPropertyChanged(Expression<Func<object>> property) {
       //var propertyString = _propertyExpressionDictionary.GetOrAdd(property, pe => Lib.GetLambda(property));
-      OnPropertyChanged(Lib.GetLambda(property));
-      //OnPropertyChanged(Lib.GetLambda(property));
+      OnPropertyChanged(GetLambda(property));
+      //OnPropertyChanged(GetLambda(property));
     }
     protected override void OnPropertyChanged(string property) {
       base.OnPropertyChanged(property);

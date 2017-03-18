@@ -1,19 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
-using System.Text;
 using HAP = HtmlAgilityPack;
 using HedgeHog;
-using System.Reactive.Linq;
-using System.Windows.Forms;
-using System.Threading;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Reactive.Concurrency;
-using System.IO;
 using System.Xml.Linq;
 using Newtonsoft.Json;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 
 namespace HedgeHog.NewsCaster {
   public enum NewsEventType { Report, Speech };

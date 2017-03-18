@@ -132,6 +132,7 @@ namespace HedgeHog.Alice.Client {
     private void Application_Exit(object sender, ExitEventArgs e) {
       if(GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic)
         return;
+      /*
       if(GlobalStorage.IsLocalDB) {
         var Connection = GlobalStorage.UseAliceContext(c => c.Connection);
         var newName = Path.Combine(
@@ -142,6 +143,7 @@ namespace HedgeHog.Alice.Client {
           File.Delete(newName);
         File.Copy(Connection.DataSource, newName);
       }
+      */
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Send("Shutdown");
     }
 

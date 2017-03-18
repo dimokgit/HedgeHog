@@ -37,7 +37,7 @@ using Gala = GalaSoft.MvvmLight.Command;
 using System.Text.RegularExpressions;
 using HedgeHog.Shared.Messages;
 using ReactiveUI.Legacy;
-
+using static HedgeHog.ReflectionCore;
 namespace HedgeHog.Alice.Client {
   [Export]
   public partial class RemoteControlModel : RemoteControlModelBase {
@@ -86,9 +86,9 @@ namespace HedgeHog.Alice.Client {
         charterNew.BuySellAdded += charter_BuySellAdded;
         charterNew.BuySellRemoved += charter_BuySellRemoved;
         charterNew.PlotterKeyDown += charterNew_PlotterKeyDown;
-        var isSelectedBinding = new Binding(Lib.GetLambda(() => tradingMacro.IsSelectedInUI)) { Source = tradingMacro };
+        var isSelectedBinding = new Binding(GetLambda(() => tradingMacro.IsSelectedInUI)) { Source = tradingMacro };
         charterNew.SetBinding(CharterControl.IsSelectedProperty, isSelectedBinding);
-        var isActiveBinding = new Binding(Lib.GetLambda(() => tradingMacro.IsTradingActive)) { Source = tradingMacro };
+        var isActiveBinding = new Binding(GetLambda(() => tradingMacro.IsTradingActive)) { Source = tradingMacro };
         charterNew.SetBinding(CharterControl.IsActiveProperty, isActiveBinding);
         charterNew.TradeLineChanged += new EventHandler<PositionChangedBaseEventArgs<double>>(charterNew_TradeLineChanged);
         charterNew.ShowChart += new EventHandler(charterNew_ShowChart);
@@ -400,7 +400,7 @@ namespace HedgeHog.Alice.Client {
       //    )
       //    tmNew.SetProperty(p.Name, tm.GetProperty(p.Name));
       try {
-        GlobalStorage.UseAliceContext(c => c.AddToTradingMacroes(tmNew), true);
+        throw new NotImplementedException();
         TradingMacrosCopy_Add(tmNew);
         new Action(() => InitTradingMacro(tmNew)).ScheduleOnUI(2.FromSeconds());
       } catch(Exception exc) {
@@ -447,7 +447,8 @@ namespace HedgeHog.Alice.Client {
       if(tm == null || tm.EntityState == System.Data.Entity.EntityState.Detached)
         return;
       tm.IsActive = false;
-      GlobalStorage.UseAliceContext(c => c.TradingMacroes.DeleteObject(tm), true);
+      throw new NotImplementedException();
+      //GlobalStorage.UseAliceContext(c => c.TradingMacroes.DeleteObject(tm), true);
       TradingMacrosCopy_Delete(tm);
 
     }
@@ -759,8 +760,9 @@ namespace HedgeHog.Alice.Client {
         .SubscribeOn(GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher)
         .Subscribe(e => Context_ObjectMaterialized(null, e));
       //GlobalStorage.AliceContext.ObjectMaterialized += Context_ObjectMaterialized;
-      if(GlobalStorage.AliceContext != null)
-        GlobalStorage.AliceContext.ObjectStateManager.ObjectStateManagerChanged += ObjectStateManager_ObjectStateManagerChanged;
+      //throw new NotImplementedException();
+      //if(GlobalStorage.AliceContext != null)
+      //  GlobalStorage.AliceContext.ObjectStateManager.ObjectStateManagerChanged += ObjectStateManager_ObjectStateManagerChanged;
     }
 
     private void LoadClosedTrades() {
@@ -1245,7 +1247,7 @@ namespace HedgeHog.Alice.Client {
           tmsByProfit.ForEach(tmbp => tmbp.tm.CurrentLoss -= tmbp.profit);
         } else
           tms.Where(tm => tm.CurrentLoss > -0.1).ToList().ForEach(tm => tm.CurrentLoss = 0);
-        try { GlobalStorage.UseAliceContextSaveChanges(); } catch { }
+        //try { GlobalStorage.UseAliceContextSaveChanges(); } catch { }
       }
     }
     void AdjustCurrentLosses() {
@@ -1256,7 +1258,7 @@ namespace HedgeHog.Alice.Client {
       var tmByLoss = tmWithLoss.Select(tm => new { tm, profit = profit * tm.CurrentLoss.Abs() / lossSum }).ToList();
       tmByLoss.ForEach(tm => tm.tm.CurrentLoss += tm.profit);
       tmsWithProfit.ForEach(tm => tm.CurrentLoss = 0);
-      GlobalStorage.UseAliceContextSaveChanges();
+      //GlobalStorage.UseAliceContextSaveChanges();
     }
     void fw_TradeClosed(object sender, TradeEventArgs e) {
       if(e.IsHandled)

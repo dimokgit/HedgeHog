@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Reactive.Linq;
-using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Threading;
 using System.Reactive;
-using System.Reactive.Subjects;
 using System.Threading.Tasks.Dataflow;
 using System.Runtime.CompilerServices;
+using System.Reactive.Concurrency;
+using System.Reactive.Subjects;
 
 namespace HedgeHog {
   public static class ObservableExtensions {
