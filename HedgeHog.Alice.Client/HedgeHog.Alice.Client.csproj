@@ -701,6 +701,14 @@
       <Project>{022EDA6A-0B76-44C3-A530-8312C1B40030}</Project>
       <Name>WPG</Name>
     </ProjectReference>
+    <ProjectReference Include="..\TWS\IBApi.CSharpAPI\IBApi.CSharpAPI.csproj">
+      <Project>{8ede0744-96c2-40b0-a8dc-37df79370203}</Project>
+      <Name>IBApi.CSharpAPI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TWS\IBWraper\IBWraper.csproj">
+      <Project>{364bf321-6c2a-41a6-8ce5-05d8441feb9a}</Project>
+      <Name>IBWraper</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />

@@ -24,6 +24,7 @@ using Microsoft.Owin.FileSystems;
 using Microsoft.Owin.StaticFiles;
 using ReactiveUI;
 using HedgeHog.Shared.Messages;
+using static HedgeHog.Core.JsonExtensions;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>

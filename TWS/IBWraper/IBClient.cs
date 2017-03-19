@@ -8,7 +8,7 @@ using IBApi;
 using System.Threading.Tasks;
 
 public class IBClient : EWrapper {
-  private EClientSocket clientSocket;
+  internal EClientSocket clientSocket;
   private int nextOrderId;
   private int clientId;
 

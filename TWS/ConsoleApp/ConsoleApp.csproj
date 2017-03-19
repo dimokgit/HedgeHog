@@ -73,13 +73,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Contracts.cs" />
-    <Compile Include="IBClient.cs" />
-    <Compile Include="IBClientCore.cs" />
-    <Compile Include="Messages\ErrorMessage.cs" />
-    <Compile Include="Messages\HistoricalDataEndMessage.cs" />
-    <Compile Include="Messages\HistoricalDataMessage.cs" />
-    <Compile Include="Messages\IBMessage.cs" />
-    <Compile Include="Messages\MessageType.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -100,9 +93,13 @@
       <Project>{22e8af73-0298-40e9-bbfe-6ba069c17c86}</Project>
       <Name>HedgeHog.Shared</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CSharpAPI\CSharpAPI.csproj">
+    <ProjectReference Include="..\IBApi.CSharpAPI\IBApi.CSharpAPI.csproj">
       <Project>{8ede0744-96c2-40b0-a8dc-37df79370203}</Project>
-      <Name>CSharpAPI</Name>
+      <Name>IBApi.CSharpAPI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\IBWraper\IBWraper.csproj">
+      <Project>{364bf321-6c2a-41a6-8ce5-05d8441feb9a}</Project>
+      <Name>IBWraper</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -11,7 +11,7 @@ using System.Reactive.Linq;
 using System.Linq.Expressions;
 using ReactiveUI;
 using System.Threading.Tasks;
-
+using static HedgeHog.Core.JsonExtensions;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     bool IsPrimaryMacro {

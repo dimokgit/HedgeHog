@@ -31,6 +31,8 @@ using ReactiveUI;
 using System.Reactive;
 using ReactiveUI.Legacy;
 using static HedgeHog.ReflectionCore;
+using IBApp;
+using static HedgeHog.Core.JsonExtensions;
 
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
@@ -64,13 +66,15 @@ namespace HedgeHog.Alice.Client {
       return Common.CurrentDirectory.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries).Last() + ":" + IpPortActual;
     }
 
-
     #region FXCM
-    public override ICoreFX CoreFX { get; } = new CoreFX();
+    void ToJsonLog(object o) => Log = new Exception(o.ToJson());
+    static bool _isIB=true;
+    ICoreFX _coreFX;
+    public override ICoreFX CoreFX { get { return _coreFX ?? (_coreFX = _isIB ? IBClientCore.Create(ToJsonLog) : new CoreFX() as ICoreFX); } }
     FXW _fwMaster;
 
     public override FXW FWMaster {
-      get { return _fwMaster ?? (_fwMaster = new FXCoreWrapper(CoreFX, CommissionByTrade)); }
+      get { return _fwMaster ?? (_fwMaster = _isIB? new IBWraper(CoreFX): new FXCoreWrapper(CoreFX, CommissionByTrade) as ITradesManager); }
     }
     public bool IsLoggedIn { get { return CoreFX != null && CoreFX.IsLoggedIn; } }
     bool _isInLogin;
@@ -85,7 +89,7 @@ namespace HedgeHog.Alice.Client {
       get { return virtualTrader; }
       set { virtualTrader = value; }
     }
-    public override FXW TradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)FWMaster; } }
+    public override FXW TradesManager { get { return IsInVirtualTrading ? virtualTrader : FWMaster; } }
 
     private TradingServerSessionStatus _SessionStatus = TradingServerSessionStatus.Disconnected;
     public TradingServerSessionStatus SessionStatus {
@@ -1416,12 +1420,10 @@ namespace HedgeHog.Alice.Client {
           OnInvokeSyncronize(TradesManager.GetAccount());
           return true;
         } else {
-          MessageBox.Show("Login failed. See Log.");
           return false;
         }
       } catch(Exception exc) {
         Log = exc;
-        MessageBox.Show(exc + "");
         return false;
       } finally {
         IsInLogin = false;

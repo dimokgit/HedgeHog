@@ -27,6 +27,7 @@ using Westwind.Web.WebApi;
 using HedgeHog.Bars;
 using Microsoft.Owin.Security;
 using Microsoft.AspNet.SignalR.Hubs;
+using static HedgeHog.Core.JsonExtensions;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {

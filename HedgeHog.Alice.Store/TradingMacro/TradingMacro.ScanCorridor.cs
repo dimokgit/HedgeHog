@@ -14,6 +14,7 @@ using RI = System.Tuple<HedgeHog.Bars.Rate, int>;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
 using TLS = System.Lazy<System.Collections.Generic.IList<HedgeHog.Bars.Rate>>;
 using static HedgeHog.MathCore;
+using static HedgeHog.Core.JsonExtensions;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {

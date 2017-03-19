@@ -11,6 +11,7 @@ using System.Reactive.Linq;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
 using static HedgeHog.IEnumerableCore;
 using static HedgeHog.MonoidsCore;
+using static HedgeHog.Core.JsonExtensions;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
