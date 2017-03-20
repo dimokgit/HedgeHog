@@ -35,7 +35,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     protected bool IsInDesigh { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
-    protected FXW fwMaster { get { return MasterModel.FWMaster; } }
+    protected FXW fwMaster { get { return MasterModel.TradesManager; } }
 
     TraderModelBase _MasterModel;
     [Import]

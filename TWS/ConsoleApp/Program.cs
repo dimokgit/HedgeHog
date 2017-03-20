@@ -13,6 +13,7 @@ using IBApi;
 using IBApp;
 using HedgeHog;
 using HedgeHog.Shared;
+using HedgeHog.Bars;
 
 namespace ConsoleApp {
   class Program {
@@ -31,12 +32,12 @@ namespace ConsoleApp {
       var gold = ContractSamples.Commodity("XAUUSD");
       if(ibClient.LogOn("", 7497 + "", 2 + "", false)) {
         var dateEnd = DateTime.Parse("2017-03-08 12:00");
-        var count = 0;
-        new HistoryLoader(ibClient, gold, 1, dateEnd, TimeSpan.FromHours(4), TimeUnit.S, BarSize._1_secs,
-           list => {
-             HandleMessage(new { list = new { list.Count, first = list.First().Date, last = list.Last().Date } } + "");
-           },
-           dates => HandleMessage(new { dateStart = dates[0], dateEnd = dates[1], reqCount = ++count } + ""),
+        var counter = 0;
+        HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
+        new HistoryLoader<Rate>(ibClient, gold, dateEnd, TimeSpan.FromHours(4), TimeUnit.S, BarSize._1_secs,
+           map,
+           list => HandleMessage(new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate } } + ""),
+           dates => HandleMessage(new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter } + ""),
            exc => HandleError(exc));
       }
       HandleMessage("Press any key ...");

@@ -280,10 +280,10 @@ namespace HedgeHog.Alice.Client {
 
     #region LoadTradingSettings
     ReactiveCommand<object,Unit> _LoadTradingSettingsCommand;
-    public ReactiveCommand<object,Unit> LoadTradingSettingsCommand {
+    public ReactiveCommand<object, Unit> LoadTradingSettingsCommand {
       get {
         if(_LoadTradingSettingsCommand == null) {
-          _LoadTradingSettingsCommand = ReactiveUI.ReactiveCommand.CreateFromObservable<object,Unit>(LoadTradingSettings);
+          _LoadTradingSettingsCommand = ReactiveUI.ReactiveCommand.CreateFromObservable<object, Unit>(LoadTradingSettings);
           //_LoadTradingSettingsCommand.Subscribe(LoadTradingSettings);
         }
 
@@ -871,7 +871,7 @@ namespace HedgeHog.Alice.Client {
         }
 
 
-        if(e.PropertyName ==nameof(tm.GannAngles_)) {
+        if(e.PropertyName == nameof(tm.GannAngles_)) {
           tm.SetGannAngles();
           AddShowChart(tm);
         }
@@ -1062,7 +1062,10 @@ namespace HedgeHog.Alice.Client {
         var startDateInterval = tm.BarPeriodCalc == BarsPeriodType.s1
           ? 1.FromSeconds()
           : tm.BarPeriod == BarsPeriodType.t1
-          ? TimeSpan.Zero : ((int)tm.BarPeriod).FromMinutes();
+          ? tm.HasTicks
+          ? TimeSpan.Zero
+          : 1.FromSeconds()
+          : ((int)tm.BarPeriod).FromMinutes();
         ratesForChart.SetStartDateForChart(startDateInterval);
         if(tm.FitRatesToPlotter)
           rates.SetStartDateForChart(startDateInterval);
@@ -1108,8 +1111,7 @@ namespace HedgeHog.Alice.Client {
             /*9*/, tm.CorridorStats.Rates.Count.Div(tm.CorridorDistance).ToInt()
             /*10*/, tm.WorkflowStep
           );
-          if (tm.TrendLines.Value!=null) 
-          {
+          if(tm.TrendLines.Value != null) {
             charter.SetTrendLines(tm.TrendLines.Value.OrderBarsDescending().ToArray(), tm.CorridorStartDate.HasValue);
             charter.SetTrendLines2(tm.TrendLines2.Value);
             charter.SetTrendLines1(tm.TrendLines1.Value);

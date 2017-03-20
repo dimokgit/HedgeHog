@@ -98,14 +98,14 @@ namespace HedgeHog.Alice.Store {
       return ShowVolts(RateLast.Volume, 2);
     }
     CorridorStatistics ShowVoltsByRsd() {
-      if(IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable))
+      if(UseCalc())
         return UseRates(rates => rates.ToArray(_priceAvg).StDevByRegressoin())
           .Select(rsd => ShowVolts(InPips(rsd), 2))
           .SingleOrDefault();
       return null;
     }
     CorridorStatistics ShowVoltsByPPM(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      var useCalc = UseCalc();
       Func<Rate, double> price = _priceAvg;
       Func<IEnumerable<double>> calcVolt = ()
         => UseRates(rates
@@ -142,7 +142,7 @@ namespace HedgeHog.Alice.Store {
     Tuple<DateTime,DateTime,double> _tlBlue = new Tuple<DateTime, DateTime,double>(DateTime.MinValue,DateTime.MaxValue,double.NaN);
 
     CorridorStatistics ShowVoltsByPPMB(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      var useCalc = UseCalc();
 
       Func<DateTime, DateTime, double[]> getmemoize = (ds, de) => _tlBlue.Item1 == ds && _tlBlue.Item2 == de ? new[] { _tlBlue.Item3 } : new double[0];
       Func<DateTime, DateTime, double, double> setmemoize = (ds, de, v) => { _tlBlue = Tuple.Create(ds, de, v); return v; };
@@ -163,16 +163,16 @@ namespace HedgeHog.Alice.Store {
         .Select(volt => ShowVolts(useCalc ? volt : GetLastVolt().DefaultIfEmpty(volt).Single(), 2, getVolt, setVolt))
         .SingleOrDefault();
     }
-
+    bool UseCalc() => IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
     CorridorStatistics ShowVoltsByBBSD(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      var useCalc = UseCalc();
       if(!useCalc)
         return GetLastVolt().Take(1).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault();
       return _boilingerStDev.Value?.Select(v => ShowVolts(v.Item1.Div(v.Item2).ToPercent(), 2, getVolt, setVolt)).SingleOrDefault();
     }
 
     CorridorStatistics ShowVoltsByUDB(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      var useCalc = UseCalc();
       Func<DateTime, DateTime, double[]> getmemoize = (ds, de) => _tlBlue.Item1 == ds && _tlBlue.Item2 == de ? new[] { _tlBlue.Item3 } : new double[0];
       Func<DateTime, DateTime, double, double> setmemoize = (ds, de, v) => { _tlBlue = Tuple.Create(ds, de, v); return v; };
       Func<TL, IEnumerable<double>> calcVolt = tl
@@ -193,7 +193,7 @@ namespace HedgeHog.Alice.Store {
 
 
     CorridorStatistics ShowVoltsByPPMH() {
-      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      var useCalc = UseCalc();
       if(!useCalc)
         return GetLastVolt()
           .Select(v => ShowVolts(v, 2))
@@ -232,7 +232,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     CorridorStatistics ShowVoltsByAO() {
-      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      var useCalc = UseCalc();
 
       if(!useCalc)
         return GetLastVolt()
@@ -250,7 +250,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     CorridorStatistics ShowVoltsByMPH() {
-      var useCalc = IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+      var useCalc = UseCalc();
 
       if(useCalc)
         SetVots(RatesDuration / InPips(_RatesHeight), 2);

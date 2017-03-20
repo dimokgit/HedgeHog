@@ -276,6 +276,36 @@ namespace HedgeHog.Alice.Store {
     partial void OnCurrencyChanging(global::System.String value);
     partial void OnCurrencyChanged();
 
+    #region Broker
+    [DataMemberAttribute()]
+    public string Broker {
+      get { return _Broker; }
+      set {
+        if(_Broker != value) {
+          ReportPropertyChanging(nameof(Broker));
+          _Broker = value;
+          ReportPropertyChanged(nameof(Broker));
+        }
+      }
+    }
+    private string _Broker;
+
+    #endregion
+    #region IsVirtual
+    [DataMemberAttribute()]
+    public bool IsVirtual {
+      get { return _IsVirtual; }
+      set {
+        if(_IsVirtual != value) {
+          ReportPropertyChanging(nameof(IsVirtual));
+          _IsVirtual = value;
+          ReportPropertyChanged(nameof(IsVirtual));
+        }
+      }
+    }
+    private bool _IsVirtual;
+
+    #endregion
     #endregion
 
   }

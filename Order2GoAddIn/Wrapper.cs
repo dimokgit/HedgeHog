@@ -547,7 +547,7 @@ namespace Order2GoAddIn {
     //  return GetBarsBase(pair, period, startDate, TradesManagedStatic.FX_DATE_NOW,callBack);
     //}
 
-    public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate {
+    public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate,new() {
       if (map == null) map = l => l;
       if (period >= 1) {
         startDate = startDate.Round(period);
@@ -1317,7 +1317,7 @@ namespace Order2GoAddIn {
       order.OCOBulkID = (int)row.CellValue("OCOBulkID");
       order.PrimaryOrderID = (string)row.CellValue("PrimaryOrderID");
 
-      order.PipCost = GetPipCost(order.Pair);
+      //order.PipCost = GetPipCost(order.Pair);
       order.PointSize = GetPipSize(order.Pair);
       //order.PipsTillRate = InPips(order.Pair, (order.Rate - GetCurrentPrice(order.Pair, order.IsBuy)).Abs());
       order.PipsTillRate = (int)row.CellValue("Distance");
@@ -1389,7 +1389,7 @@ namespace Order2GoAddIn {
       order.TypeStop = (int)row.GetValue("TypeStop");
       order.TypeLimit = (int)row.GetValue("TypeLimit");
       order.OCOBulkID = (int)row.GetValue("OCOBulkID");
-      order.PipCost = GetPipCost(order.Pair);
+      //order.PipCost = GetPipCost(order.Pair);
       order.PointSize = GetPipSize(order.Pair);
       order.PipsTillRate = (int)row.GetValue("Distance");
       if (order.Stop != 0) {
@@ -1450,7 +1450,7 @@ namespace Order2GoAddIn {
       order.TypeStop = row.GetInt("TypeStop");
       order.TypeLimit = row.GetInt("TypeLimit");
       order.OCOBulkID = row.GetInt("OCOBulkID");
-      order.PipCost = GetPipCost(order.Pair);
+      //order.PipCost = GetPipCost(order.Pair);
       order.PointSize = GetPipSize(order.Pair);
       order.PipsTillRate = row.GetInt("Distance");
       if (order.Stop != 0) {
@@ -2161,17 +2161,17 @@ namespace Order2GoAddIn {
       //}
     }
     C.ConcurrentDictionary<string, double> pipCostDictionary = new C.ConcurrentDictionary<string, double>();
-    public double GetPipCost(string pair) {
-      if (!IsLoggedIn) return double.NaN;
-      pair = pair.ToUpper();
-      if (!pipCostDictionary.ContainsKey(pair))
-        GetOffers().ToList().ForEach(o => pipCostDictionary[o.Pair] = o.PipCost);
-      Func<string, double> getPipCost = p => {
-        CoreFX.SetOfferSubscription(p);
-        return GetOffer(p).PipCost;
-      };
-      return pipCostDictionary.GetOrAdd(pair, getPipCost);
-    }
+    //public double GetPipCost(string pair) {
+    //  if (!IsLoggedIn) return double.NaN;
+    //  pair = pair.ToUpper();
+    //  if (!pipCostDictionary.ContainsKey(pair))
+    //    GetOffers().ToList().ForEach(o => pipCostDictionary[o.Pair] = o.PipCost);
+    //  Func<string, double> getPipCost = p => {
+    //    CoreFX.SetOfferSubscription(p);
+    //    return GetOffer(p).PipCost;
+    //  };
+    //  return pipCostDictionary.GetOrAdd(pair, getPipCost);
+    //}
 
     Dictionary<string, int> digitDictionary = new Dictionary<string, int>() { { "EUR/USD", 5 } };
     public int GetDigits(string pair) {
@@ -2235,7 +2235,8 @@ namespace Order2GoAddIn {
       return pips * lots * pipCost / baseUnitSize;
     }
     public double PipsAndLotInMoney(double pips, int lot, string pair) {
-      return PipsAndLotToMoney(pips, lot, GetPipCost(pair), GetBaseUnitSize(pair));
+      return TradesManagerStatic.PipsAndLotToMoney(pair, pips, lot, GetPrice(pair).Average, GetPipSize(pair));
+      //return PipsAndLotToMoney(pips, lot, GetPipCost(pair), GetBaseUnitSize(pair));
     }
 
     #endregion
@@ -2600,7 +2601,6 @@ namespace Order2GoAddIn {
         double priceClose = double.Parse(getData(isBuy ? 4 : 5).Value);
         var timeClose = DateTime.Parse(getData(3).Value);
         var grossPL = double.Parse(getData(6).Value);
-        var pipSize = GetPipCost(pair);
         var pl = TradesManagerStatic.MoneyAndLotToPips(pair, grossPL, volume, priceClose, GetPipSize(pair));
         var commission = double.Parse(getData(7).Value);
         var rollover = double.Parse(getData(8).Value);
@@ -2701,6 +2701,8 @@ namespace Order2GoAddIn {
     }
     public DateTime ServerTimeCached { get; set; }
     public DateTime ServerTime { get { return ServerTimeCached = CoreFX.ServerTime; } }
+
+    public bool HasTicks => true;
     static object converterLocker = new object();
     DateTime ConvertDateToLocal(DateTime date) {
       return TimeZoneInfo.ConvertTimeFromUtc(date, TimeZoneInfo.Local);

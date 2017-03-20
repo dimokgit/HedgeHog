@@ -24,9 +24,9 @@ public class IBClientCore : IBClient, ICoreFX {
   TradingServerSessionStatus _sessionStatus;
   #endregion
 
-  private void NotifyPropertyChanged([CallerMemberName] string propertyName = "") {
-    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-  }
+  #region Properties
+  public AccountManager AccountManager { get { return _accountManager; } }
+  #endregion
 
   #region ICoreEX Implementation
   public void SetOfferSubscription(string pair) {
@@ -98,7 +98,7 @@ public class IBClientCore : IBClient, ICoreFX {
 
   #region Connect/Disconnect
   public void Disconnect() {
-    if(ClientSocket.IsConnected())
+    if(!IsInVirtualTrading && ClientSocket.IsConnected())
       ClientSocket.eDisconnect();
   }
   public void Connect(int port, string host, int clientId) {
@@ -161,6 +161,8 @@ public class IBClientCore : IBClient, ICoreFX {
 
   #region Log(In/Out)
   public bool LogOn(string host, string port, string clientId, bool isDemo) {
+    if(IsInVirtualTrading)
+      return true;
     try {
       var hosts = host.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
       int iPort;
@@ -187,11 +189,11 @@ public class IBClientCore : IBClient, ICoreFX {
     Connect(_port, _host, ClientId);
     return true;
   }
-  public bool IsLoggedIn => ClientSocket.IsConnected();
+  public bool IsLoggedIn => IsInVirtualTrading || ClientSocket.IsConnected();
 
   public TradingServerSessionStatus SessionStatus {
     get {
-      return _sessionStatus;
+      return IsInVirtualTrading ? TradingServerSessionStatus.Connected : _sessionStatus;
     }
 
     set {
@@ -205,4 +207,7 @@ public class IBClientCore : IBClient, ICoreFX {
   #endregion
 
   #endregion
+  private void NotifyPropertyChanged([CallerMemberName] string propertyName = "") {
+    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+  }
 }

@@ -68,7 +68,7 @@ namespace HedgeHog.Alice.Client {
 
     #region FXCM
     void ToJsonLog(object o) => Log = new Exception(o.ToJson());
-    static bool _isIB=true;
+    bool _isIB => MasterAccount.Broker == "IB";
     ICoreFX _coreFX;
     public override ICoreFX CoreFX { get { return _coreFX ?? (_coreFX = _isIB ? IBClientCore.Create(ToJsonLog) : new CoreFX() as ICoreFX); } }
     FXW _fwMaster;
@@ -123,7 +123,7 @@ namespace HedgeHog.Alice.Client {
       get { return _IsInVirtualTrading; }
       set {
         if(_IsInVirtualTrading != value) {
-          if(!_IsInVirtualTrading && CoreFX.IsLoggedIn)
+          if(!_IsInVirtualTrading && IsLoggedIn)
             CoreFX.Logout();
           _IsInVirtualTrading = value;
           RaisePropertyChangedCore();
@@ -712,7 +712,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void IncreaseEntryStop(Order order) {
-      FWMaster.ChangeEntryOrderPeggedStop(order.OrderID, order.StopInPips + 1);
+      TradesManager.ChangeEntryOrderPeggedStop(order.OrderID, order.StopInPips + 1);
     }
 
     ICommand _DecreaseEntryStopCommandCommand;
@@ -727,7 +727,7 @@ namespace HedgeHog.Alice.Client {
     }
     void DecreaseEntryStopCommand(object o) {
       var order = o as Order;
-      FWMaster.ChangeEntryOrderPeggedStop(order.OrderID, order.StopInPips - 1);
+      TradesManager.ChangeEntryOrderPeggedStop(order.OrderID, order.StopInPips - 1);
     }
 
 
@@ -742,7 +742,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void IncreaseEntryLimit(Order order) {
-      FWMaster.ChangeEntryOrderPeggedLimit(order.OrderID, order.LimitInPips + 1);
+      TradesManager.ChangeEntryOrderPeggedLimit(order.OrderID, order.LimitInPips + 1);
     }
 
     ICommand _DecreaseEntryLimitCommand;
@@ -756,7 +756,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void DecreaseEntryLimit(Order order) {
-      FWMaster.ChangeEntryOrderPeggedLimit(order.OrderID, order.LimitInPips - 1);
+      TradesManager.ChangeEntryOrderPeggedLimit(order.OrderID, order.LimitInPips - 1);
     }
 
 
@@ -771,7 +771,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void IncreaseEntryRate(Order order) {
-      FWMaster.ChangeOrderRate(order, order.Rate + order.PointSize);
+      TradesManager.ChangeOrderRate(order, order.Rate + order.PointSize);
     }
 
     ICommand _DecreaseEntryRateCommand;
@@ -785,7 +785,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void DecreaseEntryRate(Order order) {
-      FWMaster.ChangeOrderRate(order, order.Rate - order.PointSize);
+      TradesManager.ChangeOrderRate(order, order.Rate - order.PointSize);
     }
 
     ICommand _CancelEntryOrderCommand;
@@ -799,7 +799,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void CancelEntryOrder(Order order) {
-      FWMaster.DeleteOrder(order.OrderID);
+      TradesManager.DeleteOrder(order.OrderID);
     }
 
     #endregion
@@ -1002,7 +1002,7 @@ namespace HedgeHog.Alice.Client {
       if(isLoadHistoryTaskRunning)
         MessageBox.Show("LoadHistoryTask is in " + loadHistoryTask.Status + " status.");
       else {
-        Action a = () => { PriceHistory.LoadBars(FWMaster, "", o => Log = new Exception(o + "")); };
+        Action a = () => { PriceHistory.LoadBars(TradesManager, "", o => Log = new Exception(o + "")); };
         if(loadHistoryTask == null)
           loadHistoryTask = Task.Factory.StartNew(a);
         else
@@ -1228,6 +1228,7 @@ namespace HedgeHog.Alice.Client {
         #region FXCM
         TradesManagerStatic.AccountCurrency = MasterAccount.Currency;
         virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, CommissionByTrade);
+        virtualTrader.SetHasTicks(!_isIB);
         CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
         //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)
         //.RegisterHandler(c=>c.SessionStatus,c=>SessionStatus = c.SessionStatus);
@@ -1253,17 +1254,17 @@ namespace HedgeHog.Alice.Client {
           //.GroupByUntil(g => g.EventArgs.Pair, g => Observable.Timer(TimeSpan.FromSeconds(1), System.Concurrency.Scheduler.ThreadPool))
           //.Subscribe(g => g.TakeLast(1)
           //  .Subscribe(ie => FWMaster_PriceChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { }));
-          OrderChangedSubscribtion = Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(h => h, h => FWMaster.OrderChanged += h, h => FWMaster.OrderChanged -= h)
+          OrderChangedSubscribtion = Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(h => h, h => TradesManager.OrderChanged += h, h => TradesManager.OrderChanged -= h)
             .Throttle(_throttleInterval)//, System.Concurrency.Scheduler.Dispatcher)
             .Subscribe(ie => FWMaster_OrderChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { });
           //FWMaster.OrderChanged += FWMaster_OrderChanged;
-          FWMaster.OrderAdded += FWMaster_OrderAdded;
+          TradesManager.OrderAdded += FWMaster_OrderAdded;
 
-          TradeColsedSubscribtion = Observable.FromEventPattern<EventHandler<TradeEventArgs>, TradeEventArgs>(h => h, h => FWMaster.TradeClosed += h, h => FWMaster.TradeClosed -= h)
+          TradeColsedSubscribtion = Observable.FromEventPattern<EventHandler<TradeEventArgs>, TradeEventArgs>(h => h, h => TradesManager.TradeClosed += h, h => TradesManager.TradeClosed -= h)
             .Subscribe(ie => ClosedTrades.Add(ie.EventArgs.Trade), exc => Log = exc);
           GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
             ClosedTrades.Clear();
-            FWMaster.GetClosedTrades("")
+            TradesManager.GetClosedTrades("")
               .ForEach(ct => ClosedTrades.Add(ct));
           });
 
@@ -1319,7 +1320,7 @@ namespace HedgeHog.Alice.Client {
           TradesManager.Error -= FWMaster_Error;
           //TradesManager.PriceChanged -= FWMaster_PriceChanged;
           //FWMaster.OrderChanged -= FWMaster_OrderChanged;
-          FWMaster.OrderAdded -= FWMaster_OrderAdded;
+          TradesManager.OrderAdded -= FWMaster_OrderAdded;
           PriceChangeSubscribtion.YieldNotNull().ForEach(d => d.Dispose());
         };
         #endregion
@@ -1417,7 +1418,10 @@ namespace HedgeHog.Alice.Client {
         CoreFX.IsInVirtualTrading = IsInVirtualTrading;
         if(CoreFX.LogOn(tradingAccount, accountSubId, tradingPassword, tradingDemo)) {
           RaiseSlaveLoginRequestEvent();
+          while(TradesManager.GetAccount() == null)
+            Thread.Sleep(300);
           OnInvokeSyncronize(TradesManager.GetAccount());
+          UpdateTradingAccount(TradesManager.GetAccount());
           return true;
         } else {
           return false;
@@ -1603,14 +1607,14 @@ namespace HedgeHog.Alice.Client {
 
     #region Change Stop/Limit
     void changeStop(string tradeId, double newStop) {
-      FWMaster.FixOrderSetStop(tradeId, newStop, "");
+      TradesManager.FixOrderSetStop(tradeId, newStop, "");
     }
     void changeStops() {
       changeStopsOrLimits(stopDeltas, trade => trade.Stop, (id, v) => changeStop(id, v), changeStopScheduler);
     }
     // TODO: sync new level with others by using NessageBus
     void changeLimit(string tradeId, double newLimit) {
-      FWMaster.FixOrderSetLimit(tradeId, newLimit, "");
+      TradesManager.FixOrderSetLimit(tradeId, newLimit, "");
     }
     void changeLimits() {
       changeStopsOrLimits(limitDeltas, trade => trade.Limit, (id, v) => changeLimit(id, v), changeLimitScheduler);

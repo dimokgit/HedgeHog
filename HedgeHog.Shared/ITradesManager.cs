@@ -63,7 +63,7 @@ namespace HedgeHog.Shared {
     double InPoints(string pair, double? price);
     double GetPipSize(string pair);
     int GetDigits(string pair);
-    double GetPipCost(string pair);
+    //double GetPipCost(string pair);
     int GetBaseUnitSize(string pair);
     #endregion
 
@@ -148,8 +148,10 @@ namespace HedgeHog.Shared {
     #endregion
 
     void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map);
-    void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate;
+    void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate,new();
     Func<Trade, double> CommissionByTrade { get; }
+    bool HasTicks { get; }
+
     double CommissionByTrades(params Trade[] trades);
     IList<Rate> GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate);
 

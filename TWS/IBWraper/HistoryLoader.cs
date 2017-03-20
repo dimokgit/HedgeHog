@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -14,11 +15,12 @@ namespace IBApp {
     _3_mins, _5_mins, _15_mins, _30_mins, _1_hour, _1_day
   }
   #region HistoryLoader
-  public class HistoryLoader {
+  public class HistoryLoader<T> {
+    private static int _currentTicker=0;
     #region Fields
     public const int HISTORICAL_ID_BASE = 30000000;
-    private readonly List<HistoricalDataMessage> _list;
-    private readonly List<HistoricalDataMessage> _list2;
+    private readonly List<T> _list;
+    private readonly List<T> _list2;
     private readonly int _reqId;
     private readonly IBClient _ibClient;
     private readonly Contract _contract;
@@ -27,22 +29,35 @@ namespace IBApp {
     private readonly TimeUnit _timeUnit;
     private readonly BarSize _barSize;
     private readonly TimeSpan _duration;
-    private readonly Action<IList<HistoricalDataMessage>> _done;
+    private readonly Action<IList<T>> _done;
     private readonly Action<Exception> _error;
-    private readonly Action<DateTime?[]> _dataEnd;
+    private readonly Action<IList<T>> _dataEnd;
     private TimeSpan _delay;
+    private readonly DataMapDelegate<T> _map;
     public bool Done { get; private set; }
     #endregion
 
     #region ctor
-    public HistoryLoader(IBClient ibClient, Contract contract, int currentTicker, DateTime endDate, TimeSpan duration, TimeUnit timeUnit, BarSize barSize, Action<IList<HistoricalDataMessage>> done, Action<DateTime?[]> dataEnd, Action<Exception> error) {
+    public delegate T DataMapDelegate<T>(DateTime date, double open, double high, double low, double close, int volume, int count);
+    public HistoryLoader(IBClient ibClient
+      , Contract contract
+      , DateTime endDate
+      , TimeSpan duration
+      , TimeUnit timeUnit
+      , BarSize barSize
+      ,DataMapDelegate<T> map
+      , Action<IList<T>> done
+      , Action<IList<T>> dataEnd
+      , Action<Exception> error) {
       _ibClient = ibClient;
       _contract = contract;
-      _reqId = currentTicker + HISTORICAL_ID_BASE;
-      _list = new List<HistoricalDataMessage>();
-      _list2 = new List<HistoricalDataMessage>();
+      _reqId = (++_currentTicker) + HISTORICAL_ID_BASE;
+      _list = new List<T>();
+      _list2 = new List<T>();
+      if(endDate.Kind == DateTimeKind.Unspecified)
+        throw new Exception(new { endDate = new { endDate.Kind } } + "");
       _dateStart = endDate.Subtract(duration);
-      _endDate = endDate;
+      _endDate = endDate.ToLocalTime();
       _timeUnit = timeUnit;
       _barSize = barSize;
       _duration = duration;
@@ -50,6 +65,7 @@ namespace IBApp {
       _dataEnd = dataEnd;
       _error = error;
       _delay = TimeSpan.Zero;
+      _map = map;
       Done = false;
       Init();
       var me = this;
@@ -62,6 +78,7 @@ namespace IBApp {
       _ibClient.HistoricalDataEnd += IbClient_HistoricalDataEnd;
     }
     void CleanUp() {
+      _ibClient.Error -= HandlePacer;
       _ibClient.HistoricalData -= IbClient_HistoricalData;
       _ibClient.HistoricalDataEnd -= IbClient_HistoricalDataEnd;
       Done = true;
@@ -69,32 +86,38 @@ namespace IBApp {
     #endregion
 
     #region Event Handlers
-    private void HandlePacer(int arg1, int arg2, string arg3, Exception arg4) {
-      if(arg2 != 162)
-        return;
-      _delay += TimeSpan.FromSeconds(2);
-      _error(new Exception(new { _delay } + ""));
-      RequestNextDataChunk();
+    private void HandlePacer(int reqId, int code, string error, Exception exc) {
+      if(code == 162 && error.Contains("pacing violation")) {
+        _delay += TimeSpan.FromSeconds(2);
+        _error(new Exception(new { _delay } + ""));
+        RequestNextDataChunk();
+      } else {
+        CleanUp();
+        _error(exc ?? new Exception(new { reqId, code, error } + ""));
+      }
     }
     private void IbClient_HistoricalDataEnd(int reqId, string startDateTWS, string endDateTWS) {
       if(reqId != _reqId)
         return;
       _delay = TimeSpan.Zero;
       _list.InsertRange(0, _list2);
-      _endDate = _list[0].Date;
       if(_endDate <= _dateStart) {
         CleanUp();
         _done(_list);
       } else {
-        _dataEnd(new[] { _list2.FirstOrDefault()?.Date, _list2.LastOrDefault()?.Date });
+        _dataEnd(_list);
         var me = this;
         _list2.Clear();
         RequestNextDataChunk();
       }
     }
     private void IbClient_HistoricalData(int reqId, string date, double open, double high, double low, double close, int volume, int count, double WAP, bool hasGaps) {
-      if(reqId == _reqId)
-        _list2.Add(new HistoricalDataMessage(reqId, date.FromTWSString(), open, high, low, close, volume, count, WAP, hasGaps));
+      if(reqId == _reqId) {
+        var date2 = date.FromTWSString();
+        if(date2 < _endDate)
+          _endDate = date2;
+        _list2.Add(_map( date2, open, high, low, close, volume, count));
+      }
     }
     #endregion
 

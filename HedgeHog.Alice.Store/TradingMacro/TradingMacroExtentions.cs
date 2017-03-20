@@ -349,7 +349,7 @@ namespace HedgeHog.Alice.Store {
       if(string.IsNullOrWhiteSpace(Pair))
         return;
       if(_TradesManager != null) {
-        if(TradesManager != null && TradesManager.IsLoggedIn)
+        if(!IsInVirtualTrading && TradesManager!= null && TradesManager.IsLoggedIn)
           TradesManager.DeleteOrders(Pair);
       } else {
         Log = new Exception(new { _TradesManager } + "");
@@ -1216,6 +1216,7 @@ namespace HedgeHog.Alice.Store {
     IEnumerable<TradingMacro> _tradingMacros = new TradingMacro[0];
     Func<ITradesManager> _TradesManager = () => null;
     public ITradesManager TradesManager { get { return _TradesManager(); } }
+    public bool HasTicks => TradesManager.HasTicks;
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
       _tradingMacros = tradingMacros;
       Action<Expression<Func<TradingMacro, bool>>> check = g => TradingMacrosByPair()
@@ -1243,7 +1244,6 @@ namespace HedgeHog.Alice.Store {
       TradesManager.TradeClosed += TradeCloseHandler;
       TradesManager.TradeAdded -= TradeAddedHandler;
       TradesManager.TradeAdded += TradeAddedHandler;
-      var fw = GetFXWraper();
       var digits = TradesManager.GetDigits(Pair);
       var a = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>
         , PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
@@ -1264,11 +1264,11 @@ namespace HedgeHog.Alice.Store {
       else
         PriceChangedSubscribsion = a.Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
 
-      if(fw != null && !IsInPlayback) {
-        fw.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
-        fw.OrderAdded += TradesManager_OrderAdded;
-        fw.OrderChanged += TradesManager_OrderChanged;
-        fw.OrderRemoved += TradesManager_OrderRemoved;
+      if(!IsInVirtualTrading && !IsInPlayback) {
+        TradesManager.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
+        TradesManager.OrderAdded += TradesManager_OrderAdded;
+        TradesManager.OrderChanged += TradesManager_OrderChanged;
+        TradesManager.OrderRemoved += TradesManager_OrderRemoved;
         if(isLoggedIn) {
           RunningBalance = tradesFromReport.ByPair(Pair).Sum(t => t.NetPL);
           CalcTakeProfitDistance();
@@ -1491,17 +1491,18 @@ namespace HedgeHog.Alice.Store {
         SetPlayBackInfo(true, args.DateStart.GetValueOrDefault(), args.DelayInSeconds.FromSeconds());
         var dateStartDownload = AddWorkingDays(args.DateStart.Value, -(BarsCountCount() / 1440.0).Ceiling());
         var actionBlock = new ActionBlock<Action>(a => a());
-        Action<RateLoadingCallbackArgs<Rate>> cb = callBackArgs => PriceHistory.SaveTickCallBack(BarPeriodInt, Pair, o => Log = new Exception(o + ""), actionBlock, callBackArgs);
-        var fw = GetFXWraper();
-        if(fw != null)
-          PriceHistory.AddTicks(fw, BarPeriodInt, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-BarsCountCount() * 2)), o => Log = new Exception(o + ""));
-        //GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
+        var dbBarPeriod = BarPeriodInt.Max(0);
+        Action<RateLoadingCallbackArgs<Rate>> cb = callBackArgs => PriceHistory.SaveTickCallBack(dbBarPeriod, Pair, o => Log = new Exception(o + ""), actionBlock, callBackArgs);
+        //var fw = GetFXWraper();
+        //if(fw != null)
+        //  PriceHistory.AddTicks(fw, dbBarPeriod, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-BarsCountCount() * 2)), o => Log = new Exception(o + ""));
+        //GetFXWraper().GetBarsBase<Rate>(Pair, dbBarPeriod, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
         var internalRateCount = BarsCountCount();
         var doGroupTick = BarPeriodCalc == BarsPeriodType.s1;
         Func<List<Rate>, List<Rate>> groupTicks = rates => doGroupTick ? GroupTicksToSeconds(rates) : rates;
-        var _replayRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, args.DateStart.Value.ToUniversalTime(), BarsCountCount(), BarPeriodInt, groupTicks);
+        var _replayRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, args.DateStart.Value.ToUniversalTime(), BarsCountCount(), dbBarPeriod, groupTicks);
         _replayRates.CopyLast(1).Select(r => r.StartDate2)
-          .ForEach(startDate => _replayRates.AddRange(groupTicks(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, startDate, BarsCount, BarPeriodInt))));
+          .ForEach(startDate => _replayRates.AddRange(groupTicks(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, startDate, BarsCount, dbBarPeriod))));
         //var rateStart = rates.SkipWhile(r => r.StartDate < args.DateStart.Value).First();
         //var rateStartIndex = rates.IndexOf(rateStart);
         //var rateIndexStart = (rateStartIndex - BarsCount).Max(0);
@@ -1655,7 +1656,7 @@ namespace HedgeHog.Alice.Store {
               }
               Func<bool> indexCurrentIsOver = () => indexCurrent >= _replayRates.Count - 1;
               if(!noMoreDbRates && (indexCurrent > _replayRates.Count - BarsCountCount() * .20 || indexCurrentIsOver())) {
-                var moreRates = groupTicks(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, _replayRates.Last().StartDate2.AddSeconds(1), BarsCountCount(), BarPeriodInt));
+                var moreRates = groupTicks(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, _replayRates.Last().StartDate2.AddSeconds(1), BarsCountCount(), dbBarPeriod));
                 if(moreRates.Count == 0)
                   noMoreDbRates = true;
                 else {
@@ -1781,7 +1782,7 @@ namespace HedgeHog.Alice.Store {
           }
         }
         Log = new Exception("Replay for PairIndex:{0}[{1}] done.".Formater(PairIndex, BarPeriod));
-        
+
       } catch(Exception exc) {
         Log = exc;
       } finally {
@@ -2718,7 +2719,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     double CalcTicksPerSecond(IList<Rate> rates) {
-      if(BarPeriod != BarsPeriodType.t1)
+      if(!HasTicks)
         return 1;
       return rates.CalcTicksPerSecond();
     }
@@ -3062,8 +3063,8 @@ namespace HedgeHog.Alice.Store {
       UseRatesInternal(ri => {
         if(BarPeriod != BarsPeriodType.t1 && (!ri.Any() || !HasRates))
           return;
-        var isTick = BarPeriod == BarsPeriodType.t1;
-        if(BarPeriod == 0) {
+        var isTick = IsTicks;
+        if(IsTicks) {
           ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
         } else {
           var lastDate = ri.Last().StartDate.Round();
@@ -4282,6 +4283,8 @@ namespace HedgeHog.Alice.Store {
       if(noRates.IsEmpty())
         return;
       if(noRates.Any(b => b)) {
+        if(Debugger.IsAttached)
+          Debug.Fail("LoadRates: Should not be here");
         var dbRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, ServerTime.ToUniversalTime(), BarsCountCount(), BarPeriodInt, BarPeriodCalc == BarsPeriodType.s1 ? GroupTicksToSeconds : (Func<List<Rate>, List<Rate>>)null);
         if(UseRatesInternal(ri => { ri.AddRange(dbRates); return true; }).IsEmpty())
           return;
@@ -4325,13 +4328,13 @@ namespace HedgeHog.Alice.Store {
             startDate = ratesList.Select(r => r.StartDate).DefaultIfEmpty(startDate).First();
             if(startDate != TradesManagerStatic.FX_DATE_NOW && _Rates.Count > 10)
               periodsBack = 0;
-            var groupTicks = BarPeriodCalc == BarsPeriodType.s1;
+            var groupTicks = false && BarPeriodCalc == BarsPeriodType.s1;
             LoadRatesImpl(GetFXWraper(), Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
             if(BarPeriod != BarsPeriodType.t1)
               ratesList.TakeLast(1).ForEach(r => {
                 var rateLastDate = r.StartDate;
                 var delay = ServerTime.Subtract(rateLastDate).Duration();
-                var delayMax = 1.0.Max(BarPeriodInt).FromMinutes();
+                var delayMax = 1.0.Max(BarPeriodInt.Max(1) * 60).FromSeconds();
                 if(delay > delayMax) {
                   if(delay > (delayMax + delayMax))
                     Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));

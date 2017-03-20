@@ -52,7 +52,7 @@ namespace HedgeHog.Alice.Client {
         return new object[0];
 
       double cmaPeriod = tm.CmaPeriodByRatesCount();
-      if(tm.BarPeriod == BarsPeriodType.t1) {
+      if(tm.IsTicks) {
         Action<IList<Rate>, Rate> volts = (gr, r) => {
           if(doShowVolt)
             tm.SetVoltage(r, gr.Select(tm.GetVoltage).Where(v => v.IsNotNaN()).DefaultIfEmpty(lastVolt.First()).Average());

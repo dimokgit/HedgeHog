@@ -541,8 +541,10 @@
 											<DataGridTextColumn Binding="{Binding Path=Commission}" Header="C$" />
 											<DataGridTextColumn Binding="{Binding Path=TradeRatio}" Header="M:S" ToolTipService.ToolTip="Trade Ratio" />
 											<DataGridCheckBoxColumn Binding="{Binding Path=IsMaster}" Header="Master" Width="SizeToHeader" />
-											<DataGridCheckBoxColumn Binding="{Binding Path=IsActive}" Header="Active" Width="SizeToHeader" />
-											<DataGridTemplateColumn Header="Case">
+                      <DataGridCheckBoxColumn Binding="{Binding Path=IsActive}" Header="Active" Width="SizeToHeader" />
+                      <DataGridCheckBoxColumn Binding="{Binding Path=IsVirtual}" Header="Virtual" Width="SizeToHeader" />
+                      <DataGridTextColumn Binding="{Binding Path=Broker}" Header="Broker" ToolTipService.ToolTip="Broker" />
+                      <DataGridTemplateColumn Header="Case">
 												<DataGridTemplateColumn.CellTemplate>
 													<DataTemplate>
 														<ContentControl Content="{Binding TradingMacroName}"/>

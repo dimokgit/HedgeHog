@@ -18,8 +18,9 @@ namespace HedgeHog.Shared {
       get {
         if (_offersCollection == null || _baseUnits == null) {
           var dbOffers = new[] {
-            new Offer { Pair = "USD/JPY", Digits = 3, MMR = 40, PipCost = 0.9, PointSize = 0.01, ContractSize = 1000 },
-            new Offer { Pair = "EUR/USD", Digits = 5, MMR = 40, PipCost = 1, PointSize = 0.0001, ContractSize = 1000 }
+            new Offer { Pair = "USD/JPY", Digits = 3, MMR = 40,  PointSize = 0.01, ContractSize = 1000 },
+            new Offer { Pair = "EUR/USD", Digits = 5, MMR = 40,  PointSize = 0.0001, ContractSize = 1000 },
+            new Offer { Pair = "XAUUSD", Digits = 2, MMR = 1, PointSize = 0.01, ContractSize = 1 }
           };
           //  offers.Select(o => new Offer() {
           //  Pair = o.Pair, Digits = o.Digits, MMR = o.MMR, PipCost = o.PipCost, PointSize = o.PipSize, ContractSize = o.BaseUnitSize
@@ -30,6 +31,8 @@ namespace HedgeHog.Shared {
         return _offersCollection;
       }
     }
+    public void SetHasTicks(bool hasTicks) => HasTicks = hasTicks;
+    public bool HasTicks { get; private set; }
     double PipsToMarginCallCore(Account account) {
       var trades = GetTrades();
       if (!trades.Any()) return int.MaxValue;
@@ -77,13 +80,13 @@ namespace HedgeHog.Shared {
     }
     public int GetDigits(string pair) { return GetOffer(pair).Digits; }
 
-    IDictionary<string, double> _pipCostDictionary = new Dictionary<string, double>();
-    public double GetPipCost(string pair) {
-      if (!_pipCostDictionary.ContainsKey(pair)) {
-        _pipCostDictionary.Add(pair, GetOffer(pair).PipCost);
-      }
-      return _pipCostDictionary[pair];
-    }
+    //IDictionary<string, double> _pipCostDictionary = new Dictionary<string, double>();
+    //public double GetPipCost(string pair) {
+    //  if (!_pipCostDictionary.ContainsKey(pair)) {
+    //    _pipCostDictionary.Add(pair, GetOffer(pair).PipCost);
+    //  }
+    //  return _pipCostDictionary[pair];
+    //}
 
     public int GetBaseUnitSize(string pair) { return baseUnits[pair]; }
 
@@ -544,12 +547,11 @@ namespace HedgeHog.Shared {
       throw new NotImplementedException();
     }
 
-    public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate {
+    public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate,new() {
       throw new NotImplementedException();
     }
 
     public void DeleteOrders(string pair) {
-      throw new NotImplementedException();
     }
 
     public double GetNetOrderRate(string pair, bool isStop, bool getFromInternal = false) {

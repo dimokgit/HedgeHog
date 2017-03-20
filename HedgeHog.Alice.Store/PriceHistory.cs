@@ -19,7 +19,7 @@ namespace HedgeHog.Alice.Store {
     public static void LoadBars(ITradesManager fw, string pairToLoad, Action<object> progressCallback = null) {
       var pairsToLoad = new RequestPairForHistoryMessage();
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(pairsToLoad);
-      foreach (var pair in pairsToLoad.Pairs)
+      foreach(var pair in pairsToLoad.Pairs)
         AddTicks(fw, pair.Item2, pair.Item1, DateTime.Now.AddYears(-1), progressCallback);
     }
     static Task saveTicksTask;
@@ -35,11 +35,12 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         var offset = TimeSpan.FromMinutes(period);
-        using (var context = new ForexEntities()) {
-          if (dateStart > DateTime.MinValue) {
-            var dateMin = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Min(b => (DateTimeOffset?)b.StartDate);
-            if (!dateMin.HasValue) dateMin = DateTimeOffset.Now;
-            var dateEnd = dateMin.Value.Subtract(offset).DateTime;
+        using(var context = new ForexEntities()) {
+          if(dateStart > DateTime.MinValue) {
+            var dateMin = new DateTime(context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Min(b => (DateTimeOffset?)b.StartDate).GetValueOrDefault().DateTime.Ticks, DateTimeKind.Utc);
+            if(dateMin.IsMin())
+              dateMin = DateTime.Now;
+            var dateEnd = dateMin.Subtract(offset);
             fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
           }
           var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
@@ -49,14 +50,16 @@ namespace HedgeHog.Alice.Store {
           dateStart = q.LocalDateTime.Add(p.FromMinutes());
         }
         fw.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
-      } catch (Exception exc) {
+      } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
 
     public static void SaveTickCallBack(int period, string pair, Action<object> progressCallback, ActionBlock<Action> saveTickActionBlock, RateLoadingCallbackArgs<Rate> args) {
-      if (progressCallback != null) progressCallback(args.Message);
-      else Debug.WriteLine("{0}", args.Message);
+      if(progressCallback != null)
+        progressCallback(args.Message);
+      else
+        Debug.WriteLine("{0}", args.Message);
       var context = new ForexEntities();
       //context.Configuration.AutoDetectChangesEnabled = false;
       //context.Configuration.ValidateOnSaveEnabled = false;
@@ -65,11 +68,15 @@ namespace HedgeHog.Alice.Store {
           context.t_Bar.Add(FillBar(period, pair, context.t_Bar.Create(), t));
           try {
             context.SaveConcurrent();
-          } catch (Exception exc) {
-            if (progressCallback != null) progressCallback(exc);
+          } catch(Exception exc) {
+            if(progressCallback != null)
+              progressCallback(exc);
           }
         }).TakeLast(1)
-        .ForEach(_ => context.Dispose());
+        .ForEach(_ => {
+          context.Dispose();
+          args.NewRates.Clear();
+        });
       a();
       //saveTickActionBlock.Post(a);
     }

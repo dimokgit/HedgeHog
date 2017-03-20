@@ -32,6 +32,10 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Interactive, Version=3.0.1000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\System.Interactive.3.1.1\lib\net45\System.Interactive.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -41,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccountManager.cs" />
+    <Compile Include="Contracts.cs" />
     <Compile Include="EpochTimeExtensions.cs" />
     <Compile Include="Messages\AccountSummaryMessage.cs" />
     <Compile Include="Messages\AccountValueMessage.cs" />
@@ -77,6 +82,9 @@
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -51,8 +51,7 @@ namespace HedgeHog.Alice.Store {
         var prices = UseRatesInternal(ri => ri.Reverse().Select(r => new { r.StartDate, PriceAvg = r.PriceCMALast }).ToList()).SelectMany(p => p).ToList();
         if(prices.Count == 0)
           return;
-        var isTicks = BarPeriod == BarsPeriodType.t1;
-        if(isTicks) {
+        if(IsTicks) {
           var startIndexDate = prices[startIndex.Min(prices.Count - 1)].StartDate;
           prices = prices.GroupedDistinct(a => a.StartDate.AddMilliseconds(-a.StartDate.Millisecond), g => new { StartDate = g[0].StartDate, PriceAvg = g.Average(r => r.PriceAvg) }).ToList();
           startIndex = prices.FuzzyFind(startIndexDate, isBetween);
@@ -95,6 +94,8 @@ namespace HedgeHog.Alice.Store {
         Log = exc;
       }
     }
+
+    public bool IsTicks => BarPeriod == BarsPeriodType.t1 && HasTicks;
     #endregion
 
     void ScanRatesLengthByDistanceMin0() {
@@ -364,7 +365,7 @@ namespace HedgeHog.Alice.Store {
         .Select(r => r.StartDate)
         .ToArray();
     }
-    void ScanRatesLengthByM1Wave(Func<TradingMacro,WaveRange> wave) {
+    void ScanRatesLengthByM1Wave(Func<TradingMacro, WaveRange> wave) {
       if(BarPeriod != BarsPeriodType.t1)
         throw new Exception("ScanRatesLengthByM1Wave is only supported for BarsPeriodType." + BarsPeriodType.t1);
       TradingMacroM1(wave)

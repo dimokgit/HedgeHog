@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using HedgeHog;
 using HedgeHog.Bars;
 using HedgeHog.Shared;
 
@@ -16,27 +18,42 @@ namespace IBApp {
     }
 
     #region ITradesManager - Implemented
+    #region Methods
+    TBar ToRate<TBar>(DateTime date, double open, double high, double low, double close, int volume, int count) where TBar : Rate, new() {
+      return Rate.Create<TBar>(date, high, low, true);
+    }
+    public void GetBarsBase<TBar>(string pair
+      , int period
+      , int periodsBack
+      , DateTime startDate
+      , DateTime endDate
+      , List<TBar> ticks
+      , Func<List<TBar>
+      , List<TBar>> map
+      , Action<RateLoadingCallbackArgs<TBar>> callBack = null
+      ) where TBar : Rate, new() {
+      var isFx = pair.Contains("/");
+      var contract = isFx ? ContractSamples.FxContract(pair) : ContractSamples.Commodity(pair);
+      var isDone = false;
+      new HistoryLoader<TBar>(_ibClient, contract, endDate.Max(startDate), (endDate - startDate).Duration(), period == 0 ? TimeUnit.S : TimeUnit.M, period == 0 ? BarSize._1_secs : BarSize._1_min,
+        ToRate<TBar>,
+         list => isDone = true,
+         list => callBack(new RateLoadingCallbackArgs<TBar>(new { HistoryLoader = new { StartDate=list.FirstOrDefault()?.StartDate, EndDate = list.LastOrDefault()?.StartDate } } + "", list)),
+         exc => { isDone = true; RaiseError(exc); });
+      while(!isDone)
+        Thread.Sleep(300);
+      return;
+    }
     public Account GetAccount() {
       try {
-        var trades = new Trade[] { };
-        var account = new Account() {
-          //ID = row.CellValue(FIELD_ACCOUNTID) + "",
-          //Balance = (double)row.CellValue(FIELD_BALANCE),
-          //UsableMargin = (double)row.CellValue(FIELD_USABLEMARGIN),
-          //IsMarginCall = row.CellValue(FIELD_MARGINCALL) + "" == "W",
-          //Equity = (double)row.CellValue(FIELD_EQUITY),
-          //Hedging = row.CellValue("Hedging").ToString() == "Y",
-          ////Trades = includeOtherInfo ? trades = GetTrades("") : null,
-          ////StopAmount = includeOtherInfo ? trades.Sum(t => t.StopAmount) : 0,
-          ////LimitAmount = includeOtherInfo ? trades.Sum(t => t.LimitAmount) : 0,
-          //ServerTime = ServerTime
-        };
-        return account;
+        return _ibClient.AccountManager?.Account;
       } catch(Exception exc) {
         RaiseError(exc);
         return null;
       }
     }
+    #endregion
+
     #region Error Event
     event EventHandler<ErrorEventArgs> ErrorEvent;
     public event EventHandler<ErrorEventArgs>  Error {
@@ -53,13 +70,19 @@ namespace IBApp {
         ErrorEvent(this, new ErrorEventArgs(exc));
     }
     #endregion
+
+    #region Properties
+    public bool HasTicks => false;
+    public bool IsLoggedIn => _ibClient.IsLoggedIn;
     public DateTime ServerTime {
       get {
         return DateTime.Now + _ibClient._serverTimeOffset;
       }
     }
     #endregion
+    #endregion
 
+    #region ITradesManager
     public Func<Trade, double> CommissionByTrade {
       get {
         throw new NotImplementedException();
@@ -80,12 +103,6 @@ namespace IBApp {
       }
 
       set {
-        throw new NotImplementedException();
-      }
-    }
-
-    public bool IsLoggedIn {
-      get {
         throw new NotImplementedException();
       }
     }
@@ -217,10 +234,6 @@ namespace IBApp {
       throw new NotImplementedException();
     }
 
-    public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate {
-      throw new NotImplementedException();
-    }
-
     public IList<Rate> GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate) {
       throw new NotImplementedException();
     }
@@ -261,9 +274,9 @@ namespace IBApp {
       throw new NotImplementedException();
     }
 
-    public double GetPipCost(string pair) {
-      throw new NotImplementedException();
-    }
+    //public double GetPipCost(string pair) {
+    //  throw new NotImplementedException();
+    //}
 
     public double GetPipSize(string pair) {
       throw new NotImplementedException();
@@ -344,5 +357,6 @@ namespace IBApp {
     public Trade TradeFactory(string pair) {
       throw new NotImplementedException();
     }
+    #endregion
   }
 }

@@ -514,8 +514,8 @@ namespace HedgeHog.Bars {
     public BarBase() { }
     public BarBase(bool isHistory) { IsHistory = isHistory; }
 
-    void SetAsk(double ask) { AskOpen = AskLow = AskClose = AskHigh = ask; }
-    void SetBid(double bid) { BidOpen = BidLow = BidClose = BidHigh = bid; }
+    protected void SetAsk(double ask) { AskOpen = AskLow = AskClose = AskHigh = ask; }
+    protected void SetBid(double bid) { BidOpen = BidLow = BidClose = BidHigh = bid; }
 
     public BarBase(DateTimeOffset startDate, double ask, double bid, bool isHistory) {
       SetAsk(ask);
@@ -708,6 +708,14 @@ namespace HedgeHog.Bars {
     }
     public Rate() { }
     public Rate(bool isHistory) : base(isHistory) { }
+    public static TBar Create<TBar>(DateTime Time, double Ask, double Bid, bool isHistory) where TBar : Rate, new() {
+      var bar = new TBar();
+      bar.StartDate2 = Time.ToUniversalTime();
+      bar.SetAsk(Ask);
+      bar.SetBid(Bid);
+      bar.IsHistory = isHistory;
+      return bar;
+    }
     public Rate(DateTime Time, double Ask, double Bid, bool isHistory) : base(Time, Ask, Bid, isHistory) { }
     public Rate(Price price, bool isHistory) : this(price.Time, price.Ask, price.Bid, isHistory) { }
     public Rate(double AskHigh, double AskLow, double AskOpen, double AskClose,
