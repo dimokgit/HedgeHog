@@ -304,6 +304,20 @@ namespace HedgeHog.Alice.Store {
       }
     }
     private bool _IsVirtual;
+    #endregion
+    #region TradingMacroName
+    [DataMemberAttribute()]
+    public string TradingMacroName {
+      get { return _TradingMacroName; }
+      set {
+        if(_TradingMacroName != value) {
+          ReportPropertyChanging(nameof(TradingMacroName));
+          _TradingMacroName = value;
+          ReportPropertyChanged(nameof(TradingMacroName));
+        }
+      }
+    }
+    private string _TradingMacroName;
 
     #endregion
     #endregion

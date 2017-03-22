@@ -563,6 +563,8 @@ namespace HedgeHog.Alice.Store {
         return _IsActive;
       }
       set {
+        if(value == _IsActive)
+          return;
         OnIsActiveChanging(value);
         ReportPropertyChanging("IsActive");
         _IsActive = StructuralObject.SetValidValue(value, "IsActive");

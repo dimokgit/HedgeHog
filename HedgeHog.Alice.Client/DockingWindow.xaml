@@ -544,7 +544,8 @@
                       <DataGridCheckBoxColumn Binding="{Binding Path=IsActive}" Header="Active" Width="SizeToHeader" />
                       <DataGridCheckBoxColumn Binding="{Binding Path=IsVirtual}" Header="Virtual" Width="SizeToHeader" />
                       <DataGridTextColumn Binding="{Binding Path=Broker}" Header="Broker" ToolTipService.ToolTip="Broker" />
-                      <DataGridTemplateColumn Header="Case">
+                      <DataGridTextColumn Binding="{Binding Path=TradingMacroName}" Header="Case" ToolTipService.ToolTip="Trading Macro Prefix" />
+                      <!--<DataGridTemplateColumn Header="Case">
 												<DataGridTemplateColumn.CellTemplate>
 													<DataTemplate>
 														<ContentControl Content="{Binding TradingMacroName}"/>
@@ -555,7 +556,7 @@
 														<ComboBox SelectedItem="{Binding Path=TradingMacroName}" ItemsSource="{Binding DataContext.TradingMacrosCases,RelativeSource={RelativeSource AncestorType=DataGrid}}" />
 													</DataTemplate>
 												</DataGridTemplateColumn.CellEditingTemplate>
-											</DataGridTemplateColumn>
+											</DataGridTemplateColumn>-->
 											<DataGridTextColumn Binding="{Binding Path=EntityState}" Header="State" />
 											<DataGridTextColumn Binding="{Binding Path=Id}" Header="Id" />
 										</DataGrid.Columns>

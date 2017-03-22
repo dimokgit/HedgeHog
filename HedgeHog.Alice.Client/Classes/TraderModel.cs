@@ -176,7 +176,7 @@ namespace HedgeHog.Alice.Client {
         }
       }
     }
-    public TradingAccount MasterAccount { get { return TradingMaster; } }
+    public override TradingAccount MasterAccount => TradingMaster;
     #endregion
 
     #region Events

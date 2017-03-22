@@ -469,7 +469,7 @@ namespace HedgeHog.Alice.Client {
     async Task<object> PriceHistory(object o) {
       var tm = o as TradingMacro;
       await Task.Factory.StartNew(() => {
-        Store.PriceHistory.AddTicks(fwMaster, (int)tm.BarPeriod, tm.Pair, fwMaster.ServerTime.AddMonths(-tm.MonthsOfHistory.Max(1)), obj => Log = new Exception(obj + ""));
+        Store.PriceHistory.AddTicks(TradesManager, (int)tm.BarPeriod, tm.Pair, TradesManager.ServerTime.AddMonths(-tm.MonthsOfHistory.Max(1)), obj => Log = new Exception(obj + ""));
       });
       return null;
     }

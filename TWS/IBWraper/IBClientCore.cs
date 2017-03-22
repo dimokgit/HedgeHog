@@ -78,7 +78,6 @@ public class IBClientCore : IBClient, ICoreFX {
   private void OnConnectionOpend() {
     ClientSocket.reqCurrentTime();
     SessionStatus = TradingServerSessionStatus.Connected;
-    RaiseLoggedIn();
   }
 
   private void OnConnectionClosed() {
@@ -161,18 +160,19 @@ public class IBClientCore : IBClient, ICoreFX {
 
   #region Log(In/Out)
   public bool LogOn(string host, string port, string clientId, bool isDemo) {
-    if(IsInVirtualTrading)
-      return true;
     try {
       var hosts = host.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-      int iPort;
-      if(!int.TryParse(port, out iPort))
-        throw new ArgumentException("Value is not integer", nameof(port));
-      int iClientId;
-      if(!int.TryParse(clientId, out iClientId))
-        throw new ArgumentException("Value is not integer", nameof(port));
       _managedAccount = hosts.Skip(1).LastOrDefault();
-      Connect(iPort, hosts.FirstOrDefault(), iClientId);
+      if(IsInVirtualTrading) {
+        int iPort;
+        if(!int.TryParse(port, out iPort))
+          throw new ArgumentException("Value is not integer", nameof(port));
+        int iClientId;
+        if(!int.TryParse(clientId, out iClientId))
+          throw new ArgumentException("Value is not integer", nameof(port));
+        Connect(iPort, hosts.FirstOrDefault(), iClientId);
+      }
+      RaiseLoggedIn();
       return IsLoggedIn;
     } catch(Exception exc) {
       RaiseLoginError(exc);

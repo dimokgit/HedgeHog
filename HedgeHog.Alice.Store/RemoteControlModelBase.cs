@@ -35,7 +35,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     protected bool IsInDesigh { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
-    protected FXW fwMaster { get { return MasterModel.TradesManager; } }
 
     TraderModelBase _MasterModel;
     [Import]
@@ -77,8 +76,8 @@ namespace HedgeHog.Alice.Store {
 
     #region TradingMacros
 
-    public static TradingMacro[] ReadTradingMacros(List<Exception> errors) {
-      var searchPath = GlobalStorage.ActiveSettingsPath(TradingMacrosPath("*", "*", "*", "*"));
+    public static TradingMacro[] ReadTradingMacros(string tradingacroName, List<Exception> errors) {
+      var searchPath = GlobalStorage.ActiveSettingsPath(TradingMacrosPath(tradingacroName.IfEmpty("*"), "*", "*", "*"));
       var paths = Directory.GetFiles(Path.GetDirectoryName(searchPath), Path.GetFileName(searchPath));
       return (from path in paths
               select new { tm = GlobalStorage.LoadJson<TradingMacro>(path, errors), path }
@@ -141,7 +140,8 @@ namespace HedgeHog.Alice.Store {
         try {
           if(_TradingMacros == null) {
             var errors = new List<Exception>();
-            _TradingMacros = ReadTradingMacros(errors);
+            //this.MasterModel.MasterAccount.cas
+            _TradingMacros = ReadTradingMacros(MasterModel.MasterAccount.TradingMacroName, errors);
             if(errors.Any())
               throw errors.First();
             _TradingMacros.ForEach(tm => Context_ObjectMaterialized(tm, null));
