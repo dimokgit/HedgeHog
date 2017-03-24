@@ -105,7 +105,7 @@ namespace HedgeHog.Alice.Store {
           _CreateEntryOrderSubject
               .SubscribeToLatestOnBGThread(s => {
                 try {
-                  CheckPendingAction("EO", (pa) => { pa(); GetFXWraper().CreateEntryOrder(s.Pair, s.IsBuy, s.Amount, s.Rate, 0, 0); });
+                  CheckPendingAction("EO", (pa) => { pa(); TradesManager.CreateEntryOrder(s.Pair, s.IsBuy, s.Amount, s.Rate, 0, 0); });
                 } catch(Exception exc) {
                   Log = exc;
                 }
@@ -131,7 +131,7 @@ namespace HedgeHog.Alice.Store {
             _DeleteOrderSubject
               .Subscribe(s => {
                 try {
-                  GetFXWraper().DeleteOrder(s);
+                  TradesManager.DeleteOrder(s);
                 } catch(Exception exc) { Log = exc; }
               }, exc => Log = exc);
           }
@@ -259,7 +259,7 @@ namespace HedgeHog.Alice.Store {
       #region SetTradeNet
       Action<Trade, double, double> SetTradeNet = (trade, limit, stop) => {
         //fxWraper.OnNext(() => {
-        var fw = GetFXWraper();
+        var fw = TradesManager;
         if(!limit.IsNaN())
           try {
             if(fw.GetNetOrderRate(Pair, false).Abs(limit) > InPoints(1)) {
@@ -294,20 +294,20 @@ namespace HedgeHog.Alice.Store {
               && !Trades.IsBuy(sr.IsBuy).Any();
             Func<bool, int> lotSize = isBuy =>
               (buySellLevels.Where(sr => sr.IsBuy == isBuy).Any(canTrade) ? (isBuy ? LotSizeByLossBuy : LotSizeByLossSell) : 0)
-              + (GetFXWraper().GetNetOrderRate(Pair, true) > 0 ? 0 : Trades.IsBuy(!isBuy).Lots());
+              + (TradesManager.GetNetOrderRate(Pair, true) > 0 ? 0 : Trades.IsBuy(!isBuy).Lots());
             buySellLevels.Select(sr => new { sr.IsBuy, sr.Rate, lotSize = lotSize(sr.IsBuy) })
               .Do(sr => GetEntryOrders(sr.IsBuy).Where(a => sr.lotSize == 0).ForEach(OnDeletingOrder))
               .Where(sr => sr.lotSize > 0 && !GetEntryOrders(sr.IsBuy).Any())
              .ForEach(level => OnCreateEntryOrder(level.IsBuy, level.lotSize, level.Rate));
 
-            Action<Order> changeLimit = eo => GetFXWraper().YieldNotNull(eo.Lot.Ratio(lotSize(eo.IsBuy)) > 1.025)
+            Action<Order> changeLimit = eo => TradesManager.YieldIf(!IsInVirtualTrading && eo.Lot.Ratio(lotSize(eo.IsBuy)) > 1.025)
               .ForEach(fw => {
                 //Log = new Exception("ChangeEntryOrderLot:" + reason);
                 fw.ChangeEntryOrderLot(eo.OrderID, lotSize(eo.IsBuy));
               });
 
             Func<bool, double> orderRate = isBuy => buySellLevels.Where(sr => sr.IsBuy == isBuy).First().Rate;
-            Action<Order> changeRate = eo => GetFXWraper().YieldNotNull(eo.Rate.Abs(orderRate(eo.IsBuy)) > PointSize)
+            Action<Order> changeRate = eo => TradesManager.YieldIf(!IsInVirtualTrading && eo.Rate.Abs(orderRate(eo.IsBuy)) > PointSize)
               .ForEach(fw => {
                 //Log = new Exception("ChangeEntryOrderRate:" + reason);
                 fw.ChangeEntryOrderRate(eo.OrderID, orderRate(eo.IsBuy));
@@ -330,10 +330,10 @@ namespace HedgeHog.Alice.Store {
           .Select(_ => _.Sender.IsBuy ? "Buy" + (_.Sender.IsExitOnly ? "Close" : "") + "Level" : "Sell" + (_.Sender.IsExitOnly ? "Close" : "") + "Level")
           .Merge(ReactiveTrades.ItemChanged.Where(_ => _.PropertyName == "Stop").Select(_ => _.Sender.IsBuy ? "BuyTrade" : "SellTrade"))
           .Merge(Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(
-            h => GetFXWraper().OrderAdded += h, h => GetFXWraper().OrderAdded -= h).Select(e => "OrderAdded"))
+            h => TradesManager.OrderAdded += h, h => TradesManager.OrderAdded -= h).Select(e => "OrderAdded"))
           .Merge(Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(
-            h => GetFXWraper().OrderChanged += h, h => GetFXWraper().OrderChanged -= h).Select(e => "OrderChanged"))
-          .Merge(Observable.FromEvent<OrderRemovedEventHandler, Order>(h => GetFXWraper().OrderRemoved += h, h => GetFXWraper().OrderRemoved -= h).Select(_ => "OrderRemoved"))
+            h => TradesManager.OrderChanged += h, h => TradesManager.OrderChanged -= h).Select(e => "OrderChanged"))
+          .Merge(Observable.FromEvent<OrderRemovedEventHandler, Order>(h => TradesManager.OrderRemoved += h, h => TradesManager.OrderRemoved -= h).Select(_ => "OrderRemoved"))
           .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Sample(cpThrottleTimeSpan))
           .Merge(this.WhenAny(tm => tm.CanDoEntryOrders, tm => "CanDoEntryOrders"))
           .Merge(this.WhenAny(tm => tm.CanDoNetStopOrders, tm => "CanDoNetStopOrders"))
@@ -347,7 +347,7 @@ namespace HedgeHog.Alice.Store {
       Action updateTradeLimitOrders = () => {
         Func<Trade, double[]> levelRate = trade => bsCloseLevels().Where(sr => sr.IsBuy == !trade.IsBuy).Select(sr => sr.Rate).Take(1).ToArray();
         Action<Trade> changeRate = trade => levelRate(trade)
-          .Where(_ => GetFXWraper() != null)
+          .Where(_ => !IsInVirtualTrading)
           .Where(lr => trade.Limit.Abs(lr) > PointSize)
           .ForEach(lr => SetTradeNetLimit(trade, lr));
         Trades.Take(1).ForEach(changeRate);
@@ -370,7 +370,7 @@ namespace HedgeHog.Alice.Store {
           .Take(1)
           )
           .Take(1);
-        Action<Trade> changeRate = trade => GetFXWraper().YieldNotNull(levelRate(trade).Any(rate => trade.Stop.Abs(rate) > PointSize))
+        Action<Trade> changeRate = trade => TradesManager.YieldNotNull(levelRate(trade).Any(rate => trade.Stop.Abs(rate) > PointSize))
           .ForEach(fw => levelRate(trade).ForEach(rate => SetTradeNetStop(trade, rate)));
         Trades.Take(1).ForEach(changeRate);
       };

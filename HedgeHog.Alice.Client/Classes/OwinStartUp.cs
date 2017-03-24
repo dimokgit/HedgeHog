@@ -98,15 +98,13 @@ namespace HedgeHog.Alice.Client {
             App.SetSignalRSubjectSubject(() => {
               setAuthScheme?.Invoke(remoteControl.Value);
               setAuthScheme = null;
-              var tm = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == Pair);
-              if(tm != null) {
+              //var tm = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == Pair);
                 try {
                   GlobalHost.ConnectionManager.GetHubContext<MyHub>()
                     .Clients.All.addMessage();
                 } catch(Exception exc) {
                   GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
                 }
-              }
             });
 
           if(context.Request.Path.Value.ToLower().StartsWith("/hello")) {

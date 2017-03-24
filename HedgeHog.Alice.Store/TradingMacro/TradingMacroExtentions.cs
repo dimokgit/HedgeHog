@@ -442,8 +442,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     void SuppRes_EntryOrderIdChanged(object sender, SuppRes.EntryOrderIdEventArgs e) {
-      var fw = GetFXWraper();
-      if(!string.IsNullOrWhiteSpace(e.OldId) && fw != null)
+      if(!string.IsNullOrWhiteSpace(e.OldId) && !IsInVirtualTrading)
         try {
           OnDeletingOrder(e.OldId);
           //fw.DeleteOrder(e.OldId);
@@ -455,10 +454,9 @@ namespace HedgeHog.Alice.Store {
     void SuppRes_IsActiveChanged(object sender, EventArgs e) {
       try {
         var suppRes = (SuppRes)sender;
-        var fw = GetFXWraper();
-        if(fw != null && !suppRes.IsActive) {
-          fw.GetOrders(Pair).IsBuy(suppRes.IsBuy).ToList()
-            .ForEach(o => fw.DeleteOrder(o.OrderID));
+        if(!IsInVirtualTrading && !suppRes.IsActive) {
+          TradesManager.GetOrders(Pair).IsBuy(suppRes.IsBuy).ToList()
+            .ForEach(o => TradesManager.DeleteOrder(o.OrderID));
         }
       } catch(Exception exc) {
         Log = exc;
@@ -1171,7 +1169,7 @@ namespace HedgeHog.Alice.Store {
       get {
         lock(_tradesFromReportLock) {
           if(_tradesFromReport == null)
-            _tradesFromReport = new List<Trade>();// GetFXWraper().GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now);
+            _tradesFromReport = new List<Trade>();// TradesManager.GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now);
         }
         return _tradesFromReport;
       }
@@ -1286,10 +1284,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     void CoreFX_LoggingOffEvent(object sender, LoggedInEventArgs e) {
-      var fw = GetFXWraper();
-      if(fw == null)
+      if(IsInVirtualTrading)
         return;
-      fw.DeleteOrders(Pair);
+      TradesManager.DeleteOrders(Pair);
     }
 
     void TradesManager_OrderAdded(object sender, OrderEventArgs e) {
@@ -1307,8 +1304,7 @@ namespace HedgeHog.Alice.Store {
       try {
         TakeProfitDistance = CalcTakeProfitDistance();
         var order = e.Order;
-        var fw = GetFXWraper();
-        if(fw != null && !order.IsNetOrder) {
+        if(!IsInVirtualTrading && !order.IsNetOrder) {
           var orders = GetEntryOrders();
           orders.IsBuy(true).OrderBy(o => o.OrderID).Skip(1)
             .Concat(orders.IsBuy(false).OrderBy(o => o.OrderID).Skip(1))
@@ -1493,10 +1489,10 @@ namespace HedgeHog.Alice.Store {
         var actionBlock = new ActionBlock<Action>(a => a());
         var dbBarPeriod = BarPeriodInt.Max(0);
         Action<RateLoadingCallbackArgs<Rate>> cb = callBackArgs => PriceHistory.SaveTickCallBack(dbBarPeriod, Pair, o => Log = new Exception(o + ""), actionBlock, callBackArgs);
-        //var fw = GetFXWraper();
+        //var fw = TradesManager;
         //if(fw != null)
         //  PriceHistory.AddTicks(fw, dbBarPeriod, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-BarsCountCount() * 2)), o => Log = new Exception(o + ""));
-        //GetFXWraper().GetBarsBase<Rate>(Pair, dbBarPeriod, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
+        //TradesManager.GetBarsBase<Rate>(Pair, dbBarPeriod, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
         var internalRateCount = BarsCountCount();
         var doGroupTick = BarPeriodCalc == BarsPeriodType.s1;
         Func<List<Rate>, List<Rate>> groupTicks = rates => doGroupTick ? GroupTicksToSeconds(rates) : rates;
@@ -3126,10 +3122,9 @@ namespace HedgeHog.Alice.Store {
     public double CalcTakeProfitDistance(bool inPips = false) {
       if(Trades.Length == 0)
         return double.NaN;
-      var fw = GetFXWraper();
-      if(fw == null)
+      if(IsInVirtualTrading)
         return double.NaN;
-      var netOrder = fw.GetNetLimitOrder(Trades.LastTrade());
+      var netOrder = TradesManager.GetNetLimitOrder(Trades.LastTrade());
       if(netOrder == null)
         return double.NaN;
       var netOpen = Trades.NetOpen();
@@ -4329,7 +4324,7 @@ namespace HedgeHog.Alice.Store {
             if(startDate != TradesManagerStatic.FX_DATE_NOW && _Rates.Count > 10)
               periodsBack = 0;
             var groupTicks = false && BarPeriodCalc == BarsPeriodType.s1;
-            LoadRatesImpl(GetFXWraper(), Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
+            LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
             if(BarPeriod != BarsPeriodType.t1)
               ratesList.TakeLast(1).ForEach(r => {
                 var rateLastDate = r.StartDate;
@@ -4339,7 +4334,7 @@ namespace HedgeHog.Alice.Store {
                   if(delay > (delayMax + delayMax))
                     Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
                   ratesList.RemoveAt(ratesList.Count - 1);
-                  LoadRatesImpl(GetFXWraper(), Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
+                  LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
                 }
               });
             {

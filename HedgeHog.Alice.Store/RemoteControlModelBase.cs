@@ -121,7 +121,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public void SaveTradingMacros() {
-      TradingMacros.ForEach(tm => GlobalStorage.SaveJson(tm.Serialize(false), TradingMacrosPath(tm.TradingMacroName, tm.Pair, tm.TradingGroup, tm.PairIndex)));
+      TradingMacros.ForEach(tm => GlobalStorage.SaveJson(tm.Serialize(false), TradingMacrosPath(MasterModel.MasterAccount.TradingMacroName, tm.Pair, tm.TradingGroup, tm.PairIndex)));
     }
     protected void ResetTradingMacros() {
       //_tradingMacrosCopy = TradingMacros.ToArray();

@@ -163,7 +163,7 @@ public class IBClientCore : IBClient, ICoreFX {
     try {
       var hosts = host.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
       _managedAccount = hosts.Skip(1).LastOrDefault();
-      if(IsInVirtualTrading) {
+      if(!IsInVirtualTrading) {
         int iPort;
         if(!int.TryParse(port, out iPort))
           throw new ArgumentException("Value is not integer", nameof(port));
