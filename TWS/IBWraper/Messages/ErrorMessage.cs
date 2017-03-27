@@ -13,9 +13,8 @@ namespace IBApp
         private int errorCode;
         private int requestId;
 
-        public ErrorMessage(int requestId, int errorCode, string message)
+        public ErrorMessage(int requestId, int errorCode, string message):base(MessageType.Error)
         {
-            Type = MessageType.Error;
             Message = message;
             RequestId = requestId;
             ErrorCode = errorCode;

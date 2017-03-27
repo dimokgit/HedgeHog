@@ -12,12 +12,21 @@ namespace IBApp {
   public class IBWraper : HedgeHog.Shared.ITradesManager {
     private readonly IBClientCore _ibClient;
 
-    public IBWraper(ICoreFX coreFx) {
+    public IBWraper(ICoreFX coreFx, Func<Trade, double> commissionByTrade) {
+      CommissionByTrade = commissionByTrade;
+
       CoreFX = coreFx;
       _ibClient = (IBClientCore)CoreFX;
+      _ibClient.PriceChanged += OnPriceChanged;
+      _ibClient.CommissionByTrade = commissionByTrade;
+    }
+
+    private void OnPriceChanged(Price price) {
+      RaisePriceChanged(price.Pair, price);
     }
 
     #region ITradesManager - Implemented
+
     #region Methods
     TBar ToRate<TBar>(DateTime date, double open, double high, double low, double close, int volume, int count) where TBar : Rate, new() {
       return Rate.Create<TBar>(date, high, low, true);
@@ -52,6 +61,9 @@ namespace IBApp {
         return null;
       }
     }
+    public Trade[] GetTrades() {
+      return _ibClient.Trades;
+    }
     #endregion
 
     #region Error Event
@@ -71,6 +83,29 @@ namespace IBApp {
     }
     #endregion
 
+    #region PriceChangedEvent
+
+    event EventHandler<PriceChangedEventArgs> PriceChangedEvent;
+    public event EventHandler<PriceChangedEventArgs> PriceChanged {
+      add {
+        if (PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
+          PriceChangedEvent += value;
+      }
+      remove {
+        PriceChangedEvent -= value;
+      }
+    }
+    void RaisePriceChanged(string pair, Price price, Account account, Trade[] trades) {
+      var e = new PriceChangedEventArgs(pair, price, account, trades);
+      PriceChangedEvent?.Invoke(this, e);
+    }
+
+    public void RaisePriceChanged(string pair, Price price) {
+      RaisePriceChanged(pair, price, GetAccount(), GetTrades());
+    }
+    #endregion
+
+
     #region Properties
     public bool HasTicks => false;
     public bool IsLoggedIn => _ibClient.IsLoggedIn;
@@ -83,11 +118,7 @@ namespace IBApp {
     #endregion
 
     #region ITradesManager
-    public Func<Trade, double> CommissionByTrade {
-      get {
-        throw new NotImplementedException();
-      }
-    }
+    public Func<Trade, double> CommissionByTrade { get; private set; }
 
     public ICoreFX CoreFX { get; set; }
 
@@ -116,7 +147,6 @@ namespace IBApp {
     public event EventHandler<OrderEventArgs> OrderAdded;
     public event EventHandler<OrderEventArgs> OrderChanged;
     public event OrderRemovedEventHandler OrderRemoved;
-    public event EventHandler<PriceChangedEventArgs> PriceChanged;
     public event EventHandler<RequestEventArgs> RequestFailed;
     public event EventHandler<TradeEventArgs> TradeAdded;
     public event EventHandler<TradeEventArgs> TradeClosed;
@@ -199,7 +229,7 @@ namespace IBApp {
     }
 
     public void DeleteOrders(string pair) {
-      throw new NotImplementedException();
+      RaiseError(new NotImplementedException(nameof(DeleteOrders)));
     }
 
     public PendingOrder FixCreateLimit(string tradeId, double limit, string remark) {
@@ -243,12 +273,11 @@ namespace IBApp {
     }
 
     public Trade[] GetClosedTrades(string pair) {
-      throw new NotImplementedException();
+      RaiseError(new NotImplementedException(nameof(GetClosedTrades)));
+      return new Trade[0];
     }
 
-    public int GetDigits(string pair) {
-      throw new NotImplementedException();
-    }
+    public int GetDigits(string pair) => TradesManagerStatic.GetDigits(pair);
 
     public Trade GetLastTrade(string pair) {
       throw new NotImplementedException();
@@ -278,19 +307,13 @@ namespace IBApp {
     //  throw new NotImplementedException();
     //}
 
-    public double GetPipSize(string pair) {
-      throw new NotImplementedException();
-    }
+    public double GetPipSize(string pair) => TradesManagerStatic.GetPointSize(pair);
 
     public Price GetPrice(string pair) {
       throw new NotImplementedException();
     }
 
     public Tick[] GetTicks(string pair, int periodsBack, Func<List<Tick>, List<Tick>> map) {
-      throw new NotImplementedException();
-    }
-
-    public Trade[] GetTrades() {
       throw new NotImplementedException();
     }
 
@@ -319,14 +342,6 @@ namespace IBApp {
     }
 
     public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
-      throw new NotImplementedException();
-    }
-
-    public void RaisePriceChanged(string pair, Price price) {
-      throw new NotImplementedException();
-    }
-
-    public void RaisePriceChanged(string pair, int barPeriod, Price price) {
       throw new NotImplementedException();
     }
 

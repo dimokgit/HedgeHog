@@ -538,7 +538,8 @@
 											</DataGridTemplateColumn>
 											<DataGridTextColumn Binding="{Binding Path=Password}" Header="Password" Foreground="Transparent" />
 											<DataGridCheckBoxColumn Binding="{Binding Path=IsDemo}" Header="Demo" Width="SizeToHeader" />
-											<DataGridTextColumn Binding="{Binding Path=Commission}" Header="C$" />
+                      <DataGridTextColumn Binding="{Binding Path=Commission}" Header="C$" />
+                      <DataGridTextColumn Binding="{Binding Path=CommissionType}" Header="CT" />
 											<DataGridTextColumn Binding="{Binding Path=TradeRatio}" Header="M:S" ToolTipService.ToolTip="Trade Ratio" />
 											<DataGridCheckBoxColumn Binding="{Binding Path=IsMaster}" Header="Master" Width="SizeToHeader" />
                       <DataGridCheckBoxColumn Binding="{Binding Path=IsActive}" Header="Active" Width="SizeToHeader" />

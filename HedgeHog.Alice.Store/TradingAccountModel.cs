@@ -10,7 +10,7 @@ using HedgeHog.Alice.Store;
 
 namespace HedgeHog.Alice.Store {
   public class TradingAccountModel : Shared.Account, INotifyPropertyChanged {
-    public TradingAccountModel(Func<Trade,double> commissionByTrade):base() {
+    public TradingAccountModel():base() {
     }
     TradingStatistics _tradingStatistics;
     public TradingStatistics TradingStatistics {

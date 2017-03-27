@@ -13,7 +13,7 @@ namespace HedgeHog.Shared.Tests {
       try {
         Assert.AreEqual(18.251244785358632, TradesManagerStatic.PipAmount("USD_JPY", 217000, 118.896, 0.01));
         Assert.Fail("Not ArgumentNullException was not thrown.");
-      } catch (ArgumentNullException) {
+      } catch(ArgumentNullException) {
         TradesManagerStatic.AccountCurrency = "uSd";
         Assert.AreEqual(18.251244785358632, TradesManagerStatic.PipAmount("USD_JPY", 217000, 118.896, 0.01));
         Assert.AreEqual(21.7, TradesManagerStatic.PipAmount("eurUSD", 217000, 118.896, 0.0001));
@@ -24,7 +24,7 @@ namespace HedgeHog.Shared.Tests {
         try {
           TradesManagerStatic.PipAmount("USD", 217000, 118.896, 0.01);
           Assert.Fail("Not ArgumentException was not thrown.");
-        } catch (ArgumentException) {
+        } catch(ArgumentException) {
         }
       } finally {
         TradesManagerStatic.AccountCurrency = null;
@@ -46,8 +46,8 @@ namespace HedgeHog.Shared.Tests {
       try {
         TradesManagerStatic.AccountCurrency = "uSd";
         var ptm = TradesManagerStatic.PipsAndLotToMoney("usdjpy", 2.1, 217000, 118.896, 0.01);
-        Assert.AreEqual(38.327614, Math.Round(ptm,6));
-        Assert.AreEqual(2.100000,Math.Round(TradesManagerStatic.MoneyAndLotToPips("usdjpy", ptm, 217000, 118.896, 0.01),6));
+        Assert.AreEqual(38.327614, Math.Round(ptm, 6));
+        Assert.AreEqual(2.100000, Math.Round(TradesManagerStatic.MoneyAndLotToPips("usdjpy", ptm, 217000, 118.896, 0.01), 6));
 
         ptm = TradesManagerStatic.PipsAndLotToMoney("eur/usd", 2.1, 20000, 1.3333, 0.0001);
         Assert.AreEqual(4.2, ptm);
@@ -55,6 +55,12 @@ namespace HedgeHog.Shared.Tests {
       } finally {
         TradesManagerStatic.AccountCurrency = null;
       }
+    }
+
+    [TestMethod()]
+    public void IsCurrenncyTest() {
+      Assert.IsTrue("usd/jpy".IsCurrenncy());
+      Assert.IsFalse("XAUusd".IsCurrenncy());
     }
   }
 }

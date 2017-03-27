@@ -22,15 +22,19 @@ public class IBClientCore : IBClient, ICoreFX {
   private readonly Action<object> _trace;
   private AccountManager _accountManager;
   TradingServerSessionStatus _sessionStatus;
+  readonly private MarketDataManager _marketDataManager;
+  readonly private List<Trade> _trades=new List<Trade>();
   #endregion
 
   #region Properties
   public AccountManager AccountManager { get { return _accountManager; } }
+  public Trade[] Trades { get { return _trades.ToArray(); } }
   #endregion
 
   #region ICoreEX Implementation
   public void SetOfferSubscription(string pair) {
-    throw new NotImplementedException();
+    var c = pair.IsCurrenncy() ? ContractSamples.FxContract(pair) : ContractSamples.Commodity(pair);
+    _marketDataManager.AddRequest(c);
   }
   public bool IsInVirtualTrading { get; set; }
 
@@ -48,7 +52,7 @@ public class IBClientCore : IBClient, ICoreFX {
   #region Ctor
   public static IBClientCore Create(Action<object> trace) {
     var signal = new EReaderMonitorSignal();
-    return new IBClientCore(signal,trace) { _signal = signal };
+    return new IBClientCore(signal, trace) { _signal = signal };
   }
   public IBClientCore(EReaderSignal signal, Action<object> trace) : base(signal) {
     _trace = trace;
@@ -57,15 +61,42 @@ public class IBClientCore : IBClient, ICoreFX {
     ConnectionOpend += OnConnectionOpend;
     CurrentTime += OnCurrentTime;
     ManagedAccounts += OnManagedAccounts;
+    _marketDataManager = new MarketDataManager(this);
+    _marketDataManager.PriceChanged += OnPriceChanged;
   }
 
+  #region Price Changed
+  private void OnPriceChanged(Price price) {
+    RaisePriceChanged(price);
+  }
+
+
+  #region PriceChanged Event
+  event PriceChangedEventHandler PriceChangedEvent;
+  public event PriceChangedEventHandler  PriceChanged {
+    add {
+      if (PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
+        PriceChangedEvent += value;
+    }
+    remove {
+      PriceChangedEvent -= value;
+    }
+  }
+  protected void RaisePriceChanged(Price price) {
+    var time = new DateTimeOffset(ServerTime);
+    price.Time2 = time;
+    PriceChangedEvent?.Invoke(price);
+  }
+  #endregion
+
+  #endregion
   private void OnManagedAccounts(string obj) {
     if(_accountManager != null)
       _trace(new { _accountManager, isNot = (string)null });
-    var ma = obj.Splitter('.').Where(a=>_managedAccount.IsNullOrWhiteSpace() || a == _managedAccount).SingleOrDefault();
+    var ma = obj.Splitter('.').Where(a => _managedAccount.IsNullOrWhiteSpace() || a == _managedAccount).SingleOrDefault();
     if(ma == null)
       throw new Exception(new { _managedAccount, error = "Not Found" } + "");
-    _accountManager = new AccountManager(this, ma, _trace);
+    _accountManager = new AccountManager(this, ma, CommissionByTrade, _trace);
     _accountManager.RequestAccountSummary();
     _accountManager.SubscribeAccountUpdates();
     _accountManager.RequestPositions();
@@ -155,7 +186,7 @@ public class IBClientCore : IBClient, ICoreFX {
   #endregion
 
   public override string ToString() {
-    return new { Host = _host, Port =_port,  ClientId } + "";
+    return new { Host = _host, Port = _port, ClientId } + "";
   }
 
   #region Log(In/Out)
@@ -203,6 +234,8 @@ public class IBClientCore : IBClient, ICoreFX {
       NotifyPropertyChanged();
     }
   }
+
+  public Func<Trade, double> CommissionByTrade { get; internal set; }
 
   #endregion
 

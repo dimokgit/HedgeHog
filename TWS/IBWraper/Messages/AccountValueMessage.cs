@@ -14,9 +14,8 @@ namespace IBApp
         private string currency;
         private string accountName;
 
-        public AccountValueMessage(string key, string value, string currency, string accountName)
+        public AccountValueMessage(string key, string value, string currency, string accountName):base(MessageType.AccountValue)
         {
-            Type = MessageType.AccountValue;
             Key = key;
             Value = value;
             Currency = currency;

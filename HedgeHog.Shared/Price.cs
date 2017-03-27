@@ -7,17 +7,14 @@ using HedgeHog.Bars;
 namespace HedgeHog.Shared {
   public class PriceChangedEventArgs : EventArgs {
     public string Pair { get; set; }
-    public int BarPeriod { get; set; }
     public Price Price { get; set; }
     public Account Account { get; set; }
     public Trade[] Trades { get; set; }
-    public PriceChangedEventArgs(string pair, Price price, Account account, Trade[] trades) : this(pair, int.MinValue, price, account, trades) { }
-    public PriceChangedEventArgs(string pair,int barPeriod, Price price,Account account,Trade[] trades) {
-      this.Pair = pair;
-      this.BarPeriod = barPeriod;
-      this.Price = price;
-      this.Account = account;
-      this.Trades = trades;
+    public PriceChangedEventArgs(string pair, Price price, Account account, Trade[] trades) {
+      Pair = pair;
+      Price = price;
+      Account = account;
+      Trades = trades;
     }
   }
   public delegate void PriceChangedEventHandler(Price Price);
@@ -30,7 +27,7 @@ namespace HedgeHog.Shared {
     private DateTimeOffset _time2;
     public DateTimeOffset Time2 {
       get { return _time2; }
-      set { 
+      set {
         _time2 = value.ToUniversalTime();
       }
     }
@@ -40,15 +37,15 @@ namespace HedgeHog.Shared {
     public int AskChangeDirection { get; set; }
     public bool IsReal { get { return Time != DateTime.MinValue; } }
     public bool IsPlayback { get; set; }
-    public Price() {    }
+    public Price(string pair) {
+      Pair = pair;
+    }
 
-    public Price(string pair, Rate rate ) {
-      if (rate == null) {
-        Ask = Bid = double.NaN;
-      } else {
-        Ask = rate.AskClose;
-        Bid = rate.BidClose;
-      }
+    public Price(string pair, Rate rate) {
+      if(rate == null)
+        throw new ArgumentNullException(nameof(rate));
+      Ask = rate.AskClose;
+      Bid = rate.BidClose;
       Time2 = rate.StartDate2;
       Pair = pair;
       AskChangeDirection = 0;
@@ -56,6 +53,10 @@ namespace HedgeHog.Shared {
     }
     public double BuyClose { get; set; }
     public double SellClose { get; set; }
+
+    public override string ToString() {
+      return new { Time, Bid, Ask } + "";
+    }
   }
 
 }

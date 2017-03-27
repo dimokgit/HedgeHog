@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 using System.Reflection;
+using HedgeHog.Core;
+using static HedgeHog.MathCore;
+
 namespace HedgeHog.Tests {
   [TestClass()]
   public class MathExtensionsTest {
@@ -243,15 +246,15 @@ namespace UnitLib {
       var date = DateTime.Parse("1999-01-01 15:14:13");
       var dateFloor = DateTime.Parse("1999-01-01 15:14:00");
       var dateCieling = DateTime.Parse("1999-01-01 15:15:00");
-      Assert.AreEqual(dateFloor, date.Round(MathExtensions.RoundTo.Minute));
-      Assert.AreEqual(dateFloor, date.Round(MathExtensions.RoundTo.MinuteFloor));
-      Assert.AreEqual(dateCieling, date.Round(MathExtensions.RoundTo.MinuteCieling));
+      Assert.AreEqual(dateFloor, date.Round(RoundTo.Minute));
+      Assert.AreEqual(dateFloor, date.Round(RoundTo.MinuteFloor));
+      Assert.AreEqual(dateCieling, date.Round(RoundTo.MinuteCieling));
       return;
       DateTime dt = DateTime.Parse("1/1/1990  15:34");
       int period = 3;
       DateTime expected = new DateTime(); // TODO: Initialize to an appropriate value
       DateTime actual;
-      actual = MathExtensions.Round(dt, period);
+      actual = dt.Round(period);
       Assert.AreEqual(expected, actual);
       Assert.Inconclusive("Verify the correctness of this test method.");
 

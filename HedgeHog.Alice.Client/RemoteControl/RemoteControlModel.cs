@@ -959,7 +959,7 @@ namespace HedgeHog.Alice.Client {
             Task.Factory.StartNew(() => currTM.LastTrade = TradesManager.GetLastTrade(currTM.Pair));
             tm.OnLoadRates();
             runPriceQueue.Add(() => {
-              currTM.RunPriceChanged(new PriceChangedEventArgs(currTM.Pair, currTM.BarPeriodInt, TradesManager.GetPrice(currTM.Pair), TradesManager.GetAccount(), TradesManager.GetTradesInternal(currTM.Pair)), null);
+              currTM.RunPriceChanged(new PriceChangedEventArgs(currTM.Pair, TradesManager.GetPrice(currTM.Pair), TradesManager.GetAccount(), TradesManager.GetTradesInternal(currTM.Pair)), null);
             });
           }
           tm.SetLotSize(TradesManager.GetAccount());

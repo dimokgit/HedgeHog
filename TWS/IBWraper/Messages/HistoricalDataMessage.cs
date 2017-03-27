@@ -29,8 +29,7 @@ namespace IBApp {
 
     public bool HasGaps { get; set; }
 
-    public HistoricalDataMessage(int reqId, DateTime date, double open, double high, double low, double close, int volume, int count, double WAP, bool hasGaps) {
-      Type = MessageType.HistoricalData;
+    public HistoricalDataMessage(int reqId, DateTime date, double open, double high, double low, double close, int volume, int count, double WAP, bool hasGaps):base(MessageType.HistoricalData) {
       RequestId = reqId;
       Date = date;
       Open = open;

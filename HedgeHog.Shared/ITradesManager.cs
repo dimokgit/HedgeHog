@@ -11,6 +11,7 @@ using System.Reactive.Subjects;
 using System.Windows;
 using System.Text.RegularExpressions;
 using System.ComponentModel;
+using HedgeHog;
 
 namespace HedgeHog.Shared {
   public delegate void LoginErrorHandler(Exception exc);
@@ -30,7 +31,7 @@ namespace HedgeHog.Shared {
     }
   }
 
-  public interface ICoreFX: INotifyPropertyChanged {
+  public interface ICoreFX : INotifyPropertyChanged {
     bool LogOn(string user, string accountSubId, string password, bool isDemo);
     void Logout();
     bool ReLogin();
@@ -116,7 +117,6 @@ namespace HedgeHog.Shared {
     event EventHandler<TradeEventArgs> TradeClosed;
     event EventHandler<PriceChangedEventArgs> PriceChanged;
     void RaisePriceChanged(string pair, Price price);
-    void RaisePriceChanged(string pair, int barPeriod, Price price);
 
     event EventHandler<TradeEventArgs> TradeAdded;
     event TradeRemovedEventHandler TradeRemoved;
@@ -148,14 +148,14 @@ namespace HedgeHog.Shared {
     #endregion
 
     void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map);
-    void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate,new();
+    void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate, new();
     Func<Trade, double> CommissionByTrade { get; }
     bool HasTicks { get; }
 
     double CommissionByTrades(params Trade[] trades);
     IList<Rate> GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate);
 
-    Tick[] GetTicks(string pair, int periodsBack,Func<List<Tick>,List<Tick>> map);
+    Tick[] GetTicks(string pair, int periodsBack, Func<List<Tick>, List<Tick>> map);
 
     void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map);
 
@@ -194,6 +194,37 @@ namespace HedgeHog.Shared {
 
 
   public static class TradesManagerStatic {
+    static Offer[] dbOffers = new[] {
+            new Offer { Pair = "USD/JPY", Digits = 3,   PointSize = 0.01 },
+            new Offer { Pair = "EUR/USD", Digits = 5,   PointSize = 0.0001 },
+            new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01 }
+          };
+    static Func<string,Offer> GetOfferImpl= symbol => dbOffers.Where(o => o.Pair.ToUpper() == symbol.ToUpper()).Take(1).IfEmpty(() => { }).Single();
+    public static Func<string,Offer> GetOffer=GetOfferImpl.Memoize();
+    public static double GetPointSize(string symbol) => GetOffer(symbol).PointSize;
+    public static int GetDigits(string symbol) => GetOffer(symbol).Digits;
+
+    private static string[] _currencies=new []{
+      "USD",
+      "SEK",
+      "NZD",
+      "JPY",
+      "GBP",
+      "EUR",
+      "CHF",
+      "CAD",
+      "AUD",
+    };
+    public static string WrapPair(string pair) {
+      return Regex.Replace(pair, "[./-]", "");
+    }
+    static string UnWrapPair(string pair) {
+      if(!pair.IsNullOrEmpty())
+        throw new NotImplementedException();
+      return Regex.Replace(pair, @"(\w3)(\w3)", "$1/$2");
+    }
+
+    public static bool IsCurrenncy(this string s) => _currencies.Any(c => s.ToUpper().StartsWith(c)) && _currencies.Any(c => s.ToUpper().EndsWith(c));
     private static readonly EventLoopScheduler _tradingThread =
       new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; });
 
@@ -203,9 +234,9 @@ namespace HedgeHog.Shared {
     private static volatile ISubject<Action> _tradingSubject;
     public static ISubject<Action> TradingSubject {
       get {
-        if (_tradingSubject == null)
-          lock (syncRoot)
-            if (_tradingSubject == null) {
+        if(_tradingSubject == null)
+          lock(syncRoot)
+            if(_tradingSubject == null) {
               _tradingSubject = new Subject<Action>();
               _tradingSubject.ObserveOn(TradesManagerStatic.TradingScheduler).Subscribe(a => a()
                 , exc => {
@@ -219,7 +250,8 @@ namespace HedgeHog.Shared {
 
 
     public static DateTime GetVirtualServerTime(this IList<Rate> rates, int barMinutes) {
-      if (rates == null || rates.Count == 0) return DateTime.MinValue;
+      if(rates == null || rates.Count == 0)
+        return DateTime.MinValue;
       return rates.Last().StartDate;
     }
     public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
@@ -229,12 +261,16 @@ namespace HedgeHog.Shared {
     public static int GetLotSize(double lot, int baseUnitSize) {
       return GetLotSize(lot, baseUnitSize, false);
     }
-    public static int GetLotstoTrade(double balance, double leverage, double tradeRatio, int baseUnitSize) {
-      var amountToTrade = balance * leverage * tradeRatio;
+    public static int GetLotstoTrade(double rate, string symbol, double balance, double leverage, double tradeRatio, int baseUnitSize) {
+      var amountToTrade = symbol.IsCurrenncy()
+        ? balance * leverage * tradeRatio
+        : rate == 0
+        ? 0
+        : balance * leverage / rate;
       return GetLotSize(amountToTrade, baseUnitSize);
     }
     public static double MoneyAndLotToPips(this ITradesManager tm, double money, int lots, string pair) {
-      return tm == null ? double.NaN : MoneyAndLotToPips(pair, money, lots,tm.RateForPipAmount(tm.GetPrice(pair)), tm.GetPipSize(pair));
+      return tm == null ? double.NaN : MoneyAndLotToPips(pair, money, lots, tm.RateForPipAmount(tm.GetPrice(pair)), tm.GetPipSize(pair));
     }
     public static double MarginRequired(int lot, double baseUnitSize, double mmr) {
       return lot / baseUnitSize * mmr;
@@ -243,28 +279,36 @@ namespace HedgeHog.Shared {
     static string[] PairCurrencies(string pair) {
       var ret = Regex.Matches(Regex.Replace(pair, "[^a-z]", "", RegexOptions.IgnoreCase), @"\w{3}")
         .Cast<Match>().Select(m => m.Value.ToUpper()).ToArray();
-      if (ret.Length != 2) throw new ArgumentException(new { pair, error = "Wrong format" } + "");
+      if(ret.Length != 2)
+        throw new ArgumentException(new { pair, error = "Wrong format" } + "");
       return ret;
     }
-    public static double PipByPair(string pair, Func<double> left, Func<double> right) {
-      if (string.IsNullOrEmpty(AccountCurrency)) throw new ArgumentNullException(new { AccountCurrency } + "");
+    public static double PipByPair(string pair, Func<double> left, Func<double> right, Func<double> middle) {
+      if(string.IsNullOrEmpty(AccountCurrency))
+        throw new ArgumentNullException(new { AccountCurrency } + "");
       Func<double> error = () => { throw new NotSupportedException(new { pair, error = "Not Supported" } + ""); };
       var acc = AccountCurrency.ToUpper();
-      var foos = new[] { 
+      var foos = new[] {
         new { acc, a = left} ,
         new { acc, a = right}
       };
-      return PairCurrencies(pair)
+      var curs = PairCurrencies(pair);
+      return (curs.All(c => c.IsCurrenncy())
+        ? PairCurrencies(pair)
+        .Where(cur => cur.IsCurrenncy())
         .Zip(foos, (c, f) => new { ok = c == f.acc, f.a })
         .Where(a => a.ok)
         .Select(a => a.a)
-        .DefaultIfEmpty(() => error)
-        .First()();
+        .DefaultIfEmpty(error)
+        .First()
+        : middle)
+        ();
     }
     #region PipAmount
     /// <summary>
     /// Pip Dollar Value
     /// </summary>
+    /// <param name="pair"></param>
     /// <param name="lot"></param>
     /// <param name="rate">Usually Ask or (Ask+Bid)/2</param>
     /// <param name="pipSize">EUR/USD:0.0001, USD/JPY:0.01</param>
@@ -277,20 +321,25 @@ namespace HedgeHog.Shared {
       var pl = pips * lot;
       return PipByPair(pair,
         () => pl * pipSize / rate,
-        () => pl / 10000);
+        () => pl / 10000,
+        () => pl * pipSize);
     }
     public static double MoneyAndLotToPips(string pair, double money, int lot, double rate, double pipSize) {
-      if (money == 0 || lot == 0) return 0;
+      if(money == 0 || lot == 0)
+        return 0;
       var ml = money / lot;
       return PipByPair(pair,
-        () => ml * rate /  pipSize,
-        () => ml * 10000);
+        () => ml * rate / pipSize,
+        () => ml * 10000,
+        () => ml / pipSize);
     }
     #region PipCost
     public static double PipCost(string pair, double rate, int baseUnit, double pipSize) {
       return PipByPair(pair,
         () => baseUnit * pipSize / rate,
-        () => baseUnit / 10000.0);
+        () => baseUnit / 10000.0,
+        () => pipSize
+        );
     }
     #endregion
     public static double InPoins(ITradesManager tm, string pair, double? price) {

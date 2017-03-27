@@ -27,10 +27,12 @@ namespace ConsoleApp {
       var coreFx = ibClient as ICoreFX;
       coreFx.LoginError += HandleError;
       coreFx.SubscribeToPropertyChanged(ibc => ibc.SessionStatus, ibc => HandleMessage(new { ibc.SessionStatus } + ""));
+      //ibClient.PriceChanged += OnPriceChanged;
 
       var usdJpi = ContractSamples.FxContract("usd/jpy");
       var gold = ContractSamples.Commodity("XAUUSD");
       if(ibClient.LogOn("", 7497 + "", 2 + "", false)) {
+        ibClient.SetOfferSubscription(gold.Instrument);
         var dateEnd = new DateTime( DateTime.Parse("2017-03-08 12:00").Ticks, DateTimeKind.Local);
         var counter = 0;
         HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
@@ -44,6 +46,10 @@ namespace ConsoleApp {
       Console.ReadKey();
       ibClient.Logout();
       Console.ReadKey();
+    }
+
+    private static void OnPriceChanged(Price price) {
+      HandleMessage(price.ToString());
     }
 
     #region Handle(Error/Massage)

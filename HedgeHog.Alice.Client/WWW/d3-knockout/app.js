@@ -64,7 +64,7 @@
   // enable global JSON date parsing
   //JSON.useDateParser();
   var chat;
-  var pair = getQueryVariable("pair") || "usdjpy";
+  var pair = (getQueryVariable("pair") || "").toUpperCase();
 
   var NOTE_ERROR = "error";
   function settingsGrid() { return $("#settingsGrid"); }
@@ -1289,7 +1289,7 @@
       }
 
       function _priceChanged(pairChanged) {
-        if (!isDocHidden() && pair === pairChanged) {
+        if (!isDocHidden() && pair === pairChanged.toUpperCase()) {
           if (_isPriceChangeInFlight())
             return;
           _inFlightPriceChanged = new Date();
@@ -1331,63 +1331,87 @@
         showErrorPerm("Unexpected start data:\n" + JSON.stringify(a.data) + "\nNeed refresh");
         return;
       }
-      //#region Load static data
-      var defTDT = dataViewModel.readTradeDirectionTriggers();
-      var defTC = dataViewModel.readTradingConditions();
-      var defTOC = dataViewModel.readTradeOpenActions();
-      serverCall("isInVirtual", [], function (response) {
-        dataViewModel.isVirtual(response);
-      })
-      //#region Read Enums
-      serverCall("readEnum", ["RatesLengthFunction"], function (enums) {
-        dataViewModel.ratesLengthFunction(mapEnumsForSettings(enums));
+      serverCall("availibleSymbols", [], function (pairs) {
+        if (pair) {
+          if (pairs.some(function (p) { return p.toUpperCase() === pair; }))
+            return afterPairIsAvailible();
+          return showErrorPerm(JSON.stringify({ pair: pair, pairs: pairs }));
+        }
+        else
+          switch (pairs.length) {
+            case 0:
+              showErrorPerm(JSON.stringify({ pairs: pairs }));
+              break;
+            case 1:
+              pair = pairs[0];
+              showWarning("Using " + pair);
+              afterPairIsAvailible();
+              break;
+            default:
+              showErrorPerm(JSON.stringify({ pairs: pairs }));
+          }
       });
-      function mapEnumsForSettings(enums) {
-        return Object.keys(enums).map(function (v) { return { text: v, value: v } });
+
+      function afterPairIsAvailible() {
+        //#region Load static data
+        var defTDT = dataViewModel.readTradeDirectionTriggers();
+        var defTC = dataViewModel.readTradingConditions();
+        var defTOC = dataViewModel.readTradeOpenActions();
+        serverCall("isInVirtual", [], function (response) {
+          dataViewModel.isVirtual(response);
+        })
+        //#region Read Enums
+        serverCall("readEnum", ["RatesLengthFunction"], function (enums) {
+          dataViewModel.ratesLengthFunction(mapEnumsForSettings(enums));
+        });
+        function mapEnumsForSettings(enums) {
+          return Object.keys(enums).map(function (v) { return { text: v, value: v } });
+        }
+        var defTPF = serverCall("readEnum", ["TradingMacroTakeProfitFunction"], function (enums) {
+          dataViewModel.tradingMacroTakeProfitFunction(mapEnumsForSettings(enums));
+        });
+        serverCall("readEnum", ["TradeLevelBy"], function (enums) {
+          dataViewModel.tradeLevelBys(mapEnumsForSettings(enums));
+        });
+        serverCall("readEnum", ["WaveSmoothBys"], function (enums) {
+          dataViewModel.waveSmoothByFunction(mapEnumsForSettings(enums));
+        });
+        serverCall("readEnum", ["ScanCorridorFunction"], function (enums) {
+          dataViewModel.scanCorridorFunction(mapEnumsForSettings(enums));
+        });
+        serverCall("readEnum", ["VoltageFunction"], function (enums) {
+          dataViewModel.voltageFunction(mapEnumsForSettings(enums));
+        });
+        serverCall("readEnum", ["CorridorCalculationMethod"], function (enums) {
+          dataViewModel.corridorCalculationMethod(mapEnumsForSettings(enums));
+        });
+        serverCall("readEnum", ["MovingAverageType"], function (enums) {
+          dataViewModel.movingAverageType(mapEnumsForSettings(enums));
+        });
+        serverCall("readEnum", ["BarsPeriodType"], function (enums) {
+          dataViewModel.barsPeriodType(mapEnumsForSettings(enums));
+        });
+        serverCall("readEnum", ["Strategies"], function (enums) {
+          dataViewModel.strategyType(mapEnumsForSettings(enums));
+        });
+
+        //#endregion 
+        //#region read trade-related data
+        serverCall("getPresetTradeLevels", [pair], function (l) {
+          dataViewModel.tradePresetLevel(l[0] || 0);
+        });
+        dataViewModel.readStrategies();
+        dataViewModel.readClosedTrades();
+        //#endregion
+        //dataViewModel.readNews();
+        $.when.apply($, [defTC, defTOC, defTDT]).done(function () {
+          ko.applyBindings(dataViewModel);
+        });
+        serverCall("readTitleRoot", [], function (t) {
+          document.title = t + devVersion + "::" + pair;
+        });
+        //#endregion
       }
-      var defTPF = serverCall("readEnum", ["TradingMacroTakeProfitFunction"], function (enums) {
-        dataViewModel.tradingMacroTakeProfitFunction(mapEnumsForSettings(enums));
-      });
-      serverCall("readEnum", ["TradeLevelBy"], function (enums) {
-        dataViewModel.tradeLevelBys(mapEnumsForSettings(enums));
-      });
-      serverCall("readEnum", ["WaveSmoothBys"], function (enums) {
-        dataViewModel.waveSmoothByFunction(mapEnumsForSettings(enums));
-      });
-      serverCall("readEnum", ["ScanCorridorFunction"], function (enums) {
-        dataViewModel.scanCorridorFunction(mapEnumsForSettings(enums));
-      });
-      serverCall("readEnum", ["VoltageFunction"], function (enums) {
-        dataViewModel.voltageFunction(mapEnumsForSettings(enums));
-      });
-      serverCall("readEnum", ["CorridorCalculationMethod"], function (enums) {
-        dataViewModel.corridorCalculationMethod(mapEnumsForSettings(enums));
-      });
-      serverCall("readEnum", ["MovingAverageType"], function (enums) {
-        dataViewModel.movingAverageType(mapEnumsForSettings(enums));
-      });
-      serverCall("readEnum", ["BarsPeriodType"], function (enums) {
-        dataViewModel.barsPeriodType(mapEnumsForSettings(enums));
-      });
-      serverCall("readEnum", ["Strategies"], function (enums) {
-        dataViewModel.strategyType(mapEnumsForSettings(enums));
-      });
-      serverCall("getPresetTradeLevels", [pair], function (l) {
-        dataViewModel.tradePresetLevel(l[0] || 0);
-      });
-
-      //#endregion 
-      dataViewModel.readStrategies();
-      dataViewModel.readClosedTrades();
-      //dataViewModel.readNews();
-      $.when.apply($, [defTC,defTOC,defTDT]).done(function () {
-        ko.applyBindings(dataViewModel);
-      });
-      serverCall("readTitleRoot", [], function (t) {
-        document.title = t + devVersion + "::" + pair;
-      });
-      //#endregion
-
       // #region This section should be implemented in dataViewModel
       $('#sendmessage').click(function () {
         // Call the Send method on the hub.

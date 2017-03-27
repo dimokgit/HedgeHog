@@ -173,7 +173,10 @@ namespace HedgeHog.Shared {
     public DateTime Time2 {
       get { return _time2; }
       set {
-        Time = TimeZoneInfo.ConvertTimeFromUtc(_time2 = value, TimeZoneInfo.Local);
+        if(value.Kind == DateTimeKind.Unspecified)
+          throw new ArgumentException(new { Time2 = new { value.Kind } } + "");
+        _time2 = value;
+        Time = _time2.Kind != DateTimeKind.Local ? TimeZoneInfo.ConvertTimeFromUtc(_time2, TimeZoneInfo.Local) : _time2;
       }
     }
     [DataMember]
@@ -188,7 +191,10 @@ namespace HedgeHog.Shared {
     public DateTime Time2Close {
       get { return _time2Close; }
       set {
-        TimeClose = TimeZoneInfo.ConvertTimeFromUtc(_time2Close = value, TimeZoneInfo.Local);
+        if(value.Kind == DateTimeKind.Unspecified)
+          throw new ArgumentException(new { Time2Close = new { value.Kind } } + "");
+        _time2Close = value;
+        TimeClose = _time2.Kind != DateTimeKind.Local ? TimeZoneInfo.ConvertTimeFromUtc(_time2Close, TimeZoneInfo.Local) : _time2Close;
       }
     }
     DateTime _TimeClose;
@@ -203,6 +209,7 @@ namespace HedgeHog.Shared {
     public int DaysSinceClose { get { return Math.Floor((DateTime.Now - TimeClose).TotalDays).ToInt(); } }
     [DataMember]
     public int Lots { get; set; }
+    public double Position => IsBuy ? Lots : -Lots; 
     public int AmountK { get { return Lots / (BaseUnitSize == 0 ? 1000 : BaseUnitSize); } }
 
     [DataMember]

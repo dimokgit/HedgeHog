@@ -6,46 +6,41 @@ using System.Linq;
 using System.Text;
 using IBApi;
 
-namespace IBApp
-{
-    public class PositionMessage : IBMessage 
-    {
-        private string account;
-        private Contract contract;
-        private double position;
-        private double averageCost;
-        
-        public PositionMessage(string account, Contract contract, double pos, double avgCost)
-        {
-            Type = MessageType.Position;
-            Account = account;
-            Contract = contract;
-            Position = pos;
-            AverageCost = avgCost;
-        }
+namespace IBApp {
+  public class PositionMessage : IBMessage {
+    private string account;
+    private Contract contract;
+    private double position;
+    private double averageCost;
 
-        public string Account
-        {
-            get { return account; }
-            set { account = value; }
-        }
-
-        public Contract Contract
-        {
-            get { return contract; }
-            set { contract = value; }
-        }
-
-        public double Position
-        {
-            get { return position; }
-            set { position = value; }
-        }
-        
-        public double AverageCost
-        {
-            get { return averageCost; }
-            set { averageCost = value; }
-        }
+    public PositionMessage(string account, Contract contract, double pos, double avgCost) : base(MessageType.Position) {
+      Account = account;
+      Contract = contract;
+      Position = pos;
+      AverageCost = avgCost;
     }
+
+    public string Account {
+      get { return account; }
+      set { account = value; }
+    }
+
+    public Contract Contract {
+      get { return contract; }
+      set { contract = value; }
+    }
+
+    public double Position {
+      get { return position; }
+      set { position = value; }
+    }
+
+    public double AverageCost {
+      get { return averageCost; }
+      set { averageCost = value; }
+    }
+    public override string ToString() {
+      return new { Contract = new { contract.LocalSymbol } + "", Position, AverageCost, Type } + "";
+    }
+  }
 }

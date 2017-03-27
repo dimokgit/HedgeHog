@@ -87,12 +87,6 @@ namespace HedgeHog.Alice.Store {
               //.Where(tm => tm != null)
               .ToArray();
     }
-    static string WrapPair(string pair) {
-      return pair.Replace("/", "");
-    }
-    static string UnWrapPair(string pair) {
-      return Regex.Replace(pair, @"(\w3)(\w3)", "$1/$2");
-    }
 
     public class DynamicContractResolver : DefaultContractResolver {
 
@@ -133,7 +127,7 @@ namespace HedgeHog.Alice.Store {
 
     protected virtual void Context_ObjectMaterialized(object sender, ObjectMaterializedEventArgs e) { throw new NotImplementedException(); }
     protected static readonly string _tradingMacrosPath = "TradingMacros\\{0}+{1}_{2}_{3}.json";
-    protected static string TradingMacrosPath(string name, string pair, object group, object index) { return _tradingMacrosPath.Formater(name, WrapPair(pair), group, index); }
+    protected static string TradingMacrosPath(string name, string pair, object group, object index) { return _tradingMacrosPath.Formater(name, TradesManagerStatic.WrapPair(pair), group, index); }
     protected IList<TradingMacro> _TradingMacros;
     public IList<TradingMacro> TradingMacros {
       get {

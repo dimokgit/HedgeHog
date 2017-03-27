@@ -31,7 +31,6 @@ using static HedgeHog.Core.JsonExtensions;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
-    public string Pair { get { return "usdjpy"; } }
     List<string> Pairs = new List<string>() { "usdjpy", "eurusd" };
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
@@ -61,7 +60,7 @@ namespace HedgeHog.Alice.Client {
         NewThreadScheduler.Default.Schedule(TimeSpan.FromSeconds(1), () => {
           priceChanged = trader.PriceChanged
             .Select(x => x.EventArgs.Pair.Replace("/", "").ToLower())
-            .Where(pair => Pairs.Contains(pair))
+            //.Where(pair => Pairs.Contains(pair))
             .Subscribe(pair => {
               try {
                 myHub().Clients.All.priceChanged(pair);
@@ -72,8 +71,7 @@ namespace HedgeHog.Alice.Client {
           tradesChanged =
             trader.TradeAdded.Select(x => x.EventArgs.Trade.Pair.Replace("/", "").ToLower())
             .Merge(
-            trader.TradeRemoved.Select(x => x.EventArgs.MasterTrade.Pair.Replace("/", "").ToLower()))
-            .Where(pair => Pairs.Contains(pair))
+            trader.TradeRemoved.Select(x => TradesManagerStatic.WrapPair(x.EventArgs.MasterTrade.Pair)))
             .Subscribe(pair => {
               try {
                 myHub().Clients.All.tradesChanged(pair);
@@ -652,7 +650,7 @@ namespace HedgeHog.Alice.Client {
       });
     }
     #endregion
-    static string MakePair(string pair) { return pair.Substring(0, 3) + "/" + pair.Substring(3, 3); }
+    static string MakePair(string pair) { return TradesManagerStatic.IsCurrenncy(pair) ? pair.Substring(0, 3) + "/" + pair.Substring(3, 3) : pair; }
     public Trade[] ReadClosedTrades(string pair) {
       try {
         return new[] { new { p = MakePair(pair), rc = remoteControl.Value } }.SelectMany(x =>
@@ -755,9 +753,9 @@ namespace HedgeHog.Alice.Client {
           + "/" + (am.OriginalProfit).ToString("p1")));
         if(tm.LastTradeLoss != 0)
           list2.Add(row("Last Loss", tm.LastTradeLoss.AutoRound2("$", 2)));
-        list2.Add(row("PipAmount", tm.PipAmount.AutoRound2("$", 2) + "/" + tm.PipAmountPercent.ToString("p2")));
+        list2.Add(row("PipAmount", tm.PipAmount.AutoRound2("$", 2) + "/" + tm.PipAmountPercent.AutoRound2(3).ToString("p")));
         list2.Add(row("PipsToMC", (!ht ? tm.PipsToPMCByLot : am.PipsToMC).ToString("n0")));
-        list2.Add(row("LotSize", (tm.LotSize / 1000.0).Floor() + "K/" + tm.LotSizePercent.ToString("p0")));
+        list2.Add(row("LotSize", (tm.IsCurrency? (tm.LotSize / 1000.0).Floor() + "K/":tm.LotSize+"/") + tm.LotSizePercent.ToString("p0")));
         return list2;
       }).Concat();
       return list.Concat(more).ToArray();
@@ -789,6 +787,14 @@ namespace HedgeHog.Alice.Client {
         tm.BuySellLevels.ForEach(sr => sr.InManual = canTrade);
         tm.SetCanTrade(canTrade, isBuy);
       });
+    }
+
+    public string[] AvailibleSymbols() {
+      return remoteControl?.Value?
+        .TradingMacrosCopy
+        .Where(tm => tm.IsActive && tm.IsTrader)
+        .Select(tm=> tm.PairPlain)
+        .ToArray();
     }
     private void GetTradingMacro(string pair, Action<TradingMacro> action) {
       GetTradingMacro(pair)

@@ -200,13 +200,10 @@ namespace Order2GoAddIn {
       }
     }
     public void RaisePriceChanged(string pair, Price price) {
-      RaisePriceChanged(pair, -1, price);
+      RaisePriceChanged(pair, price, GetAccount(), GetTrades());
     }
-    public void RaisePriceChanged(string pair, int barPeriod, Price price) {
-      RaisePriceChanged(pair, barPeriod, price, GetAccount(), GetTrades());
-    }
-    void RaisePriceChanged(string pair, int barPeriod, Price price, Account account, Trade[] trades) {
-      var e = new PriceChangedEventArgs(pair, barPeriod, price, account, trades);
+    void RaisePriceChanged(string pair,  Price price, Account account, Trade[] trades) {
+      var e = new PriceChangedEventArgs(pair, price, account, trades);
       if (_PriceChangedBroadcast != null)
         PriceChangedBroadcast.SendAsync(e);
       if (PriceChangedEvent != null) PriceChangedEvent(this, e);
@@ -1522,30 +1519,27 @@ namespace Order2GoAddIn {
       return price;
     }
     private Price GetPrice(FXCore.RowAut Row) {
-      return Row == null ? null : new Price() {
+      return Row == null ? null : new Price(Row.CellValue(FIELD_INSTRUMENT) + "") {
         Ask = (double)Row.CellValue(FIELD_ASK), Bid = (double)Row.CellValue(FIELD_BID),
         AskChangeDirection = (int)Row.CellValue(FIELD_ASKCHANGEDIRECTION),
         BidChangeDirection = (int)Row.CellValue(FIELD_BIDCHANGEDIRECTION),
-        Time2 = ConvertDateToLocal((DateTime)Row.CellValue(FIELD_TIME)),
-        Pair = Row.CellValue(FIELD_INSTRUMENT) + ""
+        Time2 = ConvertDateToLocal((DateTime)Row.CellValue(FIELD_TIME))
       };
     }
     private Price GetPrice(FXCore.ParserAut Row) {
-      return new Price() {
+      return new Price(Row.GetValue(FIELD_INSTRUMENT) + "") {
         Ask = (double)Row.GetValue(FIELD_ASK), Bid = (double)Row.GetValue(FIELD_BID),
         AskChangeDirection = (int)Row.GetValue(FIELD_ASKCHANGEDIRECTION),
         BidChangeDirection = (int)Row.GetValue(FIELD_BIDCHANGEDIRECTION),
-        Time2 = ConvertDateToLocal((DateTime)Row.GetValue(FIELD_TIME)),
-        Pair = Row.GetValue(FIELD_INSTRUMENT) + ""
+        Time2 = ConvertDateToLocal((DateTime)Row.GetValue(FIELD_TIME))
       };
     }
     private Price GetPrice(NameValueParser Row) {
-      return new Price() {
+      return new Price(Row.Get(FIELD_INSTRUMENT)) {
         Ask = Row.GetDouble(FIELD_ASK), Bid = Row.GetDouble(FIELD_BID),
         AskChangeDirection = Row.GetInt(FIELD_ASKCHANGEDIRECTION),
         BidChangeDirection = Row.GetInt(FIELD_BIDCHANGEDIRECTION),
-        Time2 = ConvertDateToLocal(Row.GetDateTime(FIELD_TIME)),
-        Pair = Row.Get(FIELD_INSTRUMENT)
+        Time2 = ConvertDateToLocal(Row.GetDateTime(FIELD_TIME))
       };
     }
     #endregion

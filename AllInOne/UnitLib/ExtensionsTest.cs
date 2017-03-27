@@ -10,6 +10,7 @@ using System.Threading;
 using System.Collections;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using static HedgeHog.Core.JsonExtensions;
 
 namespace HedgeHog.Tests {
   [TestClass()]

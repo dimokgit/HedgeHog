@@ -208,9 +208,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp", "..\TWS\ConsoleApp\ConsoleApp.csproj", "{8D2E0075-E2E0-4D8D-B2DF-3BDFD71F62CA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TWS", "TWS", "{7BE5EBE0-4DFC-4087-A849-351B326E1F9D}"
-	ProjectSection(SolutionItems) = preProject
-		D:\TWS API\samples\CSharp\IBSampleApp\ui\AccountManager.cs = D:\TWS API\samples\CSharp\IBSampleApp\ui\AccountManager.cs
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Others", "Others", "{47C75CBB-9C1F-49A5-BC51-1E7F532FF293}"
 EndProject

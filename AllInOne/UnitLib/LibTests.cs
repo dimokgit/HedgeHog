@@ -7,6 +7,7 @@ using HedgeHog;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics;
 using System.Reflection;
+using static HedgeHog.Core.JsonExtensions;
 namespace HedgeHog.Tests {
   [TestClass()]
   public class LibTests {

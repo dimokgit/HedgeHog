@@ -6,79 +6,45 @@ using System.Linq;
 using System.Text;
 using IBApi;
 
-namespace IBApp
-{
-    public class UpdatePortfolioMessage : IBMessage
-    {
-        private Contract contract;
-        private double position;
-        private double marketPrice;
-        private double marketValue;
-        private double averageCost;
-        private double unrealisedPNL;
-        private double realisedPNL;
-        private string accountName;
-
-        public UpdatePortfolioMessage(Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName)
-        {
-            Type = MessageType.PortfolioValue;
-            Contract = contract;
-            Position = position;
-            MarketPrice = marketPrice;
-            MarketValue = marketValue;
-            AverageCost = averageCost;
-            UnrealisedPNL = unrealisedPNL;
-            RealisedPNL = realisedPNL;
-            AccountName = accountName;
-        }
-
-        public Contract Contract
-        {
-            get { return contract; }
-            set { contract = value; }
-        }
-        
-        public double Position
-        {
-            get { return position; }
-            set { position = value; }
-        }
-        
-        public double MarketPrice
-        {
-            get { return marketPrice; }
-            set { marketPrice = value; }
-        }
-        
-        public double MarketValue
-        {
-            get { return marketValue; }
-            set { marketValue = value; }
-        }
-        
-        public double AverageCost
-        {
-            get { return averageCost; }
-            set { averageCost = value; }
-        }
-        
-        public double UnrealisedPNL
-        {
-            get { return unrealisedPNL; }
-            set { unrealisedPNL = value; }
-        }
-        
-        public double RealisedPNL
-        {
-            get { return realisedPNL; }
-            set { realisedPNL = value; }
-        }
-        
-        public string AccountName
-        {
-            get { return accountName; }
-            set { accountName = value; }
-        }
-
+namespace IBApp {
+  public class UpdatePortfolioMessage : IBMessage {
+    public UpdatePortfolioMessage(Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName) : base(MessageType.PortfolioValue) {
+      Contract = contract;
+      Position = position;
+      MarketPrice = marketPrice;
+      MarketValue = marketValue;
+      AverageCost = averageCost;
+      UnrealisedPNL = unrealisedPNL;
+      RealisedPNL = realisedPNL;
+      AccountName = accountName;
     }
+
+    public Contract Contract { get; set; }
+
+    public double Position { get; set; }
+
+    public double MarketPrice { get; set; }
+
+    public double MarketValue { get; set; }
+
+    public double AverageCost { get; set; }
+
+    public double UnrealisedPNL { get; set; }
+
+    public double RealisedPNL { get; set; }
+
+    public string AccountName { get; set; }
+    public override string ToString() {
+      return new {
+        Contract = new { Contract.LocalSymbol } + "",
+        Position,
+        UnrealisedPNL,
+        AverageCost,
+        MarketPrice,
+        MarketValue,
+        Type
+      } + "";
+    }
+
+  }
 }

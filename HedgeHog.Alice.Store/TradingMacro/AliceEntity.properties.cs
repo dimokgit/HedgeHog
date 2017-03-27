@@ -2011,7 +2011,7 @@ namespace HedgeHog.Alice.Store {
       LevelBuyBy = LevelBuyCloseBy = LevelSellBy = LevelSellCloseBy = TradeLevelBy.None;
     }
 
-    public string PairPlain { get { return Pair.ToLower().Replace("/", ""); } }
+    public string PairPlain { get { return TradesManagerStatic.WrapPair(Pair); } }
 
     bool _FitRatesToPlotter;
 

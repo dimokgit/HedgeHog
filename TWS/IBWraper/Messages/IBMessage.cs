@@ -8,11 +8,12 @@ using IBApi;
 using static HedgeHog.Core.JsonExtensions;
 namespace IBApp {
   public abstract class IBMessage {
-    protected MessageType type;
-
+    readonly MessageType _type;
     public MessageType Type {
-      get { return type; }
-      set { type = value; }
+      get { return _type; }
+    }
+    public IBMessage(MessageType type) {
+      _type = type;
     }
     public override string ToString() {
       return this.ToJson();

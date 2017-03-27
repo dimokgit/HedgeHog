@@ -35,11 +35,12 @@ namespace IBApi
         private List<ComboLeg> comboLegs;
         private UnderComp underComp;
 
+    public string Instrument { get; set; }
 
-        /**
-        * @brief The unique IB contract identifier
-        */
-        public int ConId
+    /**
+    * @brief The unique IB contract identifier
+    */
+    public int ConId
         {
             get { return conId; }
             set { conId = value; }

@@ -44,8 +44,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AccountManager.cs" />
+    <Compile Include="DataManagers\DataManager.cs" />
+    <Compile Include="DataManagers\AccountManager.cs" />
     <Compile Include="Contracts.cs" />
+    <Compile Include="DataManagers\MarketDataManager.cs" />
     <Compile Include="EpochTimeExtensions.cs" />
     <Compile Include="Messages\AccountSummaryMessage.cs" />
     <Compile Include="Messages\AccountValueMessage.cs" />
@@ -57,8 +59,10 @@
     <Compile Include="IBClientCore.cs" />
     <Compile Include="IBWraper.cs" />
     <Compile Include="Messages\IBMessage.cs" />
+    <Compile Include="Messages\MarketDataMessage.cs" />
     <Compile Include="Messages\MessageType.cs" />
     <Compile Include="Messages\PositionMessage.cs" />
+    <Compile Include="Messages\TickPriceMessage.cs" />
     <Compile Include="Messages\UpdatePortfolioMessage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="types\FinancialAdvisorTypes.cs" />

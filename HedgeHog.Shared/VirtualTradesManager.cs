@@ -355,25 +355,22 @@ namespace HedgeHog.Shared {
       }
     }
     void OnTradeClosed(Trade trade) {
-      if (TradeClosedEvent != null) TradeClosedEvent(this, new TradeEventArgs(trade));
+      TradeClosedEvent?.Invoke(this, new TradeEventArgs(trade));
     }
 
     public event EventHandler<PriceChangedEventArgs> PriceChanged;
 
     public void RaisePriceChanged(string pair, Price price) {
-      RaisePriceChanged(pair, -1, price);
-    }
-    public void RaisePriceChanged(string pair, int barPeriod, Price price) {
       PriceCurrent.AddOrUpdate(pair, price, (k, v) => price);
       if (PriceChanged != null) {
-        var args = new PriceChangedEventArgs(pair, barPeriod, price, GetAccount(), GetTrades());
+        var args = new PriceChangedEventArgs(pair, price, GetAccount(), GetTrades());
         PriceChanged(this, args);
       }
     }
 
     public event EventHandler<TradeEventArgs> TradeAdded;
     void OnTradeAdded(Trade trade) {
-      if (TradeAdded != null) TradeAdded(this, new TradeEventArgs(trade));
+      TradeAdded?.Invoke(this, new TradeEventArgs(trade));
     }
 
 
@@ -383,7 +380,7 @@ namespace HedgeHog.Shared {
 
     private ConcurrentDictionary<string, Price> PriceCurrent = new ConcurrentDictionary<string,Price>();
     void OnTradeRemoved(Trade trade) {
-      if (TradeRemoved != null) TradeRemoved(trade);
+      TradeRemoved?.Invoke(trade);
     }
 
     #endregion

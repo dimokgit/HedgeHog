@@ -74,7 +74,7 @@ namespace HedgeHog.Alice.Client {
     FXW _fwMaster;
 
     public override FXW FWMaster {
-      get { return _fwMaster ?? (_fwMaster = _isIB? new IBWraper(CoreFX): new FXCoreWrapper(CoreFX, CommissionByTrade) as ITradesManager); }
+      get { return _fwMaster ?? (_fwMaster = _isIB? new IBWraper(CoreFX,CommissionByTrade): new FXCoreWrapper(CoreFX, CommissionByTrade) as FXW); }
     }
     public bool IsLoggedIn { get { return CoreFX != null && CoreFX.IsLoggedIn; } }
     bool _isInLogin;
@@ -417,7 +417,7 @@ namespace HedgeHog.Alice.Client {
     public override TradingAccountModel AccountModel {
       get {
         if(_accountModel == null) {
-          _accountModel = new TradingAccountModel(CommissionByTrade);
+          _accountModel = new TradingAccountModel();
           AccountModel.CloseAllTrades += AccountModel_CloseAllTrades;
         }
         return _accountModel;
@@ -1436,7 +1436,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     void FWMaster_PriceChanged(string pair) {
-      FWMaster_PriceChanged(TradesManager, new PriceChangedEventArgs(pair, new Price() { Pair = pair }, TradesManager.GetAccount(), TradesManager.GetTrades()));
+      FWMaster_PriceChanged(TradesManager, new PriceChangedEventArgs(pair, new Price( pair), TradesManager.GetAccount(), TradesManager.GetTrades()));
     }
     void FWMaster_PriceChanged(object sender, PriceChangedEventArgs e) {
       try {
@@ -1444,7 +1444,6 @@ namespace HedgeHog.Alice.Client {
           e.Account.Equity = e.Account.Balance + e.Account.Trades.Sum(t => t.NetPL);
           UpdateTradingAccount(e.Account);
         }
-        Price Price = e.Price;
         RunPriceChanged(e);
       } catch(Exception exc) {
         Log = exc;
@@ -1668,10 +1667,12 @@ namespace HedgeHog.Alice.Client {
     double CommissionByLot(int lot) {
       return MasterAccount == null
         ? 0
-        : lot / 10000.0 * MasterAccount.Commission;
+        : MasterAccount.CommissionType == Store.TradingAccount.CommissionTypes.Rel
+        ? lot / 10000.0 * MasterAccount.Commission
+        : MasterAccount.Commission;
     }
     static T TestDefault<T>(T value, string errorMessage) {
-      if(EqualityComparer<T>.Default.Equals(value, default(T)))
+      if(value.IsDefault())
         throw new ArgumentException(errorMessage);
       return value;
     }
@@ -1682,7 +1683,6 @@ namespace HedgeHog.Alice.Client {
         ? 0
         : CommissionByLot(TestDefault(trade.Lots, "trade.Lots==0"));
     }
-    public double CommissionByTrades(params Trade[] trades) { return trades.Sum(t => CommissionByTrade(t)); }
     string tradeIdLast = "";
     public override void AddCosedTrade(Trade trade) {
       try {

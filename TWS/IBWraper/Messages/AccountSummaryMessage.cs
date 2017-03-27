@@ -45,9 +45,8 @@ namespace IBApp
             set { currency = value; }
         }
 
-        public AccountSummaryMessage(int requestId, string account, string tag, string value, string currency)
+        public AccountSummaryMessage(int requestId, string account, string tag, string value, string currency):base(MessageType.AccountSummary)
         {
-            Type = MessageType.AccountSummary;
             RequestId = requestId;
             Account = account;
             Tag = tag;

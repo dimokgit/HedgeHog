@@ -318,6 +318,21 @@ namespace HedgeHog.Alice.Store {
       }
     }
     private string _TradingMacroName;
+    #endregion
+    #region CommissionType
+    public enum CommissionTypes { Rel, Abs };
+    [DataMemberAttribute()]
+    public CommissionTypes CommissionType {
+      get { return _CommissionType; }
+      set {
+        if(_CommissionType != value) {
+          ReportPropertyChanging(nameof(CommissionType));
+          _CommissionType = value;
+          ReportPropertyChanged(nameof(CommissionType));
+        }
+      }
+    }
+    private CommissionTypes _CommissionType= CommissionTypes.Rel;
 
     #endregion
     #endregion

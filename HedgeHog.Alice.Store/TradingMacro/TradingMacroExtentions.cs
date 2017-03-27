@@ -349,7 +349,7 @@ namespace HedgeHog.Alice.Store {
       if(string.IsNullOrWhiteSpace(Pair))
         return;
       if(_TradesManager != null) {
-        if(!IsInVirtualTrading && TradesManager!= null && TradesManager.IsLoggedIn)
+        if(!IsInVirtualTrading && TradesManager != null && TradesManager.IsLoggedIn)
           TradesManager.DeleteOrders(Pair);
       } else {
         Log = new Exception(new { _TradesManager } + "");
@@ -599,7 +599,7 @@ namespace HedgeHog.Alice.Store {
         //return _blackoutTimes.Where(b => RateLast.StartDate.Between(b.TimeStart.Value.LocalDateTime, b.TimeStop.LocalDateTime)).Any();
       }
     }
-
+    public bool IsCurrency => Pair.IsCurrenncy();
     #region LotSize
     int _lotSize;
     public int LotSize {
@@ -1739,7 +1739,7 @@ namespace HedgeHog.Alice.Store {
                     continue;
                   ratePrev = rate;
                   if(this.TradingMacrosByPair().First() == this && (Trades.Any() || IsTradingDay())) {
-                    TradesManager.RaisePriceChanged(Pair, BarPeriodInt, new Price(Pair, rate));
+                    TradesManager.RaisePriceChanged(Pair, new Price(Pair, rate));
                   }
                   ReplayEvents();
                   {
@@ -3865,7 +3865,7 @@ namespace HedgeHog.Alice.Store {
       throw new NotSupportedException(function + "");
     }
 
-    public double CommissionByTrade(Trade trade) { return TradesManager.CommissionByTrade(trade); }
+    public double CommissionByTrade(Trade trade) => TradesManager.CommissionByTrade(trade);
 
     public bool IsInVirtualTrading { get { return TradesManager is VirtualTradesManager; } }
     private bool CanTrade() {
@@ -4042,7 +4042,7 @@ namespace HedgeHog.Alice.Store {
             .Where(tr => tr > 0)
             .Select(tr => tr >= 1
               ? (tr * BaseUnitSize).ToInt()
-              : TradesManagerStatic.GetLotstoTrade(account.Balance, TradesManager.Leverage(Pair), tr, BaseUnitSize)))
+              : TradesManagerStatic.GetLotstoTrade((CurrentPrice?.Average).GetValueOrDefault(), Pair, account.Balance, TradesManager.Leverage(Pair), tr, BaseUnitSize)))
           .Concat(0.Yield())
           .Take(1)
           .ForEach(ls => {

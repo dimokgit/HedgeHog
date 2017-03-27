@@ -86,6 +86,7 @@
     <Compile Include="Enums.cs" />
     <Compile Include="FullGroupJoin.cs" />
     <Compile Include="FuzzyIndex.cs" />
+    <Compile Include="Generics.cs" />
     <Compile Include="IEnumerable.cs" />
     <Compile Include="JsonExtensions.cs" />
     <Compile Include="LazyMonad.cs" />

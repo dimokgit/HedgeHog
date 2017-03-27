@@ -11,8 +11,7 @@ namespace IBApp {
     public int RequestId { get; }
     public string EndDate { get; }
 
-    public HistoricalDataEndMessage(int requestId, string startDate, string endDate) {
-      Type = MessageType.HistoricalDataEnd;
+    public HistoricalDataEndMessage(int requestId, string startDate, string endDate):base(MessageType.HistoricalDataEnd) {
       RequestId = requestId;
       StartDate = startDate;
       EndDate = endDate;
