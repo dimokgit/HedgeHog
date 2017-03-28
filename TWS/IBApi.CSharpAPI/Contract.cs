@@ -35,7 +35,7 @@ namespace IBApi
         private List<ComboLeg> comboLegs;
         private UnderComp underComp;
 
-    public string Instrument { get; set; }
+    public string Instrument => LocalSymbol.Replace(".", "/");
 
     /**
     * @brief The unique IB contract identifier

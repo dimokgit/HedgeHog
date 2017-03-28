@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using HedgeHog;
 using HedgeHog.Bars;
 using HedgeHog.Shared;
-
+using static HedgeHog.Shared.TradesManagerStatic;
 namespace IBApp {
   public class IBWraper : HedgeHog.Shared.ITradesManager {
     private readonly IBClientCore _ibClient;
@@ -47,7 +47,7 @@ namespace IBApp {
       new HistoryLoader<TBar>(_ibClient, contract, endDate.Max(startDate), (endDate - startDate).Duration(), period == 0 ? TimeUnit.S : TimeUnit.M, period == 0 ? BarSize._1_secs : BarSize._1_min,
         ToRate<TBar>,
          list => isDone = true,
-         list => callBack(new RateLoadingCallbackArgs<TBar>(new { HistoryLoader = new { StartDate=list.FirstOrDefault()?.StartDate, EndDate = list.LastOrDefault()?.StartDate } } + "", list)),
+         list => callBack(new RateLoadingCallbackArgs<TBar>(new { HistoryLoader = new { StartDate = list.FirstOrDefault()?.StartDate, EndDate = list.LastOrDefault()?.StartDate } } + "", list)),
          exc => { isDone = true; RaiseError(exc); });
       while(!isDone)
         Thread.Sleep(300);
@@ -61,9 +61,8 @@ namespace IBApp {
         return null;
       }
     }
-    public Trade[] GetTrades() {
-      return _ibClient.Trades;
-    }
+    public Trade[] GetTrades() => _ibClient.AccountManager.GetTrades();
+    public Trade[] GetTrades(string pair) => _ibClient.AccountManager.GetTrades().Where(t => t.Pair.WrapPair() == pair.WrapPair()).ToArray();
     #endregion
 
     #region Error Event
@@ -314,10 +313,6 @@ namespace IBApp {
     }
 
     public Tick[] GetTicks(string pair, int periodsBack, Func<List<Tick>, List<Tick>> map) {
-      throw new NotImplementedException();
-    }
-
-    public Trade[] GetTrades(string pair) {
       throw new NotImplementedException();
     }
 

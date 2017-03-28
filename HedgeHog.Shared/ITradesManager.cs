@@ -195,11 +195,16 @@ namespace HedgeHog.Shared {
 
   public static class TradesManagerStatic {
     static Offer[] dbOffers = new[] {
-            new Offer { Pair = "USD/JPY", Digits = 3,   PointSize = 0.01 },
-            new Offer { Pair = "EUR/USD", Digits = 5,   PointSize = 0.0001 },
+            new Offer { Pair = "USDJPY", Digits = 3,   PointSize = 0.01 },
+            new Offer { Pair = "EURUSD", Digits = 5,   PointSize = 0.0001 },
             new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01 }
           };
-    static Func<string,Offer> GetOfferImpl= symbol => dbOffers.Where(o => o.Pair.ToUpper() == symbol.ToUpper()).Take(1).IfEmpty(() => { }).Single();
+    static Func<string,Offer> GetOfferImpl= symbol
+      =>  dbOffers
+    .Where(o => o.Pair.ToUpper() == symbol.WrapPair())
+    .Take(1)
+    .IfEmpty(() => { throw new Exception(new {symbol,not=" found" }+""); })
+    .Single();
     public static Func<string,Offer> GetOffer=GetOfferImpl.Memoize();
     public static double GetPointSize(string symbol) => GetOffer(symbol).PointSize;
     public static int GetDigits(string symbol) => GetOffer(symbol).Digits;
@@ -215,8 +220,8 @@ namespace HedgeHog.Shared {
       "CAD",
       "AUD",
     };
-    public static string WrapPair(string pair) {
-      return Regex.Replace(pair, "[./-]", "");
+    public static string WrapPair(this string pair) {
+      return Regex.Replace(pair, "[./-]", "").ToUpper();
     }
     static string UnWrapPair(string pair) {
       if(!pair.IsNullOrEmpty())

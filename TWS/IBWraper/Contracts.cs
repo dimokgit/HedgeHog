@@ -28,7 +28,7 @@ namespace IBApp {
     }
     public static Contract Commodity(string symbol) {
       //EXSTART::usstock::csharp
-      Contract contract = new Contract() { Instrument = symbol };
+      Contract contract = new Contract() { LocalSymbol = symbol };
       contract.Symbol = symbol;
       contract.SecType = "CMDTY";
       contract.Currency = "USD";
@@ -43,7 +43,7 @@ namespace IBApp {
     static Contract FxPair(string instrument) {
       var pair2 = (from Match m in Regex.Matches(Regex.Replace(instrument, @"\W*", ""), @"\w{3}") select m.Value).ToArray();
       //EXSTART::eurgbpfx::csharp
-      Contract contract = new Contract() { Instrument = instrument };
+      Contract contract = new Contract() { LocalSymbol = instrument };
       contract.Symbol = pair2[0].ToUpper();
       contract.SecType = "CASH";
       contract.Currency = pair2[1].ToUpper();

@@ -9,6 +9,7 @@ using static HedgeHog.Core.JsonExtensions;
 using HedgeHog.Shared;
 using IBApi;
 using HedgeHog;
+using System.Collections.Concurrent;
 
 namespace IBApp {
   public class AccountManager : DataManager {
@@ -27,9 +28,11 @@ namespace IBApp {
     private readonly Action<object> _defaultMessageHandler;
     private readonly string _accountCurrency="USD";
     #endregion
+
     #region Properties
     public Account Account { get; private set; }
-    public List<Trade> OpenTrades { get; private set; } = new List<Trade>();
+    public ConcurrentDictionary<Tuple<string, bool>, Trade> OpenTrades { get; private set; } = new ConcurrentDictionary<Tuple<string, bool>, Trade>();
+    public ConcurrentDictionary<Tuple<string, bool>, Trade> ClosedTrades { get; private set; } = new ConcurrentDictionary<Tuple<string, bool>, Trade>();
     public Func<Trade, double> CommissionByTrade { get; private set; }
     #endregion
 
@@ -53,20 +56,6 @@ namespace IBApp {
       IbClient.Position += OnPosition;
     }
 
-    private void OnExecDetails(int reqId, Contract contract, Execution execution) {
-      var symbol = contract.LocalSymbol;
-      var trade = Trade.Create(symbol, TradesManagerStatic.GetPointSize(symbol), CommissionByTrade);
-
-      trade.Id = execution.PermId + "";
-      trade.Buy = execution.Side == "BOT";
-      trade.IsBuy = trade.Buy;
-      trade.Time2 = execution.Time.FromTWSString();
-      trade.Time2Close = execution.Time.FromTWSString();
-      trade.Open = trade.Close = execution.AvgPrice;
-      trade.Lots = execution.CumQty;
-      trade.OpenOrderID = execution.OrderId + "";
-      _defaultMessageHandler(new { contract = contract + "", execution }.ToJson());
-    }
     /*
     public bool CloseTrade(Trade trade, int lot, Price price) {
       if(trade.Lots <= lot)
@@ -87,29 +76,102 @@ namespace IBApp {
     */
     #endregion
 
-    #region Updates
-    private void OnPosition(string account, Contract contract, double pos, double avgCost) {
-      var position = new PositionMessage(account, contract, pos, avgCost);
-      IbClient.ClientSocket.reqExecutions(IbClient.NextOrderId, new ExecutionFilter() { Symbol = contract.LocalSymbol });
+    #region Events
 
+    #region TradeAdded Event
+    public class TradeEventArgs : EventArgs {
+      public Trade Trade { get; private set; }
+      public TradeEventArgs(Trade trade): base() {
+        Trade = trade;
+      }
+    }
+    event EventHandler<TradeEventArgs> TradeAddedEvent;
+    public event EventHandler<TradeEventArgs>  TradeAdded {
+      add {
+        if (TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
+          TradeAddedEvent += value;
+      }
+      remove {
+        TradeAddedEvent -= value;
+      }
+    }
+    protected void RaiseTradeAdded(Trade trade) {
+      if(TradeAddedEvent != null)
+        TradeAddedEvent(this, new TradeEventArgs(trade));
+    }
+    #endregion
+
+    #region TradeRemoved Event
+    event EventHandler<TradeEventArgs> TradeRemovedEvent;
+    public event EventHandler<TradeEventArgs>  TradeRemoved {
+      add {
+        if (TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
+          TradeRemovedEvent += value;
+      }
+      remove {
+        TradeRemovedEvent -= value;
+      }
+    }
+    protected void RaiseTradeRemoved(Trade trade) {
+      if(TradeRemovedEvent != null)
+        TradeRemovedEvent(this, new TradeEventArgs(trade));
+    }
+    #endregion
+
+    #endregion
+
+    #region Trades
+    public Trade[] GetTrades() { return OpenTrades.Values.ToArray(); }
+    void CloseTrade(Trade trade) {
+      ClosedTrades.TryAdd(trade.Key(), trade);
+      RaiseTradeRemoved(trade);
+    }
+    void OpenTrade(Trade trade) {
+      OpenTrades.TryAdd(trade.Key(), trade);
+      RaiseTradeAdded(trade);
+    }
+    #endregion
+
+    #region IB Handlers
+    private void OnExecDetails(int reqId, Contract contract, Execution execution) {
       var symbol = contract.LocalSymbol;
       var trade = Trade.Create(symbol, TradesManagerStatic.GetPointSize(symbol), CommissionByTrade);
 
-      trade.Id = DateTime.Now.Ticks + "";
-      trade.Buy = pos > 0;
+      trade.Id = execution.PermId + "";
+      trade.Buy = execution.Side == "BOT";
       trade.IsBuy = trade.Buy;
-      trade.Time2 = IbClient.ServerTime;
-      trade.Time2Close = IbClient.ServerTime;
-      trade.Open = avgCost;
-      trade.Lots = pos.Abs().ToInt();
-      trade.OpenOrderID = "";
+      trade.Time2 = execution.Time.FromTWSString();
+      trade.Time2Close = execution.Time.FromTWSString();
+      trade.Open = trade.Close = execution.AvgPrice;
+      trade.Lots = execution.CumQty;
+      trade.OpenOrderID = execution.OrderId + "";
 
-      OpenTrades.Where(ot => ot.Pair == trade.Pair && ot.Position != trade.Position)
-        .ForEach(ot => {
+      _defaultMessageHandler(new { contract = contract + "", execution }.ToJson());
+    }
+    bool _firstTime=true;
+    private void OnPosition(string account, Contract contract, double pos, double avgCost) {
+      var position = new PositionMessage(account, contract, pos, avgCost);
+      if(!_firstTime) {
+        _firstTime = false;
+        var symbol = contract.LocalSymbol;
+        var trade = Trade.Create(symbol, TradesManagerStatic.GetPointSize(symbol), CommissionByTrade);
 
-        });
+        trade.Id = DateTime.Now.Ticks + "";
+        trade.Buy = pos > 0;
+        trade.IsBuy = trade.Buy;
+        trade.Time2 = IbClient.ServerTime;
+        trade.Time2Close = IbClient.ServerTime;
+        trade.Open = avgCost;
+        trade.Lots = pos.Abs().ToInt();
+        trade.OpenOrderID = "";
 
+        Trade otAdd;
+        if(!OpenTrades.TryGetValue(trade.Key(), out otAdd))
+          OpenTrades.TryAdd(trade.Key(),trade);
+
+      }
       _defaultMessageHandler(position);
+      IbClient.ClientSocket.reqExecutions(IbClient.NextOrderId, new ExecutionFilter() { Symbol = contract.LocalSymbol });
     }
 
     private void OnUpdatePortfolio(Contract arg1, double arg2, double arg3, double arg4, double arg5, double arg6, double arg7, string arg8) {
@@ -181,8 +243,14 @@ namespace IBApp {
     }
     #endregion
 
+    #region Overrrides
     public override string ToString() {
       return new { IbClient, CurrentAccount = _accountId } + "";
     }
+    #endregion
+  }
+  static class Mixins {
+    public static Tuple<string, bool> Key(this Trade t) => Tuple.Create(t.Pair, t.IsBuy);
+    public static Tuple<string, bool> Key2(this Trade t) => Tuple.Create(t.Pair, !t.IsBuy);
   }
 }

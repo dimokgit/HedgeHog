@@ -1,6 +1,7 @@
 ﻿/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved.  This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +13,7 @@ namespace IBApp {
   public class MarketDataManager : DataManager {
     const int TICK_ID_BASE = 10000000;
 
+    private readonly ConcurrentDictionary<string,Price> _currentPrices=new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
     private Dictionary<int, Tuple<Contract,Price>> activeRequests = new Dictionary<int, Tuple<Contract,Price>>();
 
     public MarketDataManager(IBClientCore client ) : base(client, TICK_ID_BASE) { }
@@ -27,6 +29,11 @@ namespace IBApp {
       activeRequests.Add(reqId, Tuple.Create(contract,new Price(contract.Instrument)));
     }
 
+    public Price GetPrice(string symbol) {
+      if(_currentPrices.ContainsKey(symbol))
+        throw new KeyNotFoundException(new { _currentPrices = new { symbol, not = " found" } } + "");
+      return _currentPrices[symbol];
+    }
     private void OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
       var priceMessage = new TickPriceMessage(requestId, field, price, canAutoExecute);
       var price2 = activeRequests[requestId].Item2;
@@ -68,6 +75,7 @@ namespace IBApp {
       }
     }
     protected void RaisePriceChanged(Price price) {
+      _currentPrices.AddOrUpdate(price.Pair, price, (s, p) => price);
       PriceChangedEvent?.Invoke(price);
     }
     #endregion

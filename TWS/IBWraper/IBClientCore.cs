@@ -23,12 +23,10 @@ public class IBClientCore : IBClient, ICoreFX {
   private AccountManager _accountManager;
   TradingServerSessionStatus _sessionStatus;
   readonly private MarketDataManager _marketDataManager;
-  readonly private List<Trade> _trades=new List<Trade>();
   #endregion
 
   #region Properties
   public AccountManager AccountManager { get { return _accountManager; } }
-  public Trade[] Trades { get { return _trades.ToArray(); } }
   #endregion
 
   #region ICoreEX Implementation
@@ -64,7 +62,7 @@ public class IBClientCore : IBClient, ICoreFX {
     _marketDataManager = new MarketDataManager(this);
     _marketDataManager.PriceChanged += OnPriceChanged;
   }
-
+  public Price GetPrice(string symbol) { return _marketDataManager.GetPrice(symbol); }
   #region Price Changed
   private void OnPriceChanged(Price price) {
     RaisePriceChanged(price);
