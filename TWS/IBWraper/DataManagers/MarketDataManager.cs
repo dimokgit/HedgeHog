@@ -16,14 +16,15 @@ namespace IBApp {
     private readonly ConcurrentDictionary<string,Price> _currentPrices=new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
     private Dictionary<int, Tuple<Contract,Price>> activeRequests = new Dictionary<int, Tuple<Contract,Price>>();
 
-    public MarketDataManager(IBClientCore client ) : base(client, TICK_ID_BASE) { }
+    public MarketDataManager(IBClientCore client ) : base(client, TICK_ID_BASE) {
+      IbClient.TickPrice += OnTickPrice;
+    }
 
     public void AddRequest(Contract contract, string genericTickList="") {
       if(activeRequests.Any(ar => ar.Value.Item1.Instrument.ToUpper() == contract.Instrument.ToUpper())) {
         return;
       }
       var reqId = NextReqId();
-      IbClient.TickPrice += OnTickPrice;
       //IbClient.TickSize += OnTickSize;
       IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
       activeRequests.Add(reqId, Tuple.Create(contract,new Price(contract.Instrument)));

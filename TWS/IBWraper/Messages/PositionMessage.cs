@@ -40,7 +40,7 @@ namespace IBApp {
       set { averageCost = value; }
     }
     public override string ToString() {
-      return new { Contract = new { contract.LocalSymbol } + "", Position, AverageCost, Type } + "";
+      return new { Symbol = contract.LocalSymbol, Position, AverageCost, Type } + "";
     }
   }
 }

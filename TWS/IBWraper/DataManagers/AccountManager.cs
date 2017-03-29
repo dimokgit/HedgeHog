@@ -10,7 +10,11 @@ using HedgeHog.Shared;
 using IBApi;
 using HedgeHog;
 using System.Collections.Concurrent;
-
+using System.Reactive;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using PosArg = System.Tuple<string, IBApi.Contract, IBApp.PositionMessage>;
 namespace IBApp {
   public class AccountManager : DataManager {
     #region Constants
@@ -32,7 +36,7 @@ namespace IBApp {
     #region Properties
     public Account Account { get; private set; }
     public ConcurrentDictionary<Tuple<string, bool>, Trade> OpenTrades { get; private set; } = new ConcurrentDictionary<Tuple<string, bool>, Trade>();
-    public ConcurrentDictionary<Tuple<string, bool>, Trade> ClosedTrades { get; private set; } = new ConcurrentDictionary<Tuple<string, bool>, Trade>();
+    public ReactiveUI.ReactiveList<Trade> ClosedTrades { get; private set; } = new ReactiveUI.ReactiveList<Trade>();
     public Func<Trade, double> CommissionByTrade { get; private set; }
     #endregion
 
@@ -81,7 +85,7 @@ namespace IBApp {
     #region TradeAdded Event
     public class TradeEventArgs : EventArgs {
       public Trade Trade { get; private set; }
-      public TradeEventArgs(Trade trade): base() {
+      public TradeEventArgs(Trade trade) : base() {
         Trade = trade;
       }
     }
@@ -122,10 +126,6 @@ namespace IBApp {
 
     #region Trades
     public Trade[] GetTrades() { return OpenTrades.Values.ToArray(); }
-    void CloseTrade(Trade trade) {
-      ClosedTrades.TryAdd(trade.Key(), trade);
-      RaiseTradeRemoved(trade);
-    }
     void OpenTrade(Trade trade) {
       OpenTrades.TryAdd(trade.Key(), trade);
       RaiseTradeAdded(trade);
@@ -146,36 +146,79 @@ namespace IBApp {
       trade.Lots = execution.CumQty;
       trade.OpenOrderID = execution.OrderId + "";
 
+      ClosedTrades
+        .Where(ct => ct.Key() == trade.Key2() && ct.Time.Round(MathCore.RoundTo.Second) == trade.Time);
+
       _defaultMessageHandler(new { contract = contract + "", execution }.ToJson());
     }
-    bool _firstTime=true;
+
+    #region Position
+    #region PositionSubject Subject
+    object _PositionSubjectSubjectLocker = new object();
+    ISubject<PosArg> _PositionSubjectSubject;
+    ISubject<PosArg> PositionSubjectSubject {
+      get {
+        lock(_PositionSubjectSubjectLocker)
+          if(_PositionSubjectSubject == null) {
+            _PositionSubjectSubject = new Subject<PosArg>();
+            _PositionSubjectSubject
+              .DistinctUntilChanged(t => new { t.Item2.LocalSymbol, t.Item3.Position })
+              .Subscribe(s => OnNewPosition(s.Item2, s.Item3), exc => { IbClient.RaiseError(exc); });
+          }
+        return _PositionSubjectSubject;
+      }
+    }
+    void OnPositionSubject(string account, Contract contract, PositionMessage pm) {
+      PositionSubjectSubject.OnNext(Tuple.Create(account, contract, pm));
+    }
+    #endregion
+
     private void OnPosition(string account, Contract contract, double pos, double avgCost) {
       var position = new PositionMessage(account, contract, pos, avgCost);
-      if(!_firstTime) {
-        _firstTime = false;
-        var symbol = contract.LocalSymbol;
-        var trade = Trade.Create(symbol, TradesManagerStatic.GetPointSize(symbol), CommissionByTrade);
-
-        trade.Id = DateTime.Now.Ticks + "";
-        trade.Buy = pos > 0;
-        trade.IsBuy = trade.Buy;
-        trade.Time2 = IbClient.ServerTime;
-        trade.Time2Close = IbClient.ServerTime;
-        trade.Open = avgCost;
-        trade.Lots = pos.Abs().ToInt();
-        trade.OpenOrderID = "";
-
-        Trade otAdd;
-        if(!OpenTrades.TryGetValue(trade.Key(), out otAdd))
-          OpenTrades.TryAdd(trade.Key(),trade);
-
-      }
-      _defaultMessageHandler(position);
-      IbClient.ClientSocket.reqExecutions(IbClient.NextOrderId, new ExecutionFilter() { Symbol = contract.LocalSymbol });
+      OnPositionSubject(account, contract, position);
     }
 
-    private void OnUpdatePortfolio(Contract arg1, double arg2, double arg3, double arg4, double arg5, double arg6, double arg7, string arg8) {
-      _defaultMessageHandler(new UpdatePortfolioMessage(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
+    private void OnNewPosition(Contract contract, PositionMessage position) {
+      var symbol = contract.LocalSymbol;
+      var trade = Trade.Create(symbol, TradesManagerStatic.GetPointSize(symbol), CommissionByTrade);
+
+      trade.Id = DateTime.Now.Ticks + "";
+      trade.Buy = position.Position > 0;
+      trade.IsBuy = trade.Buy;
+      trade.Time2 = IbClient.ServerTime;
+      trade.Time2Close = IbClient.ServerTime;
+      trade.Open = position.AverageCost;
+      trade.Lots = position.Position.Abs().ToInt();
+      trade.OpenOrderID = "";
+
+      Trade otAdd;
+      if(trade.Position != 0 && !OpenTrades.TryGetValue(trade.Key(), out otAdd))
+        OpenTrades.TryAdd(trade.Key(), trade);
+
+      Trade t;
+      if(OpenTrades.TryRemove(trade.Key2(), out t)) {
+        t.Time2 = IbClient.ServerTime;
+        ClosedTrades.Add(t);
+      }
+
+      _defaultMessageHandler(position);
+      if(OpenTrades.Any()) {
+        _defaultMessageHandler("Opened: " + (OpenTrades.Count() > 1 ? "\n" : "")
+          + string.Join("\n", OpenTrades.Values.Select(ot => new { ot.Pair, ot.Position, ot.Time })));
+        _defaultMessageHandler("Closed: " + (ClosedTrades.Count() > 1 ? "\n" : "")
+          + string.Join("\n", ClosedTrades.Select(ot => new { ot.Pair, ot.Position, ot.Time })));
+      }
+
+      IbClient.ClientSocket.reqExecutions(IbClient.NextOrderId, new ExecutionFilter() {
+        Symbol = contract.LocalSymbol,
+        //Side = (trade.IsBuy ? ExecutionFilter.Sides.BUY : ExecutionFilter.Sides.SELL) + "",
+        Time = trade.Time.ToTWSString()
+      });
+    }
+    #endregion
+
+    private void OnUpdatePortfolio(Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName) {
+      //_defaultMessageHandler(new UpdatePortfolioMessage(contract, position, marketPrice, marketValue, averageCost, unrealisedPNL, realisedPNL, accountName));
     }
 
     private void OnUpdateAccountValue(string key, string value, string currency, string accountName) {
