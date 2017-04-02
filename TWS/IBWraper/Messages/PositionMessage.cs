@@ -8,10 +8,6 @@ using IBApi;
 
 namespace IBApp {
   public class PositionMessage : IBMessage {
-    private string account;
-    private Contract contract;
-    private double position;
-    private double averageCost;
 
     public PositionMessage(string account, Contract contract, double pos, double avgCost) : base(MessageType.Position) {
       Account = account;
@@ -20,27 +16,20 @@ namespace IBApp {
       AverageCost = avgCost;
     }
 
-    public string Account {
-      get { return account; }
-      set { account = value; }
-    }
+    public string Account { get; set; }
 
-    public Contract Contract {
-      get { return contract; }
-      set { contract = value; }
-    }
+    public Contract Contract { get; set; }
 
-    public double Position {
-      get { return position; }
-      set { position = value; }
-    }
+    public double Position { get; set; }
 
-    public double AverageCost {
-      get { return averageCost; }
-      set { averageCost = value; }
-    }
+    public double AverageCost { get; set; }
+
+    public bool IsBuy => Position > 0;
+
+    public int Quantity => (int)Math.Abs(Position);
+
     public override string ToString() {
-      return new { Symbol = contract.LocalSymbol, Position, AverageCost, Type } + "";
+      return new { Symbol = Contract.LocalSymbol, Position, AverageCost, Type } + "";
     }
   }
 }

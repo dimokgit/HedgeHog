@@ -188,8 +188,8 @@ namespace HedgeHog.Shared {
         trade.Lots = lot;
         trade.Open = isBuy ? price.Ask : price.Bid;
         trade.Close = isBuy ? price.Bid : price.Ask;
-        trade.Time2 = price.Time2.DateTime;
-        trade.Time2Close = price.Time2.DateTime;
+        trade.Time2 = price.Time2;
+        trade.Time2Close = price.Time2;
         trade.IsVirtual = true;
       };
       tradesOpened.Add(trade);

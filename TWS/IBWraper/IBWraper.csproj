@@ -30,6 +30,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Passager, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\Passager.0.2.1.0\lib\net452\Passager.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="ReactiveUI, Version=7.2.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\reactiveui-core.7.2.0\lib\Net45\ReactiveUI.dll</HintPath>
       <Private>True</Private>

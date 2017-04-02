@@ -91,6 +91,8 @@ namespace IBApp {
         _delay += TimeSpan.FromSeconds(2);
         _error(new Exception(new { _delay } + ""));
         RequestNextDataChunk();
+      } else if(reqId < 0 && exc == null) {
+        _error(exc ?? new Exception(new { reqId, code, error } + ""));
       } else {
         CleanUp();
         _error(exc ?? new Exception(new { reqId, code, error } + ""));

@@ -61,8 +61,8 @@ namespace IBApp {
         return null;
       }
     }
-    public Trade[] GetTrades() => _ibClient.AccountManager.GetTrades();
-    public Trade[] GetTrades(string pair) => _ibClient.AccountManager.GetTrades().Where(t => t.Pair.WrapPair() == pair.WrapPair()).ToArray();
+    public Trade[] GetTrades() => _ibClient.AccountManager?.GetTrades() ?? new Trade[0];
+    public Trade[] GetTrades(string pair) => GetTrades().Where(t => t.Pair.WrapPair() == pair.WrapPair()).ToArray();
     #endregion
 
     #region Error Event

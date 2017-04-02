@@ -14,6 +14,7 @@ using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using ReactiveUI;
 using PosArg = System.Tuple<string, IBApi.Contract, IBApp.PositionMessage>;
 namespace IBApp {
   public class AccountManager : DataManager {
@@ -35,8 +36,9 @@ namespace IBApp {
 
     #region Properties
     public Account Account { get; private set; }
-    public ConcurrentDictionary<Tuple<string, bool>, Trade> OpenTrades { get; private set; } = new ConcurrentDictionary<Tuple<string, bool>, Trade>();
-    public ReactiveUI.ReactiveList<Trade> ClosedTrades { get; private set; } = new ReactiveUI.ReactiveList<Trade>();
+    private readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade>();
+    private readonly ConcurrentDictionary<string, PositionMessage> _positions = new ConcurrentDictionary<string, PositionMessage>();
+    private readonly ReactiveList<Trade> ClosedTrades = new ReactiveUI.ReactiveList<Trade>();
     public Func<Trade, double> CommissionByTrade { get; private set; }
     #endregion
 
@@ -125,95 +127,151 @@ namespace IBApp {
     #endregion
 
     #region Trades
-    public Trade[] GetTrades() { return OpenTrades.Values.ToArray(); }
-    void OpenTrade(Trade trade) {
-      OpenTrades.TryAdd(trade.Key(), trade);
-      RaiseTradeAdded(trade);
-    }
+    public Trade[] GetTrades() { return OpenTrades.ToArray(); }
     #endregion
-
+    public class PositionNotFoundException : Exception {
+      public PositionNotFoundException(string symbol) : base(new { symbol } + "") { }
+    }
     #region IB Handlers
     private void OnExecDetails(int reqId, Contract contract, Execution execution) {
-      var symbol = contract.LocalSymbol;
-      var trade = Trade.Create(symbol, TradesManagerStatic.GetPointSize(symbol), CommissionByTrade);
+      try {
+        var symbol = contract.LocalSymbol;
+        var execTime = execution.Time.FromTWSString();
+        var execPrice = execution.AvgPrice;
 
-      trade.Id = execution.PermId + "";
-      trade.Buy = execution.Side == "BOT";
-      trade.IsBuy = trade.Buy;
-      trade.Time2 = execution.Time.FromTWSString();
-      trade.Time2Close = execution.Time.FromTWSString();
-      trade.Open = trade.Close = execution.AvgPrice;
-      trade.Lots = execution.CumQty;
-      trade.OpenOrderID = execution.OrderId + "";
+        #region Create Trade
+        var trade = Trade.Create<Trade>(symbol, TradesManagerStatic.GetPointSize(symbol), CommissionByTrade);
+        trade.Id = execution.PermId + "";
+        trade.Buy = execution.Side == "BOT";
+        trade.IsBuy = trade.Buy;
+        trade.Time2 = execTime;
+        trade.Time2Close = execution.Time.FromTWSString();
+        trade.Open = trade.Close = execPrice;
+        trade.Lots = execution.CumQty;
+        trade.OpenOrderID = execution.OrderId + "";
+        #endregion
 
-      ClosedTrades
-        .Where(ct => ct.Key() == trade.Key2() && ct.Time.Round(MathCore.RoundTo.Second) == trade.Time);
+        PositionMessage position;
+        if(!_positions.TryGetValue(contract.LocalSymbol, out position))
+          throw new PositionNotFoundException(symbol);
 
-      _defaultMessageHandler(new { contract = contract + "", execution }.ToJson());
+        #region Close Trades
+        OpenTrades
+          .ToArray()
+          .Where(IsNotEqual(trade))
+          .Scan(0, (lots, otClose) => {
+            var cL = CloseTrade(execTime, execPrice, otClose, trade.Lots);
+            return trade.Lots = cL;
+          })
+          .TakeWhile(l => l > 0)
+          .Count();
+        #endregion
+
+        if(trade.Lots > 0)
+          OpenTrades.Add(trade);
+
+        var openLots = OpenTrades
+          .Where(IsEqual(position))
+          .Sum(ot => ot.Lots);
+        Passager.ThrowIf(() => openLots != position.Quantity);
+
+        _defaultMessageHandler(new { symbol = contract.LocalSymbol + "", execution }.ToJson());
+        TraceTrades("Opened: ", OpenTrades);
+        TraceTrades("Closed: ", ClosedTrades);
+      } catch(Exception exc) {
+        IbClient.RaiseError(exc);
+      }
     }
 
+    private static Func<Trade, bool> IsEqual(PositionMessage position) => ot => ot.Key().Equals(position.Key());
+    private static Func<Trade, bool> IsNotEqual(Trade trade) => ot => ot.Key().Equals(trade.Key2());
+
+    private int CloseTrade(DateTime execTime, double execPrice, Trade closedTrade, int closeLots) {
+      if(closeLots >= closedTrade.Lots) {// Full close
+        closedTrade.Time2Close = execTime;
+        closedTrade.Close = execPrice;
+
+        ClosedTrades.Add(closedTrade);
+        if(!OpenTrades.Remove(closedTrade))
+          throw new Exception($"Couldn't remove {nameof(closedTrade)} from {nameof(OpenTrades)}");
+        return closeLots - closedTrade.Lots;
+      } else {// Partial close
+        var trade = closedTrade.Clone();
+        trade.Lots = closeLots;
+        trade.Time2Close = execTime;
+        trade.Close = execPrice;
+        closedTrade.Lots -= trade.Lots;
+        ClosedTrades.Add(trade);
+        return 0;
+      }
+    }
+
+    /*
+ Trade ctAdd;
+ if(OpenTrades.TryRemove(trade.Key2(), out ctAdd)) {
+   ctAdd.Time2 = IbClient.ServerTime;
+   ClosedTrades.Add(ctAdd);
+ }
+*/
     #region Position
-    #region PositionSubject Subject
-    object _PositionSubjectSubjectLocker = new object();
-    ISubject<PosArg> _PositionSubjectSubject;
-    ISubject<PosArg> PositionSubjectSubject {
+    #region Position Subject
+    object _PositionSubjectLocker = new object();
+    ISubject<PosArg> _PositionSubject;
+    ISubject<PosArg> PositionSubject {
       get {
-        lock(_PositionSubjectSubjectLocker)
-          if(_PositionSubjectSubject == null) {
-            _PositionSubjectSubject = new Subject<PosArg>();
-            _PositionSubjectSubject
+        lock(_PositionSubjectLocker)
+          if(_PositionSubject == null) {
+            _PositionSubject = new Subject<PosArg>();
+            _PositionSubject
               .DistinctUntilChanged(t => new { t.Item2.LocalSymbol, t.Item3.Position })
-              .Subscribe(s => OnNewPosition(s.Item2, s.Item3), exc => { IbClient.RaiseError(exc); });
+              .Take(1)
+              .Subscribe(s => OnFirstPosition(s.Item2, s.Item3), exc => { IbClient.RaiseError(exc); }, () => { _defaultMessageHandler($"{nameof(PositionSubject)} is done."); });
           }
-        return _PositionSubjectSubject;
+        return _PositionSubject;
       }
     }
     void OnPositionSubject(string account, Contract contract, PositionMessage pm) {
-      PositionSubjectSubject.OnNext(Tuple.Create(account, contract, pm));
+      PositionSubject.OnNext(Tuple.Create(account, contract, pm));
     }
     #endregion
 
     private void OnPosition(string account, Contract contract, double pos, double avgCost) {
       var position = new PositionMessage(account, contract, pos, avgCost);
+      _positions.AddOrUpdate(position.Key().Item1, position, (k, p) => position);
       OnPositionSubject(account, contract, position);
+      IbClient.ClientSocket.reqExecutions(IbClient.NextOrderId, new ExecutionFilter() {
+        Symbol = contract.LocalSymbol,
+        //Side = (trade.IsBuy ? ExecutionFilter.Sides.BUY : ExecutionFilter.Sides.SELL) + "",
+        Time = IbClient.ServerTime.ToTWSString()
+      });
     }
 
-    private void OnNewPosition(Contract contract, PositionMessage position) {
-      var symbol = contract.LocalSymbol;
-      var trade = Trade.Create(symbol, TradesManagerStatic.GetPointSize(symbol), CommissionByTrade);
+    private void OnFirstPosition(Contract contract, PositionMessage position) {
+      _defaultMessageHandler(position);
+      var st = IbClient.ServerTime;
 
+      if(position.Position != 0 && !OpenTrades.Any(IsEqual(position)))
+        OpenTrades.Add(TradeFromPosition(contract.LocalSymbol, position, st));
+
+      TraceTrades("Opened: ", OpenTrades.AsEnumerable());
+    }
+
+    private void TraceTrades(string label, IEnumerable<Trade> trades) {
+      _defaultMessageHandler(label + (trades.Count() > 1 ? "\n" : "")
+        + string.Join("\n", trades.Select(ot => new { ot.Pair, ot.Position, ot.Time })));
+    }
+
+    private Trade TradeFromPosition(string symbol, PositionMessage position, DateTime st) {
+      var trade = Trade.Create<Trade>(symbol, TradesManagerStatic.GetPointSize(symbol), CommissionByTrade);
       trade.Id = DateTime.Now.Ticks + "";
       trade.Buy = position.Position > 0;
       trade.IsBuy = trade.Buy;
-      trade.Time2 = IbClient.ServerTime;
+      trade.Time2 = st;
       trade.Time2Close = IbClient.ServerTime;
       trade.Open = position.AverageCost;
       trade.Lots = position.Position.Abs().ToInt();
       trade.OpenOrderID = "";
-
-      Trade otAdd;
-      if(trade.Position != 0 && !OpenTrades.TryGetValue(trade.Key(), out otAdd))
-        OpenTrades.TryAdd(trade.Key(), trade);
-
-      Trade t;
-      if(OpenTrades.TryRemove(trade.Key2(), out t)) {
-        t.Time2 = IbClient.ServerTime;
-        ClosedTrades.Add(t);
-      }
-
-      _defaultMessageHandler(position);
-      if(OpenTrades.Any()) {
-        _defaultMessageHandler("Opened: " + (OpenTrades.Count() > 1 ? "\n" : "")
-          + string.Join("\n", OpenTrades.Values.Select(ot => new { ot.Pair, ot.Position, ot.Time })));
-        _defaultMessageHandler("Closed: " + (ClosedTrades.Count() > 1 ? "\n" : "")
-          + string.Join("\n", ClosedTrades.Select(ot => new { ot.Pair, ot.Position, ot.Time })));
-      }
-
-      IbClient.ClientSocket.reqExecutions(IbClient.NextOrderId, new ExecutionFilter() {
-        Symbol = contract.LocalSymbol,
-        //Side = (trade.IsBuy ? ExecutionFilter.Sides.BUY : ExecutionFilter.Sides.SELL) + "",
-        Time = trade.Time.ToTWSString()
-      });
+      return trade;
     }
     #endregion
 
@@ -293,7 +351,13 @@ namespace IBApp {
     #endregion
   }
   static class Mixins {
-    public static Tuple<string, bool> Key(this Trade t) => Tuple.Create(t.Pair, t.IsBuy);
-    public static Tuple<string, bool> Key2(this Trade t) => Tuple.Create(t.Pair, !t.IsBuy);
+    private static Tuple<string, bool> Key(string symbol, bool isBuy) => Tuple.Create(symbol.WrapPair(), isBuy);
+    private static Tuple<string, bool> Key2(string symbol, bool isBuy) => Key(symbol, !isBuy);
+
+    public static Tuple<string, bool> Key(this PositionMessage t) => Key(t.Contract.LocalSymbol, t.IsBuy);
+    public static Tuple<string, bool> Key2(this PositionMessage t) => Key2(t.Contract.LocalSymbol, t.IsBuy);
+
+    public static Tuple<string, bool> Key(this Trade t) => Key(t.Pair, t.IsBuy);
+    public static Tuple<string, bool> Key2(this Trade t) => Key2(t.Pair, t.IsBuy);
   }
 }

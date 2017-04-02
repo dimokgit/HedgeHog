@@ -23,6 +23,7 @@ namespace ConsoleApp {
       var ibClient = IBClientCore.Create(o => HandleMessage(o + ""));
       ibClient.NextValidId += id => _nextValidId = id;
       ibClient.CurrentTime += time => HandleMessage("Current Time: " + ibClient.ServerTime + "\n");
+      ibClient.Error += HandleError;
 
       var coreFx = ibClient as ICoreFX;
       coreFx.LoginError += HandleError;

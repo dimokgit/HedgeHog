@@ -823,8 +823,10 @@ namespace HedgeHog.Alice.Store {
           : _BarsCountCalc.GetValueOrDefault(BarsCount);
       }
       set {
-        if(_BarsCountCalc == value)
+        if(_BarsCountCalc == value) {
+          IsRatesLengthStable = true;
           return;
+        }
 
         IsRatesLengthStable = RatesArray.Count.Ratio(value) < 1.05;
         var newBarsCount = value == 0 ? (int?)null : value.Min(RatesInternal.Count);

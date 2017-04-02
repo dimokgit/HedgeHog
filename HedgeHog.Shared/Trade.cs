@@ -74,10 +74,13 @@ namespace HedgeHog.Shared {
     /// Not Implemented exception
     /// </summary>
     public static Func<double> PipRateNI = () => { throw new NotImplementedException(); };
-    public static Trade Create(string pair, double pipSize, Func<Trade, double> commissionByTrade) {
-      return new Trade() { Pair = pair, PipSize = pipSize, CommissionByTrade = commissionByTrade };
+    public static TTrade Create<TTrade>(string pair, double pipSize, Func<Trade, double> commissionByTrade) where TTrade:Trade,new(){
+      return new TTrade() { Pair = pair, PipSize = pipSize, CommissionByTrade = commissionByTrade };
     }
-    protected Trade() {
+    public static Trade Create(string pair, double pipSize, Func<Trade, double> commissionByTrade) {
+      return Create<Trade>( pair, pipSize, commissionByTrade );
+    }
+    public Trade() {
     }
     [DataMember]
     public string Id { get; set; }
@@ -251,7 +254,7 @@ namespace HedgeHog.Shared {
           PipSize = tradesManager.GetPipSize(Pair);
         if(BaseUnitSize == 0)
           BaseUnitSize = tradesManager.GetBaseUnitSize(Pair);
-        Time2Close = price.Time2.DateTime;
+        Time2Close = price.Time2;
         Close = Buy ? price.Bid : price.Ask;
         Commission = CommissionByTrade(this);
         //Close = Buy ? price.BuyClose : price.SellClose;

@@ -24,13 +24,15 @@ namespace HedgeHog.Cloud {
     #region Gist Client Factory
     static GitHubClient ClientFactory() {
       var client = new GitHubClient(new ProductHeaderValue(MyApp));
-      client.Credentials = new Octokit.Credentials("dimokgit", "BudG0tov");
+      //client.Credentials = new Octokit.Credentials("dimokgit", "BudG0tov");
+      client.Credentials = new Octokit.Credentials("dimokgit2", "!Qazxsw2");
       return client;
     }
     #endregion
 
     public static async Task<IList<Gist>> GistStrategies(bool archived = false) {
-      return (from gist in await ClientFactory().Gist.GetAll()
+      var gists = await (ClientFactory().Gist.GetAll());
+      return (from gist in gists
               from name in gist.Names()
               where name.ToLower().ToLower().StartsWith(archived ? prefix_ : prefix)
               select gist

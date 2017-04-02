@@ -81,8 +81,7 @@ public class IBClientCore : IBClient, ICoreFX {
     }
   }
   protected void RaisePriceChanged(Price price) {
-    var time = new DateTimeOffset(ServerTime);
-    price.Time2 = time;
+    price.Time2 = ServerTime;
     PriceChangedEvent?.Invoke(price);
   }
   #endregion

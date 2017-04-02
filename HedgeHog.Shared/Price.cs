@@ -24,14 +24,17 @@ namespace HedgeHog.Shared {
     public double Ask { get; set; }
     public double Average { get { return (Ask + Bid) / 2; } }
     public double Spread { get { return Ask - Bid; } }
-    private DateTimeOffset _time2;
-    public DateTimeOffset Time2 {
+    private DateTime _time2;
+    public DateTime Time2 {
       get { return _time2; }
       set {
-        _time2 = value.ToUniversalTime();
+        if(value.Kind == DateTimeKind.Unspecified)
+          throw new ArgumentException(new { Time2 = new { value.Kind } } + "");
+        _time2 = value;
+        Time = _time2.Kind != DateTimeKind.Local ? TimeZoneInfo.ConvertTimeFromUtc(_time2, TimeZoneInfo.Local) : _time2;
       }
     }
-    public DateTime Time { get { return _time2.LocalDateTime; } }
+    public DateTime Time { get; private set; }
     public string Pair { get; set; }
     public int BidChangeDirection { get; set; }
     public int AskChangeDirection { get; set; }
@@ -46,7 +49,7 @@ namespace HedgeHog.Shared {
         throw new ArgumentNullException(nameof(rate));
       Ask = rate.AskClose;
       Bid = rate.BidClose;
-      Time2 = rate.StartDate2;
+      Time2 = rate.StartDate;
       Pair = pair;
       AskChangeDirection = 0;
       BidChangeDirection = 0;

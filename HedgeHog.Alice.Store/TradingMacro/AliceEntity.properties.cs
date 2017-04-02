@@ -320,21 +320,6 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    #region PriceCmaLevels
-    [DisplayName("Price CMA Levels")]
-    [WwwSetting(wwwSettingsCorridorCMA)]
-    [Category(categoryActive)]
-    public double PriceCmaLevels_ {
-      get { return PriceCmaLevels; }
-      set {
-        if(PriceCmaLevels != value) {
-          PriceCmaLevels = value;
-          OnPropertyChanged(nameof(PriceCmaLevels_));
-        }
-      }
-    }
-
-    #endregion
     #region MovingAverageType
     int _movingAverageTypeDefault = 0;
     [DisplayName("Moving Avg By")]
