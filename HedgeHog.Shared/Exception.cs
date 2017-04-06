@@ -6,6 +6,16 @@ using System.Runtime.Serialization;
 using System.Security.Permissions;
 
 namespace HedgeHog.Shared {
+
+  [Serializable]
+  public class SoftException : Exception {
+    public SoftException() { }
+    public SoftException(string message) : base(message) { }
+    public SoftException(string message, Exception inner) : base(message, inner) { }
+    protected SoftException(
+    SerializationInfo info,
+    StreamingContext context) : base(info, context) { }
+  }
   [Serializable()]
   public class WiredException : Exception, ISerializable {
     // This public constructor is used by class instantiators.

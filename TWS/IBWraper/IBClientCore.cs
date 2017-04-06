@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using static EpochTimeExtensions;
 using IBApp;
 
-public class IBClientCore : IBClient, ICoreFX {
+public class IBClientCore : IBClient,IPricer, ICoreFX {
   #region Fields
   EReaderMonitorSignal _signal;
   private int _port;
@@ -70,8 +70,8 @@ public class IBClientCore : IBClient, ICoreFX {
 
 
   #region PriceChanged Event
-  event PriceChangedEventHandler PriceChangedEvent;
-  public event PriceChangedEventHandler  PriceChanged {
+  event EventHandler<PriceChangedEventArgs> PriceChangedEvent;
+  public event EventHandler<PriceChangedEventArgs>  PriceChanged {
     add {
       if (PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
         PriceChangedEvent += value;
@@ -82,7 +82,7 @@ public class IBClientCore : IBClient, ICoreFX {
   }
   protected void RaisePriceChanged(Price price) {
     price.Time2 = ServerTime;
-    PriceChangedEvent?.Invoke(price);
+    PriceChangedEvent?.Invoke(this, new PriceChangedEventArgs(null, price, null, null));
   }
   #endregion
 
@@ -232,7 +232,7 @@ public class IBClientCore : IBClient, ICoreFX {
     }
   }
 
-  public Func<Trade, double> CommissionByTrade { get; internal set; }
+  public Func<Trade, double> CommissionByTrade { get; set; }
 
   #endregion
 

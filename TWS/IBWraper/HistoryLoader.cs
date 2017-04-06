@@ -7,12 +7,17 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using IBApi;
+using HedgeHog;
+using HedgeHog.Shared;
 
 namespace IBApp {
   public enum TimeUnit { S, D, W, M, Y }
   public enum BarSize {
     _1_secs, _5_secs, _15_secs, _30_secs, _1_min, _2_mins,
     _3_mins, _5_mins, _15_mins, _30_mins, _1_hour, _1_day
+  }
+  public class DelayException : SoftException {
+    public DelayException(TimeSpan delay) : base(new { delay } + "") { }
   }
   #region HistoryLoader
   public class HistoryLoader<T> {
@@ -41,16 +46,18 @@ namespace IBApp {
     public delegate T DataMapDelegate<T>(DateTime date, double open, double high, double low, double close, int volume, int count);
     public HistoryLoader(IBClient ibClient
       , Contract contract
+      , int periodsBack
       , DateTime endDate
       , TimeSpan duration
       , TimeUnit timeUnit
       , BarSize barSize
-      ,DataMapDelegate<T> map
+      , DataMapDelegate<T> map
       , Action<IList<T>> done
       , Action<IList<T>> dataEnd
       , Action<Exception> error) {
       _ibClient = ibClient;
       _contract = contract;
+      _periodsBack = periodsBack;
       _reqId = (++_currentTicker) + HISTORICAL_ID_BASE;
       _list = new List<T>();
       _list2 = new List<T>();
@@ -60,7 +67,8 @@ namespace IBApp {
       _endDate = endDate.ToLocalTime();
       _timeUnit = timeUnit;
       _barSize = barSize;
-      _duration = duration;
+      var durationByPeriod = barSize.Span().Multiply(periodsBack);
+      _duration = duration.Max(durationByPeriod);
       _done = done;
       _dataEnd = dataEnd;
       _error = error;
@@ -86,11 +94,17 @@ namespace IBApp {
     #endregion
 
     #region Event Handlers
+    const string NO_DATA="HMDS query returned no data";
     private void HandlePacer(int reqId, int code, string error, Exception exc) {
+      if(reqId != _reqId)
+        return;
       if(code == 162 && error.Contains("pacing violation")) {
         _delay += TimeSpan.FromSeconds(2);
-        _error(new Exception(new { _delay } + ""));
+        _error(new DelayException(_delay));
         RequestNextDataChunk();
+      } else if(code == 162 && error.Contains(NO_DATA)) {
+        CleanUp();
+        _error(exc ?? new Exception(new { reqId, code, error } + ""));
       } else if(reqId < 0 && exc == null) {
         _error(exc ?? new Exception(new { reqId, code, error } + ""));
       } else {
@@ -103,7 +117,7 @@ namespace IBApp {
         return;
       _delay = TimeSpan.Zero;
       _list.InsertRange(0, _list2);
-      if(_endDate <= _dateStart) {
+      if(_endDate <= _dateStart && (_periodsBack == 0 || _list.Count >= _periodsBack)) {
         CleanUp();
         _done(_list);
       } else {
@@ -118,7 +132,7 @@ namespace IBApp {
         var date2 = date.FromTWSString();
         if(date2 < _endDate)
           _endDate = date2;
-        _list2.Add(_map( date2, open, high, low, close, volume, count));
+        _list2.Add(_map(date2, open, high, low, close, volume, count));
       }
     }
     #endregion
@@ -133,6 +147,7 @@ namespace IBApp {
       try {
         string barSizeSetting = (_barSize + "").Replace("_", " ").Trim();
         string whatToShow = "MIDPOINT";
+        _error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, 0, 1, new List<TagValue>());
       } catch(Exception exc) {
         _error(exc);
@@ -151,6 +166,7 @@ namespace IBApp {
         [TimeUnit.M] = new[] { 1, 1 }
       }
     };
+    private readonly int _periodsBack;
 
     static string Duration(BarSize barSize, TimeUnit timeUnit, TimeSpan timeSpan) {
       var interval = (int)(timeUnit == TimeUnit.S ? timeSpan.TotalSeconds : timeSpan.TotalMinutes);
@@ -161,7 +177,29 @@ namespace IBApp {
     #endregion
   }
   #endregion
-  public static class IBAppExtensions {
+  static class IBAppExtensions {
+    public static TimeSpan Span(this BarSize bs) {
+      var split = (bs + "").Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
+      var unit = int.Parse(split[0]);
+      #region bts
+      Func<string, int, TimeSpan> bts = (s, u) => {
+        switch(s) {
+          case "secs":
+            return TimeSpan.FromSeconds(u);
+          case "min":
+          case "mins":
+            return TimeSpan.FromMinutes(u);
+          case "hour":
+            return TimeSpan.FromHours(u);
+          case "day":
+            return TimeSpan.FromDays(u);
+          default:
+            throw new ArgumentException(new { s, isNot = "supported" } + "");
+        }
+      };
+      #endregion
+      return bts(split[1], unit);
+    }
     public static string ToTWSString(this DateTime date) {
       return date.ToString("yyyyMMdd HH:mm:ss");
     }

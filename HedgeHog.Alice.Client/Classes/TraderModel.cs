@@ -89,7 +89,7 @@ namespace HedgeHog.Alice.Client {
       get { return virtualTrader; }
       set { virtualTrader = value; }
     }
-    public override FXW TradesManager { get { return IsInVirtualTrading ? virtualTrader : FWMaster; } }
+    public override FXW TradesManager { get { return MasterAccount.IsVirtual ? virtualTrader : FWMaster; } }
 
     private TradingServerSessionStatus _SessionStatus = TradingServerSessionStatus.Disconnected;
     public TradingServerSessionStatus SessionStatus {
@@ -119,17 +119,8 @@ namespace HedgeHog.Alice.Client {
 
     #region Properties
     private bool _IsInVirtualTrading;
-    public override bool IsInVirtualTrading {
-      get { return _IsInVirtualTrading; }
-      set {
-        if(_IsInVirtualTrading != value) {
-          if(!_IsInVirtualTrading && IsLoggedIn)
-            CoreFX.Logout();
-          _IsInVirtualTrading = value;
-          RaisePropertyChangedCore();
-          //GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(value, typeof(VirtualTradesManager));
-        }
-      }
+    public bool IsInVirtualTrading {
+      get { return MasterAccount.IsVirtual; }
     }
 
     private int _IpPort = 0;
@@ -1679,9 +1670,9 @@ namespace HedgeHog.Alice.Client {
     override public double CommissionByTrade(Trade trade) {
       return MasterAccount == null
         ? 0
-        : trade == null
+        : trade == null && trade.Lots == 0
         ? 0
-        : CommissionByLot(TestDefault(trade.Lots, "trade.Lots==0"));
+        : CommissionByLot(trade.Lots);
     }
     string tradeIdLast = "";
     public override void AddCosedTrade(Trade trade) {

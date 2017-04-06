@@ -45,6 +45,8 @@ using System.Reactive.Concurrency;
 namespace HedgeHog.Alice.Store {
   [JsonObject(MemberSerialization.OptOut)]
   public partial class TradingMacro {
+    public bool IsLoaded { get; set; }
+
     List<SuppRes> _suppRes = new List<SuppRes>();
     public List<SuppRes> SuppRes {
       get {
@@ -1059,10 +1061,9 @@ namespace HedgeHog.Alice.Store {
     public double PipsPerMinuteCmaFirst { get { return InPips(PriceQueue.Speed(.5)); } }
     public double PipsPerMinuteCmaLast { get { return InPips(PriceQueue.Speed(1)); } }
 
-    public double OpenTradesGross {
-      get { return Trades.Gross() - (TradesManager == null ? 0 : TradesManager.CommissionByTrades(Trades)); }
-    }
-    public double OpenTradesGross2 { get { return OpenTradesGross - (TradesManager == null ? 0 : TradesManager.CommissionByTrades(Trades)); } }
+    public double OpenTradesGross => Trades.Net();
+    public double OpenTradesGross2 => Trades.Net2();
+
     public double OpenTradesGross2InPips { get { return TradesManager.MoneyAndLotToPips(OpenTradesGross2, Trades.Lots(), Pair); } }
 
     partial void OnCurrentLossChanged() {
@@ -1564,7 +1565,7 @@ namespace HedgeHog.Alice.Store {
           var sessionUid = Guid.Parse(closedSessionToLoad);
           var dbTrades = GlobalStorage.UseForexContext(c => c.t_Trade.Where(t => t.SessionId == sessionUid).ToArray());
           var trades = dbTrades.Select(trade => {
-            var t = Trade.Create(trade.Pair, PointSize, CommissionByTrade);
+            var t = Trade.Create(TradesManager, trade.Pair, PointSize, BaseUnitSize, CommissionByTrade);
             Func<DateTime, DateTime> convert = d => DateTime.SpecifyKind(TimeZoneInfo.ConvertTime(d, HedgeHog.DateTimeZone.DateTimeZone.Eastern), DateTimeKind.Local);
             {
               t.Id = trade.Id;
@@ -1802,7 +1803,7 @@ namespace HedgeHog.Alice.Store {
           if(!IsInVirtualTrading) {
             UseRatesInternal(ri => ri.Clear());
             SubscribeToTradeClosedEVent(null, _tradingMacros);
-            LoadRates();
+            OnLoadRates();
           }
         } catch(Exception exc) {
           Log = exc;
@@ -3063,12 +3064,14 @@ namespace HedgeHog.Alice.Store {
         if(IsTicks) {
           ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
         } else {
-          var lastDate = ri.Last().StartDate.Round();
-          if(price.Time.Round() > lastDate) {
-            ri.Add(isTick ? new Tick(price, 0, false) : new Rate(lastDate.AddMinutes((int)BarPeriod).ToUniversalTime(), price.Ask, price.Bid, false));
+          var roundTo = BarPeriod == BarsPeriodType.t1 ? RoundTo.Second : RoundTo.Minute;
+          var lastRateDate = ri.Last().StartDate.Round(roundTo);
+          var priceDate = price.Time.Round(roundTo);
+          if(priceDate > lastRateDate) {
+            ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
             OnLoadRates();
           } else
-            ri.Last().AddTick(price.Time.Round().ToUniversalTime(), price.Ask, price.Bid);
+            ri.Last().AddTick(price.Time.Round(roundTo).ToUniversalTime(), price.Ask, price.Bid);
         }
       });
     }
@@ -3226,7 +3229,7 @@ namespace HedgeHog.Alice.Store {
     Schedulers.TaskTimer _runPriceChangedTasker = new Schedulers.TaskTimer(100);
     Schedulers.TaskTimer _runPriceTasker = new Schedulers.TaskTimer(100);
     public void RunPriceChanged(PriceChangedEventArgs e, Action<TradingMacro> doAfterScanCorridor) {
-      if(TradesManager != null) {
+      if(TradesManager != null && e.Price != null) {
         try {
           RunPriceChangedTask(e, doAfterScanCorridor);
         } catch(Exception exc) {
@@ -4449,7 +4452,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     class LoadRateAsyncBuffer : AsyncBuffer<LoadRateAsyncBuffer, Action> {
-      public LoadRateAsyncBuffer() : base() {
+      public LoadRateAsyncBuffer() : base(1,TimeSpan.FromSeconds(15)) {
 
       }
       protected override Action PushImpl(Action context) {

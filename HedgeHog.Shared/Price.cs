@@ -28,7 +28,7 @@ namespace HedgeHog.Shared {
     public DateTime Time2 {
       get { return _time2; }
       set {
-        if(value.Kind == DateTimeKind.Unspecified)
+        if(value.Kind == DateTimeKind.Unspecified || value.IsMin() && value.Kind == DateTimeKind.Unspecified)
           throw new ArgumentException(new { Time2 = new { value.Kind } } + "");
         _time2 = value;
         Time = _time2.Kind != DateTimeKind.Local ? TimeZoneInfo.ConvertTimeFromUtc(_time2, TimeZoneInfo.Local) : _time2;

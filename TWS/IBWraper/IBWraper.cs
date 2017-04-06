@@ -18,16 +18,25 @@ namespace IBApp {
       CoreFX = coreFx;
       _ibClient = (IBClientCore)CoreFX;
       _ibClient.PriceChanged += OnPriceChanged;
+      ;
       _ibClient.CommissionByTrade = commissionByTrade;
     }
 
-    private void OnPriceChanged(Price price) {
+    private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
+      var price = e.Price;
       RaisePriceChanged(price.Pair, price);
     }
 
     #region ITradesManager - Implemented
 
     #region Methods
+    public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1000 : 1;
+    public double Leverage(string pair) => 1;
+    public Trade TradeFactory(string pair) => Trade.Create(this, pair, GetPipSize(pair), GetBaseUnitSize(pair), CommissionByTrade);
+
+    public double InPips(string pair, double? price) => price.GetValueOrDefault() / GetPipSize(pair);
+    public double RateForPipAmount(Price price) { return price.Ask.Avg(price.Bid); }
+    public double RateForPipAmount(double ask, double bid) { return ask.Avg(bid); }
     TBar ToRate<TBar>(DateTime date, double open, double high, double low, double close, int volume, int count) where TBar : Rate, new() {
       return Rate.Create<TBar>(date, high, low, true);
     }
@@ -37,21 +46,34 @@ namespace IBApp {
       , DateTime startDate
       , DateTime endDate
       , List<TBar> ticks
-      , Func<List<TBar>
-      , List<TBar>> map
+      , Func<List<TBar>, List<TBar>> map
       , Action<RateLoadingCallbackArgs<TBar>> callBack = null
       ) where TBar : Rate, new() {
+
       var isFx = pair.Contains("/");
       var contract = isFx ? ContractSamples.FxContract(pair) : ContractSamples.Commodity(pair);
       var isDone = false;
-      new HistoryLoader<TBar>(_ibClient, contract, endDate.Max(startDate), (endDate - startDate).Duration(), period == 0 ? TimeUnit.S : TimeUnit.M, period == 0 ? BarSize._1_secs : BarSize._1_min,
+      Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
+      endDate = fxDate(endDate);
+      startDate = fxDate(startDate);
+      new HistoryLoader<TBar>(_ibClient, contract, periodsBack, endDate.Max(startDate), (endDate - startDate).Duration(), period == 0 ? TimeUnit.S : TimeUnit.M, period == 0 ? BarSize._1_secs : BarSize._1_min,
         ToRate<TBar>,
-         list => isDone = true,
+         list => { ticks.AddRange(list); ticks.Sort(); isDone = true; },
          list => callBack(new RateLoadingCallbackArgs<TBar>(new { HistoryLoader = new { StartDate = list.FirstOrDefault()?.StartDate, EndDate = list.LastOrDefault()?.StartDate } } + "", list)),
-         exc => { isDone = true; RaiseError(exc); });
+         exc => {
+           isDone = !(exc is SoftException);
+           RaiseError(exc);
+         });
       while(!isDone)
         Thread.Sleep(300);
       return;
+    }
+    public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map) {
+      throw new NotImplementedException();
+    }
+
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
+      GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack);
     }
     public Account GetAccount() {
       try {
@@ -63,6 +85,8 @@ namespace IBApp {
     }
     public Trade[] GetTrades() => _ibClient.AccountManager?.GetTrades() ?? new Trade[0];
     public Trade[] GetTrades(string pair) => GetTrades().Where(t => t.Pair.WrapPair() == pair.WrapPair()).ToArray();
+    public Trade[] GetTradesInternal(string Pair) => GetTrades(Pair);
+
     #endregion
 
     #region Error Event
@@ -127,15 +151,7 @@ namespace IBApp {
       }
     }
 
-    public bool IsInTest {
-      get {
-        throw new NotImplementedException();
-      }
-
-      set {
-        throw new NotImplementedException();
-      }
-    }
+    public bool IsInTest { get; set; }
 
     public double PipsToMarginCall {
       get {
@@ -207,10 +223,6 @@ namespace IBApp {
       throw new NotImplementedException();
     }
 
-    public double CommissionByTrades(params Trade[] trades) {
-      throw new NotImplementedException();
-    }
-
     public string CreateEntryOrder(string pair, bool isBuy, int amount, double rate, double stop, double limit) {
       throw new NotImplementedException();
     }
@@ -255,35 +267,34 @@ namespace IBApp {
       throw new NotImplementedException();
     }
 
-    public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map) {
-      throw new NotImplementedException();
-    }
-
-    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
-      throw new NotImplementedException();
-    }
-
     public IList<Rate> GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate) {
       throw new NotImplementedException();
     }
 
-    public int GetBaseUnitSize(string pair) {
-      throw new NotImplementedException();
-    }
 
+    void RaiseNotImplemented(string NotImplementedException) {
+      //RaiseError(new NotImplementedException(new { NotImplementedException } + ""));
+    }
     public Trade[] GetClosedTrades(string pair) {
-      RaiseError(new NotImplementedException(nameof(GetClosedTrades)));
+      RaiseNotImplemented(nameof(GetClosedTrades));
       return new Trade[0];
     }
 
     public int GetDigits(string pair) => TradesManagerStatic.GetDigits(pair);
 
     public Trade GetLastTrade(string pair) {
-      throw new NotImplementedException();
+      RaiseNotImplemented(nameof(GetLastTrade));
+      return null;
     }
 
     public Order GetNetLimitOrder(Trade trade, bool getFromInternal = false) {
-      throw new NotImplementedException();
+      RaiseNotImplemented(nameof(GetNetLimitOrder));
+      return null;
+    }
+
+    public Order[] GetOrders(string pair) {
+      RaiseNotImplemented(nameof(GetOrders));
+      return new Order[0];
     }
 
     public double GetNetOrderRate(string pair, bool isStop, bool getFromInternal = false) {
@@ -298,9 +309,6 @@ namespace IBApp {
       throw new NotImplementedException();
     }
 
-    public Order[] GetOrders(string pair) {
-      throw new NotImplementedException();
-    }
 
     //public double GetPipCost(string pair) {
     //  throw new NotImplementedException();
@@ -309,42 +317,20 @@ namespace IBApp {
     public double GetPipSize(string pair) => TradesManagerStatic.GetPointSize(pair);
 
     public Price GetPrice(string pair) {
-      throw new NotImplementedException();
+      return _ibClient.GetPrice(pair);
     }
 
     public Tick[] GetTicks(string pair, int periodsBack, Func<List<Tick>, List<Tick>> map) {
       throw new NotImplementedException();
     }
 
-    public Trade[] GetTradesInternal(string Pair) {
-      throw new NotImplementedException();
-    }
-
-    public double InPips(string pair, double? price) {
-      throw new NotImplementedException();
-    }
-
-    public double InPoints(string pair, double? price) {
-      throw new NotImplementedException();
-    }
-
-    public double Leverage(string pair) {
-      throw new NotImplementedException();
-    }
+    public double InPoints(string pair, double? price) { return InPoins(this, pair, price); }
 
     public PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment) {
       throw new NotImplementedException();
     }
 
     public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
-      throw new NotImplementedException();
-    }
-
-    public double RateForPipAmount(Price price) {
-      throw new NotImplementedException();
-    }
-
-    public double RateForPipAmount(double ask, double bid) {
       throw new NotImplementedException();
     }
 
@@ -356,15 +342,9 @@ namespace IBApp {
       throw new NotImplementedException();
     }
 
-    public double Round(string pair, double value, int digitOffset = 0) {
-      throw new NotImplementedException();
-    }
+    public double Round(string pair, double value, int digitOffset = 0) { return Math.Round(value, GetDigits(pair) + digitOffset); }
 
     public void SetServerTime(DateTime serverTime) {
-      throw new NotImplementedException();
-    }
-
-    public Trade TradeFactory(string pair) {
       throw new NotImplementedException();
     }
     #endregion

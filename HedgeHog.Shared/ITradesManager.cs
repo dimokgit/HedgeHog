@@ -47,7 +47,10 @@ namespace HedgeHog.Shared {
     TradingServerSessionStatus SessionStatus { get; set; }
     DateTime ServerTime { get; }
   }
-  public interface ITradesManager {
+  public interface IPricer {
+    event EventHandler<PriceChangedEventArgs> PriceChanged;
+  }
+  public interface ITradesManager: IPricer {
     ICoreFX CoreFX { get; set; }
     bool IsLoggedIn { get; }
     bool IsInTest { get; set; }
@@ -115,7 +118,6 @@ namespace HedgeHog.Shared {
     #region Events
     event EventHandler<OrderEventArgs> OrderAdded;
     event EventHandler<TradeEventArgs> TradeClosed;
-    event EventHandler<PriceChangedEventArgs> PriceChanged;
     void RaisePriceChanged(string pair, Price price);
 
     event EventHandler<TradeEventArgs> TradeAdded;
@@ -152,7 +154,6 @@ namespace HedgeHog.Shared {
     Func<Trade, double> CommissionByTrade { get; }
     bool HasTicks { get; }
 
-    double CommissionByTrades(params Trade[] trades);
     IList<Rate> GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate);
 
     Tick[] GetTicks(string pair, int periodsBack, Func<List<Tick>, List<Tick>> map);

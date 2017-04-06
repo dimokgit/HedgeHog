@@ -24,6 +24,7 @@ namespace IBApp {
     private const string ACCOUNT_SUMMARY_TAGS = "AccountType,NetLiquidation,TotalCashValue,SettledCash,AccruedCash,BuyingPower,EquityWithLoanValue,PreviousEquityWithLoanValue,"
              +"GrossPositionValue,ReqTEquity,ReqTMargin,SMA,InitMarginReq,MaintMarginReq,AvailableFunds,ExcessLiquidity,Cushion,FullInitMarginReq,FullMaintMarginReq,FullAvailableFunds,"
              +"FullExcessLiquidity,LookAheadNextChange,LookAheadInitMarginReq ,LookAheadMaintMarginReq,LookAheadAvailableFunds,LookAheadExcessLiquidity,HighestSeverity,DayTradesRemaining,Leverage";
+    private const int BaseUnitSize = 1;
     #endregion
 
     #region Fields
@@ -140,7 +141,7 @@ namespace IBApp {
         var execPrice = execution.AvgPrice;
 
         #region Create Trade
-        var trade = Trade.Create<Trade>(symbol, TradesManagerStatic.GetPointSize(symbol), CommissionByTrade);
+        var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), BaseUnitSize, null);
         trade.Id = execution.PermId + "";
         trade.Buy = execution.Side == "BOT";
         trade.IsBuy = trade.Buy;
@@ -149,6 +150,7 @@ namespace IBApp {
         trade.Open = trade.Close = execPrice;
         trade.Lots = execution.CumQty;
         trade.OpenOrderID = execution.OrderId + "";
+        trade.Commission = CommissionByTrade(trade);
         #endregion
 
         PositionMessage position;
@@ -197,6 +199,7 @@ namespace IBApp {
         return closeLots - closedTrade.Lots;
       } else {// Partial close
         var trade = closedTrade.Clone();
+        trade.Commission = 0;
         trade.Lots = closeLots;
         trade.Time2Close = execTime;
         trade.Close = execPrice;
@@ -253,7 +256,7 @@ namespace IBApp {
       if(position.Position != 0 && !OpenTrades.Any(IsEqual(position)))
         OpenTrades.Add(TradeFromPosition(contract.LocalSymbol, position, st));
 
-      TraceTrades("Opened: ", OpenTrades.AsEnumerable());
+      TraceTrades("Opened: ", OpenTrades);
     }
 
     private void TraceTrades(string label, IEnumerable<Trade> trades) {
@@ -262,7 +265,7 @@ namespace IBApp {
     }
 
     private Trade TradeFromPosition(string symbol, PositionMessage position, DateTime st) {
-      var trade = Trade.Create<Trade>(symbol, TradesManagerStatic.GetPointSize(symbol), CommissionByTrade);
+      var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), BaseUnitSize, null);
       trade.Id = DateTime.Now.Ticks + "";
       trade.Buy = position.Position > 0;
       trade.IsBuy = trade.Buy;
@@ -271,6 +274,7 @@ namespace IBApp {
       trade.Open = position.AverageCost;
       trade.Lots = position.Position.Abs().ToInt();
       trade.OpenOrderID = "";
+      trade.Commission = CommissionByTrade(trade);
       return trade;
     }
     #endregion

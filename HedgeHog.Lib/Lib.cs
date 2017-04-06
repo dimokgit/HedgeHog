@@ -828,32 +828,6 @@ namespace HedgeHog {
       return string.Join(separator, props);
     }
 
-
-    #region TimeSpan
-    public static TimeSpan Max(this IEnumerable<TimeSpan> spans) {
-      var spanMin = TimeSpan.MinValue;
-      foreach(var span in spans)
-        if(spanMin < span)
-          spanMin = span;
-      return spanMin;
-    }
-    public static TimeSpan Average(this IEnumerable<TimeSpan> span) {
-      return TimeSpan.FromMilliseconds(span.Average(s => s.TotalMilliseconds));
-    }
-    public static TimeSpan Multiply(this TimeSpan span, TimeSpan d) {
-      return TimeSpan.FromMilliseconds(span.TotalMilliseconds * d.TotalMilliseconds);
-    }
-    public static TimeSpan Multiply(this TimeSpan span, double d) {
-      return TimeSpan.FromMilliseconds(span.TotalMilliseconds * d);
-    }
-    public static TimeSpan Divide(this TimeSpan span, TimeSpan d) {
-      return TimeSpan.FromMilliseconds(span.TotalMilliseconds / d.TotalMilliseconds);
-    }
-    public static double Ratio(this TimeSpan span, TimeSpan d) {
-      return span.TotalMilliseconds / d.TotalMilliseconds;
-    }
-    #endregion
-
     public static IEnumerable<T> FirstOrLast<T>(this IEnumerable<T> e, bool last, int count = 1) {
       return last ? e.TakeLast(count) : e.Take(count);
     }

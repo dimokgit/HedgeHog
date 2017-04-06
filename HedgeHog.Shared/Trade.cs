@@ -74,13 +74,10 @@ namespace HedgeHog.Shared {
     /// Not Implemented exception
     /// </summary>
     public static Func<double> PipRateNI = () => { throw new NotImplementedException(); };
-    public static TTrade Create<TTrade>(string pair, double pipSize, Func<Trade, double> commissionByTrade) where TTrade:Trade,new(){
-      return new TTrade() { Pair = pair, PipSize = pipSize, CommissionByTrade = commissionByTrade };
+    public static Trade Create(IPricer tradesManager, string pair, double pipSize,int baseUnitSize, Func<Trade, double> commissionByTrade) {
+      return new Trade() { Pair = pair, PipSize = pipSize, BaseUnitSize = baseUnitSize, CommissionByTrade = commissionByTrade, TradesManager = tradesManager };
     }
-    public static Trade Create(string pair, double pipSize, Func<Trade, double> commissionByTrade) {
-      return Create<Trade>( pair, pipSize, commissionByTrade );
-    }
-    public Trade() {
+    private Trade() {
     }
     [DataMember]
     public string Id { get; set; }
@@ -197,7 +194,7 @@ namespace HedgeHog.Shared {
         if(value.Kind == DateTimeKind.Unspecified)
           throw new ArgumentException(new { Time2Close = new { value.Kind } } + "");
         _time2Close = value;
-        TimeClose = _time2.Kind != DateTimeKind.Local ? TimeZoneInfo.ConvertTimeFromUtc(_time2Close, TimeZoneInfo.Local) : _time2Close;
+        TimeClose = _time2Close.Kind != DateTimeKind.Local ? TimeZoneInfo.ConvertTimeFromUtc(_time2Close, TimeZoneInfo.Local) : _time2Close;
       }
     }
     DateTime _TimeClose;
@@ -231,9 +228,9 @@ namespace HedgeHog.Shared {
     [DataMember]
     public bool IsVirtual { get; set; }
 
-    private ITradesManager _tradesManager;
+    private IPricer _tradesManager;
 
-    public ITradesManager TradesManager {
+    public IPricer TradesManager {
       get { return _tradesManager; }
       set {
         if(_tradesManager != null)
@@ -256,17 +253,18 @@ namespace HedgeHog.Shared {
           BaseUnitSize = tradesManager.GetBaseUnitSize(Pair);
         Time2Close = price.Time2;
         Close = Buy ? price.Bid : price.Ask;
-        Commission = CommissionByTrade(this);
+        if(CommissionByTrade != null)
+          Commission = CommissionByTrade(this);
         //Close = Buy ? price.BuyClose : price.SellClose;
       }
     }
-    Func<Trade, double> _commissionByTrade = t => { throw new NotImplementedException(); };
+    Func<Trade, double> _commissionByTrade;
     public Func<Trade, double> CommissionByTrade {
       get { return _commissionByTrade; }
       set { _commissionByTrade = value; }
     }
-    public double NetPL { get { return GrossPL - CommissionByTrade(this); } }
-    public double NetPL2 { get { return GrossPL - CommissionByTrade(this) * 2; } }
+    public double NetPL => GrossPL - (CommissionByTrade == null ? Commission : CommissionByTrade(this));
+    public double NetPL2 => GrossPL - (CommissionByTrade == null ? Commission : CommissionByTrade(this) * 2);
     public double NetPLInPips { get { return InPips(NetPL); } }
     public double OpenInPips { get { return InPips(this.Open); } }
     public double CloseInPips { get { return InPips(this.Close); } }

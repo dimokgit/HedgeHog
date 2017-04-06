@@ -585,8 +585,10 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_RatesLengthBy != value) {
           _RatesLengthBy = value;
-          BarsCountCalc = BarCountSmoothed = 0;
-          Task.Delay(1000).ContinueWith(t => IsRatesLengthStable = _RatesLengthBy == RatesLengthFunction.None);
+          if(IsLoaded) {
+            BarsCountCalc = BarCountSmoothed = 0;
+            Task.Delay(1000).ContinueWith(t => IsRatesLengthStable = _RatesLengthBy == RatesLengthFunction.None);
+          }
           OnPropertyChanged(nameof(RatesLengthBy));
         }
       }

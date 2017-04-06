@@ -59,7 +59,7 @@ namespace HedgeHog.Shared {
 
     public double PL { get { return Trades.GrossInPips(); } }
 
-    public double Net { get { return Equity - Balance - Trades.Sum(t => t.CommissionByTrade(t)); } }
+    public double Net { get { return Trades.Net2(); } }
 
     public double StopToBalanceRatio { get { return StopAmount / Balance; } }
 

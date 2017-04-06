@@ -31,6 +31,37 @@ namespace HedgeHog {
       return d == DateTime.MaxValue ? d1 : d;
     }
 
+    #region TimeSpan
+    public static TimeSpan Max(this IEnumerable<TimeSpan> spans) {
+      var spanMin = TimeSpan.MinValue;
+      foreach(var span in spans)
+        if(spanMin < span)
+          spanMin = span;
+      return spanMin;
+    }
+    public static TimeSpan Average(this IEnumerable<TimeSpan> span) {
+      return TimeSpan.FromMilliseconds(span.Average(s => s.TotalMilliseconds));
+    }
+    public static TimeSpan Multiply(this TimeSpan span, TimeSpan d) {
+      return TimeSpan.FromMilliseconds(span.TotalMilliseconds * d.TotalMilliseconds);
+    }
+    public static TimeSpan Multiply(this TimeSpan span, double d) {
+      return TimeSpan.FromMilliseconds(span.TotalMilliseconds * d);
+    }
+    public static TimeSpan Divide(this TimeSpan span, TimeSpan d) {
+      return TimeSpan.FromMilliseconds(span.TotalMilliseconds / d.TotalMilliseconds);
+    }
+    public static double Ratio(this TimeSpan span, TimeSpan d) {
+      return span.TotalMilliseconds / d.TotalMilliseconds;
+    }
+    public static TimeSpan Max(this TimeSpan span, TimeSpan d) {
+      return span >= d ? span : d;
+    }
+    public static TimeSpan Min(this TimeSpan span, TimeSpan d) {
+      return span <= d ? span : d;
+    }
+    #endregion
+
     public static double Div(this int v, int other) {
       return (v / (double)other);
     }
@@ -135,7 +166,7 @@ namespace HedgeHog {
       return (v - other).Abs() / max;
     }
     public static int ToPercent(this double d) { return (int)Math.Round(d * 100, 0); }
-    public static int ToPercent(this double d,double other) { return (int)Math.Round(d.Percentage(other) * 100, 0); }
+    public static int ToPercent(this double d, double other) { return (int)Math.Round(d.Percentage(other) * 100, 0); }
 
     #region Between
     public static bool Between(this int value, double d1, double d2) {
@@ -155,8 +186,8 @@ namespace HedgeHog {
     public static bool Between(this DateTime value, DateTimeOffset d1, DateTimeOffset d2) {
       return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
     }
-    public static bool Between(this double value, Tuple<double,double> tuple) {
-      return value.Between(tuple.Item1, tuple.Item2); 
+    public static bool Between(this double value, Tuple<double, double> tuple) {
+      return value.Between(tuple.Item1, tuple.Item2);
     }
     public static bool Between(this DateTimeOffset value, DateTimeOffset d1, DateTimeOffset d2) {
       return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;

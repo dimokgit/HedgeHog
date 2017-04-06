@@ -288,7 +288,7 @@ namespace HedgeHog.Alice.Store {
       var buffrerSize = (ratesForCorridor.Count / sampleMin).Max(2);
       var grouped = ratesForCorridor.Select(Tuple.Create<Rate, int>)
         .Buffer(buffrerSize, buffrerSize - 1)
-        .Where(b => b.Count > 2)
+        .Where(b => b.Count > 1)
         .Select(RateGroup.Create).ToList();
       return grouped;
     }

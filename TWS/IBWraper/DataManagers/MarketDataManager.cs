@@ -31,7 +31,7 @@ namespace IBApp {
     }
 
     public Price GetPrice(string symbol) {
-      if(_currentPrices.ContainsKey(symbol))
+      if(!_currentPrices.ContainsKey(symbol))
         throw new KeyNotFoundException(new { _currentPrices = new { symbol, not = " found" } } + "");
       return _currentPrices[symbol];
     }

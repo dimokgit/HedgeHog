@@ -82,7 +82,11 @@ namespace HedgeHog.Alice.Store {
       return (from path in paths
               select new { tm = GlobalStorage.LoadJson<TradingMacro>(path, errors), path }
               )
-              .Do(x => { if(x.tm == null) errors.Add(new Exception(x + "")); })
+              .Do(x => {
+                x.tm.IsLoaded = true;
+                if(x.tm == null)
+                  errors.Add(new Exception(x + ""));
+              })
               .Select(x => x.tm)
               //.Where(tm => tm != null)
               .ToArray();
@@ -226,7 +230,7 @@ namespace HedgeHog.Alice.Store {
 
 
     //    protected ITradesManager tradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)fw; } }
-    public bool IsInVirtualTrading { get { return MasterModel == null ? false : MasterModel.IsInVirtualTrading; } }
+    public bool IsInVirtualTrading { get { return MasterModel == null ? false : MasterModel.MasterAccount.IsVirtual; } }
 
     #region PriceBars
     protected class PriceBarsDuplex {

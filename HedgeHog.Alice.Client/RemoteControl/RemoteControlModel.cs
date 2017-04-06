@@ -950,7 +950,7 @@ namespace HedgeHog.Alice.Client {
         foreach(var tm in TradingMacrosCopy) {
           InitTradingMacro(tm);
           if(!IsInVirtualTrading) {
-            (sender as CoreFX).SetOfferSubscription(tm.Pair);
+            (sender as ICoreFX).SetOfferSubscription(tm.Pair);
             //tm.CurrentPrice = TradesManager.GetPrice(tm.Pair);
           }
           tm.CurrentLot = tm.Trades.Sum(t => t.Lots);
@@ -959,7 +959,7 @@ namespace HedgeHog.Alice.Client {
             Task.Factory.StartNew(() => currTM.LastTrade = TradesManager.GetLastTrade(currTM.Pair));
             tm.OnLoadRates();
             runPriceQueue.Add(() => {
-              currTM.RunPriceChanged(new PriceChangedEventArgs(currTM.Pair, TradesManager.GetPrice(currTM.Pair), TradesManager.GetAccount(), TradesManager.GetTradesInternal(currTM.Pair)), null);
+              //currTM.RunPriceChanged(new PriceChangedEventArgs(currTM.Pair, TradesManager.GetPrice(currTM.Pair), TradesManager.GetAccount(), TradesManager.GetTradesInternal(currTM.Pair)), null);
             });
           }
           tm.SetLotSize(TradesManager.GetAccount());
@@ -1072,8 +1072,6 @@ namespace HedgeHog.Alice.Client {
         var corridorTime0 = tm.WaveTradeStart == null || !tm.WaveTradeStart.HasRates ? DateTime.MinValue : tm.WaveTradeStart.Rates[0].StartDateContinuous;
         var corridorTime1 = tm.WaveTradeStart == null || !tm.WaveTradeStart.HasRates ? DateTime.MinValue : tm.WaveTradeStart.Rates.Min(r => r.StartDateContinuous);// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
         var corridorTime2 = !tm.WaveTradeStart1.HasRates ? DateTime.MinValue : tm.WaveTradeStart1.Rates.LastBC().StartDateContinuous;// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
-        var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;
-        var timeLow = tm.LastTrade.Pair == tm.Pair && tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.Time }.Max() : DateTime.MinValue;
         var dateMin = ratesForChart.Min(r => r.StartDateContinuous);
         string[] info = new string[] { };
         //RunWithTimeout.WaitFor<object>.Run(TimeSpan.FromSeconds(1), () => {

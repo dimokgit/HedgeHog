@@ -26,25 +26,28 @@ namespace HedgeHog {
     ISubject<Action> _StartProcessSubject = new Subject<Action>();
     IDisposable _StartProcessDisposable;
     public AsyncBuffer() : this(1) { }
-    public AsyncBuffer(int boundedCapacity) {
+    public AsyncBuffer(int boundedCapacity) : this(boundedCapacity, TimeSpan.Zero) { }
+    public AsyncBuffer(int boundedCapacity, TimeSpan sample) {
       var buffer = new BroadcastBlock<Action>(n => n, new DataflowBlockOptions() { BoundedCapacity = boundedCapacity });
 
       _StartProcessDisposable = _StartProcessSubject
         .ObserveOn(TaskPoolScheduler.Default)
         .Subscribe(a => buffer.SendAsync(a)
         , exc => Error.OnNext(exc));
-
-      _bufferDisposable = buffer
+      var b = buffer
         .AsObservable()
         .Catch<Action, Exception>(exc => {
           Error.OnNext(exc);
           return Observable.Return(new Action(() => { }));
-        })
+        });
+      if(sample != TimeSpan.Zero)
+        b = b.Sample(sample);
+      _bufferDisposable = b
         .Subscribe(a => {
           try {
             a();
             Pushed.OnNext(_lastContext);
-          } catch (Exception exc) {
+          } catch(Exception exc) {
             Error.OnNext(exc);
           }
         }, exc => Error.OnNext(exc));
@@ -55,7 +58,7 @@ namespace HedgeHog {
     #region Push
     protected abstract Action PushImpl(TContext context);
     public void Push(TContext context) {
-      if (_StartProcessDisposable == null)
+      if(_StartProcessDisposable == null)
         throw new InvalidOperationException(new { Pipe = typeof(TDerived).FullName, Error = "Calling Push after pipe was disposed." } + "");
       _StartProcessSubject.OnNext(Instance.PushImpl(context));
       _lastContext = context;
@@ -80,17 +83,17 @@ namespace HedgeHog {
 
     // Protected implementation of Dispose pattern. 
     protected virtual void Dispose(bool disposing) {
-      if (_disposed)
+      if(_disposed)
         return;
 
-      if (disposing) {
+      if(disposing) {
         // Free any other managed objects here. 
-        if (_StartProcessDisposable != null) {
+        if(_StartProcessDisposable != null) {
           _StartProcessSubject.OnCompleted();
           _StartProcessDisposable.Dispose();
           _StartProcessDisposable = null;
         }
-        if (_bufferDisposable != null) {
+        if(_bufferDisposable != null) {
           _bufferDisposable.Dispose();
           _bufferDisposable = null;
         }

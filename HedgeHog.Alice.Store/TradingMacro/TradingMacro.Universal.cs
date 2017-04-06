@@ -42,7 +42,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region ============ Init =================
-
+      bool _useSms = false;
       if(_strategyExecuteOnTradeClose == null) {
         Func<SuppRes, IObservable<EventPattern<EventArgs>>> onCanTrade = sr => Observable.FromEventPattern<EventHandler<EventArgs>, EventArgs>(h => h, h => sr.CanTradeChanged += h, h => sr.CanTradeChanged -= h);
         if(IsInVirtualTrading && Trades.Any())
@@ -223,7 +223,7 @@ namespace HedgeHog.Alice.Store {
           var buySellCanTradeObservable = onCanTrade(BuyLevel).Merge(onCanTrade(SellLevel))
             .Select(e => e.Sender as SuppRes)
             .DistinctUntilChanged(sr => sr.CanTrade)
-            .Where(sr => sr.CanTrade)
+            .Where(sr => _useSms && sr.CanTrade)
             .Subscribe(sr => SendSms(Pair + "::", new { sr.CanTrade }, false));
         }
         if(BuyLevel.Rate.Min(SellLevel.Rate) == 0)
