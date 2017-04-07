@@ -200,8 +200,11 @@ public class IBClientCore : IBClient,IPricer, ICoreFX {
           throw new ArgumentException("Value is not integer", nameof(port));
         Connect(iPort, hosts.FirstOrDefault(), iClientId);
       }
-      RaiseLoggedIn();
-      return IsLoggedIn;
+      if(IsLoggedIn) {
+        RaiseLoggedIn();
+        return IsLoggedIn;
+      }
+      return false;
     } catch(Exception exc) {
       RaiseLoginError(exc);
       return false;

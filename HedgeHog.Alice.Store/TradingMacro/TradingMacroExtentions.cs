@@ -58,7 +58,7 @@ namespace HedgeHog.Alice.Store {
     static TimeSpan THROTTLE_INTERVAL = TimeSpan.FromSeconds(1);
 
     public void OnLoadRates(Action a = null) {
-      _loadRatesAsyncBuffer.Push(() => LoadRates(a));
+      (_loadRatesAsyncBuffer ?? (_loadRatesAsyncBuffer = new LoadRateAsyncBuffer())).Push(() => LoadRates(a));
       //broadcastLoadRates.Post(u => LoadRates(a));
     }
 
@@ -2456,7 +2456,7 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByAvgLineRatio() {
-      _setEdgeLinesAsyncBuffer.Push(() =>
+      _setEdgeLinesAsyncBuffer.Value.Push(() =>
         UseRates(rates => rates.ToArray(_priceAvg)).ForEach(rates => {
           SetAvgLines(rates);
           SetVots(InPips(AvgLineAvg), 2);
@@ -4459,7 +4459,7 @@ namespace HedgeHog.Alice.Store {
         return context;
       }
     }
-    LoadRateAsyncBuffer _loadRatesAsyncBuffer = new LoadRateAsyncBuffer();
+    LoadRateAsyncBuffer _loadRatesAsyncBuffer;
     BroadcastBlock<Action<Unit>> _broadcastLoadRates;
     BroadcastBlock<Action<Unit>> broadcastLoadRates {
       get {

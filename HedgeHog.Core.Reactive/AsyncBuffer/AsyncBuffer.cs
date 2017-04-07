@@ -15,10 +15,6 @@ namespace HedgeHog {
     where TDerived : AsyncBuffer<TDerived, TContext>, new() {
 
     public static TDerived Create() { return new TDerived(); }
-    #region Singleton
-    private static readonly TDerived instance = new TDerived();
-    public static TDerived Instance { get { return instance; } }
-    #endregion
 
     #region Pipe
     TContext _lastContext;
@@ -60,7 +56,7 @@ namespace HedgeHog {
     public void Push(TContext context) {
       if(_StartProcessDisposable == null)
         throw new InvalidOperationException(new { Pipe = typeof(TDerived).FullName, Error = "Calling Push after pipe was disposed." } + "");
-      _StartProcessSubject.OnNext(Instance.PushImpl(context));
+      _StartProcessSubject.OnNext(PushImpl(context));
       _lastContext = context;
     }
     #endregion

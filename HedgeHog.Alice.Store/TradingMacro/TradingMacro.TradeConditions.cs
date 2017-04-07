@@ -608,14 +608,14 @@ namespace HedgeHog.Alice.Store {
         return context;
       }
     }
-    LoadRateAsyncBuffer _setEdgeLinesAsyncBuffer = new LoadRateAsyncBuffer();
+    Lazy<SetEdgeLinesAsyncBuffer> _setEdgeLinesAsyncBuffer = Lazy.Create(()=> new SetEdgeLinesAsyncBuffer());
 
     public TradeConditionDelegateHide EdgesAOk {
       get {
         return () => {
           return UseRates(rates => rates.Select(_priceAvg).ToArray())
           .Select(rates => {
-            _setEdgeLinesAsyncBuffer.Push(() => SetAvgLines(rates));
+            _setEdgeLinesAsyncBuffer.Value.Push(() => SetAvgLines(rates));
             return TradeDirections.Both;
           })
           .SingleOrDefault();
@@ -1446,8 +1446,8 @@ namespace HedgeHog.Alice.Store {
       return TLsTimeRatio(tm, useMin, out timeAvg);
     }
     private static int[] TLsTimeRatio(TradingMacro tm, bool useMin, out double timeAvg) {
-      var tls = tm.TrendLinesMinMax.Where(t => t.Item2 == useMin).Select(t => new { tl = t.Item1,perc=t.Item3.Abs() }).ToList();
-      var timeRatio = (timeAvg = TLsTimeAverage(tls.Select(x=>x.tl)).GetValueOrDefault(double.NaN)) * tls.Count / tm.RatesDuration;
+      var tls = tm.TrendLinesMinMax.Where(t => t.Item2 == useMin).Select(t => new { tl = t.Item1, perc = t.Item3.Abs() }).ToList();
+      var timeRatio = (timeAvg = TLsTimeAverage(tls.Select(x => x.tl)).GetValueOrDefault(double.NaN)) * tls.Count / tm.RatesDuration;
       var rangesSum = tls.Sum(x => (int?)x.perc) / 100.0;
       return timeRatio.IsNaN() || !rangesSum.HasValue ? new int[0] : new[] { (timeRatio / rangesSum.Value - 1).ToPercent() };
     }
