@@ -56,7 +56,7 @@ namespace IBApp {
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);
       startDate = fxDate(startDate);
-      new HistoryLoader<TBar>(_ibClient, contract, periodsBack, endDate.Max(startDate), (endDate - startDate).Duration(), period == 0 ? TimeUnit.S : TimeUnit.M, period == 0 ? BarSize._1_secs : BarSize._1_min,
+      new HistoryLoader<TBar>(_ibClient, contract, periodsBack, endDate.Max(startDate), (endDate - startDate).Duration(), period == 0 ? TimeUnit.S : TimeUnit.D, period == 0 ? BarSize._1_secs : BarSize._1_min,
         ToRate<TBar>,
          list => { ticks.AddRange(list); ticks.Sort(); isDone = true; },
          list => callBack(new RateLoadingCallbackArgs<TBar>(new { HistoryLoader = new { StartDate = list.FirstOrDefault()?.StartDate, EndDate = list.LastOrDefault()?.StartDate } } + "", list)),

@@ -163,7 +163,7 @@ namespace IBApp {
       },
       [BarSize._1_min]= new Dictionary<TimeUnit, int[]> {
         [TimeUnit.S] = new[] { 60, 28800 },
-        [TimeUnit.M] = new[] { 1, 1 }
+        [TimeUnit.D] = new[] { 1, 1 }
       }
     };
     private readonly int _periodsBack;

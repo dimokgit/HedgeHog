@@ -1249,17 +1249,10 @@ namespace HedgeHog.Alice.Store {
         .Where(pce => pce.EventArgs.Pair == Pair)
         //.Sample((0.1).FromSeconds())
         //.DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
-        .Do(pce => {
-          try {
-            CurrentPrice = pce.EventArgs.Price;
-            if(!TradesManager.IsInTest && !IsInPlayback)
-              AddCurrentTick(pce.EventArgs.Price);
-            TicksPerMinuteSet(pce.EventArgs.Price, ServerTime);
-            OnPropertyChanged(nameof(PipsPerPosition));
-          } catch(Exception exc) { Log = exc; }
-        });
+        ;
       if(!IsInVirtualTrading)
-        PriceChangedSubscribsion = a.SubscribeToLatestOnBGThread(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
+        PriceChangedSubscribsion = a.ObserveLatestOn(new EventLoopScheduler())
+          .Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
       else
         PriceChangedSubscribsion = a.Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
 
@@ -1276,6 +1269,16 @@ namespace HedgeHog.Alice.Store {
       RaisePositionsChanged();
       Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategies.Universal;
       IsTradingActive = IsInVirtualTrading;
+    }
+
+    private void HansleTick(PriceChangedEventArgs pce) {
+      try {
+        CurrentPrice = pce.Price;
+        if(!TradesManager.IsInTest && !IsInPlayback)
+          AddCurrentTick(pce.Price);
+        TicksPerMinuteSet(pce.Price, ServerTime);
+        OnPropertyChanged(nameof(PipsPerPosition));
+      } catch(Exception exc) { Log = exc; }
     }
 
     void TradesManager_OrderChanged(object sender, OrderEventArgs e) {
@@ -3070,8 +3073,12 @@ namespace HedgeHog.Alice.Store {
           if(priceDate > lastRateDate) {
             ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
             OnLoadRates();
-          } else
+          } else if(priceDate == lastRateDate)
             ri.Last().AddTick(price.Time.Round(roundTo).ToUniversalTime(), price.Ask, price.Bid);
+          else {
+            Log = new Exception(new { priceDate, lastRateDate } + "");
+          }
+
         }
       });
     }
@@ -3229,6 +3236,7 @@ namespace HedgeHog.Alice.Store {
     Schedulers.TaskTimer _runPriceChangedTasker = new Schedulers.TaskTimer(100);
     Schedulers.TaskTimer _runPriceTasker = new Schedulers.TaskTimer(100);
     public void RunPriceChanged(PriceChangedEventArgs e, Action<TradingMacro> doAfterScanCorridor) {
+      HansleTick(e);
       if(TradesManager != null && e.Price != null) {
         try {
           RunPriceChangedTask(e, doAfterScanCorridor);
@@ -4452,7 +4460,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     class LoadRateAsyncBuffer : AsyncBuffer<LoadRateAsyncBuffer, Action> {
-      public LoadRateAsyncBuffer() : base(1,TimeSpan.FromSeconds(15)) {
+      public LoadRateAsyncBuffer() : base(1, TimeSpan.FromSeconds(11)) {
 
       }
       protected override Action PushImpl(Action context) {
