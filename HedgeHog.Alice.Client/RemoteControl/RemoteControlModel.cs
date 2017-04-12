@@ -247,8 +247,8 @@ namespace HedgeHog.Alice.Client {
       var startDate2 = e.NewPosition.ToUniversalTime();
       var index = tm.RatesArray.TakeWhile(r => r.StartDate2 < startDate2).Count();
       //var index = tm.RatesArray.IndexOf(new Rate() { StartDate2 = e.NewPosition.ToUniversalTime() });
-      var rate = tm.RatesArray.GetRange(index - 5, 10).OrderByDescending(r => r.PriceHigh - r.PriceLow).First();
-      tm.CorridorStartDate = rate.StartDate;
+      var rate = tm.RatesArray.IsEmpty() ? null : tm.RatesArray.GetRange((index - 5).Max(0), 10).OrderByDescending(r => r.PriceHigh - r.PriceLow).First();
+      tm.CorridorStartDate = rate?.StartDate;
     }
 
     private TradingMacro GetTradingMacro(CharterControl sender) {

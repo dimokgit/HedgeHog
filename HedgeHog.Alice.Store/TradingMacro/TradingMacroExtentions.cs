@@ -2304,7 +2304,8 @@ namespace HedgeHog.Alice.Store {
               _checkAdjustSuppResCount = false;
               AdjustSuppResCount();
             }
-            IsAsleep = new[] { BuyLevel.InManual, SellLevel.InManual }.All(im => !im) &&
+            IsAsleep = RatesArray.Any() &&
+              new[] { BuyLevel.InManual, SellLevel.InManual }.All(im => !im) &&
               Trades.Length == 0 &&
               IsInVirtualTrading &&
               TradeConditionsHaveAsleep();
@@ -3073,7 +3074,8 @@ namespace HedgeHog.Alice.Store {
           if(priceDate > lastRateDate) {
             ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
             OnLoadRates();
-          } else if(priceDate == lastRateDate)
+          } 
+          else if(priceDate == lastRateDate)
             ri.Last().AddTick(price.Time.Round(roundTo).ToUniversalTime(), price.Ask, price.Bid);
           else {
             Log = new Exception(new { priceDate, lastRateDate } + "");

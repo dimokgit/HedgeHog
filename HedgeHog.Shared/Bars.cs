@@ -530,7 +530,7 @@ namespace HedgeHog.Bars {
       if(Count++ == 0) {
         SetAsk(ask);
         SetBid(bid);
-        StartDate2 = startDate.Round();
+        StartDate2 = startDate;
       } else {
         if(ask > AskHigh)
           AskHigh = ask;
