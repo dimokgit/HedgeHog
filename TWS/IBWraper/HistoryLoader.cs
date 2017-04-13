@@ -132,7 +132,9 @@ namespace IBApp {
         var date2 = date.FromTWSString();
         if(date2 < _endDate)
           _endDate = date2;
-        _list2.Add(_map(date2, open, high, low, close, volume, count));
+        var n = _map(date2, open, high, low, close, volume, count);
+        if(_list2.Count == 0 || !n.Equals(_list2.Last()))
+          _list2.Add(n);
       }
     }
     #endregion
