@@ -116,7 +116,7 @@ namespace IBApp {
       if(reqId != _reqId)
         return;
       _delay = TimeSpan.Zero;
-      _list.InsertRange(0, _list2);
+      _list.InsertRange(0, _list2.Distinct());
       if(_endDate <= _dateStart && (_periodsBack == 0 || _list.Count >= _periodsBack)) {
         CleanUp();
         _done(_list);
@@ -132,9 +132,7 @@ namespace IBApp {
         var date2 = date.FromTWSString();
         if(date2 < _endDate)
           _endDate = date2;
-        var n = _map(date2, open, high, low, close, volume, count);
-        if(_list2.Count == 0 || !n.Equals(_list2.Last()))
-          _list2.Add(n);
+        _list2.Add(_map(date2, open, high, low, close, volume, count));
       }
     }
     #endregion

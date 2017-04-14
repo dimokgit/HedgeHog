@@ -3074,8 +3074,7 @@ namespace HedgeHog.Alice.Store {
           if(priceDate > lastRateDate) {
             ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
             OnLoadRates();
-          } 
-          else if(priceDate == lastRateDate)
+          } else if(priceDate == lastRateDate)
             ri.Last().AddTick(price.Time.Round(roundTo).ToUniversalTime(), price.Ask, price.Bid);
           else {
             Log = new Exception(new { priceDate, lastRateDate } + "");
@@ -4363,8 +4362,10 @@ namespace HedgeHog.Alice.Store {
                     LoadRatesStartDate2 = ratesList[0].StartDate2;
                     var sd1 = ratesList.Last().StartDate;
                     rl.RemoveRange(rl.Count - ratesLocalCount, ratesLocalCount);
-                    rl.RemoveAll(r => r.StartDate2 >= LoadRatesStartDate2);
-                    rl.AddRange(ratesList);
+                    //rl.RemoveAll(r => r.StartDate2 >= LoadRatesStartDate2);
+                    var ld = rl.LastOrDefault()?.StartDate;
+                    var ratesToAdd = ld == null ? ratesList : ratesList.SkipWhile(r => r.StartDate <= ld);
+                    rl.AddRange(ratesToAdd);
                     var rateTail = ratesLocal.SkipWhile(r => r.StartDate <= sd1).ToArray();
                     rl.AddRange(rateTail);
                     return;
