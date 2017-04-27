@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using static EpochTimeExtensions;
 using IBApp;
 
-public class IBClientCore : IBClient,IPricer, ICoreFX {
+public class IBClientCore : IBClient, IPricer, ICoreFX {
   #region Fields
   EReaderMonitorSignal _signal;
   private int _port;
@@ -23,6 +23,7 @@ public class IBClientCore : IBClient,IPricer, ICoreFX {
   private AccountManager _accountManager;
   TradingServerSessionStatus _sessionStatus;
   readonly private MarketDataManager _marketDataManager;
+  private static int _validOrderId;
   #endregion
 
   #region Properties
@@ -30,18 +31,9 @@ public class IBClientCore : IBClient,IPricer, ICoreFX {
   #endregion
 
   #region ICoreEX Implementation
-  public void SetOfferSubscription(string pair) {
-    var c = pair.IsCurrenncy() ? ContractSamples.FxContract(pair) : ContractSamples.Commodity(pair);
-    _marketDataManager.AddRequest(c);
-  }
+  public void SetOfferSubscription(string pair) => _marketDataManager.AddRequest(ContractSamples.ContractFactory(pair));
   public bool IsInVirtualTrading { get; set; }
-
-  public DateTime ServerTime {
-    get {
-      return DateTime.Now + _serverTimeOffset;
-    }
-  }
-
+  public DateTime ServerTime => DateTime.Now + _serverTimeOffset;
   public event EventHandler<LoggedInEventArgs> LoggedOff;
   public event EventHandler<LoggedInEventArgs> LoggingOff;
   public event PropertyChangedEventHandler PropertyChanged;
@@ -54,6 +46,7 @@ public class IBClientCore : IBClient,IPricer, ICoreFX {
   }
   public IBClientCore(EReaderSignal signal, Action<object> trace) : base(signal) {
     _trace = trace;
+    NextValidId += OnNextValidId;
     Error += OnError;
     ConnectionClosed += OnConnectionClosed;
     ConnectionOpend += OnConnectionOpend;
@@ -61,6 +54,14 @@ public class IBClientCore : IBClient,IPricer, ICoreFX {
     ManagedAccounts += OnManagedAccounts;
     _marketDataManager = new MarketDataManager(this);
     _marketDataManager.PriceChanged += OnPriceChanged;
+  }
+
+  private void OnNextValidId(int obj) {
+    _validOrderId = obj;
+  }
+  public int ValidOrderId() {
+    //ClientSocket.reqIds(1);
+    return ++_validOrderId;
   }
   public Price GetPrice(string symbol) { return _marketDataManager.GetPrice(symbol); }
   #region Price Changed

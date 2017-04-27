@@ -57,12 +57,37 @@ namespace IBApp {
       IbClient.AccountSummaryEnd += OnAccountSummaryEnd;
       IbClient.UpdateAccountValue += OnUpdateAccountValue;
       IbClient.UpdatePortfolio += OnUpdatePortfolio;
-      IbClient.ExecDetails += OnExecDetails;
+      IbClient.ExecDetails += OnExecution;
       //IbClient.CommissionReport += OnExecDetails;
 
       IbClient.Position += OnPosition;
+      ibClient.OrderStatus += OnOrderStatus;
+      ibClient.OpenOrder += OnOpenOrder;
+      ibClient.OpenOrderEnd += OnOpenOrderEnd;
+      ;
     }
 
+    private void OnOpenOrderEnd() {
+      IbClient.RaiseError(new Exception("OnOpenOrderEnd"));
+    }
+
+    private void OnOpenOrder(int arg1, Contract arg2, IBApi.Order arg3, OrderState arg4) {
+      IbClient.RaiseError(new Exception(new { OpenOrder = new { arg1, arg2, arg3, arg4 } }.ToJson()
+      ));
+    }
+
+    private void OnOrderStatus(int arg1, string arg2, double arg3, double arg4, double arg5, int arg6, int arg7, double arg8, int arg9, string arg10) {
+      IbClient.RaiseError(new Exception(new {
+        OrderStatus = new {
+          arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10
+        }
+      } + ""));
+    }
+
+    Func<Trade, double> IBCommissionByTrade(Trade trade) {
+      var commissionPerUnit = CommissionByTrade(trade) / trade.Lots;
+      return t => t.Lots * commissionPerUnit;
+    }
     /*
     public bool CloseTrade(Trade trade, int lot, Price price) {
       if(trade.Lots <= lot)
@@ -134,8 +159,30 @@ namespace IBApp {
       public PositionNotFoundException(string symbol) : base(new { symbol } + "") { }
     }
     #region IB Handlers
+    #region Execution Subject
+    object _ExecutionSubjectLocker = new object();
+    ISubject<Tuple<int,Contract,Execution>> _ExecutionSubject;
+    ISubject<Tuple<int, Contract, Execution>> ExecutionSubject {
+      get {
+        lock(_ExecutionSubjectLocker)
+          if(_ExecutionSubject == null) {
+            _ExecutionSubject = new Subject<Tuple<int, Contract, Execution>>();
+            _ExecutionSubject
+              .Where(t => t.Item1 >= 0)
+              .DistinctUntilChanged(t => t.Item1)
+              .Subscribe(s => OnExecDetails(s.Item1, s.Item2, s.Item3), IbClient.RaiseError);
+          }
+        return _ExecutionSubject;
+      }
+    }
+    void OnExecution(int reqId, Contract contract, Execution execution) {
+      ExecutionSubject.OnNext(Tuple.Create(reqId, contract, execution));
+    }
+    #endregion
+
     private void OnExecDetails(int reqId, Contract contract, Execution execution) {
       try {
+        _defaultMessageHandler(new { OnExecDetails = new { reqId } });
         var symbol = contract.LocalSymbol;
         var execTime = execution.Time.FromTWSString();
         var execPrice = execution.AvgPrice;
@@ -150,7 +197,7 @@ namespace IBApp {
         trade.Open = trade.Close = execPrice;
         trade.Lots = execution.CumQty;
         trade.OpenOrderID = execution.OrderId + "";
-        trade.Commission = CommissionByTrade(trade);
+        trade.CommissionByTrade = IBCommissionByTrade(trade);
         #endregion
 
         PositionMessage position;
@@ -199,7 +246,7 @@ namespace IBApp {
         return closeLots - closedTrade.Lots;
       } else {// Partial close
         var trade = closedTrade.Clone();
-        trade.Commission = 0;
+        trade.CommissionByTrade = closedTrade.CommissionByTrade;
         trade.Lots = closeLots;
         trade.Time2Close = execTime;
         trade.Close = execPrice;
@@ -217,7 +264,7 @@ namespace IBApp {
  }
 */
     #region Position
-    #region Position Subject
+    #region Position Subject - Fires once
     object _PositionSubjectLocker = new object();
     ISubject<PosArg> _PositionSubject;
     ISubject<PosArg> PositionSubject {
@@ -261,7 +308,7 @@ namespace IBApp {
 
     private void TraceTrades(string label, IEnumerable<Trade> trades) {
       _defaultMessageHandler(label + (trades.Count() > 1 ? "\n" : "")
-        + string.Join("\n", trades.Select(ot => new { ot.Pair, ot.Position, ot.Time })));
+        + string.Join("\n", trades.Select(ot => new { ot.Pair, ot.Position, ot.Time, ot.Commission })));
     }
 
     private Trade TradeFromPosition(string symbol, PositionMessage position, DateTime st) {
@@ -274,7 +321,7 @@ namespace IBApp {
       trade.Open = position.AverageCost;
       trade.Lots = position.Position.Abs().ToInt();
       trade.OpenOrderID = "";
-      trade.Commission = CommissionByTrade(trade);
+      trade.CommissionByTrade = IBCommissionByTrade(trade);
       return trade;
     }
     #endregion

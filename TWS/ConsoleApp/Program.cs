@@ -14,6 +14,7 @@ using IBApp;
 using HedgeHog;
 using HedgeHog.Shared;
 using HedgeHog.Bars;
+using HedgeHog.Core;
 
 namespace ConsoleApp {
   class Program {
@@ -26,6 +27,7 @@ namespace ConsoleApp {
       ibClient.NextValidId += id => _nextValidId = id;
       ibClient.CurrentTime += time => HandleMessage("Current Time: " + ibClient.ServerTime + "\n");
       ibClient.Error += HandleError;
+      ibClient.OpenOrder += OnOpenOrder;
 
       var coreFx = ibClient as ICoreFX;
       coreFx.LoginError += HandleError;
@@ -34,7 +36,7 @@ namespace ConsoleApp {
 
       var usdJpi = ContractSamples.FxContract("usd/jpy");
       var gold = ContractSamples.Commodity("XAUUSD");
-      if(ibClient.LogOn("", 7497 + "", 2 + "", false)) {
+      if(ibClient.LogOn("", 7497 + "", 0 + "", false)) {
         ibClient.SetOfferSubscription(gold.Instrument);
         var dateEnd = new DateTime( DateTime.Parse("2017-03-08 12:00").Ticks, DateTimeKind.Local);
         var counter = 0;
@@ -49,6 +51,10 @@ namespace ConsoleApp {
       Console.ReadKey();
       ibClient.Logout();
       Console.ReadKey();
+    }
+
+    private static void OnOpenOrder(int reqId, Contract contract, IBApi.Order order, OrderState orderState) {
+      HandleMessage(new { reqId, contract, order, orderState }.ToJson());
     }
 
     private static void OnPriceChanged(Price price) {

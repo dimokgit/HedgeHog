@@ -5,6 +5,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using IBApi;
+using HedgeHog.Shared;
 
 namespace IBApp {
   /*
@@ -20,6 +21,9 @@ namespace IBApp {
    * Any stock or option symbols displayed are for illustrative purposes only and are not intended to portray a recommendation.
    */
   public class ContractSamples {
+    public static Contract ContractFactory(string pair) =>
+     pair.IsCurrenncy() ? ContractSamples.FxContract(pair) : ContractSamples.Commodity(pair);
+
     public static Contract FxContract(string pair) {
       return FxPair(pair);
     }

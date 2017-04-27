@@ -222,8 +222,13 @@ namespace HedgeHog.Shared {
     public string LimitOrderID { get; set; }
 
 
+    double _commission=double.NaN;
     [DataMember]
-    public double Commission { get; set; }
+    public double Commission {
+      get {
+        return double.IsNaN(_commission) ? (CommissionByTrade?.Invoke(this) ?? 0) : _commission; }
+      set { _commission = value; }
+    }
 
     [DataMember]
     public bool IsVirtual { get; set; }

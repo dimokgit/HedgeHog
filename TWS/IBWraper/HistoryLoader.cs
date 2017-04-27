@@ -119,6 +119,7 @@ namespace IBApp {
       _list.InsertRange(0, _list2.Distinct());
       if(_endDate <= _dateStart && (_periodsBack == 0 || _list.Count >= _periodsBack)) {
         CleanUp();
+        _dataEnd(_list);
         _done(_list);
       } else {
         _dataEnd(_list);
@@ -147,7 +148,7 @@ namespace IBApp {
       try {
         string barSizeSetting = (_barSize + "").Replace("_", " ").Trim();
         string whatToShow = "MIDPOINT";
-        _error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
+        //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, 0, 1, new List<TagValue>());
       } catch(Exception exc) {
         _error(exc);
@@ -168,7 +169,7 @@ namespace IBApp {
     };
     private readonly int _periodsBack;
 
-    static string Duration(BarSize barSize, TimeUnit timeUnit, TimeSpan timeSpan) {
+    public static string Duration(BarSize barSize, TimeUnit timeUnit, TimeSpan timeSpan) {
       var interval = (int)(timeUnit == TimeUnit.S ? timeSpan.TotalSeconds : timeSpan.TotalMinutes);
       var range = BarSizeRanges[barSize][timeUnit];
       var duration = Math.Min(Math.Max(interval, range[0]), range[1]);

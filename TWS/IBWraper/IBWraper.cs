@@ -11,6 +11,8 @@ using static HedgeHog.Shared.TradesManagerStatic;
 namespace IBApp {
   public class IBWraper : HedgeHog.Shared.ITradesManager {
     private readonly IBClientCore _ibClient;
+    private static int _nextOrderId=1;
+    private int NetOrderId() => _ibClient.ValidOrderId();
 
     public IBWraper(ICoreFX coreFx, Func<Trade, double> commissionByTrade) {
       CommissionByTrade = commissionByTrade;
@@ -18,8 +20,16 @@ namespace IBApp {
       CoreFX = coreFx;
       _ibClient = (IBClientCore)CoreFX;
       _ibClient.PriceChanged += OnPriceChanged;
-      ;
+      _ibClient.OpenOrder += OnOpenOrder;
       _ibClient.CommissionByTrade = commissionByTrade;
+    }
+
+    private void OnOpenOrder(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) {
+      RaiseOrderAdded(new Order {
+        IsBuy = o.Action == "BUY",
+        Lot = (int)o.TotalQuantity,
+        Pair = c.LocalSymbol
+      });
     }
 
     private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
@@ -28,6 +38,25 @@ namespace IBApp {
     }
 
     #region ITradesManager - Implemented
+
+    public PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment) {
+      throw new NotImplementedException();
+    }
+
+    public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
+      var c = ContractSamples.ContractFactory(pair);
+      var o = new IBApi.Order() {
+        OrderId = NetOrderId(),
+        Action = buy ? "BUY" : "SELL",
+        OrderType = "MKT",
+        TotalQuantity = lots,
+        Tif = "DAY",
+
+      };
+      _ibClient.ClientSocket.placeOrder(o.OrderId, c, o);
+      return null;
+    }
+
 
     #region Methods
     public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1000 : 1;
@@ -56,10 +85,34 @@ namespace IBApp {
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);
       startDate = fxDate(startDate);
-      new HistoryLoader<TBar>(_ibClient, contract, periodsBack, endDate.Max(startDate), (endDate - startDate).Duration(), period == 0 ? TimeUnit.S : TimeUnit.D, period == 0 ? BarSize._1_secs : BarSize._1_min,
+      var timeUnit = period == 0 ? TimeUnit.S : TimeUnit.D;
+      var barSize = period == 0 ? BarSize._1_secs : BarSize._1_min;
+      var duration = (endDate - startDate).Duration();
+      new HistoryLoader<TBar>(
+        _ibClient,
+        contract,
+        periodsBack,
+        endDate.Max(startDate),
+        duration,
+        timeUnit,
+        barSize,
         ToRate<TBar>,
          list => { ticks.AddRange(list); ticks.Sort(); isDone = true; },
-         list => callBack(new RateLoadingCallbackArgs<TBar>(new { HistoryLoader = new { StartDate = list.FirstOrDefault()?.StartDate, EndDate = list.LastOrDefault()?.StartDate } } + "", list)),
+         list => {
+           //var x = new { ReqId = _reqId, contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
+
+           callBack(new RateLoadingCallbackArgs<TBar>(
+             new {
+               HistoryLoader = new {
+                 StartDate = list.FirstOrDefault()?.StartDate,
+                 EndDate = list.LastOrDefault()?.StartDate,
+                 timeUnit,barSize,
+                 contract.Symbol,
+                 duration= HistoryLoader<Rate>.Duration(barSize, timeUnit, duration)
+               }
+             } + "",
+             list));
+         },
          exc => {
            isDone = !(exc is SoftException);
            RaiseError(exc);
@@ -128,6 +181,24 @@ namespace IBApp {
     }
     #endregion
 
+    #region OrderAddedEvent
+    event EventHandler<OrderEventArgs> OrderAddedEvent;
+    public event EventHandler<OrderEventArgs> OrderAdded {
+      add {
+        if (OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
+          OrderAddedEvent += value;
+      }
+      remove {
+        OrderAddedEvent -= value;
+      }
+    }
+
+    void RaiseOrderAdded(Order Order) {
+      if(OrderAddedEvent != null)
+        OrderAddedEvent(this, new OrderEventArgs(Order));
+    }
+    #endregion
+
 
     #region Properties
     public bool HasTicks => false;
@@ -159,7 +230,6 @@ namespace IBApp {
       }
     }
 
-    public event EventHandler<OrderEventArgs> OrderAdded;
     public event EventHandler<OrderEventArgs> OrderChanged;
     public event OrderRemovedEventHandler OrderRemoved;
     public event EventHandler<RequestEventArgs> RequestFailed;
@@ -196,15 +266,33 @@ namespace IBApp {
     }
 
     public bool ClosePair(string pair) {
-      throw new NotImplementedException();
+      var lotBuy = GetTradesInternal(pair).IsBuy(true).Lots();
+      if(lotBuy > 0)
+        ClosePair(pair, true, lotBuy);
+      var lotSell = GetTradesInternal(pair).IsBuy(false).Lots();
+      if(lotSell > 0)
+        ClosePair(pair, false, lotSell);
+      return lotBuy > 0 || lotSell > 0;
     }
 
     public bool ClosePair(string pair, bool isBuy) {
       throw new NotImplementedException();
     }
 
-    public bool ClosePair(string pair, bool isBuy, int lot) {
-      throw new NotImplementedException();
+    public bool ClosePair(string pair, bool buy, int lot) {
+      try {
+        var lotToDelete = Math.Min(lot, GetTradesInternal(pair).IsBuy(buy).Lots());
+        if(lotToDelete > 0) {
+          OpenTrade(pair, !buy, lotToDelete, 0, 0, "", null);
+        } else {
+          RaiseError(new Exception("Pair [" + pair + "] does not have positions to close."));
+          return false;
+        }
+        return true;
+      } catch(Exception exc) {
+        RaiseError(exc);
+        return false;
+      }
     }
 
     public void CloseTrade(Trade trade) {
@@ -325,14 +413,6 @@ namespace IBApp {
     }
 
     public double InPoints(string pair, double? price) { return InPoins(this, pair, price); }
-
-    public PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment) {
-      throw new NotImplementedException();
-    }
-
-    public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
-      throw new NotImplementedException();
-    }
 
     public void RefreshOrders() {
       throw new NotImplementedException();

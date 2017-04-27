@@ -10,7 +10,9 @@ using Newtonsoft.Json.Converters;
 namespace HedgeHog.Core {
   public static class JsonExtensions {
     public static string ToJson(this object obj) {
-      var settings = new Newtonsoft.Json.JsonSerializerSettings();
+      var settings = new Newtonsoft.Json.JsonSerializerSettings() {
+        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+      };
       settings.Converters.Add(new StringEnumConverter());
       return Newtonsoft.Json.JsonConvert.SerializeObject(obj, settings);
     }

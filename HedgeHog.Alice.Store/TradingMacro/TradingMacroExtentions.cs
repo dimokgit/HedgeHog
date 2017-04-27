@@ -2282,7 +2282,8 @@ namespace HedgeHog.Alice.Store {
       get {
         try {
           if(!SnapshotArguments.IsTarget && RatesInternal.Count < Math.Max(1, BarsCount)) {
-            Log = new Exception(new { RatesInternal = new { RatesInternal.Count }, LessThen = new { BarsCount } } + "");
+            if(RatesInternal.Count > BarsCount*0.5)
+              Log = new Exception(new { RatesInternal = new { RatesInternal.Count }, LessThen = new { BarsCount } } + "");
             return new List<Rate>();
           }
 
@@ -3069,7 +3070,7 @@ namespace HedgeHog.Alice.Store {
           ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
         } else {
           var roundTo = BarPeriod == BarsPeriodType.t1 ? RoundTo.Second : RoundTo.Minute;
-          var lastRateDate = ri.Last().StartDate.Round(roundTo);
+          var lastRateDate = ri.BackwardsIterator().Select(r => r.StartDate.Round(roundTo)).FirstOrDefault();
           var priceDate = price.Time.Round(roundTo);
           if(priceDate > lastRateDate) {
             ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
@@ -3077,7 +3078,7 @@ namespace HedgeHog.Alice.Store {
           } else if(priceDate == lastRateDate)
             ri.Last().AddTick(price.Time.Round(roundTo).ToUniversalTime(), price.Ask, price.Bid);
           else {
-            Log = new Exception(new { priceDate, lastRateDate } + "");
+            Log = new Exception(new { AddCurrentTick = new { priceDate, lastRateDate } } + "");
           }
 
         }

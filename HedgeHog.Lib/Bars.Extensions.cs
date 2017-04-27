@@ -929,14 +929,15 @@ namespace HedgeHog.Bars {
     static int GetWeekOfYear(DateTime dateTime) { return callendar.GetWeekOfYear(dateTime, CalendarWeekRule.FirstDay, DayOfWeek.Sunday); }
 
     public static TimeSpan Duration<T>(this IList<T> rates, Func<T, DateTime> date) {
-      var dateLast = date(rates.Last());
-      var dateFirst = date(rates[0]);
-      var isSameWeek = GetWeekOfYear(dateLast) == GetWeekOfYear(dateFirst);
-      var rd = (isSameWeek
-      ? (dateLast - dateFirst)
-      : rates.DurationImpl(date, 5.FromMinutes())
-      );
-      return rd;
+      return (from dateLast in rates.BackwardsIterator().Take(1).Select(date)
+              from dateFirst in rates.Take(1).Select(date)
+              let isSameWeek = GetWeekOfYear(dateLast) == GetWeekOfYear(dateFirst)
+              select (isSameWeek
+              ? (dateLast - dateFirst)
+              : rates.DurationImpl(date, 5.FromMinutes())
+              ))
+              .DefaultIfEmpty()
+              .Single();
     }
     static TimeSpan DurationImpl<T>(this ICollection<T> rates,Func<T,DateTime> date, TimeSpan durationMax) {
       var sw = Stopwatch.StartNew();
