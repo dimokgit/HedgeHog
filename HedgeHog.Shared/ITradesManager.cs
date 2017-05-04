@@ -50,7 +50,7 @@ namespace HedgeHog.Shared {
   public interface IPricer {
     event EventHandler<PriceChangedEventArgs> PriceChanged;
   }
-  public interface ITradesManager: IPricer {
+  public interface ITradesManager : IPricer {
     ICoreFX CoreFX { get; set; }
     bool IsLoggedIn { get; }
     bool IsInTest { get; set; }
@@ -196,9 +196,9 @@ namespace HedgeHog.Shared {
 
   public static class TradesManagerStatic {
     static Offer[] dbOffers = new[] {
-            new Offer { Pair = "USDJPY", Digits = 3,   PointSize = 0.01 },
-            new Offer { Pair = "EURUSD", Digits = 5,   PointSize = 0.0001 },
-            new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01 }
+            new Offer { Pair = "USDJPY", Digits = 3, PointSize = 0.01, MMR=1 },
+            new Offer { Pair = "EURUSD", Digits = 5, PointSize = 0.0001, MMR=1 },
+            new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01, MMR=1 }
           };
     static Func<string,Offer> GetOfferImpl= symbol
       =>  dbOffers

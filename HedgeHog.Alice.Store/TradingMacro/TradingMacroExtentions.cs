@@ -2282,7 +2282,7 @@ namespace HedgeHog.Alice.Store {
       get {
         try {
           if(!SnapshotArguments.IsTarget && RatesInternal.Count < Math.Max(1, BarsCount)) {
-            if(RatesInternal.Count > BarsCount*0.5)
+            if(RatesInternal.Count > BarsCount * 0.5)
               Log = new Exception(new { RatesInternal = new { RatesInternal.Count }, LessThen = new { BarsCount } } + "");
             return new List<Rate>();
           }
@@ -2298,7 +2298,9 @@ namespace HedgeHog.Alice.Store {
               RatePrev = ri[ri.Count - 2];
               RatePrev1 = ri[ri.Count - 3];
               OnSetBarsCountCalc(true);
-              UseRates(_ => RatesArray = ri.GetRange(BarsCountCalc).ToList());
+              if(BarsCountCalc > ri.Count)
+                Log = new Exception(new { RatesArraySafe = new { ratesInternal = new { ri.Count }, BarsCountCalc } } + "");
+              UseRates(_ => RatesArray = ri.GetRange(BarsCountCalc.Min(ri.Count)).ToList());
               RatesDuration = RatesArray.Duration(r => r.StartDate).TotalMinutes.ToInt();
             });
             if(_checkAdjustSuppResCount) {
@@ -2335,7 +2337,7 @@ namespace HedgeHog.Alice.Store {
               UseRates(rates => rates.ToList())
               .ForEach(rates => {
                 if(rates.Count < BarsCount) {
-                  Log = new Exception(new { BarsCount, Error = "Too low" } + "");
+                  Log = new Exception(new { RatesArraySafe = new { rates = new { rates.Count }, BarsCount, Error = "Too low" } } + "");
                   return;
                 }
                 if(VoltageFunction == Alice.VoltageFunction.DistanceMacd) {
@@ -5381,7 +5383,7 @@ namespace HedgeHog.Alice.Store {
       }
       set {
         _ratesDuration = value;
-        RatesPipsPerMInute = InPips(RatesArray.Distances(_priceAvg).Last().Item2) / RatesDuration;
+        RatesPipsPerMInute = InPips(RatesArray.Distances(_priceAvg).TakeLast(1).Select(t => t.Item2).LastOrDefault()) / RatesDuration;
         OnPropertyChanged(() => RatesDuration);
       }
     }

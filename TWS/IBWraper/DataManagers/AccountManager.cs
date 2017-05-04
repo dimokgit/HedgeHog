@@ -32,6 +32,7 @@ namespace IBApp {
     private bool accountUpdateRequestActive = false;
     private string _accountId;
     private readonly Action<object> _defaultMessageHandler;
+    private Action<object> _verbous => _defaultMessageHandler;
     private readonly string _accountCurrency="USD";
     #endregion
 
@@ -61,27 +62,7 @@ namespace IBApp {
       //IbClient.CommissionReport += OnExecDetails;
 
       IbClient.Position += OnPosition;
-      ibClient.OrderStatus += OnOrderStatus;
-      ibClient.OpenOrder += OnOpenOrder;
-      ibClient.OpenOrderEnd += OnOpenOrderEnd;
-      ;
-    }
-
-    private void OnOpenOrderEnd() {
-      IbClient.RaiseError(new Exception("OnOpenOrderEnd"));
-    }
-
-    private void OnOpenOrder(int arg1, Contract arg2, IBApi.Order arg3, OrderState arg4) {
-      IbClient.RaiseError(new Exception(new { OpenOrder = new { arg1, arg2, arg3, arg4 } }.ToJson()
-      ));
-    }
-
-    private void OnOrderStatus(int arg1, string arg2, double arg3, double arg4, double arg5, int arg6, int arg7, double arg8, int arg9, string arg10) {
-      IbClient.RaiseError(new Exception(new {
-        OrderStatus = new {
-          arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10
-        }
-      } + ""));
+      _defaultMessageHandler(nameof(AccountManager) + " is ready");
     }
 
     Func<Trade, double> IBCommissionByTrade(Trade trade) {
@@ -168,9 +149,12 @@ namespace IBApp {
           if(_ExecutionSubject == null) {
             _ExecutionSubject = new Subject<Tuple<int, Contract, Execution>>();
             _ExecutionSubject
-              .Where(t => t.Item1 >= 0)
-              .DistinctUntilChanged(t => t.Item1)
-              .Subscribe(s => OnExecDetails(s.Item1, s.Item2, s.Item3), IbClient.RaiseError);
+              //.Where(t => t.Item1 >= 0)
+              .DistinctUntilChanged(t => {
+                _defaultMessageHandler(new { ExecutionSubject = new { OrderId = t.Item3?.OrderId } });
+                return t.Item3?.OrderId;
+              })
+              .Subscribe(s => OnExecDetails(s.Item1, s.Item2, s.Item3), exc=>_defaultMessageHandler(exc), () => _defaultMessageHandler(new { _defaultMessageHandler = "Completed" }));
           }
         return _ExecutionSubject;
       }
@@ -182,7 +166,7 @@ namespace IBApp {
 
     private void OnExecDetails(int reqId, Contract contract, Execution execution) {
       try {
-        _defaultMessageHandler(new { OnExecDetails = new { reqId } });
+        _verbous(new { OnExecDetails = new { reqId, contract, execution } });
         var symbol = contract.LocalSymbol;
         var execTime = execution.Time.FromTWSString();
         var execPrice = execution.AvgPrice;
@@ -224,11 +208,10 @@ namespace IBApp {
           .Sum(ot => ot.Lots);
         Passager.ThrowIf(() => openLots != position.Quantity);
 
-        _defaultMessageHandler(new { symbol = contract.LocalSymbol + "", execution }.ToJson());
         TraceTrades("Opened: ", OpenTrades);
         TraceTrades("Closed: ", ClosedTrades);
       } catch(Exception exc) {
-        IbClient.RaiseError(exc);
+        _defaultMessageHandler(exc);
       }
     }
 
@@ -275,7 +258,7 @@ namespace IBApp {
             _PositionSubject
               .DistinctUntilChanged(t => new { t.Item2.LocalSymbol, t.Item3.Position })
               .Take(1)
-              .Subscribe(s => OnFirstPosition(s.Item2, s.Item3), exc => { IbClient.RaiseError(exc); }, () => { _defaultMessageHandler($"{nameof(PositionSubject)} is done."); });
+              .Subscribe(s => OnFirstPosition(s.Item2, s.Item3), exc => _defaultMessageHandler(exc), () => { _defaultMessageHandler($"{nameof(PositionSubject)} is done."); });
           }
         return _PositionSubject;
       }

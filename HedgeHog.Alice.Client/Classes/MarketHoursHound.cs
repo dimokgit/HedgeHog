@@ -16,7 +16,7 @@ namespace HedgeHog.Alice.Client {
         var web = new HAP.HtmlWeb();
         var doc = web.Load("http://forex.timezoneconverter.com/?timezone=America/New_York&refresh=5");
         var trs = doc.DocumentNode.SelectNodes("//body//div[@class='markets']/table/tr");
-        return trs.Skip(1).Aggregate(new List<MarketHours>(), (list, tr) => {
+        return trs?.Skip(1).Aggregate(new List<MarketHours>(), (list, tr) => {
           var i = 0;
           var tds = tr.SelectNodes("td");
           list.Add(new MarketHours {

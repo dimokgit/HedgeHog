@@ -63,8 +63,13 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void RequestAddCharterToUI(CharterControl charter) {
-      RxApp.MainThreadScheduler.Schedule(3.FromSeconds(), () =>
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(charter, CharterControl.MessageType.Add));
+      try {
+        charter.Dispatcher.InvokeAsync(
+         () =>
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(charter, CharterControl.MessageType.Add));
+      }catch(Exception exc) {
+        Log = exc;
+      }
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public CharterControl GetCharter(TradingMacro tradingMacro) {

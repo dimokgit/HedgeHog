@@ -11,6 +11,7 @@ using HedgeHog;
 using System.Runtime.CompilerServices;
 using static EpochTimeExtensions;
 using IBApp;
+using HedgeHog.Core;
 
 public class IBClientCore : IBClient, IPricer, ICoreFX {
   #region Fields
@@ -28,6 +29,8 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
 
   #region Properties
   public AccountManager AccountManager { get { return _accountManager; } }
+  public Action<object> Trace => _trace;
+  public void Verbouse(object o) { _trace(o); }
   #endregion
 
   #region ICoreEX Implementation

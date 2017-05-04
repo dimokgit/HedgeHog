@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,11 +10,37 @@ using HedgeHog;
 using HedgeHog.Bars;
 using HedgeHog.Shared;
 using static HedgeHog.Shared.TradesManagerStatic;
+using OpenOrderArg = System.Tuple<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
 namespace IBApp {
   public class IBWraper : HedgeHog.Shared.ITradesManager {
     private readonly IBClientCore _ibClient;
     private static int _nextOrderId=1;
     private int NetOrderId() => _ibClient.ValidOrderId();
+    private void Trace(object o) { _ibClient.Trace(o); }
+    private void Verbous(object o) { _ibClient.Trace(o); }
+
+    #region OpenOrder Subject
+    object _OpenOrderSubjectLocker = new object();
+    ISubject<OpenOrderArg> _OpenOrderSubject;
+    ISubject<OpenOrderArg> OpenOrderSubject {
+      get {
+        lock(_OpenOrderSubjectLocker)
+          if(_OpenOrderSubject == null) {
+            _OpenOrderSubject = new Subject<OpenOrderArg>();
+            _OpenOrderSubject
+              //.Do(t => Verbous(new { OpenOrderSubject = new { reqId = t.Item1, status = t.Item4 } }))
+              .Where(t => t.Item4.Status == "Filled")
+              .DistinctUntilChanged(t => t.Item1)
+              .Subscribe(t => OnOpenOrderImpl(t.Item1, t.Item2, t.Item3, t.Item4), exc => Trace(exc), () => Trace(nameof(OpenOrderSubject) + " is gone"));
+          }
+        return _OpenOrderSubject;
+      }
+    }
+    void OnOpenOrder(OpenOrderArg p) {
+      OpenOrderSubject.OnNext(p);
+    }
+    #endregion
+
 
     public IBWraper(ICoreFX coreFx, Func<Trade, double> commissionByTrade) {
       CommissionByTrade = commissionByTrade;
@@ -21,16 +49,32 @@ namespace IBApp {
       _ibClient = (IBClientCore)CoreFX;
       _ibClient.PriceChanged += OnPriceChanged;
       _ibClient.OpenOrder += OnOpenOrder;
+      //_ibClient.OrderStatus += OnOrderStatus;
       _ibClient.CommissionByTrade = commissionByTrade;
     }
 
-    private void OnOpenOrder(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) {
+    #region OpenOrder
+    private void OnOrderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld) {
+      Verbous(new {
+        OrderStatus = new {
+          orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld
+        }
+      });
+    }
+
+    private static bool IsEntryOrder(IBApi.Order o) => new[] { "MKT", "LMT" }.Contains(o.OrderType);
+    private void OnOpenOrder(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) =>
+      OnOpenOrder(Tuple.Create(reqId, c, o, os));
+    private void OnOpenOrderImpl(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) {
+      Trace(new { OnOpenOrder = new { reqId, c, o, os } });
       RaiseOrderAdded(new Order {
         IsBuy = o.Action == "BUY",
         Lot = (int)o.TotalQuantity,
-        Pair = c.LocalSymbol
+        Pair = c.LocalSymbol,
+        IsEntryOrder = IsEntryOrder(o)
       });
     }
+    #endregion
 
     private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
       var price = e.Price;
@@ -106,9 +150,9 @@ namespace IBApp {
                HistoryLoader = new {
                  StartDate = list.FirstOrDefault()?.StartDate,
                  EndDate = list.LastOrDefault()?.StartDate,
-                 timeUnit,barSize,
+                 timeUnit, barSize,
                  contract.Symbol,
-                 duration= HistoryLoader<Rate>.Duration(barSize, timeUnit, duration)
+                 duration = HistoryLoader<Rate>.Duration(barSize, timeUnit, duration)
                }
              } + "",
              list));
@@ -390,7 +434,7 @@ namespace IBApp {
     }
 
     public Offer GetOffer(string pair) {
-      throw new NotImplementedException();
+      return TradesManagerStatic.GetOffer(pair);
     }
 
     public Offer[] GetOffers() {

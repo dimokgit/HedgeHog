@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static class ReflectionCore {
+    public static bool IsAnonymous(this object o) {
+      return o.GetType().Name.Contains("AnonymousType");
+    }
     public static void SetProperty<T>(this object o, string p, T v) {
       System.Reflection.PropertyInfo pi = o.GetType().GetProperty(p);
       if(pi != null)

@@ -33,6 +33,7 @@ using ReactiveUI.Legacy;
 using static HedgeHog.ReflectionCore;
 using IBApp;
 using static HedgeHog.Core.JsonExtensions;
+using Newtonsoft.Json;
 
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
@@ -67,14 +68,14 @@ namespace HedgeHog.Alice.Client {
     }
 
     #region FXCM
-    void ToJsonLog(object o) => Log = new Exception(o.ToJson());
+    void ToJsonLog(object o) => Log = o is Exception ? (Exception)o : new Exception(o.GetType() == typeof(string) || o.IsAnonymous() ? o + "" : o.ToJson(Formatting.None));
     bool _isIB => MasterAccount.Broker == "IB";
     ICoreFX _coreFX;
     public override ICoreFX CoreFX { get { return _coreFX ?? (_coreFX = _isIB ? IBClientCore.Create(ToJsonLog) : new CoreFX() as ICoreFX); } }
     FXW _fwMaster;
 
     public override FXW FWMaster {
-      get { return _fwMaster ?? (_fwMaster = _isIB? new IBWraper(CoreFX,CommissionByTrade): new FXCoreWrapper(CoreFX, CommissionByTrade) as FXW); }
+      get { return _fwMaster ?? (_fwMaster = _isIB ? new IBWraper(CoreFX, CommissionByTrade) : new FXCoreWrapper(CoreFX, CommissionByTrade) as FXW); }
     }
     public bool IsLoggedIn { get { return CoreFX != null && CoreFX.IsLoggedIn; } }
     bool _isInLogin;
@@ -1262,8 +1263,10 @@ namespace HedgeHog.Alice.Client {
           if(!(TradesManager is VirtualTradesManager)) {
             Action<IList<MarketHours>> a = mks => {
               try {
-                Markets.Clear();
-                mks.ForEach(mh => Markets.Add(mh));
+                if((mks?.Any()).GetValueOrDefault()) {
+                  Markets.Clear();
+                  mks.ForEach(mh => Markets.Add(mh));
+                }
                 //Log = new Exception("Markets Loaded.");
               } catch(Exception exc) { Log = exc; }
             };
@@ -1427,7 +1430,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     void FWMaster_PriceChanged(string pair) {
-      FWMaster_PriceChanged(TradesManager, new PriceChangedEventArgs(pair, new Price( pair), TradesManager.GetAccount(), TradesManager.GetTrades()));
+      FWMaster_PriceChanged(TradesManager, new PriceChangedEventArgs(pair, new Price(pair), TradesManager.GetAccount(), TradesManager.GetTrades()));
     }
     void FWMaster_PriceChanged(object sender, PriceChangedEventArgs e) {
       try {

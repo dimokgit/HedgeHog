@@ -37,8 +37,9 @@ namespace HedgeHog.Alice.Store {
     [MethodImpl(MethodImplOptions.Synchronized)]
     private void ReleasePendingAction(string key) {
       LogPendingActions();
-      if(_pendingEntryOrders.Contains(key)) {
-        _pendingEntryOrders.Remove(key);
+      //if(_pendingEntryOrders.Contains(key)) {
+      foreach(var k in _pendingEntryOrders) {
+        _pendingEntryOrders.Remove(k.Key);
         LogTradingAction(new { Pending = Pair, key, status = "Released." });
       }
     }

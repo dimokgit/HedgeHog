@@ -34,10 +34,14 @@ namespace IBApi
         private double evMultiplier;
         private string modelCode;
 
-        /**
-         * @brief The API client's order Id.
-         */
-        public int OrderId
+    public override string ToString() {
+      return new { OrderId, CumQty, ExecId, Time } + "";
+    }
+
+    /**
+     * @brief The API client's order Id.
+     */
+    public int OrderId
         {
             get { return orderId; }
             set { orderId = value; }
