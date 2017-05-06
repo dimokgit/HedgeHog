@@ -151,7 +151,7 @@ namespace IBApp {
             _ExecutionSubject
               //.Where(t => t.Item1 >= 0)
               .DistinctUntilChanged(t => {
-                _defaultMessageHandler(new { ExecutionSubject = new { OrderId = t.Item3?.OrderId } });
+                //_defaultMessageHandler(new { ExecutionSubject = new { OrderId = t.Item3?.OrderId } });
                 return t.Item3?.OrderId;
               })
               .Subscribe(s => OnExecDetails(s.Item1, s.Item2, s.Item3), exc=>_defaultMessageHandler(exc), () => _defaultMessageHandler(new { _defaultMessageHandler = "Completed" }));
@@ -184,10 +184,6 @@ namespace IBApp {
         trade.CommissionByTrade = IBCommissionByTrade(trade);
         #endregion
 
-        PositionMessage position;
-        if(!_positions.TryGetValue(contract.LocalSymbol, out position))
-          throw new PositionNotFoundException(symbol);
-
         #region Close Trades
         OpenTrades
           .ToArray()
@@ -203,11 +199,27 @@ namespace IBApp {
         if(trade.Lots > 0)
           OpenTrades.Add(trade);
 
-        var openLots = OpenTrades
-          .Where(IsEqual(position))
-          .Sum(ot => ot.Lots);
-        Passager.ThrowIf(() => openLots != position.Quantity);
+        PositionMessage position;
+        if(!_positions.TryGetValue(contract.LocalSymbol, out position))
+          throw new PositionNotFoundException(symbol);
+        var tradeByPosition = TradeFromPosition(contract.LocalSymbol, position, execTime);
 
+        var openLots = (from ot in OpenTrades
+                        where tradeByPosition.Pair == ot.Pair
+                        group ot by ot.IsBuy into g
+                        select new { isBuy = g.Key, sum = g.Sum(t => t.Lots) }
+                        ).ToArray();
+        try {
+          Passager.ThrowIf(() => openLots.Length > 1);
+          openLots.ForEach(openLot => {
+            Passager.ThrowIf(() => openLot.isBuy != position.IsBuy);
+            Passager.ThrowIf(() => openLot.sum != position.Quantity);
+          });
+        }catch(Exception exc) {
+          _defaultMessageHandler(exc);
+          OpenTrades.ToList().ForEach(ot => CloseTrade(execTime, execPrice, ot, ot.Lots));
+          OpenTrades.Add(tradeByPosition);
+        }
         TraceTrades("Opened: ", OpenTrades);
         TraceTrades("Closed: ", ClosedTrades);
       } catch(Exception exc) {

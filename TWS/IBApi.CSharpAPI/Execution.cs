@@ -35,7 +35,7 @@ namespace IBApi
         private string modelCode;
 
     public override string ToString() {
-      return new { OrderId, CumQty, ExecId, Time } + "";
+      return new { OrderId, CumQty, Time } + "";
     }
 
     /**

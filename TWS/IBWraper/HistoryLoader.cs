@@ -104,14 +104,19 @@ namespace IBApp {
         RequestNextDataChunk();
       } else if(code == 162 && error.Contains(NO_DATA)) {
         CleanUp();
-        _error(exc ?? new Exception(new { reqId, code, error } + ""));
+        _error(MakeError(reqId, code, error, exc));
       } else if(reqId < 0 && exc == null) {
-        _error(exc ?? new Exception(new { reqId, code, error } + ""));
+        _error(MakeError(reqId, code, error, exc));
       } else {
         CleanUp();
-        _error(exc ?? new Exception(new { reqId, code, error } + ""));
+        _error(MakeError(reqId, code, error, exc));
       }
     }
+
+    private static Exception MakeError(int reqId, int code, string error, Exception exc) {
+      return exc ?? new Exception(new { HistoryLoader = new { reqId, code, error } } + "");
+    }
+
     private void IbClient_HistoricalDataEnd(int reqId, string startDateTWS, string endDateTWS) {
       if(reqId != _reqId)
         return;

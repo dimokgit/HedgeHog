@@ -121,9 +121,13 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
   public void RaiseError(Exception exc) {
     ((EWrapper)this).error(exc);
   }
-  private void OnError(int arg1, int arg2, string arg3, Exception exc) {
+  private void OnError(int id, int errorCode, string message, Exception exc) {
     if(exc is System.Net.Sockets.SocketException && !ClientSocket.IsConnected())
       RaiseLoginError(exc);
+    if(exc != null)
+      Trace(exc);
+    else
+      Trace(new { IBClientCore = new { id, errorCode, message } });
   }
   #endregion
 

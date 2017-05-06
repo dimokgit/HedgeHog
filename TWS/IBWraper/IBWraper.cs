@@ -132,6 +132,7 @@ namespace IBApp {
       var timeUnit = period == 0 ? TimeUnit.S : TimeUnit.D;
       var barSize = period == 0 ? BarSize._1_secs : BarSize._1_min;
       var duration = (endDate - startDate).Duration();
+      var lastTime = DateTime.Now;
       new HistoryLoader<TBar>(
         _ibClient,
         contract,
@@ -156,13 +157,20 @@ namespace IBApp {
                }
              } + "",
              list));
+           lastTime = DateTime.Now;
          },
          exc => {
            isDone = !(exc is SoftException);
-           RaiseError(exc);
+           Trace(exc);
+           lastTime = DateTime.Now;
          });
-      while(!isDone)
+      while(!isDone) {
         Thread.Sleep(300);
+        if(lastTime.AddMinutes(1) < DateTime.Now) {
+          Trace(new { GetBarsBase = new { lastTime, DateTime.Now, error = "Timeout" } });
+          break;
+        }
+      }
       return;
     }
     public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map) {
