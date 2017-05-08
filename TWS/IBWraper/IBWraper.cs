@@ -51,6 +51,8 @@ namespace IBApp {
       _ibClient.OpenOrder += OnOpenOrder;
       //_ibClient.OrderStatus += OnOrderStatus;
       _ibClient.CommissionByTrade = commissionByTrade;
+      _ibClient.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
+      _ibClient.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
     }
 
     #region OpenOrder
@@ -251,6 +253,40 @@ namespace IBApp {
     }
     #endregion
 
+    #region TradeAddedEvent
+    event EventHandler<TradeEventArgs> TradeAddedEvent;
+    public event EventHandler<TradeEventArgs> TradeAdded {
+      add {
+        if (TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
+          TradeAddedEvent += value;
+      }
+      remove {
+        if (TradeAddedEvent != null)
+          TradeAddedEvent -= value;
+      }
+    }
+    void RaiseTradeAdded(Trade trade) {
+      if(TradeAddedEvent != null)
+        TradeAddedEvent(this, new TradeEventArgs(trade));
+    }
+    #endregion
+
+    #region TradeRemovedEvent
+    event TradeRemovedEventHandler TradeRemovedEvent;
+    public event TradeRemovedEventHandler TradeRemoved {
+      add {
+        if (TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
+          TradeRemovedEvent += value;
+      }
+      remove {
+        TradeRemovedEvent -= value;
+      }
+    }
+    void RaiseTradeRemoved(Trade trade) {
+      if(TradeRemovedEvent != null)
+        TradeRemovedEvent(trade);
+    }
+    #endregion
 
     #region Properties
     public bool HasTicks => false;
@@ -285,9 +321,8 @@ namespace IBApp {
     public event EventHandler<OrderEventArgs> OrderChanged;
     public event OrderRemovedEventHandler OrderRemoved;
     public event EventHandler<RequestEventArgs> RequestFailed;
-    public event EventHandler<TradeEventArgs> TradeAdded;
+
     public event EventHandler<TradeEventArgs> TradeClosed;
-    public event TradeRemovedEventHandler TradeRemoved;
 
     public void ChangeEntryOrderLot(string orderId, int lot) {
       throw new NotImplementedException();

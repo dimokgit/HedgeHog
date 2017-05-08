@@ -40,7 +40,7 @@ namespace IBApp {
     public Account Account { get; private set; }
     private readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade>();
     private readonly ConcurrentDictionary<string, PositionMessage> _positions = new ConcurrentDictionary<string, PositionMessage>();
-    private readonly ReactiveList<Trade> ClosedTrades = new ReactiveUI.ReactiveList<Trade>();
+    private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
     public Func<Trade, double> CommissionByTrade { get; private set; }
     #endregion
 
@@ -54,16 +54,19 @@ namespace IBApp {
       Account = new Account();
       _accountId = accountId;
       _defaultMessageHandler = onMessage ?? new Action<object>(o => { throw new NotImplementedException(new { onMessage } + ""); });
+
       IbClient.AccountSummary += OnAccountSummary;
       IbClient.AccountSummaryEnd += OnAccountSummaryEnd;
       IbClient.UpdateAccountValue += OnUpdateAccountValue;
       IbClient.UpdatePortfolio += OnUpdatePortfolio;
       IbClient.ExecDetails += OnExecution;
-      //IbClient.CommissionReport += OnExecDetails;
-
       IbClient.Position += OnPosition;
+      OpenTrades.ItemsAdded.Subscribe(RaiseTradeAdded);
+      OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved);
+
       _defaultMessageHandler(nameof(AccountManager) + " is ready");
     }
+
 
     Func<Trade, double> IBCommissionByTrade(Trade trade) {
       var commissionPerUnit = CommissionByTrade(trade) / trade.Lots;
@@ -92,12 +95,12 @@ namespace IBApp {
     #region Events
 
     #region TradeAdded Event
-    public class TradeEventArgs : EventArgs {
-      public Trade Trade { get; private set; }
-      public TradeEventArgs(Trade trade) : base() {
-        Trade = trade;
-      }
-    }
+    //public class TradeEventArgs : EventArgs {
+    //  public Trade Trade { get; private set; }
+    //  public TradeEventArgs(Trade trade) : base() {
+    //    Trade = trade;
+    //  }
+    //}
     event EventHandler<TradeEventArgs> TradeAddedEvent;
     public event EventHandler<TradeEventArgs>  TradeAdded {
       add {
@@ -331,15 +334,14 @@ namespace IBApp {
           case "NetLiquidation":
             Account.Equity = double.Parse(value);
             break;
-          case "EquityWithLoanValue":
-          case "AvailableFunds":
-            Account.Balance = double.Parse(value);
+          case "TotalCashValue":
+            Account.Balance = double.Parse(value) + OpenTrades.Gross();
             break;
           case "MaintMarginReq":
             Account.UsableMargin = double.Parse(value);
             break;
         }
-        //_defaultMessageHandler(new AccountValueMessage(key, value, currency, accountName));
+        _defaultMessageHandler(new AccountValueMessage(key, value, currency, accountName));
       }
     }
 
@@ -349,15 +351,14 @@ namespace IBApp {
           case "NetLiquidation":
             Account.Equity = double.Parse(value);
             break;
-          case "EquityWithLoanValue":
-          case "FullAvailableFunds":
-            Account.Balance = double.Parse(value);
+          case "TotalCashValue":
+            Account.Balance = double.Parse(value) + OpenTrades.Gross();
             break;
           case "MaintMarginReq":
             Account.UsableMargin = double.Parse(value);
             break;
         }
-        //_defaultMessageHandler(new AccountSummaryMessage(requestId, account, tag, value, currency));
+        _defaultMessageHandler(new AccountSummaryMessage(requestId, account, tag, value, currency));
       }
     }
     private void OnAccountSummaryEnd(int obj) {

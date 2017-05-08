@@ -2346,11 +2346,12 @@ namespace HedgeHog.Alice.Store {
                 SpreadForCorridor = rates.Spread();
                 RatesHeightCma = rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax);
                 var leg = rates.Count.Div(10).ToInt().Max(1);
-                PriceSpreadAverage = rates
+                PriceSpreadAverage = IsTicks
+                ? rates
                 .Buffer(leg)
                 .Where(b => b.Count > leg * .75)
                 .Select(b => b.Max(r => r.PriceSpread))
-                .Average();
+                .Average() : 0;
                 OnRatesArrayChaged();
                 AdjustSuppResCount();
                 var prices = RatesArray.ToArray(_priceAvg);
@@ -3098,6 +3099,8 @@ namespace HedgeHog.Alice.Store {
     private bool _isPriceSpreadOk;
     public bool IsPriceSpreadOk {
       get {
+        if(!IsTicks)
+          return true;
         if(!_isPriceSpreadOk)
           Log = new Exception(new { _isPriceSpreadOk } + "");
         return _isPriceSpreadOk;

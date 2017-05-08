@@ -219,7 +219,7 @@ namespace HedgeHog.Shared {
       "EUR",
       "CHF",
       "CAD",
-      "AUD",
+      "AUD"
     };
     public static string WrapPair(this string pair) {
       return Regex.Replace(pair, "[./-]", "").ToUpper();
@@ -272,7 +272,7 @@ namespace HedgeHog.Shared {
         ? balance * leverage * tradeRatio
         : rate == 0
         ? 0
-        : balance * leverage / rate;
+        : balance * leverage / rate * tradeRatio;
       return GetLotSize(amountToTrade, baseUnitSize);
     }
     public static double MoneyAndLotToPips(this ITradesManager tm, double money, int lots, string pair) {

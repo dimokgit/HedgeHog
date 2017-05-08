@@ -101,6 +101,8 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
     _accountManager.RequestAccountSummary();
     _accountManager.SubscribeAccountUpdates();
     _accountManager.RequestPositions();
+    _accountManager.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
+    _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
   }
 
   private void OnCurrentTime(long obj) {
@@ -129,6 +131,48 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
     else
       Trace(new { IBClientCore = new { id, errorCode, message } });
   }
+
+
+  #region TradeAdded Event
+  //public class TradeEventArgs : EventArgs {
+  //  public Trade Trade { get; private set; }
+  //  public TradeEventArgs(Trade trade) : base() {
+  //    Trade = trade;
+  //  }
+  //}
+  event EventHandler<TradeEventArgs> TradeAddedEvent;
+  public event EventHandler<TradeEventArgs>  TradeAdded {
+    add {
+      if (TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
+        TradeAddedEvent += value;
+    }
+    remove {
+      TradeAddedEvent -= value;
+    }
+  }
+  protected void RaiseTradeAdded(Trade trade) {
+    if(TradeAddedEvent != null)
+      TradeAddedEvent(this, new TradeEventArgs(trade));
+  }
+  #endregion
+
+  #region TradeRemoved Event
+  event EventHandler<TradeEventArgs> TradeRemovedEvent;
+  public event EventHandler<TradeEventArgs>  TradeRemoved {
+    add {
+      if (TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
+        TradeRemovedEvent += value;
+    }
+    remove {
+      TradeRemovedEvent -= value;
+    }
+  }
+  protected void RaiseTradeRemoved(Trade trade) {
+    if(TradeRemovedEvent != null)
+      TradeRemovedEvent(this, new TradeEventArgs(trade));
+  }
+  #endregion
+
   #endregion
 
   #region Connect/Disconnect

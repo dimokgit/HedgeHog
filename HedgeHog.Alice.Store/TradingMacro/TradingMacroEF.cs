@@ -198,6 +198,7 @@ namespace HedgeHog.Alice.Store {
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
     [DataMemberAttribute()]
+    [WwwSetting(wwwSettingsTradingParams)]
     public global::System.Double TradingRatio {
       get {
         return _TradingRatio;
@@ -1719,6 +1720,7 @@ namespace HedgeHog.Alice.Store {
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
     [DataMemberAttribute()]
+    [WwwSetting(wwwSettingsCorridorCMA)]
     public global::System.Double PriceCmaLevels {
       get {
         return _PriceCmaLevels;

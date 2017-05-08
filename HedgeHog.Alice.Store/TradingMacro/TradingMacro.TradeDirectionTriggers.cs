@@ -227,9 +227,9 @@ namespace HedgeHog.Alice.Store {
     }
     bool _voltsOk = true;
     static ISubject<Action> _canTriggerTradeDirectionSubject = new Subject<Action>();
-    static IDisposable _canTriggerTradeDirectionDisp = _canTriggerTradeDirectionSubject.Sample(2.FromSeconds()).Subscribe(a => a());
+    static IDisposable _canTriggerTradeDirectionDisp = _canTriggerTradeDirectionSubject.Sample(5.FromSeconds()).Subscribe(a => a());
     private bool CanTriggerTradeDirection() {
-      var canTriggerTradeDirection = RatesLengthBy != RatesLengthFunction.DistanceMinSmth || TLBlue.Count > BarsCount && IsRatesLengthStable;
+      var canTriggerTradeDirection = RatesLengthBy != RatesLengthFunction.DistanceMinSmth || IsRatesLengthStable;
       if(IsInVirtualTrading && (!canTriggerTradeDirection || !_voltsOk))
         _canTriggerTradeDirectionSubject.OnNext(() => Log = new Exception(new { canTriggerTradeDirection, IsRatesLengthStable, _voltsOk } + ""));
       return canTriggerTradeDirection;
