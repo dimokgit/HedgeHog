@@ -382,9 +382,6 @@ namespace HedgeHog.Shared {
     public event EventHandler<OrderEventArgs> OrderChanged;
 
     private ConcurrentDictionary<string, Price> PriceCurrent = new ConcurrentDictionary<string,Price>();
-    void OnTradeRemoved(Trade trade) {
-      TradeRemoved?.Invoke(trade);
-    }
 
     #endregion
 

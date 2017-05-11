@@ -52,7 +52,7 @@ namespace IBApp {
       //_ibClient.OrderStatus += OnOrderStatus;
       _ibClient.CommissionByTrade = commissionByTrade;
       _ibClient.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
-      _ibClient.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
+      _ibClient.TradeRemoved += (s, e) => { RaiseTradeClosed(e.Trade); RaiseTradeRemoved(e.Trade); };
     }
 
     #region OpenOrder
@@ -193,6 +193,7 @@ namespace IBApp {
     public Trade[] GetTrades() => _ibClient.AccountManager?.GetTrades() ?? new Trade[0];
     public Trade[] GetTrades(string pair) => GetTrades().Where(t => t.Pair.WrapPair() == pair.WrapPair()).ToArray();
     public Trade[] GetTradesInternal(string Pair) => GetTrades(Pair);
+    public Trade[] GetClosedTrades(string pair) => _ibClient.AccountManager?.GetClosedTrades() ?? new Trade[0];
 
     #endregion
 
@@ -288,6 +289,25 @@ namespace IBApp {
     }
     #endregion
 
+    #region TradeClosedEvent
+    event EventHandler<TradeEventArgs> TradeClosedEvent;
+    public event EventHandler<TradeEventArgs> TradeClosed {
+      add {
+        if (TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
+          TradeClosedEvent += value;
+      }
+      remove {
+        if (TradeClosedEvent != null)
+          TradeClosedEvent -= value;
+      }
+    }
+    void RaiseTradeClosed(Trade trade) {
+      if(TradeClosedEvent != null)
+        TradeClosedEvent(this, new TradeEventArgs(trade));
+    }
+    #endregion
+
+
     #region Properties
     public bool HasTicks => false;
     public bool IsLoggedIn => _ibClient.IsLoggedIn;
@@ -321,8 +341,6 @@ namespace IBApp {
     public event EventHandler<OrderEventArgs> OrderChanged;
     public event OrderRemovedEventHandler OrderRemoved;
     public event EventHandler<RequestEventArgs> RequestFailed;
-
-    public event EventHandler<TradeEventArgs> TradeClosed;
 
     public void ChangeEntryOrderLot(string orderId, int lot) {
       throw new NotImplementedException();
@@ -448,11 +466,10 @@ namespace IBApp {
 
 
     void RaiseNotImplemented(string NotImplementedException) {
-      //RaiseError(new NotImplementedException(new { NotImplementedException } + ""));
+      Trace(new NotImplementedException(new { NotImplementedException } + ""));
     }
-    public Trade[] GetClosedTrades(string pair) {
-      RaiseNotImplemented(nameof(GetClosedTrades));
-      return new Trade[0];
+    void RaiseShouldBeImplemented(string NotImplementedException) {
+      //Trace(new NotImplementedException(new { NotImplementedException } + ""));
     }
 
     public int GetDigits(string pair) => TradesManagerStatic.GetDigits(pair);
@@ -463,12 +480,12 @@ namespace IBApp {
     }
 
     public Order GetNetLimitOrder(Trade trade, bool getFromInternal = false) {
-      RaiseNotImplemented(nameof(GetNetLimitOrder));
+      RaiseShouldBeImplemented(nameof(GetNetLimitOrder));
       return null;
     }
 
     public Order[] GetOrders(string pair) {
-      RaiseNotImplemented(nameof(GetOrders));
+      RaiseShouldBeImplemented(nameof(GetOrders));
       return new Order[0];
     }
 

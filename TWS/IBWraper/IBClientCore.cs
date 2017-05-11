@@ -103,6 +103,7 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
     _accountManager.RequestPositions();
     _accountManager.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
     _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
+    _accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
   }
 
   private void OnCurrentTime(long obj) {
@@ -131,7 +132,6 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
     else
       Trace(new { IBClientCore = new { id, errorCode, message } });
   }
-
 
   #region TradeAdded Event
   //public class TradeEventArgs : EventArgs {
@@ -170,6 +170,24 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
   protected void RaiseTradeRemoved(Trade trade) {
     if(TradeRemovedEvent != null)
       TradeRemovedEvent(this, new TradeEventArgs(trade));
+  }
+  #endregion
+
+  #region TradeClosedEvent
+  event EventHandler<TradeEventArgs> TradeClosedEvent;
+  public event EventHandler<TradeEventArgs> TradeClosed {
+    add {
+      if (TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
+        TradeClosedEvent += value;
+    }
+    remove {
+      if (TradeClosedEvent != null)
+        TradeClosedEvent -= value;
+    }
+  }
+  void RaiseTradeClosed(Trade trade) {
+    if(TradeClosedEvent != null)
+      TradeClosedEvent(this, new TradeEventArgs(trade));
   }
   #endregion
 

@@ -63,7 +63,7 @@ namespace IBApp {
       IbClient.Position += OnPosition;
       OpenTrades.ItemsAdded.Subscribe(RaiseTradeAdded);
       OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved);
-
+      ClosedTrades.ItemsAdded.Subscribe(RaiseTradeClosed);
       _defaultMessageHandler(nameof(AccountManager) + " is ready");
     }
 
@@ -134,10 +134,31 @@ namespace IBApp {
     }
     #endregion
 
+    #region TradeClosedEvent
+    event EventHandler<TradeEventArgs> TradeClosedEvent;
+    public event EventHandler<TradeEventArgs> TradeClosed {
+      add {
+        if (TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
+          TradeClosedEvent += value;
+      }
+      remove {
+        if (TradeClosedEvent != null)
+          TradeClosedEvent -= value;
+      }
+    }
+    void RaiseTradeClosed(Trade trade) {
+      trade.Kind = PositionBase.PositionKind.Closed;
+      trade.TradesManager = null;
+      TradeClosedEvent?.Invoke(this, new TradeEventArgs(trade));
+    }
+    #endregion
+
+
     #endregion
 
     #region Trades
     public Trade[] GetTrades() { return OpenTrades.ToArray(); }
+    public Trade[] GetClosedTrades() { return ClosedTrades.ToArray(); }
     #endregion
     public class PositionNotFoundException : Exception {
       public PositionNotFoundException(string symbol) : base(new { symbol } + "") { }
