@@ -21,7 +21,7 @@ namespace HedgeHog.Alice.Client {
       Func<Rate, double> rateHL = rate => (rate.PriceAvg >= rate.PriceCMALast ? rate.PriceHigh : rate.PriceLow).Round(digits);
       #region map
       var doShowVolt = tm.VoltageFunction != VoltageFunction.None;
-      var doShowVolt2 = tm.VoltageFunction2 != VoltageFunction.None;
+      var doShowVolt2 = tm.VoltageFunction2 != VoltageFunction.None || tm.VoltageFunction == VoltageFunction.PPMH;
       var lastVolt = tm.GetLastVolt().DefaultIfEmpty().Memoize();
       var lastVolt2 = tm.GetLastVolt(tm.GetVoltage2).DefaultIfEmpty().Memoize();
       var lastCma = tm.UseRates(TradingMacro.GetLastRateCma).SelectMany(cma => cma).FirstOrDefault();

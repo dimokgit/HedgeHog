@@ -1019,7 +1019,6 @@
       args.noNote = true;
       serverCall("getWaveRanges", args,
         function (wrs) {
-          debugger;
           wrs.forEach(function (wr) {
             wr.Power = { mx: false, v: wr.Distance.v * wr.HSD.v };
           });

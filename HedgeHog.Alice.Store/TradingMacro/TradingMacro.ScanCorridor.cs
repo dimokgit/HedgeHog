@@ -282,10 +282,22 @@ namespace HedgeHog.Alice.Store {
       }
       public static RateGroup Create(IList<RI> range) => new RateGroup(range);
     }
+    #region GroupRatesCount
+    private int _GroupRatesCount=2000;
+    [WwwSetting(wwwSettingsTrends)]
+    public int GroupRatesCount {
+      get { return _GroupRatesCount; }
+      set {
+        if(_GroupRatesCount != value) {
+          _GroupRatesCount = value;
+          OnPropertyChanged("GroupRatesCount");
+        }
+      }
+    }
 
-    private static List<RateGroup> GroupRatesImpl(IList<Rate> ratesForCorridor) {
-      var sampleMin = 2000;
-      var buffrerSize = (ratesForCorridor.Count / sampleMin).Max(2);
+    #endregion
+    private static List<RateGroup> GroupRatesImpl(IList<Rate> ratesForCorridor,int sampleMin) {
+      var buffrerSize = ratesForCorridor.Count.Div(sampleMin).Ceiling().Max(2);
       var grouped = ratesForCorridor.Select(Tuple.Create<Rate, int>)
         .Buffer(buffrerSize, buffrerSize - 1)
         .Where(b => b.Count > 1)

@@ -248,7 +248,7 @@ namespace HedgeHog.Alice.Store {
 
     Func<IList<Rate>, List<RateGroup>> GroupRates { get; }
     public TradingMacro() {
-      GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates)).MemoizeLast(r => r.Last().StartDate);
+      GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
       this.ObservableForProperty(tm => tm.Pair, false, false)
         .Where(oc => !string.IsNullOrWhiteSpace(oc.Value) && !IsInVirtualTrading)
         .Throttle(1.FromSeconds())

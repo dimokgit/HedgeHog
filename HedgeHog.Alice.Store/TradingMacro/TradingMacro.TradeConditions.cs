@@ -108,6 +108,12 @@ namespace HedgeHog.Alice.Store {
           .SingleOrDefault();
       }
     }
+    public TradeConditionDelegate BSOk {
+      get {
+        return () => TradeDirectionByBool(BuyLevel.Rate.Abs(SellLevel.Rate) <= StDevByPriceAvg);
+      }
+    }
+
     public TradeConditionDelegate THOk {
       get {
         return () => TradeDirectionByBool(IsTradingHour());
@@ -1520,12 +1526,12 @@ namespace HedgeHog.Alice.Store {
 
     #region Angles
     [TradeCondition(TradeConditionAttribute.Types.And)]
-    public TradeConditionDelegate LimeAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TLLime, TrendAngleLime); } }
+    public TradeConditionDelegateHide LimeAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TLLime, TrendAngleLime); } }
     [TradeCondition(TradeConditionAttribute.Types.And)]
-    public TradeConditionDelegate GreenAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TLGreen, TrendAngleGreen); } }
+    public TradeConditionDelegateHide GreenAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TLGreen, TrendAngleGreen); } }
     [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate RedAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TLRed, TrendAngleRed); } }
-    public TradeConditionDelegate PlumAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TLPlum, TrendAnglePlum); } }
+    public TradeConditionDelegateHide PlumAngOk { get { return () => TradeDirectionByAngleCondition(tm => tm.TLPlum, TrendAnglePlum); } }
     [TradeCondition(TradeConditionAttribute.Types.And)]
     public TradeConditionDelegate BlueAngOk {
       get {
@@ -1597,41 +1603,6 @@ namespace HedgeHog.Alice.Store {
         };
         return () => TradeDirectionByBool(isOk() > TipRatio);
       }
-    }
-    [TradeConditionSetCorridor]
-    public TradeConditionDelegate PA23Ok {
-      get {
-        return () => {
-          SetTradelevelsDirectional(SellLevel, BuyLevel);
-          return TradeDirections.Both;
-        };
-      }
-    }
-    [TradeConditionSetCorridor]
-    public TradeConditionDelegate PA23ROk {
-      get {
-        return () => {
-          SetTradelevelsDirectional(BuyLevel, SellLevel);
-          return TradeDirections.Both;
-        };
-      }
-    }
-    void SetTradelevelsDirectional(SuppRes srPA2, SuppRes srPA3) {
-      Action<SuppRes> up3 = sr => sr.RateEx = sr.Rate.Max(TradeLevelByPA3(2));
-      Action<SuppRes> up2 = sr => sr.RateEx = sr.Rate.Max(TradeLevelByPA2(2));
-      Action<SuppRes> down3 = sr => sr.RateEx = sr.Rate.Min(TradeLevelByPA3(2));
-      Action<SuppRes> down2 = sr => sr.RateEx = sr.Rate.Min(TradeLevelByPA2(2));
-      Action setUp = () => {
-        up3(srPA3);
-        up2(srPA2);
-      };
-      Action setDown = () => {
-        down3(srPA3);
-        down2(srPA2);
-      };
-      var isUp = TLBlue.Slope > 0;
-      var avg1 = TLBlue.PriceAvg1;
-      (isUp ? setUp : setDown)();
     }
 
     private IEnumerable<double> TrendLevelsSorted(Func<TL, double> get, Func<double, double, bool> comp, int takeCount) {

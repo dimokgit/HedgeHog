@@ -235,48 +235,6 @@ namespace HedgeHog.Alice.Store {
       return canTriggerTradeDirection;
     }
 
-    //[TradeDirectionTrigger]
-    public void OnAngRGOk() {
-      var bs = new[] { BuyLevel, SellLevel };
-      if(bs.Any(sr => sr.InManual))
-        return;
-      if(!TradeConditionsHaveTurnOff() && Trades.Length == 0 && TradeConditionsEval().Any(b => b.HasAny())) {
-        var angCondsAll = new Dictionary<TradeConditionDelegate, Rate.TrendLevels> {
-          { GreenAngOk,TLGreen  },
-          { RedAngOk,TLRed  },
-          { BlueAngOk,TLBlue  }
-        };
-        var angConds = from ac in angCondsAll
-                       join tc in TradeConditionsInfo() on ac.Key equals tc
-                       select ac;
-        var anonBS = MonoidsCore.ToFunc(0.0, 0.0, (buy, sell) => new { buy, sell });
-        var getBS = MonoidsCore.ToFunc(0, count => {
-          double buy, sell;
-          RatesArray.GetRange(RatesArray.Count - count, count).Height(out sell, out buy);
-          return anonBS(buy, sell);
-        });
-        var setLevels = MonoidsCore.ToFunc(anonBS(0, 0), x => {
-          BuyLevel.ResetPricePosition();
-          BuyLevel.Rate = x.buy;// GetTradeLevel(true, BuyLevel.Rate);
-          SellLevel.ResetPricePosition();
-          SellLevel.Rate = x.sell;// GetTradeLevel(false, SellLevel.RateEx);
-                                  // init trade levels
-          bs.ForEach(sr => {
-            sr.TradesCount = TradeCountStart;
-            sr.CanTrade = true;
-            sr.InManual = true;
-          });
-          return true;
-        });
-        angConds
-          //.Where(kv => kv.Key().HasAny()) //only need this for OR conditions
-          .MaxBy(kv => kv.Value.Count)
-          .Select(kv => getBS(kv.Value.Count))
-          .Where(x => new[] { CurrentPrice.Ask, CurrentPrice.Bid }.All(cp => cp.Between(x.sell, x.buy)))
-          .Select(x => MonoidsCore.ToFunc(() => setLevels(x)))
-          .ForEach(a => a());
-      }
-    }
 
     #region Move Trade corridor
     [TradeDirectionTrigger]
