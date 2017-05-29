@@ -1031,7 +1031,7 @@ namespace HedgeHog.Alice.Store {
         (from tm in TradingMacroTrender()
          from t in BSTipOverlap(tm)
          where isTreshOk(tm, t)
-         select order(t.Item2.IsBuy) ? TradeDirections.Up : TradeDirections.Down
+         select tm.TipRatio > 0 ? TradeDirections.Both : order(t.Item2.IsBuy) ? TradeDirections.Up : TradeDirections.Down
         )
         .SingleOrDefault();
     }

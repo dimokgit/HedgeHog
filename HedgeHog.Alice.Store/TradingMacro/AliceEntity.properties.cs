@@ -1070,6 +1070,7 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryXXX_NU)]
     [DisplayName("Trade On BOW")]
     [Description("If ExitOnFriday, consider this as well")]
+    [WwwSetting(wwwSettingsTradingConditions)]
     public bool TradeOnBOW {
       get { return TradeByFirstWave.GetValueOrDefault(); }
       set {
