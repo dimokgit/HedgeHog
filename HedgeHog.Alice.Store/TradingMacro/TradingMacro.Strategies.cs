@@ -418,7 +418,7 @@ namespace HedgeHog.Alice.Store {
 
       var minutes = (corridorValues.Last().StartDate - corridorValues[0].StartDate).Duration().TotalMinutes;
       var isTicks = BarPeriod == BarsPeriodType.t1;
-      var angleBM = HasTicks  ? 1 / 60.0 : 1.0;
+      var angleBM = HasTicks ? 1 / 60.0 : isTicks ? 0.1 : 1.0;
       Func<IList<Rate>, Tuple<double, double, double>> price = rl => Tuple.Create(rl.Max(r => r.AskHigh), rl.Min(r => r.BidLow), rl.Average(_priceAvg));
       Func<Rate, Tuple<double, double, double>> price0 = r => Tuple.Create(r.AskHigh, r.BidLow, r.PriceAvg);
       var groupped = corridorValues.GroupedDistinct(r => r.StartDate.AddMilliseconds(-r.StartDate.Millisecond), price);

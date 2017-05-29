@@ -284,6 +284,7 @@ namespace HedgeHog.Alice.Store {
     }
     #region GroupRatesCount
     private int _GroupRatesCount=2000;
+    [Category(categoryCorridor)]
     [WwwSetting(wwwSettingsTrends)]
     public int GroupRatesCount {
       get { return _GroupRatesCount; }

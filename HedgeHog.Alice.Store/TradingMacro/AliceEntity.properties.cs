@@ -1623,21 +1623,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-
-    [DisplayName("Trading Ratio")]
-    [Description("Lot Size By % from Account Balance[0.1] or N*1000")]
-    [Category(categoryTrading)]
-    public double TradingRatio_ {
-      get { return TradingRatio; }
-      set {
-        if(TradingRatio != value) {
-          TradingRatio = value;
-          OnPropertyChanged(nameof(TradingRatio_));
-        }
-      }
-    }
-
-
     public int GannAngle1x1Index { get { return GannAnglesList.Angle1x1Index; } }
 
     public bool IsAutoStrategy { get { return Strategy.HasFlag(Strategies.Auto); } }

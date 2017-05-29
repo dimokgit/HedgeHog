@@ -41,7 +41,8 @@ namespace HedgeHog.Alice.Store {
             if(dateMin.IsMin())
               dateMin = DateTime.Now;
             var dateEnd = dateMin.Subtract(offset);
-            fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
+            if(dateStart < dateMin)
+              fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
           }
           var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
           if(dateStart == DateTime.MinValue && q == DateTimeOffset.MinValue)

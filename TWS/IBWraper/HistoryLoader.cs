@@ -98,7 +98,12 @@ namespace IBApp {
     private void HandlePacer(int reqId, int code, string error, Exception exc) {
       if(reqId != _reqId)
         return;
-      if(code == 162 && error.Contains("pacing violation")) {
+      const string NO_DATA = "HMDS query returned no data";
+      if(code == 162 && error.Contains(NO_DATA)) {
+        _endDate = _endDate.AddMinutes(-BarSizeRange(_barSize, _timeUnit).Last());
+        _error(new SoftException(new { _endDate } + ""));
+        RequestNextDataChunk();
+      } else if(code == 162 && error.Contains("pacing violation")) {
         _delay += TimeSpan.FromSeconds(2);
         _error(new DelayException(_delay));
         RequestNextDataChunk();
@@ -174,9 +179,12 @@ namespace IBApp {
     };
     private readonly int _periodsBack;
 
+    private static int[] BarSizeRange(BarSize barSize, TimeUnit timeUnit) {
+      return BarSizeRanges[barSize][timeUnit];
+    }
     public static string Duration(BarSize barSize, TimeUnit timeUnit, TimeSpan timeSpan) {
       var interval = (int)(timeUnit == TimeUnit.S ? timeSpan.TotalSeconds : timeSpan.TotalMinutes);
-      var range = BarSizeRanges[barSize][timeUnit];
+      var range = BarSizeRange(barSize, timeUnit);
       var duration = Math.Min(Math.Max(interval, range[0]), range[1]);
       return duration + " " + timeUnit;
     }
