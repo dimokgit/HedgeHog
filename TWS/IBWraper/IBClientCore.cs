@@ -86,7 +86,7 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
   }
   protected void RaisePriceChanged(Price price) {
     price.Time2 = ServerTime;
-    PriceChangedEvent?.Invoke(this, new PriceChangedEventArgs(null, price, null, null));
+    PriceChangedEvent?.Invoke(this, new PriceChangedEventArgs( price, null, null));
   }
   #endregion
 

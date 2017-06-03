@@ -79,6 +79,7 @@ namespace HedgeHog.Alice.Store {
     public static TradingMacro[] ReadTradingMacros(string tradingacroName, List<Exception> errors) {
       var searchPath = GlobalStorage.ActiveSettingsPath(TradingMacrosPath(tradingacroName.IfEmpty("*"), "*", "*", "*"));
       var paths = Directory.GetFiles(Path.GetDirectoryName(searchPath), Path.GetFileName(searchPath));
+
       return (from path in paths
               select new { tm = GlobalStorage.LoadJson<TradingMacro>(path, errors), path }
               )

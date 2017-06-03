@@ -713,7 +713,7 @@ namespace HedgeHog.Alice.Store {
     public static bool IsTradingHour2(string range, DateTime time) {
       string[][] ranges;
       if(range.TryFromJson(out ranges)) {
-        if(range == null)
+        if(ranges == null)
           return true;
         var timeSpans = ranges.Select(r => r.Select(t => TimeSpan.Parse(t)).ToArray());
         var ands = timeSpans.Where(tsr => !IsTimeRangeReversed(tsr)).Select(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay)).DefaultIfEmpty(true).Any(b=>b);

@@ -191,7 +191,7 @@ namespace IBApp {
     private void OnExecDetails(int reqId, Contract contract, Execution execution) {
       try {
         _verbous(new { OnExecDetails = new { reqId, contract, execution } });
-        var symbol = contract.LocalSymbol;
+        var symbol = contract.Instrument;
         var execTime = execution.Time.FromTWSString();
         var execPrice = execution.AvgPrice;
 

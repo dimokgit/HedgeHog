@@ -1246,7 +1246,7 @@ namespace HedgeHog.Alice.Store {
       var digits = TradesManager.GetDigits(Pair);
       var a = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>
         , PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
-        .Where(pce => pce.EventArgs.Pair == Pair)
+        .Where(pce => pce.EventArgs.Price.Pair == Pair)
         //.Sample((0.1).FromSeconds())
         //.DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
         ;
@@ -1743,7 +1743,7 @@ namespace HedgeHog.Alice.Store {
                     continue;
                   ratePrev = rate;
                   if(this.TradingMacrosByPair().First() == this && (Trades.Any() || IsTradingDay())) {
-                    TradesManager.RaisePriceChanged(Pair, new Price(Pair, rate));
+                    TradesManager.RaisePriceChanged( new Price(Pair, rate));
                   }
                   ReplayEvents();
                   {

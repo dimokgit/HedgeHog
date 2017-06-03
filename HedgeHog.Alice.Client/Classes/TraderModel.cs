@@ -1237,10 +1237,10 @@ namespace HedgeHog.Alice.Client {
           else
             PriceChangeSubscribtion = PriceChanged
               .Do(ie => UpdateTradingAccountTargetBlock.Post(ie.EventArgs.Account))
-              .Where(ie => TradesManager.GetTrades().Select(t => t.Pair).Contains(ie.EventArgs.Pair))
+              .Where(ie => TradesManager.GetTrades().Select(t => t.Pair).Contains(ie.EventArgs.Price.Pair))
               .Buffer(_throttleInterval)
               .Subscribe(l => {
-                l.GroupBy(ie => ie.EventArgs.Pair).Select(g => g.Last()).ToList()
+                l.GroupBy(ie => ie.EventArgs.Price.Pair).Select(g => g.Last()).ToList()
                   .ForEach(ie => FWMaster_PriceChanged(ie.Sender, ie.EventArgs));
               });
           //.GroupByUntil(g => g.EventArgs.Pair, g => Observable.Timer(TimeSpan.FromSeconds(1), System.Concurrency.Scheduler.ThreadPool))
@@ -1430,7 +1430,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     void FWMaster_PriceChanged(string pair) {
-      FWMaster_PriceChanged(TradesManager, new PriceChangedEventArgs(pair, new Price(pair), TradesManager.GetAccount(), TradesManager.GetTrades()));
+      FWMaster_PriceChanged(TradesManager, new PriceChangedEventArgs( new Price(pair), TradesManager.GetAccount(), TradesManager.GetTrades()));
     }
     void FWMaster_PriceChanged(object sender, PriceChangedEventArgs e) {
       try {
@@ -1467,7 +1467,7 @@ namespace HedgeHog.Alice.Client {
         Trade trade = e.Trade;
         OnMasterTradeAdded(trade);
         var tm = (ITradesManager)sender;
-        RunPriceChanged(new PriceChangedEventArgs(trade.Pair, tm.GetPrice(trade.Pair), tm.GetAccount(), tm.GetTrades()));
+        RunPriceChanged(new PriceChangedEventArgs( tm.GetPrice(trade.Pair), tm.GetAccount(), tm.GetTrades()));
       } catch(Exception exc) {
         Log = exc;
       }

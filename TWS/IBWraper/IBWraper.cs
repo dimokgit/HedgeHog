@@ -72,7 +72,7 @@ namespace IBApp {
       RaiseOrderAdded(new Order {
         IsBuy = o.Action == "BUY",
         Lot = (int)o.TotalQuantity,
-        Pair = c.LocalSymbol,
+        Pair = c.Instrument,
         IsEntryOrder = IsEntryOrder(o)
       });
     }
@@ -80,7 +80,7 @@ namespace IBApp {
 
     private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
       var price = e.Price;
-      RaisePriceChanged(price.Pair, price);
+      RaisePriceChanged( price);
     }
 
     #region ITradesManager - Implemented
@@ -226,13 +226,13 @@ namespace IBApp {
         PriceChangedEvent -= value;
       }
     }
-    void RaisePriceChanged(string pair, Price price, Account account, Trade[] trades) {
-      var e = new PriceChangedEventArgs(pair, price, account, trades);
+    void RaisePriceChanged( Price price, Account account, Trade[] trades) {
+      var e = new PriceChangedEventArgs( price, account, trades);
       PriceChangedEvent?.Invoke(this, e);
     }
 
-    public void RaisePriceChanged(string pair, Price price) {
-      RaisePriceChanged(pair, price, GetAccount(), GetTrades());
+    public void RaisePriceChanged( Price price) {
+      RaisePriceChanged( price, GetAccount(), GetTrades());
     }
     #endregion
 

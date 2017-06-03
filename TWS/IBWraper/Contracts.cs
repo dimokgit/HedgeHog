@@ -47,7 +47,7 @@ namespace IBApp {
     static Contract FxPair(string instrument) {
       var pair2 = (from Match m in Regex.Matches(Regex.Replace(instrument, @"\W*", ""), @"\w{3}") select m.Value).ToArray();
       //EXSTART::eurgbpfx::csharp
-      Contract contract = new Contract() { LocalSymbol = instrument };
+      Contract contract = new Contract() { LocalSymbol = instrument.Replace("/", ".").ToUpper() };
       contract.Symbol = pair2[0].ToUpper();
       contract.SecType = "CASH";
       contract.Currency = pair2[1].ToUpper();

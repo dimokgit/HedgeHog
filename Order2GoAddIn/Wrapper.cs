@@ -202,11 +202,11 @@ namespace Order2GoAddIn {
         PriceChangedEvent -= value;
       }
     }
-    public void RaisePriceChanged(string pair, Price price) {
-      RaisePriceChanged(pair, price, GetAccount(), GetTrades());
+    public void RaisePriceChanged( Price price) {
+      RaisePriceChanged( price, GetAccount(), GetTrades());
     }
-    void RaisePriceChanged(string pair, Price price, Account account, Trade[] trades) {
-      var e = new PriceChangedEventArgs(pair, price, account, trades);
+    void RaisePriceChanged(Price price, Account account, Trade[] trades) {
+      var e = new PriceChangedEventArgs( price, account, trades);
       if(_PriceChangedBroadcast != null)
         PriceChangedBroadcast.SendAsync(e);
       if(PriceChangedEvent != null)
@@ -2518,7 +2518,7 @@ namespace Order2GoAddIn {
           case "offers":
             var price = GetPrice(new NameValueParser(rowText));
             SetCurrentPrice(price);
-            RaisePriceChanged(price.Pair, price);
+            RaisePriceChanged( price);
             break;
           case TABLE_ACCOUNTS:
             GetAccount(new NameValueParser(rowText));

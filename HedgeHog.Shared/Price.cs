@@ -6,12 +6,10 @@ using HedgeHog.Bars;
 
 namespace HedgeHog.Shared {
   public class PriceChangedEventArgs : EventArgs {
-    public string Pair { get; set; }
     public Price Price { get; set; }
     public Account Account { get; set; }
     public Trade[] Trades { get; set; }
-    public PriceChangedEventArgs(string pair, Price price, Account account, Trade[] trades) {
-      Pair = pair;
+    public PriceChangedEventArgs( Price price, Account account, Trade[] trades) {
       Price = price;
       Account = account;
       Trades = trades;

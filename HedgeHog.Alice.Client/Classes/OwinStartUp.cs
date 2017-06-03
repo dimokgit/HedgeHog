@@ -59,7 +59,7 @@ namespace HedgeHog.Alice.Client {
 
         NewThreadScheduler.Default.Schedule(TimeSpan.FromSeconds(1), () => {
           priceChanged = trader.PriceChanged
-            .Select(x => x.EventArgs.Pair.Replace("/", "").ToLower())
+            .Select(x => x.EventArgs.Price.Pair.Replace("/", "").ToLower())
             //.Where(pair => Pairs.Contains(pair))
             .Subscribe(pair => {
               try {

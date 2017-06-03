@@ -118,7 +118,7 @@ namespace HedgeHog.Shared {
     #region Events
     event EventHandler<OrderEventArgs> OrderAdded;
     event EventHandler<TradeEventArgs> TradeClosed;
-    void RaisePriceChanged(string pair, Price price);
+    void RaisePriceChanged(Price price);
 
     event EventHandler<TradeEventArgs> TradeAdded;
     event TradeRemovedEventHandler TradeRemoved;
