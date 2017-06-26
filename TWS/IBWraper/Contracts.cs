@@ -20,9 +20,13 @@ namespace IBApp {
    *
    * Any stock or option symbols displayed are for illustrative purposes only and are not intended to portray a recommendation.
    */
-  public class ContractSamples {
+  public static class ContractSamples {
     public static Contract ContractFactory(string pair) =>
-     pair.IsCurrenncy() ? ContractSamples.FxContract(pair) : ContractSamples.Commodity(pair);
+     pair.IsCurrenncy()
+      ? FxContract(pair)
+      : pair.IsFuture()
+      ? Future(pair)
+      : USStock(pair);
 
     public static Contract FxContract(string pair) {
       return FxPair(pair);
@@ -37,6 +41,27 @@ namespace IBApp {
       contract.SecType = "CMDTY";
       contract.Currency = "USD";
       contract.Exchange = "SMART";
+      //EXEND
+      return contract;
+    }
+    public static Contract USStock(string symbol) {
+      //EXSTART::usstock::csharp
+      Contract contract = new Contract() { LocalSymbol = symbol };
+      contract.Symbol = symbol;
+      contract.SecType = "STK";
+      contract.Currency = "USD";
+      contract.Exchange = "SMART";
+      //EXEND
+      return contract;
+    }
+    public static Contract Future(string symbol) {
+      Contract contract = new Contract();
+      contract.SecType = "FUT";
+      contract.Exchange = "GLOBEX";
+      contract.Currency = "USD";
+      contract.LocalSymbol = symbol;
+      contract.IncludeExpired = true;
+      ;
       //EXEND
       return contract;
     }

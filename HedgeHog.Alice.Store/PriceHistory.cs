@@ -63,18 +63,17 @@ namespace HedgeHog.Alice.Store {
         Debug.WriteLine("{0}", args.Message);
       var context = new ForexEntities();
       //context.Configuration.AutoDetectChangesEnabled = false;
-      //context.Configuration.ValidateOnSaveEnabled = false;
+      context.Configuration.ValidateOnSaveEnabled = false;
       Action a = () =>
         args.NewRates.Distinct().Do(t => {
           context.t_Bar.Add(FillBar(period, pair, context.t_Bar.Create(), t));
+        }).TakeLast(1)
+        .ForEach(_ => {
           try {
             context.SaveConcurrent();
           } catch(Exception exc) {
-            if(progressCallback != null)
-              progressCallback(exc);
+            progressCallback?.Invoke(exc);
           }
-        }).TakeLast(1)
-        .ForEach(_ => {
           context.Dispose();
           args.NewRates.Clear();
         });

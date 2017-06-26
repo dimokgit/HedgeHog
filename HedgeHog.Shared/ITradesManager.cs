@@ -195,16 +195,18 @@ namespace HedgeHog.Shared {
 
 
   public static class TradesManagerStatic {
-    static Offer[] dbOffers = new[] {
-            new Offer { Pair = "USDJPY", Digits = 3, PointSize = 0.01, MMR=1 },
-            new Offer { Pair = "EURUSD", Digits = 5, PointSize = 0.0001, MMR=1 },
-            new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01, MMR=1 }
+    readonly static Offer _offerDefault= new Offer { Pair = "DEFAULT", Digits = 3, PointSize = 0.01, MMR = 1, ContractSize = 1 };
+    public static Offer[] dbOffers = new[] {
+            new Offer { Pair = "USDJPY", Digits = 3, PointSize = 0.01, MMR=1, ContractSize = 1000 },
+            new Offer { Pair = "EURUSD", Digits = 5, PointSize = 0.0001, MMR=1, ContractSize = 1000 },
+            new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01, MMR=1, ContractSize = 1 },
+            new Offer { Pair = "SPY", Digits = 3, PointSize = 0.01, MMR = 1, ContractSize = 1 }
           };
     static Func<string,Offer> GetOfferImpl= symbol
       =>  dbOffers
     .Where(o => o.Pair.ToUpper() == symbol.WrapPair())
     .Take(1)
-    .IfEmpty(() => { throw new Exception(new {symbol,not=" found" }+""); })
+    .DefaultIfEmpty(_offerDefault  )
     .Single();
     public static Func<string,Offer> GetOffer=GetOfferImpl.Memoize();
     public static double GetPointSize(string symbol) => GetOffer(symbol).PointSize;
@@ -231,6 +233,7 @@ namespace HedgeHog.Shared {
     }
 
     public static bool IsCurrenncy(this string s) => _currencies.Any(c => s.ToUpper().StartsWith(c)) && _currencies.Any(c => s.ToUpper().EndsWith(c));
+    public static bool IsFuture(this string s) => Regex.IsMatch(s, @"\w{2}[HMUZ]\d{1,2}", RegexOptions.IgnoreCase);
     private static readonly EventLoopScheduler _tradingThread =
       new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; });
 
@@ -285,8 +288,8 @@ namespace HedgeHog.Shared {
     static string[] PairCurrencies(string pair) {
       var ret = Regex.Matches(Regex.Replace(pair, "[^a-z]", "", RegexOptions.IgnoreCase), @"\w{3}")
         .Cast<Match>().Select(m => m.Value.ToUpper()).ToArray();
-      if(ret.Length != 2)
-        throw new ArgumentException(new { pair, error = "Wrong format" } + "");
+      //if(ret.Length != 2)
+      //  throw new ArgumentException(new { pair, error = "Wrong format" } + "");
       return ret;
     }
     public static double PipByPair(string pair, Func<double> left, Func<double> right, Func<double> middle) {
@@ -299,7 +302,7 @@ namespace HedgeHog.Shared {
         new { acc, a = right}
       };
       var curs = PairCurrencies(pair);
-      return (curs.All(c => c.IsCurrenncy())
+      return (curs.Length > 1 && curs.All(c => c.IsCurrenncy())
         ? PairCurrencies(pair)
         .Where(cur => cur.IsCurrenncy())
         .Zip(foos, (c, f) => new { ok = c == f.acc, f.a })

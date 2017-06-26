@@ -125,8 +125,7 @@ namespace IBApp {
       , Action<RateLoadingCallbackArgs<TBar>> callBack = null
       ) where TBar : Rate, new() {
 
-      var isFx = pair.Contains("/");
-      var contract = isFx ? ContractSamples.FxContract(pair) : ContractSamples.Commodity(pair);
+      var contract = ContractSamples.ContractFactory(pair);
       var isDone = false;
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);

@@ -114,6 +114,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [TradeConditionAsleep]
     public TradeConditionDelegate THOk {
       get {
         return () => TradeDirectionByBool(IsTradingHour());

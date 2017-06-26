@@ -270,8 +270,11 @@ namespace HedgeHog.Alice.Store {
         tm => tm.CorridorCalcMethod,
         (v1, rls, v3, v4, v5, v6, v7, v8, v9) => new { v1, rls, v3, v4, v5, v6, v7, v8, v9 }
         )
-        .Where(x => x.rls)
-        .Subscribe(_ => { _mustResetAllTrendLevels = true; OnScanCorridor(RatesArray, () => { }, false); });
+        .Where(x => !IsAsleep && x.rls)
+        .Subscribe(_ => {
+          _mustResetAllTrendLevels = true;
+          OnScanCorridor(RatesArray, () => { }, false);
+        });
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy != Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)
         .Subscribe(nc => {
@@ -2320,7 +2323,7 @@ namespace HedgeHog.Alice.Store {
               BarsCountCalc = BarsCount;
               RaiseShowChart();
               RunStrategy();
-              OnScanCorridor(RatesArray, null, false);
+              //OnScanCorridor(RatesArray, null, false);
               return RatesArray;
             }
 
@@ -3080,7 +3083,7 @@ namespace HedgeHog.Alice.Store {
             OnLoadRates();
           } else if(priceDate == lastRateDate)
             ri.Last().AddTick(price.Time.Round(roundTo).ToUniversalTime(), price.Ask, price.Bid);
-          else {
+          else if(IsTradingHour()) {
             Log = new Exception(new { AddCurrentTick = new { priceDate, lastRateDate } } + "");
           }
 
@@ -4348,7 +4351,7 @@ namespace HedgeHog.Alice.Store {
                 var rateLastDate = r.StartDate;
                 var delay = ServerTime.Subtract(rateLastDate).Duration();
                 var delayMax = 1.0.Max(BarPeriodInt.Max(1) * 60).FromSeconds();
-                if(delay > delayMax) {
+                if(delay > delayMax && Pair.IsCurrenncy()) {
                   if(delay > (delayMax + delayMax))
                     Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
                   ratesList.RemoveAt(ratesList.Count - 1);

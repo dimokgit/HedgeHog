@@ -34,14 +34,17 @@ namespace ConsoleApp {
       coreFx.SubscribeToPropertyChanged(ibc => ibc.SessionStatus, ibc => HandleMessage(new { ibc.SessionStatus } + ""));
       //ibClient.PriceChanged += OnPriceChanged;
 
-      var usdJpi = ContractSamples.FxContract("usd/jpy");
+      var usdJpi2 = ContractSamples.FxContract("usd/jpy");
       var gold = ContractSamples.Commodity("XAUUSD");
-      if(ibClient.LogOn("192.168.2.9", 7497 + "", 102 + "", false)) {
-        ibClient.SetOfferSubscription(usdJpi.Instrument);
-        var dateEnd = new DateTime( DateTime.Parse("2017-03-08 12:00").Ticks, DateTimeKind.Local);
+      var es = ContractSamples.ContractFactory("ESM7");
+      var spy = ContractSamples.ContractFactory("SPY");
+      var contract = spy;
+      if(ibClient.LogOn("192.168.2.10", 7497 + "", 102 + "", false)) {
+        ibClient.SetOfferSubscription(contract.Instrument);
+        var dateEnd = new DateTime( DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
         var counter = 0;
         HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
-        new HistoryLoader<Rate>(ibClient, usdJpi,14400*2, dateEnd, TimeSpan.FromHours(4), TimeUnit.S, BarSize._1_secs,
+        new HistoryLoader<Rate>(ibClient, contract,14400*2, dateEnd, TimeSpan.FromHours(4), TimeUnit.S, BarSize._1_secs,
            map,
            list => HandleMessage(new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate } } + ""),
            dates => HandleMessage(new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter } + ""),
