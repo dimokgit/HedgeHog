@@ -297,7 +297,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    private static List<RateGroup> GroupRatesImpl(IList<Rate> ratesForCorridor,int sampleMin) {
+    private static List<RateGroup> GroupRatesImpl(IList<Rate> ratesForCorridor, int sampleMin) {
       var buffrerSize = ratesForCorridor.Count.Div(sampleMin).Ceiling().Max(2);
       var grouped = ratesForCorridor.Select(Tuple.Create<Rate, int>)
         .Buffer(buffrerSize, buffrerSize - 1)
@@ -424,7 +424,7 @@ namespace HedgeHog.Alice.Store {
         .Select(tl => Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc))
         .ForEach(tl => setTLs(TrendLines2, tl, () => TrendLines2 = tl));
       var overlapSlack = TLsOverlap - 1;
-      Func<TL, bool> isTLMinMax = tl => TrendLinesMinMax.Single(t => t.Item1 == tl).Item2;
+      Func<TL, bool> isTLMinMax = tl => TrendLinesMinMax.Single(t => t.Item1.Color == tl.Color).Item2;
       Func<TL, TL[]> tlsPrev = tl => TrendLinesTrendsAll
         .Skip(TrendLinesTrendsAll.ToList().IndexOf(tl) + 1)
         .SkipWhile(tl0 => isTLMinMax(tl0) != isTLMinMax(tl))
@@ -440,13 +440,14 @@ namespace HedgeHog.Alice.Store {
          .Do(ctl => tl(Lazy.Create(() => ctl)))
          .AsSingleable();
 
-      (from td in TradeConditionHasAny(BlueAngOk).DefaultIfEmpty(TradeDirections.Both)
-       where td.HasAny()
-       from tlr in doTL(TrendRedInt(), tl => setTLs(TrendLines, tl, () => TrendLines = tl), TrendLines, TradeLevelsPreset.Red)
-       from tlp in doTL(TrendPlumInt(), tl => setTLs(TrendLines3, tl, () => TrendLines3 = tl), TrendLines3, TradeLevelsPreset.Plum)
-       from tlg in doTL(TrendGreenInt(), tl => setTLs(TrendLines1, tl, () => TrendLines1 = tl), TrendLines1, TradeLevelsPreset.Green)
-       from tll in doTL(TrendLimeInt(), tl => setTLs(TrendLines0, tl, () => TrendLines0 = tl), TrendLines0, TradeLevelsPreset.Lime)
-       select true
+      (
+        //from td in TradeConditionHasAny(BlueAngOk).DefaultIfEmpty(TradeDirections.Both)
+        //where td.HasAny()
+        from tlr in doTL(TrendRedInt(), tl => setTLs(TrendLines, tl, () => TrendLines = tl), TrendLines, TradeLevelsPreset.Red)
+        from tlp in doTL(TrendPlumInt(), tl => setTLs(TrendLines3, tl, () => TrendLines3 = tl), TrendLines3, TradeLevelsPreset.Plum)
+        from tlg in doTL(TrendGreenInt(), tl => setTLs(TrendLines1, tl, () => TrendLines1 = tl), TrendLines1, TradeLevelsPreset.Green)
+        from tll in doTL(TrendLimeInt(), tl => setTLs(TrendLines0, tl, () => TrendLines0 = tl), TrendLines0, TradeLevelsPreset.Lime)
+        select true
        ).Count();
 
       TrendLinesTrendsAll

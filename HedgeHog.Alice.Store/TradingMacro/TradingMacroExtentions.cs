@@ -407,7 +407,7 @@ namespace HedgeHog.Alice.Store {
       var jump = e.Next.Abs(e.Prev);
       if(jump / BuySellHeight > .15)
         sr.ResetPricePosition();
-      if(jump / RatesHeight > .15) {
+      if(!HaveTrades() && jump / RatesHeight > .15) {
         sr.CanTrade = false;
         sr.TradesCount = 0;
       }
@@ -3737,8 +3737,8 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceAvg2))},
           {TradeLevelBy.PriceMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceAvg3))},
 
-          {TradeLevelBy.TrendMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceMax.Single()+offsetByCR(tl)))},
-          {TradeLevelBy.TrendMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceMin.Single()-offsetByCR(tl)))},
+          {TradeLevelBy.TrendMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceMax.SingleOrDefault()+offsetByCR(tl)))},
+          {TradeLevelBy.TrendMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceMin.SingleOrDefault()-offsetByCR(tl)))},
 
           { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
