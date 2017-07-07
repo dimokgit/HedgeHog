@@ -1023,6 +1023,12 @@ namespace HedgeHog.Alice.Store {
         return () => ok();
       }
     }
+    public TradeConditionDelegate BSTipNOk {
+      get {
+        var ok = BSTipNImpl();
+        return () => ok();
+      }
+    }
 
     private TradeConditionDelegate BSTipImpl(Func<bool, bool> order) {
       Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
@@ -1035,6 +1041,31 @@ namespace HedgeHog.Alice.Store {
          select tm.TipRatio > 0 ? TradeDirections.Both : order(t.Item2.IsBuy) ? TradeDirections.Up : TradeDirections.Down
         )
         .SingleOrDefault();
+    }
+    private TradeConditionDelegate BSTipNImpl() {
+      Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
+      TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + "")).FirstOrDefault();
+      Func<TradingMacro, Tuple<double, SuppRes>, bool> isTreshOk = (tm, t) => IsTresholdAbsOk(_tipRatioCurrent = t.Item1, tipRatioTres(tm));
+      return () =>
+        (from tm in TradingMacroTrender()
+         from t in BSTipNOverlap(tm)
+         where isTreshOk(tm, t)
+         select t.Item2.IsBuy ? TradeDirections.Up : TradeDirections.Down
+        )
+        .Scan((p, n) => p | n)
+        .Where(td=> td== TradeDirections.Both)
+        .DefaultIfEmpty()
+        .Last();
+    }
+    private IEnumerable<Tuple<double, SuppRes>> BSTipNOverlap(TradingMacro tmTrender) {
+      return (from bs in BuySellLevels//.Select(x => x.Rate)
+              let rmm = new[] { tmTrender.RatesMin, tmTrender.RatesMax }
+              from rm in rmm
+              let bsrm = new[] { bs.Rate, rm }
+              let r = bsrm.OverlapRatio(rmm)
+              orderby r
+              select Tuple.Create(r, bs)
+              );
     }
 
     private Singleable<Tuple<double, SuppRes>> BSTipOverlap(TradingMacro tmTrender) {
