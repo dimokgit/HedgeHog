@@ -93,14 +93,16 @@ namespace HedgeHog.Alice.Store {
           .SingleOrDefault();
       }
     }
-    public TradeConditionDelegateHide FrshTrdOk {
+    public TradeConditionDelegate FrshTrdOk {
       get {
         TradingMacroTrader(tm => Log = new Exception(new { FrshTrdOk = new { tm.WavesRsdPerc } } + "")).FirstOrDefault();
         Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
           tm.TradeTrendLines
+          .OrderByDescending(tl=>tl.EndDate)
           .Where(tl => !tl.IsEmpty)
           .IfEmpty(() => { throw new Exception(nameof(TrendLevelByTradeLevel) + "() returned empty handed."); })
           .Where(tl => IsTLFresh(tm, tl, tm.WavesRsdPerc / 100.0)))
+          .Take(1)
           .Concat()
           .AsSingleable();
         return () => tls()

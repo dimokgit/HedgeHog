@@ -115,7 +115,9 @@ namespace HedgeHog {
     }
     public static double[] MinMax<T>(this IEnumerable<T> source, Func<T, double> miner, Func<T, double> maxer) {
       var minMax = source.MinMaxBy(miner, maxer);
-      return new[] { miner(minMax[0]), maxer(minMax[1]) };
+      return  minMax.Any()
+        ?new[] { miner(minMax[0]), maxer(minMax.Last()) }
+        : new[] { double.NaN };
     }
     public static T[] MinMaxBy<T>(this IEnumerable<T> source, Func<T, double> miner, Func<T, double> maxer) {
       var def = default(T);

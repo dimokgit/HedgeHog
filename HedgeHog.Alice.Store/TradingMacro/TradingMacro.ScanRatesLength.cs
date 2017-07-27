@@ -252,21 +252,24 @@ namespace HedgeHog.Alice.Store {
       if(BarPeriod != BarsPeriodType.t1)
         BarsCountCalc = RatesTimeSpanMinimum.TotalMinutes.ToInt();
       else
-        UseRatesInternal(ri => {
-          var dateStart = ri.Last().StartDate.Subtract(RatesTimeSpanMinimum);
-          return ri.FuzzyIndex(dateStart, (ds, r1, r2) => ds.Between(r1.StartDate, r2.StartDate)).DefaultIfEmpty(0);
-        })
-        .SelectMany(i => i)
-        .ForEach(i => {
-          var count = RatesInternal.Count - i;
-          if(count >= BarsCount)
-            BarsCountCalc = count;
-        });
+        GetRatesByTimeFrame()
+          .ForEach(c => BarsCountCalc = c);
       Task.Delay(1000).ContinueWith(_ => IsRatesLengthStable = true);
     }
     void ScanRatesLengthByMinHeight() {
-      BarsCountByMinHeight(InPoints(RatesHeight)).ForEach(count => BarsCountCalc = count);
-      IsRatesLengthStable = true;
+      var rhms = new[] { RatesHeightMin > 1
+        ? RatesHeightMin
+        : RateLast.PriceAvg * RatesHeightMin
+      };
+
+      rhms
+        .Where(_ => !IsAsleep)
+        .Select(rhm => BarsCountByMinHeight(InPoints(rhm)))
+        .Concat()
+        .Concat(GetRatesByTimeFrame())
+        .Take(1)
+        .ForEach(count => BarsCountCalc = count);
+      IsRatesLengthStable = !IsAsleep;
     }
     void ScanRatesLengthByBBSD() {
       var bbsd = InPoints(RatesHeightMin);
@@ -275,7 +278,6 @@ namespace HedgeHog.Alice.Store {
         .Where(b => b.Ratio(bbsd) > 1.01)
         .Select(b => (BarsCountCalc / Math.Sqrt(b / bbsd)).ToInt())
         .Concat(GetRatesByTimeFrame())
-        .Concat(new[] { BarsCount })
         .OrderByDescending(c => c)
         .Take(1)
         .ForEach(count => SetRatesLengthStable(count).With(c => BarsCountCalc = c.Ratio(BarsCountCalc) > 1.01 ? c : BarsCountCalc));
@@ -284,20 +286,23 @@ namespace HedgeHog.Alice.Store {
       UseRatesInternal(ri => BarsCountByStDevByReg(ri, 0, InPoints(RatesHeightMin)))
         .Concat()
         .Concat(GetRatesByTimeFrame())
-        .Concat(new[] { BarsCount })
         .OrderByDescending(c => c)
         .Take(1)
         .ForEach(count => SetRatesLengthStable(count).With(c => BarsCountCalc = c.Ratio(BarsCountCalc) > 1.01 ? c : BarsCountCalc));
     }
 
     private IEnumerable<int> BarsCountByMinHeight(double ratesHeightMin) {
-      return UseRatesInternal(ri =>
+      return IsAsleep
+        ? GetRatesByTimeFrame()
+        : UseRatesInternal(ri =>
         ri.BackwardsIterator()
         .Scan(new { min = double.MaxValue, max = double.MinValue }, (x, y) => new { min = x.min.Min(y.PriceAvg), max = x.max.Max(y.PriceAvg) })
         .TakeWhile(x => x.max - x.min < ratesHeightMin)
         .Count()
-      )
-      .Where(count => count >= BarsCount);
+        )
+        .Concat(GetRatesByTimeFrame())
+        .OrderByDescending(c => c)
+        .Take(1);
     }
     private int[] BarsCountByStDevByReg(IList<Rate> rates, int countStart, double stDevMin) {
       var prices = rates.Reverse().ToList(_priceAvg);
@@ -415,7 +420,8 @@ namespace HedgeHog.Alice.Store {
         .Concat()
         .Select(i => RatesInternal.Count - i)
         .DefaultIfEmpty(RatesInternal.Count)
-       .ToArray();
+        .AsSingleable()
+        .ToArray();
     }
 
     DateTime __barsCountLastDate = DateTime.MinValue;

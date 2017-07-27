@@ -75,6 +75,7 @@ namespace IBApp {
         PriceChangedEvent -= value;
       }
     }
+
     protected void RaisePriceChanged(Price price) {
       _currentPrices.AddOrUpdate(price.Pair, price, (s, p) => price);
       PriceChangedEvent?.Invoke(price);

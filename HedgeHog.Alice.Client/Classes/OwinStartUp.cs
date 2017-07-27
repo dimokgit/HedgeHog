@@ -753,6 +753,8 @@ namespace HedgeHog.Alice.Client {
           + "/" + (am.OriginalProfit).ToString("p1")));
         if(tm.LastTradeLoss != 0)
           list2.Add(row("Last Loss", tm.LastTradeLoss.AutoRound2("$", 2)));
+        if(tm.Trades.Any())
+          list2.Add(row("CurrentLot", tm.Trades.Lots()));
         list2.Add(row("PipAmount", tm.PipAmount.AutoRound2("$", 2) + "/" + tm.PipAmountPercent.AutoRound2(3).ToString("p")));
         list2.Add(row("PipsToMC", (!ht ? tm.PipsToPMCByLot : am.PipsToMC).ToString("n0")));
         list2.Add(row("LotSize", (tm.IsCurrency? (tm.LotSize / 1000.0).Floor() + "K/":tm.LotSize+"/") + tm.LotSizePercent.ToString("p0")));

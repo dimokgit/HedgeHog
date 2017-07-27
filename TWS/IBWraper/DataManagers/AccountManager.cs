@@ -176,7 +176,7 @@ namespace IBApp {
               //.Where(t => t.Item1 >= 0)
               .DistinctUntilChanged(t => {
                 //_defaultMessageHandler(new { ExecutionSubject = new { OrderId = t.Item3?.OrderId } });
-                return t.Item3?.OrderId;
+                return t.Item3?.ExecId;
               })
               .Subscribe(s => OnExecDetails(s.Item1, s.Item2, s.Item3), exc=>_defaultMessageHandler(exc), () => _defaultMessageHandler(new { _defaultMessageHandler = "Completed" }));
           }

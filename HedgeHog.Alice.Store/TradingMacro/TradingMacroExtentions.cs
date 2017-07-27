@@ -2168,7 +2168,7 @@ namespace HedgeHog.Alice.Store {
     public double CenterOfMassSell2 {
       get { return _CenterOfMassSell2; }
       private set {
-        CenterOfMassSell3 = _CenterOfMassSell2;
+        //CenterOfMassSell3 = _CenterOfMassSell2;
         _CenterOfMassSell2 = value;
       }
     }
@@ -2176,7 +2176,7 @@ namespace HedgeHog.Alice.Store {
     public double CenterOfMassBuy2 {
       get { return _CenterOfMassBuy2; }
       private set {
-        CenterOfMassBuy3 = _CenterOfMassBuy2;
+        //CenterOfMassBuy3 = _CenterOfMassBuy2;
         _CenterOfMassBuy2 = value;
       }
     }
@@ -2319,6 +2319,7 @@ namespace HedgeHog.Alice.Store {
             //ResetBarsCountCalc();
             RatesHeight = RatesArray.Height(r => r.AskHigh, r => r.BidLow, out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
 
+            SetCentersOfMassSubject.OnNext(SetCentersOfMass);
             if(IsAsleep) {
               BarsCountCalc = BarsCount;
               RaiseShowChart();
@@ -3212,7 +3213,7 @@ namespace HedgeHog.Alice.Store {
         if(lot > 0) {
           pa();
           LogTradingAction(string.Format("{0}[{1}]: {2} {3} from {4} by [{5}]", Pair, BarPeriod, isBuy ? "Buying" : "Selling", lot, new StackFrame(3).GetMethod().Name, reason));
-          TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", null);
+          TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", CurrentPrice);
         }
       });
     }
@@ -4699,6 +4700,8 @@ namespace HedgeHog.Alice.Store {
     public bool HasBuyLevel { get { return Resistances.Length > 0; } }
     public Store.SuppRes BuyLevel {
       get {
+        if(RatesArray.IsEmpty())
+          return new Store.SuppRes();
         if(!HasBuyLevel)
           AdjustSuppResCount();
         if(!HasBuyLevel)
@@ -4719,6 +4722,8 @@ namespace HedgeHog.Alice.Store {
     public bool HasSellLevel { get { return Supports.Length > 0; } }
     public Store.SuppRes SellLevel {
       get {
+        if(RatesArray.IsEmpty())
+          return new Store.SuppRes();
         if(!HasSellLevel)
           AdjustSuppResCount();
         if(!HasBuyLevel)

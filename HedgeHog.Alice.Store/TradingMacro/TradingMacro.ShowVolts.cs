@@ -61,7 +61,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.PPMB:
           return () => ShowVoltsByPPMB(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLsTimeAvg:
-          return () => ShowVoltsByTLsTimeAvg(true,getVolts, setVolts);
+          return () => ShowVoltsByTLsTimeAvg(true, getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLsTimeMax:
           return () => ShowVoltsByTLsTimeAvg(false, getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.RiskReward:
@@ -257,7 +257,7 @@ namespace HedgeHog.Alice.Store {
 
       return null;
     }
-    CorridorStatistics ShowVoltsByTLsTimeAvg(bool useMin,Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+    CorridorStatistics ShowVoltsByTLsTimeAvg(bool useMin, Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       return IsRatesLengthStableGlobal()
         ? TLTimeAvg(useMin).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault()
         : null;
@@ -325,12 +325,12 @@ namespace HedgeHog.Alice.Store {
         Func<TL, double[]> dateRange = tl => new[] { tl.StartDate, tl.EndDate }.ToArray(d => (d - dateMin).TotalMinutes);
         //var dateOverlapOk = !tl3.Permutation().Any(t => dateRange(t.Item1).DoSetsOverlap(TLsOverlap - 1, dateRange(t.Item2)));
         //if(dateOverlapOk) {
-          var dateZero = tl3[0].StartDate;
-          Func<DateTime, double> date0 = d => d.Subtract(dateZero).TotalMinutes;
-          Func<TL, double[]> tlTMs = tl => new[] { date0(tl.StartDate), date0(tl.EndDate) };
-          var tl3MM = tl3.Select(tl => tlTMs(tl)).ToArray();
-          var overlap = tl3MM.Pairwise((tm1, tm2) => tm1.OverlapRatio(tm2)).Average().ToPercent();
-          ShowVolts(overlap, VoltAverageIterations, getVolt, setVolt);
+        var dateZero = tl3[0].StartDate;
+        Func<DateTime, double> date0 = d => d.Subtract(dateZero).TotalMinutes;
+        Func<TL, double[]> tlTMs = tl => new[] { date0(tl.StartDate), date0(tl.EndDate) };
+        var tl3MM = tl3.Select(tl => tlTMs(tl)).ToArray();
+        var overlap = tl3MM.Pairwise((tm1, tm2) => tm1.OverlapRatio(tm2)).Average().ToPercent();
+        ShowVolts(overlap, VoltAverageIterations, getVolt, setVolt);
         //}
       }
       return null;
@@ -525,6 +525,24 @@ namespace HedgeHog.Alice.Store {
         .Select(a => map(rates2, a.t, a.b));
     }
     private void SetCentersOfMass() {
+      var startHour = 5;
+      var endHour = 8;
+      var stripHoursGreen = new[] { ServerTime.Date.AddHours(startHour), ServerTime.Date.AddHours(endHour) };
+      SetCenterOfMassByM1Hours(stripHoursGreen, b => {
+        CenterOfMassBuy = b[1];
+        CenterOfMassSell = b[0];
+      });
+      var stripHoursBlue = new[] { ServerTime.Date.AddDays(-1).AddHours(startHour), ServerTime.Date.AddDays(-1).AddHours(endHour) };
+      SetCenterOfMassByM1Hours(stripHoursBlue, b => {
+        CenterOfMassBuy2 = b[1];
+        CenterOfMassSell2 = b[0];
+      });
+      var stripHoursRed = new[] { ServerTime.Date.AddDays(-2).AddHours(startHour), ServerTime.Date.AddDays(-2).AddHours(endHour) };
+      SetCenterOfMassByM1Hours(stripHoursRed, b => {
+        CenterOfMassBuy3 = b[1];
+        CenterOfMassSell3 = b[0];
+      });
+
       return;
       var height = ScanCorridorByStDevAndAngleHeightMin();
       GetSenterOfMassStrip(RatesArray.ToArray(_priceAvg), height, 0, (rates, t, b) => new { rates = UseVoltage ? rates : null, t, b })
@@ -545,6 +563,17 @@ namespace HedgeHog.Alice.Store {
           }
         });
     }
+
+    private void SetCenterOfMassByM1Hours(DateTime[] stripHours,Action<IList<double>> setCenterOfMass) {
+      TradingMacroM1(tm => tm.UseRatesInternal(ri =>
+      ri.BackwardsIterator().SkipWhile(r => r.StartDate > stripHours[1]).TakeWhile(r => r.StartDate > stripHours[0]).MinMax(r => r.BidLow, r => r.AskHigh)))
+        .Concat()
+        .Concat()
+        .Buffer(2)
+        .Where(b => b.Count > 1)
+        .ForEach(setCenterOfMass);
+    }
+
     int _integrationPeriod { get { return CorridorHeightMax.ToInt(); } }
 
     int _AoPeriodFast = 5;

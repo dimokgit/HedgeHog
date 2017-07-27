@@ -200,7 +200,7 @@ namespace HedgeHog.Shared {
             new Offer { Pair = "USDJPY", Digits = 3, PointSize = 0.01, MMR=1, ContractSize = 1000 },
             new Offer { Pair = "EURUSD", Digits = 5, PointSize = 0.0001, MMR=1, ContractSize = 1000 },
             new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01, MMR=1, ContractSize = 1 },
-            new Offer { Pair = "SPY", Digits = 3, PointSize = 0.01, MMR = 1, ContractSize = 1 }
+            new Offer { Pair = "SPY", Digits = 3, PointSize = 0.01, MMR = 0.250, ContractSize = 1 }
           };
     static Func<string,Offer> GetOfferImpl= symbol
       =>  dbOffers
@@ -234,6 +234,7 @@ namespace HedgeHog.Shared {
 
     public static bool IsCurrenncy(this string s) => _currencies.Any(c => s.ToUpper().StartsWith(c)) && _currencies.Any(c => s.ToUpper().EndsWith(c));
     public static bool IsFuture(this string s) => Regex.IsMatch(s, @"\w{2}[HMUZ]\d{1,2}", RegexOptions.IgnoreCase);
+    public static bool IsUSStock(this string s) => !s.IsCurrenncy() && !s.IsFuture();
     private static readonly EventLoopScheduler _tradingThread =
       new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; });
 

@@ -22,6 +22,8 @@ namespace IBApp {
     #region OpenOrder Subject
     object _OpenOrderSubjectLocker = new object();
     ISubject<OpenOrderArg> _OpenOrderSubject;
+    private Price _currentPrice;
+
     ISubject<OpenOrderArg> OpenOrderSubject {
       get {
         lock(_OpenOrderSubjectLocker)
@@ -79,6 +81,7 @@ namespace IBApp {
     #endregion
 
     private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
+      _currentPrice = e.Price;
       var price = e.Price;
       RaisePriceChanged( price);
     }
@@ -90,15 +93,21 @@ namespace IBApp {
     }
 
     public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
+      var isStock = pair.IsUSStock();
+      var rth = new[] { price.Time.Date.AddHours(9.5), price.Time.Date.AddHours(16) };
+      var isPreRTH = isStock && !price.Time.Between(rth);
+      var orderType = isPreRTH ? "LMT" : "MKT";
       var c = ContractSamples.ContractFactory(pair);
       var o = new IBApi.Order() {
         OrderId = NetOrderId(),
         Action = buy ? "BUY" : "SELL",
-        OrderType = "MKT",
+        OrderType = orderType,
         TotalQuantity = lots,
         Tif = "DAY",
-
+        OutsideRth=isPreRTH
       };
+      if(orderType == "LMT")
+        o.LmtPrice = buy ? price.Ask : price.Bid;
       _ibClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
     }
@@ -106,7 +115,7 @@ namespace IBApp {
 
     #region Methods
     public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1000 : 1;
-    public double Leverage(string pair) => 1;
+    public double Leverage(string pair) => GetBaseUnitSize(pair) / GetOffer(pair).MMR;
     public Trade TradeFactory(string pair) => Trade.Create(this, pair, GetPipSize(pair), GetBaseUnitSize(pair), CommissionByTrade);
 
     public double InPips(string pair, double? price) => price.GetValueOrDefault() / GetPipSize(pair);
@@ -387,7 +396,7 @@ namespace IBApp {
       try {
         var lotToDelete = Math.Min(lot, GetTradesInternal(pair).IsBuy(buy).Lots());
         if(lotToDelete > 0) {
-          OpenTrade(pair, !buy, lotToDelete, 0, 0, "", null);
+          OpenTrade(pair, !buy, lotToDelete, 0, 0, "", _currentPrice);
         } else {
           RaiseError(new Exception("Pair [" + pair + "] does not have positions to close."));
           return false;

@@ -20,7 +20,7 @@ namespace HedgeHog.Shared {
     public static int Lots(this IEnumerable<Trade> trades) {
       return trades.Select(t => t.Lots).DefaultIfEmpty().Sum();
     }
-    public static double NetLots(this IEnumerable<Trade> trades) {
+    public static int NetLots(this IEnumerable<Trade> trades) {
       return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.Buy ? t.Lots : -t.Lots);
     }
     public static double GrossInPips(this IEnumerable<Trade> trades) {
