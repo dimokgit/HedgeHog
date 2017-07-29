@@ -16,6 +16,8 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using ReactiveUI;
 using PosArg = System.Tuple<string, IBApi.Contract, IBApp.PositionMessage>;
+using System.Diagnostics;
+
 namespace IBApp {
   public class AccountManager : DataManager {
     #region Constants
@@ -173,12 +175,12 @@ namespace IBApp {
           if(_ExecutionSubject == null) {
             _ExecutionSubject = new Subject<Tuple<int, Contract, Execution>>();
             _ExecutionSubject
-              //.Where(t => t.Item1 >= 0)
+              .Where(t => t.Item1 == -1)
               .DistinctUntilChanged(t => {
                 //_defaultMessageHandler(new { ExecutionSubject = new { OrderId = t.Item3?.OrderId } });
                 return t.Item3?.ExecId;
               })
-              .Subscribe(s => OnExecDetails(s.Item1, s.Item2, s.Item3), exc=>_defaultMessageHandler(exc), () => _defaultMessageHandler(new { _defaultMessageHandler = "Completed" }));
+              .Subscribe(s => OnExecDetails(s.Item1, s.Item2, s.Item3), exc => _defaultMessageHandler(exc), () => _defaultMessageHandler(new { _defaultMessageHandler = "Completed" }));
           }
         return _ExecutionSubject;
       }
@@ -190,13 +192,16 @@ namespace IBApp {
 
     private void OnExecDetails(int reqId, Contract contract, Execution execution) {
       try {
-        _verbous(new { OnExecDetails = new { reqId, contract, execution } });
+        //_verbous(new { OnExecDetails = new { reqId, contract, execution } });
         var symbol = contract.Instrument;
         var execTime = execution.Time.FromTWSString();
         var execPrice = execution.AvgPrice;
+        var orderId = execution.OrderId + "";
 
         #region Create Trade
-        var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), BaseUnitSize, null);
+        var trade = OpenTrades.SingleOrDefault(t => t.OpenOrderID == orderId);
+        var isPartial = trade != null;
+        trade = trade ?? Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), BaseUnitSize, null);
         trade.Id = execution.PermId + "";
         trade.Buy = execution.Side == "BOT";
         trade.IsBuy = trade.Buy;
@@ -211,6 +216,7 @@ namespace IBApp {
         #region Close Trades
         OpenTrades
           .ToArray()
+          .Where(t => t.OpenOrderID != orderId)
           .Where(IsNotEqual(trade))
           .Scan(0, (lots, otClose) => {
             var cL = CloseTrade(execTime, execPrice, otClose, trade.Lots);
@@ -220,32 +226,33 @@ namespace IBApp {
           .Count();
         #endregion
 
-        if(trade.Lots > 0)
+        if(!isPartial && trade.Lots > 0)
           OpenTrades.Add(trade);
 
         PositionMessage position;
         if(!_positions.TryGetValue(contract.LocalSymbol, out position))
           throw new PositionNotFoundException(symbol);
         var tradeByPosition = TradeFromPosition(contract.LocalSymbol, position, execTime);
+        TraceTrades("tradeByPositiont:", new[] { tradeByPosition });
 
-        var openLots = (from ot in OpenTrades
-                        where tradeByPosition.Pair == ot.Pair
-                        group ot by ot.IsBuy into g
-                        select new { isBuy = g.Key, sum = g.Sum(t => t.Lots) }
-                        ).ToArray();
-        try {
-          Passager.ThrowIf(() => openLots.Length > 1);
-          openLots.ForEach(openLot => {
-            Passager.ThrowIf(() => openLot.isBuy != position.IsBuy);
-            Passager.ThrowIf(() => openLot.sum != position.Quantity);
-          });
-        }catch(Exception exc) {
-          _defaultMessageHandler(exc);
-          OpenTrades.ToList().ForEach(ot => CloseTrade(execTime, execPrice, ot, ot.Lots));
-          OpenTrades.Add(tradeByPosition);
-        }
-        TraceTrades("Opened: ", OpenTrades);
-        TraceTrades("Closed: ", ClosedTrades);
+        //var openLots = (from ot in OpenTrades
+        //                where tradeByPosition.Pair == ot.Pair
+        //                group ot by ot.IsBuy into g
+        //                select new { isBuy = g.Key, sum = g.Sum(t => t.Lots) }
+        //                ).ToArray();
+        //try {
+        //  Passager.ThrowIf(() => openLots.Length > 1);
+        //  openLots.ForEach(openLot => {
+        //    Passager.ThrowIf(() => openLot.isBuy != position.IsBuy);
+        //    Passager.ThrowIf(() => openLot.sum != position.Quantity);
+        //  });
+        //}catch(Exception exc) {
+        //  _defaultMessageHandler(exc);
+        //  OpenTrades.ToList().ForEach(ot => CloseTrade(execTime, execPrice, ot, ot.Lots));
+        //  OpenTrades.Add(tradeByPosition);
+        //}
+        //TraceTrades("Opened: ", OpenTrades);
+        //TraceTrades("Closed: ", ClosedTrades);
       } catch(Exception exc) {
         _defaultMessageHandler(exc);
       }
@@ -362,7 +369,7 @@ namespace IBApp {
             Account.UsableMargin = double.Parse(value);
             break;
         }
-        _defaultMessageHandler(new AccountValueMessage(key, value, currency, accountName));
+        //_defaultMessageHandler(new AccountValueMessage(key, value, currency, accountName));
       }
     }
 
@@ -379,7 +386,7 @@ namespace IBApp {
             Account.UsableMargin = double.Parse(value);
             break;
         }
-        _defaultMessageHandler(new AccountSummaryMessage(requestId, account, tag, value, currency));
+        //_defaultMessageHandler(new AccountSummaryMessage(requestId, account, tag, value, currency));
       }
     }
     private void OnAccountSummaryEnd(int obj) {

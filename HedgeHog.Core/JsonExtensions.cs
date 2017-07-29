@@ -31,6 +31,7 @@ namespace HedgeHog.Core {
       }
     }
 
+    public static string ToJson<T>(this T o, bool format) => o.ToJson(format ? Formatting.Indented : Formatting.None);
     /// <summary>
     /// Convert object to JSON string
     /// </summary>
