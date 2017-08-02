@@ -20,7 +20,7 @@ namespace IBApp {
     public DelayException(TimeSpan delay) : base(new { delay } + "") { }
   }
   #region HistoryLoader
-  public class HistoryLoader<T> {
+  public class HistoryLoader<T> where T:HedgeHog.Bars.BarBaseDate {
     private static int _currentTicker=0;
     #region Fields
     public const int HISTORICAL_ID_BASE = 30000000;
@@ -94,7 +94,6 @@ namespace IBApp {
     #endregion
 
     #region Event Handlers
-    const string NO_DATA="HMDS query returned no data";
     private void HandlePacer(int reqId, int code, string error, Exception exc) {
       if(reqId != _reqId)
         return;
@@ -126,7 +125,7 @@ namespace IBApp {
       if(reqId != _reqId)
         return;
       _delay = TimeSpan.Zero;
-      _list.InsertRange(0, _list2.Distinct());
+      _list.InsertRange(0, _list2.Distinct().SkipWhile(b=> _periodsBack == 0 && b.StartDate< _dateStart));
       if(_endDate <= _dateStart && (_periodsBack == 0 || _list.Count >= _periodsBack)) {
         CleanUp();
         _dataEnd(_list);

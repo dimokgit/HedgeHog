@@ -2190,7 +2190,9 @@ namespace HedgeHog.Alice.Store {
       get { return _CenterOfMassBuy3; }
       private set { _CenterOfMassBuy3 = value; }
     }
-
+    public DateTime[] CenterOfMassDates { get; private set; }
+    public DateTime[] CenterOfMass2Dates { get; private set; }
+    public DateTime[] CenterOfMass3Dates { get; private set; }
     #endregion
     public double SuppResMinimumDistance { get { return CurrentPrice.Spread * 2; } }
 

@@ -175,11 +175,11 @@ namespace IBApp {
           if(_ExecutionSubject == null) {
             _ExecutionSubject = new Subject<Tuple<int, Contract, Execution>>();
             _ExecutionSubject
-              .Where(t => t.Item1 == -1)
-              .DistinctUntilChanged(t => {
-                //_defaultMessageHandler(new { ExecutionSubject = new { OrderId = t.Item3?.OrderId } });
-                return t.Item3?.ExecId;
-              })
+              //.Where(t => t.Item1 == -1)
+              //.DistinctUntilChanged(t => {
+              //  //_defaultMessageHandler(new { ExecutionSubject = new { OrderId = t.Item3?.OrderId } });
+              //  return t.Item3?.ExecId;
+              //})
               .Subscribe(s => OnExecDetails(s.Item1, s.Item2, s.Item3), exc => _defaultMessageHandler(exc), () => _defaultMessageHandler(new { _defaultMessageHandler = "Completed" }));
           }
         return _ExecutionSubject;
@@ -189,26 +189,28 @@ namespace IBApp {
       ExecutionSubject.OnNext(Tuple.Create(reqId, contract, execution));
     }
     #endregion
-
+    ConcurrentDictionary<string,int> _executions= new ConcurrentDictionary<string, int>();
     private void OnExecDetails(int reqId, Contract contract, Execution execution) {
       try {
-        //_verbous(new { OnExecDetails = new { reqId, contract, execution } });
+        _verbous(new { OnExecDetails = new { reqId, contract, execution } });
         var symbol = contract.Instrument;
         var execTime = execution.Time.FromTWSString();
         var execPrice = execution.AvgPrice;
         var orderId = execution.OrderId + "";
 
         #region Create Trade
-        var trade = OpenTrades.SingleOrDefault(t => t.OpenOrderID == orderId);
-        var isPartial = trade != null;
-        trade = trade ?? Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), BaseUnitSize, null);
+        var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), BaseUnitSize, null);
         trade.Id = execution.PermId + "";
         trade.Buy = execution.Side == "BOT";
         trade.IsBuy = trade.Buy;
         trade.Time2 = execTime;
         trade.Time2Close = execution.Time.FromTWSString();
         trade.Open = trade.Close = execPrice;
-        trade.Lots = execution.CumQty;
+
+        _executions.TryGetValue(orderId, out int orderLot);
+        trade.Lots = execution.CumQty - orderLot;
+        _executions.AddOrUpdate(orderId, _ => execution.CumQty, (s, i) => i + execution.CumQty);
+
         trade.OpenOrderID = execution.OrderId + "";
         trade.CommissionByTrade = IBCommissionByTrade(trade);
         #endregion
@@ -226,14 +228,19 @@ namespace IBApp {
           .Count();
         #endregion
 
-        if(!isPartial && trade.Lots > 0)
+        if(trade.Lots > 0)
           OpenTrades.Add(trade);
+
+        OpenTrades
+          .Where(t => t.Lots == 0)
+          .ToList()
+          .ForEach(t => OpenTrades.Remove(t));
 
         PositionMessage position;
         if(!_positions.TryGetValue(contract.LocalSymbol, out position))
           throw new PositionNotFoundException(symbol);
-        var tradeByPosition = TradeFromPosition(contract.LocalSymbol, position, execTime);
-        TraceTrades("tradeByPositiont:", new[] { tradeByPosition });
+        //var tradeByPosition = TradeFromPosition(contract.LocalSymbol, position, execTime,orderId);
+        //TraceTrades("tradeByPositiont:", new[] { tradeByPosition });
 
         //var openLots = (from ot in OpenTrades
         //                where tradeByPosition.Pair == ot.Pair
@@ -251,8 +258,8 @@ namespace IBApp {
         //  OpenTrades.ToList().ForEach(ot => CloseTrade(execTime, execPrice, ot, ot.Lots));
         //  OpenTrades.Add(tradeByPosition);
         //}
-        //TraceTrades("Opened: ", OpenTrades);
-        //TraceTrades("Closed: ", ClosedTrades);
+        TraceTrades("Opened: ", OpenTrades);
+        TraceTrades("Closed: ", ClosedTrades);
       } catch(Exception exc) {
         _defaultMessageHandler(exc);
       }
@@ -314,12 +321,13 @@ namespace IBApp {
     private void OnPosition(string account, Contract contract, double pos, double avgCost) {
       var position = new PositionMessage(account, contract, pos, avgCost);
       _positions.AddOrUpdate(position.Key().Item1, position, (k, p) => position);
+      //_defaultMessageHandler(nameof(OnPosition) + ": " + string.Join("\n", _positions));
       OnPositionSubject(account, contract, position);
-      IbClient.ClientSocket.reqExecutions(IbClient.NextOrderId, new ExecutionFilter() {
-        Symbol = contract.LocalSymbol,
-        //Side = (trade.IsBuy ? ExecutionFilter.Sides.BUY : ExecutionFilter.Sides.SELL) + "",
-        Time = IbClient.ServerTime.ToTWSString()
-      });
+      //IbClient.ClientSocket.reqExecutions(IbClient.NextOrderId, new ExecutionFilter() {
+      //  Symbol = contract.LocalSymbol,
+      //  //Side = (trade.IsBuy ? ExecutionFilter.Sides.BUY : ExecutionFilter.Sides.SELL) + "",
+      //  Time = IbClient.ServerTime.ToTWSString()
+      //});
     }
 
     private void OnFirstPosition(Contract contract, PositionMessage position) {
@@ -327,7 +335,7 @@ namespace IBApp {
       var st = IbClient.ServerTime;
 
       if(position.Position != 0 && !OpenTrades.Any(IsEqual(position)))
-        OpenTrades.Add(TradeFromPosition(contract.LocalSymbol, position, st));
+        OpenTrades.Add(TradeFromPosition(contract.LocalSymbol, position, st, ""));
 
       TraceTrades("Opened: ", OpenTrades);
     }
@@ -337,7 +345,7 @@ namespace IBApp {
         + string.Join("\n", trades.Select(ot => new { ot.Pair, ot.Position, ot.Time, ot.Commission })));
     }
 
-    private Trade TradeFromPosition(string symbol, PositionMessage position, DateTime st) {
+    private Trade TradeFromPosition(string symbol, PositionMessage position, DateTime st, string openOrderId) {
       var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), BaseUnitSize, null);
       trade.Id = DateTime.Now.Ticks + "";
       trade.Buy = position.Position > 0;
@@ -346,7 +354,7 @@ namespace IBApp {
       trade.Time2Close = IbClient.ServerTime;
       trade.Open = position.AverageCost;
       trade.Lots = position.Position.Abs().ToInt();
-      trade.OpenOrderID = "";
+      trade.OpenOrderID = openOrderId;
       trade.CommissionByTrade = IBCommissionByTrade(trade);
       return trade;
     }

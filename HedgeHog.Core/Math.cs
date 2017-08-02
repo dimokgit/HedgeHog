@@ -258,6 +258,7 @@ namespace HedgeHog {
       }
       return dtRounded;
     }
+    public static DateTime SetKind(this DateTime d) => DateTime.SpecifyKind(d, DateTimeKind.Local);
     public static DateTime Round(this DateTime d, RoundTo rt) {
       DateTime dtRounded = new DateTime();
       switch(rt) {

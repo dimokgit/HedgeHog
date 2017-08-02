@@ -97,12 +97,12 @@ namespace HedgeHog.Alice.Client {
               setAuthScheme?.Invoke(remoteControl.Value);
               setAuthScheme = null;
               //var tm = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == Pair);
-                try {
-                  GlobalHost.ConnectionManager.GetHubContext<MyHub>()
-                    .Clients.All.addMessage();
-                } catch(Exception exc) {
-                  GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-                }
+              try {
+                GlobalHost.ConnectionManager.GetHubContext<MyHub>()
+                  .Clients.All.addMessage();
+              } catch(Exception exc) {
+                GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+              }
             });
 
           if(context.Request.Path.Value.ToLower().StartsWith("/hello")) {
@@ -313,9 +313,9 @@ namespace HedgeHog.Alice.Client {
         tci = GetTradeConditionsInfo(tmTrader),
         wp = tmTrader.WaveHeightPower.Round(1),
         ip = remoteControl.Value.ReplayArguments.InPause ? 1 : 0,
-        com = new { b = tmTrader.CenterOfMassBuy.Round(digits), s = tmTrader.CenterOfMassSell.Round(digits) },
-        com2 = new { b = tmTrader.CenterOfMassBuy2.Round(digits), s = tmTrader.CenterOfMassSell2.Round(digits) },
-        com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits) },
+        com = new { b = tmTrader.CenterOfMassBuy.Round(digits), s = tmTrader.CenterOfMassSell.Round(digits), dates = tmTrader.CenterOfMassDates ?? new DateTime [0] },
+        com2 = new { b = tmTrader.CenterOfMassBuy2.Round(digits), s = tmTrader.CenterOfMassSell2.Round(digits), dates = tmTrader.CenterOfMass2Dates ?? new DateTime[0] },
+        com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits), dates = tmTrader.CenterOfMass3Dates ?? new DateTime[0] },
         tpls = tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
         tts = HasMinMaxTradeLevels(tmTrader) ? tmTrender.TradeTrends : "",
         tti = GetTradeTrendIndexImpl(tmTrader, tmTrender)
@@ -757,7 +757,7 @@ namespace HedgeHog.Alice.Client {
           list2.Add(row("CurrentLot", tm.Trades.Lots()));
         list2.Add(row("PipAmount", tm.PipAmount.AutoRound2("$", 2) + "/" + tm.PipAmountPercent.AutoRound2(3).ToString("p")));
         list2.Add(row("PipsToMC", (!ht ? tm.PipsToPMCByLot : am.PipsToMC).ToString("n0")));
-        list2.Add(row("LotSize", (tm.IsCurrency? (tm.LotSize / 1000.0).Floor() + "K/":tm.LotSize+"/") + tm.LotSizePercent.ToString("p0")));
+        list2.Add(row("LotSize", (tm.IsCurrency ? (tm.LotSize / 1000.0).Floor() + "K/" : tm.LotSize + "/") + tm.LotSizePercent.ToString("p0")));
         return list2;
       }).Concat();
       return list.Concat(more).ToArray();
@@ -795,7 +795,7 @@ namespace HedgeHog.Alice.Client {
       return remoteControl?.Value?
         .TradingMacrosCopy
         .Where(tm => tm.IsActive && tm.IsTrader)
-        .Select(tm=> tm.PairPlain)
+        .Select(tm => tm.PairPlain)
         .ToArray();
     }
     private void GetTradingMacro(string pair, Action<TradingMacro> action) {
@@ -859,7 +859,7 @@ namespace HedgeHog.Alice.Client {
     }
     T UseTradingMacro<T>(string pair, int chartNum, Func<TradingMacro, T> func) {
       try {
-        return GetTradingMacro(pair, chartNum).Select(func).IfEmpty(() => {throw new Exception(new { notFound = new { pair, chartNum } } + ""); }).First();
+        return GetTradingMacro(pair, chartNum).Select(func).IfEmpty(() => { throw new Exception(new { notFound = new { pair, chartNum } } + ""); }).First();
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;

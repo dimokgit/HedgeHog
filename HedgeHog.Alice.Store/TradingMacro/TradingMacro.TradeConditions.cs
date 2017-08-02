@@ -100,7 +100,7 @@ namespace HedgeHog.Alice.Store {
           tm.TradeTrendLines
           .OrderByDescending(tl=>tl.EndDate)
           .Where(tl => !tl.IsEmpty)
-          .IfEmpty(() => { throw new Exception(nameof(TrendLevelByTradeLevel) + "() returned empty handed."); })
+          .IfEmpty(() => { if(!IsAsleep) throw new Exception(nameof(TrendLevelByTradeLevel) + "() returned empty handed.");  })
           .Where(tl => IsTLFresh(tm, tl, tm.WavesRsdPerc / 100.0)))
           .Take(1)
           .Concat()

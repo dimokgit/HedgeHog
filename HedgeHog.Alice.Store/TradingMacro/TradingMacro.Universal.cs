@@ -586,7 +586,7 @@ namespace HedgeHog.Alice.Store {
                   onOpenTradeLocal += t => {
                     canTradeByTradeCount(t);
                     toai().ForEach(x => {
-                      Log = new Exception("TradeOpenAction:" + x.n);
+                      Log = new Exception(nameof(TradeOpenAction) + ": " + x.n);
                       x.d(t);
                     });
                   };

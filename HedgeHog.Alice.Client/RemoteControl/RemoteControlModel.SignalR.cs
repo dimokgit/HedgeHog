@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using HedgeHog.Alice.Store;
 using HedgeHog.Bars;
+using HedgeHog.DateTimeZone;
 using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client {
@@ -20,6 +21,10 @@ namespace HedgeHog.Alice.Client {
       string pair = tm.Pair;
       Func<Rate, double> rateHL = rate => (rate.PriceAvg >= rate.PriceCMALast ? rate.PriceHigh : rate.PriceLow).Round(digits);
       #region map
+      var rth = new[] { new TimeSpan(9, 30, 0), new TimeSpan(16, 0, 0) };
+      var rthDates = MonoidsCore.ToFunc((DateTime dt) => dt.Date.With(d => rth.Select(h => d + h)).ToArray()).MemoizeLast(dt => dt.Date);
+      bool isRth(DateTime dt)
+      { return dt.Between(rthDates(dt)); }
       var doShowVolt = tm.VoltageFunction != VoltageFunction.None;
       var doShowVolt2 = tm.VoltageFunction2 != VoltageFunction.None || tm.VoltageFunction == VoltageFunction.PPMH;
       var lastVolt = tm.GetLastVolt().DefaultIfEmpty().Memoize();
@@ -32,7 +37,8 @@ namespace HedgeHog.Alice.Client {
         v2 = doShowVolt2 ? tm.GetVoltage2(rate).IfNaNOrZero(lastVolt2) : 0,
         m = rate.PriceCMALast.IfNaNOrZero(lastCma).Round(digits),
         a = rate.AskHigh.Round(digits),
-        b = rate.BidLow.Round(digits)
+        b = rate.BidLow.Round(digits),
+        h = isRth(rate.StartDate.InNewYork())
       });
       #endregion
       var exit = false;// doShowVolt && lastVolt.IsEmpty() || doShowVolt2 && lastVolt2.IsEmpty();

@@ -5,7 +5,7 @@
 /*global ko, d3, Enumerable,_*/
 /*ignore jscs*/
 (function () {
-  function tradeLevelUIFactory(x, y, on, manual, tradeCount,canTrade) {
+  function tradeLevelUIFactory(x, y, on, manual, tradeCount, canTrade) {
     return {
       x: x, y: y,
       on: on ? true : false,
@@ -15,7 +15,7 @@
     };
   }
   var margin = { top: 0, right: 10, bottom: 20, left: 0 };
-  function calcElementHeight(width){
+  function calcElementHeight(width) {
     return width * 9 / 16.0 - 15;
   }
   var xAxisOffset = 5;
@@ -24,12 +24,12 @@
   }
   function calcChartArea(element) {
     var elementWidth = parseInt(d3.select(element).style("width"), 10),
-    elementHeight = calcElementHeight(elementWidth),// parseInt(d3.select(element).style("height"), 10),
-    width = elementWidth - margin.left - margin.right,
-    height = elementHeight - margin.top - margin.bottom,
-    x = d3.scaleTime().range([xAxisOffset, width - xAxisOffset]),
-    y = d3.scaleLinear().range([height, 0]),
-    y2 = d3.scaleLinear().range([height, height * 4 / 5]);
+      elementHeight = calcElementHeight(elementWidth),// parseInt(d3.select(element).style("height"), 10),
+      width = elementWidth - margin.left - margin.right,
+      height = elementHeight - margin.top - margin.bottom,
+      x = d3.scaleTime().range([xAxisOffset, width - xAxisOffset]),
+      y = d3.scaleLinear().range([height, 0]),
+      y2 = d3.scaleLinear().range([height, height * 4 / 5]);
     y3 = d3.scaleLinear().range([height / 5, 0]);
     return { width: width, height: height, x: x, y: y, y2: y2, y3: y3 };
   }
@@ -69,7 +69,7 @@
   var redStrip = "redStrip";
   var doCorridorStartDate = false;
   var showLineLog = false;
-  var tpsChartNum = [0,1];
+  var tpsChartNum = [0, 1];
   ko.bindingHandlers.lineChart = {
     init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
       "use strict";
@@ -86,25 +86,25 @@
         width = chartArea.width,
         height = chartArea.height,
         svg = d3.select(element).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .on("dblclick", chartData.togglePause.bind(chartData, 0))
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .on("dblclick", chartData.togglePause.bind(chartData, 0))
+          .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
       // #endregion
 
       // #region axis'
       svg.append("g")
-          .attr("class", "x axis")
-          .attr("transform", "translate(0," + height + ")");
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")");
 
       svg.append("g")
-          .attr("transform", "translate(" + (width) + ",0)")
-          .attr("class", "y axis")
-          .append("text")
-          .attr("transform", "rotate(-90)")
-          .attr("y", 6)
-          .attr("dy", ".71em")
+        .attr("transform", "translate(" + (width) + ",0)")
+        .attr("class", "y axis")
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
       //.style("text-anchor", "end")
       //.text("Price ($)");
       if (chartNum === 1) {
@@ -112,17 +112,17 @@
         addRect("dayTailRect", tickAreaBgColor);
       }
       // coms
-      addRect(redStrip, "#FAE6E6", 0.5);
-      addRect(blueStrip, "lavender", 0.5);
+      addRect(redStrip, "#FAE6E6", 0.8);
+      addRect(blueStrip, "lavender", 0.8);
       addRect(greenStrip, "#E6FAE6", 0.6);
 
       if (hasTps) {
         svg.append("g")
-            .attr("class", "y2 axis");
+          .attr("class", "y2 axis");
         addLine("tpsHigh", "silver").style("opacity", tpsOpacity);
         addLine("tpsLow", "silver").style("opacity", tpsOpacity);
         svg.append("g")
-            .attr("class", "y3 axis");
+          .attr("class", "y3 axis");
 
       }
       // #endregion
@@ -226,10 +226,10 @@
         viewModel.setTradeRate(isBuy === "buy", price);
 
       }
-      function setTradeLine(name, color, key,drag) {
+      function setTradeLine(name, color, key, drag) {
         addLine(name, color, 1, 5, drag).node().buySell = key;
       }
-      setTradeLine("buyEnter", "darkred", "buy",drag); setTradeLine("sellEnter", "darkblue", "sell", drag);
+      setTradeLine("buyEnter", "darkred", "buy", drag); setTradeLine("sellEnter", "darkblue", "sell", drag);
       setTradeLine("buyClose", "darkblue"); setTradeLine("sellClose", "darkred");
       //#region Corridor StartDate
       //if (doCorridorStartDate) {
@@ -253,7 +253,7 @@
       //      chartData.moveCorridorWavesCount(chartData.chartNum, i === 0 ? 1 : -1);
       //    });
       addLine("ask", "steelblue", 1, "2,2");
-      addLine("bid", "steelblue", 1, "2,2"); 
+      addLine("bid", "steelblue", 1, "2,2");
       addLine("trade");
       // #endregion
 
@@ -281,15 +281,15 @@
       // #endregion
 
       // #region Locals
-      function addRect(name, color,opacity) {
+      function addRect(name, color, opacity) {
         svg.append("rect")
           .attr("class", name)
-        .style("fill", color)  // colour the line
-        .style("opacity",opacity || 0.25)
-        .attr("x", 0) // x position of the first end of the line
-        .attr("y", 0) // y position of the first end of the line
-        .attr("width", 10) // x position of the second end of the line
-        .attr("height", 50);// y position of the second end of the line
+          .style("fill", color)  // colour the line
+          .style("opacity", opacity || 0.25)
+          .attr("x", 0) // x position of the first end of the line
+          .attr("y", 0) // y position of the first end of the line
+          .attr("width", 10) // x position of the second end of the line
+          .attr("height", 50);// y position of the second end of the line
       }
       function addLine(lineSuffix, color, width, dashArray, drag) {
         var line = svg.append("line")
@@ -319,7 +319,7 @@
       }
       // #endregion
     },
-    update: function (element, valueAccessor,allBindings,viewModel,bindingContext) {
+    update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
       "use strict";
       viewModel = bindingContext.$root;
       //var lineChart = viewModel.lineChart || (viewModel.lineChart = new LineChart());
@@ -355,13 +355,13 @@
       var __data__ = bufferCount === 1
         ? data
         : Enumerable
-        .from(data)
-        .buffer(bufferCount)
-        .select(function (a) {
-          var max = _.max(a, function (e) { return Math.abs(e.c - e.m); });
-          var f = { c: max.c, m: max.m, d: max.d, v: _.max(a, 'v').v };
-          return f;
-        });
+          .from(data)
+          .buffer(bufferCount)
+          .select(function (a) {
+            var max = _.max(a, function (e) { return Math.abs(e.c - e.m); });
+            var f = { c: max.c, m: max.m, d: max.d, v: _.max(a, 'v').v };
+            return f;
+          });
 
       if (data.length === 0) {
         $(element).hide();
@@ -400,16 +400,16 @@
       var chartArea = calcChartArea(element);
       viewModel.chartArea[chartNum].cha = chartArea;
       var
-          width = chartArea.width,
-          height = chartArea.height,
-          x = chartArea.x,
-          y = chartArea.y,
-          y2 = chartArea.y2,
-          y3 = chartArea.y3,
-          xAxis = d3.axisBottom().scale(x),
-          yAxis = d3.axisLeft().scale(y),
-          yAxis2 = hasTps ? d3.axisRight().scale(y2): null,
-          yAxis3 = hasTps ? d3.axisRight().scale(y3) : null;
+        width = chartArea.width,
+        height = chartArea.height,
+        x = chartArea.x,
+        y = chartArea.y,
+        y2 = chartArea.y2,
+        y3 = chartArea.y3,
+        xAxis = d3.axisBottom().scale(x),
+        yAxis = d3.axisLeft().scale(y),
+        yAxis2 = hasTps ? d3.axisRight().scale(y2) : null,
+        yAxis3 = hasTps ? d3.axisRight().scale(y3) : null;
       // define the graph line
       function lineYc(d) {
         return y(d.c);
@@ -422,13 +422,13 @@
       }
       function lineXd(d) {
         return x(d.d);
-        }
+      }
       var line = d3.line()
-          .x(lineXd)
-          .y(chartNum === 0 ? lineYa : lineYc);
-      var lineBid = chartNum===1?null: d3.line()
-          .x(lineXd)
-          .y(lineYb);
+        .x(lineXd)
+        .y(chartNum === 0 ? lineYa : lineYc);
+      var lineBid = chartNum === 1 ? null : d3.line()
+        .x(lineXd)
+        .y(lineYb);
       //setCma(data, "c", "ma", cmaPeriod);
       //var _ma, line1 = d3.svg.line()
       //    .x(function (d) { return x(d.d); })
@@ -466,19 +466,19 @@
         , sbchnum(tradeLevels && canSell ? tradeLevels.sell : yDomain[1])
         , sbchnum(
           openBuy && tradeLevels
-          ? tradeLevels.buyClose
-          : openSell && tradeLevels
-          ? tradeLevels.sellClose
-          : yDomain[1])]);
-        var xDomain = viewModel.chartArea[chartNum].xDomain = d3.extent(data, function (d) { return d.d; });
-        x.domain(xDomain);
-        var vOffset = (yDomain[1] - yDomain[0]) / 20;
-        viewModel.chartArea[chartNum].yDomain = yDomain = [yDomain[0] - vOffset, yDomain[1] + vOffset];
-        y.domain(yDomain);
-        var yDomain2 = d3.extent(data, function (d) { return tipValue(d.v); });
-        y2.domain([yDomain2[0], yDomain2[1]]);
-        var yDomain3 = d3.extent(data, function (d) { return tipValue2(d.v2); });
-        y3.domain([yDomain3[0], yDomain3[1]]);
+            ? tradeLevels.buyClose
+            : openSell && tradeLevels
+              ? tradeLevels.sellClose
+              : yDomain[1])]);
+      var xDomain = viewModel.chartArea[chartNum].xDomain = d3.extent(data, function (d) { return d.d; });
+      x.domain(xDomain);
+      var vOffset = (yDomain[1] - yDomain[0]) / 20;
+      viewModel.chartArea[chartNum].yDomain = yDomain = [yDomain[0] - vOffset, yDomain[1] + vOffset];
+      y.domain(yDomain);
+      var yDomain2 = d3.extent(data, function (d) { return tipValue(d.v); });
+      y2.domain([yDomain2[0], yDomain2[1]]);
+      var yDomain3 = d3.extent(data, function (d) { return tipValue2(d.v2); });
+      y3.domain([yDomain3[0], yDomain3[1]]);
       // #endregion
 
       // #region transform axises
@@ -506,11 +506,11 @@
           .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue")
           .datum(bufferCount >= 3 ? __data__.toArray() : data)
           .attr("d", line);
-        if(lineBid)
-        svg.select("path.line.data.bid")
-          .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue")
-          .datum(bufferCount >= 3 ? __data__.toArray() : data)
-          .attr("d", lineBid);
+        if (lineBid)
+          svg.select("path.line.data.bid")
+            .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue")
+            .datum(bufferCount >= 3 ? __data__.toArray() : data)
+            .attr("d", lineBid);
         if (lineLogDate) {
           var lineLogDate2 = new Date(new Date() - lineLogDate);
           console.log("lineLogDate[" + chartNum + "]: " + (lineLogDate2.getSeconds() * 1000 + lineLogDate2.getMilliseconds()) / 1000 + " sec");
@@ -520,10 +520,10 @@
         //  .attr("d", line1);
         if (hasTps) {
           var line2 = d3.line()
-              .x(function (d) { return x(d.d); })
-              .y(function (d) {
-                return y2(tipValue(d.v));
-              });
+            .x(function (d) { return x(d.d); })
+            .y(function (d) {
+              return y2(tipValue(d.v));
+            });
           var isHotTps = _.last(data).v > tpsHigh || _.last(data).v < tpsLow;
           var colorTps = isHotTps ? "darkred" : "navy";
           var opacityTps = isHotTps ? tpsOpacity * 2 : tpsOpacity;
@@ -537,7 +537,7 @@
           if (hasTps2) {
             var line3 = d3.line()
               .x(function (d) { return x(d.d); })
-              .y(function (d) { return y3(isNaN(d.v2) ? 0 :tipValue2(d.v2)); });
+              .y(function (d) { return y3(isNaN(d.v2) ? 0 : tipValue2(d.v2)); });
 
             svg.select("path.line.dataTps2")
               .datum(data)
@@ -558,9 +558,9 @@
         if (com)
           setHorizontalStrip(com.b, com.s, greenStrip);
         if (com2)
-          setHorizontalStrip(com2.b, com2.s, blueStrip);
+          setRectArea(com2.dates[0], com2.b, com2.dates[1], com2.s, blueStrip);
         if (com3)
-          setHorizontalStrip(com3.b, com3.s, redStrip);
+          setRectArea(com3.dates[0], com3.b, com3.dates[1], com3.s, redStrip);
         // #region add trend corridor
         //setTrendLine(trendLines, 1, "lightgrey");
         setTrendLine2(trendLines, 2, "", "darkred", trendLines.sel);
@@ -597,7 +597,7 @@
             .attr("transform", function (d) {
               return "translate(" + (x(corridorStartTime) + d) + ",7) rotate(-90)";
             })
-          ;
+            ;
         }
       } else
         svg.selectAll("path.nextWave").style("display", "none");
@@ -623,7 +623,7 @@
           .data(chkBoxData)
           .attr('x', function (d) { return d.x; })
           .attr('y', function (d) { return isNaN(d.y) ? 0 : d.y; })
-        ;
+          ;
         svg.selectAll("*.tradeLineUI input")
           .data(chkBoxData)
           .style("display", function (d) { return d.canTrade ? "" : "none"; })
@@ -675,7 +675,7 @@
             };
           }
           function map(ct) {
-            var timeOpen = 0,timeClose = 1;
+            var timeOpen = 0, timeClose = 1;
             return [ctf(ct, timeOpen, "open", 0, 1), ctf(ct, timeClose, "close", 1, 0)];
           }
           var cts = Enumerable.from(closedTrades)
@@ -697,14 +697,14 @@
             .style("fill", function (ct) { return ct.fill; })
             .style("stroke", function (ct) { return ct.stroke; })
             .style("stroke-width", function (ct) { return ct.strokeWidth; })
-          ;
+            ;
           var openAltitude = altitudeByArea(openSize);
           closedTradesDelta
             .style("stroke", function (ct) {
               return ct.stroke;
             })
             .attr("transform", function (d) {
-              return "translate(" + x(d.x) + "," + (y(d.y) + d.offsetSign * (openAltitude / 2 + d.strokeWidth)) + ") rotate("+d.rotate+")";
+              return "translate(" + x(d.x) + "," + (y(d.y) + d.offsetSign * (openAltitude / 2 + d.strokeWidth)) + ") rotate(" + d.rotate + ")";
             });
 
         })();
@@ -712,36 +712,36 @@
       // #endregion
 
       //#region waveLines
-        var waveLines = chartData.waveLines || [];
-        var waveLineColor = "gray";
-        var waveLineColorOk = "limegreen";
-        var waveLineWidth = 1;
-        var wlDelta = svg.selectAll("line.waveLine").data(waveLines);
-        function waveLineDate(i) {
-          return function (d) {
-            return x(d.dates[i]);
-          };
-        }
-        function waveLineISept(i) {
-          return function (d) {
-            return y(d.isept[i]);
-          };
-        }
-        wlDelta.enter()
-          .append("line")
-          .attr("class", "waveLine");
-        wlDelta
-          .style("stroke-width", function (d) {
-            return d.bold ? 2 : 1;
-          })
-          .attr("x1", waveLineDate(0))
-          .attr("y1", waveLineISept(0))
-          .attr("x2", waveLineDate(1))
-          .attr("y2", waveLineISept(1))
-          .style("stroke", function (w) {
-            return w.color ? waveLineColorOk : waveLineColor;
-          });
-        wlDelta.exit().remove();
+      var waveLines = chartData.waveLines || [];
+      var waveLineColor = "gray";
+      var waveLineColorOk = "limegreen";
+      var waveLineWidth = 1;
+      var wlDelta = svg.selectAll("line.waveLine").data(waveLines);
+      function waveLineDate(i) {
+        return function (d) {
+          return x(d.dates[i]);
+        };
+      }
+      function waveLineISept(i) {
+        return function (d) {
+          return y(d.isept[i]);
+        };
+      }
+      wlDelta.enter()
+        .append("line")
+        .attr("class", "waveLine");
+      wlDelta
+        .style("stroke-width", function (d) {
+          return d.bold ? 2 : 1;
+        })
+        .attr("x1", waveLineDate(0))
+        .attr("y1", waveLineISept(0))
+        .attr("x2", waveLineDate(1))
+        .attr("y2", waveLineISept(1))
+        .style("stroke", function (w) {
+          return w.color ? waveLineColorOk : waveLineColor;
+        });
+      wlDelta.exit().remove();
       //#endregion
 
       d3.select(element).select("svg")
@@ -761,7 +761,7 @@
             .attr("y2", (yTrans || y)(level))// y position of the second end of the line
             ;
 
-          //.duration(animationDuration);    
+        //.duration(animationDuration);    
         else
           return line
             .style("stroke-width", 0);

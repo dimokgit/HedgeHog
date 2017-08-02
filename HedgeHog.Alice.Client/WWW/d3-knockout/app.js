@@ -864,9 +864,9 @@
       response.waveLines.forEach(function (w, i) { w.bold = i == sumStartIndexById(); });
       isTradingActive(response.isTradingActive);
       var chartData = chartDataFactory(lineChartData, getTrends(response), response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross(), response.tpsHigh, response.tpsLow, response.canBuy, response.canSell, response.waveLines);
-      chartData.com = self.com;
-      chartData.com2 = self.com2;
-      chartData.com3 = self.com3;
+      chartData.com = prepDates($.extend(true, {}, self.com));
+      chartData.com2 = prepDates($.extend(true, {}, self.com2));
+      chartData.com3 = prepDates($.extend(true, {}, self.com3));
       self.chartData(chartData);
       updateChartCmas[0](cma(updateChartCmas[0](), 10, getSecondsBetween(new Date(), d)));
       dataViewModel.price(response.askBid);
@@ -902,20 +902,24 @@
         : [];
       function mapDates(v) { return v.dates; }
       var trends = getTrends(response);
+      var com = prepDates($.extend(true, {}, self.com));
+      var com2 = prepDates($.extend(true, {}, self.com2));
+      var com3 = prepDates($.extend(true, {}, self.com3));
       var moreDates = []
         .concat(response.waveLines.map(mapDates))
         .concat(closedTradesLocal.map(mapDates))
-        .concat(trends.map(mapDates));
+        .concat(trends.map(mapDates))
+        .concat([com, com2, com3].map(mapDates));
       var ratesAll = continuoseDates("minute", lineChartData2(), moreDates);
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;
       var chartData2 = chartDataFactory(ratesAll, trends, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross(), 0, 0, response.canBuy, response.canSell, response.waveLines);
+      chartData2.com = com;
+      chartData2.com2 = com2;
+      chartData2.com3 = com3;
       chartData2.tickDate = lineChartData()[0].d;
       chartData2.tickDateEnd = lineChartData().slice(-1)[0].d;
-      chartData2.com = self.com;
-      chartData2.com2 = self.com2;
-      chartData2.com3 = self.com3;
       response.waveLines.forEach(function (w, i) {
         w.bold = i == sumStartIndexById();
         w.color = w.isOk ? "limegreen" : "";

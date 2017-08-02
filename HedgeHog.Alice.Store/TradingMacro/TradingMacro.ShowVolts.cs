@@ -524,23 +524,29 @@ namespace HedgeHog.Alice.Store {
         .Take(1)
         .Select(a => map(rates2, a.t, a.b));
     }
+    [WwwSetting]
+    public double CoMStartHour { get; set; } = 5;
+    [WwwSetting]
+    public double CoMEndHour { get; set; } = 9.5;
     private void SetCentersOfMass() {
-      var startHour = 5;
-      var endHour = 8;
+      var startHour = CoMStartHour;
+      var endHour = CoMEndHour;
       var stripHoursGreen = new[] { ServerTime.Date.AddHours(startHour), ServerTime.Date.AddHours(endHour) };
-      SetCenterOfMassByM1Hours(stripHoursGreen, b => {
-        CenterOfMassBuy = b[1];
-        CenterOfMassSell = b[0];
+      var stripHours = SetCenterOfMassByM1Hours(stripHoursGreen, t => {
+        CenterOfMassBuy = t.Item1[1];
+        CenterOfMassSell = t.Item1[0];
+        return CenterOfMassDates = t.Item2;
       });
-      var stripHoursBlue = new[] { ServerTime.Date.AddDays(-1).AddHours(startHour), ServerTime.Date.AddDays(-1).AddHours(endHour) };
-      SetCenterOfMassByM1Hours(stripHoursBlue, b => {
-        CenterOfMassBuy2 = b[1];
-        CenterOfMassSell2 = b[0];
+      stripHours = SetCenterOfMassByM1Hours(stripHours, t => {
+        CenterOfMassBuy2 = t.Item1[1];
+        CenterOfMassSell2 = t.Item1[0];
+        return CenterOfMass2Dates = t.Item2;
       });
-      var stripHoursRed = new[] { ServerTime.Date.AddDays(-2).AddHours(startHour), ServerTime.Date.AddDays(-2).AddHours(endHour) };
-      SetCenterOfMassByM1Hours(stripHoursRed, b => {
-        CenterOfMassBuy3 = b[1];
-        CenterOfMassSell3 = b[0];
+
+      SetCenterOfMassByM1Hours(stripHours, (t) => {
+        CenterOfMassBuy3 = t.Item1[1];
+        CenterOfMassSell3 = t.Item1[0];
+        return CenterOfMass3Dates = t.Item2;
       });
 
       return;
@@ -564,15 +570,29 @@ namespace HedgeHog.Alice.Store {
         });
     }
 
-    private void SetCenterOfMassByM1Hours(DateTime[] stripHours,Action<IList<double>> setCenterOfMass) {
-      TradingMacroM1(tm => tm.UseRatesInternal(ri =>
-      ri.BackwardsIterator().SkipWhile(r => r.StartDate > stripHours[1]).TakeWhile(r => r.StartDate > stripHours[0]).MinMax(r => r.BidLow, r => r.AskHigh)))
-        .Concat()
-        .Concat()
-        .Buffer(2)
-        .Where(b => b.Count > 1)
-        .ForEach(setCenterOfMass);
+    private DateTime[] SetCenterOfMassByM1Hours(DateTime[] stripHours, Func<(double[], DateTime[]), DateTime[]> setCenterOfMass) {
+      return TradingMacroM1(tm =>
+      from shs in Enumerable.Range(0, 5).Select(i => addDay(stripHours, -i))
+      from mm in tm.UseRatesInternal(ri =>
+      ri.BackwardsIterator()
+      .SkipWhile(r => r.StartDate > shs[1])
+      .TakeWhile(r => r.StartDate > shs[0])
+      .MinMax(r => r.BidLow, r => r.AskHigh)
+      )
+      where mm.All(Lib.IsNotNaN)
+      select addDay(setCenterOfMass((mm, shs)), -1)
+       )
+      .Concat()
+      .Take(1)
+      .Concat()
+      .ToArray()
+      ;
+      DateTime[] addDay(DateTime[] shrs, int i)
+      {
+        return shrs.Select(sh => sh.AddDays(i)).ToArray();
+      }
     }
+
 
     int _integrationPeriod { get { return CorridorHeightMax.ToInt(); } }
 

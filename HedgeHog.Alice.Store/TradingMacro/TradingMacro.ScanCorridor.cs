@@ -842,8 +842,8 @@ namespace HedgeHog.Alice.Store {
           return;
         }
 
-        IsRatesLengthStable = RatesArray.Count.Ratio(value) < 1.05;
         var newBarsCount = value == 0 ? (int?)null : value.Min(RatesInternal.Count);
+        IsRatesLengthStable = RatesArray.Count.Ratio(newBarsCount.GetValueOrDefault()) < 1.05;
         OnPropertyChanged("BarsCountCalc");
         _BarsCountCalc = newBarsCount;
         if(_BarsCountCalc.HasValue) {
