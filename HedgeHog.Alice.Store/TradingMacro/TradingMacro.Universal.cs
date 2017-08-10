@@ -412,7 +412,6 @@ namespace HedgeHog.Alice.Store {
 
         var corridorMovedTrigger = new ValueTrigger<ValueTrigger<bool>>(false) { Value = new ValueTrigger<bool>(false) };
         var dateTrigger = new ValueTrigger<DateTime>(false);
-        object any = null;
         object[] bag = null;
         #region Workflow tuple factories
         Func<List<object>> emptyWFContext = () => new List<object>();

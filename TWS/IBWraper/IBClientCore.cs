@@ -273,8 +273,8 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
       if(IsLoggedIn) {
         RaiseLoggedIn();
         return IsLoggedIn;
-      }
-      return false;
+      } else
+        throw new Exception("Not logged in.");
     } catch(Exception exc) {
       RaiseLoginError(exc);
       return false;

@@ -316,6 +316,7 @@ namespace HedgeHog.Alice.Client {
         com = new { b = tmTrader.CenterOfMassBuy.Round(digits), s = tmTrader.CenterOfMassSell.Round(digits), dates = tmTrader.CenterOfMassDates ?? new DateTime [0] },
         com2 = new { b = tmTrader.CenterOfMassBuy2.Round(digits), s = tmTrader.CenterOfMassSell2.Round(digits), dates = tmTrader.CenterOfMass2Dates ?? new DateTime[0] },
         com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits), dates = tmTrader.CenterOfMass3Dates ?? new DateTime[0] },
+        com4 = new { b = tmTrader.CenterOfMassBuy4.Round(digits), s = tmTrader.CenterOfMassSell4.Round(digits), dates = tmTrader.CenterOfMass4Dates ?? new DateTime[0] },
         tpls = tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
         tts = HasMinMaxTradeLevels(tmTrader) ? tmTrender.TradeTrends : "",
         tti = GetTradeTrendIndexImpl(tmTrader, tmTrender)

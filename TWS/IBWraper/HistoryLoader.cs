@@ -95,6 +95,10 @@ namespace IBApp {
 
     #region Event Handlers
     private void HandlePacer(int reqId, int code, string error, Exception exc) {
+      if(code == 504) {
+        CleanUp();
+        _error(MakeError(_contract, reqId, code, error, exc));
+      }
       if(reqId != _reqId)
         return;
       const string NO_DATA = "HMDS query returned no data";
@@ -108,17 +112,17 @@ namespace IBApp {
         RequestNextDataChunk();
       } else if(code == 162 && error.Contains(NO_DATA)) {
         CleanUp();
-        _error(MakeError(reqId, code, error, exc));
+        _error(MakeError(_contract, reqId, code, error, exc));
       } else if(reqId < 0 && exc == null) {
-        _error(MakeError(reqId, code, error, exc));
+        _error(MakeError(_contract, reqId, code, error, exc));
       } else {
         CleanUp();
-        _error(MakeError(reqId, code, error, exc));
+        _error(MakeError(_contract, reqId, code, error, exc));
       }
     }
 
-    private static Exception MakeError(int reqId, int code, string error, Exception exc) {
-      return exc ?? new Exception(new { HistoryLoader = new { reqId, code, error } } + "");
+    private static Exception MakeError(Contract contract, int reqId, int code, string error, Exception exc) {
+      return exc ?? new Exception(new { HistoryLoader = new { reqId,contract , code, error } } + "");
     }
 
     private void IbClient_HistoricalDataEnd(int reqId, string startDateTWS, string endDateTWS) {
@@ -158,7 +162,8 @@ namespace IBApp {
         string barSizeSetting = (_barSize + "").Replace("_", " ").Trim();
         string whatToShow = "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
-        var useRTH = false && !_contract.LocalSymbol.IsCurrenncy() && !_contract.LocalSymbol.IsFuture() && _timeUnit != TimeUnit.S;
+        var ls = _contract.LocalSymbol;
+        var useRTH = !ls.IsCurrenncy() && !ls.IsFuture() && !ls.IsETF() && _timeUnit != TimeUnit.S;
         _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, new List<TagValue>());
       } catch(Exception exc) {
         _error(exc);

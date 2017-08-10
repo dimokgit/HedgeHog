@@ -186,12 +186,12 @@ namespace HedgeHog.Alice.Store {
         _SetCorridorDistanceByDistanceIsRunning--;
       }
     }
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="revs"></param>
-    /// <param name="ratio">0 < ratio < 1</param>
-    /// <returns></returns>
+/// <summary>
+/// 
+/// </summary>
+/// <param name="revs"></param>
+/// <param name="ratio"></param>
+/// <returns></returns>
     private static int CalcCountByDistanceRatio(IList<double> revs, double ratio) {
       var ds = revs.Zip(revs.Skip(1), (r1, r2) => r1.Abs(r2)).ToArray();
       var total = ds.Sum() * ratio;

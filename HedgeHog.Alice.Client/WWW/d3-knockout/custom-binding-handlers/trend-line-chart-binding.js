@@ -67,6 +67,7 @@
   var blueStrip = "blueStrip";
   var greenStrip = "greenStrip";
   var redStrip = "redStrip";
+  var cyanStrip = "cyanStrip";
   var doCorridorStartDate = false;
   var showLineLog = false;
   var tpsChartNum = [0, 1];
@@ -112,8 +113,9 @@
         addRect("dayTailRect", tickAreaBgColor);
       }
       // coms
-      addRect(redStrip, "#FAE6E6", 0.8);
-      addRect(blueStrip, "lavender", 0.8);
+      addRect(cyanStrip, "lightcyan", 1);
+      addRect(redStrip, "#FAE6E6", 1);
+      addRect(blueStrip, "lavender", 1);
       addRect(greenStrip, "#E6FAE6", 0.6);
 
       if (hasTps) {
@@ -391,6 +393,7 @@
       var com = chartData.com;
       var com2 = chartData.com2;
       var com3 = chartData.com3;
+      var com4 = chartData.com4;
       var showNegativeVolts = viewModel.showNegativeVoltsParsed();
       var showNegativeVolts2 = viewModel.showNegativeVolts2Parsed();
       // #endregion
@@ -557,10 +560,12 @@
         }
         if (com)
           setHorizontalStrip(com.b, com.s, greenStrip);
-        if (com2)
-          setRectArea(com2.dates[0], com2.b, com2.dates[1], com2.s, blueStrip);
-        if (com3)
-          setRectArea(com3.dates[0], com3.b, com3.dates[1], com3.s, redStrip);
+        if (com2 && com2.dates[0])
+          setRectArea(com2.dates[0], com2.b, com2.dates[1], com2.s, blueStrip, "black");
+        if (com3 && com3.dates[0])
+          setRectArea(com3.dates[0], com3.b, com3.dates[1], com3.s, redStrip, "black");
+        if (com4 && com4.dates[0])
+          setRectArea(com4.dates[0], com4.b, com4.dates[1], com4.s, cyanStrip, "black");
         // #region add trend corridor
         //setTrendLine(trendLines, 1, "lightgrey");
         setTrendLine2(trendLines, 2, "", "darkred", trendLines.sel);
@@ -816,9 +821,9 @@
       function selectRect(rectName) {
         return svg.select("rect." + rectName);
       }
-      function setRectArea(date1, level1, date2, level2, rectName) {
+      function setRectArea(date1, level1, date2, level2, rectName,borderColour) {
         svg.select("rect." + rectName)
-          //.style("stroke", rectColour)  // colour the line
+          .style("stroke", borderColour)  // colour the line
           .attr("x", x(date1)) // x position of the first end of the line
           .attr("y", y(level1)) // y position of the first end of the line
           .attr("width", x(date2) - x(date1)) // x position of the second end of the line

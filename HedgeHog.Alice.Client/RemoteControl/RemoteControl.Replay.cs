@@ -80,7 +80,7 @@ namespace HedgeHog.Alice.Client {
             try {
               var sessions = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
               if(sessions.Any())
-                await FillTestParams(tmOriginal, tpr => SetTestCorridorDistanceRatio(tpr, sessions));
+                await FillTestParams(tmOriginal, tpr => { });
               else
                 throw new Exception("Either ReplayArguments.DateStart or valid Supersession Uid must be provided.");
               return sessions.Min(s => s.DateStart.Value).AddDays(5);
@@ -155,12 +155,6 @@ namespace HedgeHog.Alice.Client {
           return;
         if(testParams.Any()) {
           StartReplayInternal(tm, testParams.Dequeue(), t => { ContinueReplayWith(tm, testParams); });
-        } else if(ReplayArguments.UseSuperSession) {
-          var super = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
-          FillTestParams(tm, tpr => SetTestCorridorDistanceRatio(tpr, super)).Wait();
-          ReplayArguments.SuperSessionId = Guid.NewGuid();
-          ReplayArguments.DateStart = ReplayArguments.DateStart.Value.AddDays(6);
-          StartReplayInternal(tm, TestParams.Any() ? TestParams.Dequeue() : null, task => { ContinueReplayWith(tm, TestParams); });
         }else {
           ReplayArguments.LastWwwErrorObservable.OnNext("Replay done");
         }
@@ -184,17 +178,6 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Test params setters
-    private void SetTestCorridorDistanceRatio(IList<KeyValuePair<string, object>[]> testParamsRaw, DB.v_TradeSession[] sessions) {
-      var testParam = sessions[0].CorridorDistanceRatio.Value;
-      var a = sessions.OrderBy(s => s.TimeStamp).ToArray();
-      var testParamStep = (a[1].CorridorDistanceRatio - a[0].CorridorDistanceRatio).Value.ToInt();
-      var testParamCount = 5;
-      var testParamStepMin = -testParamCount / 2;
-      var startMin = (-(testParam.ToInt() / testParamStep) + 1).Max(testParamStepMin);
-      var testParamName = "CorridorDistanceRatio";
-      ReplaceTestParamRaw(testParamName, Enumerable.Range(startMin, testParamCount)
-        .Select(r => new KeyValuePair<string, object>(testParamName, testParam + r * testParamStep)).ToArray());
-    }
     #endregion
 
     CancellationTokenSource _replayTaskCancellationToken = new CancellationTokenSource();

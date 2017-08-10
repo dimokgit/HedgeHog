@@ -29,6 +29,8 @@ namespace HedgeHog.Shared {
     [DataMember]
     public double UsableMargin { get; set; }
     [DataMember]
+    public double ExcessLiquidity { get; set; } = double.NaN;
+    [DataMember]
     public bool IsMarginCall { get; set; }
     [DataMember]
     public int PipsToMC { get; set; }

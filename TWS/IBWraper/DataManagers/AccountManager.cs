@@ -26,7 +26,7 @@ namespace IBApp {
     private const string ACCOUNT_SUMMARY_TAGS = "AccountType,NetLiquidation,TotalCashValue,SettledCash,AccruedCash,BuyingPower,EquityWithLoanValue,PreviousEquityWithLoanValue,"
              +"GrossPositionValue,ReqTEquity,ReqTMargin,SMA,InitMarginReq,MaintMarginReq,AvailableFunds,ExcessLiquidity,Cushion,FullInitMarginReq,FullMaintMarginReq,FullAvailableFunds,"
              +"FullExcessLiquidity,LookAheadNextChange,LookAheadInitMarginReq ,LookAheadMaintMarginReq,LookAheadAvailableFunds,LookAheadExcessLiquidity,HighestSeverity,DayTradesRemaining,Leverage";
-    private const int BaseUnitSize = 1;
+    //private const int BaseUnitSize = 1;
     #endregion
 
     #region Fields
@@ -63,12 +63,16 @@ namespace IBApp {
       IbClient.UpdatePortfolio += OnUpdatePortfolio;
       IbClient.ExecDetails += OnExecution;
       IbClient.Position += OnPosition;
+      //ibClient.UpdatePortfolio += IbClient_UpdatePortfolio;
       OpenTrades.ItemsAdded.Subscribe(RaiseTradeAdded);
       OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved);
       ClosedTrades.ItemsAdded.Subscribe(RaiseTradeClosed);
       _defaultMessageHandler(nameof(AccountManager) + " is ready");
     }
 
+    private void IbClient_UpdatePortfolio(Contract arg1, double arg2, double arg3, double arg4, double arg5, double arg6, double arg7, string arg8) {
+
+    }
 
     Func<Trade, double> IBCommissionByTrade(Trade trade) {
       var commissionPerUnit = CommissionByTrade(trade) / trade.Lots;
@@ -114,8 +118,7 @@ namespace IBApp {
       }
     }
     protected void RaiseTradeAdded(Trade trade) {
-      if(TradeAddedEvent != null)
-        TradeAddedEvent(this, new TradeEventArgs(trade));
+      TradeAddedEvent?.Invoke(this, new TradeEventArgs(trade));
     }
     #endregion
 
@@ -131,8 +134,7 @@ namespace IBApp {
       }
     }
     protected void RaiseTradeRemoved(Trade trade) {
-      if(TradeRemovedEvent != null)
-        TradeRemovedEvent(this, new TradeEventArgs(trade));
+      TradeRemovedEvent?.Invoke(this, new TradeEventArgs(trade));
     }
     #endregion
 
@@ -192,14 +194,15 @@ namespace IBApp {
     ConcurrentDictionary<string,int> _executions= new ConcurrentDictionary<string, int>();
     private void OnExecDetails(int reqId, Contract contract, Execution execution) {
       try {
-        _verbous(new { OnExecDetails = new { reqId, contract, execution } });
+        //_verbous(new { OnExecDetails = new { reqId, contract, execution } });
         var symbol = contract.Instrument;
         var execTime = execution.Time.FromTWSString();
         var execPrice = execution.AvgPrice;
         var orderId = execution.OrderId + "";
 
         #region Create Trade
-        var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), BaseUnitSize, null);
+
+        var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol),TradesManagerStatic.GetBaseUnitSize(symbol), null);
         trade.Id = execution.PermId + "";
         trade.Buy = execution.Side == "BOT";
         trade.IsBuy = trade.Buy;
@@ -209,7 +212,7 @@ namespace IBApp {
 
         _executions.TryGetValue(orderId, out int orderLot);
         trade.Lots = execution.CumQty - orderLot;
-        _executions.AddOrUpdate(orderId, _ => execution.CumQty, (s, i) => i + execution.CumQty);
+        _executions.AddOrUpdate(orderId, execution.CumQty, (s, i) => execution.CumQty);
 
         trade.OpenOrderID = execution.OrderId + "";
         trade.CommissionByTrade = IBCommissionByTrade(trade);
@@ -228,8 +231,14 @@ namespace IBApp {
           .Count();
         #endregion
 
-        if(trade.Lots > 0)
-          OpenTrades.Add(trade);
+        if(trade.Lots > 0) {
+          //var oldTrade = OpenTrades.SingleOrDefault(t => t.OpenOrderID == orderId);
+          //if(oldTrade != null) {
+          //  oldTrade.Lots += trade.Lots;
+          //  oldTrade.Open = execution.AvgPrice;
+          //} else
+            OpenTrades.Add(trade);
+        }
 
         OpenTrades
           .Where(t => t.Lots == 0)
@@ -346,7 +355,7 @@ namespace IBApp {
     }
 
     private Trade TradeFromPosition(string symbol, PositionMessage position, DateTime st, string openOrderId) {
-      var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), BaseUnitSize, null);
+      var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), TradesManagerStatic.GetBaseUnitSize(symbol), null);
       trade.Id = DateTime.Now.Ticks + "";
       trade.Buy = position.Position > 0;
       trade.IsBuy = trade.Buy;
@@ -361,20 +370,23 @@ namespace IBApp {
     #endregion
 
     private void OnUpdatePortfolio(Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName) {
-      //_defaultMessageHandler(new UpdatePortfolioMessage(contract, position, marketPrice, marketValue, averageCost, unrealisedPNL, realisedPNL, accountName));
+      var pu = new UpdatePortfolioMessage(contract, position, marketPrice, marketValue, averageCost, unrealisedPNL, realisedPNL, accountName);
     }
 
     private void OnUpdateAccountValue(string key, string value, string currency, string accountName) {
       if(currency == _accountCurrency) {
         switch(key) {
-          case "NetLiquidation":
+          case "EquityWithLoanValue":
             Account.Equity = double.Parse(value);
-            break;
-          case "TotalCashValue":
-            Account.Balance = double.Parse(value) + OpenTrades.Gross();
             break;
           case "MaintMarginReq":
             Account.UsableMargin = double.Parse(value);
+            break;
+          case "ExcessLiquidity":
+            Account.ExcessLiquidity = double.Parse(value);
+            break;
+          case "UnrealizedPnL":
+            Account.Balance = Account.Equity - double.Parse(value);
             break;
         }
         //_defaultMessageHandler(new AccountValueMessage(key, value, currency, accountName));
@@ -384,11 +396,8 @@ namespace IBApp {
     private void OnAccountSummary(int requestId, string account, string tag, string value, string currency) {
       if(currency == _accountCurrency) {
         switch(tag) {
-          case "NetLiquidation":
+          case "EquityWithLoanValue":
             Account.Equity = double.Parse(value);
-            break;
-          case "TotalCashValue":
-            Account.Balance = double.Parse(value) + OpenTrades.Gross();
             break;
           case "MaintMarginReq":
             Account.UsableMargin = double.Parse(value);
@@ -433,7 +442,7 @@ namespace IBApp {
     }
     #endregion
   }
-  static class Mixins {
+  public static class Mixins {
     private static Tuple<string, bool> Key(string symbol, bool isBuy) => Tuple.Create(symbol.WrapPair(), isBuy);
     private static Tuple<string, bool> Key2(string symbol, bool isBuy) => Key(symbol, !isBuy);
 

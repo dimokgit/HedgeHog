@@ -2042,18 +2042,6 @@ namespace HedgeHog.Alice.Store {
           a.Index = index++;
         });
         return suppReses;
-        if(Trades.Length > 0) {
-          var trade = Trades.OrderBy(t => t.Time).Last();
-          var lots = (Trades.Sum(t => t.Lots) + LotSize) / LotSize;
-          var lot = lots / 2;
-          var rem = lots % 2;
-          var tcBuy = lot + (trade.Buy ? rem : 0);
-          var tcSell = lot + (!trade.Buy ? rem : 0);
-          if(tcBuy > 0)
-            SuppResResetTradeCounts(Resistances, tcBuy);
-          if(tcSell > 0)
-            SuppResResetTradeCounts(Supports, tcSell);
-        }
       }
       return suppReses;
     }
@@ -2185,14 +2173,25 @@ namespace HedgeHog.Alice.Store {
       get { return _CenterOfMassSell3; }
       private set { _CenterOfMassSell3 = value; }
     }
+    double _CenterOfMassSell4 = double.NaN;
+    public double CenterOfMassSell4 {
+      get { return _CenterOfMassSell4; }
+      private set { _CenterOfMassSell4 = value; }
+    }
     double _CenterOfMassBuy3 = double.NaN;
     public double CenterOfMassBuy3 {
       get { return _CenterOfMassBuy3; }
       private set { _CenterOfMassBuy3 = value; }
     }
+    double _CenterOfMassBuy4 = double.NaN;
+    public double CenterOfMassBuy4 {
+      get { return _CenterOfMassBuy4; }
+      private set { _CenterOfMassBuy4 = value; }
+    }
     public DateTime[] CenterOfMassDates { get; private set; }
     public DateTime[] CenterOfMass2Dates { get; private set; }
     public DateTime[] CenterOfMass3Dates { get; private set; }
+    public DateTime[] CenterOfMass4Dates { get; private set; }
     #endregion
     public double SuppResMinimumDistance { get { return CurrentPrice.Spread * 2; } }
 
@@ -2795,7 +2794,7 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
     public double PipAmountPercent {
-      get { return PipAmount / Account.Balance; }
+      get { return PipAmount / Account.Equity; }
     }
 
 
@@ -2951,6 +2950,16 @@ namespace HedgeHog.Alice.Store {
           _tradesCount = trades.Length;
         }
         return trades;
+      }
+      //set {
+      //  _trades.Clear();
+      //  _trades.AddRange(value);
+      //  if (value.Length > 0) ResetLock();
+      //}
+    }
+    public Trade[] TradesClosed {
+      get {
+        return TradesManager == null ? new Trade[0] : TradesManager.GetClosedTrades(Pair);/* _trades.ToArray();*/
       }
       //set {
       //  _trades.Clear();
@@ -4066,7 +4075,7 @@ namespace HedgeHog.Alice.Store {
             .Where(tr => tr > 0)
             .Select(tr => tr >= 1
               ? (tr * BaseUnitSize).ToInt()
-              : TradesManagerStatic.GetLotstoTrade((CurrentPrice?.Average).GetValueOrDefault(), Pair, account.Balance, TradesManager.Leverage(Pair), tr, BaseUnitSize)))
+              : TradesManagerStatic.GetLotstoTrade((CurrentPrice?.Average).GetValueOrDefault(), Pair, account.Equity, TradesManager.Leverage(Pair), tr, BaseUnitSize)))
           .Concat(0.Yield())
           .Take(1)
           .ForEach(ls => {

@@ -31,31 +31,17 @@ namespace HedgeHog.DB
         public Nullable<double> DaysPerMinute { get; set; }
         public Nullable<double> DollarPerLot { get; set; }
         public string SessionInfo { get; set; }
-        public string PriceCmaLevels { get; set; }
-        public Nullable<double> CorridorDistanceRatio { get; set; }
-        public string DistanceDaysBack { get; set; }
-        public string ProfitToLossExitRatio { get; set; }
-        public string BarsCount { get; set; }
+        public Nullable<double> CmaPasses { get; set; }
+        public Nullable<double> PriceCmaLevels { get; set; }
         public Nullable<double> MinimumGross { get; set; }
         public Nullable<System.DateTime> DateStart { get; set; }
         public Nullable<System.DateTime> DateStop { get; set; }
         public Nullable<double> LossToProfit { get; set; }
-        public string WaveStDevRatio { get; set; }
-        public string DistanceIterations { get; set; }
-        public string CorrelationMinimum { get; set; }
-        public string ScanCorridorBy { get; set; }
-        public string TrailingDistanceFunction { get; set; }
         public string TakeProfitLimitRatio { get; set; }
-        public string TradingAngleRange { get; set; }
-        public string PolyOrder { get; set; }
-        public string MovingAverageType { get; set; }
-        public string PriceCmaLevels_ { get; set; }
         public string TestFileName { get; set; }
         public Nullable<int> ProfitCount { get; set; }
         public Nullable<int> LossCount { get; set; }
         public Nullable<double> PLRatio { get; set; }
-        public string VoltsFrameLength { get; set; }
-        public string IsTakeBack { get; set; }
-        public string LimitProfitByRatesHeight { get; set; }
+        public Nullable<double> RatesDistanceMin { get; set; }
     }
 }

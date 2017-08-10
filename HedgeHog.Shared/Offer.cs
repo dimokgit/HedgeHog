@@ -44,7 +44,7 @@ namespace HedgeHog.Shared {
     [DataMember]
     public String OfferID { get; set; }
     [DataMember]
-    public String Pair{ get; set; }
+    public String Pair { get; set; }
     [DataMember]
     public int InstrumentType { get; set; }
     [DataMember]
@@ -71,6 +71,14 @@ namespace HedgeHog.Shared {
     public Double PipCost { get; set; }
     [DataMember]
     public Double MMR { get; set; }
+    double _MMRShort=double.NaN;
+    [DataMember]
+    public double MMRShort {
+      get { return double.IsNaN(_MMRShort) ? MMR : _MMRShort; }
+      set {
+        _MMRShort = value;
+      }
+    }
     [DataMember]
     public DateTime Time { get; set; }
     [DataMember]

@@ -543,10 +543,15 @@ namespace HedgeHog.Alice.Store {
         return CenterOfMass2Dates = t.Item2;
       });
 
-      SetCenterOfMassByM1Hours(stripHours, (t) => {
+      stripHours = SetCenterOfMassByM1Hours(stripHours, (t) => {
         CenterOfMassBuy3 = t.Item1[1];
         CenterOfMassSell3 = t.Item1[0];
         return CenterOfMass3Dates = t.Item2;
+      });
+      SetCenterOfMassByM1Hours(stripHours, (t) => {
+        CenterOfMassBuy4 = t.Item1[1];
+        CenterOfMassSell4 = t.Item1[0];
+        return CenterOfMass4Dates = t.Item2;
       });
 
       return;

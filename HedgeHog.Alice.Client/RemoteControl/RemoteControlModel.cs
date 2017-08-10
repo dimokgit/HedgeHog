@@ -67,7 +67,7 @@ namespace HedgeHog.Alice.Client {
         charter.Dispatcher.InvokeAsync(
          () =>
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(charter, CharterControl.MessageType.Add));
-      }catch(Exception exc) {
+      } catch(Exception exc) {
         Log = exc;
       }
     }
@@ -1275,7 +1275,7 @@ namespace HedgeHog.Alice.Client {
         var tm = GetTradingMacros(pair).First();
         tm.LastTrade = trade;
         var totalGross = trade.NetPL2;
-        tm.LastTradeLoss = totalGross.Min(0);
+        tm.LastTradeLoss = tm.TradesClosed.Where(t => t.OpenOrderID == trade.OpenOrderID).Net2().Min(0);
         tm.RunningBalance += totalGross;
         tm.CurrentLoss = tm.CurrentLoss + totalGross;
         OnZeroPositiveLoss(tm);

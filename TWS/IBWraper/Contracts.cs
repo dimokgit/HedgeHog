@@ -26,6 +26,8 @@ namespace IBApp {
       ? FxContract(pair)
       : pair.IsFuture()
       ? Future(pair)
+      : pair.IsCommodity()
+      ? Commodity(pair)
       : USStock(pair);
 
     public static Contract FxContract(string pair) {

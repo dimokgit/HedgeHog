@@ -199,8 +199,8 @@ namespace HedgeHog.Shared {
     public static Offer[] dbOffers = new[] {
             new Offer { Pair = "USDJPY", Digits = 3, PointSize = 0.01, MMR=1, ContractSize = 1000 },
             new Offer { Pair = "EURUSD", Digits = 5, PointSize = 0.0001, MMR=1, ContractSize = 1000 },
-            new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01, MMR=1, ContractSize = 1 },
-            new Offer { Pair = "SPY", Digits = 3, PointSize = 0.01, MMR = 0.250, ContractSize = 1 }
+            new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01, MMR=0.513, ContractSize = 1 },
+            new Offer { Pair = "SPY", Digits = 3, PointSize = 0.01, MMR = 0.250, MMRShort= 0.3, ContractSize = 1 }
           };
     static Func<string,Offer> GetOfferImpl= symbol
       =>  dbOffers
@@ -210,6 +210,7 @@ namespace HedgeHog.Shared {
     .Single();
     public static Func<string,Offer> GetOffer=GetOfferImpl.Memoize();
     public static double GetPointSize(string symbol) => GetOffer(symbol).PointSize;
+    public static int GetBaseUnitSize(string symbol) => GetOffer(symbol).ContractSize;
     public static int GetDigits(string symbol) => GetOffer(symbol).Digits;
 
     private static string[] _currencies=new []{
@@ -223,6 +224,9 @@ namespace HedgeHog.Shared {
       "CAD",
       "AUD"
     };
+    private static string[] _commodities=new []{
+      "XAUUSD"
+    };
     public static string WrapPair(this string pair) {
       return Regex.Replace(pair, "[./-]", "").ToUpper();
     }
@@ -234,7 +238,10 @@ namespace HedgeHog.Shared {
 
     public static bool IsCurrenncy(this string s) => _currencies.Any(c => s.ToUpper().StartsWith(c)) && _currencies.Any(c => s.ToUpper().EndsWith(c));
     public static bool IsFuture(this string s) => Regex.IsMatch(s, @"\w{2}[HMUZ]\d{1,2}", RegexOptions.IgnoreCase);
-    public static bool IsUSStock(this string s) => !s.IsCurrenncy() && !s.IsFuture();
+    public static bool IsCommodity(this string s) => _commodities.Contains(s.ToUpper());
+    public static bool IsUSStock(this string s) => !s.IsCurrenncy() && !s.IsFuture() && !s.IsCommodity();
+    static string [] _etfs=new[]{"SPY"};
+    public static bool IsETF(this string s) => _etfs.Contains(s);
     private static readonly EventLoopScheduler _tradingThread =
       new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; });
 
