@@ -12,8 +12,6 @@ using HedgeHog.Bars;
 using HedgeHog.Shared;
 using ReactiveUI;
 using static HedgeHog.Shared.TradesManagerStatic;
-using OpenOrderArg = System.Tuple<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
-using OrderStatusArg = System.Tuple<int, string, double, double, bool>;
 namespace IBApp {
   public class IBWraper : HedgeHog.Shared.ITradesManager {
     private readonly IBClientCore _ibClient;
@@ -22,173 +20,25 @@ namespace IBApp {
     private void Trace(object o) { _ibClient.Trace(o); }
     private void Verbous(object o) { _ibClient.Trace(o); }
 
-    #region OpenOrder Subject
-    object _OpenOrderSubjectLocker = new object();
-    ISubject<OpenOrderArg> _OpenOrderSubject;
-
-    ISubject<OpenOrderArg> OpenOrderSubject {
-      get {
-        lock(_OpenOrderSubjectLocker)
-          if(_OpenOrderSubject == null) {
-            _OpenOrderSubject = new Subject<OpenOrderArg>();
-            _OpenOrderSubject
-              //.Do(t => Verbous(new { OpenOrderSubject = new { reqId = t.Item1, status = t.Item4 } }))
-              .Where(t => t.Item4.Status == "Filled")
-              .DistinctUntilChanged(t => t.Item1)
-              .Subscribe(t => OnOrderFilledImpl(t.Item1, t.Item2, t.Item3, t.Item4), exc => Trace(exc), () => Trace(nameof(OpenOrderSubject) + " is gone"));
-          }
-        return _OpenOrderSubject;
-      }
-    }
-    void OnOpenOrderPush(OpenOrderArg p) {
-      OpenOrderSubject.OnNext(p);
-    }
-    #endregion
-    #region OrderStatus Subject
-    object _OrderStatusSubjectLocker = new object();
-    ISubject<OrderStatusArg> _OrderStatusSubject;
-
-    ISubject<OrderStatusArg> OrderStatusSubject {
-      get {
-        lock(_OrderStatusSubjectLocker)
-          if(_OrderStatusSubject == null) {
-            _OrderStatusSubject = new Subject<OrderStatusArg>();
-            _OrderStatusSubject
-              //.Do(t => Verbous(new { OrderStatusSubject = new { reqId = t.Item1, status = t.Item4 } }))
-              .Where(t => t.Item5)
-              .DistinctUntilChanged()
-              .Subscribe(t => OnOrderStatusImpl(t), exc => Trace(exc), () => Trace(nameof(OrderStatusSubject) + " is gone"));
-          }
-        return _OrderStatusSubject;
-      }
-    }
-    void OnOrderStatusPush(OrderStatusArg p) {
-      OrderStatusSubject.OnNext(p);
-    }
-    #endregion
-
-
     public IBWraper(ICoreFX coreFx, Func<Trade, double> commissionByTrade) {
       CommissionByTrade = commissionByTrade;
 
       CoreFX = coreFx;
       _ibClient = (IBClientCore)CoreFX;
       _ibClient.PriceChanged += OnPriceChanged;
-      _ibClient.OpenOrder += OnOpenOrder;
-      _ibClient.OrderStatus += OnOrderStatus;
       _ibClient.CommissionByTrade = commissionByTrade;
       _ibClient.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
       _ibClient.TradeRemoved += (s, e) => { RaiseTradeClosed(e.Trade); RaiseTradeRemoved(e.Trade); };
+      _ibClient.OrderAdded += RaiseOrderAdded;
     }
 
     #region OpenOrder
-    private void OnOrderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld) {
-      OnOrderStatusPush(Tuple.Create(orderId, status, filled, remaining, new[] { "Cancelled", "Filled" }.Contains(status)));
-      //Verbous(new { OrderStatus = new { orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld } });
-    }
-    private void OnOrderStatusImpl(OrderStatusArg arg) {
-      Verbous(new { OnOrderStatus = arg });
-    }
-    private readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade>();
     private readonly ConcurrentDictionary<string, PositionMessage> _positions = new ConcurrentDictionary<string, PositionMessage>();
-    private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
-    private void OnExecDetails(IBApi.Order order, double avgPrice,int lots) {
-      try {
-        //_verbous(new { OnExecDetails = new { reqId, contract, execution } });
-        var orderId = order.OrderId+"";
-        var symbol = _orderContracts[orderId].contract.Instrument;
-        var execTime = ServerTime;
-        var execPrice = avgPrice;
-
-        #region Create Trade
-
-        var trade = Trade.Create(_ibClient, symbol, GetPointSize(symbol), GetBaseUnitSize(symbol), null);
-        trade.Id = DateTime.Now.Ticks + "";
-        trade.Buy = order.Action == "BUY";
-        trade.IsBuy = trade.Buy;
-        trade.Time2 = execTime;
-        trade.Time2Close = execTime;
-        trade.Open = trade.Close = execPrice;
-
-        trade.Lots = lots;
-
-        trade.OpenOrderID = orderId+"";
-        trade.CommissionByTrade = t => t.Lots * .08;
-        #endregion
-
-        #region Close Trades
-        OpenTrades
-          .ToArray()
-          .Where(t => t.OpenOrderID != orderId)
-          .Where(IsNotEqual(trade))
-          .Scan(0, (_, otClose) => {
-            var cL = CloseTrade(execTime, execPrice, otClose, trade.Lots);
-            return trade.Lots = cL;
-          })
-          .TakeWhile(l => l > 0)
-          .Count();
-        #endregion
-
-        if(trade.Lots > 0) {
-          //var oldTrade = OpenTrades.SingleOrDefault(t => t.OpenOrderID == orderId);
-          //if(oldTrade != null) {
-          //  oldTrade.Lots += trade.Lots;
-          //  oldTrade.Open = execution.AvgPrice;
-          //} else
-          OpenTrades.Add(trade);
-        }
-
-        OpenTrades
-          .Where(t => t.Lots == 0)
-          .ToList()
-          .ForEach(t => OpenTrades.Remove(t));
-
-        //TraceTrades("Opened: ", OpenTrades);
-        //TraceTrades("Closed: ", ClosedTrades);
-      } catch(Exception exc) {
-        Verbous(exc);
-      }
-      int CloseTrade(DateTime execTime, double execPrice, Trade closedTrade, int closeLots)
-      {
-        if(closeLots >= closedTrade.Lots) {// Full close
-          closedTrade.Time2Close = execTime;
-          closedTrade.Close = execPrice;
-
-          ClosedTrades.Add(closedTrade);
-          if(!OpenTrades.Remove(closedTrade))
-            throw new Exception($"Couldn't remove {nameof(closedTrade)} from {nameof(OpenTrades)}");
-          return closeLots - closedTrade.Lots;
-        } else {// Partial close
-          var trade = closedTrade.Clone();
-          trade.CommissionByTrade = closedTrade.CommissionByTrade;
-          trade.Lots = closeLots;
-          trade.Time2Close = execTime;
-          trade.Close = execPrice;
-          closedTrade.Lots -= trade.Lots;
-          ClosedTrades.Add(trade);
-          return 0;
-        }
-      }
-    }
 
     private static Func<Trade, bool> IsEqual(PositionMessage position) => ot => ot.Key().Equals(position.Key());
     private static Func<Trade, bool> IsNotEqual(Trade trade) => ot => ot.Key().Equals(trade.Key2());
 
 
-    private static bool IsEntryOrder(IBApi.Order o) => new[] { "MKT", "LMT" }.Contains(o.OrderType);
-    ConcurrentDictionary<string,(IBApi.Order order, IBApi.Contract contract)> _orderContracts;
-    private void OnOpenOrder(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) =>
-      OnOpenOrderPush(Tuple.Create(reqId, c, o, os));
-    private void OnOrderFilledImpl(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) {
-      _orderContracts.TryAdd(o.OrderId+"", (o, c));
-      Trace(new { OnOpenOrder = new { reqId, c, o, os } });
-      RaiseOrderAdded(new Order {
-        IsBuy = o.Action == "BUY",
-        Lot = (int)o.TotalQuantity,
-        Pair = c.Instrument,
-        IsEntryOrder = IsEntryOrder(o)
-      });
-    }
     #endregion
 
     private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
@@ -228,7 +78,7 @@ namespace IBApp {
 
     #region Methods
     public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1000 : 1;
-    public double Leverage(string pair) => GetBaseUnitSize(pair) / GetOffer(pair).MMR;
+    public double Leverage(string pair, bool isBuy) => GetBaseUnitSize(pair) / GetMMR(pair, isBuy);
     public Trade TradeFactory(string pair) => Trade.Create(this, pair, GetPipSize(pair), GetBaseUnitSize(pair), CommissionByTrade);
 
     public double InPips(string pair, double? price) => price.GetValueOrDefault() / GetPipSize(pair);
@@ -321,16 +171,6 @@ namespace IBApp {
       var offer = GetOffer(pair);
       return trades.Sum(trade =>
         MoneyAndLotToPips(pair, account.ExcessLiquidity, trade.Lots, _currentPrice.Average, GetPipSize(pair)) * trade.Lots) / trades.Lots();
-      return trades.Sum(trade =>
-        TradesManagerStatic.PipToMarginCall(
-        trade.Lots,
-        trade.PL,
-        account.Balance,
-        offer.MMR,
-        GetBaseUnitSize(trade.Pair),
-        TradesManagerStatic.PipAmount(trade.Pair, trade.Lots, trade.Close, GetPipSize(trade.Pair))
-      // CommissionByTrade(trade)
-      ) * trade.Lots) / trades.Lots();
     }
     public double PipsToMarginCall {
       get {
@@ -396,11 +236,26 @@ namespace IBApp {
       }
     }
 
-    void RaiseOrderAdded(Order Order) {
+    void RaiseOrderAdded(object sender, OrderEventArgs args) {
       if(OrderAddedEvent != null)
-        OrderAddedEvent(this, new OrderEventArgs(Order));
+        OrderAddedEvent(this, args);
     }
     #endregion
+    #region OrderRemovedEvent
+    public event OrderRemovedEventHandler OrderRemovedEvent;
+    public event OrderRemovedEventHandler OrderRemoved {
+      add {
+        if (OrderRemovedEvent == null || !OrderRemovedEvent.GetInvocationList().Contains(value))
+          OrderRemovedEvent += value;
+      }
+      remove {
+        OrderRemovedEvent -= value;
+      }
+    }
+
+    void RaiseOrderRemoved(object sender, OrderEventArgs args) => OrderAddedEvent?.Invoke(this, args);
+    #endregion
+
 
     #region TradeAddedEvent
     event EventHandler<TradeEventArgs> TradeAddedEvent;
@@ -481,7 +336,6 @@ namespace IBApp {
     public bool IsInTest { get; set; }
 
     public event EventHandler<OrderEventArgs> OrderChanged;
-    public event OrderRemovedEventHandler OrderRemoved;
     public event EventHandler<RequestEventArgs> RequestFailed;
 
     public void ChangeEntryOrderLot(string orderId, int lot) {

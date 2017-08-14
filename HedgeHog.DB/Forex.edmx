@@ -105,7 +105,7 @@
           <Key>
             <PropertyRef Name="Id" />
           </Key>
-          <Property Name="Id" Type="nvarchar" MaxLength="16" Nullable="false" />
+          <Property Name="Id" Type="nvarchar" MaxLength="32" Nullable="false" />
           <Property Name="Buy" Type="bit" Nullable="false" />
           <Property Name="PL" Type="float" Nullable="false" />
           <Property Name="GrossPL" Type="float" Nullable="false" />
@@ -132,7 +132,7 @@
             <PropertyRef Name="Id" />
           </Key>
           <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="TradeId" Type="nvarchar" MaxLength="16" Nullable="false" />
+          <Property Name="TradeId" Type="nvarchar" MaxLength="32" Nullable="false" />
           <Property Name="Name" Type="varchar" MaxLength="128" Nullable="false" />
           <Property Name="Value" Type="varchar" MaxLength="256" Nullable="false" />
         </EntityType>
@@ -399,7 +399,6 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
           <EntitySet Name="v_Pair" EntityType="ForexModel.v_Pair" />
           <EntitySet Name="t_Offer" EntityType="ForexModel.t_Offer" />
           <EntitySet Name="t_Stat" EntityType="ForexModel.t_Stat" />
-          <EntitySet Name="t_Trade" EntityType="ForexModel.t_Trade" />
           <EntitySet Name="t_BarHeight" EntityType="ForexModel.t_BarHeight" />
           <EntitySet Name="t_Report" EntityType="ForexModel.t_Report" />
           <EntitySet Name="v_BlackoutTime" EntityType="ForexModel.v_BlackoutTime" />
@@ -429,12 +428,13 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
             <End Role="t_BarExtender" EntitySet="t_BarExtender" />
           </AssociationSet>
           <EntitySet Name="t_TradeValue" EntityType="ForexModel.t_TradeValue" />
+          <EntitySet Name="SP500" EntityType="ForexModel.SP500" />
+          <EntitySet Name="v_TradeSession" EntityType="ForexModel.v_TradeSession" />
+          <EntitySet Name="t_Trade" EntityType="ForexModel.t_Trade" />
           <AssociationSet Name="FK_t_TradeValue_t_Trade" Association="ForexModel.FK_t_TradeValue_t_Trade">
             <End Role="t_Trade" EntitySet="t_Trade" />
             <End Role="t_TradeValue" EntitySet="t_TradeValue" />
           </AssociationSet>
-          <EntitySet Name="SP500" EntityType="ForexModel.SP500" />
-          <EntitySet Name="v_TradeSession" EntityType="ForexModel.v_TradeSession" />
         </EntityContainer>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
@@ -484,33 +484,6 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
           <Property Type="Double" Name="Value2" Nullable="false" />
           <Property Type="Double" Name="Value3" Nullable="false" />
           <Property Type="String" Name="Name" Nullable="false" MaxLength="Max" FixedLength="false" Unicode="true" />
-        </EntityType>
-        <EntityType Name="t_Trade">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Type="String" Name="Id" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
-          <Property Type="Boolean" Name="Buy" Nullable="false" />
-          <Property Type="Double" Name="PL" Nullable="false" />
-          <Property Type="Double" Name="GrossPL" Nullable="false" />
-          <Property Type="Double" Name="Lot" Nullable="false" />
-          <Property Type="String" Name="Pair" Nullable="false" MaxLength="8" FixedLength="false" Unicode="true" />
-          <Property Type="DateTime" Name="TimeOpen" Nullable="false" Precision="3" />
-          <Property Type="DateTime" Name="TimeClose" Nullable="false" Precision="3" />
-          <Property Type="String" Name="AccountId" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
-          <Property Type="Double" Name="Commission" Nullable="false" />
-          <Property Type="Boolean" Name="IsVirtual" Nullable="false" />
-          <Property Type="DateTime" Name="TimeStamp" Precision="3" />
-          <Property Type="Double" Name="CorridorHeightInPips" Nullable="false" />
-          <Property Type="Double" Name="CorridorMinutesBack" Nullable="false" />
-          <Property Type="Guid" Name="SessionId" Nullable="false" />
-          <Property Type="Double" Name="PriceOpen" Nullable="false" />
-          <Property Type="Double" Name="PriceClose" Nullable="false" />
-          <Property Type="String" Name="SessionInfo" MaxLength="4000" FixedLength="false" Unicode="true" />
-          <Property Type="Double" Name="RunningBalance" />
-          <Property Type="Double" Name="RunningBalanceTotal" />
-          <Property Name="SessionInfo2" Type="String" MaxLength="1024" FixedLength="false" Unicode="false" />
-          <NavigationProperty Name="t_TradeValue" Relationship="ForexModel.FK_t_TradeValue_t_Trade" FromRole="t_Trade" ToRole="t_TradeValue" />
         </EntityType>
         <EntityType Name="t_BarHeight">
           <Key>
@@ -691,25 +664,11 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
             <PropertyRef Name="Id" />
           </Key>
           <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="TradeId" Type="String" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
+          <Property Name="TradeId" Type="String" Nullable="false" MaxLength="32" FixedLength="false" Unicode="true" />
           <Property Name="Name" Type="String" Nullable="false" MaxLength="128" FixedLength="false" Unicode="false" />
-          <NavigationProperty Name="t_Trade" Relationship="ForexModel.FK_t_TradeValue_t_Trade" FromRole="t_TradeValue" ToRole="t_Trade" />
           <Property Name="Value" Type="String" Nullable="false" MaxLength="256" FixedLength="false" Unicode="false" />
+          <NavigationProperty Name="t_Trade" Relationship="ForexModel.FK_t_TradeValue_t_Trade" FromRole="t_TradeValue" ToRole="t_Trade" />
         </EntityType>
-        <Association Name="FK_t_TradeValue_t_Trade">
-          <End Type="ForexModel.t_Trade" Role="t_Trade" Multiplicity="1">
-            <OnDelete Action="Cascade" />
-          </End>
-          <End Type="ForexModel.t_TradeValue" Role="t_TradeValue" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="t_Trade">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="t_TradeValue">
-              <PropertyRef Name="TradeId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <EntityType Name="SP500">
           <Key>
             <PropertyRef Name="Symbol" />
@@ -753,6 +712,47 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
           <Property Name="PLRatio" Type="Double" />
           <Property Name="RatesDistanceMin" Type="Double" />
         </EntityType>
+        <EntityType Name="t_Trade">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="String" Nullable="false" MaxLength="32" FixedLength="false" Unicode="true" />
+          <Property Name="Buy" Type="Boolean" Nullable="false" />
+          <Property Name="PL" Type="Double" Nullable="false" />
+          <Property Name="GrossPL" Type="Double" Nullable="false" />
+          <Property Name="Lot" Type="Double" Nullable="false" />
+          <Property Name="Pair" Type="String" Nullable="false" MaxLength="8" FixedLength="false" Unicode="true" />
+          <Property Name="TimeOpen" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="TimeClose" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="AccountId" Type="String" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
+          <Property Name="Commission" Type="Double" Nullable="false" />
+          <Property Name="IsVirtual" Type="Boolean" Nullable="false" />
+          <Property Name="TimeStamp" Type="DateTime" Precision="3" />
+          <Property Name="CorridorHeightInPips" Type="Double" Nullable="false" />
+          <Property Name="CorridorMinutesBack" Type="Double" Nullable="false" />
+          <Property Name="SessionId" Type="Guid" Nullable="false" />
+          <Property Name="PriceOpen" Type="Double" Nullable="false" />
+          <Property Name="PriceClose" Type="Double" Nullable="false" />
+          <Property Name="SessionInfo" Type="String" MaxLength="4000" FixedLength="false" Unicode="true" />
+          <Property Name="RunningBalance" Type="Double" />
+          <Property Name="RunningBalanceTotal" Type="Double" />
+          <Property Name="SessionInfo2" Type="String" MaxLength="1024" FixedLength="false" Unicode="false" />
+          <NavigationProperty Name="t_TradeValue" Relationship="ForexModel.FK_t_TradeValue_t_Trade" FromRole="t_Trade" ToRole="t_TradeValue" />
+        </EntityType>
+        <Association Name="FK_t_TradeValue_t_Trade">
+          <End Type="ForexModel.t_Trade" Role="t_Trade" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="ForexModel.t_TradeValue" Role="t_TradeValue" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="t_Trade">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="t_TradeValue">
+              <PropertyRef Name="TradeId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -814,33 +814,6 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
                 <ScalarProperty Name="Value1" ColumnName="Value1" />
                 <ScalarProperty Name="Price" ColumnName="Price" />
                 <ScalarProperty Name="Time" ColumnName="Time" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="t_Trade">
-            <EntityTypeMapping TypeName="ForexModel.t_Trade">
-              <MappingFragment StoreEntitySet="t_Trade">
-                <ScalarProperty Name="SessionInfo2" ColumnName="SessionInfo2" />
-                <ScalarProperty Name="RunningBalanceTotal" ColumnName="RunningBalanceTotal" />
-                <ScalarProperty Name="RunningBalance" ColumnName="RunningBalance" />
-                <ScalarProperty Name="SessionInfo" ColumnName="SessionInfo" />
-                <ScalarProperty Name="PriceClose" ColumnName="PriceClose" />
-                <ScalarProperty Name="PriceOpen" ColumnName="PriceOpen" />
-                <ScalarProperty Name="SessionId" ColumnName="SessionId" />
-                <ScalarProperty Name="CorridorMinutesBack" ColumnName="CorridorMinutesBack" />
-                <ScalarProperty Name="CorridorHeightInPips" ColumnName="CorridorHeightInPips" />
-                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
-                <ScalarProperty Name="IsVirtual" ColumnName="IsVirtual" />
-                <ScalarProperty Name="Commission" ColumnName="Commission" />
-                <ScalarProperty Name="AccountId" ColumnName="AccountId" />
-                <ScalarProperty Name="TimeClose" ColumnName="TimeClose" />
-                <ScalarProperty Name="TimeOpen" ColumnName="TimeOpen" />
-                <ScalarProperty Name="Pair" ColumnName="Pair" />
-                <ScalarProperty Name="Lot" ColumnName="Lot" />
-                <ScalarProperty Name="GrossPL" ColumnName="GrossPL" />
-                <ScalarProperty Name="PL" ColumnName="PL" />
-                <ScalarProperty Name="Buy" ColumnName="Buy" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>
@@ -1051,6 +1024,33 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="t_Trade">
+            <EntityTypeMapping TypeName="ForexModel.t_Trade">
+              <MappingFragment StoreEntitySet="t_Trade">
+                <ScalarProperty Name="SessionInfo2" ColumnName="SessionInfo2" />
+                <ScalarProperty Name="RunningBalanceTotal" ColumnName="RunningBalanceTotal" />
+                <ScalarProperty Name="RunningBalance" ColumnName="RunningBalance" />
+                <ScalarProperty Name="SessionInfo" ColumnName="SessionInfo" />
+                <ScalarProperty Name="PriceClose" ColumnName="PriceClose" />
+                <ScalarProperty Name="PriceOpen" ColumnName="PriceOpen" />
+                <ScalarProperty Name="SessionId" ColumnName="SessionId" />
+                <ScalarProperty Name="CorridorMinutesBack" ColumnName="CorridorMinutesBack" />
+                <ScalarProperty Name="CorridorHeightInPips" ColumnName="CorridorHeightInPips" />
+                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
+                <ScalarProperty Name="IsVirtual" ColumnName="IsVirtual" />
+                <ScalarProperty Name="Commission" ColumnName="Commission" />
+                <ScalarProperty Name="AccountId" ColumnName="AccountId" />
+                <ScalarProperty Name="TimeClose" ColumnName="TimeClose" />
+                <ScalarProperty Name="TimeOpen" ColumnName="TimeOpen" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+                <ScalarProperty Name="Lot" ColumnName="Lot" />
+                <ScalarProperty Name="GrossPL" ColumnName="GrossPL" />
+                <ScalarProperty Name="PL" ColumnName="PL" />
+                <ScalarProperty Name="Buy" ColumnName="Buy" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -1077,7 +1077,6 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
         <edmx:EntityTypeShape EntityType="ForexModel.v_Pair" Width="1.5" PointX="2.75" PointY="5.75" Height="1.4279589843749996" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_Offer" Width="1.5" PointX="5.75" PointY="3.75" Height="1.7566536458333317" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_Stat" Width="1.5" PointX="4.75" PointY="6.75" Height="2.0853483072916674" />
-        <edmx:EntityTypeShape EntityType="ForexModel.t_Trade" Width="1.5" PointX="6.75" PointY="6.75" Height="4.6725065104166674" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_BarHeight" Width="1.5" PointX="7.75" PointY="3.75" Height="1.7879850260416674" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_Report" Width="1.5" PointX="0.75" PointY="8.75" Height="1.5956835937499996" />
         <edmx:EntityTypeShape EntityType="ForexModel.v_BlackoutTime" Width="1.5" PointX="8.75" PointY="6.75" Height="2.3648893229166674" />
@@ -1093,9 +1092,10 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
         <edmx:EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.75" PointY="0.75" />
         <edmx:AssociationConnector Association="ForexModel.FK_t_BarExtender_t_Bar" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_TradeValue" Width="1.5" PointX="9" PointY="10.5" />
-        <edmx:AssociationConnector Association="ForexModel.FK_t_TradeValue_t_Trade" />
         <edmx:EntityTypeShape EntityType="ForexModel.SP500" Width="1.5" PointX="0.75" PointY="11.75" />
         <edmx:EntityTypeShape EntityType="ForexModel.v_TradeSession" Width="1.5" PointX="3.375" PointY="10.75" />
+        <edmx:EntityTypeShape EntityType="ForexModel.t_Trade" Width="1.5" PointX="6.75" PointY="9.875" />
+        <edmx:AssociationConnector Association="ForexModel.FK_t_TradeValue_t_Trade" />
       </edmx:Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

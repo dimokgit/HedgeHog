@@ -1698,9 +1698,9 @@ namespace HedgeHog.Alice.Client {
             c.t_Trade.Add(ct);
             c.SaveChanges();
           }, (c, e) => {
-            c.t_Trade.Remove(ct);
-            Log = new Exception(ct.ToXml());
+            Log = new Exception(ct.ToJson());
             Log = e;
+            c.t_Trade.Remove(ct);
           });
         }
       } catch(Exception exc) { Log = exc; }

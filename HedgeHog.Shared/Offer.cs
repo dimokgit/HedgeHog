@@ -70,11 +70,11 @@ namespace HedgeHog.Shared {
     [DataMember]
     public Double PipCost { get; set; }
     [DataMember]
-    public Double MMR { get; set; }
+    public Double MMRLong { get; set; }
     double _MMRShort=double.NaN;
     [DataMember]
     public double MMRShort {
-      get { return double.IsNaN(_MMRShort) ? MMR : _MMRShort; }
+      get { return double.IsNaN(_MMRShort) ? MMRLong : _MMRShort; }
       set {
         _MMRShort = value;
       }

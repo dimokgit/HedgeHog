@@ -606,16 +606,6 @@ namespace HedgeHog.Alice.Store {
     }
     public bool IsCurrency => Pair.IsCurrenncy();
     #region LotSize
-    int _lotSize;
-    public int LotSize {
-      get { return _lotSize; }
-      set {
-        if(_lotSize == value)
-          return;
-        _lotSize = value;
-        OnPropertyChanged("LotSize");
-      }
-    }
 
     private double _LotSizePercent;
     public double LotSizePercent {
@@ -661,7 +651,6 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
-    double TakeProfitInDollars { get { return TakeProfitPips * LotSize / 10000; } }
     private double _TakeProfitPips;
     public double TakeProfitPips {
       get { return _TakeProfitPips; }
@@ -1077,7 +1066,7 @@ namespace HedgeHog.Alice.Store {
       get { return !IsTrader ? 0 : CurrentLoss + OpenTradesGross; }
     }
 
-    public int CurrentGrossLot { get { return !IsTrader ? 0 : Trades.Select(t => t.Lots).DefaultIfEmpty(AllowedLotSizeCore()).Sum(); } }
+    public int CurrentGrossLot { get { return !IsTrader ? 0 : Trades.Select(t => t.Lots).DefaultIfEmpty(0).Sum(); } }
     public double CurrentGrossInPips {
       get {
         return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentGross, CurrentGrossLot, Pair);
@@ -1532,7 +1521,7 @@ namespace HedgeHog.Alice.Store {
         _sessionInfo = "";
         _isSelfStrategy = false;
         WaveShort.Reset();
-        CloseAtZero = _trimAtZero = false;
+        CloseAtZero = false;
         CurrentLoss = HistoryMaximumLot = 0;
         ResetMinimumGross();
         ForEachSuppRes(sr => {
@@ -1746,7 +1735,7 @@ namespace HedgeHog.Alice.Store {
                     continue;
                   ratePrev = rate;
                   if(this.TradingMacrosByPair().First() == this && (Trades.Any() || IsTradingDay())) {
-                    TradesManager.RaisePriceChanged( new Price(Pair, rate));
+                    TradesManager.RaisePriceChanged(new Price(Pair, rate));
                   }
                   ReplayEvents();
                   {
@@ -2788,14 +2777,18 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region PipAmount
-    public double PipAmount {
-      get { return TradesManagerStatic.PipAmount(Pair, AllowedLotSizeCore(), TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); }
+    public double PipAmount=>
+       TradesManagerStatic.PipAmount(Pair, Trades.Lots(), TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); 
+    public double PipAmountBuy {
+      get { return TradesManagerStatic.PipAmount(Pair, AllowedLotSizeCore(true), TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); }
+    }
+    public double PipAmountSell {
+      get { return TradesManagerStatic.PipAmount(Pair, AllowedLotSizeCore(false), TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); }
     }
 
     #endregion
-    public double PipAmountPercent {
-      get { return PipAmount / Account.Equity; }
-    }
+    public double PipAmountBuyPercent => PipAmountBuy / Account.Equity;
+    public double PipAmountSellPercent => PipAmountSell / Account.Equity;
 
 
     double _HeightFib;
@@ -2856,11 +2849,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    public int MaxLotSize {
-      get {
-        return MaxLotByTakeProfitRatio.ToInt() * LotSize;
-      }
-    }
 
     private double _Profitability;
     public double Profitability {
@@ -3051,17 +3039,6 @@ namespace HedgeHog.Alice.Store {
         if(!HasRates)
           return double.NaN;
         _tradingDistance = GetValueByTakeProfitFunction(TradingDistanceFunction, TradingDistanceX);
-        if(false) {
-          var td1 = AllowedLotSizeCore(TradingDistanceInPips)
-            .ValueByPosition(LotSize, LotSize * MaxLotByTakeProfitRatio, _tradingDistance, RatesHeight / _ratesHeightAdjustmentForAls)
-            .Min(RatesHeight / _ratesHeightAdjustmentForAls);
-          if(td1 > 0) {
-            if((td1 - _tradingDistance).Abs() / _tradingDistance > .1)
-              _tradingDistance = td1;
-          } else {
-            td1 = _tradingDistance;
-          }
-        }
         return _tradingDistance;// td;
       }
     }
@@ -3193,7 +3170,7 @@ namespace HedgeHog.Alice.Store {
     private void OpenTradeWithReverse(bool isBuy) {
       CheckPendingAction("OT", (pa) => {
         var lotClose = Trades.IsBuy(!isBuy).Lots();
-        var lotOpen = AllowedLotSizeCore();
+        var lotOpen = AllowedLotSizeCore(isBuy);
         var lot = lotClose + lotOpen;
         if(lot > 0) {
           pa();
@@ -3229,7 +3206,6 @@ namespace HedgeHog.Alice.Store {
       });
     }
 
-    public void TrimTrades(string reason) { CloseTrades(Trades.Lots() - LotSize, reason); }
     public void CloseTrades(string reason) { CloseTrades(Trades.Lots(), reason); }
     private void CloseTrades(int lot, string reason) {
       if(!Trades.Any())
@@ -3271,22 +3247,9 @@ namespace HedgeHog.Alice.Store {
     private SuppRes[] EnsureActiveSuppReses() {
       return EnsureActiveSuppReses(true).Concat(EnsureActiveSuppReses(false)).OrderBy(sr => sr.Rate).ToArray();
     }
-    private SuppRes[] EnsureActiveSuppReses(bool isBuy, bool doTrades = false) {
-      var hasTrades = doTrades && HasTradesByDistance(Trades.IsBuy(isBuy));
-      var isActiveCommon = true;// !IsCold && IsHotStrategy && HasCorridor;
-      var isActiveByBuy = true;//rateLast == null ? true : !isBuy ? rateLast.PriceAvg < rateLast.PriceAvg1 : rateLast.PriceAvg > rateLast.PriceAvg1;
-      SuppRes.IsBuy(isBuy).ToList().ForEach(sr => sr.IsActive = ForceOpenTrade.HasValue || !hasTrades && isActiveByBuy && isActiveCommon);
+    private SuppRes[] EnsureActiveSuppReses(bool isBuy) {
+      SuppRes.IsBuy(isBuy).ToList().ForEach(sr => sr.IsActive = true);
       return SuppRes.Active(isBuy);
-    }
-
-    private bool HasTradesByDistance(bool isBuy) {
-      return HasTradesByDistance(Trades.IsBuy(isBuy));
-    }
-    private bool HasTradesByDistance(Trade[] trades) {
-      if(MaximumPositions <= trades.Positions(LotSize))
-        return true;
-      var td = TradingDistanceInPips;//.Max(trades.DistanceMaximum());
-      return CalculateTakeProfit() == 0 || double.IsNaN(TradingDistance) || HasTradesByDistanceDelegate(trades, td);
     }
 
     delegate bool HasTradesByDistanceCustom(Trade[] trades, double tradingDistanceInPips);
@@ -4057,7 +4020,6 @@ namespace HedgeHog.Alice.Store {
     int _BaseUnitSize = 0;
     double _mmr = 0;
     public int BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = TradesManager.GetBaseUnitSize(Pair); } }
-    public double MMR { get { return _mmr > 0 ? _mmr : _mmr = TradesManager.GetOffer(Pair).MMR; } }
     Account _account = null;
     Account Account { get { return _account ?? (_account = TradesManager.GetAccount()); } }
     public void SetLotSize(Account account = null) {
@@ -4070,19 +4032,20 @@ namespace HedgeHog.Alice.Store {
       try {
         TradingRatioByPMC.Yield()
           .Where(pmc => pmc)
-          .Select(_ => CalcLotSizeByPMC(account))
+          .Select(_ => (buy: CalcLotSizeByPMC(account, true), sell: CalcLotSizeByPMC(account, false)))
           .Concat(TradingRatio.Yield()
             .Where(tr => tr > 0)
-            .Select(tr => tr >= 1
-              ? (tr * BaseUnitSize).ToInt()
-              : TradesManagerStatic.GetLotstoTrade((CurrentPrice?.Average).GetValueOrDefault(), Pair, account.Equity, TradesManager.Leverage(Pair), tr, BaseUnitSize)))
-          .Concat(0.Yield())
+            .Select(tr =>
+            tr >= 1
+            ? (buy: (tr * BaseUnitSize).ToInt(), sell: (tr * BaseUnitSize).ToInt())
+            : (buy: GetLotsToTrade(account, tr, true), sell: GetLotsToTrade(account, tr, false))))
+          .Concat((buy: 0, sell: 0).Yield())
           .Take(1)
           .ForEach(ls => {
-            LotSize = ls;
-            LotSizePercent = LotSize / account.Balance / TradesManager.Leverage(Pair);
-            LotSizeByLossBuy = AllowedLotSizeCore();
-            LotSizeByLossSell = AllowedLotSizeCore();
+            LotSizePercent = (ls.buy + ls.sell) / 2 / account.Balance / TradesManager.Leverage(Pair, true);
+            LotSizeByLossBuy = ls.buy;
+            LotSizeByLossSell = ls.sell;
+            AllowedLotSizeCore(true);
           });
         var stopAmount = 0.0;
         var limitAmount = 0.0;
@@ -4096,10 +4059,10 @@ namespace HedgeHog.Alice.Store {
       } catch(Exception exc) { throw new SetLotSizeException("", exc); }
     }
 
-    public double PipsToPMCByLot { get { return PipsToPMCByLotCalc(); } }
-    double PipsToPMCByLotCalc() {
-      return TradesManagerStatic.PipToMarginCall(LotSizeByLossBuy, 0, Account.Equity, MMR, BaseUnitSize, PipAmount);
+    private int GetLotsToTrade(Account account, double tr, bool isBuy) {
+      return TradesManagerStatic.GetLotstoTrade((CurrentPrice?.Average).GetValueOrDefault(), Pair, account.Equity, TradesManager.Leverage(Pair, isBuy), tr, BaseUnitSize);
     }
+
     public int MaxPipsToPMC() {
       return InPips(
         Enumerable.Range(0, 1)
@@ -4110,51 +4073,34 @@ namespace HedgeHog.Alice.Store {
         .ToInt();
     }
 
-    public int CalcLotSizeByPMC(Account account) {
+    public int CalcLotSizeByPMC(Account account, bool isBuy) {
       var tms = TradingStatistics.TradingMacros;
       return tms == null || !tms.Any() ? 0
         : TradesManagerStatic.LotToMarginCall(MaxPipsToPMC()
         , account.Equity / tms.Count(tm => tm.TradingRatioByPMC)
         , BaseUnitSize
         , GetPipCost()
-        , MMR);
+        , TradesManagerStatic.GetMMR(Pair, isBuy));
     }
 
     private double GetPipCost() {
       return TradesManagerStatic.PipCost(Pair, TradesManager.RateForPipAmount(CurrentPrice), BaseUnitSize, PointSize);
     }
 
-    int LotSizeByLoss(ITradesManager tradesManager, double loss, int baseLotSize, double lotMultiplierInPips) {
+    int LotSizeByLoss(ITradesManager tradesManager, double loss, double lotMultiplierInPips) {
       var bus = tradesManager.GetBaseUnitSize(Pair);
       return TradesManagerStatic.GetLotSize(-(loss / lotMultiplierInPips) * bus / GetPipCost(), bus, true);
     }
-    int LotSizeByLoss(double? lotMultiplierInPips = null) {
+    int LotSizeByLoss() {
       var currentGross = this.TradingStatistics.CurrentGross;
-      var lotSize = LotSizeByLoss(TradesManager, currentGross, LotSize,
-        lotMultiplierInPips ?? (TradingDistanceInPips * 2));
-      return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize || !false ? lotSize.Min(MaxLotSize) : LotSizeByLoss(TradesManager, currentGross, LotSize, RatesHeightInPips / _ratesHeightAdjustmentForAls).Max(MaxLotSize);
+      var lotSize = LotSizeByLoss(TradesManager, currentGross, TradingDistanceInPips * 2);
+      return lotSize;
     }
 
-    int StrategyLotSizeByLossAndDistance(ICollection<Trade> trades) {
-      var lotSize = trades.Select(t => t.Lots).DefaultIfEmpty(LotSizeByLoss()).Min()
-        .Max(LotSize).Min((MaxLotByTakeProfitRatio * LotSize).ToInt());
-      var lastLotSize = trades.Select(t => t.Lots).DefaultIfEmpty(lotSize).Max();
-      var pl = trades.Select(t => (t.Close - t.Open).Abs()).OrderBy(d => d).LastOrDefault();
-      var multilier = (Math.Floor(pl / CorridorStats.HeightUpDown) + 1).Min(MaxLotByTakeProfitRatio).ToInt();
-      return (lotSize * multilier).Min(lastLotSize + lotSize);
-    }
-
-    private int LotSizeByDistance(ICollection<Trade> trades) {
-      var pl = trades.Select(t => (t.Close - t.Open).Abs()).OrderBy(d => d).LastOrDefault();
-      var multilier = (Math.Floor(pl / RatesHeight) + 1).Min(MaxLotByTakeProfitRatio).ToInt();
-      return LotSize.Max(LotSize * multilier);
-    }
-
-
-    public int AllowedLotSizeCore(double? lotMultiplierInPips = null) {
+    public int AllowedLotSizeCore(bool isBuy) {
       if(!HasRates)
         return 0;
-      return LotSizeByLoss(lotMultiplierInPips).Max(LotSize);//.Min(MaxLotByTakeProfitRatio.ToInt() * LotSize);
+      return LotSizeByLoss().Max(isBuy ? LotSizeByLossBuy : LotSizeByLossSell);//.Min(MaxLotByTakeProfitRatio.ToInt() * LotSize);
     }
     #endregion
 

@@ -59,7 +59,7 @@ namespace HedgeHog.Shared {
     #region Common Info
     DateTime ServerTime { get; }
     void SetServerTime(DateTime serverTime);
-    double Leverage(string pair);
+    double Leverage(string pair,bool isBuy);
     double PipsToMarginCall { get; }
 
     double Round(string pair, double value, int digitOffset = 0);
@@ -195,12 +195,12 @@ namespace HedgeHog.Shared {
 
 
   public static class TradesManagerStatic {
-    readonly static Offer _offerDefault= new Offer { Pair = "DEFAULT", Digits = 3, PointSize = 0.01, MMR = 1, ContractSize = 1 };
+    readonly static Offer _offerDefault= new Offer { Pair = "DEFAULT", Digits = 3, PointSize = 0.01, MMRLong = 1, ContractSize = 1 };
     public static Offer[] dbOffers = new[] {
-            new Offer { Pair = "USDJPY", Digits = 3, PointSize = 0.01, MMR=1, ContractSize = 1000 },
-            new Offer { Pair = "EURUSD", Digits = 5, PointSize = 0.0001, MMR=1, ContractSize = 1000 },
-            new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01, MMR=0.513, ContractSize = 1 },
-            new Offer { Pair = "SPY", Digits = 3, PointSize = 0.01, MMR = 0.250, MMRShort= 0.3, ContractSize = 1 }
+            new Offer { Pair = "USDJPY", Digits = 3, PointSize = 0.01, MMRLong=1, ContractSize = 1000 },
+            new Offer { Pair = "EURUSD", Digits = 5, PointSize = 0.0001, MMRLong=1, ContractSize = 1000 },
+            new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01, MMRLong=0.513, ContractSize = 1 },
+            new Offer { Pair = "SPY", Digits = 3, PointSize = 0.01, MMRLong = 0.250, MMRShort= 0.3, ContractSize = 1 }
           };
     static Func<string,Offer> GetOfferImpl= symbol
       =>  dbOffers
@@ -212,6 +212,7 @@ namespace HedgeHog.Shared {
     public static double GetPointSize(string symbol) => GetOffer(symbol).PointSize;
     public static int GetBaseUnitSize(string symbol) => GetOffer(symbol).ContractSize;
     public static int GetDigits(string symbol) => GetOffer(symbol).Digits;
+    public static double GetMMR(string symbol,bool isBuy) => isBuy? GetOffer(symbol).MMRLong : GetOffer(symbol).MMRShort;
 
     private static string[] _currencies=new []{
       "USD",

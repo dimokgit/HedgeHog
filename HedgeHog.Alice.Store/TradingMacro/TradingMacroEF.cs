@@ -92,7 +92,7 @@ namespace HedgeHog.Alice.Store {
     /// <param name="currentLossInPipsCloseAdjustment">Initial value of the CurrentLossInPipsCloseAdjustment property.</param>
     /// <param name="corridorBigToSmallRatio">Initial value of the CorridorBigToSmallRatio property.</param>
     /// <param name="voltageFunction">Initial value of the VoltageFunction property.</param>
-    public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual, global::System.Boolean tradeOnCrossOnly, global::System.Int32 takeProfitFunctionInt, global::System.Boolean doAdjustTimeframeByAllowedLot, global::System.Boolean isColdOnTrades, global::System.Int32 corridorCrossesCountMinimum, global::System.Double stDevToSpreadRatio, global::System.Int32 loadRatesSecondsWarning, global::System.Int32 corridorHighLowMethodInt, global::System.Double corridorStDevRatioMax, global::System.Double corridorLengthMinimum, global::System.Int32 corridorCrossHighLowMethodInt, global::System.Double priceCmaLevels, global::System.Int32 volumeTresholdIterations, global::System.Int32 stDevTresholdIterations, global::System.Double stDevAverageLeewayRatio, global::System.Int32 extreamCloseOffset, global::System.Double currentLossInPipsCloseAdjustment, global::System.Double corridorBigToSmallRatio, VoltageFunction voltageFunction) {
+    public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual, global::System.Boolean tradeOnCrossOnly, global::System.Int32 takeProfitFunctionInt, global::System.Boolean doAdjustTimeframeByAllowedLot, global::System.Boolean isColdOnTrades, global::System.Int32 corridorCrossesCountMinimum, global::System.Double stDevToSpreadRatio, global::System.Int32 loadRatesSecondsWarning, global::System.Int32 corridorHighLowMethodInt, global::System.Double corridorStDevRatioMax, global::System.Double corridorLengthMinimum, global::System.Int32 corridorCrossHighLowMethodInt, global::System.Double priceCmaLevels, global::System.Int32 volumeTresholdIterations, global::System.Int32 stDevTresholdIterations, global::System.Double stDevAverageLeewayRatio, global::System.Int32 extreamCloseOffset, global::System.Double currentLossInPipsCloseAdjustment, global::System.Double corridorBigToSmallRatio, VoltageFunction voltageFunction) {
       TradingMacro tradingMacro = new TradingMacro();
       tradingMacro.Pair = pair;
       tradingMacro.TradingRatio = tradingRatio;
@@ -111,11 +111,9 @@ namespace HedgeHog.Alice.Store {
       tradingMacro.CorridorBarMinutes = corridorBarMinutes;
       tradingMacro.PairIndex = pairIndex;
       tradingMacro.TradingGroup = tradingGroup;
-      tradingMacro.MaximumPositions = maximumPositions;
       tradingMacro.IsActive = isActive;
       tradingMacro.TradingMacroName = tradingMacroName;
       tradingMacro.LimitCorridorByBarHeight = limitCorridorByBarHeight;
-      tradingMacro.MaxLotByTakeProfitRatio = maxLotByTakeProfitRatio;
       tradingMacro.BarPeriodsLow = barPeriodsLow;
       tradingMacro.BarPeriodsHigh = barPeriodsHigh;
       tradingMacro.StrictTradeClose = strictTradeClose;
@@ -538,27 +536,6 @@ namespace HedgeHog.Alice.Store {
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
     [DataMemberAttribute()]
-    public global::System.Int32 MaximumPositions {
-      get {
-        return _MaximumPositions;
-      }
-      set {
-        OnMaximumPositionsChanging(value);
-        ReportPropertyChanging("MaximumPositions");
-        _MaximumPositions = StructuralObject.SetValidValue(value, "MaximumPositions");
-        ReportPropertyChanged("MaximumPositions");
-        OnMaximumPositionsChanged();
-      }
-    }
-    private global::System.Int32 _MaximumPositions;
-    partial void OnMaximumPositionsChanging(global::System.Int32 value);
-    partial void OnMaximumPositionsChanged();
-
-    /// <summary>
-    /// No Metadata Documentation available.
-    /// </summary>
-    [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
-    [DataMemberAttribute()]
     public global::System.Boolean IsActive {
       get {
         return _IsActive;
@@ -619,27 +596,6 @@ namespace HedgeHog.Alice.Store {
     private global::System.Boolean _LimitCorridorByBarHeight;
     partial void OnLimitCorridorByBarHeightChanging(global::System.Boolean value);
     partial void OnLimitCorridorByBarHeightChanged();
-
-    /// <summary>
-    /// No Metadata Documentation available.
-    /// </summary>
-    [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
-    [DataMemberAttribute()]
-    public global::System.Double MaxLotByTakeProfitRatio {
-      get {
-        return _MaxLotByTakeProfitRatio;
-      }
-      set {
-        OnMaxLotByTakeProfitRatioChanging(value);
-        ReportPropertyChanging("MaxLotByTakeProfitRatio");
-        _MaxLotByTakeProfitRatio = StructuralObject.SetValidValue(value, "MaxLotByTakeProfitRatio");
-        ReportPropertyChanged("MaxLotByTakeProfitRatio");
-        OnMaxLotByTakeProfitRatioChanged();
-      }
-    }
-    private global::System.Double _MaxLotByTakeProfitRatio;
-    partial void OnMaxLotByTakeProfitRatioChanging(global::System.Double value);
-    partial void OnMaxLotByTakeProfitRatioChanged();
 
     /// <summary>
     /// No Metadata Documentation available.

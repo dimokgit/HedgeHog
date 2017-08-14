@@ -86,7 +86,7 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
   }
   protected void RaisePriceChanged(Price price) {
     price.Time2 = ServerTime;
-    PriceChangedEvent?.Invoke(this, new PriceChangedEventArgs( price, null, null));
+    PriceChangedEvent?.Invoke(this, new PriceChangedEventArgs(price, null, null));
   }
   #endregion
 
@@ -98,13 +98,27 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
     if(ma == null)
       throw new Exception(new { _managedAccount, error = "Not Found" } + "");
     _accountManager = new AccountManager(this, ma, CommissionByTrade, _trace);
-    _accountManager.RequestAccountSummary();
-    _accountManager.SubscribeAccountUpdates();
-    _accountManager.RequestPositions();
     _accountManager.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
     _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
     _accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
+    _accountManager.OrderAdded += RaiseOrderAdded;
   }
+
+  #region OrderAddedEvent
+  event EventHandler<OrderEventArgs> OrderAddedEvent;
+  public event EventHandler<OrderEventArgs> OrderAdded {
+    add {
+      if (OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
+        OrderAddedEvent += value;
+    }
+    remove {
+      OrderAddedEvent -= value;
+    }
+  }
+
+  void RaiseOrderAdded(object sender, OrderEventArgs args) => OrderAddedEvent?.Invoke(sender, args);
+  #endregion
+
 
   private void OnCurrentTime(long obj) {
     var ct = obj.ToDateTimeFromEpoch(DateTimeKind.Utc).ToLocalTime();

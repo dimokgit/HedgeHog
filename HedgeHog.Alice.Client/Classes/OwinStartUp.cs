@@ -508,11 +508,11 @@ namespace HedgeHog.Alice.Client {
     }
     [BasicAuthenticationFilter]
     public void Buy(string pair) {
-      UseTradingMacro(pair, tm => tm.OpenTrade(true, tm.LotSizeByLossBuy, "web"));
+      UseTradingMacro(pair, tm => tm.OpenTrade(true, tm.Trades.IsBuy(false).Lots() + tm.LotSizeByLossBuy, "web"));
     }
     [BasicAuthenticationFilter]
     public void Sell(string pair) {
-      UseTradingMacro(pair, tm => tm.OpenTrade(false, tm.LotSizeByLossBuy, "web"));
+      UseTradingMacro(pair, tm => tm.OpenTrade(false, tm.Trades.IsBuy(true).Lots()+ tm.LotSizeByLossSell, "web"));
     }
     [BasicAuthenticationFilter]
     public void SetRsdTreshold(string pair, int chartNum, int pips) {
@@ -756,9 +756,15 @@ namespace HedgeHog.Alice.Client {
           list2.Add(row("Last Loss", tm.LastTradeLoss.AutoRound2("$", 2)));
         if(tm.Trades.Any())
           list2.Add(row("CurrentLot", tm.Trades.Lots()));
-        list2.Add(row("PipAmount", tm.PipAmount.AutoRound2("$", 2) + "/" + tm.PipAmountPercent.AutoRound2(3).ToString("p")));
-        list2.Add(row("PipsToMC", (!ht ? tm.PipsToPMCByLot : am.PipsToMC).ToString("n0")));
-        list2.Add(row("LotSize", (tm.IsCurrency ? (tm.LotSize / 1000.0).Floor() + "K/" : tm.LotSize + "/") + tm.LotSizePercent.ToString("p0")));
+        if(!ht) {
+          list2.Add(row("PipAmountBuy", tm.PipAmountBuy.AutoRound2("$", 2) + "/" + tm.PipAmountBuyPercent.AutoRound2(3).ToString("p")));
+          list2.Add(row("PipAmountSell", tm.PipAmountSell.AutoRound2("$", 2) + "/" + tm.PipAmountSellPercent.AutoRound2(3).ToString("p")));
+        } else {
+          list2.Add(row("PipAmount", tm.PipAmount.AutoRound2("$", 2)));
+        }
+        list2.Add(row("PipsToMC", (!ht ? 0 : am.PipsToMC).ToString("n0")));
+        list2.Add(row("LotSizeB", (tm.IsCurrency ? (tm.LotSizeByLossBuy / 1000.0).Floor() + "K/" : tm.LotSizeByLossBuy + "/") + tm.LotSizePercent.ToString("p0")));
+        list2.Add(row("LotSizeS", (tm.IsCurrency ? (tm.LotSizeByLossSell / 1000.0).Floor() + "K/" : tm.LotSizeByLossSell + "/") + tm.LotSizePercent.ToString("p0")));
         return list2;
       }).Concat();
       return list.Concat(more).ToArray();

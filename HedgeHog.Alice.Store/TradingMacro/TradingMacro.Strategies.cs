@@ -76,13 +76,10 @@ namespace HedgeHog.Alice.Store {
         if(_CloseAtZero == value)
           return;
         _CloseAtZero = value;
-        _trimAtZero = false;
         MustExitOnReverse = false;
         OnPropertyChanged(() => CloseAtZero);
       }
     }
-    bool _trimAtZero;
-    bool _trimToLotSize;
 
     #region CorridorDistance
     public int CorridorDistance {

@@ -30,7 +30,6 @@ namespace HedgeHog.DB
         public virtual DbSet<v_Pair> v_Pair { get; set; }
         public virtual DbSet<t_Offer> t_Offer { get; set; }
         public virtual DbSet<t_Stat> t_Stat { get; set; }
-        public virtual DbSet<t_Trade> t_Trade { get; set; }
         public virtual DbSet<t_BarHeight> t_BarHeight { get; set; }
         public virtual DbSet<t_Report> t_Report { get; set; }
         public virtual DbSet<v_BlackoutTime> v_BlackoutTime { get; set; }
@@ -43,6 +42,7 @@ namespace HedgeHog.DB
         public virtual DbSet<t_TradeValue> t_TradeValue { get; set; }
         public virtual DbSet<SP500> SP500 { get; set; }
         public virtual DbSet<v_TradeSession> v_TradeSession { get; set; }
+        public virtual DbSet<t_Trade> t_Trade { get; set; }
     
         public virtual ObjectResult<Nullable<float>> GetCorridor(string pair, Nullable<byte> period, Nullable<System.DateTime> date, Nullable<int> spreadPeriod)
         {

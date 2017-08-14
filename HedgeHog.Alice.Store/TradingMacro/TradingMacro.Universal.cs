@@ -37,7 +37,7 @@ namespace HedgeHog.Alice.Store {
       Func<SuppRes, bool> isSellR = sr => reverseStrategy.Value ? !sr.IsSell : sr.IsSell;
       Func<bool> calcAngleOk = () => TradingAngleRange >= 0
         ? CorridorAngleFromTangent().Abs() >= TradingAngleRange : CorridorAngleFromTangent().Abs() < TradingAngleRange.Abs();
-      Action resetCloseAndTrim = () => CloseAtZero = _trimAtZero = _trimToLotSize = false;
+      Action resetCloseAndTrim = () => CloseAtZero = false;
       Func<bool, double> enter = isBuy => CalculateLastPrice(RateLast, GetTradeEnterBy(isBuy));
       #endregion
 
@@ -85,43 +85,10 @@ namespace HedgeHog.Alice.Store {
             CloseAtZero = true;
         };
         #endregion
-        #region exitByGrossTakeProfit
-        Func<bool> exitByGrossTakeProfit = () =>
-          Trades.Lots() >= LotSize * ProfitToLossExitRatio && TradesManager.MoneyAndLotToPips(-currentGross(), LotSize, Pair) <= CalculateTakeProfitInPips();
-        #endregion
 
         //TradesManager.MoneyAndLotToPips(-currentGross(), LotSizeByLossBuy, Pair)
-        #region exitByLossGross
-        Func<bool> exitByLossGross = () =>
-          Trades.Lots() >= LotSize * ProfitToLossExitRatio && currentLoss() < currentGross() * ProfitToLossExitRatio;// && LotSizeByLossBuy <= LotSize;
-        #endregion
         #region exitVoid
         Action exitVoid = () => { };
-        #endregion
-        #region exitByWavelette
-        Action exitByWavelette = () => {
-          double als = LotSizeByLossBuy;
-          if(exitOnFriday())
-            return;
-          var waveOk = WaveShort.Rates.Count < CorridorDistanceRatio;
-          if(Trades.Lots() > als && waveOk)
-            _trimAtZero = true;
-          if(currentGrossInPips() >= CalculateTakeProfitInPips() || currentGross() > 0 && waveOk)
-            CloseAtZero = true;
-          else if(Trades.Lots() > LotSize && currentGross() > 0)
-            _trimAtZero = true;
-        };
-        #endregion
-        #region exitByTakeProfit
-        Action exitByTakeProfit = () => {
-          double als = LotSizeByLossBuy;
-          if(exitOnFriday())
-            return;
-          if(exitByGrossTakeProfit())
-            CloseTrades(Trades.Lots() - LotSize, "exitByTakeProfit");
-          else if(Trades.Lots() > LotSize && currentGross() > 0)
-            _trimAtZero = true;
-        };
         #endregion
         #region exitByJumpOut
         Action exitByJumpOut = () => {
@@ -142,12 +109,8 @@ namespace HedgeHog.Alice.Store {
               return exitVoid;
             case Store.ExitFunctions.Friday:
               return () => exitOnFriday();
-            case Store.ExitFunctions.GrossTP:
-              return exitByTakeProfit;
             case Store.ExitFunctions.JumpOut:
               return exitByJumpOut;
-            case Store.ExitFunctions.Wavelette:
-              return exitByWavelette;
             case Store.ExitFunctions.Limit:
               return exitByLimit;
             case Store.ExitFunctions.CorrTouch:
@@ -282,7 +245,6 @@ namespace HedgeHog.Alice.Store {
           isTradingHourLocal() &&
           sr.CanTrade &&
           sr.TradesCount <= 0 &&
-          !HasTradesByDistance(isBuyR(sr)) &&
           canTradeLocal(sr) &&
           IsPriceSpreadOk &&
           !IsEndOfWeek();
@@ -311,7 +273,7 @@ namespace HedgeHog.Alice.Store {
             var lot = Trades.IsBuy(!isBuy).Lots();
             var canTrade = suppResCanTrade(suppRes);
             if(canTrade) {
-              lot += AllowedLotSizeCore();
+              lot += AllowedLotSizeCore(isBuy);
               suppRes.TradeDate = ServerTime;
             }
             //var ghost = SuppRes.SingleOrDefault(sr => sr.IsExitOnly && sr.IsBuy == isBuy && sr.InManual && sr.CanTrade && sr.TradesCount <= 0);
@@ -330,7 +292,7 @@ namespace HedgeHog.Alice.Store {
         Action<SuppRes> exitCrossHandler = (sr) => {
           if((!IsInVirtualTrading && CanDoNetLimitOrders) || isCrossDisabled(sr))
             return;
-          var lot = Trades.Lots() - (_trimToLotSize ? LotSize.Max(Trades.Lots() / 2) : _trimAtZero ? AllowedLotSizeCore() : 0);
+          var lot = Trades.Lots();
           resetCloseAndTrim();
           if(TradingStatistics.TradingMacros.Count > 1 && (
             CurrentGrossInPipTotal > PriceSpreadAverageInPips || CurrentGrossInPipTotal >= _tradingStatistics.GrossToExitInPips)
@@ -628,7 +590,7 @@ namespace HedgeHog.Alice.Store {
           if(TurnOffOnProfit && t.PL >= PriceSpreadAverageInPips) {
             Strategy = Strategy & ~Strategies.Auto;
           }
-          CloseAtZero = _trimAtZero = _trimToLotSize = false;
+          CloseAtZero = false;
         };
         #endregion
 

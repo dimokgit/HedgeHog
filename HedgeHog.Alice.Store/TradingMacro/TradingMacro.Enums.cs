@@ -183,8 +183,6 @@ namespace HedgeHog.Alice.Store {
   }
   public enum ExitFunctions {
     Void = -1,
-    GrossTP = 4,
-    Wavelette = 5,
     JumpOut = 6,
     Limit = 7,
     Friday = 8,

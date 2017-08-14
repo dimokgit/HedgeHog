@@ -40,7 +40,7 @@ namespace HedgeHog.Shared {
         trade.Lots,
         trade.PL,
         account.Balance,
-        offer.MMR,
+        trade.IsBuy ? offer.MMRLong : offer.MMRShort,
         GetBaseUnitSize(trade.Pair),
         TradesManagerStatic.PipAmount(trade.Pair, trade.Lots, trade.Close, GetPipSize(trade.Pair))
       // CommissionByTrade(trade)
@@ -90,7 +90,7 @@ namespace HedgeHog.Shared {
     public Func<Trade, double> CommissionByTrade { get; set; }
 
     public bool IsLoggedIn { get { return true; } }
-    public double Leverage(string pair) { return (double)GetBaseUnitSize(pair) / GetOffer(pair).MMR; }
+    public double Leverage(string pair,bool isBuy) { return (double)GetBaseUnitSize(pair) / TradesManagerStatic.GetMMR(pair,isBuy); }
     DateTime _serverTime;
     public DateTime ServerTime {
       get {
@@ -146,7 +146,7 @@ namespace HedgeHog.Shared {
         var trades = GetTrades();
         Account.Trades = trades;
         if(trades.Any())
-          Account.UsableMargin = Account.Equity - TradesManagerStatic.MarginRequired(trades.Lots(), GetBaseUnitSize(trades[0].Pair), GetOffer(trades[0].Pair).MMR);
+          Account.UsableMargin = Account.Equity - TradesManagerStatic.MarginRequired(trades.Lots(), GetBaseUnitSize(trades[0].Pair), TradesManagerStatic.GetMMR(trades[0].Pair,trades[0].IsBuy));
         Account.StopAmount = includeOtherInfo ? trades.Sum(t => t.StopAmount) : 0;
         Account.LimitAmount = includeOtherInfo ? trades.Sum(t => t.LimitAmount) : 0;
         Account.PipsToMC = PipsToMarginCallCore(Account).ToInt();
@@ -359,10 +359,10 @@ namespace HedgeHog.Shared {
 
     public event EventHandler<PriceChangedEventArgs> PriceChanged;
 
-    public void RaisePriceChanged( Price price) {
+    public void RaisePriceChanged(Price price) {
       PriceCurrent.AddOrUpdate(price.Pair, price, (k, v) => price);
       if(PriceChanged != null) {
-        var args = new PriceChangedEventArgs( price, GetAccount(), GetTrades());
+        var args = new PriceChangedEventArgs(price, GetAccount(), GetTrades());
         PriceChanged(this, args);
       }
     }

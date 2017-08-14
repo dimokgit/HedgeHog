@@ -944,7 +944,7 @@ namespace Order2GoAddIn {
                   Digits = (int)t.CellValue("Digits"),
                   DefaultSortOrder = (int)t.CellValue("DefaultSortOrder"),
                   PipCost = (Double)t.CellValue("PipCost"),
-                  MMR = (Double)t.CellValue("MMR"),
+                  MMRLong = (Double)t.CellValue("MMR"),
                   Time = (DateTime)t.CellValue("Time"),
                   BidChangeDirection = (int)t.CellValue("BidChangeDirection"),
                   AskChangeDirection = (int)t.CellValue("AskChangeDirection"),
@@ -2277,7 +2277,7 @@ namespace Order2GoAddIn {
                       t.Trades.Lots(),
                       t.Trades.GrossInPips(),
                       account.Balance,
-                      GetOffer(t.Pair).MMR,
+                      GetOffer(t.Pair).MMRLong,
                       GetBaseUnitSize(t.Pair),
                       t.PipAmount)
                   };
@@ -2803,13 +2803,13 @@ namespace Order2GoAddIn {
 
     C.ConcurrentDictionary<string, double> leverages = new C.ConcurrentDictionary<string, double>();
 
-    public double Leverage(string pair) {
+    public double Leverage(string pair,bool isBuy) {
       if(!IsLoggedIn)
         return 0;
       Func<string, double> addLeverage = p => {
         CoreFX.SetOfferSubscription(p);
         var offer = GetOffer(p);
-        return GetBaseUnitSize(pair) / offer.MMR;
+        return GetBaseUnitSize(pair) / (isBuy? offer.MMRLong:offer.MMRShort);
       };
       return leverages.GetOrAdd(pair, addLeverage);
     }

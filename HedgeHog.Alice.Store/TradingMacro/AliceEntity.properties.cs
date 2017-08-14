@@ -510,18 +510,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("MaxLot By TakeProfit Ratio")]
-    [Description("MaxLotSize < LotSize*N")]
-    [Category(categoryXXX)]
-    public double MaxLotByTakeProfitRatio_ {
-      get { return MaxLotByTakeProfitRatio; }
-      set {
-        MaxLotByTakeProfitRatio = value;
-        OnPropertyChanged(nameof(MaxLotByTakeProfitRatio_));
-      }
-    }
-
-
     VoltageFunction _voltageFunction;
     [DisplayName("Voltage Function")]
     [Category(categoryActiveFuncs)]
@@ -797,19 +785,6 @@ namespace HedgeHog.Alice.Store {
         if(StDevToSpreadRatio != value) {
           StDevToSpreadRatio = value;
           OnPropertyChanged(() => CorrelationMinimum);
-        }
-      }
-    }
-
-    [DisplayName("ProfitToLossExitRatio")]
-    [Category(categoryXXX)]
-    [Description("Trades.Lot() / AllowedLotSize")]
-    public double ProfitToLossExitRatio_ {
-      get { return ProfitToLossExitRatio; }
-      set {
-        if(ProfitToLossExitRatio != value) {
-          ProfitToLossExitRatio = value;
-          OnPropertyChanged(nameof(ProfitToLossExitRatio_));
         }
       }
     }
@@ -1516,20 +1491,6 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    #region MaximumPositions
-    [DisplayName("Maximum Positions")]
-    [Category(categoryTrading)]
-    public int MaximumPositions_ {
-      get { return MaximumPositions; }
-      set {
-        if(MaximumPositions != value) {
-          MaximumPositions = value;
-          OnPropertyChanged(nameof(MaximumPositions_));
-        }
-      }
-    }
-
-    #endregion
     BarsPeriodType _barPeriodCalc = BarsPeriodType.none;
     [Category(categoryActiveFuncs)]
     public BarsPeriodType BarPeriodCalc {

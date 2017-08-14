@@ -378,10 +378,10 @@ namespace HedgeHog.Alice.Client {
       var tmNew = TradingMacro.CreateTradingMacro(
         tm.Pair, tm.TradingRatio, Guid.NewGuid(), (int)tm.BarPeriod, tm.CurrentLoss, tm.ReverseOnProfit,
         tm.FreezLimit, tm.FreezeStop, tm.FibMax, tm.FibMin, tm.CorridornessMin, tm.CorridorIterationsIn,
-        tm.CorridorIterationsOut, tm.CorridorIterations, tm.CorridorBarMinutes, pairIndex, tm.TradingGroup, tm.MaximumPositions,
+        tm.CorridorIterationsOut, tm.CorridorIterations, tm.CorridorBarMinutes, pairIndex, tm.TradingGroup,
         tradingMacroName != null,
         tradingMacroName ?? tm.TradingMacroName,
-        tm.LimitCorridorByBarHeight, tm.MaxLotByTakeProfitRatio, tm.BarPeriodsLow, tm.BarPeriodsHigh,
+        tm.LimitCorridorByBarHeight, tm.BarPeriodsLow, tm.BarPeriodsHigh,
         tm.StrictTradeClose, tm.BarPeriodsLowHighRatio, tm.LongMAPeriod, tm.CorridorAverageDaysBack, tm.CorridorPeriodsStart,
         tm.CorridorPeriodsLength, tm.CorridorRatioForRange, tm.CorridorRatioForBreakout, tm.RangeRatioForTradeLimit,
         tm.TradeByAngle, tm.ProfitToLossExitRatio, tm.PowerRowOffset, tm.RangeRatioForTradeStop,
@@ -479,24 +479,6 @@ namespace HedgeHog.Alice.Client {
       return null;
     }
 
-
-
-    #region TrimPairCommand
-    ICommand _TrimPairCommand;
-    public ICommand TrimPairCommand {
-      get {
-        if(_TrimPairCommand == null) {
-          _TrimPairCommand = new Gala.RelayCommand<TradingMacro>(TrimPair, (tm) => true);
-        }
-
-        return _TrimPairCommand;
-      }
-    }
-    void TrimPair(TradingMacro tradingMacro) {
-      tradingMacro.TrimTrades("TrimTrades Command");
-    }
-    #endregion
-
     ReactiveCommand<object> _ClosePairCommand;
     public ReactiveCommand<object> ClosePairCommand {
       get {
@@ -532,7 +514,7 @@ namespace HedgeHog.Alice.Client {
     void Buy(object tradingMacro) {
       try {
         var tm = tradingMacro as TradingMacro;
-        var lot = tm.AllowedLotSizeCore();
+        var lot = tm.AllowedLotSizeCore(true);
         if(!TradesManager.GetAccount().Hedging)
           lot += TradesManager.GetTradesInternal(tm.Pair).IsBuy(false).Sum(t => t.Lots);
         OpenTrade(true, tm.Pair, lot, 0, 0, 0, "");
@@ -557,7 +539,7 @@ namespace HedgeHog.Alice.Client {
     void Sell(object tradingMacro) {
       try {
         var tm = tradingMacro as TradingMacro;
-        var lot = tm.AllowedLotSizeCore();
+        var lot = tm.AllowedLotSizeCore(false);
         if(!TradesManager.GetAccount().Hedging)
           lot += TradesManager.GetTradesInternal(tm.Pair).IsBuy(true).Sum(t => t.Lots);
         OpenTrade(false, tm.Pair, lot, 0, 0, 0, "");
@@ -1320,92 +1302,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    #region RunCorrelations Subject
-    object _RunCorrelationsSubjectLocker = new object();
-    ISubject<string> _RunCorrelationsSubject;
-    ISubject<string> RunCorrelationsSubject {
-      get {
-        lock(_RunCorrelationsSubjectLocker)
-          if(_RunCorrelationsSubject == null) {
-            _RunCorrelationsSubject = new Subject<string>();
-            _RunCorrelationsSubject
-              .Buffer(1.FromSeconds())
-              .Select(g => g.First())
-              .Subscribe(s => RunCorrelations(), exc => Log = exc);
-          }
-        return _RunCorrelationsSubject;
-      }
-    }
-
-    System.Threading.Tasks.Dataflow.BroadcastBlock<string> _runCorrelationBlock;
-
-    public System.Threading.Tasks.Dataflow.BroadcastBlock<string> RunCorrelationBlock {
-      get {
-        if(_runCorrelationBlock == null)
-          _runCorrelationBlock = new System.Threading.Tasks.Dataflow.BroadcastBlock<string>(s => { RunCorrelations(); return s; });
-        return _runCorrelationBlock;
-      }
-    }
-
-    void OnRunCorrelations(string p) {
-      RunCorrelationsSubject.OnNext(p);
-    }
-    #endregion
-
-    List<PairCorrelation> _CorrelationsByPair = new List<PairCorrelation>();
-    public List<PairCorrelation> CorrelationsByPair {
-      get { return _CorrelationsByPair; }
-      set { _CorrelationsByPair = value; }
-    }
-
-    void RunCorrelations() {
-      Stopwatch sw = Stopwatch.StartNew();
-      var currencies = new List<string>();
-      foreach(var tm in TradingMacrosCopy.Where(t => t.LotSize > 0))
-        currencies.AddRange(tm.Pair.Split('/'));
-      currencies = currencies.Distinct().ToList();
-      CorrelationsByPair.Clear();
-      foreach(var currency in currencies)
-        CorrelationsByPair.AddRange(RunPairCorrelation(currency));
-      //Correlations[currency] = RunCorrelation(currency);
-      //Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
-    }
-
-    private ICollection<PairCorrelation> RunPairCorrelation(string currency) {
-      Func<string, double[]> getRatesForCorrelation = pair =>
-        GetRatesForCorridor(GetTradingMacros(pair).First()).Select(r => r.PriceAvg).ToArray();
-      var correlations = new List<PairCorrelation>();
-      var pairs = TradingMacrosCopy.Where(tm => tm.LotSize > 0 && tm.Pair.Contains(currency)).Select(tm => tm.Pair).ToArray();
-      if(pairs.Any())
-        foreach(var pair in pairs) {
-          var price1 = getRatesForCorrelation(pair);
-          foreach(var pc in pairs.Where(p => p != pair)) {
-            var price2 = getRatesForCorrelation(pc);
-            var correlation = AlgLib.correlation.pearsoncorrelation(ref price1, ref price2, Math.Min(price1.Length, price2.Length)).Abs();
-            correlations.Add(new PairCorrelation(pair, pc, correlation));
-          }
-        }
-      return correlations;
-    }
-
-
-
-    private double RunCorrelation(string currency) {
-      Func<string, double[]> getRatesForCorrelation = pair =>
-        GetRatesForCorridor(GetTradingMacros(pair).First()).Select(r => r.PriceAvg).ToArray();
-      var correlations = new List<double>();
-      var pairs = TradingMacrosCopy.Where(tm => tm.LotSize > 0 && tm.Pair.Contains(currency)).Select(tm => tm.Pair).ToArray();
-      if(pairs.Length == 0)
-        return 0;
-      foreach(var pair in pairs) {
-        var price1 = getRatesForCorrelation(pair);
-        foreach(var pc in pairs.Where(p => p != pair)) {
-          var price2 = getRatesForCorrelation(pc);
-          correlations.Add(AlgLib.correlation.pearsoncorrelation(ref price1, ref price2, Math.Min(price1.Length, price2.Length)).Abs());
-        }
-      }
-      return correlations.Count > 0 ? correlations.Average() : 0;
-    }
 
     #endregion
 
