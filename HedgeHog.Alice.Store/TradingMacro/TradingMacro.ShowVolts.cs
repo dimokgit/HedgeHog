@@ -528,6 +528,19 @@ namespace HedgeHog.Alice.Store {
     public double CoMStartHour { get; set; } = 5;
     [WwwSetting]
     public double CoMEndHour { get; set; } = 9.5;
+
+    public (double[] upDown, DateTime[] dates)[] BeforeHours;
+    private void SetBeforeHours() {
+      var startHour = CoMStartHour;
+      var endHour = CoMEndHour;
+      var timeRange = new[] { ServerTime.Date.AddHours(startHour), ServerTime.Date.AddHours(endHour) };
+      var afterHours = new List<(double[] upDown, DateTime[] dates)>();
+      while((timeRange = SetCenterOfMassByM1Hours(timeRange, t => {
+        afterHours.Add(t);
+        return t.dates;
+      })).Any()){ };
+      BeforeHours = afterHours.ToArray();
+    }
     private void SetCentersOfMass() {
       var startHour = CoMStartHour;
       var endHour = CoMEndHour;
@@ -575,7 +588,7 @@ namespace HedgeHog.Alice.Store {
         });
     }
 
-    private DateTime[] SetCenterOfMassByM1Hours(DateTime[] stripHours, Func<(double[], DateTime[]), DateTime[]> setCenterOfMass) {
+    private DateTime[] SetCenterOfMassByM1Hours(DateTime[] stripHours, Func<(double[]upDown, DateTime[]dates), DateTime[]> setCenterOfMass) {
       return TradingMacroM1(tm =>
       from shs in Enumerable.Range(0, 5).Select(i => addDay(stripHours, -i))
       from mm in tm.UseRatesInternal(ri =>

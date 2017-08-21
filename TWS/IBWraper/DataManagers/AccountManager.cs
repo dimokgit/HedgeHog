@@ -237,36 +237,56 @@ namespace IBApp {
     #region OrderStatus
     #region OrderStatus Subject
     object _OrderStatusSubjectLocker = new object();
-    ISubject<OrderStatusArg> _OrderStatusSubject;
+    ISubject<OrderStatusArguments> _OrderStatusSubject;
 
-    ISubject<OrderStatusArg> OrderStatusSubject {
+    ISubject<OrderStatusArguments> OrderStatusSubject {
       get {
         lock(_OrderStatusSubjectLocker)
           if(_OrderStatusSubject == null) {
-            _OrderStatusSubject = new Subject<OrderStatusArg>();
+            _OrderStatusSubject = new Subject<OrderStatusArguments>();
             _OrderStatusSubject
               //.Do(t => Verbous(new { OrderStatusSubject = new { reqId = t.Item1, status = t.Item4 } }))
-              .Where(t => t.Item5)
+              .Where(t => t.IsDone)
               .DistinctUntilChanged()
               .Subscribe(t => OnOrderStatusImpl(t), exc => _defaultMessageHandler(exc), () => _defaultMessageHandler(nameof(OrderStatusSubject) + " is gone"));
           }
         return _OrderStatusSubject;
       }
     }
-    void OnOrderStatusPush(OrderStatusArg p) {
+    void OnOrderStatusPush(OrderStatusArguments p) {
       OrderStatusSubject.OnNext(p);
     }
     #endregion
+    class OrderStatusArguments {
+
+      public OrderStatusArguments(int orderId, string status, double filled, double remaining, double avgFillPrice) {
+        OrderId = orderId;
+        Status = status;
+        Filled = filled;
+        Remaining = remaining;
+        AvgFillPrice = avgFillPrice;
+      }
+
+      public int OrderId { get; private set; }
+      public string Status { get; private set; }
+      public double Filled { get; private set; }
+      public double Remaining { get; private set; }
+      public double AvgFillPrice { get; private set; }
+      public bool IsDone => new[] { "Cancelled", "Filled" }.Contains(Status);
+
+      public override string ToString() => new { OrderId, Status, Filled, Remaining, IsDone } + "";
+    }
     ConcurrentDictionary<string,(IBApi.Order order, IBApi.Contract contract)> _orderContracts = new ConcurrentDictionary<string, (IBApi.Order order, IBApi.Contract contract)>();
     private void OnOrderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld) {
-      OnOrderStatusPush(Tuple.Create(orderId, status, filled, remaining, new[] { "Cancelled", "Filled" }.Contains(status), avgFillPrice));
+      OnOrderStatusPush(new OrderStatusArguments(orderId, status, filled, remaining, avgFillPrice));
       //Verbous(new { OrderStatus = new { orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld } });
     }
-    private void OnOrderStatusImpl(OrderStatusArg arg) {
-      _verbous(new { OnOrderStatus = arg });
-      DoOrderStatus(arg.Item1 + "", arg.Item6, arg.Item3.ToInt());
-      var o = _orderContracts[arg.Item1 + ""].order;
-      var c = _orderContracts[arg.Item1 + ""].contract;
+    private void OnOrderStatusImpl(OrderStatusArguments arg) {
+      _verbous(new { OrderStatusImpl = arg });
+      DoOrderStatus(arg.OrderId + "", arg.AvgFillPrice, arg.Filled.ToInt());
+      var cd = _orderContracts[arg.OrderId + ""];
+      var o = cd.order;
+      var c = cd.contract;
       RaiseOrderRemoved(new HedgeHog.Shared.Order {
         IsBuy = o.Action == "BUY",
         Lot = (int)o.TotalQuantity,
@@ -396,7 +416,7 @@ namespace IBApp {
 
         #region Create Trade
 
-        var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol),TradesManagerStatic.GetBaseUnitSize(symbol), null);
+        var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), TradesManagerStatic.GetBaseUnitSize(symbol), null);
         trade.Id = execution.PermId + "";
         trade.Buy = execution.Side == "BOT";
         trade.IsBuy = trade.Buy;
@@ -431,7 +451,7 @@ namespace IBApp {
           //  oldTrade.Lots += trade.Lots;
           //  oldTrade.Open = execution.AvgPrice;
           //} else
-            OpenTrades.Add(trade);
+          OpenTrades.Add(trade);
         }
 
         OpenTrades

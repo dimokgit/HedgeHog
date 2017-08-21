@@ -17,13 +17,14 @@ using System.Reactive.Disposables;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
-      public bool HaveTrades() {
+    public bool HaveTrades() {
       return Trades.Any() || HasPendingOrders();
     }
     void LogTradingAction(object message) {
       if(IsInVirtualTrading || LogTrades)
         Log = new Exception(message + "");
     }
+
     #region Pending Action
     static MemoryCache _pendingEntryOrders;
     MemoryCache PendingEntryOrders_ {
@@ -38,7 +39,7 @@ namespace HedgeHog.Alice.Store {
     private void ReleasePendingAction(string key) {
       LogPendingActions();
       //if(_pendingEntryOrders.Contains(key)) {
-      foreach(var k in _pendingEntryOrders) {
+      foreach(var k in _pendingEntryOrders.Where(c => c.Key == key)) {
         _pendingEntryOrders.Remove(k.Key);
         LogTradingAction(new { Pending = Pair, key, status = "Released." });
       }
@@ -68,13 +69,12 @@ namespace HedgeHog.Alice.Store {
         if(action != null) {
           try {
             Action a = () => {
-              var exp = IsInVirtualTrading ? ObjectCache.InfiniteAbsoluteExpiration : DateTimeOffset.Now.AddMinutes(1);
+              var exp = IsInVirtualTrading || true ? ObjectCache.InfiniteAbsoluteExpiration : DateTimeOffset.Now.AddMinutes(1);
               var cip = new CacheItemPolicy() { AbsoluteExpiration = exp, RemovedCallback = ce => { /*if (!IsInVitualTrading)*/ Log = new Exception(ce.CacheItem.Key + "[" + Pair + "] expired without being closed."); } };
               AddPendingAction(key, DateTimeOffset.Now, cip);
             };
             action(a);
           } catch(Exception exc) {
-            ReleasePendingAction(key);
             Log = exc;
           }
         }
@@ -106,7 +106,7 @@ namespace HedgeHog.Alice.Store {
           _CreateEntryOrderSubject
               .SubscribeToLatestOnBGThread(s => {
                 try {
-                  CheckPendingAction("EO", (pa) => { pa(); TradesManager.CreateEntryOrder(s.Pair, s.IsBuy, s.Amount, s.Rate, 0, 0); });
+                  CheckPendingAction(EO, (pa) => { pa(); TradesManager.CreateEntryOrder(s.Pair, s.IsBuy, s.Amount, s.Rate, 0, 0); });
                 } catch(Exception exc) {
                   Log = exc;
                 }
@@ -126,7 +126,7 @@ namespace HedgeHog.Alice.Store {
     static ISubject<string> _DeleteOrderSubject;
     ISubject<string> DeleteOrderSubject {
       get {
-        lock (_DeleteOrderSubjectLocker)
+        lock(_DeleteOrderSubjectLocker)
           if(_DeleteOrderSubject == null) {
             _DeleteOrderSubject = new Subject<string>();
             _DeleteOrderSubject

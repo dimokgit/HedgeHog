@@ -102,6 +102,7 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
     _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
     _accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
     _accountManager.OrderAdded += RaiseOrderAdded;
+    _accountManager.OrderRemoved += RaiseOrderRemoved;
   }
 
   #region OrderAddedEvent
@@ -117,6 +118,20 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
   }
 
   void RaiseOrderAdded(object sender, OrderEventArgs args) => OrderAddedEvent?.Invoke(sender, args);
+  #endregion
+  #region OrderRemovedEvent
+  event OrderRemovedEventHandler OrderRemovedEvent;
+  public event OrderRemovedEventHandler OrderRemoved {
+    add {
+      if (OrderRemovedEvent == null || !OrderRemovedEvent.GetInvocationList().Contains(value))
+        OrderRemovedEvent += value;
+    }
+    remove {
+      OrderRemovedEvent -= value;
+    }
+  }
+
+  void RaiseOrderRemoved(HedgeHog.Shared.Order args) => OrderRemovedEvent?.Invoke( args);
   #endregion
 
 

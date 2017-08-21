@@ -1290,12 +1290,6 @@ namespace HedgeHog.Alice.Store {
         return;
       if(e.Order.IsEntryOrder) {
         EnsureActiveSuppReses();
-        try {
-          var key = "EO";
-          ReleasePendingAction(key);
-        } catch(Exception exc) {
-          Log = exc;
-        }
       }
       try {
         TakeProfitDistance = CalcTakeProfitDistance();
@@ -1315,6 +1309,7 @@ namespace HedgeHog.Alice.Store {
       if(!IsMyOrder(order))
         return;
       EnsureActiveSuppReses();
+      ReleasePendingAction(OT);
       SuppRes.Where(sr => sr.EntryOrderId == order.OrderID).ToList().ForEach(sr => sr.EntryOrderId = Store.SuppRes.RemovedOrderTag);
     }
 
@@ -1322,7 +1317,6 @@ namespace HedgeHog.Alice.Store {
       try {
         if(!IsMyTrade(e.Trade))
           return;
-        ReleasePendingAction("OT");
         EnsureActiveSuppReses();
         RaisePositionsChanged();
         if(_strategyExecuteOnTradeOpen != null)
@@ -1347,6 +1341,11 @@ namespace HedgeHog.Alice.Store {
         tradesManager.TradeAdded -= TradeAddedHandler;
       }
     }
+
+    private const string CT = "OT";
+    private const string OT = "OT";
+    private const string EO = "OT";
+
     void TradesManager_TradeClosed(object sender, TradeEventArgs e) {
       if(!IsMyTrade(e.Trade))
         return;
@@ -1355,7 +1354,6 @@ namespace HedgeHog.Alice.Store {
         CloseAtZero = false;
         EnsureActiveSuppReses();
         RaisePositionsChanged();
-        ReleasePendingAction("CT");
         if(_strategyExecuteOnTradeClose != null)
           _strategyExecuteOnTradeClose(e.Trade);
       }
@@ -2309,7 +2307,7 @@ namespace HedgeHog.Alice.Store {
             //ResetBarsCountCalc();
             RatesHeight = RatesArray.Height(r => r.AskHigh, r => r.BidLow, out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
 
-            SetCentersOfMassSubject.OnNext(SetCentersOfMass);
+            SetCentersOfMassSubject.OnNext(()=> { SetBeforeHours(); SetCentersOfMass(); });
             if(IsAsleep) {
               BarsCountCalc = BarsCount;
               RaiseShowChart();
@@ -3168,7 +3166,7 @@ namespace HedgeHog.Alice.Store {
 
 
     private void OpenTradeWithReverse(bool isBuy) {
-      CheckPendingAction("OT", (pa) => {
+      CheckPendingAction(OT, (pa) => {
         var lotClose = Trades.IsBuy(!isBuy).Lots();
         var lotOpen = AllowedLotSizeCore(isBuy);
         var lot = lotClose + lotOpen;
@@ -3196,7 +3194,7 @@ namespace HedgeHog.Alice.Store {
         sr.RateEx = rate;
     }
     public void OpenTrade(bool isBuy, int lot, string reason) {
-      var key = lot - Trades.Lots(t => t.IsBuy != isBuy) > 0 ? "OT" : "CT";
+      var key = lot - Trades.Lots(t => t.IsBuy != isBuy) > 0 ? OT : CT;
       CheckPendingAction(key, (pa) => {
         if(lot > 0) {
           pa();
@@ -3210,15 +3208,15 @@ namespace HedgeHog.Alice.Store {
     private void CloseTrades(int lot, string reason) {
       if(!Trades.Any())
         return;
-      if(HasPendingKey("CT"))
+      if(HasPendingKey(CT))
         return;
       if(lot > 0)
-        CheckPendingAction("CT", pa => {
+        CheckPendingAction(CT, pa => {
           pa();
           LogTradingAction(string.Format("{0}[{1}]: Closing {2} from {3} in {4} from {5}]"
             , Pair, BarPeriod, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name, reason));
           if(!TradesManager.ClosePair(Pair, Trades[0].IsBuy, lot))
-            ReleasePendingAction("CT");
+            ReleasePendingAction(CT);
         });
     }
 
@@ -4304,6 +4302,10 @@ namespace HedgeHog.Alice.Store {
               periodsBack = 0;
             var groupTicks = false && BarPeriodCalc == BarsPeriodType.s1;
             LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
+            ratesList
+              .Where(r => (r.AskHigh - r.BidLow) / (r.AskHigh + r.BidLow) / 2 * 100 > 0.01)
+              .ToArray()
+              .ForEach(r => ratesList.Remove(r));
             if(BarPeriod != BarsPeriodType.t1)
               ratesList.TakeLast(1).ForEach(r => {
                 var rateLastDate = r.StartDate;

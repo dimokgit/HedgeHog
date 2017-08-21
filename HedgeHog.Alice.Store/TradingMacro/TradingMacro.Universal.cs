@@ -294,7 +294,7 @@ namespace HedgeHog.Alice.Store {
             return;
           var lot = Trades.Lots();
           resetCloseAndTrim();
-          if(TradingStatistics.TradingMacros.Count > 1 && (
+          if(TradingStatistics.TradingMacros.Distinct(tm => tm.Pair).Count() > 1 && (
             CurrentGrossInPipTotal > PriceSpreadAverageInPips || CurrentGrossInPipTotal >= _tradingStatistics.GrossToExitInPips)
             )
             CloseTrading(new { exitCrossHandler = "", CurrentGrossInPipTotal, _tradingStatistics.GrossToExitInPips } + "");

@@ -68,6 +68,7 @@
   var greenStrip = "greenStrip";
   var redStrip = "redStrip";
   var cyanStrip = "cyanStrip";
+  var beforeTradeHoursRect = "beforeTradeHoursRect";
   var doCorridorStartDate = false;
   var showLineLog = false;
   var tpsChartNum = [0, 1];
@@ -117,7 +118,9 @@
       addRect(redStrip, "#FAE6E6", 1);
       addRect(blueStrip, "lavender", 1);
       addRect(greenStrip, "#E6FAE6", 0.6);
-
+      [1, 2, 3, 4, 5, 6].forEach(function (i) {
+        addRect(beforeTradeHoursRect + i, "lightcyan", 1);
+      });
       if (hasTps) {
         svg.append("g")
           .attr("class", "y2 axis");
@@ -394,6 +397,7 @@
       var com2 = chartData.com2;
       var com3 = chartData.com3;
       var com4 = chartData.com4;
+      var bth = chartData.bth || [];
       var showNegativeVolts = viewModel.showNegativeVoltsParsed();
       var showNegativeVolts2 = viewModel.showNegativeVolts2Parsed();
       // #endregion
@@ -558,14 +562,22 @@
           tailEnd = new Date(tailEnd.setHours(tailEnd.getHours() - 24));
           setRectArea(tailEnd, yDomain[1], tailStart, yDomain[0], "dayTailRect");
         }
-        if (com)
-          setHorizontalStrip(com.b, com.s, greenStrip);
-        if (com2 && com2.dates[0])
-          setRectArea(com2.dates[0], com2.b, com2.dates[1], com2.s, blueStrip, "black");
-        if (com3 && com3.dates[0])
-          setRectArea(com3.dates[0], com3.b, com3.dates[1], com3.s, redStrip, "black");
-        if (com4 && com4.dates[0])
-          setRectArea(com4.dates[0], com4.b, com4.dates[1], com4.s, cyanStrip, "black");
+        try {
+          if (com && com.dates)
+            setHorizontalStrip(com.b, com.s, greenStrip);
+          if (com2 && com2.dates[0])
+            setRectArea(com2.dates[0], com2.b, com2.dates[1], com2.s, blueStrip, "black");
+          if (com3 && com3.dates[0])
+            setRectArea(com3.dates[0], com3.b, com3.dates[1], com3.s, redStrip, "black");
+          if (com4 && com4.dates[0])
+            setRectArea(com4.dates[0], com4.b, com4.dates[1], com4.s, cyanStrip, "black");
+        } catch (e) {
+          //log = e;
+        }
+        bth.forEach(function (x,i) {
+          if (x.dates[0])
+            setRectArea(x.dates[0], x.upDown[1], x.dates[1], x.upDown[0], beforeTradeHoursRect + i, "black");
+        });
         // #region add trend corridor
         //setTrendLine(trendLines, 1, "lightgrey");
         setTrendLine2(trendLines, 2, "", "darkred", trendLines.sel);
@@ -822,11 +834,12 @@
         return svg.select("rect." + rectName);
       }
       function setRectArea(date1, level1, date2, level2, rectName,borderColour) {
-        svg.select("rect." + rectName)
+        var rect = svg.select("rect." + rectName) || addRect(rect,"cyan");
+        rect
           .style("stroke", borderColour)  // colour the line
           .attr("x", x(date1)) // x position of the first end of the line
           .attr("y", y(level1)) // y position of the first end of the line
-          .attr("width", x(date2) - x(date1)) // x position of the second end of the line
+          .attr("width", Math.max(0, x(date2) - x(date1))) // x position of the second end of the line
           .attr("height", y(level2) - y(level1));// y position of the second end of the line
       }
       function setHorizontalStrip(level1, level2, rectName) {
