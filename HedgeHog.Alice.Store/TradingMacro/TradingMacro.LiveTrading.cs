@@ -27,7 +27,7 @@ namespace HedgeHog.Alice.Store {
 
     #region Pending Action
     static MemoryCache _pendingEntryOrders;
-    MemoryCache PendingEntryOrders_ {
+    public MemoryCache PendingEntryOrders {
       [MethodImpl(MethodImplOptions.Synchronized)]
       get {
         if(_pendingEntryOrders == null)

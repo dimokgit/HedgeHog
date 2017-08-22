@@ -766,6 +766,8 @@ namespace HedgeHog.Alice.Client {
         list2.Add(row("PipsToMC", (!ht ? 0 : am.PipsToMC).ToString("n0")));
         list2.Add(row("LotSizeB", (tm.IsCurrency ? (tm.LotSizeByLossBuy / 1000.0).Floor() + "K/" : tm.LotSizeByLossBuy + "/") + tm.LotSizePercent.ToString("p0")));
         list2.Add(row("LotSizeS", (tm.IsCurrency ? (tm.LotSizeByLossSell / 1000.0).Floor() + "K/" : tm.LotSizeByLossSell + "/") + tm.LotSizePercent.ToString("p0")));
+        if(tm.PendingEntryOrders.Any())
+          list2.Add(row("Pending", tm.PendingEntryOrders.Select(po=>po.Key).ToArray().ToJson(false)));
         return list2;
       }).Concat();
       return list.Concat(more).ToArray();

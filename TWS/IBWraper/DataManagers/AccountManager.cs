@@ -247,7 +247,7 @@ namespace IBApp {
             _OrderStatusSubject
               //.Do(t => Verbous(new { OrderStatusSubject = new { reqId = t.Item1, status = t.Item4 } }))
               .Where(t => t.IsDone)
-              .DistinctUntilChanged()
+              .DistinctUntilChanged(a => new { a.OrderId, a.Status, a.Remaining })
               .Subscribe(t => OnOrderStatusImpl(t), exc => _defaultMessageHandler(exc), () => _defaultMessageHandler(nameof(OrderStatusSubject) + " is gone"));
           }
         return _OrderStatusSubject;
@@ -272,7 +272,7 @@ namespace IBApp {
       public double Filled { get; private set; }
       public double Remaining { get; private set; }
       public double AvgFillPrice { get; private set; }
-      public bool IsDone => new[] { "Cancelled", "Filled" }.Contains(Status);
+      public bool IsDone => "Cancelled" == Status || "Filled" == Status && Remaining == 0;
 
       public override string ToString() => new { OrderId, Status, Filled, Remaining, IsDone } + "";
     }

@@ -30,6 +30,7 @@ namespace IBApp {
       _ibClient.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
       _ibClient.TradeRemoved += (s, e) => { RaiseTradeClosed(e.Trade); RaiseTradeRemoved(e.Trade); };
       _ibClient.OrderAdded += RaiseOrderAdded;
+      _ibClient.OrderRemoved += RaiseOrderRemoved;
     }
 
     #region OpenOrder
@@ -69,7 +70,8 @@ namespace IBApp {
         OutsideRth = isPreRTH
       };
       if(orderType == "LMT") {
-        o.LmtPrice = buy ? price.Ask : price.Bid;
+        var offset = isPreRTH ? 1.001 : 1;
+        o.LmtPrice = buy ? price.Ask * offset : price.Bid / offset;
       }
       _ibClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
@@ -253,7 +255,7 @@ namespace IBApp {
       }
     }
 
-    void RaiseOrderRemoved(object sender, OrderEventArgs args) => OrderAddedEvent?.Invoke(this, args);
+    void RaiseOrderRemoved(HedgeHog.Shared.Order args) => OrderRemovedEvent?.Invoke(args);
     #endregion
 
 

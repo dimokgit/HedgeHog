@@ -529,7 +529,7 @@ namespace HedgeHog.Alice.Store {
     [WwwSetting]
     public double CoMEndHour { get; set; } = 9.5;
 
-    public (double[] upDown, DateTime[] dates)[] BeforeHours;
+    public (double[] upDown, DateTime[] dates)[] BeforeHours=new (double[] , DateTime[] )[0];
     private void SetBeforeHours() {
       var startHour = CoMStartHour;
       var endHour = CoMEndHour;

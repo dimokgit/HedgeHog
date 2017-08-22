@@ -494,6 +494,7 @@ namespace HedgeHog.Alice.Store {
                   WorkflowStep = "";
                   Log = new Exception(conditions() + "");
                   ResetTakeProfitManual();
+
                   #region onCloseTradeLocal
                   onCanTradeLocal = canTrade => canTrade || Trades.Any();
                   var canTradeOff = !IsAutoStrategy;
@@ -534,6 +535,7 @@ namespace HedgeHog.Alice.Store {
                     setLevels();
                   };
                   #endregion
+
                   Action<Trade> canTradeByTradeCount = t =>
                     hasTradeCountOff
                     .Take(1)
