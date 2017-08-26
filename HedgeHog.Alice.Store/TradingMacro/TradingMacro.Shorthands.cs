@@ -82,6 +82,8 @@ namespace HedgeHog.Alice.Store {
     public void WrapTradeInCorridor(bool forceMove = false, bool useTakeProfit = true) {
       if(Trades.Any() && (SuppRes.All(sr => !sr.InManual) || forceMove)) {
         SuppRes.ForEach(sr => sr.ResetPricePosition());
+        var isActive = IsTradingActive;
+        IsTradingActive = false;
         BuyLevel.InManual = SellLevel.InManual = true;
         double offset = HeightForWrapToCorridor(useTakeProfit);
         if(Trades.HaveBuy()) {
@@ -92,6 +94,7 @@ namespace HedgeHog.Alice.Store {
           BuyLevel.Rate = SellLevel.Rate + offset;
         }
         SuppRes.ForEach(sr => sr.ResetPricePosition());
+        IsTradingActive = isActive;
       }
       RaiseShowChart();
     }

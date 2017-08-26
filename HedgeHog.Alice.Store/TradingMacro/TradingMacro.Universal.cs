@@ -266,9 +266,9 @@ namespace HedgeHog.Alice.Store {
             .Subscribe(tc => onTradesCount(tc));
         #region enterCrossHandler
         Func<SuppRes, bool> enterCrossHandler = (suppRes) => {
-          if(CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled(suppRes))
+          if(CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled(suppRes) || HaveTrades(suppRes.IsBuy))
             return false;
-          if(suppRes.InManual || BuyLevel.Rate > SellLevel.Rate || suppRes.CanTrade) {
+          if( suppRes.InManual || BuyLevel.Rate > SellLevel.Rate || suppRes.CanTrade) {
             var isBuy = isBuyR(suppRes);
             var lot = Trades.IsBuy(!isBuy).Lots();
             var canTrade = suppResCanTrade(suppRes);
@@ -517,7 +517,7 @@ namespace HedgeHog.Alice.Store {
                   #endregion
                   var hasTradeCountOff = _buySellLevels.Where(sr => sr.TradesCount < -TradeCountMax);
                   onCloseTradeLocal += t => {
-                    if(!HaveTrades()) {
+                    //if(!HaveTrades()) {
                       if(_buySellLevels.All(sr => sr.InManual && !sr.CanTrade))
                         _buySellLevelsForEach(sr => sr.InManual = false);
                       if(minPLOk(t) || hasTradeCountOff.Any()) {
@@ -531,7 +531,7 @@ namespace HedgeHog.Alice.Store {
                         BroadcastCloseAllTrades();
                       BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
                       CorridorStartDate = null;
-                    }
+                    //}
                     setLevels();
                   };
                   #endregion
@@ -599,8 +599,8 @@ namespace HedgeHog.Alice.Store {
         #region On Trade Open
         _strategyExecuteOnTradeOpen = trade => {
           SuppRes.ForEach(sr => sr.ResetPricePosition());
-          if(onOpenTradeLocal != null)
-            onOpenTradeLocal(trade);
+          onOpenTradeLocal?.Invoke(trade);
+          IsTradingActive = true;
         };
         #endregion
 

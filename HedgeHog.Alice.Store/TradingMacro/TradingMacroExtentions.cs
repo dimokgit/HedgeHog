@@ -1319,8 +1319,7 @@ namespace HedgeHog.Alice.Store {
           return;
         EnsureActiveSuppReses();
         RaisePositionsChanged();
-        if(_strategyExecuteOnTradeOpen != null)
-          _strategyExecuteOnTradeOpen(e.Trade);
+        _strategyExecuteOnTradeOpen?.Invoke(e.Trade);
       } catch(Exception exc) {
         Log = exc;
       }

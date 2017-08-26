@@ -20,15 +20,14 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
   private string _host;
   internal TimeSpan _serverTimeOffset;
   private string _managedAccount;
+  public string ManagedAccount { get => _managedAccount;  }
   private readonly Action<object> _trace;
-  private AccountManager _accountManager;
   TradingServerSessionStatus _sessionStatus;
   readonly private MarketDataManager _marketDataManager;
   private static int _validOrderId;
   #endregion
 
   #region Properties
-  public AccountManager AccountManager { get { return _accountManager; } }
   public Action<object> Trace => _trace;
   public void Verbouse(object o) { _trace(o); }
   #endregion
@@ -54,7 +53,6 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
     ConnectionClosed += OnConnectionClosed;
     ConnectionOpend += OnConnectionOpend;
     CurrentTime += OnCurrentTime;
-    ManagedAccounts += OnManagedAccounts;
     _marketDataManager = new MarketDataManager(this);
     _marketDataManager.PriceChanged += OnPriceChanged;
   }
@@ -91,19 +89,6 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
   #endregion
 
   #endregion
-  private void OnManagedAccounts(string obj) {
-    if(_accountManager != null)
-      _trace(new { _accountManager, isNot = (string)null });
-    var ma = obj.Splitter('.').Where(a => _managedAccount.IsNullOrWhiteSpace() || a == _managedAccount).SingleOrDefault();
-    if(ma == null)
-      throw new Exception(new { _managedAccount, error = "Not Found" } + "");
-    _accountManager = new AccountManager(this, ma, CommissionByTrade, _trace);
-    _accountManager.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
-    _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
-    _accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
-    _accountManager.OrderAdded += RaiseOrderAdded;
-    _accountManager.OrderRemoved += RaiseOrderRemoved;
-  }
 
   #region OrderAddedEvent
   event EventHandler<OrderEventArgs> OrderAddedEvent;

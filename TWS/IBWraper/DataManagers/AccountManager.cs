@@ -61,6 +61,8 @@ namespace IBApp {
       RequestAccountSummary();
       SubscribeAccountUpdates();
       RequestPositions();
+      IbClient.ClientSocket.reqAllOpenOrders();
+      IbClient.ClientSocket.reqAutoOpenOrders(true);
 
       IbClient.AccountSummary += OnAccountSummary;
       IbClient.AccountSummaryEnd += OnAccountSummaryEnd;
@@ -74,7 +76,13 @@ namespace IBApp {
       OpenTrades.ItemsAdded.Subscribe(RaiseTradeAdded);
       OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved);
       ClosedTrades.ItemsAdded.Subscribe(RaiseTradeClosed);
+      ibClient.Error += OnError;
       _defaultMessageHandler(nameof(AccountManager) + " is ready");
+    }
+
+    private void OnError(int reqId, int code, string error, Exception exc) {
+      if(new[] { 110 }.Contains(code))
+        RaiseOrderRemoved(reqId);
     }
 
     private void IbClient_UpdatePortfolio(Contract arg1, double arg2, double arg3, double arg4, double arg5, double arg6, double arg7, string arg8) {
@@ -272,28 +280,35 @@ namespace IBApp {
       public double Filled { get; private set; }
       public double Remaining { get; private set; }
       public double AvgFillPrice { get; private set; }
-      public bool IsDone => "Cancelled" == Status || "Filled" == Status && Remaining == 0;
+      public bool IsDone => new[] { "Cancelled", "Inactive" }.Contains(Status) || "Filled" == Status && Remaining == 0;
 
       public override string ToString() => new { OrderId, Status, Filled, Remaining, IsDone } + "";
     }
     ConcurrentDictionary<string,(IBApi.Order order, IBApi.Contract contract)> _orderContracts = new ConcurrentDictionary<string, (IBApi.Order order, IBApi.Contract contract)>();
     private void OnOrderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld) {
       OnOrderStatusPush(new OrderStatusArguments(orderId, status, filled, remaining, avgFillPrice));
-      //Verbous(new { OrderStatus = new { orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld } });
+      _defaultMessageHandler(new { OrderStatus = new { orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld } });
     }
     private void OnOrderStatusImpl(OrderStatusArguments arg) {
       _verbous(new { OrderStatusImpl = arg });
       DoOrderStatus(arg.OrderId + "", arg.AvgFillPrice, arg.Filled.ToInt());
-      var cd = _orderContracts[arg.OrderId + ""];
-      var o = cd.order;
-      var c = cd.contract;
-      RaiseOrderRemoved(new HedgeHog.Shared.Order {
-        IsBuy = o.Action == "BUY",
-        Lot = (int)o.TotalQuantity,
-        Pair = c.Instrument,
-        IsEntryOrder = IsEntryOrder(o)
-      });
+      RaiseOrderRemoved(arg.OrderId);
     }
+
+    private void RaiseOrderRemoved(int orderId) {
+      if(_orderContracts.ContainsKey(orderId + "")) {
+        var cd = _orderContracts[orderId + ""];
+        var o = cd.order;
+        var c = cd.contract;
+        RaiseOrderRemoved(new HedgeHog.Shared.Order {
+          IsBuy = o.Action == "BUY",
+          Lot = (int)o.TotalQuantity,
+          Pair = c.Instrument,
+          IsEntryOrder = IsEntryOrder(o)
+        });
+      }
+    }
+
     private void DoOrderStatus(string orderId, double avgPrice, int lots) {
       try {
         //_verbous(new { OnExecDetails = new { reqId, contract, execution } });
@@ -381,6 +396,33 @@ namespace IBApp {
     public class PositionNotFoundException : Exception {
       public PositionNotFoundException(string symbol) : base(new { symbol } + "") { }
     }
+
+    #region OpenOrder
+    private int NetOrderId() => IbClient.ValidOrderId();
+    public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
+      var isStock = pair.IsUSStock();
+      var rth = new[] { price.Time.Date.AddHours(9.5), price.Time.Date.AddHours(16) };
+      var isPreRTH = isStock && !price.Time.Between(rth);
+      var orderType = isPreRTH ? "LMT" : "MKT";
+      var c = ContractSamples.ContractFactory(pair);
+      var o = new IBApi.Order() {
+        OrderId = NetOrderId(),
+        Action = buy ? "BUY" : "SELL",
+        OrderType = orderType,
+        TotalQuantity = lots,
+        Tif = "DAY",
+        OutsideRth = isPreRTH
+      };
+      if(orderType == "LMT") {
+        var offset = isPreRTH ? 1.001 : 1;
+        o.LmtPrice = buy ? price.Ask * offset : price.Bid / offset;
+      }
+      _orderContracts.TryAdd(o.OrderId + "", (o, c));
+      IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
+      return null;
+    }
+    #endregion
+
     #region IB Handlers
     #region Execution Subject
     object _ExecutionSubjectLocker = new object();

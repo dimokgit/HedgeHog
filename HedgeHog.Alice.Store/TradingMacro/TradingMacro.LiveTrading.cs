@@ -20,6 +20,9 @@ namespace HedgeHog.Alice.Store {
     public bool HaveTrades() {
       return Trades.Any() || HasPendingOrders();
     }
+    public bool HaveTrades(bool isBuy) {
+      return Trades.IsBuy(isBuy).Any() || HasPendingOrders();
+    }
     void LogTradingAction(object message) {
       if(IsInVirtualTrading || LogTrades)
         Log = new Exception(message + "");
@@ -48,13 +51,12 @@ namespace HedgeHog.Alice.Store {
     private void AddPendingAction(string key, object value, CacheItemPolicy cip) {
       if(_pendingEntryOrders.Contains(key))
         throw new Exception(new { PendingEntryOrders = new { key, message = "Already exists" } } + "");
-      LogPendingActions();
       _pendingEntryOrders.Add(key, DateTimeOffset.Now, cip);
-      LogTradingAction(new { PendingEntryOrders = new { Pair, key, value, status = "Added." } });
+      LogTradingAction(new { PendingEntryOrders = new { Pair, key,  status = "Added." } });
     }
 
     private void LogPendingActions() {
-      LogTradingAction(new { PendingEntryOrders = "\n" + string.Join("\n", _pendingEntryOrders.Select(po => new { po.Key, po.Value, status = "Existing" })) });
+      LogTradingAction(new { PendingEntryOrders = string.Join("\n", _pendingEntryOrders.Select(po => new { Pair, po.Key, status = "Existing" })) });
     }
 
     private bool HasPendingOrders() { return _pendingEntryOrders.Any(); }
@@ -70,7 +72,9 @@ namespace HedgeHog.Alice.Store {
           try {
             Action a = () => {
               var exp = IsInVirtualTrading || true ? ObjectCache.InfiniteAbsoluteExpiration : DateTimeOffset.Now.AddMinutes(1);
-              var cip = new CacheItemPolicy() { AbsoluteExpiration = exp, RemovedCallback = ce => { /*if (!IsInVitualTrading)*/ Log = new Exception(ce.CacheItem.Key + "[" + Pair + "] expired without being closed."); } };
+              var cip = new CacheItemPolicy() {
+                AbsoluteExpiration = exp,
+                RemovedCallback = ce => { if (DateTime.Now > exp) Log = new Exception(ce.CacheItem.Key + "[" + Pair + "] expired without being closed."); } };
               AddPendingAction(key, DateTimeOffset.Now, cip);
             };
             action(a);

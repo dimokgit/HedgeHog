@@ -15,8 +15,9 @@ using static HedgeHog.Shared.TradesManagerStatic;
 namespace IBApp {
   public class IBWraper : HedgeHog.Shared.ITradesManager {
     private readonly IBClientCore _ibClient;
+    private AccountManager _accountManager;
+    public AccountManager AccountManager { get { return _accountManager; } }
     private Price _currentPrice;
-    private int NetOrderId() => _ibClient.ValidOrderId();
     private void Trace(object o) { _ibClient.Trace(o); }
     private void Verbous(object o) { _ibClient.Trace(o); }
 
@@ -31,8 +32,22 @@ namespace IBApp {
       _ibClient.TradeRemoved += (s, e) => { RaiseTradeClosed(e.Trade); RaiseTradeRemoved(e.Trade); };
       _ibClient.OrderAdded += RaiseOrderAdded;
       _ibClient.OrderRemoved += RaiseOrderRemoved;
+      _ibClient.ManagedAccounts += OnManagedAccounts;
     }
 
+    private void OnManagedAccounts(string obj) {
+      if(_accountManager != null)
+        Trace(new { _accountManager, isNot = (string)null });
+      var ma = obj.Splitter('.').Where(a => _ibClient.ManagedAccount.IsNullOrWhiteSpace() || a == _ibClient.ManagedAccount).SingleOrDefault();
+      if(ma == null)
+        throw new Exception(new { _ibClient.ManagedAccount, error = "Not Found" } + "");
+      _accountManager = new AccountManager(_ibClient, ma, CommissionByTrade, Trace);
+      _accountManager.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
+      _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
+      _accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
+      _accountManager.OrderAdded += RaiseOrderAdded;
+      _accountManager.OrderRemoved += RaiseOrderRemoved;
+    }
     #region OpenOrder
     private readonly ConcurrentDictionary<string, PositionMessage> _positions = new ConcurrentDictionary<string, PositionMessage>();
 
@@ -51,31 +66,6 @@ namespace IBApp {
 
     #region ITradesManager - Implemented
 
-    public PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment) {
-      throw new NotImplementedException();
-    }
-
-    public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
-      var isStock = pair.IsUSStock();
-      var rth = new[] { price.Time.Date.AddHours(9.5), price.Time.Date.AddHours(16) };
-      var isPreRTH = isStock && !price.Time.Between(rth);
-      var orderType = isPreRTH ? "LMT" : "MKT";
-      var c = ContractSamples.ContractFactory(pair);
-      var o = new IBApi.Order() {
-        OrderId = NetOrderId(),
-        Action = buy ? "BUY" : "SELL",
-        OrderType = orderType,
-        TotalQuantity = lots,
-        Tif = "DAY",
-        OutsideRth = isPreRTH
-      };
-      if(orderType == "LMT") {
-        var offset = isPreRTH ? 1.001 : 1;
-        o.LmtPrice = buy ? price.Ask * offset : price.Bid / offset;
-      }
-      _ibClient.ClientSocket.placeOrder(o.OrderId, c, o);
-      return null;
-    }
 
 
     #region Methods
@@ -157,7 +147,7 @@ namespace IBApp {
     }
     public Account GetAccount() {
       try {
-        var account = _ibClient.AccountManager?.Account;
+        var account = AccountManager?.Account;
         return account;
       } catch(Exception exc) {
         RaiseError(exc);
@@ -180,10 +170,10 @@ namespace IBApp {
       }
     }
 
-    public Trade[] GetTrades() => _ibClient.AccountManager?.GetTrades() ?? new Trade[0];
+    public Trade[] GetTrades() => AccountManager?.GetTrades() ?? new Trade[0];
     public Trade[] GetTrades(string pair) => GetTrades().Where(t => t.Pair.WrapPair() == pair.WrapPair()).ToArray();
     public Trade[] GetTradesInternal(string Pair) => GetTrades(Pair);
-    public Trade[] GetClosedTrades(string pair) => _ibClient.AccountManager?.GetClosedTrades() ?? new Trade[0];
+    public Trade[] GetClosedTrades(string pair) => AccountManager?.GetClosedTrades() ?? new Trade[0];
 
     #endregion
 
@@ -527,6 +517,14 @@ namespace IBApp {
     public double Round(string pair, double value, int digitOffset = 0) { return Math.Round(value, GetDigits(pair) + digitOffset); }
 
     public void SetServerTime(DateTime serverTime) {
+      throw new NotImplementedException();
+    }
+
+    public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
+      return AccountManager.OpenTrade(pair, buy, lots, takeProfit, stopLoss, remark, price);
+    }
+
+    public PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment) {
       throw new NotImplementedException();
     }
     #endregion
