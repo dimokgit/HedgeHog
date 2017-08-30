@@ -538,7 +538,7 @@ namespace HedgeHog.Alice.Store {
       while((timeRange = SetCenterOfMassByM1Hours(timeRange, t => {
         afterHours.Add(t);
         return t.dates;
-      })).Any()){ };
+      })).Any()) { };
       BeforeHours = afterHours.ToArray();
     }
     private void SetCentersOfMass() {
@@ -588,25 +588,25 @@ namespace HedgeHog.Alice.Store {
         });
     }
 
-    private DateTime[] SetCenterOfMassByM1Hours(DateTime[] stripHours, Func<(double[]upDown, DateTime[]dates), DateTime[]> setCenterOfMass) {
-      return TradingMacroM1(tm =>
-      from shs in Enumerable.Range(0, 5).Select(i => addDay(stripHours, -i))
-      from mm in tm.UseRatesInternal(ri =>
-      ri.BackwardsIterator()
-      .SkipWhile(r => r.StartDate > shs[1])
-      .TakeWhile(r => r.StartDate > shs[0])
-      .MinMax(r => r.BidLow, r => r.AskHigh)
-      )
-      where mm.All(Lib.IsNotNaN)
-      select addDay(setCenterOfMass((mm, shs)), -1)
+    private DateTime[] SetCenterOfMassByM1Hours(DateTime[] stripHours, Func<(double[] upDown, DateTime[] dates), DateTime[]> setCenterOfMass) {
+      return stripHours.IsEmpty() ? new DateTime[0]
+        : TradingMacroM1(tm =>
+       from shs in Enumerable.Range(0, 5).Select(i => addDay(stripHours, -i))
+       from mm in tm.UseRatesInternal(ri =>
+       ri.BackwardsIterator()
+       .SkipWhile(r => r.StartDate > shs[1])
+       .TakeWhile(r => r.StartDate > shs[0])
+       .MinMax(r => r.BidLow, r => r.AskHigh)
+       )
+       where mm.All(Lib.IsNotNaN)
+       select addDay(setCenterOfMass((mm, shs)), -1)
        )
       .Concat()
       .Take(1)
       .Concat()
       .ToArray()
       ;
-      DateTime[] addDay(DateTime[] shrs, int i)
-      {
+      DateTime[] addDay(DateTime[] shrs, int i) {
         return shrs.Select(sh => sh.AddDays(i)).ToArray();
       }
     }

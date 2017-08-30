@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using IBSampleApp.util;
 using static HedgeHog.Core.JsonExtensions;
+using HedgeHog.Core;
 using HedgeHog.Shared;
 using IBApi;
 using HedgeHog;
@@ -81,7 +82,7 @@ namespace IBApp {
     }
 
     private void OnError(int reqId, int code, string error, Exception exc) {
-      if(new[] { 110 }.Contains(code))
+      if(new[] { 110,382,383 }.Contains(code))
         RaiseOrderRemoved(reqId);
     }
 
@@ -224,9 +225,7 @@ namespace IBApp {
         return _OpenOrderSubject;
       }
     }
-    void OnOpenOrderPush(OpenOrderArg p) {
-      OpenOrderSubject.OnNext(p);
-    }
+    void OnOpenOrderPush(OpenOrderArg p) => OpenOrderSubject.OnNext(p);
     #endregion
     private static bool IsEntryOrder(IBApi.Order o) => new[] { "MKT", "LMT" }.Contains(o.OrderType);
     private void OnOpenOrder(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) =>
@@ -414,8 +413,9 @@ namespace IBApp {
         OutsideRth = isPreRTH
       };
       if(orderType == "LMT") {
+        var d = TradesManagerStatic.GetDigits(pair) - 1;
         var offset = isPreRTH ? 1.001 : 1;
-        o.LmtPrice = buy ? price.Ask * offset : price.Bid / offset;
+        o.LmtPrice = Math.Round(buy ? price.Ask * offset : price.Bid / offset, d);
       }
       _orderContracts.TryAdd(o.OrderId + "", (o, c));
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);

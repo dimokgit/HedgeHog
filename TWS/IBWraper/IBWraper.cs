@@ -131,7 +131,7 @@ namespace IBApp {
          });
       while(!isDone) {
         Thread.Sleep(300);
-        if(lastTime.AddMinutes(1) < DateTime.Now) {
+        if(lastTime.AddMinutes(10) < DateTime.Now) {
           Trace(new { GetBarsBase = new { lastTime, DateTime.Now, error = "Timeout" } });
           break;
         }

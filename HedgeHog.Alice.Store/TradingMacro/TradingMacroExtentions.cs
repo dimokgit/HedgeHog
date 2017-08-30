@@ -1252,12 +1252,12 @@ namespace HedgeHog.Alice.Store {
         TradesManager.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
         TradesManager.OrderAdded += TradesManager_OrderAdded;
         TradesManager.OrderChanged += TradesManager_OrderChanged;
-        TradesManager.OrderRemoved += TradesManager_OrderRemoved;
         if(isLoggedIn) {
           RunningBalance = tradesFromReport.ByPair(Pair).Sum(t => t.NetPL);
           CalcTakeProfitDistance();
         }
       }
+      TradesManager.OrderRemoved += TradesManager_OrderRemoved;
       RaisePositionsChanged();
       Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategies.Universal;
       IsTradingActive = IsInVirtualTrading;
@@ -4302,7 +4302,7 @@ namespace HedgeHog.Alice.Store {
             var groupTicks = false && BarPeriodCalc == BarsPeriodType.s1;
             LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
             ratesList
-              .Where(r => (r.AskHigh - r.BidLow) / (r.AskHigh + r.BidLow) / 2 * 100 > 0.01)
+              .Where(r => (r.AskHigh - r.BidLow) / (r.AskHigh + r.BidLow) / 2 * 100 > BumpRatio)
               .ToArray()
               .ForEach(r => ratesList.Remove(r));
             if(BarPeriod != BarsPeriodType.t1)

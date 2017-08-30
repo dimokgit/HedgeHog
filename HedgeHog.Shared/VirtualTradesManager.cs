@@ -259,6 +259,7 @@ namespace HedgeHog.Shared {
         case NotifyCollectionChangedAction.Add:
           trade.TradesManager = this;
           OnTradeAdded(trade);
+          RaiseOrderRemoved(new Order() { Pair = trade.Pair });
           break;
         case NotifyCollectionChangedAction.Reset:
         case NotifyCollectionChangedAction.Remove:
@@ -268,6 +269,7 @@ namespace HedgeHog.Shared {
           tradesClosed.Add(trade);
           OnTradeClosed(trade);
           TradeRemoved(trade);
+          RaiseOrderRemoved(new Order() { Pair = trade.Pair });
           break;
       }
     }
@@ -311,12 +313,13 @@ namespace HedgeHog.Shared {
     Dictionary<string, Offer> _offersDictionary = new Dictionary<string, Offer>();
     public Offer GetOffer(string pair) {
       if(!_offersDictionary.ContainsKey(pair))
-        _offersDictionary.Add(pair, offersCollection.Where(o => o.Pair == pair).Single());
+        _offersDictionary.Add(pair, offersCollection.Where(o => o.Pair == pair).DefaultIfEmpty(TradesManagerStatic.OfferDefault).Single());
       return _offersDictionary[pair];
     }
 
     public event EventHandler<RequestEventArgs> RequestFailed;
     public event OrderRemovedEventHandler OrderRemoved;
+    void RaiseOrderRemoved(HedgeHog.Shared.Order args) => OrderRemoved?.Invoke(args);
 
     event EventHandler<ErrorEventArgs> ErrorEvent;
     public event EventHandler<ErrorEventArgs> Error {

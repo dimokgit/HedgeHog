@@ -1516,6 +1516,8 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    [WwwSetting(wwwSettingsBars)]
+    public double BumpRatio { get; set; } = 1;
 
     private int _barsCount;
     [DisplayName("Bars Count")]

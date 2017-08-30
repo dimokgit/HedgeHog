@@ -511,7 +511,8 @@
         //svg.append("path").attr("class", "line data")
         svg.select("path.line.data")
           .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue")
-          .datum(bufferCount >= 3 ? __data__.toArray() : data)
+          //.datum(bufferCount >= 3 ? __data__.toArray() : data)
+          .datum(data)
           .attr("d", line);
         if (lineBid)
           svg.select("path.line.data.bid")
