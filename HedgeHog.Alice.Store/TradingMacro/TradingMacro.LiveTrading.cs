@@ -31,41 +31,52 @@ namespace HedgeHog.Alice.Store {
     #region Pending Action
     static MemoryCache _pendingEntryOrders;
     public MemoryCache PendingEntryOrders {
-      [MethodImpl(MethodImplOptions.Synchronized)]
       get {
-        if(_pendingEntryOrders == null)
-          _pendingEntryOrders = new MemoryCache(Pair);
-        return _pendingEntryOrders;
+        lock(_pendingEntryOrdersLocker) {
+
+          if(_pendingEntryOrders == null)
+            _pendingEntryOrders = new MemoryCache(Pair);
+          return _pendingEntryOrders;
+        }
       }
     }
-    [MethodImpl(MethodImplOptions.Synchronized)]
+    //[MethodImpl(MethodImplOptions.Synchronized)]
     private void ReleasePendingAction(string key) {
-      LogPendingActions();
-      //if(_pendingEntryOrders.Contains(key)) {
-      foreach(var k in _pendingEntryOrders.Where(c => c.Key == key)) {
-        _pendingEntryOrders.Remove(k.Key);
-        LogTradingAction(new { Pending = Pair, key, status = "Released." });
+      lock(_pendingEntryOrdersLocker) {
+        LogPendingActions();
+        //if(_pendingEntryOrders.Contains(key)) {
+        foreach(var k in _pendingEntryOrders.Where(c => c.Key == key)) {
+          _pendingEntryOrders.Remove(k.Key);
+          LogTradingAction(new { Pending = Pair, key, status = "Released." });
+        }
       }
     }
-    [MethodImpl(MethodImplOptions.Synchronized)]
+    //[MethodImpl(MethodImplOptions.Synchronized)]
     private void AddPendingAction(string key, object value, CacheItemPolicy cip) {
-      if(_pendingEntryOrders.Contains(key))
-        throw new Exception(new { PendingEntryOrders = new { key, message = "Already exists" } } + "");
-      _pendingEntryOrders.Add(key, DateTimeOffset.Now, cip);
-      LogTradingAction(new { PendingEntryOrders = new { Pair, key,  status = "Added." } });
+      lock(_pendingEntryOrdersLocker) {
+        if(_pendingEntryOrders.Contains(key))
+          throw new Exception(new { PendingEntryOrders = new { key, message = "Already exists" } } + "");
+        _pendingEntryOrders.Add(key, DateTimeOffset.Now, cip);
+        LogTradingAction(new { PendingEntryOrders = new { Pair, key, status = "Added." } });
+      }
     }
 
     private void LogPendingActions() {
       LogTradingAction(new { PendingEntryOrders = string.Join("\n", _pendingEntryOrders.Select(po => new { Pair, po.Key, status = "Existing" })) });
     }
 
-    private bool HasPendingOrders() { return _pendingEntryOrders.Any(); }
-    private bool HasPendingKey(string key) { return !CheckPendingKey(key); }
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    private bool CheckPendingKey(string key) {
-      return !_pendingEntryOrders.Contains(key);
+    static object _pendingEntryOrdersLocker = new object();
+    private bool HasPendingOrders() {
+      lock(_pendingEntryOrdersLocker)
+        return _pendingEntryOrders.Any();
     }
-    [MethodImpl(MethodImplOptions.Synchronized)]
+    private bool HasPendingKey(string key) { return !CheckPendingKey(key); }
+    //[MethodImpl(MethodImplOptions.Synchronized)]
+    private bool CheckPendingKey(string key) {
+      lock(_pendingEntryOrdersLocker)
+        return !_pendingEntryOrders.Contains(key);
+    }
+    //[MethodImpl(MethodImplOptions.Synchronized)]
     private void CheckPendingAction(string key, Action<Action> action = null) {
       if(!HasPendingOrders()) {
         if(action != null) {
@@ -74,7 +85,8 @@ namespace HedgeHog.Alice.Store {
               var exp = IsInVirtualTrading || true ? ObjectCache.InfiniteAbsoluteExpiration : DateTimeOffset.Now.AddMinutes(1);
               var cip = new CacheItemPolicy() {
                 AbsoluteExpiration = exp,
-                RemovedCallback = ce => { if (DateTime.Now > exp) Log = new Exception(ce.CacheItem.Key + "[" + Pair + "] expired without being closed."); } };
+                RemovedCallback = ce => { if(DateTime.Now > exp) Log = new Exception(ce.CacheItem.Key + "[" + Pair + "] expired without being closed."); }
+              };
               AddPendingAction(key, DateTimeOffset.Now, cip);
             };
             action(a);

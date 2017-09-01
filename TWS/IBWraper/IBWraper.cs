@@ -136,6 +136,15 @@ namespace IBApp {
           break;
         }
       }
+      // Test threading
+      //lastTime = DateTime.Now;
+      //while(true) {
+      //  Thread.Sleep(300);
+      //  if(lastTime.AddMinutes(10) < DateTime.Now) {
+      //    break;
+      //  }
+      //}
+
       return;
     }
     public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map) {
