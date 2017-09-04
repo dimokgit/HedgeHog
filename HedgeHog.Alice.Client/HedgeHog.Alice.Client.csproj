@@ -571,6 +571,7 @@
     <None Include="Service References\TraderService\System.xsd">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Settings\Instruments.json" />
     <None Include="Store\Alice.xls" />
     <None Include="WWW\.synkron.syncdb" />
     <None Include="WWW\.weignore" />

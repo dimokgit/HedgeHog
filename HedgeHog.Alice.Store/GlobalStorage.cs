@@ -22,6 +22,8 @@ using System.Reflection;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
+using System.Net;
+using System.Runtime.ExceptionServices;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage : Models.ModelBase {
@@ -226,10 +228,20 @@ namespace HedgeHog.Alice.Store {
       File.WriteAllText(settingsPath, json);
 
     }
+
+    static string DownloadText(Uri url) {
+      using(var wc = new WebClient())
+        return wc.DownloadString(url);
+    }
     public static T LoadJson<T>(string path, List<Exception> errors = null) {
-      var json = File.ReadAllText(ActiveSettingsPath(path));
-      return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings {
+      string _path() => !Path.HasExtension(path) ? path = ".json" : path;
+      var json = Uri.IsWellFormedUriString(path, UriKind.Absolute)
+        ? DownloadText(new Uri(path))
+        : File.ReadAllText(ActiveSettingsPath(_path()));
+      return JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings {
         Error = (s, e) => {
+          if(errors==null)
+            ExceptionDispatchInfo.Capture(e.ErrorContext.Error).Throw();
           e.ErrorContext.Handled = true;
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(e.ErrorContext.Error);
           errors.Add(e.ErrorContext.Error);

@@ -14,7 +14,7 @@ namespace HedgeHog {
       System.IO.File.Delete(logFileName);
     }
     public static Exception LogToFile(Exception exc) { return LogToFile(exc, logFileName); }
-    [MethodImpl(MethodImplOptions.Synchronized)]
+    //[MethodImpl(MethodImplOptions.Synchronized)]
     public static Exception LogToFile(Exception exc,string fileName) {
       try {
         if (exc != null) {
@@ -38,7 +38,7 @@ namespace HedgeHog {
     public static void LogToFile( string text) {
       LogToFile(logFileName, text);
     }
-    [MethodImpl(MethodImplOptions.Synchronized)]
+    //[MethodImpl(MethodImplOptions.Synchronized)]
     public static void LogToFile(string fileName, string text) {
       System.IO.File.AppendAllText(fileName, text);
     }

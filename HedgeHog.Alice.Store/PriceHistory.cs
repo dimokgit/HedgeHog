@@ -22,8 +22,7 @@ namespace HedgeHog.Alice.Store {
       foreach(var pair in pairsToLoad.Pairs)
         AddTicks(fw, pair.Item2, pair.Item1, DateTime.Now.AddYears(-1), progressCallback);
     }
-    static Task saveTicksTask;
-    [MethodImpl(MethodImplOptions.Synchronized)]
+    //[MethodImpl(MethodImplOptions.Synchronized)]
     public static void AddTicks(ITradesManager fw, int period, string pair, DateTime dateStart, Action<object> progressCallback) {
       try {
         #region callback
@@ -44,13 +43,13 @@ namespace HedgeHog.Alice.Store {
             if(dateStart < dateMin)
               fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
           }
-          var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
+          var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty().Max();
           if(dateStart == DateTime.MinValue && q == DateTimeOffset.MinValue)
             throw new Exception("dateStart must be provided there is no bars in database.");
           var p = period == 0 ? 1 / 60.0 : period;
           dateStart = q.LocalDateTime.Add(p.FromMinutes());
         }
-        fw.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
+        fw.GetBarsBase(pair, period, 0, dateStart.Max(DateTime.Now.AddYears(-1)), DateTime.Now, new List<Rate>(), null, showProgress);
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }

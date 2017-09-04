@@ -34,6 +34,7 @@ using static HedgeHog.ReflectionCore;
 using IBApp;
 using static HedgeHog.Core.JsonExtensions;
 using Newtonsoft.Json;
+using System.Net;
 
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
@@ -274,18 +275,6 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Trade Lists
-
-    public string[] TradingMacrosCases {
-      get {
-        try {
-          return new string[0];// GlobalStorage.UseAliceContext(c => c.TradingMacroes.Select(tm => tm.TradingMacroName).Distinct()).ToArray();
-        } catch(Exception exc) {
-          Log = exc;
-          return null;
-        }
-      }
-    }
-
     private bool _IsAccountManagerExpanded = true;
     public bool IsAccountManagerExpanded {
       get { return _IsAccountManagerExpanded; }
@@ -1207,6 +1196,7 @@ namespace HedgeHog.Alice.Client {
         _default = this;
         Initialize();
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
+        TradesManagerStatic.dbOffers = GlobalStorage.LoadJson<Offer[]>("https://onedrive.live.com/download?resid=CA0EFDC2645EC5F8!51252");
         _tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
         var activeTradeAccounts = (_tradingAccounts?.Count(ta => ta.IsActive)).GetValueOrDefault();
         if(activeTradeAccounts == 0) {

@@ -70,7 +70,10 @@
     <DataTemplate x:Key="InstrumentEditTemplate">
       <StackPanel Orientation="Horizontal">
         <TextBox Text="{Binding PairIndex}" ToolTip="Pair Index"/>
-        <ComboBox ItemsSource="{Binding DataContext.Instruments,Mode=OneWay,RelativeSource={RelativeSource AncestorType=DataGrid}}" SelectedValue="{Binding Pair,Mode=TwoWay}"></ComboBox>
+
+        <!--<ComboBox ItemsSource="{Binding DataContext.Instruments,Mode=OneWay,RelativeSource={RelativeSource AncestorType=DataGrid}}" SelectedValue="{Binding Pair,Mode=TwoWay}"></ComboBox>-->
+        <TextBox Text="{Binding Pair}" ToolTip="Instrument"/>
+
         <TextBox Text="{Binding MaximumPositions}" ToolTip="Maximum Positions"/>
         <TextBox Text="{Binding TradingMacroName}" ToolTip="Trading Macro Name"/>
         <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active"/>

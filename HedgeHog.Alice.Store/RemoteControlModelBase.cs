@@ -165,7 +165,11 @@ namespace HedgeHog.Alice.Store {
     public TradingMacro[] TradingMacrosCopy {
       get {
         if(_tradingMacrosCopy.Count == 0)
-          _tradingMacrosCopy = TradingMacros.ToList();
+          _tradingMacrosCopy = TradingMacros
+            .OrderBy(tm => !tm.IsActive)
+            .ThenBy(tm => tm.TradingGroup)
+            .ThenBy(tm => tm.PairIndex)
+            .ToList();
         return _tradingMacrosCopy.ToArray();
       }
     }

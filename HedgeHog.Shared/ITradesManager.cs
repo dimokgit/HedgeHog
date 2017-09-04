@@ -201,7 +201,8 @@ namespace HedgeHog.Shared {
             new Offer { Pair = "EURUSD", Digits = 5, PointSize = 0.0001, MMRLong=1, ContractSize = 1000 },
             new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01, MMRLong=0.513, ContractSize = 1 },
             new Offer { Pair = "SPY", Digits = 3, PointSize = 0.01, MMRLong = 0.250, MMRShort= 0.3, ContractSize = 1 },
-            new Offer { Pair = "TVIX", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 }
+            new Offer { Pair = "TVIX", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 },
+            new Offer { Pair = "UVXY", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 }
           };
     static Func<string,Offer> GetOfferImpl= symbol
       =>  dbOffers
@@ -242,7 +243,7 @@ namespace HedgeHog.Shared {
     public static bool IsFuture(this string s) => Regex.IsMatch(s, @"\w{2}[HMUZ]\d{1,2}", RegexOptions.IgnoreCase);
     public static bool IsCommodity(this string s) => _commodities.Contains(s.ToUpper());
     public static bool IsUSStock(this string s) => !s.IsCurrenncy() && !s.IsFuture() && !s.IsCommodity();
-    static string [] _etfs=new[]{"SPY","TVIX","VXX" };
+    static string [] _etfs=new[]{"SPY","TVIX","VXX","UVXY" };
     public static bool IsETF(this string s) => _etfs.Contains(s);
     private static readonly EventLoopScheduler _tradingThread =
       new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; });

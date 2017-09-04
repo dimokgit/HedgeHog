@@ -71,34 +71,36 @@ namespace HedgeHog.Alice.Client {
         Log = exc;
       }
     }
-    [MethodImpl(MethodImplOptions.Synchronized)]
+    static object _chartersLocker=new object();
     public CharterControl GetCharter(TradingMacro tradingMacro) {
-      if(!charters.ContainsKey(tradingMacro)) {
-        var charterNew = new CharterControl(tradingMacro.CompositeId, App.container) { tm = tradingMacro };
-        RequestAddCharterToUI(charterNew);
-        try {
-          charters.Add(tradingMacro, charterNew);
-        } catch(ArgumentException exc) {
-          Log = new Exception(new { tradingMacro.Pair } + "", exc);
-          return charters[tradingMacro];
+      lock(_chartersLocker) {
+        if(!charters.ContainsKey(tradingMacro)) {
+          var charterNew = new CharterControl(tradingMacro.CompositeId, App.container) { tm = tradingMacro };
+          RequestAddCharterToUI(charterNew);
+          try {
+            charters.Add(tradingMacro, charterNew);
+          } catch(ArgumentException exc) {
+            Log = new Exception(new { tradingMacro.Pair } + "", exc);
+            return charters[tradingMacro];
+          }
+          charterNew.CorridorStartPositionChanged += charter_CorridorStartPositionChanged;
+          charterNew.SupportResistanceChanged += charter_SupportResistanceChanged;
+          charterNew.LineTimeShortChanged += charterNew_LineTimeShortChanged;
+          charterNew.LineTimeMiddleChanged += charterNew_LineTimeMiddleChanged;
+          charterNew.Play += charter_Play;
+          charterNew.GannAngleOffsetChanged += charter_GannAngleOffsetChanged;
+          charterNew.BuySellAdded += charter_BuySellAdded;
+          charterNew.BuySellRemoved += charter_BuySellRemoved;
+          charterNew.PlotterKeyDown += charterNew_PlotterKeyDown;
+          var isSelectedBinding = new Binding(GetLambda(() => tradingMacro.IsSelectedInUI)) { Source = tradingMacro };
+          charterNew.SetBinding(CharterControl.IsSelectedProperty, isSelectedBinding);
+          var isActiveBinding = new Binding(GetLambda(() => tradingMacro.IsTradingActive)) { Source = tradingMacro };
+          charterNew.SetBinding(CharterControl.IsActiveProperty, isActiveBinding);
+          charterNew.TradeLineChanged += new EventHandler<PositionChangedBaseEventArgs<double>>(charterNew_TradeLineChanged);
+          charterNew.ShowChart += new EventHandler(charterNew_ShowChart);
+          charterNew.RoundTo = tradingMacro.Digits();
+          charterNew.SetDefaultTradeLevels += charterNew_CenterTradeLevels;
         }
-        charterNew.CorridorStartPositionChanged += charter_CorridorStartPositionChanged;
-        charterNew.SupportResistanceChanged += charter_SupportResistanceChanged;
-        charterNew.LineTimeShortChanged += charterNew_LineTimeShortChanged;
-        charterNew.LineTimeMiddleChanged += charterNew_LineTimeMiddleChanged;
-        charterNew.Play += charter_Play;
-        charterNew.GannAngleOffsetChanged += charter_GannAngleOffsetChanged;
-        charterNew.BuySellAdded += charter_BuySellAdded;
-        charterNew.BuySellRemoved += charter_BuySellRemoved;
-        charterNew.PlotterKeyDown += charterNew_PlotterKeyDown;
-        var isSelectedBinding = new Binding(GetLambda(() => tradingMacro.IsSelectedInUI)) { Source = tradingMacro };
-        charterNew.SetBinding(CharterControl.IsSelectedProperty, isSelectedBinding);
-        var isActiveBinding = new Binding(GetLambda(() => tradingMacro.IsTradingActive)) { Source = tradingMacro };
-        charterNew.SetBinding(CharterControl.IsActiveProperty, isActiveBinding);
-        charterNew.TradeLineChanged += new EventHandler<PositionChangedBaseEventArgs<double>>(charterNew_TradeLineChanged);
-        charterNew.ShowChart += new EventHandler(charterNew_ShowChart);
-        charterNew.RoundTo = tradingMacro.Digits();
-        charterNew.SetDefaultTradeLevels += charterNew_CenterTradeLevels;
         //charter.Show();
 
         /*

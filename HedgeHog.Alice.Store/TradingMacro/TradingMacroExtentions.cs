@@ -752,20 +752,7 @@ namespace HedgeHog.Alice.Store {
       return -1;
     }
 
-    void cs_PropertyChanged(object sender, PropertyChangedEventArgs e) {
-      var cs = (sender as CorridorStatistics);
-      switch(e.PropertyName) {
-        case "StartDate":
-          if(!IsGannAnglesManual)
-            SetGannAngleOffset(cs);
-          break;
-      }
-    }
 
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    private void SetGannAngleOffset(CorridorStatistics cs) {
-      GannAnglesOffset = cs.Slope.Abs() / GannAngle1x1;
-    }
     private ObservableCollection<CorridorStatistics> _CorridorStatsArray;
     public ObservableCollection<CorridorStatistics> CorridorStatsArray {
       get {
@@ -785,8 +772,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     void CorridorStatsArray_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-      if(e.Action == NotifyCollectionChangedAction.Add)
-        (e.NewItems[0] as CorridorStatistics).PropertyChanged += cs_PropertyChanged;
     }
 
     CorridorStatistics _corridorBig;
@@ -809,8 +794,6 @@ namespace HedgeHog.Alice.Store {
         _CorridorStats = value;
 
         if(value != null && RatesArray.Count > 0) {
-          if(false && !IsGannAnglesManual)
-            SetGannAngleOffset(value);
           UpdateTradingGannAngleIndex();
         }
         //}
@@ -4377,7 +4360,7 @@ namespace HedgeHog.Alice.Store {
 
     public DateTimeOffset LoadRatesStartDate2 { get; set; }
     #region Overrides
-    [MethodImpl(MethodImplOptions.Synchronized)]
+    //[MethodImpl(MethodImplOptions.Synchronized)]
     void LoadRatesImpl(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool groupToSeconds) {
       Func<List<Rate>, List<Rate>> map = groupToSeconds ? TradingMacro.GroupTicksToSeconds<Rate> : (Func<List<Rate>, List<Rate>>)null;
       if(ratesList.Count() == -1) {
