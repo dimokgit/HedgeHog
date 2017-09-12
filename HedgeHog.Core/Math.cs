@@ -81,6 +81,9 @@ namespace HedgeHog {
     public static double Avg(this double v, double other) {
       return (v + other) / 2;
     }
+    public static int Avg(this int v, double other) {
+      return ((v + other) / 2).ToInt();
+    }
     public static double? Abs(this double? v) {
       return v.HasValue ? v.Value.Abs() : (double?)null;
     }

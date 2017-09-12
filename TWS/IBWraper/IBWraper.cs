@@ -17,7 +17,6 @@ namespace IBApp {
     private readonly IBClientCore _ibClient;
     private AccountManager _accountManager;
     public AccountManager AccountManager { get { return _accountManager; } }
-    private Price _currentPrice;
     private void Trace(object o) { _ibClient.Trace(o); }
     private void Verbous(object o) { _ibClient.Trace(o); }
 
@@ -58,7 +57,6 @@ namespace IBApp {
     #endregion
 
     private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
-      _currentPrice = e.Price;
       var price = e.Price;
       GetAccount().PipsToMC = PipsToMarginCallCore().ToInt();
       RaisePriceChanged(price);
@@ -170,9 +168,12 @@ namespace IBApp {
         return int.MaxValue;
       var pair = trades[0].Pair;
       var offer = GetOffer(pair);
+      var priceAvg = (GetPrice(pair)?.Average).GetValueOrDefault(double.NaN);
       return trades.Sum(trade =>
-        MoneyAndLotToPips(pair, account.ExcessLiquidity, trade.Lots, _currentPrice.Average, GetPipSize(pair)) * trade.Lots) / trades.Lots();
+        MoneyAndLotToPips(pair, account.ExcessLiquidity, trade.Lots, priceAvg, GetPipSize(pair)) * trade.Lots) / trades.Lots();
     }
+
+
     public double PipsToMarginCall {
       get {
         return PipsToMarginCallCore();
@@ -385,7 +386,7 @@ namespace IBApp {
       try {
         var lotToDelete = Math.Min(lot, GetTradesInternal(pair).IsBuy(buy).Lots());
         if(lotToDelete > 0) {
-          OpenTrade(pair, !buy, lotToDelete, 0, 0, "", _currentPrice);
+          OpenTrade(pair, !buy, lotToDelete, 0, 0, "", GetPrice(pair));
         } else {
           RaiseError(new Exception("Pair [" + pair + "] does not have positions to close."));
           return false;

@@ -1036,20 +1036,18 @@ namespace HedgeHog.Alice.Store {
     public double PipsPerMinuteCmaFirst { get { return InPips(PriceQueue.Speed(.5)); } }
     public double PipsPerMinuteCmaLast { get { return InPips(PriceQueue.Speed(1)); } }
 
-    public double OpenTradesGross => Trades.Net();
+    public double OpenTradesGross => Trades.Net2();
     public double OpenTradesGross2 => Trades.Net2();
 
-    public double OpenTradesGross2InPips { get { return TradesManager.MoneyAndLotToPips(OpenTradesGross2, Trades.Lots(), Pair); } }
+    public double OpenTradesGross2InPips => TradesManager.MoneyAndLotToPips(OpenTradesGross2, Trades.Lots(), Pair); 
 
     partial void OnCurrentLossChanged() {
       if(!IsTrader && _CurrentLoss != 0)
         CurrentLoss = 0;
     }
-    public double CurrentGross {
-      get { return !IsTrader ? 0 : CurrentLoss + OpenTradesGross; }
-    }
 
-    public int CurrentGrossLot { get { return !IsTrader ? 0 : Trades.Select(t => t.Lots).DefaultIfEmpty(0).Sum(); } }
+    public int CurrentGrossLot { get { return !IsTrader ? 0 : Trades.Select(t => t.Lots).DefaultIfEmpty(LotSizeByLossBuy.Avg(LotSizeByLossSell)).Sum(); } }
+    public double CurrentGross =>!IsTrader ? 0 : CurrentLoss + OpenTradesGross; 
     public double CurrentGrossInPips {
       get {
         return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentGross, CurrentGrossLot, Pair);
@@ -1188,6 +1186,7 @@ namespace HedgeHog.Alice.Store {
     public int Digits() { return TradesManager == null ? 0 : TradesManager.GetDigits(Pair); }
     private const int RatesHeightMinimumOff = 0;
     IEnumerable<TradingMacro> _tradingMacros = new TradingMacro[0];
+    IEnumerable<TradingMacro> TradingMacrosActive => _tradingMacros;
     Func<ITradesManager> _TradesManager = () => null;
     public ITradesManager TradesManager { get { return _TradesManager(); } }
     public bool HasTicks => TradesManager.HasTicks;
@@ -2289,7 +2288,7 @@ namespace HedgeHog.Alice.Store {
             //ResetBarsCountCalc();
             RatesHeight = RatesArray.Height(r => r.AskHigh, r => r.BidLow, out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
 
-            SetCentersOfMassSubject.OnNext(()=> { SetBeforeHours(); SetCentersOfMass(); });
+            SetCentersOfMassSubject.OnNext(() => { SetBeforeHours(); SetCentersOfMass(); });
             if(IsAsleep) {
               BarsCountCalc = BarsCount;
               RaiseShowChart();
@@ -2757,8 +2756,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region PipAmount
-    public double PipAmount=>
-       TradesManagerStatic.PipAmount(Pair, Trades.Lots(), TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); 
+    public double PipAmount =>
+       TradesManagerStatic.PipAmount(Pair, Trades.Lots(), TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize);
     public double PipAmountBuy {
       get { return TradesManagerStatic.PipAmount(Pair, AllowedLotSizeCore(true), TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); }
     }
@@ -3047,9 +3046,12 @@ namespace HedgeHog.Alice.Store {
           var roundTo = BarPeriod == BarsPeriodType.t1 ? RoundTo.Second : RoundTo.Minute;
           var lastRateDate = ri.BackwardsIterator().Select(r => r.StartDate.Round(roundTo)).FirstOrDefault();
           var priceDate = price.Time.Round(roundTo);
-          if(priceDate > lastRateDate) {
+          if( priceDate > lastRateDate) {
             ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
-            OnLoadRates();
+            if(BarPeriod > 0)
+              OnLoadRates();
+            else
+              RatesArraySafe.Any();
           } else if(priceDate == lastRateDate)
             ri.Last().AddTick(price.Time.Round(roundTo).ToUniversalTime(), price.Ask, price.Bid);
           else if(IsTradingHour()) {
@@ -3251,11 +3253,10 @@ namespace HedgeHog.Alice.Store {
           return;
         Price price = e.Price;
         #region LoadRates
+        var tmCount = 1;//TradingMacrosActive.Count(tm => tm.BarPeriod == BarPeriod);
         if(!TradesManager.IsInTest && !IsInPlayback
-          && (!UseRatesInternal(ri => ri.Any()).DefaultIfEmpty(true).Single() || LastRatePullTime.AddMinutes(0.3.Max((double)BarPeriod / 2)) <= ServerTime)) {
-          LastRatePullTime = ServerTime;
+          && (!UseRatesInternal(ri => ri.Any()).DefaultIfEmpty(true).Single() || LastRatePullTime.AddMinutes((0.3 * tmCount).Max((double)BarPeriod / 2)) <= ServerTime))
           OnLoadRates();
-        }
         #endregion
         OnRunPriceBroadcast(e);
         if(doAfterScanCorridor != null)

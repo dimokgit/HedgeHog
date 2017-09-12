@@ -22,6 +22,8 @@ using OpenOrderArg = System.Tuple<int, IBApi.Contract, IBApi.Order, IBApi.OrderS
 using OrderStatusArg = System.Tuple<int, string, double, double, bool, double>;
 namespace IBApp {
   public class AccountManager : DataManager {
+    public enum OrderStatuses { Cancelled, Inactive, PreSubmitted };
+
     #region Constants
     private const int ACCOUNT_ID_BASE = 50000000;
 
@@ -45,7 +47,12 @@ namespace IBApp {
     private readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade>();
     private readonly ConcurrentDictionary<string, PositionMessage> _positions = new ConcurrentDictionary<string, PositionMessage>();
     private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
-    public Func<Trade, double> CommissionByTrade { get; private set; }
+    public Func<Trade, double> CommissionByTrade => t => t.Lots * .01;
+    IObservable<(Offer o,bool b)> _offerMMRs= TradesManagerStatic.dbOffers
+        .Select(o => new[] { ( o, b : true ), ( o, b : false ) })
+        .Concat()
+        .ToObservable();
+
     #endregion
 
     #region Methods
@@ -54,7 +61,7 @@ namespace IBApp {
 
     #region Ctor
     public AccountManager(IBClientCore ibClient, string accountId, Func<Trade, double> commissionByTrade, Action<object> onMessage) : base(ibClient, ACCOUNT_ID_BASE) {
-      CommissionByTrade = commissionByTrade;
+      //CommissionByTrade = commissionByTrade;
       Account = new Account();
       _accountId = accountId;
       _defaultMessageHandler = onMessage ?? new Action<object>(o => { throw new NotImplementedException(new { onMessage } + ""); });
@@ -73,6 +80,7 @@ namespace IBApp {
       ibClient.OrderStatus += OnOrderStatus;
       //IbClient.ExecDetails += OnExecution;
       IbClient.Position += OnPosition;
+      ibClient.PriceChanged += OnPriceChanged;
       //ibClient.UpdatePortfolio += IbClient_UpdatePortfolio;
       OpenTrades.ItemsAdded.Subscribe(RaiseTradeAdded);
       OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved);
@@ -81,19 +89,22 @@ namespace IBApp {
       _defaultMessageHandler(nameof(AccountManager) + " is ready");
     }
 
+    ConcurrentDictionary<string,DateTime> _mmrScheduler= new ConcurrentDictionary<string, DateTime>();
+    private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
+      if(!_mmrScheduler.ContainsKey(e.Price.Pair)) {
+        _mmrScheduler[e.Price.Pair] = DateTime.Now;
+        TaskPoolScheduler.Default.Schedule(TimeSpan.FromSeconds(5), () => {
+          OpenTradeWhatIf(e.Price.Pair, true);
+          OpenTradeWhatIf(e.Price.Pair, false);
+        });
+      }
+    }
+
     private void OnError(int reqId, int code, string error, Exception exc) {
-      if(new[] { 110,382,383 }.Contains(code))
+      if(new[] { 110, 382, 383 }.Contains(code))
         RaiseOrderRemoved(reqId);
     }
 
-    private void IbClient_UpdatePortfolio(Contract arg1, double arg2, double arg3, double arg4, double arg5, double arg6, double arg7, string arg8) {
-
-    }
-
-    Func<Trade, double> IBCommissionByTrade(Trade trade) {
-      var commissionPerUnit = CommissionByTrade(trade) / trade.Lots;
-      return t => t.Lots * commissionPerUnit;
-    }
     /*
     public bool CloseTrade(Trade trade, int lot, Price price) {
       if(trade.Lots <= lot)
@@ -231,14 +242,25 @@ namespace IBApp {
     private void OnOpenOrder(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) =>
       OnOpenOrderPush(Tuple.Create(reqId, c, o, os));
     private void OnOrderStartedImpl(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) {
-      _orderContracts.TryAdd(o.OrderId + "", (o, c));
-      _verbous(new { OnOpenOrder = new { reqId, c, o, os } });
-      RaiseOrderAdded(new HedgeHog.Shared.Order {
-        IsBuy = o.Action == "BUY",
-        Lot = (int)o.TotalQuantity,
-        Pair = c.Instrument,
-        IsEntryOrder = IsEntryOrder(o)
-      });
+      if(!os.IsPreSubmited()) {
+        _orderContracts.TryAdd(o.OrderId + "", (o, c));
+        _verbous(new { OnOpenOrder = new { reqId, c, o, os } });
+        RaiseOrderAdded(new HedgeHog.Shared.Order {
+          IsBuy = o.Action == "BUY",
+          Lot = (int)o.TotalQuantity,
+          Pair = c.Instrument,
+          IsEntryOrder = IsEntryOrder(o)
+        });
+      } else if(GetTrades().IsEmpty()) {
+        //RaiseOrderRemoved(o.OrderId);
+        var offer = TradesManagerStatic.GetOffer(c.Instrument);
+        var isBuy = o.IsBuy();
+        var levelrage = (o.LmtPrice * o.TotalQuantity) / (double.Parse(os.InitMargin) - InitialMarginRequirement);
+        if(isBuy)
+          offer.MMRLong = 1 / levelrage;
+        else
+          offer.MMRShort = 1 / levelrage;
+      }
     }
     #endregion
     #region OrderStatus
@@ -279,8 +301,7 @@ namespace IBApp {
       public double Filled { get; private set; }
       public double Remaining { get; private set; }
       public double AvgFillPrice { get; private set; }
-      public bool IsDone => new[] { "Cancelled", "Inactive" }.Contains(Status) || "Filled" == Status && Remaining == 0;
-
+      public bool IsDone => Enum.GetNames(typeof(OrderStatuses)).Contains(Status) || "Filled" == Status && Remaining == 0;
       public override string ToString() => new { OrderId, Status, Filled, Remaining, IsDone } + "";
     }
     ConcurrentDictionary<string,(IBApi.Order order, IBApi.Contract contract)> _orderContracts = new ConcurrentDictionary<string, (IBApi.Order order, IBApi.Contract contract)>();
@@ -329,7 +350,7 @@ namespace IBApp {
         trade.Lots = lots;
 
         trade.OpenOrderID = orderId + "";
-        trade.CommissionByTrade = t => t.Lots * .02;
+        trade.CommissionByTrade = CommissionByTrade;
         #endregion
 
         #region Close Trades
@@ -364,8 +385,7 @@ namespace IBApp {
       } catch(Exception exc) {
         _defaultMessageHandler(exc);
       }
-      int CloseTrade(DateTime execTime, double execPrice, Trade closedTrade, int closeLots)
-      {
+      int CloseTrade(DateTime execTime, double execPrice, Trade closedTrade, int closeLots) {
         if(closeLots >= closedTrade.Lots) {// Full close
           closedTrade.Time2Close = execTime;
           closedTrade.Close = execPrice;
@@ -381,7 +401,8 @@ namespace IBApp {
           trade.Time2Close = execTime;
           trade.Close = execPrice;
           closedTrade.Lots -= trade.Lots;
-          ClosedTrades.Add(trade);
+          if(trade.Lots > 0)
+            ClosedTrades.Add(trade);
           return 0;
         }
       }
@@ -398,8 +419,17 @@ namespace IBApp {
 
     #region OpenOrder
     private int NetOrderId() => IbClient.ValidOrderId();
+    public PendingOrder OpenTradeWhatIf(string pair, bool buy) {
+      var price = IbClient.GetPrice(pair);
+      var anount = GetTrades().Where(t => t.Pair == pair).Select(t => t.GrossPL).DefaultIfEmpty(Account.Equity).Sum() / 2;
+      return OpenTrade(pair, buy, (anount / price.Average).ToInt(), 0, 0, "", price, true);
+    }
     public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
+      return OpenTrade(pair, buy, lots, takeProfit, stopLoss, remark, price, false);
+    }
+    public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price, bool whatIf) {
       var isStock = pair.IsUSStock();
+      price = price ?? IbClient.GetPrice(pair);
       var rth = new[] { price.Time.Date.AddHours(9.5), price.Time.Date.AddHours(16) };
       var isPreRTH = isStock && !price.Time.Between(rth);
       var orderType = isPreRTH ? "LMT" : "MKT";
@@ -408,11 +438,14 @@ namespace IBApp {
         OrderId = NetOrderId(),
         Action = buy ? "BUY" : "SELL",
         OrderType = orderType,
-        TotalQuantity = lots,
+        TotalQuantity = whatIf ? lots : pair.IsUSStock() ? (lots / 100.0).Floor() * 100 : lots,
         Tif = "DAY",
-        OutsideRth = isPreRTH
+        OutsideRth = isPreRTH,
+        WhatIf = whatIf
       };
-      if(orderType == "LMT") {
+      if(whatIf)
+        o.LmtPrice = buy ? price.Ask : price.Bid;
+      else if(orderType == "LMT") {
         var d = TradesManagerStatic.GetDigits(pair) - 1;
         var offset = isPreRTH ? 1.001 : 1;
         o.LmtPrice = Math.Round(buy ? price.Ask * offset : price.Bid / offset, d);
@@ -471,7 +504,7 @@ namespace IBApp {
         _executions.AddOrUpdate(orderId, execution.CumQty, (s, i) => execution.CumQty);
 
         trade.OpenOrderID = execution.OrderId + "";
-        trade.CommissionByTrade = IBCommissionByTrade(trade);
+        trade.CommissionByTrade = CommissionByTrade;
         #endregion
 
         #region Close Trades
@@ -578,6 +611,9 @@ namespace IBApp {
         return _PositionSubject;
       }
     }
+
+    public double InitialMarginRequirement { get; private set; }
+
     void OnPositionSubject(string account, Contract contract, PositionMessage pm) {
       PositionSubject.OnNext(Tuple.Create(account, contract, pm));
     }
@@ -620,7 +656,7 @@ namespace IBApp {
       trade.Open = position.AverageCost;
       trade.Lots = position.Position.Abs().ToInt();
       trade.OpenOrderID = openOrderId;
-      trade.CommissionByTrade = IBCommissionByTrade(trade);
+      trade.CommissionByTrade = CommissionByTrade;
       return trade;
     }
     #endregion
@@ -643,6 +679,10 @@ namespace IBApp {
             break;
           case "UnrealizedPnL":
             Account.Balance = Account.Equity - double.Parse(value);
+            break;
+          case "InitMarginReq":
+            _mmrScheduler.Clear();
+            InitialMarginRequirement = double.Parse(value);
             break;
         }
         //_defaultMessageHandler(new AccountValueMessage(key, value, currency, accountName));
@@ -699,6 +739,10 @@ namespace IBApp {
     #endregion
   }
   public static class Mixins {
+    public static bool IsPreSubmited(this IBApi.OrderState order) => order.Status == AccountManager.OrderStatuses.PreSubmitted + "";
+
+    public static bool IsBuy(this IBApi.Order o) => o.Action == "BUY";
+
     private static Tuple<string, bool> Key(string symbol, bool isBuy) => Tuple.Create(symbol.WrapPair(), isBuy);
     private static Tuple<string, bool> Key2(string symbol, bool isBuy) => Key(symbol, !isBuy);
 

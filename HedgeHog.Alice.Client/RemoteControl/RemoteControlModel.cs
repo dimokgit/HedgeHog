@@ -723,9 +723,10 @@ namespace HedgeHog.Alice.Client {
 
     private double CalculateCurrentNetInPips() {
       return GetTradingMacrosForStatistics()
+        .Where(tm => tm.Trades.Any())
         .Select(tm => new { tm.CurrentGrossInPips, tm.CurrentGrossLot })
         .ToArray().Yield()
-        .Select(_ => _.Sum(tm => tm.CurrentGrossInPips * tm.CurrentGrossLot) / _.Sum(tm => tm.CurrentGrossLot))
+        .Select(_ => _.Sum(tm => tm.CurrentGrossInPips * tm.CurrentGrossLot) / _.Sum(tm => tm.CurrentGrossLot).Max(1))
         .FirstOrDefault();
     }
     private double CalculateCurrentNet() {
@@ -741,7 +742,9 @@ namespace HedgeHog.Alice.Client {
               group tm by tm.Pair into g
               select g
               .Where(t => t.Strategy != Strategies.None)
-              .DefaultIfEmpty(g.First()).First()).ToArray();
+              .DefaultIfEmpty(g.First())
+              .First()
+              ).ToArray();
     }
     //
     private void InitializeModel() {

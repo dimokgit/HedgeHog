@@ -38,6 +38,8 @@ namespace IBApp {
     private void OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
       var priceMessage = new TickPriceMessage(requestId, field, price, canAutoExecute);
       var price2 = activeRequests[requestId].Item2;
+      if(priceMessage.Price == 0)
+        return;
       switch(priceMessage.Field) {
         case 1: {
             //BID
@@ -55,9 +57,8 @@ namespace IBApp {
             RaisePriceChanged(price2);
             break;
           }
-        case 9: {
-            //CLOSE
-            //grid[CLOSE_PRICE_INDEX, GetIndex(dataMessage.RequestId)].Value = priceMessage.Price;
+        case 4: {
+            RaisePriceChanged(price2);
             break;
           }
       }

@@ -275,7 +275,8 @@ namespace HedgeHog.Alice.Client {
       #endregion
 
       #region News
-      if(tmTrader.DoNews && DateTime.Now.Subtract(_newsReadLastDate).TotalMinutes > 1) {
+      var doNews = false;
+      if(doNews && tmTrader.DoNews && DateTime.Now.Subtract(_newsReadLastDate).TotalMinutes > 1) {
         _newsReadLastDate = DateTime.Now;
         var now = DateTimeOffset.UtcNow;
         var then = now.AddMinutes(60);
@@ -294,6 +295,8 @@ namespace HedgeHog.Alice.Client {
       Func<TradingMacro, string> timeFrame = tm => tm.BarPeriod > Bars.BarsPeriodType.t1
       ? (tm.RatesArray.Count * tm.BarPeriodInt).FromMinutes().TotalDays.Round(1) + ""
       : TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"h\:mm");
+      var cgp = tmTrader.CurrentGrossInPips;
+      var otgp = tmTrader.OpenTradesGross2InPips;
       return new {
         time = tm0.ServerTime.ToString(timeFormat),
         prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 3),
@@ -317,7 +320,7 @@ namespace HedgeHog.Alice.Client {
         com2 = new { b = tmTrader.CenterOfMassBuy2.Round(digits), s = tmTrader.CenterOfMassSell2.Round(digits), dates = tmTrader.CenterOfMass2Dates ?? new DateTime[0] },
         com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits), dates = tmTrader.CenterOfMass3Dates ?? new DateTime[0] },
         com4 = new { b = tmTrader.CenterOfMassBuy4.Round(digits), s = tmTrader.CenterOfMassSell4.Round(digits), dates = tmTrader.CenterOfMass4Dates ?? new DateTime[0] },
-        bth = tmTrader.BeforeHours.Select(t=>new { t.upDown, t.dates }).ToArray(),
+        bth = tmTrader.BeforeHours.Select(t => new { t.upDown, t.dates }).ToArray(),
         tpls = tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
         tts = HasMinMaxTradeLevels(tmTrader) ? tmTrender.TradeTrends : "",
         tti = GetTradeTrendIndexImpl(tmTrader, tmTrender)
@@ -357,6 +360,9 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region TradeConditions
+    public object[] ReadOffers() {
+      return TradesManagerStatic.dbOffers.Select(o=>new { pair = o.Pair, mmrBuy = o.MMRLong, mmrSell = o.MMRShort }).ToArray();
+    }
     public string[] ReadTradingConditions(string pair) {
       return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, p, name) => name).ToArray());
     }
@@ -513,7 +519,7 @@ namespace HedgeHog.Alice.Client {
     }
     [BasicAuthenticationFilter]
     public void Sell(string pair) {
-      UseTradingMacro(pair, tm => tm.OpenTrade(false, tm.Trades.IsBuy(true).Lots()+ tm.LotSizeByLossSell, "web: sell with reverse"));
+      UseTradingMacro(pair, tm => tm.OpenTrade(false, tm.Trades.IsBuy(true).Lots() + tm.LotSizeByLossSell, "web: sell with reverse"));
     }
     [BasicAuthenticationFilter]
     public void SetRsdTreshold(string pair, int chartNum, int pips) {
@@ -610,9 +616,13 @@ namespace HedgeHog.Alice.Client {
     }
 
     private static DB.Event__News[] ReadNewsFromDb() {
-      var date = DateTimeOffset.UtcNow.AddMinutes(-60);
-      var countries = new[] { "USD", "US", "GBP", "GB", "EUR", "EMU", "JPY", "JP" };
-      return GlobalStorage.UseForexContext(c => c.Event__News.Where(en => en.Time > date && countries.Contains(en.Country)).ToArray());
+      try {
+        var date = DateTimeOffset.UtcNow.AddMinutes(-60);
+        var countries = new[] { "USD", "US", "GBP", "GB", "EUR", "EMU", "JPY", "JP" };
+        return GlobalStorage.UseForexContext(c => c.Event__News.Where(en => en.Time > date && countries.Contains(en.Country)).ToArray());
+      } catch {
+        return new DB.Event__News[0];
+      }
     }
     public Dictionary<string, int> ReadEnum(string enumName) {
       return
@@ -753,6 +763,8 @@ namespace HedgeHog.Alice.Client {
         list2.Add(row("CurrentGross", am.CurrentGross.AutoRound2("$", 2) +
           (ht ? "/" + (am.ProfitPercent).ToString("p1") : "")
           + "/" + (am.OriginalProfit).ToString("p1")));
+        if(tm.Trades.Any())
+          list2.Add(row("Trades GrossPL", tm.Trades.Gross().AutoRound2("$", 2)));
         if(tm.LastTradeLoss != 0)
           list2.Add(row("Last Loss", tm.LastTradeLoss.AutoRound2("$", 2)));
         if(tm.Trades.Any())
@@ -764,10 +776,12 @@ namespace HedgeHog.Alice.Client {
           list2.Add(row("PipAmount", tm.PipAmount.AutoRound2("$", 2)));
         }
         list2.Add(row("PipsToMC", (!ht ? 0 : am.PipsToMC).ToString("n0")));
-        list2.Add(row("LotSizeB", (tm.IsCurrency ? (tm.LotSizeByLossBuy / 1000.0).Floor() + "K/" : tm.LotSizeByLossBuy + "/") + tm.LotSizePercent.ToString("p0")));
-        list2.Add(row("LotSizeS", (tm.IsCurrency ? (tm.LotSizeByLossSell / 1000.0).Floor() + "K/" : tm.LotSizeByLossSell + "/") + tm.LotSizePercent.ToString("p0")));
+        var lsb = (tm.IsCurrency ? (tm.LotSizeByLossBuy / 1000.0).Floor() + "K/" : tm.LotSizeByLossBuy + "/");
+        var lss = (tm.IsCurrency ? (tm.LotSizeByLossSell / 1000.0).Floor() + "K/" : tm.LotSizeByLossSell + "/");
+        var lsp = tm.LotSizePercent.ToString("p0");
+        list2.Add(row("LotSizeBS", lsb + (lsb == lss ? "" : "/" + lss) + lsp));
         if(tm.PendingEntryOrders.Any())
-          list2.Add(row("Pending", tm.PendingEntryOrders.Select(po=>po.Key).ToArray().ToJson(false)));
+          list2.Add(row("Pending", tm.PendingEntryOrders.Select(po => po.Key).ToArray().ToJson(false)));
         return list2;
       }).Concat();
       return list.Concat(more).ToArray();

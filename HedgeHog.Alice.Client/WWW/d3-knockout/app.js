@@ -761,6 +761,16 @@
       if (!s) return;
       setStrategy(s);
     });
+    //#region
+    this.offersDialog = ko.observable();
+    this.offers = ko.observableArray();
+    this.showOffers = function () {
+      serverCall("readOffers", [], function (offers) {
+        this.offers(offers);
+        $(this.offersDialog()).modal("show");
+      }.bind(this));
+    }.bind(this);
+    //#endregion
     this.strategiesDialog = ko.observable();
     var strategyNick = this.strategyNick = ko.observable();
     this.strategyNameInput = ko.observable();

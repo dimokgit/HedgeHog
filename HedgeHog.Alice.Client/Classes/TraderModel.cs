@@ -1196,7 +1196,7 @@ namespace HedgeHog.Alice.Client {
         _default = this;
         Initialize();
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
-        TradesManagerStatic.dbOffers = GlobalStorage.LoadJson<Offer[]>("https://onedrive.live.com/download?resid=CA0EFDC2645EC5F8!51252");
+        TradesManagerStatic.dbOffers = GlobalStorage.LoadJson<Offer[]>("https://raw.githubusercontent.com/dimokgit/HedgeHog/master/HedgeHog.Alice.Client/Settings/Instruments.json");
         _tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
         var activeTradeAccounts = (_tradingAccounts?.Count(ta => ta.IsActive)).GetValueOrDefault();
         if(activeTradeAccounts == 0) {

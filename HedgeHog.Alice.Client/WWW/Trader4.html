@@ -421,6 +421,9 @@
                 <button data-bind="click:showWwwSettings" title="Www Settings">
                   <span class="glyphicon glyphicon-piggy-bank"></span>
                 </button>
+                <button data-bind="click:showOffers" title="Show Offers">
+                  <span class="glyphicon glyphicon-piggy-bank"></span>
+                </button>
                 
               </li>
             </ul>
@@ -754,6 +757,33 @@
         </tr>
       </tbody>
     </table>
+  </div>
+  <!--#endregion-->
+  <!--#region Offers-->
+
+  <div class="modal" data-bind="elementer:offersDialog" id="strategiesDialog" tabindex="-1" role="dialog" aria-labelledby="strategiesDialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <span class="modal-title" id="myModalLabel">Offers</span>
+        </div>
+        <div class="modal-body">
+          <table border="1" cellspacing="0" class="wwwInfo">
+            <tbody data-bind="foreach:offers">
+              <tr>
+                <td data-bind="text:pair"></td>
+                <td data-bind="text:d3.format('.3f')(mmrBuy)"></td>
+                <td data-bind="text:d3.format('.3f')(mmrSell)"></td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   </div>
   <!--#endregion-->
   <!--#region wwwSettings-->
