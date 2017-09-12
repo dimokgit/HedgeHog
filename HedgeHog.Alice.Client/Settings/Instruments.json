@@ -182,8 +182,7 @@
     "BidExpireDate": "0001-01-01T00:00:00",
     "AskExpireDate": "0001-01-01T00:00:00",
     "PointSize": 0.01
-  }
-],
+  },
   {
     "OfferID": null,
     "Pair": "SVXY",
@@ -214,4 +213,3 @@
     "PointSize": 0.01
   }
 ]
-
