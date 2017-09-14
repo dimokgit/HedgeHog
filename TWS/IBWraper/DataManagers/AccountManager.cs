@@ -89,14 +89,37 @@ namespace IBApp {
       _defaultMessageHandler(nameof(AccountManager) + " is ready");
     }
 
-    ConcurrentDictionary<string,DateTime> _mmrScheduler= new ConcurrentDictionary<string, DateTime>();
+    #region WhatIf Subject
+    object _WhatIfSubjectLocker = new object();
+    ISubject<Action> _WhatIfSubject;
+    ISubject<Action> WhatIfSubject {
+      get {
+        lock(_WhatIfSubjectLocker)
+          if(_WhatIfSubject == null) {
+            _WhatIfSubject = new Subject<Action>();
+            _WhatIfSubject
+              //.Throttle(TimeSpan.FromSeconds(1))
+              .Subscribe(a => a(), exc => _defaultMessageHandler(exc));
+          }
+        return _WhatIfSubject;
+      }
+    }
+    void OnWhatIf(Action a) {
+      WhatIfSubject.OnNext(a);
+    }
+    #endregion
+
+    static ConcurrentDictionary<string,DateTime> _mmrScheduler= new ConcurrentDictionary<string, DateTime>();
     private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
-      if(!_mmrScheduler.ContainsKey(e.Price.Pair)) {
-        _mmrScheduler[e.Price.Pair] = DateTime.Now;
-        TaskPoolScheduler.Default.Schedule(TimeSpan.FromSeconds(5), () => {
-          OpenTradeWhatIf(e.Price.Pair, true);
-          OpenTradeWhatIf(e.Price.Pair, false);
-        });
+      var pair = e.Price.Pair;
+      FetchMMR(pair);
+    }
+
+    private void FetchMMR(string pair) {
+      if(!_mmrScheduler.ContainsKey(pair)) {
+        _mmrScheduler[pair] = DateTime.Now;
+        OnWhatIf(() => OpenTradeWhatIf(pair, true));
+        OnWhatIf(() => OpenTradeWhatIf(pair, false));
       }
     }
 
@@ -420,19 +443,18 @@ namespace IBApp {
     #region OpenOrder
     private int NetOrderId() => IbClient.ValidOrderId();
     public PendingOrder OpenTradeWhatIf(string pair, bool buy) {
-      var price = IbClient.GetPrice(pair);
       var anount = GetTrades().Where(t => t.Pair == pair).Select(t => t.GrossPL).DefaultIfEmpty(Account.Equity).Sum() / 2;
-      return OpenTrade(pair, buy, (anount / price.Average).ToInt(), 0, 0, "", price, true);
+      return OpenTrade(pair, buy, pair.IsFuture() ? 1 : 100, 0, 0, "", null, true);
     }
     public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
       return OpenTrade(pair, buy, lots, takeProfit, stopLoss, remark, price, false);
     }
-    public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price, bool whatIf) {
+    public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price_, bool whatIf) {
       var isStock = pair.IsUSStock();
-      price = price ?? IbClient.GetPrice(pair);
-      var rth = new[] { price.Time.Date.AddHours(9.5), price.Time.Date.AddHours(16) };
-      var isPreRTH = isStock && !price.Time.Between(rth);
-      var orderType = isPreRTH ? "LMT" : "MKT";
+      var price = Lazy.Create(() => price_ ?? IbClient.GetPrice(pair));
+      var rth = Lazy.Create(() => new[] { price.Value.Time.Date.AddHours(9.5), price.Value.Time.Date.AddHours(16) });
+      var isPreRTH = !whatIf && isStock && !price.Value.Time.Between(rth.Value);
+      var orderType = whatIf ? "MKT" : isPreRTH ? "LMT" : "MKT";
       var c = ContractSamples.ContractFactory(pair);
       var o = new IBApi.Order() {
         OrderId = NetOrderId(),
@@ -441,16 +463,16 @@ namespace IBApp {
         TotalQuantity = whatIf ? lots : pair.IsUSStock() ? (lots / 100.0).Floor() * 100 : lots,
         Tif = "DAY",
         OutsideRth = isPreRTH,
-        WhatIf = whatIf
+        WhatIf = whatIf,
+        OverridePercentageConstraints = true
       };
-      if(whatIf)
-        o.LmtPrice = buy ? price.Ask : price.Bid;
-      else if(orderType == "LMT") {
+      if(orderType == "LMT") {
         var d = TradesManagerStatic.GetDigits(pair) - 1;
         var offset = isPreRTH ? 1.001 : 1;
-        o.LmtPrice = Math.Round(buy ? price.Ask * offset : price.Bid / offset, d);
+        o.LmtPrice = Math.Round(buy ? price.Value.Ask * offset : price.Value.Bid / offset, d);
       }
       _orderContracts.TryAdd(o.OrderId + "", (o, c));
+      _defaultMessageHandler(o);
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
     }
@@ -682,6 +704,7 @@ namespace IBApp {
             break;
           case "InitMarginReq":
             _mmrScheduler.Clear();
+            TradesManagerStatic.dbOffers.ToObservable().Subscribe(o => FetchMMR(o.Pair));
             InitialMarginRequirement = double.Parse(value);
             break;
         }

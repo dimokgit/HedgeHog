@@ -530,7 +530,9 @@ namespace HedgeHog.Alice.Client {
           }
 
           //GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() =>
-          _logExpandedTargetBlock = new Action(() => IsLogExpanded = false).ScheduleOnUI(10.FromSeconds());
+          try {
+            _logExpandedTargetBlock = new Action(() => IsLogExpanded = false).ScheduleOnUI(10.FromSeconds());
+          } catch(InvalidOperationException) { }
           //);
         } catch(Exception exc) {
           AsyncMessageBox.BeginMessageBoxAsync(exc + "");

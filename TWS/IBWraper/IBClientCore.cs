@@ -60,9 +60,14 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
   private void OnNextValidId(int obj) {
     _validOrderId = obj;
   }
+  [MethodImpl( MethodImplOptions.Synchronized)]
   public int ValidOrderId() {
     //ClientSocket.reqIds(1);
-    return ++_validOrderId;
+    try {
+      return ++_validOrderId;
+    } finally {
+      Trace(new { _validOrderId });
+    }
   }
   public Price GetPrice(string symbol) { return _marketDataManager.GetPrice(symbol); }
   #region Price Changed
