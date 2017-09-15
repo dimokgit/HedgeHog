@@ -30,6 +30,13 @@ namespace IBApp {
       activeRequests.Add(reqId, Tuple.Create(contract,new Price(contract.Instrument)));
     }
 
+    public bool TryGetPrice(string symbol,out Price price) {
+      price = null;
+      if(!_currentPrices.ContainsKey(symbol))
+        return false;
+      price = _currentPrices[symbol];
+      return true;
+    }
     public Price GetPrice(string symbol) {
       if(!_currentPrices.ContainsKey(symbol))
         throw new KeyNotFoundException(new { _currentPrices = new { symbol, not = " found" } } + "");

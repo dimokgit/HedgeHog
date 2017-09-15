@@ -58,7 +58,9 @@ namespace IBApp {
 
     private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
       var price = e.Price;
-      GetAccount().PipsToMC = PipsToMarginCallCore().ToInt();
+      try {
+        GetAccount().PipsToMC = PipsToMarginCallCore().ToInt();
+      } catch { }
       RaisePriceChanged(price);
     }
 
@@ -168,9 +170,10 @@ namespace IBApp {
         return int.MaxValue;
       var pair = trades[0].Pair;
       var offer = GetOffer(pair);
-      var priceAvg = (GetPrice(pair)?.Average).GetValueOrDefault(double.NaN);
-      return trades.Sum(trade =>
-        MoneyAndLotToPips(pair, account.ExcessLiquidity, trade.Lots, priceAvg, GetPipSize(pair)) * trade.Lots) / trades.Lots();
+      return TryGetPrice(pair, out var price)
+        ? trades.Sum(trade =>
+           MoneyAndLotToPips(pair, account.ExcessLiquidity, trade.Lots, price.Average, GetPipSize(pair)) * trade.Lots) / trades.Lots()
+        : 0;
     }
 
 
@@ -506,9 +509,8 @@ namespace IBApp {
 
     public double GetPipSize(string pair) => TradesManagerStatic.GetPointSize(pair);
 
-    public Price GetPrice(string pair) {
-      return _ibClient.GetPrice(pair);
-    }
+    public bool TryGetPrice(string pair,out Price price) => _ibClient.TryGetPrice(pair,out price);
+    public Price GetPrice(string pair) => _ibClient.GetPrice(pair);
 
     public Tick[] GetTicks(string pair, int periodsBack, Func<List<Tick>, List<Tick>> map) {
       throw new NotImplementedException();

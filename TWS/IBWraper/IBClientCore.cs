@@ -69,6 +69,7 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
       Trace(new { _validOrderId });
     }
   }
+  public bool TryGetPrice(string symbol,out Price price) { return _marketDataManager.TryGetPrice(symbol,out price); }
   public Price GetPrice(string symbol) { return _marketDataManager.GetPrice(symbol); }
   #region Price Changed
   private void OnPriceChanged(Price price) {

@@ -80,7 +80,6 @@ namespace IBApp {
       ibClient.OrderStatus += OnOrderStatus;
       //IbClient.ExecDetails += OnExecution;
       IbClient.Position += OnPosition;
-      ibClient.PriceChanged += OnPriceChanged;
       //ibClient.UpdatePortfolio += IbClient_UpdatePortfolio;
       OpenTrades.ItemsAdded.Subscribe(RaiseTradeAdded);
       OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved);
@@ -109,18 +108,9 @@ namespace IBApp {
     }
     #endregion
 
-    static ConcurrentDictionary<string,DateTime> _mmrScheduler= new ConcurrentDictionary<string, DateTime>();
-    private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
-      var pair = e.Price.Pair;
-      FetchMMR(pair);
-    }
-
     private void FetchMMR(string pair) {
-      if(!_mmrScheduler.ContainsKey(pair)) {
-        _mmrScheduler[pair] = DateTime.Now;
         OnWhatIf(() => OpenTradeWhatIf(pair, true));
         OnWhatIf(() => OpenTradeWhatIf(pair, false));
-      }
     }
 
     private void OnError(int reqId, int code, string error, Exception exc) {
@@ -703,8 +693,7 @@ namespace IBApp {
             Account.Balance = Account.Equity - double.Parse(value);
             break;
           case "InitMarginReq":
-            _mmrScheduler.Clear();
-            TradesManagerStatic.dbOffers.ToObservable().Subscribe(o => FetchMMR(o.Pair));
+            TradesManagerStatic.dbOffers.Take(0).ToObservable().Subscribe(o => FetchMMR(o.Pair));
             InitialMarginRequirement = double.Parse(value);
             break;
         }
