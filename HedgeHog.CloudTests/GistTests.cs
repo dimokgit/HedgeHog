@@ -3,10 +3,36 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using HedgeHog.Cloud;
+using Octokit;
 
 namespace HedgeHog.CloudTests {
   [TestClass]
   public class GistTests {
+    [TestMethod]
+    public async Task LoadGitFile() {
+      var ghClient = Cloud.GitHub.ClientFactory();
+      ghClient.Credentials = new Octokit.Credentials("dimokgit", "BudG0tov");
+
+      // github variables
+      var owner = "dimokgit";
+      var repo = "HedgeHog";
+      var branch = "master";
+
+      var targetFile = "HedgeHog.Alice.Client/Settings/Instruments.json";
+
+      try {
+        // try to get the file (and with the file the last commit sha)
+        var existingFile = await ghClient.Repository.Content.GetAllContentsByRef(owner, repo, targetFile, branch);
+
+        // update the file
+        var updateChangeSet = await ghClient.Repository.Content.UpdateFile(owner, repo, targetFile,
+           new UpdateFileRequest("Instruments Update "+DateTime.Now, "Instruments Update " + DateTime.Now, existingFile.First().Sha, branch));
+      } catch(Octokit.NotFoundException) {
+        // if file is not found, create it
+        var createChangeSet = await ghClient.Repository.Content.CreateFile(owner, repo, targetFile, new CreateFileRequest("API File creation", "Hello Universe! " + DateTime.UtcNow, branch));
+      }
+    }
+
     [TestMethod]
     public async Task GistList() {
       var gistName = "test.txt";
