@@ -22,11 +22,28 @@ namespace HedgeHog.Cloud {
     public static string MyApp { get; set; } = "HedgeHog";
     #endregion
     #region Gist Client Factory
-    public static GitHubClient ClientFactory() {
-      var client = new GitHubClient(new ProductHeaderValue(MyApp));
-      //client.Credentials = new Octokit.Credentials("dimokgit", "BudG0tov");
-      client.Credentials = new Octokit.Credentials("dimokgit2", "!Qazxsw2");
-      return client;
+    public static GitHubClient ClientFactoryGit() => ClientFactory("dimokgit", "BudG0tov");
+    public static GitHubClient ClientFactory() => ClientFactory("dimokgit2", "!Qazxsw2");
+    public static GitHubClient ClientFactory(string user, string password) =>
+      new GitHubClient(new ProductHeaderValue(MyApp)) { Credentials = new Octokit.Credentials(user, password) };
+    #endregion
+
+    #region GitHub
+    public static async Task SaveInstruments() {
+      var ghClient = Cloud.GitHub.ClientFactoryGit();
+      var owner = "dimokgit";
+      var repo = "HedgeHog";
+      var branch = "master";
+      var targetFile = "HedgeHog.Alice.Client/Settings/Instruments.json";
+      try {
+        // try to get the file (and with the file the last commit sha)
+        var existingFile = (await ghClient.Repository.Content.GetAllContentsByRef(owner, repo, targetFile, branch)).First();
+        // update the file
+        var updateChangeSet = await ghClient.Repository.Content.UpdateFile(owner, repo, targetFile,
+           new UpdateFileRequest("Instruments Update", existingFile.Content, existingFile.Sha, branch));
+      } catch(Octokit.NotFoundException exc) {
+        throw new Exception(new { repo, branch, targetFile } + "", exc);
+      }
     }
     #endregion
 
@@ -92,9 +109,9 @@ namespace HedgeHog.Cloud {
       gist.Files.ForEach((file, i) => newGist.Files.Add(file.Key, new GistFileUpdate { NewFileName = file.Key.Replace(prefix_, prefix), Content = file.Value.Content }));
       return await ClientFactory().Gist.Edit(gist.Id, newGist);
     }
-    public static async Task GistStrategyDeleteByName(string name, bool permanent,bool archived= false) {
+    public static async Task GistStrategyDeleteByName(string name, bool permanent, bool archived = false) {
       if(permanent) {
-        var tasks = (await GistStrategyFindByName(name,archived))
+        var tasks = (await GistStrategyFindByName(name, archived))
           .Select(async gist => await ClientFactory().Gist.Delete(gist.Id));
         await Task.WhenAll(tasks);
       } else
@@ -118,7 +135,7 @@ namespace HedgeHog.Cloud {
     }
     private static IEnumerable<IEnumerable<T>> MapStrategies<T>(Gist[] gists, Func<string, string, string, Uri, T> map) {
       return from gist in gists
-             select gist.Files.Select(file=> map(CleanStrategyName(file.Key), gist.Description, file.Value.Content, new Uri(gist.HtmlUrl)));
+             select gist.Files.Select(file => map(CleanStrategyName(file.Key), gist.Description, file.Value.Content, new Uri(gist.HtmlUrl)));
     }
 
     private static async Task<string> FetchGistContent(GistFile file) {

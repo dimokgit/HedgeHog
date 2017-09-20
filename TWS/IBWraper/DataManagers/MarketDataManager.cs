@@ -52,19 +52,31 @@ namespace IBApp {
             //BID
             if(price2.Bid == priceMessage.Price)
               break;
-            price2.Bid = priceMessage.Price;
-            RaisePriceChanged(price2);
+            if(priceMessage.Price > 0) {
+              price2.Bid = priceMessage.Price;
+              price2.Time2 = IbClient.ServerTime;
+              RaisePriceChanged(price2);
+            }
             break;
           }
         case 2: {
             //ASK
             if(price2.Ask == priceMessage.Price)
               break;
-            price2.Ask = priceMessage.Price;
-            RaisePriceChanged(price2);
+            if(priceMessage.Price > 0) {
+              price2.Ask = priceMessage.Price;
+              price2.Time2 = IbClient.ServerTime;
+              RaisePriceChanged(price2);
+            }
             break;
           }
         case 4: {
+            if(priceMessage.Price > 0)
+              if(price2.Ask <= 0)
+                price2.Ask = priceMessage.Price;
+            if(price2.Bid <= 0)
+              price2.Bid = priceMessage.Price;
+            price2.Time2 = IbClient.ServerTime;
             RaisePriceChanged(price2);
             break;
           }

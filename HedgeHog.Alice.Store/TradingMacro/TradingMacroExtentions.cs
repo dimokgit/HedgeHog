@@ -1039,7 +1039,7 @@ namespace HedgeHog.Alice.Store {
     public double OpenTradesGross => Trades.Net2();
     public double OpenTradesGross2 => Trades.Net2();
 
-    public double OpenTradesGross2InPips => TradesManager.MoneyAndLotToPips(OpenTradesGross2, Trades.Lots(), Pair); 
+    public double OpenTradesGross2InPips => TradesManager.MoneyAndLotToPips(OpenTradesGross2, Trades.Lots(), Pair);
 
     partial void OnCurrentLossChanged() {
       if(!IsTrader && _CurrentLoss != 0)
@@ -1047,7 +1047,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public int CurrentGrossLot { get { return !IsTrader ? 0 : Trades.Select(t => t.Lots).DefaultIfEmpty(LotSizeByLossBuy.Avg(LotSizeByLossSell)).Sum(); } }
-    public double CurrentGross =>!IsTrader ? 0 : CurrentLoss + OpenTradesGross; 
+    public double CurrentGross => !IsTrader ? 0 : CurrentLoss + OpenTradesGross;
     public double CurrentGrossInPips {
       get {
         return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentGross, CurrentGrossLot, Pair);
@@ -3046,7 +3046,7 @@ namespace HedgeHog.Alice.Store {
           var roundTo = BarPeriod == BarsPeriodType.t1 ? RoundTo.Second : RoundTo.Minute;
           var lastRateDate = ri.BackwardsIterator().Select(r => r.StartDate.Round(roundTo)).FirstOrDefault();
           var priceDate = price.Time.Round(roundTo);
-          if( priceDate > lastRateDate) {
+          if(priceDate > lastRateDate) {
             ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
             if(BarPeriod > 0)
               OnLoadRates();
@@ -4022,6 +4022,7 @@ namespace HedgeHog.Alice.Store {
             : (buy: GetLotsToTrade(account, tr, true), sell: GetLotsToTrade(account, tr, false))))
           .Concat((buy: 0, sell: 0).Yield())
           .Take(1)
+          .Where(_ => CurrentPrice?.Ask > 0 && CurrentPrice?.Bid > 0)
           .ForEach(ls => {
             LotSizePercent = (ls.buy + ls.sell) / 2 / account.Balance / TradesManager.Leverage(Pair, true);
             LotSizeByLossBuy = ls.buy;
