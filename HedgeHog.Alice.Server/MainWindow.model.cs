@@ -142,11 +142,11 @@ namespace HedgeHog.Alice.Server {
     }
 
 
-    void coreFX_LoggedOffEvent(object sender, Order2GoAddIn.LoggedInEventArgs e) {
+    void coreFX_LoggedOffEvent(object sender, Shared.LoggedInEventArgs e) {
       IsLoggedIn = coreFX.IsLoggedIn;
     }
 
-    void coreFX_LoggedInEvent(object sender, Order2GoAddIn.LoggedInEventArgs e) {
+    void coreFX_LoggedInEvent(object sender, Shared.LoggedInEventArgs e) {
       IsLoggedIn = coreFX.IsLoggedIn;
     }
 

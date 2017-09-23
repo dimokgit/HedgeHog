@@ -762,6 +762,8 @@
     <Content Include="Scripts\jquery.signalR-2.2.1.js" />
     <Content Include="Scripts\jquery.signalR-2.2.1.min.js" />
     <Content Include="Settings\EURUSD%281%29_Last.txt" />
+    <Resource Include="Settings\RadDocking.xml" />
+    <Resource Include="Settings\Settings.xml" />
     <Content Include="Settings\USDJPY%282%29_Last.txt" />
     <Content Include="WWW\bower\bower_components\d3\.gitattributes" />
     <Content Include="WWW\bower\bower_components\d3\d3.js" />

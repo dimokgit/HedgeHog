@@ -162,7 +162,7 @@ namespace HedgeHog {
     /// <param name="i">Value position</param>
     /// <returns>Regression value by position</returns>
     public static double RegressionValue(this double[] coeffs, int i) {
-      double y = 0; int j = 0;
+      double y = 0; 
       int n = coeffs.Length;
       if (n == 2) {
         y = coeffs[0] + coeffs[1] * i;

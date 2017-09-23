@@ -90,9 +90,10 @@ namespace HedgeHog.Alice.Server {
     void CoreFX_LoggedInEvent(object sender, LoggedInEventArgs e) {
       _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
         h => h, h => _fw.PriceChanged += h, h => _fw.PriceChanged -= h)
-        .GroupByUntil(pca=>pca.EventArgs.Pair,(d)=>Observable.Timer(55.FromSeconds()))
-        .Select(go=>go.TakeLast(1))
-        .Subscribe(go => go.Subscribe(pce=> fw_PriceChanged(pce.Sender, pce.EventArgs)))
+        //.GroupByUntil(pca=>pca.EventArgs.Pair,(d)=>Observable.Timer(55.FromSeconds()))
+        //.Select(go=>go.TakeLast(1))
+        //.Subscribe(go => go.Subscribe(pce => fw_PriceChanged(pce.Sender, pce.EventArgs)))
+        .Subscribe(pce=> fw_PriceChanged(pce.Sender, pce.EventArgs))
         //.Subscribe(el => {
         //  el.GroupBy(e2 => e2.EventArgs.Pair).Select(e2 => e2.Last()).ToList()
         //    .ForEach(ie => fw_PriceChanged(ie.Sender, ie.EventArgs));

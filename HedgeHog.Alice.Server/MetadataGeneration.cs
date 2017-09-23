@@ -14,15 +14,6 @@ using System.Linq.Expressions;
 
 namespace HedgeHog.Alice.Server.XamlMetadata.Metadata
 {
-    /// <summary>Metadata for XAML App.xaml</summary>
-    public static class AppXamlMetadata
-    {
-            /// <summary>Represents x:Key="Locator"/></summary>
-            public static string LocatorKey { get { return "Locator"; } }
-
-
-    }
-
 }
 
 
@@ -58,37 +49,37 @@ namespace HedgeHog.Alice.Server.Metadata
                 /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.RaiseReLoadRates"/></summary>
         public const string RaiseReLoadRates = "RaiseReLoadRates";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._Rates"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{TBar}._Rates"/></summary>
         public const string _Rates = "_Rates";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Rates"/></summary>
         public const string Rates = "Rates";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._BidHighToAskLowRatio"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{TBar}._BidHighToAskLowRatio"/></summary>
         public const string _BidHighToAskLowRatio = "_BidHighToAskLowRatio";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.BidHighToAskLowRatio"/></summary>
         public const string BidHighToAskLowRatio = "BidHighToAskLowRatio";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._BidHighToAskLowRatioMA"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{TBar}._BidHighToAskLowRatioMA"/></summary>
         public const string _BidHighToAskLowRatioMA = "_BidHighToAskLowRatioMA";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.BidHighToAskLowRatioMA"/></summary>
         public const string BidHighToAskLowRatioMA = "BidHighToAskLowRatioMA";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._StatsFramePeriods"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{TBar}._StatsFramePeriods"/></summary>
         public const string _StatsFramePeriods = "_StatsFramePeriods";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.StatsFramePeriods"/></summary>
         public const string StatsFramePeriods = "StatsFramePeriods";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._Period"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{TBar}._Period"/></summary>
         public const string _Period = "_Period";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Period"/></summary>
         public const string Period = "Period";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._Periods"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{TBar}._Periods"/></summary>
         public const string _Periods = "_Periods";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Periods"/></summary>
@@ -97,19 +88,19 @@ namespace HedgeHog.Alice.Server.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Pair"/></summary>
         public const string Pair = "Pair";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._LastDate"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{TBar}._LastDate"/></summary>
         public const string _LastDate = "_LastDate";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.LastDate"/></summary>
         public const string LastDate = "LastDate";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._Count"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{TBar}._Count"/></summary>
         public const string _Count = "_Count";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Count"/></summary>
         public const string Count = "Count";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._PullsCount"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{TBar}._PullsCount"/></summary>
         public const string _PullsCount = "_PullsCount";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.PullsCount"/></summary>
@@ -443,31 +434,6 @@ namespace HedgeHog.Alice.Server.Properties.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.Properties.Settings.Default"/></summary>
         public static PropertyPath DefaultPath { get { return new PropertyPath("Default"); } }
-
-    }
-
-}
-
-namespace HedgeHog.Alice.Server.ViewModel.Metadata
-{
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Server.ViewModel.MainViewModel"/></summary>
-    public static class MainViewModelMetadata
-    {
-        
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Server.ViewModel.ViewModelLocator"/></summary>
-    public static class ViewModelLocatorMetadata
-    {
-                /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.ViewModel.ViewModelLocator.Main"/></summary>
-        public const string Main = "Main";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.ViewModel.ViewModelLocator.Cleanup"/></summary>
-        public const string Cleanup = "Cleanup";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.ViewModel.ViewModelLocator.Main"/></summary>
-        public static PropertyPath MainPath { get { return new PropertyPath("Main"); } }
 
     }
 

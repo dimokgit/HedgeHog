@@ -63,20 +63,12 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EnumerableHH, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\TicketBuster\packages\HedgeHog.Common.1.0.0\lib\net40\EnumerableHH.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.Interactive, Version=3.0.1000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
       <HintPath>..\..\..\..\Source\Repos\ICE\Git\Webs\CIP\Sulutions\packages\System.Interactive.3.1.1\lib\net45\System.Interactive.dll</HintPath>
       <Private>True</Private>
-    </Reference>
-    <Reference Include="TA-Lib-Core, Version=1.0.2813.38892, Culture=neutral, PublicKeyToken=fdb2a6b268f56aa5, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\TicketBuster\packages\HedgeHog.Common.1.0.0\lib\net40\TA-Lib-Core.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -135,8 +127,8 @@
   <PropertyGroup>
     <PostBuildEvent>REM Create a NuGet package for this project and place the .nupkg file in the project's output directory.
 REM If you see this in Visual Studio's Error List window, check the Output window's Build tab for the actual error.
-ECHO Creating NuGet package in Post-Build event...
-PowerShell -NoProfile -ExecutionPolicy Bypass -Command "&amp; '$(ProjectDir)_CreateNewNuGetPackage\DoNotModify\CreateNuGetPackage.ps1' -ProjectFilePath '$(ProjectPath)' -OutputDirectory '$(TargetDir)' -BuildConfiguration '$(ConfigurationName)' -BuildPlatform '$(PlatformName)'"</PostBuildEvent>
+REM ECHO Creating NuGet package in Post-Build event...
+REM PowerShell -NoProfile -ExecutionPolicy Bypass -Command "&amp; '$(ProjectDir)_CreateNewNuGetPackage\DoNotModify\CreateNuGetPackage.ps1' -ProjectFilePath '$(ProjectPath)' -OutputDirectory '$(TargetDir)' -BuildConfiguration '$(ConfigurationName)' -BuildPlatform '$(PlatformName)'"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
