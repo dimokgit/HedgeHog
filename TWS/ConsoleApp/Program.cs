@@ -26,11 +26,9 @@ namespace ConsoleApp {
       ibClient.CommissionByTrade = (t) => 2;
       ibClient.NextValidId += id => _nextValidId = id;
       ibClient.CurrentTime += time => HandleMessage("Current Time: " + ibClient.ServerTime + "\n");
-      ibClient.Error += HandleError;
-      ibClient.OpenOrder += OnOpenOrder;
 
       var coreFx = ibClient as ICoreFX;
-      coreFx.LoginError += HandleError;
+      //coreFx.LoginError += HandleError;
       coreFx.SubscribeToPropertyChanged(ibc => ibc.SessionStatus, ibc => HandleMessage(new { ibc.SessionStatus } + ""));
       //ibClient.PriceChanged += OnPriceChanged;
 
@@ -38,23 +36,26 @@ namespace ConsoleApp {
       var usdJpi2 = ContractSamples.FxContract("usd/jpy");
       var gold = ContractSamples.Commodity("XAUUSD");
       var es = ContractSamples.ContractFactory("ESM7");
+      var vx = ContractSamples.ContractFactory("VXH8");
       var spy = ContractSamples.ContractFactory("SPY");
-      var contract = spy;
-      if(ibClient.LogOn("simulator", 7497 + "", 102 + "", false)) {
+      var contract = vx;
+      if(ibClient.LogOn("127.0.0.1", 7497 + "", 102 + "", false)) {
         ibClient.SetOfferSubscription(contract.Instrument);
-        var dateEnd = new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
-        var counter = 0;
-        HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
-        if(false)
-          new HistoryLoader<Rate>(ibClient, contract, 14400 * 2, dateEnd, TimeSpan.FromHours(4), TimeUnit.S, BarSize._1_secs,
+        if(true) {
+          var dateEnd = new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
+          HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
+          var counter = 0;
+          new HistoryLoader<Rate>(ibClient, contract, 1800 * 1, dateEnd, TimeSpan.FromHours(4), TimeUnit.S, BarSize._1_secs,
              map,
              list => HandleMessage(new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate } } + ""),
              dates => HandleMessage(new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter } + ""),
-             exc => HandleError(exc));
-        var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp=>sp.LoadRates).ToArray());
-        var dateStart = DateTime.UtcNow.Date.ToLocalTime().AddMonths(-1).AddDays(-2);
-        foreach(var sp in sp500.Select(b => b.Symbol)) {
-          HedgeHog.Alice.Store.PriceHistory.AddTicks(fw, 1, sp, dateStart, o => HandleMessage(o + ""));
+             exc => { });
+        } else {
+          var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp => sp.LoadRates).ToArray());
+          var dateStart = DateTime.UtcNow.Date.ToLocalTime().AddMonths(-1).AddDays(-2);
+          foreach(var sp in sp500.Select(b => b.Symbol)) {
+            HedgeHog.Alice.Store.PriceHistory.AddTicks(fw, 1, sp, dateStart, o => HandleMessage(o + ""));
+          }
         }
       }
       HandleMessage("Press any key ...");
@@ -62,10 +63,6 @@ namespace ConsoleApp {
       ibClient.Logout();
       HandleMessage("Press any key ...");
       Console.ReadKey();
-    }
-
-    private static void OnOpenOrder(int reqId, Contract contract, IBApi.Order order, OrderState orderState) {
-      HandleMessage(new { reqId, contract, order, orderState }.ToJson());
     }
 
     private static void OnPriceChanged(Price price) {
@@ -76,6 +73,7 @@ namespace ConsoleApp {
     static void HandleError(Exception ex) {
       HandleError(-1, -1, "", ex);
     }
+
     static void HandleError(int id, int errorCode, string str, Exception ex) {
       if(ex != null)
         Console.Error.WriteLine("Error: " + ex);

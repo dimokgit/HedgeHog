@@ -224,7 +224,7 @@ namespace IBApi
 
         public override string ToString()
         {
-            return SecType + " " + Symbol + " " + Currency + " " + Exchange;
+            return $"{SecType} {Symbol ?? LocalSymbol} {Currency} {Exchange}";
         }
     }
 }

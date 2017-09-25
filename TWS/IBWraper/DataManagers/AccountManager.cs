@@ -38,7 +38,8 @@ namespace IBApp {
     private bool accountUpdateRequestActive = false;
     private string _accountId;
     private readonly Action<object> _defaultMessageHandler;
-    private Action<object> _verbous => _defaultMessageHandler;
+    private bool _useVerbouse = false;
+    private Action<object> _verbous => _useVerbouse ? _defaultMessageHandler : o => { };
     private readonly string _accountCurrency="USD";
     #endregion
 
@@ -320,10 +321,10 @@ namespace IBApp {
     ConcurrentDictionary<string,(IBApi.Order order, IBApi.Contract contract)> _orderContracts = new ConcurrentDictionary<string, (IBApi.Order order, IBApi.Contract contract)>();
     private void OnOrderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld) {
       OnOrderStatusPush(new OrderStatusArguments(orderId, status, filled, remaining, avgFillPrice));
-      _defaultMessageHandler(new { OrderStatus = new { orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld } });
+      _defaultMessageHandler(new { OrderStatus = status, orderId,  filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld } );
     }
     private void OnOrderStatusImpl(OrderStatusArguments arg) {
-      _verbous(new { OrderStatusImpl = arg });
+      _defaultMessageHandler(new { OrderStatusImpl = arg });
       DoOrderStatus(arg.OrderId + "", arg.AvgFillPrice, arg.Filled.ToInt());
       RaiseOrderRemoved(arg.OrderId);
     }

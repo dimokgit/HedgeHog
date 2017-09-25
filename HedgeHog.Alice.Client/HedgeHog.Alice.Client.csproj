@@ -764,6 +764,7 @@
     <Content Include="Settings\EURUSD%281%29_Last.txt" />
     <Resource Include="Settings\RadDocking.xml" />
     <Resource Include="Settings\Settings.xml" />
+    <Content Include="Settings\Exported-2017-09-23.vssettings" />
     <Content Include="Settings\USDJPY%282%29_Last.txt" />
     <Content Include="WWW\bower\bower_components\d3\.gitattributes" />
     <Content Include="WWW\bower\bower_components\d3\d3.js" />

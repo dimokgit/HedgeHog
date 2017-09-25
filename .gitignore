@@ -37,3 +37,5 @@ _ReSharper*/
 *.opendb
 *.sdf
 sync.ffs_db
+/AllInOne/SQL_DateFuncs/SQL_DateFuncs.jfm
+/AllInOne/SQL_DateFuncs/SQL_DateFuncs.dbmdl
