@@ -129,15 +129,15 @@
     return $.connection.hub.state === 1;
   }
   function askRates() {
-    if (!isConnected() || isInFlight(ratesInFlight,0))
+    if (!isConnected() || isInFlight(ratesInFlight, 0))
       return;
     ratesInFlight = new Date();
     chat.server.askRates(1200, dataViewModel.firstDate().toISOString(), dataViewModel.lastDate().toISOString(), pair, 't1')
       .done(function (response) {
         Enumerable.from(response)
-        .forEach(function (r) {
-          dataViewModel.updateChart(r);
-        });
+          .forEach(function (r) {
+            dataViewModel.updateChart(r);
+          });
         resetPlotter2();
       })
       .fail(function (e) {
@@ -147,15 +147,15 @@
       });
   }
   function askRates2() {
-    if (!isConnected() || isInFlight(ratesInFlight2,2))
+    if (!isConnected() || isInFlight(ratesInFlight2, 2))
       return;
     ratesInFlight2 = new Date();
     chat.server.askRates(1200, dataViewModel.firstDate2().toISOString(), dataViewModel.lastDate2().toISOString(), pair, 'M1')
       .done(function (response) {
         Enumerable.from(response)
-        .forEach(function (r) {
-          dataViewModel.updateChart2(r);
-        });
+          .forEach(function (r) {
+            dataViewModel.updateChart2(r);
+          });
       }).fail(function (e) {
         showErrorPerm(e, keyNote("askRates2"));
       }).always(function () {
@@ -226,7 +226,7 @@
           delay: isCustom ? 5000 : 1000
         });
       })
-    ;
+      ;
     if ($.isFunction(done)) r.done(function (data) {
       done(data, note);
     });
@@ -241,7 +241,7 @@
 
     // #region Locals
     function lineChartDataEmpty() {
-      return [{ d: new Date("1/1/1900"),do: new Date("1/1/1900"), c: 0, v: 0, m: 0 }];// jshint ignore:line
+      return [{ d: new Date("1/1/1900"), do: new Date("1/1/1900"), c: 0, v: 0, m: 0 }];// jshint ignore:line
     }
     // #endregion
     this.isVirtual = ko.observable(true);
@@ -359,10 +359,10 @@
     function moveCorridorWavesCount(chartIndex, step) {
       if (chartIndex !== 0) return alert("chartIndex:" + chartIndex + " is not supported");
       var name = "PriceCmaLevels_";
-      readTradeSettings(chartIndex,function (ts) {
+      readTradeSettings(chartIndex, function (ts) {
         var value = Math.round((ts[name].v + step / 10) * 10) / 10;
-        saveTradeSetting(chartIndex,name, value, function (ts,note) {
-          var pcl = (ts||{})[name].v;
+        saveTradeSetting(chartIndex, name, value, function (ts, note) {
+          var pcl = (ts || {})[name].v;
           note.update({
             type: "success",
             text: "Set " + name + " to " + pcl,
@@ -389,15 +389,15 @@
     /**
      * @param {Object} ts
      */
-    function saveTradeSetting(chartNum, name, value,done) {
+    function saveTradeSetting(chartNum, name, value, done) {
       var ts = {};
       ts[name] = value;
-      serverCall("saveTradeSettings", [pair,chartNum, ts], done);
+      serverCall("saveTradeSettings", [pair, chartNum, ts], done);
     }
     function saveTradeSettings(chartNum) {
       var ts = settingsGrid().jqPropertyGrid('get');
       settingsGrid().empty();
-      serverCall("saveTradeSettings", [pair,chartNum, ts]);
+      serverCall("saveTradeSettings", [pair, chartNum, ts]);
     }
     function readTradeSettings(chartNum, done) {
       if (arguments.length !== 2) return alert("readTradeSettings must have two arguments");
@@ -498,6 +498,7 @@
     this.tradeConditions = ko.observableArray([]);
     var closedTrades = [];
     var mustShowClosedTrades2 = ko.observable(true);
+    this.mustShowClosedTrades = ko.pureComputed(function () { return mustShowClosedTrades2() });
     this.showClosedTrades2Text = ko.pureComputed(function () { return mustShowClosedTrades2() ? "ON" : "OFF"; });
     this.toggleClosedTrades2 = function () {
       mustShowClosedTrades2(!mustShowClosedTrades2());
@@ -544,10 +545,10 @@
     // #region tradeConditions
     this.tradingConditionsReady = ko.observable(false);
     this.readTradingConditions = readTradingConditions;
-    this.saveTradeConditions = saveChecked.bind(null,self.tradeConditions, "setTradingConditions");
-    this.getTradingConditions = getChecked.bind(null,self.tradingConditionsReady, "getTradingConditions", self.tradeConditions) ;
+    this.saveTradeConditions = saveChecked.bind(null, self.tradeConditions, "setTradingConditions");
+    this.getTradingConditions = getChecked.bind(null, self.tradingConditionsReady, "getTradingConditions", self.tradeConditions);
     // #endregion
-    function getChecked(isReadeObservable,serverMethod,checkedSubject) {
+    function getChecked(isReadeObservable, serverMethod, checkedSubject) {
       isReadeObservable(false);
       function hasName(name) { return function (name2) { return name === name2; }; }
       serverCall(serverMethod, [pair], function (tcs) {
@@ -557,7 +558,7 @@
         isReadeObservable(true);
       });
     }
-    function saveChecked (checkeds,serverMethod) {
+    function saveChecked(checkeds, serverMethod) {
       var tcs = checkeds()
         .filter(function (tc) {
           return tc.checked();
@@ -652,8 +653,8 @@
     this.wwwSettingProperties = ko.pureComputed(function () {
       function gettype(v) { return typeof v === "boolean" ? "checkbox" : "text" }
       return [
-          { n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
-          { n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
+        { n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
+        { n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
       ];
     });
     this.showWwwSettings = function () {
@@ -696,7 +697,7 @@
 
     }
     function getWwwInfo(chartNum) {
-      var args =[pair, chartNum];
+      var args = [pair, chartNum];
       args.noNote = true;
       var foo = getWwwInfo.bind(null, chartNum);
       serverCall("getWwwInfo", args,
@@ -723,7 +724,7 @@
     this.syncTradeConditionInfos = function (tci) {
       sync(tradeConditionsInfosAnd, toKoDictionary(tci.And || {}));
       sync(tradeConditionsInfosOr, toKoDictionary(tci.Or || {}));
-      function sync(tradeConditionsInfos,tcid) {
+      function sync(tradeConditionsInfos, tcid) {
         while (tradeConditionsInfos().length > tcid.length)
           tradeConditionsInfos.pop();
         var i = 0, l = tradeConditionsInfos().length;
@@ -746,7 +747,7 @@
       });
     }
     var strategies = this.strategies = ko.observableArray();
-    this.strategiesFiltered = ko.pureComputed(function(){
+    this.strategiesFiltered = ko.pureComputed(function () {
       return strategies().filter(function (s) {
         return s.nick.match(new RegExp(strategyFilter(), "i"));
       });
@@ -798,7 +799,7 @@
     var setStrategy = this.setStrategy = function (strategy) {
       var strategyNick = (strategy || {}).nick || this.strategyNick();
       if (!strategyNick) return showErrorPerm("Empty strategy nick");
-      serverCall("loadStrategy", [pair,strategyNick ], " loading <b>" + strategyNick + "</b>")
+      serverCall("loadStrategy", [pair, strategyNick], " loading <b>" + strategyNick + "</b>")
         .done(function () {
           $(this.strategyNameDialog()).modal("hide");
           this.hideStrategies();
@@ -843,7 +844,7 @@
     var updateChartCmas = [ko.observable(), ko.observable()];
     this.stats = { ucia: updateChartIntervalAverages, ucCmas: updateChartCmas };
     this.mustShowStata = ko.pureComputed(function () {
-      return 
+      return
     });
     this.isTradingActive = isTradingActive = ko.observable(true);
     function updateChart(response) {
@@ -905,7 +906,7 @@
       lineChartData2.unshift.apply(lineChartData2, rates2);
       if (response.isTrader) {
         tradeLevels(response.tradeLevels);
-        openTrades(response.trades);
+        openTrades(mustShowClosedTrades2() ? response.trades : []);
       }
       var closedTradesLocal = mustShowClosedTrades2()
         ? closedTrades.map(function (ct) { return $.extend(true, {}, ct); })
@@ -920,8 +921,8 @@
       var moreDates = []
         .concat(response.waveLines.map(mapDates))
         .concat(closedTradesLocal.map(mapDates))
-        .concat(trends.map(mapDates))        
-        .concat(bth.map(mapDates))        
+        .concat(trends.map(mapDates))
+        .concat(bth.map(mapDates))
         .concat([com, com2, com3, com4].map(mapDates));
       var ratesAll = continuoseDates("minute", lineChartData2(), moreDates);
       var shouldUpdateData = true;
@@ -964,11 +965,11 @@
     // #region FirstDate
     this.firstDate = firstDate;
     this.firstDate2 = firstDate2;
-    function firstDateImpl(lineChartData,key) {
+    function firstDateImpl(lineChartData, key) {
       return (lineChartData()[0] || {})[key];
     }
     function firstDate() {
-      return firstDateImpl(lineChartData,'d');
+      return firstDateImpl(lineChartData, 'd');
     }
     function firstDate2() {
       return firstDateImpl(lineChartData2, 'do');
@@ -985,7 +986,7 @@
     var movingAverageType = this.movingAverageType = ko.observableArray()
     var barsPeriodType = this.barsPeriodType = ko.observableArray()
     var strategyType = this.strategyType = ko.observableArray();
-    
+
     var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
     // #endregion
     // #region GetAccounting
@@ -1034,7 +1035,7 @@
     //#region WaveRanges
     var currentWareRangesChartNum = 1;
     function getWaveRanges() {
-      var args = [pair,currentWareRangesChartNum];
+      var args = [pair, currentWareRangesChartNum];
       args.noNote = true;
       serverCall("getWaveRanges", args,
         function (wrs) {
@@ -1053,9 +1054,9 @@
     }
     var waveRangesDialog;
     var sumStartIndex = ko.observable(0);
-    function waveRangeValue(prop,wr) { return wr[prop].v; }
+    function waveRangeValue(prop, wr) { return wr[prop].v; }
     this.waveRangesDialog = function (element) {
-      var table = $(element).find("table") ;
+      var table = $(element).find("table");
       waveRangesDialog = table[0];
       table.on("click", "tbody tr", function (a, b) {
         var koData = ko.dataFor(this);
@@ -1102,7 +1103,7 @@
       var wr = fuzzyFind(waveRanges(), waveRangeValue.bind(null, waveRangesUidProp), uid);
       return waveRanges().indexOf(wr);
     }
-    function sumByIndex (prop) {
+    function sumByIndex(prop) {
       var i = sumStartIndexById();
       return i <= 0
         ? 0
@@ -1116,7 +1117,7 @@
       $(waveRangesDialog).dialog({
         title: "Wave Ranges",
         width: "auto",
-        dialogClass:"dialog-compact",
+        dialogClass: "dialog-compact",
         dragStop: function (event, ui) {
           $(this).dialog({
             width: "auto",
@@ -1158,7 +1159,7 @@
       $(replayDialog()).dialog({
         title: "Replay Controls",
         width: "auto",
-        minHeight:20,
+        minHeight: 20,
         dragStop: function (event, ui) {
           $(this).dialog({
             width: "auto",
@@ -1209,11 +1210,11 @@
       return root;
     }
     function chartDataFactory(data, trends, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross, tpsHigh, tpsLow, canBuy, canSell, waveLines) {
-      function shrikData(data) { return data.length > 50 ? data : [];}
+      function shrikData(data) { return data.length > 50 ? data : []; }
       return {
         data: data ? shrikData(ko.unwrap(data)) : [],
         trends: trends,
-        waveLines:waveLines,
+        waveLines: waveLines,
         tradeLevels: tradeLevels,
         askBid: askBid || {},
         trades: trades || [],
@@ -1235,7 +1236,7 @@
         tpsLow: tpsLow,
 
         canBuy: canBuy,
-        canSell:canSell
+        canSell: canSell
       };
     }
     function continuoseDates(interval, data, dates) {// jshint ignore:line
@@ -1344,14 +1345,14 @@
     // #region Start the connection.
     //$.connection.hub.logging = true;
     $.connection.hub.start().done(function (a) {
-      try{
+      try {
         showInfo(JSON.parse(a.data)[0].name + " started");
       } catch (e) {
         showErrorPerm("Unexpected start data:\n" + JSON.stringify(a.data) + "\nNeed refresh");
         return;
       }
       serverCall("availibleSymbols", [], function (pairs) {
-        if (pair) {
+        if (pair && pairs.length) {
           if (pairs.some(function (p) { return p.toUpperCase() === pair; }))
             return afterPairIsAvailible();
           return showErrorPerm(JSON.stringify({ pair: pair, pairs: pairs }));
@@ -1361,13 +1362,13 @@
             case 0:
               showErrorPerm(JSON.stringify({ pairs: pairs }));
               break;
-            case 1:
-              pair = pairs[0];
+            default:
+              pair = pair || pairs[0];
               showWarning("Using " + pair);
               afterPairIsAvailible();
+              if (pairs.length > 1)
+                showErrorPerm(JSON.stringify({ pairs: pairs }));
               break;
-            default:
-              showErrorPerm(JSON.stringify({ pairs: pairs }));
           }
       });
 
@@ -1537,7 +1538,7 @@
     return showWarning(message, $.extend({ delay: 0, hide: false }, settings));
   }
   function showWarning(message, settings) {
-    return notify(message,"warning", settings);
+    return notify(message, "warning", settings);
   }
   function showSuccess(message, settings) {// jshint ignore:line
     return notify(message, "success", $.extend({ type: "success" }, settings));
@@ -1552,7 +1553,7 @@
     return note;
   }
   /* jshint ignore:end */
-  function showErrorPerm(message,settings) {
+  function showErrorPerm(message, settings) {
     if (isMobile) return showWarning(message, settings);
     return showError(message, $.extend({ delay: 0, hide: false }, settings));
   }

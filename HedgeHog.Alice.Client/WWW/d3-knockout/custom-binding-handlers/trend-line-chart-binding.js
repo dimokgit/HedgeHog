@@ -383,6 +383,7 @@
       var trendLines3 = trends[4];
       var openTrades = chartData.trades;
       var openBuy = openTrades.buy, openSell = openTrades.sell;
+      var mustShowClosedTrades = viewModel.mustShowClosedTrades();
       var closedTrades = chartData.closedTrades;
       var isTradingActive = chartData.isTradingActive;
       var shouldUpdateData = chartData.shouldUpdateData || svgChanged;
@@ -472,9 +473,9 @@
         , sbchnum(tradeLevels && canBuy ? tradeLevels.buy : yDomain[1])
         , sbchnum(tradeLevels && canSell ? tradeLevels.sell : yDomain[1])
         , sbchnum(
-          openBuy && tradeLevels
+          mustShowClosedTrades && openBuy && tradeLevels
             ? tradeLevels.buyClose
-            : openSell && tradeLevels
+            : mustShowClosedTrades && openSell && tradeLevels
               ? tradeLevels.sellClose
               : yDomain[1])]);
       var xDomain = viewModel.chartArea[chartNum].xDomain = d3.extent(data, function (d) { return d.d; });
