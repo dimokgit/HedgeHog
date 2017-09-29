@@ -148,6 +148,7 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
   static int[] _warningCodes = new[] { 2104, 2106 };
   static bool IsWarning(int code) => _warningCodes.Contains(code);
   private void OnError(int id, int errorCode, string message, Exception exc) {
+    
     if(IsWarning(errorCode)) return;
     if(exc is System.Net.Sockets.SocketException && !ClientSocket.IsConnected())
       RaiseLoginError(exc);

@@ -6,9 +6,21 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using System.IO;
+using System.Runtime.ExceptionServices;
+using System.Net;
 
 namespace HedgeHog.Core {
   public static class JsonExtensions {
+    public static IEnumerable<T> LoadJson<T>(string path, Action<Exception> error) =>
+      from json in Common.LoadText(path).Catch<string, Exception>(exc => {
+        if(error == null) ExceptionDispatchInfo.Capture(exc).Throw();
+        error(exc);
+        return new string[0];
+      })
+      from t in json.FromJson<T>(error)
+      select t;
+
     public static string ToJson(this object obj) {
       var settings = new Newtonsoft.Json.JsonSerializerSettings() {
         ReferenceLoopHandling = ReferenceLoopHandling.Ignore
@@ -16,14 +28,26 @@ namespace HedgeHog.Core {
       settings.Converters.Add(new StringEnumConverter());
       return Newtonsoft.Json.JsonConvert.SerializeObject(obj, settings);
     }
-    public static T FromJson<T>(this string json) {
-      var settings = new Newtonsoft.Json.JsonSerializerSettings();
+    public static IEnumerable<T> FromJson<T>(this string json) => json.FromJson<T>(null);
+    public static IEnumerable<T> FromJson<T>(this string json, Action<Exception> error) {
+      var hasError = false;
+      var settings = new Newtonsoft.Json.JsonSerializerSettings {
+        Error = (s, e) => {
+          if(error == null)
+            ExceptionDispatchInfo.Capture(e.ErrorContext.Error).Throw();
+          e.ErrorContext.Handled = true;
+          error(e.ErrorContext.Error);
+          hasError = true;
+        }
+      };
       settings.Converters.Add(new StringEnumConverter());
-      return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json, settings);
+      var ret= JsonConvert.DeserializeObject<T>(json, settings);
+      if(hasError) yield break;
+      yield return ret;
     }
     public static bool TryFromJson<T>(this string json, out T v) {
       try {
-        v = json.FromJson<T>();
+        v = json.FromJson<T>().Single();
         return true;
       } catch {
         v = default(T);
