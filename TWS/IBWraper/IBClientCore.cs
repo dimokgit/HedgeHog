@@ -12,8 +12,18 @@ using System.Runtime.CompilerServices;
 using static EpochTimeExtensions;
 using IBApp;
 using HedgeHog.Core;
+using System.Collections.Specialized;
+using System.Configuration;
 
 public class IBClientCore : IBClient, IPricer, ICoreFX {
+  class Configer {
+    static NameValueCollection section;
+    public static int[] WarningCodes;
+    static Configer() {
+      section = ConfigurationManager.GetSection("IBSettings") as NameValueCollection;
+      WarningCodes = section["WarningCodes"].Split(',').Select(int.Parse).ToArray();
+    }
+  }
   #region Fields
   EReaderMonitorSignal _signal;
   private int _port;
@@ -145,8 +155,8 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
     ((EWrapper)this).error(exc);
   }
 
-  static int[] _warningCodes = new[] { 2104, 2106 };
-  static bool IsWarning(int code) => _warningCodes.Contains(code);
+  static int[] _warningCodes = new[] { 2104, 2106, 2108 };
+  static bool IsWarning(int code) => Configer.WarningCodes.Contains(code);
   private void OnError(int id, int errorCode, string message, Exception exc) {
     
     if(IsWarning(errorCode)) return;
