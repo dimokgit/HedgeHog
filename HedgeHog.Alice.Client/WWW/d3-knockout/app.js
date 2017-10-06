@@ -1630,6 +1630,8 @@
     dataViewModel.inPause(response.ip);
     delete response.ip;
 
+    dataViewModel.vfs = !!response.vfs;
+    delete response.vfs;
 
     $('#discussion').text(JSON.stringify(response).replace(/["{}]/g, ""));
 

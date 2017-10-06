@@ -180,16 +180,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    class AdjustCmaPassesAsyncBuffer : AsyncBuffer<AdjustCmaPassesAsyncBuffer, Action> {
-      public AdjustCmaPassesAsyncBuffer() : base() {
-
-      }
-      protected override Action PushImpl(Action context) {
-        return context;
-      }
-    }
-    AdjustCmaPassesAsyncBuffer _adjustCmaPassesAsyncBuffer = new AdjustCmaPassesAsyncBuffer();
-
     #region CmaPassesMin
     private int _CmaPassesMin = 5;
     [Category(categoryActive)]

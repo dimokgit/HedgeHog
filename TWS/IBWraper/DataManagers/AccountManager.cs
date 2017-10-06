@@ -21,15 +21,15 @@ using System.Diagnostics;
 using OpenOrderArg = System.Tuple<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
 using OrderStatusArg = System.Tuple<int, string, double, double, bool, double>;
 namespace IBApp {
-  public class AccountManager : DataManager {
+  public class AccountManager :DataManager {
     public enum OrderStatuses { Cancelled, Inactive, PreSubmitted };
 
     #region Constants
     private const int ACCOUNT_ID_BASE = 50000000;
 
     private const string ACCOUNT_SUMMARY_TAGS = "AccountType,NetLiquidation,TotalCashValue,SettledCash,AccruedCash,BuyingPower,EquityWithLoanValue,PreviousEquityWithLoanValue,"
-             +"GrossPositionValue,ReqTEquity,ReqTMargin,SMA,InitMarginReq,MaintMarginReq,AvailableFunds,ExcessLiquidity,Cushion,FullInitMarginReq,FullMaintMarginReq,FullAvailableFunds,"
-             +"FullExcessLiquidity,LookAheadNextChange,LookAheadInitMarginReq ,LookAheadMaintMarginReq,LookAheadAvailableFunds,LookAheadExcessLiquidity,HighestSeverity,DayTradesRemaining,Leverage";
+             + "GrossPositionValue,ReqTEquity,ReqTMargin,SMA,InitMarginReq,MaintMarginReq,AvailableFunds,ExcessLiquidity,Cushion,FullInitMarginReq,FullMaintMarginReq,FullAvailableFunds,"
+             + "FullExcessLiquidity,LookAheadNextChange,LookAheadInitMarginReq ,LookAheadMaintMarginReq,LookAheadAvailableFunds,LookAheadExcessLiquidity,HighestSeverity,DayTradesRemaining,Leverage";
     //private const int BaseUnitSize = 1;
     #endregion
 
@@ -40,7 +40,7 @@ namespace IBApp {
     private readonly Action<object> _defaultMessageHandler;
     private bool _useVerbouse = false;
     private Action<object> _verbous => _useVerbouse ? _defaultMessageHandler : o => { };
-    private readonly string _accountCurrency="USD";
+    private readonly string _accountCurrency = "USD";
     #endregion
 
     #region Properties
@@ -49,8 +49,8 @@ namespace IBApp {
     private readonly ConcurrentDictionary<string, PositionMessage> _positions = new ConcurrentDictionary<string, PositionMessage>();
     private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
     public Func<Trade, double> CommissionByTrade => t => t.Lots * .01;
-    IObservable<(Offer o,bool b)> _offerMMRs= TradesManagerStatic.dbOffers
-        .Select(o => new[] { ( o, b : true ), ( o, b : false ) })
+    IObservable<(Offer o, bool b)> _offerMMRs = TradesManagerStatic.dbOffers
+        .Select(o => new[] { (o, b: true), (o, b: false) })
         .Concat()
         .ToObservable();
 
@@ -110,8 +110,8 @@ namespace IBApp {
     #endregion
 
     private void FetchMMR(string pair) {
-        OnWhatIf(() => OpenTradeWhatIf(pair, true));
-        OnWhatIf(() => OpenTradeWhatIf(pair, false));
+      OnWhatIf(() => OpenTradeWhatIf(pair, true));
+      OnWhatIf(() => OpenTradeWhatIf(pair, false));
     }
 
     private void OnError(int reqId, int code, string error, Exception exc) {
@@ -149,9 +149,9 @@ namespace IBApp {
     //  }
     //}
     event EventHandler<TradeEventArgs> TradeAddedEvent;
-    public event EventHandler<TradeEventArgs>  TradeAdded {
+    public event EventHandler<TradeEventArgs> TradeAdded {
       add {
-        if (TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
+        if(TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
           TradeAddedEvent += value;
       }
       remove {
@@ -165,9 +165,9 @@ namespace IBApp {
 
     #region TradeRemoved Event
     event EventHandler<TradeEventArgs> TradeRemovedEvent;
-    public event EventHandler<TradeEventArgs>  TradeRemoved {
+    public event EventHandler<TradeEventArgs> TradeRemoved {
       add {
-        if (TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
+        if(TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
           TradeRemovedEvent += value;
       }
       remove {
@@ -183,11 +183,11 @@ namespace IBApp {
     event EventHandler<TradeEventArgs> TradeClosedEvent;
     public event EventHandler<TradeEventArgs> TradeClosed {
       add {
-        if (TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
+        if(TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
           TradeClosedEvent += value;
       }
       remove {
-        if (TradeClosedEvent != null)
+        if(TradeClosedEvent != null)
           TradeClosedEvent -= value;
       }
     }
@@ -205,7 +205,7 @@ namespace IBApp {
     event EventHandler<OrderEventArgs> OrderAddedEvent;
     public event EventHandler<OrderEventArgs> OrderAdded {
       add {
-        if (OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
+        if(OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
           OrderAddedEvent += value;
       }
       remove {
@@ -222,7 +222,7 @@ namespace IBApp {
     public event OrderRemovedEventHandler OrderRemovedEvent;
     public event OrderRemovedEventHandler OrderRemoved {
       add {
-        if (OrderRemovedEvent == null || !OrderRemovedEvent.GetInvocationList().Contains(value))
+        if(OrderRemovedEvent == null || !OrderRemovedEvent.GetInvocationList().Contains(value))
           OrderRemovedEvent += value;
       }
       remove {
@@ -270,10 +270,13 @@ namespace IBApp {
         var offer = TradesManagerStatic.GetOffer(c.Instrument);
         var isBuy = o.IsBuy();
         var levelrage = (o.LmtPrice * o.TotalQuantity) / (double.Parse(os.InitMargin) - InitialMarginRequirement);
-        if(isBuy)
+        if(isBuy) {
           offer.MMRLong = 1 / levelrage;
-        else
+          _defaultMessageHandler(new { offer = new { offer.Pair, offer.MMRLong } });
+        } else {
           offer.MMRShort = 1 / levelrage;
+          _defaultMessageHandler(new { offer = new { offer.Pair, offer.MMRShort } });
+        }
       }
     }
     #endregion
@@ -318,10 +321,10 @@ namespace IBApp {
       public bool IsDone => Enum.GetNames(typeof(OrderStatuses)).Contains(Status) || "Filled" == Status && Remaining == 0;
       public override string ToString() => new { OrderId, Status, Filled, Remaining, IsDone } + "";
     }
-    ConcurrentDictionary<string,(IBApi.Order order, IBApi.Contract contract)> _orderContracts = new ConcurrentDictionary<string, (IBApi.Order order, IBApi.Contract contract)>();
+    ConcurrentDictionary<string, (IBApi.Order order, IBApi.Contract contract)> _orderContracts = new ConcurrentDictionary<string, (IBApi.Order order, IBApi.Contract contract)>();
     private void OnOrderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld) {
       OnOrderStatusPush(new OrderStatusArguments(orderId, status, filled, remaining, avgFillPrice));
-      _defaultMessageHandler(new { OrderStatus = status, orderId,  filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld } );
+      _defaultMessageHandler(new { OrderStatus = status, orderId, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld });
     }
     private void OnOrderStatusImpl(OrderStatusArguments arg) {
       _defaultMessageHandler(new { OrderStatusImpl = arg });
@@ -427,7 +430,7 @@ namespace IBApp {
     public Trade[] GetTrades() { return OpenTrades.ToArray(); }
     public Trade[] GetClosedTrades() { return ClosedTrades.ToArray(); }
     #endregion
-    public class PositionNotFoundException : Exception {
+    public class PositionNotFoundException :Exception {
       public PositionNotFoundException(string symbol) : base(new { symbol } + "") { }
     }
 
@@ -472,7 +475,7 @@ namespace IBApp {
     #region IB Handlers
     #region Execution Subject
     object _ExecutionSubjectLocker = new object();
-    ISubject<Tuple<int,Contract,Execution>> _ExecutionSubject;
+    ISubject<Tuple<int, Contract, Execution>> _ExecutionSubject;
     ISubject<Tuple<int, Contract, Execution>> ExecutionSubject {
       get {
         lock(_ExecutionSubjectLocker)
@@ -493,7 +496,7 @@ namespace IBApp {
       ExecutionSubject.OnNext(Tuple.Create(reqId, contract, execution));
     }
     #endregion
-    ConcurrentDictionary<string,int> _executions= new ConcurrentDictionary<string, int>();
+    ConcurrentDictionary<string, int> _executions = new ConcurrentDictionary<string, int>();
     private void OnExecDetails(int reqId, Contract contract, Execution execution) {
       try {
         //_verbous(new { OnExecDetails = new { reqId, contract, execution } });
@@ -618,6 +621,7 @@ namespace IBApp {
             _PositionSubject = new Subject<PosArg>();
             _PositionSubject
               .DistinctUntilChanged(t => new { t.Item2.LocalSymbol, t.Item3.Position })
+              .Where(x => x.Item3.Position != 0)
               .Take(1)
               .Subscribe(s => OnFirstPosition(s.Item2, s.Item3), exc => _defaultMessageHandler(exc), () => { _defaultMessageHandler($"{nameof(PositionSubject)} is done."); });
           }
@@ -694,7 +698,7 @@ namespace IBApp {
             Account.Balance = Account.Equity - double.Parse(value);
             break;
           case "InitMarginReq":
-            TradesManagerStatic.dbOffers.Take(0).ToObservable().Subscribe(o => FetchMMR(o.Pair));
+            //FetchMMRs();
             InitialMarginRequirement = double.Parse(value);
             break;
         }
@@ -702,6 +706,9 @@ namespace IBApp {
       }
     }
 
+    public void FetchMMRs() => GetTrades()
+      .IfEmpty(() => TradesManagerStatic.dbOffers.ToObservable().Subscribe(o => FetchMMR(o.Pair)))
+      .ForEach(t => _defaultMessageHandler(new { FetchMMRs = new { t.Pair, t.IsBuy, t.Lots, Message = "Won't run" } }));
     private void OnAccountSummary(int requestId, string account, string tag, string value, string currency) {
       if(currency == _accountCurrency) {
         switch(tag) {

@@ -194,7 +194,7 @@ namespace HedgeHog.Alice.Client {
     }
   }
 
-  public class MyHubPipelineModule : HubPipelineModule {
+  public class MyHubPipelineModule :HubPipelineModule {
     protected override void OnIncomingError(ExceptionContext exceptionContext, IHubIncomingInvokerContext invokerContext) {
       MethodDescriptor method = invokerContext.MethodDescriptor;
       var args = string.Join(", ", invokerContext.Args);
@@ -206,8 +206,8 @@ namespace HedgeHog.Alice.Client {
   }
 
   [BasicAuthenticationFilter]
-  public class MyHub : Hub {
-    class SendChartBuffer : AsyncBuffer<SendChartBuffer, Action> {
+  public class MyHub :Hub {
+    class SendChartBuffer :AsyncBuffer<SendChartBuffer, Action> {
       protected override Action PushImpl(Action action) {
         return action;
       }
@@ -323,7 +323,8 @@ namespace HedgeHog.Alice.Client {
         bth = tmTrader.BeforeHours.Select(t => new { t.upDown, t.dates }).ToArray(),
         tpls = tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
         tts = HasMinMaxTradeLevels(tmTrader) ? tmTrender.TradeTrends : "",
-        tti = GetTradeTrendIndexImpl(tmTrader, tmTrender)
+        tti = GetTradeTrendIndexImpl(tmTrader, tmTrender),
+        vfs = tm0.IsVoltFullScale ? 1 : 0
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
@@ -361,7 +362,8 @@ namespace HedgeHog.Alice.Client {
 
     #region TradeConditions
     public object[] ReadOffers() {
-      return TradesManagerStatic.dbOffers.Select(o=>new { pair = o.Pair, mmrBuy = o.MMRLong, mmrSell = o.MMRShort }).ToArray();
+      trader.Value.TradesManager.FetchMMRs();
+      return TraderModel.LoadOffers().Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong, mmrSell = o.MMRShort }).ToArray();
     }
     public string[] ReadTradingConditions(string pair) {
       return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, p, name) => name).ToArray());
@@ -779,7 +781,7 @@ namespace HedgeHog.Alice.Client {
         var lsb = (tm.IsCurrency ? (tm.LotSizeByLossBuy / 1000.0).Floor() + "K/" : tm.LotSizeByLossBuy + "/");
         var lss = (tm.IsCurrency ? (tm.LotSizeByLossSell / 1000.0).Floor() + "K/" : tm.LotSizeByLossSell + "/");
         var lsp = tm.LotSizePercent.ToString("p0");
-        list2.Add(row("LotSizeBS", lsb + (lsb == lss ? "" : "/" + lss) + lsp));
+        list2.Add(row("LotSizeBS", lsb + (lsb == lss ? "" : "" + lss) + lsp));
         if(tm.PendingEntryOrders.Any())
           list2.Add(row("Pending", tm.PendingEntryOrders.Select(po => po.Key).ToArray().ToJson(false)));
         return list2;

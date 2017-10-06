@@ -1190,6 +1190,10 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
+    public class OfferMG :Offer {
+      public MongoDB.Bson.ObjectId id { get; set; }
+    }
+
     TimeSpan _throttleInterval = TimeSpan.FromSeconds(1);
     TraderModel() {
       lock(_defaultLocker) {
@@ -1198,7 +1202,8 @@ namespace HedgeHog.Alice.Client {
         _default = this;
         Initialize();
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
-        TradesManagerStatic.dbOffers = GlobalStorage.LoadJson<Offer[]>("https://raw.githubusercontent.com/dimokgit/HedgeHog/master/HedgeHog.Alice.Client/Settings/Instruments.json");
+        //TradesManagerStatic.dbOffers = GlobalStorage.LoadJson<Offer[]>("https://raw.githubusercontent.com/dimokgit/HedgeHog/master/HedgeHog.Alice.Client/Settings/Instruments.json");
+        LoadOffers();
         _tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
         var activeTradeAccounts = (_tradingAccounts?.Count(ta => ta.IsActive)).GetValueOrDefault();
         if(activeTradeAccounts == 0) {
@@ -1327,7 +1332,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-
+    public static Offer[] LoadOffers() => TradesManagerStatic.dbOffers = HedgeHog.MongoExtensions.ReadCollection<OfferMG>("mongodb://dimok:1Aaaaaaa@ds040017.mlab.com:40017/forex", "forex", "offer").ToArray();
 
     private void UpdateTradingAccount(Account account) {
       OnNeedTradingStatistics();
@@ -1501,7 +1506,7 @@ namespace HedgeHog.Alice.Client {
       else {
         var trades = TradesManager.GetTrades();
         RaiseMasterListChangedEvent(trades);
-        UpdateTrades(account, trades.ToList(), ServerTrades);
+        //UpdateTrades(account, trades.ToList(), ServerTrades);
         UpdateOrders(account, (account.Orders ?? new Order[0]).ToList(), orders);
       }
     }

@@ -88,6 +88,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByBPA1;
         case HedgeHog.Alice.VoltageFunction.TtlSd:
           return SetVoltsByTradeTrendLinesAvg;
+        case HedgeHog.Alice.VoltageFunction.Pair:
+          return () => ShowVoltsByPair(getVolts, setVolts);
       }
       throw new NotSupportedException(VoltageFunction + " not supported.");
     }
@@ -139,7 +141,7 @@ namespace HedgeHog.Alice.Store {
         .SingleOrDefault();
     }
 
-    Tuple<DateTime,DateTime,double> _tlBlue = new Tuple<DateTime, DateTime,double>(DateTime.MinValue,DateTime.MaxValue,double.NaN);
+    Tuple<DateTime, DateTime, double> _tlBlue = new Tuple<DateTime, DateTime, double>(DateTime.MinValue, DateTime.MaxValue, double.NaN);
 
     CorridorStatistics ShowVoltsByPPMB(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       var useCalc = UseCalc();
@@ -354,6 +356,51 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
+    CorridorStatistics ShowVoltsByPair(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+      if(UseCalc()) {
+        var nonVoltRates = UseRatesInternal(ri => ri
+          .BackwardsIterator()
+          .SkipWhile(r => !getVolt(r).IsNaNOrZero()).ToArray())
+          .Concat()
+          .Reverse()
+          .ToArray();
+        var voltDate = nonVoltRates
+          .Select(r => r.StartDate)
+          .DefaultIfEmpty(DateTime.MinValue)
+          .First();
+        var tmRates2 = (from tm in _tradingMacros.Where(x => x.Pair != Pair && x.BarPeriod == BarPeriod).Take(1)
+                        where tm.BarPeriod == BarPeriod
+                        from tmRates in tm.UseRatesInternal(ri => ri.BackwardsIterator().TakeWhile(r => r.StartDate >= voltDate).ToArray())
+                        from tmRate in tmRates
+                        select tmRate)
+                        .Reverse()
+                        .ToArray();
+        nonVoltRates.Zip(
+          r => r.StartDate
+          , tmRates2.Select(x => Tuple.Create(x.StartDate, 1/x.PriceAvg))
+          , (r, t) => setVolt(r, t.Item2));
+      }
+      return null;
+    }
+
+    IEnumerable<BarBaseDate> GetContinious<TRate>(IEnumerable<TRate> source, BarsPeriodType periodType) where TRate : Rate {
+      var e = source.GetEnumerator();
+      if(!e.MoveNext()) yield break;
+
+      var ts = TimeSpan.FromMinutes(((double)periodType).Max(1 / 60.0));
+      var current = e.Current;
+      yield return current;
+
+      while(e.MoveNext()) {
+        while(current.StartDate.Add(ts) < e.Current.StartDate) {
+          current = current.Clone() as TRate;
+          current.StartDate2 = current.StartDate2 + ts;
+          yield return current;
+        }
+        yield return current = e.Current;
+      }
+    }
+
     IEnumerable<int> LastTrendLineDurationPercentage() => LastTrendLineDurationPercentage(TrendLinesByDate);
     static IEnumerable<int> LastTrendLineDurationPercentage(IList<TL> tls) =>
       from tlLast in tls.TakeLast(1)
@@ -529,7 +576,7 @@ namespace HedgeHog.Alice.Store {
     [WwwSetting]
     public double CoMEndHour { get; set; } = 9.5;
 
-    public (double[] upDown, DateTime[] dates)[] BeforeHours=new (double[] , DateTime[] )[0];
+    public (double[] upDown, DateTime[] dates)[] BeforeHours = new(double[], DateTime[])[0];
     private void SetBeforeHours() {
       var startHour = CoMStartHour;
       var endHour = CoMEndHour;
@@ -675,5 +722,7 @@ namespace HedgeHog.Alice.Store {
         ResetVoltages();
       }
     }
+
+    public bool IsVoltFullScale => VoltageFunction == VoltageFunction.Pair;
   }
 }

@@ -19,6 +19,7 @@ namespace IBApp {
     public AccountManager AccountManager { get { return _accountManager; } }
     private void Trace(object o) { _ibClient.Trace(o); }
     private void Verbous(object o) { _ibClient.Trace(o); }
+    public void FetchMMRs() => _accountManager.FetchMMRs();
 
     public IBWraper(ICoreFX coreFx, Func<Trade, double> commissionByTrade) {
       CommissionByTrade = commissionByTrade;
@@ -476,7 +477,7 @@ namespace IBApp {
     public int GetDigits(string pair) => TradesManagerStatic.GetDigits(pair);
 
     public Trade GetLastTrade(string pair) {
-      RaiseNotImplemented(nameof(GetLastTrade));
+      //RaiseNotImplemented(nameof(GetLastTrade));
       return null;
     }
 

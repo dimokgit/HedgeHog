@@ -212,7 +212,7 @@ namespace HedgeHog.NewsCaster {
     }
     static IObservable<IEnumerable<NewsEvent>> Fetch(Func<HAP.HtmlDocument, DateTime, IEnumerable<IEnumerable<NewsEvent>>> parser, params FetchParam[] urls) {
       var hw = new HAP.HtmlWeb() { PreRequest = (hr) => { hr.Timeout = 150 * 1000; return true; } };
-      return urls.ToObservable(NewThreadScheduler.Default).Select(url => {
+      return urls.ToObservable().Select(url => {
         try {
           return parser(hw.Load(url.Url), url.Date).SelectMany(evt => evt);
         } catch (Exception exc) {

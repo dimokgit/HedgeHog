@@ -192,11 +192,9 @@ namespace HedgeHog.Alice.Store {
       return GetTradingMacros(pair).Where(tm => (int)tm.BarPeriod == period).SingleOrDefault();
     }
     protected Dictionary<string, IList<TradingMacro>> _tradingMacrosDictionary = new Dictionary<string, IList<TradingMacro>>(StringComparer.OrdinalIgnoreCase);
-    protected IList<TradingMacro> GetTradingMacros(string pair = "") {
+    protected IEnumerable<TradingMacro> GetTradingMacros(string pair = "") {
       pair = pair.ToLower();
-      if(!_tradingMacrosDictionary.ContainsKey(pair))
-        _tradingMacrosDictionary.Add(pair, TradingMacrosCopy.Where(tm => new[] { tm.Pair.ToLower(), "" }.Contains(pair) && tm.IsActive).OrderBy(tm => tm.PairIndex).ToList());
-      return _tradingMacrosDictionary.ContainsKey(pair) ? _tradingMacrosDictionary[pair] : new TradingMacro[0];
+        return TradingMacrosCopy.Where(tm => new[] { tm.Pair.ToLower(), "" }.Contains(pair) && tm.IsActive).OrderBy(tm => tm.PairIndex);
     }
     #endregion
 
@@ -257,7 +255,7 @@ namespace HedgeHog.Alice.Store {
     }
     protected PriceBar[] FetchPriceBars(TradingMacro tradingMacro, int rowOffset, bool reversePower, DateTime dateStart) {
       var isLong = dateStart == DateTime.MinValue;
-      var rs = tradingMacro.RatesArraySafe.Where(r => r.StartDate >= dateStart).GroupTicksToRates();
+      var rs = tradingMacro.UseRates(ra=>ra.Where(r => r.StartDate >= dateStart).GroupTicksToRates()).Concat();
       var ratesForDensity = (reversePower ? rs.OrderBarsDescending() : rs.OrderBars()).ToArray();
       SetPriceBars(tradingMacro, isLong, ratesForDensity.GetPriceBars(TradesManager.GetPipSize(tradingMacro.Pair), rowOffset));
       return GetPriceBars(tradingMacro, isLong);

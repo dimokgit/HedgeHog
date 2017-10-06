@@ -2160,6 +2160,9 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<TradingMacro> TradingMacrosByPair() {
       return _tradingMacros.Where(tm => tm.Pair == Pair).OrderBy(tm => PairIndex);
     }
+    public IEnumerable<TradingMacro> TradingMacrosByPair(string pair) {
+      return _tradingMacros.Where(tm => tm.Pair == pair).OrderBy(tm => PairIndex);
+    }
     #endregion
 
     #region Cross Handlers

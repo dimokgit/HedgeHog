@@ -56,7 +56,7 @@ namespace HedgeHog.Shared {
     public double SellClose { get; set; }
 
     public override string ToString() {
-      return new { Time, Bid, Ask } + "";
+      return new { Pair, Time, Bid, Ask } + "";
     }
   }
 

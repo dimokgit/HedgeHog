@@ -80,6 +80,11 @@ namespace IBApp {
             RaisePriceChanged(price2);
             break;
           }
+        case 0:
+        case 3:
+        case 5:
+            RaisePriceChanged(price2);
+          break;
       }
     }
 

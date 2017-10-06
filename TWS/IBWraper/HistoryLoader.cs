@@ -130,7 +130,7 @@ namespace IBApp {
         return;
       _delay = TimeSpan.Zero;
       _list.InsertRange(0, _list2.Distinct().SkipWhile(b=> _periodsBack == 0 && b.StartDate< _dateStart));
-      if(_endDate <= _dateStart && (_periodsBack == 0 || _list.Count >= _periodsBack)) {
+      if((_periodsBack ==0 && _endDate <= _dateStart) || (_periodsBack > 0 && _list.Count >= _periodsBack)) {
         CleanUp();
         _dataEnd(_list);
         _done(_list);
@@ -188,7 +188,7 @@ namespace IBApp {
       return BarSizeRanges[barSize][timeUnit];
     }
     public static string Duration(BarSize barSize, TimeUnit timeUnit, TimeSpan timeSpan) {
-      var interval = (int)(timeUnit == TimeUnit.S ? timeSpan.TotalSeconds : timeSpan.TotalMinutes);
+      var interval = (timeUnit == TimeUnit.S ? timeSpan.TotalSeconds : timeSpan.TotalMinutes);
       var range = BarSizeRange(barSize, timeUnit);
       var duration = Math.Min(Math.Max(interval, range[0]), range[1]);
       return duration + " " + timeUnit;

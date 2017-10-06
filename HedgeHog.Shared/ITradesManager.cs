@@ -161,6 +161,7 @@ namespace HedgeHog.Shared {
     void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map);
 
     PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment);
+    void FetchMMRs();
   }
   public class ErrorEventArgs : EventArgs {
     public string Pair { get; set; }
@@ -210,7 +211,7 @@ namespace HedgeHog.Shared {
     .Take(1)
     .DefaultIfEmpty(OfferDefault  )
     .Single();
-    public static Func<string,Offer> GetOffer=GetOfferImpl.Memoize();
+    public static Offer GetOffer(string pair) => GetOfferImpl(pair);
     public static double GetPointSize(string symbol) => GetOffer(symbol).PointSize;
     public static int GetBaseUnitSize(string symbol) => GetOffer(symbol).ContractSize;
     public static int GetDigits(string symbol) => GetOffer(symbol).Digits;

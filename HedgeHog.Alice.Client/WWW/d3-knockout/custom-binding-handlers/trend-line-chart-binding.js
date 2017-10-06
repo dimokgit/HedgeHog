@@ -22,14 +22,15 @@
   function svgFrom(element) {
     return d3.select(element).select("svg g");
   }
-  function calcChartArea(element) {
+  function calcChartArea(element, y2Scale) {
     var elementWidth = parseInt(d3.select(element).style("width"), 10),
       elementHeight = calcElementHeight(elementWidth),// parseInt(d3.select(element).style("height"), 10),
       width = elementWidth - margin.left - margin.right,
       height = elementHeight - margin.top - margin.bottom,
       x = d3.scaleTime().range([xAxisOffset, width - xAxisOffset]),
       y = d3.scaleLinear().range([height, 0]),
-      y2 = d3.scaleLinear().range([height, height * 4 / 5]);
+      y2 = d3.scaleLinear().range([height, height * (y2Scale ? 4 : 0) / 5]);
+    //y2 = d3.scaleLinear().range([height, height * 4 / 5]);
     y3 = d3.scaleLinear().range([height / 5, 0]);
     return { width: width, height: height, x: x, y: y, y2: y2, y3: y3 };
   }
@@ -405,7 +406,7 @@
 
       // #region adjust svg and axis'
       $(element).show();
-      var chartArea = calcChartArea(element);
+      var chartArea = calcChartArea(element, !viewModel.vfs);
       viewModel.chartArea[chartNum].cha = chartArea;
       var
         width = chartArea.width,
@@ -576,7 +577,7 @@
         } catch (e) {
           //log = e;
         }
-        bth.forEach(function (x,i) {
+        bth.forEach(function (x, i) {
           if (x.dates[0])
             setRectArea(x.dates[0], x.upDown[1], x.dates[1], x.upDown[0], beforeTradeHoursRect + i, "black");
         });
@@ -835,8 +836,8 @@
       function selectRect(rectName) {
         return svg.select("rect." + rectName);
       }
-      function setRectArea(date1, level1, date2, level2, rectName,borderColour) {
-        var rect = svg.select("rect." + rectName) || addRect(rect,"cyan");
+      function setRectArea(date1, level1, date2, level2, rectName, borderColour) {
+        var rect = svg.select("rect." + rectName) || addRect(rect, "cyan");
         rect
           .style("stroke", borderColour)  // colour the line
           .attr("x", x(date1)) // x position of the first end of the line

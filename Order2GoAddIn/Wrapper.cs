@@ -2856,6 +2856,8 @@ namespace Order2GoAddIn {
     public void ResetClosedTrades(string pair) {
       throw new NotImplementedException();
     }
+
+    public void FetchMMRs() => throw new NotImplementedException();
   }
 
   #region Data Classes

@@ -25,9 +25,6 @@ namespace HedgeHog.Alice {
     Equinox,
     BPA1,
     TtlSd,
-    StDevInsideOutRatio,
-    HourlyStDevAvg,
-    StDevSumRatio,
     TLH,
     TLH2,
     TLH3,
@@ -39,7 +36,8 @@ namespace HedgeHog.Alice {
     TLW3,
     TLW4,
     TLDur,
-    TLDur2
+    TLDur2,
+    Pair
   }
 }
 namespace HedgeHog.Alice.Store {

@@ -14,6 +14,7 @@ using IBApp;
 using HedgeHog.Core;
 using System.Collections.Specialized;
 using System.Configuration;
+using MongoDB.Bson;
 
 public class IBClientCore : IBClient, IPricer, ICoreFX {
   class Configer {
@@ -21,7 +22,14 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
     public static int[] WarningCodes;
     static Configer() {
       section = ConfigurationManager.GetSection("IBSettings") as NameValueCollection;
-      WarningCodes = section["WarningCodes"].Split(',').Select(int.Parse).ToArray();
+      var mongoUri = ConfigurationManager.AppSettings["MongoUri"];
+      var mongoCollection = ConfigurationManager.AppSettings["MongoCollection"];
+      try {
+        var codeAnon = new { id = ObjectId.Empty, codes = new int[0] };
+        WarningCodes = MongoExtensions.ReadCollectionAnon(codeAnon, mongoUri, "forex", mongoCollection).SelectMany(x => x.codes).ToArray();
+      }catch(Exception exc) {
+        throw new Exception(new { mongoUri, mongoCollection } + "",exc);
+      }
     }
   }
   #region Fields

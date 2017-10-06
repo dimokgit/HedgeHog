@@ -571,6 +571,8 @@ namespace HedgeHog.Shared {
     public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
       throw new NotImplementedException();
     }
+
+    public void FetchMMRs() => throw new NotImplementedException();
   }
 
 }
