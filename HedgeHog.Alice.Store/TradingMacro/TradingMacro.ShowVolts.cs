@@ -90,6 +90,8 @@ namespace HedgeHog.Alice.Store {
           return SetVoltsByTradeTrendLinesAvg;
         case HedgeHog.Alice.VoltageFunction.Pair:
           return () => ShowVoltsByPair(getVolts, setVolts);
+        case HedgeHog.Alice.VoltageFunction.Corr:
+          return ShowVoltsByCorrelation;
       }
       throw new NotSupportedException(VoltageFunction + " not supported.");
     }
@@ -379,6 +381,19 @@ namespace HedgeHog.Alice.Store {
           r => r.StartDate
           , tmRates2.Select(x => Tuple.Create(x.StartDate, 1/x.PriceAvg))
           , (r, t) => setVolt(r, t.Item2));
+      }
+      return null;
+    }
+
+    CorridorStatistics ShowVoltsByCorrelation() {
+      if(UseCalc()) {
+        var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())
+          .Concat()
+          .ToArray();
+        if(voltRates.Length > BarsCountCalc * 0.9) {
+          var volt = alglib.pearsoncorr2(voltRates.ToArray(r => r.PriceAvg), voltRates.ToArray(GetVoltage));
+          ShowVolts(volt, 2, GetVoltage2, SetVoltage2);
+        }
       }
       return null;
     }

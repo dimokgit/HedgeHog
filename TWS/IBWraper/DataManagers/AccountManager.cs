@@ -454,7 +454,7 @@ namespace IBApp {
         OrderId = NetOrderId(),
         Action = buy ? "BUY" : "SELL",
         OrderType = orderType,
-        TotalQuantity = whatIf ? lots : pair.IsUSStock() ? (lots / 100.0).Floor() * 100 : lots,
+        TotalQuantity = whatIf ? lots : pair.IsUSStock() ? lots : lots,
         Tif = "DAY",
         OutsideRth = isPreRTH,
         WhatIf = whatIf,

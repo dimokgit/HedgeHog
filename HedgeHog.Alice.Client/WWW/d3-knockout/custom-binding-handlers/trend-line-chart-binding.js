@@ -402,11 +402,12 @@
       var bth = chartData.bth || [];
       var showNegativeVolts = viewModel.showNegativeVoltsParsed();
       var showNegativeVolts2 = viewModel.showNegativeVolts2Parsed();
+      var y2Scale = !viewModel.vfs;
       // #endregion
 
       // #region adjust svg and axis'
       $(element).show();
-      var chartArea = calcChartArea(element, !viewModel.vfs);
+      var chartArea = calcChartArea(element, y2Scale);
       viewModel.chartArea[chartNum].cha = chartArea;
       var
         width = chartArea.width,
@@ -497,9 +498,12 @@
       svg.select("g.y.axis")
         .attr("transform", "translate(" + (width) + ",0)")
         .call(yAxis);
-      if (yAxis2)
-        svg.select("g.y2.axis")
+      if (yAxis2) {
+        var y2Axis = svg.select("g.y2.axis");
+        y2Axis
+          .style("opacity", y2Scale ? 1 : 0)
           .call(yAxis2);
+      }
       var y3Axis = svg.select("g.y3.axis");
       if (yAxis3)
         y3Axis.call(yAxis3);

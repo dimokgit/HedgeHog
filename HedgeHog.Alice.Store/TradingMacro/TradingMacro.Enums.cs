@@ -37,7 +37,8 @@ namespace HedgeHog.Alice {
     TLW4,
     TLDur,
     TLDur2,
-    Pair
+    Pair,
+    Corr
   }
 }
 namespace HedgeHog.Alice.Store {
