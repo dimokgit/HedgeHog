@@ -76,10 +76,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core, Version=4.3.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <Private>True</Private>
-      <HintPath>..\AllInOne\packages\FSharp.Core.Microsoft.Signed.3.1.1.1\lib\net40\FSharp.Core.dll</HintPath>
+      <HintPath>..\AllInOne\packages\FSharp.Core.Microsoft.Signed.3.1.1.1\lib\net45\FSharp.Core.dll</HintPath>
     </Reference>
-    <Reference Include="FSharpx.Core">
+    <Reference Include="FSharpx.Core, Version=1.8.41.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\FSharpx.Core.1.8.41\lib\40\FSharpx.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
