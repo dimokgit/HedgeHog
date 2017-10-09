@@ -1680,6 +1680,7 @@ namespace HedgeHog.Alice.Store {
                   if(indexCurrent >= _replayRates.Count)
                     continue;
                   ratePrev = rate;
+                  RatesArraySafe.Any();
                   if(this.TradingMacrosByPair().First() == this && (Trades.Any() || IsTradingDay())) {
                     TradesManager.RaisePriceChanged(new Price(Pair, rate));
                   }
