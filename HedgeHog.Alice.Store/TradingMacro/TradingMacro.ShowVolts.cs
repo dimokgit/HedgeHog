@@ -409,14 +409,21 @@ namespace HedgeHog.Alice.Store {
           var pricePos = linearPrice.PositionRatio(priceMinMax);
 
           var linearVolt = voltRates.Linear(GetVoltage).RegressionValue(voltRates.Length / 2);
-          var voltMinMax = voltRates.MinMax(GetVoltage);
-          var voltPos = linearVolt.PositionRatio(voltMinMax);
+          var v = voltRates.MinMax(GetVoltage).Yield(mm => new { min = mm[0], max = mm[1] }).Single();
+          var voltPos = linearVolt.PositionRatio(v.min, v.max);
 
-          var priceVoltRatio = pricePos / voltPos;
-          VoltsFullScaleShift = linearVolt * (1 - priceVoltRatio);
+          VoltsFullScaleMinMax = new[]{
+            voltMinNew(),
+            voltMaxNew()
+          };
+
+          double voltMaxNew() => (linearVolt - v.min) / pricePos + v.min;
+          double voltMinNew() => v.max - (v.max - linearVolt) / (1 - pricePos);
         }
       }
     }
+    public static double MaxLevelByMinMiddlePos(double min, double middle, double pos) => (middle - min) / pos + min;
+    public static double MinLevelByMaxMiddlePos(double max, double middle, double pos) => max - (max - middle) / (1 - pos);
 
     IEnumerable<BarBaseDate> GetContinious<TRate>(IEnumerable<TRate> source, BarsPeriodType periodType) where TRate : Rate {
       var e = source.GetEnumerator();
@@ -759,6 +766,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     public bool IsVoltFullScale => VoltageFunction == VoltageFunction.Pair;
-    public double VoltsFullScaleShift { get; private set; }
+    public double[] VoltsFullScaleMinMax { get; private set; }
   }
 }

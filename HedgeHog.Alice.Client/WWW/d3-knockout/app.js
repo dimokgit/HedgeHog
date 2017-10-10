@@ -878,6 +878,8 @@
       chartData.com = prepDates($.extend(true, {}, self.com));
       chartData.com2 = prepDates($.extend(true, {}, self.com2));
       chartData.com3 = prepDates($.extend(true, {}, self.com3));
+      chartData.vfs = !!response.vfs;
+      chartData.vfss = response.vfss;
       self.chartData(chartData);
       updateChartCmas[0](cma(updateChartCmas[0](), 10, getSecondsBetween(new Date(), d)));
       dataViewModel.price(response.askBid);
@@ -936,6 +938,8 @@
       chartData2.bth = bth;
       chartData2.tickDate = lineChartData()[0].d;
       chartData2.tickDateEnd = lineChartData().slice(-1)[0].d;
+      chartData2.vfs = !!response.vfs;
+      chartData2.vfss = response.vfss;
       response.waveLines.forEach(function (w, i) {
         w.bold = i == sumStartIndexById();
         w.color = w.isOk ? "limegreen" : "";
@@ -1240,7 +1244,7 @@
       };
     }
     function continuoseDates(interval, data, dates) {// jshint ignore:line
-      var ds = dates.map(function (ds) { return { dates2: [], dates: ds.reverse() }; });
+      var ds = dates.map(function (ds) { return { dates2: [], dates: (ds || []).reverse() }; });
       data.reverse().reduce(function (prevValue, current) {
         var cdo = current.do;
         current.d = prevValue = (prevValue ? dateAdd(prevValue, interval, -1) : current.d);
@@ -1629,11 +1633,6 @@
 
     dataViewModel.inPause(response.ip);
     delete response.ip;
-
-    dataViewModel.vfs = !!response.vfs;
-    delete response.vfs;
-    dataViewModel.vfss = response.vfss;
-    delete response.vfss;
 
     $('#discussion').text(JSON.stringify(response).replace(/["{}]/g, ""));
 

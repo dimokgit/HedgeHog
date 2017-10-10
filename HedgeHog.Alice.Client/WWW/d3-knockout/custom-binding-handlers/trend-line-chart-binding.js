@@ -402,8 +402,8 @@
       var bth = chartData.bth || [];
       var showNegativeVolts = viewModel.showNegativeVoltsParsed();
       var showNegativeVolts2 = viewModel.showNegativeVolts2Parsed();
-      var y2Scale = !viewModel.vfs;
-      var y2ScaleShift = viewModel.vfss || 0;
+      var y2Scale = !chartData.vfs;
+      var y2ScaleShift = chartData.vfss || [0, 0];
       // #endregion
 
       // #region adjust svg and axis'
@@ -487,7 +487,7 @@
       viewModel.chartArea[chartNum].yDomain = yDomain = [yDomain[0] - vOffset, yDomain[1] + vOffset];
       y.domain(yDomain);
       var yDomain2 = d3.extent(data, function (d) { return tipValue(d.v); });
-      y2.domain([yDomain2[0] - (y2ScaleShift > 0 ? y2ScaleShift : 0), yDomain2[1] - (y2ScaleShift < 0 ? y2ScaleShift : 0)]);
+      y2.domain([Math.min(y2ScaleShift[0] || yDomain2[0], yDomain2[0]), Math.max(y2ScaleShift[1] || yDomain2[1], yDomain2[1])]);
       var yDomain3 = d3.extent(data, function (d) { return tipValue2(d.v2); });
       y3.domain([yDomain3[0], yDomain3[1]]);
       // #endregion

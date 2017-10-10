@@ -323,9 +323,7 @@ namespace HedgeHog.Alice.Client {
         bth = tmTrader.BeforeHours.Select(t => new { t.upDown, t.dates }).ToArray(),
         tpls = tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
         tts = HasMinMaxTradeLevels(tmTrader) ? tmTrender.TradeTrends : "",
-        tti = GetTradeTrendIndexImpl(tmTrader, tmTrender),
-        vfs = tm0.IsVoltFullScale ? 1 : 0,
-        vfss = tm0.IsVoltFullScale ? tm0.VoltsFullScaleShift : 0
+        tti = GetTradeTrendIndexImpl(tmTrader, tmTrender)
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }

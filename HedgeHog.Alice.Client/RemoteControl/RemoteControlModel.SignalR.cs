@@ -213,7 +213,9 @@ namespace HedgeHog.Alice.Client {
         canBuy = tmTrader.CanOpenTradeByDirection(true),
         canSell = tmTrader.CanOpenTradeByDirection(false),
         waveLines,
-        barPeriod = tm.BarPeriodInt
+        barPeriod = tm.BarPeriodInt,
+        vfs = tm.IsVoltFullScale ? 1 : 0,
+        vfss = tm.IsVoltFullScale ? tm.VoltsFullScaleMinMax : new[] { 0.0, 0.0 }
       });
       return ret;
     }

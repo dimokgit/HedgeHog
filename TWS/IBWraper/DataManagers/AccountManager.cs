@@ -623,6 +623,7 @@ namespace IBApp {
               .DistinctUntilChanged(t => new { t.Item2.LocalSymbol, t.Item3.Position })
               .Where(x => x.Item3.Position != 0)
               .Take(1)
+              .Timeout(TimeSpan.FromSeconds(10))
               .Subscribe(s => OnFirstPosition(s.Item2, s.Item3), exc => _defaultMessageHandler(exc), () => { _defaultMessageHandler($"{nameof(PositionSubject)} is done."); });
           }
         return _PositionSubject;
