@@ -324,7 +324,8 @@ namespace HedgeHog.Alice.Client {
         tpls = tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
         tts = HasMinMaxTradeLevels(tmTrader) ? tmTrender.TradeTrends : "",
         tti = GetTradeTrendIndexImpl(tmTrader, tmTrender),
-        vfs = tm0.IsVoltFullScale ? 1 : 0
+        vfs = tm0.IsVoltFullScale ? 1 : 0,
+        vfss = tm0.IsVoltFullScale ? tm0.VoltsFullScaleShift : 0
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
     }
@@ -363,7 +364,7 @@ namespace HedgeHog.Alice.Client {
     #region TradeConditions
     public object[] ReadOffers() {
       trader.Value.TradesManager.FetchMMRs();
-      return TraderModel.LoadOffers().Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong, mmrSell = o.MMRShort }).ToArray();
+      return TradesManagerStatic.dbOffers.Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong, mmrSell = o.MMRShort }).ToArray();
     }
     public string[] ReadTradingConditions(string pair) {
       return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, p, name) => name).ToArray());

@@ -656,6 +656,7 @@ namespace IBApp {
         OpenTrades.Add(TradeFromPosition(contract.LocalSymbol, position, st, ""));
 
       TraceTrades("Opened: ", OpenTrades);
+      FetchMMRs();
     }
 
     private void TraceTrades(string label, IEnumerable<Trade> trades) {
@@ -698,7 +699,6 @@ namespace IBApp {
             Account.Balance = Account.Equity - double.Parse(value);
             break;
           case "InitMarginReq":
-            //FetchMMRs();
             InitialMarginRequirement = double.Parse(value);
             break;
         }
@@ -707,7 +707,10 @@ namespace IBApp {
     }
 
     public void FetchMMRs() => GetTrades()
-      .IfEmpty(() => TradesManagerStatic.dbOffers.ToObservable().Subscribe(o => FetchMMR(o.Pair)))
+      .IfEmpty(() => {
+        _defaultMessageHandler(nameof(FetchMMR) + " started");
+        TradesManagerStatic.dbOffers.ToObservable().Subscribe(o => FetchMMR(o.Pair));
+      })
       .ForEach(t => _defaultMessageHandler(new { FetchMMRs = new { t.Pair, t.IsBuy, t.Lots, Message = "Won't run" } }));
     private void OnAccountSummary(int requestId, string account, string tag, string value, string currency) {
       if(currency == _accountCurrency) {

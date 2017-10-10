@@ -190,7 +190,7 @@ namespace IBApp {
     public static string Duration(BarSize barSize, TimeUnit timeUnit, TimeSpan timeSpan) {
       var interval = (timeUnit == TimeUnit.S ? timeSpan.TotalSeconds : timeSpan.TotalMinutes);
       var range = BarSizeRange(barSize, timeUnit);
-      var duration = Math.Min(Math.Max(interval, range[0]), range[1]);
+      var duration = Math.Min(Math.Max(interval, range[0]), range[1]).Ceiling();
       return duration + " " + timeUnit;
     }
     #endregion

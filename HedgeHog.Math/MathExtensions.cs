@@ -429,9 +429,9 @@ namespace HedgeHog {
     /// <param name="low"></param>
     /// <param name="high"></param>
     /// <returns></returns>
-    public static double PositionRatio(this double current, double low, double high) {
-      return (current - low) / (high - low);
-    }
+    public static double PositionRatio(this double current, double low, double high) => (current - low) / (high - low);
+    public static double PositionRatio(this double current, IList<double> lowHigh) => current.PositionRatio(lowHigh[0], lowHigh[1]);
+
     public static double StDevP_(this double[] value, bool fcompensate = true) {
       double[] average = { 0.0, 0.0 };
       double stdev = 0;
@@ -1196,5 +1196,25 @@ namespace HedgeHog {
       return !(bsRates.Min() > bsRatesCT.Max() || bsRates.Max() < bsRatesCT.Min());
     }
 
+    public static double HistoricalVolatility(this IEnumerable<double> source) => source.HistoricalVolatility((d1, d2) => Math.Log(d2 / d1));
+    public static double HistoricalVolatility(this IEnumerable<double> source, Func<double, double, double> calc) => source.Pairwise(calc).StandardDeviation();
+
+    #region Helpers
+
+    #region Pairwise
+    public static IEnumerable<Tuple<TSequence, TSequence>> Pairwise<TSequence>(this IEnumerable<TSequence> seq) {
+      return seq.Pairwise(Tuple.Create);
+    }
+    public static IEnumerable<TResult> Pairwise<TSequence, TResult>(this IEnumerable<TSequence> seq, Func<TSequence, TSequence, TResult> resultSelector) {
+      TSequence prev = default(TSequence);
+      using(IEnumerator<TSequence> e = seq.GetEnumerator()) {
+        if(e.MoveNext()) prev = e.Current;
+
+        while(e.MoveNext()) yield return resultSelector(prev, prev = e.Current);
+      }
+    }
+    #endregion
+
+    #endregion
   }
 }

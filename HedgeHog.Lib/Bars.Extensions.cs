@@ -551,18 +551,6 @@ namespace HedgeHog.Bars {
     public static IEnumerable<U> Distance<T,U>(this IList<T> rates, Func<T, double> getPrice,Func<T,T,double,U> map) {
       return rates.Zip(rates.Skip(1), (r1, r2) => map(r1,r2,getPrice(r1).Abs(getPrice(r2))));
     }
-    public static IEnumerable<Tuple<TSequence,TSequence>> Pairwise<TSequence>(this IEnumerable<TSequence> seq) {
-      return seq.Pairwise(Tuple.Create);
-    }
-    public static IEnumerable<TResult> Pairwise<TSequence, TResult>(this IEnumerable<TSequence> seq, Func<TSequence, TSequence, TResult> resultSelector) {
-      TSequence prev = default(TSequence);
-      using (IEnumerator<TSequence> e = seq.GetEnumerator()) {
-        if (e.MoveNext()) prev = e.Current;
-
-        while (e.MoveNext()) yield return resultSelector(prev, prev = e.Current);
-      }
-    }
-
     public static double CalcDistance<TBar>(this IEnumerable<TBar> rates, Func<TBar, double> getPrice) {
       return rates.Pairwise((b1, b2) => getPrice(b1).Abs(getPrice(b2))).DefaultIfEmpty().Sum();
     }

@@ -379,8 +379,9 @@ namespace HedgeHog.Alice.Store {
                         .ToArray();
         nonVoltRates.Zip(
           r => r.StartDate
-          , tmRates2.Select(x => Tuple.Create(x.StartDate, 1/x.PriceAvg))
+          , tmRates2.Select(x => Tuple.Create(x.StartDate, 1 / x.PriceAvg))
           , (r, t) => setVolt(r, t.Item2));
+        CalcVoltsFullScaleShift();
       }
       return null;
     }
@@ -396,6 +397,25 @@ namespace HedgeHog.Alice.Store {
         }
       }
       return null;
+    }
+    void CalcVoltsFullScaleShift() {
+      if(IsVoltFullScale && UseCalc()) {
+        var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())
+          .Concat()
+          .ToArray();
+        if(voltRates.Length > BarsCountCalc * 0.9) {
+          var linearPrice = voltRates.Linear(_priceAvg).RegressionValue(voltRates.Length / 2);
+          var priceMinMax = voltRates.MinMax(_priceAvg);
+          var pricePos = linearPrice.PositionRatio(priceMinMax);
+
+          var linearVolt = voltRates.Linear(GetVoltage).RegressionValue(voltRates.Length / 2);
+          var voltMinMax = voltRates.MinMax(GetVoltage);
+          var voltPos = linearVolt.PositionRatio(voltMinMax);
+
+          var priceVoltRatio = pricePos / voltPos;
+          VoltsFullScaleShift = linearVolt * (1 - priceVoltRatio);
+        }
+      }
     }
 
     IEnumerable<BarBaseDate> GetContinious<TRate>(IEnumerable<TRate> source, BarsPeriodType periodType) where TRate : Rate {
@@ -739,5 +759,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     public bool IsVoltFullScale => VoltageFunction == VoltageFunction.Pair;
+    public double VoltsFullScaleShift { get; private set; }
   }
 }

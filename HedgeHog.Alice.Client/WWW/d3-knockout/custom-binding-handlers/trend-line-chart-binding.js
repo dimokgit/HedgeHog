@@ -403,6 +403,7 @@
       var showNegativeVolts = viewModel.showNegativeVoltsParsed();
       var showNegativeVolts2 = viewModel.showNegativeVolts2Parsed();
       var y2Scale = !viewModel.vfs;
+      var y2ScaleShift = viewModel.vfss || 0;
       // #endregion
 
       // #region adjust svg and axis'
@@ -486,7 +487,7 @@
       viewModel.chartArea[chartNum].yDomain = yDomain = [yDomain[0] - vOffset, yDomain[1] + vOffset];
       y.domain(yDomain);
       var yDomain2 = d3.extent(data, function (d) { return tipValue(d.v); });
-      y2.domain([yDomain2[0], yDomain2[1]]);
+      y2.domain([yDomain2[0] - (y2ScaleShift > 0 ? y2ScaleShift : 0), yDomain2[1] - (y2ScaleShift < 0 ? y2ScaleShift : 0)]);
       var yDomain3 = d3.extent(data, function (d) { return tipValue2(d.v2); });
       y3.domain([yDomain3[0], yDomain3[1]]);
       // #endregion
@@ -539,8 +540,8 @@
               return y2(tipValue(d.v));
             });
           var isHotTps = _.last(data).v > tpsHigh || _.last(data).v < tpsLow;
-          var colorTps = isHotTps ? "darkred" : "navy";
-          var opacityTps = isHotTps ? tpsOpacity * 2 : tpsOpacity;
+          var colorTps = !y2Scale ? "Wisteria" : isHotTps ? "darkred" : "navy";
+          var opacityTps = !y2Scale ? tpsOpacity : isHotTps ? tpsOpacity * 2 : tpsOpacity;
           svg.select("path.line.dataTps")
             .datum(data)
             .attr("d", line2).style("stroke", colorTps).style("opacity", opacityTps);

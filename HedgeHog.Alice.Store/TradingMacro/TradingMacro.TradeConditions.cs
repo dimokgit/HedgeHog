@@ -98,9 +98,9 @@ namespace HedgeHog.Alice.Store {
         TradingMacroTrader(tm => Log = new Exception(new { FrshTrdOk = new { tm.WavesRsdPerc } } + "")).FirstOrDefault();
         Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
           tm.TradeTrendLines
-          .OrderByDescending(tl=>tl.EndDate)
+          .OrderByDescending(tl => tl.EndDate)
           .Where(tl => !tl.IsEmpty)
-          .IfEmpty(() => { if(!IsAsleep) throw new Exception(nameof(TrendLevelByTradeLevel) + "() returned empty handed.");  })
+          .IfEmpty(() => { if(!IsAsleep) throw new Exception(nameof(TrendLevelByTradeLevel) + "() returned empty handed."); })
           .Where(tl => IsTLFresh(tm, tl, tm.WavesRsdPerc / 100.0)))
           .Take(1)
           .Concat()
@@ -148,8 +148,8 @@ namespace HedgeHog.Alice.Store {
       .SingleOrDefault();
       }
     }
-    static string[] _minTradeLevelSuffix =new[] {"Min","Down" };
-    static string[] _maxTradeLevelSuffix =new[] {"Max","Up" };
+    static string[] _minTradeLevelSuffix = new[] { "Min", "Down" };
+    static string[] _maxTradeLevelSuffix = new[] { "Max", "Up" };
     bool isReverse => _minTradeLevelSuffix.Any(ml => (LevelBuyBy + "").EndsWith(ml)) && _maxTradeLevelSuffix.Any(ml => (LevelSellBy + "").EndsWith(ml));
     [TradeConditionSetCorridor]
     public TradeConditionDelegate TLSOk {
@@ -609,7 +609,7 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
-    class SetEdgeLinesAsyncBuffer : AsyncBuffer<SetEdgeLinesAsyncBuffer, Action> {
+    class SetEdgeLinesAsyncBuffer :AsyncBuffer<SetEdgeLinesAsyncBuffer, Action> {
       public SetEdgeLinesAsyncBuffer() : base() {
 
       }
@@ -617,7 +617,7 @@ namespace HedgeHog.Alice.Store {
         return context;
       }
     }
-    Lazy<SetEdgeLinesAsyncBuffer> _setEdgeLinesAsyncBuffer = Lazy.Create(()=> new SetEdgeLinesAsyncBuffer());
+    Lazy<SetEdgeLinesAsyncBuffer> _setEdgeLinesAsyncBuffer = Lazy.Create(() => new SetEdgeLinesAsyncBuffer());
 
     public TradeConditionDelegateHide EdgesAOk {
       get {
@@ -1055,7 +1055,7 @@ namespace HedgeHog.Alice.Store {
          select t.Item2.IsBuy ? TradeDirections.Up : TradeDirections.Down
         )
         .Scan((p, n) => p | n)
-        .Where(td=> td== TradeDirections.Both)
+        .Where(td => td == TradeDirections.Both)
         .DefaultIfEmpty()
         .Last();
     }
@@ -1522,7 +1522,10 @@ namespace HedgeHog.Alice.Store {
         .Add(showBBSD ? (object)new { BoilBand = _boilingerStDev.Value.Select(t => string.Format("{0:n2}:{1:n2}", InPips(t.Item1), InPips(t.Item2))) } : new { })
         .Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         .Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
-        .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { });
+        .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { })
+        .Add(new { HistVolLn = $"{HV(this)}/{TradingMacroM1(HV).SingleOrDefault()}" })
+        .Add(new { HistVolDif = $"{HVD(this)}/{TradingMacroM1(HVD).SingleOrDefault()}" })
+        ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
       //.Merge(new { BPA1Tip__ = _wwwBpa1 }, () =>TradeConditionsHave(BPA12Ok))
@@ -1530,6 +1533,8 @@ namespace HedgeHog.Alice.Store {
       .SingleOrDefault();
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
+      double HV(TradingMacro tm) => tm.UseRates(ra => tm.InPips(ra.Select(_priceAvg).HistoricalVolatility())).SingleOrDefault().AutoRound2(2);
+      double HVD(TradingMacro tm) => tm.UseRates(ra => tm.InPips(ra.Select(_priceAvg).HistoricalVolatility((d1, d2) => d1-d2))).SingleOrDefault().AutoRound2(2);
     }
     #endregion
 
@@ -2427,7 +2432,7 @@ namespace HedgeHog.Alice.Store {
         _wavesRsdPec = value;
       }
     }
-    int _riskRewardThresh=100;
+    int _riskRewardThresh = 100;
     [WwwSetting(wwwSettingsTradingParams)]
     [Category(categoryActiveFuncs)]
     public int RiskRewardThresh {

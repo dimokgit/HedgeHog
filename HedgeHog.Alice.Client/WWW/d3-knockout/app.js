@@ -1632,6 +1632,8 @@
 
     dataViewModel.vfs = !!response.vfs;
     delete response.vfs;
+    dataViewModel.vfss = response.vfss;
+    delete response.vfss;
 
     $('#discussion').text(JSON.stringify(response).replace(/["{}]/g, ""));
 
