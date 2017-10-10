@@ -15,6 +15,7 @@ namespace IBApp {
     private int currentTicker = 0;
     private readonly int _baseReqId;
 
+    protected Action<object> Trace { get; }
     protected IBClientCore IbClient { get; private set; }
     #endregion
 
@@ -23,6 +24,7 @@ namespace IBApp {
     public DataManager(IBClientCore ibClient,int baseReqId) {
       IbClient = ibClient;
       _baseReqId = baseReqId;
+      Trace = IbClient.Trace;
     }
     #endregion
 

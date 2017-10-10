@@ -75,6 +75,7 @@ namespace HedgeHog.Shared {
     Offer[] GetOffers();
     Offer GetOffer(string pair);
     Price GetPrice(string pair);
+    bool TryGetPrice(string pair,out Price price);
     #endregion
 
     #region Money
@@ -291,7 +292,7 @@ namespace HedgeHog.Shared {
       return GetLotSize(amountToTrade, baseUnitSize);
     }
     public static double MoneyAndLotToPips(this ITradesManager tm, double money, int lots, string pair) {
-      return tm == null ? double.NaN : MoneyAndLotToPips(pair, money, lots, tm.RateForPipAmount(tm.GetPrice(pair)), tm.GetPipSize(pair));
+      return  tm == null || !tm.TryGetPrice(pair,out Price price) ? double.NaN : MoneyAndLotToPips(pair, money, lots, tm.RateForPipAmount(price), tm.GetPipSize(pair));
     }
     public static double MarginRequired(int lot, double baseUnitSize, double mmr) {
       return lot / baseUnitSize * mmr;

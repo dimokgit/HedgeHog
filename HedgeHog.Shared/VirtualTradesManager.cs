@@ -573,6 +573,15 @@ namespace HedgeHog.Shared {
     }
 
     public void FetchMMRs() => throw new NotImplementedException();
+    public bool TryGetPrice(string pair, out Price price) {
+      try {
+        price = GetPrice(pair);
+        return true;
+      } catch(KeyNotFoundException) {
+        price = default(Price);
+        return false;
+      }
+    }
   }
 
 }

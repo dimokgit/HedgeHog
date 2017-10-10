@@ -72,12 +72,12 @@ namespace IBApp {
      * Usually, the easiest way to define a Stock/CASH contract is through these four attributes.
      */
     static Contract FxPair(string instrument) {
-      var pair2 = (from Match m in Regex.Matches(Regex.Replace(instrument, @"\W*", ""), @"\w{3}") select m.Value).ToArray();
+      var pair2 = (from Match m in Regex.Matches(Regex.Replace(instrument, @"\W*", ""), @"\w{3}") select m.Value.ToUpper()).ToArray();
       //EXSTART::eurgbpfx::csharp
-      Contract contract = new Contract() { LocalSymbol = instrument.Replace("/", ".").ToUpper() };
-      contract.Symbol = pair2[0].ToUpper();
+      Contract contract = new Contract() { LocalSymbol = string.Join(".", pair2) };
+      contract.Symbol = pair2[0];
       contract.SecType = "CASH";
-      contract.Currency = pair2[1].ToUpper();
+      contract.Currency = pair2[1];
       contract.Exchange = "IDEALPRO";
       //EXEND
       return contract;

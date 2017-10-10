@@ -1404,11 +1404,11 @@ namespace HedgeHog.Alice.Store {
           : new Func<Rate, double>(r => r.PriceChartBid);
         case TradeCrossMethod.PriceCurr:
           if(!isBuy.HasValue)
-            return _ => CurrentPrice.Average;
+            return _ => (CurrentPrice?.Average).GetValueOrDefault();
           if(isBuy.Value)
-            return _ => CurrentPrice.Ask;
+            return _ => (CurrentPrice?.Ask).GetValueOrDefault();
           else
-            return _ => CurrentPrice.Bid;
+            return _ => (CurrentPrice?.Bid).GetValueOrDefault();
       }
       throw new NotSupportedException(method.GetType().Name + "." + method + " is not supported");
     }

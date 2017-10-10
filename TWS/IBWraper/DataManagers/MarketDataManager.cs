@@ -20,6 +20,7 @@ namespace IBApp {
       IbClient.TickPrice += OnTickPrice;
     }
 
+
     public void AddRequest(Contract contract, string genericTickList="") {
       if(activeRequests.Any(ar => ar.Value.Item1.Instrument.ToUpper() == contract.Instrument.ToUpper())) {
         return;

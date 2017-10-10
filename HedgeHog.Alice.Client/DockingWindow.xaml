@@ -534,7 +534,8 @@
 													</DataTemplate>
 												</DataGridTemplateColumn.CellEditingTemplate>
 											</DataGridTemplateColumn>
-											<DataGridTextColumn Binding="{Binding Path=Password}" Header="Password" Foreground="Transparent" />
+                      <!--<DataGridTextColumn Binding="{Binding Path=Password}" Header="Password" Foreground="Transparent" />-->
+                      <DataGridTextColumn Binding="{Binding Path=Password}" Header="Password" />
 											<DataGridCheckBoxColumn Binding="{Binding Path=IsDemo}" Header="Demo" Width="SizeToHeader" />
                       <DataGridTextColumn Binding="{Binding Path=Commission}" Header="C$" />
                       <DataGridTextColumn Binding="{Binding Path=CommissionType}" Header="CT" />

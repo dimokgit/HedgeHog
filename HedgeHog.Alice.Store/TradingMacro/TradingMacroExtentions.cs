@@ -2243,7 +2243,7 @@ namespace HedgeHog.Alice.Store {
               RatePrev1 = ri[ri.Count - 3];
               OnSetBarsCountCalc(true);
               if(BarsCountCalc > ri.Count)
-                Log = new Exception(new { RatesArraySafe = new { ratesInternal = new { ri.Count }, BarsCountCalc } } + "");
+                Log = new Exception(new { RatesArraySafe = new { Pair, BarPeriod, ratesInternal = new { ri.Count }, BarsCountCalc } } + "");
               UseRates(_ => RatesArray = ri.GetRange(BarsCountCalc.Min(ri.Count)).ToList());
               RatesDuration = RatesArray.Duration(r => r.StartDate).TotalMinutes.ToInt();
             });
@@ -3057,7 +3057,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public void SetPriceSpreadOk() {
-      IsPriceSpreadOk = this.CurrentPrice.Spread < this.PriceSpreadAverage * 3;
+      IsPriceSpreadOk = CurrentPrice!=null && CurrentPrice.Spread < this.PriceSpreadAverage * 3;
     }
     static TradingMacro() {
       Scheduler.Default.Schedule(5.FromSeconds(), () => {

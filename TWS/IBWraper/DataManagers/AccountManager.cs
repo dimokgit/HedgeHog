@@ -117,6 +117,11 @@ namespace IBApp {
     private void OnError(int reqId, int code, string error, Exception exc) {
       if(new[] { 110, 382, 383 }.Contains(code))
         RaiseOrderRemoved(reqId);
+      if(_orderContracts.ContainsKey(reqId + "")) {
+        var contract = _orderContracts[reqId + ""].contract + "";
+        var order = _orderContracts[reqId + ""].order + "";
+        Trace(new { contract, code, error, order });
+      }
     }
 
     /*
@@ -622,9 +627,15 @@ namespace IBApp {
             _PositionSubject
               .DistinctUntilChanged(t => new { t.Item2.LocalSymbol, t.Item3.Position })
               .Where(x => x.Item3.Position != 0)
-              .Take(1)
               .Timeout(TimeSpan.FromSeconds(10))
-              .Subscribe(s => OnFirstPosition(s.Item2, s.Item3), exc => _defaultMessageHandler(exc), () => { _defaultMessageHandler($"{nameof(PositionSubject)} is done."); });
+              .Catch(new Func<Exception, IObservable<PosArg>>(e => new PosArg[0].ToObservable()))
+              .Take(1)
+              .Subscribe(s => OnFirstPosition(s.Item2, s.Item3)
+                , exc => _defaultMessageHandler(exc)
+                , () => {
+                  _defaultMessageHandler($"{nameof(PositionSubject)} is done.");
+                  FetchMMRs();
+                });
           }
         return _PositionSubject;
       }
@@ -752,7 +763,8 @@ namespace IBApp {
     }
 
     public void RequestPositions() {
-      IbClient.ClientSocket.reqPositions();
+      if(PositionSubject != null)
+        IbClient.ClientSocket.reqPositions();
     }
     #endregion
 
