@@ -50,8 +50,8 @@
     <Reference Include="MongoDB.Driver.Core, Version=2.4.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\AllInOne\packages\MongoDB.Driver.Core.2.4.4\lib\net45\MongoDB.Driver.Core.dll</HintPath>
     </Reference>
-    <Reference Include="MongoExtensions, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\AllInOne\packages\MongoExtensions.1.0.0\lib\net452\MongoExtensions.dll</HintPath>
+    <Reference Include="MongoExtensions, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\AllInOne\packages\MongoExtensions.1.0.2\lib\net462\MongoExtensions.dll</HintPath>
     </Reference>
     <Reference Include="ReactiveUI, Version=7.4.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\AllInOne\packages\reactiveui-core.7.4.0\lib\Net45\ReactiveUI.dll</HintPath>

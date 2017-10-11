@@ -154,7 +154,7 @@
 
 	.NOTES
 	Author: Daniel Schroeder
-	Version: 1.5.8
+	Version: 1.5.9
 	
 	This script is designed to be called from PowerShell or ran directly from Windows Explorer.
 	If this script is ran without the $NuSpecFilePath, $ProjectFilePath, and $PackageFilePath parameters, it will automatically search for a .nuspec, project, or package file in the 
@@ -177,7 +177,7 @@ param
 
 	[parameter(Position=2,Mandatory=$false,HelpMessage="The new version number to use for the NuGet Package.",ParameterSetName="PackUsingNuSpec")]
     [parameter(Position=2,Mandatory=$false,HelpMessage="The new version number to use for the NuGet Package.",ParameterSetName="PackUsingProject")]
-	[ValidatePattern('(?i)(^(\d+(\.\d+){1,3})$)|(^(\d+\.\d+\.\d+-[a-zA-Z0-9\-\.\+]+)$)|(^(\$version\$)$)|(^$)')]	# This validation is duplicated in the Update-NuSpecFile function, so update it in both places. This regex does not represent Sematic Versioning, but the versioning that NuGet.exe allows.
+	[ValidatePattern('(?i)(^\d+(\.\d+){1,3}(-[a-zA-Z0-9\-\.\+]+)?$)|(^(\$version\$)$)|(^$)')]	# This validation is duplicated in the Update-NuSpecFile function, so update it in both places. This regex does not represent Sematic Versioning, but the versioning that NuGet.exe allows.
 	[Alias("Version")]
 	[Alias("V")]
 	[string] $VersionNumber,
@@ -403,7 +403,7 @@ function Update-NuSpecFile
 		}
 		
 		# The script's parameter validation does not seem to be enforced (probably because this is inside a function), so re-enforce it here.
-		$rxVersionNumberValidation = [regex] '(?i)(^(\d+(\.\d+){1,3})$)|(^(\d+\.\d+\.\d+-[a-zA-Z0-9\-\.\+]+)$)|(^(\$version\$)$)|(^$)'	# This validation is duplicated in the Update-NuSpecFile function, so update it in both places. This regex does not represent Sematic Versioning, but the versioning that NuGet.exe allows.
+		$rxVersionNumberValidation = [regex] '(?i)(^\d+(\.\d+){1,3}(-[a-zA-Z0-9\-\.\+]+)?$)|(^(\$version\$)$)|(^$)'	# This validation is duplicated in the script's $Version parameter validation, so update it in both places. This regex does not represent Sematic Versioning, but the versioning that NuGet.exe allows.
 
 		# If the user cancelled the prompt or did not provide a valid version number, exit the script.
 		if ((Test-StringIsNullOrWhitespace $VersionNumber) -or !$rxVersionNumberValidation.IsMatch($VersionNumber))
@@ -1278,8 +1278,8 @@ try
 		# Assume they are pushing to the typical default source.
         $sourceToPushPackageTo = $DEFAULT_NUGET_SOURCE_TO_PUSH_TO
 		
-		# Update the PushOptions to include the default source (as -Source is now a required parameter as of NuGet.exe v3.4).
-		$PushOptions += " -Source $sourceToPushPackageTo"
+		# Update the PushOptions to include the default source (as -Source is now a required parameter as of NuGet.exe v3.4.2).
+		$PushOptions = $PushOptions.Trim() + " -Source $sourceToPushPackageTo"
 	}
 
 	# If the switch to push the package to the gallery was not provided and we are allowed to prompt, prompt the user if they want to push the package.
@@ -1350,7 +1350,7 @@ try
 		$pushCommand = $pushCommand -ireplace ';', '`;'		# Escape any semicolons so they are not interpreted as the start of a new command.
 
         # Push the package to the gallery.
-		Write-Verbose "About to run Push command '$pushCommand'." -Verbose
+		Write-Verbose "About to run Push command '$pushCommand'."
 		$pushOutput = (Invoke-Expression -Command $pushCommand | Out-String).Trim()
 		
 		# Write the output of the above command to the Verbose stream.

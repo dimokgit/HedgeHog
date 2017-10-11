@@ -78,7 +78,7 @@
       <HintPath>..\AllInOne\packages\ImapX.2.0.0.18\lib\net452\ImapX.dll</HintPath>
     </Reference>
     <Reference Include="Octokit, Version=0.24.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\AllInOne\packages\Octokit.0.24.0\lib\net45\Octokit.dll</HintPath>
+      <HintPath>..\AllInOne\packages\Octokit.0.27.0\lib\net45\Octokit.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Net.Http" />
