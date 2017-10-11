@@ -1191,7 +1191,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     public class OfferMG :Offer {
-      public MongoDB.Bson.ObjectId id { get; set; }
+      public global::MongoDB.Bson.ObjectId id { get; set; }
     }
 
     TimeSpan _throttleInterval = TimeSpan.FromSeconds(1);
