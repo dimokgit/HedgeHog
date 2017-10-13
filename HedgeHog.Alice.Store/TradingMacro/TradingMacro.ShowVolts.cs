@@ -370,7 +370,7 @@ namespace HedgeHog.Alice.Store {
           .Select(r => r.StartDate)
           .DefaultIfEmpty(DateTime.MinValue)
           .First();
-        var tmRates2 = (from tm in _tradingMacros.Where(x => x.Pair != Pair && x.BarPeriod == BarPeriod).Take(1)
+        var tmRates2 = (from tm in _tradingMacros.Where(x => x.Pair.ToLower() == PairHedge.ToLower() && x.BarPeriod == BarPeriod).Take(1)
                         where tm.BarPeriod == BarPeriod
                         from tmRates in tm.UseRatesInternal(ri => ri.BackwardsIterator().TakeWhile(r => r.StartDate >= voltDate).ToArray())
                         from tmRate in tmRates

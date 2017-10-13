@@ -589,7 +589,7 @@ namespace HedgeHog.Alice.Store {
       //GlobalStorage.UseForexContext(f => {
       //  this._blackoutTimes = f.v_BlackoutTime.ToArray();
       //});
-      _pendingEntryOrders = new MemoryCache(Pair);
+      _pendingEntryOrders = null;
       OnPropertyChanged(nameof(CompositeName));
     }
     partial void OnLimitBarChanged() { OnPropertyChanged(nameof(CompositeName)); }
@@ -2728,6 +2728,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region PipAmount
+    public double PipAmountByLot(int lot) =>
+      TradesManagerStatic.PipAmount(Pair, lot, TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize);
     public double PipAmount =>
        TradesManagerStatic.PipAmount(Pair, Trades.Lots(), TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize);
     public double PipAmountBuy {
@@ -4013,6 +4015,10 @@ namespace HedgeHog.Alice.Store {
 
     private int GetLotsToTrade(Account account, double tr, bool isBuy) {
       return TradesManagerStatic.GetLotstoTrade((CurrentPrice?.Average).GetValueOrDefault(), Pair, account.Equity, TradesManager.Leverage(Pair, isBuy), tr, BaseUnitSize);
+    }
+    public int GetLotsToTrade(double equity,double mmr, double tradeRatio) {
+      return TradesManagerStatic.GetLotstoTrade((CurrentPrice?.Average).GetValueOrDefault()
+        , Pair, equity, TradesManagerStatic.Leverage(Pair, mmr), tradeRatio, BaseUnitSize);
     }
 
     public int MaxPipsToPMC() {

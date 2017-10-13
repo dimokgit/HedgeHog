@@ -329,7 +329,7 @@ namespace HedgeHog.Alice.Store {
     Action<double?, double?> _adjustExitLevels = (buyLevel, selLevel) => { throw new NotImplementedException(); };
     Action _exitTrade = () => { throw new NotImplementedException(); };
 
-    Func<Rate, double> _priceAvg = rate => rate.PriceAvg;
+    static Func<Rate, double> _priceAvg = rate => rate.PriceAvg;
     void SetCorridorStartDateAsync(DateTime? date) {
       Scheduler.CurrentThread.Schedule(TimeSpan.FromMilliseconds(1), () => CorridorStartDate = date);
     }

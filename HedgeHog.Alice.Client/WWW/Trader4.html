@@ -27,7 +27,7 @@
   <link href="Scripts/jquery-ui-1.12.1.custom/jquery-ui.min.css" rel="stylesheet" />
   <!--<link href="Scripts/jquery-ui-1.12.1.custom/jquery-ui.structure.min.css" rel="stylesheet" />
   <link href="Scripts/jquery-ui-1.12.1.custom/jquery-ui.theme.min.css" rel="stylesheet" />-->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
   <link href="scripts/bootstrap-toggle.min.css" rel="stylesheet">
   <link rel="stylesheet" href="d3-knockout/style/bar-chart-demo.css" />
   <link href="Styles/BS-dropdown-submenu.css" rel="stylesheet" />
@@ -41,7 +41,7 @@
   <!--#region scripts-->
   <script src="Scripts/jquery-3.1.1.min.js"></script>
   <script src="Scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   <script src="scripts/bootstrap-toggle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
@@ -256,11 +256,10 @@
       border-color: olive;
     }
 
-      input[type='button'].setTradeLevelActive
-      {
-        color: black;
-        font-weight:bold;
-      }
+    input[type='button'].setTradeLevelActive {
+      color: black;
+      font-weight: bold;
+    }
 
     .line .crosshair {
       fill: none;
@@ -297,19 +296,22 @@
     table.accounting {
     }
 
-    #wwwSettingsDialog.ui-dialog-content{
-      min-height:0 !important;
-      padding:0;
+    #wwwSettingsDialog.ui-dialog-content {
+      min-height: 0 !important;
+      padding: 0;
     }
-    div.wwwInfo{
-      font-size:inherit;
-      padding:0;
+
+    div.wwwInfo {
+      font-size: inherit;
+      padding: 0;
     }
-    div.wwwInfo.ui-dialog.ui-dialog-content{
-      padding:0;
-    }
-    table.wwwInfo tbody tr td{
-      text-align:right;
+
+      div.wwwInfo.ui-dialog.ui-dialog-content {
+        padding: 0;
+      }
+
+    table.wwwInfo tbody tr td {
+      text-align: right;
     }
   </style>
   <script>
@@ -424,7 +426,10 @@
                 <button data-bind="click:showOffers" title="Show Offers">
                   <span class="glyphicon glyphicon-piggy-bank"></span>
                 </button>
-                
+                <button data-bind="click:showHedgingRatios" title="Show Hedge Ratios">
+                  <i class="glyphicon glyphicon-retweet"></i>
+                </button>
+
               </li>
             </ul>
           </li>
@@ -760,14 +765,15 @@
   </div>
   <!--#endregion-->
   <!--#region Offers-->
-
   <div class="modal" data-bind="elementer:offersDialog" id="strategiesDialog" tabindex="-1" role="dialog" aria-labelledby="strategiesDialog" aria-hidden="true">
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
           <div class="modal-title" id="myModalLabel">
-            <a href="https://mlab.com/databases/forex" target="_blank">Offers</a> 
+            <a href="https://mlab.com/databases/forex" target="_blank">Offers</a>
+            <span data-bind="click:getMMRs" style="text-decoration:underline">Get MMRs</span>
+            <span data-bind="click:loadOffers" style="text-decoration:underline">Load Offers</span>
           </div>
         </div>
         <div class="modal-body">
@@ -780,12 +786,9 @@
               </tr>
             </tbody>
           </table>
-          </div>
         </div>
       </div>
     </div>
-  </div>
-
   </div>
   <!--#endregion-->
   <!--#region wwwSettings-->
@@ -856,7 +859,7 @@
           <td><span data-bind="text:d3.format('.0f')(Minutes.v),style:{fontWeight:Minutes.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v),style:{fontWeight:Distance.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.1f')(PPM.v),style:{fontWeight:PPM.mx?'bold':''}"></span></td>
-<!--          <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>-->
+          <!--          <td><span data-bind="text:d3.format('.0f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>-->
           <td><span data-bind="text:d3.format('.0f')(Power.v),style:{fontWeight:Power.mx?'bold':''}"></span></td>
         </tr>
       </tbody>
@@ -867,7 +870,7 @@
           <td><span data-bind="text:d3.format('.0f')(Minutes.v)"></span></td>
           <td><span data-bind="text:d3.format('.0f')(Distance.v)"></span></td>
           <td><span data-bind="text:d3.format('.1f')(PPM.v)"></span></td>
-<!--          <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>-->
+          <!--          <td><span data-bind="text:d3.format('.0f')(Angle.v)"></span></td>-->
           <td><span data-bind="text:d3.format('.0f')(0)"></span></td>
         </tr>
       </tfoot>
@@ -1019,6 +1022,42 @@
     </div>
   </div>
   <!--#endregion-->
+
+  <!--#region HedgingRatios-->
+  <div data-bind="elementer:hedgingRatiosDialog" style="display:none;padding:0">
+    <table border="1" cellspacing="0" class="wwwInfo">
+      <thead>
+        <tr>
+          <td>Pair</td>
+          <td>HVP</td>
+          <td>Ratio</td>
+          <td>Amount</td>
+          <td>Lot</td>
+          <td>Pip</td>
+          <td>MMR</td>
+          <td>Corr</td>
+          <td>IsBuy</td>
+        </tr>
+      </thead>
+      <tbody data-bind="foreach:hedgingRatios">
+        <tr>
+          <td data-bind="text:Pair"></td>
+          <td data-bind="text:HVP"></td>
+          <td data-bind="text:d3.format('.1f')(TradeRatio)"></td>
+          <td data-bind="text:d3.format('.0f')(TradeAmount)"></td>
+          <td data-bind="text:Lot"></td>
+          <td data-bind="text:Pip"></td>
+          <td data-bind="text:d3.format('.2f')(MMR)"></td>
+          <td data-bind="text:Corr"></td>
+          <td>
+            <button data-bind="text:IsBuy,click:$parent.openHedgeTrade"></button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!--#endregion-->
+
 </body>
 <script src='d3-knockout/app.js'></script>
 </html>

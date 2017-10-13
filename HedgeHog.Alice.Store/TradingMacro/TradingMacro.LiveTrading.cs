@@ -29,7 +29,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region Pending Action
-    static MemoryCache _pendingEntryOrders;
+    MemoryCache _pendingEntryOrders;
     public MemoryCache PendingEntryOrders {
       get {
         lock(_pendingEntryOrdersLocker) {
@@ -45,8 +45,8 @@ namespace HedgeHog.Alice.Store {
       lock(_pendingEntryOrdersLocker) {
         LogPendingActions();
         //if(_pendingEntryOrders.Contains(key)) {
-        foreach(var k in _pendingEntryOrders.Where(c => c.Key == key)) {
-          _pendingEntryOrders.Remove(k.Key);
+        foreach(var k in PendingEntryOrders.Where(c => c.Key == key)) {
+          PendingEntryOrders.Remove(k.Key);
           LogTradingAction(new { Pending = Pair, key, status = "Released." });
         }
       }
@@ -54,27 +54,27 @@ namespace HedgeHog.Alice.Store {
     //[MethodImpl(MethodImplOptions.Synchronized)]
     private void AddPendingAction(string key, object value, CacheItemPolicy cip) {
       lock(_pendingEntryOrdersLocker) {
-        if(_pendingEntryOrders.Contains(key))
+        if(PendingEntryOrders.Contains(key))
           throw new Exception(new { PendingEntryOrders = new { key, message = "Already exists" } } + "");
-        _pendingEntryOrders.Add(key, DateTimeOffset.Now, cip);
+        PendingEntryOrders.Add(key, DateTimeOffset.Now, cip);
         LogTradingAction(new { PendingEntryOrders = new { Pair, key, status = "Added." } });
       }
     }
 
     private void LogPendingActions() {
-      LogTradingAction(new { PendingEntryOrders = string.Join("\n", _pendingEntryOrders.Select(po => new { Pair, po.Key, status = "Existing" })) });
+      LogTradingAction(new { PendingEntryOrders = string.Join("\n", PendingEntryOrders.Select(po => new { Pair, po.Key, status = "Existing" })) });
     }
 
     static object _pendingEntryOrdersLocker = new object();
     private bool HasPendingOrders() {
       lock(_pendingEntryOrdersLocker)
-        return _pendingEntryOrders.Any();
+        return PendingEntryOrders.Any();
     }
     private bool HasPendingKey(string key) { return !CheckPendingKey(key); }
     //[MethodImpl(MethodImplOptions.Synchronized)]
     private bool CheckPendingKey(string key) {
       lock(_pendingEntryOrdersLocker)
-        return !_pendingEntryOrders.Contains(key);
+        return !PendingEntryOrders.Contains(key);
     }
     //[MethodImpl(MethodImplOptions.Synchronized)]
     private void CheckPendingAction(string key, Action<Action> action = null) {

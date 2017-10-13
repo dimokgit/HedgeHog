@@ -721,7 +721,7 @@ namespace IBApp {
     public void FetchMMRs() => GetTrades()
       .IfEmpty(() => {
         _defaultMessageHandler(nameof(FetchMMR) + " started");
-        TradesManagerStatic.dbOffers.ToObservable().Subscribe(o => FetchMMR(o.Pair));
+        TradesManagerStatic.dbOffers.Where(o => !o.Pair.IsCurrenncy()).ToObservable().Subscribe(o => FetchMMR(o.Pair));
       })
       .ForEach(t => _defaultMessageHandler(new { FetchMMRs = new { t.Pair, t.IsBuy, t.Lots, Message = "Won't run" } }));
     private void OnAccountSummary(int requestId, string account, string tag, string value, string currency) {

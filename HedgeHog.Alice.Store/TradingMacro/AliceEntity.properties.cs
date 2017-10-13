@@ -1949,6 +1949,18 @@ namespace HedgeHog.Alice.Store {
 
     public string PairPlain { get { return TradesManagerStatic.WrapPair(Pair); } }
 
+    private string _pairHedge = "";
+    [WwwSetting]
+    public string PairHedge {
+      get => _pairHedge;
+      set {
+        _pairHedge = value;
+      }
+    }
+
+    [WwwSetting]
+    public double HedgeMMR { get; set; } = 1;
+
     bool _FitRatesToPlotter;
 
     [Category(categoryCorridor)]
@@ -1961,6 +1973,5 @@ namespace HedgeHog.Alice.Store {
     }
 
     public int IpPort { get; set; }
-
   }
 }

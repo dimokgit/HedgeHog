@@ -217,6 +217,7 @@ namespace HedgeHog.Shared {
     public static int GetBaseUnitSize(string symbol) => GetOffer(symbol).ContractSize;
     public static int GetDigits(string symbol) => GetOffer(symbol).Digits;
     public static double GetMMR(string symbol,bool isBuy) => isBuy? GetOffer(symbol).MMRLong : GetOffer(symbol).MMRShort;
+    public static double Leverage(string pair, double mmr) => GetBaseUnitSize(pair) / mmr;
 
     private static string[] _currencies=new []{
       "USD",

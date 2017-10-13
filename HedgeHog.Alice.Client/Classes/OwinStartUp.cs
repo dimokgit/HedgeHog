@@ -360,13 +360,85 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region TradeConditions
-    public object[] ReadOffers() {
+    public void GetMMRs() {
       trader.Value.TradesManager.FetchMMRs();
+    }
+    public object[] LoadOffers() {
+      return TraderModel.LoadOffers().Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong, mmrSell = o.MMRShort }).ToArray();
+    }
+    public object[] ReadOffers() {
       return TradesManagerStatic.dbOffers.Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong, mmrSell = o.MMRShort }).ToArray();
     }
     public string[] ReadTradingConditions(string pair) {
       return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, p, name) => name).ToArray());
     }
+
+    public object[] ReadHedgingRatios(string pair) {
+      try {
+        var xx = new[] { true, false }.SelectMany(isBuy => CalcHedgedPositions(pair, isBuy));
+        return xx.Select(t => new { t.Pair, t.HVP, t.TradeRatio, t.TradeAmount, t.MMR, t.Lot, t.Corr, t.Pip, t.IsBuy }).ToArray();
+      } catch(Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        return new object[0];
+      }
+    }
+
+    private (TradingMacro tm, string Pair, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, int Corr, bool IsBuy)[] CalcHedgedPositions
+      (string hedgedPair, bool isBuy) {
+      var hedgePairs = GetHedgedTradingMacros(hedgedPair);
+      var hvps = hedgePairs.SelectMany(tm => tm.HistoricalVolatility(), (tm, hvp) => new { tm, hvp }).ToArray();
+      var hvpsSum = hvps.Sum(x => x.hvp);
+      var rc = remoteControl.Value;
+      var am = rc.MasterModel.AccountModel;
+      var mmr = hvps.Max(x => TradesManagerStatic.GetMMR(x.tm.Pair, isBuy));
+      var equity = am.Equity / mmr;
+      var xx = hvps.Select((x, i) => {
+        var r = 1 - x.hvp / hvpsSum;
+        var ta = equity * r;
+        var l = x.tm.GetLotsToTrade(ta, 1, 1);
+        return (
+          tm: x.tm,
+          Pair: x.tm.Pair,
+          HVP: x.hvp,
+          TradeRatio: r * 100,
+          TradeAmount: ta,
+          MMR: mmr,
+          Lot: l,
+          Pip: x.tm.PipAmountByLot(l).AutoRound2(2),
+          Corr: i == 0 ? 1 : -HedgeCorrelation(x.tm.Pair).SingleOrDefault(),
+          IsBuy: isBuy
+        );
+      }).ToArray();
+      return xx;
+      /// Locals
+    }
+    IEnumerable<TradingMacro> GetHedgedTradingMacros(string pair) {
+      return GetTM(pair)
+        .SelectMany(tm => GetTM(tm.Pair).Concat(GetTM(tm.PairHedge)))
+        .Where(tm => tm.IsTrader)
+        .Distinct(tm => tm.Pair)
+        ;
+      IEnumerable<TradingMacro> GetTM(string pair0) {
+        return GetTradingMacros().Where(tm => !pair0.IsNullOrWhiteSpace() && new[] { tm.Pair, tm.PairHedge }.Select(p => p.ToLower()).Contains(pair0.ToLower()));
+      }
+    }
+
+    [BasicAuthenticationFilter]
+    public void OpenHedge(string pair, bool isBuy) {
+      CalcHedgedPositions(pair, isBuy)
+        .OrderByDescending(tm => tm.Pair == pair)
+        .ForEach(t => t.tm.OpenTrade(t.Corr == 1 ? isBuy : !isBuy, t.Lot, "web: hedge open"));
+    }
+
+    Func<string, IEnumerable<int>> _hedgeCorrelation;
+    Func<string, IEnumerable<int>> HedgeCorrelation => _hedgeCorrelation ?? (_hedgeCorrelation = new Func<string, IEnumerable<int>>(pair => {
+      return (from t in GetHedgedTradingMacros(pair).Pairwise()
+              from r1 in t.Item1.UseRates(ra => ra.ToList())
+              from r2 in t.Item2.UseRates(ra => ra.ToList())
+              select alglib.pearsoncorr2(r1.ToArray(r => r.PriceAvg), r2.ToArray(r => r.PriceAvg), r1.Count.Min(r2.Count)) > 0 ? 1 : -1
+              );
+    }).Memoize());
+
     public string[] GetTradingConditions(string pair) {
       return UseTradingMacro(pair, tm => tm.TradeConditionsInfo((tc, p, name) => name).ToArray());
     }
@@ -478,9 +550,15 @@ namespace HedgeHog.Alice.Client {
     }
     public void CloseTrades(string pair) {
       try {
-        GetTradingMacro(pair).ForEach(tm => tm.CloseTrades("SignalR"));
+        GetTM(pair)
+        .SelectMany(tm => GetTM(tm.Pair).Concat(GetTM(tm.PairHedge)))
+        .Distinct(tm => tm.Pair)
+        .ForEach(tm => tm.CloseTrades("SignalR: CloseTrades"));
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+      }
+      IEnumerable<TradingMacro> GetTM(string pair0) {
+        return GetTradingMacros().Where(tm => new[] { tm.Pair, tm.PairHedge }.Select(p => p.ToLower()).Contains(pair0.ToLower()));
       }
     }
     public void MoveTradeLevel(string pair, bool isBuy, double pips) {
@@ -837,9 +915,17 @@ namespace HedgeHog.Alice.Client {
     }
 
     private IEnumerable<TradingMacro> GetTradingMacros(string pair) {
+      return GetTradingMacros()
+        .Where(tm => tm.PairPlain == pair)
+        .OrderBy(tm => tm.TradingGroup)
+        .ThenBy(tm => tm.PairIndex)
+        .AsEnumerable()
+        ?? new TradingMacro[0];
+    }
+    private IEnumerable<TradingMacro> GetTradingMacros() {
       return remoteControl?.Value?
         .TradingMacrosCopy
-        .Where(tm => tm.IsActive && tm.PairPlain == pair)
+        .Where(tm => tm.IsActive)
         .OrderBy(tm => tm.TradingGroup)
         .ThenBy(tm => tm.PairIndex)
         .AsEnumerable()

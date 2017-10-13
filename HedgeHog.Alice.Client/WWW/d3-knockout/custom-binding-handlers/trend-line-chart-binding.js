@@ -556,7 +556,7 @@
 
             svg.select("path.line.dataTps2")
               .datum(data)
-              .attr("d", line3).style("stroke", colorTps).style("opacity", opacityTps);
+              .attr("d", line3).style("stroke", "darkred").style("opacity", opacityTps);
             y3Axis.style("display", "");
           } else
             y3Axis.style("display", "none");

@@ -150,7 +150,7 @@
     if (!isConnected() || isInFlight(ratesInFlight2, 2))
       return;
     ratesInFlight2 = new Date();
-    chat.server.askRates(1200, dataViewModel.firstDate2().toISOString(), dataViewModel.lastDate2().toISOString(), pair, 'M1')
+    chat.server.askRates(1200, dataViewModel.firstDate2().toISOString(), dateAdd(dataViewModel.lastDate2(), "minute", -5).toISOString(), pair, 'M1')
       .done(function (response) {
         Enumerable.from(response)
           .forEach(function (r) {
@@ -630,7 +630,6 @@
         }).value();
     });
     // #endregion
-
     // #region wwwSettings
     var wwwSettingsElement;
     this.wwwSettingsDialog = function (element) {
@@ -666,7 +665,40 @@
       //$(wwwSettingsGridElement).jqPropertyGrid(properties);
     };
     // #endregion
-
+    // #region hedgingRatiosDialog
+    var stophedgingRatios;
+    this.hedgingRatios = ko.observableArray();
+    this.hedgingRatiosDialog = ko.observable();
+    this.showHedgingRatios = function () {
+      stophedgingRatios = false;
+      readHedgingRatios.bind(this)();
+      $(this.hedgingRatiosDialog()).dialog({
+        title: "Hedging Ratios", width: "auto", dialogClass: "dialog-compact",
+        dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
+        close: function () {
+          stophedgingRatios = true;
+          $(this).dialog("destroy");
+        }
+      });
+    }.bind(this);
+    function readHedgingRatios() {
+      var args = [pair];
+      args.noNote = true;
+      serverCall("readHedgingRatios", args, function (hrs) {
+        this.hedgingRatios(hrs);
+        if (!stophedgingRatios)
+          setTimeout(readHedgingRatios.bind(this), 2000);
+      }.bind(this),
+        function (error) {
+          showWarning("readHedgingRatios: " + error);
+          setTimeout(readHedgingRatios.bind(this), 10000);
+        }.bind(this));
+    }
+    this.openHedgeTrade = function (hp) {
+      debugger;
+      serverCall("openHedge", [pair, hp.IsBuy]);
+    }
+    // #endregion
     // #region WwwInfo
     var wwwInfoElement;
     var currentWwwInfoChartNum;
@@ -770,6 +802,12 @@
         this.offers(offers);
         $(this.offersDialog()).modal("show");
       }.bind(this));
+    }.bind(this);
+    this.loadOffers = function () {
+      serverCall("loadOffers", [], this.offers);
+    }.bind(this);
+    this.getMMRs = function () {
+      serverCall("getMMRs", []);
     }.bind(this);
     //#endregion
     this.strategiesDialog = ko.observable();
@@ -1185,6 +1223,7 @@
       serverCall("stopReplay", [pair], readReplayArguments);
     }
     // #endregion
+
     // #endregion
 
     // #region Helpers
