@@ -359,7 +359,7 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
-    #region TradeConditions
+    #region MMRs
     public void GetMMRs() {
       trader.Value.TradesManager.FetchMMRs();
     }
@@ -368,7 +368,17 @@ namespace HedgeHog.Alice.Client {
     }
     public object[] ReadOffers() {
       return TradesManagerStatic.dbOffers.Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong, mmrSell = o.MMRShort }).ToArray();
+    } 
+    public void UpdateMMRs(string pair,double mmrLong,double mmrShort) {
+      pair = pair.ToUpper();
+      GlobalStorage.UseForexMongo(c => c.Offer.Where(o => o.Pair == pair).ForEach(o => {
+        o.MMRLong = mmrLong;
+        o.MMRShort = mmrShort;
+      }), true);
     }
+    #endregion
+
+    #region TradeConditions
     public string[] ReadTradingConditions(string pair) {
       return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, p, name) => name).ToArray());
     }

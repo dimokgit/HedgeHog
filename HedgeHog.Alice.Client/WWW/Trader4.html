@@ -43,8 +43,9 @@
   <script src="Scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   <script src="scripts/bootstrap-toggle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.2/knockout-min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout-es5/0.4.6/knockout-es5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
   <script src="bower_components/d3/d3.min.js"></script>
   <!--<script src="Scripts/techan.min.js"></script>-->
@@ -312,6 +313,12 @@
 
     table.wwwInfo tbody tr td {
       text-align: right;
+    }
+    table.inline-edit td input{
+      height:100%;
+      width:100%;
+      border:none;
+      text-align:right;
     }
   </style>
   <script>
@@ -765,7 +772,7 @@
   </div>
   <!--#endregion-->
   <!--#region Offers-->
-  <div class="modal" data-bind="elementer:offersDialog" id="strategiesDialog" tabindex="-1" role="dialog" aria-labelledby="strategiesDialog" aria-hidden="true">
+  <div class="modal" data-bind="elementer:offersDialog" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header">
@@ -777,12 +784,12 @@
           </div>
         </div>
         <div class="modal-body">
-          <table border="1" cellspacing="0" class="wwwInfo">
+          <table border="1" cellspacing="0" class="wwwInfo inline-edit">
             <tbody data-bind="foreach:offers">
               <tr>
                 <td data-bind="text:pair"></td>
-                <td data-bind="text:d3.format('.3f')(mmrBuy)"></td>
-                <td data-bind="text:d3.format('.3f')(mmrSell)"></td>
+                <td><input data-bind="value:mmrBuy,event:{change:$parent.updateOffer}" /></td>
+                <td><input data-bind="value:mmrSell,event:{change:$parent.updateOffer}" /></td>
               </tr>
             </tbody>
           </table>
@@ -1058,6 +1065,6 @@
   </div>
   <!--#endregion-->
 
+  <script src='d3-knockout/app.js'></script>
 </body>
-<script src='d3-knockout/app.js'></script>
 </html>

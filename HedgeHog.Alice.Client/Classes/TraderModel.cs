@@ -35,9 +35,10 @@ using IBApp;
 using static HedgeHog.Core.JsonExtensions;
 using Newtonsoft.Json;
 using System.Net;
+using AutoMapper;
 
 namespace HedgeHog.Alice.Client {
-  public class MasterListChangedEventArgs : EventArgs {
+  public class MasterListChangedEventArgs :EventArgs {
     public Trade[] MasterTrades { get; set; }
     public MasterListChangedEventArgs(Trade[] masterTrades)
       : base() {
@@ -47,7 +48,7 @@ namespace HedgeHog.Alice.Client {
   [Export]
   [Export(typeof(TraderModelBase))]
   [Export("MainWindowModel")]
-  public class TraderModel : TraderModelBase {
+  public class TraderModel :TraderModelBase {
     static object _defaultLocker = new object();
     static private TraderModel _default;
     static public TraderModel Default {
@@ -1190,10 +1191,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    public class OfferMG :Offer {
-      public global::MongoDB.Bson.ObjectId id { get; set; }
-    }
-
     TimeSpan _throttleInterval = TimeSpan.FromSeconds(1);
     TraderModel() {
       lock(_defaultLocker) {
@@ -1202,7 +1199,6 @@ namespace HedgeHog.Alice.Client {
         _default = this;
         Initialize();
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
-        //TradesManagerStatic.dbOffers = GlobalStorage.LoadJson<Offer[]>("https://raw.githubusercontent.com/dimokgit/HedgeHog/master/HedgeHog.Alice.Client/Settings/Instruments.json");
         LoadOffers();
         _tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
         var activeTradeAccounts = (_tradingAccounts?.Count(ta => ta.IsActive)).GetValueOrDefault();
@@ -1332,7 +1328,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    public static Offer[] LoadOffers() => TradesManagerStatic.dbOffers = HedgeHog.MongoExtensions.ReadCollection<OfferMG>("mongodb://dimok:1Aaaaaaa@ds040017.mlab.com:40017/forex", "forex", "offers").ToArray();
+    public static Offer[] LoadOffers() => TradesManagerStatic.dbOffers =  GlobalStorage.LoadOffers();
 
     private void UpdateTradingAccount(Account account) {
       OnNeedTradingStatistics();
@@ -1427,7 +1423,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     void FWMaster_PriceChanged(string pair) {
-      FWMaster_PriceChanged(TradesManager, new PriceChangedEventArgs( new Price(pair), TradesManager.GetAccount(), TradesManager.GetTrades()));
+      FWMaster_PriceChanged(TradesManager, new PriceChangedEventArgs(new Price(pair), TradesManager.GetAccount(), TradesManager.GetTrades()));
     }
     void FWMaster_PriceChanged(object sender, PriceChangedEventArgs e) {
       try {
@@ -1464,7 +1460,7 @@ namespace HedgeHog.Alice.Client {
         Trade trade = e.Trade;
         OnMasterTradeAdded(trade);
         var tm = (ITradesManager)sender;
-        RunPriceChanged(new PriceChangedEventArgs( tm.GetPrice(trade.Pair), tm.GetAccount(), tm.GetTrades()));
+        RunPriceChanged(new PriceChangedEventArgs(tm.GetPrice(trade.Pair), tm.GetAccount(), tm.GetTrades()));
       } catch(Exception exc) {
         Log = exc;
       }
@@ -1484,7 +1480,7 @@ namespace HedgeHog.Alice.Client {
     //  } catch (Exception exc) { Log = exc; }
     //}
 
-    class InvokeSyncronizeEventArgs : EventArgs {
+    class InvokeSyncronizeEventArgs :EventArgs {
       public Account Account { get; set; }
       public InvokeSyncronizeEventArgs(Account account) {
         this.Account = account;

@@ -24,41 +24,16 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
 using System.Net;
 using System.Runtime.ExceptionServices;
+using AutoMapper;
 
 namespace HedgeHog.Alice.Store {
-  public class GlobalStorage : Models.ModelBase {
-    static GlobalStorage _Instance;
-    public static GlobalStorage Instance {
-      get { return GlobalStorage._Instance ?? (GlobalStorage._Instance = new GlobalStorage()); }
-      set {
-        if(GlobalStorage._Instance != null)
-          throw new InvalidOperationException("GlobalStorage has already been instantiated.");
-        GlobalStorage._Instance = value;
-      }
-    }
-    static GlobalStorage() {
-      Instance = new GlobalStorage();
-    }
-    static ForexEntities _forexContext;
-    static AliceEntities _context;
-    static object contextLocker = new object();
-    static string _databasePath;
-    public static string DatabasePath {
-      get {
-        if(string.IsNullOrWhiteSpace(_databasePath) || !System.IO.Directory.Exists(_databasePath)) {
-          _databasePath = OpenDataBasePath();
-          if(string.IsNullOrWhiteSpace(_databasePath))
-            throw new Exception("No database path ptovided for AliceEntities");
-        }
-        return _databasePath;
-      }
-      set { _databasePath = value; }
-    }
+  public class GlobalStorage :Models.ModelBase {
 
     public static string ActiveSettingsPath(string path) {
       return Path.IsPathRooted(path) ? path : Path.Combine(Lib.CurrentDirectory, "Settings", path);
     }
 
+    #region Generic List
     public class GenericRow<T> {
       public int Index { get; set; }
       public T Value { get; set; }
@@ -68,11 +43,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public GlobalStorage() {
-      //Instance = this;
-      //var list = new[] { new { Index = 1, Value = 48 } };
-      //SetGenericList(list);
-    }
     private static ListCollectionView _GenericList { get; set; }
 
     public ListCollectionView GenericList {
@@ -128,6 +98,7 @@ namespace HedgeHog.Alice.Store {
         }
       });
     }
+    #endregion
 
     static ObservableCollection<string> _Instruments;// = new ObservableCollection<string>(defaultInstruments);
     public static ObservableCollection<string> Instruments {
@@ -140,6 +111,29 @@ namespace HedgeHog.Alice.Store {
     static void SetTimeout(IObjectContextAdapter oca, int timeOut) {
       oca.ObjectContext.CommandTimeout = timeOut;
     }
+
+
+    //TradesManagerStatic.dbOffers = GlobalStorage.LoadJson<Offer[]>("https://raw.githubusercontent.com/dimokgit/HedgeHog/master/HedgeHog.Alice.Client/Settings/Instruments.json");
+    #region Forex Mongo
+    static IMapper offersMapper = new MapperConfiguration(cfg => cfg.CreateMap<MongoDB.Offer, HedgeHog.Shared.Offer>()).CreateMapper();
+    static string mongoConnectionString = "mongodb://dimok:1Aaaaaaa@ds040017.mlab.com:40017/forex";
+    static MongoDB.ForexDbContext _ForexMongoFactory;
+    static MongoDB.ForexDbContext ForexMongoFactory => _ForexMongoFactory ?? (_ForexMongoFactory = new MongoDB.ForexDbContext(mongoConnectionString));
+    public static T UseForexMongo<T>(Func<MongoDB.ForexDbContext, T> func) => func(ForexMongoFactory);
+    public static void UseForexMongo(Action<MongoDB.ForexDbContext> action, bool save = false) {
+      var c = ForexMongoFactory;
+      action(c);
+      if(save) c.SaveChanges();
+    }
+    public static void ForexMongoSave() => UseForexMongo(c => c.SaveChanges());
+    public static Shared.Offer[] LoadOffers() => UseForexMongo(c => c.Offer.Select(o => offersMapper.Map<Shared.Offer>(o)).ToArray());
+
+    /// <summary>
+    /// obsolete
+    /// </summary>
+    class OfferMG :Shared.Offer { public global::MongoDB.Bson.ObjectId id { get; set; } }
+    static Shared.Offer[] LoadOffers_Old() => HedgeHog.MongoExtensions.ReadCollection<OfferMG>(mongoConnectionString, "forex", "offers").ToArray();
+    #endregion
 
     static ForexEntities ForexEntitiesFactory() {
       var fe = new ForexEntities();
@@ -194,7 +188,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region JSON
-    class AllPropertiesResolver : DefaultContractResolver {
+    class AllPropertiesResolver :DefaultContractResolver {
       protected override List<MemberInfo> GetSerializableMembers(Type objectType) {
         return objectType.GetProperties()
             .Where(p => p.GetIndexParameters().Length == 0)
@@ -240,7 +234,7 @@ namespace HedgeHog.Alice.Store {
         : File.ReadAllText(ActiveSettingsPath(_path()));
       return JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings {
         Error = (s, e) => {
-          if(errors==null)
+          if(errors == null)
             ExceptionDispatchInfo.Capture(e.ErrorContext.Error).Throw();
           e.ErrorContext.Handled = true;
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(e.ErrorContext.Error);

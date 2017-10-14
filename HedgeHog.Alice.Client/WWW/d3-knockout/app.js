@@ -4,7 +4,8 @@
 /// <reference path="../scripts/traverse.js" />
 /// <reference path="../Scripts/pnotify.custom.min.js" />
 /// http://sciactive.github.io/pnotify/#demos-simple
-/// <reference path="http://knockoutjs.com/downloads/knockout-3.3.0.js" />
+/// <reference path="../Scripts/knockout-3.4.2.js" />
+/// <reference path="../Scripts/knockout.mapping-latest.js" />
 /// <reference path="https://code.jquery.com/jquery-2.1.3.js" />
 /// <reference path="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore.js" />
 /// <reference path="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js" />
@@ -797,18 +798,22 @@
     //#region
     this.offersDialog = ko.observable();
     this.offers = ko.observableArray();
+    function mapOffers(offers) { this.offers(offers.map(function (o) { return ko.mapping.fromJS(o); })); }
     this.showOffers = function () {
       serverCall("readOffers", [], function (offers) {
-        this.offers(offers);
+        mapOffers.bind(this)(offers);
         $(this.offersDialog()).modal("show");
       }.bind(this));
     }.bind(this);
     this.loadOffers = function () {
-      serverCall("loadOffers", [], this.offers);
+      serverCall("loadOffers", [], mapOffers.bind(this));
     }.bind(this);
     this.getMMRs = function () {
       serverCall("getMMRs", []);
     }.bind(this);
+    this.updateOffer = function (a, b, c) {
+      serverCall("updateMMRs", [a.pair(), a.mmrBuy(), a.mmrSell()]);
+    }
     //#endregion
     this.strategiesDialog = ko.observable();
     var strategyNick = this.strategyNick = ko.observable();

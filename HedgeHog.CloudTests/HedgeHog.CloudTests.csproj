@@ -8,7 +8,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HedgeHog.CloudTests</RootNamespace>
     <AssemblyName>HedgeHog.CloudTests</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
@@ -75,9 +75,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ImapX, Version=2.0.0.18, Culture=neutral, PublicKeyToken=5992873d65130d1f, processorArchitecture=MSIL">
-      <HintPath>..\AllInOne\packages\ImapX.2.0.0.18\lib\net452\ImapX.dll</HintPath>
+      <HintPath>..\AllInOne\packages\ImapX.2.0.0.18\lib\net46\ImapX.dll</HintPath>
     </Reference>
-    <Reference Include="Octokit, Version=0.24.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Octokit, Version=0.27.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\Octokit.0.27.0\lib\net45\Octokit.dll</HintPath>
     </Reference>
     <Reference Include="System" />
