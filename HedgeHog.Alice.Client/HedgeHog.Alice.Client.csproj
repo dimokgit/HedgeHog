@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HedgeHog.Alice.Client</RootNamespace>
     <AssemblyName>HedgeHog.Alice.Client</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -45,7 +45,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\..\..\Data\Forex\Builds\Debug_RealMicro 4\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\Data\Forex\Builds\Debug_RealMicro 3\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -236,7 +236,7 @@
       <HintPath>..\AllInOne\packages\Microsoft.Owin.StaticFiles.3.1.0\lib\net45\Microsoft.Owin.StaticFiles.dll</HintPath>
     </Reference>
     <Reference Include="Mongo.EF, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\AllInOne\packages\Mongo.EF.0.0.0-preview-01\lib\net461\Mongo.EF.dll</HintPath>
+      <HintPath>..\AllInOne\packages\Mongo.EF.0.0.0-preview-02\lib\net461\Mongo.EF.dll</HintPath>
     </Reference>
     <Reference Include="MongoDB.Bson, Version=2.4.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\MongoDB.Bson.2.4.4\lib\net45\MongoDB.Bson.dll</HintPath>
@@ -362,8 +362,9 @@
       <HintPath>..\AllInOne\packages\Microsoft.Tpl.Dataflow.4.5.24\lib\portable-net45+win8+wpa81\System.Threading.Tasks.Dataflow.dll</HintPath>
     </Reference>
     <Reference Include="System.Transactions" />
-    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\AllInOne\packages\System.ValueTuple.4.4.0\lib\net461\System.ValueTuple.dll</HintPath>
+    <Reference Include="System.ValueTuple">
+      <HintPath>..\AllInOne\packages\System.ValueTuple.4.4.0\lib\net47\System.ValueTuple.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Web.Cors, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\Microsoft.AspNet.Cors.5.2.3\lib\net45\System.Web.Cors.dll</HintPath>
@@ -486,12 +487,13 @@
     <Compile Include="RemoteControl\RemoteControlModel.cs" />
     <Compile Include="RemoteControl\RemoteControlModel.SignalR.cs" />
     <Compile Include="RemoteControl\RemoteControlModel.Strategy.cs" />
-    <Compile Include="Service References\TraderService\Reference.cs">
+    <Compile Include="Classes\TraderModel.cs" />
+    <Compile Include="Service References\TraderService\Reference.cs" />
+    <Compile Include="Service References\TraderService\Reference1.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
-    <Compile Include="Classes\TraderModel.cs" />
     <Compile Include="UI\Alice.xaml.cs">
       <DependentUpon>Alice.xaml</DependentUpon>
     </Compile>
@@ -829,6 +831,12 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Service References\TraderService\configuration.svcinfo" />
+    <Content Include="Service References\TraderService\configuration91.svcinfo" />
+    <Content Include="Service References\TraderService\Reference.svcmap">
+      <Generator>WCF Proxy Generator</Generator>
+      <LastGenOutput>Reference1.cs</LastGenOutput>
+    </Content>
     <Content Include="Settings\EURUSD%281%29_Last.txt" />
     <Resource Include="Settings\RadDocking.xml" />
     <Resource Include="Settings\Settings.xml" />
@@ -2433,23 +2441,11 @@
     <Resource Include="Images\down-arrow-3675-16.png" />
     <Resource Include="Themes\UpArrow-32.png" />
     <Resource Include="Themes\DownArrow-32.png" />
-    <None Include="Service References\TraderService\configuration91.svcinfo" />
-    <None Include="Service References\TraderService\configuration.svcinfo" />
-    <None Include="Service References\TraderService\Reference.svcmap">
-      <Generator>WCF Proxy Generator</Generator>
-      <LastGenOutput>Reference.cs</LastGenOutput>
-    </None>
-    <Content Include="bin\Debug_01\Store\Alice.sdf" />
-    <Content Include="bin\Debug_02\Store\Alice.sdf" />
-    <Content Include="bin\DTurbo\Store\Alice.sdf" />
     <Resource Include="Images\DownArrow-32.png" />
     <Resource Include="Images\UpArrow-32.png" />
     <Resource Include="HedgeHog.ico" />
     <Resource Include="FodyWeavers.xml" />
     <Content Include="Store\Alice.sdf" />
-  </ItemGroup>
-  <ItemGroup>
-    <WCFMetadataStorage Include="Service References\TraderService\" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="SHDocVw">
@@ -2463,54 +2459,24 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
-    <PublishFile Include="bin\Debug_01\Store\Alice.sdf">
-      <Visible>False</Visible>
-      <PublishState>Exclude</PublishState>
-      <IncludeHash>True</IncludeHash>
-      <Group>
-      </Group>
-      <TargetPath>
-      </TargetPath>
-      <FileType>File</FileType>
-    </PublishFile>
-    <PublishFile Include="bin\Debug_02\Store\Alice.sdf">
-      <Visible>False</Visible>
-      <PublishState>Exclude</PublishState>
-      <IncludeHash>True</IncludeHash>
-      <Group>
-      </Group>
-      <TargetPath>
-      </TargetPath>
-      <FileType>File</FileType>
-    </PublishFile>
-    <PublishFile Include="bin\DTurbo\Store\Alice.sdf">
-      <Visible>False</Visible>
-      <PublishState>Exclude</PublishState>
-      <IncludeHash>True</IncludeHash>
-      <Group>
-      </Group>
-      <TargetPath>
-      </TargetPath>
-      <FileType>File</FileType>
-    </PublishFile>
     <PublishFile Include="ReactiveUI.Blend">
       <Visible>False</Visible>
-      <PublishState>Include</PublishState>
-      <IncludeHash>True</IncludeHash>
       <Group>
       </Group>
       <TargetPath>
       </TargetPath>
+      <PublishState>Include</PublishState>
+      <IncludeHash>True</IncludeHash>
       <FileType>Assembly</FileType>
     </PublishFile>
     <PublishFile Include="ReactiveUI.Xaml">
       <Visible>False</Visible>
-      <PublishState>Include</PublishState>
-      <IncludeHash>True</IncludeHash>
       <Group>
       </Group>
       <TargetPath>
       </TargetPath>
+      <PublishState>Include</PublishState>
+      <IncludeHash>True</IncludeHash>
       <FileType>Assembly</FileType>
     </PublishFile>
   </ItemGroup>

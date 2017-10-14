@@ -1,6 +1,0 @@
-[26 07:50:12]  **************** Exception ***************
-News Done.
-
-[26 07:50:26]  **************** Exception ***************
-Account RealMicro logged out.
-

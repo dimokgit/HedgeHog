@@ -1332,7 +1332,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    public static Offer[] LoadOffers() => TradesManagerStatic.dbOffers = HedgeHog.MongoExtensions.ReadCollection<OfferMG>("mongodb://dimok:1Aaaaaaa@ds040017.mlab.com:40017/forex", "forex", "offer").ToArray();
+    public static Offer[] LoadOffers() => TradesManagerStatic.dbOffers = HedgeHog.MongoExtensions.ReadCollection<OfferMG>("mongodb://dimok:1Aaaaaaa@ds040017.mlab.com:40017/forex", "forex", "offers").ToArray();
 
     private void UpdateTradingAccount(Account account) {
       OnNeedTradingStatistics();
