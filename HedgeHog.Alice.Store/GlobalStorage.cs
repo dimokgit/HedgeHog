@@ -122,6 +122,7 @@ namespace HedgeHog.Alice.Store {
       public ForexDbContext(string connection) : base(connection) { }
       public Microsoft.EntityFrameworkCore.DbSet<MongoDB.TradingMacroSettings> TradingMacroSettings { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<TradingAccount> TradingAccount { get; set; }
+      public Microsoft.EntityFrameworkCore.DbSet<TraderModelPersist> TraderSettings { get; set; }
     }
 
     #endregion
@@ -136,20 +137,35 @@ namespace HedgeHog.Alice.Store {
       action(c);
       if(save) c.SaveChanges();
     }
-    public static void ForexMongoSave() => UseForexMongo(c => c.SaveChanges()); 
+    public static void ForexMongoSave() => UseForexMongo(c => c.SaveChanges());
     #endregion
 
+    #region Offers
     static IMapper offersMapper = new MapperConfiguration(cfg => cfg.CreateMap<MongoDB.Offer, HedgeHog.Shared.Offer>()).CreateMapper();
-    public static Shared.Offer[] LoadOffers() => UseForexMongo(c => c.Offer.Select(o => offersMapper.Map<Shared.Offer>(o)).ToArray());
+    public static Shared.Offer[] LoadOffers() => UseForexMongo(c => c.Offer.Select(o => offersMapper.Map<Shared.Offer>(o)).ToArray()); 
+    #endregion
 
+    #region TraderSettings
+    static IMapper traderMapper = new MapperConfiguration(cfg => cfg.CreateMap<TraderModelPersist, TraderModelBase>()).CreateMapper();
+    static IMapper traderMapper2 = new MapperConfiguration(cfg => cfg.CreateMap<TraderModelBase, TraderModelPersist>()).CreateMapper();
+    public static void LoadTradeSettings(TraderModelBase trader) => UseForexMongo(c
+      => c.TraderSettings.Find(TraderModelPersist.CurrentDirectory()).YieldNotNull().ForEach(o => traderMapper.Map(o, trader)));
+    public static void SaveTraderSettings(TraderModelBase trader) => UseForexMongo(c => {
+      var ts = c.TraderSettings.Find(trader._key);
+      if(ts == null)
+        c.TraderSettings.Add(traderMapper2.Map<TraderModelPersist>(trader));
+      else
+        traderMapper2.Map(trader, ts);
+    }, true); 
+    #endregion
+
+    #region TradingMacro
     static IMapper tradingMacroMapper2 = new MapperConfiguration(cfg => cfg.CreateMap<TradingMacro, MongoDB.TradingMacroSettings>()).CreateMapper();
-    static IMapper tradingMacroMapper = new MapperConfiguration(cfg => cfg.CreateMap< MongoDB.TradingMacroSettings, TradingMacro>()).CreateMapper();
+    static IMapper tradingMacroMapper = new MapperConfiguration(cfg => cfg.CreateMap<MongoDB.TradingMacroSettings, TradingMacro>()).CreateMapper();
     public static TradingMacro[] LoadTradingMacros() => UseForexMongo(c => c.TradingMacroSettings.Select(o => tradingMacroMapper.Map<TradingMacro>(o)).ToArray());
     public static void SaveTradingMacros(IEnumerable<TradingMacro> tms) =>
-      UseForexMongo(c => c.TradingMacroSettings.AddRange(
-        tms.Select(o => tradingMacroMapper2.Map<MongoDB.TradingMacroSettings>(o))
-        .Do(o=>o._id= ObjectId.GenerateNewId())
-        .ToArray()), true);
+      UseForexMongo(c => c.TradingMacroSettings.UpdateRange(tms.Select(o => tradingMacroMapper2.Map<MongoDB.TradingMacroSettings>(o))), true);
+    #endregion
 
     /// <summary>
     /// obsolete
@@ -158,6 +174,7 @@ namespace HedgeHog.Alice.Store {
     static Shared.Offer[] LoadOffers_Old() => HedgeHog.MongoExtensions.ReadCollection<OfferMG>(mongoConnectionString, "forex", "offers").ToArray();
     #endregion
 
+    #region Forex Entitites
     static ForexEntities ForexEntitiesFactory() {
       var fe = new ForexEntities();
       SetTimeout(fe, 60 * 1);
@@ -204,6 +221,7 @@ namespace HedgeHog.Alice.Store {
     static void OnAliceMaterializer(ObjectMaterializedEventArgs p) {
       AliceMaterializerSubject.OnNext(p);
     }
+    #endregion 
     #endregion
 
     static void _context_ObjectMaterialized(object sender, System.Data.Entity.Core.Objects.ObjectMaterializedEventArgs e) {
@@ -267,6 +285,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
     public static string OpenDataBasePath() {
       var dlg = new Microsoft.Win32.OpenFileDialog();
       dlg.FileName = "Alice";

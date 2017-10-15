@@ -121,21 +121,10 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Properties
-    private bool _IsInVirtualTrading;
     public bool IsInVirtualTrading {
       get { return MasterAccount.IsVirtual; }
     }
 
-    private int _IpPort = 0;
-    public override int IpPort {
-      get { return _IpPort; }
-      set {
-        if(_IpPort != value) {
-          _IpPort = value;
-          RaisePropertyChangedCore();
-        }
-      }
-    }
     private int _IpPortActual = 0;
     public int IpPortActual {
       get { return _IpPortActual; }
@@ -837,6 +826,9 @@ namespace HedgeHog.Alice.Client {
         //GlobalStorage.UseAliceContextSaveChanges();
 
         //GlobalStorage.SaveJson(_tradingAccounts, _accountsPath);
+        //IMapper traderMapper2 = new MapperConfiguration(cfg => cfg.CreateMap<TraderModelBase, TraderModelPersist>()).CreateMapper();
+        //GlobalStorage.UseForexMongo(c => c.TraderSettings.Add(traderMapper2.Map<TraderModelPersist>(this)));
+        GlobalStorage.SaveTraderSettings(this);
         GlobalStorage.ForexMongoSave();
         Log = new Exception("Trade accounts were saved");
       } catch(Exception exc) {
@@ -1185,7 +1177,13 @@ namespace HedgeHog.Alice.Client {
     }
 
     TimeSpan _throttleInterval = TimeSpan.FromSeconds(1);
-    TraderModel() {
+    static TraderModel() {
+      var pack = new global::MongoDB.Bson.Serialization.Conventions.ConventionPack {
+        new global::MongoDB.Bson.Serialization.Conventions.EnumRepresentationConvention(global::MongoDB.Bson.BsonType.String)
+      };
+      global::MongoDB.Bson.Serialization.Conventions.ConventionRegistry.Register("EnumStringConvention", pack, t => true);
+    }
+    TraderModel():base() {
       lock(_defaultLocker) {
         if(_default != null)
           throw new InvalidOperationException();
@@ -1323,7 +1321,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    public static Offer[] LoadOffers() => TradesManagerStatic.dbOffers =  GlobalStorage.LoadOffers();
+    public static Offer[] LoadOffers() => TradesManagerStatic.dbOffers = GlobalStorage.LoadOffers();
 
     private void UpdateTradingAccount(Account account) {
       OnNeedTradingStatistics();
@@ -1346,6 +1344,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     private void Initialize() {
+      GlobalStorage.LoadTradeSettings(this);
       var settings = new WpfPersist.UserSettingsStorage.Settings().Dictionary;
       DatabasePath = settings.Where(kv => kv.Key.Contains("DatabasePath")).LastOrDefault().Value;
       //if (!string.IsNullOrWhiteSpace(DatabasePath)) GlobalStorage.DatabasePath = DatabasePath;

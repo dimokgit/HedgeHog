@@ -607,6 +607,7 @@
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Classes\ClassDiagram1.cd" />
     <None Include="HedgeHog.Alice.Client_TemporaryKey.pfx" />
     <None Include="packages.config">
       <SubType>Designer</SubType>

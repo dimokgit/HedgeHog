@@ -481,7 +481,7 @@
 									</Button.ToolTip>
 								</Button>
 								<ComboBox SelectedValue="{Binding TradingAccount}" SelectedIndex="{state:UserSettings Default=0}" Name="TradingAccount" ItemsSource="{Binding TradingAccounts}" />
-								<u:TextBox2 Text2="{Binding IpPort,Mode=TwoWay,FallbackValue='0'}" Text="{state:UserSettings Default='0'}" Name="IpPort" MinWidth="30" ToolTip="IP Port" />
+								<u:TextBox2 Text="{Binding IpPort,Mode=TwoWay,FallbackValue='80'}"  Name="IpPort" MinWidth="30" ToolTip="IP Port" />
 								<Button Command="{Binding StepBackCommand}" Content="_&lt;&lt;"></Button>
 								<u:CheckBox2 IsChecked2="{Binding VirtualPause,Mode=TwoWay}" IsChecked="{state:UserSettings Default=true}" Name="chkVP" Content="_Pause"/>
 								<Button Command="{Binding StepForwardCommand}" Content=">_>"></Button>

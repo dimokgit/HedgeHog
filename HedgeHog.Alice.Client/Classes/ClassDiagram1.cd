@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="HedgeHog.Alice.Client.MasterListChangedEventArgs" Collapsed="true">
+    <Position X="0.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAA=</HashCode>
+      <FileName>Classes\TraderModel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="HedgeHog.Alice.Client.TraderModel">
+    <Position X="2.25" Y="0.5" Width="3.25" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <NestedTypes>
+      <Delegate Name="HedgeHog.Alice.Client.TraderModel.MasterListChangedeventHandler" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Classes\TraderModel.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Delegate>
+      <Class Name="HedgeHog.Alice.Client.TraderModel.InvokeSyncronizeEventArgs" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Classes\TraderModel.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>13qN67WZ6TeHp9uuAWn9f71ezemS+fz9/eh23n6blI8=</HashCode>
+      <FileName>Classes\TraderModel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Enum Name="HedgeHog.Alice.Client.AliceModes" Collapsed="true">
+    <Position X="0.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAACAAAAA=</HashCode>
+      <FileName>Classes\TraderModel.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

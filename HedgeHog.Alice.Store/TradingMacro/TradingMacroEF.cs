@@ -11,7 +11,10 @@ using Newtonsoft.Json;
 
 namespace HedgeHog.Alice.Store {
   //[JsonObject(MemberSerialization.OptOut)]
-  public partial class TradingMacro : EntityObject {
+  public class TradingMacroPersisted :EntityObject {
+    public global::MongoDB.Bson.ObjectId _id { get; set; }
+  }
+  public partial class TradingMacro :TradingMacroPersisted {
     #region Factory Method
 
     /// <summary>

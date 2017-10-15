@@ -11,6 +11,8 @@ using System.Diagnostics;
 
 namespace HedgeHog.Models {
   public class ModelBase : INotifyPropertyChanged {
+    [System.ComponentModel.DataAnnotations.Key]
+    public string _key { get; set; }
     #region INotifyPropertyChanged Members
 
     #region PropertyChanged Event
