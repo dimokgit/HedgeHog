@@ -252,7 +252,7 @@ namespace HedgeHog.Alice.Store {
       this.ObservableForProperty(tm => tm.Pair, false, false)
         .Where(oc => !string.IsNullOrWhiteSpace(oc.Value) && !IsInVirtualTrading)
         .Throttle(1.FromSeconds())
-        .ObserveOn(Application.Current.Dispatcher)
+        .ObserveOn(Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher)
         .Subscribe(oc => {
           LoadActiveSettings();
           SubscribeToEntryOrderRelatedEvents();
@@ -1156,7 +1156,7 @@ namespace HedgeHog.Alice.Store {
     IEnumerable<TradingMacro> TradingMacrosActive => _tradingMacros;
     Func<ITradesManager> _TradesManager = () => null;
     public ITradesManager TradesManager { get { return _TradesManager(); } }
-    public bool HasTicks => TradesManager.HasTicks;
+    public bool HasTicks => (TradesManager?.HasTicks).GetValueOrDefault();
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
       _tradingMacros = tradingMacros;
       Action<Expression<Func<TradingMacro, bool>>> check = g => TradingMacrosByPair()
@@ -1461,8 +1461,6 @@ namespace HedgeHog.Alice.Store {
         CorridorStats.Rates = null;
         UseRatesInternal(ri => ri.Clear());
         RateLast = null;
-        WaveDistanceForTrade = double.NaN;
-        WaveLength = 0;
         _waves = null;
         _sessionInfo = "";
         _isSelfStrategy = false;
@@ -2759,7 +2757,7 @@ namespace HedgeHog.Alice.Store {
     Trade _lastTrade;
 
     public Trade LastTrade {
-      get { return _lastTrade ?? (_lastTrade = TradesManager.TradeFactory(Pair)); }
+      get { return _lastTrade ?? (_lastTrade = TradesManager?.TradeFactory(Pair)); }
       set {
         if(value == null)
           return;
@@ -3059,7 +3057,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public void SetPriceSpreadOk() {
-      IsPriceSpreadOk = CurrentPrice!=null && CurrentPrice.Spread < this.PriceSpreadAverage * 3;
+      IsPriceSpreadOk = CurrentPrice != null && CurrentPrice.Spread < this.PriceSpreadAverage * 3;
     }
     static TradingMacro() {
       Scheduler.Default.Schedule(5.FromSeconds(), () => {
@@ -3962,7 +3960,7 @@ namespace HedgeHog.Alice.Store {
         if(!IsInVirtualTrading && swLocal.Elapsed > TimeSpan.FromSeconds(5)) {
           Log = new Exception("RunPrice({0}) took {1:n1} sec.".Formater(Pair, swLocal.Elapsed.TotalSeconds));
         }
-        if(UseRates(ra=> ra.Count == 0).Single())
+        if(UseRates(ra => ra.Count == 0).Single())
           RatesArray.Clear();
         timeSpanDict.Add("RatesArraySafe", swLocal.ElapsedMilliseconds);
       } catch(Exception exc) { Log = exc; }
@@ -4016,7 +4014,7 @@ namespace HedgeHog.Alice.Store {
     private int GetLotsToTrade(Account account, double tr, bool isBuy) {
       return TradesManagerStatic.GetLotstoTrade((CurrentPrice?.Average).GetValueOrDefault(), Pair, account.Equity, TradesManager.Leverage(Pair, isBuy), tr, BaseUnitSize);
     }
-    public int GetLotsToTrade(double equity,double mmr, double tradeRatio) {
+    public int GetLotsToTrade(double equity, double mmr, double tradeRatio) {
       return TradesManagerStatic.GetLotstoTrade((CurrentPrice?.Average).GetValueOrDefault()
         , Pair, equity, TradesManagerStatic.Leverage(Pair, mmr), tradeRatio, BaseUnitSize);
     }
@@ -4815,8 +4813,8 @@ namespace HedgeHog.Alice.Store {
       }
       public IList<Rate> Rates {
         get {
-          if(_Rates == null || !_Rates.Any())
-            throw new NullReferenceException();
+          //if(_Rates == null || !_Rates.Any())
+          //  throw new NullReferenceException();
           return _Rates;
         }
         set {
@@ -5059,22 +5057,6 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    #region WaveLength
-    private int _WaveLength;
-    public int WaveLength {
-      get {
-        if(_WaveLength == 0)
-          throw new ArgumentOutOfRangeException("WaveLength");
-        return _WaveLength;
-      }
-      set {
-        if(_WaveLength != value) {
-          _WaveLength = value;
-          OnPropertyChanged("WaveLength");
-        }
-      }
-    }
-    #endregion
     public double WaveDistanceInPips { get { return InPips(WaveDistance); } }
 
     public void MakeGhosts() {
@@ -5138,20 +5120,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    double _WaveDistanceForTrade = double.NaN;
-
-    public double WaveDistanceForTrade {
-      get {
-        if(double.IsNaN(_WaveDistanceForTrade))
-          throw new ArgumentOutOfRangeException("WaveDistanceForTrade");
-        return _WaveDistanceForTrade;
-      }
-      set {
-        if(_WaveDistanceForTrade == value)
-          return;
-        _WaveDistanceForTrade = value;
-      }
-    }
     double _WaveDistance;
     /// <summary>
     /// Distance for WaveShort

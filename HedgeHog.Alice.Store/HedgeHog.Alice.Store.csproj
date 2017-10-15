@@ -280,6 +280,7 @@
     <Compile Include="AbsentTrade.cs" />
     <Compile Include="Models\TradingAccount.cs" />
     <Compile Include="TradingAccountModel.cs" />
+    <Compile Include="TradingMacroSettings.cs" />
     <Compile Include="TradingMacro\AliceEntity.properties.cs" />
     <Compile Include="TradingMacro\AliceEntityExtender_MC.cs" />
     <Compile Include="TradingMacro\Exceptions.cs" />

@@ -9,6 +9,7 @@ using HedgeHog.Shared;
 //using System.Reactive.Subjects;
 using NotifyCollectionChangedWrapper;
 using System.Collections.ObjectModel;
+using System.Windows;
 
 namespace HedgeHog.Alice.Store {
   public class CorridorStatistics : HedgeHog.Models.ModelBase {
@@ -95,7 +96,7 @@ namespace HedgeHog.Alice.Store {
     private double _StDev = double.NaN;
     public double StDev {
       get {
-        if (double.IsNaN(_StDev)) throw new NullReferenceException();
+        //if ( double.IsNaN(_StDev)) throw new NullReferenceException();
         return _StDev;
       }
       set {
