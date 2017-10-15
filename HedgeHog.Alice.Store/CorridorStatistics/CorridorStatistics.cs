@@ -26,12 +26,6 @@ namespace HedgeHog.Alice.Store {
         Rate rate2;
         this.Slope = CalculateSlope(rateBase, ratesOther, interval, out rate2);
         this.Rate2 = rate2;
-        if (false) {
-          var rates = new[] { rateBase, ratesOther[0] }.OrderBars().ToArray();
-          var y = rates[1].PriceAvg > rates[0].PriceAvg ? rates[1].PriceHigh - rates[0].PriceLow : rates[1].PriceLow - rates[0].PriceHigh;
-          var x = (rates[1].StartDate - rates[0].StartDate).TotalMinutes / interval.TotalMinutes;
-          this.Slope = y / x;
-        }
       }
       static double CalculateSlope(Rate rate1, ICollection<Rate> rates2, TimeSpan interval, out Rate rate) {
         var slopes = new List<Tuple<Rate, double>>();
@@ -50,21 +44,7 @@ namespace HedgeHog.Alice.Store {
 
       }
     }
-    NotifyCollectionChangedWrapper<LegInfo> _LegInfos;
-    public NotifyCollectionChangedWrapper<LegInfo> LegInfos {
-      get {
-        return _LegInfos;
-      }
-    }
     ~CorridorStatistics() {
-    }
-    public void LegInfosClear() {
-      GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => LegInfos.Clear());
-    }
-    public LegInfo LegInfosAdd(Rate rate1, Rate rate2, TimeSpan interval) {
-      var li = new LegInfo(rate1, rate2, interval);
-      GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => LegInfos.Add(li));
-      return li;
     }
 
 

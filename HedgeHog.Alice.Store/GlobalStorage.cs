@@ -25,6 +25,7 @@ using Newtonsoft.Json;
 using System.Net;
 using System.Runtime.ExceptionServices;
 using AutoMapper;
+using MongoDB.Bson;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage :Models.ModelBase {
@@ -115,14 +116,17 @@ namespace HedgeHog.Alice.Store {
 
     //TradesManagerStatic.dbOffers = GlobalStorage.LoadJson<Offer[]>("https://raw.githubusercontent.com/dimokgit/HedgeHog/master/HedgeHog.Alice.Client/Settings/Instruments.json");
     #region Forex Mongo
-    #region TradingMacro
 
+    #region ForexDbContext
     public class ForexDbContext :MongoDB.ForexDbContext {
       public ForexDbContext(string connection) : base(connection) { }
       public Microsoft.EntityFrameworkCore.DbSet<MongoDB.TradingMacroSettings> TradingMacroSettings { get; set; }
+      public Microsoft.EntityFrameworkCore.DbSet<TradingAccount> TradingAccount { get; set; }
     }
 
     #endregion
+
+    #region ForexDbContext factory
     static string mongoConnectionString = "mongodb://dimok:1Aaaaaaa@ds040017.mlab.com:40017/forex";
     static ForexDbContext _ForexMongoFactory;
     static ForexDbContext ForexMongoFactory => _ForexMongoFactory ?? (_ForexMongoFactory = new ForexDbContext(mongoConnectionString));
@@ -132,13 +136,20 @@ namespace HedgeHog.Alice.Store {
       action(c);
       if(save) c.SaveChanges();
     }
-    public static void ForexMongoSave() => UseForexMongo(c => c.SaveChanges());
+    public static void ForexMongoSave() => UseForexMongo(c => c.SaveChanges()); 
+    #endregion
 
     static IMapper offersMapper = new MapperConfiguration(cfg => cfg.CreateMap<MongoDB.Offer, HedgeHog.Shared.Offer>()).CreateMapper();
     public static Shared.Offer[] LoadOffers() => UseForexMongo(c => c.Offer.Select(o => offersMapper.Map<Shared.Offer>(o)).ToArray());
 
-    static IMapper tradingMacroMapper = new MapperConfiguration(cfg => cfg.CreateMap<TradingMacro, MongoDB.TradingMacroSettings>()).CreateMapper();
-    public static TradingMacro[] LoadTradingMacros() => UseForexMongo(c => c.TradingMacroSettings.Select(o => offersMapper.Map<TradingMacro>(o)).ToArray());
+    static IMapper tradingMacroMapper2 = new MapperConfiguration(cfg => cfg.CreateMap<TradingMacro, MongoDB.TradingMacroSettings>()).CreateMapper();
+    static IMapper tradingMacroMapper = new MapperConfiguration(cfg => cfg.CreateMap< MongoDB.TradingMacroSettings, TradingMacro>()).CreateMapper();
+    public static TradingMacro[] LoadTradingMacros() => UseForexMongo(c => c.TradingMacroSettings.Select(o => tradingMacroMapper.Map<TradingMacro>(o)).ToArray());
+    public static void SaveTradingMacros(IEnumerable<TradingMacro> tms) =>
+      UseForexMongo(c => c.TradingMacroSettings.AddRange(
+        tms.Select(o => tradingMacroMapper2.Map<MongoDB.TradingMacroSettings>(o))
+        .Do(o=>o._id= ObjectId.GenerateNewId())
+        .ToArray()), true);
 
     /// <summary>
     /// obsolete

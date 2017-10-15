@@ -303,8 +303,6 @@ namespace HedgeHog.Alice.Client {
       get {
         if(_tradingAccountsList == null) {
           _TradingAccountsSet = new ObservableCollection<Store.TradingAccount>(_tradingAccounts);
-          foreach(var ta in _TradingAccountsSet)
-            ta.PropertyChanged += new PropertyChangedEventHandler(ta_PropertyChanged);
           _TradingAccountsSet.CollectionChanged += _TradingAccountsSet_CollectionChanged;
           _tradingAccountsList = new ListCollectionView(_TradingAccountsSet);
           _tradingAccountsList.Filter = FilterTradingAccounts;
@@ -333,13 +331,6 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
-
-    void ta_PropertyChanged(object sender, PropertyChangedEventArgs e) {
-      if(sender == TradingMaster) {
-        if(e.PropertyName == "TradingMacroName")
-          RaiseTradingMacroNameChanged();
-      }
-    }
 
     void _tradingAccountsList_CurrentChanged(object sender, EventArgs e) {
       OnMasterTradeAccountChanged();
@@ -844,7 +835,9 @@ namespace HedgeHog.Alice.Client {
     void SaveTradingSlaves() {
       try {
         //GlobalStorage.UseAliceContextSaveChanges();
-        GlobalStorage.SaveJson(_tradingAccounts, _accountsPath);
+
+        //GlobalStorage.SaveJson(_tradingAccounts, _accountsPath);
+        GlobalStorage.ForexMongoSave();
         Log = new Exception("Trade accounts were saved");
       } catch(Exception exc) {
         Log = exc;
@@ -1200,7 +1193,9 @@ namespace HedgeHog.Alice.Client {
         Initialize();
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
         LoadOffers();
-        _tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
+        //_tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
+        _tradingAccounts = GlobalStorage.UseForexMongo(c => c.TradingAccount.ToArray());
+        //GlobalStorage.UseForexMongo(c => c.TradingAccount.AddRange(_tradingAccounts.Select(ta => { ta._id = global::MongoDB.Bson.ObjectId.GenerateNewId(); return ta; })), true);
         var activeTradeAccounts = (_tradingAccounts?.Count(ta => ta.IsActive)).GetValueOrDefault();
         if(activeTradeAccounts == 0) {
           Log = new Exception(new { activeTradeAccounts } + "");

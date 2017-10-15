@@ -140,7 +140,14 @@ namespace HedgeHog.Alice.Store {
           if(_TradingMacros == null) {
             var errors = new List<Exception>();
             //this.MasterModel.MasterAccount.cas
-            _TradingMacros = ReadTradingMacros(MasterModel.MasterAccount.TradingMacroName, errors);
+            //_TradingMacros = ReadTradingMacros(MasterModel.MasterAccount.TradingMacroName, errors);
+            //GlobalStorage.SaveTradingMacros(_TradingMacros);
+            _TradingMacros = GlobalStorage.LoadTradingMacros()
+              .OrderBy(tm => !tm.IsActive)
+              .ThenBy(tm => tm.TradingGroup)
+              .ThenBy(tm => tm.PairIndex)
+              .ToArray();
+;
             if(errors.Any())
               throw errors.First();
             _TradingMacros.ForEach(tm => Context_ObjectMaterialized(tm, null));

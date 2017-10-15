@@ -41,6 +41,8 @@ using static HedgeHog.MathCore;
 using static HedgeHog.ReflectionCore;
 using System.Reactive.Subjects;
 using System.Reactive.Concurrency;
+using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Bson;
 
 namespace HedgeHog.Alice.Store {
   [JsonObject(MemberSerialization.OptOut)]
@@ -3060,6 +3062,9 @@ namespace HedgeHog.Alice.Store {
       IsPriceSpreadOk = CurrentPrice != null && CurrentPrice.Spread < this.PriceSpreadAverage * 3;
     }
     static TradingMacro() {
+      var pack = new ConventionPack { new EnumRepresentationConvention(BsonType.String) };
+      ConventionRegistry.Register("EnumStringConvention", pack, t => true);
+
       Scheduler.Default.Schedule(5.FromSeconds(), () => {
         var dups = ((TrailingWaveMethod)0).HasDuplicates();
         if(dups.Any())
