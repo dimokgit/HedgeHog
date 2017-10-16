@@ -143,12 +143,15 @@ namespace HedgeHog.Alice.Store {
             //this.MasterModel.MasterAccount.cas
             //_TradingMacros = ReadTradingMacros(MasterModel.MasterAccount.TradingMacroName, errors);
             //GlobalStorage.SaveTradingMacros(_TradingMacros);
-            _TradingMacros = GlobalStorage.LoadTradingMacros()
+            _TradingMacros = GlobalStorage.LoadTradingMacros(MasterModel.TradingMacroName)
               .OrderBy(tm => !tm.IsActive)
               .ThenBy(tm => tm.TradingGroup)
               .ThenBy(tm => tm.PairIndex)
               .ToArray();
-;
+
+            if(_TradingMacros.IsEmpty())
+              _TradingMacros = ReadTradingMacros(MasterModel.TradingMacroName, errors);
+            ;
             if(errors.Any())
               throw errors.First();
             _TradingMacros.ForEach(tm => Context_ObjectMaterialized(tm, null));
@@ -241,7 +244,7 @@ namespace HedgeHog.Alice.Store {
 
 
     //    protected ITradesManager tradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)fw; } }
-    public bool IsInVirtualTrading { get { return MasterModel == null ? false : MasterModel.MasterAccount.IsVirtual; } }
+    public bool IsInVirtualTrading { get { return MasterModel == null ? false : MasterModel.IsInVirtualTrading; } }
 
     #region PriceBars
     protected class PriceBarsDuplex {

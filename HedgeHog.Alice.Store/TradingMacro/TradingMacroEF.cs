@@ -8,11 +8,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using MongoDB.Bson;
 
 namespace HedgeHog.Alice.Store {
   //[JsonObject(MemberSerialization.OptOut)]
   public class TradingMacroPersisted :EntityObject {
-    public global::MongoDB.Bson.ObjectId _id { get; set; }
+    private global::MongoDB.Bson.ObjectId __id;
+    public ObjectId _id { get => __id == ObjectId.Empty ? ObjectId.GenerateNewId() : __id; set => __id = value; }
   }
   public partial class TradingMacro :TradingMacroPersisted {
     #region Factory Method

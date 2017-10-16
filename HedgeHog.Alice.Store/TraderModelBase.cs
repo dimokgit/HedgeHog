@@ -25,9 +25,6 @@ namespace HedgeHog.Alice.Store {
     public abstract double CurrentLoss { set; }
     public abstract void AddCosedTrade(Trade trade);
     public abstract double CommissionByTrade(Trade trades);
-    //public abstract bool IsInVirtualTrading { get; set; }
-    //public abstract int IpPort { get; set; }
-    public abstract TradingLogin LoginInfo { get; }
     public abstract TradingAccount MasterAccount { get; }
     private double _ActiveTakeProfit;
     public double ActiveTakeProfit {

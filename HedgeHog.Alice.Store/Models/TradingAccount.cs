@@ -31,8 +31,6 @@ namespace HedgeHog.Alice.Store {
     public global::System.String Currency { get; set; }
 
     public string Broker { get; set; }
-    public bool IsVirtual { get; set; }
-    public string TradingMacroName { get; set; }
     public CommissionTypes CommissionType { get; set; }
     public enum CommissionTypes { Rel, Abs };
   }

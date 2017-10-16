@@ -142,7 +142,7 @@ namespace HedgeHog.Alice.Store {
 
     #region Offers
     static IMapper offersMapper = new MapperConfiguration(cfg => cfg.CreateMap<MongoDB.Offer, HedgeHog.Shared.Offer>()).CreateMapper();
-    public static Shared.Offer[] LoadOffers() => UseForexMongo(c => c.Offer.Select(o => offersMapper.Map<Shared.Offer>(o)).ToArray()); 
+    public static Shared.Offer[] LoadOffers() => UseForexMongo(c => c.Offer.Select(o => offersMapper.Map<Shared.Offer>(o)).ToArray());
     #endregion
 
     #region TraderSettings
@@ -156,15 +156,29 @@ namespace HedgeHog.Alice.Store {
         c.TraderSettings.Add(traderMapper2.Map<TraderModelPersist>(trader));
       else
         traderMapper2.Map(trader, ts);
-    }, true); 
+    }, true);
     #endregion
 
     #region TradingMacro
     static IMapper tradingMacroMapper2 = new MapperConfiguration(cfg => cfg.CreateMap<TradingMacro, MongoDB.TradingMacroSettings>()).CreateMapper();
     static IMapper tradingMacroMapper = new MapperConfiguration(cfg => cfg.CreateMap<MongoDB.TradingMacroSettings, TradingMacro>()).CreateMapper();
-    public static TradingMacro[] LoadTradingMacros() => UseForexMongo(c => c.TradingMacroSettings.Select(o => tradingMacroMapper.Map<TradingMacro>(o)).ToArray());
+    public static TradingMacro[] LoadTradingMacros(string tradingMacroName)
+      => UseForexMongo(c => c.TradingMacroSettings
+      .Where(tm => tm.TradingMacroName == tradingMacroName)
+      .Select(o => tradingMacroMapper.Map<TradingMacro>(o))
+      //.IfEmpty(() => { throw new Exception(new { tradingMacroName, errror = "Not found" } + ""); })
+      .ToArray());
     public static void SaveTradingMacros(IEnumerable<TradingMacro> tms) =>
-      UseForexMongo(c => c.TradingMacroSettings.UpdateRange(tms.Select(o => tradingMacroMapper2.Map<MongoDB.TradingMacroSettings>(o))), true);
+      UseForexMongo(c => 
+        tms.ForEach(o => {
+          var tm = c.TradingMacroSettings.Find(o._id);
+          if(tm == null)
+            c.TradingMacroSettings.Add(tradingMacroMapper2.Map<MongoDB.TradingMacroSettings>(o));
+          else
+            tradingMacroMapper2.Map(o, tm);
+        })
+      , true);
+    public static string[] TradingMacroNames => UseForexMongo(c => c.TradingMacroSettings.Select(o => o.TradingMacroName).Distinct().OrderBy(s => s).ToArray());
     #endregion
 
     /// <summary>

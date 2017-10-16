@@ -10,41 +10,41 @@ namespace HedgeHog.MongoDB {
     public global::MongoDB.Bson.ObjectId _id { get; set; }
     public int BarsCount { get; set; }
     public int BarsCountMax { get; set; }
-    public float BbRatio { get; set; }
-    public float CanTradeLocalRatio { get; set; }
+    public double BbRatio { get; set; }
+    public double CanTradeLocalRatio { get; set; }
     public int CmaPasses { get; set; }
     public int CmaPassesMin { get; set; }
-    public float CmaRatioForWaveLength { get; set; }
-    public float CorridorDistanceRatio { get; set; }
-    public float CorridorSDRatio { get; set; }
-    public float EquinoxPerc { get; set; }
+    public double CmaRatioForWaveLength { get; set; }
+    public double CorridorDistanceRatio { get; set; }
+    public double CorridorSDRatio { get; set; }
+    public double EquinoxPerc { get; set; }
     public bool IsContinuousTrading { get; set; }
-    public float RatesDistanceMin { get; set; }
-    public float RatesHeightMin { get; set; }
+    public double RatesDistanceMin { get; set; }
+    public double RatesHeightMin { get; set; }
     public string RatesMinutesMin { get; set; }
     public int RatesStDevMinInPips { get; set; }
-    public float TakeProfitLimitRatio { get; set; }
-    public float TipRatio { get; set; }
+    public double TakeProfitLimitRatio { get; set; }
+    public double TipRatio { get; set; }
     public int TradeCountMax { get; set; }
     public int TradeCountStart { get; set; }
-    public float TradingAngleRange_ { get; set; }
+    public double TradingAngleRange_ { get; set; }
     public string TradingHoursRange { get; set; }
     public string TradingPriceRange { get; set; }
     public string TrendAngleBlue { get; set; }
-    public float TrendAngleGreen { get; set; }
+    public double TrendAngleGreen { get; set; }
     public string TrendAngleLast { get; set; }
-    public float TrendAngleLime { get; set; }
-    public float TrendAnglePlum { get; set; }
+    public double TrendAngleLime { get; set; }
+    public double TrendAnglePlum { get; set; }
     public string TrendAnglePrev { get; set; }
     public string TrendAnglePrev2 { get; set; }
-    public float TrendAngleRed { get; set; }
-    public float TrendHeightPerc { get; set; }
+    public double TrendAngleRed { get; set; }
+    public double TrendHeightPerc { get; set; }
     public int VoltAverageIterations { get; set; }
-    public float VoltAvgRange { get; set; }
+    public double VoltAvgRange { get; set; }
     public string VoltRange { get; set; }
     public string VoltRange_2 { get; set; }
-    public float WaveStDevPower { get; set; }
-    public float WaveStDevPowerS { get; set; }
+    public double WaveStDevPower { get; set; }
+    public double WaveStDevPowerS { get; set; }
     public string BarPeriod { get; set; }
     public string BarPeriodCalc { get; set; }
     public string CorridorByStDevRatioFunc { get; set; }
@@ -62,7 +62,7 @@ namespace HedgeHog.MongoDB {
     public int RiskRewardThresh { get; set; }
     public string ScanCorridorBy { get; set; }
     public string TakeProfitFunction { get; set; }
-    public float TakeProfitXRatio { get; set; }
+    public double TakeProfitXRatio { get; set; }
     public string TimeFrameTreshold { get; set; }
     public string TradeConditionsSave { get; set; }
     public string TradeDirectionTriggerssSave { get; set; }
@@ -72,7 +72,7 @@ namespace HedgeHog.MongoDB {
     public string TradeTrends { get; set; }
     public string TradingDaysRange { get; set; }
     public string TradingDistanceFunction { get; set; }
-    public float TradingDistanceX { get; set; }
+    public double TradingDistanceX { get; set; }
     public string TrailingDistanceFunction { get; set; }
     public string TrendBlue { get; set; }
     public string TrendGreen { get; set; }
@@ -106,15 +106,15 @@ namespace HedgeHog.MongoDB {
     public string ChartHighMethod { get; set; }
     public string ChartLowMethod { get; set; }
     public bool ClearCOMs { get; set; }
-    public float CorrelationMinimum { get; set; }
+    public double CorrelationMinimum { get; set; }
     public string CorridorCrossHighLowMethod { get; set; }
-    public float CorridorLengthMinimum_ { get; set; }
+    public double CorridorLengthMinimum_ { get; set; }
     public bool DoShowTradeOnChart { get; set; }
     public bool FitRatesToPlotter { get; set; }
     public string GreenRedBlue { get; set; }
     public int GroupRatesCount { get; set; }
     public bool IsAutoSync { get; set; }
-    public float IteratorLastRatioForCorridor { get; set; }
+    public double IteratorLastRatioForCorridor { get; set; }
     public int PriceFftLevelsFast { get; set; }
     public int PriceFftLevelsSlow { get; set; }
     public bool ResetTradeStrip { get; set; }
@@ -130,21 +130,21 @@ namespace HedgeHog.MongoDB {
     public string TestProfitToLossExitRatio { get; set; }
     public string TestRatesHeightMinimum { get; set; }
     public string TestWaveStDevRatio { get; set; }
-    public float TestMinimumBalancePerc { get; set; }
+    public double TestMinimumBalancePerc { get; set; }
     public string TestSuperSessionUid_ { get; set; }
     public bool TestUseSuperSession { get; set; }
     public int BigWaveIndex { get; set; }
-    public float CurrentLoss_ { get; set; }
+    public double CurrentLoss_ { get; set; }
     public bool DoNews { get; set; }
     public int EllasticRange { get; set; }
     public string ExitFunction { get; set; }
     public bool IsTrader { get; set; }
-    public float LastTradeLoss { get; set; }
+    public double LastTradeLoss { get; set; }
     public bool StreatchTakeProfit { get; set; }
     public string TurnOffFunction { get; set; }
     public bool TurnOffOnProfit { get; set; }
     public bool CloseOnOpen_ { get; set; }
-    public float CorridorHeightMax { get; set; }
+    public double CorridorHeightMax { get; set; }
     public int DistanceDaysBack { get; set; }
     public bool DoLogSaveRates { get; set; }
     public bool DoStreatchRates_ { get; set; }
@@ -152,47 +152,47 @@ namespace HedgeHog.MongoDB {
     public bool IsGannAnglesManual_ { get; set; }
     public bool IsSuppResManual_ { get; set; }
     public int LoadRatesSecondsWarning_ { get; set; }
-    public float RsdTreshold { get; set; }
-    public float StreatchRatesMaxRatio { get; set; }
-    public float VoltsBelowAboveLengthMin { get; set; }
+    public double RsdTreshold { get; set; }
+    public double StreatchRatesMaxRatio { get; set; }
+    public double VoltsBelowAboveLengthMin { get; set; }
     public int VoltsFrameLength { get; set; }
     public int VoltsHighIterations { get; set; }
-    public float WaveStDevRatio { get; set; }
+    public double WaveStDevRatio { get; set; }
     public bool CloseByMomentum_ { get; set; }
     public bool CloseOnProfitOnly_ { get; set; }
-    public float CorridorBigToSmallRatio_ { get; set; }
+    public double CorridorBigToSmallRatio_ { get; set; }
     public int ExtreamCloseOffset_ { get; set; }
-    public float ResetOnBalance_ { get; set; }
+    public double ResetOnBalance_ { get; set; }
     public bool TradeByRateDirection_ { get; set; }
     public bool TradeOnBOW { get; set; }
     public int BarPeriodsHigh { get; set; }
     public int BarPeriodsLow { get; set; }
-    public float BarPeriodsLowHighRatio { get; set; }
+    public double BarPeriodsLowHighRatio { get; set; }
     public bool CloseAllOnProfit { get; set; }
     public bool CloseByMomentum { get; set; }
     public bool CloseOnOpen { get; set; }
     public bool CloseOnProfitOnly { get; set; }
-    public float CorrelationTreshold { get; set; }
+    public double CorrelationTreshold { get; set; }
     public int CorridorAverageDaysBack { get; set; }
-    public float CorridorBigToSmallRatio { get; set; }
+    public double CorridorBigToSmallRatio { get; set; }
     public int CorridorCrossesCountMinimum { get; set; }
     public int CorridorCrossHighLowMethodInt { get; set; }
     public int CorridorHighLowMethodInt { get; set; }
     public string CorridorIterations { get; set; }
     public int CorridorIterationsIn { get; set; }
     public int CorridorIterationsOut { get; set; }
-    public float CorridorLengthMinimum { get; set; }
-    public float CorridornessMin { get; set; }
+    public double CorridorLengthMinimum { get; set; }
+    public double CorridornessMin { get; set; }
     public int CorridorPeriodsLength { get; set; }
     public int CorridorPeriodsStart { get; set; }
-    public float CorridorRatioForRange { get; set; }
-    public float CorridorStDevRatioMax { get; set; }
-    public float CurrentLossInPipsCloseAdjustment { get; set; }
+    public double CorridorRatioForRange { get; set; }
+    public double CorridorStDevRatioMax { get; set; }
+    public double CurrentLossInPipsCloseAdjustment { get; set; }
     public bool DoAdjustTimeframeByAllowedLot { get; set; }
     public bool DoStreatchRates { get; set; }
     public int ExtreamCloseOffset { get; set; }
     public string FibMax { get; set; }
-    public float FibMin { get; set; }
+    public double FibMin { get; set; }
     public int FreezeStop { get; set; }
     public int FreezLimit { get; set; }
     public bool IsActive { get; set; }
@@ -206,18 +206,18 @@ namespace HedgeHog.MongoDB {
     public string Pair { get; set; }
     public int PairIndex { get; set; }
     public int PowerRowOffset { get; set; }
-    public float PriceCmaLevels { get; set; }
-    public float ProfitToLossExitRatio { get; set; }
-    public float RangeRatioForTradeLimit { get; set; }
-    public float RangeRatioForTradeStop { get; set; }
-    public float ResetOnBalance { get; set; }
+    public double PriceCmaLevels { get; set; }
+    public double ProfitToLossExitRatio { get; set; }
+    public double RangeRatioForTradeLimit { get; set; }
+    public double RangeRatioForTradeStop { get; set; }
+    public double ResetOnBalance { get; set; }
     public object ResistanceDate { get; set; }
     public object ResistancePriceStore { get; set; }
     public bool ReverseOnProfit { get; set; }
     public bool ReversePower { get; set; }
-    public float SpreadShortToLongTreshold { get; set; }
-    public float StDevAverageLeewayRatio { get; set; }
-    public float StDevToSpreadRatio { get; set; }
+    public double SpreadShortToLongTreshold { get; set; }
+    public double StDevAverageLeewayRatio { get; set; }
+    public double StDevToSpreadRatio { get; set; }
     public int StDevTresholdIterations { get; set; }
     public bool StreachTradingDistance { get; set; }
     public bool StrictTradeClose { get; set; }
@@ -230,10 +230,10 @@ namespace HedgeHog.MongoDB {
     public bool TradeByFirstWave { get; set; }
     public bool TradeByRateDirection { get; set; }
     public bool TradeOnCrossOnly { get; set; }
-    public float TradingAngleRange { get; set; }
+    public double TradingAngleRange { get; set; }
     public int TradingGroup { get; set; }
     public string TradingMacroName { get; set; }
-    public float TradingRatio { get; set; }
+    public double TradingRatio { get; set; }
     public int VolumeTresholdIterations { get; set; }
   }
 }

@@ -200,9 +200,9 @@ namespace HedgeHog.Alice.Store {
     public void LoadActiveSettings(string path) {
       var settings = Lib.ReadTestParameters(path);
       if(settings.IsEmpty()) {
-        Log = new Exception(new { path, isEmpty = true } + "");
         return;
       }
+      Log = new Exception(new { path, isEmpty = false } + "");
       LoadActiveSettings(settings, path);
       File.Delete(path);
     }

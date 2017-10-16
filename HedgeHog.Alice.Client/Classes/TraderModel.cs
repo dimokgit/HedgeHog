@@ -92,7 +92,7 @@ namespace HedgeHog.Alice.Client {
       get { return virtualTrader; }
       set { virtualTrader = value; }
     }
-    public override FXW TradesManager { get { return MasterAccount.IsVirtual ? virtualTrader : FWMaster; } }
+    public override FXW TradesManager { get { return IsInVirtualTrading ? virtualTrader : FWMaster; } }
 
     private TradingServerSessionStatus _SessionStatus = TradingServerSessionStatus.Disconnected;
     public TradingServerSessionStatus SessionStatus {
@@ -121,9 +121,6 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Properties
-    public bool IsInVirtualTrading {
-      get { return MasterAccount.IsVirtual; }
-    }
 
     private int _IpPortActual = 0;
     public int IpPortActual {
@@ -564,7 +561,7 @@ namespace HedgeHog.Alice.Client {
     }
     void Login(object tradingAccount) {
       var ta = tradingAccount as TradingAccount;
-      LoginAsync(ta.AccountId, ta.AccountSubId, ta.Password, ta.IsDemo);
+      LoginAsync(_isIB ? IB_IPAddress + "" : ta.AccountId, _isIB ? IB_IPPort + "" : ta.AccountSubId, _isIB ? IB_ClientId + "" : ta.Password, ta.IsDemo);
     }
 
     #endregion
@@ -1110,7 +1107,6 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Trading Info
-    public override TradingLogin LoginInfo { get { return new TradingLogin(TradingAccount, TradingPassword, TradingDemo); } }
 
     public string[] TradingAccounts {
       get {
@@ -1183,7 +1179,7 @@ namespace HedgeHog.Alice.Client {
       };
       global::MongoDB.Bson.Serialization.Conventions.ConventionRegistry.Register("EnumStringConvention", pack, t => true);
     }
-    TraderModel():base() {
+    TraderModel() : base() {
       lock(_defaultLocker) {
         if(_default != null)
           throw new InvalidOperationException();
@@ -1194,18 +1190,19 @@ namespace HedgeHog.Alice.Client {
         //_tradingAccounts = GlobalStorage.LoadJson<TradingAccount[]>(_accountsPath);
         _tradingAccounts = GlobalStorage.UseForexMongo(c => c.TradingAccount.ToArray());
         //GlobalStorage.UseForexMongo(c => c.TradingAccount.AddRange(_tradingAccounts.Select(ta => { ta._id = global::MongoDB.Bson.ObjectId.GenerateNewId(); return ta; })), true);
-        var activeTradeAccounts = (_tradingAccounts?.Count(ta => ta.IsActive)).GetValueOrDefault();
-        if(activeTradeAccounts == 0) {
+        var activeTradeAccounts = (_tradingAccounts?.Where(ta => ta.IsActive).ToArray());
+        if(activeTradeAccounts.Length == 0) {
           Log = new Exception(new { activeTradeAccounts } + "");
           throw new Exception("No Trading Account found.");
         }
-        if(activeTradeAccounts > 1) {
+        if(activeTradeAccounts.Length > 1) {
           Log = new Exception(new { activeTradeAccounts } + "");
           throw new Exception("Multiple Trading Accounts found.");
         }
+        TradingAccount = activeTradeAccounts.Single().AccountId;
         #region FXCM
         TradesManagerStatic.AccountCurrency = MasterAccount.Currency;
-        virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, CommissionByTrade);
+        virtualTrader = new VirtualTradesManager(TradingAccount, CommissionByTrade);
         virtualTrader.SetHasTicks(!_isIB);
         CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
         //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)

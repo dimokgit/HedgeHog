@@ -480,9 +480,20 @@
 										</ToolTip>
 									</Button.ToolTip>
 								</Button>
-								<ComboBox SelectedValue="{Binding TradingAccount}" SelectedIndex="{state:UserSettings Default=0}" Name="TradingAccount" ItemsSource="{Binding TradingAccounts}" />
-								<u:TextBox2 Text="{Binding IpPort,Mode=TwoWay,FallbackValue='80'}"  Name="IpPort" MinWidth="30" ToolTip="IP Port" />
-								<Button Command="{Binding StepBackCommand}" Content="_&lt;&lt;"></Button>
+
+                <TextBlock>Trading Macro</TextBlock>
+                <ComboBox ItemsSource="{Binding Source={x:Static store:GlobalStorage.TradingMacroNames}}" SelectedValue="{Binding TradingMacroName,Mode=TwoWay}" ToolTip="IP Port"></ComboBox>
+
+                <TextBlock>IB Connection</TextBlock>
+                <TextBox Text="{Binding IB_IPAddress,Mode=TwoWay}"  MinWidth="30" ToolTip="IP Port"></TextBox>
+                <TextBlock>:</TextBlock>
+                <TextBox Text="{Binding IB_IPPort,Mode=TwoWay}"  MinWidth="30" ToolTip="IP Port"></TextBox>
+                <TextBlock>/</TextBlock>
+                <TextBox Text="{Binding IB_ClientId,Mode=TwoWay,FallbackValue='0'}"  MinWidth="30" ToolTip="IP Port"></TextBox>
+                <TextBlock>SignalR Port:</TextBlock>
+                <u:TextBox2 Text="{Binding IpPort,Mode=TwoWay,FallbackValue='80'}"  Name="IpPort" MinWidth="30" ToolTip="IP Port" />
+                <CheckBox IsChecked="{Binding IsInVirtualTrading,Mode=TwoWay}" Name="chkIsVirtual" ToolTip="Is in virtual trading"/>
+                <Button Command="{Binding StepBackCommand}" Content="_&lt;&lt;"></Button>
 								<u:CheckBox2 IsChecked2="{Binding VirtualPause,Mode=TwoWay}" IsChecked="{state:UserSettings Default=true}" Name="chkVP" Content="_Pause"/>
 								<Button Command="{Binding StepForwardCommand}" Content=">_>"></Button>
 								<CheckBox IsChecked="{Binding VirtualClearTest,Mode=TwoWay}" Name="chkClearTest" ToolTip="Clear Previouse Test Results"/>
@@ -542,7 +553,6 @@
 											<DataGridTextColumn Binding="{Binding Path=TradeRatio}" Header="M:S" ToolTipService.ToolTip="Trade Ratio" />
 											<DataGridCheckBoxColumn Binding="{Binding Path=IsMaster}" Header="Master" Width="SizeToHeader" />
                       <DataGridCheckBoxColumn Binding="{Binding Path=IsActive}" Header="Active" Width="SizeToHeader" />
-                      <DataGridCheckBoxColumn Binding="{Binding Path=IsVirtual}" Header="Virtual" Width="SizeToHeader" />
                       <DataGridTextColumn Binding="{Binding Path=Broker}" Header="Broker" ToolTipService.ToolTip="Broker" />
                       <DataGridTextColumn Binding="{Binding Path=TradingMacroName}" Header="Case" ToolTipService.ToolTip="Trading Macro Prefix" />
                       <!--<DataGridTemplateColumn Header="Case">
