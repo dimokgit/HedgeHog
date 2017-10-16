@@ -4270,10 +4270,12 @@ namespace HedgeHog.Alice.Store {
               periodsBack = 0;
             var groupTicks = false && BarPeriodCalc == BarsPeriodType.s1;
             LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate.AddSeconds(1), TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
-            ratesList
-              .Where(r => (r.AskHigh - r.BidLow) / (r.AskHigh + r.BidLow) / 2 * 100 > BumpRatio)
-              .ToArray()
-              .ForEach(r => ratesList.Remove(r));
+            var maxBump = ratesList.Max(r => (r.AskHigh - r.BidLow) / (r.AskHigh + r.BidLow) / 2 * 100);
+            if(BarPeriod !=  BarsPeriodType.t1)
+              ratesList
+                .Where(r => (r.AskHigh - r.BidLow) / (r.AskHigh + r.BidLow) / 2 * 100 > BumpRatio)
+                .ToArray()
+                .ForEach(r => ratesList.Remove(r));
             if(BarPeriod != BarsPeriodType.t1)
               ratesList.TakeLast(1).ForEach(r => {
                 var rateLastDate = r.StartDate;

@@ -1958,9 +1958,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [WwwSetting]
-    public double HedgeMMR { get; set; } = 1;
-
     bool _FitRatesToPlotter;
 
     [Category(categoryCorridor)]

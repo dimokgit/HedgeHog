@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HedgeHog.MongoDB {
+namespace HedgeHog.Alice.Store {
   public class TradingMacroSettings {
     [System.ComponentModel.DataAnnotations.Key]
     public global::MongoDB.Bson.ObjectId _id { get; set; }
@@ -205,6 +205,7 @@ namespace HedgeHog.MongoDB {
     public int MovingAverageTypeInt { get; set; }
     public string Pair { get; set; }
     public int PairIndex { get; set; }
+    public string PairHedge { get; set; }
     public int PowerRowOffset { get; set; }
     public double PriceCmaLevels { get; set; }
     public double ProfitToLossExitRatio { get; set; }

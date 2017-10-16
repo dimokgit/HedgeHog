@@ -781,6 +781,7 @@
             <a href="https://mlab.com/databases/forex" target="_blank">Offers</a>
             <span data-bind="click:getMMRs" style="text-decoration:underline">Get MMRs</span>
             <span data-bind="click:loadOffers" style="text-decoration:underline">Load Offers</span>
+            <span data-bind="click:saveOffers" style="text-decoration:underline">Save Offers</span>
           </div>
         </div>
         <div class="modal-body">
@@ -1037,6 +1038,7 @@
         <tr>
           <td>Pair</td>
           <td>HVP</td>
+          <td>HV</td>
           <td>Ratio</td>
           <td>Amount</td>
           <td>Lot</td>
@@ -1050,6 +1052,7 @@
         <tr>
           <td data-bind="text:Pair"></td>
           <td data-bind="text:HVP"></td>
+          <td data-bind="text:HV"></td>
           <td data-bind="text:d3.format('.1f')(TradeRatio)"></td>
           <td data-bind="text:d3.format('.0f')(TradeAmount)"></td>
           <td data-bind="text:Lot"></td>
@@ -1057,7 +1060,7 @@
           <td data-bind="text:d3.format('.2f')(MMR)"></td>
           <td data-bind="text:Corr"></td>
           <td>
-            <button data-bind="text:IsBuy,click:$parent.openHedgeTrade"></button>
+            <button data-bind="text:IsBuy?' Buy':'Sell',click:$parent.openHedgeTrade"></button>
           </td>
         </tr>
       </tbody>

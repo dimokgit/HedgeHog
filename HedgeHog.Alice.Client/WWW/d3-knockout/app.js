@@ -692,7 +692,7 @@
       }.bind(this),
         function (error) {
           showWarning("readHedgingRatios: " + error);
-          setTimeout(readHedgingRatios.bind(this), 10000);
+          setTimeout(readHedgingRatios.bind(this), 2000);
         }.bind(this));
     }
     this.openHedgeTrade = function (hp) {
@@ -813,6 +813,9 @@
     }.bind(this);
     this.updateOffer = function (a, b, c) {
       serverCall("updateMMRs", [a.pair(), a.mmrBuy(), a.mmrSell()]);
+    }
+    this.saveOffers = function () {
+      serverCall("saveOffers", []);
     }
     //#endregion
     this.strategiesDialog = ko.observable();
@@ -1055,7 +1058,7 @@
         },
         function (error) {
           showErrorPerm("getAccounting: " + error);
-          setTimeout(getAccounting, 5000);
+          setTimeout(getAccounting, 2000);
         });
     }
     this.startAccounting = function () {

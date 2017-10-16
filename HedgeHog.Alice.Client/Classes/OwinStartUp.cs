@@ -364,57 +364,79 @@ namespace HedgeHog.Alice.Client {
       trader.Value.TradesManager.FetchMMRs();
     }
     public object[] LoadOffers() {
-      return TraderModel.LoadOffers().Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong, mmrSell = o.MMRShort }).ToArray();
+      return TraderModel.LoadOffers().Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong.Round(3), mmrSell = o.MMRShort.Round(3) }).ToArray();
     }
     public object[] ReadOffers() {
-      return TradesManagerStatic.dbOffers.Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong, mmrSell = o.MMRShort }).ToArray();
-    } 
-    public void UpdateMMRs(string pair,double mmrLong,double mmrShort) {
+      return TradesManagerStatic.dbOffers.Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong.Round(3), mmrSell = o.MMRShort.Round(3) }).ToArray();
+    }
+    public void UpdateMMRs(string pair, double mmrLong, double mmrShort) {
       pair = pair.ToUpper();
       GlobalStorage.UseForexMongo(c => c.Offer.Where(o => o.Pair == pair).ForEach(o => {
         o.MMRLong = mmrLong;
         o.MMRShort = mmrShort;
       }), true);
     }
-    #endregion
+    public void SaveOffers() {
+      GlobalStorage.UseForexMongo(c =>
+      (from o in c.Offer
+       join dbo in TradesManagerStatic.dbOffers on o.Pair.ToLower() equals dbo.Pair.ToLower()
+       select new { o, dbo }
+      ).ForEach(x => {
+        x.o.MMRLong = x.dbo.MMRLong;
+        x.o.MMRShort = x.dbo.MMRShort;
+      }), true);
 
-    #region TradeConditions
-    public string[] ReadTradingConditions(string pair) {
-      return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, p, name) => name).ToArray());
     }
 
     public object[] ReadHedgingRatios(string pair) {
       try {
         var xx = new[] { true, false }.SelectMany(isBuy => CalcHedgedPositions(pair, isBuy));
-        return xx.Select(t => new { t.Pair, t.HVP, t.TradeRatio, t.TradeAmount, t.MMR, t.Lot, t.Corr, t.Pip, t.IsBuy }).ToArray();
+        return xx.Select(t => new {
+          t.Pair,
+          HV = t.HV.AutoRound2(3),
+          HVP = t.HVP.AutoRound2(3),
+          t.TradeRatio,
+          TradeAmount = t.TradeAmount.ToInt(),
+          MMR = t.MMR.AutoRound2(3),
+          t.Lot,
+          t.Corr,
+          Pip = t.Pip.AutoRound2(2),
+          t.IsBuy
+        }).ToArray();
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         return new object[0];
       }
     }
 
-    private (TradingMacro tm, string Pair, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, int Corr, bool IsBuy)[] CalcHedgedPositions
+    private (TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, int Corr, bool IsBuy)[] CalcHedgedPositions
       (string hedgedPair, bool isBuy) {
       var hedgePairs = GetHedgedTradingMacros(hedgedPair);
-      var hvps = hedgePairs.SelectMany(tm => tm.HistoricalVolatility(), (tm, hvp) => new { tm, hvp }).ToArray();
-      var hvpsSum = hvps.Sum(x => x.hvp);
+      var hvps = (from tm in hedgePairs
+                  from hv in tm.HistoricalVolatility()
+                  from hvp in tm.HistoricalVolatilityByPips()
+                  select new { tm, hvp, hv }
+                  ).ToArray();
+      var hvsSum = hvps.Sum(x => x.hv);
       var rc = remoteControl.Value;
       var am = rc.MasterModel.AccountModel;
-      var mmr = hvps.Max(x => TradesManagerStatic.GetMMR(x.tm.Pair, isBuy));
-      var equity = am.Equity / mmr;
+      var ratioMax = hvps.Max(x => 1 - x.hv / hvsSum);
+      var mmr = hvps.Max(x => TradesManagerStatic.GetMMR(x.tm.Pair, isBuy)) / 2 / ratioMax;
+      var equity = am.Equity * .95 / mmr;
       var xx = hvps.Select((x, i) => {
-        var r = 1 - x.hvp / hvpsSum;
+        var r = 1 - x.hv / hvsSum;
         var ta = equity * r;
         var l = x.tm.GetLotsToTrade(ta, 1, 1);
         return (
           tm: x.tm,
           Pair: x.tm.Pair,
+          HV: x.hv,
           HVP: x.hvp,
           TradeRatio: r * 100,
           TradeAmount: ta,
           MMR: mmr,
           Lot: l,
-          Pip: x.tm.PipAmountByLot(l).AutoRound2(2),
+          Pip: x.tm.PipAmountByLot(l),
           Corr: i == 0 ? 1 : -HedgeCorrelation(x.tm.Pair).SingleOrDefault(),
           IsBuy: isBuy
         );
@@ -448,6 +470,12 @@ namespace HedgeHog.Alice.Client {
               select alglib.pearsoncorr2(r1.ToArray(r => r.PriceAvg), r2.ToArray(r => r.PriceAvg), r1.Count.Min(r2.Count)) > 0 ? 1 : -1
               );
     }).Memoize());
+    #endregion
+
+    #region TradeConditions
+    public string[] ReadTradingConditions(string pair) {
+      return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, p, name) => name).ToArray());
+    }
 
     public string[] GetTradingConditions(string pair) {
       return UseTradingMacro(pair, tm => tm.TradeConditionsInfo((tc, p, name) => name).ToArray());

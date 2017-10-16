@@ -275,13 +275,14 @@ namespace IBApp {
         var offer = TradesManagerStatic.GetOffer(c.Instrument);
         var isBuy = o.IsBuy();
         var levelrage = (o.LmtPrice * o.TotalQuantity) / (double.Parse(os.InitMargin) - InitialMarginRequirement);
-        if(isBuy) {
-          offer.MMRLong = 1 / levelrage;
-          _defaultMessageHandler(new { offer = new { offer.Pair, offer.MMRLong } });
-        } else {
-          offer.MMRShort = 1 / levelrage;
-          _defaultMessageHandler(new { offer = new { offer.Pair, offer.MMRShort } });
-        }
+        if(levelrage != 0 && !double.IsInfinity(levelrage))
+          if(isBuy) {
+            offer.MMRLong = 1 / levelrage;
+            _defaultMessageHandler(new { offer = new { offer.Pair, offer.MMRLong } });
+          } else {
+            offer.MMRShort = 1 / levelrage;
+            _defaultMessageHandler(new { offer = new { offer.Pair, offer.MMRShort } });
+          }
       }
     }
     #endregion
@@ -628,8 +629,8 @@ namespace IBApp {
               .DistinctUntilChanged(t => new { t.Item2.LocalSymbol, t.Item3.Position })
               .Where(x => x.Item3.Position != 0)
               .Timeout(TimeSpan.FromSeconds(10))
-              .Catch(new Func<Exception, IObservable<PosArg>>(e => new PosArg[0].ToObservable()))
-              .Take(1)
+              .Catch(new Func<Exception, IObservable<PosArg>>(e => new PosArg[] { null }.ToObservable()))
+              .TakeWhile(pa => pa != null)
               .Subscribe(s => OnFirstPosition(s.Item2, s.Item3)
                 , exc => _defaultMessageHandler(exc)
                 , () => {

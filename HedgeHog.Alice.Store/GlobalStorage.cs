@@ -120,7 +120,7 @@ namespace HedgeHog.Alice.Store {
     #region ForexDbContext
     public class ForexDbContext :MongoDB.ForexDbContext {
       public ForexDbContext(string connection) : base(connection) { }
-      public Microsoft.EntityFrameworkCore.DbSet<MongoDB.TradingMacroSettings> TradingMacroSettings { get; set; }
+      public Microsoft.EntityFrameworkCore.DbSet<TradingMacroSettings> TradingMacroSettings { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<TradingAccount> TradingAccount { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<TraderModelPersist> TraderSettings { get; set; }
     }
@@ -160,8 +160,8 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region TradingMacro
-    static IMapper tradingMacroMapper2 = new MapperConfiguration(cfg => cfg.CreateMap<TradingMacro, MongoDB.TradingMacroSettings>()).CreateMapper();
-    static IMapper tradingMacroMapper = new MapperConfiguration(cfg => cfg.CreateMap<MongoDB.TradingMacroSettings, TradingMacro>()).CreateMapper();
+    static IMapper tradingMacroMapper2 = new MapperConfiguration(cfg => cfg.CreateMap<TradingMacro, TradingMacroSettings>()).CreateMapper();
+    static IMapper tradingMacroMapper = new MapperConfiguration(cfg => cfg.CreateMap<TradingMacroSettings, TradingMacro>()).CreateMapper();
     public static TradingMacro[] LoadTradingMacros(string tradingMacroName)
       => UseForexMongo(c => c.TradingMacroSettings
       .Where(tm => tm.TradingMacroName == tradingMacroName)
@@ -173,7 +173,7 @@ namespace HedgeHog.Alice.Store {
         tms.ForEach(o => {
           var tm = c.TradingMacroSettings.Find(o._id);
           if(tm == null)
-            c.TradingMacroSettings.Add(tradingMacroMapper2.Map<MongoDB.TradingMacroSettings>(o));
+            c.TradingMacroSettings.Add(tradingMacroMapper2.Map<TradingMacroSettings>(o));
           else
             tradingMacroMapper2.Map(o, tm);
         })
