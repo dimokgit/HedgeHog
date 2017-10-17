@@ -656,7 +656,9 @@
     <None Include="WWW\bower_components\d3\LICENSE" />
     <None Include="WWW\bower_components\d3\README.md" />
     <None Include="WWW\d3-knockout\README.md" />
-    <None Include="WWW\HedgeHog.ico\manifest.json" />
+    <None Include="WWW\HedgeHog.ico\manifest.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="WWW\packages.config" />
     <None Include="WWW\Publish - 04.cmd" />
     <None Include="WWW\Publish - RM.cmd" />
@@ -850,32 +852,84 @@
     <Content Include="WWW\d3-knockout\view-models\election-data-view-model.js" />
     <Content Include="WWW\d3-knockout\view-models\line-data-view-model.js" />
     <Content Include="WWW\deployJava.js" />
-    <Resource Include="WWW\HedgeHog.ico\android-icon-144x144.png" />
-    <Resource Include="WWW\HedgeHog.ico\android-icon-192x192.png" />
-    <Resource Include="WWW\HedgeHog.ico\android-icon-36x36.png" />
-    <Resource Include="WWW\HedgeHog.ico\android-icon-48x48.png" />
-    <Resource Include="WWW\HedgeHog.ico\android-icon-72x72.png" />
-    <Resource Include="WWW\HedgeHog.ico\android-icon-96x96.png" />
-    <Resource Include="WWW\HedgeHog.ico\apple-icon-114x114.png" />
-    <Resource Include="WWW\HedgeHog.ico\apple-icon-120x120.png" />
-    <Resource Include="WWW\HedgeHog.ico\apple-icon-144x144.png" />
-    <Resource Include="WWW\HedgeHog.ico\apple-icon-152x152.png" />
-    <Resource Include="WWW\HedgeHog.ico\apple-icon-180x180.png" />
-    <Resource Include="WWW\HedgeHog.ico\apple-icon-57x57.png" />
-    <Resource Include="WWW\HedgeHog.ico\apple-icon-60x60.png" />
-    <Resource Include="WWW\HedgeHog.ico\apple-icon-72x72.png" />
-    <Resource Include="WWW\HedgeHog.ico\apple-icon-76x76.png" />
-    <Resource Include="WWW\HedgeHog.ico\apple-icon-precomposed.png" />
-    <Resource Include="WWW\HedgeHog.ico\apple-icon.png" />
-    <Resource Include="WWW\HedgeHog.ico\browserconfig.xml" />
-    <Resource Include="WWW\HedgeHog.ico\favicon-16x16.png" />
-    <Resource Include="WWW\HedgeHog.ico\favicon-32x32.png" />
-    <Resource Include="WWW\HedgeHog.ico\favicon-96x96.png" />
-    <Resource Include="WWW\HedgeHog.ico\favicon.ico" />
-    <Resource Include="WWW\HedgeHog.ico\ms-icon-144x144.png" />
-    <Resource Include="WWW\HedgeHog.ico\ms-icon-150x150.png" />
-    <Resource Include="WWW\HedgeHog.ico\ms-icon-310x310.png" />
-    <Resource Include="WWW\HedgeHog.ico\ms-icon-70x70.png" />
+    <Resource Include="WWW\HedgeHog.ico\android-icon-144x144.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\android-icon-192x192.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\android-icon-36x36.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\android-icon-48x48.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\android-icon-72x72.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\android-icon-96x96.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\apple-icon-114x114.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\apple-icon-120x120.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\apple-icon-144x144.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\apple-icon-152x152.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\apple-icon-180x180.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\apple-icon-57x57.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\apple-icon-60x60.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\apple-icon-72x72.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\apple-icon-76x76.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\apple-icon-precomposed.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\apple-icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\browserconfig.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\favicon-16x16.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\favicon-32x32.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\favicon-96x96.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\favicon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\ms-icon-144x144.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\ms-icon-150x150.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\ms-icon-310x310.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="WWW\HedgeHog.ico\ms-icon-70x70.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
     <Content Include="WWW\index.html" />
     <Resource Include="WWW\Scripts\AUTHORS.txt" />
     <Content Include="WWW\Scripts\bootstrap-notify.min.js" />

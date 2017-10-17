@@ -1802,7 +1802,7 @@ namespace HedgeHog.Alice.Store {
         var rs = rates.GetRange(size);
         return new { rs, da = rs.Select(tm.GetPriceMA).Where(d => !d.IsNaN()).Distances().ToArray() };
       })
-      .Where(x=>x.da.Any())
+      .Where(x => x.da.Any())
       .Select(x => x.da.Average() / x.rs.Last().StartDate.Subtract(x.rs[0].StartDate).Duration().TotalMinutes);
     }
     IEnumerable<double> M1SD => TradingMacroM1(tm => tm.WaveRanges.Select(wr => wr.StDev).FirstOrDefault());
@@ -2730,14 +2730,14 @@ namespace HedgeHog.Alice.Store {
 
     #region PipAmount
     public double PipAmountByLot(int lot) =>
-      TradesManagerStatic.PipAmount(Pair, lot, TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize);
+      TradesManager == null || CurrentPrice == null ? 0 : TradesManagerStatic.PipAmount(Pair, lot, TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize);
     public double PipAmount =>
        TradesManagerStatic.PipAmount(Pair, Trades.Lots(), TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize);
     public double PipAmountBuy {
-      get { return TradesManagerStatic.PipAmount(Pair, LotSizeByLossBuy, TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); }
+      get { return TradesManager == null || CurrentPrice == null ? 0 : TradesManagerStatic.PipAmount(Pair, LotSizeByLossBuy, TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); }
     }
     public double PipAmountSell {
-      get { return TradesManagerStatic.PipAmount(Pair, LotSizeByLossSell, TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); }
+      get { return TradesManager == null || CurrentPrice == null ? 0 : TradesManagerStatic.PipAmount(Pair, LotSizeByLossSell, TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); }
     }
 
     #endregion
@@ -4272,7 +4272,7 @@ namespace HedgeHog.Alice.Store {
             var groupTicks = false && BarPeriodCalc == BarsPeriodType.s1;
             LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate.AddSeconds(1), TradesManagerStatic.FX_DATE_NOW, ratesList, groupTicks);
             var maxBump = ratesList.Max(r => (r.AskHigh - r.BidLow) / (r.AskHigh + r.BidLow) / 2 * 100);
-            if(BarPeriod !=  BarsPeriodType.t1)
+            if(BarPeriod != BarsPeriodType.t1)
               ratesList
                 .Where(r => (r.AskHigh - r.BidLow) / (r.AskHigh + r.BidLow) / 2 * 100 > BumpRatio)
                 .ToArray()

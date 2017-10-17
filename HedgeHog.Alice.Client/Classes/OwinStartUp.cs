@@ -28,7 +28,8 @@ using HedgeHog.Bars;
 using Microsoft.Owin.Security;
 using Microsoft.AspNet.SignalR.Hubs;
 using static HedgeHog.Core.JsonExtensions;
-using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, int Corr, bool IsBuy)>;
+using TM_HEDGE_OLD = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, int Corr, bool IsBuy)>;
+using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, bool IsBuy)>;
 
 
 namespace HedgeHog.Alice.Client {
@@ -392,7 +393,8 @@ namespace HedgeHog.Alice.Client {
 
     public object[] ReadHedgingRatios(string pair) {
       try {
-        var xx = new[] { true, false }.SelectMany(isBuy => CalcHedgedPositions(pair, isBuy));
+        //var xx = new[] { true, false }.SelectMany(isBuy => CalcHedgedPositions(pair, isBuy));
+        var xx = new[] { true, false }.SelectMany(isBuy => HedgeBuySell(pair, isBuy));
         return xx
           .Select(x => x.Value)
           .Select(t => new {
@@ -403,7 +405,7 @@ namespace HedgeHog.Alice.Client {
             TradeAmount = t.TradeAmount.ToInt(),
             MMR = t.MMR.AutoRound2(3),
             t.Lot,
-            t.Corr,
+            //t.Corr,
             Pip = t.Pip.AutoRound2(2),
             t.IsBuy
           }).ToArray();
@@ -413,10 +415,11 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    private TM_HEDGE[] CalcHedgedPositions
+    private TM_HEDGE_OLD[] CalcHedgedPositions
       (string hedgedPair, bool isBuy) {
       var hedgePairs = GetHedgedTradingMacros(hedgedPair);
-      var hvps = (from tm in hedgePairs
+      var hvps = (from tmh in hedgePairs
+                  from tm in new[] {tmh.tm1, tmh.tm2 }
                   from hv in tm.HistoricalVolatility()
                   from hvp in tm.HistoricalVolatilityByPips()
                   select new { tm, hvp, hv }
@@ -445,24 +448,59 @@ namespace HedgeHog.Alice.Client {
           IsBuy: isBuy
         );
       }).ToArray();
-      return xx.ToArray(x => new TM_HEDGE(x));
+      return xx.ToArray(x => new TM_HEDGE_OLD(x));
       /// Locals
     }
-    (TradingMacro tm, double tradeAmount) CalcTradeAmount(IList<(TradingMacro tm, bool buy)> tms, double equity) {
+    IEnumerable<TM_HEDGE> HedgeBuySell(string pair, bool isBuy) {
+      var rc = remoteControl.Value;
+      var am = rc.MasterModel.AccountModel;
+      var equity = UseTradingMacro(pair,tm=>tm.IsTrader, tm=> am.Equity * tm.TradingRatio).Single();
+      var hbs = (from tmh in GetHedgedTradingMacros(pair)
+                 from corr in TMCorrelation(tmh.tm1, tmh.tm2)
+                 let t = new[] { (tmh.tm1, isBuy), (tmh.tm2, corr > 0 ? !isBuy : isBuy) }
+                 from x in CalcTradeAmount(t, equity)
+                 let lot = x.tm.GetLotsToTrade(x.tradeAmount, 1, 1)
+                 select (
+                 tm: x.tm,
+                 Pair: x.tm.Pair,
+                 HV: x.hv,
+                 HVP: x.hvp,
+                 TradeRatio: x.tradeRatio * 100,
+                 TradeAmount: x.tradeAmount,
+                 MMR: x.mmr,
+                 Lot: lot,
+                 Pip: x.tm.PipAmountByLot(lot),
+                 IsBuy: isBuy
+                 ));
+      return hbs.Select(t => new TM_HEDGE(t));
+    }
+    IEnumerable<(TradingMacro tm, bool buy, double tradeAmount, double tradeRatio, double hv,double hvp,double mmr)> CalcTradeAmount
+      (IList<(TradingMacro tm, bool buy)> tms, double equity) {
       var minMaxes = (from tm in tms
                       from hv in tm.tm.HistoricalVolatility()
+                      from hvp in tm.tm.HistoricalVolatilityByPips()
                       let mmr = TradesManagerStatic.GetMMR(tm.tm.Pair, tm.buy)
                       orderby mmr descending
-                      select new { tm.tm, tradeMax = equity / mmr, tm.buy }
+                      select new { tm.tm, tradeMax = equity / mmr, tm.buy, hv, hvp, mmr }
                       )
-                      .Pairwise((min, max) => new { min, max })
+                      .Pairwise((min, max) => new { min, max, hvr = min.hv / max.hv })
                       .ToArray();
-      minMaxes.ForEach(mm => {
-
+      return minMaxes.SelectMany(mm => {
+        var maxTrade = mm.max.tradeMax.Min(mm.min.tradeMax * mm.hvr);
+        var minTrade = mm.min.tradeMax.Min(maxTrade / mm.hvr);
+        var hvs = mm.min.hv + mm.max.hv;
+        return new[] {
+          (mm.min.tm, mm.min.buy,minTrade,1 - mm.min.hv / hvs,mm.min.hv,mm.min.hvp,mm.min.mmr),
+          (mm.max.tm, mm.max.buy,maxTrade,1 - mm.max.hv / hvs,mm.max.hv,mm.max.hvp,mm.max.mmr)
+        };
       });
-      return (null, 0.0);
     }
-    IEnumerable<TradingMacro> GetHedgedTradingMacros(string pair) {
+    IEnumerable<(TradingMacro tm1, TradingMacro tm2)> GetHedgedTradingMacros(string pair) {
+      return from tm1 in GetTradingMacros(pair).Where(tm => tm.IsTrader).Take(1)
+             from tm2 in GetTradingMacros(tm1.PairHedge).Where(tm => tm.BarPeriod == tm1.BarPeriod && tm.IsTrader).Take(1)
+             select (tm1, tm2);
+    }
+    IEnumerable<TradingMacro> GetHedgedTradingMacros_(string pair) {
       return GetTM(pair)
         .SelectMany(tm => GetTM(tm.Pair).Concat(GetTM(tm.PairHedge)))
         .Where(tm => tm.IsTrader)
@@ -475,20 +513,25 @@ namespace HedgeHog.Alice.Client {
 
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) {
-      CalcHedgedPositions(pair, isBuy)
+      HedgeBuySell(pair, isBuy)
         .Select(x => x.Value)
         .OrderByDescending(tm => tm.Pair == pair)
-        .ForEach(t => t.tm.OpenTrade(t.Corr == 1 ? isBuy : !isBuy, t.Lot, "web: hedge open"));
+        .ToArray()
+        //.ForEach(t => t.tm.OpenTrade(t.Corr == 1 ? isBuy : !isBuy, t.Lot, "web: hedge open"));
+        .ForEach(t => t.tm.OpenTrade(t.IsBuy, t.Lot, "web: hedge open"));
     }
 
     Func<string, IEnumerable<int>> _hedgeCorrelation;
     Func<string, IEnumerable<int>> HedgeCorrelation => _hedgeCorrelation ?? (_hedgeCorrelation = new Func<string, IEnumerable<int>>(pair => {
-      return (from t in GetHedgedTradingMacros(pair).Pairwise()
-              from r1 in t.Item1.UseRates(ra => ra.ToList())
-              from r2 in t.Item2.UseRates(ra => ra.ToList())
-              select alglib.pearsoncorr2(r1.ToArray(r => r.PriceAvg), r2.ToArray(r => r.PriceAvg), r1.Count.Min(r2.Count)) > 0 ? 1 : -1
-              );
+      var hedgePairs = GetHedgedTradingMacros(pair);
+      return hedgePairs.SelectMany(t => TMCorrelation(t.tm1, t.tm2));
     }).Memoize());
+
+    private static IEnumerable<int> TMCorrelation(TradingMacro tm1, TradingMacro tm2)
+      => (from r1 in tm1.UseRates(ra => ra.ToList())
+          from r2 in tm2.UseRates(ra => ra.ToList())
+          select alglib.pearsoncorr2(r1.ToArray(r => r.PriceAvg), r2.ToArray(r => r.PriceAvg), r1.Count.Min(r2.Count)) > 0 ? 1 : -1
+          );
     #endregion
 
     #region TradeConditions
