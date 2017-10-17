@@ -28,6 +28,8 @@ using HedgeHog.Bars;
 using Microsoft.Owin.Security;
 using Microsoft.AspNet.SignalR.Hubs;
 using static HedgeHog.Core.JsonExtensions;
+using TPL = System.ValueTuple<string,string>;
+
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
@@ -588,10 +590,11 @@ namespace HedgeHog.Alice.Client {
     }
     public void CloseTrades(string pair) {
       try {
-        GetTM(pair)
+        var tms = GetTM(pair)
         .SelectMany(tm => GetTM(tm.Pair).Concat(GetTM(tm.PairHedge)))
         .Distinct(tm => tm.Pair)
-        .ForEach(tm => tm.CloseTrades("SignalR: CloseTrades"));
+        .ToArray();
+        tms.ForEach(tm => tm.CloseTrades("SignalR: CloseTrades"));
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
@@ -883,7 +886,7 @@ namespace HedgeHog.Alice.Client {
           (ht ? "/" + (am.ProfitPercent).ToString("p1") : "")
           + "/" + (am.OriginalProfit).ToString("p1")));
         if(tm.Trades.Any())
-          list2.Add(row("Trades GrossPL", tm.Trades.Gross().AutoRound2("$", 2)));
+          list2.Add(row("Trades GrossPL", $"{tm.Trades.Gross().AutoRound2("$", 2)}@{tm.ServerTime.TimeOfDay.ToString(@"hh\:mm\:ss")}"));
         if(tm.LastTradeLoss != 0)
           list2.Add(row("Last Loss", tm.LastTradeLoss.AutoRound2("$", 2)));
         if(tm.Trades.Any())

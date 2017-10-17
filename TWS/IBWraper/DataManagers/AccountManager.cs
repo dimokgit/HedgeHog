@@ -38,7 +38,7 @@ namespace IBApp {
     private bool accountUpdateRequestActive = false;
     private string _accountId;
     private readonly Action<object> _defaultMessageHandler;
-    private bool _useVerbouse = false;
+    private bool _useVerbouse = true;
     private Action<object> _verbous => _useVerbouse ? _defaultMessageHandler : o => { };
     private readonly string _accountCurrency = "USD";
     #endregion
@@ -48,7 +48,7 @@ namespace IBApp {
     private readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade>();
     private readonly ConcurrentDictionary<string, PositionMessage> _positions = new ConcurrentDictionary<string, PositionMessage>();
     private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
-    public Func<Trade, double> CommissionByTrade => t => t.Lots * .01;
+    public Func<Trade, double> CommissionByTrade = t => t.Lots * .008;
     IObservable<(Offer o, bool b)> _offerMMRs = TradesManagerStatic.dbOffers
         .Select(o => new[] { (o, b: true), (o, b: false) })
         .Concat()
@@ -62,7 +62,7 @@ namespace IBApp {
 
     #region Ctor
     public AccountManager(IBClientCore ibClient, string accountId, Func<Trade, double> commissionByTrade, Action<object> onMessage) : base(ibClient, ACCOUNT_ID_BASE) {
-      //CommissionByTrade = commissionByTrade;
+      CommissionByTrade = commissionByTrade;
       Account = new Account();
       _accountId = accountId;
       _defaultMessageHandler = onMessage ?? new Action<object>(o => { throw new NotImplementedException(new { onMessage } + ""); });
@@ -311,8 +311,9 @@ namespace IBApp {
     #endregion
     class OrderStatusArguments {
 
-      public OrderStatusArguments(int orderId, string status, double filled, double remaining, double avgFillPrice) {
+      public OrderStatusArguments(int orderId,Contract contract, string status, double filled, double remaining, double avgFillPrice) {
         OrderId = orderId;
+        Contract = contract;
         Status = status;
         Filled = filled;
         Remaining = remaining;
@@ -320,17 +321,19 @@ namespace IBApp {
       }
 
       public int OrderId { get; private set; }
+      public Contract Contract { get; private set; }
       public string Status { get; private set; }
       public double Filled { get; private set; }
       public double Remaining { get; private set; }
       public double AvgFillPrice { get; private set; }
       public bool IsDone => Enum.GetNames(typeof(OrderStatuses)).Contains(Status) || "Filled" == Status && Remaining == 0;
-      public override string ToString() => new { OrderId, Status, Filled, Remaining, IsDone } + "";
+      public override string ToString() => new { OrderId, Contract.Symbol, Status, Filled, Remaining, IsDone } + "";
     }
     ConcurrentDictionary<string, (IBApi.Order order, IBApi.Contract contract)> _orderContracts = new ConcurrentDictionary<string, (IBApi.Order order, IBApi.Contract contract)>();
     private void OnOrderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld) {
-      OnOrderStatusPush(new OrderStatusArguments(orderId, status, filled, remaining, avgFillPrice));
-      _defaultMessageHandler(new { OrderStatus = status, orderId, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld });
+      _orderContracts.TryGetValue(orderId + "", out var c);
+      OnOrderStatusPush(new OrderStatusArguments(orderId, c.contract, status, filled, remaining, avgFillPrice));
+      _verbous(new { OrderStatus = status,c.contract?.Symbol, orderId, filled, rem = remaining, permId, parentId, price = lastFillPrice, clientId, whyHeld });
     }
     private void OnOrderStatusImpl(OrderStatusArguments arg) {
       _defaultMessageHandler(new { OrderStatusImpl = arg });

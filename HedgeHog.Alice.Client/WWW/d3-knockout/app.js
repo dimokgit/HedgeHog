@@ -208,30 +208,35 @@
     }
     var noNote = args.noNote;
     var note = noNote ? { update: $.noop } : addPendingMessage(name, name + " is in progress ...");
-    var r = chat.server[name].apply(chat.server, args)
-      .always(function () {
-        //clearPendingMessages(name);
-      }).fail(function (error) {
-        notifyClose(note);
-        if (fail) fail(error);
-        else addPendingError(name, error + "", { title: name, icon: true });
-      }).done(function () {
-        var isCustom = typeof done === 'string';
-        var msg = isCustom ? "\n" + done : "";
-        resetPlotter();
-        note.update({
-          type: "warning",
-          text: name + " is done" + msg,
-          icon: 'picon picon-task-complete',
-          hide: true,
-          delay: isCustom ? 5000 : 1000
-        });
-      })
-      ;
-    if ($.isFunction(done)) r.done(function (data) {
-      done(data, note);
-    });
-    return r;
+    try {
+      var r = chat.server[name].apply(chat.server, args)
+        .always(function () {
+          //clearPendingMessages(name);
+        }).fail(function (error) {
+          notifyClose(note);
+          if (fail) fail(error);
+          else addPendingError(name, error + "", { title: name, icon: true });
+        }).done(function () {
+          var isCustom = typeof done === 'string';
+          var msg = isCustom ? "\n" + done : "";
+          resetPlotter();
+          note.update({
+            type: "warning",
+            text: name + " is done" + msg,
+            icon: 'picon picon-task-complete',
+            hide: true,
+            delay: isCustom ? 5000 : 1000
+          });
+        })
+        ;
+      if ($.isFunction(done)) r.done(function (data) {
+        done(data, note);
+      });
+      return r;
+    } catch (e) {
+      if (fail) fail(e);
+      else throw e;
+    }
   }
   // #endregion
 
@@ -670,8 +675,10 @@
     var stophedgingRatios;
     this.hedgingRatios = ko.observableArray();
     this.hedgingRatiosDialog = ko.observable();
+    var hedgingRatiosError = this.hedgingRatiosError = ko.observable(true);
     this.showHedgingRatios = function () {
       stophedgingRatios = false;
+      hedgingRatiosError(true);
       readHedgingRatios.bind(this)();
       $(this.hedgingRatiosDialog()).dialog({
         title: "Hedging Ratios", width: "auto", dialogClass: "dialog-compact",
@@ -686,11 +693,13 @@
       var args = [pair];
       args.noNote = true;
       serverCall("readHedgingRatios", args, function (hrs) {
+        hedgingRatiosError(false);
         this.hedgingRatios(hrs);
         if (!stophedgingRatios)
           setTimeout(readHedgingRatios.bind(this), 2000);
       }.bind(this),
         function (error) {
+          hedgingRatiosError(true);
           showWarning("readHedgingRatios: " + error);
           setTimeout(readHedgingRatios.bind(this), 2000);
         }.bind(this));
@@ -1043,6 +1052,7 @@
     var accounting = this.accounting = ko.observableArray();
     var accountingDialog;
     var stopAccounting = false;
+    var accountingError = this.accountingError = ko.observable(true);
     this.accountingDialog = function (element) {
       var table = $(element).find("table");
       accountingDialog = table[0];
@@ -1053,16 +1063,20 @@
       serverCall("getAccounting", args,
         function (acc) {
           accounting(acc);
+          accountingError(false);
           if (!stopAccounting)
             setTimeout(getAccounting, 1000);
-        },
+        }.bind(this),
         function (error) {
+          accountingError(true);
           showErrorPerm("getAccounting: " + error);
           setTimeout(getAccounting, 2000);
-        });
+        }.bind(this));
     }
     this.startAccounting = function () {
       stopAccounting = false;
+      accountingError(true);
+      accounting([]);
       $(accountingDialog).dialog({
         title: "Accounting",
         width: "auto",

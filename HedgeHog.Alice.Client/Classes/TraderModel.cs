@@ -352,7 +352,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    public TradingAccount TradingMaster { get { return TradingMasters.FirstOrDefault(); } }
+    public TradingAccount TradingMaster { get { return TradingMasters.Single(); } }
     public IEnumerable<TradingAccount> TradingMasters { get { return TradingAccountsSet.Where(ta => ta.IsMaster); } }
     public TradingAccount[] TradingSlaves { get { return TradingAccountsSet.Where(ta => !ta.IsMaster).ToArray(); } }
 
@@ -1451,7 +1451,8 @@ namespace HedgeHog.Alice.Client {
         Trade trade = e.Trade;
         OnMasterTradeAdded(trade);
         var tm = (ITradesManager)sender;
-        RunPriceChanged(new PriceChangedEventArgs(tm.GetPrice(trade.Pair), tm.GetAccount(), tm.GetTrades()));
+        if(tm.TryGetPrice(trade.Pair, out var price))
+          RunPriceChanged(new PriceChangedEventArgs(price, tm.GetAccount(), tm.GetTrades()));
       } catch(Exception exc) {
         Log = exc;
       }
@@ -1670,22 +1671,24 @@ namespace HedgeHog.Alice.Client {
           if(tradeIdLast == trade.Id)
             return;
           tradeIdLast = trade.Id;
-          TradeStatistics tradeStats = trade.InitUnKnown<TradeUnKNown>().TradeStats ?? new TradeStatistics();
-          //if (GlobalStorage.Context.TradeHistories.Count(t => t.Id == trade.Id) > 0) return;
-          ////var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id + "", trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID + "", trade.OpenOrderReqID + "", trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, DateTime.Now, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack);
-          var ct = new t_Trade { Id = trade.Id, Buy = trade.Buy, PL = trade.PL, GrossPL = trade.GrossPL, Lot = trade.Lots, Pair = trade.Pair, TimeOpen = trade.Time, TimeClose = trade.TimeClose, AccountId = TradingMaster.AccountId + "", Commission = trade.Commission * 2, IsVirtual = trade.IsVirtual, CorridorMinutesBack = tradeStats.CorridorStDev, CorridorHeightInPips = tradeStats.CorridorStDevCma, SessionId = tradeStats.SessionId, PriceOpen = trade.Open, PriceClose = trade.Close };
-          ct.t_TradeValue = tradeStats.Values.Select(kv => new t_TradeValue { Name = kv.Key, Value = kv.Value + "" }).ToArray();
-          //var ct = TradeHistory.CreateTradeHistory(trade.Id, trade.Buy, (float)trade.PL, (float)trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", (float)CommissionByTrade(trade), trade.IsVirtual, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack, tradeStats.SessionId);
-          ct.TimeStamp = DateTime.Now;
-          ct.SessionInfo = tradeStats.SessionInfo;
-          GlobalStorage.UseForexContext(c => {
-            c.t_Trade.Add(ct);
-            c.SaveChanges();
-          }, (c, e) => {
-            Log = new Exception(ct.ToJson());
-            Log = e;
-            c.t_Trade.Remove(ct);
-          });
+          if(IsInVirtualTrading) {
+            TradeStatistics tradeStats = trade.InitUnKnown<TradeUnKNown>().TradeStats ?? new TradeStatistics();
+            //if (GlobalStorage.Context.TradeHistories.Count(t => t.Id == trade.Id) > 0) return;
+            ////var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id + "", trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID + "", trade.OpenOrderReqID + "", trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, DateTime.Now, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack);
+            var ct = new t_Trade { Id = trade.Id, Buy = trade.Buy, PL = trade.PL, GrossPL = trade.GrossPL, Lot = trade.Lots, Pair = trade.Pair, TimeOpen = trade.Time, TimeClose = trade.TimeClose, AccountId = TradingMaster.AccountId + "", Commission = trade.Commission * 2, IsVirtual = trade.IsVirtual, CorridorMinutesBack = tradeStats.CorridorStDev, CorridorHeightInPips = tradeStats.CorridorStDevCma, SessionId = tradeStats.SessionId, PriceOpen = trade.Open, PriceClose = trade.Close };
+            ct.t_TradeValue = tradeStats.Values.Select(kv => new t_TradeValue { Name = kv.Key, Value = kv.Value + "" }).ToArray();
+            //var ct = TradeHistory.CreateTradeHistory(trade.Id, trade.Buy, (float)trade.PL, (float)trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", (float)CommissionByTrade(trade), trade.IsVirtual, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack, tradeStats.SessionId);
+            ct.TimeStamp = DateTime.Now;
+            ct.SessionInfo = tradeStats.SessionInfo;
+            GlobalStorage.UseForexContext(c => {
+              c.t_Trade.Add(ct);
+              c.SaveChanges();
+            }, (c, e) => {
+              Log = new Exception(ct.ToJson());
+              Log = e;
+              c.t_Trade.Remove(ct);
+            });
+          }
         }
       } catch(Exception exc) { Log = exc; }
     }

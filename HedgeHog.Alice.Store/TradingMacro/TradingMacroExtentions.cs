@@ -1800,9 +1800,10 @@ namespace HedgeHog.Alice.Store {
     static IEnumerable<double> PPMFromEnd(TradingMacro tm, double size) {
       return tm.UseRates(rates => {
         var rs = rates.GetRange(size);
-        return new { rs, da = rs.Select(tm.GetPriceMA).Where(d => !d.IsNaN()).Distances().Average() };
+        return new { rs, da = rs.Select(tm.GetPriceMA).Where(d => !d.IsNaN()).Distances().ToArray() };
       })
-      .Select(x => x.da / x.rs.Last().StartDate.Subtract(x.rs[0].StartDate).Duration().TotalMinutes);
+      .Where(x=>x.da.Any())
+      .Select(x => x.da.Average() / x.rs.Last().StartDate.Subtract(x.rs[0].StartDate).Duration().TotalMinutes);
     }
     IEnumerable<double> M1SD => TradingMacroM1(tm => tm.WaveRanges.Select(wr => wr.StDev).FirstOrDefault());
     IEnumerable<double> M1SDA => TradingMacroM1(tm => tm.WaveRangeAvg.StDev);

@@ -294,7 +294,8 @@
         stroke-dasharray: 1, 1;
       }
 
-    table.accounting {
+    table.error {
+      background-color: lightcoral;
     }
 
     #wwwSettingsDialog.ui-dialog-content {
@@ -314,11 +315,12 @@
     table.wwwInfo tbody tr td {
       text-align: right;
     }
-    table.inline-edit td input{
-      height:100%;
-      width:100%;
-      border:none;
-      text-align:right;
+
+    table.inline-edit td input {
+      height: 100%;
+      width: 100%;
+      border: none;
+      text-align: right;
     }
   </style>
   <script>
@@ -826,7 +828,7 @@
   <!--#endregion-->
   <!--#region-->
   <div data-bind="elementer:accountingDialog" style="display:none">
-    <table class="accounting" border="1" cellspacing="0">
+    <table class="accounting" data-bind="css:{error:accountingError}" border="1" cellspacing="0">
       <tbody data-bind="foreach: accounting">
         <tr>
           <td data-bind="text:n"></td>
@@ -1030,10 +1032,9 @@
     </div>
   </div>
   <!--#endregion-->
-
   <!--#region HedgingRatios-->
   <div data-bind="elementer:hedgingRatiosDialog" style="display:none;padding:0">
-    <table border="1" cellspacing="0" class="wwwInfo">
+    <table border="1" cellspacing="0" data-bind="css:{error:hedgingRatiosError}" class="wwwInfo">
       <thead>
         <tr>
           <td>Pair</td>
