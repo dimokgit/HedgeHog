@@ -322,6 +322,10 @@
       border: none;
       text-align: right;
     }
+
+    .hide {
+      display: none;
+    }
   </style>
   <script>
     $(function () {
@@ -835,6 +839,15 @@
           <td data-bind="text:v"></td>
         </tr>
       </tbody>
+      <tfoot>
+        <tr>
+          <td>Gross To Exit</td>
+          <td>
+            <input data-bind="value:grossToExit" size="2" />
+            <input data-bind="click:saveGrossToExit" value="Save" type="button"/>
+          </td>
+        </tr>
+      </tfoot>
     </table>
   </div>
   <!--#endregion-->
@@ -1059,7 +1072,7 @@
           <td data-bind="text:Pip"></td>
           <td data-bind="text:d3.format('.2f')(MMR)"></td>
           <td>
-            <button data-bind="text:IsBuy?' Buy':'Sell',click:$parent.openHedgeTrade"></button>
+            <button data-bind="text:IsBuy?' Buy':'Sell',click:$parent.openHedgeTrade,css:{hide:!IsPrime}"></button>
           </td>
         </tr>
       </tbody>

@@ -377,14 +377,14 @@ namespace HedgeHog.Alice.Client {
       get {
         if(_accountModel == null) {
           _accountModel = new TradingAccountModel();
-          AccountModel.CloseAllTrades += AccountModel_CloseAllTrades;
+          AccountModel.CloseAllTrades += CloseAllTrades;
         }
         return _accountModel;
       }
     }
 
-    void AccountModel_CloseAllTrades(object sender, EventArgs e) {
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage<TradingMacro>>(new CloseAllTradesMessage<TradingMacro>(null, tm => tm.CloseTrades("AccountModel_CloseAllTrades")));
+    void CloseAllTrades(object sender, EventArgs e) {
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new CloseAllTradesMessage<TradingMacro>(null, tm => tm.CloseTrades(GetType().Name + "::CloseAllTrades")));
     }
     public TradingAccountModel[] ServerAccountRow { get { return new[] { AccountModel }; } }
     public override double CurrentLoss { set { AccountModel.CurrentLoss = value; } }

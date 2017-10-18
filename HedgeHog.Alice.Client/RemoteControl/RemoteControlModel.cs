@@ -40,7 +40,7 @@ using ReactiveUI.Legacy;
 using static HedgeHog.ReflectionCore;
 namespace HedgeHog.Alice.Client {
   [Export]
-  public partial class RemoteControlModel : RemoteControlModelBase {
+  public partial class RemoteControlModel :RemoteControlModelBase {
     //Dimok:Show Closed trades
 
     #region Settings
@@ -71,7 +71,7 @@ namespace HedgeHog.Alice.Client {
         Log = exc;
       }
     }
-    static object _chartersLocker=new object();
+    static object _chartersLocker = new object();
     public CharterControl GetCharter(TradingMacro tradingMacro) {
       lock(_chartersLocker) {
         if(!charters.ContainsKey(tradingMacro)) {
@@ -286,7 +286,7 @@ namespace HedgeHog.Alice.Client {
 
 
     #region LoadTradingSettings
-    ReactiveCommand<object,Unit> _LoadTradingSettingsCommand;
+    ReactiveCommand<object, Unit> _LoadTradingSettingsCommand;
     public ReactiveCommand<object, Unit> LoadTradingSettingsCommand {
       get {
         if(_LoadTradingSettingsCommand == null) {
@@ -715,6 +715,10 @@ namespace HedgeHog.Alice.Client {
           var clp = tms.Sum(tm => tm.CurrentLossInPips);
           _tradingStatistics.CurrentLossInPips = clp;
           _tradingStatistics.OriginalProfit = MasterModel.AccountModel.OriginalProfit;
+          if(MasterModel.GrossToExit != 0
+            && !tms.SelectMany(tm => tm.PendingEntryOrders).Any()
+            && MasterModel.TradesManager.GetTrades().Net2() > MasterModel.GrossToExit)
+            tms.ForEach(tm => tm.CloseTrades(new { MasterModel.GrossToExit } + ""));
         }
       } catch(Exception exc) {
         Log = exc;
@@ -738,6 +742,7 @@ namespace HedgeHog.Alice.Client {
     public TradingMacro[] GetTradingMacrosForStatistics() {
       // TODO: should only pick first of the same pair
       return (from tm in GetTradingMacros()
+              where tm.IsTrader
               orderby tm.PairIndex
               group tm by tm.Pair into g
               select g
@@ -918,13 +923,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    IDisposable _priceChangedSubscribsion;
-    private void PriceChangeSubscriptionDispose() {
-      if(_priceChangedSubscribsion != null) {
-        _priceChangedSubscribsion.Dispose();
-        _priceChangedSubscribsion = null;
-      }
-    }
     void CoreFX_LoggedInEvent(object sender, EventArgs e) {
       try {
         if(TradingMacrosCopy.Length > 0) {
@@ -972,7 +970,6 @@ namespace HedgeHog.Alice.Client {
 
     void CoreFX_LoggedOffEvent(object sender, EventArgs e) {
       if(TradesManager != null) {
-        PriceChangeSubscriptionDispose();
         TradesManager.TradeAdded -= fw_TradeAdded;
         TradesManager.Error -= fw_Error;
 

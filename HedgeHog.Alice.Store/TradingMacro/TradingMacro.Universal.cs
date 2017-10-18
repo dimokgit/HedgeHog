@@ -268,7 +268,7 @@ namespace HedgeHog.Alice.Store {
         Func<SuppRes, bool> enterCrossHandler = (suppRes) => {
           if(CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled(suppRes) || HaveTrades(suppRes.IsBuy))
             return false;
-          if( suppRes.InManual || BuyLevel.Rate > SellLevel.Rate || suppRes.CanTrade) {
+          if(suppRes.InManual || BuyLevel.Rate > SellLevel.Rate || suppRes.CanTrade) {
             var isBuy = isBuyR(suppRes);
             var lot = Trades.IsBuy(!isBuy).Lots();
             var canTrade = suppResCanTrade(suppRes);
@@ -518,19 +518,19 @@ namespace HedgeHog.Alice.Store {
                   var hasTradeCountOff = _buySellLevels.Where(sr => sr.TradesCount < -TradeCountMax);
                   onCloseTradeLocal += t => {
                     //if(!HaveTrades()) {
-                      if(_buySellLevels.All(sr => sr.InManual && !sr.CanTrade))
-                        _buySellLevelsForEach(sr => sr.InManual = false);
-                      if(minPLOk(t) || hasTradeCountOff.Any()) {
-                        BuyLevel.InManual = SellLevel.InManual = false;
-                        turnItOff(true, () => {
-                          if(canTradeOff)
-                            IsTradingActive = false;
-                        });
-                      }
-                      if(CurrentGrossInPipTotal > 0)
-                        BroadcastCloseAllTrades();
-                      BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
-                      CorridorStartDate = null;
+                    if(_buySellLevels.All(sr => sr.InManual && !sr.CanTrade))
+                      _buySellLevelsForEach(sr => sr.InManual = false);
+                    if(minPLOk(t) || hasTradeCountOff.Any()) {
+                      BuyLevel.InManual = SellLevel.InManual = false;
+                      turnItOff(true, () => {
+                        if(canTradeOff)
+                          IsTradingActive = false;
+                      });
+                    }
+                    if(false && CurrentGrossInPipTotal > 0)
+                      BroadcastCloseAllTrades();
+                    BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
+                    CorridorStartDate = null;
                     //}
                     setLevels();
                   };
@@ -600,7 +600,8 @@ namespace HedgeHog.Alice.Store {
         _strategyExecuteOnTradeOpen = trade => {
           SuppRes.ForEach(sr => sr.ResetPricePosition());
           onOpenTradeLocal?.Invoke(trade);
-          IsTradingActive = true;
+          if(IsInVirtualTrading)
+            IsTradingActive = true;
         };
         #endregion
 

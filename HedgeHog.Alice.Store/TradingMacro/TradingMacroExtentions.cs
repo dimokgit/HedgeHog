@@ -3166,9 +3166,7 @@ namespace HedgeHog.Alice.Store {
 
     public void CloseTrades(string reason) { CloseTrades(Trades.Lots(), reason); }
     private void CloseTrades(int lot, string reason) {
-      if(!Trades.Any())
-        return;
-      if(HasPendingKey(CT))
+      if(!IsTrader || !Trades.Any() || HasPendingKey(CT))
         return;
       if(lot > 0)
         CheckPendingAction(CT, pa => {
@@ -3930,7 +3928,7 @@ namespace HedgeHog.Alice.Store {
         _priceQueue.Dequeue();
       _priceQueue.Enqueue(price);
       Account account = e.Account;
-      if(account.IsMarginCall && IsPrimaryMacro) {
+      if(IsInVirtualTrading && account.IsMarginCall && IsPrimaryMacro) {
         IsTradingActive = false;
         SuppRes.ForEach(sr => sr.CanTrade = false);
         CloseTrades("Margin Call.");
@@ -3978,7 +3976,7 @@ namespace HedgeHog.Alice.Store {
     double _mmr = 0;
     public int BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = TradesManager.GetBaseUnitSize(Pair); } }
     Account _account = null;
-    Account Account { get { return _account ?? (_account = TradesManager.GetAccount()); } }
+    Account Account { get { return _account ?? (_account = TradesManager?.GetAccount()); } }
     public void SetLotSize(Account account = null) {
       if(TradesManager == null)
         return;

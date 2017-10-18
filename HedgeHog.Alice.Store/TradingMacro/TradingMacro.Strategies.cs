@@ -549,7 +549,7 @@ namespace HedgeHog.Alice.Store {
     private void CloseTrading(string reason) {
       Log = new Exception("Closing Trading:" + reason);
       TradingStatistics.TradingMacros.ForEach(tm => {
-        TradesManager.ClosePair(tm.Pair);
+        tm.CloseTrades(reason);
         tm.SuppRes.ForEach(sr1 => sr1.CanTrade = false);
       });
     }

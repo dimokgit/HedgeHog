@@ -14,7 +14,8 @@
       canTrade: canTrade
     };
   }
-  var margin = { top: 0, right: 10, bottom: 20, left: 0 };
+  //var margin = { top: 0, right: 10, bottom: 20, left: 0 };
+  var margin = { top: 0, right: 0, bottom: 20, left: 0 };
   function calcElementHeight(width) {
     return width * 9 / 16.0 - 15;
   }
@@ -483,7 +484,7 @@
               : yDomain[1])]);
       var xDomain = viewModel.chartArea[chartNum].xDomain = d3.extent(data, function (d) { return d.d; });
       x.domain(xDomain);
-      var vOffset = (yDomain[1] - yDomain[0]) / 20;
+      var vOffset = 0;//(yDomain[1] - yDomain[0]) / 20;
       viewModel.chartArea[chartNum].yDomain = yDomain = [yDomain[0] - vOffset, yDomain[1] + vOffset];
       y.domain(yDomain);
       var yDomain2 = d3.extent(data, function (d) { return tipValue(d.v); });

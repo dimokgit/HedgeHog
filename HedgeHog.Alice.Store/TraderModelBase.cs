@@ -45,7 +45,16 @@ namespace HedgeHog.Alice.Store {
         RaisePropertyChanged("RowsList");
       }
     }
-
+    double _GroosToExit = 0;
+    public double GrossToExit {
+      get => _GroosToExit;
+      set {
+        if(_GroosToExit != value) {
+          _GroosToExit = value;
+          RaisePropertyChangedCore();
+        }
+      }
+    }
   }
   public class Row<T> {
     public int Index { get; set; }

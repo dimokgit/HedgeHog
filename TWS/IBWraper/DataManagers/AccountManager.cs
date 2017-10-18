@@ -38,7 +38,7 @@ namespace IBApp {
     private bool accountUpdateRequestActive = false;
     private string _accountId;
     private readonly Action<object> _defaultMessageHandler;
-    private bool _useVerbouse = true;
+    private bool _useVerbouse = false;
     private Action<object> _verbous => _useVerbouse ? _defaultMessageHandler : o => { };
     private readonly string _accountCurrency = "USD";
     #endregion
@@ -475,7 +475,7 @@ namespace IBApp {
         o.LmtPrice = Math.Round(buy ? price.Value.Ask * offset : price.Value.Bid / offset, d);
       }
       _orderContracts.TryAdd(o.OrderId + "", (o, c));
-      _defaultMessageHandler(o);
+      _verbous(new { plaseOrder = new { o, c } });
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
     }

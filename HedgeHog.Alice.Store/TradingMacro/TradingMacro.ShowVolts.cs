@@ -11,6 +11,7 @@ using System.Reactive.Subjects;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
 using static HedgeHog.IEnumerableCore;
 using System.Collections.Concurrent;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -92,6 +93,8 @@ namespace HedgeHog.Alice.Store {
           return () => ShowVoltsByPair(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.Corr:
           return ShowVoltsByCorrelation;
+        case HedgeHog.Alice.VoltageFunction.Gross:
+          return ShowVoltsByGross;
       }
       throw new NotSupportedException(VoltageFunction + " not supported.");
     }
@@ -370,21 +373,36 @@ namespace HedgeHog.Alice.Store {
           .Select(r => r.StartDate)
           .DefaultIfEmpty(DateTime.MinValue)
           .First();
-        var tmRates2 = (from tm in _tradingMacros.Where(x => x.Pair.ToLower() == PairHedge.ToLower() && x.BarPeriod == BarPeriod).Take(1)
-                        where tm.BarPeriod == BarPeriod
+        var tm2 = _tradingMacros.Where(x => x.Pair.ToLower() == PairHedge.ToLower() && x.BarPeriod == BarPeriod).Take(1).ToArray();
+        var tmRates2 = (from tm in tm2
                         from tmRates in tm.UseRatesInternal(ri => ri.BackwardsIterator().TakeWhile(r => r.StartDate >= voltDate).ToArray())
                         from tmRate in tmRates
                         select tmRate)
                         .Reverse()
                         .ToArray();
+        var corrs = tm2.SelectMany(tm => TMCorrelation(tm));
+        corrs.ForEach(corr =>
         nonVoltRates.Zip(
           r => r.StartDate
-          , tmRates2.Select(x => Tuple.Create(x.StartDate, 1 / x.PriceAvg))
-          , (r, t) => setVolt(r, t.Item2));
+          , tmRates2.Select(x => Tuple.Create(x.StartDate, corr == 1 ? x.PriceAvg : 1 / x.PriceAvg))
+          , (r, t) => setVolt(r, t.Item2)));
         CalcVoltsFullScaleShift();
       }
       return null;
     }
+
+    public IEnumerable<int> TMCorrelation(TradingMacro tmOther) => TMCorrelation(this, tmOther);
+    static IEnumerable<int> TMCorrelation_Old(TradingMacro tm1, TradingMacro tm2) =>
+      (from r1 in tm1.UseRates(ra => ra.ToList())
+       from r2 in tm2.UseRates(ra => ra.ToList())
+       select alglib.pearsoncorr2(r1.ToArray(r => r.PriceAvg), r2.ToArray(r => r.PriceAvg), r1.Count.Min(r2.Count)) > 0 ? 1 : -1
+      );
+    static IEnumerable<int> TMCorrelation(TradingMacro tm1, TradingMacro tm2) =>
+      from corrs in tm1.UseRates(ra1 => tm2.UseRates(ra2 => alglib.pearsoncorr2(ra1.ToArray(r => r.PriceAvg), ra2.ToArray(r => r.PriceAvg), ra1.Count.Min(ra2.Count))))
+      from corr in corrs
+      where corr !=0
+      select corr > 0 ? 1 : -1;
+
 
     CorridorStatistics ShowVoltsByCorrelation() {
       if(UseCalc()) {
@@ -396,6 +414,10 @@ namespace HedgeHog.Alice.Store {
           ShowVolts(volt, 2, GetVoltage2, SetVoltage2);
         }
       }
+      return null;
+    }
+    CorridorStatistics ShowVoltsByGross() {
+      ShowVolts(TradesManager.GetTrades().Net2(), 0, GetVoltage2, SetVoltage2);
       return null;
     }
     void CalcVoltsFullScaleShift() {

@@ -231,7 +231,8 @@ namespace HedgeHog.Shared {
       "AUD"
     };
     private static string[] _commodities=new []{
-      "XAUUSD"
+      "XAUUSD",
+      "XAGUSD"
     };
     public static string WrapPair(this string pair) {
       return Regex.Replace(pair, "[./-]", "").ToUpper();

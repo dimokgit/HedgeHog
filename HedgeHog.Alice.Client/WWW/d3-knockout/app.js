@@ -1053,6 +1053,10 @@
     var accountingDialog;
     var stopAccounting = false;
     var accountingError = this.accountingError = ko.observable(true);
+    this.grossToExit = ko.observable();
+    this.saveGrossToExit = function () {
+      serverCall("saveGrossToExit", [this.grossToExit()]);
+    }.bind(this);
     this.accountingDialog = function (element) {
       var table = $(element).find("table");
       accountingDialog = table[0];
