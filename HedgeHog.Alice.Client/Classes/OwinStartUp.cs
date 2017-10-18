@@ -416,42 +416,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    private TM_HEDGE_OLD[] CalcHedgedPositions
-      (string hedgedPair, bool isBuy) {
-      var hedgePairs = GetHedgedTradingMacros(hedgedPair);
-      var hvps = (from tmh in hedgePairs
-                  from tm in new[] { tmh.tm1, tmh.tm2 }
-                  from hv in tm.HistoricalVolatility()
-                  from hvp in tm.HistoricalVolatilityByPips()
-                  select new { tm, hvp, hv }
-                  ).ToArray();
-      var hvsSum = hvps.Sum(x => x.hv);
-      var rc = remoteControl.Value;
-      var am = rc.MasterModel.AccountModel;
-      var ratioMax = hvps.Max(x => 1 - x.hv / hvsSum);
-      var mmr = hvps.Max(x => TradesManagerStatic.GetMMR(x.tm.Pair, isBuy)) / 2 / ratioMax;
-      var equity = am.Equity * .95 / mmr;
-      var xx = hvps.Select((x, i) => {
-        var r = 1 - x.hv / hvsSum;
-        var ta = equity * r;
-        var l = x.tm.GetLotsToTrade(ta, 1, 1);
-        return (
-          tm: x.tm,
-          Pair: x.tm.Pair,
-          HV: x.hv,
-          HVP: x.hvp,
-          TradeRatio: r * 100,
-          TradeAmount: ta,
-          MMR: mmr,
-          Lot: l,
-          Pip: x.tm.PipAmountByLot(l),
-          Corr: i == 0 ? 1 : -HedgeCorrelation(x.tm.Pair).SingleOrDefault(),
-          IsBuy: isBuy
-        );
-      }).ToArray();
-      return xx.ToArray(x => new TM_HEDGE_OLD(x));
-      /// Locals
-    }
     IEnumerable<TM_HEDGE> HedgeBuySell(string pair, bool isBuy) {
       var rc = remoteControl.Value;
       var am = rc.MasterModel.AccountModel;
@@ -502,16 +466,6 @@ namespace HedgeHog.Alice.Client {
              from tm2 in GetTradingMacros(tm1.PairHedge).Where(tm => tm.BarPeriod == tm1.BarPeriod && tm.IsTrader).Take(1)
              select (tm1, tm2);
     }
-    IEnumerable<TradingMacro> GetHedgedTradingMacros_(string pair) {
-      return GetTM(pair)
-        .SelectMany(tm => GetTM(tm.Pair).Concat(GetTM(tm.PairHedge)))
-        .Where(tm => tm.IsTrader)
-        .Distinct(tm => tm.Pair)
-        ;
-      IEnumerable<TradingMacro> GetTM(string pair0) {
-        return GetTradingMacros().Where(tm => !pair0.IsNullOrWhiteSpace() && new[] { tm.Pair, tm.PairHedge }.Select(p => p.ToLower()).Contains(pair0.ToLower()));
-      }
-    }
 
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) {
@@ -519,21 +473,8 @@ namespace HedgeHog.Alice.Client {
         .Select(x => x.Value)
         .OrderByDescending(tm => tm.Pair == pair)
         .ToArray()
-        //.ForEach(t => t.tm.OpenTrade(t.Corr == 1 ? isBuy : !isBuy, t.Lot, "web: hedge open"));
         .ForEach(t => t.tm.OpenTrade(t.IsBuy, t.Lot, "web: hedge open"));
     }
-
-    Func<string, IEnumerable<int>> _hedgeCorrelation;
-    Func<string, IEnumerable<int>> HedgeCorrelation => _hedgeCorrelation ?? (_hedgeCorrelation = new Func<string, IEnumerable<int>>(pair => {
-      var hedgePairs = GetHedgedTradingMacros(pair);
-      return hedgePairs.SelectMany(t => t.tm1.TMCorrelation(t.tm2));
-    }).Memoize());
-
-    private static IEnumerable<int> TMCorrelation(TradingMacro tm1, TradingMacro tm2)
-      => (from r1 in tm1.UseRates(ra => ra.ToList())
-          from r2 in tm2.UseRates(ra => ra.ToList())
-          select alglib.pearsoncorr2(r1.ToArray(r => r.PriceAvg), r2.ToArray(r => r.PriceAvg), r1.Count.Min(r2.Count)) > 0 ? 1 : -1
-          );
     #endregion
 
     #region TradeConditions
@@ -938,23 +879,23 @@ namespace HedgeHog.Alice.Client {
       list.Add(row("Balance", am.Balance.ToString("c0")));
       list.Add(row("Equity", am.Equity.ToString("c0")));
       var more = UseTraderMacro(pair, tm => {
+        IEnumerable<Trade> trades() => tm.Trades.Concat(remoteControl.Value.TradesManager.GetTrades(tm.PairHedge));
         var ht = tm.HaveTrades();
         var list2 = new[] { row("", 0) }.Take(0).ToList();
-        list2.Add(row("CurrentGross", am.CurrentGross.AutoRound2("$", 2) +
-          (ht ? "/" + (am.ProfitPercent).ToString("p1") : "")
-          + "/" + (am.OriginalProfit).ToString("p1")));
-        if(tm.Trades.Any())
-          list2.Add(row("Trades GrossPL", $"{tm.Trades.Gross().AutoRound2("$", 2)}@{tm.ServerTime.TimeOfDay.ToString(@"hh\:mm\:ss")}"));
-        if(tm.LastTradeLoss != 0)
+        if(tm.Trades.Any()) {
+          list2.Add(row("CurrentGross", am.CurrentGross.AutoRound2("$", 2) +
+            (ht ? "/" + (am.ProfitPercent * 100).AutoRound2(2, "%") : "")
+            //+ "/" + (am.OriginalProfit).ToString("p1")
+            ));
+          list2.Add(row("CurrentLot", tm.Trades.Lots() + (ht ? "/" + tm.PipAmount.AutoRound2("$", 2) : "")));
+          list2.Add(row("Trades Gross", $"{trades().Gross().AutoRound2("$", 2)}@{tm.ServerTime.TimeOfDay.ToString(@"hh\:mm\:ss")}"));
+        }
+        if(tm.LastTradeLoss < -1000000)
           list2.Add(row("Last Loss", tm.LastTradeLoss.AutoRound2("$", 2)));
-        if(tm.Trades.Any())
-          list2.Add(row("CurrentLot", tm.Trades.Lots()));
         if(!ht) {
           list2.Add(row("PipAmountBuy", tm.PipAmountBuy.AutoRound2("$", 2) + "/" + tm.PipAmountBuyPercent.AutoRound2(3).ToString("p")));
           list2.Add(row("PipAmountSell", tm.PipAmountSell.AutoRound2("$", 2) + "/" + tm.PipAmountSellPercent.AutoRound2(3).ToString("p")));
-        } else {
-          list2.Add(row("PipAmount", tm.PipAmount.AutoRound2("$", 2)));
-        }
+        } 
         list2.Add(row("PipsToMC", (!ht ? 0 : am.PipsToMC).ToString("n0")));
         var lsb = (tm.IsCurrency ? (tm.LotSizeByLossBuy / 1000.0).Floor() + "K/" : tm.LotSizeByLossBuy + "/");
         var lss = (tm.IsCurrency ? (tm.LotSizeByLossSell / 1000.0).Floor() + "K/" : tm.LotSizeByLossSell + "/");

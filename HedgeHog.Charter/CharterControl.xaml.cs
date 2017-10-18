@@ -265,7 +265,7 @@ namespace HedgeHog {
         if (_IsInPlay != value) {
           _IsInPlay = value;
           RaisePropertyChangedCore();
-          OnPlay(value, PlayStartDate, DelayInSeconds);
+          OnPlay(value, PlayStartDate.GetValueOrDefault(), DelayInSeconds);
         }
       }
     }
@@ -282,11 +282,11 @@ namespace HedgeHog {
     }
 
     private DateTime _PlayStartDate;
-    public DateTime PlayStartDate {
+    public DateTime? PlayStartDate {
       get { return _PlayStartDate; }
       set {
         if (_PlayStartDate != value) {
-          _PlayStartDate = value;
+          _PlayStartDate = value.GetValueOrDefault();
           RaisePropertyChangedCore();
         }
       }

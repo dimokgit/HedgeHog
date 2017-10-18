@@ -1647,7 +1647,8 @@ namespace HedgeHog.Alice.Client {
       return MasterAccount == null
         ? 0
         : MasterAccount.CommissionType == Store.TradingAccount.CommissionTypes.Rel
-        ? lot / 10000.0 * MasterAccount.Commission
+        //? lot / 10000.0 * MasterAccount.Commission
+        ? lot * MasterAccount.Commission
         : MasterAccount.Commission;
     }
     static T TestDefault<T>(T value, string errorMessage) {

@@ -391,12 +391,13 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
-    public IEnumerable<int> TMCorrelation(TradingMacro tmOther) => TMCorrelation(this, tmOther);
-    static IEnumerable<int> TMCorrelation_Old(TradingMacro tm1, TradingMacro tm2) =>
-      (from r1 in tm1.UseRates(ra => ra.ToList())
-       from r2 in tm2.UseRates(ra => ra.ToList())
-       select alglib.pearsoncorr2(r1.ToArray(r => r.PriceAvg), r2.ToArray(r => r.PriceAvg), r1.Count.Min(r2.Count)) > 0 ? 1 : -1
-      );
+    public IEnumerable<int> TMCorrelation(TradingMacro tmOther) {
+      return from tm1 in GetTM1(this)
+             from tm2 in GetTM1(tmOther)
+             from corr in TMCorrelation(tm1, tm2)
+             select corr;
+      IEnumerable<TradingMacro> GetTM1(TradingMacro tm) => tm.BarPeriod == BarsPeriodType.t1 ? tm.TradingMacroM1() : new[] { tm };
+    }
     static IEnumerable<int> TMCorrelation(TradingMacro tm1, TradingMacro tm2) =>
       from corrs in tm1.UseRates(ra1 => tm2.UseRates(ra2 => alglib.pearsoncorr2(ra1.ToArray(r => r.PriceAvg), ra2.ToArray(r => r.PriceAvg), ra1.Count.Min(ra2.Count))))
       from corr in corrs
@@ -420,6 +421,23 @@ namespace HedgeHog.Alice.Store {
       ShowVolts(TradesManager.GetTrades().Net2(), 0, GetVoltage2, SetVoltage2);
       return null;
     }
+    CorridorStatistics ShowVoltsByRatioDiff() {
+      if(UseCalc()) {
+        var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())
+          .Concat()
+          .ToArray();
+        if(voltRates.Length > BarsCountCalc * 0.9) {
+          var volt = alglib.pearsoncorr2(voltRates.ToArray(r => r.PriceAvg), voltRates.ToArray(GetVoltage));
+          ShowVolts(volt, 2, GetVoltage2, SetVoltage2);
+        }
+      }
+      return null;
+    }
+    //IEnumerable<(T,double)> RatioMap<T>(IList<T> source,Func<T,double> getter) {
+    //  var minMax = source.MinMax(getter);
+    //  return source.Select(d => d.PositionRatio(minMax));
+    //}
+
     void CalcVoltsFullScaleShift() {
       if(IsVoltFullScale && UseCalc()) {
         var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())

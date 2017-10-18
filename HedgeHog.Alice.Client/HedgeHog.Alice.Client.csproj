@@ -45,7 +45,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\..\..\Data\Forex\Builds\Debug_RealMicro 3\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\Data\Forex\Builds\Debug_RealMicro 4\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -2533,6 +2533,7 @@ xcopy "$(ProjectDir)WWW\styles" "$(OutDir)WWW\bower" /s /y /i /D
 rem xcopy "$(ProjectDir)WWW\HedgeHog.ico" "$(OutDir)WWW\HedgeHog.ico" /s /y /i /D
 
 xcopy "$(ProjectDir)WWW\Scripts" "$(OutDir)WWW\scripts" /s /y /i /D
+xcopy "$(ProjectDir)WWW\HedgeHog.ico" "$(OutDir)WWW\HedgeHog.ico" /s /y /i /D
 </PreBuildEvent>
   </PropertyGroup>
   <Import Project="..\AllInOne\packages\NETStandard.Library.2.0.1\build\netstandard2.0\NETStandard.Library.targets" Condition="Exists('..\AllInOne\packages\NETStandard.Library.2.0.1\build\netstandard2.0\NETStandard.Library.targets')" />

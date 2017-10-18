@@ -294,8 +294,9 @@
         stroke-dasharray: 1, 1;
       }
 
-    table.error {
-      background-color: lightcoral;
+    table.error,
+    table tbody.error {
+      background-color: lightsalmon;
     }
 
     #wwwSettingsDialog.ui-dialog-content {
@@ -832,8 +833,8 @@
   <!--#endregion-->
   <!--#region-->
   <div data-bind="elementer:accountingDialog" style="display:none">
-    <table class="accounting" data-bind="css:{error:accountingError}" border="1" cellspacing="0">
-      <tbody data-bind="foreach: accounting">
+    <table class="accounting" data-bind="" border="1" cellspacing="0">
+      <tbody data-bind="foreach: accounting,css:{error:accountingError}">
         <tr>
           <td data-bind="text:n"></td>
           <td data-bind="text:v"></td>
@@ -844,7 +845,7 @@
           <td>Gross To Exit</td>
           <td>
             <input data-bind="value:grossToExit" size="2" />
-            <input data-bind="click:saveGrossToExit" value="Save" type="button"/>
+            <input data-bind="click:saveGrossToExit" value="Save" type="button" />
           </td>
         </tr>
       </tfoot>
@@ -1073,6 +1074,7 @@
           <td data-bind="text:d3.format('.2f')(MMR)"></td>
           <td>
             <button data-bind="text:IsBuy?' Buy':'Sell',click:$parent.openHedgeTrade,css:{hide:!IsPrime}"></button>
+            <span data-bind="text:IsBuy?'Buy':'Sell',css:{hide:IsPrime}"></span>
           </td>
         </tr>
       </tbody>
