@@ -23,15 +23,16 @@ namespace HedgeHog.Alice.Client {
       #region map
       var rth = new[] { new TimeSpan(9, 30, 0), new TimeSpan(16, 0, 0) };
       var rthDates = MonoidsCore.ToFunc((DateTime dt) => dt.Date.With(d => rth.Select(h => d + h)).ToArray()).MemoizeLast(dt => dt.Date);
-      bool isRth(DateTime dt)
-      { return dt.Between(rthDates(dt)); }
+      bool isRth(DateTime dt) { return dt.Between(rthDates(dt)); }
       var doShowVolt = tm.VoltageFunction != VoltageFunction.None;
       var doShowVolt2 = tm.VoltageFunction2 != VoltageFunction.None || tm.VoltageFunction == VoltageFunction.PPMH;
       var lastVolt = tm.GetLastVolt().DefaultIfEmpty().Memoize();
       var lastVolt2 = tm.GetLastVolt(tm.GetVoltage2).DefaultIfEmpty().Memoize();
       var lastCma = tm.UseRates(TradingMacro.GetLastRateCma).SelectMany(cma => cma).FirstOrDefault();
+      var tsMin = TimeSpan.FromMinutes(tm.BarPeriodInt);
       var map = MonoidsCore.ToFunc((Rate)null, rate => new {
-        d = rate.StartDate2,
+        //d = rate.StartDate2,
+        d = tm.IsTicks ? rate.StartDate2 : rate.StartDate2.Round().With(d => d == rate.StartDate2 ? d : d + tsMin),
         c = rateHL(rate),
         v = doShowVolt ? tm.GetVoltage(rate).IfNaNOrZero(lastVolt) : 0,
         v2 = doShowVolt2 ? tm.GetVoltage2(rate).IfNaNOrZero(lastVolt2) : 0,
@@ -189,7 +190,7 @@ namespace HedgeHog.Alice.Client {
       var tradeFoo = MonoidsCore.ToFunc(false, isBuy => new { o = getTrades(isBuy).NetOpen(), t = getTrades(isBuy).Max(t => t.Time) });
       getTrades(true).Take(1).ForEach(_ => trades.Add(new { buy = tradeFoo(true) }));
       getTrades(false).Take(1).ForEach(_ => trades.Add(new { sell = tradeFoo(false) }));
-      if(! tmg.TryGetPrice(pair,out var price)) return new object[0];
+      if(!tmg.TryGetPrice(pair, out var price)) return new object[0];
       var askBid = new { ask = price.Ask.Round(digits), bid = price.Bid.Round(digits) };
       var ret = tm.UseRates(ratesArray => ratesArray.Take(1).ToArray(), x => x).ToArray(_ => new {
         rates = getRates(ratesForChart),

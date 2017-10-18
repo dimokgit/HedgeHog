@@ -943,17 +943,19 @@
     function updateChart2(response) {
       var d = new Date();
       updateChartIntervalAverages[1](cma(updateChartIntervalAverages[1](), 10, getSecondsBetween(new Date(), ratesInFlight2)));
-      prepResponse(response);
+
       if (response.rates.length === 0) return;
       var rates = response.rates;
       var rates2 = response.rates2;
       if (rates.length + rates2.length === 0) return;
+
       rates.forEach(function (d) {
         d.d = d.do = new Date(d.d);
       });
       rates2.forEach(function (d) {
         d.d = d.do = new Date(d.d);
       });
+      prepResponse(response);
       var endDate = rates[0].d;
       var startDate = new Date(response.dateStart);
       lineChartData2.remove(function (d) {
