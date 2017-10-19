@@ -266,6 +266,32 @@ namespace HedgeHog {
       ;
     }
 
+    public static void Zip<T1, T2, U>(this IEnumerable<(DateTime d, T1 t)> prime, IEnumerable<(DateTime d, T2 t)> other, Action<(DateTime, T1 t), (DateTime d, T2 t)> map) {
+      prime.Zip(other, (a, b) => {
+        map(a, b);
+        return true;
+      }).Count();
+    }
+    public static IEnumerable<U> Zip<T1, T2, U>(this IEnumerable<(DateTime d, T1 t)> prime, IEnumerable<(DateTime d, T2 t)> other, Func<(DateTime, T1 t), (DateTime d, T2 t), U> map) {
+      (DateTime d, T2 t) prev = default;
+      var isPrevSet = false;
+      bool otherIsDone = false;
+      using(var iterPrime = prime.GetEnumerator()) {
+        using(var iterOther = other.GetEnumerator())
+          if(iterOther.MoveNext()) {
+            while(iterPrime.MoveNext()) {
+              while(!otherIsDone && iterOther.Current.d <= iterPrime.Current.d) {
+                prev = iterOther.Current;
+                isPrevSet = true;
+                if(otherIsDone = !iterOther.MoveNext())
+                  break;
+                continue;
+              }
+              yield return map(iterPrime.Current, isPrevSet ? prev: iterOther.Current);
+            }
+          }
+      }
+    }
     public static IEnumerable<U> Zip<T1, T2, U>(this IEnumerable<Tuple<DateTime, T1>> prime, IEnumerable<Tuple<DateTime, T2>> other, Func<Tuple<DateTime, T1>, Tuple<DateTime, T2>, U> map) {
       Tuple<DateTime, T2> prev = null;
       bool otherIsDone = false;

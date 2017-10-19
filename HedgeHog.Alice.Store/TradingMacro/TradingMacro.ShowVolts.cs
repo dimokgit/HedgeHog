@@ -95,6 +95,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByCorrelation;
         case HedgeHog.Alice.VoltageFunction.Gross:
           return ShowVoltsByGross;
+        case HedgeHog.Alice.VoltageFunction.RatioDiff:
+          return ShowVoltsByRatioDiff;
       }
       throw new NotSupportedException(VoltageFunction + " not supported.");
     }
@@ -401,7 +403,7 @@ namespace HedgeHog.Alice.Store {
     static IEnumerable<int> TMCorrelation(TradingMacro tm1, TradingMacro tm2) =>
       from corrs in tm1.UseRates(ra1 => tm2.UseRates(ra2 => alglib.pearsoncorr2(ra1.ToArray(r => r.PriceAvg), ra2.ToArray(r => r.PriceAvg), ra1.Count.Min(ra2.Count))))
       from corr in corrs
-      where corr !=0
+      where corr != 0
       select corr > 0 ? 1 : -1;
 
 
@@ -426,17 +428,21 @@ namespace HedgeHog.Alice.Store {
         var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())
           .Concat()
           .ToArray();
-        if(voltRates.Length > BarsCountCalc * 0.9) {
-          var volt = alglib.pearsoncorr2(voltRates.ToArray(r => r.PriceAvg), voltRates.ToArray(GetVoltage));
-          ShowVolts(volt, 2, GetVoltage2, SetVoltage2);
-        }
+        var voltMap = RatioMap(voltRates, GetVoltage);
+        var priceMap = RatioMap(voltRates, _priceAvg);
+        voltMap
+          .Zip(priceMap, (a, b) => {
+            SetVoltage2(b.t.r, a.t.v.Abs(b.t.v));
+            return true;
+          }).Count();
       }
       return null;
     }
-    //IEnumerable<(T,double)> RatioMap<T>(IList<T> source,Func<T,double> getter) {
-    //  var minMax = source.MinMax(getter);
-    //  return source.Select(d => d.PositionRatio(minMax));
-    //}
+
+    IEnumerable<(DateTime d, (double v,Rate r) t)> RatioMap(IList<Rate> source, Func<Rate, double> getter) {
+      var minMax = source.MinMax(getter);
+      return source.Select(t => (t.StartDate,( getter(t).PositionRatio(minMax), t)));
+    }
 
     void CalcVoltsFullScaleShift() {
       if(IsVoltFullScale && UseCalc()) {
