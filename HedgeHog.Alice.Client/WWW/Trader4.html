@@ -842,13 +842,15 @@
       </tbody>
       <tfoot>
         <tr>
-          <td>Gross To Exit</td>
+          <td>GrossToExit</td>
           <td>
-            <input data-bind="value:grossToExit" size="2" />
+              <input data-bind="value:grossToExit" size="5" />
             <input data-bind="click:saveGrossToExit" value="Save" type="button" />
-          </td>
         </tr>
-      </tfoot>
+    </table>
+    </td>
+    </tr>
+    </tfoot>
     </table>
   </div>
   <!--#endregion-->
@@ -1053,8 +1055,9 @@
         <tr>
           <td>Pair</td>
           <td>HVP</td>
-          <td>HV</td>
-          <td>Ratio</td>
+          <td>HVPR</td>
+          <td>HVPMR</td>
+          <td>HVR</td>
           <td>Amount</td>
           <td>Lot</td>
           <td>Pip</td>
@@ -1066,7 +1069,8 @@
         <tr>
           <td data-bind="text:Pair"></td>
           <td data-bind="text:HVP"></td>
-          <td data-bind="text:HV"></td>
+          <td data-bind="text:HVPR"></td>
+          <td data-bind="text:HVPM1R"></td>
           <td data-bind="text:d3.format('.1f')(TradeRatio)"></td>
           <td data-bind="text:d3.format('.0f')(TradeAmount)"></td>
           <td data-bind="text:Lot"></td>
@@ -1076,6 +1080,17 @@
             <button data-bind="text:IsBuy?' Buy':'Sell',click:$parent.openHedgeTrade,css:{hide:!IsPrime}"></button>
             <span data-bind="text:IsBuy?'Buy':'Sell',css:{hide:IsPrime}"></span>
           </td>
+        </tr>
+      </tbody>
+    </table>
+    <input data-bind="value:hedgeVertualDate" />
+    <button data-bind="click:openHedgeVirtual.bind($parent,true)">Buy Vertual</button>
+    <button data-bind="click:openHedgeVirtual.bind($parent,false)">Sell Vertual</button>
+    <table>
+      <tbody data-bind="foreach:hedgingStats">
+        <tr>
+          <td data-bind="text:n"></td>
+          <td data-bind="text:v"></td>
         </tr>
       </tbody>
     </table>

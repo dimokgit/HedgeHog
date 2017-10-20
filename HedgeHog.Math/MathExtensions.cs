@@ -203,6 +203,11 @@ namespace HedgeHog {
     public static double Ratio(this int v, double other) {
       return other.Ratio(v);
     }
+    public static (double,double) RelativeRatios(this double v, double other) {
+      if(Math.Sign(v) == -Math.Sign(other)) return (double.NaN, double.NaN);
+      var s = v + other;
+      return (v / s, other / s);
+    }
     public static ILookup<bool, double> Fractals(this IList<double> rates, int fractalLength) {
       return rates.Fractals(fractalLength, d => d, d => d);
     }

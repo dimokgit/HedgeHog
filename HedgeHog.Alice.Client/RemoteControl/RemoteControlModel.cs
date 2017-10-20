@@ -717,7 +717,7 @@ namespace HedgeHog.Alice.Client {
           _tradingStatistics.OriginalProfit = MasterModel.AccountModel.OriginalProfit;
           if(MasterModel.GrossToExit != 0
             && !tms.SelectMany(tm => tm.PendingEntryOrders).Any()
-            && MasterModel.TradesManager.GetTrades().Net2() > MasterModel.GrossToExit) {
+            && MasterModel.TradesManager.GetTrades().Net2() > MasterModel.GrossToExitCalc) {
             MasterModel.GrossToExit = 0;
             tms.ForEach(tm => tm.CloseTrades(new { MasterModel.GrossToExit } + ""));
           }

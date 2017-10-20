@@ -396,17 +396,43 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<int> TMCorrelation(TradingMacro tmOther) {
       return from tm1 in GetTM1(this)
              from tm2 in GetTM1(tmOther)
-             from corr in TMCorrelation(tm1, tm2)
+             from corr in Hedging.TMCorrelation(tm1, tm2)
              select corr;
       IEnumerable<TradingMacro> GetTM1(TradingMacro tm) => tm.BarPeriod == BarsPeriodType.t1 ? tm.TradingMacroM1() : new[] { tm };
     }
-    static IEnumerable<int> TMCorrelation(TradingMacro tm1, TradingMacro tm2) =>
-      from corrs in tm1.UseRates(ra1 => tm2.UseRates(ra2 => alglib.pearsoncorr2(ra1.ToArray(r => r.PriceAvg), ra2.ToArray(r => r.PriceAvg), ra1.Count.Min(ra2.Count))))
-      from corr in corrs
-      where corr != 0
-      select corr > 0 ? 1 : -1;
+    public static class Hedging {
+      public static IEnumerable<int> TMCorrelation(TradingMacro tm1, TradingMacro tm2) =>
+        from corrs in tm1.UseRates(ra1 => tm2.UseRates(ra2 => alglib.pearsoncorr2(ra1.ToArray(r => r.PriceAvg), ra2.ToArray(r => r.PriceAvg), ra1.Count.Min(ra2.Count))))
+        from corr in corrs
+        where corr != 0
+        select corr > 0 ? 1 : -1;
 
-
+      public static IEnumerable<(TradingMacro tm, bool buy, double tradeAmount, double tradingRatio, double hvpr, double hv, double hvp, double mmr, double hvpM1r)> CalcTradeAmount
+        (IList<(TradingMacro tm, bool buy)> tms, double equity) {
+        var minMaxes = (from tm in tms
+                        from tmM1 in tm.tm.TradingMacroM1()
+                        from hv in tm.tm.HistoricalVolatility()
+                        from hvp in tm.tm.HistoricalVolatilityByPips()
+                        from hvpM1 in tmM1.HistoricalVolatilityByPips()
+                        let mmr = TradesManagerStatic.GetMMR(tm.tm.Pair, tm.buy)
+                        orderby mmr descending
+                        select new { tm.tm, tradeMax = equity / mmr, tm.buy, hv, hvp, hvpM1, mmr }
+                        )
+                        .Pairwise((min, max) => new { min, max, hvr = min.hv / max.hv })
+                        .ToArray();
+        return minMaxes.SelectMany(mm => {
+          var maxTrade = mm.max.tradeMax.Min(mm.min.tradeMax * mm.hvr);
+          var minTrade = mm.min.tradeMax.Min(maxTrade / mm.hvr);
+          var hvs = mm.min.hv + mm.max.hv;
+          var hvps = mm.min.hvp + mm.max.hvp;
+          var hvpM1s = mm.min.hvpM1 + mm.max.hvpM1;
+          return new[] {
+          (mm.min.tm, mm.min.buy,minTrade,1 - mm.min.hv / hvs,mm.min.hvp / hvps,mm.min.hv,mm.min.hvp,mm.min.mmr,mm.min.hvpM1 / hvpM1s),
+          (mm.max.tm, mm.max.buy,maxTrade,1 - mm.max.hv / hvs,mm.max.hvp / hvps,mm.max.hv,mm.max.hvp,mm.max.mmr,mm.max.hvpM1 / hvpM1s)
+        };
+        });
+      }
+    }
     CorridorStatistics ShowVoltsByCorrelation() {
       if(UseCalc()) {
         var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())
@@ -428,20 +454,20 @@ namespace HedgeHog.Alice.Store {
         var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())
           .Concat()
           .ToArray();
-        var voltMap = RatioMap(voltRates, GetVoltage);
+        var voltMap = RatioMap(voltRates, GetVoltage, VoltsFullScaleMinMax);
         var priceMap = RatioMap(voltRates, _priceAvg);
         voltMap
           .Zip(priceMap, (a, b) => {
-            SetVoltage2(b.t.r, a.t.v.Abs(b.t.v));
+            SetVoltage2(b.t.r, b.t.v - a.t.v);
             return true;
           }).Count();
       }
       return null;
     }
 
-    IEnumerable<(DateTime d, (double v,Rate r) t)> RatioMap(IList<Rate> source, Func<Rate, double> getter) {
-      var minMax = source.MinMax(getter);
-      return source.Select(t => (t.StartDate,( getter(t).PositionRatio(minMax), t)));
+    IEnumerable<(DateTime d, (double v, Rate r) t)> RatioMap(IList<Rate> source, Func<Rate, double> getter, double[] minMax = null) {
+      minMax = (minMax ?? new double[0]).Concat(source.MinMax(getter)).MinMax();
+      return source.Select(t => (t.StartDate, (getter(t).PositionRatio(minMax), t)));
     }
 
     void CalcVoltsFullScaleShift() {

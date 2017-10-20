@@ -62,6 +62,12 @@ namespace HedgeHog.Shared.Tests {
       Assert.IsTrue("usd/jpy".IsCurrenncy());
       Assert.IsFalse("XAUusd".IsCurrenncy());
     }
+
+    [TestMethod()]
+    public void PipByPairTest() {
+      TradesManagerStatic.AccountCurrency = "USD";
+      Assert.AreEqual(0.088733900342957, TradesManagerStatic.PipsAndLotToMoney("USD.JPY", 1,1000, 112.6965, 0.01).Round(15));
+    }
   }
 }
 /*

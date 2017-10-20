@@ -55,6 +55,7 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    public double GrossToExitCalc => GrossToExit.Abs() < 1 ? AccountModel.Equity * GrossToExit : GrossToExit;
   }
   public class Row<T> {
     public int Index { get; set; }

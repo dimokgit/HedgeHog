@@ -5298,6 +5298,7 @@ namespace HedgeHog.Alice.Store {
 
     bool _isAsleep;
     private double[] _ratesArrayCoeffs = new double[0];
+    public double[] RatesArrayCoeffs { get => _ratesArrayCoeffs; set => _ratesArrayCoeffs = value; }
 
     public bool IsAsleep {
       get { return _isAsleep; }
@@ -5332,6 +5333,7 @@ namespace HedgeHog.Alice.Store {
         _ratesHeightCma = value;
       }
     }
+
   }
   public static class WaveInfoExtentions {
     public static Dictionary<CorridorCalculationMethod, double> ScanWaveWithAngle<T>(this IList<T> rates, Func<T, double> price, double pointSize, CorridorCalculationMethod corridorMethod) {

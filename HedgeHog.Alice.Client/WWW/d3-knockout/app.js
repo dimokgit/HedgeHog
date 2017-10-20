@@ -674,6 +674,7 @@
     // #region hedgingRatiosDialog
     var stophedgingRatios;
     this.hedgingRatios = ko.observableArray();
+    this.hedgingStats = ko.observableArray();
     this.hedgingRatiosDialog = ko.observable();
     var hedgingRatiosError = this.hedgingRatiosError = ko.observable(true);
     this.showHedgingRatios = function () {
@@ -692,9 +693,10 @@
     function readHedgingRatios() {
       var args = [pair];
       args.noNote = true;
-      serverCall("readHedgingRatios", args, function (hrs) {
+      serverCall("readHedgingRatios", args, function (ret) {
         hedgingRatiosError(false);
-        this.hedgingRatios(hrs);
+        this.hedgingRatios(ret.hrs);
+        this.hedgingStats($.map(ret.stats[0] || {}, function (v, n) { return { n, v }; }));
         if (!stophedgingRatios)
           setTimeout(readHedgingRatios.bind(this), 2000);
       }.bind(this),
@@ -708,6 +710,10 @@
       debugger;
       serverCall("openHedge", [pair, hp.IsBuy]);
     }
+    this.hedgeVertualDate = ko.observable();
+    this.openHedgeVerual = function (buy) {
+      serverCall("openHedgeVirtual", [pair, buy, this.hedgeVertualDate]);
+    }.bind(this);
     // #endregion
     // #region WwwInfo
     var wwwInfoElement;
@@ -1057,7 +1063,9 @@
     var accountingError = this.accountingError = ko.observable(true);
     this.grossToExit = ko.observable();
     this.saveGrossToExit = function () {
-      serverCall("saveGrossToExit", [this.grossToExit()]);
+      serverCall("saveGrossToExit", [this.grossToExit()], function () {
+        this.grossToExit("");
+      }.bind(this));
     }.bind(this);
     this.accountingDialog = function (element) {
       var table = $(element).find("table");

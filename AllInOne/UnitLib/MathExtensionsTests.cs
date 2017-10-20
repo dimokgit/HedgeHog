@@ -29,9 +29,9 @@ namespace HedgeHog.Tests {
 
     [TestMethod()]
     public void DistancesTest() {
-      DistanceImpl(100,3);
-      DistanceImpl(100,2);
-      DistanceImpl(100,1);
+      DistanceImpl(100, 3);
+      DistanceImpl(100, 2);
+      DistanceImpl(100, 1);
     }
 
     private static void DistanceImpl(int count, int buffer) {
@@ -41,6 +41,13 @@ namespace HedgeHog.Tests {
         .TakeWhile(b => b.Count > 1)
         .Select(b => new { item = b[0].Item1, dist = b.Distances(t => t.Item2).Last().Item2 }).ToArray();
       Assert.AreEqual(count - 1, seq2.Sum(x => x.dist));
+    }
+
+    [TestMethod()]
+    public void RelativeRatiosTest() {
+      Assert.AreEqual((0.25, 0.75), 1.0.RelativeRatios(3));
+      Assert.AreEqual((0.25, 0.75), (-1.0).RelativeRatios(-3));
+      Assert.AreEqual((double.NaN, double.NaN), (1.0).RelativeRatios( -3));
     }
   }
 }

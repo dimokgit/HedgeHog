@@ -32,7 +32,7 @@ namespace HedgeHog.Alice.Client {
       var tsMin = TimeSpan.FromMinutes(tm.BarPeriodInt);
       var map = MonoidsCore.ToFunc((Rate)null, rate => new {
         //d = rate.StartDate2,
-        d = tm.IsTicks ? rate.StartDate2 : rate.StartDate2.Round().With(d => d == rate.StartDate2 ? d : d + tsMin),
+        d = tm.BarPeriod == BarsPeriodType.t1 ? rate.StartDate2 : rate.StartDate2.Round().With(d => d == rate.StartDate2 ? d : d + tsMin),
         c = rateHL(rate),
         v = doShowVolt ? tm.GetVoltage(rate).IfNaNOrZero(lastVolt) : 0,
         v2 = doShowVolt2 ? tm.GetVoltage2(rate).IfNaNOrZero(lastVolt2) : 0,
