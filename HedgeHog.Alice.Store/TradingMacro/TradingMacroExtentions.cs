@@ -1388,14 +1388,21 @@ namespace HedgeHog.Alice.Store {
         return;
       }
       Func<IList<TradingMacro>> tms = () => args.TradingMacros;
-      var trader = tms().Single(tm => tm.IsTrader);
-      var traderStartDate = MonoidsCore.ToFunc(() => trader.UseRatesInternal(ri => ri.BackwardsIterator().Take(1).ToArray()).SelectMany(rates => rates));
-      if(tms().Count(tm => tm.IsTrader) > 1)
-        throw new Exception("Too many traders");
-      if(tms().Count(tm => tm.IsTrader) == 0)
-        throw new Exception("There is no traders");
+      var replayTrader = tms()
+        .Where(tm => tm.IsTrader)
+        .OrderBy(tm => tm.TradingGroup)
+        .ThenBy(tm => tm.PairIndex)
+        .Take(1)
+        .IfEmpty(() => { throw new Exception("No replay trader was found"); })
+        .First();
+      if(args.Initiator != replayTrader)
+        throw new Exception("Replay Initiator must be also Replay Trader");
       if(tms().Count(tm => tm.IsTrender) == 0)
         throw new Exception("There is no trenders");
+
+      var traderStartDate = MonoidsCore.ToFunc(() => replayTrader.UseRatesInternal(ri => ri.BackwardsIterator().Take(1).ToArray()).Concat());
+      var isInitiator = args.Initiator == this;
+
       Action<RepayPauseMessage> pra = m => args.InPause = !args.InPause;
       Action<RepayBackMessage> sba = m => args.StepBack = true;
       Action<RepayForwardMessage> sfa = m => args.StepForward = true;
@@ -1416,8 +1423,7 @@ namespace HedgeHog.Alice.Store {
         });
       });
 
-      var isInitiator = args.Initiator == this;
-      if(IsTrader)
+      if(isInitiator)
         TradesManager.TradeClosed += tc;
       try {
         if(isInitiator) {
@@ -1440,7 +1446,8 @@ namespace HedgeHog.Alice.Store {
         var internalRateCount = BarsCountCount();
         var doGroupTick = BarPeriodCalc == BarsPeriodType.s1;
         Func<List<Rate>, List<Rate>> groupTicks = rates => doGroupTick ? GroupTicksToSeconds(rates) : rates;
-        var _replayRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, args.DateStart.Value.ToUniversalTime(), BarsCountCount(), dbBarPeriod, groupTicks);
+        var _replayRates = GlobalStorage.GetRateFromDBBackwards(Pair, args.DateStart.Value.ToUniversalTime(), BarsCountCount(), dbBarPeriod, groupTicks);
+        if(BarPeriod != BarsPeriodType.t1) _replayRates.Smoother();
         _replayRates.CopyLast(1).Select(r => r.StartDate2)
           .ForEach(startDate => _replayRates.AddRange(groupTicks(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, startDate, BarsCount, dbBarPeriod))));
         //var rateStart = rates.SkipWhile(r => r.StartDate < args.DateStart.Value).First();
@@ -1554,7 +1561,7 @@ namespace HedgeHog.Alice.Store {
         var isReplaying = false;
         var minutesOffset = BarPeriodInt * 0;
         while(!args.MustStop && indexCurrent < _replayRates.Count && Strategy != Strategies.None) {
-          if(isReplaying && !IsTrader)
+          if(isReplaying && !isInitiator)
             if(!_waitHandle.WaitOne(1000)) {
               //Log = new Exception(new { PairIndex, WaitedFor = "1000 seconds. Recircles the loop now." } + "");
               continue;
@@ -1581,9 +1588,9 @@ namespace HedgeHog.Alice.Store {
               });
               #endregion
             } else {
-              if(isReplaying && !IsTrader && tms().Count > 1) {
+              if(isReplaying && !isInitiator && tms().Count > 1) {
                 var rateLast = UseRatesInternal(ri => ri.Last(), 15 * 1000);
-                var dateMin = tms().First(tm => tm.IsTrader)
+                var dateMin = replayTrader
                   .UseRatesInternal(ri => ri.LastOrDefault())
                   .Where(r => r != null)
                   .Select(r => r.StartDate)
@@ -1598,6 +1605,7 @@ namespace HedgeHog.Alice.Store {
                 if(moreRates.Count == 0)
                   noMoreDbRates = true;
                 else {
+                  if(BarPeriod != BarsPeriodType.t1) moreRates.Smoother();
                   _replayRates.AddRange(moreRates);
                   var maxCount = BarsCountCount() + moreRates.Count;
                   var slack = (_replayRates.Count - maxCount).Max(0);
@@ -1627,9 +1635,9 @@ namespace HedgeHog.Alice.Store {
                 #endregion
                 if(rate != null)
                   if(ri.Count == 0 || rate > ri.LastBC()) {
-                    if(isReplaying && !IsTrader && rate.StartDate > ServerTime.AddMinutes(minutesOffset).Min(replayDateMax))
+                    if(isReplaying && !isInitiator && rate.StartDate > ServerTime.AddMinutes(minutesOffset).Min(replayDateMax))
                       return false;
-                    if(!isReplaying && !IsTrader && traderStartDate().Any(r => rate.StartDate >= r.StartDate.AddMinutes(minutesOffset).Min(replayDateMax)))
+                    if(!isReplaying && !isInitiator && traderStartDate().Any(r => rate.StartDate >= r.StartDate.AddMinutes(minutesOffset).Min(replayDateMax)))
                       return false;
                     ri.Add(rate);
                   } else if(args.StepBack) {
@@ -1655,7 +1663,7 @@ namespace HedgeHog.Alice.Store {
               continue;
               //} else if (RatesArraySafe.LastBC().StartDate < args.DateStart.Value) {
               //  continue;
-            } else if(!IsTrader && traderStartDate().Any(r => rate.StartDate > r.StartDate))
+            } else if(!isInitiator && traderStartDate().Any(r => rate.StartDate > r.StartDate))
               continue;
             else {
               if(!isReplaying)
@@ -1663,7 +1671,7 @@ namespace HedgeHog.Alice.Store {
               isReplaying = true;
               if(UseRatesInternal(ri => ri.Last())
                 .Do(rl => {
-                  if(IsTrader)
+                  if(isInitiator)
                     TradesManager.SetServerTime(rl.StartDate);
                   LastRatePullTime = rl.StartDate;
                   LoadRatesStartDate2 = rl.StartDate2;
@@ -1674,7 +1682,7 @@ namespace HedgeHog.Alice.Store {
 
               if(rate != null) {
                 if(ratePrev == null || BarPeriod > BarsPeriodType.t1 || ratePrev.StartDate.Second != rate.StartDate.Second) {
-                  if(!IsTrader && tms().First().BarPeriod == BarPeriod)
+                  if(!isInitiator && replayTrader.BarPeriod == BarPeriod)
                     while(rate.StartDate.AddSeconds(1) < ServerTime && indexCurrent < _replayRates.Count)
                       UseRatesInternal(ri => ri.Add(rate = _replayRates[indexCurrent++]));
                   if(indexCurrent >= _replayRates.Count)
@@ -1716,7 +1724,7 @@ namespace HedgeHog.Alice.Store {
             }
           } finally {
             //args.NextTradingMacro();
-            if(IsTrader)
+            if(isInitiator)
               _waitHandle.Set();
           }
         }
@@ -1726,14 +1734,14 @@ namespace HedgeHog.Alice.Store {
         Log = exc;
       } finally {
         try {
-          if(IsTrader)
+          if(isInitiator)
             _waitHandle.Set();
           ResetMinimumGross();
           args.TradingMacros.Remove(this);
           args.MustStop = true;
           args.SessionStats.ProfitToLossRatio = ProfitabilityRatio;
           TradesManager.CloseAllTrades();
-          if(IsTrader)
+          if(isInitiator)
             TradesManager.TradeClosed -= tc;
           if(isInitiator) {
             GalaSoft.MvvmLight.Messaging.Messenger.Default.Unregister(this, pra);

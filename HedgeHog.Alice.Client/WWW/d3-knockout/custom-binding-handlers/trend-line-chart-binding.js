@@ -183,7 +183,9 @@
             var xScale = chartArea.x.domain(cha.xDomain);
             var mousDate = xScale.invert(x);
             var dateIndex = bisectDate(lineData(), mousDate);
-            cha.mouseData(lineData()[dateIndex] || function () { return {}; });
+            var mouseData = lineData()[dateIndex];
+            if (mouseData)
+              cha.mouseData(mouseData);
           }
           crosshair.select("#crosshairX")
             .attr("x1", x)
