@@ -64,6 +64,8 @@
   function LineChart() {
     this.data = Enumerable.from([]);
   }
+
+  // #region locals
   var tpsOpacity = 0.35;
   var tickAreaBgColor = "lightgray";//lavender";
   var blueStrip = "blueStrip";
@@ -74,16 +76,20 @@
   var doCorridorStartDate = false;
   var showLineLog = false;
   var tpsChartNum = [0, 1];
+  // #endregion
+
   ko.bindingHandlers.lineChart = {
     init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
       "use strict";
 
       viewModel = bindingContext.$root;
       var chartData = ko.unwrap(valueAccessor());
+      var lineData = chartData.data;
       var chartNum = chartData.chartNum;
       var hasTps = tpsChartNum.indexOf(chartNum) >= 0;
-
       var chartArea = calcChartArea(element);
+      var bisectDate = d3.bisector(function (d) { return d.d; }).left;
+
 
       // #region Chart/svg
       var
@@ -171,6 +177,14 @@
           var mouse = d3.mouse(this);
           var x = mouse[0];
           var y = mouse[1];
+          {
+            var chartArea = calcChartArea(element);
+            var cha = viewModel.chartArea[chartNum];
+            var xScale = chartArea.x.domain(cha.xDomain);
+            var mousDate = xScale.invert(x);
+            var dateIndex = bisectDate(lineData(), mousDate);
+            cha.mouseData(lineData()[dateIndex] || function () { return {}; });
+          }
           crosshair.select("#crosshairX")
             .attr("x1", x)
             .attr("y1", 0)

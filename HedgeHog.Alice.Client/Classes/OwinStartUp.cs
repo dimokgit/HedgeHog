@@ -428,7 +428,8 @@ namespace HedgeHog.Alice.Client {
             t.HVPR,
             t.HVPM1R
           }).ToArray(),
-          stats
+          stats,
+          htvs = ReadHedgeVirtual(pair)
         };
 
       } catch(Exception exc) {
@@ -469,34 +470,56 @@ namespace HedgeHog.Alice.Client {
              select (tm1, tm2);
     }
 
-    static List<Trade[]> hedgeTrades = new List<Trade[]>();
+    static List<IList<Trade>> hedgeTrades = new List<IList<Trade>>();
     public void OpenHedgeVirtual(string pair, bool isBuy, DateTime time) {
+      if(time.Kind == DateTimeKind.Unspecified)
+        time = DateTime.SpecifyKind(time, DateTimeKind.Local);
+      if(time.TimeOfDay == TimeSpan.Zero)
+        time = trader.Value.TradesManager.ServerTime.AddSeconds(-1);
       var trm = trader.Value.TradesManager;
       hedgeTrades.Add(HedgeBuySell(pair, isBuy)
        .Select(x => x.Value)
        .OrderByDescending(tm => tm.Pair == pair)
        .ToArray()
        .Select(t => {
+         var rate = t.tm.TradingMacroM1(tm => tm.UseRatesInternal(ra => ra[ra.FuzzyFind(time, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate))])).Concat().Single();
          var trade = Trade.Create(trm, t.Pair, trm.GetPipSize(t.Pair), trm.GetBaseUnitSize(t.Pair), trader.Value.CommissionByTrade);
          trade.Id = DateTime.Now.Ticks + "";
          trade.Buy = t.IsBuy;
          trade.IsBuy = t.IsBuy;
-         trade.Time2 = time;
-         trade.Time2Close = time;
-         trade.Open = trade.Close = t.tm.RatesArray[t.tm.RatesArray.FuzzyFind(time, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate))].With(r => t.IsBuy ? r.AskHigh : r.BidLow);
+         trade.Time2 = rate.StartDate;
+         trade.Time2Close = rate.StartDate;
+         trade.Open = trade.Close =  t.IsBuy ? rate.AskHigh : rate.BidLow;
          trade.Lots = t.tm.GetLotsToTrade(t.TradeAmount, 1, 1);
          return trade;
        }).ToArray());
     }
     public object[] ReadHedgeVirtual(string pair) {
-      var tradeInfo = MonoidsCore.ToFunc((Trade trade) => new { trade.Pair, trade.NetPL2 });
-      var tmh = from t in GetHedgedTradingMacros(pair)
-                join hts in hedgeTrades on new { pair1 = t.tm1.Pair, pair2 = t.tm2.Pair } equals new { pair1 = hts[0].Pair, pair2 = hts[0].Pair }
-                from ht in hts
-                select tradeInfo(ht);
-      return tmh.ToArray();
+      var tradeInfo = MonoidsCore.ToFunc((Trade trade,double netSum) => new {
+        trade.Pair,
+        Pos = (trade.IsBuy ? 1 : -1) * trade.Lots,
+        Net = trade.NetPL2.AutoRound2(1),
+        Balance=netSum.ToInt(),
+        trade.Open,
+        Time = trade.Time.ToString("HH:mm:ss")
+      });
+      var tmh = (from t in GetHedgedTradingMacros(pair)
+                 join hts in hedgeTrades on new { pair1 = t.tm1.Pair, pair2 = t.tm2.Pair } equals new { pair1 = hts[0].Pair, pair2 = hts[1].Pair }
+                 from ht in hts
+                 select tradeInfo(ht,hts.Sum(t=>t.NetPL2))
+                ).ToArray();
+      return tmh;
     }
-
+    public void ClearHedgeVirtualTrades(string pair) {
+      hedgeTrades.Clear();
+    }
+    public Trade[] GetHedgeVirtualTrades(string pair) {
+      return (from t in GetHedgedTradingMacros(pair)
+              join hts in hedgeTrades on new { pair1 = t.tm1.Pair, pair2 = t.tm2.Pair } equals new { pair1 = hts[0].Pair, pair2 = hts[1].Pair }
+              from ht in hts
+              select (ht)
+                ).ToArray();
+    }
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) {
       HedgeBuySell(pair, isBuy)
@@ -852,11 +875,11 @@ namespace HedgeHog.Alice.Client {
           i,
           ElliotIndex = value((double)x.wr.ElliotIndex, false),
           Angle = value(x.wr.Angle.Round(0), x.wr.Angle.Abs() >= wrStats[0].Angle.v),//.ToString("###0.0"),
-        Minutes = value(x.wr.TotalMinutes.ToInt(), x.wr.TotalMinutes >= wrStats[0].Minutes.v),//.ToString("###0.0"),
-        PPM = value(x.wr.PipsPerMinute, x.wr.PipsPerMinute >= wrStats[0].PPM.v),//.ToString("###0.0"),
-        HSD = value(x.wr.HSDRatio.Round(1), x.wr.HSDRatio >= wrStats[0].HSD.v),//.ToString("###0.0"),
-        StDev = value(x.wr.StDev.Round(4), x.wr.StDev < wrStats[0].StDev.v),//.ToString("#0.00"),
-        Distance = value(x.wr.Distance.Round(0), x.wr.Distance > wrStats[0].Distance.v),
+          Minutes = value(x.wr.TotalMinutes.ToInt(), x.wr.TotalMinutes >= wrStats[0].Minutes.v),//.ToString("###0.0"),
+          PPM = value(x.wr.PipsPerMinute, x.wr.PipsPerMinute >= wrStats[0].PPM.v),//.ToString("###0.0"),
+          HSD = value(x.wr.HSDRatio.Round(1), x.wr.HSDRatio >= wrStats[0].HSD.v),//.ToString("###0.0"),
+          StDev = value(x.wr.StDev.Round(4), x.wr.StDev < wrStats[0].StDev.v),//.ToString("#0.00"),
+          Distance = value(x.wr.Distance.Round(0), x.wr.Distance > wrStats[0].Distance.v),
           DistanceCma = value(x.wr.DistanceCma.Round(0), x.wr.Index(x.rs, wr => wr.DistanceCma) == 0),
           DistanceByRegression = value(x.wr.DistanceByRegression.Round(0), x.wr.Index(x.rs, wr => wr.DistanceByRegression) == 0),
           WorkByHeight = value(x.wr.WorkByHeight.Round(0), x.wr.Index(x.rs, wr => wr.WorkByHeight) == 0),

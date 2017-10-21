@@ -228,7 +228,7 @@
             delay: isCustom ? 5000 : 1000
           });
         })
-        ;
+      ;
       if ($.isFunction(done)) r.done(function (data) {
         done(data, note);
       });
@@ -244,7 +244,9 @@
   var dataViewModel = new DataViewModel();
   function DataViewModel() {
     var self = this;
-
+    // #region formatters
+    this.chartDateFormat=d3.timeFormat('%m/%d/%Y %H:%M:%S');
+    // #endregion
     // #region Locals
     function lineChartDataEmpty() {
       return [{ d: new Date("1/1/1900"), do: new Date("1/1/1900"), c: 0, v: 0, m: 0 }];// jshint ignore:line
@@ -697,6 +699,7 @@
         hedgingRatiosError(false);
         this.hedgingRatios(ret.hrs);
         this.hedgingStats($.map(ret.stats[0] || {}, function (v, n) { return { n, v }; }));
+        this.hedgeTradesVirtual(ret.htvs || []);
         if (!stophedgingRatios)
           setTimeout(readHedgingRatios.bind(this), 2000);
       }.bind(this),
@@ -710,11 +713,26 @@
       debugger;
       serverCall("openHedge", [pair, hp.IsBuy]);
     }
-    this.hedgeVertualDate = ko.observable();
-    this.openHedgeVerual = function (buy) {
-      serverCall("openHedgeVirtual", [pair, buy, this.hedgeVertualDate]);
+    this.hedgeVirtualDate = ko.observable(d3.timeFormat("%m/%d/%Y ")(new Date()));
+    this.openHedgeVirtual = function (buy) {
+      serverCall("openHedgeVirtual", [pair, buy, this.hedgeVirtualDate()]);
     }.bind(this);
+    this.hedgeTradesVirtual = ko.observableArray([]);
+    this.hedgeTradesVirtualDataSource = ko.pureComputed(function () {
+      var columns = self.hedgeTradesVirtual().slice(0, 1).map(function (k) {
+        return Object.keys(k);
+      });
+      var values = self.hedgeTradesVirtual().map(function (k) {
+        return $.map(k, function (v) { return v; });
+      });
+      return columns.concat(values);
+    });
+    this.readHedgeVirtual = function () {
+      serverCall("readHedgeVirtual", [pair], this.hedgeTradesVirtual);
+    }.bind(this);
+    this.clearHedgeVirtualTrades = serverCall.bind(this, "clearHedgeVirtualTrades", [pair]);
     // #endregion
+
     // #region WwwInfo
     var wwwInfoElement;
     var currentWwwInfoChartNum;
@@ -891,7 +909,9 @@
 
     // #endregion
     // #region Charts
-    this.chartArea = [{}, {}];
+    this.chartArea = [
+      { mouseData: ko.observableArray() },
+      { mouseData: ko.observableArray() }];
     this.chartData = ko.observable(defaultChartData(0));
     this.chartData2 = ko.observable(defaultChartData(1));
     var priceEmpty = { ask: NaN, bid: NaN };
@@ -1291,7 +1311,7 @@
     function chartDataFactory(data, trends, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross, tpsHigh, tpsLow, canBuy, canSell, waveLines) {
       function shrikData(data) { return data.length > 50 ? data : []; }
       return {
-        data: data ? shrikData(ko.unwrap(data)) : [],
+        data: data,
         trends: trends,
         waveLines: waveLines,
         tradeLevels: tradeLevels,
@@ -1343,7 +1363,9 @@
       var i = array.indexOf(item);
       array.splice(i, 1);
     }
-    function defaultChartData(chartNum) { return chartDataFactory(lineChartData, [{ dates: [] }, {}, {}, {}], null, null, null, false, false, chartNum, false, 0); }
+    function defaultChartData(chartNum) {
+      return chartDataFactory(chartNum ? lineChartData2 : lineChartData, [{ dates: [] }, {}, {}, {}], null, null, null, false, false, chartNum, false, 0);
+    }
     // #endregion
   }
 

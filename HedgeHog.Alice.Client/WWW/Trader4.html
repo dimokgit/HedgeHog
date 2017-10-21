@@ -424,10 +424,6 @@
                         data-target="#tradeConditionsDialog">
                   <span class="glyphicon glyphicon-ok"></span>
                 </button>
-                <button>
-                  <a href="https://gist.github.com/dimokgit" target="_blank" class="glyphicon glyphicon-book"></a>
-                  <!--<a href="https://shrib.com/hedgehog?v=md" target="_blank" class="glyphicon glyphicon-book"></a>-->
-                </button>
               </li>
               <li role="presentation" class="divider"></li>
               <li>
@@ -744,9 +740,13 @@
         <div class="modal-header">
           <!--<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>-->
           <span class="modal-title" id="myModalLabel">Strategies</span>
-          <input data-bind="textInput:strategyFilter" />
+          <input data-bind="textInput:strategyFilter" size="15" />
           <button data-bind="click: clearStrategy" title="Empty Strategy">
             <span class="glyphicon glyphicon-flash"></span>
+          </button>
+          <button title="Show Strategies Source">
+            <a href="https://gist.github.com/dimokgit" target="_blank" class="glyphicon glyphicon-book"></a>
+            <!--<a href="https://shrib.com/hedgehog?v=md" target="_blank" class="glyphicon glyphicon-book"></a>-->
           </button>
         </div>
         <div class="modal-body" data-bind="foreach:strategiesFiltered">
@@ -809,11 +809,17 @@
   <!--#region wwwSettings-->
   <div data-bind="elementer:wwwSettingsDialog" id="wwwSettingsDialog" style="display:none">
     <div data-bind="elementer:wwwSettingsGrid">
-      <table data-bind="foreach:wwwSettingProperties">
-        <tr>
-          <td data-bind="text:n"></td>
-          <td><input data-bind="value:v" /></td>
-        </tr>
+      <table border="1" class="wwwInfo">
+        <tbody data-bind="foreach:wwwSettingProperties">
+          <tr>
+            <td data-bind="text:n"></td>
+            <td><input data-bind="value:v" size="15" /></td>
+          </tr>
+        </tbody>
+        <tbody>
+          <tr><td>Mouse Date 0</td><td data-bind="text:chartDateFormat(chartArea[0].mouseData().d)"></td></tr>
+          <tr><td>Mouse Date 1</td><td data-bind="text:chartDateFormat(chartArea[1].mouseData().do)"></td></tr>
+        </tbody>
       </table>
     </div>
   </div>
@@ -844,7 +850,7 @@
         <tr>
           <td>GrossToExit</td>
           <td>
-              <input data-bind="value:grossToExit" size="5" />
+            <input data-bind="value:grossToExit" size="5" />
             <input data-bind="click:saveGrossToExit" value="Save" type="button" />
         </tr>
     </table>
@@ -1083,9 +1089,20 @@
         </tr>
       </tbody>
     </table>
-    <input data-bind="value:hedgeVertualDate" />
-    <button data-bind="click:openHedgeVirtual.bind($parent,true)">Buy Vertual</button>
-    <button data-bind="click:openHedgeVirtual.bind($parent,false)">Sell Vertual</button>
+    <input data-bind="value:hedgeVirtualDate" />
+    <button data-bind="click:openHedgeVirtual.bind($data,true)">Buy</button>
+    <button data-bind="click:openHedgeVirtual.bind($data,false)">Sell</button>
+    <button data-bind="click:readHedgeVirtual">Read</button>
+    <button data-bind="click:clearHedgeVirtualTrades">Clear</button>
+    <table border="1" class="wwwInfo">
+      <tbody data-bind="foreach:hedgeTradesVirtualDataSource">
+        <tr>
+          <!-- ko foreach: $data -->
+          <td data-bind="text: $data"></td>
+          <!-- /ko -->
+        </tr>
+      </tbody>
+    </table>
     <table>
       <tbody data-bind="foreach:hedgingStats">
         <tr>
