@@ -982,10 +982,10 @@
         d.d = d.do = new Date(d.d);
       });
       prepResponse(response);
-      var endDate = rates[0].d;
+      var endDate = rates[0].do;
       var startDate = new Date(response.dateStart);
       lineChartData2.remove(function (d) {
-        return d.d >= endDate || d.d < startDate;
+        return d.do >= endDate || d.do < startDate;
       });
       lineChartData2.push.apply(lineChartData2, rates);
       lineChartData2.unshift.apply(lineChartData2, rates2);
