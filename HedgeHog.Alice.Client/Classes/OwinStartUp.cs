@@ -482,31 +482,32 @@ namespace HedgeHog.Alice.Client {
        .OrderByDescending(tm => tm.Pair == pair)
        .ToArray()
        .Select(t => {
-         var rate = t.tm.TradingMacroM1(tm => tm.UseRatesInternal(ra => ra[ra.FuzzyFind(time, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate))])).Concat().Single();
+         var rate = t.tm.FindRateByDate(time).Concat(t.tm.TradingMacroM1(tm => tm.FindRateByDate(time)).Concat()).First();
          var trade = Trade.Create(trm, t.Pair, trm.GetPipSize(t.Pair), trm.GetBaseUnitSize(t.Pair), trader.Value.CommissionByTrade);
          trade.Id = DateTime.Now.Ticks + "";
          trade.Buy = t.IsBuy;
          trade.IsBuy = t.IsBuy;
          trade.Time2 = rate.StartDate;
          trade.Time2Close = rate.StartDate;
-         trade.Open = trade.Close =  t.IsBuy ? rate.AskHigh : rate.BidLow;
+         trade.Open = trade.Close = t.IsBuy ? rate.AskHigh : rate.BidLow;
          trade.Lots = t.tm.GetLotsToTrade(t.TradeAmount, 1, 1);
          return trade;
        }).ToArray());
     }
+
     public object[] ReadHedgeVirtual(string pair) {
-      var tradeInfo = MonoidsCore.ToFunc((Trade trade,double netSum) => new {
+      var tradeInfo = MonoidsCore.ToFunc((Trade trade, double netSum) => new {
         trade.Pair,
         Pos = (trade.IsBuy ? 1 : -1) * trade.Lots,
         Net = trade.NetPL2.AutoRound2(1),
-        Balance=netSum.ToInt(),
-        trade.Open,
+        Balance = netSum.ToInt(),
+        Open = trade.Open.Round(TradesManagerStatic.GetDigits(trade.Pair)),
         Time = trade.Time.ToString("HH:mm:ss")
       });
       var tmh = (from t in GetHedgedTradingMacros(pair)
                  join hts in hedgeTrades on new { pair1 = t.tm1.Pair, pair2 = t.tm2.Pair } equals new { pair1 = hts[0].Pair, pair2 = hts[1].Pair }
                  from ht in hts
-                 select tradeInfo(ht,hts.Sum(t=>t.NetPL2))
+                 select tradeInfo(ht, hts.Sum(t => t.NetPL2))
                 ).ToArray();
       return tmh;
     }

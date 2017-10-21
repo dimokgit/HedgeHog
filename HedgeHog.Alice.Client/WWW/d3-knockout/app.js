@@ -228,7 +228,7 @@
             delay: isCustom ? 5000 : 1000
           });
         })
-      ;
+        ;
       if ($.isFunction(done)) r.done(function (data) {
         done(data, note);
       });
@@ -245,7 +245,7 @@
   function DataViewModel() {
     var self = this;
     // #region formatters
-    this.chartDateFormat=d3.timeFormat('%m/%d/%Y %H:%M:%S');
+    this.chartDateFormat = d3.timeFormat('%m/%d/%Y %H:%M:%S');
     // #endregion
     // #region Locals
     function lineChartDataEmpty() {
@@ -910,8 +910,14 @@
     // #endregion
     // #region Charts
     this.chartArea = [
-      { mouseData: ko.observableArray() },
-      { mouseData: ko.observableArray() }];
+      {
+        mouseData: ko.observableArray(),
+        mouseClickData: ko.observable()
+      },
+      {
+        mouseData: ko.observableArray(),
+        mouseClickData: ko.observable()
+      }];
     this.chartData = ko.observable(defaultChartData(0));
     this.chartData2 = ko.observable(defaultChartData(1));
     var priceEmpty = { ask: NaN, bid: NaN };

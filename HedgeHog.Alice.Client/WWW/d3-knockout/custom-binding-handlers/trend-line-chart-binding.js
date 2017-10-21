@@ -178,12 +178,8 @@
           var x = mouse[0];
           var y = mouse[1];
           {
-            var chartArea = calcChartArea(element);
             var cha = viewModel.chartArea[chartNum];
-            var xScale = chartArea.x.domain(cha.xDomain);
-            var mousDate = xScale.invert(x);
-            var dateIndex = bisectDate(lineData(), mousDate);
-            var mouseData = lineData()[dateIndex];
+            var mouseData = dataByMouse.bind(null, lineData)(cha, x);
             if (mouseData)
               cha.mouseData(mouseData);
           }
@@ -200,7 +196,20 @@
         })
         .on("click", function () {
           console.log(d3.mouse(this));
-        });;
+          var cha = viewModel.chartArea[chartNum];
+          var mouseData = dataByMouse.bind(null,lineData)(cha, d3.mouse(this)[0]);
+          if (mouseData) {
+            cha.mouseClickData(mouseData);
+            viewModel.hedgeVirtualDate(viewModel.chartDateFormat(mouseData.do || mouseData.d));
+          }
+        });
+      function dataByMouse(lineData, cha, x) {
+        var chartArea = calcChartArea(element);
+        var xScale = chartArea.x.domain(cha.xDomain);
+        var mousDate = xScale.invert(x);
+        var dateIndex = bisectDate(lineData(), mousDate);
+        return lineData()[dateIndex];
+      }
       $(window).resize(function () {
         svg.select("rect.overlay")
           .attr("width", calcChartArea(element).width)

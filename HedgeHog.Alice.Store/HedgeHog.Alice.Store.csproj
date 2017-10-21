@@ -172,6 +172,9 @@
     <Reference Include="Octokit, Version=0.27.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\Octokit.0.27.0\lib\net45\Octokit.dll</HintPath>
     </Reference>
+    <Reference Include="Passager, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Passager.0.2.1.0\lib\net452\Passager.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="ReactiveUI, Version=7.4.0.0, Culture=neutral, processorArchitecture=MSIL">
