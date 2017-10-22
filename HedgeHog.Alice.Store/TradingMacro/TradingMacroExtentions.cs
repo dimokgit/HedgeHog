@@ -4215,18 +4215,19 @@ namespace HedgeHog.Alice.Store {
     }
     object _innerRateLocker = new object();
     string _UseRatesInternalSource = string.Empty;
-    public T[] UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
+    public IEnumerable<T> UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
       if(!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds)) {
         var message = new { Pair, PairIndex, Method = nameof(UseRatesInternal), Caller, timeoutInMilliseconds } + "";
         Log = new TimeoutException(message);
-        return new T[0];
+        yield break;
       }
       Stopwatch sw = Stopwatch.StartNew();
+      T ret;
       try {
-        return new[] { func(_Rates) };
+        ret = func(_Rates);
       } catch(Exception exc) {
         Log = exc;
-        return new T[0];
+        yield break;
       } finally {
         Monitor.Exit(_innerRateLocker);
         if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
@@ -4234,6 +4235,7 @@ namespace HedgeHog.Alice.Store {
           Log = new TimeoutException(message);
         }
       }
+      yield return ret;
     }
     public void UseRatesInternal(Action<ReactiveList<Rate>> action, [CallerMemberName] string Caller = "") {
       Func<ReactiveList<Rate>, Unit> f = rates => { action(rates); return Unit.Default; };
