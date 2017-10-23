@@ -12,6 +12,7 @@ using TL = HedgeHog.Bars.Rate.TrendLevels;
 using static HedgeHog.IEnumerableCore;
 using System.Collections.Concurrent;
 using HedgeHog.Shared;
+using System.Diagnostics;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -470,6 +471,16 @@ namespace HedgeHog.Alice.Store {
       return source.Select(t => (t.StartDate, (getter(t).PositionRatio(minMax), t)));
     }
 
+    void CalcVoltsFullScaleShiftByStDev() {
+      foreach(var mapH in TradingMacroHedged(tm => tm.UseRates(ra => RatioMap(ra, r => 1 / _priceAvg(r)).ToArray()).Concat())) {
+        foreach(var map in UseRates(ra => RatioMap(ra, _priceAvg).ToArray())) {
+          var stDevs = Enumerable.Range(-99, 99 * 2).Select(i => i / 100.0).Select(o => new { o, std = GetStDev(o) }).OrderBy(x => x.std).ToArray();
+          Debug.WriteLine(new { stDevs.First().o, stDevs.First().std, Pair, PairIndex });
+
+          double GetStDev(double ofs) => map.Zip(mapH, (t1, t2) => t1.t.v - (t2.t.v + ofs)).Sum().Abs();
+        }
+      }
+    }
     void CalcVoltsFullScaleShift() {
       if(IsVoltFullScale && UseCalc()) {
         var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())
@@ -488,6 +499,8 @@ namespace HedgeHog.Alice.Store {
             voltMinNew(),
             voltMaxNew()
           };
+          if(false)
+            CalcVoltsFullScaleShiftByStDev();
 
           double voltMaxNew() => (linearVolt - v.min) / pricePos + v.min;
           double voltMinNew() => v.max - (v.max - linearVolt) / (1 - pricePos);
