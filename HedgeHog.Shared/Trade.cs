@@ -234,8 +234,13 @@ namespace HedgeHog.Shared {
     public bool IsVirtual { get; set; }
 
     private IPricer _tradesManager;
+    public bool IsClosed() => Kind== PositionKind.Closed;
+    public void CloseTrade() {
+      Kind = PositionKind.Closed;
+      TradesManager = null;
+    }
 
-    public IPricer TradesManager {
+    protected IPricer TradesManager {
       get { return _tradesManager; }
       set {
         if(_tradesManager != null)

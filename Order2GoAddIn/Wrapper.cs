@@ -1125,6 +1125,7 @@ namespace Order2GoAddIn {
     Trade InitClosedTrade(FXCore.RowAut t) {
       var trade = TradeFactory(t.CellValue(FIELD_INSTRUMENT) + "");
       {
+        trade.CloseTrade();
         trade.Id = t.CellValue("TradeID") + "";
         trade.Buy = (t.CellValue("BS") + "") == "B";
         trade.IsBuy = (t.CellValue("BS") + "") == "B";
@@ -1139,7 +1140,6 @@ namespace Order2GoAddIn {
         trade.OpenOrderReqID = t.CellValue("OpenOrderReqID") + "";
         trade.Remark = new TradeRemark(t.CellValue("OQTXT") + "");
         trade.CommissionByTrade = CommissionByTrade;
-        trade.Kind = PositionBase.PositionKind.Closed;
       };
       trade.StopAmount = StopAmount(trade);
       trade.LimitAmount = LimitAmount(trade);

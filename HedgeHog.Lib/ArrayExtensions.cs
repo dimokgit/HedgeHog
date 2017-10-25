@@ -266,13 +266,14 @@ namespace HedgeHog {
       ;
     }
 
-    public static void Zip<T1, T2, U>(this IEnumerable<(DateTime d, T1 t)> prime, IEnumerable<(DateTime d, T2 t)> other, Action<(DateTime, T1 t), (DateTime d, T2 t)> map) {
+    public static IEnumerable<Tuple<T, T>> Zip<T>(this IEnumerable<T> source, IEnumerable<T> other) { return source.Zip(other, Tuple.Create); }
+    public static void Zip<T1, T2>(this IEnumerable<(DateTime d, T1 t)> prime, IEnumerable<(DateTime d, T2 t)> other, Action<(DateTime, T1 t), (DateTime d, T2 t)> map) {
       prime.Zip(other, (a, b) => {
         map(a, b);
         return true;
       }).Count();
     }
-    public static IEnumerable<U> Zip<T1, T2, U>(this IEnumerable<(DateTime d, T1 t)> prime, IEnumerable<(DateTime d, T2 t)> other, Func<(DateTime, T1 t), (DateTime d, T2 t), U> map) {
+    public static IEnumerable<U> Zip<T1, T2, U>(this IEnumerable<(DateTime d, T1 t)> prime, IEnumerable<(DateTime d, T2 t)> other, Func<(DateTime d, T1 t), (DateTime d, T2 t), U> map) {
       (DateTime d, T2 t) prev = default;
       var isPrevSet = false;
       bool otherIsDone = false;

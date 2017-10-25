@@ -306,7 +306,6 @@ namespace HedgeHog {
     public static U With<T, U>(this T v, Func<T, U> m) { return m(v); }
     public static V With<T, U, V>(this T v, Func<T, U> m, Func<T, U, V> r) { return r(v, m(v)); }
     public static void With<T>(this T v, Action<T> m) { m(v); }
-    public static IEnumerable<Tuple<T, T>> Zip<T>(this IEnumerable<T> source, IEnumerable<T> other) { return source.Zip(other, Tuple.Create); }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<T> value) { return source.Concat(value.Yield()); }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<IEnumerable<T>> value) {
       foreach(var v in source)
@@ -318,7 +317,7 @@ namespace HedgeHog {
     public static IEnumerable<U> Yield<T, U>(this T v, Func<T, U> m) { yield return m(v); }
     public static IEnumerable<object> YieldObject(this object v) { yield return v; }
     public static IEnumerable<T> Yield<T>(this T v) { yield return v; }
-    public static IEnumerable<U> YieldNutNull<T, U>(this T v, Func<T, U> map) {
+    public static IEnumerable<U> YieldNotNull<T, U>(this T v, Func<T, U> map) {
       if(v == null)
         yield break;
       else

@@ -197,8 +197,7 @@ namespace IBApp {
       }
     }
     void RaiseTradeClosed(Trade trade) {
-      trade.Kind = PositionBase.PositionKind.Closed;
-      trade.TradesManager = null;
+      trade.CloseTrade();
       TradeClosedEvent?.Invoke(this, new TradeEventArgs(trade));
     }
     #endregion

@@ -1514,9 +1514,10 @@ namespace HedgeHog.Alice.Store {
           var sessionUid = Guid.Parse(closedSessionToLoad);
           var dbTrades = GlobalStorage.UseForexContext(c => c.t_Trade.Where(t => t.SessionId == sessionUid).ToArray());
           var trades = dbTrades.Select(trade => {
-            var t = Trade.Create(TradesManager, trade.Pair, PointSize, BaseUnitSize, CommissionByTrade);
+            var t = Trade.Create(null, trade.Pair, PointSize, BaseUnitSize, CommissionByTrade);
             Func<DateTime, DateTime> convert = d => DateTime.SpecifyKind(TimeZoneInfo.ConvertTime(d, HedgeHog.DateTimeZone.DateTimeZone.Eastern), DateTimeKind.Local);
             {
+              t.CloseTrade();
               t.Id = trade.Id;
               t.Buy = t.IsBuy = trade.Buy;
               t.PL = trade.PL;
@@ -1528,7 +1529,6 @@ namespace HedgeHog.Alice.Store {
               t.IsVirtual = trade.IsVirtual;
               t.Open = trade.PriceOpen;
               t.Close = trade.PriceClose;
-              t.Kind = PositionBase.PositionKind.Closed;
 
             }
             return t;
@@ -2754,10 +2754,12 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region PipAmount
+    private double CurrentPriceAvg() => CurrentPrice.YieldNotNull(c => c.Ask.Avg(c.Bid)).DefaultIfEmpty().Single();
     public double PipAmountByLot(int lot) =>
-      TradesManager == null || CurrentPrice == null ? 0 : TradesManagerStatic.PipAmount(Pair, lot, TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize);
-    public double PipAmount =>
-       TradesManagerStatic.PipAmount(Pair, Trades.Lots(), TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize);
+      TradesManager == null || CurrentPrice == null ? 0 : TradesManagerStatic.PipAmount(Pair, lot, CurrentPriceAvg(), PointSize);
+
+    public double PipAmount => CurrentPrice == null ? 0 :
+TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid)).GetValueOrDefault(), PointSize);
     public double PipAmountBuy {
       get { return TradesManager == null || CurrentPrice == null ? 0 : TradesManagerStatic.PipAmount(Pair, LotSizeByLossBuy, TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); }
     }

@@ -12,10 +12,11 @@ using System.Windows;
 using System.Text.RegularExpressions;
 using System.ComponentModel;
 using HedgeHog;
+using AutoMapper;
 
 namespace HedgeHog.Shared {
   public delegate void LoginErrorHandler(Exception exc);
-  public class LoggedInEventArgs : EventArgs {
+  public class LoggedInEventArgs :EventArgs {
     public bool IsInVirtualTrading { get; set; }
     public LoggedInEventArgs(bool isInVirtualTrading) {
       IsInVirtualTrading = isInVirtualTrading;
@@ -31,13 +32,13 @@ namespace HedgeHog.Shared {
     }
   }
 
-  public interface ICoreFX : INotifyPropertyChanged {
+  public interface ICoreFX :INotifyPropertyChanged {
     bool LogOn(string user, string accountSubId, string password, bool isDemo);
     void Logout();
     bool ReLogin();
     void SetOfferSubscription(string pair);
 
-    event EventHandler<LoggedInEventArgs>  LoggedIn;
+    event EventHandler<LoggedInEventArgs> LoggedIn;
     event LoginErrorHandler LoginError;
     event EventHandler<LoggedInEventArgs> LoggedOff;
     event EventHandler<LoggedInEventArgs> LoggingOff;
@@ -50,7 +51,7 @@ namespace HedgeHog.Shared {
   public interface IPricer {
     event EventHandler<PriceChangedEventArgs> PriceChanged;
   }
-  public interface ITradesManager : IPricer {
+  public interface ITradesManager :IPricer {
     ICoreFX CoreFX { get; set; }
     bool IsLoggedIn { get; }
     bool IsInTest { get; set; }
@@ -59,7 +60,7 @@ namespace HedgeHog.Shared {
     #region Common Info
     DateTime ServerTime { get; }
     void SetServerTime(DateTime serverTime);
-    double Leverage(string pair,bool isBuy);
+    double Leverage(string pair, bool isBuy);
     double PipsToMarginCall { get; }
 
     double Round(string pair, double value, int digitOffset = 0);
@@ -75,7 +76,7 @@ namespace HedgeHog.Shared {
     Offer[] GetOffers();
     Offer GetOffer(string pair);
     Price GetPrice(string pair);
-    bool TryGetPrice(string pair,out Price price);
+    bool TryGetPrice(string pair, out Price price);
     #endregion
 
     #region Money
@@ -164,7 +165,7 @@ namespace HedgeHog.Shared {
     PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment);
     void FetchMMRs();
   }
-  public class ErrorEventArgs : EventArgs {
+  public class ErrorEventArgs :EventArgs {
     public string Pair { get; set; }
     public bool IsBuy { get; set; }
     public int Lot { get; set; }
@@ -185,7 +186,7 @@ namespace HedgeHog.Shared {
       this.Remark = remark;
     }
   }
-  public class RequestEventArgs : EventArgs {
+  public class RequestEventArgs :EventArgs {
     public string RequestId { get; set; }
     public string Error { get; set; }
     public RequestEventArgs(string requestId) : this(requestId, "") { }
@@ -197,7 +198,11 @@ namespace HedgeHog.Shared {
 
 
   public static class TradesManagerStatic {
-    public readonly static Offer OfferDefault= new Offer { Pair = "DEFAULT", Digits = 3, PointSize = 0.01, MMRLong = 0.250, MMRShort= 0.3, ContractSize = 1 };
+    public static IMapper TradeMapper() => TradeMapper(opt => opt);//.ForMember(t => t.TradesManager, o => o.Ignore()));
+    public static IMapper TradeMapper(Func<IMappingExpression<Trade, Trade>, IMappingExpression<Trade, Trade>> opt)
+      => new MapperConfiguration(cfg => opt(cfg.CreateMap<Trade, Trade>())).CreateMapper();
+
+    public readonly static Offer OfferDefault = new Offer { Pair = "DEFAULT", Digits = 3, PointSize = 0.01, MMRLong = 0.250, MMRShort = 0.3, ContractSize = 1 };
     public static Offer[] dbOffers = new[] {
             new Offer { Pair = "USDJPY", Digits = 3, PointSize = 0.01, MMRLong=1, ContractSize = 1000 },
             new Offer { Pair = "EURUSD", Digits = 5, PointSize = 0.0001, MMRLong=1, ContractSize = 1000 },
@@ -206,20 +211,20 @@ namespace HedgeHog.Shared {
             new Offer { Pair = "TVIX", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 },
             new Offer { Pair = "UVXY", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 }
           };
-    static Func<string,Offer> GetOfferImpl= symbol
-      =>  dbOffers
-    .Where(o => o.Pair.ToUpper() == symbol.WrapPair())
-    .Take(1)
-    .DefaultIfEmpty(OfferDefault  )
-    .Single();
+    static Func<string, Offer> GetOfferImpl = symbol
+        => dbOffers
+      .Where(o => o.Pair.ToUpper() == symbol.WrapPair())
+      .Take(1)
+      .DefaultIfEmpty(OfferDefault)
+      .Single();
     public static Offer GetOffer(string pair) => GetOfferImpl(pair);
     public static double GetPointSize(string symbol) => GetOffer(symbol).PointSize;
     public static int GetBaseUnitSize(string symbol) => GetOffer(symbol).ContractSize;
     public static int GetDigits(string symbol) => GetOffer(symbol).Digits;
-    public static double GetMMR(string symbol,bool isBuy) => isBuy? GetOffer(symbol).MMRLong : GetOffer(symbol).MMRShort;
+    public static double GetMMR(string symbol, bool isBuy) => isBuy ? GetOffer(symbol).MMRLong : GetOffer(symbol).MMRShort;
     public static double Leverage(string pair, double mmr) => GetBaseUnitSize(pair) / mmr;
 
-    private static string[] _currencies=new []{
+    private static string[] _currencies = new[]{
       "USD",
       "SEK",
       "NZD",
@@ -230,7 +235,7 @@ namespace HedgeHog.Shared {
       "CAD",
       "AUD"
     };
-    private static string[] _commodities=new []{
+    private static string[] _commodities = new[]{
       "XAUUSD",
       "XAGUSD"
     };
@@ -247,7 +252,7 @@ namespace HedgeHog.Shared {
     public static bool IsFuture(this string s) => Regex.IsMatch(s, @"^\w{2,3}[HMUZ]\d{1,2}$", RegexOptions.IgnoreCase);
     public static bool IsCommodity(this string s) => _commodities.Contains(s.ToUpper());
     public static bool IsUSStock(this string s) => !s.IsCurrenncy() && !s.IsFuture() && !s.IsCommodity();
-    static string [] _etfs=new[]{"SPY","TVIX","VXX","UVXY" };
+    static string[] _etfs = new[] { "SPY", "TVIX", "VXX", "UVXY" };
     public static bool IsETF(this string s) => _etfs.Contains(s);
     private static readonly EventLoopScheduler _tradingThread =
       new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; });
@@ -272,7 +277,6 @@ namespace HedgeHog.Shared {
       }
     }
 
-
     public static DateTime GetVirtualServerTime(this IList<Rate> rates, int barMinutes) {
       if(rates == null || rates.Count == 0)
         return DateTime.MinValue;
@@ -294,7 +298,7 @@ namespace HedgeHog.Shared {
       return GetLotSize(amountToTrade, baseUnitSize);
     }
     public static double MoneyAndLotToPips(this ITradesManager tm, double money, int lots, string pair) {
-      return  tm == null || !tm.TryGetPrice(pair,out Price price) ? double.NaN : MoneyAndLotToPips(pair, money, lots, tm.RateForPipAmount(price), tm.GetPipSize(pair));
+      return tm == null || !tm.TryGetPrice(pair, out Price price) ? double.NaN : MoneyAndLotToPips(pair, money, lots, tm.RateForPipAmount(price), tm.GetPipSize(pair));
     }
     public static double MarginRequired(int lot, double baseUnitSize, double mmr) {
       return lot / baseUnitSize * mmr;

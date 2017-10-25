@@ -17,7 +17,7 @@ namespace HedgeHog.Shared {
     public string KindString { get { return Kind + ""; } }
     double _PipSize;
     [UpdateOnUpdate]
-    protected double PipSize {
+    public double PipSize {
       get { return _PipSize; }
       set {
         _PipSize = value;

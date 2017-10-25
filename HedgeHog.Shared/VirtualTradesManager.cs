@@ -257,15 +257,13 @@ namespace HedgeHog.Shared {
       var trade = (e.NewItems ?? e.OldItems)[0] as Trade;
       switch(e.Action) {
         case NotifyCollectionChangedAction.Add:
-          trade.TradesManager = this;
           OnTradeAdded(trade);
           RaiseOrderRemoved(new Order() { Pair = trade.Pair });
           break;
         case NotifyCollectionChangedAction.Reset:
         case NotifyCollectionChangedAction.Remove:
           trade.UpdateByPrice(this, GetPrice(trade.Pair));
-          trade.TradesManager = null;
-          trade.Kind = PositionBase.PositionKind.Closed;
+          trade.CloseTrade();
           tradesClosed.Add(trade);
           OnTradeClosed(trade);
           TradeRemoved(trade);

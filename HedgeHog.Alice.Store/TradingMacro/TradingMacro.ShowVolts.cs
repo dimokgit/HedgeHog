@@ -450,6 +450,27 @@ namespace HedgeHog.Alice.Store {
       ShowVolts(TradesManager.GetTrades().Net2(), 0, GetVoltage2, SetVoltage2);
       return null;
     }
+
+    IEnumerable<(TradingMacro tm, TradingMacro tmh)> GetHedgedTradingMacros(string pair) {
+      return from tm2 in TradingMacroHedged()
+             select (this, tm2);
+    }
+    public static List<IList<(TradingMacro tm, Trade t)>> HedgeTradesVirtual { get; set; } = new List<IList<(TradingMacro, Trade)>>();
+
+    CorridorStatistics ShowVoltsByGross_New() {
+      var hedgedTrade = HedgeTradesVirtual
+        .Where(ht => ht[0].tm == this || TradingMacroHedged().Any(tm => ht[0].tm == tm))
+        .Concat()
+        .ToArray();
+      var tuples = (from ht in hedgedTrade
+                    from x in ht.tm.UseRates(ra => ra.Select(r => { ht.t.Close = ht.t.IsBuy ? r.BidLow : r.AskHigh; return (d: r.StartDate, t: (r, ht.t.NetPL2)); }))
+                    select x.ToArray()
+      ).ToArray();
+      tuples.Buffer(2)
+      .ForEach(b => b[0].Zip(b[1], (t1, t2) => SetVoltage2(t1.t.r, t1.t.NetPL2 + t2.t.NetPL2)));
+
+      return null;
+    }
     CorridorStatistics ShowVoltsByRatioDiff() {
       if(UseCalc()) {
         var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())
