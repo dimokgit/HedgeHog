@@ -57,7 +57,7 @@ namespace HedgeHog.Shared {
       return trades.OrderByDescending(t => t.Time).FirstOrDefault();
     }
   }
-  public class TradeEventArgs : EventArgs {
+  public class TradeEventArgs :EventArgs {
     public bool IsHandled { get; set; }
     public Trade Trade { get; set; }
     public TradeEventArgs(Trade newTrade) {
@@ -69,12 +69,12 @@ namespace HedgeHog.Shared {
   public delegate void OrderRemovedEventHandler(Order order);
   [Serializable]
   [DataContract]
-  public class Trade : PositionBase {
+  public class Trade :PositionBase {
     /// <summary>
     /// Not Implemented exception
     /// </summary>
     public static Func<double> PipRateNI = () => { throw new NotImplementedException(); };
-    public static Trade Create(IPricer tradesManager, string pair, double pipSize,int baseUnitSize, Func<Trade, double> commissionByTrade) {
+    public static Trade Create(IPricer tradesManager, string pair, double pipSize, int baseUnitSize, Func<Trade, double> commissionByTrade) {
       return new Trade() { Pair = pair, PipSize = pipSize, BaseUnitSize = baseUnitSize, CommissionByTrade = commissionByTrade, TradesManager = tradesManager };
     }
     private Trade() {
@@ -119,11 +119,15 @@ namespace HedgeHog.Shared {
         _Close = value;
         if(BaseUnitSize == 0)
           return;
-        var gross = Buy ? Close - Open : Open - Close;
-        PL = gross / PipSize;
-        var offset = Pair == "USDOLLAR" ? 1 : 10.0;
-        GrossPL = TradesManagerStatic.PipsAndLotToMoney(Pair, PL, Lots, Close, PipSize);
+        GrossPL = CalcGrossPL(Close);
       }
+    }
+    public double CalcGrossPL(double close) {
+      var gross = Buy ? close - Open : Open - close;
+      PL = gross / PipSize;
+      var offset = Pair == "USDOLLAR" ? 1 : 10.0;
+      return TradesManagerStatic.PipsAndLotToMoney(Pair, PL, Lots, close, PipSize);
+
     }
     [DataMember]
     [DisplayName("")]
@@ -209,7 +213,7 @@ namespace HedgeHog.Shared {
     public int DaysSinceClose { get { return Math.Floor((DateTime.Now - TimeClose).TotalDays).ToInt(); } }
     [DataMember]
     public int Lots { get; set; }
-    public double Position => IsBuy ? Lots : -Lots; 
+    public double Position => IsBuy ? Lots : -Lots;
     public int AmountK { get { return Lots / (BaseUnitSize == 0 ? 1000 : BaseUnitSize); } }
 
     [DataMember]
@@ -222,11 +226,12 @@ namespace HedgeHog.Shared {
     public string LimitOrderID { get; set; }
 
 
-    double _commission=double.NaN;
+    double _commission = double.NaN;
     [DataMember]
     public double Commission {
       get {
-        return double.IsNaN(_commission) ? (CommissionByTrade?.Invoke(this) ?? 0) : _commission; }
+        return double.IsNaN(_commission) ? (CommissionByTrade?.Invoke(this) ?? 0) : _commission;
+      }
       set { _commission = value; }
     }
 
@@ -234,7 +239,7 @@ namespace HedgeHog.Shared {
     public bool IsVirtual { get; set; }
 
     private IPricer _tradesManager;
-    public bool IsClosed() => Kind== PositionKind.Closed;
+    public bool IsClosed() => Kind == PositionKind.Closed;
     public void CloseTrade() {
       Kind = PositionKind.Closed;
       TradesManager = null;
@@ -256,6 +261,8 @@ namespace HedgeHog.Shared {
     }
     public int BaseUnitSize { get; set; }
     public void UpdateByPrice(ITradesManager tradesManager, Price price) {
+      if(price == null)
+        if(!tradesManager.TryGetPrice(Pair, out price)) return; ;
       if(price.Pair == Pair) {
         if(PipSize == 0)
           PipSize = tradesManager.GetPipSize(Pair);
@@ -275,6 +282,8 @@ namespace HedgeHog.Shared {
     }
     public double NetPL => GrossPL - (CommissionByTrade == null ? Commission : CommissionByTrade(this));
     public double NetPL2 => GrossPL - (CommissionByTrade == null ? Commission : CommissionByTrade(this) * 2);
+    public double CalcNetPL2(double close) => CalcGrossPL(close) - (CommissionByTrade == null ? Commission : CommissionByTrade(this) * 2);
+
     public double NetPLInPips { get { return InPips(NetPL); } }
     public double OpenInPips { get { return InPips(this.Open); } }
     public double CloseInPips { get { return InPips(this.Close); } }

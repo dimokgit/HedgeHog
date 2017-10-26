@@ -14,12 +14,12 @@ namespace IBApp {
     const int TICK_ID_BASE = 10000000;
 
     private readonly ConcurrentDictionary<string,Price> _currentPrices=new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
-    private Dictionary<int, Tuple<Contract,Price>> activeRequests = new Dictionary<int, Tuple<Contract,Price>>();
+    private Dictionary<int, (Contract contract, Price price)> activeRequests = new Dictionary<int, (Contract contract,Price price)>();
 
     public MarketDataManager(IBClientCore client ) : base(client, TICK_ID_BASE) {
       IbClient.TickPrice += OnTickPrice;
+      IbClient.TickString += OnTickString; ;
     }
-
 
     public void AddRequest(Contract contract, string genericTickList="") {
       if(activeRequests.Any(ar => ar.Value.Item1.Instrument.ToUpper() == contract.Instrument.ToUpper())) {
@@ -28,7 +28,7 @@ namespace IBApp {
       var reqId = NextReqId();
       //IbClient.TickSize += OnTickSize;
       IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
-      activeRequests.Add(reqId, Tuple.Create(contract,new Price(contract.Instrument)));
+      activeRequests.Add(reqId, (contract,new Price(contract.Instrument)));
     }
 
     public bool TryGetPrice(string symbol,out Price price) {
@@ -42,6 +42,15 @@ namespace IBApp {
       if(!_currentPrices.ContainsKey(symbol))
         throw new KeyNotFoundException(new { _currentPrices = new { symbol, not = " found" } } + "");
       return _currentPrices[symbol];
+    }
+    private void OnTickString(int tickerId, int tickType, string value) {
+      if(!activeRequests.TryGetValue(tickerId, out var t)) return;
+      var price=  t.Item2;
+      switch(tickType) {
+        // RT Volume
+        case 48:
+          break;
+      }
     }
     private void OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
       var priceMessage = new TickPriceMessage(requestId, field, price, canAutoExecute);

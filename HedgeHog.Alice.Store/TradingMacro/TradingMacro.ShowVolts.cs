@@ -96,6 +96,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByCorrelation;
         case HedgeHog.Alice.VoltageFunction.Gross:
           return ShowVoltsByGross;
+        case HedgeHog.Alice.VoltageFunction.GrossV:
+          return ShowVoltsByGrossVirtual;
         case HedgeHog.Alice.VoltageFunction.RatioDiff:
           return ShowVoltsByRatioDiff;
       }
@@ -455,19 +457,22 @@ namespace HedgeHog.Alice.Store {
       return from tm2 in TradingMacroHedged()
              select (this, tm2);
     }
-    public static List<IList<(TradingMacro tm, Trade t)>> HedgeTradesVirtual { get; set; } = new List<IList<(TradingMacro, Trade)>>();
+    public static List<IList<Trade>> HedgeTradesVirtual { get; set; } = new List<IList<Trade>>();
 
-    CorridorStatistics ShowVoltsByGross_New() {
-      var hedgedTrade = HedgeTradesVirtual
-        .Where(ht => ht[0].tm == this || TradingMacroHedged().Any(tm => ht[0].tm == tm))
+    CorridorStatistics ShowVoltsByGrossVirtual() {
+      var hedgedTrades = HedgeTradesVirtual
+        .Where(ht => ht.Select(t => t.Pair).With(pairs => pairs.Contains(Pair) && TradingMacroHedged().Any(tm => pairs.Contains(tm.Pair))))
         .Concat()
+        .OrderByDescending(t => t.Pair == Pair)
+        .Buffer(2)
+        .SelectMany(b => new[] { (tm: this, t: b[0]) }.Concat(TradingMacroHedged(tm => (tm, t: b[1]))))
         .ToArray();
-      var tuples = (from ht in hedgedTrade
-                    from x in ht.tm.UseRates(ra => ra.Select(r => { ht.t.Close = ht.t.IsBuy ? r.BidLow : r.AskHigh; return (d: r.StartDate, t: (r, ht.t.NetPL2)); }))
+      var tuples = (from ht in hedgedTrades
+                    from x in ht.tm.UseRates(ra => ra.Select(r => (d: r.StartDate, t: (r, n: ht.t.CalcNetPL2(ht.t.Close = ht.t.IsBuy ? r.BidLow : r.AskHigh)))))
                     select x.ToArray()
       ).ToArray();
       tuples.Buffer(2)
-      .ForEach(b => b[0].Zip(b[1], (t1, t2) => SetVoltage2(t1.t.r, t1.t.NetPL2 + t2.t.NetPL2)));
+      .ForEach(b => b[0].Zip(b[1], (t1, t2) => SetVoltage2(t1.t.r, t1.t.n + t2.t.n)));
 
       return null;
     }

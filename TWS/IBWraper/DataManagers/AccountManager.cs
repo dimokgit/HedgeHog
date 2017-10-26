@@ -687,6 +687,7 @@ namespace IBApp {
       trade.Time2 = st;
       trade.Time2Close = IbClient.ServerTime;
       trade.Open = position.AverageCost;
+      trade.UpdateByPrice(IbClient, null);
       trade.Lots = position.Position.Abs().ToInt();
       trade.OpenOrderID = openOrderId;
       trade.CommissionByTrade = CommissionByTrade;

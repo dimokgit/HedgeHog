@@ -52,6 +52,8 @@ namespace HedgeHog.Shared.Tests {
         ptm = TradesManagerStatic.PipsAndLotToMoney("eur/usd", 2.1, 20000, 1.3333, 0.0001);
         Assert.AreEqual(4.2, ptm);
         Assert.AreEqual(2.1, TradesManagerStatic.MoneyAndLotToPips("eurusd", ptm, 20000, 1.5555, 0.0001));
+
+        Assert.AreEqual(100, TradesManagerStatic.PipsAndLotToMoney("spy", (255 - 254) / 0.01, 100, 254, 0.01));
       } finally {
         TradesManagerStatic.AccountCurrency = null;
       }

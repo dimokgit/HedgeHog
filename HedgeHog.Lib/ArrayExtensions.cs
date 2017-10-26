@@ -267,7 +267,7 @@ namespace HedgeHog {
     }
 
     public static IEnumerable<Tuple<T, T>> Zip<T>(this IEnumerable<T> source, IEnumerable<T> other) { return source.Zip(other, Tuple.Create); }
-    public static void Zip<T1, T2>(this IEnumerable<(DateTime d, T1 t)> prime, IEnumerable<(DateTime d, T2 t)> other, Action<(DateTime, T1 t), (DateTime d, T2 t)> map) {
+    public static void Zip<T1, T2>(this IEnumerable<(DateTime d, T1 t)> prime, IEnumerable<(DateTime d, T2 t)> other, Action<(DateTime d, T1 t), (DateTime d, T2 t)> map) {
       prime.Zip(other, (a, b) => {
         map(a, b);
         return true;

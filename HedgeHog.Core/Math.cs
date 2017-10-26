@@ -327,8 +327,8 @@ namespace HedgeHog {
     /// <param name="coeffs"></param>
     /// <returns></returns>
     public static double LineSlope(this double[] coeffs) {
-      if(coeffs.Length != 2)
-        throw new IndexOutOfRangeException();
+      if(coeffs?.Length != 2)
+        throw new IndexOutOfRangeException(new { LineSlope = new { coeffs = new { coeffs?.Length } } } + "");
       return coeffs[1];
     }
     public static double LineValue(this double[] coeffs) {

@@ -51,7 +51,7 @@ public class IBClientCore : IBClient, IPricer, ICoreFX {
   #endregion
 
   #region ICoreEX Implementation
-  public void SetOfferSubscription(string pair) => _marketDataManager.AddRequest(ContractSamples.ContractFactory(pair));
+  public void SetOfferSubscription(string pair) => _marketDataManager.AddRequest(ContractSamples.ContractFactory(pair), "233,221");
   public bool IsInVirtualTrading { get; set; }
   public DateTime ServerTime => DateTime.Now + _serverTimeOffset;
   public event EventHandler<LoggedInEventArgs> LoggedOff;

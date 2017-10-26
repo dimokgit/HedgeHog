@@ -399,6 +399,7 @@ namespace HedgeHog.Alice.Client {
                      from corr in tms.tm1.TMCorrelation(tms.tm2)
                      from slope1M1 in tms.tm1.TradingMacroM1(tm => tm.RatesArrayCoeffs.LineSlope() * 1000)
                      from slope2M1 in tms.tm2.TradingMacroM1(tm => corr * tm.RatesArrayCoeffs.LineSlope() * 1000)
+                     where tms.tm1.RatesArrayCoeffs.Length == 2
                      let slope1 = tms.tm1.RatesArrayCoeffs.LineSlope() * 1000
                      let slope2 = corr * tms.tm2.RatesArrayCoeffs.LineSlope() * 1000
                      select new {
@@ -492,34 +493,36 @@ namespace HedgeHog.Alice.Client {
          trade.Open = t.IsBuy ? rate.AskHigh : rate.BidLow;
          trade.Close = t.IsBuy ? t.tm.CurrentPrice.Bid : t.tm.CurrentPrice.Ask;
          trade.Lots = t.tm.GetLotsToTrade(t.TradeAmount, 1, 1);
-         return (t.tm, trade);
+         return trade;
        }).ToArray());
     }
 
     public object[] ReadHedgeVirtual(string pair) {
-      var tradeInfo = MonoidsCore.ToFunc((Trade trade, double netSum) => new {
+      var tradeInfo = MonoidsCore.ToFunc((Trade trade,double netPL2, double netSum) => new {
         trade.Pair,
         Pos = (trade.IsBuy ? 1 : -1) * trade.Lots,
-        Net = trade.NetPL2.AutoRound2(1),
+        Net = netPL2.AutoRound2(1),
         Balance = netSum.ToInt(),
         Open = trade.Open.Round(TradesManagerStatic.GetDigits(trade.Pair)),
-        Time = trade.Time.ToString("HH:mm:ss")
+        Time = trade.Time.ToString("dd HH:mm:ss")
       });
       var tmh = (from t in GetHedgedTradingMacros(pair)
-                 join hts in TradingMacro.HedgeTradesVirtual on new { pair1 = t.tm1.Pair, pair2 = t.tm2.Pair } equals new { pair1 = hts[0].tm.Pair, pair2 = hts[1].tm.Pair }
+                 join hts in TradingMacro.HedgeTradesVirtual on new { pair1 = t.tm1.Pair, pair2 = t.tm2.Pair } equals new { pair1 = hts[0].Pair, pair2 = hts[1].Pair }
                  from ht in hts
-                 select tradeInfo(ht.t, hts.Sum(t => t.t.NetPL2))
+                 select tradeInfo(ht,ht.CalcNetPL2(cp(ht)), hts.Sum(t => t.CalcNetPL2(cp(t))))
                 ).ToArray();
       return tmh;
+
+      double cp(Trade t) => trader.Value.TradesManager.GetPrice(t.Pair).With(p => t.IsBuy ? p.Bid : p.Ask);
     }
     public void ClearHedgeVirtualTrades(string pair) {
       TradingMacro.HedgeTradesVirtual.Clear();
     }
     public Trade[] GetHedgeVirtualTrades(string pair) {
       return (from t in GetHedgedTradingMacros(pair)
-              join hts in TradingMacro.HedgeTradesVirtual on new { pair1 = t.tm1.Pair, pair2 = t.tm2.Pair } equals new { pair1 = hts[0].tm.Pair, pair2 = hts[1].tm.Pair }
+              join hts in TradingMacro.HedgeTradesVirtual on new { pair1 = t.tm1.Pair, pair2 = t.tm2.Pair } equals new { pair1 = hts[0].Pair, pair2 = hts[1].Pair }
               from ht in hts
-              select (ht.t)
+              select (ht)
                 ).ToArray();
     }
     [BasicAuthenticationFilter]
