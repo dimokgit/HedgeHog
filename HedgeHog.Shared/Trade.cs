@@ -74,7 +74,7 @@ namespace HedgeHog.Shared {
     /// Not Implemented exception
     /// </summary>
     public static Func<double> PipRateNI = () => { throw new NotImplementedException(); };
-    public static Trade Create(IPricer tradesManager, string pair, double pipSize, int baseUnitSize, Func<Trade, double> commissionByTrade) {
+    public static Trade Create(ITradesManager tradesManager, string pair, double pipSize, int baseUnitSize, Func<Trade, double> commissionByTrade) {
       return new Trade() { Pair = pair, PipSize = pipSize, BaseUnitSize = baseUnitSize, CommissionByTrade = commissionByTrade, TradesManager = tradesManager };
     }
     private Trade() {
@@ -238,31 +238,37 @@ namespace HedgeHog.Shared {
     [DataMember]
     public bool IsVirtual { get; set; }
 
-    private IPricer _tradesManager;
+    private ITradesManager _tradesManager;
     public bool IsClosed() => Kind == PositionKind.Closed;
     public void CloseTrade() {
       Kind = PositionKind.Closed;
       TradesManager = null;
     }
 
-    protected IPricer TradesManager {
+    protected ITradesManager TradesManager {
       get { return _tradesManager; }
       set {
         if(_tradesManager != null)
           _tradesManager.PriceChanged -= UpdateByPrice;
         _tradesManager = value;
-        if(_tradesManager != null)
+        if(_tradesManager != null) {
           _tradesManager.PriceChanged += UpdateByPrice;
+          UpdateByPrice(_tradesManager);
+        }
       }
     }
 
     public void UpdateByPrice(object sender, PriceChangedEventArgs e) {
       UpdateByPrice(sender as ITradesManager, e.Price);
     }
-    public int BaseUnitSize { get; set; }
+    int BaseUnitSize { get; set; }
+    public void UpdateByPrice(ITradesManager tradesManager) {
+      if(!tradesManager.TryGetPrice(Pair, out var price)) return;
+      UpdateByPrice(tradesManager, price);
+    }
     public void UpdateByPrice(ITradesManager tradesManager, Price price) {
       if(price == null)
-        if(!tradesManager.TryGetPrice(Pair, out price)) return; ;
+        throw new NullReferenceException(new { price } + "");
       if(price.Pair == Pair) {
         if(PipSize == 0)
           PipSize = tradesManager.GetPipSize(Pair);

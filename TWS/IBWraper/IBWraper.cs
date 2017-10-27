@@ -13,7 +13,7 @@ using HedgeHog.Shared;
 using ReactiveUI;
 using static HedgeHog.Shared.TradesManagerStatic;
 namespace IBApp {
-  public class IBWraper : HedgeHog.Shared.ITradesManager {
+  public class IBWraper :HedgeHog.Shared.ITradesManager {
     private readonly IBClientCore _ibClient;
     private AccountManager _accountManager;
     public AccountManager AccountManager { get { return _accountManager; } }
@@ -21,6 +21,7 @@ namespace IBApp {
     private void Verbous(object o) { _ibClient.Trace(o); }
     public void FetchMMRs() => _accountManager.FetchMMRs();
 
+    #region ctor
     public IBWraper(ICoreFX coreFx, Func<Trade, double> commissionByTrade) {
       CommissionByTrade = commissionByTrade;
 
@@ -34,6 +35,10 @@ namespace IBApp {
       _ibClient.OrderRemoved += RaiseOrderRemoved;
       _ibClient.ManagedAccounts += OnManagedAccounts;
     }
+    #endregion
+
+    public Trade CreateTrade(string symbol)
+      => Trade.Create(this, symbol, GetPointSize(symbol), GetBaseUnitSize(symbol), null);
 
     private void OnManagedAccounts(string obj) {
       if(_accountManager != null)
@@ -41,7 +46,7 @@ namespace IBApp {
       var ma = obj.Splitter('.').Where(a => _ibClient.ManagedAccount.IsNullOrWhiteSpace() || a == _ibClient.ManagedAccount).SingleOrDefault();
       if(ma == null)
         throw new Exception(new { _ibClient.ManagedAccount, error = "Not Found" } + "");
-      _accountManager = new AccountManager(_ibClient, ma, CommissionByTrade, Trace);
+      _accountManager = new AccountManager(_ibClient, ma, CreateTrade, CommissionByTrade, Trace);
       _accountManager.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
       _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
       _accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
@@ -193,9 +198,9 @@ namespace IBApp {
 
     #region Error Event
     event EventHandler<ErrorEventArgs> ErrorEvent;
-    public event EventHandler<ErrorEventArgs>  Error {
+    public event EventHandler<ErrorEventArgs> Error {
       add {
-        if (ErrorEvent == null || !ErrorEvent.GetInvocationList().Contains(value))
+        if(ErrorEvent == null || !ErrorEvent.GetInvocationList().Contains(value))
           ErrorEvent += value;
       }
       remove {
@@ -213,7 +218,7 @@ namespace IBApp {
     event EventHandler<PriceChangedEventArgs> PriceChangedEvent;
     public event EventHandler<PriceChangedEventArgs> PriceChanged {
       add {
-        if (PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
+        if(PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
           PriceChangedEvent += value;
       }
       remove {
@@ -234,7 +239,7 @@ namespace IBApp {
     event EventHandler<OrderEventArgs> OrderAddedEvent;
     public event EventHandler<OrderEventArgs> OrderAdded {
       add {
-        if (OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
+        if(OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
           OrderAddedEvent += value;
       }
       remove {
@@ -251,7 +256,7 @@ namespace IBApp {
     public event OrderRemovedEventHandler OrderRemovedEvent;
     public event OrderRemovedEventHandler OrderRemoved {
       add {
-        if (OrderRemovedEvent == null || !OrderRemovedEvent.GetInvocationList().Contains(value))
+        if(OrderRemovedEvent == null || !OrderRemovedEvent.GetInvocationList().Contains(value))
           OrderRemovedEvent += value;
       }
       remove {
@@ -267,11 +272,11 @@ namespace IBApp {
     event EventHandler<TradeEventArgs> TradeAddedEvent;
     public event EventHandler<TradeEventArgs> TradeAdded {
       add {
-        if (TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
+        if(TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
           TradeAddedEvent += value;
       }
       remove {
-        if (TradeAddedEvent != null)
+        if(TradeAddedEvent != null)
           TradeAddedEvent -= value;
       }
     }
@@ -285,7 +290,7 @@ namespace IBApp {
     event TradeRemovedEventHandler TradeRemovedEvent;
     public event TradeRemovedEventHandler TradeRemoved {
       add {
-        if (TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
+        if(TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
           TradeRemovedEvent += value;
       }
       remove {
@@ -302,11 +307,11 @@ namespace IBApp {
     event EventHandler<TradeEventArgs> TradeClosedEvent;
     public event EventHandler<TradeEventArgs> TradeClosed {
       add {
-        if (TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
+        if(TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
           TradeClosedEvent += value;
       }
       remove {
-        if (TradeClosedEvent != null)
+        if(TradeClosedEvent != null)
           TradeClosedEvent -= value;
       }
     }
@@ -510,7 +515,7 @@ namespace IBApp {
 
     public double GetPipSize(string pair) => TradesManagerStatic.GetPointSize(pair);
 
-    public bool TryGetPrice(string pair,out Price price) => _ibClient.TryGetPrice(pair,out price);
+    public bool TryGetPrice(string pair, out Price price) => _ibClient.TryGetPrice(pair, out price);
     public Price GetPrice(string pair) => _ibClient.GetPrice(pair);
 
     public Tick[] GetTicks(string pair, int periodsBack, Func<List<Tick>, List<Tick>> map) {

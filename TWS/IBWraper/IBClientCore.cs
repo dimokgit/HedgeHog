@@ -16,7 +16,7 @@ using System.Collections.Specialized;
 using System.Configuration;
 using MongoDB.Bson;
 
-public class IBClientCore : IBClient, IPricer, ICoreFX {
+public class IBClientCore : IBClient, ICoreFX {
   class Configer {
     static NameValueCollection section;
     public static int[] WarningCodes;

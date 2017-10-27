@@ -49,6 +49,9 @@ namespace IBApp {
     private readonly ConcurrentDictionary<string, PositionMessage> _positions = new ConcurrentDictionary<string, PositionMessage>();
     private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
     public Func<Trade, double> CommissionByTrade = t => t.Lots * .008;
+
+    Func<string, Trade> CreateTrade { get; set; }
+
     IObservable<(Offer o, bool b)> _offerMMRs = TradesManagerStatic.dbOffers
         .Select(o => new[] { (o, b: true), (o, b: false) })
         .Concat()
@@ -61,8 +64,9 @@ namespace IBApp {
     #endregion
 
     #region Ctor
-    public AccountManager(IBClientCore ibClient, string accountId, Func<Trade, double> commissionByTrade, Action<object> onMessage) : base(ibClient, ACCOUNT_ID_BASE) {
+    public AccountManager(IBClientCore ibClient, string accountId,Func<string,Trade> createTrade, Func<Trade, double> commissionByTrade, Action<object> onMessage) : base(ibClient, ACCOUNT_ID_BASE) {
       CommissionByTrade = commissionByTrade;
+      CreateTrade = createTrade;
       Account = new Account();
       _accountId = accountId;
       _defaultMessageHandler = onMessage ?? new Action<object>(o => { throw new NotImplementedException(new { onMessage } + ""); });
@@ -364,7 +368,7 @@ namespace IBApp {
 
         #region Create Trade
 
-        var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), TradesManagerStatic.GetBaseUnitSize(symbol), null);
+        var trade = CreateTrade(symbol);
         trade.Id = DateTime.Now.Ticks + "";
         trade.Buy = order.Action == "BUY";
         trade.IsBuy = trade.Buy;
@@ -515,7 +519,7 @@ namespace IBApp {
 
         #region Create Trade
 
-        var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), TradesManagerStatic.GetBaseUnitSize(symbol), null);
+        var trade = CreateTrade(symbol);
         trade.Id = execution.PermId + "";
         trade.Buy = execution.Side == "BOT";
         trade.IsBuy = trade.Buy;
@@ -680,14 +684,13 @@ namespace IBApp {
     }
 
     private Trade TradeFromPosition(string symbol, PositionMessage position, DateTime st, string openOrderId) {
-      var trade = Trade.Create(IbClient, symbol, TradesManagerStatic.GetPointSize(symbol), TradesManagerStatic.GetBaseUnitSize(symbol), null);
+      var trade = CreateTrade( symbol);
       trade.Id = DateTime.Now.Ticks + "";
       trade.Buy = position.Position > 0;
       trade.IsBuy = trade.Buy;
       trade.Time2 = st;
       trade.Time2Close = IbClient.ServerTime;
       trade.Open = position.AverageCost;
-      trade.UpdateByPrice(IbClient, null);
       trade.Lots = position.Position.Abs().ToInt();
       trade.OpenOrderID = openOrderId;
       trade.CommissionByTrade = CommissionByTrade;

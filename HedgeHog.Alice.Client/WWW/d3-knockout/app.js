@@ -35,6 +35,19 @@
       });
     }
   };
+  ko.bindingHandlers.toggler = {
+    init: function (element, valueAccessor/*, allBindings, viewModel, bindingContext*/) {
+      var value = valueAccessor();
+      var selector = ko.unwrap(value);
+      var togglee = $(element).find(selector);
+      $(element).click(function () {
+        if (togglee.is(":visible"))
+          togglee.hide("slide", { direction: "up" }, 1000);
+        else
+          togglee.show("slide", { direction: "down" }, 1000);
+      });
+    }
+  };
   //#endregion
   // #region Globals
   "use strict";
@@ -1126,6 +1139,10 @@
             width: "auto",
             height: "auto"
           });
+        },
+        open: function () {
+          debugger;
+          $(this).parent().click(function () { $(accountingDialog).toggle(); })
         },
         close: function () {
           debugger;
