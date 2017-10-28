@@ -699,6 +699,9 @@
       $(this.hedgingRatiosDialog()).dialog({
         title: "Hedging Ratios", width: "auto", dialogClass: "dialog-compact",
         dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
+        open: function () {
+          //$(this).parent().click(function () { $(self.hedgingRatiosDialog()).toggle(); })
+        },
         close: function () {
           stophedgingRatios = true;
           $(this).dialog("destroy");
@@ -980,6 +983,7 @@
       chartData.com3 = prepDates($.extend(true, {}, self.com3));
       chartData.vfs = !!response.vfs;
       chartData.vfss = response.vfss;
+      chartData.tpsCurr2 = response.tpsCurr2;
       self.chartData(chartData);
       updateChartCmas[0](cma(updateChartCmas[0](), 10, getSecondsBetween(new Date(), d)));
       dataViewModel.price(response.askBid);
@@ -1042,6 +1046,7 @@
       chartData2.tickDateEnd = lineChartData().slice(-1)[0].d;
       chartData2.vfs = !!response.vfs;
       chartData2.vfss = response.vfss;
+      chartData2.tpsCurr2 = response.tpsCurr2;
       response.waveLines.forEach(function (w, i) {
         w.bold = i == sumStartIndexById();
         w.color = w.isOk ? "limegreen" : "";
@@ -1141,11 +1146,9 @@
           });
         },
         open: function () {
-          debugger;
-          $(this).parent().click(function () { $(accountingDialog).toggle(); })
+          //$(this).parent().click(function () { $(accountingDialog).toggle(); })
         },
         close: function () {
-          debugger;
           stopAccounting = true;
           $(this).dialog("destroy");
         }

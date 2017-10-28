@@ -134,6 +134,7 @@
           .attr("class", "y2 axis");
         addLine("tpsHigh", "silver").style("opacity", tpsOpacity);
         addLine("tpsLow", "silver").style("opacity", tpsOpacity);
+        addLine("tpsCurr2", "silver").style("opacity", tpsOpacity);
         svg.append("g")
           .attr("class", "y3 axis");
 
@@ -417,6 +418,7 @@
       var openTradeGross = ko.unwrap(chartData.openTradeGross);
       var tpsHigh = chartData.tpsHigh;
       var tpsLow = chartData.tpsLow;
+      var tpsCurr2 = chartData.tpsCurr2;
       var chartNum = chartData.chartNum;
       var hasTps = tpsChartNum.indexOf(chartNum) >= 0;
       var canBuy = chartData.canBuy;
@@ -584,8 +586,12 @@
               .datum(data)
               .attr("d", line3).style("stroke", "darkred").style("opacity", opacityTps);
             y3Axis.style("display", "");
-          } else
+
+            setHLine(tpsCurr2, "tpsCurr2", "cyan", 1, "", y3);
+          } else {
             y3Axis.style("display", "none");
+            setHLine(NaN, "tpsCurr2", colorTps, 1, "", y3);
+          }
 
         }
         if (chartNum === 1) {
