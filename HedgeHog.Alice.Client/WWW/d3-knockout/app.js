@@ -698,9 +698,7 @@
       $(this.hedgingRatiosDialog()).dialog({
         title: "Hedging Ratios", width: "auto", dialogClass: "dialog-compact",
         dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
-        open: function () {
-          $(this).parent(".ui-dialog-titlebar").click(function () { $(self.hedgingRatiosDialog()).toggle(); })
-        },
+        open: dialogCollapse,
         close: function () {
           stophedgingRatios = true;
           $(this).dialog("destroy");
@@ -713,7 +711,7 @@
       serverCall("readHedgingRatios", args, function (ret) {
         hedgingRatiosError(false);
         this.hedgingRatios(ret.hrs);
-        this.hedgingStats($.map(ret.stats[0] || {}, function (v, n) { return { n, v }; }));
+        this.hedgingStats($.map(ret.stats[0] || {}, function (v, n) { return { n: n, v: v }; }));
         this.hedgeTradesVirtual(ret.htvs || []);
         if (!stophedgingRatios)
           setTimeout(readHedgingRatios.bind(this), 2000);

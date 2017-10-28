@@ -1331,12 +1331,13 @@ namespace HedgeHog.Alice.Client {
 
     #region OpenTrade
 
-    private PendingOrder OpenTrade(bool buy, string pair, int lot, double limitInPips, double stopInPips, double stop, string remark) {
-      var price = TradesManager.GetPrice(pair);
+    private void OpenTrade(bool buy, string pair, int lot, double limitInPips, double stopInPips, double stop, string remark) {
+      if(!TradesManager.TryGetPrice(pair, out var price))
+        throw new Exception(new { pair, error = "No price found" } + "");
       var limit = limitInPips == 0 ? 0 : buy ? price.Ask + TradesManager.InPoints(pair, limitInPips) : price.Bid - TradesManager.InPoints(pair, limitInPips);
       if(stop == 0 && stopInPips != 0)
         stop = buy ? price.Bid + TradesManager.InPoints(pair, stopInPips) : price.Ask - TradesManager.InPoints(pair, stopInPips);
-      return TradesManager.OpenTrade(pair, buy, lot, limit, stop, remark, price);
+      TradesManager.OpenTrade(pair, buy, lot, limit, stop, remark, price);
     }
     #endregion
 

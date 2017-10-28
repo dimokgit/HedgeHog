@@ -222,8 +222,7 @@ namespace IBApp {
     }
 
     void RaiseOrderAdded(HedgeHog.Shared.Order Order) {
-      if(OrderAddedEvent != null)
-        OrderAddedEvent(this, new OrderEventArgs(Order));
+      OrderAddedEvent?.Invoke(this, new OrderEventArgs(Order));
     }
     #endregion
     #region OrderRemovedEvent
@@ -562,8 +561,7 @@ namespace IBApp {
           .ToList()
           .ForEach(t => OpenTrades.Remove(t));
 
-        PositionMessage position;
-        if(!_positions.TryGetValue(contract.LocalSymbol, out position))
+        if(!_positions.TryGetValue(contract.LocalSymbol, out var position))
           throw new PositionNotFoundException(symbol);
         //var tradeByPosition = TradeFromPosition(contract.LocalSymbol, position, execTime,orderId);
         //TraceTrades("tradeByPositiont:", new[] { tradeByPosition });

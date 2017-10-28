@@ -228,16 +228,6 @@ namespace HedgeHog.Alice.Store {
     partial void OnCorridorStartDateChanged() {
       if(!CorridorStartDate.HasValue)
         CorridorStopDate = DateTime.MinValue;
-      return;
-      if(CorridorStartDate.HasValue && RatesArray.Count > 0) {
-        var rateStart = RatesArray.SkipWhile(r => r.StartDate <= CorridorStartDate.Value);
-        if(StartStopDistance > 0) {
-          var a = RatesArray.FindBar(CorridorStartDate.Value);
-          CorridorStats.StopRate = rateStart.TakeWhile(r => a.Distance - r.Distance <= StartStopDistance).Last();
-        } else
-          CorridorStats.StopRate = rateStart.Skip(60).FirstOrDefault() ?? RatesArray.LastBC();
-        _CorridorStopDate = CorridorStats.StopRate.StartDate;
-      }
     }
 
 

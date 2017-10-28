@@ -23,7 +23,6 @@ using System.Threading.Tasks.Dataflow;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
-[assembly: CLSCompliant(true)]
 namespace Order2GoAddIn {
   #region COM
   [Guid("D5FB5C05-8EF5-4bcc-BA92-10706FD640BB")]
@@ -424,8 +423,6 @@ namespace Order2GoAddIn {
         return null;
       }
     }
-
-    int _minimumQuantity = 0;
 
     string _accountID = "";
     public string AccountID {
@@ -1360,7 +1357,7 @@ namespace Order2GoAddIn {
       order.TrlRate = (Double)row.CellValue("TrlRate");
       order.Distance = (int)row.CellValue("Distance");
       order.GTC = (String)row.CellValue("GTC");
-      order.Kind = (String)row.CellValue("Kind");
+      //order.Kind = (String)row.CellValue("Kind");
       order.QTXT = (String)row.CellValue("QTXT");
       //order.StopOrderID = (String)t.CellValue("StopOrderID");
       //order.LimitOrderID = (String)t.CellValue("LimitOrderID");
@@ -1435,7 +1432,7 @@ namespace Order2GoAddIn {
       order.TrlRate = (Double)row.GetValue("TrlRate");
       order.Distance = (int)row.GetValue("Distance");
       order.GTC = (String)row.GetValue("GTC");
-      order.Kind = (String)row.GetValue("Kind");
+      //order.Kind = (String)row.GetValue("Kind");
       order.QTXT = (String)row.GetValue("QTXT");
       //order.StopOrderID = (String)t.GetValue("StopOrderID");
       //order.LimitOrderID = (String)t.GetValue("LimitOrderID");
@@ -1496,7 +1493,7 @@ namespace Order2GoAddIn {
       order.TrlRate = row.GetDouble("TrlRate");
       order.Distance = row.GetInt("Distance");
       order.GTC = row.Get("GTC");
-      order.Kind = row.Get("Kind");
+      //order.Kind = row.Get("Kind");
       order.QTXT = row.Get("QTXT");
       //order.StopOrderID = t.GetValue("StopOrderID");
       //order.LimitOrderID = t.GetValue("LimitOrderID");
@@ -1539,7 +1536,6 @@ namespace Order2GoAddIn {
     }
     //    Dictionary<string, int> tableIndices = new Dictionary<string, int>();
     C.ConcurrentDictionary<string, FXCore.TableAut> tableIndices = new C.ConcurrentDictionary<string, FXCore.TableAut>();
-    [CLSCompliant(false)]
     public FXCore.TableAut GetTable(string TableName, bool updateTable = false) {
       return ((CoreFX)CoreFX).Table(TableName);
       if(!IsLoggedIn)
@@ -1568,6 +1564,11 @@ namespace Order2GoAddIn {
     void SetCurrentPrice(Price price) { currentPrices[price.Pair] = price; }
     #endregion
     public Price GetPrice(string pair, bool useInternal) { return useInternal ? GetPriceInternal(pair) : GetCurrentPrice(pair); }
+    public IEnumerable<Price> TryGetPrice(string pair) {
+      if(TryGetPrice(pair, out var price))
+        yield return price;
+      else yield break;
+    }
     public Price GetPrice(string pair) { return GetCurrentPrice(pair); }
     Price GetPriceInternal(string pair) {
       var price = GetPrice(GetRows(TABLE_OFFERS, pair).FirstOrDefault());

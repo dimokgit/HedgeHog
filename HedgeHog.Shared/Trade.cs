@@ -300,12 +300,6 @@ namespace HedgeHog.Shared {
     /// 100,10000
     /// </summary>
     public int PipValue { get { return (int)Math.Round(Math.Abs(this.PL / (this.Open - this.Close)), 0); } }
-    /// <summary>
-    /// 2,4
-    /// </summary>
-    public int PointSize { get { return (int)Math.Log10(PipValue); } }
-
-    public string PointSizeFormat { get { return "n" + PointSize; } }
 
     public double InPips(double value) { return value * PipValue; }
 

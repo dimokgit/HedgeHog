@@ -258,6 +258,7 @@ namespace HedgeHog.UI {
       });
       //ProcessNews(NewsHound.MyFxBook.Fetch());
     }
+    #pragma warning disable 0649
     static bool _useDb;
     static NewsCasterModel() {
       if(_useDb)

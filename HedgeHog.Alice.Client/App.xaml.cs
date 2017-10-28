@@ -96,7 +96,7 @@ namespace HedgeHog.Alice.Client {
     bool IsHandled(AggregateException e) {
       return e != null && e.Flatten().InnerException.InnerException is System.Net.HttpListenerException;
     }
-    public ResourceDictionary Resources {
+    public new ResourceDictionary Resources {
       get { return base.Resources; }
       set { base.Resources = value; }
     }

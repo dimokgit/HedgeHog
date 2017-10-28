@@ -51,6 +51,7 @@ namespace HedgeHog.Alice.Store {
     /// <param name="periodsLength"></param>
     /// <param name="barsInterval"></param>
     /// <param name="pointSize"></param>
+    /// <param name="corridorMethod"></param>
     /// <param name="exitCondition"></param>
     /// <returns></returns>
     static Dictionary<int, CorridorStatistics> GetCorridornessesCore(this ICollection<Rate> rates

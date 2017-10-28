@@ -174,14 +174,11 @@ namespace Order2GoAddIn {
 
     public enum Tables { Accounts, Orders, Offers, Trades, ClosedTrades, Summary, Messages };
 
-    [CLSCompliant(false)]
     public FXCore.TableAut Table(Tables table) { return Table(table + ""); }
-    [CLSCompliant(false)]
     public FXCore.TableAut Table(string TableName) {
       return (FXCore.TableAut)Desk.FindMainTable(TableName);
     }
 
-    [CLSCompliant(false)]
     public FXCore.RowAut[] TableRows(Tables table) { return TableRows(table + ""); }
     public FXCore.RowAut[] TableRows(string tableName) { return ((FXCore.RowsEnumAut)Table(tableName).Rows).Cast<FXCore.RowAut>().ToArray(); }
 

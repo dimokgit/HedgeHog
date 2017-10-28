@@ -116,12 +116,6 @@ namespace HedgeHog.Alice.Store {
       return corridor;
     }
 
-
-    IList<Harmonic> _harmonics;
-    ValueTrigger<bool> _canTradeByHarmonicsTrigger = new ValueTrigger<bool>(false);
-    bool CanTradeByHarmonics() {
-      return HarmonicsAverage * 2 < _harmonics[0].Height;
-    }
     private ConcurrentQueue<Harmonic> CalcHurmonics(IList<Rate> binRates,int minutesPerHour) {
       ConcurrentDictionary<int, double[]> invFfts;
       ConcurrentQueue<Harmonic> harmonicsQueue;

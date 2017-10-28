@@ -9,6 +9,7 @@ using System.Windows.Data;
 namespace HedgeHog.Alice.Store {
   public abstract class TraderModelBase : TraderModelPersist {
     public TraderModelBase() :base(){    }
+    #pragma warning disable 0067
     public virtual event EventHandler<TradingStatisticsEventArgs> NeedTradingStatistics;
     public abstract event EventHandler MasterTradeAccountChanged;
     public abstract event EventHandler<MasterTradeEventArgs> MasterTradeAdded;

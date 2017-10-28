@@ -124,8 +124,6 @@ namespace HedgeHog.Shared {
     [DataMember]
     public String GTC { get; set; }
     [DataMember]
-    public String Kind { get; set; }
-    [DataMember]
     public String QTXT { get; set; }
     [DataMember]
     public String StopOrderID { get; set; }

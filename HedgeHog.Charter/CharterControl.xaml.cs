@@ -2168,10 +2168,10 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
     }
 
     private void SetTradingRange(object suppRes, double position) {
-      _tradingHorisontalRange.Value1 = centerOfMassHLineHigh.Value;
-      _tradingHorisontalRange.Value2 = centerOfMassHLineLow.Value;
-      _tradingHorisontalRange2.Value1 = centerOfMassHLineHigh2.Value;
-      _tradingHorisontalRange2.Value2 = centerOfMassHLineLow2.Value;
+      _tradingHorisontalRange.Value1 = (double)centerOfMassHLineHigh?.Value;
+      _tradingHorisontalRange.Value2 = (double)centerOfMassHLineLow?.Value;
+      _tradingHorisontalRange2.Value1 = (double)centerOfMassHLineHigh2?.Value;
+      _tradingHorisontalRange2.Value2 = (double)centerOfMassHLineLow2?.Value;
       //if (!suppRes.GetProperty<bool>("IsExitOnly"))
       //  if (suppRes.GetProperty<bool>("IsBuy")) _tradingHorisontalRange.Value1 = position;
       //  else _tradingHorisontalRange.Value2 = position;
@@ -2305,6 +2305,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
       //plotter.FitToView();
       //System.Diagnostics.Debug.WriteLine("AddTicks:" + (DateTime.Now - d).TotalMilliseconds + " ms.");
+      if(animatedTimeX.Count < 2) return;
 
       BarsPeriod = (animatedTimeX[0] - animatedTimeX[1]).Duration().TotalMinutes.ToInt();
       BarsCount = animatedTimeX.Count();

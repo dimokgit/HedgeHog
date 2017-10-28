@@ -129,7 +129,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     protected delegate void Context_ObjectMaterializedDelegate(object sender, ObjectMaterializedEventArgs e);
-    Context_ObjectMaterializedDelegate Context_ObjectMaterializer;
 
     protected virtual void Context_ObjectMaterialized(object sender, ObjectMaterializedEventArgs e) { throw new NotImplementedException(); }
     protected static readonly string _tradingMacrosPath = "TradingMacros\\{0}+{1}_{2}_{3}.json";

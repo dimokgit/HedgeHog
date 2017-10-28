@@ -73,5 +73,11 @@ namespace GIS
                 return false;
         }
 
+    public override int GetHashCode() {
+      var hashCode = 979593255;
+      hashCode = hashCode * -1521134295 + _x.GetHashCode();
+      hashCode = hashCode * -1521134295 + _y.GetHashCode();
+      return hashCode;
     }
+  }
 }

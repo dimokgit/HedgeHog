@@ -133,7 +133,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    Rate _stopRateDefault = null;
     Rate _StopRate;
     public Rate StopRate {
       get { return _StopRate; }

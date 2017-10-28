@@ -23,23 +23,22 @@ using Newtonsoft.Json.Linq;
 namespace HedgeHog.Alice.Client {
   public partial class RemoteControlModel {
     #region StartReplayCommand
-    ReactiveUI.Legacy.ReactiveCommand<object> _StartReplayCommand;
-    public ReactiveUI.Legacy.ReactiveCommand<object> StartReplayCommand {
+    ReactiveUI.ReactiveCommand<TradingMacro, Unit> _StartReplayCommand;
+    public ReactiveUI.ReactiveCommand<TradingMacro, Unit> StartReplayCommand {
       get {
         if(_StartReplayCommand == null) {
           var o = this.WhenAnyObservable(x => x._replayTasks.CountChanged)
             .StartWith(0)
             .Select(c => c == 0);
           //var o2 = this.ObservableForProperty(vm => true, false, false).Select(x => x.Value).ObserveOn(RxApp.MainThreadScheduler);
-          _StartReplayCommand = ReactiveUI.Legacy.ReactiveCommand.Create(o, RxApp.MainThreadScheduler);
-          _StartReplayCommand
-            .SelectMany(tm => StartReplay(tm).ToObservable())
-            .Subscribe();
+          _StartReplayCommand = ReactiveCommand.CreateFromTask<TradingMacro>(tm => StartReplay(tm), null, RxApp.MainThreadScheduler);
+          //_StartReplayCommand
+          //  .SelectMany(tm => StartReplay(tm).ToObservable())
+          //  .Subscribe();
         }
         return _StartReplayCommand;
       }
     }
-
     public bool ToggleReplayPause() {
       return ReplayArguments.InPause = !ReplayArguments.InPause;
     }
@@ -49,7 +48,7 @@ namespace HedgeHog.Alice.Client {
       Log = exc;
     }
     public ReactiveList<Task> _replayTasks = new ReactiveList<Task>();
-    async Task StartReplay(object tm) {
+    async Task StartReplay(TradingMacro tm) {
       TradingMacro tmOriginal = (TradingMacro)tm;
       if(!IsLoggedIn) {
         LogWww(new Exception("Must login first."));
@@ -76,7 +75,7 @@ namespace HedgeHog.Alice.Client {
 
         if(ReplayArguments.UseSuperSession) {
           #region getDateFromSuperSession
-          Func<Task<DateTime>> getDateFromSuperSession = async  () =>  {
+          Func<Task<DateTime>> getDateFromSuperSession = async () => {
             try {
               var sessions = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
               if(sessions.Any())
@@ -117,11 +116,11 @@ namespace HedgeHog.Alice.Client {
           ReplayArguments.LastWwwError = "";
           var strats = TaskMonad.RunSync(() => ReadStrategies(tmOriginal, (name, desc, content, uri, diff) => new { name, content, diff }));
           Func<string, bool> isTest = s => s.ToLower().Trim().EndsWith("{t}");
-          await strats.Select(s=>s.First())
+          await strats.Select(s => s.First())
             .Take(2)
-            .OrderByDescending(s=>isTest(s.name))
+            .OrderByDescending(s => isTest(s.name))
             .Where(s => isTest(s.name) || s.diff.IsEmpty())
-            .IfEmpty(() => { LogWww( new Exception(ReplayArguments.LastWwwError = "Current settings don't match any strategy")); })
+            .IfEmpty(() => { LogWww(new Exception(ReplayArguments.LastWwwError = "Current settings don't match any strategy")); })
             .Select(strategy => {
               tmOriginal.TestFileName = strategy.name;
               var paramsDict = Lib.ReadParametersFromString(strategy.content);
@@ -155,7 +154,7 @@ namespace HedgeHog.Alice.Client {
           return;
         if(testParams.Any()) {
           StartReplayInternal(tm, testParams.Dequeue(), t => { ContinueReplayWith(tm, testParams); });
-        }else {
+        } else {
           ReplayArguments.LastWwwErrorObservable.OnNext("Replay done");
         }
       } catch(Exception exc) { Log = exc; }
@@ -246,7 +245,7 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
-    class TestParam : IEnumerable<KeyValuePair<string, object>> {
+    class TestParam :IEnumerable<KeyValuePair<string, object>> {
       private IEnumerable<KeyValuePair<string, object>> _pairs;
       public TestParam(IEnumerable<KeyValuePair<string, object>> pairs) {
         _pairs = pairs;

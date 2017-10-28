@@ -1754,7 +1754,7 @@ namespace HedgeHog.Alice.Store {
           if(isInitiator)
             otherTMs.ForEach(tm => tm._waitHandle.Set());
           ResetMinimumGross();
-          args.TradingMacros.Remove(this);
+          args.TradingMacros.RemoveAll(tm => tm == this);
           args.MustStop = true;
           args.SessionStats.ProfitToLossRatio = ProfitabilityRatio;
           TradesManager.CloseAllTrades();
@@ -3405,7 +3405,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         Func<Rate, double> priceHigh = CorridorGetHighPrice();
         Func<Rate, double> priceLow = CorridorGetLowPrice();
         var crossedCorridor = GetScanCorridorFunction(ScanCorridorBy)(ratesForCorridor, priceHigh, priceLow);
-        if(crossedCorridor.Rates.Count == 0)
+        if((crossedCorridor?.Rates?.Count).GetValueOrDefault() == 0)
           return;
         #endregion
         #region Update Corridor
@@ -3964,8 +3964,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       var timeSpanDict = new Dictionary<string, long>();
       try {
         CalcTakeProfitDistance();
-        if(!price.IsReal)
-          price = TradesManager.GetPrice(Pair);
+        if(!price.IsReal && !TradesManager.TryGetPrice(Pair, out price)) return;
         MinimumGross = CurrentGross;
         MinimumOriginalProfit = TradingStatistics.OriginalProfit;
         CurrentLossPercent = CurrentGross / account.Balance;

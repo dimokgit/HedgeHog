@@ -135,6 +135,8 @@
         addLine("tpsHigh", "silver").style("opacity", tpsOpacity);
         addLine("tpsLow", "silver").style("opacity", tpsOpacity);
         addLine("tpsCurr2", "silver").style("opacity", tpsOpacity);
+        addLine("tpsMin2", "silver").style("opacity", tpsOpacity);
+        addLine("tpsMax2", "silver").style("opacity", tpsOpacity);
         svg.append("g")
           .attr("class", "y3 axis");
 
@@ -578,15 +580,26 @@
 
           var hasTps2 = data.some(function (d) { return d.v2 !== 0; });
           if (hasTps2) {
+            var yMin = Number.MAX_SAFE_INTEGER, yMax = Number.MIN_SAFE_INTEGER;
             var line3 = d3.line()
               .x(function (d) { return x(d.d); })
-              .y(function (d) { return y3(isNaN(d.v2) ? 0 : tipValue2(d.v2)); });
+              .y(function (d) {
+                var y = isNaN(d.v2) ? 0 : tipValue2(d.v2);
+                yMin = Math.min(yMin, y);
+                yMax = Math.max(yMax, y);
+                return y3(y);
+              });
 
+            var color = "lime";
             svg.select("path.line.dataTps2")
               .datum(data)
-              .attr("d", line3).style("stroke", "darkred").style("opacity", opacityTps);
+              .attr("d", line3)
+              .style("stroke", color).style("opacity", opacityTps);
             y3Axis.style("display", "");
 
+            var minMax = [yMin, yMax].sort(function (a, b) { return Math.abs(a) - Math.abs(b); });
+            setHLine(minMax[0], "tpsMin2", "darkred", 1, "", y3);
+            setHLine(Math.abs(minMax[0]), "tpsMax2", "darkred", 1, "", y3);
             setHLine(tpsCurr2, "tpsCurr2", "cyan", 1, "", y3);
           } else {
             y3Axis.style("display", "none");
@@ -807,7 +820,7 @@
       // #region Locals
       function setHLine(level, levelName, levelColour, width, dasharray, yTrans) {
         var line = svg.select("line.line" + levelName);
-        if (level && !isNaN(level))
+        if (level != null && !isNaN(level))
           return line
             .style("stroke", levelColour)  // colour the line
             .style("stroke-width", width)  // colour the line

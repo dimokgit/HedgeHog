@@ -10,7 +10,7 @@ using ReactiveUI;
 using System.Collections.Concurrent;
 
 namespace HedgeHog.Shared {
-  public class VirtualTradesManager : ITradesManager {
+  public class VirtualTradesManager :ITradesManager {
     const string TRADE_ID_FORMAT = "yyMMddhhmmssffff";
     IDictionary<string, int> _baseUnits = null;
     ObservableCollection<Offer> _offersCollection;
@@ -90,7 +90,7 @@ namespace HedgeHog.Shared {
     public Func<Trade, double> CommissionByTrade { get; set; }
 
     public bool IsLoggedIn { get { return true; } }
-    public double Leverage(string pair,bool isBuy) { return (double)GetBaseUnitSize(pair) / TradesManagerStatic.GetMMR(pair,isBuy); }
+    public double Leverage(string pair, bool isBuy) { return (double)GetBaseUnitSize(pair) / TradesManagerStatic.GetMMR(pair, isBuy); }
     DateTime _serverTime;
     public DateTime ServerTime {
       get {
@@ -146,7 +146,7 @@ namespace HedgeHog.Shared {
         var trades = GetTrades();
         Account.Trades = trades;
         if(trades.Any())
-          Account.UsableMargin = Account.Equity - TradesManagerStatic.MarginRequired(trades.Lots(), GetBaseUnitSize(trades[0].Pair), TradesManagerStatic.GetMMR(trades[0].Pair,trades[0].IsBuy));
+          Account.UsableMargin = Account.Equity - TradesManagerStatic.MarginRequired(trades.Lots(), GetBaseUnitSize(trades[0].Pair), TradesManagerStatic.GetMMR(trades[0].Pair, trades[0].IsBuy));
         Account.StopAmount = includeOtherInfo ? trades.Sum(t => t.StopAmount) : 0;
         Account.LimitAmount = includeOtherInfo ? trades.Sum(t => t.LimitAmount) : 0;
         Account.PipsToMC = PipsToMarginCallCore(Account).ToInt();
@@ -295,12 +295,6 @@ namespace HedgeHog.Shared {
     }
     public Trade GetLastTrade(string pair) {
       throw new NotImplementedException();
-      var trades = GetTrades(pair).OrderBy(t => t.Id).ToArray();
-      if(trades.Length == 0)
-        trades = GetClosedTrades(pair);
-      //if (trades.Length == 0)
-      //  trades = GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now.AddDays(1).Date).ToArray();
-      return trades.DefaultIfEmpty(TradeFactory(pair)).OrderBy(t => t.Id).Last();
     }
 
     public Order[] GetOrders(string pair) {
@@ -315,6 +309,7 @@ namespace HedgeHog.Shared {
       return _offersDictionary[pair];
     }
 
+#pragma warning disable 0067
     public event EventHandler<RequestEventArgs> RequestFailed;
     public event OrderRemovedEventHandler OrderRemoved;
     void RaiseOrderRemoved(HedgeHog.Shared.Order args) => OrderRemoved?.Invoke(args);
@@ -322,7 +317,7 @@ namespace HedgeHog.Shared {
     event EventHandler<ErrorEventArgs> ErrorEvent;
     public event EventHandler<ErrorEventArgs> Error {
       add {
-        if (ErrorEvent == null || !ErrorEvent.GetInvocationList().Contains(value))
+        if(ErrorEvent == null || !ErrorEvent.GetInvocationList().Contains(value))
           ErrorEvent += value;
       }
       remove {
@@ -333,7 +328,7 @@ namespace HedgeHog.Shared {
     event EventHandler<OrderEventArgs> OrderAddedEvent;
     public event EventHandler<OrderEventArgs> OrderAdded {
       add {
-        if (OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
+        if(OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
           OrderAddedEvent += value;
       }
       remove {
@@ -346,11 +341,11 @@ namespace HedgeHog.Shared {
     event EventHandler<TradeEventArgs> TradeClosedEvent;
     public event EventHandler<TradeEventArgs> TradeClosed {
       add {
-        if (TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
+        if(TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
           TradeClosedEvent += value;
       }
       remove {
-        if (TradeClosedEvent != null && TradeClosedEvent.GetInvocationList().Contains(value))
+        if(TradeClosedEvent != null && TradeClosedEvent.GetInvocationList().Contains(value))
           TradeClosedEvent -= value;
       }
     }
@@ -378,7 +373,7 @@ namespace HedgeHog.Shared {
     public event TradeRemovedEventHandler TradeRemoved;
     public event EventHandler<OrderEventArgs> OrderChanged;
 
-    private ConcurrentDictionary<string, Price> PriceCurrent = new ConcurrentDictionary<string,Price>();
+    private ConcurrentDictionary<string, Price> PriceCurrent = new ConcurrentDictionary<string, Price>();
 
     #endregion
 
@@ -408,11 +403,16 @@ namespace HedgeHog.Shared {
     #region ITradesManager Members
 
 
+    public IEnumerable<Price> TryGetPrice(string pair) {
+      if(TryGetPrice(pair, out var price))
+        yield return price;
+      else yield break;
+    }
+    public bool TryGetPrice(string pair, out Price price) => PriceCurrent.TryGetValue(pair, out price);
     public Price GetPrice(string pair) {
-      Price price;
       if(PriceCurrent.Count == 0)
         return new Price(pair);
-      if(!PriceCurrent.TryGetValue(pair, out price))
+      if(!PriceCurrent.TryGetValue(pair, out var price))
         throw new ArgumentNullException(new { pair, error = "No Current Price" } + "");
       return price;
     }
@@ -571,15 +571,6 @@ namespace HedgeHog.Shared {
     }
 
     public void FetchMMRs() => throw new NotImplementedException();
-    public bool TryGetPrice(string pair, out Price price) {
-      try {
-        price = GetPrice(pair);
-        return true;
-      } catch(KeyNotFoundException) {
-        price = default(Price);
-        return false;
-      }
-    }
   }
 
 }

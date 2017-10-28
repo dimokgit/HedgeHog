@@ -208,8 +208,7 @@ namespace IBApp {
       }
     }
     protected void RaiseError(Exception exc) {
-      if(ErrorEvent != null)
-        ErrorEvent(this, new ErrorEventArgs(exc));
+      ErrorEvent?.Invoke(this, new ErrorEventArgs(exc));
     }
     #endregion
 
@@ -248,8 +247,7 @@ namespace IBApp {
     }
 
     void RaiseOrderAdded(object sender, OrderEventArgs args) {
-      if(OrderAddedEvent != null)
-        OrderAddedEvent(this, args);
+      OrderAddedEvent?.Invoke(this, args);
     }
     #endregion
     #region OrderRemovedEvent
@@ -281,8 +279,7 @@ namespace IBApp {
       }
     }
     void RaiseTradeAdded(Trade trade) {
-      if(TradeAddedEvent != null)
-        TradeAddedEvent(this, new TradeEventArgs(trade));
+      TradeAddedEvent?.Invoke(this, new TradeEventArgs(trade));
     }
     #endregion
 
@@ -298,8 +295,7 @@ namespace IBApp {
       }
     }
     void RaiseTradeRemoved(Trade trade) {
-      if(TradeRemovedEvent != null)
-        TradeRemovedEvent(trade);
+      TradeRemovedEvent?.Invoke(trade);
     }
     #endregion
 
@@ -316,8 +312,7 @@ namespace IBApp {
       }
     }
     void RaiseTradeClosed(Trade trade) {
-      if(TradeClosedEvent != null)
-        TradeClosedEvent(this, new TradeEventArgs(trade));
+      TradeClosedEvent?.Invoke(this, new TradeEventArgs(trade));
     }
     #endregion
 
@@ -515,6 +510,11 @@ namespace IBApp {
 
     public double GetPipSize(string pair) => TradesManagerStatic.GetPointSize(pair);
 
+    public IEnumerable<Price> TryGetPrice(string pair) {
+      if(TryGetPrice(pair, out var price))
+        yield return price;
+      else yield break;
+    }
     public bool TryGetPrice(string pair, out Price price) => _ibClient.TryGetPrice(pair, out price);
     public Price GetPrice(string pair) => _ibClient.GetPrice(pair);
 

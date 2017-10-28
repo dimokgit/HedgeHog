@@ -370,7 +370,6 @@ namespace HedgeHog.Alice.Store {
         var firstTime = true;
         #region Watchers
         var watcherCanTrade = new ObservableValue<bool>(true, true);
-        IList<MathExtensions.Extream<Rate>> extreamsSaved = null;
 
         var corridorMovedTrigger = new ValueTrigger<ValueTrigger<bool>>(false) { Value = new ValueTrigger<bool>(false) };
         var dateTrigger = new ValueTrigger<DateTime>(false);

@@ -59,6 +59,10 @@ namespace HedgeHog.Alice.Store {
     public Func<double> GetVoltageHigh = () => 0;
     public Func<double> GetVoltageAverage = () => 0;
     public Func<double> GetVoltageLow = () => 0;
+    static double[] EMPTY_DOUBLE = new double[0];
+    public Func<IList<double>> GetVoltage2High = () => EMPTY_DOUBLE;
+    public Func<IList<double>> GetVoltage2Low = () => EMPTY_DOUBLE;
+
     public Func<Rate, double> GetVoltage = r => r.DistanceHistory;
     public Func<Rate, double[]> GetVoltages = r => r.VoltageLocal0;
     double VoltageCurrent { get { return GetVoltage(RateLast); } }

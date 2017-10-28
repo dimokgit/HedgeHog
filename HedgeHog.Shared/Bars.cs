@@ -6,7 +6,6 @@ using HedgeHog.Shared;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
-[assembly: CLSCompliant(true)]
 namespace HedgeHog.Bars {
   public enum FractalType {
     None = 0, Buy = -1, Sell = 1
@@ -189,16 +188,6 @@ namespace HedgeHog.Bars {
     #endregion
     public void SetPriceChart() {
       _PriceChartAsk = _PriceChartBid = double.NaN;
-      return;
-      if(PriceAvg > PriceAvg1) {
-        PriceChartAsk = AskHigh;
-        PriceChartBid = BidHigh;
-
-      } else {
-        PriceChartAsk = AskLow;
-        PriceChartBid = BidLow;
-      }
-
     }
     double _PriceAvg1 = double.NaN;
     [DataMember]
@@ -236,18 +225,6 @@ namespace HedgeHog.Bars {
     #endregion
 
     #region Gunn Angles
-    //public static double[] GannAngles = new[] { 82.5, 75, 71.25, 63.75, 45.0, 26.25, 18.75, 15, 7.5 };
-    /// <summary>
-    /// Tangents of Gann Angles.
-    /// <remarks>
-    /// Do not change the order of angles.
-    /// </remarks>
-    /// </summary>
-    //public static double[] GannAngles = new[] { 8, 4, 3, 2,1.5, 1.0,1/1.5, 1 / 2.0, 1 / 3.0, 1 / 4.0, 1 / 8.0 };
-    /// <summary>
-    /// Index of 1x1 angle in <see cref="GannAngles"/>
-    /// </summary>
-    //public static int GannAngle1x1 = GannAngles.Length / 2;
     double[] _gannPrices = new double[0];
     [DataMember]
     public double[] GannPrices {

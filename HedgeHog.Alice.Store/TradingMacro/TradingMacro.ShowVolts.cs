@@ -250,7 +250,6 @@ namespace HedgeHog.Alice.Store {
         return GetLastVolt()
           .Select(v => ShowVolts(v, 2))
           .SingleOrDefault();
-      var skip = 0;
       var map = MonoidsCore.ToFunc((IList<Rate>)null, 0.0, (rate, ma) => new { rate, ma });
 
       Func<Rate, double> select = BarPeriod >= BarsPeriodType.m1 ? _priceAvg : r => r.PriceCMALast;
@@ -483,11 +482,17 @@ namespace HedgeHog.Alice.Store {
           .ToArray();
         var voltMap = RatioMap(voltRates, GetVoltage, VoltsFullScaleMinMax);
         var priceMap = RatioMap(voltRates, _priceAvg);
+        double min = double.MaxValue, max = double.MinValue;
         voltMap
           .Zip(priceMap, (a, b) => {
-            SetVoltage2(b.t.r, b.t.v - a.t.v);
+            var v = b.t.v - a.t.v;
+            min = v.Min(min);
+            max = v.Max(max);
+            SetVoltage2(b.t.r, v);
             return true;
           }).Count();
+        GetVoltage2High = () => new[] { max };
+        GetVoltage2Low = () => new[] { min };
       }
       return null;
     }
@@ -624,8 +629,7 @@ namespace HedgeHog.Alice.Store {
     private void SetVoltFuncs() {
       if(GetVoltage(RatesArray[0]).IsNotNaN()) {
         var volts = RatesArray.Select(r => GetVoltage(r)).Where(Lib.IsNotNaN).DefaultIfEmpty().ToArray();
-        var voltsAvg = 0.0;
-        var voltsStDev = volts.StDev(out voltsAvg);
+        var voltsStDev = volts.StDev(out var voltsAvg);
         GetVoltageAverage = () => voltsAvg - voltsStDev;
         GetVoltageHigh = () => voltsAvg + voltsStDev;
         GetVoltageLow = () => voltsAvg - voltsStDev * 2;
@@ -746,25 +750,25 @@ namespace HedgeHog.Alice.Store {
       var endHour = CoMEndHour;
       var stripHoursGreen = new[] { ServerTime.Date.AddHours(startHour), ServerTime.Date.AddHours(endHour) };
       var stripHours = SetCenterOfMassByM1Hours(stripHoursGreen, t => {
-        CenterOfMassBuy = t.Item1[1];
-        CenterOfMassSell = t.Item1[0];
-        return CenterOfMassDates = t.Item2;
+        CenterOfMassBuy = t.upDown[1];
+        CenterOfMassSell = t.upDown[0];
+        return CenterOfMassDates = t.dates;
       });
       stripHours = SetCenterOfMassByM1Hours(stripHours, t => {
-        CenterOfMassBuy2 = t.Item1[1];
-        CenterOfMassSell2 = t.Item1[0];
-        return CenterOfMass2Dates = t.Item2;
+        CenterOfMassBuy2 = t.upDown[1];
+        CenterOfMassSell2 = t.upDown[0];
+        return CenterOfMass2Dates = t.dates;
       });
 
       stripHours = SetCenterOfMassByM1Hours(stripHours, (t) => {
-        CenterOfMassBuy3 = t.Item1[1];
-        CenterOfMassSell3 = t.Item1[0];
-        return CenterOfMass3Dates = t.Item2;
+        CenterOfMassBuy3 = t.upDown[1];
+        CenterOfMassSell3 = t.upDown[0];
+        return CenterOfMass3Dates = t.dates;
       });
       SetCenterOfMassByM1Hours(stripHours, (t) => {
-        CenterOfMassBuy4 = t.Item1[1];
-        CenterOfMassSell4 = t.Item1[0];
-        return CenterOfMass4Dates = t.Item2;
+        CenterOfMassBuy4 = t.upDown[1];
+        CenterOfMassSell4 = t.upDown[0];
+        return CenterOfMass4Dates = t.dates;
       });
 
       return;

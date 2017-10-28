@@ -11,6 +11,5 @@ using System.Windows.Forms.DataVisualization.Charting;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    bool isInFlight;
   }
 }

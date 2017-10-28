@@ -498,7 +498,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     public object[] ReadHedgeVirtual(string pair) {
-      var tradeInfo = MonoidsCore.ToFunc((Trade trade,double netPL2, double netSum) => new {
+      var tradeInfo = MonoidsCore.ToFunc((Trade trade, double netPL2, double netSum) => new {
         trade.Pair,
         Pos = (trade.IsBuy ? 1 : -1) * trade.Lots,
         Net = netPL2.AutoRound2(1),
@@ -509,11 +509,12 @@ namespace HedgeHog.Alice.Client {
       var tmh = (from t in GetHedgedTradingMacros(pair)
                  join hts in TradingMacro.HedgeTradesVirtual on new { pair1 = t.tm1.Pair, pair2 = t.tm2.Pair } equals new { pair1 = hts[0].Pair, pair2 = hts[1].Pair }
                  from ht in hts
-                 select tradeInfo(ht,ht.CalcNetPL2(cp(ht)), hts.Sum(t => t.CalcNetPL2(cp(t))))
+                 from p in cp(ht).DefaultIfEmpty(double.NaN)
+                 select tradeInfo(ht, ht.CalcNetPL2(p), hts.SelectMany(t => cp(t), (t, hp) => t.CalcNetPL2(hp)).Sum())
                 ).ToArray();
       return tmh;
 
-      double cp(Trade t) => trader.Value.TradesManager.GetPrice(t.Pair).With(p => t.IsBuy ? p.Bid : p.Ask);
+      double[] cp(Trade t) => trader.Value.TradesManager.TryGetPrice(t.Pair).Select(p => t.IsBuy ? p.Bid : p.Ask).ToArray();
     }
     public void ClearHedgeVirtualTrades(string pair) {
       TradingMacro.HedgeTradesVirtual.Clear();

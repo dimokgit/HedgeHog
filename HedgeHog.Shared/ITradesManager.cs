@@ -77,6 +77,7 @@ namespace HedgeHog.Shared {
     Offer GetOffer(string pair);
     Price GetPrice(string pair);
     bool TryGetPrice(string pair, out Price price);
+    IEnumerable<Price> TryGetPrice(string pair);
     #endregion
 
     #region Money

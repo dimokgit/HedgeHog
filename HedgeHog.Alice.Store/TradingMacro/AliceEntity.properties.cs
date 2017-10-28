@@ -542,6 +542,8 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
     private void ResetVoltages() {
+      GetVoltageHigh = GetVoltageAverage = GetVoltageLow = () => 0;
+      GetVoltage2High = GetVoltage2Low = () => EMPTY_DOUBLE;
       UseRatesInternal(rates => rates.ForEach(r => {
         SetVoltage(r, double.NaN);
         SetVoltage2(r, double.NaN);
@@ -615,12 +617,12 @@ namespace HedgeHog.Alice.Store {
     [Description("TakeProfitFunction")]
     [WwwSetting(Group = wwwSettingsTrading)]
     public TradingMacroTakeProfitFunction TakeProfitFunction {
-      get {  return _TakeProfitFunction; }
+      get { return _TakeProfitFunction; }
       set {
         if(TakeProfitFunction == value)
           return;
         _TakeProfitFunction = value;
-          OnPropertyChanged(nameof(TakeProfitFunction));
+        OnPropertyChanged(nameof(TakeProfitFunction));
       }
     }
 
@@ -704,11 +706,11 @@ namespace HedgeHog.Alice.Store {
         if(ranges == null)
           return true;
         var timeSpans = ranges.Select(r => r.Select(t => TimeSpan.Parse(t)).ToArray());
-        var ands = timeSpans.Where(tsr => !IsTimeRangeReversed(tsr)).Select(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay)).DefaultIfEmpty(true).Any(b=>b);
+        var ands = timeSpans.Where(tsr => !IsTimeRangeReversed(tsr)).Select(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay)).DefaultIfEmpty(true).Any(b => b);
         var ors = timeSpans.Where(tsr => IsTimeRangeReversed(tsr)).All(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay));
         return ands && ors;
       }
-      return IsTradingHour(range,time);
+      return IsTradingHour(range, time);
     }
     DayOfWeek[] TradingDays() {
       switch(TradingDaysRange) {
@@ -880,7 +882,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    bool _ExitByBuySellLevel=true;
+    bool _ExitByBuySellLevel = true;
     [DisplayName("Exit By BuySell Level")]
     [Category(categoryActiveYesNo)]
     [Description("(X ? _buySell:eve.Rate : trade.Open) + takeProfit ")]
@@ -980,7 +982,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    int _TradeCountMax= 0;
+    int _TradeCountMax = 0;
     [WwwSetting(Group = wwwSettingsTradingConditions)]
     [Category(categoryActive)]
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
