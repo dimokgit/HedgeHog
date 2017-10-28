@@ -241,7 +241,7 @@
             delay: isCustom ? 5000 : 1000
           });
         })
-        ;
+      ;
       if ($.isFunction(done)) r.done(function (data) {
         done(data, note);
       });
@@ -499,7 +499,6 @@
     function setRsdMin(chartNum, rsd) {
       serverCall("setRsdTreshold", [pair, chartNum, rsd]);
     }
-    // #endregion
 
     // #region Public
 
@@ -700,7 +699,7 @@
         title: "Hedging Ratios", width: "auto", dialogClass: "dialog-compact",
         dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
         open: function () {
-          //$(this).parent().click(function () { $(self.hedgingRatiosDialog()).toggle(); })
+          $(this).parent(".ui-dialog-titlebar").click(function () { $(self.hedgingRatiosDialog()).toggle(); })
         },
         close: function () {
           stophedgingRatios = true;
@@ -1145,9 +1144,7 @@
             height: "auto"
           });
         },
-        open: function () {
-          //$(this).parent().click(function () { $(accountingDialog).toggle(); })
-        },
+        open: dialogCollapse,
         close: function () {
           stopAccounting = true;
           $(this).dialog("destroy");
@@ -1392,8 +1389,10 @@
     function defaultChartData(chartNum) {
       return chartDataFactory(chartNum ? lineChartData2 : lineChartData, [{ dates: [] }, {}, {}, {}], null, null, null, false, false, chartNum, false, 0);
     }
+    function dialogCollapse() { $(this).prev().click(function () { $(this).next().toggle(); }); }
     // #endregion
   }
+  // #endregion
 
   // #region Init SignalR hub
   var host = location.host.match(/localhost/i) ? "ruleover.com:91" : location.host;
@@ -1594,7 +1593,6 @@
   }
   // #endregion
 
-  // #region Helpers
   // #region Note Reopener
   var errorNotes = [];
   function closeDisconnectNote() { closeErrorNote("TimeoutException"); }
@@ -1611,6 +1609,7 @@
     });
   }
   // #endregion
+
   function toKoDictionary(o) {
     return toDictionary(o, toKo, toKo);
     function toKo(k) { return ko.observable(k); }
@@ -1641,6 +1640,7 @@
   //var stack_custom2 = { "dir1": "left", "dir2": "up", "push": "top" };
   //var stack_bar_top = { "dir1": "down", "dir2": "right", "push": "top", "spacing1": 0, "spacing2": 0 };
   //var stack_bar_bottom = { "dir1": "up", "dir2": "right", "spacing1": 0, "spacing2": 0 };
+  // #region notify
   var stack_bottomleft = { "dir1": "up", "dir2": "right", "push": "top", "spacing1": 10, "spacing2": 10, firstpos1: 10, firstpos2: 10 };
   function notify(message, type, settings) {
     return new PNotify($.extend(
@@ -1705,6 +1705,7 @@
     }
     return MA + (NewValue - MA) / (Periods + 1);
   }
+  // #endregion
 
   function addMessage(response) {
     if (isDocHidden()) return;
@@ -1793,6 +1794,5 @@
     }
     console.log('Query variable %s not found', variable);
   }
-  // #endregion
   // #endregion
 })();
