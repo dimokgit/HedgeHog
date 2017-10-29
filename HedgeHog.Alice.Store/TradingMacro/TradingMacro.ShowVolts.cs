@@ -491,8 +491,9 @@ namespace HedgeHog.Alice.Store {
             SetVoltage2(b.t.r, v);
             return true;
           }).Count();
-        GetVoltage2High = () => new[] { max };
-        GetVoltage2Low = () => new[] { min };
+        min = new[] { min, max }.OrderBy(m => m.Abs()).First();
+        GetVoltage2High = () => new[] { min.Abs() };
+        GetVoltage2Low = () => new[] { -min.Abs() };
       }
       return null;
     }
@@ -737,7 +738,8 @@ namespace HedgeHog.Alice.Store {
     private void SetBeforeHours() {
       var startHour = CoMStartHour;
       var endHour = CoMEndHour;
-      var timeRange = new[] { ServerTime.Date.AddHours(startHour), ServerTime.Date.AddHours(endHour) };
+      if(!TryServerTime(out var serverTime)) return;
+      var timeRange = new[] { serverTime.Date.AddHours(startHour), serverTime.Date.AddHours(endHour) };
       var afterHours = new List<(double[] upDown, DateTime[] dates)>();
       while((timeRange = SetCenterOfMassByM1Hours(timeRange, t => {
         afterHours.Add(t);

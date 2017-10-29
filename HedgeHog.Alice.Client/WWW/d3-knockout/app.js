@@ -142,11 +142,21 @@
   function isConnected() {
     return $.connection.hub.state === 1;
   }
+
+  var askRateFirstDate, askRateLastDate;
+  var askRateFirstDate2, askRateLastDate2;
+  function askRatesDatesReset() {
+    askRateFirstDate = new Date("1/1/1900");
+  }
+  function askRatesDatesReset2() {
+    askRateFirstDate2 = new Date("1/1/1900");
+  }
+  var askRate2FirstDate, askRate2LastDate;
   function askRates() {
     if (!isConnected() || isInFlight(ratesInFlight, 0))
       return;
     ratesInFlight = new Date();
-    chat.server.askRates(1200, dataViewModel.firstDate().toISOString(), dataViewModel.lastDate().toISOString(), pair, 't1')
+    chat.server.askRates(1200, (askRateFirstDate || dataViewModel.firstDate()).toISOString(), (askRateFirstDate || dataViewModel.lastDate()).toISOString(), pair, 't1')
       .done(function (response) {
         Enumerable.from(response)
           .forEach(function (r) {
@@ -159,12 +169,13 @@
       }).always(function () {
         ratesInFlight = dateMin;
       });
+    askRateFirstDate = null;
   }
   function askRates2() {
     if (!isConnected() || isInFlight(ratesInFlight2, 2))
       return;
     ratesInFlight2 = new Date();
-    chat.server.askRates(1200, dataViewModel.firstDate2().toISOString(), dateAdd(dataViewModel.lastDate2(), "minute", -5).toISOString(), pair, 'M1')
+    chat.server.askRates(1200, (askRateFirstDate2 || dataViewModel.firstDate2()).toISOString(), (askRateFirstDate2 || dateAdd(dataViewModel.lastDate2(), "minute", -5)).toISOString(), pair, 'M1')
       .done(function (response) {
         Enumerable.from(response)
           .forEach(function (r) {
@@ -175,6 +186,7 @@
       }).always(function () {
         ratesInFlight2 = dateMin;
       });
+    askRateFirstDate2 = null;
   }
   function askPriceChanged() {
     return chat.server.askChangedPrice(pair)
@@ -661,6 +673,24 @@
     }
     this.showNegativeVolts = ko.observable(-10000);
     this.showNegativeVolts2 = ko.observable(-10000);
+
+    // #region refreshChartsInterval
+    this.refreshChartsInterval = ko.observable(1000 * 10);
+    this.refreshChartsInterval.subscribe(function () {
+      if (resetPlotterHandler()) {
+        clearInterval(resetPlotterHandler());
+        resetPlotterHandler(0);
+      }
+    })
+    this.refreshCharts2Interval = ko.observable(1000 * 10);
+    this.refreshCharts2Interval.subscribe(function () {
+      if (resetPlotter2Handler()) {
+        clearInterval(resetPlotter2Handler());
+        resetPlotter2Handler(0);
+      }
+    })
+    // #endregion
+
     this.showNegativeVoltsParsed = ko.pureComputed(function () {
       var e = eval(this.showNegativeVolts());
       return Array.isArray(e) ? e : [e];
@@ -672,6 +702,7 @@
     this.wwwSettingProperties = ko.pureComputed(function () {
       function gettype(v) { return typeof v === "boolean" ? "checkbox" : "text" }
       return [
+        { n: "refreshChartsInterval", v: self.refreshChartsInterval, t: gettype(self.refreshChartsInterval()) },
         { n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
         { n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
       ];
@@ -723,8 +754,8 @@
         }.bind(this));
     }
     this.openHedgeTrade = function (hp) {
-      debugger;
       serverCall("openHedge", [pair, hp.IsBuy]);
+      self.startAccounting();
     }
     this.hedgeVirtualDate = ko.observable(d3.timeFormat("%m/%d/%Y ")(new Date()));
     this.openHedgeVirtual = function (buy) {
@@ -947,6 +978,10 @@
       return
     });
     this.isTradingActive = isTradingActive = ko.observable(true);
+    var resetPlotterHandler = ko.observable();
+    var resetPlotter2Handler = ko.observable();
+    var lastRefreshDate = ko.observable(new Date(1900, 1));
+    var lastRefreshDate2 = ko.observable(new Date(1900, 1));
     function updateChart(response) {
       var d = new Date();
       updateChartIntervalAverages[0](cma(updateChartIntervalAverages[0](), 10, getSecondsBetween(new Date(), ratesInFlight)));
@@ -979,12 +1014,14 @@
       chartData.com2 = prepDates($.extend(true, {}, self.com2));
       chartData.com3 = prepDates($.extend(true, {}, self.com3));
       chartData.vfs = !!response.vfs;
+      resetRefreshChartInterval(chartData, lineChartData, lastRefreshDate, askRatesDatesReset);
       chartData.vfss = response.vfss;
+      chartData.tps2High = response.tps2High;
+      chartData.tps2Low = response.tps2Low;
       chartData.tpsCurr2 = response.tpsCurr2;
       self.chartData(chartData);
       updateChartCmas[0](cma(updateChartCmas[0](), 10, getSecondsBetween(new Date(), d)));
       dataViewModel.price(response.askBid);
-
     }
     function updateChart2(response) {
       var d = new Date();
@@ -1042,7 +1079,10 @@
       chartData2.tickDate = lineChartData()[0].d;
       chartData2.tickDateEnd = lineChartData().slice(-1)[0].d;
       chartData2.vfs = !!response.vfs;
+      resetRefreshChartInterval(chartData2, lineChartData2, lastRefreshDate2, askRatesDatesReset2);
       chartData2.vfss = response.vfss;
+      chartData2.tps2High = response.tps2High;
+      chartData2.tps2Low = response.tps2Low;
       chartData2.tpsCurr2 = response.tpsCurr2;
       response.waveLines.forEach(function (w, i) {
         w.bold = i == sumStartIndexById();
@@ -1051,6 +1091,17 @@
       self.chartData2(chartData2);
       updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
       dataViewModel.price(response.askBid);
+    }
+    function resetRefreshChartInterval(chartData, chartRates, lastRefreshDate, askRatesDatesReset) {
+      if (chartData.vfs && chartRates().length > 2) {
+        var ratio = 300;
+        var lastDate = Enumerable.from(chartRates()).last().d;
+        var diffMax = (lastDate - chartRates()[0].d) / ratio;
+        if (lastDate - lastRefreshDate() > diffMax) {
+          lastRefreshDate(lastDate);
+          askRatesDatesReset();
+        }
+      }
     }
     function getTrends(response) {
       return [response.trendLines0, response.trendLines1, response.trendLines, response.trendLines2, response.trendLines3];
@@ -1267,6 +1318,8 @@
     }
     function readReplayArguments() {
       serverCall("readReplayArguments", withNoNote(pair), function (ra) {
+        lastRefreshDate(new Date(1900, 0));
+        lastRefreshDate2(new Date(1900, 0));
         replayDateStart(d3.timeFormat("%m/%d/%y %H:%M")(new Date(ra.DateStart)));
         isReplayOn(ra.isReplayOn);
         if (ra.isReplayOn && !readReplayProcID)

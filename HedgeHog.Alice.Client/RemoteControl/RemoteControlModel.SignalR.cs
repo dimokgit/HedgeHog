@@ -49,8 +49,8 @@ namespace HedgeHog.Alice.Client {
       var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
       var tpsHigh = tmTrader.GetVoltageHigh();
       var tpsLow = tmTrader.GetVoltageAverage();
-      var tps2High = tmTrader.GetVoltage2High();
-      var tps2Low = tmTrader.GetVoltage2Low();
+      var tps2High = tm.GetVoltage2High();
+      var tps2Low = tm.GetVoltage2Low();
       var tpsCurr2 = tm.UseRates(ra => ra.BackwardsIterator().Select(tm.GetVoltage2).SkipWhile(double.IsNaN).FirstOrDefault()).DefaultIfEmpty(0).Single();
 
 

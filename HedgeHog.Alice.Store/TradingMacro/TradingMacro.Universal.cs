@@ -290,7 +290,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
         #region exitCrossHandler
         Action<SuppRes> exitCrossHandler = (sr) => {
-          if((!IsInVirtualTrading && CanDoNetLimitOrders) || isCrossDisabled(sr))
+          if((!IsInVirtualTrading && CanDoNetLimitOrders) || isCrossDisabled(sr) || IsPairHedged || isHedgeChild)
             return;
           var lot = Trades.Lots();
           resetCloseAndTrim();
@@ -471,7 +471,7 @@ namespace HedgeHog.Alice.Store {
 
                 var toai = MonoidsCore.ToFunc(() => TradeOpenActionsInfo((d, n) => new { n, d }).ToArray());
                 Action setLevels = () => {
-                  if(IsAsleep) {
+                  if(IsAsleep || IsPairHedged || isHedgeChild) {
                     TradingMacrosByPair()
                     .OrderByDescending(tm => tm._RatesMax - tm._RatesMin)
                     .Take(1)

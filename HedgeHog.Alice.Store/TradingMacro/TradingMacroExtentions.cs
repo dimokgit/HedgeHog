@@ -277,6 +277,13 @@ namespace HedgeHog.Alice.Store {
           _mustResetAllTrendLevels = true;
           OnScanCorridor(RatesArray, () => { }, false);
         });
+      this.WhenAnyValue(
+        tm => tm.RatesMinutesMin,
+        tm => tm.BarsCount,
+        tm => tm.BarsCountMax,
+        (v1, rls, v3) => new { v1, rls, v3 }
+        ).Subscribe(_ => SyncHedgedPair());
+
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy != Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)
         .Subscribe(nc => {
@@ -1754,7 +1761,9 @@ namespace HedgeHog.Alice.Store {
           if(isInitiator)
             otherTMs.ForEach(tm => tm._waitHandle.Set());
           ResetMinimumGross();
-          args.TradingMacros.RemoveAll(tm => tm == this);
+          try {
+            args.TradingMacros.Remove(this);
+          } catch { }
           args.MustStop = true;
           args.SessionStats.ProfitToLossRatio = ProfitabilityRatio;
           TradesManager.CloseAllTrades();

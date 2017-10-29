@@ -1840,11 +1840,18 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(nameof(IsSelectedInUI));
       }
     }
+    public bool TryServerTime(out DateTime serverTime) {
+      if(TradesManager?.IsLoggedIn == true) {
+        serverTime = TradesManager.ServerTime;
+        return !serverTime.IsMin();
+      }
+      serverTime = DateTime.MaxValue;
+      return false;
+    }
     public DateTime ServerTime {
       get {
-        return TradesManager == null || !TradesManager.IsLoggedIn
-          ? DateTime.MinValue
-          : TradesManager.ServerTime;
+        TryServerTime(out var serverTime);
+        return serverTime;
       }
     }
     double? _currentSpread;
@@ -1951,6 +1958,15 @@ namespace HedgeHog.Alice.Store {
 
     public string PairPlain { get { return TradesManagerStatic.WrapPair(Pair); } }
 
+    bool IsPairHedged => !PairHedge.IsNullOrWhiteSpace();
+    bool isHedgeChild => TradingMacrosByPairHedge(Pair).Any();
+    void SyncHedgedPair() {
+      TradingMacroHedged().ForEach(tm => {
+        tm.BarsCount = BarsCount;
+        tm.BarsCountMax = BarsCountMax;
+        tm.RatesMinutesMin = RatesMinutesMin;
+      });
+    }
     private string _pairHedge = "";
     [WwwSetting]
     public string PairHedge {

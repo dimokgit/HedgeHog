@@ -652,6 +652,7 @@ namespace HedgeHog.Alice.Client {
     }
     public void CloseTrades(string pair) {
       try {
+        trader.Value.GrossToExit = 0;
         var tms = GetHedgedTradingMacros(pair).SelectMany(x => new[] { x.tm1, x.tm2 })
         .Distinct(tm => tm.Pair)
         .ToArray();

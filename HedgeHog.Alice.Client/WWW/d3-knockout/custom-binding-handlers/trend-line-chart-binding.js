@@ -420,6 +420,8 @@
       var openTradeGross = ko.unwrap(chartData.openTradeGross);
       var tpsHigh = chartData.tpsHigh;
       var tpsLow = chartData.tpsLow;
+      var tps2High = chartData.tps2High;
+      var tps2Low = chartData.tps2Low;
       var tpsCurr2 = chartData.tpsCurr2;
       var chartNum = chartData.chartNum;
       var hasTps = tpsChartNum.indexOf(chartNum) >= 0;
@@ -585,8 +587,8 @@
               .x(function (d) { return x(d.d); })
               .y(function (d) {
                 var y = isNaN(d.v2) ? 0 : tipValue2(d.v2);
-                yMin = Math.min(yMin, y);
-                yMax = Math.max(yMax, y);
+                //yMin = Math.min(yMin, y);
+                //yMax = Math.max(yMax, y);
                 return y3(y);
               });
 
@@ -597,9 +599,11 @@
               .style("stroke", color).style("opacity", opacityTps);
             y3Axis.style("display", "");
 
-            var minMax = [yMin, yMax].sort(function (a, b) { return Math.abs(a) - Math.abs(b); });
-            setHLine(minMax[0], "tpsMin2", "darkred", 1, "", y3);
-            setHLine(Math.abs(minMax[0]), "tpsMax2", "darkred", 1, "", y3);
+            //var minMax = [yMin, yMax].sort(function (a, b) { return Math.abs(a) - Math.abs(b); });
+            //setHLine(minMax[0], "tpsMin2", "darkred", 1, "", y3);
+            //setHLine(Math.abs(minMax[0]), "tpsMax2", "darkred", 1, "", y3);
+            setHLine(tps2Low.concat(NaN).splice(0, 1)[0], "tpsMin2", "darkred", 1, "", y3);
+            setHLine(tps2High.concat(NaN).splice(0, 1)[0], "tpsMax2", "darkred", 1, "", y3);
             setHLine(tpsCurr2, "tpsCurr2", "cyan", 1, "", y3);
           } else {
             y3Axis.style("display", "none");
