@@ -2311,7 +2311,7 @@ namespace HedgeHog.Alice.Store {
             if(IsInVirtualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
             #endregion
-            if(BarPeriod > BarsPeriodType.t1)
+            if(BarPeriod > BarsPeriodType.t1 && !isHedgeChild && !IsPairHedged)
               ScanForWaveRanges2(RatesArray);
             OnGeneralPurpose(() => {
               UseRates(rates => rates.ToList())

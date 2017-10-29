@@ -200,7 +200,7 @@
         .on("click", function () {
           console.log(d3.mouse(this));
           var cha = viewModel.chartArea[chartNum];
-          var mouseData = dataByMouse.bind(null,lineData)(cha, d3.mouse(this)[0]);
+          var mouseData = dataByMouse.bind(null, lineData)(cha, d3.mouse(this)[0]);
           if (mouseData) {
             cha.mouseClickData(mouseData);
             viewModel.hedgeVirtualDate(viewModel.chartDateFormat(mouseData.do || mouseData.d));
@@ -434,6 +434,7 @@
       var bth = chartData.bth || [];
       var showNegativeVolts = viewModel.showNegativeVoltsParsed();
       var showNegativeVolts2 = viewModel.showNegativeVolts2Parsed();
+      var doShowChartBid = viewModel.doShowChartBid();
       var y2Scale = !chartData.vfs;
       var y2ScaleShift = chartData.vfss || [0, 0];
       // #endregion
@@ -461,17 +462,18 @@
         return y(d.a);
       }
       function lineYb(d) {
-        return y(d.b);
+        return y(d.m);
       }
       function lineXd(d) {
         return x(d.d);
       }
       var line = d3.line()
         .x(lineXd)
-        .y(chartNum === 0 ? lineYa : lineYc);
-      var lineBid = chartNum === 1 ? null : d3.line()
+        .y(chartNum === -1 ? lineYa : lineYc);
+      var lineBid = chartNum === 1 || !doShowChartBid ? null : d3.line()
         .x(lineXd)
         .y(lineYb);
+
       //setCma(data, "c", "ma", cmaPeriod);
       //var _ma, line1 = d3.svg.line()
       //    .x(function (d) { return x(d.d); })
@@ -479,6 +481,7 @@
       //      return y(d.ma);
       //      //return y(_ma = Cma(_ma, 150, d.c));
       //    });
+
       var svgW = width + margin.left + margin.right;
       var svgH = height + margin.top + margin.bottom;
       var svg0 = d3.select(element)
@@ -553,11 +556,15 @@
           //.datum(bufferCount >= 3 ? __data__.toArray() : data)
           .datum(data)
           .attr("d", line);
-        if (lineBid)
-          svg.select("path.line.data.bid")
-            .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue")
-            .datum(bufferCount >= 3 ? __data__.toArray() : data)
-            .attr("d", lineBid);
+
+        // #region  lineBid
+        svg.select("path.line.data.bid")
+          .style("display", lineBid ? "" : "none")
+          .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue")
+          .datum(lineBid ? data : [])
+          .attr("d", lineBid);
+        // #endregion
+
         if (lineLogDate) {
           var lineLogDate2 = new Date(new Date() - lineLogDate);
           console.log("lineLogDate[" + chartNum + "]: " + (lineLogDate2.getSeconds() * 1000 + lineLogDate2.getMilliseconds()) / 1000 + " sec");
@@ -671,7 +678,7 @@
             .attr("transform", function (d) {
               return "translate(" + (x(corridorStartTime) + d) + ",7) rotate(-90)";
             })
-            ;
+          ;
         }
       } else
         svg.selectAll("path.nextWave").style("display", "none");
@@ -697,7 +704,7 @@
           .data(chkBoxData)
           .attr('x', function (d) { return d.x; })
           .attr('y', function (d) { return isNaN(d.y) ? 0 : d.y; })
-          ;
+        ;
         svg.selectAll("*.tradeLineUI input")
           .data(chkBoxData)
           .style("display", function (d) { return d.canTrade ? "" : "none"; })
@@ -771,7 +778,7 @@
             .style("fill", function (ct) { return ct.fill; })
             .style("stroke", function (ct) { return ct.stroke; })
             .style("stroke-width", function (ct) { return ct.strokeWidth; })
-            ;
+          ;
           var openAltitude = altitudeByArea(openSize);
           closedTradesDelta
             .style("stroke", function (ct) {
@@ -833,9 +840,9 @@
             .attr("y1", (yTrans || y)(level)) // y position of the first end of the line
             .attr("x2", x(data[data.length - 1].d) + xAxisOffset) // x position of the second end of the line
             .attr("y2", (yTrans || y)(level))// y position of the second end of the line
-            ;
+          ;
 
-        //.duration(animationDuration);    
+          //.duration(animationDuration);    
         else
           return line
             .style("stroke-width", 0);

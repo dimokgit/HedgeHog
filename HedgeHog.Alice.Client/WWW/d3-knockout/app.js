@@ -673,6 +673,7 @@
     }
     this.showNegativeVolts = ko.observable(-10000);
     this.showNegativeVolts2 = ko.observable(-10000);
+    this.doShowChartBid = ko.observable(false);
 
     // #region refreshChartsInterval
     this.refreshChartsInterval = ko.observable(1000 * 10);
@@ -702,6 +703,7 @@
     this.wwwSettingProperties = ko.pureComputed(function () {
       function gettype(v) { return typeof v === "boolean" ? "checkbox" : "text" }
       return [
+        { n: "doShowChartBid", v: self.doShowChartBid, t: gettype(self.doShowChartBid()) },
         { n: "refreshChartsInterval", v: self.refreshChartsInterval, t: gettype(self.refreshChartsInterval()) },
         { n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
         { n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
