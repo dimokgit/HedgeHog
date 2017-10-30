@@ -12,6 +12,17 @@ namespace HedgeHog.Tests {
   [TestClass()]
   public class MathExtensionsTest {
     [TestMethod]
+    public void CompoundInterest() {
+      double interestRate = 0.1 / 100, days = 200 * 1, Amount = 50000;
+      Console.WriteLine(new { Amount = Amount.CompoundInterest(interestRate, days) });
+      for(int t = 0; t < days; t++) {
+        Amount = Amount + Amount * interestRate;
+        Debug.WriteLine("Your Total for Year {0} " + "is {1:F0}.", t, Amount);
+      }
+      Console.WriteLine(new { Amount });
+    }
+
+    [TestMethod]
     public void AverageByStDevTest() {
       //var source = Enumerable.Range(0, 100).Select(i => (double)i);
       double[] source = MathExtensions.Sin(100, 10000, 3, 0, 10);
@@ -47,8 +58,8 @@ namespace HedgeHog.Tests {
       var set6 = new double[] { 100, 900 };
       Assert.IsTrue(set1.DoSetsOverlap(set2));
       Assert.IsTrue(set1.DoSetsOverlap(set5));
-      Assert.IsFalse(set1.DoSetsOverlap(0.1,set3));
-      Assert.IsTrue(set1.DoSetsOverlap(0.5,set3));
+      Assert.IsFalse(set1.DoSetsOverlap(0.1, set3));
+      Assert.IsTrue(set1.DoSetsOverlap(0.5, set3));
       Assert.IsFalse(set1.DoSetsOverlap(set3));
       Assert.IsFalse(set1.DoSetsOverlap(set4));
       Assert.IsTrue(set1.DoSetsOverlap(set6));

@@ -182,9 +182,12 @@
           var y = mouse[1];
           {
             var cha = viewModel.chartArea[chartNum];
+            var fd = lineData()[0].d;
             var mouseData = dataByMouse.bind(null, lineData)(cha, x);
             if (mouseData)
               cha.mouseData(mouseData);
+            if (fd !== lineData()[0].d)
+              console.log({ fd: fd, fd2: lineData()[0].d });
           }
           crosshair.select("#crosshairX")
             .attr("x1", x)
@@ -622,7 +625,7 @@
           setRectArea(chartData.tickDate, yDomain[1], chartData.tickDateEnd, yDomain[0], "tickArea");
           var tailStart = new Date(chartData.tickDateEnd);
           tailStart = new Date(tailStart.setHours(tailStart.getHours() - 24));
-          var tailEnd = chartData.tickDate;
+          var tailEnd = new Date(chartData.tickDate);
           tailEnd = new Date(tailEnd.setHours(tailEnd.getHours() - 24));
           setRectArea(tailEnd, yDomain[1], tailStart, yDomain[0], "dayTailRect");
         }

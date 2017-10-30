@@ -1221,5 +1221,7 @@ namespace HedgeHog {
     #endregion
 
     #endregion
+    public static double CompoundInterest(this double amount, double interestRate, double periods) => amount * Math.Pow(1 + interestRate, periods);
+
   }
 }

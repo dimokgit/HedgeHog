@@ -1079,7 +1079,7 @@
       chartData2.com4 = com4;
       chartData2.bth = bth;
       chartData2.tickDate = lineChartData()[0].d;
-      chartData2.tickDateEnd = lineChartData().slice(-1)[0].d;
+      chartData2.tickDateEnd = Enumerable.from(lineChartData()).last().d;
       chartData2.vfs = !!response.vfs;
       resetRefreshChartInterval(chartData2, lineChartData2, lastRefreshDate2, askRatesDatesReset2);
       chartData2.vfss = response.vfss;

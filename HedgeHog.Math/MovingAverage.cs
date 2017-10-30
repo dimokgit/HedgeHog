@@ -44,7 +44,13 @@ namespace HedgeHog {
       return y;
     }
     public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period, Action<T, double> setMA) {
+      rates.Cma(value, period, 1, setMA);
+    }
+    public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period,int passes, Action<T, double> setMA) {
       var cmas = rates.Cma(value, period);
+      for(var i = passes; i > 1; i--)
+        cmas = cmas.Cma(period);
+
       for(var i = 0; i < rates.Count; i++)
         setMA(rates[i], cmas[i]);
     }

@@ -266,7 +266,7 @@ namespace HedgeHog.Alice.Store {
             .Subscribe(tc => onTradesCount(tc));
         #region enterCrossHandler
         Func<SuppRes, bool> enterCrossHandler = (suppRes) => {
-          if(CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled(suppRes) || HaveTrades(suppRes.IsBuy))
+          if(CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled(suppRes) || HaveTrades(suppRes.IsBuy) || isHedgeChild || IsPairHedged)
             return false;
           if(suppRes.InManual || BuyLevel.Rate > SellLevel.Rate || suppRes.CanTrade) {
             var isBuy = isBuyR(suppRes);

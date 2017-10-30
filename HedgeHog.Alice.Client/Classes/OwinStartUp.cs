@@ -963,8 +963,10 @@ namespace HedgeHog.Alice.Client {
         list2.Add(row("LotSizeBS", lsb + (lsb == lss ? "" : "" + lss) + lsp));
         if(tm.PendingEntryOrders.Any())
           list2.Add(row("Pending", tm.PendingEntryOrders.Select(po => po.Key).ToArray().ToJson(false)));
-        if(trader.Value.GrossToExit != 0)
-          list2.Add(row("GrossToExit", $"${trader.Value.GrossToExitCalc.AutoRound2(1)}:{(trader.Value.GrossToExitCalc.Abs() / am.Equity * 100).AutoRound2(3, "%")}"));
+        if(trader.Value.GrossToExit != 0) {
+          var ca = am.Equity.CompoundInterest(trader.Value.GrossToExitCalc.Abs() / am.Equity, 200);
+          list2.Add(row("GrossToExit", $"${trader.Value.GrossToExitCalc.AutoRound2(1)}:{((ca / am.Equity - 1) * 100).AutoRound2(3, "%")}"));
+        }
         return list2;
       }).Concat();
       return list.Concat(more).ToArray();

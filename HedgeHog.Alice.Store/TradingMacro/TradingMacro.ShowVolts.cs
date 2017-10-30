@@ -486,11 +486,12 @@ namespace HedgeHog.Alice.Store {
         voltMap
           .Zip(priceMap, (a, b) => {
             var v = b.t.v - a.t.v;
+            return (b.t.r, v);
+          }).ToArray().Cma(t => t.v, 3, 3, (t, v) => {
             min = v.Min(min);
             max = v.Max(max);
-            SetVoltage2(b.t.r, v);
-            return true;
-          }).Count();
+            SetVoltage2(t.r, v);
+          });
         min = new[] { min, max }.OrderBy(m => m.Abs()).First();
         GetVoltage2High = () => new[] { min.Abs() };
         GetVoltage2Low = () => new[] { -min.Abs() };
