@@ -599,8 +599,7 @@ namespace HedgeHog.Alice.Store {
         _strategyExecuteOnTradeOpen = trade => {
           SuppRes.ForEach(sr => sr.ResetPricePosition());
           onOpenTradeLocal?.Invoke(trade);
-          if(IsInVirtualTrading)
-            IsTradingActive = true;
+          IsTradingActive = IsInVirtualTrading;
         };
         #endregion
 

@@ -1972,7 +1972,10 @@ namespace HedgeHog.Alice.Store {
     public string PairHedge {
       get => _pairHedge;
       set {
-        _pairHedge = value;
+        var v = value?.ToUpper();
+        if(_pairHedge == v) return;
+        _pairHedge = v;
+        OnPropertyChanged(nameof(PairHedge));
       }
     }
 

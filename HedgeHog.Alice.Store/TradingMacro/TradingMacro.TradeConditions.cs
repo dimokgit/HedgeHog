@@ -12,6 +12,7 @@ using TL = HedgeHog.Bars.Rate.TrendLevels;
 using static HedgeHog.IEnumerableCore;
 using static HedgeHog.MonoidsCore;
 using static HedgeHog.Core.JsonExtensions;
+using System.Runtime.CompilerServices;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -75,6 +76,16 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public TradeConditionDelegate Volt2Ok {
+      get {
+        return () => {
+          var lv = GetLastVolt(GetVoltage2).ToArray();
+          var down = lv.Where(volt => GetVoltage2High().Any(v => volt > v)).Select(_ => TradeDirections.Down);
+          var up = lv.Where(volt => GetVoltage2Low().Any(v => volt < v)).Select(_ => TradeDirections.Up);
+          return down.Concat(up).AsSingleable().SingleOrDefault();
+        };
+      }
+    }
 
     #region Fresh
     public TradeConditionDelegate FreshOk {
@@ -1312,6 +1323,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #endregion
 
+
     [TradeConditionTurnOff]
     public TradeConditionDelegate ExprdOk {
       get {
@@ -1359,14 +1371,6 @@ namespace HedgeHog.Alice.Store {
 
     [TradeConditionTurnOff]
     public TradeConditionDelegate VoltAboveOk {
-      get {
-        return () => {
-          return GetLastVolt(volt => volt > GetVoltageHigh()).Select(TradeDirectionByBool).SingleOrDefault();
-        };
-      }
-    }
-    [TradeConditionTurnOff]
-    public TradeConditionDelegateHide VoltOk {
       get {
         return () => {
           return GetLastVolt(volt => volt > GetVoltageHigh()).Select(TradeDirectionByBool).SingleOrDefault();
@@ -2313,8 +2317,14 @@ namespace HedgeHog.Alice.Store {
              from tca in tc.p.GetCustomAttributes<TradeConditionAttribute>().DefaultIfEmpty(new TradeConditionAttribute(TradeConditionAttribute.Types.And))
              select map(tc.d, tc.p, tca.Type, tc.s);
     }
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public void TradeConditionsTrigger() {
+      if(!IsTrader) return;
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
+      if(IsPairHedged && IsTradingActive && !HaveTradesWithHedge()) {
+        TradeConditionsEval().Where(eval => eval.HasAny()).ForEach(eval => OpenHedgedTrades(eval.HasUp(), "Trade Condition"));
+        return;
+      }
       if(IsAsleep) {
         BuySellLevels.ForEach(sr => {
           sr.CanTrade = false;
@@ -2323,7 +2333,7 @@ namespace HedgeHog.Alice.Store {
         });
         return;
       }
-      if(IsRatesLengthStableGlobal() && IsTrader && CanTriggerTradeDirection() && (IsContinuousTrading || !HaveTrades()) /*&& !HasTradeDirectionTriggers*/) {
+      if(IsRatesLengthStableGlobal() && CanTriggerTradeDirection() && (IsContinuousTrading || !HaveTrades()) /*&& !HasTradeDirectionTriggers*/) {
         TradeConditionsEval().ForEach(eval => {
           var hasBuy = TradeDirection.HasUp() && eval.HasUp();
           var hasSell = TradeDirection.HasDown() && eval.HasDown();
@@ -2382,21 +2392,22 @@ namespace HedgeHog.Alice.Store {
               .Take(1)
               .Where(b => b.HasAny());
     }
-    public Singleable<TradeDirections> TradeConditionsEval() {
+    public IEnumerable<TradeDirections> TradeConditionsEval() {
       if(!IsTrader)
-        return new TradeDirections[0].AsSingleable();
-      return (from tc in TradeConditionsInfo((d, p, t, s) => new { d, t, s })
-              group tc by tc.t into gtci
-              let and = gtci.Select(g => g.d()).ToArray()
-              let c = gtci.Key == TradeConditionAttribute.Types.And
-              ? and.Aggregate(TradeDirections.Both, (a, td) => a & td)
-              : and.Aggregate(TradeDirections.None, (a, td) => a | td)
-              select c
+        yield break;
+      var tds = (from tc in TradeConditionsInfo((d, p, t, s) => new { d, t, s })
+                 group tc by tc.t into gtci
+                 let and = gtci.Select(g => g.d()).ToArray()
+                 let c = gtci.Key == TradeConditionAttribute.Types.And
+                 ? and.Aggregate(TradeDirections.Both, (a, td) => a & td)
+                 : and.Aggregate(TradeDirections.None, (a, td) => a | td)
+                 select c
               )
               .Scan(TradeDirections.Both, (a, td) => a & td)
               .TakeLast(1)
-              .Select(td => td & TradeDirection)
-              .AsSingleable();
+              .Select(td => td & TradeDirection);
+      foreach(var td in tds)
+        yield return td;
     }
     public IEnumerable<TradeConditionDelegate> TradeConditionsInfo() {
       return TradeConditionsInfo(TradeConditions, (d, p, s) => d);

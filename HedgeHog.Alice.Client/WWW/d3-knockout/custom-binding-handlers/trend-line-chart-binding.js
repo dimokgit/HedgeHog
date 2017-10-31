@@ -606,7 +606,7 @@
             svg.select("path.line.dataTps2")
               .datum(data)
               .attr("d", line3)
-              .style("stroke", color).style("opacity", opacityTps);
+              .style("stroke", color).style("opacity", 0.7);
             y3Axis.style("display", "");
 
             //var minMax = [yMin, yMax].sort(function (a, b) { return Math.abs(a) - Math.abs(b); });

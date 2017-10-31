@@ -3189,30 +3189,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       foreach(var sr in SuppRes)
         sr.RateEx = rate;
     }
-    public void OpenTrade(bool isBuy, int lot, string reason) {
-      var key = lot - Trades.Lots(t => t.IsBuy != isBuy) > 0 ? OT : CT;
-      CheckPendingAction(key, (pa) => {
-        if(lot > 0) {
-          pa();
-          LogTradingAction(string.Format("{0}[{1}]: {2} {3} from {4} by [{5}]", Pair, BarPeriod, isBuy ? "Buying" : "Selling", lot, new StackFrame(3).GetMethod().Name, reason));
-          TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", CurrentPrice);
-        }
-      });
-    }
-
-    public void CloseTrades(string reason) { CloseTrades(Trades.Lots(), reason); }
-    private void CloseTrades(int lot, string reason) {
-      if(!IsTrader || !Trades.Any() || HasPendingKey(CT))
-        return;
-      if(lot > 0)
-        CheckPendingAction(CT, pa => {
-          pa();
-          LogTradingAction(string.Format("{0}[{1}]: Closing {2} from {3} in {4} from {5}]"
-            , Pair, BarPeriod, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name, reason));
-          if(!TradesManager.ClosePair(Pair, Trades[0].IsBuy, lot))
-            ReleasePendingAction(CT);
-        });
-    }
 
     #region GetEntryOrders
     private Order[] GetEntryOrders() {

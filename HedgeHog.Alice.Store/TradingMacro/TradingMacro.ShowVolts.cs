@@ -751,7 +751,8 @@ namespace HedgeHog.Alice.Store {
     private void SetCentersOfMass() {
       var startHour = CoMStartHour;
       var endHour = CoMEndHour;
-      var stripHoursGreen = new[] { ServerTime.Date.AddHours(startHour), ServerTime.Date.AddHours(endHour) };
+      if(!TryServerTime(out var serverTime)) return;
+      var stripHoursGreen = new[] { serverTime.Date.AddHours(startHour), serverTime.Date.AddHours(endHour) };
       var stripHours = SetCenterOfMassByM1Hours(stripHoursGreen, t => {
         CenterOfMassBuy = t.upDown[1];
         CenterOfMassSell = t.upDown[0];
