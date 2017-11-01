@@ -90,7 +90,7 @@ namespace HedgeHog.Alice.Store {
     #region Fresh
     public TradeConditionDelegate FreshOk {
       get {
-        TradingMacroTrader(tm => Log = new Exception(new { FreshOk = new { tm.WavesRsdPerc } } + "")).FirstOrDefault();
+        TradingMacroTrader(tm => Log = new Exception(new { FreshOk = new { tm.WavesRsdPerc } } + ""));
         Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
           tm.TradeTrendLines
           .Take(1)
@@ -106,7 +106,7 @@ namespace HedgeHog.Alice.Store {
     }
     public TradeConditionDelegate FrshTrdOk {
       get {
-        TradingMacroTrader(tm => Log = new Exception(new { FrshTrdOk = new { tm.WavesRsdPerc } } + "")).FirstOrDefault();
+        TradingMacroTrader(tm => Log = new Exception(new { FrshTrdOk = new { tm.WavesRsdPerc } } + ""));
         Func<Singleable<TL>> tls = () => TradingMacroTrender(tm =>
           tm.TradeTrendLines
           .OrderByDescending(tl => tl.EndDate)
@@ -231,7 +231,7 @@ namespace HedgeHog.Alice.Store {
 
     public TradeConditionDelegateHide TLHOk {
       get {
-        TradingMacroTrader(tm => Log = new Exception(new { TLHOk = new { tm.TipRatio } } + "")).Count();
+        TradingMacroTrader(tm => Log = new Exception(new { TLHOk = new { tm.TipRatio } } + ""));
         Func<IEnumerable<double>, IEnumerable<double>> abs = (rs) => rs.Scan((d1, d2) => InPips(d1.Abs(d2)));
         Func<IList<double>, IEnumerable<double>, bool> testInside = (outer, inner) => inner.All(d => d.Between(outer[0], outer[1]));
         Func<TL, IList<double>> priceMinMax = tl => tl.PriceMin.Concat(tl.PriceMax).ToArray();
@@ -266,7 +266,7 @@ namespace HedgeHog.Alice.Store {
 
     public TradeConditionDelegateHide TLH2Ok {
       get {
-        TradingMacroTrader(tm => Log = new Exception(new { TLH2Ok = new { tm.TipRatio } } + "")).Count();
+        TradingMacroTrader(tm => Log = new Exception(new { TLH2Ok = new { tm.TipRatio } } + ""));
         Func<IEnumerable<double>, IEnumerable<double>> abs = (rs) => rs.Scan((d1, d2) => InPips(d1.Abs(d2)));
         Func<IList<double>, IEnumerable<double>, bool> testInside = (outer, inner) => inner.All(d => d.Between(outer[0], outer[1]));
         Func<TL, IList<double>> priceMinMax = tl => tl.PriceMin.Concat(tl.PriceMax).ToArray();
@@ -472,7 +472,7 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionCanSetCorridor]
     public TradeConditionDelegate TLF2Ok {
       get {
-        TradingMacroTrader(tm => Log = new Exception(new { TLF2Ok = new { tm.WavesRsdPerc } } + "")).Count();
+        TradingMacroTrader(tm => Log = new Exception(new { TLF2Ok = new { tm.WavesRsdPerc } } + ""));
         //Action<SuppRes> setBuy = (sr) => tl => sr.RateEx = tl.PriceAvg3;
         Func<SuppRes, Action<TL>> setSell = (sr) => tl => sr.RateEx = tl.PriceAvg2;
         return () => (from tm in TradingMacroTrender()
@@ -505,7 +505,7 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionCanSetCorridor]
     public TradeConditionDelegate TLF3Ok {
       get {
-        TradingMacroTrader(tm => Log = new Exception(new { TLF3Ok = new { tm.WavesRsdPerc } } + "")).Count();
+        TradingMacroTrader(tm => Log = new Exception(new { TLF3Ok = new { tm.WavesRsdPerc } } + ""));
         //Action<SuppRes> setBuy = (sr) => tl => sr.RateEx = tl.PriceAvg3;
         Func<SuppRes, Action<TL>> setSell = (sr) => tl => sr.RateEx = tl.PriceAvg2;
         return () => (from tm in TradingMacroTrender()
@@ -595,7 +595,7 @@ namespace HedgeHog.Alice.Store {
     #region Edges
     public TradeConditionDelegate RPGOk {
       get {
-        TradingMacroTrader(tm => Log = new Exception(new { TLF3Ok = new { tm.WavesRsdPerc } } + "")).Count();
+        TradingMacroTrader(tm => Log = new Exception(new { TLF3Ok = new { tm.WavesRsdPerc } } + ""));
         Func<TL, DateTime> endDate = tl => tl.EndDate.AddMinutes(-tl.TimeSpan.TotalMinutes / 3);
         return () => (from tm in TradingMacroTrender()
                       from tr in TradingMacroTrader()
@@ -905,7 +905,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate TipOk {
       get {
         Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
-        TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + "")).FirstOrDefault();
+        TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + ""));
         Func<TradingMacro, double, Func<double>, TradeDirections> ok = (tm, tradeLevel, ratesMM) => {
           var tip = (ratesMM() - tradeLevel).Abs();
           var tipRatio = tip / tm.RatesHeight;
@@ -930,7 +930,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegateHide TipFlatOk {
       get {
         Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
-        TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + "")).FirstOrDefault();
+        TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + ""));
         Func<TradingMacro, double, Func<double>, TradeDirections> ok = (tm, tradeLevel, extream) => {
           var tip = (extream() - tradeLevel).Abs();
           var tipRatio = tip / tm.RatesHeight;
@@ -1045,7 +1045,7 @@ namespace HedgeHog.Alice.Store {
 
     private TradeConditionDelegate BSTipImpl(Func<bool, bool> order) {
       Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
-      TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + "")).FirstOrDefault();
+      TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + ""));
       Func<TradingMacro, Tuple<double, SuppRes>, bool> isTreshOk = (tm, t) => IsTresholdAbsOk(_tipRatioCurrent = t.Item1, tipRatioTres(tm));
       return () =>
         (from tm in TradingMacroTrender()
@@ -1057,7 +1057,7 @@ namespace HedgeHog.Alice.Store {
     }
     private TradeConditionDelegate BSTipNImpl() {
       Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
-      TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + "")).FirstOrDefault();
+      TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + ""));
       Func<TradingMacro, Tuple<double, SuppRes>, bool> isTreshOk = (tm, t) => IsTresholdAbsOk(_tipRatioCurrent = t.Item1, tipRatioTres(tm));
       return () =>
         (from tm in TradingMacroTrender()
@@ -1341,7 +1341,7 @@ namespace HedgeHog.Alice.Store {
     }
     public TradeConditionDelegateHide VLOk {
       get {
-        Log = new Exception(new { System.Reflection.MethodBase.GetCurrentMethod().Name, TrendHeightPerc } + "");
+        //Log = new Exception(new { System.Reflection.MethodBase.GetCurrentMethod().Name, TrendHeightPerc } + "");
         return () => { return TradeDirectionByTreshold(GetVoltageAverage(), TrendHeightPerc); };
       }
     }
@@ -1633,7 +1633,7 @@ namespace HedgeHog.Alice.Store {
     }
     public TradeConditionDelegate BPA12Ok {
       get {
-        Log = new Exception(new { BPA12Ok = new { TipRatio, InPercent = true, Treshold = false } } + "");
+        //Log = new Exception(new { BPA12Ok = new { TipRatio, InPercent = true, Treshold = false } } + "");
         var scanAnon = new { r1 = (Rate)null, r2 = (Rate)null };
         Func<Rate, int> sign = rate => rate.PriceAvg.Sign(rate.PriceCMALast);
         var rateDist = MonoidsCore.ToFunc(scanAnon, x => sign(x.r1) == sign(x.r2));
@@ -2321,7 +2321,7 @@ namespace HedgeHog.Alice.Store {
     public void TradeConditionsTrigger() {
       if(!IsTrader) return;
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
-      if(IsPairHedged && IsTradingActive && !HaveTradesWithHedge()) {
+      if(IsPairHedged && IsTradingActive && !HaveTradesIncludingHedged()) {
         TradeConditionsEval().Where(eval => eval.HasAny()).ForEach(eval => OpenHedgedTrades(eval.HasUp(), "Trade Condition"));
         return;
       }
