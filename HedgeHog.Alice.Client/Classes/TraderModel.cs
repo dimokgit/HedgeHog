@@ -552,7 +552,7 @@ namespace HedgeHog.Alice.Client {
     public ReactiveCommand<object> LoginCommand {
       get {
         if(_LoginCommand == null) {
-          _LoginCommand = ReactiveUI.Legacy.ReactiveCommand.Create();
+          _LoginCommand = ReactiveUI.Legacy.ReactiveCommand.Create(null, ThreadPoolScheduler.Instance);
           _LoginCommand.Subscribe(Login);
         }
 
@@ -1034,7 +1034,8 @@ namespace HedgeHog.Alice.Client {
     #region AccountLoginCommand
 
     private void LoginAsync(string account, string accountSubId, string password, bool isDemo) {
-      new Action(() => Login(account, accountSubId, password, isDemo)).ScheduleOnUI();
+      Login(account, accountSubId, password, isDemo);
+      //new Action(() => Login(account, accountSubId, password, isDemo)).ScheduleOnUI();
     }
 
     #endregion
