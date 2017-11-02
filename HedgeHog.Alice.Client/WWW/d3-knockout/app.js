@@ -223,6 +223,7 @@
     args.noNote = true;
     return args;
   }
+  var serverMethodsRefresh = [];
   function serverCall(name, args, done, fail) {
     var method = chat.server[name];
     if (!method) {
@@ -244,7 +245,8 @@
         }).done(function () {
           var isCustom = typeof done === 'string';
           var msg = isCustom ? "\n" + done : "";
-          resetPlotter();
+          if (serverMethodsRefresh.some(function (s) { return toLowerCase(s) == toLowerCase(name); }))
+            resetPlotter();
           note.update({
             type: "warning",
             text: name + " is done" + msg,

@@ -492,7 +492,7 @@ namespace HedgeHog.Alice.Store {
             max = v.Max(max);
             SetVoltage2(t.r, v);
           });
-        min = new[] { min, max }.OrderBy(m => m.Abs()).First();
+        min = new[] { min, max }.OrderBy(m => m.Abs()).Last();
         GetVoltage2High = () => new[] { min.Abs() };
         GetVoltage2Low = () => new[] { -min.Abs() };
       }

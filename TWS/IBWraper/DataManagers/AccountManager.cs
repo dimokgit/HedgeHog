@@ -481,6 +481,29 @@ namespace IBApp {
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
     }
+    public PendingOrder OpenSpreadTrade((string pair, bool buy, int lots)[] legs, double takeProfit, double stopLoss, string remark, bool whatIf) {
+      var isStock = legs.All(l=>l.pair.IsUSStock());
+      var legs2 = legs.Select(t => (t.pair, t.buy, t.lots, price: IbClient.GetPrice(t.pair))).ToArray();
+      var price = legs2[0].price;
+      var rth = Lazy.Create(() => new[] { price.Time.Date.AddHours(9.5), price.Time.Date.AddHours(16) });
+      var isPreRTH = !whatIf && isStock && !price.Time.Between(rth.Value);
+      var orderType = "MKT";
+      var c = ContractSamples.StockComboContract();
+      var o = new IBApi.Order() {
+        OrderId = NetOrderId(),
+        Action = legs[0].buy ? "BUY" : "SELL",
+        OrderType = orderType,
+        TotalQuantity = legs[0].lots,
+        Tif = "DAY",
+        OutsideRth = isPreRTH,
+        WhatIf = whatIf,
+        OverridePercentageConstraints = true
+      };
+      _orderContracts.TryAdd(o.OrderId + "", (o, c));
+      _verbous(new { plaseOrder = new { o, c } });
+      IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
+      return null;
+    }
     #endregion
 
     #region IB Handlers
