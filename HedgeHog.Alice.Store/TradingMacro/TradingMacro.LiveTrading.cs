@@ -18,7 +18,7 @@ using System.Reactive.Disposables;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     public bool HaveTrades() =>Trades.Any() || HasPendingOrders();
-    public bool HaveTradesIncludingHedged() => TradingMacroHedged(tm => tm.HaveTrades()).Concat(new[] { HaveTrades() }).Any(b=>b);
+    public bool HaveTradesIncludingHedged() => TradingMacroHedged(tm => tm.HaveTrades()).Concat(new[] { HaveTrades() }).Any(b => b);
     public bool HaveHedgedTrades() => TradingMacroHedged(tm => tm.HaveTrades()).Concat(new[] { HaveTrades() }).Count(ht => ht) == 2;
 
     public bool HaveTrades(bool isBuy) {

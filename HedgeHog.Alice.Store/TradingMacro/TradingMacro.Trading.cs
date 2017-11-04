@@ -32,12 +32,15 @@ namespace HedgeHog.Alice.Store {
                  ));
       return hbs.Select(t => new TM_HEDGE(t));
     }
-    public void OpenHedgedTrades(bool isBuy,string reason) {
+    public void OpenHedgedTrades(bool isBuy, string reason) {
       HedgeBuySell(isBuy)
         .Select(x => x.Value)
         .OrderByDescending(tm => tm.Pair == Pair)
         .ToArray()
-        .ForEach(t => t.tm.OpenTrade(t.IsBuy, t.Lot, reason + ": hedge open"));
+        .ForEach(t => {
+          var lot = t.tm.Trades.IsBuy(!t.IsBuy).Sum(tr => tr.Lots);
+          t.tm.OpenTrade(t.IsBuy, t.Lot + lot, reason + ": hedge open");
+        });
     }
 
     public void OpenTrade(bool isBuy, int lot, string reason) {

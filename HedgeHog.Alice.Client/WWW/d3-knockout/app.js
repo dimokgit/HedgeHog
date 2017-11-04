@@ -255,7 +255,7 @@
             delay: isCustom ? 5000 : 1000
           });
         })
-      ;
+        ;
       if ($.isFunction(done)) r.done(function (data) {
         done(data, note);
       });
@@ -753,8 +753,8 @@
       }.bind(this),
         function (error) {
           hedgingRatiosError(true);
-          showWarning("readHedgingRatios: " + error);
-          setTimeout(readHedgingRatios.bind(this), 2000);
+          //showWarning("readHedgingRatios: " + error);
+          setTimeout(readHedgingRatios.bind(this), 5000);
         }.bind(this));
     }
     this.openHedgeTrade = function (hp) {
@@ -1179,8 +1179,9 @@
         }.bind(this),
         function (error) {
           accountingError(true);
-          showErrorPerm("getAccounting: " + error);
-          setTimeout(getAccounting, 2000);
+          //showErrorPerm("getAccounting: " + error);
+          if (!stopAccounting)
+            setTimeout(getAccounting, 1000);
         }.bind(this));
     }
     this.startAccounting = function () {

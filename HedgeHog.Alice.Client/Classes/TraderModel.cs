@@ -1034,8 +1034,10 @@ namespace HedgeHog.Alice.Client {
     #region AccountLoginCommand
 
     private void LoginAsync(string account, string accountSubId, string password, bool isDemo) {
-      Login(account, accountSubId, password, isDemo);
-      //new Action(() => Login(account, accountSubId, password, isDemo)).ScheduleOnUI();
+      if(IsInVirtualTrading)
+        new Action(() => Login(account, accountSubId, password, isDemo)).ScheduleOnUI();
+      else
+        Login(account, accountSubId, password, isDemo);
     }
 
     #endregion

@@ -7,7 +7,7 @@ using System.Text;
 using IBApi;
 
 namespace IBApp {
-  public class PositionMessage : IBMessage {
+  public class PositionMessage :IBMessage {
 
     public PositionMessage(string account, Contract contract, double pos, double avgCost) : base(MessageType.Position) {
       Account = account;
@@ -29,7 +29,7 @@ namespace IBApp {
     public int Quantity => (int)Math.Abs(Position);
 
     public override string ToString() {
-      return new { Symbol = Contract.LocalSymbol, Position, AverageCost, Type } + "";
+      return new { Position = Contract.LocalSymbol, Pos = Position } + "";
     }
   }
 }

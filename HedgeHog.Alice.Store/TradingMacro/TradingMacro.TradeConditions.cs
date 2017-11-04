@@ -80,8 +80,8 @@ namespace HedgeHog.Alice.Store {
       get {
         return () => {
           var lv = GetLastVolt(GetVoltage2).ToArray();
-          var down = lv.Where(volt => GetVoltage2High().Any(v => volt > v)).Select(_ => TradeDirections.Down);
-          var up = lv.Where(volt => GetVoltage2Low().Any(v => volt < v)).Select(_ => TradeDirections.Up);
+          var down = lv.Where(volt => GetVoltage2High().Any(v => volt >= v)).Select(_ => TradeDirections.Down);
+          var up = lv.Where(volt => GetVoltage2Low().Any(v => volt <= v)).Select(_ => TradeDirections.Up);
           return down.Concat(up).AsSingleable().SingleOrDefault();
         };
       }
@@ -2321,8 +2321,16 @@ namespace HedgeHog.Alice.Store {
     public void TradeConditionsTrigger() {
       if(!IsTrader) return;
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
-      if(IsPairHedged && IsTradingActive && !HaveTradesIncludingHedged()) {
-        TradeConditionsEval().Where(eval => eval.HasAny()).ForEach(eval => OpenHedgedTrades(eval.HasUp(), "Trade Condition"));
+      if(IsPairHedged) {
+        if(IsTradingActive)
+          TradeConditionsEval().Where(eval => eval.HasAny()).ForEach(eval => {
+            var isBuy = eval.HasUp();
+            if(!HedgeBuySell(isBuy)
+              .Select(x => x.Value)
+              .Select(t => t.tm.HaveTrades(t.IsBuy))
+              .Any(b => b))
+              OpenHedgedTrades(isBuy, "Trade Condition");
+          });
         return;
       }
       if(IsAsleep) {

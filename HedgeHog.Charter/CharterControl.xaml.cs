@@ -2168,10 +2168,14 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
     }
 
     private void SetTradingRange(object suppRes, double position) {
-      _tradingHorisontalRange.Value1 = (double)centerOfMassHLineHigh?.Value;
-      _tradingHorisontalRange.Value2 = (double)centerOfMassHLineLow?.Value;
-      _tradingHorisontalRange2.Value1 = (double)centerOfMassHLineHigh2?.Value;
-      _tradingHorisontalRange2.Value2 = (double)centerOfMassHLineLow2?.Value;
+      if(_tradingHorisontalRange != null) {
+        _tradingHorisontalRange.Value1 = (double)centerOfMassHLineHigh?.Value;
+        _tradingHorisontalRange.Value2 = (double)centerOfMassHLineLow?.Value;
+      }
+      if(_tradingHorisontalRange2 != null) {
+        _tradingHorisontalRange2.Value1 = (double)centerOfMassHLineHigh2?.Value;
+        _tradingHorisontalRange2.Value2 = (double)centerOfMassHLineLow2?.Value;
+      }
       //if (!suppRes.GetProperty<bool>("IsExitOnly"))
       //  if (suppRes.GetProperty<bool>("IsBuy")) _tradingHorisontalRange.Value1 = position;
       //  else _tradingHorisontalRange.Value2 = position;
