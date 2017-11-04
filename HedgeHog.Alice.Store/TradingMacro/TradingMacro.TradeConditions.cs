@@ -2319,9 +2319,10 @@ namespace HedgeHog.Alice.Store {
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void TradeConditionsTrigger() {
+      if(!IsRatesLengthStableGlobal()) return;
       if(!IsTrader) return;
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
-      if(IsPairHedged) {
+      if(IsPairHedged && BarsCountCalc == RatesArray.Count) {
         if(IsTradingActive)
           TradeConditionsEval().Where(eval => eval.HasAny()).ForEach(eval => {
             var isBuy = eval.HasUp();
@@ -2341,7 +2342,7 @@ namespace HedgeHog.Alice.Store {
         });
         return;
       }
-      if(IsRatesLengthStableGlobal() && CanTriggerTradeDirection() && (IsContinuousTrading || !HaveTrades()) /*&& !HasTradeDirectionTriggers*/) {
+      if(CanTriggerTradeDirection() && (IsContinuousTrading || !HaveTrades()) /*&& !HasTradeDirectionTriggers*/) {
         TradeConditionsEval().ForEach(eval => {
           var hasBuy = TradeDirection.HasUp() && eval.HasUp();
           var hasSell = TradeDirection.HasDown() && eval.HasDown();

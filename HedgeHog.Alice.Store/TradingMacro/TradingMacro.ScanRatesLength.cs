@@ -254,7 +254,7 @@ namespace HedgeHog.Alice.Store {
       else
         GetRatesByTimeFrame()
           .ForEach(c => BarsCountCalc = c);
-      Task.Delay(1000).ContinueWith(_ => IsRatesLengthStable = true);
+      Task.Delay(100).ContinueWith(_ => IsRatesLengthStable = RatesArray.Count == BarsCountCalc);
     }
     void ScanRatesLengthByMinHeight() {
       var rhms = new[] { RatesHeightMin > 1
@@ -411,8 +411,10 @@ namespace HedgeHog.Alice.Store {
         .SelectMany(date => UseRatesInternal(rates => rates.SkipWhile(r => r.StartDate < date).Count()));
     }
     int[] GetRatesByTimeFrame() {
-      return BarPeriod > BarsPeriodType.t1
-          ? new[] { (RatesTimeSpanMinimum.TotalMinutes / BarPeriodInt).ToInt() }
+      return !IsTicks
+          ? BarPeriod == BarsPeriodType.t1
+          ? new[] { (RatesTimeSpanMinimum.TotalSeconds).ToInt() }
+          : new[] { (RatesTimeSpanMinimum.TotalMinutes / BarPeriodInt).ToInt() }
           : GetRatesCountByTimeFrame(RatesTimeSpanMinimum);
     }
     private int[] GetRatesCountByTimeFrame(TimeSpan timeFrame) {
