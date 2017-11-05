@@ -79,15 +79,15 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate Volt2Ok {
       get {
         return () => {
-          var tms = TradingMacroM1(tmh=>new[] { this, tmh }).Concat().Select(GetTD).ToArray();
+          var tms = TradingMacroM1(tmh => new[] { new { tm = this, lh = true }, new { tm = tmh, lh = false } }).Concat().Select(x => GetTD(x.tm, x.lh)).ToArray();
           return tms.Aggregate(TradeDirections.Both, (a, td) => a & td);
         };
-        TradeDirections GetTD(TradingMacro tm) {
+        TradeDirections GetTD(TradingMacro tm, bool useHighLow) {
           var vrMin = tm.VoltRange_20;
           var vrMax = tm.VoltRange_21;
           var lv = tm.GetLastVolt(GetVoltage2).ToArray();
-          var down = lv.Where(volt => volt >= vrMax && tm.GetVoltage2High().Any(v => volt >= v)).Select(_ => TradeDirections.Down);
-          var up = lv.Where(volt => volt <= vrMin && tm.GetVoltage2Low().Any(v => volt <= v)).Select(_ => TradeDirections.Up);
+          var down = lv.Where(volt => volt >= vrMax && (!useHighLow || tm.GetVoltage2High().Any(v => volt >= v))).Select(_ => TradeDirections.Down);
+          var up = lv.Where(volt => volt <= vrMin && (!useHighLow || tm.GetVoltage2Low().Any(v => volt <= v))).Select(_ => TradeDirections.Up);
           return down.Concat(up).SingleOrDefault();
         }
       }
