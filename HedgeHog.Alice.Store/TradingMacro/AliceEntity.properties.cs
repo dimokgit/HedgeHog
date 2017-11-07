@@ -560,6 +560,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_ScanCorridorBy != value) {
           _ScanCorridorBy = value;
+          TrendLines = TrendLines3 = TrendLines1 = TrendLines0 = _trendLines2 = _trenLinesEmptyRates;
           OnPropertyChanged("ScanCorridorBy");
         }
       }

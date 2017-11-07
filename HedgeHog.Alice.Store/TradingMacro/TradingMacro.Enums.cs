@@ -69,6 +69,7 @@ namespace HedgeHog.Alice.Store {
     MinBBSD
   }
   public enum ScanCorridorFunction {
+    None = 0,
     StDevSplits = 46,
     StDevSplits3 = 48,
     Fft = 64,

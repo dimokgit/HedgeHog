@@ -3810,6 +3810,12 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
     ScanCorridorDelegate GetScanCorridorFunction(ScanCorridorFunction function) {
       switch(function) {
+        case ScanCorridorFunction.None:
+          return (a, b, c) => {
+            GetShowVoltageFunction()();
+            GetShowVoltageFunction(VoltageFunction2, 1)();
+            return null;
+          };
         case ScanCorridorFunction.OneTwoThree:
           return ScanCorridorBy123;
         case ScanCorridorFunction.OneToFour:

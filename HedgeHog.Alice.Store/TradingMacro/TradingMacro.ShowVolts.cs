@@ -487,7 +487,7 @@ namespace HedgeHog.Alice.Store {
           .Zip(priceMap, (a, b) => {
             var v = b.t.v - a.t.v;
             return (b.t.r, v);
-          }).ToArray().Cma(t => t.v, 3, 3, (t, v) => {
+          }).ToArray().Cma(t => t.v, VoltAverageIterations, VoltAverageIterations, (t, v) => {
             min = v.Min(min);
             max = v.Max(max);
             SetVoltage2(t.r, v);
