@@ -97,7 +97,7 @@ namespace HedgeHog.Alice.Store {
       var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
       var startMin = CorridorStartDate.GetValueOrDefault(ratesReversed[CorridorDistanceRatio.ToInt() - 1].StartDate);
       Lazy<int> lenghForwardOnly = new Lazy<int>(() => {
-        var date = CorridorStats.Rates.Last().StartDate;
+        var date = CorridorStats.Rates.LastOrDefault()?.StartDate;
         return ratesReversed.TakeWhile(r => r.StartDate >= date).Count();
       });
       var lengthMax = !IsCorridorForwardOnly || CorridorStats.StartDate.IsMin() ? int.MaxValue : lenghForwardOnly.Value;

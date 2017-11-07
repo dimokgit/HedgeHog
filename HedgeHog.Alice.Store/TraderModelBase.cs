@@ -46,16 +46,6 @@ namespace HedgeHog.Alice.Store {
         RaisePropertyChanged("RowsList");
       }
     }
-    double _GroosToExit = 0;
-    public double GrossToExit {
-      get => _GroosToExit;
-      set {
-        if(_GroosToExit != value) {
-          _GroosToExit = value;
-          RaisePropertyChangedCore();
-        }
-      }
-    }
     public bool IsGrossToExitPers => GrossToExit.Abs() < 1;
     public double GrossToExitCalc => IsGrossToExitPers ? AccountModel.Equity * GrossToExit : GrossToExit;
     public void GrossToExitSoftReset() {

@@ -35,8 +35,6 @@ namespace HedgeHog.Alice.Store {
       var reverseStrategy = new ObservableValue<bool>(false);
       Func<SuppRes, bool> isBuyR = sr => reverseStrategy.Value ? !sr.IsBuy : sr.IsBuy;
       Func<SuppRes, bool> isSellR = sr => reverseStrategy.Value ? !sr.IsSell : sr.IsSell;
-      Func<bool> calcAngleOk = () => TradingAngleRange >= 0
-        ? CorridorAngleFromTangent().Abs() >= TradingAngleRange : CorridorAngleFromTangent().Abs() < TradingAngleRange.Abs();
       Action resetCloseAndTrim = () => CloseAtZero = false;
       Func<bool, double> enter = isBuy => CalculateLastPrice(RateLast, GetTradeEnterBy(isBuy));
       #endregion
@@ -90,16 +88,6 @@ namespace HedgeHog.Alice.Store {
         #region exitVoid
         Action exitVoid = () => { };
         #endregion
-        #region exitByJumpOut
-        Action exitByJumpOut = () => {
-          if(CorridorAngleFromTangent().Abs() < 1 && (ServerTime - Trades.Last().Time).TotalHours < 2)
-            return;
-          var revs = RatesArray.Reverse<Rate>().Take(5).Select(_priceAvg);
-          if(Trades.HaveBuy() && revs.Max() > RateLast.PriceAvg2
-          || Trades.HaveSell() && revs.Min() < RateLast.PriceAvg3)
-            CloseTrades("exitByJumpOut");
-        };
-        #endregion
         #region exitFunc
         Func<Action> exitFunc = () => {
           if(!Trades.Any())
@@ -109,8 +97,6 @@ namespace HedgeHog.Alice.Store {
               return exitVoid;
             case Store.ExitFunctions.Friday:
               return () => exitOnFriday();
-            case Store.ExitFunctions.JumpOut:
-              return exitByJumpOut;
             case Store.ExitFunctions.Limit:
               return exitByLimit;
             case Store.ExitFunctions.CorrTouch:
@@ -583,7 +569,6 @@ namespace HedgeHog.Alice.Store {
           if(!Trades.Any() && isCurrentGrossOk()) {
             CorridorStartDate = null;
             CorridorStopDate = DateTime.MinValue;
-            LastProfitStartDate = CorridorStats.Rates.LastBC().StartDate;
           }
 
           if(onCloseTradeLocal != null)

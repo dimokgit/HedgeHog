@@ -1496,7 +1496,6 @@ namespace HedgeHog.Alice.Store {
         if(CorridorStats != null)
           CorridorStats = null;
         WaveHigh = null;
-        LastProfitStartDate = null;
         _waveRates.Clear();
         _strategyExecuteOnTradeClose = null;
         _strategyOnTradeLineChanged = null;
@@ -1653,7 +1652,7 @@ namespace HedgeHog.Alice.Store {
                   }
                 indexCurrent++;
                 while(ri.Count > BarsCountCount()
-                    && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || ri[0] < CorridorStats.Rates.LastBC())))
+                    && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || CorridorStats.Rates.BackwardsIterator().Take(1).Any(r=>ri[0] < r))))
                   ri.RemoveAt(0);
                 return true;
               })
@@ -2163,7 +2162,7 @@ namespace HedgeHog.Alice.Store {
 
     #region MagnetPrice
     private double CalcMagnetPrice(IList<Rate> rates = null) {
-      return (rates ?? CorridorStats.Rates).Average(r => r.PriceAvg);
+      return (rates ?? CorridorStats.Rates).DefaultIfEmpty().Average(r => r.PriceAvg);
       //return (double)((rates ?? CorridorStats.Rates).Sum(r => (decimal)r.PriceAvg / (decimal)(r.Spread * r.Spread)) / (rates ?? CorridorStats.Rates).Sum(r => 1 / (decimal)(r.Spread * r.Spread)));
       return (double)((rates ?? CorridorStats.Rates).Sum(r => r.PriceAvg / r.Spread) / (rates ?? CorridorStats.Rates).Sum(r => 1 / r.Spread));
     }
@@ -4628,9 +4627,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     public IList<WaveInfo> WaveRates {
       get { return _waveRates; }
       set { _waveRates = value; }
-    }
-    private double CorridorAngleFromTangent() {
-      return CorridorStats.Coeffs == null ? double.NaN : -AngleFromTangent(CorridorStats.Coeffs.LineSlope(), () => CalcTicksPerSecond(CorridorStats.Rates));
     }
 
     private double AngleFromTangent(double tangent, Func<double> ticksPerSecond) {

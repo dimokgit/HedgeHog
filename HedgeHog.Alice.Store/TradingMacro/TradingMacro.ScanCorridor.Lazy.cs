@@ -42,7 +42,7 @@ namespace HedgeHog.Alice.Store {
       Lazy<int> lenghForwardOnly = new Lazy<int>(() => {
         if(ratesReversed.Count < RatesArray.Count)
           return ratesReversed.Count;
-        var date = CorridorStats.Rates.Last().StartDate;
+        var date = CorridorStats.Rates.LastOrDefault()?.StartDate;
         return ratesReversed.TakeWhile(r => r.StartDate >= date).Count();
       });
       var lengthMax = new Lazy<int>(() => !IsCorridorForwardOnly || CorridorStats.StartDate.IsMin() ? int.MaxValue : lenghForwardOnly.Value);

@@ -1,4 +1,5 @@
 ﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -71,6 +72,26 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_IB_ClientId != value) {
           _IB_ClientId = value;
+          RaisePropertyChangedCore();
+        }
+      }
+    }
+
+    public double GrossToExitSave {
+      get => GrossToExit < 1? GrossToExit : 0;
+      set {
+        if(GrossToExit != value) {
+          GrossToExit = value;
+        }
+      }
+    }
+    double _GrossToExit = 0;
+    [BsonIgnore]
+    public double GrossToExit {
+      get => _GrossToExit;
+      set {
+        if(_GrossToExit != value) {
+          _GrossToExit = value;
           RaisePropertyChangedCore();
         }
       }

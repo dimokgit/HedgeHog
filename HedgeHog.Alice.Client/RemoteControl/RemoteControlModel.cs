@@ -991,8 +991,8 @@ namespace HedgeHog.Alice.Client {
         return _showChartQueue;
       }
     }
-    double IntOrDouble(double d, double max = 10) {
-      return d.Abs() > max ? d.ToInt() : d.Round(1);
+    double IntOrDouble(double? d, double max = 10) {
+      return d.Abs() > max ? d.GetValueOrDefault().ToInt() : d.GetValueOrDefault().Round(1);
     }
     void AddShowChart(TradingMacro tm) {
       if(tm.IsInVirtualTrading)
@@ -1092,12 +1092,12 @@ namespace HedgeHog.Alice.Client {
             /*1*/, tm.RatesArray.Count + "," + tm.TicksPerSecondAverage.Round(1)
             /*2*/, tm.TLBlue.Angle.Round(2) + "/" + tm.CorridorAngle.Round(2) + "/" + tm.TLGreen.Angle.Round(2)
             /*3*/, tm.RatesHeightInPips
-            /*4*/, tm.CorridorStats.HeightByRegressionInPips
+            /*4*/, tm.CorridorStats?.HeightByRegressionInPips
             /*5*/, IntOrDouble(tm.StDevByHeightInPips, 5)
             /*6*/, IntOrDouble(tm.StDevByPriceAvgInPips, 5)
-            /*7*/, IntOrDouble(tm.CorridorStats.StDevByHeightInPips, 5)
-            /*8*/, IntOrDouble(tm.CorridorStats.StDevByPriceAvgInPips, 5)
-            /*9*/, tm.CorridorStats.Rates.Count.Div(tm.CorridorDistance).ToInt()
+            /*7*/, IntOrDouble(tm.CorridorStats?.StDevByHeightInPips, 5)
+            /*8*/, IntOrDouble(tm.CorridorStats?.StDevByPriceAvgInPips, 5)
+            /*9*/, tm.CorridorStats?.Rates.Count.Div(tm.CorridorDistance).ToInt()
             /*10*/, tm.WorkflowStep
           );
           if(tm.TrendLines.Value != null) {
@@ -1125,10 +1125,10 @@ namespace HedgeHog.Alice.Client {
             new[] { tm.GetVoltageHigh(), tm.GetVoltageLow() }, tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           //if (tm.IsAsleep) return;
-          if(tm.CorridorStats.StopRate != null)
+          if(tm.CorridorStats?.StopRate != null)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
           else if(tm.CorridorStartDate.HasValue)
-            charter.LineTimeMiddle = tm.CorridorStats.Rates[0];
+            tm.CorridorStats?.Rates[0].YieldNotNull().ForEach(v => charter.LineTimeMiddle = v);
           charter.LineTimeMiddle = null;
           if(tm.WaveShortLeft.HasRates)
             charter.LineTimeMin = tm.WaveShortLeft.Rates.LastBC().StartDateContinuous;
@@ -1348,7 +1348,7 @@ namespace HedgeHog.Alice.Client {
     private Rate[] GetRatesForCorridor(IEnumerable<Rate> rates, TradingMacro tm) {
       if(tm.CorridorStats == null)
         return rates.ToArray();
-      return GetRatesForCorridor(rates, tm.CorridorStats.StartDate);
+      return tm.CorridorStats?.StartDate.YieldNotNull().Select(sd => GetRatesForCorridor(rates, sd)).Concat().ToArray();
     }
     private Rate[] GetRatesForCorridor(IEnumerable<Rate> rates, CorridorStatistics cs) {
       return GetRatesForCorridor(rates, cs.StartDate);
@@ -1361,7 +1361,7 @@ namespace HedgeHog.Alice.Client {
 
     #region GetSlack
     private double GetFibSlack(double fib, TradingMacro tm) {
-      var slack = fib.FibReverse().YofS(tm.CorridorStats.HeightUpDown);
+      var slack = fib.FibReverse().YofS(tm.CorridorStats?.HeightUpDown);
       tm.SlackInPips = TradesManager.InPips(tm.Pair, slack);
       return slack;
     }

@@ -63,8 +63,8 @@ namespace HedgeHog {
     /// <param name="ratio">X/Y ratio</param>
     /// <param name="sum"></param>
     /// <returns></returns>
-    public static double YofS(this double ratio, double sum) {
-      return sum / (ratio + 1);
+    public static double YofS(this double ratio, double? sum) {
+      return sum.GetValueOrDefault() / (ratio + 1);
     }
   }
 }

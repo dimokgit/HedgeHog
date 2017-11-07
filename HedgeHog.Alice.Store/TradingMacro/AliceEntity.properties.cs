@@ -1633,19 +1633,6 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    #region LastProfitStartDate
-    DateTime? _LastProfitStartDate;
-    public DateTime? LastProfitStartDate {
-      get { return _LastProfitStartDate; }
-      set {
-        if(_LastProfitStartDate != value) {
-          _LastProfitStartDate = value;
-          OnPropertyChanged("LastProfitStartDate");
-        }
-      }
-    }
-
-    #endregion
     #region ExitFunction
     [DisplayName("ExitFunction")]
     [Category(categoryTrading)]

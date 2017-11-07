@@ -300,13 +300,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-
-    double[] _getRegressionLeftRightRates() {
-      var rateLeft = CorridorStats.Coeffs.RegressionValue(CorridorStats.Rates.Count - 1);
-      var rightIndex = RatesArray.ReverseIfNot().IndexOf(CorridorStats.Rates.LastBC());
-      var rateRight = new[] { rateLeft, -CorridorStats.Coeffs[1] }.RegressionValue(rightIndex);
-      return new[] { rateLeft, rateRight };
-    }
     void ForEachSuppRes(params Action<SuppRes>[] actions) {
       (from sr in SuppRes
        from action in actions
@@ -364,7 +357,7 @@ namespace HedgeHog.Alice.Store {
       if(unFreeze)
         CorridorStartDate = null;
       else
-        CorridorStartDate = CorridorStats.Rates.Last().StartDate;
+        CorridorStartDate = CorridorStats.Rates.Last()?.StartDate;
     }
 
 
