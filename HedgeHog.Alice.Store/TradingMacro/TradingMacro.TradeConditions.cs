@@ -75,25 +75,32 @@ namespace HedgeHog.Alice.Store {
         return () => ok().Select(b => TradeDirectionByBool(b)).SingleOrDefault();
       }
     }
-
+    public TradeConditionDelegate Volt2eOk {
+      get {
+        return () => {
+          var tdRange = GetTDByEvenness(this).DefaultIfEmpty().ToArray();
+          return tdRange.Aggregate((a, td) => a & td);
+        };
+        IEnumerable<TradeDirections> GetTDByEvenness(TradingMacro tm) {
+          return from mm in tm.UseRates(ra => ra.MinMax(GetVoltage2))
+                 where mm[0].Abs().Percentage(mm[1]) < VoltAvgRange
+                 select TradeDirections.Both;
+        }
+      }
+    }
+    [TradeConditionShouldClose]
     public TradeConditionDelegate Volt2Ok {
       get {
         return () => {
           var tms = TradingMacroM1(tmh => new[] { new { tm = this, lh = true }, new { tm = tmh, lh = false } }).Concat().Take(1).Select(x => GetTD(x.tm, x.lh)).ToArray();
-          var tdRange = GetTDByEvenness(this).DefaultIfEmpty().ToArray();
-          return tdRange.Concat(tms).Aggregate((a, td) => a & td);
+          return tms.Aggregate((a, td) => a & td);
         };
-        IEnumerable<TradeDirections> GetTDByEvenness(TradingMacro tm) {
-          return from mm in tm.UseRates(ra=>ra.MinMax(GetVoltage2))
-                 where mm[0].Abs().Percentage(mm[1]) < VoltAvgRange
-                 select TradeDirections.Both;
-        }
         TradeDirections GetTD(TradingMacro tm, bool useHighLow) {
           var vrMin = tm.VoltRange_20;
           var vrMax = tm.VoltRange_21;
           var lv = tm.GetLastVolt(GetVoltage2).ToArray();
-          var down = lv.Where(volt => volt >= vrMax && (!useHighLow || tm.GetVoltage2High().Any(v => volt >= v))).Select(_ => TradeDirections.Down);
-          var up = lv.Where(volt => volt <= vrMin && (!useHighLow || tm.GetVoltage2Low().Any(v => volt <= v))).Select(_ => TradeDirections.Up);
+          var down = lv.Where(volt => volt >= vrMax && (!useHighLow || tm.GetVoltage2High().Any(v => volt >= v))).Select(_ => TradeDirections.Up);
+          var up = lv.Where(volt => volt <= vrMin && (!useHighLow || tm.GetVoltage2Low().Any(v => volt <= v))).Select(_ => TradeDirections.Down);
           return down.Concat(up).SingleOrDefault();
         }
       }
@@ -2300,6 +2307,9 @@ namespace HedgeHog.Alice.Store {
     IEnumerable<TradeDirections> TradeConditionsTradeStrip() {
       return TradeConditionsInfo<TradeConditionTradeStripAttribute>().Select(d => d());
     }
+    IEnumerable<TradeDirections> TradeConditionsShouldClose() {
+      return TradeConditionsInfo<TradeConditionShouldCloseAttribute>().Select(d => d());
+    }
     bool TradeConditionsHaveTD() {
       return TradeConditionsInfo<TradeConditionTradeDirectionAttribute>().Any();
     }
@@ -2337,14 +2347,19 @@ namespace HedgeHog.Alice.Store {
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
       if(IsPairHedged && BarsCountCalc == RatesArray.Count) {
         if(IsTradingActive)
-          TradeConditionsEval().Where(eval => eval.HasAny()).ForEach(eval => {
-            var isBuy = eval.HasUp();
-            if(!HedgeBuySell(isBuy)
-              .Select(x => x.Value)
-              .Select(t => t.tm.HaveTrades(t.IsBuy))
-              .Any(b => b))
-              OpenHedgedTrades(isBuy, "Trade Condition");
-          });
+          TradeConditionsEval()
+            .Select(eval => new { eval, open = true })
+            .Concat(TradeConditionsShouldClose().Select(eval => new { eval, open = false }))
+            .Distinct(x=> x.eval)
+            .Where(x => x.eval.HasAny()).ForEach(e => {
+              var isBuy = e.eval.HasUp();
+              if(!HedgeBuySell(isBuy)
+                .Select(((TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)? x) => x.Value)
+                .Select(((TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, bool IsBuy, bool IsPrime, double HVPR, double HVPM1R) t) => t.tm.HaveTrades(t.IsBuy))
+                .Any(b => b)) {
+                OpenHedgedTrades(isBuy, !e.open, "Trade Condition");
+              }
+            });
         return;
       }
       if(IsAsleep) {

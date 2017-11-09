@@ -13,4 +13,5 @@ namespace HedgeHog.Alice.Store {
   class TradeConditionTradeStripAttribute : Attribute { }
   class TradeConditionTradeDirectionAttribute : Attribute { }
   class TradeConditionByRatioAttribute : Attribute { }
+  class TradeConditionShouldCloseAttribute :Attribute { }
 }

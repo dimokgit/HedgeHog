@@ -510,8 +510,8 @@
       function tipValue2(v) {
         return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts2[0]), showNegativeVolts2[1] || 100000);
       }
-      yDomain = d3.extent([yDomain[0], yDomain[1]
-        , sbchnum(tradeLevels && canBuy && y2Scale? tradeLevels.buy : yDomain[1])
+      yDomain = !y2Scale ? yDomain : d3.extent([yDomain[0], yDomain[1]
+        , sbchnum(tradeLevels && canBuy && y2Scale ? tradeLevels.buy : yDomain[1])
         , sbchnum(tradeLevels && canSell && y2Scale ? tradeLevels.sell : yDomain[1])
         , sbchnum(
           mustShowClosedTrades && openBuy && tradeLevels && y2Scale
@@ -527,7 +527,7 @@
       var yDomain2 = d3.extent(data, function (d) { return tipValue(d.v); });
       y2.domain([Math.min(y2ScaleShift[0] || yDomain2[0], yDomain2[0]), Math.max(y2ScaleShift[1] || yDomain2[1], yDomain2[1])]);
       var yDomain3 = d3.extent(data, function (d) { return tipValue2(d.v2); });
-      y3.domain([yDomain3[0], yDomain3[1]]);
+      y3.domain([Math.min(tps2Low || 0, yDomain3[0]), Math.max(tps2High || 0, yDomain3[1])]);
       // #endregion
 
       // #region transform axises
@@ -681,7 +681,7 @@
             .attr("transform", function (d) {
               return "translate(" + (x(corridorStartTime) + d) + ",7) rotate(-90)";
             })
-          ;
+            ;
         }
       } else
         svg.selectAll("path.nextWave").style("display", "none");
@@ -707,7 +707,7 @@
           .data(chkBoxData)
           .attr('x', function (d) { return d.x; })
           .attr('y', function (d) { return isNaN(d.y) ? 0 : d.y; })
-        ;
+          ;
         svg.selectAll("*.tradeLineUI input")
           .data(chkBoxData)
           .style("display", function (d) { return d.canTrade ? "" : "none"; })
@@ -781,7 +781,7 @@
             .style("fill", function (ct) { return ct.fill; })
             .style("stroke", function (ct) { return ct.stroke; })
             .style("stroke-width", function (ct) { return ct.strokeWidth; })
-          ;
+            ;
           var openAltitude = altitudeByArea(openSize);
           closedTradesDelta
             .style("stroke", function (ct) {
@@ -843,9 +843,9 @@
             .attr("y1", (yTrans || y)(level)) // y position of the first end of the line
             .attr("x2", x(data[data.length - 1].d) + xAxisOffset) // x position of the second end of the line
             .attr("y2", (yTrans || y)(level))// y position of the second end of the line
-          ;
+            ;
 
-          //.duration(animationDuration);    
+        //.duration(animationDuration);    
         else
           return line
             .style("stroke-width", 0);

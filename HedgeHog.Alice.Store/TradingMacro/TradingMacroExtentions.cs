@@ -281,7 +281,8 @@ namespace HedgeHog.Alice.Store {
         tm => tm.RatesMinutesMin,
         tm => tm.BarsCount,
         tm => tm.BarsCountMax,
-        (v1, rls, v3) => new { v1, rls, v3 }
+        tm => tm.PairHedge,
+        (v1, rls, v3, ph) => new { v1, rls, v3, ph }
         ).Subscribe(_ => SyncHedgedPair());
 
       _newsCaster.CountdownSubject
@@ -1652,7 +1653,7 @@ namespace HedgeHog.Alice.Store {
                   }
                 indexCurrent++;
                 while(ri.Count > BarsCountCount()
-                    && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || CorridorStats.Rates.BackwardsIterator().Take(1).Any(r=>ri[0] < r))))
+                    && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || CorridorStats.Rates.BackwardsIterator().Take(1).Any(r => ri[0] < r))))
                   ri.RemoveAt(0);
                 return true;
               })
