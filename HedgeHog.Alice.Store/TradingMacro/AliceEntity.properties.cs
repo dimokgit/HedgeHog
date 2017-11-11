@@ -12,6 +12,8 @@ using System.Linq.Expressions;
 using ReactiveUI;
 using System.Threading.Tasks;
 using static HedgeHog.Core.JsonExtensions;
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     bool IsPrimaryMacro {
@@ -1578,6 +1580,7 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Current Loss")]
     [Category(categoryTrading)]
     [IsNotStrategy]
+    [BsonIgnore]
     public double CurrentLoss_ {
       get { return CurrentLoss; }
       set {

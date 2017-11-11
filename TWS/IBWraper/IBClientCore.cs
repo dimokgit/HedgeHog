@@ -47,7 +47,8 @@ public class IBClientCore : IBClient, ICoreFX {
 
   #region Properties
   public Action<object> Trace => _trace;
-  public void Verbouse(object o) { _trace(o); }
+  private bool _verbose = false;
+  public void Verbouse(object o) { if(_verbose) _trace(o); }
   #endregion
 
   #region ICoreEX Implementation
@@ -84,7 +85,7 @@ public class IBClientCore : IBClient, ICoreFX {
     try {
       return ++_validOrderId;
     } finally {
-      Trace(new { _validOrderId });
+      Verbouse(new { _validOrderId });
     }
   }
   public bool TryGetPrice(string symbol,out Price price) { return _marketDataManager.TryGetPrice(symbol,out price); }
@@ -165,8 +166,12 @@ public class IBClientCore : IBClient, ICoreFX {
 
   static int[] _warningCodes = new[] { 2104, 2106, 2108 };
   static bool IsWarning(int code) => Configer.WarningCodes.Contains(code);
+  System.Collections.Concurrent.ConcurrentBag<int> _handledReqErros = new System.Collections.Concurrent.ConcurrentBag<int>();
+  public int SetRequestHandled(int id) {
+    _handledReqErros.Add(id);return id;
+  } 
   private void OnError(int id, int errorCode, string message, Exception exc) {
-    
+    if(_handledReqErros.Contains(id)) return;
     if(IsWarning(errorCode)) return;
     if(exc is System.Net.Sockets.SocketException && !ClientSocket.IsConnected())
       RaiseLoginError(exc);

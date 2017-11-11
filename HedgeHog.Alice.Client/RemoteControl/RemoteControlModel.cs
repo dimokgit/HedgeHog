@@ -715,11 +715,13 @@ namespace HedgeHog.Alice.Client {
           var clp = tms.Sum(tm => tm.CurrentLossInPips);
           _tradingStatistics.CurrentLossInPips = clp;
           _tradingStatistics.OriginalProfit = MasterModel.AccountModel.OriginalProfit;
+          var net = MasterModel.TradesManager.GetTrades().Net2();
           if(MasterModel.GrossToExit != 0
             && !tms.SelectMany(tm => tm.PendingEntryOrders).Any()
-            && MasterModel.TradesManager.GetTrades().Net2() > MasterModel.GrossToExitCalc) {
+            && net > MasterModel.GrossToExitCalc) {
+            var grossToExit = MasterModel.GrossToExitCalc;
             MasterModel.GrossToExitSoftReset();
-            tms.ForEach(tm => tm.CloseTrades(new { MasterModel.GrossToExit } + ""));
+            tms.ForEach(tm => tm.CloseTrades(new { grossToExit, net } + ""));
           }
         }
       } catch(Exception exc) {
@@ -1177,16 +1179,17 @@ namespace HedgeHog.Alice.Client {
         var comm = MasterModel.CommissionByTrade(trade);
         if(IsInVirtualTrading)
           TradesManager.GetAccount().Balance -= comm;
-        var tm = GetTradingMacros(trade.Pair).First();
-        tm.CurrentLoss -= comm;
-        tm.RunningBalance -= comm;
-        //if (tm.LastTrade.Time < trade.Time) tm.LastTrade = trade;
-        var trades = TradesManager.GetTradesInternal(trade.Pair);
-        tm.CurrentLot = trades.Sum(t => t.Lots);
-        var amountK = tm.CurrentLot / tm.BaseUnitSize;
-        if(tm.HistoryMaximumLot < amountK)
-          tm.HistoryMaximumLot = amountK;
-        var ts = tm.SetTradeStatistics(trade);
+        GetTradingMacros(trade.Pair).Take(1).ForEach(tm => {
+          tm.CurrentLoss -= comm;
+          tm.RunningBalance -= comm;
+          //if (tm.LastTrade.Time < trade.Time) tm.LastTrade = trade;
+          var trades = TradesManager.GetTradesInternal(trade.Pair);
+          tm.CurrentLot = trades.Sum(t => t.Lots);
+          var amountK = tm.CurrentLot / tm.BaseUnitSize;
+          if(tm.HistoryMaximumLot < amountK)
+            tm.HistoryMaximumLot = amountK;
+          var ts = tm.SetTradeStatistics(trade);
+        });
       } catch(Exception exc) {
         Log = exc;
       }
@@ -1258,14 +1261,15 @@ namespace HedgeHog.Alice.Client {
       var trade = e.Trade;
       try {
         var pair = trade.Pair;
-        var tm = GetTradingMacros(pair).First();
-        tm.LastTrade = trade;
-        var totalGross = trade.NetPL2;
-        tm.LastTradeLoss = tm.TradesClosed.Where(t => t.OpenOrderID == trade.OpenOrderID).Net2().Min(0);
-        tm.RunningBalance += totalGross;
-        tm.CurrentLoss = tm.CurrentLoss + totalGross;
-        OnZeroPositiveLoss(tm);
-        SaveTradeAction.Post(trade);
+        GetTradingMacros(pair).Take(1).ForEach(tm => {
+          tm.LastTrade = trade;
+          var totalGross = trade.NetPL2;
+          tm.LastTradeLoss = tm.TradesClosed.Where(t => t.OpenOrderID == trade.OpenOrderID).Net2().Min(0);
+          tm.RunningBalance += totalGross;
+          tm.CurrentLoss = tm.CurrentLoss + totalGross;
+          OnZeroPositiveLoss(tm);
+          SaveTradeAction.Post(trade);
+        });
       } catch(Exception exc) {
         Log = exc;
       }

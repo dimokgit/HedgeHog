@@ -1,27 +1,18 @@
-﻿/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved.  This code is subject to the terms
- * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using IBSampleApp.util;
-using static HedgeHog.Core.JsonExtensions;
-using HedgeHog.Core;
 using HedgeHog.Shared;
 using IBApi;
 using HedgeHog;
 using System.Collections.Concurrent;
-using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using ReactiveUI;
 using PosArg = System.Tuple<string, IBApi.Contract, IBApp.PositionMessage>;
-using System.Diagnostics;
 using OpenOrderArg = System.Tuple<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
-using OrderStatusArg = System.Tuple<int, string, double, double, bool, double>;
 namespace IBApp {
-  public class AccountManager :DataManager {
+  public partial class AccountManager :DataManager {
     public enum OrderStatuses { Cancelled, Inactive, PreSubmitted };
 
     #region Constants
@@ -64,7 +55,7 @@ namespace IBApp {
     #endregion
 
     #region Ctor
-    public AccountManager(IBClientCore ibClient, string accountId,Func<string,Trade> createTrade, Func<Trade, double> commissionByTrade, Action<object> onMessage) : base(ibClient, ACCOUNT_ID_BASE) {
+    public AccountManager(IBClientCore ibClient, string accountId, Func<string, Trade> createTrade, Func<Trade, double> commissionByTrade, Action<object> onMessage) : base(ibClient, ACCOUNT_ID_BASE) {
       CommissionByTrade = commissionByTrade;
       CreateTrade = createTrade;
       Account = new Account();
@@ -93,38 +84,18 @@ namespace IBApp {
       _defaultMessageHandler(nameof(AccountManager) + " is ready");
     }
 
-    #region WhatIf Subject
-    object _WhatIfSubjectLocker = new object();
-    ISubject<Action> _WhatIfSubject;
-    ISubject<Action> WhatIfSubject {
-      get {
-        lock(_WhatIfSubjectLocker)
-          if(_WhatIfSubject == null) {
-            _WhatIfSubject = new Subject<Action>();
-            _WhatIfSubject
-              //.Throttle(TimeSpan.FromSeconds(1))
-              .Subscribe(a => a(), exc => _defaultMessageHandler(exc));
-          }
-        return _WhatIfSubject;
-      }
-    }
-    void OnWhatIf(Action a) {
-      WhatIfSubject.OnNext(a);
-    }
-    #endregion
-
-    private void FetchMMR(string pair) {
-      OnWhatIf(() => OpenTradeWhatIf(pair, true));
-      OnWhatIf(() => OpenTradeWhatIf(pair, false));
-    }
-
     private void OnError(int reqId, int code, string error, Exception exc) {
+      IbClient.SetRequestHandled(reqId);
       if(new[] { 110, 382, 383 }.Contains(code))
         RaiseOrderRemoved(reqId);
       if(_orderContracts.ContainsKey(reqId + "")) {
         var contract = _orderContracts[reqId + ""].contract + "";
         var order = _orderContracts[reqId + ""].order + "";
         Trace(new { contract, code, error, order });
+        if(code == 404) {
+          _defaultMessageHandler("Request Global Cancel");
+          IbClient.clientSocket.reqGlobalCancel();
+        }
       }
     }
 
@@ -299,7 +270,7 @@ namespace IBApp {
           if(_OrderStatusSubject == null) {
             _OrderStatusSubject = new Subject<OrderStatusArguments>();
             _OrderStatusSubject
-              //.Do(t => Verbous(new { OrderStatusSubject = new { reqId = t.Item1, status = t.Item4 } }))
+              .Do(t => _verbous(new { OrderStatusSubject = t }))
               .Where(t => t.IsDone)
               .DistinctUntilChanged(a => new { a.OrderId, a.Status, a.Remaining })
               .Subscribe(t => OnOrderStatusImpl(t), exc => _defaultMessageHandler(exc), () => _defaultMessageHandler(nameof(OrderStatusSubject) + " is gone"));
@@ -313,7 +284,7 @@ namespace IBApp {
     #endregion
     class OrderStatusArguments {
 
-      public OrderStatusArguments(int orderId,Contract contract, string status, double filled, double remaining, double avgFillPrice) {
+      public OrderStatusArguments(int orderId, Contract contract, string status, double filled, double remaining, double avgFillPrice) {
         OrderId = orderId;
         Contract = contract;
         Status = status;
@@ -335,7 +306,7 @@ namespace IBApp {
     private void OnOrderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld) {
       _orderContracts.TryGetValue(orderId + "", out var c);
       OnOrderStatusPush(new OrderStatusArguments(orderId, c.contract, status, filled, remaining, avgFillPrice));
-      _verbous(new { OrderStatus = status,c.contract?.Symbol, orderId, filled, rem = remaining, permId, parentId, price = lastFillPrice, clientId, whyHeld });
+      _verbous(new { OrderStatus = status, c.contract?.Symbol, orderId, filled, rem = remaining, permId, parentId, price = lastFillPrice, clientId, whyHeld });
     }
     private void OnOrderStatusImpl(OrderStatusArguments arg) {
       _defaultMessageHandler(new { OrderStatusImpl = arg });
@@ -441,9 +412,77 @@ namespace IBApp {
     public Trade[] GetTrades() { return OpenTrades.ToArray(); }
     public Trade[] GetClosedTrades() { return ClosedTrades.ToArray(); }
     #endregion
-    public class PositionNotFoundException :Exception {
-      public PositionNotFoundException(string symbol) : base(new { symbol } + "") { }
+
+    #region Position
+    #region Position Subject - Fires once
+    object _PositionSubjectLocker = new object();
+    ISubject<PosArg> _PositionSubject;
+    ISubject<PosArg> PositionSubject {
+      get {
+        lock(_PositionSubjectLocker)
+          if(_PositionSubject == null) {
+            _PositionSubject = new Subject<PosArg>();
+            _PositionSubject
+              .DistinctUntilChanged(t => new { t.Item2.LocalSymbol, t.Item3.Position })
+              .Where(x => x.Item3.Position != 0)
+              .Timeout(TimeSpan.FromSeconds(10))
+              .Catch(new Func<Exception, IObservable<PosArg>>(e => new PosArg[] { null }.ToObservable()))
+              .TakeWhile(pa => pa != null)
+              .Subscribe(s => OnFirstPosition(s.Item2, s.Item3)
+                , exc => _defaultMessageHandler(exc)
+                , () => {
+                  _defaultMessageHandler($"{nameof(PositionSubject)} is done.");
+                });
+          }
+        return _PositionSubject;
+      }
     }
+
+    void OnPositionSubject(string account, Contract contract, PositionMessage pm) {
+      PositionSubject.OnNext(Tuple.Create(account, contract, pm));
+    }
+    #endregion
+
+    private void OnPosition(string account, Contract contract, double pos, double avgCost) {
+      var position = new PositionMessage(account, contract, pos, avgCost);
+      _positions.AddOrUpdate(position.Key().Item1, position, (k, p) => position);
+      //_defaultMessageHandler(nameof(OnPosition) + ": " + string.Join("\n", _positions));
+      OnPositionSubject(account, contract, position);
+      //IbClient.ClientSocket.reqExecutions(IbClient.NextOrderId, new ExecutionFilter() {
+      //  Symbol = contract.LocalSymbol,
+      //  //Side = (trade.IsBuy ? ExecutionFilter.Sides.BUY : ExecutionFilter.Sides.SELL) + "",
+      //  Time = IbClient.ServerTime.ToTWSString()
+      //});
+    }
+
+    private void OnFirstPosition(Contract contract, PositionMessage position) {
+      _defaultMessageHandler(new { position, contract });
+      var st = IbClient.ServerTime;
+
+      if(position.Position != 0 && !OpenTrades.Any(IsEqual(position)))
+        OpenTrades.Add(TradeFromPosition(contract.LocalSymbol));
+
+      TraceTrades("Positions: ", OpenTrades);
+
+      #region TradeFromPosition
+      Trade TradeFromPosition(string symbol) {
+        var trade = CreateTrade(symbol);
+        trade.Id = DateTime.Now.Ticks + "";
+        trade.Buy = position.Position > 0;
+        trade.IsBuy = trade.Buy;
+        trade.Time2 = st;
+        trade.Time2Close = IbClient.ServerTime;
+        trade.Open = position.AverageCost;
+        trade.Lots = position.Position.Abs().ToInt();
+        trade.OpenOrderID = "";
+        trade.CommissionByTrade = CommissionByTrade;
+        return trade;
+      }
+      #endregion
+    }
+
+
+    #endregion
 
     #region OpenOrder
     private int NetOrderId() => IbClient.ValidOrderId();
@@ -482,7 +521,7 @@ namespace IBApp {
       return null;
     }
     public PendingOrder OpenSpreadTrade((string pair, bool buy, int lots)[] legs, double takeProfit, double stopLoss, string remark, bool whatIf) {
-      var isStock = legs.All(l=>l.pair.IsUSStock());
+      var isStock = legs.All(l => l.pair.IsUSStock());
       var legs2 = legs.Select(t => (t.pair, t.buy, t.lots, price: IbClient.GetPrice(t.pair))).ToArray();
       var price = legs2[0].price;
       var rth = Lazy.Create(() => new[] { price.Time.Date.AddHours(9.5), price.Time.Date.AddHours(16) });
@@ -506,112 +545,37 @@ namespace IBApp {
     }
     #endregion
 
-    #region IB Handlers
-    #region Execution Subject
-    object _ExecutionSubjectLocker = new object();
-    ISubject<Tuple<int, Contract, Execution>> _ExecutionSubject;
-    ISubject<Tuple<int, Contract, Execution>> ExecutionSubject {
+    #region FetchMMR
+    #region WhatIf Subject
+    object _WhatIfSubjectLocker = new object();
+    ISubject<Action> _WhatIfSubject;
+    ISubject<Action> WhatIfSubject {
       get {
-        lock(_ExecutionSubjectLocker)
-          if(_ExecutionSubject == null) {
-            _ExecutionSubject = new Subject<Tuple<int, Contract, Execution>>();
-            _ExecutionSubject
-              //.Where(t => t.Item1 == -1)
-              //.DistinctUntilChanged(t => {
-              //  //_defaultMessageHandler(new { ExecutionSubject = new { OrderId = t.Item3?.OrderId } });
-              //  return t.Item3?.ExecId;
-              //})
-              .Subscribe(s => OnExecDetails(s.Item1, s.Item2, s.Item3), exc => _defaultMessageHandler(exc), () => _defaultMessageHandler(new { _defaultMessageHandler = "Completed" }));
+        lock(_WhatIfSubjectLocker)
+          if(_WhatIfSubject == null) {
+            _WhatIfSubject = new Subject<Action>();
+            _WhatIfSubject
+              //.Throttle(TimeSpan.FromSeconds(1))
+              .Subscribe(a => a(), exc => _defaultMessageHandler(exc));
           }
-        return _ExecutionSubject;
+        return _WhatIfSubject;
       }
-    }
-    void OnExecution(int reqId, Contract contract, Execution execution) {
-      ExecutionSubject.OnNext(Tuple.Create(reqId, contract, execution));
     }
     #endregion
-    ConcurrentDictionary<string, int> _executions = new ConcurrentDictionary<string, int>();
-    private void OnExecDetails(int reqId, Contract contract, Execution execution) {
-      try {
-        //_verbous(new { OnExecDetails = new { reqId, contract, execution } });
-        var symbol = contract.Instrument;
-        var execTime = execution.Time.FromTWSString();
-        var execPrice = execution.AvgPrice;
-        var orderId = execution.OrderId + "";
-
-        #region Create Trade
-
-        var trade = CreateTrade(symbol);
-        trade.Id = execution.PermId + "";
-        trade.Buy = execution.Side == "BOT";
-        trade.IsBuy = trade.Buy;
-        trade.Time2 = execTime;
-        trade.Time2Close = execution.Time.FromTWSString();
-        trade.Open = trade.Close = execPrice;
-
-        _executions.TryGetValue(orderId, out int orderLot);
-        trade.Lots = execution.CumQty - orderLot;
-        _executions.AddOrUpdate(orderId, execution.CumQty, (s, i) => execution.CumQty);
-
-        trade.OpenOrderID = execution.OrderId + "";
-        trade.CommissionByTrade = CommissionByTrade;
-        #endregion
-
-        #region Close Trades
-        OpenTrades
-          .ToArray()
-          .Where(t => t.OpenOrderID != orderId)
-          .Where(IsNotEqual(trade))
-          .Scan(0, (lots, otClose) => {
-            var cL = CloseTrade(execTime, execPrice, otClose, trade.Lots);
-            return trade.Lots = cL;
-          })
-          .TakeWhile(l => l > 0)
-          .Count();
-        #endregion
-
-        if(trade.Lots > 0) {
-          //var oldTrade = OpenTrades.SingleOrDefault(t => t.OpenOrderID == orderId);
-          //if(oldTrade != null) {
-          //  oldTrade.Lots += trade.Lots;
-          //  oldTrade.Open = execution.AvgPrice;
-          //} else
-          OpenTrades.Add(trade);
-        }
-
-        OpenTrades
-          .Where(t => t.Lots == 0)
-          .ToList()
-          .ForEach(t => OpenTrades.Remove(t));
-
-        if(!_positions.TryGetValue(contract.LocalSymbol, out var position))
-          throw new PositionNotFoundException(symbol);
-        //var tradeByPosition = TradeFromPosition(contract.LocalSymbol, position, execTime,orderId);
-        //TraceTrades("tradeByPositiont:", new[] { tradeByPosition });
-
-        //var openLots = (from ot in OpenTrades
-        //                where tradeByPosition.Pair == ot.Pair
-        //                group ot by ot.IsBuy into g
-        //                select new { isBuy = g.Key, sum = g.Sum(t => t.Lots) }
-        //                ).ToArray();
-        //try {
-        //  Passager.ThrowIf(() => openLots.Length > 1);
-        //  openLots.ForEach(openLot => {
-        //    Passager.ThrowIf(() => openLot.isBuy != position.IsBuy);
-        //    Passager.ThrowIf(() => openLot.sum != position.Quantity);
-        //  });
-        //}catch(Exception exc) {
-        //  _defaultMessageHandler(exc);
-        //  OpenTrades.ToList().ForEach(ot => CloseTrade(execTime, execPrice, ot, ot.Lots));
-        //  OpenTrades.Add(tradeByPosition);
-        //}
-        TraceTrades("Opened: ", OpenTrades);
-        TraceTrades("Closed: ", ClosedTrades);
-      } catch(Exception exc) {
-        _defaultMessageHandler(exc);
-      }
+    void OnWhatIf(Action a) => WhatIfSubject.OnNext(a);
+    private void FetchMMR(string pair) {
+      OnWhatIf(() => OpenTradeWhatIf(pair, true));
+      OnWhatIf(() => OpenTradeWhatIf(pair, false));
     }
+    public void FetchMMRs() => GetTrades()
+      .IfEmpty(() => {
+        _defaultMessageHandler(nameof(FetchMMR) + " started");
+        TradesManagerStatic.dbOffers.Where(o => !o.Pair.IsCurrenncy()).ToObservable().Subscribe(o => FetchMMR(o.Pair));
+      })
+      .ForEach(t => _defaultMessageHandler(new { FetchMMRs = new { t.Pair, t.IsBuy, t.Lots, Message = "Won't run" } }));
+    #endregion
 
+    #region Overrrides/helpers
     private static Func<Trade, bool> IsEqual(PositionMessage position) => ot => ot.Key().Equals(position.Key());
     private static Func<Trade, bool> IsNotEqual(Trade trade) => ot => ot.Key().Equals(trade.Key2());
 
@@ -635,171 +599,8 @@ namespace IBApp {
         return 0;
       }
     }
-
-    /*
- Trade ctAdd;
- if(OpenTrades.TryRemove(trade.Key2(), out ctAdd)) {
-   ctAdd.Time2 = IbClient.ServerTime;
-   ClosedTrades.Add(ctAdd);
- }
-*/
-    #region Position
-    #region Position Subject - Fires once
-    object _PositionSubjectLocker = new object();
-    ISubject<PosArg> _PositionSubject;
-    ISubject<PosArg> PositionSubject {
-      get {
-        lock(_PositionSubjectLocker)
-          if(_PositionSubject == null) {
-            _PositionSubject = new Subject<PosArg>();
-            _PositionSubject
-              .DistinctUntilChanged(t => new { t.Item2.LocalSymbol, t.Item3.Position })
-              .Where(x => x.Item3.Position != 0)
-              .Timeout(TimeSpan.FromSeconds(10))
-              .Catch(new Func<Exception, IObservable<PosArg>>(e => new PosArg[] { null }.ToObservable()))
-              .TakeWhile(pa => pa != null)
-              .Subscribe(s => OnFirstPosition(s.Item2, s.Item3)
-                , exc => _defaultMessageHandler(exc)
-                , () => {
-                  _defaultMessageHandler($"{nameof(PositionSubject)} is done.");
-                  FetchMMRs();
-                });
-          }
-        return _PositionSubject;
-      }
-    }
-
-    public double InitialMarginRequirement { get; private set; }
-
-    void OnPositionSubject(string account, Contract contract, PositionMessage pm) {
-      PositionSubject.OnNext(Tuple.Create(account, contract, pm));
-    }
-    #endregion
-
-    private void OnPosition(string account, Contract contract, double pos, double avgCost) {
-      var position = new PositionMessage(account, contract, pos, avgCost);
-      _positions.AddOrUpdate(position.Key().Item1, position, (k, p) => position);
-      //_defaultMessageHandler(nameof(OnPosition) + ": " + string.Join("\n", _positions));
-      OnPositionSubject(account, contract, position);
-      //IbClient.ClientSocket.reqExecutions(IbClient.NextOrderId, new ExecutionFilter() {
-      //  Symbol = contract.LocalSymbol,
-      //  //Side = (trade.IsBuy ? ExecutionFilter.Sides.BUY : ExecutionFilter.Sides.SELL) + "",
-      //  Time = IbClient.ServerTime.ToTWSString()
-      //});
-    }
-
-    private void OnFirstPosition(Contract contract, PositionMessage position) {
-      _defaultMessageHandler(position);
-      var st = IbClient.ServerTime;
-
-      if(position.Position != 0 && !OpenTrades.Any(IsEqual(position)))
-        OpenTrades.Add(TradeFromPosition(contract.LocalSymbol, position, st, ""));
-
-      TraceTrades("Opened: ", OpenTrades);
-      FetchMMRs();
-    }
-
-    private void TraceTrades(string label, IEnumerable<Trade> trades) {
-      _defaultMessageHandler(label + (trades.Count() > 1 ? "\n" : "")
-        + string.Join("\n", trades.Select(ot => new { ot.Pair, ot.Position, ot.Time, ot.Commission })));
-    }
-
-    private Trade TradeFromPosition(string symbol, PositionMessage position, DateTime st, string openOrderId) {
-      var trade = CreateTrade( symbol);
-      trade.Id = DateTime.Now.Ticks + "";
-      trade.Buy = position.Position > 0;
-      trade.IsBuy = trade.Buy;
-      trade.Time2 = st;
-      trade.Time2Close = IbClient.ServerTime;
-      trade.Open = position.AverageCost;
-      trade.Lots = position.Position.Abs().ToInt();
-      trade.OpenOrderID = openOrderId;
-      trade.CommissionByTrade = CommissionByTrade;
-      return trade;
-    }
-    #endregion
-
-    private void OnUpdatePortfolio(Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName) {
-      var pu = new UpdatePortfolioMessage(contract, position, marketPrice, marketValue, averageCost, unrealisedPNL, realisedPNL, accountName);
-    }
-
-    private void OnUpdateAccountValue(string key, string value, string currency, string accountName) {
-      if(currency == _accountCurrency) {
-        switch(key) {
-          case "EquityWithLoanValue":
-            Account.Equity = double.Parse(value);
-            break;
-          case "MaintMarginReq":
-            Account.UsableMargin = double.Parse(value);
-            break;
-          case "ExcessLiquidity":
-            Account.ExcessLiquidity = double.Parse(value);
-            break;
-          case "UnrealizedPnL":
-            Account.Balance = Account.Equity - double.Parse(value);
-            break;
-          case "InitMarginReq":
-            InitialMarginRequirement = double.Parse(value);
-            break;
-        }
-        //_defaultMessageHandler(new AccountValueMessage(key, value, currency, accountName));
-      }
-    }
-
-    public void FetchMMRs() => GetTrades()
-      .IfEmpty(() => {
-        _defaultMessageHandler(nameof(FetchMMR) + " started");
-        TradesManagerStatic.dbOffers.Where(o => !o.Pair.IsCurrenncy()).ToObservable().Subscribe(o => FetchMMR(o.Pair));
-      })
-      .ForEach(t => _defaultMessageHandler(new { FetchMMRs = new { t.Pair, t.IsBuy, t.Lots, Message = "Won't run" } }));
-    private void OnAccountSummary(int requestId, string account, string tag, string value, string currency) {
-      if(currency == _accountCurrency) {
-        switch(tag) {
-          case "EquityWithLoanValue":
-            Account.Equity = double.Parse(value);
-            break;
-          case "MaintMarginReq":
-            Account.UsableMargin = double.Parse(value);
-            break;
-        }
-        //_defaultMessageHandler(new AccountSummaryMessage(requestId, account, tag, value, currency));
-      }
-    }
-    private void OnAccountSummaryEnd(int obj) {
-      accountSummaryRequestActive = false;
-    }
-    #endregion
-
-    #region Requests
-    public void RequestAccountSummary() {
-      if(!accountSummaryRequestActive) {
-        accountSummaryRequestActive = true;
-        IbClient.ClientSocket.reqAccountSummary(NextReqId(), "All", ACCOUNT_SUMMARY_TAGS);
-      } else {
-        IbClient.ClientSocket.cancelAccountSummary(CurrReqId());
-      }
-    }
-
-    public void SubscribeAccountUpdates() {
-      if(!accountUpdateRequestActive) {
-        accountUpdateRequestActive = true;
-        IbClient.ClientSocket.reqAccountUpdates(true, _accountId);
-      } else {
-        IbClient.ClientSocket.reqAccountUpdates(false, _accountId);
-        accountUpdateRequestActive = false;
-      }
-    }
-
-    public void RequestPositions() {
-      if(PositionSubject != null)
-        IbClient.ClientSocket.reqPositions();
-    }
-    #endregion
-
-    #region Overrrides
-    public override string ToString() {
-      return new { IbClient, CurrentAccount = _accountId } + "";
-    }
+    private void TraceTrades(string label, IEnumerable<Trade> trades) => _defaultMessageHandler(label + (trades.Count() > 1 ? "\n" : "") + string.Join("\n", trades.Select(ot => new { ot.Pair, ot.Position, ot.Time, ot.Commission })));
+    public override string ToString() => new { IbClient, CurrentAccount = _accountId } + "";
     #endregion
   }
   public static class Mixins {
