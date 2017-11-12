@@ -329,7 +329,7 @@ namespace HedgeHog {
           }
       }
     }
-    public static void Zip<T1, T2>(this IEnumerable<T1> prime, Func<T1,DateTime> getDate, IEnumerable<Tuple<DateTime, T2>> other, Action<T1, Tuple<DateTime, T2>> map) {
+    public static void Zip<T1, T2>(this IEnumerable<T1> prime, Func<T1, DateTime> getDate, IEnumerable<Tuple<DateTime, T2>> other, Action<T1, Tuple<DateTime, T2>> map) {
       Tuple<DateTime, T2> prev = null;
       bool otherIsDone = false;
       using(var iterPrime = prime.GetEnumerator()) {
@@ -343,6 +343,26 @@ namespace HedgeHog {
                 continue;
               }
               map(iterPrime.Current, prev ?? iterOther.Current);
+            }
+          }
+      }
+    }
+    public static IEnumerable<TResult> Zip<T1, T2,TResult>(this IEnumerable<T1> prime, Func<T1,DateTime> getDate, IEnumerable<T2> other, Func<T2, DateTime> getDateOther, Func<T1,  T2,TResult> map) {
+      T2 prev = default;
+      bool prevSet = false;
+      bool otherIsDone = false;
+      using(var iterPrime = prime.GetEnumerator()) {
+        using(var iterOther = other.GetEnumerator())
+          if(iterOther.MoveNext()) {
+            while(iterPrime.MoveNext()) {
+              while(!otherIsDone && getDateOther(iterOther.Current) <= getDate(iterPrime.Current)) {
+                prev = iterOther.Current;
+                prevSet = true;
+                if(otherIsDone = !iterOther.MoveNext())
+                  break;
+                continue;
+              }
+              yield return map(iterPrime.Current, prevSet ? prev : iterOther.Current);
             }
           }
       }

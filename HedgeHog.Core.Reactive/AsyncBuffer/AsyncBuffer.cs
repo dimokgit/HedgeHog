@@ -28,7 +28,7 @@ namespace HedgeHog {
 
       _StartProcessDisposable = _StartProcessSubject
         .ObserveOn(TaskPoolScheduler.Default)
-        .SubscribeOn(new EventLoopScheduler())
+        //.SubscribeOn(new EventLoopScheduler())
         .Subscribe(a => buffer.SendAsync(a)
         , exc => Error.OnNext(exc));
       var b = buffer
@@ -40,7 +40,7 @@ namespace HedgeHog {
       if(sample != TimeSpan.Zero)
         b = b.Sample(sample);
       _bufferDisposable = b
-        .SubscribeOn(new EventLoopScheduler())
+        //.SubscribeOn(new EventLoopScheduler())
         .Subscribe(a => {
           try {
             a();

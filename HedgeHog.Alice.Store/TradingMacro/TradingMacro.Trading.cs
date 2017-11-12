@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
 
@@ -37,7 +38,8 @@ namespace HedgeHog.Alice.Store {
         .Select(x => x.Value)
         .OrderByDescending(tm => tm.Pair == Pair)
         .ToArray()
-        .ForEach(t => {
+        .AsParallel()
+        .ForAll(t => {
           var lotToClose = t.tm.Trades.IsBuy(!t.IsBuy).Sum(tr => tr.Lots);
           var lotToOpen = !closeOnly ? t.Lot : 0;
           t.tm.OpenTrade(t.IsBuy, lotToOpen + lotToClose, reason + ": hedge open");
@@ -56,6 +58,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public void CloseTrades(string reason) { CloseTrades(Trades.Lots(), reason); }
+    //[MethodImpl(MethodImplOptions.Synchronized)]
     private void CloseTrades(int lot, string reason) {
       if(!IsTrader || !Trades.Any() || HasPendingKey(CT))
         return;

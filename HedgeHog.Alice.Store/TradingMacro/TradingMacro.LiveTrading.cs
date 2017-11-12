@@ -75,7 +75,7 @@ namespace HedgeHog.Alice.Store {
     //[MethodImpl(MethodImplOptions.Synchronized)]
     private bool CheckPendingKey(string key) {
       lock(_pendingEntryOrdersLocker)
-        return !PendingEntryOrders.Contains(key);
+        return !PendingEntryOrders.Any();//.Contains(key);
     }
     //[MethodImpl(MethodImplOptions.Synchronized)]
     private void CheckPendingAction(string key, Action<Action> action = null) {

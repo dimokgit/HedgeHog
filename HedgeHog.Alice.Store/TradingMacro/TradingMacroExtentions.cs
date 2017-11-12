@@ -1505,8 +1505,6 @@ namespace HedgeHog.Alice.Store {
         LastTrade = TradesManager.TradeFactory(Pair);
         FractalTimes = FractalTimes.Take(0);
         LineTimeMinFunc = null;
-        if(_setVoltsSubscriber != null)
-          _setVoltsSubscriber.Dispose();
         ResetTakeProfitManual();
         StDevByHeight = double.NaN;
         StDevByPriceAvg = double.NaN;
@@ -1568,6 +1566,8 @@ namespace HedgeHog.Alice.Store {
         bool noMoreDbRates = false;
         var isReplaying = false;
         var minutesOffset = BarPeriodInt * 0;
+        MaxHedgeProfit = new[] { new[] { (profit: 0.0, buy: false) }.Take(0).ToArray() }.Take(0);
+
         while(!args.MustStop && indexCurrent < _replayRates.Count && Strategy != Strategies.None) {
           if(isReplaying && !isInitiator)
             if(!_waitHandle.WaitOne(1000)) {
@@ -4471,7 +4471,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
               (r, v) => r.VoltageLocal = v, (r, v) => r.VoltageLocal0 = new double[0], (r, v) => r.VoltageLocal2 = v, (r, v) => r.VoltageLocal3 = v,
               (r, v) => r.Distance = v };
             UseRatesInternal(ri => ri.ForEach(r => { func.ForEach(f => { f(r, double.NaN); }); }));
-            new[] { _setVoltsSubscriber }.Where(a => a != null).ForEach(a => a.Dispose());
           }
           break;
         case nameof(RatesInternal):

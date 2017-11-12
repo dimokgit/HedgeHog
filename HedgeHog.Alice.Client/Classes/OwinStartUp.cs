@@ -943,9 +943,13 @@ namespace HedgeHog.Alice.Client {
         var pos = tm.PendingEntryOrders.Concat(tm.TradingMacroHedged(tmh => tmh.PendingEntryOrders).Concat()).ToArray();
         if(pos.Any())
           list2.Add(row("Pending", pos.Select(po => po.Key).ToArray().ToJson(false)));
-        if(trader.Value.GrossToExit != 0) {
-          var ca = am.Equity.CompoundInterest(trader.Value.GrossToExitCalc.Abs() / am.Equity, 200);
-          list2.Add(row("GrossToExit", $"${trader.Value.GrossToExitCalc.AutoRound2(1)}:{((ca / am.Equity - 1) * 100).AutoRound2(3, "%")}"));
+        if(tm.IsPairHedged)
+          tm.MaxHedgeProfit?.ForEach(mhps => list2.Add(row("Hedge Profit", "$" + string.Join("/", mhps.Select(mhp => mhp.profit.AutoRound2(1))) + "/" +
+            (am.Equity.CompoundInteres(mhps.DefaultIfEmpty().Average(x => x.profit), 200) * 100).AutoRound2(3, "%")
+            )));
+        if(trader.Value.GrossToExitCalc() != 0) {
+          var ca = am.Equity.CompoundInteres(trader.Value.GrossToExitCalc().Abs(), 200);
+          list2.Add(row("GrossToExit", $"${trader.Value.GrossToExitCalc().AutoRound2(1)}:{((ca) * 100).AutoRound2(3, "%")}"));
         }
         return list2;
       }).Concat();

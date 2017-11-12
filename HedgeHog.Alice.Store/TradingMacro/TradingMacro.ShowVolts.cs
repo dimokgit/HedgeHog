@@ -377,7 +377,7 @@ namespace HedgeHog.Alice.Store {
           .Select(r => r.StartDate)
           .DefaultIfEmpty(DateTime.MinValue)
           .First();
-        var tm2 = _tradingMacros.Where(x => x.Pair.ToLower() == PairHedge.ToLower() && x.BarPeriod == BarPeriod).Take(1).ToArray();
+        var tm2 = TradingMacroHedged();
         var tmRates2 = (from tm in tm2
                         from tmRates in tm.UseRatesInternal(ri => ri.BackwardsIterator().TakeWhile(r => r.StartDate >= voltDate).ToArray())
                         from tmRate in tmRates
@@ -395,13 +395,14 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
-    public IEnumerable<int> TMCorrelation(TradingMacro tmOther) {
-      return from tm1 in GetTM1(this)
-             from tm2 in GetTM1(tmOther)
+    public IEnumerable<int> TMCorrelation(TradingMacro tmOther) => TMCorrelationImpl((this, tmOther));
+    Func<(TradingMacro tmThis, TradingMacro tmOther), IEnumerable<int>> TMCorrelationImpl = new Func<(TradingMacro tmThis, TradingMacro tmOther), IEnumerable<int>>(t => {
+      return from tm1 in GetTM1(t.tmThis)
+             from tm2 in GetTM1(t.tmOther)
              from corr in Hedging.TMCorrelation(tm1, tm2)
              select corr;
       IEnumerable<TradingMacro> GetTM1(TradingMacro tm) => tm.BarPeriod == BarsPeriodType.t1 ? tm.TradingMacroM1() : new[] { tm };
-    }
+    }).Memoize();
     public static class Hedging {
       public static IEnumerable<int> TMCorrelation(TradingMacro tm1, TradingMacro tm2) =>
         from corrs in tm1.UseRates(ra1 => tm2.UseRates(ra2 => alglib.pearsoncorr2(ra1.ToArray(r => r.PriceAvg), ra2.ToArray(r => r.PriceAvg), ra1.Count.Min(ra2.Count))))
@@ -532,6 +533,8 @@ namespace HedgeHog.Alice.Store {
             voltMinNew(),
             voltMaxNew()
           };
+          //MaxHedgeProfit = CalcMaxHedgeProfit().Concat(MaxHedgeProfit).Aggregate((p,n)=>p.Zip(n,(p1,p2)=>(p1.buy,p1.profit.Cma(10,p2.profit)))  });
+          MaxHedgeProfit = new[] { CalcMaxHedgeProfit().Concat(MaxHedgeProfit).Aggregate((p, n) => p.Zip(n, (p1, p2) => (p1.profit.Cma(10, p2.profit), p1.buy)).ToArray()) };
           if(false)
             CalcVoltsFullScaleShiftByStDev();
 
@@ -539,7 +542,39 @@ namespace HedgeHog.Alice.Store {
           double voltMinNew() => v.max - (v.max - linearVolt) / (1 - pricePos);
         }
       }
+      IEnumerable<(double profit, bool buy)[]> CalcMaxHedgeProfit() {
+        if(UseCalc())
+          foreach(var hp in CalcMaxHedgeProfitMem(this))
+            yield return hp;
+      }
     }
+    static Func<TradingMacro, IEnumerable<(double profit, bool buy)[]>> CalcMaxHedgeProfitMem =
+      new Func<TradingMacro, IEnumerable<(double profit, bool buy)[]>>(CalcMaxHedgeProfitImpl)
+      .MemoizeLast(tm => tm.RatesArray.BackwardsIterator(r => r.StartDate.Round(MathCore.RoundTo.Minute)).LastOrDefault());
+    private static IEnumerable<(double profit, bool buy)[]> CalcMaxHedgeProfitImpl(TradingMacro tm) {
+      Func<int, Func<Rate, double>> getOther = corr => corr == 1 ? new Func<Rate, double>(r => r.PriceAvg) : r => 1 / r.PriceAvg;
+      return from tm2 in tm.TradingMacroHedged()
+             from corrs in tm.TMCorrelation(tm2)
+             let getter = getOther(corrs)
+             from tmMap in tm.UseRates(ra => tm.RatioMap(ra, _priceAvg)).ToArray()
+             from tmMap2 in tm2.UseRates(ra => tm2.RatioMap(ra, getter, tm.VoltsFullScaleMinMax)).ToArray()
+             let mm = tmMap2.Zip(tmMap, (r, t) => new { r = t.t.r, r2 = r.t.r, d = t.t.v - r.t.v }).MinMaxBy(t => t.d)
+             let htb = tm.HedgeBuySell(true).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount, 1, 1) }).ToArray()
+             let hts = tm.HedgeBuySell(false).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount, 1, 1) }).ToArray()
+             where mm.Any() && hts.Any() && htb.Any()
+             let t = new[] {
+             (profit:(htb[0].lots * mm[1].r.BidLow + (-corrs) * htb[1].lots * mm[1].r2.BidLow) -
+                    (htb[0].lots * mm[0].r.AskHigh + (-corrs) * htb[1].lots * mm[0].r2.AskHigh),
+                    buy:true),
+             (profit:(hts[0].lots * mm[1].r.BidLow + (-corrs) * hts[1].lots * mm[1].r2.BidLow) -
+                    (hts[0].lots * mm[0].r.AskHigh + (-corrs) * hts[1].lots * mm[0].r2.AskHigh),
+                    buy:false),
+             }
+             where t.All(p => p.profit > 0)
+             select t;
+    }
+
+
     public static double MaxLevelByMinMiddlePos(double min, double middle, double pos) => (middle - min) / pos + min;
     public static double MinLevelByMaxMiddlePos(double max, double middle, double pos) => max - (max - middle) / (1 - pos);
 
@@ -624,10 +659,6 @@ namespace HedgeHog.Alice.Store {
         .StDev();
     }
 
-    EventLoopScheduler _setVoltsScheduler = new EventLoopScheduler();
-    CompositeDisposable _setVoltsSubscriber = null;
-
-
     private void SetVoltFuncs() {
       if(GetVoltage(RatesArray[0]).IsNotNaN()) {
         var volts = RatesArray.Select(r => GetVoltage(r)).Where(Lib.IsNotNaN).DefaultIfEmpty().ToArray();
@@ -663,7 +694,7 @@ namespace HedgeHog.Alice.Store {
             IObservable<Action> o = null;
             _SetBarsCountCalcSubject = _SetBarsCountCalcSubject.InitBufferedObservable(ref o, exc => Log = exc);
             o
-              .ObserveOn(new EventLoopScheduler())
+              //.ObserveOn(new EventLoopScheduler())
               .Subscribe(a => {
                 a();
                 RatesLengthLatch = false;
@@ -886,5 +917,6 @@ namespace HedgeHog.Alice.Store {
 
     public bool IsVoltFullScale => VoltageFunction == VoltageFunction.Pair;
     public double[] VoltsFullScaleMinMax { get; private set; }
+    public IEnumerable<(double profit, bool buy)[]> MaxHedgeProfit { get; private set; } =new[] { new[] { (0.0, false) }.Take(0).ToArray() }.Take(0);
   }
 }

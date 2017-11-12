@@ -12,9 +12,9 @@ namespace HedgeHog.Tests {
   [TestClass()]
   public class MathExtensionsTest {
     [TestMethod]
-    public void CompoundInterest() {
+    public void CompoundAmount() {
       double interestRate = 0.1 / 100, days = 200 * 1, Amount = 50000;
-      Console.WriteLine(new { Amount = Amount.CompoundInterest(interestRate, days) });
+      Console.WriteLine(new { Amount = Amount.CompoundAmount(interestRate, days) });
       for(int t = 0; t < days; t++) {
         Amount = Amount + Amount * interestRate;
         Debug.WriteLine("Your Total for Year {0} " + "is {1:F0}.", t, Amount);

@@ -716,12 +716,22 @@ namespace HedgeHog.Alice.Client {
           _tradingStatistics.CurrentLossInPips = clp;
           _tradingStatistics.OriginalProfit = MasterModel.AccountModel.OriginalProfit;
           var net = MasterModel.TradesManager.GetTrades().Net2();
-          if(MasterModel.GrossToExit != 0
+          (
+            from tm in tms
+            where tm.HaveHedgedTrades()
+            from mps in tm.MaxHedgeProfit
+            from mp in mps
+            where mp.buy == tm.Trades.HaveBuy()
+            select new Action(() => MasterModel.GrossToExitCalc = () => mp.profit / 2)
+            )
+            .DefaultIfEmpty(() => MasterModel.GrossToExitCalc = null)
+            .Single()();
+          var grossToExit = MasterModel.GrossToExitCalc();
+          if(grossToExit != 0
             && !tms.SelectMany(tm => tm.PendingEntryOrders).Any()
-            && net > MasterModel.GrossToExitCalc) {
-            var grossToExit = MasterModel.GrossToExitCalc;
+            && net > grossToExit) {
             MasterModel.GrossToExitSoftReset();
-            tms.ForEach(tm => tm.CloseTrades(new { grossToExit, net } + ""));
+            tms.ForEach(tm => tm.CloseTrades(new { grossToExit = grossToExit.AutoRound2(1), net = net.AutoRound2(1) } + ""));
           }
         }
       } catch(Exception exc) {

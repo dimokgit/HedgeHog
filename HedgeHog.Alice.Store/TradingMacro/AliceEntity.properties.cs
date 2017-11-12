@@ -1949,8 +1949,8 @@ namespace HedgeHog.Alice.Store {
 
     public string PairPlain { get { return TradesManagerStatic.WrapPair(Pair); } }
 
-    bool IsPairHedged => !PairHedge.IsNullOrWhiteSpace();
-    bool isHedgeChild => TradingMacrosByPairHedge(Pair).Any();
+    public bool IsPairHedged => !PairHedge.IsNullOrWhiteSpace();
+    public bool isHedgeChild => TradingMacrosByPairHedge(Pair).Any();
     void SyncHedgedPair() {
       TradingMacroHedged().ForEach(tm => {
         tm.BarsCount = BarsCount;

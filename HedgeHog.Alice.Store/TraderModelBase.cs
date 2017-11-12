@@ -7,9 +7,9 @@ using System.ComponentModel;
 using System.Windows.Data;
 
 namespace HedgeHog.Alice.Store {
-  public abstract class TraderModelBase : TraderModelPersist {
-    public TraderModelBase() :base(){    }
-    #pragma warning disable 0067
+  public abstract class TraderModelBase :TraderModelPersist {
+    public TraderModelBase() : base() { }
+#pragma warning disable 0067
     public virtual event EventHandler<TradingStatisticsEventArgs> NeedTradingStatistics;
     public abstract event EventHandler MasterTradeAccountChanged;
     public abstract event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
@@ -31,7 +31,7 @@ namespace HedgeHog.Alice.Store {
     public double ActiveTakeProfit {
       get { return _ActiveTakeProfit; }
       set {
-        if (_ActiveTakeProfit != value) {
+        if(_ActiveTakeProfit != value) {
           _ActiveTakeProfit = value;
           RaisePropertyChanged("ActiveTakeProfit");
         }
@@ -41,13 +41,18 @@ namespace HedgeHog.Alice.Store {
 
     public ListCollectionView RowsList {
       get { return _RowsList; }
-      set { 
+      set {
         _RowsList = value;
         RaisePropertyChanged("RowsList");
       }
     }
     public bool IsGrossToExitPers => GrossToExit.Abs() < 1;
-    public double GrossToExitCalc => IsGrossToExitPers ? AccountModel.Equity * GrossToExit : GrossToExit;
+    double GrossToExitCalcDefault => IsGrossToExitPers ? AccountModel.Equity * GrossToExit : GrossToExit;
+
+    private Func<double> grossToExitCalc;
+    public Func<double> GrossToExitCalc { get => grossToExitCalc ?? (() => GrossToExitCalcDefault); set => grossToExitCalc = value; }
+
+    //=> IsGrossToExitPers ? AccountModel.Equity * GrossToExit : GrossToExit;
     public void GrossToExitSoftReset() {
       if(!IsGrossToExitPers) GrossToExit = 0;
     }
@@ -64,7 +69,7 @@ namespace HedgeHog.Alice.Store {
     public string AccountId { get; set; }
     public string Password { get; set; }
     public bool IsDemo { get; set; }
-    public TradingLogin(string accountId,string password,bool isDemo) {
+    public TradingLogin(string accountId, string password, bool isDemo) {
       this.AccountId = accountId;
       this.Password = password;
       this.IsDemo = IsDemo;
