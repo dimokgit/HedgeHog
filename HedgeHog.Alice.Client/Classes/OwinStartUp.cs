@@ -628,8 +628,9 @@ namespace HedgeHog.Alice.Client {
         trader.Value.GrossToExitSoftReset();
         var tms = GetHedgedTradingMacros(pair).SelectMany(x => new[] { x.tm1, x.tm2 })
         .Distinct(tm => tm.Pair)
+        .DefaultIfEmpty(GetTradingMacro(pair,0).Single())
         .ToArray();
-        tms.ForEach(tm => tm.CloseTrades("SignalR: CloseTrades"));
+        tms.AsParallel().ForAll(tm => tm.CloseTrades("SignalR: CloseTrades"));
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
@@ -906,6 +907,7 @@ namespace HedgeHog.Alice.Client {
     public object[] GetAccounting(string pair) {
       var row = MonoidsCore.ToFunc("", (object)null, (n, v) => new { n, v });
       var list = new[] { row("", 0) }.Take(0).ToList();
+      if(remoteControl == null) return new object[0];
       var rc = remoteControl.Value;
       var am = rc.MasterModel.AccountModel;
       list.Add(row("BalanceOrg", am.OriginalBalance.ToString("c0")));
@@ -965,6 +967,10 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void SaveGrossToExit(double grossToExit) {
       trader.Value.GrossToExit = grossToExit;
+    }
+    [BasicAuthenticationFilter]
+    public void SaveProfitByHedgeRatioDiff(double profitByRatioDiff) {
+      trader.Value.ProfitByHedgeRatioDiff = profitByRatioDiff;
     }
     [BasicAuthenticationFilter]
     public void StopTrades(string pair) { SetCanTradeImpl(pair, false, null); }

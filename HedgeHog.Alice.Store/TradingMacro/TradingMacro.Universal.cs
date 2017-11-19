@@ -401,29 +401,6 @@ namespace HedgeHog.Alice.Store {
         #region Funcs
         Func<Func<Rate, double>, double> getRateLast = (f) => f(RateLast) > 0 ? f(RateLast) : f(RatePrev);
         Func<bool> runOnce = null;
-        #region initTradeRangeShift
-        Action initTradeRangeShift = () => {
-          Func<Trade, IEnumerable<Tuple<SuppRes, double>>> ootl_ = (trade) =>
-            (from offset in (trade.IsBuy ? (CurrentPrice.Ask - BuyLevel.Rate) : (CurrentPrice.Bid - SellLevel.Rate)).Yield()
-             from sr in new[] { BuyLevel, SellLevel }
-             select Tuple.Create(sr, offset));
-          Action<Trade> ootl = null;
-          ootl = trade => {
-            ootl_(trade).ForEach(tpl => tpl.Item1.Rate += tpl.Item2);
-            onOpenTradeLocal -= ootl;
-          };
-          onCanTradeLocal = canTrade => {
-            if(!canTrade) {
-              if(!onOpenTradeLocal.GetInvocationList().Select(m => m.Method.Name).Contains(ootl.Method.Name)) {
-                onOpenTradeLocal += ootl;
-              }
-            } else if(onOpenTradeLocal != null && onOpenTradeLocal.GetInvocationList().Select(m => m.Method.Name).Contains(ootl.Method.Name)) {
-              onOpenTradeLocal -= ootl;
-            }
-            return true;
-          };
-        };
-        #endregion
         #endregion
 
         #region adjustEnterLevels

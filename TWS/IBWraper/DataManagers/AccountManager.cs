@@ -11,9 +11,13 @@ using System.Reactive.Subjects;
 using ReactiveUI;
 using PosArg = System.Tuple<string, IBApi.Contract, IBApp.PositionMessage>;
 using OpenOrderArg = System.Tuple<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
+using PositionHandker = System.Action<string, IBApi.Contract, double, double>;
+using OrderStatusHandler = System.Action<int, string, double, double, double, int, int, double, int, string>;
+using PortfolioHandler = System.Action<IBApi.Contract, double, double, double, double, double, double, string>;
 namespace IBApp {
   public partial class AccountManager :DataManager {
-    public enum OrderStatuses { Cancelled, Inactive, PreSubmitted };
+    public enum OrderStatuses { Cancelled, Inactive };
+    public enum OrderHeldReason { locate };
 
     #region Constants
     private const int ACCOUNT_ID_BASE = 50000000;
@@ -29,7 +33,7 @@ namespace IBApp {
     private bool accountUpdateRequestActive = false;
     private string _accountId;
     private readonly Action<object> _defaultMessageHandler;
-    private bool _useVerbouse = false;
+    private bool _useVerbouse = true;
     private Action<object> _verbous => _useVerbouse ? _defaultMessageHandler : o => { };
     private readonly string _accountCurrency = "USD";
     #endregion
@@ -76,17 +80,59 @@ namespace IBApp {
       ibClient.OrderStatus += OnOrderStatus;
       //IbClient.ExecDetails += OnExecution;
       IbClient.Position += OnPosition;
+      var posObs = Observable.FromEvent<PositionHandker, (Contract contract, double pos, double avgCost)>(
+        onNext => (string a, Contract b, double c, double d) => onNext((b, c, d)),
+        h => IbClient.Position += h,
+        h => IbClient.Position -= h
+        );
+      var osObs = Observable.FromEvent<OrderStatusHandler, (int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)>(
+        onNext => (int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld) => onNext((orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld)),
+        h => IbClient.OrderStatus += h,
+        h => IbClient.OrderStatus -= h
+        );
+
+      var portObs = Observable.FromEvent<PortfolioHandler, (Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName)>(
+        onNext => (Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName) => onNext((contract, position, marketPrice, marketValue, averageCost, unrealisedPNL, realisedPNL, accountName)),
+        h => IbClient.UpdatePortfolio += h,
+        h => IbClient.UpdatePortfolio -= h
+        );
+
       //ibClient.UpdatePortfolio += IbClient_UpdatePortfolio;
       OpenTrades.ItemsAdded.Subscribe(RaiseTradeAdded);
       OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved);
       ClosedTrades.ItemsAdded.Subscribe(RaiseTradeClosed);
       ibClient.Error += OnError;
+
+      _positionStream = posObs
+        .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos } }))
+        .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost));
+      _orderStatusStream = osObs
+        .Select(t => new { t.orderId, t.status, t.filled, t.remaining })
+        .Subscribe(x => _verbous("* " + new { OrderStatus = x }));
+      _portfolioStream = portObs
+        .Select(t => new { t.contract.LocalSymbol, t.position, t.unrealisedPNL })
+        .Subscribe(x => _verbous("* " + new { Portfolio = x }));
+
       _defaultMessageHandler(nameof(AccountManager) + " is ready");
     }
+    void OnPosition(Contract contract, double position, double averageCost) {
+      if(position == 0) {
+        OpenTrades
+         .Where(t => t.Pair == contract.LocalSymbol)
+         .ToList()
+         .ForEach(ot => OpenTrades.Remove(ot));
+      } else {
+        var isBuy = position > 0;
+        OpenTrades
+          .Where(ot => ot.Pair == contract.LocalSymbol && ot.IsBuy == isBuy)
+          .IfEmpty(() => new[] { TradeFromPosition(contract, position, averageCost).SideEffect(OpenTrades.Add) })
+          .ForEach(ot => ot.Lots = position.Abs().ToInt());
+      }
 
+    }
     private void OnError(int reqId, int code, string error, Exception exc) {
       IbClient.SetRequestHandled(reqId);
-      if(new[] { 110, 382, 383 }.Contains(code))
+      if(new[] { 103, 110, 382, 383 }.Contains(code))
         RaiseOrderRemoved(reqId);
       if(_orderContracts.ContainsKey(reqId + "")) {
         var contract = _orderContracts[reqId + ""].contract + "";
@@ -234,7 +280,7 @@ namespace IBApp {
     private void OnOpenOrder(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) =>
       OnOpenOrderPush(Tuple.Create(reqId, c, o, os));
     private void OnOrderStartedImpl(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) {
-      if(!os.IsPreSubmited()) {
+      if(!o.WhatIf) {
         _orderContracts.TryAdd(o.OrderId + "", (o, c));
         _verbous(new { OnOpenOrder = new { reqId, c, o, os } });
         RaiseOrderAdded(new HedgeHog.Shared.Order {
@@ -333,6 +379,8 @@ namespace IBApp {
         //_verbous(new { OnExecDetails = new { reqId, contract, execution } });
         var order = _orderContracts[orderId].order;
         var symbol = _orderContracts[orderId].contract.Instrument;
+        var isBuy = order.Action == "BUY";
+
         var execTime = IbClient.ServerTime;
         var execPrice = avgPrice;
 
@@ -340,7 +388,7 @@ namespace IBApp {
 
         var trade = CreateTrade(symbol);
         trade.Id = DateTime.Now.Ticks + "";
-        trade.Buy = order.Action == "BUY";
+        trade.Buy = isBuy;
         trade.IsBuy = trade.Buy;
         trade.Time2 = execTime;
         trade.Time2Close = execTime;
@@ -457,28 +505,28 @@ namespace IBApp {
 
     private void OnFirstPosition(Contract contract, PositionMessage position) {
       _defaultMessageHandler(new { position, contract });
-      var st = IbClient.ServerTime;
 
       if(position.Position != 0 && !OpenTrades.Any(IsEqual(position)))
-        OpenTrades.Add(TradeFromPosition(contract.LocalSymbol));
+        OpenTrades.Add(TradeFromPosition(contract, position.Position, position.AverageCost));
 
       TraceTrades("Positions: ", OpenTrades);
 
       #region TradeFromPosition
-      Trade TradeFromPosition(string symbol) {
-        var trade = CreateTrade(symbol);
-        trade.Id = DateTime.Now.Ticks + "";
-        trade.Buy = position.Position > 0;
-        trade.IsBuy = trade.Buy;
-        trade.Time2 = st;
-        trade.Time2Close = IbClient.ServerTime;
-        trade.Open = position.AverageCost;
-        trade.Lots = position.Position.Abs().ToInt();
-        trade.OpenOrderID = "";
-        trade.CommissionByTrade = CommissionByTrade;
-        return trade;
-      }
       #endregion
+    }
+    Trade TradeFromPosition(Contract contract, double position, double avgCost) {
+      var st = IbClient.ServerTime;
+      var trade = CreateTrade(contract.LocalSymbol);
+      trade.Id = DateTime.Now.Ticks + "";
+      trade.Buy = position > 0;
+      trade.IsBuy = trade.Buy;
+      trade.Time2 = st;
+      trade.Time2Close = IbClient.ServerTime;
+      trade.Open = avgCost;
+      trade.Lots = position.Abs().ToInt();
+      trade.OpenOrderID = "";
+      trade.CommissionByTrade = CommissionByTrade;
+      return trade;
     }
 
 
@@ -549,6 +597,10 @@ namespace IBApp {
     #region WhatIf Subject
     object _WhatIfSubjectLocker = new object();
     ISubject<Action> _WhatIfSubject;
+    private IDisposable _positionStream;
+    private IDisposable _orderStatusStream;
+    private IDisposable _portfolioStream;
+
     ISubject<Action> WhatIfSubject {
       get {
         lock(_WhatIfSubjectLocker)
@@ -604,7 +656,7 @@ namespace IBApp {
     #endregion
   }
   public static class Mixins {
-    public static bool IsPreSubmited(this IBApi.OrderState order) => order.Status == AccountManager.OrderStatuses.PreSubmitted + "";
+    public static bool IsPreSubmited(this IBApi.OrderState order) => order.Status == "PreSubmitted";
 
     public static bool IsBuy(this IBApi.Order o) => o.Action == "BUY";
 

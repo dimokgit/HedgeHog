@@ -78,7 +78,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public double GrossToExitSave {
-      get => GrossToExit < 1? GrossToExit : 0;
+      get => GrossToExit < 1 ? GrossToExit : 0;
       set {
         if(GrossToExit != value) {
           GrossToExit = value;
@@ -96,5 +96,16 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    double _profitByHedgeRatioDiff = 1 / 3.0;
+    public double ProfitByHedgeRatioDiff {
+      get => _profitByHedgeRatioDiff;
+      set {
+        if(_profitByHedgeRatioDiff != value) {
+          _profitByHedgeRatioDiff = value;
+          RaisePropertyChangedCore();
+        }
+      }
+    }
+
   }
 }

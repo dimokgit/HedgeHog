@@ -19,10 +19,7 @@ namespace HedgeHog {
       try {
         if (exc != null) {
           var text = DateTime.Now.ToString("[dd HH:mm:ss.fff] ") + " **************** Exception ***************" + Environment.NewLine;
-          while(exc != null) {
-            text += exc.Message + Environment.NewLine + exc.StackTrace + Environment.NewLine;
-            exc = exc.InnerException;
-          }
+          text += string.Join(Environment.NewLine, ExceptionMessages(exc));
           LogToFile(fileName, text);
           //nLogger.Error(text);
         }
@@ -33,6 +30,13 @@ namespace HedgeHog {
         } catch { }
       }
       return exc;
+    }
+
+    public static IEnumerable<string> ExceptionMessages(Exception exc ) {
+      while(exc != null) {
+        yield return exc.Message + (exc?.StackTrace.IsNullOrWhiteSpace() == true ? "" : Environment.NewLine) + exc.StackTrace;
+        exc = exc.InnerException;
+      }
     }
 
     public static void LogToFile( string text) {

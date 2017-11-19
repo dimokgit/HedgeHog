@@ -12,7 +12,6 @@ namespace HedgeHog.Alice.Store {
 #pragma warning disable 0067
     public virtual event EventHandler<TradingStatisticsEventArgs> NeedTradingStatistics;
     public abstract event EventHandler MasterTradeAccountChanged;
-    public abstract event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
     public abstract event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
     public abstract event EventHandler<OrderEventArgs> OrderToNoLoss;
     public abstract event EventHandler<EventArgs> StepBack;

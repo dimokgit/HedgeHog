@@ -1163,6 +1163,11 @@
         this.grossToExit("");
       }.bind(this));
     }.bind(this);
+    //
+    this.profitByHedgeRatioDiff = ko.observable();
+    this.saveProfitByHedgeRatioDiff = function () {
+      serverCall("saveProfitByHedgeRatioDiff", [this.profitByHedgeRatioDiff()]);
+    }.bind(this);
     this.accountingDialog = function (element) {
       var table = $(element).find("table");
       accountingDialog = table[0];

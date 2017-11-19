@@ -18,6 +18,7 @@ namespace HedgeHog.Shared {
   public delegate void PriceChangedEventHandler(Price Price);
   [Serializable]
   public class Price {
+    public bool IsShortable { get; set; } = true;
     public double Bid { get; set; }
     public double Ask { get; set; }
     public double Average { get { return (Ask + Bid) / 2; } }

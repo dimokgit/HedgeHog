@@ -47,12 +47,12 @@ public class IBClientCore : IBClient, ICoreFX {
 
   #region Properties
   public Action<object> Trace => _trace;
-  private bool _verbose = false;
+  private bool _verbose = true;
   public void Verbouse(object o) { if(_verbose) _trace(o); }
   #endregion
 
   #region ICoreEX Implementation
-  public void SetOfferSubscription(string pair) => _marketDataManager.AddRequest(ContractSamples.ContractFactory(pair), "233,221");
+  public void SetOfferSubscription(string pair) => _marketDataManager.AddRequest(ContractSamples.ContractFactory(pair), "233,221,236");
   public bool IsInVirtualTrading { get; set; }
   public DateTime ServerTime => DateTime.Now + _serverTimeOffset;
   public event EventHandler<LoggedInEventArgs> LoggedOff;
@@ -76,16 +76,25 @@ public class IBClientCore : IBClient, ICoreFX {
     _marketDataManager.PriceChanged += OnPriceChanged;
   }
 
+  private static object _validOrderIdLock = new object();
   private void OnNextValidId(int obj) {
-    _validOrderId = obj;
+    lock(_validOrderIdLock) {
+      _validOrderId = obj + 1;
+    }
+    Verbouse(new { _validOrderId });
   }
-  [MethodImpl( MethodImplOptions.Synchronized)]
+  /// <summary>
+  /// https://docs.microsoft.com/en-us/dotnet/api/system.threading.interlocked.increment?f1url=https%3A%2F%2Fmsdn.microsoft.com%2Fquery%2Fdev15.query%3FappId%3DDev15IDEF1%26l%3DEN-US%26k%3Dk(System.Threading.Interlocked.Increment);k(SolutionItemsProject);k(TargetFrameworkMoniker-.NETFramework,Version%3Dv4.6.2);k(DevLang-csharp)%26rd%3Dtrue&view=netframework-4.7.1
+  /// </summary>
+  /// <returns></returns>
   public int ValidOrderId() {
     //ClientSocket.reqIds(1);
-    try {
-      return ++_validOrderId;
-    } finally {
-      Verbouse(new { _validOrderId });
+    lock(_validOrderIdLock) {
+      try {
+        return Interlocked.Increment(ref _validOrderId);
+      } finally {
+        Trace(new { _validOrderId });
+      }
     }
   }
   public bool TryGetPrice(string symbol,out Price price) { return _marketDataManager.TryGetPrice(symbol,out price); }

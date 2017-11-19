@@ -39,14 +39,15 @@ namespace ConsoleApp {
       var es = ContractSamples.ContractFactory("ESM7");
       var vx = ContractSamples.ContractFactory("VXH8");
       var spy = ContractSamples.ContractFactory("SPY");
-      var contract = spy;
+      var svxy = ContractSamples.ContractFactory("SVXY");
+      var contract = svxy;
       if(ibClient.LogOn("127.0.0.1", 7497 + "", 102 + "", false)) {
         ibClient.SetOfferSubscription(contract.Instrument);
         if(true) {
           var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
           HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
           var counter = 0;
-          new HistoryLoader<Rate>(ibClient, contract, 1800 * 3, dateEnd, TimeSpan.FromHours(4), TimeUnit.S, BarSize._1_min,
+          new HistoryLoader<Rate>(ibClient, contract, 1440 * 3, dateEnd, TimeSpan.FromDays(3), TimeUnit.D, BarSize._1_min,
              map,
              list => HandleMessage(new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate } } + ""),
              dates => HandleMessage(new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter } + ""),

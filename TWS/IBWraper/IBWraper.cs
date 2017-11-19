@@ -53,14 +53,6 @@ namespace IBApp {
       _accountManager.OrderAdded += RaiseOrderAdded;
       _accountManager.OrderRemoved += RaiseOrderRemoved;
     }
-    #region OpenOrder
-    private readonly ConcurrentDictionary<string, PositionMessage> _positions = new ConcurrentDictionary<string, PositionMessage>();
-
-    private static Func<Trade, bool> IsEqual(PositionMessage position) => ot => ot.Key().Equals(position.Key());
-    private static Func<Trade, bool> IsNotEqual(Trade trade) => ot => ot.Key().Equals(trade.Key2());
-
-
-    #endregion
 
     private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
       var price = e.Price;

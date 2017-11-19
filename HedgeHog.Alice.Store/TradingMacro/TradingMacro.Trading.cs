@@ -33,43 +33,51 @@ namespace HedgeHog.Alice.Store {
                    ));
         return hbs.Select(t => new TM_HEDGE(t));
       }).Concat();
-    public void OpenHedgedTrades(bool isBuy,bool closeOnly, string reason) {
-      HedgeBuySell(isBuy)
+    public void OpenHedgedTrades(bool isBuy, bool closeOnly, string reason) {
+      var hbs = HedgeBuySell(isBuy)
         .Select(x => x.Value)
         .OrderByDescending(tm => tm.Pair == Pair)
-        .ToArray()
-        .AsParallel()
-        .ForAll(t => {
-          var lotToClose = t.tm.Trades.IsBuy(!t.IsBuy).Sum(tr => tr.Lots);
-          var lotToOpen = !closeOnly ? t.Lot : 0;
-          t.tm.OpenTrade(t.IsBuy, lotToOpen + lotToClose, reason + ": hedge open");
-        });
+        .ToArray();
+
+      if(hbs.Where(bs => !TradesManager.GetPrice(bs.Pair).IsShortable)
+        .Do(bs => Log = new Exception(bs.Pair + " is not shortable")).Any())
+        return;
+
+      hbs.ForEach(t => {
+        var lotToClose = t.tm.Trades.IsBuy(!t.IsBuy).Sum(tr => tr.Lots);
+        var lotToOpen = !closeOnly ? t.Lot : 0;
+        t.tm.OpenTrade(t.IsBuy, lotToOpen + lotToClose, reason + ": hedge open");
+      });
     }
 
+    object _tradeLock = new object();
     public void OpenTrade(bool isBuy, int lot, string reason) {
-      var key = lot - Trades.Lots(t => t.IsBuy != isBuy) > 0 ? OT : CT;
-      CheckPendingAction(key, (pa) => {
-        if(lot > 0) {
-          pa();
-          LogTradingAction(string.Format("{0}[{1}]: {2} {3} from {4} by [{5}]", Pair, BarPeriod, isBuy ? "Buying" : "Selling", lot, new StackFrame(3).GetMethod().Name, reason));
-          TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", CurrentPrice);
-        }
-      });
+      lock(_tradeLock) {
+        var key = lot - Trades.Lots(t => t.IsBuy != isBuy) > 0 ? OT : CT;
+        CheckPendingAction(key, (pa) => {
+          if(lot > 0) {
+            pa();
+            LogTradingAction(string.Format("{0}[{1}]: {2} {3} from {4} by [{5}]", Pair, BarPeriod, isBuy ? "Buying" : "Selling", lot, new StackFrame(3).GetMethod().Name, reason));
+            TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", CurrentPrice);
+          }
+        });
+      }
     }
 
     public void CloseTrades(string reason) { CloseTrades(Trades.Lots(), reason); }
     //[MethodImpl(MethodImplOptions.Synchronized)]
     private void CloseTrades(int lot, string reason) {
-      if(!IsTrader || !Trades.Any() || HasPendingKey(CT))
-        return;
-      if(lot > 0)
-        CheckPendingAction(CT, pa => {
-          pa();
-          LogTradingAction(string.Format("{0}[{1}]: Closing {2} from {3} in {4} from {5}]"
-            , Pair, BarPeriod, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name, reason));
-          if(!TradesManager.ClosePair(Pair, Trades[0].IsBuy, lot))
-            ReleasePendingAction(CT);
-        });
+      lock(_tradeLock) {
+        if(!IsTrader || !Trades.Any() || HasPendingKey(CT))
+          return;
+        if(lot > 0)
+          CheckPendingAction(CT, pa => {
+            LogTradingAction(string.Format("{0}[{1}]: Closing {2} from {3} in {4} from {5}]", Pair, BarPeriod, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name, reason));
+            pa();
+            if(!TradesManager.ClosePair(Pair, Trades[0].IsBuy, lot))
+              ReleasePendingAction(CT);
+          });
+      }
     }
   }
 }

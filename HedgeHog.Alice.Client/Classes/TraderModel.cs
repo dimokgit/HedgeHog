@@ -36,6 +36,9 @@ using static HedgeHog.Core.JsonExtensions;
 using Newtonsoft.Json;
 using System.Net;
 using AutoMapper;
+using System.Reactive.Subjects;
+using Loggly;
+using Loggly.Config;
 
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs :EventArgs {
@@ -470,55 +473,96 @@ namespace HedgeHog.Alice.Client {
         }
       }
     }
+
+    #region Log Subject
+    object _LogSubjectLocker = new object();
+    ISubject<Exception> _LogSubject;
+    ISubject<Exception> LogSubject {
+      get {
+        lock(_LogSubjectLocker)
+          if(_LogSubject == null) {
+            _LogSubject = new Subject<Exception>();
+            _LogSubject
+            .Subscribe(exc => Log = exc, exc => Log = exc);
+          }
+        return _LogSubject;
+      }
+    }
+    public void OnLog(Exception exc) => LogSubject.OnNext(exc);
+    #endregion
+
+
     private IDisposable _logExpandedTargetBlock;
     Queue<string> _logQueue = new Queue<string>();
     Exception _log;
+
     public override Exception Log {
       get { return _log; }
       set {
-        try {
-          if(isInDesign)
-            return;
-          _log = value;
-          var exc = value is Exception ? value : null;
-          //var comExc = exc as System.Runtime.InteropServices.COMException;
-          //if (comExc != null && comExc.ErrorCode == -2147467259)
-          //  AccountLogin(new LoginInfo(TradingAccount, TradingPassword, TradingDemo));
-          lock(_logQueue) {
-            while(_logQueue.Count > 150)
-              _logQueue.Dequeue();
-            var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss.fff] ") + value.GetExceptionShort() });
-            while(value.InnerException != null) {
-              messages.Add(value.InnerException.GetExceptionShort());
-              value = value.InnerException;
-            }
-            _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
-          }
-          exc = FileLogger.LogToFile(exc);
-
-          //ReactiveUI.MessageBus.Current.SendMessage<WwwWarningMessage>(new WwwWarningMessage(exc.Message));
-
-          lastLogTime = DateTime.Now;
-          RaisePropertyChanged(nameof(LogText));
-          RaisePropertyChanged(nameof(IsLogExpanded));
-          RaisePropertyChanged(nameof(IsLogPinned));
-          IsLogExpanded = true;
-          if(_logExpandedTargetBlock != null) {
-            _logExpandedTargetBlock.Dispose();
-          }
-
-          //GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() =>
-          try {
-            _logExpandedTargetBlock = new Action(() => IsLogExpanded = false).ScheduleOnUI(10.FromSeconds());
-          } catch(InvalidOperationException) { }
-          //);
-        } catch(Exception exc) {
-          AsyncMessageBox.BeginMessageBoxAsync(exc + "");
-        }
+        if(isInDesign)
+          return;
+        _log = value;
+        LogToFile(value);
+        LogToCloud(value);
       }
     }
 
+    private void LogToFile(Exception exc) {
+      try {
+        lock(_logQueue) {
+          while(_logQueue.Count > 150)
+            _logQueue.Dequeue();
+          var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss.fff] ") + exc.GetExceptionShort() });
+          while(exc.InnerException != null) {
+            messages.Add(exc.InnerException.GetExceptionShort());
+            exc = exc.InnerException;
+          }
+          _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
+        }
+        exc = FileLogger.LogToFile(exc);
 
+        //ReactiveUI.MessageBus.Current.SendMessage<WwwWarningMessage>(new WwwWarningMessage(exc.Message));
+
+        lastLogTime = DateTime.Now;
+        RaisePropertyChanged(nameof(LogText));
+        RaisePropertyChanged(nameof(IsLogExpanded));
+        RaisePropertyChanged(nameof(IsLogPinned));
+        IsLogExpanded = true;
+        if(_logExpandedTargetBlock != null) {
+          _logExpandedTargetBlock.Dispose();
+        }
+        try {
+          _logExpandedTargetBlock = new Action(() => IsLogExpanded = false).ScheduleOnUI(10.FromSeconds());
+        } catch(InvalidOperationException) { }
+      } catch(Exception exc2) {
+        AsyncMessageBox.BeginMessageBoxAsync(exc2 + "");
+      }
+    }
+
+    static readonly ILogglyConfig CloudLogConfig = InitCloudLogger();
+    private static ILogglyConfig InitCloudLogger() {
+
+      var config = LogglyConfig.Instance;
+      config.CustomerToken = "217a334f-b2bd-4eb8-bcc2-ee55ba3c7f0a";
+      config.ApplicationName = $"{CurrentDirectory()}";
+
+      config.Transport.EndpointHostname = "logs-01.loggly.com";
+      config.Transport.EndpointPort = 443;
+      config.Transport.LogTransport = LogTransport.Https;
+
+      var ct = new ApplicationNameTag();
+      ct.Formatter = "{0}";
+      config.TagConfig.Tags.Add(ct);
+      return config;
+    }
+
+    void LogToCloud(Exception exc) {
+      if(!CloudLogConfig.IsValid) return;
+      ILogglyClient _loggly = new LogglyClient();
+      var logEvent = new LogglyEvent();
+      logEvent.Data.Add("message", string.Join(Environment.NewLine, FileLogger.ExceptionMessages(exc)));
+      _loggly.Log(logEvent);
+    }
 
     ITargetBlock<object> _LogExoandedTargetBlock;
     ITargetBlock<object> LogExoandedTargetBlock {
@@ -1163,7 +1207,7 @@ namespace HedgeHog.Alice.Client {
       get { return _tradeAdded; }
       set {
         _tradeAdded = value;
-        OnPropertyChanged(GetLambda<TraderModel>(tm => tm.TradeAdded));
+        OnPropertyChanged(nameof(TradeAdded));
       }
     }
     private IObservable<EventPattern<MasterTradeEventArgs>> _tradeRemoved;
@@ -1345,6 +1389,7 @@ namespace HedgeHog.Alice.Client {
 
     private void Initialize() {
       GlobalStorage.LoadTradeSettings(this);
+
       var settings = new WpfPersist.UserSettingsStorage.Settings().Dictionary;
       DatabasePath = settings.Where(kv => kv.Key.Contains("DatabasePath")).LastOrDefault().Value;
       //if (!string.IsNullOrWhiteSpace(DatabasePath)) GlobalStorage.DatabasePath = DatabasePath;
@@ -1443,16 +1488,9 @@ namespace HedgeHog.Alice.Client {
       } catch(Exception exc) { Log = exc; }
     }
 
-    public override event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
-    protected void OnMasterTradeAdded(Trade trade) {
-      if(MasterTradeAdded != null)
-        MasterTradeAdded(this, new MasterTradeEventArgs(trade));
-    }
-
     void FWMaster_TradeAdded(object sender, TradeEventArgs e) {
       try {
         Trade trade = e.Trade;
-        OnMasterTradeAdded(trade);
         var tm = (ITradesManager)sender;
         if(tm.TryGetPrice(trade.Pair, out var price))
           RunPriceChanged(new PriceChangedEventArgs(price, tm.GetAccount(), tm.GetTrades()));

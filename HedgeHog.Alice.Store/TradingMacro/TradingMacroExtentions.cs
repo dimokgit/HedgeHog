@@ -3239,9 +3239,9 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           return;
         Price price = e.Price;
         #region LoadRates
-        var tmCount = 1;//TradingMacrosActive.Count(tm => tm.BarPeriod == BarPeriod);
+        var tmCount =  TradingMacrosActive.Count(tm => tm.BarPeriod == BarPeriod);
         if(!TradesManager.IsInTest && !IsInPlayback
-          && (!UseRatesInternal(ri => ri.Any()).DefaultIfEmpty(true).Single() || LastRatePullTime.AddMinutes((0.3 * tmCount).Max((double)BarPeriod / 2)) <= ServerTime))
+          && (!UseRatesInternal(ri => ri.Any()).DefaultIfEmpty(true).Single() || LastRatePullTime.AddMinutes((0.25 * tmCount).Max((double)BarPeriod / 2)) <= ServerTime))
           OnLoadRates();
         #endregion
         OnRunPriceBroadcast(e);

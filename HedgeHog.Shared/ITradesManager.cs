@@ -253,7 +253,7 @@ namespace HedgeHog.Shared {
     public static bool IsFuture(this string s) => Regex.IsMatch(s, @"^\w{2,3}[HMUZ]\d{1,2}$", RegexOptions.IgnoreCase);
     public static bool IsCommodity(this string s) => _commodities.Contains(s.ToUpper());
     public static bool IsUSStock(this string s) => !s.IsCurrenncy() && !s.IsFuture() && !s.IsCommodity();
-    static string[] _etfs = new[] { "SPY", "TVIX", "VXX", "UVXY" };
+    static string[] _etfs = new[] { "SPY", "TVIX", "VXX", "UVXY", "SVXY" };
     public static bool IsETF(this string s) => _etfs.Contains(s);
     private static readonly EventLoopScheduler _tradingThread =
       new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; });

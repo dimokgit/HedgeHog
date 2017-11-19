@@ -54,7 +54,7 @@ namespace IBApp {
     }
     private void OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
       var priceMessage = new TickPriceMessage(requestId, field, price, canAutoExecute);
-      var price2 = activeRequests[requestId].Item2;
+      var price2 = activeRequests[requestId].price;
       if(priceMessage.Price == 0)
         return;
       switch(priceMessage.Field) {
@@ -94,6 +94,10 @@ namespace IBApp {
         case 3:
         case 5:
             RaisePriceChanged(price2);
+          break;
+        case 46:
+          price2.IsShortable = price > 2.5;
+          Trace(new { price2.Pair, price2.IsShortable });
           break;
       }
     }

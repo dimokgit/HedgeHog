@@ -722,7 +722,7 @@ namespace HedgeHog.Alice.Client {
             from mps in tm.MaxHedgeProfit
             from mp in mps
             where mp.buy == tm.Trades.HaveBuy()
-            select new Action(() => MasterModel.GrossToExitCalc = () => mp.profit / 2)
+            select new Action(() => MasterModel.GrossToExitCalc = () => mp.profit * MasterModel.ProfitByHedgeRatioDiff)
             )
             .DefaultIfEmpty(() => MasterModel.GrossToExitCalc = null)
             .Single()();
@@ -1186,13 +1186,11 @@ namespace HedgeHog.Alice.Client {
       e.IsHandled = true;
       try {
         Trade trade = e.Trade;
-        var comm = MasterModel.CommissionByTrade(trade);
-        if(IsInVirtualTrading)
+        if(IsInVirtualTrading) {
+          var comm = MasterModel.CommissionByTrade(trade);
           TradesManager.GetAccount().Balance -= comm;
+        }
         GetTradingMacros(trade.Pair).Take(1).ForEach(tm => {
-          tm.CurrentLoss -= comm;
-          tm.RunningBalance -= comm;
-          //if (tm.LastTrade.Time < trade.Time) tm.LastTrade = trade;
           var trades = TradesManager.GetTradesInternal(trade.Pair);
           tm.CurrentLot = trades.Sum(t => t.Lots);
           var amountK = tm.CurrentLot / tm.BaseUnitSize;

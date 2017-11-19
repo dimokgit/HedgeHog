@@ -424,6 +424,10 @@
                         data-target="#tradeConditionsDialog">
                   <span class="glyphicon glyphicon-ok"></span>
                 </button>
+                <button data-toggle="modal"
+                        data-target="#linksDialog" title="Links">
+                  <span class="glyphicon glyphicon glyphicon-link"></span>
+                </button>
               </li>
               <li role="presentation" class="divider"></li>
               <li>
@@ -850,8 +854,14 @@
         <tr>
           <td>GrossToExit</td>
           <td>
-            <input data-bind="value:grossToExit" size="5" />
-            <input data-bind="click:saveGrossToExit" value="Save" type="button" />
+            <input data-bind="value:grossToExit" size="5" style="padding:0px" />
+            <input data-bind="click:saveGrossToExit" value="Save" type="button" style="padding:0px" />
+        </tr>
+        <tr>
+          <td>PrfByHdgRatio</td>
+          <td>
+            <input data-bind="value:profitByHedgeRatioDiff" size="5" style="padding:0px" />
+            <input data-bind="click:saveProfitByHedgeRatioDiff" value="Save" type="button" style="padding:0px" />
         </tr>
     </table>
     </td>
@@ -988,6 +998,20 @@
     </div>
   </div>
   <!--#endregion-->
+  <div class="modal" id="linksDialog" tabindex="-1" role="dialog" aria-labelledby="linksDialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <span class="modal-title" id="myModalLabel">Links</span>
+        </div>
+        <div class="modal-body">
+          <a href="https://dimok.loggly.com/search" target="_blank">Event Log</a>
+          <a href="https://mlab.com/databases/forex" target="_blank">MLab</a>
+        </div>
+      </div>
+    </div>
+  </div>
   <!--#region News-->
   <div class="modal" id="newsDialog" tabindex="-1" role="dialog" aria-labelledby="newsDialog" aria-hidden="true">
     <div class="modal-dialog">
