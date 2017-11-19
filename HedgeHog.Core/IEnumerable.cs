@@ -300,6 +300,21 @@ namespace HedgeHog {
       else
         @else();
     }
+    public static (U value, IEnumerable<Exception> error,T param) WithError<T, U>(this Func<T, U> func, T value) {
+      try {
+        return (func(value), new Exception[0], value);
+      }catch(Exception exc) {
+        return (default, new[] { exc }, value);
+      }
+    }
+    public static (U value, IEnumerable<Exception> error, T param) WithError<T,V, U>(this (T value, IEnumerable<Exception> error,V param) param, Func<(T value, IEnumerable<Exception> error, V param), U> func) {
+      try {
+        return (func(param), param.error,param.value);
+      }catch(Exception exc) {
+        return (default, param.error.Concat(new[] { exc }), param.value);
+      }
+    }
+
     public static U With<T, U>(this T v, Predicate<T> @if, Func<T, U> then, Func<T, U> @else) {
       return @if(v) ? then(v) : @else(v);
     }

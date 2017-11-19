@@ -9,16 +9,16 @@ namespace HedgeHog {
   public static class FileLogger {
     private static string logFileName = "Log.txt";
     //private static Logger nLogger = LogManager.GetCurrentClassLogger();
-    
+
     static FileLogger() {
       System.IO.File.Delete(logFileName);
     }
     public static Exception LogToFile(Exception exc) { return LogToFile(exc, logFileName); }
     //[MethodImpl(MethodImplOptions.Synchronized)]
-    public static Exception LogToFile(Exception exc,string fileName) {
+    public static Exception LogToFile(Exception exc, string fileName) {
       try {
-        if (exc != null) {
-          var text = DateTime.Now.ToString("[dd HH:mm:ss.fff] ") + " **************** Exception ***************" + Environment.NewLine;
+        if(exc != null) {
+          var text =  $"{Environment.NewLine}*****{DateTime.Now.ToString("[dd HH:mm:ss.fff] ")} *****{Environment.NewLine}";
           text += string.Join(Environment.NewLine, ExceptionMessages(exc));
           LogToFile(fileName, text);
           //nLogger.Error(text);
@@ -32,14 +32,14 @@ namespace HedgeHog {
       return exc;
     }
 
-    public static IEnumerable<string> ExceptionMessages(Exception exc ) {
+    public static IEnumerable<string> ExceptionMessages(Exception exc) {
       while(exc != null) {
         yield return exc.Message + (exc?.StackTrace.IsNullOrWhiteSpace() == true ? "" : Environment.NewLine) + exc.StackTrace;
         exc = exc.InnerException;
       }
     }
 
-    public static void LogToFile( string text) {
+    public static void LogToFile(string text) {
       LogToFile(logFileName, text);
     }
     //[MethodImpl(MethodImplOptions.Synchronized)]

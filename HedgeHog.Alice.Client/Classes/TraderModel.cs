@@ -483,7 +483,10 @@ namespace HedgeHog.Alice.Client {
           if(_LogSubject == null) {
             _LogSubject = new Subject<Exception>();
             _LogSubject
-            .Subscribe(exc => Log = exc, exc => Log = exc);
+              .ObserveOn(ThreadPoolScheduler.Instance)
+              .SelectMany(exc => IEnumerableCore.WithError(LogToFile, exc).WithError(t => LogToCloud(t.param)).error)
+              .Subscribe(exc => _logQueue.Enqueue(Environment.NewLine + exc)
+            , exc => Log = exc);
           }
         return _LogSubject;
       }
@@ -502,12 +505,11 @@ namespace HedgeHog.Alice.Client {
         if(isInDesign)
           return;
         _log = value;
-        LogToFile(value);
-        LogToCloud(value);
+        OnLog(value);
       }
     }
 
-    private void LogToFile(Exception exc) {
+    private Exception LogToFile(Exception exc) {
       try {
         lock(_logQueue) {
           while(_logQueue.Count > 150)
@@ -519,7 +521,7 @@ namespace HedgeHog.Alice.Client {
           }
           _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
         }
-        exc = FileLogger.LogToFile(exc);
+        FileLogger.LogToFile(exc);
 
         //ReactiveUI.MessageBus.Current.SendMessage<WwwWarningMessage>(new WwwWarningMessage(exc.Message));
 
@@ -537,6 +539,7 @@ namespace HedgeHog.Alice.Client {
       } catch(Exception exc2) {
         AsyncMessageBox.BeginMessageBoxAsync(exc2 + "");
       }
+      return exc;
     }
 
     static readonly ILogglyConfig CloudLogConfig = InitCloudLogger();
@@ -556,12 +559,13 @@ namespace HedgeHog.Alice.Client {
       return config;
     }
 
-    void LogToCloud(Exception exc) {
-      if(!CloudLogConfig.IsValid) return;
+    Exception LogToCloud(Exception exc) {
+      if(!CloudLogConfig.IsValid) return exc;
       ILogglyClient _loggly = new LogglyClient();
       var logEvent = new LogglyEvent();
       logEvent.Data.Add("message", string.Join(Environment.NewLine, FileLogger.ExceptionMessages(exc)));
       _loggly.Log(logEvent);
+      return exc;
     }
 
     ITargetBlock<object> _LogExoandedTargetBlock;

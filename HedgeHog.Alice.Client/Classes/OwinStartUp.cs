@@ -625,12 +625,21 @@ namespace HedgeHog.Alice.Client {
     }
     public void CloseTrades(string pair) {
       try {
+        GetTradingMacro(pair, 0)
+          .AsParallel()
+          .ForAll(tm => tm.CloseTrades("SignalR: CloseTrades"));
+      } catch(Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+      }
+    }
+    public void CloseTradesAll(string pair) {
+      try {
         trader.Value.GrossToExitSoftReset();
         var tms = GetHedgedTradingMacros(pair).SelectMany(x => new[] { x.tm1, x.tm2 })
         .Distinct(tm => tm.Pair)
-        .DefaultIfEmpty(GetTradingMacro(pair,0).Single())
+        .DefaultIfEmpty(GetTradingMacro(pair, 0).Single())
         .ToArray();
-        tms.AsParallel().ForAll(tm => tm.CloseTrades("SignalR: CloseTrades"));
+        tms.AsParallel().ForAll(tm => tm.CloseTrades($"SignalR: {nameof(CloseTradesAll)}"));
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }

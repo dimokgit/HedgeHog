@@ -597,6 +597,7 @@
           <!-- ko if:canShowClose -->
           <li class="nav-divider">|</li>
           <li><input type="button" data-bind="click:closeTrades" value=" Close " /></li>
+          <li><input type="button" data-bind="click:closeTradesAll" value="ALL" /></li>
           <!-- /ko -->
           <!-- ko ifnot:canShowClose -->
           <li class="nav-divider">|</li>
@@ -610,6 +611,10 @@
             </button>
           </li>
           <!-- /ko -->
+          <li class="nav-divider">|</li>
+          <li>
+            <select data-bind="options:pairs,value:pairCurrent"></select>
+          </li>
           <!--#region Sample-->
           <li style="display:none">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Menu 2 <b class="caret"></b></a>

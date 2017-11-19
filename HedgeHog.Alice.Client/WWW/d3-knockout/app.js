@@ -279,6 +279,13 @@
       return [{ d: new Date("1/1/1900"), do: new Date("1/1/1900"), c: 0, v: 0, m: 0 }];// jshint ignore:line
     }
     // #endregion
+    this.pairs = ko.observableArray();
+    this.pairCurrent = ko.observable(pair);
+    this.pairCurrent.subscribe(function (pc) {
+      if (pc.toLowerCase() == pair) return;
+      var newUrl = location.href.replace(location.search, "") + "?pair=" + pc;
+      location = newUrl;
+    });
     this.isVirtual = ko.observable(true);
     var inPause = this.inPause = ko.observable(true);
     this.togglePause = togglePause;
@@ -359,6 +366,9 @@
     });
     this.closeTrades = function () {
       serverCall("closeTrades", [pair], resetPlotter);
+    }
+    this.closeTradesAll = function () {
+      serverCall("closeTradesAll", [pair], resetPlotter);
     }
     this.canShowBuyButton = ko.pureComputed(function () {
       return !openTrades().buy;
@@ -1539,6 +1549,7 @@
         return;
       }
       serverCall("availibleSymbols", [], function (pairs) {
+        dataViewModel.pairs(pairs);
         if (pair && pairs.length) {
           if (pairs.some(function (p) { return p.toUpperCase() === pair; }))
             return afterPairIsAvailible();
