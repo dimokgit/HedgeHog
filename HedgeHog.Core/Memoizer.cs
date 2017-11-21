@@ -55,6 +55,13 @@ namespace HedgeHog {
         return r[0].Item2;
       };
     }
+    public static Func<A,R> MemoizePrev<A,R>(this Func<A,R> f, Predicate<R> usePrevCondition) {
+      var cache = default(R);
+      return a => {
+        var r = f(a);
+        return usePrevCondition(r) ? cache : (cache = r);
+      };
+    }
     static Func<Tuple<A, B>, R> Tuplify<A, B, R>(this Func<A, B, R> f) {
       return t => f(t.Item1, t.Item2);
     }

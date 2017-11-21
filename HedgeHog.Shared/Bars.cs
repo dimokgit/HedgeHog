@@ -241,11 +241,11 @@ namespace HedgeHog.Bars {
     [DataMember]
     public double? PriceSpeed { get; set; }
 
-    double _PriceWave = double.NaN;
+    double _PriceHedge = double.NaN;
     [DataMember]
-    public double PriceWave {
-      get { return _PriceWave; }
-      set { _PriceWave = value; }
+    public double PriceHedge {
+      get { return _PriceHedge; }
+      set { _PriceHedge = value; }
     }
 
     [DataMember]

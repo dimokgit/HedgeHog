@@ -114,7 +114,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     private void SetVolts(double volt, Func<Rate, double> getVolt, Action<Rate, double> setVolt, double cma = 0) {
-      if(!WaveShort.HasRates || !IsRatesLengthStable)
+      if(!IsRatesLengthStable)
         return;
       if(double.IsInfinity(volt) || double.IsNaN(volt))
         return;

@@ -61,6 +61,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="IEnumerableCoreTests.cs" />
+    <Compile Include="MemoizerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

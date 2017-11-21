@@ -30,6 +30,7 @@ namespace HedgeHog.Alice.Client {
       var lastVolt2 = tm.GetLastVolt(tm.GetVoltage2).DefaultIfEmpty().Memoize();
       var lastCma = tm.UseRates(TradingMacro.GetLastRateCma).SelectMany(cma => cma).FirstOrDefault();
       var tsMin = TimeSpan.FromMinutes(tm.BarPeriodInt);
+      var priceHedge = MonoidsCore.ToFunc((Rate r) => r.PriceHedge).MemoizePrev(d => d.IsZeroOrNaN());
       var map = MonoidsCore.ToFunc((Rate)null, rate => new {
         //d = rate.StartDate2,
         d = tm.BarPeriod == BarsPeriodType.t1 ? rate.StartDate2 : rate.StartDate2.Round().With(d => d == rate.StartDate2 ? d : d + tsMin),
@@ -39,7 +40,8 @@ namespace HedgeHog.Alice.Client {
         m = rate.PriceCMALast.IfNaNOrZero(lastCma).Round(digits),
         a = rate.AskHigh.Round(digits),
         b = rate.BidLow.Round(digits),
-        h = isRth(rate.StartDate.InNewYork())
+        h = isRth(rate.StartDate.InNewYork()),
+        p = priceHedge(rate)
       });
       #endregion
       var exit = false;// doShowVolt && lastVolt.IsEmpty() || doShowVolt2 && lastVolt2.IsEmpty();
@@ -195,6 +197,7 @@ namespace HedgeHog.Alice.Client {
       getTrades(false).Take(1).ForEach(_ => trades.Add(new { sell = tradeFoo(false) }));
       if(!tmg.TryGetPrice(pair, out var price)) return new object[0];
       var askBid = new { ask = price.Ask.Round(digits), bid = price.Bid.Round(digits) };
+      var ish = tm.IsPairHedged;
       var ret = tm.UseRates(ratesArray => ratesArray.Take(1).ToArray(), x => x).ToArray(_ => new {
         rates = getRates(ratesForChart),
         rates2 = getRates(ratesForChart2),
@@ -221,8 +224,9 @@ namespace HedgeHog.Alice.Client {
         canSell = tmTrader.CanOpenTradeByDirection(false),
         waveLines,
         barPeriod = tm.BarPeriodInt,
+        ish,
         vfs = tm.IsVoltFullScale ? 1 : 0,
-        vfss = tm.IsVoltFullScale ? tm.VoltsFullScaleMinMax : new[] { 0.0, 0.0 }
+        vfss = ish || tm.IsVoltFullScale ? tm.VoltsFullScaleMinMax : new[] { 0.0, 0.0 }
       });
       return ret;
     }

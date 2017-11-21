@@ -438,12 +438,12 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByCorrelation() {
       if(UseCalc()) {
-        var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())
+        var voltRates = UseRates(ra => ra.Where(r => !GetVoltage2(r).IsNaNOrZero()).ToArray())
           .Concat()
           .ToArray();
         if(voltRates.Length > BarsCountCalc * 0.9) {
-          var volt = alglib.pearsoncorr2(voltRates.ToArray(r => r.PriceAvg), voltRates.ToArray(GetVoltage));
-          ShowVolts(volt, 2, GetVoltage2, SetVoltage2);
+          var volt = alglib.pearsoncorr2(voltRates.ToArray(r => r.PriceAvg), voltRates.ToArray(GetVoltage2));
+          ShowVolts(volt, 2, GetVoltage, SetVoltage);
         }
       }
       return null;
@@ -478,36 +478,74 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByRatioDiff() {
       if(UseCalc()) {
-        var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())
-          .Concat()
+        //var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray()).Concat().ToArray();
+        var voltRates = ShowVoltsByRatioDiff_New()
           .ToArray();
-        var voltMap = RatioMap(voltRates, GetVoltage, VoltsFullScaleMinMax);
-        var priceMap = RatioMap(voltRates, _priceAvg);
-        double min = double.MaxValue, max = double.MinValue;
-        voltMap
-          .Zip(priceMap, (a, b) => {
-            var v = b.t.v - a.t.v;
+        VoltsFullScaleMinMax = voltRates.SelectMany(vr => GetFullScaleMinMax(vr.r, vr.h)).ToArray();
+        MaxHedgeProfit = new[] { CalcMaxHedgeProfit().Concat(MaxHedgeProfit).Aggregate((p, n) => p.Zip(n, (p1, p2) => (p1.profit.Cma(10, p2.profit), p1.buy)).ToArray()) };
+
+        var voltMap = voltRates.SelectMany(vr => RatioMapDouble((vr.h, VoltsFullScaleMinMax)));
+        var priceMap = voltRates.SelectMany(vr => RatioMap((vr.r, _priceAvg, null)));
+
+        double min = double.MaxValue, max = double.MinValue, priceMin = double.MaxValue, priceMax = double.MinValue;
+        priceMap
+          .Zip(voltMap, (b, a) => {
+            var v = b.t.v - a.v;
             return (b.t.r, v);
           }).ToArray().Cma(t => t.v, VoltAverageIterations, VoltAverageIterations, (t, v) => {
             min = v.Min(min);
             max = v.Max(max);
+            priceMin = t.r.PriceAvg.Min(priceMin);
+            priceMax = t.r.PriceAvg.Max(priceMax);
             SetVoltage2(t.r, v);
           });
         min = new[] { min, max }.OrderBy(m => m.Abs()).Last();
         GetVoltage2High = () => new[] { min.Abs() };
         GetVoltage2Low = () => new[] { -min.Abs() };
+
+        voltRates.Select(vr => vr.r).ForEach(ra => ra.Zip(voltMap, (r, h) => r.PriceHedge = PosByRatio(priceMin, priceMax, h.v)).Count());
       }
       return null;
+
+      double PosByRatio(double min, double max, double pos) {
+        return min + (max - min) * pos;
+      }
     }
 
-    IEnumerable<(DateTime d, (double v, Rate r) t)> RatioMap(IList<Rate> source, Func<Rate, double> getter, double[] minMax = null) {
-      minMax = (minMax ?? new double[0]).Concat(source.MinMax(getter)).MinMax();
-      return source.Select(t => (t.StartDate, (getter(t).PositionRatio(minMax), t)));
-    }
+    IEnumerable<(Rate[] r, double[] h)> ShowVoltsByRatioDiff_New() => ShowVoltsByRatioDiff_New(t => { });
+    IEnumerable<(Rate[] r, double[] h)> ShowVoltsByRatioDiff_New(Action<(Rate rate, double ratio)> action) =>
+      from tm2 in TradingMacroHedged()
+      from corr in TMCorrelation(tm2)
+      from xs in UseRates(tm2, (ra, ra2) => ZipRateArrays((ra, ra2, corr)))
+      select (xs.Do(action).Select(t => t.rate).ToArray(), xs.Select(t => t.ratio).ToArray());
+
+    Func<(List<Rate> ra, List<Rate> ra2, int corr), IList<(Rate rate, double ratio)>> ZipRateArrays = ZipRateArraysImpl;//.MemoizeLast(t => t.ra.LastOrDefault().StartDate);
+    private static Func<(List<Rate> ra, List<Rate> ra2, int corr), IList<(Rate rate, double)>> ZipRateArraysImpl =
+      t => t.ra.Zip(
+        r => r.StartDate
+        , t.ra2.Select(r => Tuple.Create(r.StartDate, t.corr == 1 ? r.PriceAvg : 1 / r.PriceAvg))
+        , r => r.Item1
+        , (r, r2) => (r, r2.Item2)
+        ).ToArray();
+
+
+    static Func<(IList<Rate> source, Func<Rate, double> getter, double[] minMax), IEnumerable<(DateTime d, (double v, Rate r) t)>> RatioMapImpl => t => {
+      var minMax = (t.minMax ?? new double[0]).Concat(t.source.MinMax(t.getter)).MinMax();
+      return t.source.Select(r => (r.StartDate, (t.getter(r).PositionRatio(minMax), r)));
+    };
+    Func<(IList<Rate> source, Func<Rate, double> getter, double[] minMax), IEnumerable<(DateTime d, (double v, Rate r) t)>> RatioMap
+      = RatioMapImpl;//.MemoizeLast(t => t.source.BackwardsIterator().Take(1).Select(r=>(r.StartDate,t.getter(r))).FirstOrDefault());
+
+    static Func<(IList<double> source, double[] minMax), IEnumerable<(double v, double r)>> RatioMapDoubleImpl = p => {
+      var minMax = (p.minMax ?? new double[0]).Concat(p.source.MinMax()).MinMax();
+      return p.source.Select(t => (t.PositionRatio(minMax), t));
+    };
+    Func<(IList<double> source, double[] minMax), IEnumerable<(double v, double r)>> RatioMapDouble
+      = RatioMapDoubleImpl;//.MemoizeLast(t => (t.source.FirstOrDefault(), t.source.LastOrDefault()));
 
     void CalcVoltsFullScaleShiftByStDev() {
-      foreach(var mapH in TradingMacroHedged(tm => tm.UseRates(ra => RatioMap(ra, r => 1 / _priceAvg(r)).ToArray()).Concat())) {
-        foreach(var map in UseRates(ra => RatioMap(ra, _priceAvg).ToArray())) {
+      foreach(var mapH in TradingMacroHedged(tm => tm.UseRates(ra => RatioMap((ra, r => 1 / _priceAvg(r), null)).ToArray()).Concat())) {
+        foreach(var map in UseRates(ra => RatioMap((ra, _priceAvg, null)).ToArray())) {
           var stDevs = Enumerable.Range(-99, 99 * 2).Select(i => i / 100.0).Select(o => new { o, std = GetStDev(o) }).OrderBy(x => x.std).ToArray();
           Debug.WriteLine(new { stDevs.First().o, stDevs.First().std, Pair, PairIndex });
 
@@ -521,43 +559,58 @@ namespace HedgeHog.Alice.Store {
           .Concat()
           .ToArray();
         if(voltRates.Length > BarsCountCalc * 0.9) {
-          var linearPrice = voltRates.Linear(_priceAvg).RegressionValue(voltRates.Length / 2);
-          var priceMinMax = voltRates.MinMax(_priceAvg);
-          var pricePos = linearPrice.PositionRatio(priceMinMax);
-
-          var linearVolt = voltRates.Linear(GetVoltage).RegressionValue(voltRates.Length / 2);
-          var v = voltRates.MinMax(GetVoltage).Yield(mm => new { min = mm[0], max = mm[1] }).Single();
-          var voltPos = linearVolt.PositionRatio(v.min, v.max);
-
-          VoltsFullScaleMinMax = new[]{
-            voltMinNew(),
-            voltMaxNew()
-          };
+          if(false) VoltsFullScaleMinMax = GetFullScaleMinMax(voltRates, GetVoltage);
           //MaxHedgeProfit = CalcMaxHedgeProfit().Concat(MaxHedgeProfit).Aggregate((p,n)=>p.Zip(n,(p1,p2)=>(p1.buy,p1.profit.Cma(10,p2.profit)))  });
-          MaxHedgeProfit = new[] { CalcMaxHedgeProfit().Concat(MaxHedgeProfit).Aggregate((p, n) => p.Zip(n, (p1, p2) => (p1.profit.Cma(10, p2.profit), p1.buy)).ToArray()) };
           if(false)
             CalcVoltsFullScaleShiftByStDev();
-
-          double voltMaxNew() => (linearVolt - v.min) / pricePos + v.min;
-          double voltMinNew() => v.max - (v.max - linearVolt) / (1 - pricePos);
         }
       }
-      IEnumerable<(double profit, bool buy)[]> CalcMaxHedgeProfit() {
-        if(UseCalc())
-          foreach(var hp in CalcMaxHedgeProfitMem(this))
-            yield return hp;
-      }
     }
+    IEnumerable<(double profit, bool buy)[]> CalcMaxHedgeProfit() {
+      if(UseCalc())
+        foreach(var hp in CalcMaxHedgeProfitMem(this))
+          yield return hp;
+    }
+
+    private static double[] GetFullScaleMinMax(IList<Rate> voltRates, Func<Rate, double> rateMap) {
+      var linearPrice = voltRates.Linear(_priceAvg).RegressionValue(voltRates.Count / 2);
+      var priceMinMax = voltRates.MinMax(_priceAvg);
+      var pricePos = linearPrice.PositionRatio(priceMinMax);
+
+      var linearVolt = voltRates.Linear(rateMap).RegressionValue(voltRates.Count / 2);
+      var v = voltRates.MinMax(rateMap).Yield(mm => new { min = mm[0], max = mm[1] }).Single();
+      var voltPos = linearVolt.PositionRatio(v.min, v.max);
+
+      return new[] { voltMinNew(), voltMaxNew() };
+
+      double voltMaxNew() => (linearVolt - v.min) / pricePos + v.min;
+      double voltMinNew() => v.max - (v.max - linearVolt) / (1 - pricePos);
+    }
+    private static double[] GetFullScaleMinMax(IList<Rate> rates, IList<double> hedge) {
+      var linearPrice = rates.Linear(_priceAvg).RegressionValue(rates.Count / 2);
+      var priceMinMax = rates.MinMax(_priceAvg);
+      var pricePos = linearPrice.PositionRatio(priceMinMax);
+
+      var linearVolt = hedge.Linear().RegressionValue(hedge.Count / 2);
+      var v = hedge.MinMax().Yield(mm => new { min = mm[0], max = mm[1] }).Single();
+      var voltPos = linearVolt.PositionRatio(v.min, v.max);
+
+      return new[] { voltMinNew(), voltMaxNew() };
+
+      double voltMaxNew() => (linearVolt - v.min) / pricePos + v.min;
+      double voltMinNew() => v.max - (v.max - linearVolt) / (1 - pricePos);
+    }
+
     static Func<TradingMacro, IEnumerable<(double profit, bool buy)[]>> CalcMaxHedgeProfitMem =
-      new Func<TradingMacro, IEnumerable<(double profit, bool buy)[]>>(CalcMaxHedgeProfitImpl)
-      .MemoizeLast(tm => tm.RatesArray.BackwardsIterator(r => r.StartDate.Round(MathCore.RoundTo.Minute)).LastOrDefault());
+      new Func<TradingMacro, IEnumerable<(double profit, bool buy)[]>>(CalcMaxHedgeProfitImpl);
+      //.MemoizeLast(tm => tm.RatesArray.BackwardsIterator(r => r.StartDate.Round(MathCore.RoundTo.Minute)).LastOrDefault());
     private static IEnumerable<(double profit, bool buy)[]> CalcMaxHedgeProfitImpl(TradingMacro tm) {
       Func<int, Func<Rate, double>> getOther = corr => corr == 1 ? new Func<Rate, double>(r => r.PriceAvg) : r => 1 / r.PriceAvg;
       return from tm2 in tm.TradingMacroHedged()
              from corrs in tm.TMCorrelation(tm2)
              let getter = getOther(corrs)
-             from tmMap in tm.UseRates(ra => tm.RatioMap(ra, _priceAvg)).ToArray()
-             from tmMap2 in tm2.UseRates(ra => tm2.RatioMap(ra, getter, tm.VoltsFullScaleMinMax)).ToArray()
+             from tmMap in tm.UseRates(ra => tm.RatioMap((ra, _priceAvg, null))).ToArray()
+             from tmMap2 in tm2.UseRates(ra => tm.RatioMap((ra, getter, tm.VoltsFullScaleMinMax))).ToArray()
              let mm = tmMap2.Zip(tmMap, (r, t) => new { r = t.t.r, r2 = r.t.r, d = t.t.v - r.t.v }).MinMaxBy(t => t.d)
              let htb = tm.HedgeBuySell(true).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount, 1, 1) }).ToArray()
              let hts = tm.HedgeBuySell(false).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount, 1, 1) }).ToArray()
@@ -917,6 +970,6 @@ namespace HedgeHog.Alice.Store {
 
     public bool IsVoltFullScale => VoltageFunction == VoltageFunction.Pair;
     public double[] VoltsFullScaleMinMax { get; private set; }
-    public IEnumerable<(double profit, bool buy)[]> MaxHedgeProfit { get; private set; } =new[] { new[] { (0.0, false) }.Take(0).ToArray() }.Take(0);
+    public IEnumerable<(double profit, bool buy)[]> MaxHedgeProfit { get; private set; } = new[] { new[] { (0.0, false) }.Take(0).ToArray() }.Take(0);
   }
 }

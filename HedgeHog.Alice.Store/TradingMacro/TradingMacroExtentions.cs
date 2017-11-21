@@ -4179,6 +4179,11 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
 
     object _innerRateArrayLocker = new object();
+    public IEnumerable<V> UseRates<V>(TradingMacro tm,  Func<List<Rate>, List<Rate>, V> map) {
+      return from vs in UseRates(ra => tm.UseRates(ra2 => map(ra, ra2)))
+             from v in vs
+             select v;
+    }
     public U[] UseRates<T, U>(Func<List<Rate>, IEnumerable<T>> func, Func<IEnumerable<T>, IEnumerable<U>> many, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber]int LineNumber = 0) {
       return UseRates(func, timeoutInMilliseconds, Caller, LastFile, LineNumber).SelectMany(many).ToArray();
     }

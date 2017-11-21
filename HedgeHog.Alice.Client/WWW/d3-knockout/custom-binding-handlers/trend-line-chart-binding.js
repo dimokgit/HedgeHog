@@ -440,6 +440,7 @@
       var doShowChartBid = viewModel.doShowChartBid();
       var y2Scale = !chartData.vfs;
       var y2ScaleShift = chartData.vfss || [0, 0];
+      var isHedged = chartData.isHedged;
       // #endregion
 
       // #region adjust svg and axis'
@@ -464,8 +465,10 @@
       function lineYa(d) {
         return y(d.a);
       }
-      function lineYb(d) {
-        return y(d.m);
+      function lineYb(key) {
+        return function (d) {
+          return y(d[key]);
+        }
       }
       function lineXd(d) {
         return x(d.d);
@@ -473,9 +476,9 @@
       var line = d3.line()
         .x(lineXd)
         .y(chartNum === -1 ? lineYa : lineYc);
-      var lineBid = chartNum === 1 || !doShowChartBid ? null : d3.line()
+      var lineBid = !doShowChartBid ? null : d3.line()
         .x(lineXd)
-        .y(lineYb);
+        .y(lineYb(doShowChartBid));
 
       //setCma(data, "c", "ma", cmaPeriod);
       //var _ma, line1 = d3.svg.line()
@@ -510,7 +513,7 @@
       function tipValue2(v) {
         return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts2[0]), showNegativeVolts2[1] || 100000);
       }
-      yDomain = !y2Scale ? yDomain : d3.extent([yDomain[0], yDomain[1]
+      yDomain = !y2Scale || isHedged ? yDomain : d3.extent([yDomain[0], yDomain[1]
         , sbchnum(tradeLevels && canBuy && y2Scale ? tradeLevels.buy : yDomain[1])
         , sbchnum(tradeLevels && canSell && y2Scale ? tradeLevels.sell : yDomain[1])
         , sbchnum(
@@ -561,9 +564,10 @@
           .attr("d", line);
 
         // #region  lineBid
+        var bidColor = doShowChartBid == "p" ? "Wisteria" : openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue";
         svg.select("path.line.data.bid")
           .style("display", lineBid ? "" : "none")
-          .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue")
+          //.style("stroke", bidColor)
           .datum(lineBid ? data : [])
           .attr("d", lineBid);
         // #endregion

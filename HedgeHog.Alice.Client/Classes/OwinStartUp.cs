@@ -961,6 +961,8 @@ namespace HedgeHog.Alice.Client {
         if(trader.Value.GrossToExitCalc() != 0) {
           var ca = am.Equity.CompoundInteres(trader.Value.GrossToExitCalc().Abs(), 200);
           list2.Add(row("GrossToExit", $"${trader.Value.GrossToExitCalc().AutoRound2(1)}:{((ca) * 100).AutoRound2(3, "%")}"));
+          list2.Add(row("grossToExitRaw", trader.Value.GrossToExit));
+          list2.Add(row("profitByHedgeRatioDiff", trader.Value.ProfitByHedgeRatioDiff));
         }
         return list2;
       }).Concat();

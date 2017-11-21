@@ -685,7 +685,7 @@
     }
     this.showNegativeVolts = ko.observable(-10000);
     this.showNegativeVolts2 = ko.observable(-10000);
-    this.doShowChartBid = ko.observable(false);
+    this.doShowChartBid = ko.observable("p");
 
     // #region refreshChartsInterval
     this.refreshChartsInterval = ko.observable(1000 * 10);
@@ -1027,9 +1027,10 @@
       chartData.com = prepDates($.extend(true, {}, self.com));
       chartData.com2 = prepDates($.extend(true, {}, self.com2));
       chartData.com3 = prepDates($.extend(true, {}, self.com3));
+      chartData.isHedged = response.ish;
       chartData.vfs = !!response.vfs;
       resetRefreshChartInterval(chartData, lineChartData, lastRefreshDate, askRatesDatesReset);
-      chartData.vfss = response.vfss;
+      chartData.vfss = chartData.vfs & response.vfss;
       chartData.tps2High = response.tps2High;
       chartData.tps2Low = response.tps2Low;
       chartData.tpsCurr2 = response.tpsCurr2;
@@ -1093,8 +1094,9 @@
       chartData2.tickDate = lineChartData()[0].d;
       chartData2.tickDateEnd = Enumerable.from(lineChartData()).last().d;
       chartData2.vfs = !!response.vfs;
+      chartData2.isHedged = response.ish;
       resetRefreshChartInterval(chartData2, lineChartData2, lastRefreshDate2, askRatesDatesReset2);
-      chartData2.vfss = response.vfss;
+      chartData2.vfss = chartData2.vfs && response.vfss;
       chartData2.tps2High = response.tps2High;
       chartData2.tps2Low = response.tps2Low;
       chartData2.tpsCurr2 = response.tpsCurr2;
@@ -1107,7 +1109,7 @@
       dataViewModel.price(response.askBid);
     }
     function resetRefreshChartInterval(chartData, chartRates, lastRefreshDate, askRatesDatesReset) {
-      if (chartData.vfs && chartRates().length > 2) {
+      if ((chartData.vfs || chartData.isHedged) && chartRates().length > 2) {
         var ratio = 300;
         var lastDate = Enumerable.from(chartRates()).last().d;
         var diffMax = (lastDate - chartRates()[0].d) / ratio;
@@ -1185,8 +1187,20 @@
     function getAccounting() {
       var args = [pair];
       args.noNote = true;
+      function getByKey(a, key) {
+        return (a.splice(a.findIndex(function (x) { return x.n == key; }), 1)[0] || {}).v;
+      }
       serverCall("getAccounting", args,
         function (acc) {
+
+          var gte = getByKey(acc, "grossToExitRaw");
+          if (!self.grossToExit())
+            self.grossToExit(gte);
+
+          var prof = getByKey(acc, "profitByHedgeRatioDiff");
+          if (!self.profitByHedgeRatioDiff())
+            self.profitByHedgeRatioDiff(prof);
+
           accounting(acc);
           accountingError(false);
           if (!stopAccounting)
