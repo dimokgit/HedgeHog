@@ -482,7 +482,7 @@ namespace HedgeHog.Alice.Store {
         var voltRates = ShowVoltsByRatioDiff_New()
           .ToArray();
         VoltsFullScaleMinMax = voltRates.SelectMany(vr => GetFullScaleMinMax(vr.r, vr.h)).ToArray();
-        MaxHedgeProfit = new[] { CalcMaxHedgeProfit().Concat(MaxHedgeProfit).Aggregate((p, n) => p.Zip(n, (p1, p2) => (p1.profit.Cma(10, p2.profit), p1.buy)).ToArray()) };
+        MaxHedgeProfit = new[] { CalcMaxHedgeProfit().Concat(MaxHedgeProfit).DefaultIfEmpty().Aggregate((p, n) => p.Zip(n, (p1, p2) => (p1.profit.Cma(10, p2.profit), p1.buy)).ToArray()) };
 
         var voltMap = voltRates.SelectMany(vr => RatioMapDouble((vr.h, VoltsFullScaleMinMax)));
         var priceMap = voltRates.SelectMany(vr => RatioMap((vr.r, _priceAvg, null)));

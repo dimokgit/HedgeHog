@@ -63,6 +63,7 @@
     <Compile Include="IEnumerableCoreTests.cs" />
     <Compile Include="MemoizerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReflectionCoreTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HedgeHog.Core\HedgeHog.Core.csproj">

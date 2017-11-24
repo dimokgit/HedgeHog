@@ -83,7 +83,6 @@ namespace IBApp {
     }
 
     public void RequestPositions() {
-      if(PositionSubject != null)
         IbClient.ClientSocket.reqPositions();
     }
     #endregion

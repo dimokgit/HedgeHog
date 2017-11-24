@@ -49,7 +49,15 @@ namespace HedgeHog.Alice.Store {
     double GrossToExitCalcDefault => IsGrossToExitPers ? AccountModel.Equity * GrossToExit : GrossToExit;
 
     private Func<double> grossToExitCalc;
-    public Func<double> GrossToExitCalc { get => grossToExitCalc ?? (() => GrossToExitCalcDefault); set => grossToExitCalc = value; }
+    public Func<double> GrossToExitCalc {
+      get => (grossToExitCalc==null
+        ? ()=>GrossToExitCalcDefault
+        : GrossToExit == 0
+        ? grossToExitCalc
+        :  () => grossToExitCalc().Min(GrossToExitCalcDefault)
+        ) ?? (() => GrossToExitCalcDefault);
+      set => grossToExitCalc = value;
+    }
 
     //=> IsGrossToExitPers ? AccountModel.Equity * GrossToExit : GrossToExit;
     public void GrossToExitSoftReset() {

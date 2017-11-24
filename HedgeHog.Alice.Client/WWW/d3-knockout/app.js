@@ -771,6 +771,10 @@
       serverCall("openHedge", [pair, hp.IsBuy]);
       self.startAccounting();
     }
+    this.openHedgeTrade = function (hp) {
+      serverCall("openHedge", [pair, hp.IsBuy]);
+      self.startAccounting();
+    }
     this.hedgeVirtualDate = ko.observable(d3.timeFormat("%m/%d/%Y ")(new Date()));
     this.openHedgeVirtual = function (buy) {
       serverCall("openHedgeVirtual", [pair, buy, this.hedgeVirtualDate()]);

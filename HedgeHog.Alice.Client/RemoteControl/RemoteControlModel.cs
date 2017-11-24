@@ -725,7 +725,7 @@ namespace HedgeHog.Alice.Client {
             select new Action(() => MasterModel.GrossToExitCalc = () => mp.profit * MasterModel.ProfitByHedgeRatioDiff)
             )
             .DefaultIfEmpty(() => MasterModel.GrossToExitCalc = null)
-            .Single()();
+            .SingleOrElse(() => MasterModel.GrossToExitCalc = null)();
           var grossToExit = MasterModel.GrossToExitCalc();
           if(grossToExit != 0
             && !tms.SelectMany(tm => tm.PendingEntryOrders).Any()

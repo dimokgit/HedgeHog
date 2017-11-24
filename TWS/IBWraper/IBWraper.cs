@@ -22,8 +22,15 @@ namespace IBApp {
     public void FetchMMRs() => _accountManager.FetchMMRs();
 
     #region ctor
+    static IBWraper() {
+      _orderAddedSubject = new Subject<OrderEventArgs>();
+    }
     public IBWraper(ICoreFX coreFx, Func<Trade, double> commissionByTrade) {
       CommissionByTrade = commissionByTrade;
+      var hot = _orderAddedSubject.Publish();
+      hot.Connect();
+      OrderAddedObservable = hot.Replay();
+      OrderAddedObservable.Connect();
 
       CoreFX = coreFx;
       _ibClient = (IBClientCore)CoreFX;
@@ -227,6 +234,9 @@ namespace IBApp {
     #endregion
 
     #region OrderAddedEvent
+    public static Subject<OrderEventArgs> _orderAddedSubject { get; set; }
+    public IConnectableObservable<OrderEventArgs> OrderAddedObservable { get; private set; }
+
     event EventHandler<OrderEventArgs> OrderAddedEvent;
     public event EventHandler<OrderEventArgs> OrderAdded {
       add {
@@ -240,6 +250,7 @@ namespace IBApp {
 
     void RaiseOrderAdded(object sender, OrderEventArgs args) {
       OrderAddedEvent?.Invoke(this, args);
+      _orderAddedSubject.OnNext(args);
     }
     #endregion
     #region OrderRemovedEvent

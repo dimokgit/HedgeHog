@@ -1233,7 +1233,7 @@ namespace HedgeHog.Alice.Client {
     TraderModel() : base() {
       lock(_defaultLocker) {
         if(_default != null)
-          throw new InvalidOperationException();
+          throw new InvalidOperationException(nameof(TraderModel) + " has already beem initialized.");
         _default = this;
         Initialize();
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);

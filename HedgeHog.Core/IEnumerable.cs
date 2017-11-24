@@ -288,6 +288,38 @@ namespace HedgeHog {
           yield return getDefaultValue();
       }
     }
+    /// <summary>
+    /// If more then one - returns else
+    /// </summary>
+    /// <typeparam name="TSource"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="else">returned if there is more then one element</param>
+    /// <returns></returns>
+    public static TSource SingleOrElse<TSource>(this IEnumerable<TSource> source, TSource @else) {
+      var res = default(TSource);
+      using(IEnumerator<TSource> enumerator = source.GetEnumerator()) {
+        if(!enumerator.MoveNext()) throw new Exception("Sequence contains no elements.");
+        res = enumerator.Current;
+        if(enumerator.MoveNext()) return @else;
+        else return res;
+      }
+    }
+    /// <summary>
+    /// If more then one - returns else
+    /// </summary>
+    /// <typeparam name="TSource"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="else">returned if there is more then one element</param>
+    /// <returns></returns>
+    public static TSource SingleOrElse<TSource>(this IEnumerable<TSource> source, Func<TSource> @else) {
+      var res = default(TSource);
+      using(IEnumerator<TSource> enumerator = source.GetEnumerator()) {
+        if(!enumerator.MoveNext()) throw new Exception("Sequence contains no elements.");
+        res = enumerator.Current;
+        if(enumerator.MoveNext()) return @else();
+        else return res;
+      }
+    }
     #endregion
 
     #region Yield

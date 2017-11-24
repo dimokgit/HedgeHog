@@ -8,6 +8,8 @@ using HedgeHog.Bars;
 using System.Diagnostics;
 using ReactiveUI;
 using System.Collections.Concurrent;
+using System.Reactive.Subjects;
+using System.Reactive.Linq;
 
 namespace HedgeHog.Shared {
   public class VirtualTradesManager :ITradesManager {
@@ -156,7 +158,11 @@ namespace HedgeHog.Shared {
     #endregion
 
     static long tradeId = 0;
+    static VirtualTradesManager() {
+      _orderAddedSubject = new Subject<OrderEventArgs>();
+    }
     public VirtualTradesManager(string accountId, Func<Trade, double> commissionByTrade) {
+      OrderAddedObservable = _orderAddedSubject.Replay(TimeSpan.FromMinutes(1));
       this.accountId = accountId;
       this.tradesOpened.CollectionChanged += VirualPortfolio_CollectionChanged;
       this.CommissionByTrade = commissionByTrade;
@@ -326,6 +332,8 @@ namespace HedgeHog.Shared {
     }
 
     event EventHandler<OrderEventArgs> OrderAddedEvent;
+    public static Subject<OrderEventArgs> _orderAddedSubject { get; set; }
+    public IConnectableObservable<OrderEventArgs> OrderAddedObservable { get; private set; }
     public event EventHandler<OrderEventArgs> OrderAdded {
       add {
         if(OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))

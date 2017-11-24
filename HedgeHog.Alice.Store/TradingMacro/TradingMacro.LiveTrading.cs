@@ -52,7 +52,22 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    /*
+*/
     //[MethodImpl(MethodImplOptions.Synchronized)]
+    private bool TryAddPendingAction(string key) {
+      if(HasPendingKey(key)) return false;
+      AddPendingAction(key);
+      return true;
+    }
+    private void AddPendingAction(string key) {
+      var exp = ObjectCache.InfiniteAbsoluteExpiration;
+      var cip = new CacheItemPolicy() {
+        AbsoluteExpiration = exp,
+        RemovedCallback = ce => { if(DateTime.Now > exp) Log = new Exception(ce.CacheItem.Key + "[" + Pair + "] expired without being closed."); }
+      };
+      AddPendingAction(key, DateTimeOffset.Now, cip);
+    }
     private void AddPendingAction(string key, object value, CacheItemPolicy cip) {
       lock(_pendingEntryOrdersLocker) {
         if(PendingEntryOrders.Contains(key))
@@ -84,11 +99,7 @@ namespace HedgeHog.Alice.Store {
           try {
             Action a = () => {
               var exp = IsInVirtualTrading || true ? ObjectCache.InfiniteAbsoluteExpiration : DateTimeOffset.Now.AddMinutes(1);
-              var cip = new CacheItemPolicy() {
-                AbsoluteExpiration = exp,
-                RemovedCallback = ce => { if(DateTime.Now > exp) Log = new Exception(ce.CacheItem.Key + "[" + Pair + "] expired without being closed."); }
-              };
-              AddPendingAction(key, DateTimeOffset.Now, cip);
+              AddPendingAction(key);
             };
             action(a);
           } catch(Exception exc) {
@@ -308,7 +319,8 @@ namespace HedgeHog.Alice.Store {
           try {
             var buySellLevels = new[] { BuyLevel, SellLevel };
             GetEntryOrders().GroupBy(eo => eo.IsBuy).SelectMany(eog => eog.Skip(1)).ForEach(OnDeletingOrder);
-            Func<SuppRes, bool> canTrade = (sr) =>/* IsTradingHour() &&*/ sr.CanTrade && sr.TradesCount <= 0
+            Func<SuppRes, bool> canTrade = (sr) =>/* IsTradingHour() &&*/
+    sr.CanTrade && sr.TradesCount <= 0
               && !Trades.IsBuy(sr.IsBuy).Any();
             Func<bool, int> lotSize = isBuy =>
               (buySellLevels.Where(sr => sr.IsBuy == isBuy).Any(canTrade) ? (isBuy ? LotSizeByLossBuy : LotSizeByLossSell) : 0)

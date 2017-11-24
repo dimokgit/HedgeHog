@@ -33,21 +33,45 @@ namespace HedgeHog.Alice.Store {
                    ));
         return hbs.Select(t => new TM_HEDGE(t));
       }).Concat();
+
     public void OpenHedgedTrades(bool isBuy, bool closeOnly, string reason) {
-      var hbs = HedgeBuySell(isBuy)
+      if(HaveHedgedTrades() && !closeOnly)
+        AdjustHedgedTrades(isBuy, reason);
+      else {
+        var hbs = HedgeBuySell(isBuy)
         .Select(x => x.Value)
         .OrderByDescending(tm => tm.Pair == Pair)
         .ToArray();
 
-      if(hbs.Where(bs => !TradesManager.GetPrice(bs.Pair).IsShortable)
-        .Do(bs => Log = new Exception(bs.Pair + " is not shortable")).Any())
-        return;
+        if(hbs.Where(bs => !TradesManager.GetPrice(bs.Pair).IsShortable)
+          .Do(bs => Log = new Exception(bs.Pair + " is not shortable")).Any())
+          return;
 
-      hbs.ForEach(t => {
-        var lotToClose = t.tm.Trades.IsBuy(!t.IsBuy).Sum(tr => tr.Lots);
-        var lotToOpen = !closeOnly ? t.Lot : 0;
-        t.tm.OpenTrade(t.IsBuy, lotToOpen + lotToClose, reason + ": hedge open");
-      });
+        hbs.ForEach(t => {
+          var lotToClose = t.tm.Trades.IsBuy(!t.IsBuy).Sum(tr => tr.Lots);
+          var lotToOpen = !closeOnly ? t.Lot : 0;
+          t.tm.OpenTrade(t.IsBuy, lotToOpen + lotToClose, reason + ": hedge open");
+        });
+      }
+    }
+
+    public void AdjustHedgedTrades(bool isBuy, string reason) {
+      if(!HaveHedgedTrades())
+        throw new Exception($"{nameof(AdjustHedgedTrades)}: there is no hedged trades to adjust.");
+
+      var hbs = HedgeBuySell(isBuy)
+        .Select(x => x.Value)
+        .OrderByDescending(tm => tm.Pair == Pair)
+        .Select(t=>(t.Pair,t.Lot))
+        .ToArray();
+
+      (from trade in TradesManager.GetTrades()
+       join ht in hbs on trade.Pair equals ht.Pair
+       from tm in TradingMacroTrender(trade.Pair)
+       let pos = ht.Lot - trade.Lots
+       let nt = (trade, isBuy: pos > 0, pos: pos.Abs())
+       select (tm, nt)
+      ).ForEach(t => t.tm.OpenTrade(t.nt.isBuy, t.nt.pos, reason + ":" + nameof(AdjustHedgedTrades)));
     }
 
     object _tradeLock = new object();

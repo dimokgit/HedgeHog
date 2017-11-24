@@ -11,6 +11,8 @@ namespace HedgeHog {
     public static TEnum Parse<TEnum>(string value, bool ignoreCase = false) where TEnum : struct, TClass {
       return (TEnum)Enum.Parse(typeof(TEnum), value, ignoreCase);
     }
+    public static bool Contains<TEnum>(string enumValue) where TEnum : struct, TClass
+      => Enum.GetNames(typeof(TEnum)).Select(s => s.ToLower()).Contains(enumValue.ToLower());
 
   }
 

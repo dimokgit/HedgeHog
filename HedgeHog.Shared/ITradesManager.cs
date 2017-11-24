@@ -119,6 +119,7 @@ namespace HedgeHog.Shared {
     #endregion
 
     #region Events
+    IConnectableObservable<OrderEventArgs> OrderAddedObservable { get; }
     event EventHandler<OrderEventArgs> OrderAdded;
     event EventHandler<TradeEventArgs> TradeClosed;
     void RaisePriceChanged(Price price);

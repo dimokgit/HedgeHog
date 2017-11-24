@@ -1126,6 +1126,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #region TradesManager 'n Stuff
+    private IDisposable _orderAddedSubscribsion;
     private IDisposable _priceChangedSubscribsion;
     public IDisposable PriceChangedSubscribsion {
       get { return _priceChangedSubscribsion; }
@@ -1209,7 +1210,8 @@ namespace HedgeHog.Alice.Store {
 
       if(!IsInVirtualTrading && !IsInPlayback) {
         TradesManager.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
-        TradesManager.OrderAdded += TradesManager_OrderAdded;
+        _orderAddedSubsciption = TradesManager.OrderAddedObservable.Subscribe(o=>TradesManager_OrderAdded(TradesManager,o));
+        //TradesManager.OrderAdded += TradesManager_OrderAdded;
         TradesManager.OrderChanged += TradesManager_OrderChanged;
         if(isLoggedIn) {
           RunningBalance = tradesFromReport.ByPair(Pair).Sum(t => t.NetPL);
@@ -1259,6 +1261,7 @@ namespace HedgeHog.Alice.Store {
             .Concat(orders.IsBuy(false).OrderBy(o => o.OrderID).Skip(1))
             .ToList().ForEach(o => OnDeletingOrder(o.OrderID));
         }
+        TryAddPendingAction(OT);
       } catch(Exception exc) {
         Log = exc;
       }
@@ -5323,6 +5326,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
     bool _isAsleep;
     private double[] _ratesArrayCoeffs = new double[0];
+    private IDisposable _orderAddedSubsciption;
+
     public double[] RatesArrayCoeffs { get => _ratesArrayCoeffs; set => _ratesArrayCoeffs = value; }
 
     public bool IsAsleep {

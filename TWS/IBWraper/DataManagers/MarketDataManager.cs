@@ -19,7 +19,10 @@ namespace IBApp {
     public MarketDataManager(IBClientCore client ) : base(client, TICK_ID_BASE) {
       IbClient.TickPrice += OnTickPrice;
       IbClient.TickString += OnTickString; ;
+      IbClient.TickGeneric += OnTickGeneric;
     }
+
+    private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, 0);
 
     public void AddRequest(Contract contract, string genericTickList="") {
       if(activeRequests.Any(ar => ar.Value.Item1.Instrument.ToUpper() == contract.Instrument.ToUpper())) {
@@ -49,6 +52,7 @@ namespace IBApp {
       switch(tickType) {
         // RT Volume
         case 48:
+          RaisePriceChanged(price);
           break;
       }
     }
@@ -95,9 +99,15 @@ namespace IBApp {
         case 5:
             RaisePriceChanged(price2);
           break;
+        case 37:
+          if(price2.Bid<=0 && price2.Ask <= 0) {
+            price2.Bid = price2.Ask = price;
+            RaisePriceChanged(price2);
+          }
+          break;
         case 46:
           price2.IsShortable = price > 2.5;
-          Trace(new { price2.Pair, price2.IsShortable });
+          Trace(new { price2.Pair, price2.IsShortable, price });
           break;
       }
     }

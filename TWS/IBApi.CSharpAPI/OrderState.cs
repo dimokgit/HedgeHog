@@ -24,7 +24,7 @@ namespace IBApi {
     private string commissionCurrency;
     private string warningText;
     public override string ToString() {
-      return new { Status, Commission, WarningText } + "";
+      return new { Status, WarningText } + "";
     }
     /**
      * @brief The order's current status

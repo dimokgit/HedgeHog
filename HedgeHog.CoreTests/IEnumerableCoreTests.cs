@@ -42,5 +42,11 @@ namespace HedgeHog.Tests {
       Assert.AreEqual(data[0].d, range[0].d);
       Assert.AreEqual(data.Last().d, range.Last().d);
     }
+
+    [TestMethod()]
+    public void SingleOrElse() {
+      Assert.AreEqual(3, new[] { 1, 2 }.SingleOrElse(() => 3));
+      Assert.AreEqual(3, new[] { 3 }.SingleOrElse(() => 3));
+    }
   }
 }

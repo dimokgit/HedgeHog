@@ -22,6 +22,7 @@ using MvvmFoundation.Wpf;
 using System.Threading.Tasks.Dataflow;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using System.Reactive.Subjects;
 
 namespace Order2GoAddIn {
   #region COM
@@ -2794,6 +2795,9 @@ namespace Order2GoAddIn {
     public DateTime ServerTime { get { return ServerTimeCached = CoreFX.ServerTime; } }
 
     public bool HasTicks => true;
+
+    public IConnectableObservable<OrderEventArgs> OrderAddedObservable => throw new NotImplementedException();
+
     static object converterLocker = new object();
     DateTime ConvertDateToLocal(DateTime date) {
       return TimeZoneInfo.ConvertTimeFromUtc(date, TimeZoneInfo.Local);
