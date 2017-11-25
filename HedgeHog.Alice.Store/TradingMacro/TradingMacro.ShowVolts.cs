@@ -482,7 +482,12 @@ namespace HedgeHog.Alice.Store {
         var voltRates = ShowVoltsByRatioDiff_New()
           .ToArray();
         VoltsFullScaleMinMax = voltRates.SelectMany(vr => GetFullScaleMinMax(vr.r, vr.h)).ToArray();
-        MaxHedgeProfit = new[] { CalcMaxHedgeProfit().Concat(MaxHedgeProfit).DefaultIfEmpty().Aggregate((p, n) => p.Zip(n, (p1, p2) => (p1.profit.Cma(10, p2.profit), p1.buy)).ToArray()) };
+        BarsCountMax = new[] {
+          CalcMaxHedgeProfit()
+          .Concat(MaxHedgeProfit.Where(x => x.Length == 2))
+          .DefaultIfEmpty()
+          .Aggregate((p, n) => p.Zip(n, (p1, p2) => (p1.profit.Cma(10, p2.profit), p1.buy)).ToArray())
+        }.Where(x=>x!=null).ToArray();
 
         var voltMap = voltRates.SelectMany(vr => RatioMapDouble((vr.h, VoltsFullScaleMinMax)));
         var priceMap = voltRates.SelectMany(vr => RatioMap((vr.r, _priceAvg, null)));
@@ -603,7 +608,7 @@ namespace HedgeHog.Alice.Store {
 
     static Func<TradingMacro, IEnumerable<(double profit, bool buy)[]>> CalcMaxHedgeProfitMem =
       new Func<TradingMacro, IEnumerable<(double profit, bool buy)[]>>(CalcMaxHedgeProfitImpl);
-      //.MemoizeLast(tm => tm.RatesArray.BackwardsIterator(r => r.StartDate.Round(MathCore.RoundTo.Minute)).LastOrDefault());
+    //.MemoizeLast(tm => tm.RatesArray.BackwardsIterator(r => r.StartDate.Round(MathCore.RoundTo.Minute)).LastOrDefault());
     private static IEnumerable<(double profit, bool buy)[]> CalcMaxHedgeProfitImpl(TradingMacro tm) {
       Func<int, Func<Rate, double>> getOther = corr => corr == 1 ? new Func<Rate, double>(r => r.PriceAvg) : r => 1 / r.PriceAvg;
       return from tm2 in tm.TradingMacroHedged()

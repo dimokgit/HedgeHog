@@ -279,6 +279,11 @@ namespace HedgeHog.Alice.Store {
         });
       this.WhenAnyValue(
         tm => tm.RatesMinutesMin,
+        tm => tm.BarsCountMax,
+        (rmm, bcm) => new { rmm, bcm }
+        ).Subscribe(_ => UseRatesInternal(ri => ri.SideEffect(__=> { Log = new Exception($"{Pair}: InternalRates cleared."); }).Clear()));
+      this.WhenAnyValue(
+        tm => tm.RatesMinutesMin,
         tm => tm.BarsCount,
         tm => tm.BarsCountMax,
         tm => tm.PairHedge,
@@ -1211,7 +1216,7 @@ namespace HedgeHog.Alice.Store {
       if(!IsInVirtualTrading && !IsInPlayback) {
         TradesManager.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
         _orderAddedSubsciption = TradesManager.OrderAddedObservable.Subscribe(o=>TradesManager_OrderAdded(TradesManager,o));
-        //TradesManager.OrderAdded += TradesManager_OrderAdded;
+        TradesManager.OrderAdded += TradesManager_OrderAdded;
         TradesManager.OrderChanged += TradesManager_OrderChanged;
         if(isLoggedIn) {
           RunningBalance = tradesFromReport.ByPair(Pair).Sum(t => t.NetPL);

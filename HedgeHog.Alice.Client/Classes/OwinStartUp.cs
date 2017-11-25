@@ -1085,7 +1085,7 @@ namespace HedgeHog.Alice.Client {
     }
     T UseTradingMacro<T>(string pair, int chartNum, Func<TradingMacro, T> func) {
       try {
-        return GetTradingMacro(pair, chartNum).Select(func).IfEmpty(() => { throw new Exception(new { notFound = new { pair, chartNum } } + ""); }).First();
+        return GetTradingMacro(pair, chartNum).Select(func).IfEmpty(() => { throw new Exception(new { TradingMacroNotFound = new { pair, chartNum } } + ""); }).First();
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
