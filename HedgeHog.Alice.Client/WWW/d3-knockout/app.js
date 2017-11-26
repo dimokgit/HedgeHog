@@ -740,10 +740,15 @@
       stophedgingRatios = false;
       hedgingRatiosError(true);
       readHedgingRatios.bind(this)();
+      var shouldToggle = ko.observable(true);
       $(this.hedgingRatiosDialog()).dialog({
         title: "Hedging Ratios", width: "auto", dialogClass: "dialog-compact",
-        dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
-        open: dialogCollapse,
+        dragStart: function () { shouldToggle(false); },
+        dragStop: function (event, ui) {
+          setTimeout(function () { shouldToggle(true); }, 100);
+          $(this).dialog({ width: "auto", height: "auto" });
+        },
+        open: dialogCollapse(shouldToggle),
         close: function () {
           stophedgingRatios = true;
           $(this).dialog("destroy");
@@ -1221,17 +1226,20 @@
       stopAccounting = false;
       accountingError(true);
       accounting([]);
+      var shouldToggle = ko.observable(true);
       $(accountingDialog).dialog({
         title: "Accounting",
         width: "auto",
         dialogClass: "dialog-compact",
         dragStop: function (event, ui) {
+          setTimeout(function () { shouldToggle(true); }, 100);
           $(this).dialog({
             width: "auto",
             height: "auto"
           });
         },
-        open: dialogCollapse,
+        dragStart: function () { shouldToggle(false); },
+        open: dialogCollapse(shouldToggle),
         close: function () {
           stopAccounting = true;
           $(this).dialog("destroy");
@@ -1478,7 +1486,13 @@
     function defaultChartData(chartNum) {
       return chartDataFactory(chartNum ? lineChartData2 : lineChartData, [{ dates: [] }, {}, {}, {}], null, null, null, false, false, chartNum, false, 0);
     }
-    function dialogCollapse() { $(this).prev().click(function () { $(this).next().toggle(); }); }
+    function dialogCollapse(shouldToggle) {
+      return function() {
+        $(this).prev().click(function () {
+          if (shouldToggle()) $(this).next().toggle();
+        });
+      }
+    }
     // #endregion
   }
   // #endregion

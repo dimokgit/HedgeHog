@@ -931,13 +931,11 @@ namespace HedgeHog.Alice.Client {
         var ht = tm.HaveTrades();
         var list2 = new[] { row("", 0) }.Take(0).ToList();
         if(trades.Any()) {
-          list2.Add(row("CurrentGross", am.CurrentGross.AutoRound2("$", 2) +
-            (ht ? "/" + (am.ProfitPercent * 100).AutoRound2(2, "%") : "")
-            //+ "/" + (am.OriginalProfit).ToString("p1")
-            ));
+          var c = am.CurrentGross > 0 ? "lawngreen" : "lightpink";
+          list2.Add(row("CurrentGross", new { v = am.CurrentGross.AutoRound2("$", 2) + (ht ? "/" + (am.ProfitPercent * 100).AutoRound2(2, "%") : ""), c }));
 
           if(tm.HaveHedgedTrades())
-            list2.Add(row("CurrentLot", string.Join("/", trades.Select(t => t.Position))));
+            list2.Add(row("CurrentLot", string.Join("/", trades.GroupBy(t => t.Pair).Select(g => g.Sum(t => t.Position)))));
           else if(ht)
             list2.Add(row("CurrentLot", tm.Trades.Lots() + (ht ? "/" + tm.PipAmount.AutoRound2("$", 2) : "")));
           list2.Add(row("Trades Gross", $"{trades.Gross().AutoRound2("$", 2)}@{tm.ServerTime.TimeOfDay.ToString(@"hh\:mm\:ss")}"));

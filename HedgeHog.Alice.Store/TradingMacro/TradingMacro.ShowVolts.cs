@@ -410,8 +410,8 @@ namespace HedgeHog.Alice.Store {
         where corr != 0
         select corr > 0 ? 1 : -1;
 
-      public static IEnumerable<(TradingMacro tm, bool buy, double tradeAmount, double tradingRatio, double hvpr, double hv, double hvp, double mmr, double hvpM1r)> CalcTradeAmount
-        (IList<(TradingMacro tm, bool buy)> tms, double equity) {
+      public static IEnumerable<(TradingMacro tm, bool buy, double tradeAmount, double tradingRatio, double hvpr, double hv, double hvp, double mmr, double hvpM1r)>
+        CalcTradeAmount(IList<(TradingMacro tm, bool buy)> tms, double equity) {
         var minMaxes = (from tm in tms
                         from tmM1 in tm.tm.TradingMacroM1()
                         from hv in tm.tm.HistoricalVolatility()
@@ -482,12 +482,12 @@ namespace HedgeHog.Alice.Store {
         var voltRates = ShowVoltsByRatioDiff_New()
           .ToArray();
         VoltsFullScaleMinMax = voltRates.SelectMany(vr => GetFullScaleMinMax(vr.r, vr.h)).ToArray();
-        BarsCountMax = new[] {
+        MaxHedgeProfit = new[] {
           CalcMaxHedgeProfit()
-          .Concat(MaxHedgeProfit.Where(x => x.Length == 2))
+          .Concat(MaxHedgeProfit)
           .DefaultIfEmpty()
           .Aggregate((p, n) => p.Zip(n, (p1, p2) => (p1.profit.Cma(10, p2.profit), p1.buy)).ToArray())
-        }.Where(x=>x!=null).ToArray();
+        }.Where(x => x != null).ToArray();
 
         var voltMap = voltRates.SelectMany(vr => RatioMapDouble((vr.h, VoltsFullScaleMinMax)));
         var priceMap = voltRates.SelectMany(vr => RatioMap((vr.r, _priceAvg, null)));

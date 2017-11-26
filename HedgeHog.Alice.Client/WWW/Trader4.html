@@ -850,9 +850,9 @@
   <div data-bind="elementer:accountingDialog" style="display:none">
     <table class="accounting" data-bind="" border="1" cellspacing="0">
       <tbody data-bind="foreach: accounting,css:{error:accountingError}">
-        <tr>
+        <tr data-bind="style:{backgroundColor:v.c || ''}">
           <td data-bind="text:n"></td>
-          <td data-bind="text:v"></td>
+          <td data-bind="text:v.v || v"></td>
         </tr>
       </tbody>
       <tfoot>

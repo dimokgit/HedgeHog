@@ -62,16 +62,16 @@ namespace HedgeHog.Alice.Store {
       var hbs = HedgeBuySell(isBuy)
         .Select(x => x.Value)
         .OrderByDescending(tm => tm.Pair == Pair)
-        .Select(t=>(t.Pair,t.Lot))
+        .Select(t => (t.Pair, Position: t.IsBuy ? t.Lot : -t.Lot))
         .ToArray();
 
       (from trade in TradesManager.GetTrades()
        join ht in hbs on trade.Pair equals ht.Pair
        from tm in TradingMacroTrender(trade.Pair)
-       let pos = ht.Lot - trade.Lots
-       let nt = (trade, isBuy: pos > 0, pos: pos.Abs())
+       let pos = ht.Position - trade.Position
+       let nt = (trade, pos)
        select (tm, nt)
-      ).ForEach(t => t.tm.OpenTrade(t.nt.isBuy, t.nt.pos, reason + ":" + nameof(AdjustHedgedTrades)));
+      ).ForEach(t => t.tm.OpenTrade(t.nt.pos > 0, t.nt.pos.Abs().ToInt(), reason + ":" + nameof(AdjustHedgedTrades)));
     }
 
     object _tradeLock = new object();

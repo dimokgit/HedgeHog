@@ -99,8 +99,8 @@ namespace HedgeHog.Alice.Store {
           var vrMin = tm.VoltRange_20;
           var vrMax = tm.VoltRange_21;
           var lv = tm.GetLastVolt(GetVoltage2).ToArray();
-          var down = lv.Where(volt => volt >= vrMax && (!useHighLow || tm.GetVoltage2High().Any(v => volt >= v))).Select(_ => TradeDirections.Up);
-          var up = lv.Where(volt => volt <= vrMin && (!useHighLow || tm.GetVoltage2Low().Any(v => volt <= v))).Select(_ => TradeDirections.Down);
+          var down = lv.Where(volt => volt >= vrMax && (!useHighLow || tm.GetVoltage2High().Any(v => volt >= v))).Select(_ => TradeDirections.Down);
+          var up = lv.Where(volt => volt <= vrMin && (!useHighLow || tm.GetVoltage2Low().Any(v => volt <= v))).Select(_ => TradeDirections.Up);
           return down.Concat(up).SingleOrDefault();
         }
       }
