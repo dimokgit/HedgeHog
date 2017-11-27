@@ -73,6 +73,7 @@
   var redStrip = "redStrip";
   var cyanStrip = "cyanStrip";
   var beforeTradeHoursRect = "beforeTradeHoursRect";
+  var afterTradeHoursRect = "afterTradeHoursRect";
   var doCorridorStartDate = false;
   var showLineLog = false;
   var tpsChartNum = [0, 1];
@@ -126,7 +127,7 @@
       addRect(redStrip, "#FAE6E6", 1);
       addRect(blueStrip, "lavender", 1);
       addRect(greenStrip, "#E6FAE6", 0.6);
-      [1, 2, 3, 4, 5, 6].forEach(function (i) {
+      [0, 1, 2, 3, 4, 5, 6].forEach(function (i) {
         addRect(beforeTradeHoursRect + i, "lightcyan", 1);
       });
       if (hasTps) {
@@ -435,6 +436,7 @@
       var com3 = chartData.com3;
       var com4 = chartData.com4;
       var bth = chartData.bth || [];
+      var afh = chartData.afh || [];
       var showNegativeVolts = viewModel.showNegativeVoltsParsed();
       var showNegativeVolts2 = viewModel.showNegativeVolts2Parsed();
       var doShowChartBid = viewModel.doShowChartBid();
@@ -648,6 +650,10 @@
         bth.forEach(function (x, i) {
           if (x.dates[0])
             setRectArea(x.dates[0], x.upDown[1], x.dates[1], x.upDown[0], beforeTradeHoursRect + i, "black");
+        });
+        afh.forEach(function (x, i) {
+          if (x.dates[0])
+            setRectArea(x.dates[0], yDomain[1], x.dates[1], yDomain[0], afterTradeHoursRect + i, "black", "beige");
         });
         // #region add trend corridor
         //setTrendLine(trendLines, 1, "lightgrey");
@@ -904,8 +910,9 @@
       function selectRect(rectName) {
         return svg.select("rect." + rectName);
       }
-      function setRectArea(date1, level1, date2, level2, rectName, borderColour) {
-        var rect = svg.select("rect." + rectName) || addRect(rect, "cyan");
+      function setRectArea(date1, level1, date2, level2, rectName, borderColour, backgoundColor) {
+        var rect = svg.select("rect." + rectName)
+        if (rect.empty()) rect = addRectGlobal(svg, rectName, backgoundColor || "cyan");
         rect
           .style("stroke", borderColour)  // colour the line
           .attr("x", x(date1)) // x position of the first end of the line
@@ -947,6 +954,17 @@
     }
   };
   /// #region Global locals
+  function addRectGlobal(svg, name, color, opacity) {
+    return svg.insert("rect", ":first-child")
+      .attr("class", name)
+      .style("fill", color)  // colour the line
+      .style("opacity", opacity || 0.25)
+      .attr("x", 0) // x position of the first end of the line
+      .attr("y", 0) // y position of the first end of the line
+      .attr("width", 10) // x position of the second end of the line
+      .attr("height", 50);// y position of the second end of the line
+  }
+
   /*jshint unused:false*/
   function setCma(data, valueName, maName, period) {
     var _ma;

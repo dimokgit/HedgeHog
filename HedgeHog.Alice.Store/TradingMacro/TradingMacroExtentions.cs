@@ -1767,7 +1767,7 @@ namespace HedgeHog.Alice.Store {
       } finally {
         try {
           if(isInitiator)
-            otherTMs.ToList().ForEach(tm => tm._waitHandle.Set());
+            otherTMs.ToList().CopyToArray(otherTMs.Count()).ForEach(tm => tm._waitHandle.Set());
           ResetMinimumGross();
           try {
             args.TradingMacros.Remove(this);

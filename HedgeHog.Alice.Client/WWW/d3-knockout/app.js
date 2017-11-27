@@ -1084,11 +1084,13 @@
       var com3 = prepDates($.extend(true, {}, self.com3));
       var com4 = prepDates($.extend(true, {}, self.com4));
       var bth = (self.bth || []).map(function (o) { return prepDates($.extend(true, {}, o)); });
+      var afh = (self.afh || []).map(function (o) { return prepDates($.extend(true, {}, o)); });
       var moreDates = []
         .concat(response.waveLines.map(mapDates))
         .concat(closedTradesLocal.map(mapDates))
         .concat(trends.map(mapDates))
         .concat(bth.map(mapDates))
+        .concat(afh.map(mapDates))
         .concat([com, com2, com3, com4].map(mapDates));
       var ratesAll = continuoseDates("minute", lineChartData2(), moreDates);
       var shouldUpdateData = true;
@@ -1100,6 +1102,7 @@
       chartData2.com3 = com3;
       chartData2.com4 = com4;
       chartData2.bth = bth;
+      chartData2.afh = afh;
       chartData2.tickDate = lineChartData()[0].d;
       chartData2.tickDateEnd = Enumerable.from(lineChartData()).last().d;
       chartData2.vfs = !!response.vfs;
@@ -1849,6 +1852,9 @@
 
     dataViewModel.bth = response.bth;
     delete response.bth;
+
+    dataViewModel.afh = response.afh;
+    delete response.afh;
 
     dataViewModel.tradePresetLevel(response.tpls[0] || 0);
     delete response.tpls;

@@ -324,11 +324,21 @@ namespace HedgeHog.Alice.Client {
         com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits), dates = tmTrader.CenterOfMass3Dates ?? new DateTime[0] },
         com4 = new { b = tmTrader.CenterOfMassBuy4.Round(digits), s = tmTrader.CenterOfMassSell4.Round(digits), dates = tmTrader.CenterOfMass4Dates ?? new DateTime[0] },
         bth = tmTrader.BeforeHours.Select(t => new { t.upDown, t.dates }).ToArray(),
+        //afh2 = new[] { new { dates = tmTrader.ServerTime.Date.AddDays(-1).AddHours(16).With(d => new[] { d, d.AddHours(4) }) } },
+        afh = GetBackDates(tmTrader.ServerTime.Date, 6)
+          .Select(date => new { dates = date.AddHours(16).With(d => new[] { d, d.AddHours(4) }) })
+          .ToArray(),
         tpls = tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
         tts = HasMinMaxTradeLevels(tmTrader) ? tmTrender.TradeTrends : "",
         tti = GetTradeTrendIndexImpl(tmTrader, tmTrender)
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
+      DateTime[] GetBackDates(DateTime start, int daysBack) =>
+        Enumerable.Range(0, 1000)
+          .Select(d => start.AddDays(-d))
+          .Where(d => !new[] { DayOfWeek.Saturday, DayOfWeek.Sunday }.Contains(d.DayOfWeek))
+          .Take(daysBack)
+          .ToArray();
     }
 
     private static bool HasMinMaxTradeLevels(TradingMacro tmTrader) {
@@ -395,6 +405,7 @@ namespace HedgeHog.Alice.Client {
       try {
         //var xx = new[] { true, false }.SelectMany(isBuy => CalcHedgedPositions(pair, isBuy));
         var xx = new[] { true, false }.SelectMany(isBuy => HedgeBuySell(pair, isBuy));
+        var canShort = GetHedgedTradingMacros(pair).SelectMany(t => new[] { t.tm1, t.tm2 }).Select(tm => new { tm.Pair, tm.CurrentPrice.IsShortable }).ToArray();
         var stats = (from tms in GetHedgedTradingMacros(pair)
                      from corr in tms.tm1.TMCorrelation(tms.tm2)
                      from slope1M1 in tms.tm1.TradingMacroM1(tm => tm.RatesArrayCoeffs.LineSlope() * 1000)
@@ -425,7 +436,7 @@ namespace HedgeHog.Alice.Client {
             //t.Corr,
             Pip = t.Pip.AutoRound2(2),
             t.IsBuy,
-            t.IsPrime,
+            IsPrime = (t.IsBuy || canShort.Any(cs => cs.Pair == t.Pair && cs.IsShortable)) && t.IsPrime,
             t.HVPR,
             t.HVPM1R
           }).ToArray(),
