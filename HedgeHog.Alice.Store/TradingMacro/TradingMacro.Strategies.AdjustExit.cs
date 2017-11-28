@@ -93,7 +93,7 @@ namespace HedgeHog.Alice.Store {
           setExitLevel(sellCloseLevel);
         } else {
           if(!Trades.Any()) {
-            throw new Exception("Should have some trades here.");
+            Log = new Exception(new { AdjustCloseLevels = "Should have some trades here." } + "");
             //adjustExitLevels(buyLevel, sellLevel);
             //buyCloseLevel.ResetPricePosition();
             //sellCloseLevel.ResetPricePosition();
