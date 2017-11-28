@@ -408,8 +408,8 @@ namespace HedgeHog.Alice.Client {
         var canShort = GetHedgedTradingMacros(pair).SelectMany(t => new[] { t.tm1, t.tm2 }).Select(tm => new { tm.Pair, tm.CurrentPrice.IsShortable }).ToArray();
         var stats = (from tms in GetHedgedTradingMacros(pair)
                      from corr in tms.tm1.TMCorrelation(tms.tm2)
-                     from slope1M1 in tms.tm1.TradingMacroM1(tm => tm.RatesArrayCoeffs.LineSlope() * 1000)
-                     from slope2M1 in tms.tm2.TradingMacroM1(tm => corr * tm.RatesArrayCoeffs.LineSlope() * 1000)
+                     from slope1M1 in tms.tm1.TradingMacroM1(tm => tm.RatesArrayCoeffs.YieldIf(ra => ra.Any(), ra => ra.LineSlope() * 1000)).Concat()
+                     from slope2M1 in tms.tm2.TradingMacroM1(tm => tm.RatesArrayCoeffs.YieldIf(ra => ra.Any(), ra => corr * ra.LineSlope() * 1000)).Concat()
                      where tms.tm1.RatesArrayCoeffs.Length == 2
                      let slope1 = tms.tm1.RatesArrayCoeffs.LineSlope() * 1000
                      let slope2 = corr * tms.tm2.RatesArrayCoeffs.LineSlope() * 1000
