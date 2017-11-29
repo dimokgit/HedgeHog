@@ -443,7 +443,7 @@ namespace HedgeHog.Alice.Store {
           .ToArray();
         if(voltRates.Length > BarsCountCalc * 0.9) {
           var volt = alglib.pearsoncorr2(voltRates.ToArray(r => r.PriceAvg), voltRates.ToArray(GetVoltage2));
-          ShowVolts(volt, 2, GetVoltage, SetVoltage);
+          ShowVolts(volt, GetVoltage, SetVoltage);
         }
       }
       return null;
@@ -493,21 +493,31 @@ namespace HedgeHog.Alice.Store {
         var priceMap = voltRates.SelectMany(vr => RatioMap((vr.r, _priceAvg, null)));
 
         double min = double.MaxValue, max = double.MinValue, priceMin = double.MaxValue, priceMax = double.MinValue;
-        priceMap
+        var rateVolts = priceMap
           .Zip(voltMap, (b, a) => {
             var v = b.t.v - a.v;
             return (b.t.r, v);
-          }).ToArray().Cma(t => t.v, VoltAverageIterations, VoltAverageIterations, (t, v) => {
-            min = v.Min(min);
-            max = v.Max(max);
-            priceMin = t.r.PriceAvg.Min(priceMin);
-            priceMax = t.r.PriceAvg.Max(priceMax);
-            SetVoltage2(t.r, v);
-          });
+          }).ToArray();
+        var volts = new double[rateVolts.Length];
+        var voltCounter = 0;
+        rateVolts.Cma(t => t.v, RatesHeightMin, RatesHeightMin.ToInt(), (t, v) => {
+          min = v.Min(min);
+          max = v.Max(max);
+          priceMin = t.r.PriceAvg.Min(priceMin);
+          priceMax = t.r.PriceAvg.Max(priceMax);
+          SetVoltage2(t.r, v);
+          volts[voltCounter++] = v;
+        });
         min = new[] { min, max }.OrderBy(m => m.Abs()).Last();
-        GetVoltage2High = () => new[] { min.Abs() };
-        GetVoltage2Low = () => new[] { -min.Abs() };
-
+        var voltageLow = volts.AverageByIterations(-VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
+        var voltageHigh = volts.AverageByIterations(VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
+        if(volts.Any()) {
+          GetVoltage2High = () => new[] { voltageHigh };
+          GetVoltage2Low = () => new[] { voltageLow };
+        } else { // store this logic for other times
+          GetVoltage2High = () => new[] { min.Abs() };
+          GetVoltage2Low = () => new[] { -min.Abs() };
+        }
         voltRates.Select(vr => vr.r).ForEach(ra => ra.Zip(voltMap, (r, h) => r.PriceHedge = PosByRatio(priceMin, priceMax, h.v)).Count());
       }
       return null;

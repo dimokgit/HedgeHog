@@ -13,7 +13,7 @@ namespace HedgeHog.Tests {
   public class MathExtensionsTest {
     [TestMethod]
     public void CompoundAmount() {
-      double interestRate = 0.1 / 100, days = 200 * 1, Amount = 50000;
+      double interestRate = 0.1 / 100, days = 200 * 10, Amount = 50000;
       Console.WriteLine(new { Amount = Amount.CompoundAmount(interestRate, days) });
       for(int t = 0; t < days; t++) {
         Amount = Amount + Amount * interestRate;
