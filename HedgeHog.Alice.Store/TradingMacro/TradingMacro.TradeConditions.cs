@@ -2301,6 +2301,9 @@ namespace HedgeHog.Alice.Store {
         .DefaultIfEmpty(TradeDirections.Both)
         .AsSingleable();
     }
+    IEnumerable<TradeDirections> TradeConditionsHedge() {
+      return TradeConditionsInfo<TradeConditionHedgeAttribute>().Select(d => d());
+    }
     IEnumerable<TradeDirections> TradeConditionsTradeStrip() {
       return TradeConditionsInfo<TradeConditionTradeStripAttribute>().Select(d => d());
     }

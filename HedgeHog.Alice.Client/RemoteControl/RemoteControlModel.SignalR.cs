@@ -198,6 +198,7 @@ namespace HedgeHog.Alice.Client {
       if(!tmg.TryGetPrice(pair, out var price)) return new object[0];
       var askBid = new { ask = price.Ask.Round(digits), bid = price.Bid.Round(digits) };
       var ish = tm.IsPairHedged;
+      var hph = !tm.PairHedge.IsNullOrWhiteSpace();
       var ret = tm.UseRates(ratesArray => ratesArray.Take(1).ToArray(), x => x).ToArray(_ => new {
         rates = getRates(ratesForChart),
         rates2 = getRates(ratesForChart2),
@@ -225,6 +226,7 @@ namespace HedgeHog.Alice.Client {
         waveLines,
         barPeriod = tm.BarPeriodInt,
         ish,
+        hph,
         vfs = tm.IsVoltFullScale ? 1 : 0,
         vfss = ish || tm.IsVoltFullScale ? tm.VoltsFullScaleMinMax : new[] { 0.0, 0.0 }
       });

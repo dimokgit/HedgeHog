@@ -281,7 +281,7 @@ namespace HedgeHog.Alice.Store {
         tm => tm.RatesMinutesMin,
         tm => tm.BarsCountMax,
         (rmm, bcm) => new { rmm, bcm }
-        ).Subscribe(_ => UseRatesInternal(ri => ri.SideEffect(__=> { Log = new Exception($"{Pair}: InternalRates cleared."); }).Clear()));
+        ).Subscribe(_ => UseRatesInternal(ri => ri.SideEffect(__ => { Log = new Exception($"{Pair}: InternalRates cleared."); }).Clear()));
       this.WhenAnyValue(
         tm => tm.RatesMinutesMin,
         tm => tm.BarsCount,
@@ -1215,7 +1215,7 @@ namespace HedgeHog.Alice.Store {
 
       if(!IsInVirtualTrading && !IsInPlayback) {
         TradesManager.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
-        _orderAddedSubsciption = TradesManager.OrderAddedObservable.Subscribe(o=>TradesManager_OrderAdded(TradesManager,o));
+        _orderAddedSubsciption = TradesManager.OrderAddedObservable.Subscribe(o => TradesManager_OrderAdded(TradesManager, o));
         TradesManager.OrderAdded += TradesManager_OrderAdded;
         TradesManager.OrderChanged += TradesManager_OrderChanged;
         if(isLoggedIn) {
@@ -2264,6 +2264,24 @@ namespace HedgeHog.Alice.Store {
     }
     RatesArrayAsyncBuffer _ratesArrayAsyncBuffer = new RatesArrayAsyncBuffer();
 
+    #region PriceSpreadAverage Subject
+    object _PriceSpreadAverageSubjectLocker = new object();
+    ISubject<(DateTime d, Action a)> _PriceSpreadAverageSubject;
+    ISubject<(DateTime d, Action a)> PriceSpreadAverageSubject {
+      get {
+        lock(_PriceSpreadAverageSubjectLocker)
+          if(_PriceSpreadAverageSubject == null) {
+            _PriceSpreadAverageSubject = new Subject<(DateTime d, Action a)>();
+            _PriceSpreadAverageSubject
+              .DistinctUntilChanged(t => t.d.Round(RoundTo.Minute))
+              .Subscribe(t => t.a(), LogExc);
+          }
+        return _PriceSpreadAverageSubject;
+      }
+    }
+    void OnPriceSpreadAverage(Action a) => PriceSpreadAverageSubject.OnNext((ServerTime, a));
+    #endregion
+
 
     public List<Rate> RatesArraySafe {
       get {
@@ -2321,6 +2339,13 @@ namespace HedgeHog.Alice.Store {
             #endregion
             if(BarPeriod > BarsPeriodType.t1 && !isHedgeChild && !IsPairHedged)
               ScanForWaveRanges2(RatesArray);
+
+            OnPriceSpreadAverage(()
+              => PriceSpreadAverage = UseRates(rates
+              => rates.Count.Div(10).ToInt().Max(1).With(leg
+              => rates.Buffer(leg).Where(b => b.Count > leg * .75).Select(b => b.Max(r => r.PriceSpread)).Average()))
+              .SingleOrDefault());
+
             OnGeneralPurpose(() => {
               UseRates(rates => rates.ToList())
               .ForEach(rates => {
@@ -2333,13 +2358,6 @@ namespace HedgeHog.Alice.Store {
                 }
                 SpreadForCorridor = rates.Spread();
                 RatesHeightCma = rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax);
-                var leg = rates.Count.Div(10).ToInt().Max(1);
-                PriceSpreadAverage = IsTicks
-                ? rates
-                .Buffer(leg)
-                .Where(b => b.Count > leg * .75)
-                .Select(b => b.Max(r => r.PriceSpread))
-                .Average() : 0;
                 OnRatesArrayChaged();
                 AdjustSuppResCount();
                 var prices = RatesArray.ToArray(_priceAvg);
@@ -3247,7 +3265,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           return;
         Price price = e.Price;
         #region LoadRates
-        var tmCount =  TradingMacrosActive.Count(tm => tm.BarPeriod == BarPeriod);
+        var tmCount = TradingMacrosActive.Count(tm => tm.BarPeriod == BarPeriod);
         if(!TradesManager.IsInTest && !IsInPlayback
           && (!UseRatesInternal(ri => ri.Any()).DefaultIfEmpty(true).Single() || LastRatePullTime.AddMinutes((0.25 * tmCount).Max((double)BarPeriod / 2)) <= ServerTime))
           OnLoadRates();
@@ -4167,6 +4185,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     #endregion
 
 
+    private void LogExc(Exception exc) => Log = exc;
     private Exception _Log;
     public Exception Log {
       get { return _Log; }
@@ -4187,7 +4206,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
 
     object _innerRateArrayLocker = new object();
-    public IEnumerable<V> UseRates<V>(TradingMacro tm,  Func<List<Rate>, List<Rate>, V> map) {
+    public IEnumerable<V> UseRates<V>(TradingMacro tm, Func<List<Rate>, List<Rate>, V> map) {
       return from vs in UseRates(ra => tm.UseRates(ra2 => map(ra, ra2)))
              from v in vs
              select v;

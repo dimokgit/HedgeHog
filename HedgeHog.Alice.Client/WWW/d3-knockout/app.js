@@ -1037,6 +1037,7 @@
       chartData.com2 = prepDates($.extend(true, {}, self.com2));
       chartData.com3 = prepDates($.extend(true, {}, self.com3));
       chartData.isHedged = response.ish;
+      chartData.hph = response.hph;
       chartData.vfs = !!response.vfs;
       resetRefreshChartInterval(chartData, lineChartData, lastRefreshDate, askRatesDatesReset);
       chartData.vfss = chartData.vfs & response.vfss;
@@ -1107,6 +1108,7 @@
       chartData2.tickDateEnd = Enumerable.from(lineChartData()).last().d;
       chartData2.vfs = !!response.vfs;
       chartData2.isHedged = response.ish;
+      chartData2.hph = response.hph;
       resetRefreshChartInterval(chartData2, lineChartData2, lastRefreshDate2, askRatesDatesReset2);
       chartData2.vfss = chartData2.vfs && response.vfss;
       chartData2.tps2High = response.tps2High;
@@ -1121,7 +1123,7 @@
       dataViewModel.price(response.askBid);
     }
     function resetRefreshChartInterval(chartData, chartRates, lastRefreshDate, askRatesDatesReset) {
-      if ((chartData.vfs || chartData.isHedged) && chartRates().length > 2) {
+      if ((chartData.vfs || chartData.hph) && chartRates().length > 2) {
         var ratio = 300;
         var lastDate = Enumerable.from(chartRates()).last().d;
         var diffMax = (lastDate - chartRates()[0].d) / ratio;

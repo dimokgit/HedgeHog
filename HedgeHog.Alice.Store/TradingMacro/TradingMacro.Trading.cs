@@ -43,7 +43,7 @@ namespace HedgeHog.Alice.Store {
         .OrderByDescending(tm => tm.Pair == Pair)
         .ToArray();
 
-        if(hbs.Where(bs => !TradesManager.GetPrice(bs.Pair).IsShortable)
+        if(hbs.Where(bs => !TradesManager.TryGetPrice(bs.Pair).Any(p => p.IsShortable))
           .Do(bs => Log = new Exception(bs.Pair + " is not shortable")).Any())
           return;
 
