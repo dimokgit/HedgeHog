@@ -1563,7 +1563,8 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<double> HistoricalVolatility() => UseRates(ra => InPips(ra.Select(_priceAvg).HistoricalVolatility()));
     public IEnumerable<double> HistoricalVolatilityByPips() => HistoricalVolatilityByPipsMem(this);
     Func<TradingMacro, double[]> _historicalVolatilityByPipsMem;
-    Func<TradingMacro, double[]> HistoricalVolatilityByPipsMem => _historicalVolatilityByPipsMem ?? (_historicalVolatilityByPipsMem = new Func<TradingMacro, double[]>((tm)
+    Func<TradingMacro, double[]> HistoricalVolatilityByPipsMem 
+      => _historicalVolatilityByPipsMem ?? (_historicalVolatilityByPipsMem = new Func<TradingMacro, double[]>((tm)
         => HistoricalVolatilityByPipsImpl(tm)).MemoizeLast(tm => tm.UseRates(ra => ra.BackwardsIterator(r => r.StartDate).Take(1)).Concat().SingleOrDefault()));
     static double[] HistoricalVolatilityByPipsImpl(TradingMacro tm)
       => tm.UseRates(ra => tm.InPips(ra.Select(_priceAvg).HistoricalVolatility((d1, d2) => d1 - d2)));

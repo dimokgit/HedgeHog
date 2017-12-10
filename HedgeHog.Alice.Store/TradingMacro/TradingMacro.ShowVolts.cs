@@ -100,6 +100,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByGrossVirtual;
         case HedgeHog.Alice.VoltageFunction.RatioDiff:
           return ShowVoltsByRatioDiff;
+        case HedgeHog.Alice.VoltageFunction.HVP:
+          return () => ShowVoltsByHVP(getVolts, setVolts);
       }
       throw new NotSupportedException(VoltageFunction + " not supported.");
     }
@@ -454,6 +456,11 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByGross() {
       ShowVolts(TradesManager.GetTrades().Net2(), 0, GetVoltage2, SetVoltage2);
+      return null;
+    }
+    CorridorStatistics ShowVoltsByHVP(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+      if(UseCalc())
+        HistoricalVolatility().ForEach(hvp => ShowVolts(hvp, getVolt, setVolt));
       return null;
     }
 

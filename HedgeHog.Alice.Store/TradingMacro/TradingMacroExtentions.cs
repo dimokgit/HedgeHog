@@ -1607,7 +1607,7 @@ namespace HedgeHog.Alice.Store {
               if(isReplaying && !isInitiator && tms().Count > 1) {
                 var rateLast = UseRatesInternal(ri => ri.Last(), 15 * 1000);
                 var dateMin = replayTrader
-                  .UseRatesInternal(ri => ri.BackwardsIterator().Take(1).Select(r => r.StartDate))
+                  .UseRatesInternal(ri => ri.GetRange(1).Select(r => r.StartDate))
                   .Concat()
                   .SingleOrDefault();
 

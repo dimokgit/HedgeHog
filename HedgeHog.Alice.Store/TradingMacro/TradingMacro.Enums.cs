@@ -41,7 +41,8 @@ namespace HedgeHog.Alice {
     Corr,
     Gross,
     GrossV,
-    RatioDiff
+    RatioDiff,
+    HVP
   }
 }
 namespace HedgeHog.Alice.Store {

@@ -223,9 +223,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IBApi.CSharpAPI", "..\TWS\IBApi.CSharpAPI\IBApi.CSharpAPI.csproj", "{8EDE0744-96C2-40B0-A8DC-37DF79370203}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug SubArray|Any CPU = Debug SubArray|Any CPU
 		Debug SubArray|Mixed Platforms = Debug SubArray|Mixed Platforms
