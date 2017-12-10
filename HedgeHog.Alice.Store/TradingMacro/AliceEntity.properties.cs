@@ -1839,6 +1839,10 @@ namespace HedgeHog.Alice.Store {
       serverTime = DateTime.MaxValue;
       return false;
     }
+    public IEnumerable<DateTime> TryServerTime() {
+      if(TradesManager?.IsLoggedIn == true) 
+        yield return TradesManager.ServerTime;
+    }
     public DateTime ServerTime {
       get {
         TryServerTime(out var serverTime);

@@ -423,7 +423,7 @@ namespace HedgeHog.Alice.Store {
                         )
                         .Pairwise((min, max) => new { min, max, hvr = min.hv / max.hv })
                         .ToArray();
-        var ctas= minMaxes.SelectMany(mm => {
+        var ctas = minMaxes.SelectMany(mm => {
           var maxTrade = mm.max.tradeMax.Min(mm.min.tradeMax * mm.hvr);
           var minTrade = mm.min.tradeMax.Min(maxTrade / mm.hvr);
           var hvs = mm.min.hv + mm.max.hv;
@@ -768,7 +768,9 @@ namespace HedgeHog.Alice.Store {
         lock(_SetCentersOfMassSubjectLocker)
           if(_SetCentersOfMassSubject == null) {
             _SetCentersOfMassSubject = new Subject<Action>();
-            _SetCentersOfMassSubject.SubscribeToLatestOnBGThread(exc => Log = exc, ThreadPriority.Lowest);
+            _SetCentersOfMassSubject
+              .DistinctUntilChanged(_ => TryServerTime().FirstOrDefault().Round(MathCore.RoundTo.Minute))
+              .SubscribeToLatestOnBGThread(exc => Log = exc, ThreadPriority.Lowest);
             //.Latest().ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
             //.Subscribe(s => s(), exc => Log = exc);
           }

@@ -1607,9 +1607,8 @@ namespace HedgeHog.Alice.Store {
               if(isReplaying && !isInitiator && tms().Count > 1) {
                 var rateLast = UseRatesInternal(ri => ri.Last(), 15 * 1000);
                 var dateMin = replayTrader
-                  .UseRatesInternal(ri => ri.LastOrDefault())
-                  .Where(r => r != null)
-                  .Select(r => r.StartDate)
+                  .UseRatesInternal(ri => ri.BackwardsIterator().Take(1).Select(r => r.StartDate))
+                  .Concat()
                   .SingleOrDefault();
 
                 if(rateLast.IsEmpty() || rateLast.Single().StartDate > dateMin.AddMinutes(minutesOffset).Min(replayDateMax))
@@ -2347,17 +2346,16 @@ namespace HedgeHog.Alice.Store {
               .SingleOrDefault());
 
             OnGeneralPurpose(() => {
-              UseRates(rates => rates.ToList())
-              .ForEach(rates => {
-                if(rates.Count < BarsCount) {
-                  Log = new Exception(new { RatesArraySafe = new { rates = new { rates.Count }, BarsCount, Error = "Too low" } } + "");
+              {
+                if(RatesInternal.Count < BarsCount) {
+                  Log = new Exception(new { RatesArraySafe = new { RatesInternal = new { RatesInternal.Count }, BarsCount, Error = "Too low" } } + "");
                   return;
                 }
                 if(VoltageFunction == Alice.VoltageFunction.DistanceMacd) {
-                  SetVoltageByRHSD(rates);
+                  UseRates(SetVoltageByRHSD);
                 }
-                SpreadForCorridor = rates.Spread();
-                RatesHeightCma = rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax);
+                SpreadForCorridor = UseRates(rates=> rates.Spread()).FirstOrDefault();
+                RatesHeightCma = Lazy.Create(() => UseRates(rates => rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax)).FirstOrDefault());
                 OnRatesArrayChaged();
                 AdjustSuppResCount();
                 var prices = RatesArray.ToArray(_priceAvg);
@@ -2383,11 +2381,11 @@ namespace HedgeHog.Alice.Store {
                   default:
                     throw new Exception(new { CorridorCalcMethod } + " is not supported.");
                 }
-                Angle = AngleFromTangent(_ratesArrayCoeffs.LineSlope(), () => CalcTicksPerSecond(rates));
+                Angle = UseRates(rates => AngleFromTangent(_ratesArrayCoeffs.LineSlope(), () => CalcTicksPerSecond(rates))).FirstOrDefault();
                 CalcBoilingerBand();
                 //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
                 OnPropertyChanged(() => RatesRsd);
-              });
+              }
               RunStrategy();
             }, IsInVirtualTrading);
             OnScanCorridor(RatesArray, () => {
@@ -3787,7 +3785,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           break;
         #region RatesHeight
         case TradingMacroTakeProfitFunction.RatesHeight:
-          tp = useTrender(tm => tm.RatesHeightCma * xRatio);
+          tp = useTrender(tm => tm.RatesHeightCma.Value * xRatio);
           break;
         #endregion
         #region BuySellLevels
@@ -4206,6 +4204,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
 
     object _innerRateArrayLocker = new object();
+    public void UseRates(Action<List<Rate>> action) => UseRates(rates => Unit.Default.SideEffect(_ => action(rates)));
     public IEnumerable<V> UseRates<V>(TradingMacro tm, Func<List<Rate>, List<Rate>, V> map) {
       return from vs in UseRates(ra => tm.UseRates(ra2 => map(ra, ra2)))
              from v in vs
@@ -5309,7 +5308,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     #region RatesDistanceMin
     [Category(categoryCorridor)]
     private double _RatesDistanceMin = 1000;
-    private double _ratesHeightCma;
     private double _ratesHeightCmaMax;
     private double _ratesHeightCmaMin;
 
@@ -5378,15 +5376,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       }
     }
 
-    public double RatesHeightCma {
-      get {
-        return _ratesHeightCma;
-      }
-
-      set {
-        _ratesHeightCma = value;
-      }
-    }
+    public Lazy<double> RatesHeightCma { get; set; } = new Lazy<double>(() => 0);
 
   }
   public static class WaveInfoExtentions {

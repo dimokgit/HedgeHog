@@ -987,7 +987,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegateHide Tip2Ok {
       get {
         return () => {
-          _tipRatioCurrent = RatesHeightCma / BuyLevel.Rate.Abs(SellLevel.Rate);
+          _tipRatioCurrent = RatesHeightCma.Value / BuyLevel.Rate.Abs(SellLevel.Rate);
           var td = IsTresholdAbsOk(_tipRatioCurrent, TipRatio)
             ? TradeDirections.Both
             : TradeDirections.None;
@@ -1037,7 +1037,7 @@ namespace HedgeHog.Alice.Store {
           var bsl = new[] { BuyLevel, SellLevel };
           if(!HaveTrades())
             SetTradeCorridorToMinHeight2();
-          _tipRatioCurrent = RatesHeightCma / BuyLevel.Rate.Abs(SellLevel.Rate);
+          _tipRatioCurrent = RatesHeightCma.Value / BuyLevel.Rate.Abs(SellLevel.Rate);
           return TradeDirectionByBool(IsCurrentPriceInsideTradeLevels && IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
         };
       }
