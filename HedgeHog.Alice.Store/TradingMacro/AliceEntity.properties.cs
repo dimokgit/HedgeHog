@@ -1840,7 +1840,7 @@ namespace HedgeHog.Alice.Store {
       return false;
     }
     public IEnumerable<DateTime> TryServerTime() {
-      if(TradesManager?.IsLoggedIn == true) 
+      if(TradesManager?.IsLoggedIn == true)
         yield return TradesManager.ServerTime;
     }
     public DateTime ServerTime {
@@ -1953,7 +1953,7 @@ namespace HedgeHog.Alice.Store {
 
     public string PairPlain { get { return TradesManagerStatic.WrapPair(Pair); } }
 
-    public bool IsPairHedged => !PairHedge.IsNullOrWhiteSpace() && TradeConditionsHedge().Any();
+    public bool IsPairHedged => !PairHedge.IsNullOrWhiteSpace() && (TradeConditionsHedge().Any() || TradingMacroTrader(tm => tm.TradeConditionsHedge()).Concat().Any());
     public bool isHedgeChild => TradingMacrosByPairHedge(Pair).Any();
     void SyncHedgedPair() {
       TradingMacroHedged().ForEach(tm => {

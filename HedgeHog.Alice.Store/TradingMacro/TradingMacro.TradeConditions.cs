@@ -89,6 +89,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [TradeConditionShouldClose]
+    [TradeConditionHedge]
     public TradeConditionDelegate Volt2Ok {
       get {
         return () => {
@@ -1078,26 +1079,26 @@ namespace HedgeHog.Alice.Store {
     private TradeConditionDelegate BSTipNImpl() {
       Func<TradingMacro, double> tipRatioTres = tm => tm.TipRatio;
       TradingMacroTrader(tm => Log = new Exception(new { TipOk = new { tm.TipRatio } } + ""));
-      Func<TradingMacro, Tuple<double, SuppRes>, bool> isTreshOk = (tm, t) => IsTresholdAbsOk(_tipRatioCurrent = t.Item1, tipRatioTres(tm));
+      Func<TradingMacro, (double r, SuppRes bs), bool> isTreshOk = (tm, t) => IsTresholdAbsOk(_tipRatioCurrent = t.r, tipRatioTres(tm));
       return () =>
         (from tm in TradingMacroTrender()
          from t in BSTipNOverlap(tm)
          where isTreshOk(tm, t)
-         select t.Item2.IsBuy ? TradeDirections.Up : TradeDirections.Down
+         select t.bs.IsBuy ? TradeDirections.Up : TradeDirections.Down
         )
         .Scan((p, n) => p | n)
         .Where(td => td == TradeDirections.Both)
         .DefaultIfEmpty()
         .Last();
     }
-    private IEnumerable<Tuple<double, SuppRes>> BSTipNOverlap(TradingMacro tmTrender) {
+    private IEnumerable<(double r, SuppRes bs)> BSTipNOverlap(TradingMacro tmTrender) {
       return (from bs in BuySellLevels//.Select(x => x.Rate)
               let rmm = new[] { tmTrender.RatesMin, tmTrender.RatesMax }
               from rm in rmm
               let bsrm = new[] { bs.Rate, rm }
               let r = bsrm.OverlapRatio(rmm)
               orderby r
-              select Tuple.Create(r, bs)
+              select (r, bs)
               );
     }
 
@@ -1563,9 +1564,9 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<double> HistoricalVolatility() => UseRates(ra => InPips(ra.Select(_priceAvg).HistoricalVolatility()));
     public IEnumerable<double> HistoricalVolatilityByPips() => HistoricalVolatilityByPipsMem(this);
     Func<TradingMacro, double[]> _historicalVolatilityByPipsMem;
-    Func<TradingMacro, double[]> HistoricalVolatilityByPipsMem 
+    Func<TradingMacro, double[]> HistoricalVolatilityByPipsMem
       => _historicalVolatilityByPipsMem ?? (_historicalVolatilityByPipsMem = new Func<TradingMacro, double[]>((tm)
-        => HistoricalVolatilityByPipsImpl(tm)).MemoizeLast(tm => tm.UseRates(ra => ra.BackwardsIterator(r => r.StartDate).Take(1)).Concat().SingleOrDefault()));
+        => HistoricalVolatilityByPipsImpl(tm)).MemoizeLast(tm => (tm, tm.UseRates(ra => ra.BackwardsIterator(r => r.StartDate).Take(1)).Concat().SingleOrDefault())));
     static double[] HistoricalVolatilityByPipsImpl(TradingMacro tm)
       => tm.UseRates(ra => tm.InPips(ra.Select(_priceAvg).HistoricalVolatility((d1, d2) => d1 - d2)));
     #endregion
@@ -2403,6 +2404,13 @@ namespace HedgeHog.Alice.Store {
             BuySellLevels.ForEach(sr => sr.DateCanTrade = ServerTime);
         });
       }
+      bool TdCloseTrade(TradeDirections td, Trade trade) => td.HasDown() && trade.IsBuy || td.HasUp() && !trade.IsBuy;
+      (from td in TradeConditionsShouldClose()
+       from trade in Trades 
+       where TdCloseTrade(td,trade) 
+       select trade
+      )
+      .ForEach(trade => CloseTrades(nameof(TradeConditionsShouldClose)));
     }
 
     bool _isTurnOnOnly = false;
