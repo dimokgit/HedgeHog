@@ -134,6 +134,8 @@ namespace HedgeHog.Shared {
 
     #region Orders
     Order[] GetOrders(string pair);
+    IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair = "");
+
     void DeleteEntryOrderStop(string orderId);
     void DeleteEntryOrderLimit(string orderId);
     void ChangeOrderRate(Order order, double rate);

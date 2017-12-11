@@ -78,7 +78,6 @@ namespace HedgeHog.Alice.Client {
       }), System.Windows.Threading.DispatcherPriority.Background);
     }
 
-
     void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e) {
       try {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(e.Exception));
@@ -88,10 +87,13 @@ namespace HedgeHog.Alice.Client {
     }
 
     void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
+      var exc = (Exception)e.ExceptionObject;
       try {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage((Exception)e.ExceptionObject));
-      } catch { }
-      AsyncMessageBox.BeginMessageBoxAsync(((Exception)e.ExceptionObject).ToString());
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
+      } catch {
+      }
+      FileLogger.LogToFile(exc);
+      AsyncMessageBox.BeginMessageBoxAsync(string.Join("\n", ((Exception)e.ExceptionObject).Inners().Reverse().Select(ex => ex + "")));
     }
     bool IsHandled(AggregateException e) {
       return e != null && e.Flatten().InnerException.InnerException is System.Net.HttpListenerException;

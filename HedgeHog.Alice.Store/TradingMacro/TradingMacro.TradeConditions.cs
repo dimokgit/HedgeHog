@@ -88,7 +88,7 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    [TradeConditionShouldClose]
+    //[TradeConditionShouldClose]
     [TradeConditionHedge]
     public TradeConditionDelegate Volt2Ok {
       get {

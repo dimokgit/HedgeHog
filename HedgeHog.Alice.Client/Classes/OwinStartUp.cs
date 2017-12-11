@@ -967,6 +967,7 @@ namespace HedgeHog.Alice.Client {
         var pos = tm.PendingEntryOrders.Concat(tm.TradingMacroHedged(tmh => tmh.PendingEntryOrders).Concat()).ToArray();
         if(pos.Any())
           list2.Add(row("Pending", pos.Select(po => po.Key).ToArray().ToJson(false)));
+        var oss = rc.TradesManager.GetOrderStatuses();
         if(tm.IsPairHedged)
           tm.MaxHedgeProfit?.ForEach(mhps => list2.Add(row("Hedge Profit", "$" + string.Join("/", mhps.Select(mhp => mhp.profit.AutoRound2(1))) + "/" +
             (am.Equity.CompoundInteres(mhps.DefaultIfEmpty().Average(x => x.profit), 200) * 100).AutoRound2(3, "%")

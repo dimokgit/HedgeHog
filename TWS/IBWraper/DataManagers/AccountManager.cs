@@ -20,7 +20,7 @@ using static IBApp.AccountManager;
 namespace IBApp {
   public partial class AccountManager :DataManager {
     public enum OrderCancelStatuses { Cancelled };
-    public enum OrderStatuses { Inactive, Filled };
+    public enum OrderDoneStatuses { Inactive, Filled };
     public enum OrderHeldReason { locate };
 
     #region Constants
@@ -97,7 +97,9 @@ namespace IBApp {
         h => IbClient.OpenOrder -= h
         );
       var osObs = Observable.FromEvent<OrderStatusHandler, (int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)>(
-        onNext => (int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld) => onNext((orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld)),
+        onNext
+        => (int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)
+        => onNext((orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld)),
         h => IbClient.OrderStatus += h,
         h => IbClient.OrderStatus -= h
         );
@@ -114,12 +116,13 @@ namespace IBApp {
         .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos } }))
         .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost));
       _openOrderStream = ooObs
-        .Distinct(a => a.orderId)
+        .DistinctUntilChanged(a => a.orderId)
         //.Do(x => _verbous("* " + new { OpenOrder = new { x.contract.LocalSymbol, x.order.OrderId } }))
         .Subscribe(a => OnOrderStartedImpl(a.orderId, a.contract, a.order, a.orderState));
       _orderStatusStream = osObs
-        .Select(t => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld })
-        .Distinct()
+        .Select(t => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() })
+        .Do(t => _orderContracts.Where(oc => oc.Key == t.orderId).ForEach(oc => (t.status, t.filled, t.remaining, t.isDone).With(os => _orderStatuses.AddOrUpdate(oc.Value.contract.Symbol, i => os, (i, u) => os))))
+        .DistinctUntilChanged()
         .Where(o => (o.status, o.remaining).IsOrderDone())
         .Do(x => _verbous("* " + new { OrderStatus = x }))
         .Subscribe(o => RaiseOrderRemoved(o.orderId));
@@ -135,11 +138,13 @@ namespace IBApp {
     }
 
     #region OrderStatus
-    ConcurrentDictionary<string, (IBApi.Order order, IBApi.Contract contract)> _orderContracts = new ConcurrentDictionary<string, (IBApi.Order order, IBApi.Contract contract)>();
+    ConcurrentDictionary<int, (IBApi.Order order, IBApi.Contract contract)> _orderContracts = new ConcurrentDictionary<int, (IBApi.Order order, IBApi.Contract contract)>();
+    ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)> _orderStatuses = new ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)>();
+    public ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)> OrderStatuses { get => _orderStatuses; }
 
     private void RaiseOrderRemoved(int orderId) {
-      if(_orderContracts.ContainsKey(orderId + "")) {
-        var cd = _orderContracts[orderId + ""];
+      if(_orderContracts.ContainsKey(orderId)) {
+        var cd = _orderContracts[orderId];
         var o = cd.order;
         var c = cd.contract;
         RaiseOrderRemoved(new HedgeHog.Shared.Order {
@@ -201,9 +206,9 @@ namespace IBApp {
       IbClient.SetRequestHandled(reqId);
       if(new[] { 103, 110, 382, 383 }.Contains(code))
         RaiseOrderRemoved(reqId);
-      if(_orderContracts.ContainsKey(reqId + "")) {
-        var contract = _orderContracts[reqId + ""].contract + "";
-        var order = _orderContracts[reqId + ""].order + "";
+      if(_orderContracts.ContainsKey(reqId)) {
+        var contract = _orderContracts[reqId].contract + "";
+        var order = _orderContracts[reqId].order + "";
         switch(code) {
           case 404:
             _verbous(new { contract, code, error, order });
@@ -318,7 +323,7 @@ namespace IBApp {
     private static bool IsEntryOrder(IBApi.Order o) => new[] { "MKT", "LMT" }.Contains(o.OrderType);
     private void OnOrderStartedImpl(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) {
       if(!o.WhatIf) {
-        _orderContracts.TryAdd(o.OrderId + "", (o, c));
+        _orderContracts.TryAdd(o.OrderId, (o, c));
         _verbous(new { OnOpenOrder = new { c, o, os } });
         RaiseOrderAdded(new HedgeHog.Shared.Order {
           IsBuy = o.Action == "BUY",
@@ -380,7 +385,7 @@ namespace IBApp {
         var offset = isPreRTH ? 1.001 : 1;
         o.LmtPrice = Math.Round(buy ? price.Value.Ask * offset : price.Value.Bid / offset, d);
       }
-      _orderContracts.TryAdd(o.OrderId + "", (o, c));
+      _orderContracts.TryAdd(o.OrderId, (o, c));
       _verbous(new { plaseOrder = new { o, c } });
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
@@ -403,7 +408,7 @@ namespace IBApp {
         WhatIf = whatIf,
         OverridePercentageConstraints = true
       };
-      _orderContracts.TryAdd(o.OrderId + "", (o, c));
+      _orderContracts.TryAdd(o.OrderId, (o, c));
       _verbous(new { plaseOrder = new { o, c } });
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
@@ -431,6 +436,7 @@ namespace IBApp {
         return _WhatIfSubject;
       }
     }
+
     #endregion
     void OnWhatIf(Action a) => WhatIfSubject.OnNext(a);
     private void FetchMMR(string pair) {
@@ -476,10 +482,10 @@ namespace IBApp {
   }
   public static class Mixins {
     public static bool IsOrderDone(this (string status, double remaining) order) =>
-      EnumUtils.Contains<OrderCancelStatuses>(order.status) || EnumUtils.Contains<OrderStatuses>(order.status) && order.remaining == 0;
+      EnumUtils.Contains<OrderCancelStatuses>(order.status) || EnumUtils.Contains<OrderDoneStatuses>(order.status) && order.remaining == 0;
 
     public static bool Contains<TEnum>(this (string status, double remaining) order) =>
-      Enum.GetNames(typeof(OrderCancelStatuses)).Contains(order.status) || HedgeHog.EnumUtils.Parse<OrderStatuses>(order.status) == OrderStatuses.Filled && order.remaining == 0;
+      Enum.GetNames(typeof(OrderCancelStatuses)).Contains(order.status) || HedgeHog.EnumUtils.Parse<OrderDoneStatuses>(order.status) == OrderDoneStatuses.Filled && order.remaining == 0;
 
 
     //public static void Verbous<T>(this T v)=>_ve
