@@ -852,7 +852,7 @@
       <tbody data-bind="foreach: accounting,css:{error:accountingError}">
         <tr data-bind="style:{backgroundColor:v.c || ''}">
           <td data-bind="text:n"></td>
-          <td data-bind="text:v.v || v"></td>
+          <td data-bind="html:v.v || v"></td>
         </tr>
       </tbody>
       <tfoot>

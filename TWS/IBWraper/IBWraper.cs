@@ -493,8 +493,11 @@ namespace IBApp {
       RaiseShouldBeImplemented(nameof(GetOrders));
       return new Order[0];
     }
-    public IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair)
-      => _accountManager.OrderStatuses.Where(os => os.Key.ToLower() == pair.ToLower()).Select(os => os.Value).ToArray();
+    public IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair = "")
+      => _accountManager.OrderStatuses.
+      Where(os => pair.IsNullOrWhiteSpace() || os.Key.ToLower() == pair.ToLower())
+      .Select(os => pair.IsNullOrWhiteSpace() ? (os.Key + ":" + os.Value.status, os.Value.filled, os.Value.remaining, os.Value.isDone) : os.Value)
+      .ToArray();
 
     public double GetNetOrderRate(string pair, bool isStop, bool getFromInternal = false) {
       throw new NotImplementedException();
