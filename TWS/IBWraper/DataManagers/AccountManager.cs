@@ -20,7 +20,7 @@ using static IBApp.AccountManager;
 namespace IBApp {
   public partial class AccountManager :DataManager {
     public enum OrderCancelStatuses { Cancelled };
-    public enum OrderDoneStatuses { Inactive, Filled };
+    public enum OrderDoneStatuses { Filled };
     public enum OrderHeldReason { locate };
 
     #region Constants
@@ -121,10 +121,10 @@ namespace IBApp {
         .Subscribe(a => OnOrderStartedImpl(a.orderId, a.contract, a.order, a.orderState));
       _orderStatusStream = osObs
         .Select(t => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() })
-        .Do(t => _orderContracts.Where(oc => oc.Key == t.orderId).ForEach(oc => (t.status, t.filled, t.remaining, t.isDone).With(os => _orderStatuses.AddOrUpdate(oc.Value.contract.Symbol, i => os, (i, u) => os))))
+        .Do(x => _verbous("* " + new { OrderStatus = x }))
+        .Do(t => _orderContracts.Where(oc => oc.Key == t.orderId && t.status != "Inactive").ForEach(oc => (t.status, t.filled, t.remaining, t.isDone).With(os => _orderStatuses.AddOrUpdate(oc.Value.contract.Symbol, i => os, (i, u) => os))))
         .DistinctUntilChanged()
         .Where(o => (o.status, o.remaining).IsOrderDone())
-        .Do(x => _verbous("* " + new { OrderStatus = x }))
         .Subscribe(o => RaiseOrderRemoved(o.orderId));
       _portfolioStream = portObs
         .Select(t => new { t.contract.LocalSymbol, t.position, t.unrealisedPNL })
@@ -203,22 +203,20 @@ namespace IBApp {
     #endregion
 
     private void OnError(int reqId, int code, string error, Exception exc) {
+      if(!_orderContracts.TryGetValue(reqId, out var oc)) return;
       IbClient.SetRequestHandled(reqId);
-      if(new[] { 103, 110, 382, 383 }.Contains(code))
+      if(new[] { 103, 110, 200, 201, 202, 203, 382, 383 }.Contains(code)) {
+        _orderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
         RaiseOrderRemoved(reqId);
-      if(_orderContracts.ContainsKey(reqId)) {
-        var contract = _orderContracts[reqId].contract + "";
-        var order = _orderContracts[reqId].order + "";
-        switch(code) {
-          case 404:
-            _verbous(new { contract, code, error, order });
-            _defaultMessageHandler("Request Global Cancel");
-            IbClient.clientSocket.reqGlobalCancel();
-            break;
-          case 202:
-            RaiseOrderRemoved(reqId);
-            break;
-        }
+      }
+      switch(code) {
+        case 404:
+          var contract = oc.contract + "";
+          var order = oc.order + "";
+          _verbous(new { contract, code, error, order });
+          _defaultMessageHandler("Request Global Cancel");
+          IbClient.clientSocket.reqGlobalCancel();
+          break;
       }
     }
     #endregion
@@ -483,10 +481,6 @@ namespace IBApp {
   public static class Mixins {
     public static bool IsOrderDone(this (string status, double remaining) order) =>
       EnumUtils.Contains<OrderCancelStatuses>(order.status) || EnumUtils.Contains<OrderDoneStatuses>(order.status) && order.remaining == 0;
-
-    public static bool Contains<TEnum>(this (string status, double remaining) order) =>
-      Enum.GetNames(typeof(OrderCancelStatuses)).Contains(order.status) || HedgeHog.EnumUtils.Parse<OrderDoneStatuses>(order.status) == OrderDoneStatuses.Filled && order.remaining == 0;
-
 
     //public static void Verbous<T>(this T v)=>_ve
     public static bool IsPreSubmited(this IBApi.OrderState order) => order.Status == "PreSubmitted";

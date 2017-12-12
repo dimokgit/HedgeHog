@@ -1140,7 +1140,7 @@ namespace HedgeHog.Alice.Client {
           if(tm.CorridorStats?.StopRate != null)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
           else if(tm.CorridorStartDate.HasValue)
-            tm.CorridorStats?.Rates[0].YieldNotNull().ForEach(v => charter.LineTimeMiddle = v);
+            tm.CorridorStats?.Rates.Take(1).ToList().ForEach(v => charter.LineTimeMiddle = v);
           charter.LineTimeMiddle = null;
           if(tm.WaveShortLeft.HasRates)
             charter.LineTimeMin = tm.WaveShortLeft.Rates.LastBC().StartDateContinuous;

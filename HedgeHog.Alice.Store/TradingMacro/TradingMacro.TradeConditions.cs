@@ -94,7 +94,7 @@ namespace HedgeHog.Alice.Store {
       get {
         return () => {
           var tms = TradingMacroM1(tmh => new[] { new { tm = this, lh = true }, new { tm = tmh, lh = false } }).Concat().Take(1).Select(x => GetTD(x.tm, x.lh)).ToArray();
-          return tms.Aggregate((a, td) => a & td);
+          return tms.DefaultIfEmpty().Aggregate((a, td) => a & td);
         };
         TradeDirections GetTD(TradingMacro tm, bool useHighLow) {
           var vrMin = tm.VoltRange_20;
