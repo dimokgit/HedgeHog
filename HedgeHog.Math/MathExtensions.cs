@@ -718,16 +718,13 @@ namespace HedgeHog {
       var avg1 = dbls.Where(d => d <= avg0).DefaultIfEmpty(avg0).Average();
       return source.Where(d => projector(d) >= avg1).ToArray();
     }
-    public static T[] CopyToArray<T>(this IList<T> values, int count) {
-      return values.SafeArray().CopyToArray(count);
-    }
+    public static T[] CopyToArray<T>(this IList<T> values, int count) =>values.SafeArray().CopyToArray(count);
+    public static T[] CopyToArray<T>(this IList<T> values) => values.CopyToArray(values.Count);
+    public static T[] CopyToArray<T>(this IList<T> values, int start, int count) => values.SafeArray().CopyToArray(start, count);
     public static T[] CopyToArray<T>(this T[] values, int count) {
       var array = new T[count];
       Array.Copy(values, array, array.Length);
       return array;
-    }
-    public static T[] CopyToArray<T>(this IList<T> values, int start, int count) {
-      return values.SafeArray().CopyToArray(start, count);
     }
     public static T[] CopyToArray<T>(this T[] values, int start, int count) {
       var array = new T[count];

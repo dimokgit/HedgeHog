@@ -442,15 +442,47 @@ namespace HedgeHog.Alice.Store {
                select cta;
       }
     }
+    CorridorStatistics ShowVoltsByCorrelation_New() {
+      if(UseCalc()) {
+        var bc = RatesArray.Count / 10;
+        ZipHedgedRates()
+          .ForEach(zip => zip
+          .Buffer(bc, 1)
+          .Where(b => b.Count == bc)
+          .Where(b => GetVoltage2(b.Last().rate).IsNotNaN() && GetVoltage(b.Last().rate).IsNaN())
+          .ForEach(b => {
+            var corr = alglib.pearsoncorr2(b.ToArray(t => GetVoltage2(t.rate)), b.ToArray(t => t.ratio));
+            SetVoltage(b.Last().rate, corr);
+          }));
+        {
+          try {
+            var voltRates = UseRates(rates => rates.Select(GetVoltage).SkipWhile(v => v.IsNaN()).TakeWhile(v => v.IsNotNaN()).ToArray()).FirstOrDefault();
+            if(voltRates != null) {
+              var voltageAvgLow = voltRates.AverageByIterations(-VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
+              GetVoltageAverage = () => voltageAvgLow;
+              var voltageAvgHigh = voltRates.AverageByIterations(VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
+              GetVoltageHigh = () => voltageAvgHigh;
+            }
+          } catch(Exception exc) { Log = exc; }
+        };
+      }
+      return null;
+    }
     CorridorStatistics ShowVoltsByCorrelation() {
       if(UseCalc()) {
-        var voltRates = UseRates(ra => ra.Where(r => !GetVoltage2(r).IsNaNOrZero()).ToArray())
-          .Concat()
-          .ToArray();
-        if(voltRates.Length > BarsCountCalc * 0.9) {
-          var volt = alglib.pearsoncorr2(voltRates.ToArray(r => r.PriceAvg), voltRates.ToArray(GetVoltage2));
-          ShowVolts(volt, GetVoltage, SetVoltage);
-        }
+        (from voltRates in UseRates(ra => ra.Where(r => !GetVoltage2(r).IsNaNOrZero()).ToList().SideEffect(l => l.Reverse()))
+         where voltRates.Count > BarsCountCalc * 0.9
+         let bc = RatesArray.Count / 5
+         from v in voltRates
+           .Buffer(bc, 1)
+           .Where(b => b.Count == bc)
+           .TakeWhile(b=>GetVoltage(b[0]).IsNaN())
+           .Select(b => alglib.pearsoncorr2(b.ToArray(t => GetVoltage2(t)), b.ToArray(_priceAvg)).SideEffect(v => SetVoltage(b[0], v)))
+           .Reverse()
+           .Take(1)
+         select v
+         ).ForEach(v => ShowVolts(v, GetVoltage, SetVoltage));
+
       }
       return null;
     }
@@ -560,10 +592,14 @@ namespace HedgeHog.Alice.Store {
 
     IEnumerable<(Rate[] r, double[] h)> ShowVoltsByRatioDiff_New() => ShowVoltsByRatioDiff_New(t => { });
     IEnumerable<(Rate[] r, double[] h)> ShowVoltsByRatioDiff_New(Action<(Rate rate, double ratio)> action) =>
+      from xs in ZipHedgedRates()
+      select (xs.Do(action).Select(t => t.rate).ToArray(), xs.Select(t => t.ratio).ToArray());
+
+    IEnumerable<IList<(Rate rate, double ratio)>> ZipHedgedRates() =>
       from tm2 in TradingMacroHedged()
       from corr in TMCorrelation(tm2)
       from xs in UseRates(tm2, (ra, ra2) => ZipRateArrays((ra, ra2, corr)))
-      select (xs.Do(action).Select(t => t.rate).ToArray(), xs.Select(t => t.ratio).ToArray());
+      select xs;
 
     Func<(List<Rate> ra, List<Rate> ra2, int corr), IList<(Rate rate, double ratio)>> ZipRateArrays = ZipRateArraysImpl;//.MemoizeLast(t => t.ra.LastOrDefault().StartDate);
     private static Func<(List<Rate> ra, List<Rate> ra2, int corr), IList<(Rate rate, double)>> ZipRateArraysImpl =
