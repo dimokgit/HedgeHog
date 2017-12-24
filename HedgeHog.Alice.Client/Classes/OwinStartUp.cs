@@ -29,7 +29,7 @@ using Microsoft.Owin.Security;
 using Microsoft.AspNet.SignalR.Hubs;
 using static HedgeHog.Core.JsonExtensions;
 using TM_HEDGE_OLD = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, int Corr, bool IsBuy)>;
-using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
+using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeRatioM1, double TradeAmount, double MMR, int Lot, double Pip, bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
 
 
 namespace HedgeHog.Alice.Client {
@@ -430,6 +430,7 @@ namespace HedgeHog.Alice.Client {
             HV = t.HV.AutoRound2(3),
             HVP = t.HVP.AutoRound2(3),
             t.TradeRatio,
+            t.TradeRatioM1,
             TradeAmount = t.TradeAmount.ToInt(),
             MMR = t.MMR.AutoRound2(3),
             t.Lot,

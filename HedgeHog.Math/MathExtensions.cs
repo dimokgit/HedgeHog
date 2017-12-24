@@ -414,6 +414,13 @@ namespace HedgeHog {
       }, list => list.AverageByIterations(averageIterations).Average());
     }
 
+    public static int CrossRange(this IEnumerable<double> source,double min,double max) =>
+      source
+      .Select(d => d >= max ? 1 : d <= min ? -1 : 0)
+      .Where(i=>i!=0)
+      .DistinctUntilChanged()
+      .Count();
+
     public static double[] Sin(int sinLength, int waveLength, double aplitude, double yOffset, int wavesCount) {
       var sin = new double[waveLength];
       var xOffset = (Math.PI / 180) * wavesCount * sinLength / waveLength;

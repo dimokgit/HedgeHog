@@ -97,13 +97,30 @@ namespace HedgeHog.Alice.Store {
           return tms.DefaultIfEmpty().Aggregate((a, td) => a & td);
         };
         TradeDirections GetTD(TradingMacro tm, bool useHighLow) {
-          var vrMin = tm.VoltRange_20;
-          var vrMax = tm.VoltRange_21;
+          var vrMin = tm.VoltRange_20.Min(tm.VoltRange_21);
+          var vrMax = tm.VoltRange_21.Max(tm.VoltRange_20);
+          var isReversed = tm.VoltRange_21 < tm.VoltRange_20;
+          var upd = !isReverse ? TradeDirections.Down : TradeDirections.Up;
+          var downd = !isReverse ? TradeDirections.Up : TradeDirections.Down;
           var lv = tm.GetLastVolt(GetVoltage2).ToArray();
-          var down = lv.Where(volt => volt >= vrMax && (!useHighLow || tm.GetVoltage2High().Any(v => volt >= v))).Select(_ => TradeDirections.Down);
-          var up = lv.Where(volt => volt <= vrMin && (!useHighLow || tm.GetVoltage2Low().Any(v => volt <= v))).Select(_ => TradeDirections.Up);
+          var down = lv.Where(volt => volt >= vrMax && (!useHighLow || tm.GetVoltage2High().Any(v => volt >= v))).Select(_ => downd);
+          var up = lv.Where(volt => volt <= vrMin && (!useHighLow || tm.GetVoltage2Low().Any(v => volt <= v))).Select(_ => upd);
           return down.Concat(up).SingleOrDefault();
         }
+      }
+    }
+    /// <summary>
+    /// Vomt range cross count
+    /// </summary>
+    public TradeConditionDelegate V2RCCOk {
+      get {
+        return () =>
+          (from max in GetVoltage2High()
+           from min in GetVoltage2Low()
+           from count in UseRates(rates => rates.Select(GetVoltage2).CrossRange(min, max))
+           where count > 2
+           select TradeDirections.Both
+          ).SingleOrDefault();
       }
     }
 
@@ -2169,7 +2186,7 @@ namespace HedgeHog.Alice.Store {
     }
     public IEnumerable<TradingMacro> TradingMacroTrender() => TradingMacrosByPair().Where(tm => tm.IsTrender);
     public IEnumerable<TradingMacro> TradingMacroTrender(string pair) => TradingMacrosByPair(pair).Where(tm => tm.IsTrender);
-    public IEnumerable<T> TradingMacroTrader<T>(Func<TradingMacro, T> map) =>TradingMacrosByPair().Where(tm => tm.IsTrader).Select(map);
+    public IEnumerable<T> TradingMacroTrader<T>(Func<TradingMacro, T> map) => TradingMacrosByPair().Where(tm => tm.IsTrader).Select(map);
     public IEnumerable<TradingMacro> TradingMacroTrader() {
       return TradingMacrosByPair().Where(tm => tm.IsTrader);
     }
@@ -2352,12 +2369,13 @@ namespace HedgeHog.Alice.Store {
           TradeConditionsEval()
             .Select(eval => new { eval, open = true })
             .Concat(TradeConditionsShouldClose().Select(eval => new { eval, open = false }))
-            .Distinct(x=> x.eval)
-            .Where(x => x.eval.HasAny()).ForEach(e => {
+            .Distinct(x => x.eval)
+            .Where(x => x.eval.HasAny())
+            .ForEach(e => {
               var isBuy = e.eval.HasUp();
               if(!HedgeBuySell(isBuy)
-                .Select(((TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)? x) => x.Value)
-                .Select(((TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, bool IsBuy, bool IsPrime, double HVPR, double HVPM1R) t) => t.tm.HaveTrades(t.IsBuy))
+                .Select(x => x.Value)
+                .Select(t => t.tm.HaveTrades(t.IsBuy))
                 .Any(b => b)) {
                 OpenHedgedTrades(isBuy, !e.open, "Trade Condition");
               }
@@ -2406,8 +2424,8 @@ namespace HedgeHog.Alice.Store {
       }
       bool TdCloseTrade(TradeDirections td, Trade trade) => td.HasDown() && trade.IsBuy || td.HasUp() && !trade.IsBuy;
       (from td in TradeConditionsShouldClose()
-       from trade in Trades 
-       where TdCloseTrade(td,trade) 
+       from trade in Trades
+       where TdCloseTrade(td, trade)
        select trade
       )
       .ForEach(trade => CloseTrades(nameof(TradeConditionsShouldClose)));

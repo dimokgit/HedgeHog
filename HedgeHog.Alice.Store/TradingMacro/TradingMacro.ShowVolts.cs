@@ -412,28 +412,30 @@ namespace HedgeHog.Alice.Store {
         where corr != 0
         select corr > 0 ? 1 : -1;
 
-      public static IEnumerable<(TradingMacro tm, bool buy, double tradeAmount, double tradingRatio, double hvpr, double hv, double hvp, double mmr, double hvpM1r)>
+      public static IEnumerable<(TradingMacro tm, bool buy, double tradeAmount, double tradingRatio, double tradingRatioM1, double hvpr, double hv, double hvp, double mmr, double hvpM1r)>
         CalcTradeAmount(IList<(TradingMacro tm, bool buy)> tms, double equity) {
         var minMaxes = (from tm in tms
                         from tmM1 in tm.tm.TradingMacroM1()
                         from hv in tm.tm.HistoricalVolatility()
+                        from hvM1 in tmM1.HistoricalVolatility()
                         from hvp in tm.tm.HistoricalVolatilityByPips()
                         from hvpM1 in tmM1.HistoricalVolatilityByPips()
                         let mmr = TradesManagerStatic.GetMMR(tm.tm.Pair, tm.buy)
                         orderby mmr descending
-                        select new { tm.tm, tradeMax = equity / mmr, tm.buy, hv, hvp, hvpM1, mmr }
+                        select new { tm.tm, tradeMax = equity / mmr, tm.buy, hv, hvM1=hvM1, hvp, hvpM1, mmr }
                         )
-                        .Pairwise((min, max) => new { min, max, hvr = min.hv / max.hv })
+                        .Pairwise((min, max) => new { min, max, hvr = min.hv / max.hv, hvM1r = min.hvM1 / max.hvM1 })
                         .ToArray();
         var ctas = minMaxes.SelectMany(mm => {
           var maxTrade = mm.max.tradeMax.Min(mm.min.tradeMax * mm.hvr);
           var minTrade = mm.min.tradeMax.Min(maxTrade / mm.hvr);
           var hvs = mm.min.hv + mm.max.hv;
+          var hvM1s = mm.min.hvM1 + mm.max.hvM1;
           var hvps = mm.min.hvp + mm.max.hvp;
           var hvpM1s = mm.min.hvpM1 + mm.max.hvpM1;
           return new[] {
-          (mm.min.tm, mm.min.buy,minTrade,1 - mm.min.hv / hvs,mm.min.hvp / hvps,mm.min.hv,mm.min.hvp,mm.min.mmr,mm.min.hvpM1 / hvpM1s),
-          (mm.max.tm, mm.max.buy,maxTrade,1 - mm.max.hv / hvs,mm.max.hvp / hvps,mm.max.hv,mm.max.hvp,mm.max.mmr,mm.max.hvpM1 / hvpM1s)
+          (mm.min.tm, mm.min.buy,minTrade,1 - mm.min.hv / hvs,1 - mm.min.hvM1 / hvM1s,mm.min.hvp / hvps,mm.min.hv,mm.min.hvp,mm.min.mmr,mm.min.hvpM1 / hvpM1s),
+          (mm.max.tm, mm.max.buy,maxTrade,1 - mm.max.hv / hvs,1 - mm.max.hvM1 / hvM1s,mm.max.hvp / hvps,mm.max.hv,mm.max.hvp,mm.max.mmr,mm.max.hvpM1 / hvpM1s)
           };
         });
 
@@ -441,32 +443,6 @@ namespace HedgeHog.Alice.Store {
                join cta in ctas on tm equals (cta.tm, cta.buy)
                select cta;
       }
-    }
-    CorridorStatistics ShowVoltsByCorrelation_New() {
-      if(UseCalc()) {
-        var bc = RatesArray.Count / 10;
-        ZipHedgedRates()
-          .ForEach(zip => zip
-          .Buffer(bc, 1)
-          .Where(b => b.Count == bc)
-          .Where(b => GetVoltage2(b.Last().rate).IsNotNaN() && GetVoltage(b.Last().rate).IsNaN())
-          .ForEach(b => {
-            var corr = alglib.pearsoncorr2(b.ToArray(t => GetVoltage2(t.rate)), b.ToArray(t => t.ratio));
-            SetVoltage(b.Last().rate, corr);
-          }));
-        {
-          try {
-            var voltRates = UseRates(rates => rates.Select(GetVoltage).SkipWhile(v => v.IsNaN()).TakeWhile(v => v.IsNotNaN()).ToArray()).FirstOrDefault();
-            if(voltRates != null) {
-              var voltageAvgLow = voltRates.AverageByIterations(-VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
-              GetVoltageAverage = () => voltageAvgLow;
-              var voltageAvgHigh = voltRates.AverageByIterations(VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
-              GetVoltageHigh = () => voltageAvgHigh;
-            }
-          } catch(Exception exc) { Log = exc; }
-        };
-      }
-      return null;
     }
     CorridorStatistics ShowVoltsByCorrelation() {
       if(UseCalc()) {
@@ -476,7 +452,7 @@ namespace HedgeHog.Alice.Store {
          from v in voltRates
            .Buffer(bc, 1)
            .Where(b => b.Count == bc)
-           .TakeWhile(b=>GetVoltage(b[0]).IsNaN())
+           .TakeWhile(b => GetVoltage(b[0]).IsNaN())
            .Select(b => alglib.pearsoncorr2(b.ToArray(t => GetVoltage2(t)), b.ToArray(_priceAvg)).SideEffect(v => SetVoltage(b[0], v)))
            .Reverse()
            .Take(1)
@@ -571,16 +547,13 @@ namespace HedgeHog.Alice.Store {
           SetVoltage2(t.r, v);
           volts[voltCounter++] = v;
         });
-        min = new[] { min, max }.OrderBy(m => m.Abs()).Last();
-        if(volts.IsEmpty()) { // store this logic for other times
-          var voltageLow = volts.AverageByIterations(-VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
-          var voltageHigh = volts.AverageByIterations(VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
-          GetVoltage2High = () => new[] { voltageHigh };
-          GetVoltage2Low = () => new[] { voltageLow };
-        } else {
-          GetVoltage2High = () => new[] { min.Abs() };
-          GetVoltage2Low = () => new[] { -min.Abs() };
+        if(volts.Any()) { // store this logic for other times
+          min = volts.AverageByIterations(-VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
+          max = volts.AverageByIterations(VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
         }
+        min = new[] { min, max }.OrderBy(m => m.Abs()).Last();
+        GetVoltage2High = () => new[] { min.Abs() };
+        GetVoltage2Low = () => new[] { -min.Abs() };
         voltRates.Select(vr => vr.r).ForEach(ra => ra.Zip(voltMap, (r, h) => r.PriceHedge = PosByRatio(priceMin, priceMax, h.v)).Count());
       }
       return null;

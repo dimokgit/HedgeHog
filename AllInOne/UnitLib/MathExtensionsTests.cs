@@ -47,7 +47,18 @@ namespace HedgeHog.Tests {
     public void RelativeRatiosTest() {
       Assert.AreEqual((0.25, 0.75), 1.0.RelativeRatios(3));
       Assert.AreEqual((0.25, 0.75), (-1.0).RelativeRatios(-3));
-      Assert.AreEqual((double.NaN, double.NaN), (1.0).RelativeRatios( -3));
+      Assert.AreEqual((double.NaN, double.NaN), (1.0).RelativeRatios(-3));
+    }
+
+    [TestMethod()]
+    public void CrossRange() {
+      int sinLength = 180;
+      int waveLength = 300;
+      int wavesCount = 4;
+      double[] sinus = MathExtensions.Sin(sinLength, waveLength, 100, 1, wavesCount);
+      double min = -95, max = 95;
+      Assert.AreEqual(4, sinus.CrossRange(min, max));
+      Assert.AreEqual(1, sinus.CrossRange(-100, 100));
     }
   }
 }

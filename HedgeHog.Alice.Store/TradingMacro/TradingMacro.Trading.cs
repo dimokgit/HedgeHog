@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
+using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeRatioM1, double TradeAmount, double MMR, int Lot, double Pip, bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -22,6 +22,7 @@ namespace HedgeHog.Alice.Store {
                    HV: x.hv,
                    HVP: x.hvp,
                    TradeRatio: x.tradingRatio * 100,
+                   TradeRatioM1: x.tradingRatioM1 * 100,
                    TradeAmount: x.tradeAmount,
                    MMR: x.mmr,
                    Lot: lot,
@@ -35,7 +36,7 @@ namespace HedgeHog.Alice.Store {
       }).Concat();
 
     public void OpenHedgedTrades(bool isBuy, bool closeOnly, string reason) {
-      if(HaveHedgedTrades() && !closeOnly)
+      if(!IsInVirtualTrading && HaveHedgedTrades() && !closeOnly)
         AdjustHedgedTrades(isBuy, reason);
       else {
         var hbs = HedgeBuySell(isBuy)
