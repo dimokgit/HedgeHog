@@ -587,26 +587,16 @@ namespace HedgeHog.Alice.Store {
       var minMax = (t.minMax ?? new double[0]).Concat(t.source.MinMax(t.getter)).MinMax();
       return t.source.Select(r => (r.StartDate, (t.getter(r).PositionRatio(minMax), r)));
     };
-    Func<(IList<Rate> source, Func<Rate, double> getter, double[] minMax), IEnumerable<(DateTime d, (double v, Rate r) t)>> RatioMap
+    static Func<(IList<Rate> source, Func<Rate, double> getter, double[] minMax), IEnumerable<(DateTime d, (double v, Rate r) t)>> RatioMap
       = RatioMapImpl;//.MemoizeLast(t => t.source.BackwardsIterator().Take(1).Select(r=>(r.StartDate,t.getter(r))).FirstOrDefault());
 
-    static Func<(IList<double> source, double[] minMax), IEnumerable<(double v, double r)>> RatioMapDoubleImpl = p => {
+    static Func<(IList<double> source, double[] minMax), IEnumerable<(double position, double value)>> RatioMapDoubleImpl = p => {
       var minMax = (p.minMax ?? new double[0]).Concat(p.source.MinMax()).MinMax();
       return p.source.Select(t => (t.PositionRatio(minMax), t));
     };
     Func<(IList<double> source, double[] minMax), IEnumerable<(double v, double r)>> RatioMapDouble
       = RatioMapDoubleImpl;//.MemoizeLast(t => (t.source.FirstOrDefault(), t.source.LastOrDefault()));
 
-    void CalcVoltsFullScaleShiftByStDev() {
-      foreach(var mapH in TradingMacroHedged(tm => tm.UseRates(ra => RatioMap((ra, r => 1 / _priceAvg(r), null)).ToArray()).Concat())) {
-        foreach(var map in UseRates(ra => RatioMap((ra, _priceAvg, null)).ToArray())) {
-          var stDevs = Enumerable.Range(-99, 99 * 2).Select(i => i / 100.0).Select(o => new { o, std = GetStDev(o) }).OrderBy(x => x.std).ToArray();
-          Debug.WriteLine(new { stDevs.First().o, stDevs.First().std, Pair, PairIndex });
-
-          double GetStDev(double ofs) => map.Zip(mapH, (t1, t2) => t1.t.v - (t2.t.v + ofs)).Sum().Abs();
-        }
-      }
-    }
     void CalcVoltsFullScaleShift() {
       if(IsVoltFullScale && UseCalc()) {
         var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray())
@@ -616,7 +606,7 @@ namespace HedgeHog.Alice.Store {
           if(false) VoltsFullScaleMinMax = GetFullScaleMinMax(voltRates, GetVoltage);
           //MaxHedgeProfit = CalcMaxHedgeProfit().Concat(MaxHedgeProfit).Aggregate((p,n)=>p.Zip(n,(p1,p2)=>(p1.buy,p1.profit.Cma(10,p2.profit)))  });
           if(false)
-            CalcVoltsFullScaleShiftByStDev();
+            CalcVoltsFullScaleShiftByStDev(this);
         }
       }
     }
@@ -624,6 +614,21 @@ namespace HedgeHog.Alice.Store {
       if(UseCalc())
         foreach(var hp in CalcMaxHedgeProfitMem(this))
           yield return hp;
+    }
+
+    static IEnumerable<(double pos, double std)> CalcVoltsFullScaleShiftByStDev(TradingMacro tmThis) {
+      foreach(var mapH in tmThis.TradingMacroHedged(tm => tm.UseRates(ra => RatioMap((ra, r => 1 / _priceAvg(r), null))).Concat().ToArray(t => t.t.v))) {
+        foreach(var map in tmThis.UseRates(ra => RatioMap((ra, _priceAvg, null)).ToArray(t => t.t.v))) {
+          var stDevs = CalcFullScaleShiftByStDev(mapH, map);
+          //Debug.WriteLine(new { stDevs.First().pos, stDevs.First().std, Pair, PairIndex });
+          yield return stDevs.First();
+        }
+      }
+    }
+
+    private static IEnumerable<(double pos, double std)> CalcFullScaleShiftByStDev(IList<double> map, IList<double> mapH) {
+      return Enumerable.Range(-99, 99 * 2).Select(i => i / 100.0).Select(pos => (pos, std: GetStDev(pos))).OrderBy(x => x.std);
+      double GetStDev(double ofs) => map.Zip(mapH, (t1, t2) => t1 - (t2 + ofs)).Sum().Abs();
     }
 
     private static double[] GetFullScaleMinMax(IList<Rate> voltRates, Func<Rate, double> rateMap) {
@@ -648,7 +653,14 @@ namespace HedgeHog.Alice.Store {
       var linearVolt = hedge.Linear().RegressionValue(hedge.Count / 2);
       var v = hedge.MinMax().Yield(mm => new { min = mm[0], max = mm[1] }).Single();
       var voltPos = linearVolt.PositionRatio(v.min, v.max);
-
+      if(voltPos.IsNaN()) {// test stdev approach
+        var rMap = RatioMapDoubleImpl((rates.ToArray(_priceAvg), null)).ToArray(t => t.position);
+        var hMap = RatioMapDoubleImpl((hedge, null)).ToArray(t => t.position);
+        var fullScaleBySrDev = CalcFullScaleShiftByStDev(rMap, hMap).ToArray();
+        var shiftByStDev = fullScaleBySrDev.First().pos;
+        var shiftByLinear = linearPrice - linearVolt;
+        var isOk = shiftByLinear.Ratio(shiftByStDev).Abs() > 0;
+      }
       return new[] { voltMinNew(), voltMaxNew() };
 
       double voltMaxNew() => (linearVolt - v.min) / pricePos + v.min;
@@ -663,8 +675,8 @@ namespace HedgeHog.Alice.Store {
       return from tm2 in tm.TradingMacroHedged()
              from corrs in tm.TMCorrelation(tm2)
              let getter = getOther(corrs)
-             from tmMap in tm.UseRates(ra => tm.RatioMap((ra, _priceAvg, null))).ToArray()
-             from tmMap2 in tm2.UseRates(ra => tm.RatioMap((ra, getter, tm.VoltsFullScaleMinMax))).ToArray()
+             from tmMap in tm.UseRates(ra => RatioMap((ra, _priceAvg, null))).ToArray()
+             from tmMap2 in tm2.UseRates(ra => RatioMap((ra, getter, tm.VoltsFullScaleMinMax))).ToArray()
              let mm = tmMap2.Zip(tmMap, (r, t) => new { r = t.t.r, r2 = r.t.r, d = t.t.v - r.t.v }).MinMaxBy(t => t.d)
              let htb = tm.HedgeBuySell(true).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount, 1, 1) }).ToArray()
              let hts = tm.HedgeBuySell(false).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount, 1, 1) }).ToArray()
