@@ -65,6 +65,7 @@ namespace HedgeHog.Alice.Store {
     public double TakeProfitXRatio { get; set; }
     public string TimeFrameTreshold { get; set; }
     public string TradeConditionsSave { get; set; }
+    public string TradeDirection { get; set; }
     public string TradeDirectionTriggerssSave { get; set; }
     public string TradeEnterBy { get; set; }
     public string TradeExitBy { get; set; }
