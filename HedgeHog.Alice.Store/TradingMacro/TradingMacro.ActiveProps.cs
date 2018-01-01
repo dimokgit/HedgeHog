@@ -170,7 +170,6 @@ namespace HedgeHog.Alice.Store {
     [WwwSetting(Group = wwwSettingsTrading)]
     [Category(categoryActive)]
     [DisplayName("Trade Direction")]
-    [Dnr]
     public TradeDirections TradeDirection {
       get { return _TradeDirection; }
       set {
