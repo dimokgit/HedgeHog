@@ -406,21 +406,22 @@ namespace HedgeHog.Alice.Client {
         //var xx = new[] { true, false }.SelectMany(isBuy => CalcHedgedPositions(pair, isBuy));
         var xx = new[] { true, false }.SelectMany(isBuy => HedgeBuySell(pair, isBuy)).ToArray();
         var canShort = GetHedgedTradingMacros(pair).SelectMany(t => new[] { t.tm1, t.tm2 }).Select(tm => new { tm.Pair, IsShortable = tm.CurrentPrice?.IsShortable == true }).ToArray();
-        var stats = (from tms in GetHedgedTradingMacros(pair)
-                     from corr in tms.tm1.TMCorrelation(tms.tm2)
-                     from slope1M1 in tms.tm1.TradingMacroM1(tm => tm.RatesArrayCoeffs.YieldIf(ra => ra.Any(), ra => ra.LineSlope() * 1000)).Concat()
-                     from slope2M1 in tms.tm2.TradingMacroM1(tm => tm.RatesArrayCoeffs.YieldIf(ra => ra.Any(), ra => corr * ra.LineSlope() * 1000)).Concat()
-                     where tms.tm1.RatesArrayCoeffs.Length == 2
-                     let slope1 = tms.tm1.RatesArrayCoeffs.LineSlope() * 1000
-                     let slope2 = corr * tms.tm2.RatesArrayCoeffs.LineSlope() * 1000
-                     select new {
-                       slopeRatio = (slope1 / slope2).AutoRound2(2),
-                       slope1 = slope1.AutoRound2(3),
-                       slope2 = slope2.AutoRound2(3),
-                       slpRatioM1 = (slope1M1 / slope2M1).AutoRound2(2),
-                       slope1M1 = slope1M1.AutoRound2(3),
-                       slope2M1 = slope2M1.AutoRound2(3)
-                     }
+        var stats = (
+          from tms in GetHedgedTradingMacros(pair)
+          from corr in tms.tm1.TMCorrelation(tms.tm2)
+          from slope1M1 in tms.tm1.TradingMacroM1(tm => tm.RatesArrayCoeffs.YieldIf(ra => ra.Any(), ra => ra.LineSlope() * 1000)).Concat()
+          from slope2M1 in tms.tm2.TradingMacroM1(tm => tm.RatesArrayCoeffs.YieldIf(ra => ra.Any(), ra => corr * ra.LineSlope() * 1000)).Concat()
+          where tms.tm1.RatesArrayCoeffs.Length == 2
+          let slope1 = tms.tm1.RatesArrayCoeffs.LineSlope() * 1000
+          let slope2 = corr * tms.tm2.RatesArrayCoeffs.LineSlope() * 1000
+          select new {
+            slopeRatio = (slope1 / slope2).AutoRound2(2),
+            slope1 = slope1.AutoRound2(3),
+            slope2 = slope2.AutoRound2(3),
+            slpRatioM1 = (slope1M1 / slope2M1).AutoRound2(2),
+            slope1M1 = slope1M1.AutoRound2(3),
+            slope2M1 = slope2M1.AutoRound2(3)
+          }
                      ).ToArray();
         return new {
           hrs = xx

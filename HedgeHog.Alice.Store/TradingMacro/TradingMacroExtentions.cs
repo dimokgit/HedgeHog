@@ -1521,7 +1521,6 @@ namespace HedgeHog.Alice.Store {
         BarsCountLastDate = DateTime.MinValue;
         TradesManager.ResetClosedTrades(Pair);
         var closedSessionToLoad = TestClosedSession;
-        _edgeDiffs = new double[0];
         if(!string.IsNullOrWhiteSpace(closedSessionToLoad)) {
           var vtm = (VirtualTradesManager)TradesManager;
           var sessionUid = Guid.Parse(closedSessionToLoad);

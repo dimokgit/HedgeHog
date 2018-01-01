@@ -161,29 +161,9 @@ namespace HedgeHog.Alice.Store {
     private void SetVoltsByPpm() {
       SetVots(WaveRangeAvg.PipsPerMinute, 2);
     }
-    private void SetVoltsByEquinox() {
-      if(IsRatesLengthStable)
-        _edgeDiffs.ForEach(v => SetVots(v, 2));
-    }
     private CorridorStatistics ShowVoltsByBPA1() {
       SetVots(_wwwBpa1, 2);
       return null;
-    }
-    private CorridorStatistics SetVoltsByTradeTrendLinesAvg() {
-      if(IsRatesLengthStable)
-        SetVots(TradeTrendLinesAvg(tl => tl.StDev), 2);
-      return null;
-    }
-    List<DateTime> _equinoxDates = new List<DateTime>();
-
-    public List<DateTime> EquinoxDates {
-      get {
-        return _equinoxDates;
-      }
-
-      set {
-        _equinoxDates = value;
-      }
     }
   }
 }

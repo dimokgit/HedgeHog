@@ -84,12 +84,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByMPH;
         case HedgeHog.Alice.VoltageFunction.PpmM1:
           return () => { SetVoltsByPpm(); return null; };
-        case HedgeHog.Alice.VoltageFunction.Equinox:
-          return () => { SetVoltsByEquinox(); return null; };
         case HedgeHog.Alice.VoltageFunction.BPA1:
           return ShowVoltsByBPA1;
-        case HedgeHog.Alice.VoltageFunction.TtlSd:
-          return SetVoltsByTradeTrendLinesAvg;
         case HedgeHog.Alice.VoltageFunction.Pair:
           return () => ShowVoltsByPair(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.Corr:
@@ -398,13 +394,16 @@ namespace HedgeHog.Alice.Store {
     }
 
     public IEnumerable<int> TMCorrelation(TradingMacro tmOther) => TMCorrelationImpl((this, tmOther));
-    Func<(TradingMacro tmThis, TradingMacro tmOther), IEnumerable<int>> TMCorrelationImpl = new Func<(TradingMacro tmThis, TradingMacro tmOther), IEnumerable<int>>(t => {
-      return from tm1 in GetTM1(t.tmThis)
-             from tm2 in GetTM1(t.tmOther)
-             from corr in Hedging.TMCorrelation(tm1, tm2)
-             select corr;
-      IEnumerable<TradingMacro> GetTM1(TradingMacro tm) => tm.BarPeriod == BarsPeriodType.t1 ? tm.TradingMacroM1() : new[] { tm };
-    }).Memoize();
+    Func<(TradingMacro tmThis, TradingMacro tmOther), int[]> TMCorrelationImpl =
+      new Func<(TradingMacro tmThis, TradingMacro tmOther), int[]>(t
+        => {
+          return (from tm1 in GetTM1(t.tmThis)
+                  from tm2 in GetTM1(t.tmOther)
+                  from corr in Hedging.TMCorrelation(tm1, tm2)
+                  select corr
+                 ).ToArray();
+          IEnumerable<TradingMacro> GetTM1(TradingMacro tm) => tm.BarPeriod == BarsPeriodType.t1 ? tm.TradingMacroM1() : new[] { tm };
+        }).MemoizeLast(t => t, i => i.Any());
     public static class Hedging {
       public static IEnumerable<int> TMCorrelation(TradingMacro tm1, TradingMacro tm2) =>
         from corrs in tm1.UseRates(ra1 => tm2.UseRates(ra2 => alglib.pearsoncorr2(ra1.ToArray(r => r.PriceAvg), ra2.ToArray(r => r.PriceAvg), ra1.Count.Min(ra2.Count))))
@@ -422,12 +421,12 @@ namespace HedgeHog.Alice.Store {
                         from hvpM1 in tmM1.HistoricalVolatilityByPips()
                         let mmr = TradesManagerStatic.GetMMR(tm.tm.Pair, tm.buy)
                         orderby mmr descending
-                        select new { tm.tm, tradeMax = equity / mmr, tm.buy, hv, hvM1=hvM1, hvp, hvpM1, mmr }
+                        select new { tm.tm, tradeMax = equity / mmr, tm.buy, hv, hvM1, hvp, hvpM1, mmr }
                         )
                         .Pairwise((min, max) => new { min, max, hvr = min.hv / max.hv, hvM1r = min.hvM1 / max.hvM1 })
                         .ToArray();
         var ctas = minMaxes.SelectMany(mm => {
-          var maxTrade = mm.max.tradeMax.Min(mm.min.tradeMax * mm.hvr);
+          var maxTrade = mm.max.tradeMax.Min(mm.min.tradeMax * mm.hvr.Avg(mm.hvM1r));
           var minTrade = mm.min.tradeMax.Min(maxTrade / mm.hvr);
           var hvs = mm.min.hv + mm.max.hv;
           var hvM1s = mm.min.hvM1 + mm.max.hvM1;
@@ -826,7 +825,7 @@ namespace HedgeHog.Alice.Store {
     Action GetRatesLengthFunction() {
       switch(RatesLengthBy) {
         case RatesLengthFunction.None:
-          return () => { };
+          return () => { BarsCountCalc = IsAsleep ? 60 : BarsCount; };
         case RatesLengthFunction.DistanceMin:
           return ScanRatesLengthByDistanceMin;
         case RatesLengthFunction.DistanceMinSmth:

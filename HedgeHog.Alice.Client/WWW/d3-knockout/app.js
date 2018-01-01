@@ -794,10 +794,6 @@
       });
       return columns.concat(values);
     });
-    this.readHedgeVirtual = function () {
-      serverCall("readHedgeVirtual", [pair], this.hedgeTradesVirtual);
-    }.bind(this);
-    this.clearHedgeVirtualTrades = serverCall.bind(this, "clearHedgeVirtualTrades", [pair]);
     // #endregion
 
     // #region WwwInfo
