@@ -110,6 +110,22 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    public TradeConditionDelegate VltOut2Ok {
+      get {
+        return () => {
+          var tms = TradingMacroM1(tmh
+            => new[] { new { tm = this, lh = true }, new { tm = tmh, lh = true } }).Concat().Take(1).Select(x => GetTD(x.tm, x.lh))
+            .Concat();
+          return tms.DefaultIfEmpty().Aggregate((a, td) => a & td);
+        };
+        IEnumerable<TradeDirections> GetTD(TradingMacro tm, bool useHighLow) =>
+          from volt in tm.GetLastVolt(GetVoltage2)
+          from vh in tm.GetVoltage2High()
+          from vl in tm.GetVoltage2Low()
+          where volt >= vh || volt <= vl
+          select TradeDirections.Both;
+      }
+    }
     public TradeConditionDelegate PriceTipOk {
       get {
         return () => {
@@ -1881,7 +1897,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region TradingPriceRange
-    public TradeConditionDelegate PrRngOk {
+    public TradeConditionDelegateHide PrRngOk {
       get {
         return () => TradeDirectionByBool(IsTradingPriceInRange(TradingPriceRange, CurrentPrice.Average));
       }
@@ -2092,7 +2108,7 @@ namespace HedgeHog.Alice.Store {
     }
     #region Outsiders
     [TradeConditionAsleep]
-    public TradeConditionDelegate AslpM1Ok {
+    public TradeConditionDelegateHide AslpM1Ok {
       get {
         Func<TradingMacro, double, bool> isIn = (tm, v) =>
           EquinoxBasedMinMax(OutsiderTLs(tm)).Any(t => {
@@ -2109,7 +2125,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate OutsideAnyOk {
       get { return () => IsCurrentPriceOutsideCorridor(tm => tm.BarPeriod > BarsPeriodType.t1, tm => OutsiderTLs(tm)); }
     }
-    public TradeConditionDelegate OutEqnxOk {
+    public TradeConditionDelegateHide OutEqnxOk {
       get {
         var tpl = TradingMacroM1(tm => EquinoxBasedMinMax(OutsiderTLs(tm)));
         return () => tpl.SelectMany(t => t)
@@ -2240,7 +2256,7 @@ namespace HedgeHog.Alice.Store {
     #region Cross Handlers
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegate WCOk {
+    public TradeConditionDelegateHide WCOk {
       get {
         return () => TradeDirectionByBool(CalculateTradingDistance() < StDevByHeight * 3);
       }
