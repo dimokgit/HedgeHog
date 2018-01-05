@@ -121,9 +121,9 @@ namespace IBApp {
         .Subscribe(a => OnOrderStartedImpl(a.orderId, a.contract, a.order, a.orderState));
       _orderStatusStream = osObs
         .Select(t => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() })
+        .DistinctUntilChanged()
         .Do(x => _verbous("* " + new { OrderStatus = x }))
         .Do(t => _orderContracts.Where(oc => oc.Key == t.orderId && t.status != "Inactive").ForEach(oc => (t.status, t.filled, t.remaining, t.isDone).With(os => _orderStatuses.AddOrUpdate(oc.Value.contract.Symbol, i => os, (i, u) => os))))
-        .DistinctUntilChanged()
         .Where(o => (o.status, o.remaining).IsOrderDone())
         .Subscribe(o => RaiseOrderRemoved(o.orderId));
       _portfolioStream = portObs
@@ -459,9 +459,9 @@ namespace IBApp {
         closedTrade.Time2Close = execTime;
         closedTrade.Close = execPrice;
 
-        ClosedTrades.Add(closedTrade);
         if(!OpenTrades.Remove(closedTrade))
           throw new Exception($"Couldn't remove {nameof(closedTrade)} from {nameof(OpenTrades)}");
+        ClosedTrades.Add(closedTrade);
         return closeLots - closedTrade.Lots;
       } else {// Partial close
         var trade = closedTrade.Clone();
