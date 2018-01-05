@@ -886,10 +886,10 @@ namespace HedgeHog {
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       return line.Zip(values, (l, v) => v - l).Do(callCC).StandardDeviation();
     }
-    public static double HeightByRegressoin(this IList<double> values) {
-      return values.HeightByRegressoin(values.Linear());
+    public static double HeightByRegression(this IList<double> values) {
+      return values.HeightByRegression(values.Linear());
     }
-    public static double HeightByRegressoin(this IList<double> values, double[] coeffs) {
+    public static double HeightByRegression(this IList<double> values, double[] coeffs) {
       if(coeffs == null || coeffs.Length == 0)
         coeffs = values.Linear();
       var line = new double[values.Count];
@@ -905,7 +905,7 @@ namespace HedgeHog {
       }
       return max - min;
     }
-    public static double[] MinMaxByRegressoin(this IList<double> values, double[] coeffs = null) {
+    public static double[] MinMaxByRegression(this IList<double> values, double[] coeffs = null) {
       if(coeffs == null || coeffs.Length == 0)
         coeffs = values.Linear();
       var line = new double[values.Count];

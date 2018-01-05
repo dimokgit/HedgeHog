@@ -601,6 +601,14 @@ namespace HedgeHog.Alice.Client {
         await RemoteControlModel.LoadStrategy(tm, strategyPath);
       });
     }
+    [BasicAuthenticationFilter]
+    public void SaveTradingMacros(string tradingMacroName) {
+      if(string.IsNullOrWhiteSpace(tradingMacroName))
+        throw new ArgumentException("Is empty", nameof(tradingMacroName));
+      if(GlobalStorage.TradingMacroNames.Any(tm => tm.ToLower() == tradingMacroName.ToLower()))
+        throw new ArgumentException($"Trading Macro[{tradingMacroName}] already exists");
+      remoteControl.Value.SaveTradingMacros(tradingMacroName);
+    }
     #endregion
 
     #region ReplayArguments

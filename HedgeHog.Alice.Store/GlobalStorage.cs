@@ -168,13 +168,17 @@ namespace HedgeHog.Alice.Store {
       .Select(o => tradingMacroMapper.Map<TradingMacro>(o))
       //.IfEmpty(() => { throw new Exception(new { tradingMacroName, errror = "Not found" } + ""); })
       .ToArray());
-    public static void SaveTradingMacros(IEnumerable<TradingMacro> tms) =>
-      UseForexMongo(c => 
+    public static void SaveTradingMacros(IEnumerable<TradingMacro> tms) => SaveTradingMacros(tms, null);
+    public static void SaveTradingMacros(IEnumerable<TradingMacro> tms, string tradingMacroName) =>
+      UseForexMongo(c =>
         tms.ForEach(o => {
           var tm = c.TradingMacroSettings.Find(o._id);
-          if(tm == null)
-            c.TradingMacroSettings.Add(tradingMacroMapper2.Map<TradingMacroSettings>(o));
-          else
+          if(tm == null || tm.TradingMacroName != tradingMacroName.IfEmpty(tm.TradingMacroName)) {
+            c.TradingMacroSettings.Add(tradingMacroMapper2.Map<TradingMacroSettings>(o).SideEffect(ts => {
+              ts._id = ObjectId.GenerateNewId();
+              ts.TradingMacroName = tradingMacroName;
+            }));
+          } else
             tradingMacroMapper2.Map(o, tm);
         })
       , true);

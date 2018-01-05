@@ -508,6 +508,10 @@
         settingsGrid().jqPropertyGrid(properties, $.extend(true, tsMeta, meta));
       });
     }
+    this.newTradingMacroName = ko.observable();
+    this.saveTradingMacros = function () {
+      serverCall("saveTradingMacros", [self.newTradingMacroName()]);
+    }
     // #endregion
     // #region TradingConditions
     function readTradingConditions() {
@@ -794,6 +798,7 @@
       });
       return columns.concat(values);
     });
+    this.clearHedgeVirtualTrades = serverCall.bind(this, "clearHedgeVirtualTrades", [pair]);
     // #endregion
 
     // #region WwwInfo

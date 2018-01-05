@@ -829,6 +829,12 @@
           <tr><td>Mouse Date 0</td><td data-bind="text:chartDateFormat(chartArea[0].mouseData().d)"></td></tr>
           <tr><td>Mouse Date 1</td><td data-bind="text:chartDateFormat(chartArea[1].mouseData().do)"></td></tr>
         </tbody>
+        <tbody>
+          <tr>
+            <td><input data-bind="textInput:newTradingMacroName" size="7" title="New TradingMacro name" /></td>
+            <td><input data-bind="click:saveTradingMacros" value="Save New Macto" type="button" style="padding:0px"></td>
+          </tr>
+        </tbody>
       </table>
     </div>
   </div>

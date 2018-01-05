@@ -66,7 +66,7 @@ namespace HedgeHog.Alice.Store {
             .Select(i => {
               //InPips(prices.GetRange(0, i.Min(prices.Count)).StandardDeviation()).Yield()
               var range = prices.GetRange(0, i.Min(prices.Count));
-              var std = InPips(range.ToArray(r => r.PriceAvg).HeightByRegressoin());
+              var std = InPips(range.ToArray(r => r.PriceAvg).HeightByRegression());
               return new { i, d = range.Last().StartDate, ok = std <= RatesStDevMinInPips, std };
             })
             .SkipWhile(a => { if(last.std < a.std) last = a; return _isOk(a.ok); })

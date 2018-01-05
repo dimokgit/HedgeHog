@@ -27,7 +27,7 @@ using Newtonsoft.Json;
 using System.Runtime.Serialization;
 
 namespace HedgeHog.Alice.Store {
-  public class RemoteControlModelBase : HedgeHog.Models.ModelBase {
+  public class RemoteControlModelBase :HedgeHog.Models.ModelBase {
 
     static string[] defaultInstruments = new string[] { "EUR/USD", "USD/JPY", "GBP/USD", "USD/CHF", "USD/CAD", "USD/SEK", "EUR/JPY" };
     public ObservableCollection<string> Instruments {
@@ -93,7 +93,7 @@ namespace HedgeHog.Alice.Store {
               .ToArray();
     }
 
-    public class DynamicContractResolver : DefaultContractResolver {
+    public class DynamicContractResolver :DefaultContractResolver {
 
       public DynamicContractResolver() {
       }
@@ -115,21 +115,15 @@ namespace HedgeHog.Alice.Store {
                 join p in properties on s.pi.Name equals p.PropertyName
                 orderby s.category, s.pi.Name
                 select p).ToList();
-
       }
     }
 
-    public void SaveTradingMacros() {
-      GlobalStorage.SaveTradingMacros(TradingMacros);
-      //TradingMacros.ForEach(tm => GlobalStorage.SaveJson(tm.Serialize(false), TradingMacrosPath(MasterModel.MasterAccount.TradingMacroName, tm.Pair, tm.TradingGroup, tm.PairIndex)));
-    }
-    protected void ResetTradingMacros() {
-      //_tradingMacrosCopy = TradingMacros.ToArray();
-      RaisePropertyChanged(() => TradingMacrosCopy);
-    }
+    //TradingMacros.ForEach(tm => GlobalStorage.SaveJson(tm.Serialize(false), TradingMacrosPath(MasterModel.MasterAccount.TradingMacroName, tm.Pair, tm.TradingGroup, tm.PairIndex)));
+    public void SaveTradingMacros() => SaveTradingMacros(null);
+    public void SaveTradingMacros(string tradingMacroName) => GlobalStorage.SaveTradingMacros(TradingMacros, tradingMacroName);
+    protected void ResetTradingMacros() => RaisePropertyChanged(() => TradingMacrosCopy);
 
     protected delegate void Context_ObjectMaterializedDelegate(object sender, ObjectMaterializedEventArgs e);
-
     protected virtual void Context_ObjectMaterialized(object sender, ObjectMaterializedEventArgs e) { throw new NotImplementedException(); }
     protected static readonly string _tradingMacrosPath = "TradingMacros\\{0}+{1}_{2}_{3}.json";
     protected static string TradingMacrosPath(string name, string pair, object group, object index) { return _tradingMacrosPath.Formater(name, TradesManagerStatic.WrapPair(pair), group, index); }
@@ -142,7 +136,7 @@ namespace HedgeHog.Alice.Store {
             //this.MasterModel.MasterAccount.cas
             //_TradingMacros = ReadTradingMacros(MasterModel.MasterAccount.TradingMacroName, errors);
             //GlobalStorage.SaveTradingMacros(_TradingMacros);
-            _TradingMacros = GlobalStorage.LoadTradingMacros(MasterModel.TradingMacroName)
+            _TradingMacros = GlobalStorage.LoadTradingMacros(MasterModel.TradingMacroName.ThrowIf(tradingMacro => tradingMacro.IsNullOrWhiteSpace()))
               .OrderBy(tm => !tm.IsActive)
               .ThenBy(tm => tm.TradingGroup)
               .ThenBy(tm => tm.PairIndex)
@@ -204,7 +198,7 @@ namespace HedgeHog.Alice.Store {
     protected Dictionary<string, IList<TradingMacro>> _tradingMacrosDictionary = new Dictionary<string, IList<TradingMacro>>(StringComparer.OrdinalIgnoreCase);
     protected IEnumerable<TradingMacro> GetTradingMacros(string pair = "") {
       pair = pair.ToLower();
-        return TradingMacrosCopy.Where(tm => new[] { tm.Pair.ToLower(), "" }.Contains(pair) && tm.IsActive).OrderBy(tm => tm.PairIndex);
+      return TradingMacrosCopy.Where(tm => new[] { tm.Pair.ToLower(), "" }.Contains(pair) && tm.IsActive).OrderBy(tm => tm.PairIndex);
     }
     #endregion
 
@@ -265,7 +259,7 @@ namespace HedgeHog.Alice.Store {
     }
     protected PriceBar[] FetchPriceBars(TradingMacro tradingMacro, int rowOffset, bool reversePower, DateTime dateStart) {
       var isLong = dateStart == DateTime.MinValue;
-      var rs = tradingMacro.UseRates(ra=>ra.Where(r => r.StartDate >= dateStart).GroupTicksToRates()).Concat();
+      var rs = tradingMacro.UseRates(ra => ra.Where(r => r.StartDate >= dateStart).GroupTicksToRates()).Concat();
       var ratesForDensity = (reversePower ? rs.OrderBarsDescending() : rs.OrderBars()).ToArray();
       SetPriceBars(tradingMacro, isLong, ratesForDensity.GetPriceBars(TradesManager.GetPipSize(tradingMacro.Pair), rowOffset));
       return GetPriceBars(tradingMacro, isLong);

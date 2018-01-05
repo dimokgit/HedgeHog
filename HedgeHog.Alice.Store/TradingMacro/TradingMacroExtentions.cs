@@ -2359,6 +2359,7 @@ namespace HedgeHog.Alice.Store {
                 AdjustSuppResCount();
                 var prices = RatesArray.ToArray(_priceAvg);
                 _ratesArrayCoeffs = prices.Linear();
+                RatesHeightByRegression = prices.HeightByRegression(_ratesArrayCoeffs);
                 StDevByPriceAvg = prices.StandardDeviation();
                 StDevByHeight = prices.StDevByRegressoin(_ratesArrayCoeffs);
                 switch(CorridorCalcMethod) {
@@ -3786,6 +3787,9 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         case TradingMacroTakeProfitFunction.RatesHeight:
           tp = useTrender(tm => tm.RatesHeightCma.Value * xRatio);
           break;
+        case TradingMacroTakeProfitFunction.RtsHghtReg:
+          tp = useTrender(tm => tm.RatesHeightByRegression * xRatio);
+          break;
         #endregion
         #region BuySellLevels
         case TradingMacroTakeProfitFunction.BuySellLevels:
@@ -4611,6 +4615,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
     public double RatesHeightInPips { get { return InPips(RatesHeight); } }
 
+    public double RatesHeightByRegression { get; private set; }
+
     double _RatesStDevHourlyAvg;
     public double RatesStDevHourlyAvg {
       get { return _RatesStDevHourlyAvg; }
@@ -5347,6 +5353,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
     bool _isAsleep;
     private double[] _ratesArrayCoeffs = new double[0];
+
     private IDisposable _orderAddedSubsciption;
 
     public double[] RatesArrayCoeffs { get => _ratesArrayCoeffs; set => _ratesArrayCoeffs = value; }

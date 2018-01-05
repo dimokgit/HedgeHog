@@ -19,7 +19,7 @@ namespace HedgeHog.Tests {
         .Do(i => values.Add(rand.NextDouble()))
         //.SkipWhile(_=>values.Count < 5000)
         .ForEach(_ => {
-          times.Add(values.HeightByRegressoin());
+          times.Add(values.HeightByRegression());
         });
       times = times.Zip(times.Skip(1), (t1, t2) => t1.Ratio(t2)).Where(Lib.IsNotNaN).ToList();
       times = times.Zip(times.Skip(1), (t1, t2) => t1.Ratio(t2)).Where(Lib.IsNotNaN).Select(d=>1/d).ToList();

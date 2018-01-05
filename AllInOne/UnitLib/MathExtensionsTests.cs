@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace HedgeHog.Tests {
   [TestClass()]
@@ -59,6 +61,25 @@ namespace HedgeHog.Tests {
       double min = -95, max = 95;
       Assert.AreEqual(4, sinus.CrossRange(min, max));
       Assert.AreEqual(1, sinus.CrossRange(-100, 100));
+    }
+
+    [TestMethod()]
+    public void MinMaxByRegressoin2() {
+      var r = new Random();
+      var source = Range.Int32(0, 100000).ToArray(i => i + r.NextDouble());
+
+      var sw = Stopwatch.StartNew();
+      var minMax = source.MinMaxByRegression();
+      Debug.WriteLine(new { sw.ElapsedMilliseconds,minMax });
+      sw.Restart();
+      var minMax2 = source.MinMaxByRegressoin2();
+      Debug.WriteLine(new { sw.ElapsedMilliseconds,minMax2 });
+      Assert.AreEqual((minMax[0],minMax[1]), (minMax2[0], minMax2[1]));
+      sw.Restart();
+      var height = source.Height();
+      var heightR = source.HeightByRegression();
+      Debug.WriteLine(new { sw.ElapsedMilliseconds, heightR });
+      Assert.AreEqual(minMax2[1]-minMax2[0], heightR);
     }
   }
 }
