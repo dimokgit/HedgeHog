@@ -137,6 +137,28 @@ namespace IBApp {
       _defaultMessageHandler(nameof(AccountManager) + " is ready");
     }
 
+    #region TraceSubject Subject
+    object _TraceSubjectLocker = new object();
+    ISubject<object> _TraceSubject;
+    ISubject<object> TraceSubject {
+      get {
+        lock(_TraceSubjectLocker)
+          if(_TraceSubject == null) {
+            _TraceSubject = new Subject<object>();
+            _TraceSubject
+              .DistinctUntilChanged()
+              .Subscribe(s => _defaultMessageHandler(s), exc => { });
+          }
+        return _TraceSubject;
+      }
+    }
+    void OnTraceSubject(object p) {
+      TraceSubject.OnNext(p);
+    }
+    #endregion
+
+
+
     #region OrderStatus
     ConcurrentDictionary<int, (IBApi.Order order, IBApi.Contract contract)> _orderContracts = new ConcurrentDictionary<int, (IBApi.Order order, IBApi.Contract contract)>();
     ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)> _orderStatuses = new ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)>();
@@ -184,6 +206,7 @@ namespace IBApp {
       }
 
       TraceTrades("Positions: ", OpenTrades);
+      FetchMMRs();
     }
     Trade TradeFromPosition(Contract contract, double position, double avgCost) {
       var st = IbClient.ServerTime;
@@ -299,6 +322,7 @@ namespace IBApp {
       OrderAddedEvent?.Invoke(this, new OrderEventArgs(Order));
     }
     #endregion
+
     #region OrderRemovedEvent
     public event OrderRemovedEventHandler OrderRemovedEvent;
     public event OrderRemovedEventHandler OrderRemoved {
@@ -313,11 +337,7 @@ namespace IBApp {
 
     void RaiseOrderRemoved(HedgeHog.Shared.Order args) => OrderRemovedEvent?.Invoke(args);
     #endregion
-    #region OpenOrder Subject
-    object _OpenOrderSubjectLocker = new object();
-    ISubject<OpenOrderArg> _OpenOrderSubject;
 
-    #endregion
     private static bool IsEntryOrder(IBApi.Order o) => new[] { "MKT", "LMT" }.Contains(o.OrderType);
     private void OnOrderStartedImpl(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) {
       if(!o.WhatIf) {
@@ -446,7 +466,7 @@ namespace IBApp {
         _defaultMessageHandler(nameof(FetchMMR) + " started");
         TradesManagerStatic.dbOffers.Where(o => !o.Pair.IsCurrenncy()).ToObservable().Subscribe(o => FetchMMR(o.Pair));
       })
-      .ForEach(t => _defaultMessageHandler(new { FetchMMRs = new { t.Pair, t.IsBuy, t.Lots, Message = "Won't run" } }));
+      .ForEach(t => OnTraceSubject(new { FetchMMRs = new { t.Pair, t.IsBuy, t.Lots, Message = "Won't run" } }));
     #endregion
 
     #region Overrrides/helpers

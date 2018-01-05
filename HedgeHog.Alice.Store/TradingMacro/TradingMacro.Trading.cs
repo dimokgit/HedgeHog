@@ -36,7 +36,7 @@ namespace HedgeHog.Alice.Store {
       }).Concat();
 
     public void OpenHedgedTrades(bool isBuy, bool closeOnly, string reason) {
-      if(!IsInVirtualTrading && HaveHedgedTrades() && !closeOnly)
+      if(!IsInVirtualTrading && TradesManager.GetTrades().Any() && !closeOnly)
         AdjustHedgedTrades(isBuy, reason);
       else {
         var hbs = HedgeBuySell(isBuy)
@@ -60,22 +60,25 @@ namespace HedgeHog.Alice.Store {
     }
 
     public void AdjustHedgedTrades(bool isBuy, string reason) {
-      if(!HaveHedgedTrades())
-        throw new Exception($"{nameof(AdjustHedgedTrades)}: there is no hedged trades to adjust.");
-
+      var exc = new Exception($"{nameof(AdjustHedgedTrades)}: there is no hadged trades to adjust.");
       var hbs = HedgeBuySell(isBuy)
         .Select(x => x.Value)
         .OrderByDescending(tm => tm.Pair == Pair)
         .Select(t => (t.Pair, Position: t.IsBuy ? t.Lot : -t.Lot))
         .ToArray();
 
-      (from trade in TradesManager.GetTrades()
-       join ht in hbs on trade.Pair equals ht.Pair
-       from tm in TradingMacroTrender(trade.Pair)
+      (from ht in hbs
+       join trd in TradesManager.GetTrades().Select(t => (t.Pair, t.Position)) on ht.Pair equals trd.Pair into gj
+       from trade in gj.DefaultIfEmpty((ht.Pair, 0))
+       from tm in TradingMacroTrader(trade.Pair).IfEmpty(() => throw ExcNoTrader(trade.Pair))
+       orderby tm.Pair != Pair
        let pos = ht.Position - trade.Position
-       let nt = (trade, pos)
-       select (tm, nt)
-      ).ForEach(t => t.tm.OpenTrade(t.nt.pos > 0, t.nt.pos.Abs().ToInt(), reason + ":" + nameof(AdjustHedgedTrades)));
+       select (tm, pos)
+      )
+      .IfEmpty(() => throw exc)
+      .ForEach(t => t.tm.OpenTrade(t.pos > 0, t.pos.Abs().ToInt(), reason + ":" + nameof(AdjustHedgedTrades)));
+
+      Exception ExcNoTrader(string pair) => new Exception(new { pair, error = "No trader found'" } + "");
     }
 
     object _tradeLock = new object();

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static partial class IEnumerableCore {
-    public class Singleable<T> : IEnumerable<T> {
+    public class Singleable<T> :IEnumerable<T> {
       private readonly IEnumerable<T> source;
       public Singleable(IEnumerable<T> sourse) {
         source = sourse;
@@ -115,8 +115,8 @@ namespace HedgeHog {
     }
     public static double[] MinMax<T>(this IEnumerable<T> source, Func<T, double> miner, Func<T, double> maxer) {
       var minMax = source.MinMaxBy(miner, maxer);
-      return  minMax.Any()
-        ?new[] { miner(minMax[0]), maxer(minMax.Last()) }
+      return minMax.Any()
+        ? new[] { miner(minMax[0]), maxer(minMax.Last()) }
         : new[] { double.NaN };
     }
     public static T[] MinMaxBy<T>(this IEnumerable<T> source, Func<T, double> miner, Func<T, double> maxer) {
@@ -250,9 +250,7 @@ namespace HedgeHog {
       if(isEmpty)
         emptyAction();
     }
-    public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
-          Func<IEnumerable<T>> emptySelector) {
-
+    public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable, Func<IEnumerable<T>> emptySelector) {
       var isEmpty = true;
       foreach(var e in enumerable) {
         isEmpty = false;
@@ -325,7 +323,7 @@ namespace HedgeHog {
 
     #region Yield
     public static void If(this bool v, Action then) {
-      if( v) then();
+      if(v) then();
     }
     public static void If(this bool v, Action then, Action @else) {
       if(v)
@@ -333,17 +331,17 @@ namespace HedgeHog {
       else
         @else();
     }
-    public static (U value, IEnumerable<Exception> error,T param) WithError<T, U>(this Func<T, U> func, T value) {
+    public static (U value, IEnumerable<Exception> error, T param) WithError<T, U>(this Func<T, U> func, T value) {
       try {
         return (func(value), new Exception[0], value);
-      }catch(Exception exc) {
+      } catch(Exception exc) {
         return (default, new[] { exc }, value);
       }
     }
-    public static (U value, IEnumerable<Exception> error, T param) WithError<T,V, U>(this (T value, IEnumerable<Exception> error,V param) param, Func<(T value, IEnumerable<Exception> error, V param), U> func) {
+    public static (U value, IEnumerable<Exception> error, T param) WithError<T, V, U>(this (T value, IEnumerable<Exception> error, V param) param, Func<(T value, IEnumerable<Exception> error, V param), U> func) {
       try {
-        return (func(param), param.error,param.value);
-      }catch(Exception exc) {
+        return (func(param), param.error, param.value);
+      } catch(Exception exc) {
         return (default, param.error.Concat(new[] { exc }), param.value);
       }
     }

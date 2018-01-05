@@ -16,7 +16,7 @@ using System.Collections.Specialized;
 using System.Configuration;
 using MongoDB.Bson;
 
-public class IBClientCore : IBClient, ICoreFX {
+public class IBClientCore :IBClient, ICoreFX {
   class Configer {
     static NameValueCollection section;
     public static int[] WarningCodes;
@@ -27,8 +27,8 @@ public class IBClientCore : IBClient, ICoreFX {
       try {
         var codeAnon = new { id = ObjectId.Empty, codes = new int[0] };
         WarningCodes = MongoExtensions.ReadCollectionAnon(codeAnon, mongoUri, "forex", mongoCollection).SelectMany(x => x.codes).ToArray();
-      }catch(Exception exc) {
-        throw new Exception(new { mongoUri, mongoCollection } + "",exc);
+      } catch(Exception exc) {
+        throw new Exception(new { mongoUri, mongoCollection } + "", exc);
       }
     }
   }
@@ -38,7 +38,7 @@ public class IBClientCore : IBClient, ICoreFX {
   private string _host;
   internal TimeSpan _serverTimeOffset;
   private string _managedAccount;
-  public string ManagedAccount { get => _managedAccount;  }
+  public string ManagedAccount { get => _managedAccount; }
   private readonly Action<object> _trace;
   TradingServerSessionStatus _sessionStatus;
   readonly private MarketDataManager _marketDataManager;
@@ -97,7 +97,7 @@ public class IBClientCore : IBClient, ICoreFX {
       }
     }
   }
-  public bool TryGetPrice(string symbol,out Price price) { return _marketDataManager.TryGetPrice(symbol,out price); }
+  public bool TryGetPrice(string symbol, out Price price) { return _marketDataManager.TryGetPrice(symbol, out price); }
   public Price GetPrice(string symbol) { return _marketDataManager.GetPrice(symbol); }
   #region Price Changed
   private void OnPriceChanged(Price price) {
@@ -107,9 +107,9 @@ public class IBClientCore : IBClient, ICoreFX {
 
   #region PriceChanged Event
   event EventHandler<PriceChangedEventArgs> PriceChangedEvent;
-  public event EventHandler<PriceChangedEventArgs>  PriceChanged {
+  public event EventHandler<PriceChangedEventArgs> PriceChanged {
     add {
-      if (PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
+      if(PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
         PriceChangedEvent += value;
     }
     remove {
@@ -128,7 +128,7 @@ public class IBClientCore : IBClient, ICoreFX {
   event EventHandler<OrderEventArgs> OrderAddedEvent;
   public event EventHandler<OrderEventArgs> OrderAdded {
     add {
-      if (OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
+      if(OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
         OrderAddedEvent += value;
     }
     remove {
@@ -142,7 +142,7 @@ public class IBClientCore : IBClient, ICoreFX {
   event OrderRemovedEventHandler OrderRemovedEvent;
   public event OrderRemovedEventHandler OrderRemoved {
     add {
-      if (OrderRemovedEvent == null || !OrderRemovedEvent.GetInvocationList().Contains(value))
+      if(OrderRemovedEvent == null || !OrderRemovedEvent.GetInvocationList().Contains(value))
         OrderRemovedEvent += value;
     }
     remove {
@@ -150,7 +150,7 @@ public class IBClientCore : IBClient, ICoreFX {
     }
   }
 
-  void RaiseOrderRemoved(HedgeHog.Shared.Order args) => OrderRemovedEvent?.Invoke( args);
+  void RaiseOrderRemoved(HedgeHog.Shared.Order args) => OrderRemovedEvent?.Invoke(args);
   #endregion
 
 
@@ -177,8 +177,8 @@ public class IBClientCore : IBClient, ICoreFX {
   static bool IsWarning(int code) => Configer.WarningCodes.Contains(code);
   System.Collections.Concurrent.ConcurrentBag<int> _handledReqErros = new System.Collections.Concurrent.ConcurrentBag<int>();
   public int SetRequestHandled(int id) {
-    _handledReqErros.Add(id);return id;
-  } 
+    _handledReqErros.Add(id); return id;
+  }
   private void OnError(int id, int errorCode, string message, Exception exc) {
     if(_handledReqErros.Contains(id)) return;
     if(IsWarning(errorCode)) return;
@@ -187,7 +187,7 @@ public class IBClientCore : IBClient, ICoreFX {
     if(exc != null)
       Trace(exc);
     else
-      Trace(new { IBClientCore = new { id, errorCode, message } });
+      Trace(new { IBCC = new { id, error = errorCode, message } });
   }
 
   #region TradeAdded Event
@@ -198,9 +198,9 @@ public class IBClientCore : IBClient, ICoreFX {
   //  }
   //}
   event EventHandler<TradeEventArgs> TradeAddedEvent;
-  public event EventHandler<TradeEventArgs>  TradeAdded {
+  public event EventHandler<TradeEventArgs> TradeAdded {
     add {
-      if (TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
+      if(TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
         TradeAddedEvent += value;
     }
     remove {
@@ -215,9 +215,9 @@ public class IBClientCore : IBClient, ICoreFX {
 
   #region TradeRemoved Event
   event EventHandler<TradeEventArgs> TradeRemovedEvent;
-  public event EventHandler<TradeEventArgs>  TradeRemoved {
+  public event EventHandler<TradeEventArgs> TradeRemoved {
     add {
-      if (TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
+      if(TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
         TradeRemovedEvent += value;
     }
     remove {
@@ -234,11 +234,11 @@ public class IBClientCore : IBClient, ICoreFX {
   event EventHandler<TradeEventArgs> TradeClosedEvent;
   public event EventHandler<TradeEventArgs> TradeClosed {
     add {
-      if (TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
+      if(TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
         TradeClosedEvent += value;
     }
     remove {
-      if (TradeClosedEvent != null)
+      if(TradeClosedEvent != null)
         TradeClosedEvent -= value;
     }
   }
@@ -281,9 +281,9 @@ public class IBClientCore : IBClient, ICoreFX {
 
   #region Events
   private EventHandler<LoggedInEventArgs> LoggedInEvent;
-  public event EventHandler<LoggedInEventArgs>  LoggedIn {
+  public event EventHandler<LoggedInEventArgs> LoggedIn {
     add {
-      if (LoggedInEvent == null || !LoggedInEvent.GetInvocationList().Contains(value))
+      if(LoggedInEvent == null || !LoggedInEvent.GetInvocationList().Contains(value))
         LoggedInEvent += value;
     }
     remove {
@@ -295,9 +295,9 @@ public class IBClientCore : IBClient, ICoreFX {
   }
 
   event LoginErrorHandler LoginErrorEvent;
-  public event LoginErrorHandler  LoginError {
+  public event LoginErrorHandler LoginError {
     add {
-      if (LoginErrorEvent == null || !LoginErrorEvent.GetInvocationList().Contains(value))
+      if(LoginErrorEvent == null || !LoginErrorEvent.GetInvocationList().Contains(value))
         LoginErrorEvent += value;
     }
     remove {

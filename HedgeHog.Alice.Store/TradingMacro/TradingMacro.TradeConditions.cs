@@ -2208,6 +2208,7 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<TradingMacro> TradingMacroTrender() => TradingMacrosByPair().Where(tm => tm.IsTrender);
     public IEnumerable<TradingMacro> TradingMacroTrender(string pair) => TradingMacrosByPair(pair).Where(tm => tm.IsTrender);
     public IEnumerable<T> TradingMacroTrader<T>(Func<TradingMacro, T> map) => TradingMacrosByPair().Where(tm => tm.IsTrader).Select(map);
+    public IEnumerable<TradingMacro> TradingMacroTrader(string pair) => TradingMacrosByPair(pair).Where(tm => tm.IsTrader);
     public IEnumerable<TradingMacro> TradingMacroTrader() {
       return TradingMacrosByPair().Where(tm => tm.IsTrader);
     }

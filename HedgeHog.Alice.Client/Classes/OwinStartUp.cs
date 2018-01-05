@@ -519,11 +519,7 @@ namespace HedgeHog.Alice.Client {
                 ).ToArray();
     }
     [BasicAuthenticationFilter]
-    public void OpenHedge(string pair, bool isBuy)
-      => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
-    [BasicAuthenticationFilter]
-    public void AdjustHedge(string pair, bool isBuy)
-      => UseTraderMacro(pair, tm => tm.AdjustHedgedTrades(isBuy, $"WWW {nameof(AdjustHedge)}"));
+    public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
     #endregion
 
     #region TradeConditions

@@ -1,28 +1,23 @@
-﻿using System;
-using System.Collections;
-using C = System.Collections.Concurrent;
+﻿using HedgeHog;
+using HedgeHog.Bars;
+using HedgeHog.Shared;
+using MvvmFoundation.Wpf;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading;
-using System.Xml.Linq;
-using HedgeHog;
-using HedgeHog.Bars;
-using HedgeHog.Shared;
-using System.Diagnostics;
-using System.Collections.ObjectModel;
-using System.Reflection;
-using System.Threading.Tasks;
-using MvvmFoundation.Wpf;
-using System.Threading.Tasks.Dataflow;
-using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
-using System.Reactive.Subjects;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
+using System.Xml.Linq;
+using C = System.Collections.Concurrent;
 
 namespace Order2GoAddIn {
   #region COM
