@@ -56,10 +56,12 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    public Func<double> GetVoltageHigh = () => 0;
-    public Func<double> GetVoltageAverage = () => 0;
-    public Func<double> GetVoltageLow = () => 0;
     static double[] EMPTY_DOUBLE = new double[0];
+    public IEnumerable<T> VoltageHigh<T>(Func<double,T> func) => GetVoltageHigh().Select(func);
+    public Func<IList<double>> GetVoltageHigh = () => EMPTY_DOUBLE;
+    public IEnumerable<T> VoltageAverage<T>(Func<double, T> func) => GetVoltageAverage().Select(func);
+    public Func<IList<double>> GetVoltageAverage = () => EMPTY_DOUBLE;
+    public Func<IList<double>> GetVoltageLow = () => EMPTY_DOUBLE;
     public Func<IList<double>> GetVoltage2High = () => EMPTY_DOUBLE;
     public Func<IList<double>> GetVoltage2Low = () => EMPTY_DOUBLE;
 

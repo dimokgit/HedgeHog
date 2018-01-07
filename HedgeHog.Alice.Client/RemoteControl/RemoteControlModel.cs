@@ -1134,7 +1134,7 @@ namespace HedgeHog.Alice.Client {
           //var volt2Dedault = rates.SkipWhile(r => volts2(r).IsNaN()).Select(volts2).FirstOrDefault();
           //PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts2(r).IfNaN(volt2Dedault) }).ToArray();
           charter.AddTicks(ratesForChart, true ? new PriceBar[1][] { distances/*, distances1*/} : new PriceBar[0][], info, null,
-            new[] { tm.GetVoltageHigh(), tm.GetVoltageLow() }, tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
+            new[] { tm.GetVoltageHigh().SingleOrDefault(), tm.GetVoltageLow().SingleOrDefault() }, tm.GetVoltageAverage().SingleOrDefault(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           //if (tm.IsAsleep) return;
           if(tm.CorridorStats?.StopRate != null)

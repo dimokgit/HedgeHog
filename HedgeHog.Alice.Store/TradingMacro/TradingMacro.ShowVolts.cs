@@ -22,6 +22,9 @@ namespace HedgeHog.Alice.Store {
     Func<CorridorStatistics> GetShowVoltageFunction(VoltageFunction voltageFunction, int voltIndex = 0) {
       var getVolts = voltIndex == 0 ? GetVoltage : GetVoltage2;
       var setVolts = voltIndex == 0 ? SetVoltage : SetVoltage2;
+      var setVoltHigh = voltIndex == 0 ? new Action<double>(v => GetVoltageHigh = () => new[] { v }) : v => GetVoltage2High = () => new[] { v };
+      var setVoltLow = voltIndex == 0 ? new Action<double>(v => GetVoltageAverage = () => new[] { v }) : v => GetVoltage2Low = () => new[] { v };
+
       switch(voltageFunction) {
         case HedgeHog.Alice.VoltageFunction.None:
           return ShowVoltsNone;
@@ -95,7 +98,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.GrossV:
           return ShowVoltsByGrossVirtual;
         case HedgeHog.Alice.VoltageFunction.RatioDiff:
-          return ShowVoltsByRatioDiff;
+          return () => ShowVoltsByRatioDiff(getVolts, setVolts, setVoltHigh, setVoltLow);
         case HedgeHog.Alice.VoltageFunction.HVP:
           return () => ShowVoltsByHVP(getVolts, setVolts);
       }
@@ -173,7 +176,7 @@ namespace HedgeHog.Alice.Store {
         .Select(volt => ShowVolts(useCalc ? volt : GetLastVolt().DefaultIfEmpty(volt).Single(), 2, getVolt, setVolt))
         .SingleOrDefault();
     }
-    bool UseCalc() => IsRatesLengthStable && TradingMacroOther(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
+    bool UseCalc() => IsRatesLengthStable && TradingMacrosByPair(tm => tm.BarPeriod != BarsPeriodType.t1).All(tm => tm.IsRatesLengthStable);
     CorridorStatistics ShowVoltsByBBSD(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
       var useCalc = UseCalc();
       if(!useCalc)
@@ -393,17 +396,27 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
-    public IEnumerable<int> TMCorrelation(TradingMacro tmOther) => TMCorrelationImpl((this, tmOther));
+    public IEnumerable<int> TMCorrelation(TradingMacro tmOther)
+      => GetHedgeCorrelation(Pair, tmOther.Pair).Concat(TMCorrelationImpl((this, tmOther))).Take(1)
+      .IfEmpty(() => Log = new Exception(new { pairThis = Pair, pairOther = tmOther.Pair, correlation = "is empty" } + ""));
     Func<(TradingMacro tmThis, TradingMacro tmOther), int[]> TMCorrelationImpl =
       new Func<(TradingMacro tmThis, TradingMacro tmOther), int[]>(t
-        => {
-          return (from tm1 in GetTM1(t.tmThis)
-                  from tm2 in GetTM1(t.tmOther)
-                  from corr in Hedging.TMCorrelation(tm1, tm2)
-                  select corr
-                 ).ToArray();
-          IEnumerable<TradingMacro> GetTM1(TradingMacro tm) => tm.BarPeriod == BarsPeriodType.t1 ? tm.TradingMacroM1() : new[] { tm };
-        }).MemoizeLast(t => t, i => i.Any());
+         => {
+           return (
+           from tm1 in GetTMt(t.tmThis)
+           from tm2 in GetTMt(t.tmOther)
+           from corr in Hedging.TMCorrelation(tm1, tm2)
+             //from tm1M1 in GetTM1(t.tmThis)
+             //from tm2M1 in GetTM1(t.tmOther)
+             //from corrM1 in t.corrs.Concat(Hedging.TMCorrelation(tm1M1, tm2M1)).Take(1)
+             //where corr != 0 && corr == corrM1
+           where corr != 0
+           select corr
+        )
+        .ToArray();
+           IEnumerable<TradingMacro> GetTMt(TradingMacro tm) => tm.BarPeriod == BarsPeriodType.t1 ? new[] { tm } : tm.TradingMacroTrader();
+           IEnumerable<TradingMacro> GetTM1(TradingMacro tm) => tm.BarPeriod == BarsPeriodType.t1 ? tm.TradingMacroM1() : new[] { tm };
+         }).MemoizeLast(t => t, i => i.Any());
     public static class Hedging {
       public static IEnumerable<int> TMCorrelation(TradingMacro tm1, TradingMacro tm2) =>
         from corrs in tm1.UseRates(ra1 => tm2.UseRates(ra2 => alglib.pearsoncorr2(ra1.ToArray(r => r.PriceAvg), ra2.ToArray(r => r.PriceAvg), ra1.Count.Min(ra2.Count))))
@@ -512,7 +525,7 @@ namespace HedgeHog.Alice.Store {
     void OnMaxHedgeProfit(DateTime d, Action a) => MaxHedgeProfitSubject.OnNext((d, a));
     #endregion
 
-    CorridorStatistics ShowVoltsByRatioDiff() {
+    CorridorStatistics ShowVoltsByRatioDiff(Func<Rate, double> getVolt, Action<Rate, double> setVolt, Action<double> setVoltHigh, Action<double> setVoltLow) {
       if(UseCalc()) {
         //var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray()).Concat().ToArray();
         var voltRates = ShowVoltsByRatioDiff_New()
@@ -538,12 +551,15 @@ namespace HedgeHog.Alice.Store {
           }).ToArray();
         var volts = new double[rateVolts.Length];
         var voltCounter = 0;
-        rateVolts.Cma(t => t.v, RatesHeightMin, RatesHeightMin.ToInt(), (t, v) => {
+        var cmaPeriod = RatesHeightMin.ToInt();
+        //rateVolts = rateVolts.Cma(t => t.v, cmaPeriod, (t, cma) => (t.r, cma)).ToArray();
+        rateVolts.Cma(t => t.v, cmaPeriod, cmaPeriod, (t, cma) => {
+          var v = /*t.v - */cma;
           min = v.Min(min);
           max = v.Max(max);
           priceMin = t.r.PriceAvg.Min(priceMin);
           priceMax = t.r.PriceAvg.Max(priceMax);
-          SetVoltage2(t.r, v);
+          setVolt(t.r, v);
           volts[voltCounter++] = v;
         });
         if(volts.Any()) { // store this logic for other times
@@ -551,8 +567,9 @@ namespace HedgeHog.Alice.Store {
           max = volts.AverageByIterations(VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
         }
         min = new[] { min, max }.OrderBy(m => m.Abs()).Last();
-        GetVoltage2High = () => new[] { min.Abs() };
-        GetVoltage2Low = () => new[] { -min.Abs() };
+
+        setVoltHigh(min.Abs());
+        setVoltLow(-min.Abs());
         voltRates.Select(vr => vr.r).ForEach(ra => ra.Zip(voltMap, (r, h) => r.PriceHedge = PosByRatio(priceMin, priceMax, h.v)).Count());
       }
       return null;
@@ -778,15 +795,6 @@ namespace HedgeHog.Alice.Store {
         .StDev();
     }
 
-    private void SetVoltFuncs() {
-      if(GetVoltage(RatesArray[0]).IsNotNaN()) {
-        var volts = RatesArray.Select(r => GetVoltage(r)).Where(Lib.IsNotNaN).DefaultIfEmpty().ToArray();
-        var voltsStDev = volts.StDev(out var voltsAvg);
-        GetVoltageAverage = () => voltsAvg - voltsStDev;
-        GetVoltageHigh = () => voltsAvg + voltsStDev;
-        GetVoltageLow = () => voltsAvg - voltsStDev * 2;
-      }
-    }
     #region SetCentersOfMass Subject
     object _SetCentersOfMassSubjectLocker = new object();
     ISubject<Action> _SetCentersOfMassSubject;

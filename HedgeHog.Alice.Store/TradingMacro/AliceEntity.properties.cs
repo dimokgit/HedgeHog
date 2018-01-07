@@ -13,6 +13,7 @@ using ReactiveUI;
 using System.Threading.Tasks;
 using static HedgeHog.Core.JsonExtensions;
 using MongoDB.Bson.Serialization.Attributes;
+using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -544,7 +545,7 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
     private void ResetVoltages() {
-      GetVoltageHigh = GetVoltageAverage = GetVoltageLow = () => 0;
+      GetVoltageHigh = GetVoltageAverage = GetVoltageLow = () => EMPTY_DOUBLE;
       GetVoltage2High = GetVoltage2Low = () => EMPTY_DOUBLE;
       UseRatesInternal(rates => rates.ForEach(r => {
         SetVoltage(r, double.NaN);
@@ -1974,6 +1975,30 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(nameof(PairHedge));
       }
     }
+
+    #region HedgeCorrelation
+    static ConcurrentDictionary<(string pair1, string pair2), int[]> _hedgeCorrelations = new ConcurrentDictionary<(string pair1, string pair2), int[]>();
+    static int[] GetHedgeCorrelation(string pair1, string pair2)
+      => _hedgeCorrelations.Where(kv => kv.Key.Equals((pair1, pair2)) || kv.Key.Equals((pair2, pair1))).Select(kv => kv.Value).SingleOrDefault() ?? new int[0];
+    private int _HedgeCorrelation;
+    [WwwSetting]
+    public int HedgeCorrelation {
+      get { return _HedgeCorrelation; }
+      set {
+        if(_HedgeCorrelation != value) {
+          _HedgeCorrelation = value;
+          var key = (Pair, PairHedge);
+          if(value == 0)
+            _hedgeCorrelations.TryRemove(key, out var i);
+          else
+            _hedgeCorrelations.AddOrUpdate(key, new[] { value }, (t, i) => new[] { value });
+          OnPropertyChanged(nameof(HedgeCorrelation));
+        }
+      }
+    }
+
+    #endregion
+
 
     bool _FitRatesToPlotter;
 

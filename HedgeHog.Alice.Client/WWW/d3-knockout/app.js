@@ -492,6 +492,7 @@
           CorridorCalcMethod: { name: "Corr Calc", type: "options", options: corridorCalculationMethod() },
           MovingAverageType: { type: "options", options: movingAverageType() },
           BarPeriod: { name: "Bars Period", type: "options", options: barsPeriodType() },
+          PairHedge: { type: "options", options: self.pairs() },
           Strategy: { type: "options", options: strategyType() },
 
           //
@@ -1098,7 +1099,7 @@
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;
-      var chartData2 = chartDataFactory(ratesAll, trends, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross(), 0, 0, response.canBuy, response.canSell, response.waveLines);
+      var chartData2 = chartDataFactory(ratesAll, trends, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross(),response.tpsHigh, response.tpsLow, response.canBuy, response.canSell, response.waveLines);
       chartData2.com = com;
       chartData2.com2 = com2;
       chartData2.com3 = com3;

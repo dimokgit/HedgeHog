@@ -289,6 +289,10 @@ namespace HedgeHog.Alice.Store {
         tm => tm.PairHedge,
         (v1, rls, v3, ph) => new { v1, rls, v3, ph }
         ).Subscribe(_ => SyncHedgedPair());
+      this.WhenAnyValue(
+        tm => tm.PairHedge
+        )
+        .Subscribe(_ => TradingMacrosByPair(tm => tm != this).ForEach(tm => tm.PairHedge = _));
 
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy != Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)
@@ -2353,7 +2357,7 @@ namespace HedgeHog.Alice.Store {
                 if(VoltageFunction == Alice.VoltageFunction.DistanceMacd) {
                   UseRates(SetVoltageByRHSD);
                 }
-                SpreadForCorridor = UseRates(rates=> rates.Spread()).FirstOrDefault();
+                SpreadForCorridor = UseRates(rates => rates.Spread()).FirstOrDefault();
                 RatesHeightCma = Lazy.Create(() => UseRates(rates => rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax)).FirstOrDefault());
                 OnRatesArrayChaged();
                 AdjustSuppResCount();
@@ -2440,7 +2444,7 @@ namespace HedgeHog.Alice.Store {
         } else {
           var oneMinute = 1.FromMinutes();
           Func<Rate, double, bool> setVolts = (r, v) => { SetVoltage(r, v); return true; };
-          (from tm in TradingMacroOther(tm => tm.BarPeriod == BarsPeriodType.t1)
+          (from tm in TradingMacrosByPair(tm => tm.BarPeriod == BarsPeriodType.t1)
            from lastRate in UseRates(ra => ra.Last())
            let lastDate = lastRate.StartDate
            from voltsAvg in tm.UseRates(ra => ra.BackwardsIterator()
@@ -2458,8 +2462,8 @@ namespace HedgeHog.Alice.Store {
 
         var std = rates.Select(GetVoltage).Where(Lib.IsNotNaN).DefaultIfEmpty().StandardDeviation(out avg);
         MacdRsdAvg = std + avg;
-        GetVoltageHigh = () => MacdRsdAvg;
-        GetVoltageAverage = () => avg;
+        GetVoltageHigh = () => new[] { MacdRsdAvg };
+        GetVoltageAverage = () => new[] { avg };
       }
     }
     CorridorStatistics ShowVoltsByStDev() {
@@ -2560,9 +2564,9 @@ namespace HedgeHog.Alice.Store {
           var averageIterations = 2;
           var volts = _SetVoltsByStd.SkipWhile(t => t.Item1 < sd).ToArray(t => t.Item2);
           var voltageAvgLow = volts.AverageByIterations(-averageIterations).Average();
-          GetVoltageAverage = () => voltageAvgLow;
+          GetVoltageAverage = () => new[] { voltageAvgLow };
           var voltageAvgHigh = volts.AverageByIterations(averageIterations).Average();
-          GetVoltageHigh = () => voltageAvgHigh;
+          GetVoltageHigh = () => new[] { voltageAvgHigh };
         };
         _setVoltsAveragesAsyncBuffer.Push(a);
       }
@@ -2621,9 +2625,9 @@ namespace HedgeHog.Alice.Store {
         var averageIterations = 2;
         var volts = _SetVoltsByStd.SkipWhile(t => t.Item1 < sd).ToArray(t => t.Item2);
         var voltageAvgLow = volts.AverageByIterations(-averageIterations).Average();
-        GetVoltageAverage = () => voltageAvgLow;
+        GetVoltageAverage = () => new[] { voltageAvgLow };
         var voltageAvgHigh = volts.AverageByIterations(averageIterations).Average();
-        GetVoltageHigh = () => voltageAvgHigh;
+        GetVoltageHigh = () => new[] { voltageAvgHigh };
       };
       _setVoltsAveragesAsyncBuffer.Push(a);
     }
@@ -3643,7 +3647,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
       get {
-        var tmt = TradingMacroOther(tm => !tm.IsAsleep && tm.IsTrender && !tm.TLRed.IsEmpty).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
+        var tmt = TradingMacrosByPair(tm => !tm.IsAsleep && tm.IsTrender && !tm.TLRed.IsEmpty).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
         if(!IsTrader)
           throw new Exception(new { TradeLevelFuncs = new { IsTrader } } + "");
         Func<double> maxDefault = () => UseRates(rates => rates.Max(_priceAvg)).DefaultIfEmpty(double.NaN).Single();

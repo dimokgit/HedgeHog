@@ -43,10 +43,17 @@ namespace HedgeHog {
       y.Reverse();
       return y;
     }
+    public static IList<U> Cma<T, U>(this IEnumerable<T> rates, Func<T, double> value, double period, Func<T, double, U> map) {
+      var x = rates.Scan(double.NaN, (ma, r) => ma.Cma(period, value(r))).ToList();
+      x.Reverse();
+      var y = x.Scan(double.NaN, (ma, d) => ma.Cma(period, d)).ToList();
+      y.Reverse();
+      return rates.Zip(y, map).ToArray();
+    }
     public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period, Action<T, double> setMA) {
       rates.Cma(value, period, 1, setMA);
     }
-    public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period,int passes, Action<T, double> setMA) {
+    public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period, int passes, Action<T, double> setMA) {
       var cmas = rates.Cma(value, period);
       for(var i = passes; i > 1; i--)
         cmas = cmas.Cma(period);

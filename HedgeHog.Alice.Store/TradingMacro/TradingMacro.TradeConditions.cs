@@ -52,7 +52,7 @@ namespace HedgeHog.Alice.Store {
     TradeDirections TradeDirectionBoth(bool ok) { return ok ? TradeDirections.Both : TradeDirections.None; }
     TradeConditionDelegate TradeDirectionEither(Func<bool> ok) { return () => ok() ? TradeDirections.Up : TradeDirections.Down; }
     TradeDirections IsTradeConditionOk(Func<TradingMacro, bool> tmPredicate, Func<TradingMacro, TradeDirections> condition) {
-      return TradingMacroOther(tmPredicate).Take(1).Select(condition).DefaultIfEmpty(TradeDirections.Both).First();
+      return TradingMacrosByPair(tmPredicate).Take(1).Select(condition).DefaultIfEmpty(TradeDirections.Both).First();
     }
     #endregion
 
@@ -89,7 +89,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
     //[TradeConditionShouldClose]
-    [TradeConditionHedge]
     [TradeConditionShouldClose]
     public TradeConditionDelegate Volt2Ok {
       get {
@@ -119,13 +118,48 @@ namespace HedgeHog.Alice.Store {
        from vl in tm.GetVoltage2Low()
        select vh == vl ? TradeDirections.Both : volt >= vh ? above : volt <= vl ? below : TradeDirections.None
       ).Scan((a, td) => a & td).LastOrDefault();
+
+    [TradeConditionHedge]
+    public TradeConditionDelegate HOk => () => TradeDirections.Both;
+
+    public TradeConditionDelegate VltOuttOk => () => VoltOutImpl(this, GetVoltageHigh, GetVoltageAverage, TradeDirections.Down, TradeDirections.Up).SingleOrDefault();
+    public TradeConditionDelegate VltOutMOk => () => TradingMacroM1(tm => VoltOutImpl(tm, tm.GetVoltageHigh, tm.GetVoltageAverage, TradeDirections.Down, TradeDirections.Up)).Concat().SingleOrDefault();
+    public TradeConditionDelegate VltOut2tOk => () => VoltOutImpl(this, GetVoltage2High, GetVoltage2Low, TradeDirections.Down, TradeDirections.Up).SingleOrDefault();
+    public TradeConditionDelegate VltOut2MOk => () => TradingMacroM1(tm => VoltOutImpl(tm, tm.GetVoltage2High, tm.GetVoltage2Low, TradeDirections.Down, TradeDirections.Up)).Concat().SingleOrDefault();
+
+    private static IEnumerable<TradeDirections> VoltOutImpl(TradingMacro tm, Func<IEnumerable<double>> voltHigh, Func<IEnumerable<double>> voltLow, TradeDirections above, TradeDirections below) =>
+       from volt in tm.GetLastVolt()
+       from vh in voltHigh()
+       from vl in voltLow()
+       select vh == vl ? TradeDirections.Both : volt >= vh ? above : volt <= vl ? below : TradeDirections.None;
+
     public TradeConditionDelegate PriceTipOk {
       get {
         return () => {
           var ask = CurrentPrice.Ask.PositionRatio(RatesMin, RatesMax);
           var bid = CurrentPrice.Bid.PositionRatio(RatesMax, RatesMin);
           _tipRatioCurrent = ask.Max(bid);
-          return TradeDirectionByBool(IsTresholdAbsOk(_tipRatioCurrent, TipRatio));
+          return TipRatio < 0
+          ? TradeDirectionByBool(ask < TipRatio.Abs() && bid < TipRatio.Abs())
+          : IsTresholdAbsOk(ask, TipRatio)
+          ? TradeDirections.Down
+          : IsTresholdAbsOk(bid, TipRatio)
+          ? TradeDirections.Up
+          : TradeDirections.None;
+        };
+      }
+    }
+    public TradeConditionDelegate PriceTipROk {
+      get {
+        return () => {
+          var ask = CurrentPrice.Ask.PositionRatio(RatesMin, RatesMax);
+          var bid = CurrentPrice.Bid.PositionRatio(RatesMax, RatesMin);
+          _tipRatioCurrent = ask.Max(bid);
+          return IsTresholdAbsOk(ask, TipRatio)
+          ? TradeDirections.Up
+          : IsTresholdAbsOk(bid, TipRatio)
+          ? TradeDirections.Down
+          : TradeDirections.None;
         };
       }
     }
@@ -1398,12 +1432,6 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate M1SDROk {
       get { return () => TradeDirectionByBool((from sd in M1SD from sda in M1SDA select sd < sda).SingleOrDefault()); }
     }
-    public TradeConditionDelegateHide VLOk {
-      get {
-        //Log = new Exception(new { System.Reflection.MethodBase.GetCurrentMethod().Name, TrendHeightPerc } + "");
-        return () => { return TradeDirectionByTreshold(GetVoltageAverage(), TrendHeightPerc); };
-      }
-    }
 
 
     [TradeConditionTurnOff]
@@ -1417,7 +1445,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate VoltBelowOk {
       get {
         return () => {
-          return GetLastVolt(volt => volt < GetVoltageAverage()).Select(TradeDirectionByBool).SingleOrDefault();
+          return GetLastVolt(volt => VoltageAverage(va => volt < va)).Concat().Select(TradeDirectionByBool).SingleOrDefault();
         };
       }
     }
@@ -1425,14 +1453,14 @@ namespace HedgeHog.Alice.Store {
     private TradeDirections VoltsBelowByTrendLines(TL tls) {
       var d = RatesArray[RatesArray.Count - tls.Count].StartDate;
       var volt = _SetVoltsByStd.SkipWhile(t => t.Item1 < d).Select(t => t.Item2).DefaultIfEmpty(double.NaN).Min();
-      return TradeDirectionByBool(volt < GetVoltageAverage());
+      return GetVoltageAverage().Select(va => TradeDirectionByBool(volt < va)).SingleOrDefault();
     }
 
     [TradeConditionTurnOff]
     public TradeConditionDelegate VoltAboveOk {
       get {
         return () => {
-          return GetLastVolt(volt => volt > GetVoltageHigh()).Select(TradeDirectionByBool).SingleOrDefault();
+          return GetLastVolt(volt => VoltageHigh(vh => volt > vh)).Concat().Select(TradeDirectionByBool).SingleOrDefault();
         };
       }
     }
@@ -1469,7 +1497,7 @@ namespace HedgeHog.Alice.Store {
         ).SingleOrDefault();
       }
     }
-    public TradeConditionDelegate VltAvgOk => () => TradeDirectionByTreshold(GetVoltageHigh(), VoltAvgRange);
+    public TradeConditionDelegate VltAvgOk => () => GetVoltageHigh().Select(vh => TradeDirectionByTreshold(vh, VoltAvgRange)).SingleOrDefault();
     public TradeConditionDelegate VltUpOk {
       get {
         return () => TradeDirectionByBool(VoltOkBySlope(s => s < 0));
@@ -2180,7 +2208,7 @@ namespace HedgeHog.Alice.Store {
         ) {
       Func<TradeDirections> onBelow = () => TradeDirections.Up;
       Func<TradeDirections> onAbove = () => TradeDirections.Down;
-      return TradingMacroOther(tmPredicate)
+      return TradingMacrosByPair(tmPredicate)
         .SelectMany(tm => trendLevels(tm))
         .SelectMany(tls => tls)
         .Select(tls =>
@@ -2225,7 +2253,7 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<U> TradingMacroM1<T, U>(Func<TradingMacro, IEnumerable<T>> selector, Func<IEnumerable<T>, IEnumerable<U>> many) {
       return TradingMacroM1(selector).SelectMany(many);
     }
-    public IEnumerable<TradingMacro> TradingMacroOther(Func<TradingMacro, bool> predicate) {
+    public IEnumerable<TradingMacro> TradingMacrosByPair(Func<TradingMacro, bool> predicate) {
       return TradingMacrosByPair().Where(predicate);
     }
     public IEnumerable<TradingMacro> TradingMacroOther() {

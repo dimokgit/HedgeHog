@@ -111,8 +111,8 @@ namespace HedgeHog.Alice.Store {
       var volts = RatesArray.Select(r => GetVoltage(r)).SkipWhile(v => v.IsNaN()).ToArray();
       double voltsAvg;
       var voltsStdev = volts.StDev(out voltsAvg);
-      GetVoltageAverage = () => voltsAvg;
-      GetVoltageHigh = () => voltsAvg + voltsStdev;
+      GetVoltageAverage = () => new[] { voltsAvg };
+      GetVoltageHigh = () => new[] { voltsAvg + voltsStdev };
       return corridor;
     }
 

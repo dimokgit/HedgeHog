@@ -84,16 +84,6 @@ namespace HedgeHog.Alice.Store {
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
-    private CorridorStatistics ShowVolts_Slow(double volt, int averageIterations) {
-      RatesArray.Where(r => GetVoltage(r).IsNaN()).ToList().ForEach(r => SetVoltage(r, volt));
-      //SetVoltage(RateLast, volt);
-      var voltageAvgLow = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray().AverageByIterations(-averageIterations).Average();
-      GetVoltageAverage = () => voltageAvgLow;
-      var voltageAvgHigh = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray().AverageByIterations(averageIterations).Average();
-      GetVoltageHigh = () => voltageAvgHigh;
-      CorridorCorrelation = AlgLib.correlation.spearmanrankcorrelation(RatesArray.Select(_priceAvg).ToArray(), RatesArray.Select(GetVoltage).ToArray(), RatesArray.Count);
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
-    }
 
     private CorridorStatistics ShowVolts(double volt,  Func<Rate, double> getVolt = null, Action<Rate, double> setVolt = null) {
       return ShowVolts(volt, VoltAverageIterations, getVolt, setVolt);
@@ -129,9 +119,9 @@ namespace HedgeHog.Alice.Store {
         GeneralPurposeSubject.OnNext(() => {
           try {
             var voltageAvgLow = voltRates.AverageByIterations(-VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
-            GetVoltageAverage = () => voltageAvgLow;
+            GetVoltageAverage = () => new[] { voltageAvgLow };
             var voltageAvgHigh = voltRates.AverageByIterations(VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
-            GetVoltageHigh = () => voltageAvgHigh;
+            GetVoltageHigh = () => new[] { voltageAvgHigh };
           } catch(Exception exc) { Log = exc; }
         });
       }
