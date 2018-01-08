@@ -33,20 +33,6 @@ namespace HedgeHog.Alice.Store {
 
     private const string MULTI_VALUE_SEPARATOR = ";";
     private const double TLsOverlap = 0.9;
-    #region VoltsAvgIterations
-    private int _VoltsAvgIterations;
-    [Category(categoryCorridor)]
-    public int VoltsAvgIterations {
-      get { return _VoltsAvgIterations; }
-      set {
-        if(_VoltsAvgIterations != value) {
-          _VoltsAvgIterations = value;
-          OnPropertyChanged("VoltsAvgIterations");
-        }
-      }
-    }
-
-    #endregion
     public int GetWorkingDays(DateTime from, DateTime to) {
       var dayDifference = (int)to.Subtract(from).TotalDays;
       return Enumerable

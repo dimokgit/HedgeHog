@@ -63,6 +63,22 @@ namespace UnitLib
     //
     #endregion
 
+    [TestMethod()]
+    public void IsTradingHour2() {
+      var range = "[['9:00','17:00']]";
+      Assert.IsTrue(TradingMacro.IsTradingHour2(range, DateTime.Parse("10:00")));
+      Assert.IsFalse(TradingMacro.IsTradingHour2(range, DateTime.Parse("17:30")));
+
+      Assert.IsTrue(TradingMacro.IsTradingHour2("[['9:00','17:00'],['17:30','17:40']]", DateTime.Parse("17:30")));
+      Assert.IsTrue(TradingMacro.IsTradingHour2("[['9:00','17:00'],['17:30','17:40']]", DateTime.Parse("9:30")));
+      Assert.IsFalse(TradingMacro.IsTradingHour2("[['9:00','17:00'],['17:30','17:40']]", DateTime.Parse("17:20")));
+
+      Assert.IsTrue(TradingMacro.IsTradingHour2("[['17:00','9:00']]", DateTime.Parse("17:20")));
+      Assert.IsTrue(TradingMacro.IsTradingHour2("[['17:00','9:00']]", DateTime.Parse("9:00")));
+      Assert.IsFalse(TradingMacro.IsTradingHour2("[['17:00','9:00']]", DateTime.Parse("16:20")));
+      Assert.IsFalse(TradingMacro.IsTradingHour2("[['17:00','9:00']]", DateTime.Parse("9:20")));
+    }
+
     [TestMethod]
     public void GetTradeConditions() {
       var tcs = new TradingMacro().GetTradeConditions();

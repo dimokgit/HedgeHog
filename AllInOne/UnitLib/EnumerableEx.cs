@@ -7,10 +7,18 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 namespace HedgeHog.Tests {
-
   namespace UnitLib {
     [TestClass]
     public class EnumerableExTest {
+      [TestMethod()]
+      public void GetCmasList() {
+        var r = new Random();
+        var a = Enumerable.Range(0, 100000).Select(_ => r.NextDouble()).ToArray();
+        var cma1 = a.GetCmasList(10);
+        var cma2 = a.Cma(10);
+        Assert.IsTrue(cma1.SequenceEqual(cma2));
+      }
+
       [TestMethod]
       public void Singleable() {
         var a0 = new int[0].AsSingleable();

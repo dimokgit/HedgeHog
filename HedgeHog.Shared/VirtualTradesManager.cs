@@ -238,8 +238,12 @@ namespace HedgeHog.Shared {
       CloseTrades(tradesOpened.Where(t => t.Pair == pair && t.Buy == isBuy).ToArray());
       return true;
     }
-    public void CloseTrade(Trade t) {
-      tradesOpened.Remove(t);
+    public void CloseTrade(Trade trade) {
+      TradeRemoved(trade);
+      tradesClosed.Add(trade);
+      OnTradeClosed(trade);
+      tradesOpened.Remove(trade);
+      RaiseOrderRemoved(new Order() { Pair = trade.Pair });
     }
     public bool CloseTrade(Trade trade, int lot, Price price) {
       if(trade.Lots <= lot)
@@ -270,10 +274,6 @@ namespace HedgeHog.Shared {
         case NotifyCollectionChangedAction.Remove:
           trade.UpdateByPrice(this, GetPrice(trade.Pair));
           trade.CloseTrade();
-          tradesClosed.Add(trade);
-          OnTradeClosed(trade);
-          TradeRemoved(trade);
-          RaiseOrderRemoved(new Order() { Pair = trade.Pair });
           break;
       }
     }

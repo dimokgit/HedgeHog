@@ -2354,9 +2354,6 @@ namespace HedgeHog.Alice.Store {
                   Log = new Exception(new { RatesArraySafe = new { RatesInternal = new { RatesInternal.Count }, BarsCount, Error = "Too low" } } + "");
                   return;
                 }
-                if(VoltageFunction == Alice.VoltageFunction.DistanceMacd) {
-                  UseRates(SetVoltageByRHSD);
-                }
                 SpreadForCorridor = UseRates(rates => rates.Spread()).FirstOrDefault();
                 RatesHeightCma = Lazy.Create(() => UseRates(rates => rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax)).FirstOrDefault());
                 OnRatesArrayChaged();

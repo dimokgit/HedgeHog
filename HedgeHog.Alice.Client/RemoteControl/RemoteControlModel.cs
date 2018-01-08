@@ -729,7 +729,9 @@ namespace HedgeHog.Alice.Client {
           var grossToExit = MasterModel.GrossToExitCalc();
           if(grossToExit != 0
             && !tms.SelectMany(tm => tm.PendingEntryOrders).Any()
-            && net > grossToExit) {
+            && net > grossToExit
+            && tms.SelectMany(tm=>tm.HasTradeEval()).IsEmpty()
+            ) {
             MasterModel.GrossToExitSoftReset();
             tms.ForEach(tm => tm.CloseTrades(new { grossToExit = grossToExit.AutoRound2(1), net = net.AutoRound2(1) } + ""));
           }

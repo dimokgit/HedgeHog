@@ -7,7 +7,6 @@ namespace HedgeHog.Alice {
   public enum VoltageFunction {
     None = 0,
     t1,
-    DistanceMacd,
     StDev,
     AvgLineRatio,
     Rsd,
@@ -40,6 +39,7 @@ namespace HedgeHog.Alice {
     Gross,
     GrossV,
     RatioDiff,
+    VoltDrv,
     HVP
   }
 }

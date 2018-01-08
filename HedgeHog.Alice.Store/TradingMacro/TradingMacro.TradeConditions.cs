@@ -122,15 +122,18 @@ namespace HedgeHog.Alice.Store {
     [TradeConditionHedge]
     public TradeConditionDelegate HOk => () => TradeDirections.Both;
 
-    public TradeConditionDelegate VltOuttOk => () => VoltOutImpl(this, GetVoltageHigh, GetVoltageAverage, TradeDirections.Down, TradeDirections.Up).SingleOrDefault();
-    public TradeConditionDelegate VltOutMOk => () => TradingMacroM1(tm => VoltOutImpl(tm, tm.GetVoltageHigh, tm.GetVoltageAverage, TradeDirections.Down, TradeDirections.Up)).Concat().SingleOrDefault();
-    public TradeConditionDelegate VltOut2tOk => () => VoltOutImpl(this, GetVoltage2High, GetVoltage2Low, TradeDirections.Down, TradeDirections.Up).SingleOrDefault();
-    public TradeConditionDelegate VltOut2MOk => () => TradingMacroM1(tm => VoltOutImpl(tm, tm.GetVoltage2High, tm.GetVoltage2Low, TradeDirections.Down, TradeDirections.Up)).Concat().SingleOrDefault();
+    public TradeConditionDelegate VltOuttOk => () => VoltOutImpl(this, 0, TradeDirections.Down, TradeDirections.Up).SingleOrDefault();
+    public TradeConditionDelegate VltOut2tOk => () => VoltOutImpl(this, 1, TradeDirections.Down, TradeDirections.Up).SingleOrDefault();
+    public TradeConditionDelegate VltOut2trOk => () => VoltOutImpl(this, 1, TradeDirections.Up, TradeDirections.Down).SingleOrDefault();
 
-    private static IEnumerable<TradeDirections> VoltOutImpl(TradingMacro tm, Func<IEnumerable<double>> voltHigh, Func<IEnumerable<double>> voltLow, TradeDirections above, TradeDirections below) =>
-       from volt in tm.GetLastVolt()
-       from vh in voltHigh()
-       from vl in voltLow()
+    public TradeConditionDelegate VltOutMOk => () => TradingMacroM1(tm => VoltOutImpl(tm, 0, TradeDirections.Down, TradeDirections.Up)).Concat().SingleOrDefault();
+    public TradeConditionDelegate VltOut2MOk => () => TradingMacroM1(tm => VoltOutImpl(tm, 1, TradeDirections.Down, TradeDirections.Up)).Concat().SingleOrDefault();
+    public TradeConditionDelegate VltOut2MrOk => () => TradingMacroM1(tm => VoltOutImpl(tm, 1, TradeDirections.Up, TradeDirections.Down)).Concat().SingleOrDefault();
+
+    private static IEnumerable<TradeDirections> VoltOutImpl(TradingMacro tm, int voltIndex, TradeDirections above, TradeDirections below) =>
+       from volt in tm.GetLastVoltByIndex(voltIndex)
+       from vh in tm.GetVoltHighByIndex(voltIndex)
+       from vl in tm.GetVoltLowByIndex(voltIndex)
        select vh == vl ? TradeDirections.Both : volt >= vh ? above : volt <= vl ? below : TradeDirections.None;
 
     public TradeConditionDelegate PriceTipOk {
@@ -1527,9 +1530,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public IEnumerable<double> GetLastVolt() {
-      return GetLastVolt(GetVoltage);
-    }
+    public IEnumerable<double> GetLastVolt() => GetLastVolt(GetVoltage);
+    public IEnumerable<double> GetLastVolt2() => GetLastVolt(GetVoltage2);
     public IEnumerable<double> GetLastVolt(Func<Rate, double> getVolt) {
       return UseRates(rates
                   => rates.BackwardsIterator()
@@ -1537,7 +1539,7 @@ namespace HedgeHog.Alice.Store {
                   .SkipWhile(double.IsNaN)
                   .Take(1)
                   )
-                  .SelectMany(v => v);
+                  .Concat();
     }
     private IEnumerable<double> GetLastVolts() {
       return GetLastVolts(GetVoltage);
@@ -1601,7 +1603,7 @@ namespace HedgeHog.Alice.Store {
           //BolngrAvg= InPips(_boilingerAvg,1),
           ProfitPip = CalculateTakeProfitInPips().Round(1),
           RiskRewrd = RiskRewardRatio().ToPercent() + "%/" + InPips(RiskRewardDenominator).AutoRound2(2),
-          TlTmeMnMx = string.Join(",", TLsTimeRatio(tm, true).Concat(TLsTimeRatio(tm, false)).Select(tr => tr.ToString("n0") + "%")),
+          //TlTmeMnMx = string.Join(",", TLsTimeRatio(tm, true).Concat(TLsTimeRatio(tm, false)).Select(tr => tr.ToString("n0") + "%")),
           //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Red__Edge = tm.TrendLinesRedTrends.EdgeDiff.SingleOrDefault().Round(1),
@@ -1611,10 +1613,12 @@ namespace HedgeHog.Alice.Store {
         }
         .ToExpando()
         .Add(showBBSD ? (object)new { BoilBand = _boilingerStDev.Value.Select(t => string.Format("{0:n2}:{1:n2}", InPips(t.Item1), InPips(t.Item2))) } : new { })
-        .Add(angles.ToDictionary(x => x.l, x => (object)x.t))
-        .Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
+        //.Add(angles.ToDictionary(x => x.l, x => (object)x.t))
+        //.Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
         .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { })
-        .Add(new { HistVolLn = $"{HV(this)}/{TradingMacroM1(HV).SingleOrDefault()}" })
+        .Add(new { HistVol = $"{HV(TradingMacroM1().Single())}" })
+        .Add(new { HistVolUp = $"{HVU(TradingMacroM1().Single())}" })
+        .Add(new { HistVolDn = $"{HVD(TradingMacroM1().Single())}" })
         .Add(HVP(this).Select(hvp => (object)new { HistVolDif = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVP).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         ;
       }
@@ -1624,10 +1628,14 @@ namespace HedgeHog.Alice.Store {
       .SingleOrDefault();
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
-      double HV(TradingMacro tm) => tm.UseRates(ra => tm.InPips(ra.Select(_priceAvg).HistoricalVolatility())).SingleOrDefault().AutoRound2(3);
+      double HV(TradingMacro tm) => tm.HistoricalVolatility().SingleOrDefault().AutoRound2(2);
+      double HVU(TradingMacro tm) => tm.HistoricalVolatilityUp().SingleOrDefault().AutoRound2(2);
+      double HVD(TradingMacro tm) => tm.HistoricalVolatilityDown().SingleOrDefault().AutoRound2(2);
       double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
     }
 
+    public IEnumerable<double> HistoricalVolatilityUp() => UseRates(ra => InPips(ra.Select(_priceAvg).HistoricalVolatility(t => t.prev < t.next)));
+    public IEnumerable<double> HistoricalVolatilityDown() => UseRates(ra => InPips(ra.Select(_priceAvg).HistoricalVolatility(t => t.prev > t.next)));
     public IEnumerable<double> HistoricalVolatility() => UseRates(ra => InPips(HistoricalVolatilityImpl(ra)));
     private Func<List<Rate>, double> HistoricalVolatilityImpl = new Func<List<Rate>, double>(ra
       => ra.Select(_priceAvg).HistoricalVolatility()).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault());
@@ -2508,6 +2516,10 @@ namespace HedgeHog.Alice.Store {
               .Take(1)
               .Where(b => b.HasAny());
     }
+    public IEnumerable<bool> HasTradeEval() =>
+      from trade in Trades
+      join td in TradeConditionsEval() on trade.IsBuy ? TradeDirections.Up : TradeDirections.Down equals td
+      select true;
     public IEnumerable<TradeDirections> TradeConditionsEval() {
       if(!IsTrader)
         yield break;

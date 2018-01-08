@@ -40,6 +40,7 @@ namespace HedgeHog.Alice.Store {
     public double TrendAngleRed { get; set; }
     public double TrendHeightPerc { get; set; }
     public int VoltAverageIterations { get; set; }
+    public int VoltAverageIterations2 { get; set; }
     public double VoltAvgRange { get; set; }
     public string VoltRange { get; set; }
     public string VoltRange_2 { get; set; }

@@ -705,17 +705,20 @@ namespace HedgeHog.Alice.Store {
     }
 
     public static bool IsTradingHour2(string range, DateTime time) {
-      string[][] ranges;
-      if(range.TryFromJson(out ranges)) {
-        if(ranges == null)
-          return true;
-        var timeSpans = ranges.Select(r => r.Select(t => TimeSpan.Parse(t)).ToArray());
-        var ands = timeSpans.Where(tsr => !IsTimeRangeReversed(tsr)).Select(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay)).DefaultIfEmpty(true).Any(b => b);
-        var ors = timeSpans.Where(tsr => IsTimeRangeReversed(tsr)).All(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay));
-        return ands && ors;
-      }
-      return IsTradingHour(range, time);
+      if(range.IsNullOrWhiteSpace())
+        return true;
+      var ranges = ParseJsonTimeRange(range);
+      if(ranges == null)
+        throw new Exception(new { range, isNot = " JSON" } + "");
+      var timeSpans = ranges.Select(r => r.Select(t => TimeSpan.Parse(t)).ToArray());
+      var ands = timeSpans.Where(tsr => !IsTimeRangeReversed(tsr)).Select(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay)).DefaultIfEmpty(true).Any(b => b);
+      var ors = timeSpans.Where(tsr => IsTimeRangeReversed(tsr)).All(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay));
+      return ands && ors;
     }
+
+    private static Func<string, string[][]> ParseJsonTimeRange =
+    new Func<string, string[][]>((string range) => range.TryFromJson<string[][]>(out var ranges) ? ranges : null).MemoizeLast(r => r);
+
     DayOfWeek[] TradingDays() {
       switch(TradingDaysRange) {
         case WeekDays.Full:
@@ -1309,7 +1312,21 @@ namespace HedgeHog.Alice.Store {
       set {
         if(_VoltAverageIterations != value) {
           _VoltAverageIterations = value;
-          OnPropertyChanged(nameof(VoltsAvgIterations));
+          OnPropertyChanged(nameof(VoltAverageIterations));
+        }
+      }
+    }
+
+    private int _VoltAverageIterations2 = 2;
+    [Description("Volt Avg Iter")]
+    [WwwSetting(Group = wwwSettingsVoltage)]
+    [Category(categoryActive)]
+    public int VoltAverageIterations2 {
+      get { return _VoltAverageIterations2; }
+      set {
+        if(_VoltAverageIterations2 != value) {
+          _VoltAverageIterations2 = value;
+          OnPropertyChanged(nameof(VoltAverageIterations2));
         }
       }
     }

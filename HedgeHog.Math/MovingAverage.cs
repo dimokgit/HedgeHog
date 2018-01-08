@@ -28,7 +28,7 @@ namespace HedgeHog {
         maList.Add(ma = ma.Cma(period, source[i]));
       return maList;
     }
-    private static List<double> GetCmasList(IList<double> source, double period) {
+    public static List<double> GetCmasList(this IList<double> source, double period) {
       var ma = double.NaN;
       var maList = new double[source.Count];
       for(var i = 0; i < source.Count; i++)
@@ -36,6 +36,25 @@ namespace HedgeHog {
       return maList.ToList();
     }
 
+    public static IList<U> Cma<T, U>(this IList<T> rates, Func<T, double> value, double period, Func<T, double, U> map)
+      => rates.Cma(value, period, 1, map);
+    public static IList<U> Cma<T, U>(this IList<T> rates, Func<T, double> value, double period, int passes, Func<T, double, U> map)
+      => rates.Zip(rates.Cma(value, period, passes), map).ToArray();
+    public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period, Action<T, double> setMA) {
+      rates.Cma(value, period, 1, setMA);
+    }
+    public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period, int passes, Action<T, double> setMA) {
+      var cmas = Cma(rates, value, period, passes);
+      for(var i = 0; i < cmas.Count; i++)
+        setMA(rates[i], cmas[i]);
+    }
+
+    public static IList<double> Cma<T>(this IList<T> rates, Func<T, double> value, double period, int passes) {
+      var cmas = rates.Cma(value, period);
+      for(var i = passes; i > 1; i--)
+        cmas = cmas.Cma(period);
+      return cmas;
+    }
     public static IList<double> Cma<T>(this IEnumerable<T> rates, Func<T, double> value, double period) {
       var x = rates.Scan(double.NaN, (ma, r) => ma.Cma(period, value(r))).ToList();
       x.Reverse();
@@ -43,23 +62,12 @@ namespace HedgeHog {
       y.Reverse();
       return y;
     }
-    public static IList<U> Cma<T, U>(this IEnumerable<T> rates, Func<T, double> value, double period, Func<T, double, U> map) {
-      var x = rates.Scan(double.NaN, (ma, r) => ma.Cma(period, value(r))).ToList();
+    public static IList<double> Cma(this IEnumerable<double> rates, double period) {
+      var x = rates.Scan(double.NaN, (ma, r) => ma.Cma(period, r)).ToList();
       x.Reverse();
       var y = x.Scan(double.NaN, (ma, d) => ma.Cma(period, d)).ToList();
       y.Reverse();
-      return rates.Zip(y, map).ToArray();
-    }
-    public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period, Action<T, double> setMA) {
-      rates.Cma(value, period, 1, setMA);
-    }
-    public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period, int passes, Action<T, double> setMA) {
-      var cmas = rates.Cma(value, period);
-      for(var i = passes; i > 1; i--)
-        cmas = cmas.Cma(period);
-
-      for(var i = 0; i < rates.Count; i++)
-        setMA(rates[i], cmas[i]);
+      return y;
     }
 
     public static IEnumerable<U> MovingAverage<T, U>(this IEnumerable<T> inputStream, Func<T, double> selector, int period, Func<T, double, U> map) {
