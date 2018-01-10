@@ -375,44 +375,7 @@ namespace HedgeHog.Alice.Client {
 
     }
     void CopyTradingMacro(object tradingMacro, string tradingMacroName = null) {
-      var tm = tradingMacro as TradingMacro;
-      var pairIndex = GetTradingMacros().Select(aTM => aTM.PairIndex).DefaultIfEmpty().Max() + 1;
-      var tmNew = TradingMacro.CreateTradingMacro(
-        tm.Pair, tm.TradingRatio, Guid.NewGuid(), (int)tm.BarPeriod, tm.CurrentLoss, tm.ReverseOnProfit,
-        tm.FreezLimit, tm.FreezeStop, tm.FibMax, tm.FibMin, tm.CorridornessMin, tm.CorridorIterationsIn,
-        tm.CorridorIterationsOut, tm.CorridorIterations, tm.CorridorBarMinutes, pairIndex, tm.TradingGroup,
-        tradingMacroName != null,
-        tradingMacroName ?? tm.TradingMacroName,
-        tm.LimitCorridorByBarHeight, tm.BarPeriodsLow, tm.BarPeriodsHigh,
-        tm.StrictTradeClose, tm.BarPeriodsLowHighRatio, tm.LongMAPeriod, tm.CorridorAverageDaysBack, tm.CorridorPeriodsStart,
-        tm.CorridorPeriodsLength, tm.CorridorRatioForRange, tm.CorridorRatioForBreakout, tm.RangeRatioForTradeLimit,
-        tm.TradeByAngle, tm.ProfitToLossExitRatio, tm.PowerRowOffset, tm.RangeRatioForTradeStop,
-        tm.ReversePower, tm.CorrelationTreshold, tm.CloseOnProfitOnly, tm.CloseOnOpen, tm.StreachTradingDistance,
-        tm.CloseAllOnProfit, tm.TradeAndAngleSynced, tm.TradingAngleRange, tm.CloseByMomentum, tm.TradeByRateDirection,
-        tm.GannAngles, tm.IsGannAnglesManual, tm.SpreadShortToLongTreshold,
-        tm.SuppResLevelsCount, tm.DoStreatchRates, tm.IsSuppResManual, tm.TradeOnCrossOnly, tm.TakeProfitFunctionInt,
-        tm.DoAdjustTimeframeByAllowedLot, tm.IsColdOnTrades, tm.CorridorCrossesCountMinimum, tm.StDevToSpreadRatio,
-        loadRatesSecondsWarning: tm.LoadRatesSecondsWarning, corridorHighLowMethodInt: tm.CorridorHighLowMethodInt,
-        corridorStDevRatioMax: tm.CorridorStDevRatioMax,
-        corridorLengthMinimum: tm.CorridorLengthMinimum, corridorCrossHighLowMethodInt: tm.CorridorCrossHighLowMethodInt,
-        priceCmaLevels: tm.PriceCmaLevels, volumeTresholdIterations: tm.VolumeTresholdIterations, stDevTresholdIterations: tm.StDevTresholdIterations,
-        stDevAverageLeewayRatio: tm.StDevAverageLeewayRatio,
-        extreamCloseOffset: tm.ExtreamCloseOffset, currentLossInPipsCloseAdjustment: tm.CurrentLossInPipsCloseAdjustment, corridorBigToSmallRatio: tm.CorridorBigToSmallRatio,
-        voltageFunction: tm.VoltageFunction);
-      tmNew.PropertyChanged += TradingMacro_PropertyChanged;
-      //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
-      //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)
-      //    .DefaultIfEmpty(new EdmScalarPropertyAttribute()).First() as EdmScalarPropertyAttribute).EntityKeyProperty
-      //    && p.Name!="Pair"
-      //    )
-      //    tmNew.SetProperty(p.Name, tm.GetProperty(p.Name));
-      try {
-        throw new NotImplementedException();
-        TradingMacrosCopy_Add(tmNew);
-        new Action(() => InitTradingMacro(tmNew)).ScheduleOnUI(2.FromSeconds());
-      } catch(Exception exc) {
-        Log = exc;
-      }
+      throw new NotImplementedException(nameof(CopyTradingMacro));
     }
 
     #endregion
@@ -899,8 +862,6 @@ namespace HedgeHog.Alice.Client {
             tm.SetLotSize(TradesManager.GetAccount());
             break;
         }
-        if(e.PropertyName == nameof(tm.CorridorIterations))
-          tm.CorridorStatsArray.Clear();
         if(e.PropertyName == nameof(tm.IsActive) && ShowAllMacrosFilter)
           RaisePropertyChanged(() => TradingMacrosCopy);
 

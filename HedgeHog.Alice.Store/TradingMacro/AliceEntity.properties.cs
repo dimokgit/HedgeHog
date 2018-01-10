@@ -748,17 +748,19 @@ namespace HedgeHog.Alice.Store {
       SuFr = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Friday + DayOfWeek.Saturday,
       SuTh = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Saturday
     }
+
+    string _TradingHoursRange = "";
     [DisplayName("Trading Hours")]
     [Description("21:00-5:00")]
     [Category(categoryActive)]
     [WwwSetting(wwwSettingsTradingParams)]
     public string TradingHoursRange {
-      get { return CorridorIterations; }
+      get { return _TradingHoursRange; }
       set {
-        if(CorridorIterations == value)
+        if(_TradingHoursRange == value)
           return;
-        CorridorIterations = value;
-        OnPropertyChanged(() => TradingHoursRange);
+        _TradingHoursRange = value;
+        OnPropertyChanged(nameof(TradingHoursRange));
       }
     }
 
@@ -1978,6 +1980,7 @@ namespace HedgeHog.Alice.Store {
         tm.BarsCount = BarsCount;
         tm.BarsCountMax = BarsCountMax;
         tm.RatesMinutesMin = RatesMinutesMin;
+        tm.RatesLengthBy = RatesLengthBy;
       });
     }
     private string _pairHedge = "";

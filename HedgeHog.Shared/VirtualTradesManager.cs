@@ -239,8 +239,8 @@ namespace HedgeHog.Shared {
       return true;
     }
     public void CloseTrade(Trade trade) {
-      TradeRemoved(trade);
       tradesClosed.Add(trade);
+      TradeRemoved(trade);
       OnTradeClosed(trade);
       tradesOpened.Remove(trade);
       RaiseOrderRemoved(new Order() { Pair = trade.Pair });
@@ -283,7 +283,13 @@ namespace HedgeHog.Shared {
     object _tradesOpenedLocker = new object();
     public Trade[] GetTrades(string pair) {
       lock(_tradesOpenedLocker) {
-        return tradesOpened.ToArray().Where(t => t.Pair.ToLower() == pair.ToLower()).ToArray();
+        return tradesOpened.ToArray().Where(PairCmp).ToArray();
+      }
+      bool PairCmp(Trade trade) {
+        if(pair == null) throw new NullReferenceException(new { pair } + "");
+        if(trade == null) throw new NullReferenceException(new { trade } + "");
+        if(trade.Pair == null) throw new NullReferenceException(new { trade =new { trade.Pair } } + "");
+        return trade.Pair.ToLower() == pair.ToLower();
       }
     }
 

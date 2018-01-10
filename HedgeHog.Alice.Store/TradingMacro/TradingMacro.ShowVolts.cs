@@ -104,7 +104,7 @@ namespace HedgeHog.Alice.Store {
             throw new Exception($"{VoltageFunction.VoltDrv} can only be used as second voltage.");
           return ShowVoltsByVoltsDerivative;
         case HedgeHog.Alice.VoltageFunction.HVP:
-          return () => ShowVoltsByHVP(getVolts, setVolts);
+          return () => ShowVoltsByHVP(voltIndex);
       }
       throw new NotSupportedException(VoltageFunction + " not supported.");
     }
@@ -401,8 +401,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     public IEnumerable<int> TMCorrelation(TradingMacro tmOther)
-      => GetHedgeCorrelation(Pair, tmOther.Pair).Concat(TMCorrelationImpl((this, tmOther))).Take(1)
-      .IfEmpty(() => Log = new Exception(new { pairThis = Pair, pairOther = tmOther.Pair, correlation = "is empty" } + ""));
+      => GetHedgeCorrelation(Pair, tmOther.Pair).Concat(TMCorrelationImpl((this, tmOther))).Take(1);
+    //.IfEmpty(() => Log = new Exception(new { pairThis = Pair, pairOther = tmOther.Pair, correlation = "is empty" } + ""));
     Func<(TradingMacro tmThis, TradingMacro tmOther), int[]> TMCorrelationImpl =
       new Func<(TradingMacro tmThis, TradingMacro tmOther), int[]>(t
          => {
@@ -421,87 +421,6 @@ namespace HedgeHog.Alice.Store {
            IEnumerable<TradingMacro> GetTMt(TradingMacro tm) => tm.BarPeriod == BarsPeriodType.t1 ? new[] { tm } : tm.TradingMacroTrader();
            IEnumerable<TradingMacro> GetTM1(TradingMacro tm) => tm.BarPeriod == BarsPeriodType.t1 ? tm.TradingMacroM1() : new[] { tm };
          }).MemoizeLast(t => t, i => i.Any());
-    public static class Hedging {
-      public static IEnumerable<int> TMCorrelation(TradingMacro tm1, TradingMacro tm2) =>
-        from corrs in tm1.UseRates(ra1 => tm2.UseRates(ra2 => alglib.pearsoncorr2(ra1.ToArray(r => r.PriceAvg), ra2.ToArray(r => r.PriceAvg), ra1.Count.Min(ra2.Count))))
-        from corr in corrs
-        where corr != 0
-        select corr > 0 ? 1 : -1;
-
-      public static IEnumerable<(TradingMacro tm, bool buy
-        , double tradeAmountAll, double tradeAmountUp, double tradeAmountDown
-        , double tradingRatioAll, double tradingRatioM1All
-        , double tradingRatioUp, double tradingRatioM1Up
-        , double tradingRatioDown, double tradingRatioM1Down
-        , double hvpr, double hv, double hvp, double mmr, double hvpM1r)>
-        CalcTradeAmount(IList<(TradingMacro tm, bool buy)> tms, double equity) {
-        var minMaxes = (from tm in tms
-                        from tmM1 in tm.tm.TradingMacroM1()
-                        from hv in tm.tm.HistoricalVolatility()
-                        from hvM1 in tmM1.HistoricalVolatility()
-                        from hvUp in tm.tm.HistoricalVolatilityUp()
-                        from hvM1Up in tmM1.HistoricalVolatilityUp()
-                        from hvDown in tm.tm.HistoricalVolatilityDown()
-                        from hvM1Down in tmM1.HistoricalVolatilityDown()
-                        from hvp in tm.tm.HistoricalVolatilityByPips()
-                        from hvpM1 in tmM1.HistoricalVolatilityByPips()
-                        let mmr = TradesManagerStatic.GetMMR(tm.tm.Pair, tm.buy)
-                        orderby mmr descending
-                        select new { tm.tm, tradeMax = equity / mmr, tm.buy, hv, hvM1, hvUp, hvM1Up, hvDown, hvM1Down, hvp, hvpM1, mmr }
-                        )
-                        .Pairwise((min, max) => new { min, max,
-                          hvr = min.hv / max.hv,
-                          hvM1r = min.hvM1 / max.hvM1,
-                          hvrUp = min.hvUp / max.hvUp,
-                          hvM1rUp = min.hvM1Up / max.hvM1Up,
-                          hvrDown = min.hvDown / max.hvDown,
-                          hvM1rDown = min.hvM1Down / max.hvM1Down
-                        })
-                        .ToArray();
-        var ctas = minMaxes.SelectMany(mm => {
-          var hvr = mm.hvr.Avg(mm.hvM1r);
-          var maxTradeAll = mm.max.tradeMax.Min(mm.min.tradeMax * hvr);
-          var minTradeAll = mm.min.tradeMax.Min(maxTradeAll / mm.hvr);
-
-          var hvrUp = mm.hvrUp.Avg(mm.hvM1rUp);
-          var maxTradeUp = mm.max.tradeMax.Min(mm.min.tradeMax * hvrUp);
-          var minTradeUp = mm.min.tradeMax.Min(maxTradeUp / hvrUp);
-
-          var hvrDown = mm.hvrDown.Avg(mm.hvM1rDown);
-          var maxTradeDown = mm.max.tradeMax.Min(mm.min.tradeMax * hvrDown);
-          var minTradeDown = mm.min.tradeMax.Min(maxTradeDown / hvrDown);
-
-          var hvs = mm.min.hv + mm.max.hv;
-          var hvsUp = mm.min.hvUp + mm.max.hvUp;
-          var hvsDown = mm.min.hvDown + mm.max.hvDown;
-
-          var hvM1s = mm.min.hvM1 + mm.max.hvM1;
-          var hvM1sUp = mm.min.hvM1Up + mm.max.hvM1Up;
-          var hvM1sDown = mm.min.hvM1Down + mm.max.hvM1Down;
-
-          var hvps = mm.min.hvp + mm.max.hvp;
-          var hvpM1s = mm.min.hvpM1 + mm.max.hvpM1;
-          return new[] {
-          (mm.min.tm, mm.min.buy
-          , minTradeAll, minTradeUp, minTradeDown
-          ,1 - mm.min.hv / hvs,1 - mm.min.hvM1 / hvM1s,1 - mm.min.hvUp / hvsUp
-          ,1 - mm.min.hvM1Up / hvM1sUp
-          ,1 - mm.min.hvDown / hvsDown,1 - mm.min.hvM1Down / hvM1sDown
-          ,mm.min.hvp / hvps,mm.min.hv,mm.min.hvp,mm.min.mmr,mm.min.hvpM1 / hvpM1s),
-          (mm.max.tm, mm.max.buy
-          ,maxTradeAll,maxTradeUp,maxTradeDown
-          ,1 - mm.max.hv / hvs,1 - mm.max.hvM1 / hvM1s
-          ,1 - mm.max.hvUp / hvsUp,1 - mm.max.hvM1Up / hvM1sUp
-          ,1 - mm.max.hvDown / hvsDown,1 - mm.max.hvM1Down / hvM1sDown
-          ,mm.max.hvp / hvps,mm.max.hv,mm.max.hvp,mm.max.mmr,mm.max.hvpM1 / hvpM1s)
-          };
-        });
-
-        return from tm in tms
-               join cta in ctas on tm equals (cta.tm, cta.buy)
-               select cta;
-      }
-    }
     CorridorStatistics ShowVoltsByCorrelation() {
       if(UseCalc()) {
         (from voltRates in UseRates(ra => ra.Where(r => !GetVoltage2(r).IsNaNOrZero()).ToList().SideEffect(l => l.Reverse()))
@@ -524,9 +443,14 @@ namespace HedgeHog.Alice.Store {
       ShowVolts(TradesManager.GetTrades().Net2(), 0, GetVoltage2, SetVoltage2);
       return null;
     }
-    CorridorStatistics ShowVoltsByHVP(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
+    CorridorStatistics ShowVoltsByHVP(int voltIndex) {
       if(UseCalc())
-        HistoricalVolatility().ForEach(hvp => ShowVolts(hvp, getVolt, setVolt));
+        (from t in GetHedgedTradingMacros(Pair)
+         from hv in t.tm.HistoricalVolatility()
+         from hvh in t.tmh.HistoricalVolatility()
+         let hvs = hv + hvh
+         select (hv / hvs) * 100
+         ).ForEach(hvp => SetVolts(hvp, voltIndex));
       return null;
     }
     CorridorStatistics ShowVoltsByVoltsDerivative() {
@@ -741,6 +665,7 @@ namespace HedgeHog.Alice.Store {
     private static double[] GetFullScaleMinMax(IList<Rate> rates, IList<double> hedge) {
       var linearPrice = rates.Linear(_priceAvg).RegressionValue(rates.Count / 2);
       var priceMinMax = rates.MinMax(_priceAvg);
+      if(priceMinMax.Length < 2) return new double[0];
       var pricePos = linearPrice.PositionRatio(priceMinMax);
 
       var linearVolt = hedge.Linear().RegressionValue(hedge.Count / 2);
@@ -771,8 +696,8 @@ namespace HedgeHog.Alice.Store {
              from tmMap in tm.UseRates(ra => RatioMap((ra, _priceAvg, null))).ToArray()
              from tmMap2 in tm2.UseRates(ra => RatioMap((ra, getter, tm.VoltsFullScaleMinMax))).ToArray()
              let mm = tmMap2.Zip(tmMap, (r, t) => new { r = t.t.r, r2 = r.t.r, d = t.t.v - r.t.v }).MinMaxBy(t => t.d)
-             let htb = tm.HedgeBuySell(true).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount, 1, 1) }).ToArray()
-             let hts = tm.HedgeBuySell(false).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount, 1, 1) }).ToArray()
+             let htb = tm.HedgeBuySell(true).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount.Up, 1, 1) }).ToArray()
+             let hts = tm.HedgeBuySell(false).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount.Down, 1, 1) }).ToArray()
              where mm.Any() && hts.Any() && htb.Any()
              let t = new[] {
              (profit:(htb[0].lots * mm[1].r.BidLow + (-corrs) * htb[1].lots * mm[1].r2.BidLow) -

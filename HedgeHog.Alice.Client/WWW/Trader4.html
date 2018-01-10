@@ -1092,6 +1092,14 @@
   <!--#region HedgingRatios-->
   <div data-bind="elementer:hedgingRatiosDialog" style="display:none;padding:0">
     <table border="1" cellspacing="0" data-bind="css:{error:hedgingRatiosError}" class="wwwInfo">
+      <colgroup>
+        <col />
+        <col />
+        <col />
+        <col />
+        <col style="background-color:khaki" />
+        <col style="background-color:khaki" />
+      </colgroup>
       <thead>
         <tr>
           <td>Pair</td>
@@ -1099,10 +1107,14 @@
           <td>HVPR</td>
           <td>HVPMR</td>
           <td>HVR</td>
+          <!--<td>HVR</td>-->
           <td>HVRM1</td>
+          <!--<td>HVRM1</td>-->
           <td>Amount</td>
+          <!--<td>Amount</td>-->
           <td>Lot</td>
           <td>Pip</td>
+    <!--      <td>Pip</td>-->
           <td>MMR</td>
           <td>IsBuy</td>
         </tr>
@@ -1114,10 +1126,15 @@
           <td data-bind="text:HVPR"></td>
           <td data-bind="text:HVPM1R"></td>
           <td data-bind="text:d3.format('.1f')(TradeRatio)"></td>
+          <!--<td data-bind="text:d3.format('.1f')(TradeRatio2)"></td>-->
           <td data-bind="text:d3.format('.1f')(TradeRatioM1)"></td>
+          <!--<td data-bind="text:d3.format('.1f')(TradeRatioM12)"></td>-->
           <td data-bind="text:d3.format('.0f')(TradeAmount)"></td>
+          <!--<td data-bind="text:d3.format('.0f')(TradeAmount2)"></td>-->
           <td data-bind="text:Lot"></td>
+<!--          <td data-bind="text:Lot2"></td>-->
           <td data-bind="text:Pip"></td>
+        <!--  <td data-bind="text:Pip2"></td>-->
           <td data-bind="text:d3.format('.2f')(MMR)"></td>
           <td>
             <button data-bind="text:IsBuy?' Buy':'Sell',click:$parent.openHedgeTrade,css:{hide:!IsPrime}"></button>

@@ -1587,7 +1587,7 @@
         showErrorPerm("Unexpected start data:\n" + JSON.stringify(a.data) + "\nNeed refresh");
         return;
       }
-      serverCall("availibleSymbols", [], function (pairs) {
+      serverCall("readPairs", [], function (pairs) {
         dataViewModel.pairs(pairs);
         if (pair && pairs.length) {
           if (pairs.some(function (p) { return p.toUpperCase() === pair; }))

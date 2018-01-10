@@ -103,6 +103,9 @@ namespace HedgeHog.Alice.Store {
       SetVolts(volt, GetVoltage, SetVoltage, cma);
     }
 
+    //    SetVoltHighByIndex(voltIndex)(min.Abs());
+    //        SetVoltLowByIndex(voltIndex)(-min.Abs());
+
     private void SetVolts(double volt, Func<Rate, double> getVolt, Action<Rate, double> setVolt, double cma = 0) {
       if(!IsRatesLengthStable)
         return;
@@ -122,6 +125,26 @@ namespace HedgeHog.Alice.Store {
             GetVoltageAverage = () => new[] { voltageAvgLow };
             var voltageAvgHigh = voltRates.AverageByIterations(VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
             GetVoltageHigh = () => new[] { voltageAvgHigh };
+          } catch(Exception exc) { Log = exc; }
+        });
+      }
+    }
+    private void SetVolts(double volt, int voltIndex) {
+      if(!IsRatesLengthStable)
+        return;
+      if(double.IsInfinity(volt) || double.IsNaN(volt))
+        return;
+      UseRates(rates => rates.Where(r => GetVoltByIndex(voltIndex)(r).IsNaN()).ToList())
+        .SelectMany(rates => rates).ForEach(r => SetVoltByIndex(voltIndex)(r, volt));
+      //SetVoltage(RateLast, volt);
+      var voltRates = RatesArray.Select(GetVoltByIndex(voltIndex)).SkipWhile(v => v.IsNaN()).ToArray();
+      if(voltRates.Any()) {
+        GeneralPurposeSubject.OnNext(() => {
+          try {
+            var voltageAvgLow = voltRates.AverageByIterations(-VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
+            SetVoltLowByIndex(voltIndex)(voltageAvgLow);
+            var voltageAvgHigh = voltRates.AverageByIterations(VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
+            SetVoltHighByIndex(voltIndex)(voltageAvgHigh);
           } catch(Exception exc) { Log = exc; }
         });
       }

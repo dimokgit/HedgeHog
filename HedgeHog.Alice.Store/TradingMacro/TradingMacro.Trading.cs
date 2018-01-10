@@ -6,47 +6,41 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP
-  , double TradeRatioAll, double TradeRatioM1All
-  , double TradeRatioUp, double TradeRatioM1Up
-  , double TradeRatioDown, double TradeRatioM1Down
-  , double TradeAmountAll  , double TradeAmountUp  , double TradeAmountUp
+  , (double All, double Up, double Down) TradeRatio
+  , (double All, double Up, double Down) TradeRatioM1
+  , (double All, double Up, double Down) TradeAmount
   , double MMR
-  , int LotAll  , int LotUp  , int LotDown
-  , double PipAll, bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
+  , (int All, int Up, int Down) Lot
+  , (double All, double Up, double Down) Pip
+  , bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
     public IEnumerable<TM_HEDGE> HedgeBuySell(bool isBuy) =>
       (TradesManager?.GetAccount()?.Equity * TradingRatio / 2).YieldNotNull(equity => {
         var hbss = (from tmh in GetHedgedTradingMacros(Pair)
-                   from corr in tmh.tm.TMCorrelation(tmh.tmh)
-                   let t = new[] { (tmh.tm, isBuy), (tmh.tmh, corr > 0 ? !isBuy : isBuy) }
-                   from x in Hedging.CalcTradeAmount(t, equity.Value)
-                   let lotAll = x.tm.GetLotsToTrade(x.tradeAmountAll, 1, 1)
-                   let lotUp = x.tm.GetLotsToTrade(x.tradeAmountUp, 1, 1)
-                   let lotDown = x.tm.GetLotsToTrade(x.tradeAmountDown, 1, 1)
-                   select (
-                   tm: x.tm,
-                   Pair: x.tm.Pair,
-                   HV: x.hv,
-                   HVP: x.hvp,
-                   TradeRatioAll: x.tradingRatioAll * 100,
-                   TradeRatioM1All: x.tradingRatioM1All * 100,
-                   TradeRatioUp: x.tradingRatioUp * 100,
-                   TradeRatioM1Up: x.tradingRatioM1Up * 100,
-                   TradeRatioDown: x.tradingRatioDown * 100,
-                   TradeRatioM1Down: x.tradingRatioM1Down * 100,
-                   TradeAmountAll: x.tradeAmountAll,
-                   MMR: x.mmr,
-                   LotAll: lotAll,
-                   LotUp: lotUp,
-                   LotDown: lotDown,
-                   PipAll: x.tm.PipAmountByLot(lotAll),
-                   IsBuy: x.buy,
-                   IsPrime: x.tm.Pair.ToLower() == Pair.ToLower(),
-                   HVPR: (x.hvpr * 100).AutoRound2(3),
-                   HVPM1R: (x.hvpM1r * 100).AutoRound2(3)
-                   ));
+                    from corr in tmh.tm.TMCorrelation(tmh.tmh)
+                    let t = new[] { (tmh.tm, isBuy), (tmh.tmh, corr > 0 ? !isBuy : isBuy) }
+                    from x in Hedging.CalcTradeAmount(t, equity.Value)
+                    let lotAll = x.tm.GetLotsToTrade(x.tradeAmountAll, 1, 1)
+                    let lotUp = x.tm.GetLotsToTrade(x.tradeAmountUp, 1, 1)
+                    let lotDown = x.tm.GetLotsToTrade(x.tradeAmountDown, 1, 1)
+                    select (
+                    tm: x.tm,
+                    Pair: x.tm.Pair,
+                    HV: x.hv,
+                    HVP: x.hvp,
+                    TradeRatio: (x.tradingRatioAll * 100, x.tradingRatioUp * 100, x.tradingRatioDown * 100),
+                    TradeRatioM1: (x.tradingRatioM1All * 100, x.tradingRatioM1Up * 100, x.tradingRatioM1Down * 100),
+                    TradeAmount: (x.tradeAmountAll, x.tradeAmountUp, x.tradeAmountDown),
+                    MMR: x.mmr,
+                    Lot: (lotAll, lotUp, lotDown),
+                    Pip: (x.tm.PipAmountByLot(lotAll), x.tm.PipAmountByLot(lotUp), x.tm.PipAmountByLot(lotDown)),
+                    IsBuy: x.buy,
+                    IsPrime: x.tm.Pair.ToLower() == Pair.ToLower(),
+                    HVPR: (x.hvpr * 100).AutoRound2(3),
+                    HVPM1R: (x.hvpM1r * 100).AutoRound2(3)
+                    ));
         return hbss.Select(hbs => new TM_HEDGE(hbs));
       }).Concat();
 
@@ -65,7 +59,7 @@ namespace HedgeHog.Alice.Store {
 
         hbs.ForEach(t => {
           var lotToClose = t.tm.Trades.IsBuy(!t.IsBuy).Sum(tr => tr.Lots);
-          var lotToOpen = !closeOnly ? t.Lot : 0;
+          var lotToOpen = !closeOnly ? t.Lot.HedgedLotAll(isBuy) : 0;
           t.tm.OpenTrade(t.IsBuy, lotToOpen + lotToClose, reason + ": hedge open");
         });
         if(TradesManager.GetTrades().Length == 1) {
@@ -79,7 +73,7 @@ namespace HedgeHog.Alice.Store {
       var hbs = HedgeBuySell(isBuy)
         .Select(x => x.Value)
         .OrderByDescending(tm => tm.Pair == Pair)
-        .Select(t => (t.Pair, Position: t.IsBuy ? t.Lot : -t.Lot))
+        .Select(t => (t.Pair, Position: t.Lot.HedgedPositionAll(t.IsBuy)))
         .ToArray();
 
       (from ht in hbs

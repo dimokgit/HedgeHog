@@ -29,7 +29,14 @@ using Microsoft.Owin.Security;
 using Microsoft.AspNet.SignalR.Hubs;
 using static HedgeHog.Core.JsonExtensions;
 using TM_HEDGE_OLD = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, int Corr, bool IsBuy)>;
-using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeRatioM1, double TradeAmount, double MMR, int Lot, double Pip, bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
+using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP
+  , (double All, double Up, double Down) TradeRatio
+  , (double All, double Up, double Down) TradeRatioM1
+  , (double All, double Up, double Down) TradeAmount
+  , double MMR
+  , (int All, int Up, int Down) Lot
+  , (double All, double Up, double Down) Pip
+  , bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
 
 
 namespace HedgeHog.Alice.Client {
@@ -75,6 +82,7 @@ namespace HedgeHog.Alice.Client {
             trader.TradeAdded.Select(x => x.EventArgs.Trade.Pair.Replace("/", "").ToLower())
             .Merge(
             trader.TradeRemoved.Select(x => TradesManagerStatic.WrapPair(x.EventArgs.MasterTrade.Pair)))
+            .Delay(TimeSpan.FromSeconds(1))
             .Subscribe(pair => {
               try {
                 myHub().Clients.All.tradesChanged(pair);
@@ -404,7 +412,7 @@ namespace HedgeHog.Alice.Client {
     public object ReadHedgingRatios(string pair) {
       try {
         //var xx = new[] { true, false }.SelectMany(isBuy => CalcHedgedPositions(pair, isBuy));
-        var xx = new[] { true, false }.SelectMany(isBuy => HedgeBuySell(pair, isBuy)).ToArray();
+        var hbss = new[] { true, false }.SelectMany(isBuy => HedgeBuySell(pair, isBuy)).ToArray();
         var htms = GetHedgedTradingMacros(pair).ToArray();
         var canShort = htms.SelectMany(t => new[] { t.tm1, t.tm2 }).Select(tm => new { tm.Pair, IsShortable = tm.CurrentPrice?.IsShortable == true }).ToArray();
         var stats = (
@@ -424,19 +432,24 @@ namespace HedgeHog.Alice.Client {
             slope2M1 = slope2M1.AutoRound2(3)
           }).ToArray();
         return new {
-          hrs = xx
+          hrs = hbss
           .Select(x => x.Value)
           .Select(t => new {
             t.Pair,
             HV = t.HV.AutoRound2(3),
             HVP = t.HVP.AutoRound2(3),
-            t.TradeRatio,
-            t.TradeRatioM1,
-            TradeAmount = t.TradeAmount.ToInt(),
+            TradeRatio = t.TradeRatio.All,
+            TradeRatio2 = t.TradeRatio.HedgedTriplet(t.IsBuy),
+            TradeRatioM1 = t.TradeRatioM1.All,
+            TradeRatioM12 = t.TradeRatioM1.HedgedTriplet(t.IsBuy),
+            TradeAmount = t.TradeAmount.All.ToInt(),
+            TradeAmount2 = t.TradeAmount.HedgedTradeAmount(t.IsBuy).ToInt(),
             MMR = t.MMR.AutoRound2(3),
-            t.Lot,
+            Lot = t.Lot.All,
+            Lot2 = t.Lot.HedgedLot(t.IsBuy),
             //t.Corr,
-            Pip = t.Pip.AutoRound2(2),
+            Pip = t.Pip.All.AutoRound2(2),
+            Pip2 = t.Pip.HedgedPip(t.IsBuy).AutoRound2(2),
             t.IsBuy,
             IsPrime = (t.IsBuy || canShort.Any(cs => cs.Pair == t.Pair && cs.IsShortable)) && t.IsPrime,
             t.HVPR,
@@ -484,7 +497,7 @@ namespace HedgeHog.Alice.Client {
          trade.Time2Close = t.tm.ServerTime;
          trade.Open = t.IsBuy ? rate.AskHigh : rate.BidLow;
          trade.Close = t.IsBuy ? t.tm.CurrentPrice.Bid : t.tm.CurrentPrice.Ask;
-         trade.Lots = t.tm.GetLotsToTrade(t.TradeAmount, 1, 1);
+         trade.Lots = t.tm.GetLotsToTrade(t.TradeAmount.HedgedTradeAmount(t.IsBuy), 1, 1);
          return trade;
        }).ToArray());
     }
@@ -978,7 +991,7 @@ namespace HedgeHog.Alice.Client {
           var s = string.Join("<br/>", oss.Select(os => $"{os.status}:{os.filled}<<{os.remaining}"));
           list2.Add(row("Orders", s));
         }
-        if(tm.IsPairHedged)
+        if(true || tm.IsPairHedged)
           tm.MaxHedgeProfit?.ForEach(mhps => list2.Add(row("Hedge Profit", "$" + string.Join("/", mhps.Select(mhp => mhp.profit.AutoRound2(1))) + "/" +
             (am.Equity.CompoundInteres(mhps.DefaultIfEmpty().Average(x => x.profit), 200) * 100).AutoRound2(3, "%")
             )));
@@ -1029,11 +1042,13 @@ namespace HedgeHog.Alice.Client {
       });
     }
 
-    public string[] AvailibleSymbols() {
+    public string[] ReadPairs() {
       return remoteControl?.Value?
         .TradingMacrosCopy
         .Where(tm => tm.IsActive && tm.IsTrader)
         .Select(tm => tm.PairPlain)
+        .Concat(new[] { "" })
+        .OrderBy(s => s)
         .ToArray();
     }
     private void GetTradingMacro(string pair, Action<TradingMacro> action) {

@@ -68,7 +68,7 @@ namespace HedgeHog.Alice.Store {
           #endregion
 
           var wrs = wr.SkipLast(wr.Count > 4 ? 1 : 0).Where(w => !w.Distance.IsNaNOrZero()).ToArray();
-          Func<Func<WaveRange, double>, double, double> pwmp = (w, power) => wrs.Select(w).RootMeanPower(power);
+          Func<Func<WaveRange, double>, double, double> pwmp = (w, power) => wrs.Select(w).DefaultIfEmpty().RootMeanPower(power);
 
 
           var hasCalm3 = TradeConditionsHave(Calm3Ok);
@@ -218,7 +218,7 @@ namespace HedgeHog.Alice.Store {
         ).ToArray();
 
       var extreams = ratesForWave2.Extreams(waveWidth, r => r.Price, r => r.StartDate).ToArray();
-      var slopeMin = extreams.Select(t => t.Item3.Abs()).Average();
+      var slopeMin = extreams.Select(t => t.Item3.Abs()).DefaultIfEmpty().Average();
       var extreams2 = extreams.Scan(Tuple.Create(0, DateTime.Now, 0.0), (p, t) => {
         return p.Item1 == 0 ? t
           : t.Item1 - p.Item1 < waveWidth.Div(waveWidthAvgIterCnt)

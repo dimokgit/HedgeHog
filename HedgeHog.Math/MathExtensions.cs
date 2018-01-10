@@ -9,6 +9,8 @@ using System.Collections;
 using System.Reflection;
 using System.ComponentModel;
 using IDouble = System.Collections.Generic.IEnumerable<System.Double>;
+using System.Threading.Tasks;
+
 namespace HedgeHog {
   public static class RelativeStDevStore {
     public static readonly ConcurrentDictionary<int, ConcurrentDictionary<int, double>> RSDs = new ConcurrentDictionary<int, ConcurrentDictionary<int, double>>();
@@ -168,6 +170,9 @@ namespace HedgeHog {
     public static List<T> SafeList<T>(this IEnumerable<T> values) {
       return values as List<T> ?? values.ToList();
     }
+    public static IList<T> SafeIList<T>(this IEnumerable<T> values) {
+      return values as IList<T> ?? values.ToArray();
+    }
     /// <summary>
     /// Calculate overlapped area for two areas
     /// </summary>
@@ -203,7 +208,7 @@ namespace HedgeHog {
     public static double Ratio(this int v, double other) {
       return other.Ratio(v);
     }
-    public static (double,double) RelativeRatios(this double v, double other) {
+    public static (double, double) RelativeRatios(this double v, double other) {
       if(Math.Sign(v) == -Math.Sign(other)) return (double.NaN, double.NaN);
       var s = v + other;
       return (v / s, other / s);
@@ -414,10 +419,10 @@ namespace HedgeHog {
       }, list => list.AverageByIterations(averageIterations).Average());
     }
 
-    public static int CrossRange(this IEnumerable<double> source,double min,double max) =>
+    public static int CrossRange(this IEnumerable<double> source, double min, double max) =>
       source
       .Select(d => d >= max ? 1 : d <= min ? -1 : 0)
-      .Where(i=>i!=0)
+      .Where(i => i != 0)
       .DistinctUntilChanged()
       .Count();
 
@@ -673,6 +678,14 @@ namespace HedgeHog {
       }
       return Math.Sqrt(S / (k - 2));
     }
+    public static double StandardDeviationSmoothed(this IEnumerable<double> source, double sdTreshold) {
+      var dbls = source.SafeIList();
+      var sd = dbls.StandardDeviation(out var avg, out var max, out var min);
+      var l = avg - sd * sdTreshold;
+      var h = avg + sd * sdTreshold;
+      sd = dbls.Where(d => Math.Abs(d).Between(l, h)).StandardDeviation();
+      return sd;
+    }
     public static double RelativeStandardDeviationSmoothed(this IEnumerable<double> dbls) {
       double avg, std;
       var rsd = dbls.RelativeStandardDeviation(out std, out avg);
@@ -725,7 +738,7 @@ namespace HedgeHog {
       var avg1 = dbls.Where(d => d <= avg0).DefaultIfEmpty(avg0).Average();
       return source.Where(d => projector(d) >= avg1).ToArray();
     }
-    public static T[] CopyToArray<T>(this IList<T> values, int count) =>values.SafeArray().CopyToArray(count);
+    public static T[] CopyToArray<T>(this IList<T> values, int count) => values.SafeArray().CopyToArray(count);
     public static T[] CopyToArray<T>(this IList<T> values) => values.CopyToArray(values.Count);
     public static T[] CopyToArray<T>(this IList<T> values, int start, int count) => values.SafeArray().CopyToArray(start, count);
     public static T[] CopyToArray<T>(this T[] values, int count) {
@@ -802,9 +815,10 @@ namespace HedgeHog {
 
     public static IEnumerable<Tuple<int, U, double>> Extreams<T, U>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, U> date) {
       return values
+        .Where(_ => waveWidth > 0)
         .Select((rate, i) => new { y = value(rate), x = date(rate), i })
         .Where(x => !x.y.IsNaN())
-        .Buffer(waveWidth, 1)
+        .Buffer(waveWidth.Max(1), 1)
         .Where(chank => chank.Count == waveWidth)
         .Select(chunk => {
           var slope = chunk.LinearSlope(r => r.y);
@@ -1056,14 +1070,12 @@ namespace HedgeHog {
       return a.AverageInRange(high, high - 1);
     }
     public static IEnumerable<double> AverageInRange(this IList<double> a, int high, int low) {
-      double b = double.NaN, c = double.NaN;
-      return a.Where(v => {
-        if(double.IsNaN(b)) {
-          b = a.AverageByIterations(high, false).Average();
-          c = a.AverageByIterations(low).Average();
-        }
-        return v.Between(c, b);
-      });
+      var bt = Task.Run(() => a.AverageByIterations(high, false).DefaultIfEmpty().Average());
+      var ct = Task.Run(() => a.AverageByIterations(low).DefaultIfEmpty().Average());
+      Task.WaitAll(bt, ct);
+      var b = bt.Result;
+      var c = ct.Result;
+      return a.Where(v => v.Between(c, b));
     }
 
     public static IList<double> AverageByIterations(this IList<double> values, double iterations, List<double> averagesOut = null) {
@@ -1210,8 +1222,8 @@ namespace HedgeHog {
 
     public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), bool> condition)
       => source.HistoricalVolatility(condition, t => Math.Log(t.prev / t.next));
-    public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), bool> condition, Func<(double prev, double next), double> calc) 
-      => source.Pairwise((prev,next)=>(prev,next)).Where(condition).Select(calc).StandardDeviation();
+    public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), bool> condition, Func<(double prev, double next), double> calc)
+      => source.Pairwise((prev, next) => (prev, next)).Where(condition).Select(calc).StandardDeviation();
 
     #region Helpers
 
@@ -1230,7 +1242,7 @@ namespace HedgeHog {
     #endregion
 
     #endregion
-    public static double CompoundAmount(this double amount, double interestRate, double periods) 
+    public static double CompoundAmount(this double amount, double interestRate, double periods)
       => amount * Math.Pow(1 + interestRate, periods);
     public static double CompoundInteres(this double balance, double profit, double periods)
       => balance.CompoundAmount(profit / balance, periods) / balance - 1;

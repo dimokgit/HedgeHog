@@ -276,7 +276,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
         #region exitCrossHandler
         Action<SuppRes> exitCrossHandler = (sr) => {
-          if((!IsInVirtualTrading && CanDoNetLimitOrders) || isCrossDisabled(sr) || IsPairHedged || isHedgeChild)
+          if((!IsInVirtualTrading && CanDoNetLimitOrders) || isCrossDisabled(sr) || IsPairHedged || isHedgeChild || HaveHedgedTrades())
             return;
           var lot = Trades.Lots();
           resetCloseAndTrim();

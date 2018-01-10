@@ -112,7 +112,6 @@ namespace HedgeHog.Alice.Store {
       tradingMacro.CorridornessMin = corridornessMin;
       tradingMacro.CorridorIterationsIn = corridorIterationsIn;
       tradingMacro.CorridorIterationsOut = corridorIterationsOut;
-      tradingMacro.CorridorIterations = corridorIterations;
       tradingMacro.CorridorBarMinutes = corridorBarMinutes;
       tradingMacro.PairIndex = pairIndex;
       tradingMacro.TradingGroup = tradingGroup;
@@ -453,24 +452,6 @@ namespace HedgeHog.Alice.Store {
     partial void OnCorridorIterationsOutChanging(global::System.Int32 value);
     partial void OnCorridorIterationsOutChanged();
 
-    /// <summary>
-    /// No Metadata Documentation available.
-    /// </summary>
-    [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
-    [DataMemberAttribute()]
-    public global::System.String CorridorIterations {
-      get {
-        return _CorridorIterations;
-      }
-      set {
-        OnCorridorIterationsChanging(value);
-        ReportPropertyChanging("CorridorIterations");
-        _CorridorIterations = StructuralObject.SetValidValue(value, false, "CorridorIterations");
-        ReportPropertyChanged("CorridorIterations");
-        OnCorridorIterationsChanged();
-      }
-    }
-    private global::System.String _CorridorIterations;
     partial void OnCorridorIterationsChanging(global::System.String value);
     partial void OnCorridorIterationsChanged();
 

@@ -1452,6 +1452,17 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+    public TradeConditionDelegate VoltBelow2Ok {
+      get {
+        return () => {
+          return (from volt in GetLastVolt2()
+                  from vl in GetVoltage2Low()
+                  where  volt < vl
+                  select TradeDirections.Both
+                  ).SingleOrDefault();
+        };
+      }
+    }
 
     private TradeDirections VoltsBelowByTrendLines(TL tls) {
       var d = RatesArray[RatesArray.Count - tls.Count].StartDate;
@@ -1554,9 +1565,8 @@ namespace HedgeHog.Alice.Store {
               from v in vs
               select v);
     }
-    private IEnumerable<T> GetLastVolt<T>(Func<double, T> map) {
-      return GetLastVolt().Select(map);
-    }
+    private IEnumerable<T> GetLastVolt<T>(Func<double, T> map) => GetLastVolt().Select(map);
+    private IEnumerable<T> GetLastVolt2<T>(Func<double, T> map) => GetLastVolt2().Select(map);
     #endregion
     #endregion
 
@@ -1619,7 +1629,7 @@ namespace HedgeHog.Alice.Store {
         .Add(new { HistVol = $"{HV(TradingMacroM1().Single())}" })
         .Add(new { HistVolUp = $"{HVU(TradingMacroM1().Single())}" })
         .Add(new { HistVolDn = $"{HVD(TradingMacroM1().Single())}" })
-        .Add(HVP(this).Select(hvp => (object)new { HistVolDif = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVP).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
+        //.Add(HVP(this).Select(hvp => (object)new { HistVolDif = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVP).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
@@ -1634,15 +1644,19 @@ namespace HedgeHog.Alice.Store {
       double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
     }
 
-    public IEnumerable<double> HistoricalVolatilityUp() => UseRates(ra => InPips(ra.Select(_priceAvg).HistoricalVolatility(t => t.prev < t.next)));
-    public IEnumerable<double> HistoricalVolatilityDown() => UseRates(ra => InPips(ra.Select(_priceAvg).HistoricalVolatility(t => t.prev > t.next)));
+    public IEnumerable<double> HistoricalVolatilityUp() => HistoricalVolatility();
+    //UseRates(ra => InPips(RatesForHV(ra).HistoricalVolatility(t => t.prev < t.next)));
+    public IEnumerable<double> HistoricalVolatilityDown() => HistoricalVolatility();
+    //UseRates(ra => InPips(RatesForHV(ra).HistoricalVolatility(t => t.prev > t.next)));
     public IEnumerable<double> HistoricalVolatility() => UseRates(ra => InPips(HistoricalVolatilityImpl(ra)));
     private Func<List<Rate>, double> HistoricalVolatilityImpl = new Func<List<Rate>, double>(ra
-      => ra.Select(_priceAvg).HistoricalVolatility()).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault());
+      => RatesForHV(ra).HistoricalVolatility()).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault());
 
     public double[] HistoricalVolatilityByPips() => UseRates(ra => InPips(RatesHVBP(ra)));
     private Func<List<Rate>, double> RatesHVBP => new Func<List<Rate>, double>(ra
-      => ra.Select(_priceAvg).HistoricalVolatility((d1, d2) => d1 - d2)).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault());
+      => RatesForHV(ra).HistoricalVolatility((d1, d2) => d1 - d2)).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault());
+
+    private static IList<double> RatesForHV(List<Rate> ra) => ra.Select(_priceAvg).Cma(2.2);
     #endregion
 
     #region Angles

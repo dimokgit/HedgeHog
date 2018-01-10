@@ -55,6 +55,18 @@ namespace HedgeHog {
         cmas = cmas.Cma(period);
       return cmas;
     }
+    public static IList<double> Cma(this IList<double> rates, double period, int passes) {
+      var cmas = rates.Cma(period);
+      for(var i = passes; i > 1; i--)
+        cmas = cmas.Cma(period);
+      return cmas;
+    }
+    public static IList<double> Cma(this IEnumerable<double> rates, double period, int passes) {
+      var cmas = rates.Cma(period);
+      for(var i = passes; i > 1; i--)
+        cmas = cmas.Cma(period);
+      return cmas;
+    }
     public static IList<double> Cma<T>(this IEnumerable<T> rates, Func<T, double> value, double period) {
       var x = rates.Scan(double.NaN, (ma, r) => ma.Cma(period, value(r))).ToList();
       x.Reverse();
