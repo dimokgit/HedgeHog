@@ -44,6 +44,8 @@ namespace HedgeHog.Alice.Store {
     public double VoltAvgRange { get; set; }
     public string VoltRange { get; set; }
     public string VoltRange_2 { get; set; }
+    public double VoltCmaPeriod { get; set; }
+    public int VoltCmaPasses { get; set; }
     public double WaveStDevPower { get; set; }
     public double WaveStDevPowerS { get; set; }
     public string BarPeriod { get; set; }

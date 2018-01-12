@@ -116,7 +116,7 @@ namespace HedgeHog.Alice.Store {
        from volt in tm.GetLastVolt(GetVoltage2)
        from vh in tm.GetVoltage2High()
        from vl in tm.GetVoltage2Low()
-       select vh == vl ? TradeDirections.Both : volt >= vh ? above : volt <= vl ? below : TradeDirections.None
+       select  volt > vh ? above : volt < vl ? below : TradeDirections.None
       ).Scan((a, td) => a & td).LastOrDefault();
 
     [TradeConditionHedge]
@@ -130,11 +130,20 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate VltOut2MOk => () => TradingMacroM1(tm => VoltOutImpl(tm, 1, TradeDirections.Down, TradeDirections.Up)).Concat().SingleOrDefault();
     public TradeConditionDelegate VltOut2MrOk => () => TradingMacroM1(tm => VoltOutImpl(tm, 1, TradeDirections.Up, TradeDirections.Down)).Concat().SingleOrDefault();
 
+
+    public TradeConditionDelegate VltInOk => () => VoltInImpl(this, 0).SingleOrDefault();
+    public TradeConditionDelegate VltIn2Ok => () => VoltInImpl(this, 1).SingleOrDefault();
     private static IEnumerable<TradeDirections> VoltOutImpl(TradingMacro tm, int voltIndex, TradeDirections above, TradeDirections below) =>
        from volt in tm.GetLastVoltByIndex(voltIndex)
        from vh in tm.GetVoltHighByIndex(voltIndex)
        from vl in tm.GetVoltLowByIndex(voltIndex)
        select vh == vl ? TradeDirections.Both : volt >= vh ? above : volt <= vl ? below : TradeDirections.None;
+
+    private static IEnumerable<TradeDirections> VoltInImpl(TradingMacro tm, int voltIndex) =>
+       from volt in tm.GetLastVoltByIndex(voltIndex)
+       from vh in tm.GetVoltHighByIndex(voltIndex)
+       from vl in tm.GetVoltLowByIndex(voltIndex)
+       select vh == vl ? TradeDirections.Both : volt.Between(vl,vh) ?TradeDirections.Both : TradeDirections.None;
 
     public TradeConditionDelegate PriceTipOk {
       get {
@@ -1452,18 +1461,13 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
-    public TradeConditionDelegate VoltBelow2Ok {
-      get {
-        return () => {
-          return (from volt in GetLastVolt2()
-                  from vl in GetVoltage2Low()
-                  where  volt < vl
-                  select TradeDirections.Both
-                  ).SingleOrDefault();
-        };
-      }
-    }
+    public TradeConditionDelegate VoltBelow2Ok => () => VoltBelowImpl(1);
 
+    private TradeDirections VoltBelowImpl(int voltIndex) => (from volt in GetLastVoltByIndex(voltIndex)
+                                                         from vl in GetVoltLowByIndex(voltIndex)
+                                                         where volt <= vl
+                                                         select TradeDirections.Both
+                                                         ).SingleOrDefault();
     private TradeDirections VoltsBelowByTrendLines(TL tls) {
       var d = RatesArray[RatesArray.Count - tls.Count].StartDate;
       var volt = _SetVoltsByStd.SkipWhile(t => t.Item1 < d).Select(t => t.Item2).DefaultIfEmpty(double.NaN).Min();
@@ -1471,13 +1475,16 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegate VoltAboveOk {
-      get {
-        return () => {
-          return GetLastVolt(volt => VoltageHigh(vh => volt > vh)).Concat().Select(TradeDirectionByBool).SingleOrDefault();
-        };
-      }
-    }
+    public TradeConditionDelegate VoltAboveOk => () 
+      => GetLastVolt(volt => VoltageHigh(vh => volt > vh)).Concat().Select(TradeDirectionByBool).SingleOrDefault();
+    public TradeConditionDelegate VoltAbove2Ok => () => VoltAboveImpl(1);
+
+    private TradeDirections VoltAboveImpl(int voltIndex) => (from volt in GetLastVoltByIndex(voltIndex)
+                                                             from vl in GetVoltHighByIndex(voltIndex)
+                                                             where volt >= vl
+                                                             select TradeDirections.Both
+                                                             ).SingleOrDefault();
+
     TradeDirections _VROk;
     public TradeConditionDelegate VROk {
       get {

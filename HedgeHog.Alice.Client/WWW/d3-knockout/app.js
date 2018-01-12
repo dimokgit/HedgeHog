@@ -282,7 +282,7 @@
     this.pairs = ko.observableArray();
     this.pairCurrent = ko.observable(pair);
     this.pairCurrent.subscribe(function (pc) {
-      if (pc.toLowerCase() == pair) return;
+      if (pc.toUpperCase() == pair) return;
       var newUrl = location.href.replace(location.search, "") + "?pair=" + pc;
       location = newUrl;
     });
@@ -1600,7 +1600,8 @@
               showErrorPerm(JSON.stringify({ pairs: pairs }));
               break;
             default:
-              pair = pair || pairs[0];
+              pair = pair || pairs.filter(function (p) { return p; })[0];
+              dataViewModel.pairCurrent(pair);
               showWarning("Using " + pair);
               afterPairIsAvailible();
               if (pairs.length > 1)

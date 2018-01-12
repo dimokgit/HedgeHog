@@ -524,6 +524,8 @@ namespace HedgeHog.Alice.Store {
     Action<double> SetVoltLowByIndex(int voltIndex) => voltIndex == 0 ? new Action<double>(v => GetVoltageAverage = () => new[] { v }) : v => GetVoltage2Low = () => new[] { v };
     IEnumerable<double> GetVoltHighByIndex(int voltIndex) => voltIndex == 0 ? GetVoltageHigh() : GetVoltage2High();
     IEnumerable<double> GetVoltLowByIndex(int voltIndex) => voltIndex == 0 ? GetVoltageAverage() : GetVoltage2Low();
+    double GetVoltCmaPeriodByIndex(int voltIndex) => voltIndex == 0 ? VoltCmaPeriod : RatesHeightMin;
+    int GetVoltCmaPassesByIndex(int voltIndex) => voltIndex == 0 ? VoltCmaPasses  : RatesHeightMin.ToInt();
 
     CorridorStatistics ShowVoltsByRatioDiff(int voltIndex) {
       if(UseCalc()) {
@@ -553,7 +555,7 @@ namespace HedgeHog.Alice.Store {
         var voltCounter = 0;
         var cmaPeriod = RatesHeightMin.ToInt();
         //rateVolts = rateVolts.Cma(t => t.v, cmaPeriod, (t, cma) => (t.r, cma)).ToArray();
-        rateVolts.Cma(t => t.v, cmaPeriod, cmaPeriod, (t, cma) => {
+        rateVolts.Cma(t => t.v, GetVoltCmaPeriodByIndex(voltIndex), GetVoltCmaPassesByIndex(voltIndex), (t, cma) => {
           var v = /*t.v - */cma;
           min = v.Min(min);
           max = v.Max(max);

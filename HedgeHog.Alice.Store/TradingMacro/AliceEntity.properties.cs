@@ -1335,6 +1335,35 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    #region VoltCmaPeriod
+    private double _VoltCmaPeriod;
+    [WwwSetting(wwwSettingsVoltage)]
+    [Category(categoryActive)]
+    public double VoltCmaPeriod {
+      get { return _VoltCmaPeriod; }
+      set {
+        if(_VoltCmaPeriod != value) {
+          _VoltCmaPeriod = value;
+          OnPropertyChanged("VoltCmaPeriod");
+        }
+      }
+    }
+    #endregion
+    #region VoltCmaPasses
+    private int _VoltCmaPasses;
+    [WwwSetting(wwwSettingsVoltage)]
+    [Category(categoryActive)]
+    public int VoltCmaPasses {
+      get { return _VoltCmaPasses; }
+      set {
+        if(_VoltCmaPasses != value) {
+          _VoltCmaPasses = value;
+          OnPropertyChanged("VoltCmaPasses");
+        }
+      }
+    }
+
+    #endregion
     double _waveStDevPower = 10;
     [Description("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]
     [WwwSetting(Group = wwwSettingsTradingParams)]
