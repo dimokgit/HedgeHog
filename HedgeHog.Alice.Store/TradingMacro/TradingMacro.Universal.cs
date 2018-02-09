@@ -252,7 +252,7 @@ namespace HedgeHog.Alice.Store {
             .Subscribe(tc => onTradesCount(tc));
         #region enterCrossHandler
         Func<SuppRes, bool> enterCrossHandler = (suppRes) => {
-          if(CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled(suppRes) || HaveTrades(suppRes.IsBuy) || isHedgeChild || IsPairHedged)
+          if(CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled(suppRes) || HaveTrades(suppRes.IsBuy) || isHedgeChild || IsHedgedTrading)
             return false;
           if(suppRes.InManual || BuyLevel.Rate > SellLevel.Rate || suppRes.CanTrade) {
             var isBuy = isBuyR(suppRes);
@@ -276,7 +276,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
         #region exitCrossHandler
         Action<SuppRes> exitCrossHandler = (sr) => {
-          if((!IsInVirtualTrading && CanDoNetLimitOrders) || isCrossDisabled(sr) || IsPairHedged || isHedgeChild || HaveHedgedTrades())
+          if((!IsInVirtualTrading && CanDoNetLimitOrders) || isCrossDisabled(sr) || IsHedgedTrading || isHedgeChild || HaveHedgedTrades())
             return;
           var lot = Trades.Lots();
           resetCloseAndTrim();
@@ -434,7 +434,7 @@ namespace HedgeHog.Alice.Store {
 
                 var toai = MonoidsCore.ToFunc(() => TradeOpenActionsInfo((d, n) => new { n, d }).ToArray());
                 Action setLevels = () => {
-                  if(IsAsleep || IsPairHedged || isHedgeChild) {
+                  if(IsAsleep || IsHedgedTrading || isHedgeChild) {
                     TradingMacrosByPair()
                     .OrderByDescending(tm => tm._RatesMax - tm._RatesMin)
                     .Take(1)

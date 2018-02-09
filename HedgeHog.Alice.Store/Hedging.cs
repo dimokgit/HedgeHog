@@ -54,17 +54,17 @@ namespace HedgeHog.Alice.Store {
                       .ToArray();
       var ctas = minMaxes.SelectMany(mm => {
         //var hvr = mm.hvr.Avg(mm.hvM1r);
-        var hvr = mm.hvM1r;
+        var hvr = mm.hvr;
         var maxTradeAll = mm.max.tradeMax.Min(mm.min.tradeMax * hvr);
         var minTradeAll = mm.min.tradeMax.Min(maxTradeAll / hvr);
 
         //var hvrUp = mm.hvrUp.Avg(mm.hvM1rUp);
-        var hvrUp = mm.hvM1rUp;
+        var hvrUp = mm.hvrUp;
         var maxTradeUp = mm.max.tradeMax.Min(mm.min.tradeMax * hvrUp);
         var minTradeUp = mm.min.tradeMax.Min(maxTradeUp / hvrUp);
 
         //var hvrDown = mm.hvrDown.Avg(mm.hvM1rDown);
-        var hvrDown = mm.hvM1rDown;
+        var hvrDown = mm.hvrDown;
         var maxTradeDown = mm.max.tradeMax.Min(mm.min.tradeMax * hvrDown);
         var minTradeDown = mm.min.tradeMax.Min(maxTradeDown / hvrDown);
 

@@ -89,8 +89,6 @@ namespace HedgeHog.Alice.Store {
           return () => { SetVoltsByPpm(); return null; };
         case HedgeHog.Alice.VoltageFunction.BPA1:
           return ShowVoltsByBPA1;
-        case HedgeHog.Alice.VoltageFunction.Pair:
-          return () => ShowVoltsByPair(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.Corr:
           return ShowVoltsByCorrelation;
         case HedgeHog.Alice.VoltageFunction.Gross:
@@ -370,38 +368,10 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
-    CorridorStatistics ShowVoltsByPair(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      if(UseCalc()) {
-        var nonVoltRates = UseRatesInternal(ri => ri
-          .BackwardsIterator()
-          .SkipWhile(r => !getVolt(r).IsNaNOrZero()).ToArray())
-          .Concat()
-          .Reverse()
-          .ToArray();
-        var voltDate = nonVoltRates
-          .Select(r => r.StartDate)
-          .DefaultIfEmpty(DateTime.MinValue)
-          .First();
-        var tm2 = TradingMacroHedged();
-        var tmRates2 = (from tm in tm2
-                        from tmRates in tm.UseRatesInternal(ri => ri.BackwardsIterator().TakeWhile(r => r.StartDate >= voltDate).ToArray())
-                        from tmRate in tmRates
-                        select tmRate)
-                        .Reverse()
-                        .ToArray();
-        var corrs = tm2.SelectMany(tm => TMCorrelation(tm));
-        corrs.ForEach(corr =>
-        nonVoltRates.Zip(
-          r => r.StartDate
-          , tmRates2.Select(x => Tuple.Create(x.StartDate, corr == 1 ? x.PriceAvg : 1 / x.PriceAvg))
-          , (r, t) => setVolt(r, t.Item2)));
-        CalcVoltsFullScaleShift();
-      }
-      return null;
-    }
-
     public IEnumerable<int> TMCorrelation(TradingMacro tmOther)
-      => GetHedgeCorrelation(Pair, tmOther.Pair).Concat(TMCorrelationImpl((this, tmOther))).Take(1);
+      => new[] { HedgeCorrelation }.Where(i => i != 0)
+      .Concat(GetHedgeCorrelation(Pair, tmOther.Pair))
+      .Concat(TMCorrelationImpl((this, tmOther))).Take(1);
     //.IfEmpty(() => Log = new Exception(new { pairThis = Pair, pairOther = tmOther.Pair, correlation = "is empty" } + ""));
     Func<(TradingMacro tmThis, TradingMacro tmOther), int[]> TMCorrelationImpl =
       new Func<(TradingMacro tmThis, TradingMacro tmOther), int[]>(t
@@ -461,15 +431,18 @@ namespace HedgeHog.Alice.Store {
                        select t
         ).Select(t => {
           SetVoltage2(t.r, t.v);
-          return t.v;
+          return BarPeriod == BarsPeriodType.t1 || IsTradingHour(t.r.StartDate) ? t.v : double.NaN;
         })
+        .Where(Lib.IsNotNaN)
         .ToArray();
         {
           var min = voltses.AverageByIterations(-VoltAverageIterations2).DefaultIfEmpty(double.NaN).Average();
           var max = voltses.AverageByIterations(VoltAverageIterations2).DefaultIfEmpty(double.NaN).Average();
-          min = new[] { min, max }.OrderBy(m => m.Abs()).Last();
-          GetVoltage2High = () => new[] { min.Abs() };
-          GetVoltage2Low = () => new[] { -min.Abs() };
+          //min = new[] { min, max }.OrderBy(m => m.Abs()).Last();
+          //GetVoltage2High = () => new[] { min.Abs() };
+          //GetVoltage2Low = () => new[] { -min.Abs() };
+          GetVoltage2High = () => new[] { max };
+          GetVoltage2Low = () => new[] { min };
         }
       }
       return null;
@@ -525,7 +498,7 @@ namespace HedgeHog.Alice.Store {
     IEnumerable<double> GetVoltHighByIndex(int voltIndex) => voltIndex == 0 ? GetVoltageHigh() : GetVoltage2High();
     IEnumerable<double> GetVoltLowByIndex(int voltIndex) => voltIndex == 0 ? GetVoltageAverage() : GetVoltage2Low();
     double GetVoltCmaPeriodByIndex(int voltIndex) => voltIndex == 0 ? VoltCmaPeriod : RatesHeightMin;
-    int GetVoltCmaPassesByIndex(int voltIndex) => voltIndex == 0 ? VoltCmaPasses  : RatesHeightMin.ToInt();
+    int GetVoltCmaPassesByIndex(int voltIndex) => voltIndex == 0 ? VoltCmaPasses : RatesHeightMin.ToInt();
 
     CorridorStatistics ShowVoltsByRatioDiff(int voltIndex) {
       if(UseCalc()) {
@@ -1047,7 +1020,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public bool IsVoltFullScale => VoltageFunction == VoltageFunction.Pair;
+    public bool IsVoltFullScale => false;
     public double[] VoltsFullScaleMinMax { get; private set; }
     public IEnumerable<(double profit, bool buy)[]> MaxHedgeProfit { get; private set; } = new[] { new[] { (0.0, false) }.Take(0).ToArray() }.Take(0);
   }

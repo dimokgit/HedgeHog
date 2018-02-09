@@ -654,7 +654,7 @@ namespace HedgeHog.Alice.Client {
 
         if(GetTradingMacros().Any(tm => !tm.UseRates(rs => rs.Count > 0).SingleOrDefault()))
           return;
-        var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0 && tm.Strategy != Strategies.None).ToArray();
+        var tms = GetTradingMacros().Where(tm => tm.IsTrader && tm.Trades.Length > 0 && tm.Strategy != Strategies.None).ToArray();
         if(tms.Any() && tms.All(tm => tm.UseRates(rs => rs.Count > 0).SingleOrDefault())) {
           var tp = (tms.Sum(tm => (tm.CloseOnOpen ? tm.CalculateTakeProfit() : tm.CalcTakeProfitDistance(inPips: true)) * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
           _tradingStatistics.TakeProfitDistanceInPips = tp;

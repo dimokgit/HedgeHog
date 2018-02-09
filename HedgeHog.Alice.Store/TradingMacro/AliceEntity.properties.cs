@@ -141,6 +141,7 @@ namespace HedgeHog.Alice.Store {
     string _prevSession;
     [DisplayName("Previous Session")]
     [Category(categoryTestControl)]
+    [WwwSetting]
     [Dnr]
     public string TestPrevSession {
       get { return _prevSession; }
@@ -684,7 +685,7 @@ namespace HedgeHog.Alice.Store {
       return TradingDays().Contains(time.DayOfWeek);
     }
     private bool IsTradingHour(DateTime time) {
-      return IsTradingHour2(TradingHoursRange, time);
+      return IsTradingHour2((_tradingHoursRangeTimeSpans, time));
     }
     public static bool IsTradingHour(string range, DateTime time) {
       var times = range.Split('-')
@@ -700,21 +701,14 @@ namespace HedgeHog.Alice.Store {
         : tod >= times.First() || tod <= times.Last();
     }
 
-    private static bool IsTimeRangeReversed(TimeSpan[] times) {
-      return times.First() > times.Last();
-    }
-
-    public static bool IsTradingHour2(string range, DateTime time) {
-      if(range.IsNullOrWhiteSpace())
-        return true;
-      var ranges = ParseJsonTimeRange(range);
-      if(ranges == null)
-        throw new Exception(new { range, isNot = " JSON" } + "");
-      var timeSpans = ranges.Select(r => r.Select(t => TimeSpan.Parse(t)).ToArray());
-      var ands = timeSpans.Where(tsr => !IsTimeRangeReversed(tsr)).Select(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay)).DefaultIfEmpty(true).Any(b => b);
-      var ors = timeSpans.Where(tsr => IsTimeRangeReversed(tsr)).All(ts => IsTimeSpanRangeOk(ts, time.TimeOfDay));
+    private static Func<TimeSpan[], bool> IsTimeRangeReversedImpl = (times) => times.First() > times.Last();
+    private static Func<TimeSpan[], bool> IsTimeRangeReversed = IsTimeRangeReversedImpl.Memoize();
+    public Func<(TimeSpan[][] timeSpans, DateTime time), bool> IsTradingHour2 => IsTradingHour2Impl;//.MemoizeLast(t => t.time);
+    public static Func<(TimeSpan[][] timeSpans, DateTime time), bool> IsTradingHour2Impl = ((TimeSpan[][] timeSpans, DateTime time) arg) => {
+      var ands = arg.timeSpans.Where(tsr => !IsTimeRangeReversed(tsr)).Select(ts => IsTimeSpanRangeOk(ts, arg.time.TimeOfDay)).DefaultIfEmpty(true).Any(b => b);
+      var ors = arg.timeSpans.Where(tsr => IsTimeRangeReversed(tsr)).All(ts => IsTimeSpanRangeOk(ts, arg.time.TimeOfDay));
       return ands && ors;
-    }
+    };
 
     private static Func<string, string[][]> ParseJsonTimeRange =
     new Func<string, string[][]>((string range) => range.TryFromJson<string[][]>(out var ranges) ? ranges : null).MemoizeLast(r => r);
@@ -749,6 +743,7 @@ namespace HedgeHog.Alice.Store {
       SuTh = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Saturday
     }
 
+    private TimeSpan[][] _tradingHoursRangeTimeSpans = new TimeSpan[0][];
     string _TradingHoursRange = "";
     [DisplayName("Trading Hours")]
     [Description("21:00-5:00")]
@@ -760,8 +755,22 @@ namespace HedgeHog.Alice.Store {
         if(_TradingHoursRange == value)
           return;
         _TradingHoursRange = value;
+        _tradingHoursRangeTimeSpans = ParseTimeRangeTimeSpans(value);
         OnPropertyChanged(nameof(TradingHoursRange));
       }
+    }
+    public static TimeSpan[][] ParseTimeRangeTimeSpans(string range) {
+      if(range.IsNullOrWhiteSpace())
+        return new TimeSpan[0][];
+      var ranges = ParseJsonTimeRange(range);
+      if(ranges == null)
+        ranges = ParseJsonTimeRange("[['" + range.Replace("-", "','") + "']]");
+      if(ranges == null)
+        throw new Exception(new { range, isNot = " JSON" } + "");
+      return ranges
+        .Select(r => r.Select(t => TimeSpan.Parse(t)).ToArray())
+        .Where(tss => tss[0] != tss[1])
+        .ToArray();
     }
 
     [DisplayName("Trading Days")]
@@ -2003,6 +2012,7 @@ namespace HedgeHog.Alice.Store {
     public string PairPlain { get { return TradesManagerStatic.WrapPair(Pair); } }
 
     public bool IsPairHedged => !PairHedge.IsNullOrWhiteSpace() && (TradeConditionsHedge().Any() || TradingMacroTrader(tm => tm.TradeConditionsHedge()).Concat().Any());
+    public bool IsHedgedTrading => !PairHedge.IsNullOrWhiteSpace() && HedgedTrading;
     public bool isHedgeChild => TradingMacrosByPairHedge(Pair).Any();
     void SyncHedgedPair() {
       TradingMacroHedged().ForEach(tm => {
@@ -2016,15 +2026,16 @@ namespace HedgeHog.Alice.Store {
     [WwwSetting]
     [Category(categoryTrading)]
     public string PairHedge {
-      get => _pairHedge;
+      get => PairHedges.FirstOrDefault() ?? "";
       set {
         var v = value?.ToUpper();
         if(_pairHedge == v) return;
         _pairHedge = v;
+        PairHedges = _pairHedge.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
         OnPropertyChanged(nameof(PairHedge));
       }
     }
-
+    private string[] PairHedges = new string[0];
     #region HedgeCorrelation
     static ConcurrentDictionary<(string pair1, string pair2), int[]> _hedgeCorrelations = new ConcurrentDictionary<(string pair1, string pair2), int[]>();
     static int[] GetHedgeCorrelation(string pair1, string pair2)

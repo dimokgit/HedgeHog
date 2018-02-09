@@ -30,6 +30,7 @@
       height = elementHeight - margin.top - margin.bottom,
       x = d3.scaleTime().range([xAxisOffset, width - xAxisOffset]),
       y = d3.scaleLinear().range([height, 0]),
+      //y = d3.scaleLinear().range([height, height / 5]),
       y2 = d3.scaleLinear().range([height, height * (y2Scale ? 4 : 0) / 5]);
     //y2 = d3.scaleLinear().range([height, height * 4 / 5]);
     y3 = d3.scaleLinear().range([height / 5, 0]);

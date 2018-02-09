@@ -902,7 +902,7 @@ namespace HedgeHog.Alice.Client {
           Minutes = value(x.wr.TotalMinutes.ToInt(), x.wr.TotalMinutes >= wrStats[0].Minutes.v),//.ToString("###0.0"),
           PPM = value(x.wr.PipsPerMinute, x.wr.PipsPerMinute >= wrStats[0].PPM.v),//.ToString("###0.0"),
           HSD = value(x.wr.HSDRatio.Round(1), x.wr.HSDRatio >= wrStats[0].HSD.v),//.ToString("###0.0"),
-          StDev = value(x.wr.StDev.Round(4), x.wr.StDev < wrStats[0].StDev.v),//.ToString("#0.00"),
+          StDev = value(x.wr.StDev.Round(5), x.wr.StDev < wrStats[0].StDev.v),//.ToString("#0.00"),
           Distance = value(x.wr.Distance.Round(0), x.wr.Distance > wrStats[0].Distance.v),
           DistanceCma = value(x.wr.DistanceCma.Round(0), x.wr.Index(x.rs, wr => wr.DistanceCma) == 0),
           DistanceByRegression = value(x.wr.DistanceByRegression.Round(0), x.wr.Index(x.rs, wr => wr.DistanceByRegression) == 0),
@@ -973,8 +973,8 @@ namespace HedgeHog.Alice.Client {
         if(tm.LastTradeLoss < -1000000)
           list2.Add(row("Last Loss", tm.LastTradeLoss.AutoRound2("$", 2)));
         if(!ht) {
-          list2.Add(row("PipAmountBuy", tm.PipAmountBuy.AutoRound2("$", 2) + "/" + tm.PipAmountBuyPercent.AutoRound2(3).ToString("p")));
-          list2.Add(row("PipAmountSell", tm.PipAmountSell.AutoRound2("$", 2) + "/" + tm.PipAmountSellPercent.AutoRound2(3).ToString("p")));
+          list2.Add(row("PipAmountBuy", tm.PipAmountBuy.AutoRound2("$", 2) + "/" + (tm.PipAmountBuyPercent * 100).AutoRound2(2, "%")));
+          list2.Add(row("PipAmountSell", tm.PipAmountSell.AutoRound2("$", 2) + "/" + (tm.PipAmountSellPercent * 100).AutoRound2(2, "%")));
         }
         if(!tm.HaveHedgedTrades()) {
           list2.Add(row("PipsToMC", (!ht ? 0 : am.PipsToMC).ToString("n0")));
@@ -991,10 +991,9 @@ namespace HedgeHog.Alice.Client {
           var s = string.Join("<br/>", oss.Select(os => $"{os.status}:{os.filled}<<{os.remaining}"));
           list2.Add(row("Orders", s));
         }
-        if(true || tm.IsPairHedged)
-          tm.MaxHedgeProfit?.ForEach(mhps => list2.Add(row("Hedge Profit", "$" + string.Join("/", mhps.Select(mhp => mhp.profit.AutoRound2(1))) + "/" +
-            (am.Equity.CompoundInteres(mhps.DefaultIfEmpty().Average(x => x.profit), 200) * 100).AutoRound2(3, "%")
-            )));
+        tm.MaxHedgeProfit?.ForEach(mhps => list2.Add(row("Hedge Profit", "$" + string.Join("/", mhps.Select(mhp => mhp.profit.AutoRound2(1))) + "/" +
+          (am.Equity.CompoundInteres(mhps.DefaultIfEmpty().Average(x => x.profit), 200) * 100).AutoRound2(3, "%")
+          )));
         if(trader.Value.GrossToExitCalc() != 0) {
           var ca = am.Equity.CompoundInteres(trader.Value.GrossToExitCalc().Abs(), 200);
           list2.Add(row("GrossToExit", $"${trader.Value.GrossToExitCalc().AutoRound2(1)}:{((ca) * 100).AutoRound2(3, "%")}"));
@@ -1048,7 +1047,6 @@ namespace HedgeHog.Alice.Client {
         .Where(tm => tm.IsActive && tm.IsTrader)
         .Select(tm => tm.PairPlain)
         .Concat(new[] { "" })
-        .OrderBy(s => s)
         .ToArray();
     }
     private void GetTradingMacro(string pair, Action<TradingMacro> action) {

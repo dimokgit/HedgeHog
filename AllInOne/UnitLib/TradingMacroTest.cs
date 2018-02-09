@@ -65,18 +65,19 @@ namespace UnitLib
 
     [TestMethod()]
     public void IsTradingHour2() {
-      var range = "[['9:00','17:00']]";
-      Assert.IsTrue(TradingMacro.IsTradingHour2(range, DateTime.Parse("10:00")));
-      Assert.IsFalse(TradingMacro.IsTradingHour2(range, DateTime.Parse("17:30")));
+      var range = TradingMacro.ParseTimeRangeTimeSpans("[['9:00','17:00']]");
+      Assert.IsTrue(TradingMacro.IsTradingHour2Impl((range, DateTime.Parse("10:00"))));
+      Assert.IsFalse(TradingMacro.IsTradingHour2Impl((range, DateTime.Parse("17:30"))));
 
-      Assert.IsTrue(TradingMacro.IsTradingHour2("[['9:00','17:00'],['17:30','17:40']]", DateTime.Parse("17:30")));
-      Assert.IsTrue(TradingMacro.IsTradingHour2("[['9:00','17:00'],['17:30','17:40']]", DateTime.Parse("9:30")));
-      Assert.IsFalse(TradingMacro.IsTradingHour2("[['9:00','17:00'],['17:30','17:40']]", DateTime.Parse("17:20")));
+      range = TradingMacro.ParseTimeRangeTimeSpans("[['9:00','17:00'],['17:30','17:40']]");
+      Assert.IsTrue(TradingMacro.IsTradingHour2Impl((range, DateTime.Parse("17:30"))));
+      Assert.IsTrue(TradingMacro.IsTradingHour2Impl((range, DateTime.Parse("9:30"))));
+      Assert.IsFalse(TradingMacro.IsTradingHour2Impl((range, DateTime.Parse("17:20"))));
 
-      Assert.IsTrue(TradingMacro.IsTradingHour2("[['17:00','9:00']]", DateTime.Parse("17:20")));
-      Assert.IsTrue(TradingMacro.IsTradingHour2("[['17:00','9:00']]", DateTime.Parse("9:00")));
-      Assert.IsFalse(TradingMacro.IsTradingHour2("[['17:00','9:00']]", DateTime.Parse("16:20")));
-      Assert.IsFalse(TradingMacro.IsTradingHour2("[['17:00','9:00']]", DateTime.Parse("9:20")));
+      Assert.IsTrue(TradingMacro.IsTradingHour2Impl((range, DateTime.Parse("17:20"))));
+      Assert.IsTrue(TradingMacro.IsTradingHour2Impl((range, DateTime.Parse("9:00"))));
+      Assert.IsFalse(TradingMacro.IsTradingHour2Impl((range, DateTime.Parse("16:20"))));
+      Assert.IsFalse(TradingMacro.IsTradingHour2Impl((range, DateTime.Parse("9:20"))));
     }
 
     [TestMethod]

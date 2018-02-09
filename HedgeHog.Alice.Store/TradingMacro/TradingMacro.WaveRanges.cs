@@ -10,8 +10,6 @@ using HedgeHog.Bars;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     double waveWidthAvgIterCnt = 2000;
-    double _lastTotalMinuteStDev = double.MaxValue;
-    int _lastTotalMinuteStDevStep = 1;
 
     private void ScanForWaveRanges2(List<Rate> rates) {
       try {

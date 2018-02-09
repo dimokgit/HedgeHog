@@ -100,6 +100,7 @@ namespace HedgeHog.Alice.Store {
     public bool IsTakeBack { get; set; }
     public bool IsTrender { get; set; }
     public bool IsTurnOnOnly { get; set; }
+    public bool HedgedTrading { get; set; }
     public bool LimitProfitByRatesHeight { get; set; }
     public bool TradingRatioByPMC { get; set; }
     public bool UseFlatTrends { get; set; }

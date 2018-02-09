@@ -13,6 +13,9 @@ using static HedgeHog.IEnumerableCore;
 using static HedgeHog.MonoidsCore;
 using static HedgeHog.Core.JsonExtensions;
 using System.Runtime.CompilerServices;
+using System.Reactive;
+using System.Reactive.Subjects;
+using System.Diagnostics;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -116,11 +119,39 @@ namespace HedgeHog.Alice.Store {
        from volt in tm.GetLastVolt(GetVoltage2)
        from vh in tm.GetVoltage2High()
        from vl in tm.GetVoltage2Low()
-       select  volt > vh ? above : volt < vl ? below : TradeDirections.None
+       select volt > vh ? above : volt < vl ? below : TradeDirections.None
       ).Scan((a, td) => a & td).LastOrDefault();
 
     [TradeConditionHedge]
     public TradeConditionDelegate HOk => () => TradeDirections.Both;
+
+    private static T XOR<T>((T p, T n) x, Func<T, T> a) => a(x.p.Equals(x.n) ? default : x.p);
+    [TradeConditionShouldClose]
+    public TradeConditionDelegate VltOutInOk {
+      get {
+        var ok = VltOutInImpl(this, 0, TradeDirections.Down, TradeDirections.Up);
+        return () => ok();
+      }
+    }
+
+    private static TradeConditionDelegate VltOutInImpl(TradingMacro tm, int voltIndex, TradeDirections above, TradeDirections below) {
+      Subject<TradeDirections> VltOutInSubject = new Subject<TradeDirections>();
+      var td = TradeDirections.None;
+      var o = VltOutInSubject
+        .Scan((p: td, n: td), (p, n) => ((p.n, n)))
+        .Subscribe(x => XOR(x, i => td = i | td));
+      return () => {
+        var hs = from max in tm.GetVoltHighByIndex(voltIndex)
+                 from min in tm.GetVoltLowByIndex(voltIndex)
+                 from v in tm.GetLastVoltByIndex(voltIndex)
+                 let offset = (max - min) / 4
+                 where v.Between(max - offset, min + offset)
+                 select v.SideEffect(_ => td = TradeDirections.None);
+        hs.Any();
+        VltOutInSubject.OnNext(VoltOutImpl(tm, voltIndex, above,below).SingleOrDefault());
+        return td;
+      };
+    }
 
     public TradeConditionDelegate VltOuttOk => () => VoltOutImpl(this, 0, TradeDirections.Down, TradeDirections.Up).SingleOrDefault();
     public TradeConditionDelegate VltOut2tOk => () => VoltOutImpl(this, 1, TradeDirections.Down, TradeDirections.Up).SingleOrDefault();
@@ -133,6 +164,7 @@ namespace HedgeHog.Alice.Store {
 
     public TradeConditionDelegate VltInOk => () => VoltInImpl(this, 0).SingleOrDefault();
     public TradeConditionDelegate VltIn2Ok => () => VoltInImpl(this, 1).SingleOrDefault();
+
     private static IEnumerable<TradeDirections> VoltOutImpl(TradingMacro tm, int voltIndex, TradeDirections above, TradeDirections below) =>
        from volt in tm.GetLastVoltByIndex(voltIndex)
        from vh in tm.GetVoltHighByIndex(voltIndex)
@@ -143,7 +175,7 @@ namespace HedgeHog.Alice.Store {
        from volt in tm.GetLastVoltByIndex(voltIndex)
        from vh in tm.GetVoltHighByIndex(voltIndex)
        from vl in tm.GetVoltLowByIndex(voltIndex)
-       select vh == vl ? TradeDirections.Both : volt.Between(vl,vh) ?TradeDirections.Both : TradeDirections.None;
+       select vh == vl ? TradeDirections.Both : volt.Between(vl, vh) ? TradeDirections.Both : TradeDirections.None;
 
     public TradeConditionDelegate PriceTipOk {
       get {
@@ -177,19 +209,19 @@ namespace HedgeHog.Alice.Store {
     }
 
     /// <summary>
-    /// Vomt range cross count
+    /// Volt range cross count
     /// </summary>
-    public TradeConditionDelegate V2RCCOk {
-      get {
-        return () =>
-          (from max in GetVoltage2High()
-           from min in GetVoltage2Low()
-           from count in UseRates(rates => rates.Select(GetVoltage2).CrossRange(min, max))
-           where count < 2
-           select TradeDirections.Both
-          ).SingleOrDefault();
-      }
+    public TradeConditionDelegate VRCCOk => () => VoltRangeCrossCount(0).Select(_ => TradeDirections.Both).SingleOrDefault();
+
+    public IEnumerable<Unit> VoltRangeCrossCount(int voltIndex) {
+      return
+        from max in GetVoltHighByIndex(voltIndex)
+        from min in GetVoltLowByIndex(voltIndex)
+        from count in UseRates(rates => rates.Select(GetVoltByIndex(voltIndex)).CrossRange(min, max))
+        where count > 1
+        select Unit.Default;
     }
+
 
 
     #region Fresh
@@ -795,6 +827,22 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+
+    public TradeConditionDelegate SmallWaveOk => () => IsWaveSmall().Select(_ => TradeDirections.Both).FirstOrDefault();
+    public TradeConditionDelegate MidWaveOk => () => IsWaveMedium().Select(_ => TradeDirections.Both).FirstOrDefault();
+    private IEnumerable<WaveRange> IsWaveSmall() =>
+      from tm in TradingMacroOther()
+      from w in tm.WaveRanges.Take(1)
+      let ws = tm.WaveRangeSum
+      where w.StDev < ws.StDev
+      select w;
+    private IEnumerable<WaveRange> IsWaveMedium() =>
+      from tm in TradingMacroOther()
+      from w in tm.WaveRanges.Take(1)
+      let ws = tm.WaveRangeSum
+      let wa = tm.WaveRangeAvg
+      where w.StDev.Between(wa.StDev, ws.StDev)
+      select w;
 
     public TradeConditionDelegate InWaveOk {
       get {
@@ -1464,9 +1512,9 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate VoltBelow2Ok => () => VoltBelowImpl(1);
 
     private TradeDirections VoltBelowImpl(int voltIndex) => (from volt in GetLastVoltByIndex(voltIndex)
-                                                         from vl in GetVoltLowByIndex(voltIndex)
-                                                         where volt <= vl
-                                                         select TradeDirections.Both
+                                                             from vl in GetVoltLowByIndex(voltIndex)
+                                                             where volt <= vl
+                                                             select TradeDirections.Both
                                                          ).SingleOrDefault();
     private TradeDirections VoltsBelowByTrendLines(TL tls) {
       var d = RatesArray[RatesArray.Count - tls.Count].StartDate;
@@ -1475,7 +1523,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegate VoltAboveOk => () 
+    public TradeConditionDelegate VoltAboveOk => ()
       => GetLastVolt(volt => VoltageHigh(vh => volt > vh)).Concat().Select(TradeDirectionByBool).SingleOrDefault();
     public TradeConditionDelegate VoltAbove2Ok => () => VoltAboveImpl(1);
 
@@ -2443,7 +2491,7 @@ namespace HedgeHog.Alice.Store {
       if(!IsRatesLengthStableGlobal()) return;
       if(!IsTrader) return;
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
-      if(IsPairHedged && BarsCountCalc == RatesArray.Count) {
+      if(IsHedgedTrading && BarsCountCalc == RatesArray.Count) {
         if(IsTradingActive)
           TradeConditionsEval()
             .Select(eval => new { eval, open = true })
@@ -2523,6 +2571,24 @@ namespace HedgeHog.Alice.Store {
         _isTurnOnOnly = value;
       }
     }
+
+    //public bool  => !PairHedge.IsNullOrWhiteSpace() && (TradeConditionsHedge().Any() || TradingMacroTrader(tm => tm.TradeConditionsHedge()).Concat().Any());
+
+    #region IsHedgedTrading
+    private bool _hedgedTrading;
+    [Category(categoryActiveYesNo)]
+    [WwwSetting(wwwSettingsTradingConditions)]
+    public bool HedgedTrading {
+      get { return _hedgedTrading; }
+      set {
+        if(_hedgedTrading != value) {
+          _hedgedTrading = value;
+          OnPropertyChanged(nameof(HedgedTrading));
+        }
+      }
+    }
+
+    #endregion
 
     public IEnumerable<TradeDirections> TradeConditionsEvalStartDate() {
       if(!IsTrader)
