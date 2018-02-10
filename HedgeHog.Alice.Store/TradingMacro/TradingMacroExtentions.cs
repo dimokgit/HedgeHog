@@ -3723,6 +3723,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           return ScanCorridorBy12345;
         case ScanCorridorFunction.AllFive:
           return ScanCorridorByAll5;
+        case ScanCorridorFunction.M1Wave:
+          return ScanCorridorByM1Wave;
         case ScanCorridorFunction.Fft:
           return ScanCorridorByFft;
         case ScanCorridorFunction.StDevSplits:

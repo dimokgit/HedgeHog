@@ -43,7 +43,7 @@ namespace HedgeHog.Alice.Store {
 
 
     static double[] EMPTY_DOUBLE = new double[0];
-    public IEnumerable<T> VoltageHigh<T>(Func<double,T> func) => GetVoltageHigh().Select(func);
+    public IEnumerable<T> VoltageHigh<T>(Func<double, T> func) => GetVoltageHigh().Select(func);
     public Func<IList<double>> GetVoltageHigh = () => EMPTY_DOUBLE;
     public IEnumerable<T> VoltageAverage<T>(Func<double, T> func) => GetVoltageAverage().Select(func);
     public Func<IList<double>> GetVoltageAverage = () => EMPTY_DOUBLE;
@@ -275,7 +275,7 @@ namespace HedgeHog.Alice.Store {
       public static RateGroup Create(IList<RI> range) => new RateGroup(range);
     }
     #region GroupRatesCount
-    private int _GroupRatesCount=2000;
+    private int _GroupRatesCount = 2000;
     [Category(categoryCorridor)]
     [WwwSetting(wwwSettingsTrends)]
     public int GroupRatesCount {
@@ -447,6 +447,32 @@ namespace HedgeHog.Alice.Store {
         .Where(b => b)
         .Take(1)
         .ForEach(_ => _mustResetAllTrendLevels = true);
+
+      var ratesForCorr = _ratesArrayCoeffs.Take(1)
+        .Select(_ => {
+          var redRates = RatesArray.GetRange(RatesArray.Count - 2, 2);
+          redRates.Reverse();
+          WaveShort.Rates = redRates;
+          return new { redRates, trend = new { StDev = 0, Coeffs = new[] { 0.0, 0.0 } } };
+        })
+      .ToArray();
+
+      GetShowVoltageFunction()();
+      GetShowVoltageFunction(VoltageFunction2, 1)();
+      return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();
+    }
+
+    private CorridorStatistics ScanCorridorByM1Wave(List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var xxx = (from ra in UseRates(ra => ra)
+                 from r in ra.Take(1)
+                 from wrs in TradingMacroM1(tm => tm.WaveRanges)
+                 from wr in wrs.TakeWhile(wr => wr.StartDate >= r.StartDate).IfEmpty(() => wrs.Take(1))
+                 orderby wr.Distance descending
+                 select ra.SkipWhile(r => r.StartDate < wr.StartDate).TakeWhile(r => r.StartDate <= wr.EndDate)
+                 )
+                 .Take(1)
+                 .Concat();
+      TrendLines2 = Lazy.Create(() => CalcTrendLines(xxx.ToList(), tl => tl), TrendLines2.Value, exc => Log = exc);
 
       var ratesForCorr = _ratesArrayCoeffs.Take(1)
         .Select(_ => {

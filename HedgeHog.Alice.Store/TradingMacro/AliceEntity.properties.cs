@@ -146,8 +146,8 @@ namespace HedgeHog.Alice.Store {
     public string TestPrevSession {
       get { return _prevSession; }
       set {
-        _prevSession = value;
-        OnPropertyChanged(() => TestPrevSession);
+        _prevSession = value ?? "";
+        OnPropertyChanged(nameof(TestPrevSession));
       }
     }
     int _testBalance = 50000;

@@ -75,6 +75,7 @@ namespace HedgeHog.Alice.Store {
     OneToFour = 6,
     OneToFive = 7,
     AllFive = 8,
+    M1Wave = 9,
   }
   public enum TrailingWaveMethod {
     SimpleMove = 5,
