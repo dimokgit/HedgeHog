@@ -1680,7 +1680,7 @@ namespace HedgeHog.Alice.Store {
         .Add(showBBSD ? (object)new { BoilBand = _boilingerStDev.Value.Select(t => string.Format("{0:n2}:{1:n2}", InPips(t.Item1), InPips(t.Item2))) } : new { })
         //.Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         //.Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
-        .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { })
+        .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk),nameof(PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { })
         .Add(new { HistVol = $"{HV(TradingMacroM1().Single())}" })
         .Add(new { HistVolUp = $"{HVU(TradingMacroM1().Single())}" })
         .Add(new { HistVolDn = $"{HVD(TradingMacroM1().Single())}" })
@@ -2353,9 +2353,9 @@ namespace HedgeHog.Alice.Store {
     #region Cross Handlers
 
     [TradeConditionTurnOff]
-    public TradeConditionDelegateHide WCOk {
+    public TradeConditionDelegate WCOk {
       get {
-        return () => TradeDirectionByBool(CalculateTradingDistance() < StDevByHeight * 3);
+        return () => TradeDirectionByBool(M1WaveRatio().Any());
       }
     }
     [TradeConditionTurnOff]

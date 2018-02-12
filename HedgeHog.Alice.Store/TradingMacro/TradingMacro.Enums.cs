@@ -39,7 +39,8 @@ namespace HedgeHog.Alice {
     GrossV,
     RatioDiff,
     VoltDrv,
-    HVP
+    HVP,
+    M1WR
   }
 }
 namespace HedgeHog.Alice.Store {
