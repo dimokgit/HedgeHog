@@ -185,7 +185,7 @@ namespace IBApp {
       var posMsg = new PositionMessage("", contract, position, averageCost);
       if(position == 0) {
         OpenTrades
-         .Where(IsEqual(posMsg))
+         .Where(t => t.Pair == contract.LocalSymbol)
          .ToList()
          .ForEach(ot => OpenTrades.Remove(ot)
          .SideEffect(_ => _verbous(new { RemovedPosition = new { ot.Pair, ot.IsBuy, ot.Lots } })));
@@ -206,7 +206,6 @@ namespace IBApp {
       }
 
       TraceTrades("Positions: ", OpenTrades);
-      FetchMMRs();
     }
     Trade TradeFromPosition(Contract contract, double position, double avgCost) {
       var st = IbClient.ServerTime;
