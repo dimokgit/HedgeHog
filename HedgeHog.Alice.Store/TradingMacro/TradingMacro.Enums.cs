@@ -39,7 +39,7 @@ namespace HedgeHog.Alice {
     GrossV,
     RatioDiff,
     VoltDrv,
-    HVP,
+    HV,
     M1WR
   }
 }

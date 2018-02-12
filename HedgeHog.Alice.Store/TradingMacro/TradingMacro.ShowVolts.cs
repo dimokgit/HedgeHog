@@ -103,8 +103,8 @@ namespace HedgeHog.Alice.Store {
           if(voltIndex == 0)
             throw new Exception($"{VoltageFunction.VoltDrv} can only be used as second voltage.");
           return ShowVoltsByVoltsDerivative;
-        case HedgeHog.Alice.VoltageFunction.HVP:
-          return () => ShowVoltsByHVP(voltIndex);
+        case HedgeHog.Alice.VoltageFunction.HV:
+          return () => ShowVoltsByHV(voltIndex);
       }
       throw new NotSupportedException(VoltageFunction + " not supported.");
     }
@@ -415,14 +415,14 @@ namespace HedgeHog.Alice.Store {
       ShowVolts(TradesManager.GetTrades().Net2(), 0, GetVoltage2, SetVoltage2);
       return null;
     }
-    CorridorStatistics ShowVoltsByHVP(int voltIndex) {
+    CorridorStatistics ShowVoltsByHV(int voltIndex) {
       if(UseCalc())
-        (from t in GetHedgedTradingMacros(Pair)
-         from hv in t.tm.HistoricalVolatility()
-         from hvh in t.tmh.HistoricalVolatility()
-         let hvs = hv + hvh
-         select (hv / hvs) * 100
-         ).ForEach(hvp => SetVolts(hvp, voltIndex));
+        (from tl in Trends.Reverse()
+         where !tl.IsEmpty
+         select RatesArray.GetRange(tl.Count).Select(_priceAvg).HistoricalVolatility()
+         )
+         .Take(1)
+         .ForEach(hvp => SetVolts(hvp * 100000, voltIndex));
       return null;
     }
     CorridorStatistics ShowVoltsByVoltsDerivative() {
