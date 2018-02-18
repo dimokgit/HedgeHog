@@ -372,8 +372,8 @@ namespace HedgeHog.Alice.Store {
 
     public IEnumerable<int> TMCorrelation(TradingMacro tmOther)
       => new[] { HedgeCorrelation }.Where(i => i != 0)
-      .Concat(GetHedgeCorrelation(Pair, tmOther.Pair))
-      .Concat(TMCorrelationImpl((this, tmOther))).Take(1);
+      .IfEmpty(() => GetHedgeCorrelation(Pair, tmOther.Pair))
+      .IfEmpty(() => TMCorrelationImpl((this, tmOther))).Take(1);
     //.IfEmpty(() => Log = new Exception(new { pairThis = Pair, pairOther = tmOther.Pair, correlation = "is empty" } + ""));
     Func<(TradingMacro tmThis, TradingMacro tmOther), int[]> TMCorrelationImpl =
       new Func<(TradingMacro tmThis, TradingMacro tmOther), int[]>(t
@@ -422,6 +422,7 @@ namespace HedgeHog.Alice.Store {
          select RatesArray.GetRange(tl.Count).Select(_priceAvg).HistoricalVolatility()
          )
          .Take(1)
+         .IfEmpty(()=>throw new Exception($"{Pair}:{BarPeriod}:{nameof(ShowVoltsByHV)}: {nameof(Trends)} are all empty"))
          .ForEach(hvp => SetVolts(hvp * 100000, voltIndex));
       return null;
     }

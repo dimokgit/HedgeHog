@@ -388,7 +388,25 @@ namespace HedgeHog.Alice.Client {
       return TraderModel.LoadOffers().Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong.Round(3), mmrSell = o.MMRShort.Round(3) }).ToArray();
     }
     public object[] ReadOffers() {
-      return TradesManagerStatic.dbOffers.Select(o => new { pair = o.Pair, mmrBuy = o.MMRLong.Round(3), mmrSell = o.MMRShort.Round(3) }).ToArray();
+      var equity = remoteControl.Value.MasterModel.AccountModel.Equity;
+      return TradesManagerStatic.dbOffers.Select(o => new {
+        pair = o.Pair,
+        mmrBuy = o.MMRLong.Round(3),
+        mmrSell = o.MMRShort.Round(3),
+        pipBuy = TradeStats(o.Pair, true).SingleOrDefault(),
+        pipSel = TradeStats(o.Pair, false).SingleOrDefault()
+      }).ToArray();
+
+      IEnumerable<string> TradeStats(string pair, bool isBuy) =>
+        UseTraderMacro(pair, tm =>
+        (tm, lot: tm.GetLotsToTrade(equity, TradesManagerStatic.GetMMR(tm.Pair, isBuy), 1)))
+        .Select(t => (
+          t.lot,
+          t.tm,
+          pip: TradesManagerStatic.PipAmount(t.tm.Pair, t.lot, (t.tm.CurrentPrice?.Average).GetValueOrDefault(), TradesManagerStatic.GetPointSize(t.tm.Pair))))
+        .Select(t => (t.pip, h: t.tm.RatesHeightInPips * t.pip, hv: t.tm.HistoricalVolatility().SingleOrDefault()))
+        .Select(t => $"{t.hv.AutoRound2(3)},{t.pip.AutoRound2("$", 3)},{t.h.ToString("c0")}");
+
     }
     public void UpdateMMRs(string pair, double mmrLong, double mmrShort) {
       pair = pair.ToUpper();
@@ -1034,6 +1052,12 @@ namespace HedgeHog.Alice.Client {
     public bool[] ToggleCanTrade(string pair, bool isBuy) {
       return UseTradingMacro(pair, tm => tm.ToggleCanTrade(isBuy)).ToArray();
     }
+    [BasicAuthenticationFilter]
+    public void SetHedgedPair(string pair, string pairHedge) => UseTraderMacro(pair, tm => {
+      if(pair != pairHedge) tm.PairHedge = pairHedge;
+    });
+    public string ReadHedgedPair(string pair) => UseTraderMacro(pair, tm => tm.PairHedge).SingleOrDefault();
+
     public void SetCanTrade(string pair, bool canTrade, bool isBuy) {
       GetTradingMacro(pair).ForEach(tm => {
         tm.BuySellLevels.ForEach(sr => sr.InManual = canTrade);

@@ -48,8 +48,11 @@ namespace IBApp {
       => Trade.Create(this, symbol, GetPointSize(symbol), GetBaseUnitSize(symbol), null);
 
     private void OnManagedAccounts(string obj) {
-      if(_accountManager != null)
+      if(_accountManager != null) {
         Trace(new { _accountManager, isNot = (string)null });
+        _accountManager.Dispose();
+        //return;
+      }
       var ma = obj.Splitter('.').Where(a => _ibClient.ManagedAccount.IsNullOrWhiteSpace() || a == _ibClient.ManagedAccount).SingleOrDefault();
       if(ma == null)
         throw new Exception(new { _ibClient.ManagedAccount, error = "Not Found" } + "");
@@ -74,7 +77,7 @@ namespace IBApp {
 
 
     #region Methods
-    public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1000 : 1;
+    public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1 : 1;
     public double Leverage(string pair, bool isBuy) => GetBaseUnitSize(pair) / GetMMR(pair, isBuy);
     public Trade TradeFactory(string pair) => Trade.Create(this, pair, GetPipSize(pair), GetBaseUnitSize(pair), CommissionByTrade);
 

@@ -286,6 +286,11 @@
       var newUrl = location.href.replace(location.search, "") + "?pair=" + pc;
       location = newUrl;
     });
+    this.pairHedgedCurrent = ko.observable(pair);
+    this.pairHedgedCurrent.subscribe(function (ph) {
+      serverCall("setHedgedPair", [pair, ph]);
+    });
+
     this.isVirtual = ko.observable(true);
     var inPause = this.inPause = ko.observable(true);
     this.togglePause = togglePause;
@@ -1099,7 +1104,7 @@
       var shouldUpdateData = true;
       if (response.isTrader)
         commonChartParts.tradeLevels = response.tradeLevels;
-      var chartData2 = chartDataFactory(ratesAll, trends, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross(),response.tpsHigh, response.tpsLow, response.canBuy, response.canSell, response.waveLines);
+      var chartData2 = chartDataFactory(ratesAll, trends, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTradesLocal, self.openTradeGross(), response.tpsHigh, response.tpsLow, response.canBuy, response.canSell, response.waveLines);
       chartData2.com = com;
       chartData2.com2 = com2;
       chartData2.com3 = com3;
@@ -1494,7 +1499,7 @@
       return chartDataFactory(chartNum ? lineChartData2 : lineChartData, [{ dates: [] }, {}, {}, {}], null, null, null, false, false, chartNum, false, 0);
     }
     function dialogCollapse(shouldToggle) {
-      return function() {
+      return function () {
         $(this).prev().click(function () {
           if (shouldToggle()) $(this).next().toggle();
         });
@@ -1652,6 +1657,7 @@
         serverCall("readEnum", ["Strategies"], function (enums) {
           dataViewModel.strategyType(mapEnumsForSettings(enums));
         });
+        serverCall("readHedgedPair", [pair], function (hp) { dataViewModel.pairHedgedCurrent(hp); });
 
         //#endregion 
         //#region read trade-related data

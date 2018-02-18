@@ -18,7 +18,7 @@ using OpenOrderHandler = System.Action<int, IBApi.Contract, IBApi.Order, IBApi.O
 using static IBApp.AccountManager;
 
 namespace IBApp {
-  public partial class AccountManager :DataManager {
+  public partial class AccountManager :DataManager, IDisposable {
     public enum OrderCancelStatuses { Cancelled };
     public enum OrderDoneStatuses { Filled };
     public enum OrderHeldReason { locate };
@@ -62,6 +62,7 @@ namespace IBApp {
     #endregion
 
     #region Ctor
+    List<IDisposable> _strams = new List<IDisposable>();
     public AccountManager(IBClientCore ibClient, string accountId, Func<string, Trade> createTrade, Func<Trade, double> commissionByTrade, Action<object> onMessage) : base(ibClient, ACCOUNT_ID_BASE) {
       CommissionByTrade = commissionByTrade;
       CreateTrade = createTrade;
@@ -80,9 +81,9 @@ namespace IBApp {
       IbClient.UpdateAccountValue += OnUpdateAccountValue;
       IbClient.UpdatePortfolio += OnUpdatePortfolio;
 
-      OpenTrades.ItemsAdded.Subscribe(RaiseTradeAdded);
-      OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved);
-      ClosedTrades.ItemsAdded.Subscribe(RaiseTradeClosed);
+      OpenTrades.ItemsAdded.Subscribe(RaiseTradeAdded).SideEffect(s => _strams.Add(s));
+      OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved).SideEffect(s => _strams.Add(s));
+      ClosedTrades.ItemsAdded.Subscribe(RaiseTradeClosed).SideEffect(s => _strams.Add(s));
       ibClient.Error += OnError;
 
       #region Observables
@@ -112,27 +113,31 @@ namespace IBApp {
 
       #endregion
       #region Subscibtions
-      _positionStream = posObs
+      posObs
         .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos } }))
-        .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost));
-      _openOrderStream = ooObs
+        .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost))
+        .SideEffect(s => _strams.Add(s));
+      ooObs
         .DistinctUntilChanged(a => a.orderId)
         //.Do(x => _verbous("* " + new { OpenOrder = new { x.contract.LocalSymbol, x.order.OrderId } }))
-        .Subscribe(a => OnOrderStartedImpl(a.orderId, a.contract, a.order, a.orderState));
-      _orderStatusStream = osObs
+        .Subscribe(a => OnOrderStartedImpl(a.orderId, a.contract, a.order, a.orderState))
+        .SideEffect(s => _strams.Add(s));
+      osObs
         .Select(t => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() })
         .DistinctUntilChanged()
         .Do(x => _verbous("* " + new { OrderStatus = x }))
         .Do(t => _orderContracts.Where(oc => oc.Key == t.orderId && t.status != "Inactive").ForEach(oc => (t.status, t.filled, t.remaining, t.isDone).With(os => _orderStatuses.AddOrUpdate(oc.Value.contract.Symbol, i => os, (i, u) => os))))
         .Where(o => (o.status, o.remaining).IsOrderDone())
-        .Subscribe(o => RaiseOrderRemoved(o.orderId));
-      _portfolioStream = portObs
+        .Subscribe(o => RaiseOrderRemoved(o.orderId))
+        .SideEffect(s => _strams.Add(s));
+      portObs
         .Select(t => new { t.contract.LocalSymbol, t.position, t.unrealisedPNL })
         .Take(1)
-        .Subscribe(x => _verbous("* " + new { Portfolio = x }), () => _verbous($"{nameof(_portfolioStream)} is done."));
+        .Subscribe(x => _verbous("* " + new { Portfolio = x }), () => _verbous($"portfolioStream is done."))
+        .SideEffect(s => _strams.Add(s));
       #endregion
 
-      IbClient.clientSocket.reqAllOpenOrders();
+      IbClient.ClientSocket.reqAllOpenOrders();
 
       _defaultMessageHandler(nameof(AccountManager) + " is ready");
     }
@@ -237,11 +242,44 @@ namespace IBApp {
           var order = oc.order + "";
           _verbous(new { contract, code, error, order });
           _defaultMessageHandler("Request Global Cancel");
-          IbClient.clientSocket.reqGlobalCancel();
+          IbClient.ClientSocket.reqGlobalCancel();
           break;
       }
     }
     #endregion
+
+    #region IDisposable Support
+    private bool disposedValue = false; // To detect redundant calls
+
+    protected virtual void Dispose(bool disposing) {
+      if(!disposedValue) {
+        if(disposing) {
+          // TODO: dispose managed state (managed objects).
+          _strams.ForEach(s=> s.Dispose());
+        }
+
+        // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+        // TODO: set large fields to null.
+
+        disposedValue = true;
+      }
+    }
+
+    // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+    // ~AccountManager() {
+    //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+    //   Dispose(false);
+    // }
+
+    // This code added to correctly implement the disposable pattern.
+    public void Dispose() {
+      // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+      Dispose(true);
+      // TODO: uncomment the following line if the finalizer is overridden above.
+      // GC.SuppressFinalize(this);
+    }
+    #endregion
+
 
     #region Events
 
@@ -279,6 +317,7 @@ namespace IBApp {
       }
     }
     protected void RaiseTradeRemoved(Trade trade) {
+      ClosedTrades.Add(trade);
       TradeRemovedEvent?.Invoke(this, new TradeEventArgs(trade));
     }
     #endregion
@@ -436,11 +475,6 @@ namespace IBApp {
     #region WhatIf Subject
     object _WhatIfSubjectLocker = new object();
     ISubject<Action> _WhatIfSubject;
-    private IDisposable _positionStream;
-    private IDisposable _openOrderStream;
-    private IDisposable _orderStatusStream;
-    private IDisposable _portfolioStream;
-
     ISubject<Action> WhatIfSubject {
       get {
         lock(_WhatIfSubjectLocker)

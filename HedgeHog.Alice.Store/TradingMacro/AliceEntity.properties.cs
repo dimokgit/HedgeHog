@@ -2020,6 +2020,7 @@ namespace HedgeHog.Alice.Store {
         tm.BarsCountMax = BarsCountMax;
         tm.RatesMinutesMin = RatesMinutesMin;
         tm.RatesLengthBy = RatesLengthBy;
+        tm.HedgeCorrelation = HedgeCorrelation;
       });
     }
     private string _pairHedge = "";

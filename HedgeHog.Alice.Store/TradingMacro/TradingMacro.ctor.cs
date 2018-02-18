@@ -53,7 +53,8 @@ namespace HedgeHog.Alice.Store {
         tm => tm.BarsCountMax,
         tm => tm.PairHedge,
         tm => tm.RatesLengthBy,
-        (v1, rls, v3, ph,rlb) => true ).Subscribe(_ => SyncHedgedPair());
+        tm => tm.HedgeCorrelation,
+        (v1, rls, v3, ph, rlb, hc) => true).Subscribe(_ => SyncHedgedPair());
       this.WhenAnyValue(
         tm => tm.PairHedge
         )
@@ -76,8 +77,8 @@ namespace HedgeHog.Alice.Store {
             new[] { BuyLevel, SellLevel }.ForEach(sr => {
               sr.ResetPricePosition();
               sr.CanTrade = true;
-            //sr.InManual = true;
-          });
+              //sr.InManual = true;
+            });
             DispatcherScheduler.Current.Schedule(5.FromSeconds(), () => nc.AutoTrade = false);
           } catch(Exception exc) { Log = exc; }
         });

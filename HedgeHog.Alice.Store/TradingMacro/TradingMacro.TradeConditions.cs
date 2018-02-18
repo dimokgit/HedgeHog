@@ -148,7 +148,7 @@ namespace HedgeHog.Alice.Store {
                  where v.Between(max - offset, min + offset)
                  select v.SideEffect(_ => td = TradeDirections.None);
         hs.Any();
-        VltOutInSubject.OnNext(VoltOutImpl(tm, voltIndex, above,below).SingleOrDefault());
+        VltOutInSubject.OnNext(VoltOutImpl(tm, voltIndex, above, below).SingleOrDefault());
         return td;
       };
     }
@@ -1680,10 +1680,9 @@ namespace HedgeHog.Alice.Store {
         .Add(showBBSD ? (object)new { BoilBand = _boilingerStDev.Value.Select(t => string.Format("{0:n2}:{1:n2}", InPips(t.Item1), InPips(t.Item2))) } : new { })
         //.Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         //.Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
-        .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk),nameof(PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { })
-        .Add(new { HistVol = $"{HV(TradingMacroM1().Single())}" })
-        .Add(new { HistVolUp = $"{HVU(TradingMacroM1().Single())}" })
-        .Add(new { HistVolDn = $"{HVD(TradingMacroM1().Single())}" })
+        .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk), nameof(PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { })
+        .Add(new { HistVol = $"{HV(this)}" })
+        .Add(new { HistVolM = $"{HV(TradingMacroM1().Single())}" })
         //.Add(HVP(this).Select(hvp => (object)new { HistVolDif = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVP).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         ;
       }
@@ -1693,7 +1692,7 @@ namespace HedgeHog.Alice.Store {
       .SingleOrDefault();
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
-      double HV(TradingMacro tm) => tm.HistoricalVolatility().SingleOrDefault().AutoRound2(2);
+      double HV(TradingMacro tm) => tm.HistoricalVolatility().SingleOrDefault().AutoRound2(3);
       double HVU(TradingMacro tm) => tm.HistoricalVolatilityUp().SingleOrDefault().AutoRound2(2);
       double HVD(TradingMacro tm) => tm.HistoricalVolatilityDown().SingleOrDefault().AutoRound2(2);
       double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();

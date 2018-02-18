@@ -614,6 +614,7 @@
           <li class="nav-divider">|</li>
           <li>
             <select data-bind="options:pairs,value:pairCurrent"></select>
+            <select data-bind="options:pairs,value:pairHedgedCurrent"></select>
           </li>
           <!--#region Sample-->
           <li style="display:none">
@@ -789,7 +790,7 @@
   <!--#endregion-->
   <!--#region Offers-->
   <div class="modal" data-bind="elementer:offersDialog" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
+    <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
@@ -807,6 +808,8 @@
                 <td data-bind="text:pair"></td>
                 <td><input data-bind="value:mmrBuy,event:{change:$parent.updateOffer}" /></td>
                 <td><input data-bind="value:mmrSell,event:{change:$parent.updateOffer}" /></td>
+                <td data-bind="text:pipBuy"></td>
+                <td data-bind="text:pipSel"></td>
               </tr>
             </tbody>
           </table>

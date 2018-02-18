@@ -2210,7 +2210,7 @@ namespace HedgeHog.Alice.Store {
             if(IsInVirtualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
             #endregion
-            if(BarPeriod > BarsPeriodType.t1 && !isHedgeChild && !IsPairHedged)
+            if(BarPeriod > BarsPeriodType.t1)
               ScanForWaveRanges2(RatesArray);
 
             OnPriceSpreadAverage(()

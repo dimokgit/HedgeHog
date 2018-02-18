@@ -7,8 +7,7 @@ using System.Text;
 using IBApi;
 using System.Threading.Tasks;
 
-public class IBClient : EWrapper {
-  internal EClientSocket clientSocket;
+public class IBClient :EWrapper {
   private int nextOrderId;
   private int clientId;
 
@@ -95,13 +94,10 @@ public class IBClient : EWrapper {
   }
 
   public IBClient(EReaderSignal signal) {
-    clientSocket = new EClientSocket(this, signal);
+    ClientSocket = new EClientSocket(this, signal);
   }
 
-  public EClientSocket ClientSocket {
-    get { return clientSocket; }
-    private set { clientSocket = value; }
-  }
+  public EClientSocket ClientSocket { get; private set; }
 
   public int NextOrderId {
     get { return nextOrderId; }

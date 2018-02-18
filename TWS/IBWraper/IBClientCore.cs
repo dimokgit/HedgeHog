@@ -15,6 +15,7 @@ using HedgeHog.Core;
 using System.Collections.Specialized;
 using System.Configuration;
 using MongoDB.Bson;
+using System.Reactive.Linq;
 
 public class IBClientCore :IBClient, ICoreFX {
   class Configer {
@@ -184,7 +185,7 @@ public class IBClientCore :IBClient, ICoreFX {
     if(IsWarning(errorCode)) return;
     if(exc is System.Net.Sockets.SocketException && !ClientSocket.IsConnected())
       RaiseLoginError(exc);
-    if(exc != null)
+    if(exc != null) 
       Trace(exc);
     else
       Trace(new { IBCC = new { id, error = errorCode, message } });
@@ -262,13 +263,40 @@ public class IBClientCore :IBClient, ICoreFX {
       host = "127.0.0.1";
     try {
       ClientId = clientId;
+
+      if(ClientSocket.IsConnected())
+        throw new Exception(nameof(ClientSocket) + " is already connected");
       ClientSocket.eConnect(host, port, ClientId);
+      if(!ClientSocket.IsConnected()) return;
 
       var reader = new EReader(ClientSocket, _signal);
 
       reader.Start();
 
-      new Thread(() => { while(ClientSocket.IsConnected()) { _signal.waitForSignal(); reader.processMsgs(); } }) { IsBackground = true }.Start();
+      Task.Factory.StartNew(() => {
+        while(ClientSocket.IsConnected() && !reader.MessageQueueThread.IsCompleted) {
+          _signal.waitForSignal();
+          reader.processMsgs();
+        }
+      }, TaskCreationOptions.LongRunning)
+      .ContinueWith(t => {
+        Observable.Interval(TimeSpan.FromSeconds(5))
+        .Select(_ => {
+          try {
+            RaiseError(new Exception(new { ClientSocket = new { IsConnected = ClientSocket.IsConnected() } } + ""));
+            ReLogin();
+            if(ClientSocket.IsConnected()) {
+              RaiseLoggedIn();
+              return true;
+            };
+          } catch {
+          }
+          return false;
+        })
+        .TakeWhile(b => b == false)
+        .Subscribe();
+      });
+
     } catch(Exception exc) {
       //HandleMessage(new ErrorMessage(-1, -1, "Please check your connection attributes.") + "");
       RaiseLoginError(exc);
@@ -343,6 +371,7 @@ public class IBClientCore :IBClient, ICoreFX {
   }
 
   public bool ReLogin() {
+    _signal.issueSignal();
     Disconnect();
     Connect(_port, _host, ClientId);
     return true;

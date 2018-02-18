@@ -827,8 +827,8 @@ namespace HedgeHog.Alice.Client {
           try {
             if(tm.IsActive && tm.HasRates && !IsInVirtualTrading) {
               if(!_isMinimized) {
-                var charter = GetCharter(tm);
-                charter.Dispatcher.Invoke(new Action(() => {
+                RxApp.MainThreadScheduler.Schedule(() => {
+                  var charter = GetCharter(tm);
                   charter.LineAvgAsk = tm.CurrentPrice.Ask;
                   charter.LineAvgBid = tm.CurrentPrice.Bid;
                   var high = tm.CalculateLastPrice(tm.RateLast, tm.ChartHighPrice());
@@ -838,7 +838,7 @@ namespace HedgeHog.Alice.Client {
                   charter.SetLastPoint(high, low, ma, ma2, tm.RateLast);
                   ;
                   //Debug.WriteLineIf(tm.Pair == "EUR/JPY", string.Format("Current price:{0} @ {1:mm:ss}", tm.CurrentPrice.Average.Round(3), tm.CurrentPrice.Time));
-                }), DispatcherPriority.Send);
+                });
               }
             }
           } catch(Exception exc) {
@@ -1363,15 +1363,17 @@ namespace HedgeHog.Alice.Client {
     private void InitTradingMacro(TradingMacro tm, bool unwind = false) {
       var isFilterOk = tm.IsActive;
       if(!unwind && isFilterOk) {
-        tm.TradingStatistics = _tradingStatistics;
-        tm.IpPort = MasterModel.IpPort;
-        try {
-          tm.SubscribeToTradeClosedEVent(() => TradesManager, GetTradingMacros());
-          _syncDisposables.Add(tm, tm.SyncObservable.Subscribe(_ => {
-            UpdateTradingStatistics();
-          }));
-        } catch(Exception exc) {
-          Log = exc;
+        if(!_syncDisposables.ContainsKey(tm)) {
+          tm.TradingStatistics = _tradingStatistics;
+          tm.IpPort = MasterModel.IpPort;
+          try {
+            tm.SubscribeToTradeClosedEVent(() => TradesManager, GetTradingMacros());
+            _syncDisposables.Add(tm, tm.SyncObservable.Subscribe(_ => {
+              UpdateTradingStatistics();
+            }));
+          } catch(Exception exc) {
+            Log = exc;
+          }
         }
       } else
         try {
