@@ -16,6 +16,7 @@ using System.Runtime.CompilerServices;
 using System.Reactive;
 using System.Reactive.Subjects;
 using System.Diagnostics;
+using DynamicExpresso;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -78,6 +79,34 @@ namespace HedgeHog.Alice.Store {
         return () => ok().Select(b => TradeDirectionByBool(b)).SingleOrDefault();
       }
     }
+
+    #region TradeConditionEval
+    private string _TradeConditionEval;
+    [WwwSetting(wwwSettingsTradingConditions)]
+    public string TradeConditionEval {
+      get { return _TradeConditionEval; }
+      set {
+        if(_TradeConditionEval != value) {
+          _TradeConditionEval = value;
+          TradeConditionsHave(UOK);
+          OnPropertyChanged(nameof(TradeConditionEval));
+        }
+      }
+    }
+
+    #endregion
+
+    public TradeConditionDelegate UOK {
+      get {
+        var interpreter = new Interpreter().SetVariable("tm", this);
+        //string expression = "tm.TradeDirectionByTreshold(tm.StDevByPriceAvgInPips,tm.WaveStDevPower)";
+        var parsedExpression = !TradeConditionEval.IsNullOrWhiteSpace() ? interpreter.ParseAsDelegate<Func<TradeDirections>>(TradeConditionEval) : null;
+        return () => TradeConditionEval.IsNullOrWhiteSpace()
+        ? TradeDirections.Both
+        : interpreter.ParseAsDelegate<Func<TradeDirections>>(TradeConditionEval)();
+      }
+    }
+
     public TradeConditionDelegate Volt2eOk {
       get {
         return () => {
@@ -154,6 +183,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public TradeConditionDelegate VltOuttOk => () => VoltOutImpl(this, 0, TradeDirections.Down, TradeDirections.Up).SingleOrDefault();
+    public TradeConditionDelegate VltOutrOk => () => VoltOutImpl(this, 0, TradeDirections.Up, TradeDirections.Down).SingleOrDefault();
     public TradeConditionDelegate VltOut2tOk => () => VoltOutImpl(this, 1, TradeDirections.Down, TradeDirections.Up).SingleOrDefault();
     public TradeConditionDelegate VltOut2trOk => () => VoltOutImpl(this, 1, TradeDirections.Up, TradeDirections.Down).SingleOrDefault();
 
@@ -1501,7 +1531,8 @@ namespace HedgeHog.Alice.Store {
 
     #region Volts
     [TradeConditionTurnOff]
-    public TradeConditionDelegate VoltBelowTOOk { get { return () => VoltBelowOk(); } }
+    public TradeConditionDelegate VoltAboveOk => ()
+      => GetLastVolt(volt => VoltageHigh(vh => volt > vh)).Concat().Select(TradeDirectionByBool).SingleOrDefault();
     public TradeConditionDelegate VoltBelowOk {
       get {
         return () => {
@@ -1509,6 +1540,9 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+    [TradeConditionTurnOff]
+    public TradeConditionDelegate VoltBelowTOOk { get { return () => VoltBelowOk(); } }
+    public TradeConditionDelegate VoltAbove2Ok => () => VoltAboveImpl(1);
     public TradeConditionDelegate VoltBelow2Ok => () => VoltBelowImpl(1);
 
     private TradeDirections VoltBelowImpl(int voltIndex) => (from volt in GetLastVoltByIndex(voltIndex)
@@ -1521,11 +1555,6 @@ namespace HedgeHog.Alice.Store {
       var volt = _SetVoltsByStd.SkipWhile(t => t.Item1 < d).Select(t => t.Item2).DefaultIfEmpty(double.NaN).Min();
       return GetVoltageAverage().Select(va => TradeDirectionByBool(volt < va)).SingleOrDefault();
     }
-
-    [TradeConditionTurnOff]
-    public TradeConditionDelegate VoltAboveOk => ()
-      => GetLastVolt(volt => VoltageHigh(vh => volt > vh)).Concat().Select(TradeDirectionByBool).SingleOrDefault();
-    public TradeConditionDelegate VoltAbove2Ok => () => VoltAboveImpl(1);
 
     private TradeDirections VoltAboveImpl(int voltIndex) => (from volt in GetLastVoltByIndex(voltIndex)
                                                              from vl in GetVoltHighByIndex(voltIndex)
@@ -1656,18 +1685,18 @@ namespace HedgeHog.Alice.Store {
 
     public object WwwInfo() {
       Func<Func<TradingMacro, TL>, IEnumerable<TL>> trenderLine = tl => TradingMacroTrender().Select(tl);
-      return TradingMacroTrender(tm => {
-        var tlText = ToFunc((TL tl) => new { l = "Ang" + tl.Color, t = $"{tl.Angle.Abs().Round()},{tl.TimeSpan.ToString("h\\:mm")}" });
+      return this.TradingMacroTrender<System.Dynamic.ExpandoObject>(tm => {
+        var tlText = ToFunc((TL tl) => new { l = "Ang" + tl.Color, t = $"{tl.Angle.Abs().Round()},{tl.TimeSpan.ToString((string)"h\\:mm")}" });
         var angles = tm.TrendLinesTrendsAll.Select(tlText).ToArray();
-        var showBBSD = new[] { VoltageFunction, VoltageFunction2 }.Contains(VoltageFunction.BBSD) ||
-          new[] { TradeLevelBy.BoilingerDown, TradeLevelBy.BoilingerUp }.Contains(LevelBuyBy) ||
+        var showBBSD = (new[] { VoltageFunction, VoltageFunction2 }).Contains((VoltageFunction)VoltageFunction.BBSD) ||
+          (new[] { TradeLevelBy.BoilingerDown, TradeLevelBy.BoilingerUp }).Contains((TradeLevelBy)LevelBuyBy) ||
           TakeProfitFunction == TradingMacroTakeProfitFunction.BBand;
-        return new {
-          StDevHP = tm.StDevByHeightInPips.AutoRound2(2) + "/" + tm.StDevByPriceAvgInPips.AutoRound2(2),
+        return (new {
+          StDevHP = $"{tm.StDevByHeightInPips.AutoRound2((int)2)}/{tm.StDevByPriceAvgInPips.AutoRound2((int)2)}:{(StdOverCurrPriceRatio()).Round((int)1)}%",
           //StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
           //BolngrAvg= InPips(_boilingerAvg,1),
-          ProfitPip = CalculateTakeProfitInPips().Round(1),
-          RiskRewrd = RiskRewardRatio().ToPercent() + "%/" + InPips(RiskRewardDenominator).AutoRound2(2),
+          ProfitPip = CalculateTakeProfitInPips().Round((int)1),
+          RiskRewrd = RiskRewardRatio().ToPercent() + "%/" + InPips((double?)RiskRewardDenominator).AutoRound2((int)2),
           //TlTmeMnMx = string.Join(",", TLsTimeRatio(tm, true).Concat(TLsTimeRatio(tm, false)).Select(tr => tr.ToString("n0") + "%")),
           //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
@@ -1675,14 +1704,14 @@ namespace HedgeHog.Alice.Store {
           //Blue_Edge = tm.TrendLinesBlueTrends.EdgeDiff.SingleOrDefault().Round(1)
           //BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
           //WvDistRsd = _waveDistRsd.Round(2)
-        }
+        })
         .ToExpando()
-        .Add(showBBSD ? (object)new { BoilBand = _boilingerStDev.Value.Select(t => string.Format("{0:n2}:{1:n2}", InPips(t.Item1), InPips(t.Item2))) } : new { })
+        .Add((object)(showBBSD ? (object)new { BoilBand = this._boilingerStDev.Value.Select<global::System.Tuple<double, double>, string>(t => string.Format("{0:n2}:{1:n2}", this.InPips(t.Item1), this.InPips(t.Item2))) } : new { }))
         //.Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         //.Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
-        .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk), nameof(PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round(3) } : new { })
-        .Add(new { HistVol = $"{HV(this)}" })
-        .Add(new { HistVolM = $"{HV(TradingMacroM1().Single())}" })
+        .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk), nameof(Store.TradingMacro.PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round((int)3) } : new { })
+        .Add((object)(new { HistVol = $"{HV(this)}" }))
+        .Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
         //.Add(HVP(this).Select(hvp => (object)new { HistVolDif = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVP).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         ;
       }
@@ -1698,6 +1727,7 @@ namespace HedgeHog.Alice.Store {
       double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
     }
 
+    public double StdOverCurrPriceRatio() => InPips(StDevByHeight) / CurrentPriceAvg() * 100;
     public IEnumerable<double> HistoricalVolatilityUp() => HistoricalVolatility();
     //UseRates(ra => InPips(RatesForHV(ra).HistoricalVolatility(t => t.prev < t.next)));
     public IEnumerable<double> HistoricalVolatilityDown() => HistoricalVolatility();
@@ -1729,7 +1759,7 @@ namespace HedgeHog.Alice.Store {
         ? TradeDirections.Up
         : TradeDirections.Down;
     }
-    TradeDirections TradeDirectionByTreshold(double value, double treshold) {
+    public TradeDirections TradeDirectionByTreshold(double value, double treshold) {
       return TradeDirectionByBool(IsTresholdAbsOk(value, treshold));
     }
     TradeDirections TradeDirectionByAngleCondition(Func<TradingMacro, TL> tls, double tradingAngleRange) {

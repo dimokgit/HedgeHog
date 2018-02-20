@@ -53,34 +53,14 @@ namespace HedgeHog.Alice.Store {
           return () => ShowVoltsByTLA(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.TLAR:
           return () => ShowVoltsByTLAR(getVolts, setVolts);
-        case HedgeHog.Alice.VoltageFunction.TLW2:
-          return () => ShowVoltsByTLWn(2, getVolts, setVolts);
-        case HedgeHog.Alice.VoltageFunction.TLW3:
-          return () => ShowVoltsByTLWn(3, getVolts, setVolts);
-        case HedgeHog.Alice.VoltageFunction.TLW4:
-          return () => ShowVoltsByTLWn(4, getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.BBSD:
           return () => ShowVoltsByBBSD(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.PPM:
           return () => ShowVoltsByPPM(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.PPMB:
           return () => ShowVoltsByPPMB(getVolts, setVolts);
-        case HedgeHog.Alice.VoltageFunction.TLsTimeAvg:
-          return () => ShowVoltsByTLsTimeAvg(true, getVolts, setVolts);
-        case HedgeHog.Alice.VoltageFunction.TLsTimeMax:
-          return () => ShowVoltsByTLsTimeAvg(false, getVolts, setVolts);
-        case HedgeHog.Alice.VoltageFunction.RiskReward:
-          return () => ShowVoltsByRiskReward(getVolts, setVolts);
-        case HedgeHog.Alice.VoltageFunction.TLDur:
-          return () => ShowVoltsByTLDuration(getVolts, setVolts);
-        case HedgeHog.Alice.VoltageFunction.TLDur2:
-          return () => ShowVoltsByTLDuration2(getVolts, setVolts);
         case HedgeHog.Alice.VoltageFunction.PPMH:
           return ShowVoltsByPPMH;
-        case HedgeHog.Alice.VoltageFunction.TFH:
-          return voltIndex == 0
-            ? (Func<CorridorStatistics>)ShowVoltsByFrameAverage
-            : () => ShowVoltsByFrameAverage(GetVoltage2, SetVoltage2);
         //case HedgeHog.Alice.VoltageFunction.AO:
         //  return ShowVoltsByAO;
         case HedgeHog.Alice.VoltageFunction.MPH:
@@ -105,6 +85,11 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByVoltsDerivative;
         case HedgeHog.Alice.VoltageFunction.HV:
           return () => ShowVoltsByHV(voltIndex);
+        case HedgeHog.Alice.VoltageFunction.StdRatio:
+          return () => ShowVoltsByStdRatio(voltIndex);
+        case VoltageFunction.StdOverPrice:
+          return () => ShowVoltsByStdOverPrice(voltIndex);
+          //StdOverCurrPriceRatio
       }
       throw new NotSupportedException(VoltageFunction + " not supported.");
     }
@@ -234,20 +219,6 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
-    CorridorStatistics ShowVoltsByFrameAverage() {
-      return ShowVoltsByFrameAverage(GetVoltage, SetVoltage);
-    }
-    CorridorStatistics ShowVoltsByFrameAverage(Func<Rate, double> getVolt = null, Action<Rate, double> setVolt = null) {
-      var useCalc = IsRatesLengthStable;
-      if(!useCalc)
-        return GetLastVolt(getVolt)
-          .Select(v => ShowVolts(v, 2, getVolt, setVolt))
-          .SingleOrDefault();
-      var calcVolt = RatesHeightByFrameAverage(new[] { this }, 0.0625);
-      SetVolts(InPips(calcVolt), getVolt, setVolt, 2);
-      return null;
-    }
-
     CorridorStatistics ShowVoltsByAO() {
       var useCalc = UseCalc();
 
@@ -272,26 +243,6 @@ namespace HedgeHog.Alice.Store {
         SetVots(RatesDuration / InPips(_RatesHeight), 2);
 
       return null;
-    }
-    CorridorStatistics ShowVoltsByTLsTimeAvg(bool useMin, Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      return IsRatesLengthStableGlobal()
-        ? TLTimeAvg(useMin).Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault()
-        : null;
-    }
-    CorridorStatistics ShowVoltsByRiskReward(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      return IsRatesLengthStableGlobal()
-        ? RiskRewardRatio().YieldIf(Lib.IsNotNaN).Select(v => ShowVolts(v.ToPercent(), 2, getVolt, setVolt)).SingleOrDefault()
-        : null;
-    }
-    CorridorStatistics ShowVoltsByTLDuration(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      return IsRatesLengthStableGlobal()
-        ? LastTrendLineDurationPercentage().Select(v => ShowVolts(v, 2, getVolt, setVolt)).SingleOrDefault()
-        : null;
-    }
-    CorridorStatistics ShowVoltsByTLDuration2(Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      return IsRatesLengthStableGlobal()
-        ? LastTrendLineDurationPercentage2(TrendLinesByDate, 2).With(v => ShowVolts(v, 2, getVolt, setVolt))
-        : null;
     }
 
     private bool IsRatesLengthStableGlobal() {
@@ -331,23 +282,6 @@ namespace HedgeHog.Alice.Store {
             ShowVolts(v, getVolt, setVolt);
           }
         }
-      }
-      return null;
-    }
-    CorridorStatistics ShowVoltsByTLWn(int tlCount, Func<Rate, double> getVolt, Action<Rate, double> setVolt) {
-      var tl3 = TrendLinesTrendsAll.OrderBy(tl => tl.EndDate).TakeLast(tlCount).ToArray();
-      var dateMin = tl3.Min(tl => tl.StartDate);
-      if(!tl3.Any(tl => tl.IsEmpty) && tl3.Length == tlCount && IsRatesLengthStable) {
-        Func<TL, double[]> dateRange = tl => new[] { tl.StartDate, tl.EndDate }.ToArray(d => (d - dateMin).TotalMinutes);
-        //var dateOverlapOk = !tl3.Permutation().Any(t => dateRange(t.Item1).DoSetsOverlap(TLsOverlap - 1, dateRange(t.Item2)));
-        //if(dateOverlapOk) {
-        var dateZero = tl3[0].StartDate;
-        Func<DateTime, double> date0 = d => d.Subtract(dateZero).TotalMinutes;
-        Func<TL, double[]> tlTMs = tl => new[] { date0(tl.StartDate), date0(tl.EndDate) };
-        var tl3MM = tl3.Select(tl => tlTMs(tl)).ToArray();
-        var overlap = tl3MM.Pairwise((tm1, tm2) => tm1.OverlapRatio(tm2)).Average().ToPercent();
-        ShowVolts(overlap, VoltAverageIterations, getVolt, setVolt);
-        //}
       }
       return null;
     }
@@ -417,13 +351,19 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByHV(int voltIndex) {
       if(UseCalc())
-        (from tl in Trends.Reverse()
-         where !tl.IsEmpty
-         select RatesArray.GetRange(tl.Count).Select(_priceAvg).HistoricalVolatility()
-         )
-         .Take(1)
-         .IfEmpty(()=>throw new Exception($"{Pair}:{BarPeriod}:{nameof(ShowVoltsByHV)}: {nameof(Trends)} are all empty"))
-         .ForEach(hvp => SetVolts(hvp * 100000, voltIndex));
+        UseRates(ra => ra.Select(_priceAvg).Cma(5, 5).HistoricalVolatility())
+          .Take(1)
+          .ForEach(hvp => SetVolts(hvp * 100000, voltIndex));
+      return null;
+    }
+    CorridorStatistics ShowVoltsByStdRatio(int voltIndex) {
+      if(UseCalc())
+        SetVolts(Math.Log(StDevByPriceAvg / StDevByHeight), voltIndex);
+      return null;
+    }
+    CorridorStatistics ShowVoltsByStdOverPrice(int voltIndex) {
+      if(UseCalc())
+        SetVolts(StdOverCurrPriceRatio(), voltIndex);
       return null;
     }
     CorridorStatistics ShowVoltsByVoltsDerivative() {
@@ -492,7 +432,7 @@ namespace HedgeHog.Alice.Store {
     void OnMaxHedgeProfit(DateTime d, Action a) => MaxHedgeProfitSubject.OnNext((d, a));
     #endregion
 
-    int VoltAverageIterationsByIndex(int index) => index == 0 ? VoltAverageIterations : VoltAverageIterations;
+    int VoltAverageIterationsByIndex(int index) => index == 0 ? VoltAverageIterations : VoltAverageIterations2;
     IEnumerable<double> GetLastVoltByIndex(int voltIndex) => voltIndex == 0 ? GetLastVolt() : GetLastVolt2();
     Func<Rate, double> GetVoltByIndex(int voltIndex) => voltIndex == 0 ? GetVoltage : GetVoltage2;
     Action<Rate, double> SetVoltByIndex(int voltIndex) => voltIndex == 0 ? SetVoltage : SetVoltage2;
@@ -724,11 +664,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    IEnumerable<int> LastTrendLineDurationPercentage() => LastTrendLineDurationPercentage(TrendLinesByDate);
-    static IEnumerable<int> LastTrendLineDurationPercentage(IList<TL> tls) =>
-      from tlLast in tls.TakeLast(1)
-      let tla = tls.SkipLast(1).Select(tl => tl.TimeSpan.TotalMinutes).SquareMeanRoot()
-      select tlLast.TimeSpan.TotalMinutes.Div(tla).ToPercent();
 
     static int LastTrendLineDurationPercentage2(IList<TL> tls, int skip) =>
       tls.TakeLast(skip).Select(tl => tl.TimeSpan.TotalMinutes).RootMeanPower().With(tlLast => {

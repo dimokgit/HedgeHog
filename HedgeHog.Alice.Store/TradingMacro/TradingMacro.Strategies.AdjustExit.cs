@@ -190,7 +190,7 @@ namespace HedgeHog.Alice.Store {
     private void AdjustExitLevelsByTradeTime(Action<double, double> adjustExitLevels) {
       Func<double, IEnumerable<double>> rateSinceTrade = def => {
         var d = Trades.Max(t => t.Time);
-        d = d - ServerTime.Subtract(d);
+        //d = d - ServerTime.Subtract(d);
         return TradingMacroTrender(tm
           => tm.UseRates(rates
           => rates.BackwardsIterator()

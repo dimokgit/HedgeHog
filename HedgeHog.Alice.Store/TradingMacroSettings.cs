@@ -242,5 +242,6 @@ namespace HedgeHog.Alice.Store {
     public string TradingMacroName { get; set; }
     public double TradingRatio { get; set; }
     public int VolumeTresholdIterations { get; set; }
+    public string TradeConditionEval { get; set; }
   }
 }

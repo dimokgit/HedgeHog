@@ -141,9 +141,9 @@ namespace HedgeHog.Alice.Store {
       if(voltRates.Any()) {
         GeneralPurposeSubject.OnNext(() => {
           try {
-            var voltageAvgLow = voltRates.AverageByIterations(-VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
+            var voltageAvgLow = voltRates.AverageByIterations(-VoltAverageIterationsByIndex(voltIndex)).DefaultIfEmpty(double.NaN).Average();
             SetVoltLowByIndex(voltIndex)(voltageAvgLow);
-            var voltageAvgHigh = voltRates.AverageByIterations(VoltAverageIterations).DefaultIfEmpty(double.NaN).Average();
+            var voltageAvgHigh = voltRates.AverageByIterations(VoltAverageIterationsByIndex(voltIndex)).DefaultIfEmpty(double.NaN).Average();
             SetVoltHighByIndex(voltIndex)(voltageAvgHigh);
           } catch(Exception exc) { Log = exc; }
         });

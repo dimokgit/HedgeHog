@@ -971,6 +971,7 @@ namespace HedgeHog.Alice.Client {
       if(remoteControl == null) return new object[0];
       var rc = remoteControl.Value;
       var am = rc.MasterModel.AccountModel;
+      double CompInt(double profit) => am.Equity.CompoundInteres(profit, 252);
       list.Add(row("BalanceOrg", am.OriginalBalance.ToString("c0")));
       //list.Add(row("Balance", am.Balance.ToString("c0")));
       list.Add(row("Equity", am.Equity.ToString("c0")));
@@ -1009,11 +1010,12 @@ namespace HedgeHog.Alice.Client {
           var s = string.Join("<br/>", oss.Select(os => $"{os.status}:{os.filled}<<{os.remaining}"));
           list2.Add(row("Orders", s));
         }
-        tm.MaxHedgeProfit?.ForEach(mhps => list2.Add(row("Hedge Profit", "$" + string.Join("/", mhps.Select(mhp => mhp.profit.AutoRound2(1))) + "/" +
-          (am.Equity.CompoundInteres(mhps.DefaultIfEmpty().Average(x => x.profit), 200) * 100).AutoRound2(3, "%")
-          )));
+        if(tm.IsHedgedTrading)
+          tm.MaxHedgeProfit?.ForEach(mhps => list2.Add(row("Hedge Profit", "$" + string.Join("/", mhps.Select(mhp => mhp.profit.AutoRound2(1))) + "/" +
+            (CompInt(mhps.DefaultIfEmpty().Average(x => x.profit)) * 100).AutoRound2(3, "%")
+            )));
         if(trader.Value.GrossToExitCalc() != 0) {
-          var ca = am.Equity.CompoundInteres(trader.Value.GrossToExitCalc().Abs(), 200);
+          var ca = CompInt(trader.Value.GrossToExitCalc().Abs());
           list2.Add(row("GrossToExit", $"${trader.Value.GrossToExitCalc().AutoRound2(1)}:{((ca) * 100).AutoRound2(3, "%")}"));
           list2.Add(row("grossToExitRaw", trader.Value.GrossToExit));
           list2.Add(row("profitByHedgeRatioDiff", trader.Value.ProfitByHedgeRatioDiff));
