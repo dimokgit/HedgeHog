@@ -162,6 +162,12 @@ namespace HedgeHog.Alice.Store {
         return () => ok();
       }
     }
+    public TradeConditionDelegate VltAboveInOk {
+      get {
+        var ok = VltOutInImpl(this, 0, TradeDirections.Both, TradeDirections.None);
+        return () => ok();
+      }
+    }
 
     private static TradeConditionDelegate VltOutInImpl(TradingMacro tm, int voltIndex, TradeDirections above, TradeDirections below) {
       Subject<TradeDirections> VltOutInSubject = new Subject<TradeDirections>();
