@@ -1155,12 +1155,15 @@ namespace HedgeHog.Alice.Store {
       SuppRes.Where(sr => sr.EntryOrderId == order.OrderID).ToList().ForEach(sr => sr.EntryOrderId = Store.SuppRes.RemovedOrderTag);
     }
 
+    double _ratesArrayDistance = double.NaN;
     void TradesManager_TradeAddedGlobal(object sender, TradeEventArgs e) {
       try {
         if(!IsMyTrade(e.Trade))
           return;
         EnsureActiveSuppReses();
         RaisePositionsChanged();
+        UseRates(ra => ra.Distances(r=>r.PriceCMALast).Last().Item2)
+          .ForEach(d => _ratesArrayDistance = d);
         _strategyExecuteOnTradeOpen?.Invoke(e.Trade);
       } catch(Exception exc) {
         Log = exc;
@@ -1190,6 +1193,7 @@ namespace HedgeHog.Alice.Store {
     void TradesManager_TradeClosed(object sender, TradeEventArgs e) {
       if(!IsMyTrade(e.Trade))
         return;
+      _ratesArrayDistance = double.NaN;
       if(HistoryMaximumLot > 0) {
         CurrentLot = Trades.Sum(t => t.Lots);
         CloseAtZero = false;
@@ -3609,6 +3613,11 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       switch(function) {
         case TradingMacroTakeProfitFunction.StDev:
           return useTrenderComm(tm => tm.StDevByHeight * xRatio);
+        case TradingMacroTakeProfitFunction.Distance:
+          var tpd = double.NaN;
+          Trades.TakeLast(1).SelectMany(t => UseRatesInternal(ri => ri.BackwardsIterator().TakeWhile(r => r.StartDate >= t.Time).Distances(r => r.PriceCMALast).Last().Item2))
+          .ForEach(d => tpd = d);
+          return _ratesArrayDistance.IfNaN(StDevByPriceAvg) * xRatio - tpd.IfNaN(0);
         case TradingMacroTakeProfitFunction.BBand:
           return useTrenderComm(tm => tm.BBWithRatio.SingleOrDefault() * xRatio);
         case TradingMacroTakeProfitFunction.StDevP:

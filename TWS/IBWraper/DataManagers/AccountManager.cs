@@ -139,7 +139,7 @@ namespace IBApp {
 
       IbClient.ClientSocket.reqAllOpenOrders();
 
-      _defaultMessageHandler(nameof(AccountManager) + " is ready");
+      _defaultMessageHandler($"{nameof(AccountManager)}:{_accountId} is ready");
     }
 
     #region TraceSubject Subject

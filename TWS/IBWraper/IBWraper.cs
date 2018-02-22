@@ -53,7 +53,7 @@ namespace IBApp {
         _accountManager.Dispose();
         //return;
       }
-      var ma = obj.Splitter('.').Where(a => _ibClient.ManagedAccount.IsNullOrWhiteSpace() || a == _ibClient.ManagedAccount).SingleOrDefault();
+      var ma = obj.Splitter(',').Where(a => _ibClient.ManagedAccount.IsNullOrWhiteSpace() || a == _ibClient.ManagedAccount).FirstOrDefault();
       if(ma == null)
         throw new Exception(new { _ibClient.ManagedAccount, error = "Not Found" } + "");
       _accountManager = new AccountManager(_ibClient, ma, CreateTrade, CommissionByTrade, Trace);
