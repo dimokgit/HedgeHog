@@ -358,7 +358,7 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByStdRatio(int voltIndex) {
       if(UseCalc()) {
-        var c = RatesArray.Count;
+        var c = RatesArray.Count - 1;
         if(GetVoltByIndex(voltIndex)(RatesInternal[c]).IsNaN())
           UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b=>b.Count==c).ForEach(b => {
             var std = b.StandardDeviation(_priceAvg);

@@ -87,8 +87,8 @@ namespace IBApp {
       ibClient.Error += OnError;
 
       #region Observables
-      var posObs = Observable.FromEvent<PositionHandker, (Contract contract, double pos, double avgCost)>(
-        onNext => (string a, Contract b, double c, double d) => onNext((b, c, d)),
+      var posObs = Observable.FromEvent<PositionHandker, (string account, Contract contract, double pos, double avgCost)>(
+        onNext => (string a, Contract b, double c, double d) => onNext((a, b, c, d)),
         h => IbClient.Position += h,
         h => IbClient.Position -= h
         );
@@ -114,24 +114,28 @@ namespace IBApp {
       #endregion
       #region Subscibtions
       posObs
-        .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos } }))
+        .Where(x => x.account == _accountId)
+        .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos, x.account } }))
         .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost))
         .SideEffect(s => _strams.Add(s));
       ooObs
+        .Where(x => x.order.Account == _accountId)
         .DistinctUntilChanged(a => a.orderId)
         //.Do(x => _verbous("* " + new { OpenOrder = new { x.contract.LocalSymbol, x.order.OrderId } }))
         .Subscribe(a => OnOrderStartedImpl(a.orderId, a.contract, a.order, a.orderState))
         .SideEffect(s => _strams.Add(s));
       osObs
+        .Where(t => _orderContracts.Any(oc => oc.Key == t.orderId && oc.Value.order.Account == _accountId))
         .Select(t => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() })
         .DistinctUntilChanged()
-        .Do(x => _verbous("* " + new { OrderStatus = x }))
+        .Do(x => _verbous("* " + new { OrderStatus = x, _orderContracts[x.orderId].order.Account }))
         .Do(t => _orderContracts.Where(oc => oc.Key == t.orderId && t.status != "Inactive").ForEach(oc => (t.status, t.filled, t.remaining, t.isDone).With(os => _orderStatuses.AddOrUpdate(oc.Value.contract.Symbol, i => os, (i, u) => os))))
         .Where(o => (o.status, o.remaining).IsOrderDone())
         .Subscribe(o => RaiseOrderRemoved(o.orderId))
         .SideEffect(s => _strams.Add(s));
       portObs
-        .Select(t => new { t.contract.LocalSymbol, t.position, t.unrealisedPNL })
+        .Where(x => x.accountName == _accountId)
+        .Select(t => new { t.contract.LocalSymbol, t.position, t.unrealisedPNL,t.accountName })
         .Take(1)
         .Subscribe(x => _verbous("* " + new { Portfolio = x }), () => _verbous($"portfolioStream is done."))
         .SideEffect(s => _strams.Add(s));
@@ -255,7 +259,7 @@ namespace IBApp {
       if(!disposedValue) {
         if(disposing) {
           // TODO: dispose managed state (managed objects).
-          _strams.ForEach(s=> s.Dispose());
+          _strams.ForEach(s => s.Dispose());
         }
 
         // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
@@ -430,6 +434,7 @@ namespace IBApp {
         OrderId = NetOrderId(),
         Action = buy ? "BUY" : "SELL",
         OrderType = orderType,
+        Account = _accountId,
         TotalQuantity = whatIf ? lots : pair.IsUSStock() ? lots : lots,
         Tif = "DAY",
         OutsideRth = isPreRTH,

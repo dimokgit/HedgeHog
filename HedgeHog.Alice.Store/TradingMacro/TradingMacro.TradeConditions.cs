@@ -1716,6 +1716,7 @@ namespace HedgeHog.Alice.Store {
         //.Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         //.Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
         .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk), nameof(Store.TradingMacro.PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round((int)3) } : new { })
+        .Add((object)(new { MacdDist = tm.MacdDistances(RatesArray).TakeLast(1).Select(d=>d.AutoRound2(3)).SingleOrDefault() }))
         .Add((object)(new { HistVol = $"{HV(this)}" }))
         .Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
         //.Add(HVP(this).Select(hvp => (object)new { HistVolDif = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVP).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())

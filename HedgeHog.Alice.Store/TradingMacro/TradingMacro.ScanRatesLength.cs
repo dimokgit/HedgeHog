@@ -143,12 +143,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     void ScanRatesLengthByDistanceMinSmoothed() {
-      Func<int, double[]> bcByM1 = count => {
-        var bc = (from rates in UseRatesInternal(ri => ri.GetRange(count))
-                  let ts = rates.Last().StartDate.Subtract(rates.First().StartDate).Duration()
-                  select RatesHeightByM1TimeFrame(ts));
-        return bc.ToArray();
-      };
       var x = GetRatesLengthByDistanceMinByMacdSmoothed()
         //.Concat(BarsCountByM1())
         .OrderBy(d => d)
@@ -174,16 +168,10 @@ namespace HedgeHog.Alice.Store {
       return count;
     }
     IEnumerable<int> GetRatesLengthByDistanceMinByMacdSmoothed() {
-      var cmaPeriod = CmaPeriodByRatesCount(BarsCountCalc);
       var rdm = InPoints(RatesDistanceMin);
       return UseRatesInternal(rs => rs.GetRange((BarsCountCalc * 1.1).ToInt().Min(rs.Count)).ToList())
         .Select(rs => {
-          _macdDiastances = Macd(rs, BarsCountCalc)
-            .Pairwise((v1, v2) => v1.Abs(v2))
-            .ToArray()
-            .Cma(cmaPeriod)
-            .Reverse()
-            .Distances()
+          _macdDiastances = MacdDistances(rs)
             .Skip(BarsCount + 1)
             .TakeWhile(i => i <= rdm)
             .ToList();
@@ -194,6 +182,14 @@ namespace HedgeHog.Alice.Store {
           return x.count;
         });
     }
+
+    private IEnumerable<double> MacdDistances(List<Rate> rs) => Macd(rs, BarsCountCalc)
+                .Pairwise((v1, v2) => v1.Abs(v2))
+                .ToArray()
+                .Cma(CmaPeriodByRatesCount(BarsCountCalc))
+                .Reverse()
+                .Distances();
+
     IEnumerable<double> MacdDistancesSmoothedReversed(IList<Rate> rates) {
       var cmaPeriod = CmaPeriodByRatesCount(rates.Count);
       return Macd(rates, null)

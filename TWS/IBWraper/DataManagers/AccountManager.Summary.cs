@@ -45,7 +45,7 @@ namespace IBApp {
     }
 
     private void OnAccountSummary(int requestId, string account, string tag, string value, string currency) {
-      if(currency == _accountCurrency) {
+      if(currency == _accountCurrency && account == _accountId) {
         switch(tag) {
           case "EquityWithLoanValue":
             Account.Equity = double.Parse(value);
@@ -83,7 +83,7 @@ namespace IBApp {
     }
 
     public void RequestPositions() {
-        IbClient.ClientSocket.reqPositions();
+      IbClient.ClientSocket.reqPositions();
     }
     #endregion
   }
