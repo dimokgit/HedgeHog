@@ -268,7 +268,7 @@ namespace HedgeHog.Alice.Client {
       var tm0 = UseTradingMacro(pair, tm => tm);
       if(tm0 == null)
         return new { };
-      var tm1 = UseTradingMacro(pair, 1, tm => tm);
+      var tm1 = UseTradingMacro2(pair, 1, tm => tm).SingleOrDefault();
       var tmTrader = tm0.TradingMacroTrader().Single();
       var tmTrender = tm0.TradingMacroTrender().Last();
       var isVertual = tmTrader.IsInVirtualTrading;
