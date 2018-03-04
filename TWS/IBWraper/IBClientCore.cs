@@ -53,7 +53,8 @@ public class IBClientCore :IBClient, ICoreFX {
   #endregion
 
   #region ICoreEX Implementation
-  public void SetOfferSubscription(string pair) => _marketDataManager.AddRequest(ContractSamples.ContractFactory(pair), "233,221,236");
+  public void SetOfferSubscription(Contract contract) => _marketDataManager.AddRequest(contract, "233,221,236");
+  public void SetOfferSubscription(string pair) => SetOfferSubscription(ContractSamples.ContractFactory(pair));
   public bool IsInVirtualTrading { get; set; }
   public DateTime ServerTime => DateTime.Now + _serverTimeOffset;
   public event EventHandler<LoggedInEventArgs> LoggedOff;
@@ -185,7 +186,7 @@ public class IBClientCore :IBClient, ICoreFX {
     if(IsWarning(errorCode)) return;
     if(exc is System.Net.Sockets.SocketException && !ClientSocket.IsConnected())
       RaiseLoginError(exc);
-    if(exc != null) 
+    if(exc != null)
       Trace(exc);
     else
       Trace(new { IBCC = new { id, error = errorCode, message } });

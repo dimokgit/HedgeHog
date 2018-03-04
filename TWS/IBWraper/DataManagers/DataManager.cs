@@ -7,6 +7,7 @@ using System.Text;
 using IBSampleApp.util;
 using static HedgeHog.Core.JsonExtensions;
 using HedgeHog.Shared;
+using System.Threading;
 
 namespace IBApp {
   public abstract class DataManager {
@@ -28,7 +29,7 @@ namespace IBApp {
     }
     #endregion
 
-    protected int NextReqId() => _baseReqId + (++currentTicker);
+    protected int NextReqId() => _baseReqId + Interlocked.Increment(ref currentTicker);
     protected int CurrReqId() => _baseReqId + currentTicker; 
 
     public override string ToString() => new { IbClient } + "";

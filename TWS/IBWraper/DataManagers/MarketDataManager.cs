@@ -57,6 +57,7 @@ namespace IBApp {
       }
     }
     private void OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
+      if(!activeRequests.ContainsKey(requestId)) return;
       var priceMessage = new TickPriceMessage(requestId, field, price, canAutoExecute);
       var price2 = activeRequests[requestId].price;
       if(priceMessage.Price == 0)

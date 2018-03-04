@@ -196,7 +196,7 @@ namespace IBApp {
     #endregion
   }
   #endregion
-  static class IBAppExtensions {
+  public static class IBAppExtensions {
     public static TimeSpan Span(this BarSize bs) {
       var split = (bs + "").Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
       var unit = int.Parse(split[0]);
@@ -219,6 +219,18 @@ namespace IBApp {
       #endregion
       return bts(split[1], unit);
     }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="date"></param>
+    /// <returns>yymmdd</returns>
+    public static string ToTWSOptionDateString(this DateTime date) => date.ToString("yyMMdd");
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="date"></param>
+    /// <returns>yyyymmdd</returns>
+    public static string ToTWSDateString(this DateTime date) => date.ToString("yyyyMMdd");
     public static string ToTWSString(this DateTime date) {
       return date.ToString("yyyyMMdd HH:mm:ss");
     }
@@ -227,6 +239,10 @@ namespace IBApp {
       var time = Regex.Split(dateTime, @"\s+")[1];
       return date.ToDateTime("yyyyMMdd", DateTimeKind.Local) +
         time.ToDateTime("HH:mm:ss", DateTimeKind.Local).TimeOfDay;
+    }
+    public static DateTime FromTWSDateString(this string d) {
+      var date = Regex.Split(d, @"\s+")[0];
+      return date.ToDateTime("yyyyMMdd", DateTimeKind.Local);
     }
     static DateTime ToDateTime(this string dateTimeString, string dateTimeFormat, DateTimeKind dateTimeKind) {
       if(string.IsNullOrEmpty(dateTimeString)) {

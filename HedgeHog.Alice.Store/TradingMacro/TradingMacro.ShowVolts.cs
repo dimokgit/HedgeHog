@@ -370,8 +370,15 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByStdOverPrice(int voltIndex) {
-      if(UseCalc())
+      if(UseCalc()) {
+        var c = RatesArray.Count - 1;
+        if(GetVoltByIndex(voltIndex)(RatesInternal[c]).IsNaN())
+          UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b => b.Count == c).ForEach(b => {
+            var stdr = b.Select(_priceAvg).ToArray().StDevByRegressoin();
+            SetVoltByIndex(voltIndex)(b.Last(), StdOverCurrPriceRatio(stdr, b.Last().PriceAvg));
+          }));
         SetVolts(StdOverCurrPriceRatio(), voltIndex);
+      }
       return null;
     }
     CorridorStatistics ShowVoltsByVoltsDerivative() {

@@ -15,7 +15,11 @@ using PositionHandker = System.Action<string, IBApi.Contract, double, double>;
 using OrderStatusHandler = System.Action<int, string, double, double, double, int, int, double, int, string>;
 using PortfolioHandler = System.Action<IBApi.Contract, double, double, double, double, double, double, string>;
 using OpenOrderHandler = System.Action<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
+using ContDetHandler = System.Action<int, IBApi.ContractDetails>;
+using OptionsChainHandler = System.Action<int, string, int, string, string, System.Collections.Generic.HashSet<string>, System.Collections.Generic.HashSet<double>>;
+using TickPriceHandler = System.Action<int, int, double, int>;
 using static IBApp.AccountManager;
+using System.Reactive.Disposables;
 
 namespace IBApp {
   public partial class AccountManager :DataManager, IDisposable {
@@ -87,6 +91,24 @@ namespace IBApp {
       ibClient.Error += OnError;
 
       #region Observables
+      _contractDetailsObservable = Observable.FromEvent<ContDetHandler, (int reqId, ContractDetails contractDetails)>(
+        onNext => (int a, ContractDetails b) => onNext((a, b)),
+        h => IbClient.ContractDetails += h,
+        h => IbClient.ContractDetails -= h
+        );
+      _optionsChainObservable = Observable.FromEvent<OptionsChainHandler, (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)>(
+        onNext => (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)
+        => onNext((reqId, exchange, underlyingConId, tradingClass, multiplier, expirations, strikes)),
+        h => IbClient.SecurityDefinitionOptionParameter += h,
+        h => IbClient.SecurityDefinitionOptionParameter -= h
+        );
+      _marketDataObservable = Observable.FromEvent<TickPriceHandler, (int reqId, int field, double price, int canAutoExecute)>(
+        onNext => (int reqId, int field, double price, int canAutoExecute)
+        => onNext((reqId, field, price, canAutoExecute)),
+        h => IbClient.TickPrice += h,
+        h => IbClient.TickPrice -= h
+        );
+
       var posObs = Observable.FromEvent<PositionHandker, (string account, Contract contract, double pos, double avgCost)>(
         onNext => (string a, Contract b, double c, double d) => onNext((a, b, c, d)),
         h => IbClient.Position += h,
@@ -135,7 +157,7 @@ namespace IBApp {
         .SideEffect(s => _strams.Add(s));
       portObs
         .Where(x => x.accountName == _accountId)
-        .Select(t => new { t.contract.LocalSymbol, t.position, t.unrealisedPNL,t.accountName })
+        .Select(t => new { t.contract.LocalSymbol, t.position, t.unrealisedPNL, t.accountName })
         .Take(1)
         .Subscribe(x => _verbous("* " + new { Portfolio = x }), () => _verbous($"portfolioStream is done."))
         .SideEffect(s => _strams.Add(s));
@@ -413,6 +435,43 @@ namespace IBApp {
     public Trade[] GetClosedTrades() { return ClosedTrades.ToArray(); }
     #endregion
 
+    public IObservable<(int reqId, ContractDetails cd)> ReqContractDetails(string symbol) => ReqContractDetails(new Contract() { LocalSymbol = symbol, SecType = "", Symbol = symbol });
+
+    Func<Contract, IObservable<(int reqId, ContractDetails cd)>> _ReqContractDetails;
+    public IObservable<(int reqId, ContractDetails cd)> ReqContractDetails(Contract contract) => (_ReqContractDetails
+      ?? (_ReqContractDetails = new Func<Contract, IObservable<(int reqId, ContractDetails cd)>>(c => ReqContractDetailsImpl(c))
+      .Memoize(c => c.Symbol.IsNullOrWhiteSpace() ? c.LocalSymbol : c.Symbol)))(contract);
+    IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsImpl(Contract contract) {
+      var reqId = NextReqId();
+      var cd = _contractDetailsObservable
+        .Where(t => t.reqId == reqId)
+        .Do(x => _verbous(new { ContractDetails = new { Started = x.reqId } }));
+      //.Subscribe(t => callback(t.contractDetails),exc=> { throw exc; }, () => _verbous(new { ContractDetails = new { Completed = reqId } }));
+      IbClient.ClientSocket.reqContractDetails(reqId, contract);
+      return cd;
+    }
+    public IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)>
+      ReqSecDefOptParams(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
+      var reqId = NextReqId();
+      var cd = _optionsChainObservable
+        .Where(t => t.reqId == reqId)
+        .Do(x => _verbous(new { ReqSecDefOptParams = new { Started = x.reqId } }))
+        ;
+      //.Subscribe(t => callback(t.contractDetails),exc=> { throw exc; }, () => _verbous(new { ContractDetails = new { Completed = reqId } }));
+      IbClient.ClientSocket.reqSecDefOptParams(reqId, underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId);
+      return cd;
+    }
+    public IObservable<double> ReqPrice(Contract contract) {
+      var reqId = NextReqId();
+      var cd = _marketDataObservable
+        .Do(x => _verbous(new { ReqMktData = new { Started = x } }))
+        .Where(t => t.reqId == reqId)
+        .SkipWhile(t => t.field != 37)
+        .Take(1)
+        .Select(t => t.price);
+      IbClient.ClientSocket.reqMktData(reqId, contract, "232", false, null);
+      return cd;
+    }
 
     #region OpenOrder
     private int NetOrderId() => IbClient.ValidOrderId();
@@ -451,6 +510,23 @@ namespace IBApp {
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
     }
+    public PendingOrder OpenTrade(Contract contract, int quantity, double takeProfit, double stopLoss, string remark, bool whatIf) {
+      var orderType = "MKT";
+      bool isPreRTH = false;
+      var o = new IBApi.Order() {
+        OrderId = NetOrderId(),
+        Action = "BUY",
+        OrderType = orderType,
+        TotalQuantity = quantity,
+        Tif = "DAY",
+        OutsideRth = isPreRTH,
+        OverridePercentageConstraints = true
+      };
+      _orderContracts.TryAdd(o.OrderId, (o, contract));
+      _verbous(new { plaseOrder = new { o, contract } });
+      IbClient.ClientSocket.placeOrder(o.OrderId, contract, o);
+      return null;
+    }
     public PendingOrder OpenSpreadTrade((string pair, bool buy, int lots)[] legs, double takeProfit, double stopLoss, string remark, bool whatIf) {
       var isStock = legs.All(l => l.pair.IsUSStock());
       var legs2 = legs.Select(t => (t.pair, t.buy, t.lots, price: IbClient.GetPrice(t.pair))).ToArray();
@@ -480,6 +556,10 @@ namespace IBApp {
     #region WhatIf Subject
     object _WhatIfSubjectLocker = new object();
     ISubject<Action> _WhatIfSubject;
+    private IObservable<(int reqId, ContractDetails contractDetails)> _contractDetailsObservable;
+    private IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)> _optionsChainObservable;
+    private IObservable<(int reqId, int field, double price, int canAutoExecute)> _marketDataObservable;
+
     ISubject<Action> WhatIfSubject {
       get {
         lock(_WhatIfSubjectLocker)
@@ -553,5 +633,7 @@ namespace IBApp {
 
     public static (string symbol, bool isBuy) Key(this Trade t) => Key(t.Pair, t.IsBuy);
     public static (string symbol, bool isBuy) Key2(this Trade t) => Key2(t.Pair, t.IsBuy);
+
+    public static string Key(this Contract c) => c.Symbol + ":" + string.Join(",", c.ComboLegs?.Select(l => l.ConId)) ?? "";
   }
 }

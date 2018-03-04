@@ -1734,7 +1734,8 @@ namespace HedgeHog.Alice.Store {
       double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
     }
 
-    public double StdOverCurrPriceRatio() => InPips(StDevByHeight) / CurrentPriceAvg() * 100;
+    public double StdOverCurrPriceRatio() => StdOverCurrPriceRatio(StDevByHeight, CurrentPriceAvg());
+    double StdOverCurrPriceRatio(double stDevByHeight,double price) => InPips(stDevByHeight) / price * 100;
     public IEnumerable<double> HistoricalVolatilityUp() => HistoricalVolatility();
     //UseRates(ra => InPips(RatesForHV(ra).HistoricalVolatility(t => t.prev < t.next)));
     public IEnumerable<double> HistoricalVolatilityDown() => HistoricalVolatility();

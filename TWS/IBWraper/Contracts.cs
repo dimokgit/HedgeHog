@@ -21,9 +21,11 @@ namespace IBApp {
    * Any stock or option symbols displayed are for illustrative purposes only and are not intended to portray a recommendation.
    */
   public static class ContractSamples {
-    public static Contract ContractFactory(string pair) =>
+    public static Contract ContractFactory(this string pair) =>
      pair.IsCurrenncy()
       ? FxContract(pair)
+      : pair.IsIndex()
+      ? Index(pair.Split(' ').First(), "")
       : pair.IsFuture()
       ? Future(pair)
       : pair.IsCommodity()
@@ -67,6 +69,46 @@ namespace IBApp {
       //EXEND
       return contract;
     }
+    public static Contract Index(string symbol, string exchange) {
+      //EXSTART::normaloption::csharp
+      Contract contract = new Contract();
+      contract.Symbol = symbol;
+      contract.SecType = "IND";
+      contract.Exchange = exchange;
+      contract.Currency = "USD";
+      return contract;
+    }
+    //SPXW  180305C02680000
+    public static Contract Option(string symbol) {
+      //EXSTART::normaloption::csharp
+      Contract contract = new Contract();
+      contract.LocalSymbol = symbol;
+      contract.SecType = "OPT";
+      contract.Exchange = "SMART";
+      contract.Currency = "USD";
+      return contract;
+    }
+
+    public static Contract Option(string symbol, DateTime lastDate, double strike, bool isCall, string tradingClass = null)
+      => Option(symbol, lastDate.ToTWSDateString(), strike, isCall, tradingClass);
+    public static Contract Option(string symbol, string lastDate, double strike, bool isCall, string tradingClass = null) {
+      //EXSTART::normaloption::csharp
+      Contract contract = new Contract();
+      contract.Symbol = symbol;
+      contract.SecType = "OPT";
+      contract.Exchange = "SMART";
+      contract.Currency = "EUR";
+      contract.LastTradeDateOrContractMonth = lastDate;
+      contract.Strike = 100;
+      contract.Right = isCall ? "C" : "P";
+      contract.Multiplier = "100";
+      //Often, contracts will also require a trading class to rule out ambiguities
+      if(!string.IsNullOrWhiteSpace(tradingClass))
+        contract.TradingClass = tradingClass;
+      //EXEND
+      return contract;
+    }
+
 
     /*
      * Usually, the easiest way to define a Stock/CASH contract is through these four attributes.
