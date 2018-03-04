@@ -18,6 +18,7 @@ using OpenOrderHandler = System.Action<int, IBApi.Contract, IBApi.Order, IBApi.O
 using ContDetHandler = System.Action<int, IBApi.ContractDetails>;
 using OptionsChainHandler = System.Action<int, string, int, string, string, System.Collections.Generic.HashSet<string>, System.Collections.Generic.HashSet<double>>;
 using TickPriceHandler = System.Action<int, int, double, int>;
+using AAA = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using static IBApp.AccountManager;
 using System.Reactive.Disposables;
 
@@ -440,18 +441,22 @@ namespace IBApp {
     Func<Contract, IObservable<(int reqId, ContractDetails cd)>> _ReqContractDetails;
     public IObservable<(int reqId, ContractDetails cd)> ReqContractDetails(Contract contract) => (_ReqContractDetails
       ?? (_ReqContractDetails = new Func<Contract, IObservable<(int reqId, ContractDetails cd)>>(c => ReqContractDetailsImpl(c))
-      .Memoize(c => c.Symbol.IsNullOrWhiteSpace() ? c.LocalSymbol : c.Symbol)))(contract);
+      .Memoize(c => c.ToString())))(contract);
     IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsImpl(Contract contract) {
       var reqId = NextReqId();
       var cd = _contractDetailsObservable
         .Where(t => t.reqId == reqId)
-        .Do(x => _verbous(new { ContractDetails = new { Started = x.reqId } }));
+        .Do(x => _verbous(new { ReqContractDetails = new { Started = x.reqId } }));
       //.Subscribe(t => callback(t.contractDetails),exc=> { throw exc; }, () => _verbous(new { ContractDetails = new { Completed = reqId } }));
       IbClient.ClientSocket.reqContractDetails(reqId, contract);
       return cd;
     }
-    public IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)>
-      ReqSecDefOptParams(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
+
+    Func<string, string, string, int, AAA> _ReqSecDefOptParams;
+    public AAA ReqSecDefOptParams(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) => (_ReqSecDefOptParams
+      ?? (_ReqSecDefOptParams = new Func<string, string, string, int, AAA>((us, ex, st, comId)
+          => ReqSecDefOptParamsImpl(us, ex, st, comId))).Memoize())(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId);
+    public AAA ReqSecDefOptParamsImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
       var reqId = NextReqId();
       var cd = _optionsChainObservable
         .Where(t => t.reqId == reqId)
@@ -464,7 +469,7 @@ namespace IBApp {
     public IObservable<double> ReqPrice(Contract contract) {
       var reqId = NextReqId();
       var cd = _marketDataObservable
-        .Do(x => _verbous(new { ReqMktData = new { Started = x } }))
+        .Do(x => _verbous(new { ReqPrice = new { Started = x } }))
         .Where(t => t.reqId == reqId)
         .SkipWhile(t => t.field != 37)
         .Take(1)

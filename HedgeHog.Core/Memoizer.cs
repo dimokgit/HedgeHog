@@ -46,32 +46,35 @@ namespace HedgeHog {
       return f.MemoizeLast(key);
     }
     public static Func<A, R> MemoizeLast<A, R, K>(this Func<A, R> f, Func<A, K> key) => f.MemoizeLast(key, r => true);
-    public static Func<A, R> MemoizeLast<A, R, K>(this Func<A, R> f, Func<A, K> key,Predicate<R> result) {
+    public static Func<A, R> MemoizeLast<A, R, K>(this Func<A, R> f, Func<A, K> key, Predicate<R> result) {
       var cache = new Tuple<K, R>[0];
       return a => {
         K k = key(a);
-        var r = cache.Where(t=>result(t.Item2) && EqualityComparer<K>.Default.Equals(t.Item1,k)).ToArray();
-        if(r.Length==0) 
+        var r = cache.Where(t => result(t.Item2) && EqualityComparer<K>.Default.Equals(t.Item1, k)).ToArray();
+        if(r.Length == 0)
           r = cache = new[] { Tuple.Create(k, f(a)) };
         return r[0].Item2;
       };
     }
-    public static Func<A,R> MemoizePrev<A,R>(this Func<A,R> f, Predicate<R> usePrevCondition) {
+    public static Func<A, R> MemoizePrev<A, R>(this Func<A, R> f, Predicate<R> usePrevCondition) {
       var cache = default(R);
       return a => {
         var r = f(a);
         return usePrevCondition(r) ? cache : (cache = r);
       };
     }
-    static Func<Tuple<A, B>, R> Tuplify<A, B, R>(this Func<A, B, R> f) {
-      return t => f(t.Item1, t.Item2);
-    }
-    static Func<A, B, R> Detuplify<A, B, R>(this Func<Tuple<A, B>, R> f) {
-      return (a, b) => f(Tuple.Create(a, b));
-    }
-    public static Func<A, B, R> Memoize<A, B, R>(this Func<A, B, R> f) {
-      return f.Tuplify().Memoize().Detuplify();
-    }
+    static Func<(A a, B b), R> Tuplify<A, B, R>(this Func<A, B, R> f) => t => f(t.a, t.b);
+    static Func<(A a, B b, C c), R> Tuplify<A, B, C, R>(this Func<A, B, C, R> f) => t => f(t.a, t.b, t.c);
+    static Func<(A a, B b, C c, D d), R> Tuplify<A, B, C, D, R>(this Func<A, B, C, D, R> f) => t => f(t.a, t.b, t.c, t.d);
+
+    static Func<A, B, R> Detuplify<A, B, R>(this Func<(A, B), R> f) => (a, b) => f((a, b));
+    static Func<A, B, C, R> Detuplify<A, B, C, R>(this Func<(A, B, C), R> f) => (a, b, c) => f((a, b, c));
+    static Func<A, B, C, D, R> Detuplify<A, B, C, D, R>(this Func<(A, B, C, D), R> f) => (a, b, c, d) => f((a, b, c, d));
+
+    public static Func<A, B, R> Memoize<A, B, R>(this Func<A, B, R> f) => f.Tuplify().Memoize().Detuplify();
+    public static Func<A, B, C, R> Memoize<A, B, C, R>(this Func<A, B, C, R> f) => f.Tuplify().Memoize().Detuplify();
+    public static Func<A, B, C, D, R> Memoize<A, B, C, D, R>(this Func<A, B, C, D, R> f) => f.Tuplify().Memoize().Detuplify();
+
     public static Func<A, B, R> Memoize2<A, B, R>(this Func<A, B, R> f) {
       Func<Tuple<A, B>, R> tuplified = t => f(t.Item1, t.Item2);
       Func<Tuple<A, B>, R> memoized = tuplified.Memoize();

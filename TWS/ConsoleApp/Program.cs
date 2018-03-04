@@ -46,11 +46,11 @@ namespace ConsoleApp {
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       var contract = spy;
       void OpenTrade(IList<Contract> contracts) {
-        contracts.Take(1).ForEach(c => fw.AccountManager.OpenTrade(c, 10, 0, 0, "", false));
+        HandleMessage(contracts.First().Key());
+        //contracts.Take(1).ForEach(c => fw.AccountManager.OpenTrade(c, 10, 0, 0, "", false));
       }
       ibClient.ManagedAccounts += s => {
         var symbol = "spx index";
-        var butterFlyContracts = new ConcurrentDictionary<string, Contract>();
         var optionChain = (
           from cd in fw.AccountManager.ReqContractDetails(symbol.ContractFactory()).FirstAsync().Select(t => t.cd)
           from price in fw.AccountManager.ReqPrice(cd.Summary).FirstAsync()
@@ -74,12 +74,11 @@ namespace ConsoleApp {
          .Do(b => HandleMessage(b.ToJson()))
          .Select(b => new { b[0].symbol, b[0].Exchange, b[0].Currency, conIds = b.Select(x => x.ConId).ToArray() })
          .Select(b => MakeButterfly(b.symbol, b.Exchange, b.Currency, b.conIds))
+         .ToArray()
          .Subscribe(och => {
-           if(och.ComboLegs.Zip(och.ComboLegs.Skip(1)).Any(t => t.Item1.ConId >= t.Item2.ConId))
-             throw new Exception($"Butterfly legs are out of order:{string.Join(",", och.ComboLegs.Select(l => l.ConId))}");
-           butterFlyContracts.TryAdd(och.Key(), och);
+           OpenTrade(och);
            HandleMessage("Butterfly done");
-         }, () => OpenTrade(butterFlyContracts.Select(x => x.Value).ToArray()));
+         });
         //fw.AccountManager.ReqContractDetails(spx).Subscribe(cd => HandleMessage(cd.ToJson()), () => HandleMessage(new { ContractDetails = new { Completed = contract.LocalSymbol } } + ""));
       };
 
@@ -110,6 +109,8 @@ namespace ConsoleApp {
       Console.ReadKey();
     }
     static Contract MakeButterfly(string symbol, string exchange, string currency, int[] conIds) {
+      if(conIds.Zip(conIds.Skip(1)).Any(t => t.Item1 >= t.Item2))
+        throw new Exception($"Butterfly legs are out of order:{string.Join(",", conIds)}");
       var c = new Contract() {
         Symbol = symbol,
         SecType = "BAG",
