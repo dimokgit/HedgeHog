@@ -747,8 +747,8 @@
       debugger;
       serverCall("openButterfly", [key, 10]);
     }
-
     this.showButterflies = function () {
+      serverCall("buildButterflies", [pair]);
       var shouldToggle = ko.observable(true);
       $(this.butterfliesDialog()).dialog({
         title: "Batterflies", width: "auto", dialogClass: "dialog-compact",
@@ -1608,7 +1608,6 @@
     };
     chat.client.butterflies = function (butterflies) {
       dataViewModel.butterflies(butterflies);
-      debugger;
     };
     // #endregion
     // #region Start the connection.
@@ -1686,8 +1685,6 @@
           dataViewModel.strategyType(mapEnumsForSettings(enums));
         });
         serverCall("readHedgedPair", [pair], function (hp) { dataViewModel.pairHedgedCurrent(hp); });
-        serverCall("buildButterflies", [pair], function (hp) {
-        });
         //#endregion 
         //#region read trade-related data
         serverCall("getPresetTradeLevels", [pair], function (l) {
