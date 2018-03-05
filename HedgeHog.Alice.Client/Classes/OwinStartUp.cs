@@ -37,7 +37,7 @@ using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string P
   , (int All, int Up, int Down) Lot
   , (double All, double Up, double Down) Pip
   , bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
-
+using IBApp;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
@@ -551,6 +551,12 @@ namespace HedgeHog.Alice.Client {
     }
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
+    public async Task<string[]> ReadButterflies(string pair) { 
+      var a= await ((IBWraper)trader.Value.TradesManager).AccountManager
+      .BatterflyFactory(pair)
+      .Select(b => b.Select(t => t.k));
+      return a.ToArray();
+    }
     #endregion
 
     #region TradeConditions

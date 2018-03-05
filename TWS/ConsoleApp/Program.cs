@@ -45,40 +45,29 @@ namespace ConsoleApp {
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       var contract = spy;
-      void OpenTrade(IList<Contract> contracts) {
-        HandleMessage(contracts.First().Key());
-        //contracts.Take(1).ForEach(c => fw.AccountManager.OpenTrade(c, 10, 0, 0, "", false));
+      void OpenTrade(IList<(string k, Contract c)> contracts) {
+        HandleMessage("\n" + string.Join("\n", contracts));
+        var c = contracts.First().c;
+        fw.AccountManager.ReqBidAsk(c)
+          .Subscribe(p => HandleMessage(new { c, p } + ""));
+        HandleMessage($"Butterflys {contracts.Count()} are done");
+        //contracts.Take(1).ForEach(c => fw.AccountManager.OpenTrade(c.c, 10, 0, 0, "", false));
+        //var counter = 0;
+        //var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
+        //HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
+        //new HistoryLoader<Rate>(ibClient, contracts.First().c, 1440 * 3, dateEnd, TimeSpan.FromDays(4), TimeUnit.D, BarSize._1_min,
+        //  map,
+        //  list => HandleMessage(new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate } } + ""),
+        //  dates => HandleMessage(new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter } + ""),
+        //  exc => { });
+
       }
       ibClient.ManagedAccounts += s => {
-        var symbol = "spx index";
-        var optionChain = (
-          from cd in fw.AccountManager.ReqContractDetails(symbol.ContractFactory()).FirstAsync().Select(t => t.cd)
-          from price in fw.AccountManager.ReqPrice(cd.Summary).FirstAsync()
-          from och in fw.AccountManager.ReqSecDefOptParams(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
-          select new { och.exchange, och.underlyingConId, och.tradingClass, och.multiplier, och.expirations, och.strikes, price, symbol = cd.Summary.Symbol, currency = cd.Summary.Currency }
-        )
-        .SkipWhile(t => t.expirations.First().FromTWSDateString() > DateTime.UtcNow.Date.AddDays(3))
-        .FirstAsync();
-
-        (from t in optionChain
-         from exp in t.expirations.Take(1)
-         from strikeMiddle in t.strikes.OrderBy(st => st.Abs(t.price)).Take(2).Select((strike, i) => new { strike, i })
-         from strike in new[] { strikeMiddle.strike - 5, strikeMiddle.strike, strikeMiddle.strike + 5 }
-         let option = MakeOptionSymbol(t.tradingClass, exp.FromTWSDateString(), strike, true)
-         from o in fw.AccountManager.ReqContractDetails(ContractSamples.Option(option)).FirstAsync()
-         select new { t.symbol, o.cd.Summary.Exchange, o.cd.Summary.ConId, o.cd.Summary.Currency, o.reqId, t.price, strikeMiddle.i }
-         )
-         .Buffer(6)
-         .SelectMany(b => b.OrderBy(c => c.i).ThenBy(c => c.ConId).ToArray())
-         .Buffer(3)
-         .Do(b => HandleMessage(b.ToJson()))
-         .Select(b => new { b[0].symbol, b[0].Exchange, b[0].Currency, conIds = b.Select(x => x.ConId).ToArray() })
-         .Select(b => MakeButterfly(b.symbol, b.Exchange, b.Currency, b.conIds))
-         .ToArray()
-         .Subscribe(och => {
-           OpenTrade(och);
-           HandleMessage("Butterfly done");
-         });
+        //var symbol = "spx index";
+        fw.AccountManager.BatterflyFactory("spx index")
+        .Merge(fw.AccountManager.BatterflyFactory("SPY"))
+        //.Merge(fw.AccountManager.BatterflyFactory(fw, "VXX"))
+        .Subscribe(och => { OpenTrade(och); });
         //fw.AccountManager.ReqContractDetails(spx).Subscribe(cd => HandleMessage(cd.ToJson()), () => HandleMessage(new { ContractDetails = new { Completed = contract.LocalSymbol } } + ""));
       };
 
@@ -94,13 +83,14 @@ namespace ConsoleApp {
                list => HandleMessage(new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate } } + ""),
                dates => HandleMessage(new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter } + ""),
                exc => { });
-        } else {
-          var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp => sp.LoadRates).ToArray());
-          var dateStart = DateTime.UtcNow.Date.ToLocalTime().AddMonths(-1).AddDays(-2);
-          foreach(var sp in sp500.Select(b => b.Symbol)) {
-            HedgeHog.Alice.Store.PriceHistory.AddTicks(fw, 1, sp, dateStart, o => HandleMessage(o + ""));
-          }
         }
+        //else {
+        //  var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp => sp.LoadRates).ToArray());
+        //  var dateStart = DateTime.UtcNow.Date.ToLocalTime().AddMonths(-1).AddDays(-2);
+        //  foreach(var sp in sp500.Select(b => b.Symbol)) {
+        //    HedgeHog.Alice.Store.PriceHistory.AddTicks(fw, 1, sp, dateStart, o => HandleMessage(o + ""));
+        //  }
+        //}
       }
       HandleMessage("Press any key ...");
       Console.ReadKey();
@@ -108,43 +98,6 @@ namespace ConsoleApp {
       HandleMessage("Press any key ...");
       Console.ReadKey();
     }
-    static Contract MakeButterfly(string symbol, string exchange, string currency, int[] conIds) {
-      if(conIds.Zip(conIds.Skip(1)).Any(t => t.Item1 >= t.Item2))
-        throw new Exception($"Butterfly legs are out of order:{string.Join(",", conIds)}");
-      var c = new Contract() {
-        Symbol = symbol,
-        SecType = "BAG",
-        Exchange = exchange,
-        Currency = currency
-      };
-      var left = new ComboLeg() {
-        ConId = conIds[0],
-        Ratio = 1,
-        Action = "BUY",
-        Exchange = exchange
-      };
-      var middle = new ComboLeg() {
-        ConId = conIds[1],
-        Ratio = 2,
-        Action = "SELL",
-        Exchange = exchange
-      };
-      var right = new ComboLeg() {
-        ConId = conIds[2],
-        Ratio = 1,
-        Action = "BUY",
-        Exchange = exchange
-      };
-      c.ComboLegs = new List<ComboLeg> { left, middle, right };
-      return c;
-    }
-    static string MakeOptionSymbol(string symbol, DateTime expiration, double strike, bool isCall) {
-      var date = expiration.ToTWSOptionDateString();
-      var cp = isCall ? "C" : "P";
-      var price = strike.ToString("00000") + "000";
-      return $"{symbol}  {date}{cp}{price}";
-    }
-
 
     private static void OnPriceChanged(Price price) {
       HandleMessage(price.ToString());

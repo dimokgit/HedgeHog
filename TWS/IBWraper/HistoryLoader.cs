@@ -162,7 +162,7 @@ namespace IBApp {
         string barSizeSetting = (_barSize + "").Replace("_", " ").Trim();
         string whatToShow = "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
-        var ls = _contract.LocalSymbol;
+        var ls = _contract.LocalSymbol ?? _contract.Symbol ?? "";
         var useRTH = !ls.IsCurrenncy() && !ls.IsFuture() && !ls.IsETF() && _timeUnit != TimeUnit.S;
         _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, new List<TagValue>());
       } catch(Exception exc) {

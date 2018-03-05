@@ -1658,7 +1658,9 @@
           dataViewModel.strategyType(mapEnumsForSettings(enums));
         });
         serverCall("readHedgedPair", [pair], function (hp) { dataViewModel.pairHedgedCurrent(hp); });
-
+        serverCall("readButterflies", [pair], function (hp) {
+          debugger;
+        });
         //#endregion 
         //#region read trade-related data
         serverCall("getPresetTradeLevels", [pair], function (l) {
