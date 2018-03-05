@@ -740,6 +740,30 @@
       //$(wwwSettingsGridElement).jqPropertyGrid(properties);
     };
     // #endregion
+    // #region Butterflies
+    this.butterflies = ko.observableArray();
+    this.butterfliesDialog = ko.observable();
+    this.openButterfly = function (key) {
+      debugger;
+      serverCall("openButterfly", [key, 10]);
+    }
+
+    this.showButterflies = function () {
+      var shouldToggle = ko.observable(true);
+      $(this.butterfliesDialog()).dialog({
+        title: "Batterflies", width: "auto", dialogClass: "dialog-compact",
+        dragStart: function () { shouldToggle(false); },
+        dragStop: function (event, ui) {
+          setTimeout(function () { shouldToggle(true); }, 100);
+          $(this).dialog({ width: "auto", height: "auto" });
+        },
+        open: dialogCollapse(shouldToggle),
+        close: function () {
+          $(this).dialog("destroy");
+        }
+      });
+    }.bind(this);
+    // #endregion
     // #region hedgingRatiosDialog
     var stophedgingRatios;
     this.hedgingRatios = ko.observableArray();
@@ -1582,6 +1606,10 @@
     chat.client.warning = function (message) {
       showWarningPerm(message);
     };
+    chat.client.butterflies = function (butterflies) {
+      dataViewModel.butterflies(butterflies);
+      debugger;
+    };
     // #endregion
     // #region Start the connection.
     //$.connection.hub.logging = true;
@@ -1658,8 +1686,7 @@
           dataViewModel.strategyType(mapEnumsForSettings(enums));
         });
         serverCall("readHedgedPair", [pair], function (hp) { dataViewModel.pairHedgedCurrent(hp); });
-        serverCall("readButterflies", [pair], function (hp) {
-          debugger;
+        serverCall("buildButterflies", [pair], function (hp) {
         });
         //#endregion 
         //#region read trade-related data

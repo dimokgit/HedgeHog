@@ -448,20 +448,91 @@ namespace IBApp {
 
     #region Butterfly
     ConcurrentDictionary<string, Contract> Butterflies = new ConcurrentDictionary<string, Contract>();
-    public IObservable<(string k, Contract c)[]> BatterflyFactory(string symbol) {
-      var experationMin = DateTime.MaxValue;
-      DateTime GetMinDate(DateTime experation) {
-        if(experation < experationMin)
-          experationMin = experation;
-        return experationMin;
-      }
+    public IObservable<(string k, Contract c)> BatterflyFactory2(string symbol) {
       var optionChain = (
         from cd in ReqContractDetails(symbol.ContractFactory()).FirstAsync().Select(t => t.cd)
         from price in ReqMarketPrice(cd.Summary)
         from och in ReqSecDefOptParams(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
         where och.exchange == "SMART"
         from expiration in och.expirations.Select(e => e.FromTWSDateString())
-        select new { experationMin = GetMinDate(expiration), och.exchange, och.underlyingConId, och.tradingClass, och.multiplier, expiration, och.strikes, price, symbol = cd.Summary.Symbol, currency = cd.Summary.Currency }
+        select new { och.exchange, och.underlyingConId, och.tradingClass, och.multiplier, expiration, och.strikes, price, symbol = cd.Summary.Symbol, currency = cd.Summary.Currency }
+      )
+      .SkipWhile(t => t.expiration > DateTime.UtcNow.Date.AddDays(2))
+      //.SkipWhile(t => true)
+      //.Where(t => t.expiration == experationMin)
+      .Take(1);
+      var contracts0 = (
+        from t in optionChain
+        from strikeMiddle in t.strikes.OrderBy(st => st.Abs(t.price)).Take(2).Select((strike, i) => (strike, i))
+        from inc in t.strikes.Zip(t.strikes.Skip(1), (p, n) => p.Abs(n)).OrderBy(d => d).Take(1)
+        from strike in new[] { strikeMiddle.strike - inc, strikeMiddle.strike, strikeMiddle.strike + inc }
+        let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, true)
+        from o in ReqContractDetails(ContractSamples.Option(option)).FirstAsync()
+        select new { t.symbol, o.cd.Summary.Exchange, o.cd.Summary.ConId, o.cd.Summary.Currency, o.reqId, t.price, strikeMiddle.i, strike, t.expiration }
+       )
+       .Buffer(6)
+       .SelectMany(b => b.OrderBy(c => c.i).ThenByDescending(c => c.strike).ToArray())
+       .Buffer(3)
+       .Select(b => new { b[0].symbol, b[0].Exchange, b[0].Currency, b[0].strike, b[0].expiration, conIds = b.Select(x => x.ConId).ToArray() });
+      var contracts = (
+        from b in contracts0
+        let c = MakeButterfly(b.symbol, b.Exchange, b.Currency, b.conIds)
+        select (k : b.symbol + ":" + b.strike + ":" + b.expiration.ToTWSDateString(), c )
+      )
+      //.ObserveOn(TaskPoolScheduler.Default)
+      //.Catch<(string k,Contract c), Exception>(exc => {
+      //  Trace(exc);
+      //  return new[] { ( k : "", c : (Contract)null ) }.ToObservable();
+      //})
+      ;
+      return contracts;
+      /// Locals
+      string MakeOptionSymbol(string tradingClass, DateTime expiration, double strike, bool isCall) {
+        var date = expiration.ToTWSOptionDateString();
+        var cp = isCall ? "C" : "P";
+        var price = strike.ToString("00000.000").Replace(".", "");
+        return $"{tradingClass.PadRight(4)}  {date}{cp}{price}";
+      }
+      Contract MakeButterfly(string instrument, string exchange, string currency, int[] conIds) {
+        //if(conIds.Zip(conIds.Skip(1), (p, n) => (p, n)).Any(t => t.p <= t.n)) throw new Exception($"Butterfly legs are out of order:{string.Join(",", conIds)}");
+        var c = new Contract() {
+          Symbol = instrument,
+          SecType = "BAG",
+          Exchange = exchange,
+          Currency = currency
+        };
+        var left = new ComboLeg() {
+          ConId = conIds[0],
+          Ratio = 1,
+          Action = "BUY",
+          Exchange = exchange
+        };
+        var middle = new ComboLeg() {
+          ConId = conIds[1],
+          Ratio = 2,
+          Action = "SELL",
+          Exchange = exchange
+        };
+        var right = new ComboLeg() {
+          ConId = conIds[2],
+          Ratio = 1,
+          Action = "BUY",
+          Exchange = exchange
+        };
+        c.ComboLegs = new List<ComboLeg> { left, middle, right };
+        return c;
+      }
+      //.ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
+      //.SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
+    }
+    public IObservable<(string k, Contract c)> BatterflyFactory(string symbol) {
+      var optionChain = (
+        from cd in ReqContractDetails(symbol.ContractFactory()).FirstAsync().Select(t => t.cd)
+        from price in ReqMarketPrice(cd.Summary)
+        from och in ReqSecDefOptParams(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
+        where och.exchange == "SMART"
+        from expiration in och.expirations.Select(e => e.FromTWSDateString())
+        select new { och.exchange, och.underlyingConId, och.tradingClass, och.multiplier, expiration, och.strikes, price, symbol = cd.Summary.Symbol, currency = cd.Summary.Currency }
       )
       .SkipWhile(t => t.expiration > DateTime.UtcNow.Date.AddDays(2))
       //.SkipWhile(t => true)
@@ -491,7 +562,7 @@ namespace IBApp {
         Trace(exc);
         return new(string k, Contract c)[0].ToObservable();
       })
-      .ToArray();
+      ;
       return contracts;
       /// Locals
       string MakeOptionSymbol(string tradingClass, DateTime expiration, double strike, bool isCall) {
@@ -535,17 +606,18 @@ namespace IBApp {
     #endregion
 
     #region Req-* functions
-    int _reqTimeout = 5;
+    int _reqTimeout = 60;
     public IObservable<(int reqId, ContractDetails cd)> ReqContractDetails(string symbol) => ReqContractDetails(new Contract() { LocalSymbol = symbol, SecType = "", Symbol = symbol });
     Func<Contract, IObservable<(int reqId, ContractDetails cd)>> _ReqContractDetails;
     public IObservable<(int reqId, ContractDetails cd)> ReqContractDetails(Contract contract) => (_ReqContractDetails
       ?? (_ReqContractDetails = new Func<Contract, IObservable<(int reqId, ContractDetails cd)>>(c => ReqContractDetailsImpl(c))
-      .Memoize(c => c.ToString())))(contract);
+      //.Memoize(c => c.ToString())
+      ))(contract);
     IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsImpl(Contract contract) {
       var reqId = NextReqId();
       var cd = _contractDetailsObservable
         .Where(t => t.reqId == reqId)
-        .Timeout(TimeSpan.FromSeconds(_reqTimeout))
+        //.Timeout(TimeSpan.FromSeconds(_reqTimeout))
         //.Do(x => _verbous(new { ReqContractDetails = new { Started = x.reqId } }))
         ;
       //.Subscribe(t => callback(t.contractDetails),exc=> { throw exc; }, () => _verbous(new { ContractDetails = new { Completed = reqId } }));
@@ -556,7 +628,9 @@ namespace IBApp {
     Func<string, string, string, int, ReqSecDefOptParams> _ReqSecDefOptParams;
     public ReqSecDefOptParams ReqSecDefOptParams(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) => (_ReqSecDefOptParams
       ?? (_ReqSecDefOptParams = new Func<string, string, string, int, ReqSecDefOptParams>((us, ex, st, comId)
-          => ReqSecDefOptParamsImpl(us, ex, st, comId))).Memoize())(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId);
+          => ReqSecDefOptParamsImpl(us, ex, st, comId)))
+      //.Memoize()
+      )(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId);
     public ReqSecDefOptParams ReqSecDefOptParamsImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
       var reqId = NextReqId();
       var cd = _optionsChainObservable
@@ -627,7 +701,7 @@ namespace IBApp {
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
     }
-    public PendingOrder OpenTrade(Contract contract, int quantity, double takeProfit, double stopLoss, string remark, bool whatIf) {
+    public PendingOrder OpenTrade(Contract contract, int quantity) {
       var orderType = "MKT";
       bool isPreRTH = false;
       var o = new IBApi.Order() {

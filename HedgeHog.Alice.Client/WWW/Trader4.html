@@ -443,6 +443,9 @@
                 <button data-bind="click:showHedgingRatios" title="Show Hedge Ratios">
                   <i class="glyphicon glyphicon-retweet"></i>
                 </button>
+                <button data-bind="click:showButterflies" title="Show Butterflies">
+                  <i class="glyphicon glyphicon-retweet"></i>
+                </button>
 
               </li>
             </ul>
@@ -1117,7 +1120,7 @@
           <!--<td>Amount</td>-->
           <td>Lot</td>
           <td>Pip</td>
-    <!--      <td>Pip</td>-->
+          <!--      <td>Pip</td>-->
           <td>MMR</td>
           <td>IsBuy</td>
         </tr>
@@ -1135,9 +1138,9 @@
           <td data-bind="text:d3.format('.0f')(TradeAmount)"></td>
           <!--<td data-bind="text:d3.format('.0f')(TradeAmount2)"></td>-->
           <td data-bind="text:Lot"></td>
-<!--          <td data-bind="text:Lot2"></td>-->
+          <!--          <td data-bind="text:Lot2"></td>-->
           <td data-bind="text:Pip"></td>
-        <!--  <td data-bind="text:Pip2"></td>-->
+          <!--  <td data-bind="text:Pip2"></td>-->
           <td data-bind="text:d3.format('.2f')(MMR)"></td>
           <td>
             <button data-bind="text:IsBuy?' Buy':'Sell',click:$parent.openHedgeTrade,css:{hide:!IsPrime}"></button>
@@ -1164,6 +1167,26 @@
         <tr>
           <td data-bind="text:n"></td>
           <td data-bind="text:v"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!--#endregion-->
+  <!--#region Butterflies-->
+  <div data-bind="elementer:butterfliesDialog" style="display:none;padding:0">
+    <table border="1" cellspacing="0" data-bind="css:{error:hedgingRatiosError}" class="wwwInfo">
+      <thead>
+        <tr>
+          <td>Batterfly</td>
+          <td>Buy</td>
+        </tr>
+      </thead>
+      <tbody data-bind="foreach:butterflies">
+        <tr>
+          <td data-bind="text:$data"></td>
+          <td>
+            <button data-bind="click:$parent.openButterfly.bind(null,$data)">Buy</button>
+          </td>
         </tr>
       </tbody>
     </table>

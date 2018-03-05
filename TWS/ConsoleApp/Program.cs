@@ -51,7 +51,7 @@ namespace ConsoleApp {
         fw.AccountManager.ReqBidAsk(c)
           .Subscribe(p => HandleMessage(new { c, p } + ""));
         HandleMessage($"Butterflys {contracts.Count()} are done");
-        //contracts.Take(1).ForEach(c => fw.AccountManager.OpenTrade(c.c, 10, 0, 0, "", false));
+        //contracts.Take(1).ForEach(c => fw.AccountManager.OpenTrade(c.c, 10));
         //var counter = 0;
         //var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
         //HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
@@ -64,8 +64,8 @@ namespace ConsoleApp {
       }
       ibClient.ManagedAccounts += s => {
         //var symbol = "spx index";
-        fw.AccountManager.BatterflyFactory("spx index")
-        .Merge(fw.AccountManager.BatterflyFactory("SPY"))
+        fw.AccountManager.BatterflyFactory("spx index").ToArray()
+        .Merge(fw.AccountManager.BatterflyFactory("SPY").ToArray())
         //.Merge(fw.AccountManager.BatterflyFactory(fw, "VXX"))
         .Subscribe(och => { OpenTrade(och); });
         //fw.AccountManager.ReqContractDetails(spx).Subscribe(cd => HandleMessage(cd.ToJson()), () => HandleMessage(new { ContractDetails = new { Completed = contract.LocalSymbol } } + ""));
