@@ -359,6 +359,7 @@
     // #endregion
 
     // #region Buy/Sell
+    this.hasTrades = ko.observable();
     this.isQuickTrade = ko.observable(false);
     this.toggleQuickTrade = function () {
       this.isQuickTrade(!this.isQuickTrade());
@@ -367,7 +368,7 @@
     this.buy = function () { serverCall("buy", [pair]); }
     var openTrades = ko.observable({});
     this.canShowClose = ko.pureComputed(function () {
-      return Object.keys(openTrades()).length;
+      return Object.keys(openTrades()).length || self.hasTrades();
     });
     this.closeTrades = function () {
       serverCall("closeTrades", [pair], resetPlotter);
@@ -1904,6 +1905,8 @@
 
     dataViewModel.inPause(response.ip);
     delete response.ip;
+    dataViewModel.hasTrades(response.ht);
+    delete response.ht;
 
     $('#discussion').text(JSON.stringify(response).replace(/["{}]/g, ""));
 

@@ -10,13 +10,13 @@ using IBApi;
 using IBSampleApp.util;
 
 namespace IBApp {
-  public class MarketDataManager : DataManager {
+  public class MarketDataManager :DataManager {
     const int TICK_ID_BASE = 10000000;
 
-    private readonly ConcurrentDictionary<string,Price> _currentPrices=new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
-    private Dictionary<int, (Contract contract, Price price)> activeRequests = new Dictionary<int, (Contract contract,Price price)>();
+    private readonly ConcurrentDictionary<string, Price> _currentPrices = new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<int, (Contract contract, Price price)> activeRequests = new Dictionary<int, (Contract contract, Price price)>();
 
-    public MarketDataManager(IBClientCore client ) : base(client, TICK_ID_BASE) {
+    public MarketDataManager(IBClientCore client) : base(client, TICK_ID_BASE) {
       IbClient.TickPrice += OnTickPrice;
       IbClient.TickString += OnTickString; ;
       IbClient.TickGeneric += OnTickGeneric;
@@ -24,17 +24,18 @@ namespace IBApp {
 
     private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, 0);
 
-    public void AddRequest(Contract contract, string genericTickList="") {
+    public void AddRequest(Contract contract, string genericTickList = "") {
+      if(string.IsNullOrEmpty(contract.Exchange)) contract.Exchange = "SMART";
       if(activeRequests.Any(ar => ar.Value.Item1.Instrument.ToUpper() == contract.Instrument.ToUpper())) {
         return;
       }
       var reqId = NextReqId();
       //IbClient.TickSize += OnTickSize;
       IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
-      activeRequests.Add(reqId, (contract,new Price(contract.Instrument)));
+      activeRequests.Add(reqId, (contract, new Price(contract.Instrument)));
     }
 
-    public bool TryGetPrice(string symbol,out Price price) {
+    public bool TryGetPrice(string symbol, out Price price) {
       price = null;
       if(!_currentPrices.ContainsKey(symbol))
         return false;
@@ -48,7 +49,7 @@ namespace IBApp {
     }
     private void OnTickString(int tickerId, int tickType, string value) {
       if(!activeRequests.TryGetValue(tickerId, out var t)) return;
-      var price=  t.Item2;
+      var price = t.Item2;
       switch(tickType) {
         // RT Volume
         case 48:
@@ -98,10 +99,10 @@ namespace IBApp {
         case 0:
         case 3:
         case 5:
-            RaisePriceChanged(price2);
+          RaisePriceChanged(price2);
           break;
         case 37:
-          if(price2.Bid<=0 && price2.Ask <= 0) {
+          if(price2.Bid <= 0 && price2.Ask <= 0) {
             price2.Bid = price2.Ask = price;
             RaisePriceChanged(price2);
           }
@@ -118,7 +119,7 @@ namespace IBApp {
     event PriceChangedEventHandler PriceChangedEvent;
     public event PriceChangedEventHandler PriceChanged {
       add {
-        if (PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
+        if(PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
           PriceChangedEvent += value;
       }
       remove {

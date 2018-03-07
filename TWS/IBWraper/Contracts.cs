@@ -26,6 +26,8 @@ namespace IBApp {
       ? FxContract(pair)
       : pair.IsIndex()
       ? Index(pair.Split(' ').First(), "")
+      : pair.IsOption()
+      ? Option(pair)
       : pair.IsFuture()
       ? Future(pair)
       : pair.IsCommodity()

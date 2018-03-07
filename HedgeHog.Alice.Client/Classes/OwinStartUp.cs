@@ -308,6 +308,7 @@ namespace HedgeHog.Alice.Client {
       : TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"h\:mm");
       var cgp = tmTrader.CurrentGrossInPips;
       var otgp = tmTrader.OpenTradesGross2InPips;
+      var ht = trader.Value?.TradesManager.GetTrades().Any();
       return new {
         time = tm0.ServerTime.ToString(timeFormat),
         prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 3),
@@ -338,7 +339,8 @@ namespace HedgeHog.Alice.Client {
           .ToArray(),
         tpls = tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
         tts = HasMinMaxTradeLevels(tmTrader) ? tmTrender.TradeTrends : "",
-        tti = GetTradeTrendIndexImpl(tmTrader, tmTrender)
+        tti = GetTradeTrendIndexImpl(tmTrader, tmTrender),
+        ht
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       };
       DateTime[] GetBackDates(DateTime start, int daysBack) =>
@@ -699,6 +701,7 @@ namespace HedgeHog.Alice.Client {
     }
     public void CloseTradesAll(string pair) {
       try {
+        trader.Value.TradesManager.GetTrades().ForEach(t => trader.Value.TradesManager.ClosePair(t.Pair));
         trader.Value.GrossToExitSoftReset();
         var tms = GetHedgedTradingMacros(pair).SelectMany(x => new[] { x.tm1, x.tm2 })
         .Distinct(tm => tm.Pair)
@@ -1002,6 +1005,7 @@ namespace HedgeHog.Alice.Client {
             list2.Add(row("CurrentLot", tm.Trades.Lots() + (ht ? "/" + tm.PipAmount.AutoRound2("$", 2) : "")));
           list2.Add(row("Trades Gross", $"{trades.Gross().AutoRound2("$", 2)}@{tm.ServerTime.TimeOfDay.ToString(@"hh\:mm\:ss")}"));
         }
+        list2.Add(row("Trades Gross", $"{rc.TradesManager.GetTrades().Gross().AutoRound2("$", 2)}@{tm.ServerTime.TimeOfDay.ToString(@"hh\:mm\:ss")}"));
         if(tm.LastTradeLoss < -1000000)
           list2.Add(row("Last Loss", tm.LastTradeLoss.AutoRound2("$", 2)));
         if(!ht) {

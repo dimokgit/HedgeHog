@@ -241,7 +241,7 @@ namespace IBApp {
           .Where(IsEqual(posMsg))
           .Select(ot => new Action(() => ot.Lots = posMsg.Quantity
             .SideEffect(Lots => _verbous(new { ChangePosition = new { ot.Pair, ot.IsBuy, Lots } }))))
-          .DefaultIfEmpty(() => OpenTrades.Add(TradeFromPosition(contract, position, averageCost)
+          .DefaultIfEmpty(() => OpenTrades.Add(TradeFromPosition(contract.SideEffect(IbClient.SetOfferSubscription), position, averageCost)
             .SideEffect(t => _verbous(new { OpenPosition = new { t.Pair, t.IsBuy, t.Lots } }))))
           .ToList()
           .ForEach(a => a());
@@ -551,7 +551,7 @@ namespace IBApp {
        .Buffer(6)
        .SelectMany(b => b.OrderBy(c => c.i).ThenByDescending(c => c.strike).ToArray())
        .Buffer(3)
-       .Select(b => new { b[0].symbol, b[0].Exchange, b[0].Currency, b[0].strike, b[0].expiration, conIds = b.Select(x => x.ConId).ToArray() });
+       .Select(b => new { b[0].symbol, b[0].Exchange, b[0].Currency, b[1].strike, b[0].expiration, conIds = b.Select(x => x.ConId).ToArray() });
       var contracts = (
         from b in contracts0
         let c = MakeButterfly(b.symbol, b.Exchange, b.Currency, b.conIds)
