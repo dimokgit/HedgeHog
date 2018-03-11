@@ -21,6 +21,14 @@ namespace IBApp {
    * Any stock or option symbols displayed are for illustrative purposes only and are not intended to portray a recommendation.
    */
   public static class ContractSamples {
+    public static Contract ContractFactory(this Contract contract) =>
+      new Contract {
+        Symbol = contract.Symbol,
+        Exchange=contract.Exchange,
+        SecType = contract.SecType,
+        Currency = contract.Currency
+      };
+
     public static Contract ContractFactory(this string pair) =>
      pair.IsCurrenncy()
       ? FxContract(pair)

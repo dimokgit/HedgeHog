@@ -203,7 +203,7 @@ namespace IBApi {
     }
 
     public override string ToString() {
-      return $"{SecType} {Symbol ?? LocalSymbol} {Currency} {Exchange}";
+      return $"{localSymbol ?? Symbol} {SecType} {Exchange} {Currency}";
     }
   }
 }

@@ -62,15 +62,25 @@ namespace ConsoleApp {
         //  exc => { });
 
       }
+      var disposables = new List<IDisposable>();
       ibClient.ManagedAccountsObservable.Subscribe(s => {
-        var symbol = "VXX";// "spx index";
-        // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
-        var mp=fw.AccountManager.ReqMarketPrice(symbol).ToEnumerable().ToArray();
-        HandleMessage(new { mp=mp.ToJson() }+"");
-        fw.AccountManager.ReqCurrentOptionsAsync(symbol).ToEnumerable()
-        .ForEach(oc => HandleMessage(oc.k));
-        var och = fw.AccountManager.BatterflyFactory(symbol).ToArray();
-        OpenTrade(och);
+        HandleMessage("Sleep a little");
+        //Thread.Sleep(20*1000);
+        var symbols = new[] { "SPY", "spx index", "VXX" };
+        void ProcessSymbol(string symbol) {
+          //HandleMessage(new { symbol } + "");
+          // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
+          fw.AccountManager.ReqMarketPrice(symbol).ToEnumerable()
+          .Count(1, "ReqMarketPrice")
+          .ForEach(mp => HandleMessage($"{symbol}:{new { mp = mp.ToJson() }}"));
+
+          var options = IBWraper.RunUntilCount(2,3, () => fw.AccountManager.ReqCurrentOptionsAsync(symbol).ToEnumerable().ToArray());
+          HandleMessage(new { options.c, options = options.a.Flatter(",") });
+        }
+        symbols.ForEach(ProcessSymbol);
+        //var och = fw.AccountManager.BatterflyFactory(symbol).ToArray();
+        //OpenTrade(och);
+
         //.Merge(fw.AccountManager.BatterflyFactory("SPY").ToArray())
         //.Merge(fw.AccountManager.BatterflyFactory(fw, "VXX"))
         //.Subscribe(och => { OpenTrade(och); },exc=>HandleError(exc));
@@ -78,7 +88,7 @@ namespace ConsoleApp {
       });
 
       if(ibClient.LogOn("127.0.0.1", 7497 + "", 102 + "", false)) {
-        ibClient.SetOfferSubscription(contract);
+        //ibClient.SetOfferSubscription(contract);
         if(true) {
           var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
           HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
@@ -124,9 +134,8 @@ namespace ConsoleApp {
     }
 
 
-    private static void HandleMessage(string message) {
-      Console.WriteLine(DateTime.Now + ": " + message);
-    }
+    private static void HandleMessage<T>(T message) => Console.WriteLine(DateTime.Now + ": " + message);
+    private static void HandleMessage(string message) => Console.WriteLine(DateTime.Now + ": " + message);
     private static void HandleMessage(HistoricalDataMessage historicalDataEndMessage) {
       HandleMessage(historicalDataEndMessage + "");
     }

@@ -18,6 +18,7 @@ namespace IBApp {
 
     public MarketDataManager(IBClientCore client) : base(client, TICK_ID_BASE) {
       IbClient.TickPrice += OnTickPrice;
+      IbClient.TickPrice += OnTickPrice;
       IbClient.TickString += OnTickString; ;
       IbClient.TickGeneric += OnTickGeneric;
     }

@@ -14,6 +14,14 @@ using ReactiveUI;
 using static HedgeHog.Shared.TradesManagerStatic;
 namespace IBApp {
   public class IBWraper :HedgeHog.Shared.ITradesManager {
+    public static (int c,T[] a) RunUntilCount<T>(int count, int countMax, Func<T[]> func) {
+      T[] options = default;
+      do {
+        options = func();
+      } while(options.Length < count && countMax-- > 0);
+      return (count, options);
+    }
+
     private readonly IBClientCore _ibClient;
     private AccountManager _accountManager;
     public AccountManager AccountManager { get { return _accountManager; } }
@@ -500,7 +508,7 @@ namespace IBApp {
       => _accountManager?.OrderStatuses.
       Where(os => pair.IsNullOrWhiteSpace() || os.Key.ToLower() == pair.ToLower())
       .Select(os => pair.IsNullOrWhiteSpace() ? (os.Key + ":" + os.Value.status, os.Value.filled, os.Value.remaining, os.Value.isDone) : os.Value)
-      .ToArray() 
+      .ToArray()
       ?? new(string status, double filled, double remaining, bool isDone)[0];
 
     public double GetNetOrderRate(string pair, bool isStop, bool getFromInternal = false) {

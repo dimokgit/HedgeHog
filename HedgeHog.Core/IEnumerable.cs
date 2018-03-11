@@ -31,32 +31,38 @@ namespace HedgeHog {
     }
 
     #region Counter
-    public static IEnumerable<T> Count<T>(this IEnumerable<T> source, int expectedCount) {
-      return source.Count(expectedCount, (Action<int>)null, (Action<int>)null);
-    }
+    public static IEnumerable<T> Count<T, C>(this IEnumerable<T> source, int expectedCount, C context) =>
+      source.Count(expectedCount, (Action<int>)null, (Action<int>)null, context);
     public static IEnumerable<T> Count<T, E>(this IEnumerable<T> source, int expectedCount, E onLess, E onMore) where E : Exception {
       return source.Count(expectedCount,
         onLess == null ? (Action<int>)null : _ => { throw onLess; },
         onMore == null ? (Action<int>)null : _ => { throw onMore; });
     }
-    public static IEnumerable<T> Count<T>(this IEnumerable<T> source, int expectedCount, Action<int> onLess, Action<int> onMore) {
+    public static IEnumerable<T> Count<T>(this IEnumerable<T> source, int expectedCount, Action<int> onLess, Action<int> onMore) =>
+    source.Count(expectedCount, onLess, onMore, (string)null);
+    public static IEnumerable<T> Count<T, C>(this IEnumerable<T> source, int expectedCount, Action<int> onLess, Action<int> onMore, C context) {
       if(source == null) throw new ArgumentNullException("source");
       var counter = 0;
       var handled = false;
+      string Context() => context.IsDefault() ? "" : $" Context: {context}";
       foreach(var v in source) {
         if(++counter > expectedCount) {
-          (onMore != null ? onMore : c => { throw new Exception("Sequence has more items[" + c + "] then expected[" + expectedCount + "]"); })(counter);
+          (onMore != null
+            ? onMore
+            : c => { throw new Exception($"Sequence has more items[{c}] then expected[{expectedCount}].{Context()}"); }
+            )(counter);
           handled = true;
           break;
         }
         yield return v;
       }
       if(!handled && counter != expectedCount)
-        (onLess != null ? onLess : c => { throw new Exception("Sequence has less items[" + c + "] then expected[" + expectedCount + "]"); })(counter);
+        (onLess != null ? onLess : c => { throw new Exception($"Sequence has less items[{c}] then expected[{expectedCount}].{Context()}"); })(counter);
     }
     #endregion
 
     public static string[] Splitter(this string s, params char[] split) { return s.Split(split, StringSplitOptions.RemoveEmptyEntries); }
+    public static string Flatter<T>(this IEnumerable<T> s, string split) { return string.Join(split, s); }
     public static IList<double> MaxByOrEmpty(this IEnumerable<double> source) {
       return source.MaxByOrEmpty(d => d);
     }
