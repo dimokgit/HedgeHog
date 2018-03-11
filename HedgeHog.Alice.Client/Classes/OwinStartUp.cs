@@ -557,9 +557,9 @@ namespace HedgeHog.Alice.Client {
     public (string k, IBApi.Contract c)[] ReadButterflies(string pair) => _butterflies;
     public void BuildButterflies(string pair) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
-      am.BatterflyFactory(pair)
-        .ToArray()
-        .Subscribe(b => Clients.Caller.butterflies((_butterflies = b).ToArray(t => t.k)));
+      var b = am.BatterflyFactory(pair)
+        .ToArray();
+      Clients.Caller.butterflies((_butterflies = b).ToArray(t => t.k));
     }
     [BasicAuthenticationFilter]
     public void OpenButterfly(string key, int quantity) {

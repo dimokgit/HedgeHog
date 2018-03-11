@@ -19,9 +19,11 @@ using ContDetHandler = System.Action<int, IBApi.ContractDetails>;
 using OptionsChainHandler = System.Action<int, string, int, string, string, System.Collections.Generic.HashSet<string>, System.Collections.Generic.HashSet<double>>;
 using TickPriceHandler = System.Action<int, int, double, int>;
 using ReqSecDefOptParams = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
+using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using static IBApp.AccountManager;
 using System.Reactive.Disposables;
 using HedgeHog.Core;
+using System.Threading;
 
 namespace IBApp {
   public partial class AccountManager :DataManager, IDisposable {
@@ -101,22 +103,50 @@ namespace IBApp {
         }
       }
       _contractDetailsObservable = Observable.FromEvent<ContDetHandler, (int reqId, ContractDetails contractDetails)>(
-        onNext => (int a, ContractDetails b) => Try(() => onNext((a, b)), nameof(IbClient.ContractDetails)),
-        h => IbClient.ContractDetails += h,
-        h => IbClient.ContractDetails -= h
-        );
+        onNext => (int a, ContractDetails b) => onNext((a, b)),
+        h => IbClient.ContractDetails += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(IbClient.ContractDetails)}")),
+        h => IbClient.ContractDetails -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(IbClient.ContractDetails)}"))
+        ).ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
+        .Catch<(int reqId, ContractDetails contractDetails), Exception>(exc => {
+          Trace(new Exception(nameof(IbClient.ContractDetails), exc));
+          return new(int reqId, ContractDetails contractDetails)[0].ToObservable();
+        });
+      _contractDetailsEndObservable = Observable.FromEvent<Action<int>, int>(
+        onNext => (int a) => Try(() => onNext(a), nameof(IbClient.ContractDetails)),
+        h => IbClient.ContractDetailsEnd += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(IbClient.ContractDetailsEnd)}")),
+        h => IbClient.ContractDetailsEnd -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(IbClient.ContractDetailsEnd)}"))
+        ).ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
+        .Catch<int, Exception>(exc => {
+          Trace(new Exception(nameof(IbClient.ContractDetails), exc));
+          return new int[0].ToObservable();
+        });
+
       _optionsChainObservable = Observable.FromEvent<OptionsChainHandler, (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)>(
         onNext => (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)
         => Try(() => onNext((reqId, exchange, underlyingConId, tradingClass, multiplier, expirations, strikes)), nameof(IbClient.SecurityDefinitionOptionParameter)),
         h => IbClient.SecurityDefinitionOptionParameter += h,
         h => IbClient.SecurityDefinitionOptionParameter -= h
         );
+      _optionsChainEndObservable = Observable.FromEvent<Action<int>, int>(
+        onNext => (int a) => onNext(a),
+        h => IbClient.SecurityDefinitionOptionParameterEnd += h,
+        h => IbClient.SecurityDefinitionOptionParameterEnd -= h
+        ).ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
+        .Catch<int, Exception>(exc => {
+          Trace(new Exception(nameof(IbClient.SecurityDefinitionOptionParameterEnd), exc));
+          return new int[0].ToObservable();
+        });
+
       _marketDataObservable = Observable.FromEvent<TickPriceHandler, (int reqId, int field, double price, int canAutoExecute)>(
         onNext => (int reqId, int field, double price, int canAutoExecute)
         => Try(() => onNext((reqId, field, price, canAutoExecute)), nameof(IbClient.TickPrice)),
         h => IbClient.TickPrice += h,
         h => IbClient.TickPrice -= h
-        );
+        ).ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
+        .Catch<(int reqId, int field, double price, int canAutoExecute), Exception>(exc => {
+          Trace(new Exception(nameof(IbClient.TickPrice), exc));
+          return new(int reqId, int field, double price, int canAutoExecute)[0].ToObservable();
+        });
 
       var posObs = Observable.FromEvent<PositionHandker, (string account, Contract contract, double pos, double avgCost)>(
         onNext => (string a, Contract b, double c, double d) => Try(() => onNext((a, b, c, d)), nameof(IbClient.Position)),
@@ -446,29 +476,33 @@ namespace IBApp {
     public Trade[] GetClosedTrades() { return ClosedTrades.ToArray(); }
     #endregion
 
+    Action IfEmpty(object o) => () => throw new Exception(o.ToJson());
     #region Butterfly
     ConcurrentDictionary<string, Contract> Butterflies = new ConcurrentDictionary<string, Contract>();
     public IObservable<(string k, Contract c)> BatterflyFactory2(string symbol) {
       var optionChain = (
-        from cd in ReqContractDetails(symbol.ContractFactory()).FirstAsync().Select(t => t.cd)
+        from cd in ReqContractDetails(symbol).ToObservable()
         from price in ReqMarketPrice(cd.Summary)
-        from och in ReqSecDefOptParams(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
+        from och in ReqSecDefOptParamsSyncImpl(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
         where och.exchange == "SMART"
         from expiration in och.expirations.Select(e => e.FromTWSDateString())
         select new { och.exchange, och.underlyingConId, och.tradingClass, och.multiplier, expiration, och.strikes, price, symbol = cd.Summary.Symbol, currency = cd.Summary.Currency }
       )
-      .SkipWhile(t => t.expiration > DateTime.UtcNow.Date.AddDays(2))
+      //.SkipWhile(t => t.expiration > DateTime.UtcNow.Date.AddDays(2))
       //.SkipWhile(t => true)
       //.Where(t => t.expiration == experationMin)
+      .ToArray()
+      .Select(a => a.OrderBy(t => t.expiration))
       .Take(1);
       var contracts0 = (
-        from t in optionChain
+        from tt in optionChain
+        from t in tt
         from strikeMiddle in t.strikes.OrderBy(st => st.Abs(t.price)).Take(2).Select((strike, i) => (strike, i))
         from inc in t.strikes.Zip(t.strikes.Skip(1), (p, n) => p.Abs(n)).OrderBy(d => d).Take(1)
         from strike in new[] { strikeMiddle.strike - inc, strikeMiddle.strike, strikeMiddle.strike + inc }
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, true)
-        from o in ReqContractDetails(ContractSamples.Option(option)).FirstAsync()
-        select new { t.symbol, o.cd.Summary.Exchange, o.cd.Summary.ConId, o.cd.Summary.Currency, o.reqId, t.price, strikeMiddle.i, strike, t.expiration }
+        from o in ReqContractDetails(ContractSamples.Option(option))
+        select new { t.symbol, o.Summary.Exchange, o.Summary.ConId, o.Summary.Currency, t.price, strikeMiddle.i, strike, t.expiration }
        )
        .Buffer(6)
        .SelectMany(b => b.OrderBy(c => c.i).ThenByDescending(c => c.strike).ToArray())
@@ -477,7 +511,7 @@ namespace IBApp {
       var contracts = (
         from b in contracts0
         let c = MakeButterfly(b.symbol, b.Exchange, b.Currency, b.conIds)
-        select (k : b.symbol + ":" + b.strike + ":" + b.expiration.ToTWSDateString(), c )
+        select (k: b.symbol + ":" + b.strike + ":" + b.expiration.ToTWSDateString(), c)
       )
       //.ObserveOn(TaskPoolScheduler.Default)
       //.Catch<(string k,Contract c), Exception>(exc => {
@@ -525,43 +559,43 @@ namespace IBApp {
       //.ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
       //.SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
     }
-    public IObservable<(string k, Contract c)> BatterflyFactory(string symbol) {
+    public IObservable<(string exchange, string tradingClass, string multiplier, DateTime expiration, double[] strikes, double price, string symbol, string currency)>
+      ReqOptionChains(string symbol) {
       var optionChain = (
-        from cd in ReqContractDetails(symbol.ContractFactory()).FirstAsync().Select(t => t.cd)
+        from cd in ReqContractDetails(symbol).Count(1).ToObservable()
         from price in ReqMarketPrice(cd.Summary)
-        from och in ReqSecDefOptParams(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
+        from och in ReqSecDefOptParamsSync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
         where och.exchange == "SMART"
         from expiration in och.expirations.Select(e => e.FromTWSDateString())
-        select new { och.exchange, och.underlyingConId, och.tradingClass, och.multiplier, expiration, och.strikes, price, symbol = cd.Summary.Symbol, currency = cd.Summary.Currency }
-      )
-      .SkipWhile(t => t.expiration > DateTime.UtcNow.Date.AddDays(2))
-      //.SkipWhile(t => true)
-      //.Where(t => t.expiration == experationMin)
-      .Take(1);
-
+        select (och.exchange, och.tradingClass, och.multiplier, expiration, strikes: och.strikes.IfEmpty(IfEmpty(new { och.strikes })).ToArray(), price, symbol = cd.Summary.Symbol, currency: cd.Summary.Currency)
+        )
+        .MinBy(t => t.expiration)
+        .SelectMany(l => l.OrderBy(t => t.strikes.Length).TakeLast(1))
+        .Take(1);
+      return optionChain;
+    }
+    public IEnumerable<(string k, Contract c)> BatterflyFactory(string symbol) {
+      //var cds = ReqContractDetails(symbol.ContractFactory()).ToEnumerable().ToArray();
+      var ochs = ReqOptionChains(symbol).ToEnumerable().ToArray();
       var contracts0 = (
-        from t in optionChain
+        from t in ochs
         from strikeMiddle in t.strikes.OrderBy(st => st.Abs(t.price)).Take(2).Select((strike, i) => (strike, i))
         from inc in t.strikes.Zip(t.strikes.Skip(1), (p, n) => p.Abs(n)).OrderBy(d => d).Take(1)
         from strike in new[] { strikeMiddle.strike - inc, strikeMiddle.strike, strikeMiddle.strike + inc }
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, true)
-        from o in ReqContractDetails(ContractSamples.Option(option)).FirstAsync()
-        select new { t.symbol, o.cd.Summary.Exchange, o.cd.Summary.ConId, o.cd.Summary.Currency, o.reqId, t.price, strikeMiddle.i, strike, t.expiration }
+        from o in ReqContractDetails(ContractSamples.Option(option))
+        select new { t.symbol, o.Summary.Exchange, o.Summary.ConId, o.Summary.Currency, t.price, strikeMiddle.i, strike, t.expiration }
        )
        .Buffer(6)
        .SelectMany(b => b.OrderBy(c => c.i).ThenByDescending(c => c.strike).ToArray())
        .Buffer(3)
+       .Where(b => b.Count == 3)
        .Select(b => new { b[0].symbol, b[0].Exchange, b[0].Currency, b[1].strike, b[0].expiration, conIds = b.Select(x => x.ConId).ToArray() });
       var contracts = (
         from b in contracts0
         let c = MakeButterfly(b.symbol, b.Exchange, b.Currency, b.conIds)
         select (b.symbol + ":" + b.strike + ":" + b.expiration.ToTWSDateString(), c)
       )
-      .ObserveOn(TaskPoolScheduler.Default)
-      .Catch<(string k, Contract c), Exception>(exc => {
-        Trace(exc);
-        return new(string k, Contract c)[0].ToObservable();
-      })
       ;
       return contracts;
       /// Locals
@@ -603,20 +637,51 @@ namespace IBApp {
       //.ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
       //.SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
     }
+    public IObservable<(string k, Contract c)> ReqCurrentOptionsAsync(string symbol) {
+      return (
+        from t in ReqOptionChains(symbol)
+        from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(2).Select((strike, i) => (strike, i))
+        let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike.strike, true)
+        from o in ReqContractDetails(option)
+        select new { t.symbol, contract = o.Summary, o.Summary.Exchange, o.Summary.ConId, o.Summary.Currency, t.price, strike.i, strike.strike, t.expiration }
+       ).ToArray()
+       .SelectMany(b => b.OrderBy(t => t.i))
+       .Select(t => (t.symbol + ":" + t.strike + ":" + t.expiration.ToTWSDateString(), t.contract))
+       .Catch<(string k, Contract c), Exception>(exc => {
+         Trace(new { BatterflyFactory = exc });
+         return new(string k, Contract c)[0].ToObservable();
+       });
+      /// Locals
+      string MakeOptionSymbol(string tradingClass, DateTime expiration, double strike, bool isCall) {
+        var date = expiration.ToTWSOptionDateString();
+        var cp = isCall ? "C" : "P";
+        var price = strike.ToString("00000.000").Replace(".", "");
+        return $"{tradingClass.PadRight(4)}  {date}{cp}{price}";
+      }
+    }
+
     #endregion
 
     #region Req-* functions
     int _reqTimeout = 60;
-    public IObservable<(int reqId, ContractDetails cd)> ReqContractDetails(string symbol) => ReqContractDetails(new Contract() { LocalSymbol = symbol, SecType = "", Symbol = symbol });
-    Func<Contract, IObservable<(int reqId, ContractDetails cd)>> _ReqContractDetails;
-    public IObservable<(int reqId, ContractDetails cd)> ReqContractDetails(Contract contract) => (_ReqContractDetails
-      ?? (_ReqContractDetails = new Func<Contract, IObservable<(int reqId, ContractDetails cd)>>(c => ReqContractDetailsImpl(c))
-      //.Memoize(c => c.ToString())
+    //public IList<ContractDetails> ReqContractDetails(string symbol) => ReqContractDetails(new Contract() { LocalSymbol = symbol, SecType = "", Symbol = symbol });
+    Func<Contract, IList<ContractDetails>> _ReqContractDetails;
+    public IList<ContractDetails> ReqContractDetails(string symbol) => ReqContractDetails(symbol.ContractFactory());
+
+    public IList<ContractDetails> ReqContractDetails(Contract contract) => (_ReqContractDetails
+      ?? (_ReqContractDetails = new Func<Contract, IList<ContractDetails>>(c => ReqContractDetailsImpl(c))
+      .Memoize(c => c.ToString())
       ))(contract);
-    IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsImpl(Contract contract) {
+    IList<ContractDetails> ReqContractDetailsImpl(Contract contract) {
+      return ReqContractDetailsAsync(contract).ToEnumerable().Select(t => t.cd).ToArray();
+    }
+    IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsAsync(Contract contract) {
       var reqId = NextReqId();
       var cd = _contractDetailsObservable
+        .Merge(_contractDetailsEndObservable.Select(rid => (reqId: rid, contractDetails: (ContractDetails)null)))
         .Where(t => t.reqId == reqId)
+        .TakeWhile(t => t.contractDetails != null)
+        .Do(t => TraceTemp(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails.Summary }))
         //.Timeout(TimeSpan.FromSeconds(_reqTimeout))
         //.Do(x => _verbous(new { ReqContractDetails = new { Started = x.reqId } }))
         ;
@@ -625,40 +690,57 @@ namespace IBApp {
       return cd;
     }
 
-    Func<string, string, string, int, ReqSecDefOptParams> _ReqSecDefOptParams;
-    public ReqSecDefOptParams ReqSecDefOptParams(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) => (_ReqSecDefOptParams
-      ?? (_ReqSecDefOptParams = new Func<string, string, string, int, ReqSecDefOptParams>((us, ex, st, comId)
-          => ReqSecDefOptParamsImpl(us, ex, st, comId)))
-      //.Memoize()
+    Func<string, string, string, int, ReqSecDefOptParamsList> _ReqSecDefOptParamsList;
+    public ReqSecDefOptParamsList ReqSecDefOptParamsSync(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) => (_ReqSecDefOptParamsList
+      ?? (_ReqSecDefOptParamsList = new Func<string, string, string, int, ReqSecDefOptParamsList>((us, ex, st, comId)
+          => ReqSecDefOptParamsSyncImpl(us, ex, st, comId)))
+      .Memoize()
       )(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId);
+
+    public ReqSecDefOptParamsList ReqSecDefOptParamsSyncImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
+      return ReqSecDefOptParamsImpl(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId).ToEnumerable().ToArray();
+    }
     public ReqSecDefOptParams ReqSecDefOptParamsImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
       var reqId = NextReqId();
       var cd = _optionsChainObservable
+        .Merge(_optionsChainEndObservable.Select(rid => (reqId: rid, exchange: "", underlyingConId: 0, tradingClass: "", multiplier: "", expirations: (HashSet<string>)null, strikes: (HashSet<double>)null)))
         .Where(t => t.reqId == reqId)
+        .TakeWhile(t => t.expirations != null)
+        .Do(t => TraceTemp(new { ReqSecDefOptParamsImpl = t.reqId, t.tradingClass }))
+        .Catch<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes), Exception>(exc => {
+          Trace(new { ReqSecDefOptParamsImpl = exc });
+          return new(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)[0].ToObservable();
+        })
         //.Do(x => _verbous(new { ReqSecDefOptParams = new { Started = x.reqId } }))
-        .Timeout(TimeSpan.FromSeconds(_reqTimeout))
+        //.Timeout(TimeSpan.FromSeconds(_reqTimeout))
         ;
       //.Subscribe(t => callback(t.contractDetails),exc=> { throw exc; }, () => _verbous(new { ContractDetails = new { Completed = reqId } }));
       IbClient.ClientSocket.reqSecDefOptParams(reqId, underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId);
       return cd;
     }
     public enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
+    public IObservable<double> ReqMarketPrice(string symbol)
+      => ReqContractDetails(symbol).Take(1).ToObservable().SelectMany(c => ReqPrice(c.Summary, TickType.MarketPrice).SelectMany(p => p));
     public IObservable<double> ReqMarketPrice(Contract contract) => ReqPrice(contract, TickType.MarketPrice).SelectMany(p => p);
     public IObservable<(double bid, double ask)> ReqBidAsk(Contract contract)
-      => ReqPrice(contract, TickType.Bid, TickType.Ask).Select(d => (d.FirstOrDefault(), d.LastOrDefault()));
+      => ReqPrice(contract, TickType.Bid, TickType.Ask).Select(d => (d.Min(), d.Max()));
     public IObservable<double[]> ReqPrice(Contract contract, params TickType[] tickType) {
       var tt = tickType.Cast<int>().ToArray();
       var reqId = NextReqId();
       var cd = _marketDataObservable
         .Where(t => t.reqId == reqId)
-        .Do(x => _verbous(new { ReqPrice = new { contract, started = x } }))
+        .Do(x => TraceTemp(new { ReqPrice = new { contract, started = x } }))
         .Where(t => tt.Contains(t.field))
         .Distinct(t => t.field)
         .Timeout(TimeSpan.FromSeconds(_reqTimeout))
         .Take(tickType.Length)
         .Select(t => t.price)
         .ToArray()
-        .FirstAsync();
+        .Catch<double[], TimeoutException>(exc => {
+          Trace(new { ReqPrice = exc });
+          return new double[0][].ToObservable();
+        })
+        ;
       IbClient.ClientSocket.reqMktData(reqId, contract, "232", false, null);
       return cd;
     }
@@ -748,7 +830,9 @@ namespace IBApp {
     object _WhatIfSubjectLocker = new object();
     ISubject<Action> _WhatIfSubject;
     private IObservable<(int reqId, ContractDetails contractDetails)> _contractDetailsObservable;
+    private IObservable<int> _contractDetailsEndObservable;
     private IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)> _optionsChainObservable;
+    private IObservable<int> _optionsChainEndObservable;
     private IObservable<(int reqId, int field, double price, int canAutoExecute)> _marketDataObservable;
 
     ISubject<Action> WhatIfSubject {

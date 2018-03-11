@@ -47,9 +47,9 @@ namespace ConsoleApp {
       var contract = spy;
       void OpenTrade(IList<(string k, Contract c)> contracts) {
         HandleMessage("\n" + string.Join("\n", contracts));
-        var c = contracts.First().c;
-        fw.AccountManager.ReqBidAsk(c)
-          .Subscribe(p => HandleMessage(new { c, p } + ""));
+        contracts.Take(1).ForEach(c =>
+        fw.AccountManager.ReqBidAsk(c.c)
+          .Subscribe(p => HandleMessage(new { c, p } + "")));
         HandleMessage($"Butterflys {contracts.Count()} are done");
         //contracts.Take(1).ForEach(c => fw.AccountManager.OpenTrade(c.c, 10));
         //var counter = 0;
@@ -62,14 +62,20 @@ namespace ConsoleApp {
         //  exc => { });
 
       }
-      ibClient.ManagedAccounts += s => {
-        //var symbol = "spx index";
-        fw.AccountManager.BatterflyFactory("spx index").ToArray()
-        .Merge(fw.AccountManager.BatterflyFactory("SPY").ToArray())
+      ibClient.ManagedAccountsObservable.Subscribe(s => {
+        var symbol = "VXX";// "spx index";
+        // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
+        var mp=fw.AccountManager.ReqMarketPrice(symbol).ToEnumerable().ToArray();
+        HandleMessage(new { mp=mp.ToJson() }+"");
+        fw.AccountManager.ReqCurrentOptionsAsync(symbol).ToEnumerable()
+        .ForEach(oc => HandleMessage(oc.k));
+        var och = fw.AccountManager.BatterflyFactory(symbol).ToArray();
+        OpenTrade(och);
+        //.Merge(fw.AccountManager.BatterflyFactory("SPY").ToArray())
         //.Merge(fw.AccountManager.BatterflyFactory(fw, "VXX"))
-        .Subscribe(och => { OpenTrade(och); });
+        //.Subscribe(och => { OpenTrade(och); },exc=>HandleError(exc));
         //fw.AccountManager.ReqContractDetails(spx).Subscribe(cd => HandleMessage(cd.ToJson()), () => HandleMessage(new { ContractDetails = new { Completed = contract.LocalSymbol } } + ""));
-      };
+      });
 
       if(ibClient.LogOn("127.0.0.1", 7497 + "", 102 + "", false)) {
         ibClient.SetOfferSubscription(contract);

@@ -6,6 +6,9 @@ using System.Linq;
 using System.Text;
 using IBApi;
 using System.Threading.Tasks;
+using System.Reactive.Linq;
+using System.Reactive.Concurrency;
+using System.Threading;
 
 public class IBClient :EWrapper {
   private int nextOrderId;
@@ -95,9 +98,21 @@ public class IBClient :EWrapper {
 
   public IBClient(EReaderSignal signal) {
     ClientSocket = new EClientSocket(this, signal);
+    ManagedAccountsObservable = Observable.FromEvent<Action<string>, string>(
+      onNext => (string a) => onNext(a),
+      h => ManagedAccounts += h,
+      h => ManagedAccounts -= h
+      )
+      .ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
+      .Catch<string,Exception>(exc=> {
+        Error(-1, 0, nameof(ManagedAccounts), exc);
+        return new string[0].ToObservable();
+      });
+
   }
 
   public EClientSocket ClientSocket { get; private set; }
+  public IObservable<string> ManagedAccountsObservable { get; }
 
   public int NextOrderId {
     get { return nextOrderId; }

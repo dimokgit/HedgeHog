@@ -17,6 +17,7 @@ namespace IBApp {
     private readonly int _baseReqId;
 
     protected Action<object> Trace { get; }
+    protected Action<object> TraceTemp => o => { };
     protected IBClientCore IbClient { get; private set; }
     #endregion
 

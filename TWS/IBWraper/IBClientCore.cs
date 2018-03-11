@@ -274,29 +274,37 @@ public class IBClientCore :IBClient, ICoreFX {
 
       reader.Start();
 
-      Task.Factory.StartNew(() => {
-        while(ClientSocket.IsConnected() && !reader.MessageQueueThread.IsCompleted) {
+      var t = new Thread(() => {
+        while(ClientSocket.IsConnected()) {
           _signal.waitForSignal();
           reader.processMsgs();
         }
-      }, TaskCreationOptions.LongRunning)
-      .ContinueWith(t => {
-        Observable.Interval(TimeSpan.FromSeconds(5))
-        .Select(_ => {
-          try {
-            RaiseError(new Exception(new { ClientSocket = new { IsConnected = ClientSocket.IsConnected() } } + ""));
-            ReLogin();
-            if(ClientSocket.IsConnected()) {
-              RaiseLoggedIn();
-              return true;
-            };
-          } catch {
-          }
-          return false;
-        })
-        .TakeWhile(b => b == false)
-        .Subscribe();
       });
+      t.IsBackground =true;
+      t.Start();
+      //Task.Factory.StartNew(() => {
+      //  while(ClientSocket.IsConnected() && !reader.MessageQueueThread.IsCompleted) {
+      //    _signal.waitForSignal();
+      //    reader.processMsgs();
+      //  }
+      //}, TaskCreationOptions.LongRunning)
+      //.ContinueWith(t => {
+      //  Observable.Interval(TimeSpan.FromSeconds(5))
+      //  .Select(_ => {
+      //    try {
+      //      RaiseError(new Exception(new { ClientSocket = new { IsConnected = ClientSocket.IsConnected() } } + ""));
+      //      ReLogin();
+      //      if(ClientSocket.IsConnected()) {
+      //        RaiseLoggedIn();
+      //        return true;
+      //      };
+      //    } catch {
+      //    }
+      //    return false;
+      //  })
+      //  .TakeWhile(b => b == false)
+      //  .Subscribe();
+      //});
 
     } catch(Exception exc) {
       //HandleMessage(new ErrorMessage(-1, -1, "Please check your connection attributes.") + "");
