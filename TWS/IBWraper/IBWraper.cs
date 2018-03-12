@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -14,12 +15,12 @@ using ReactiveUI;
 using static HedgeHog.Shared.TradesManagerStatic;
 namespace IBApp {
   public class IBWraper :HedgeHog.Shared.ITradesManager {
-    public static (int c,T[] a) RunUntilCount<T>(int count, int countMax, Func<T[]> func) {
+    public static (int c, IList<T> a) RunUntilCount<T>(int count, int countMax, Func<T[]> func) {
       T[] options = default;
       do {
         options = func();
-      } while(options.Length < count && countMax-- > 0);
-      return (count, options);
+      } while(options.Length < count && (countMax--)/*.SideEffect(c => Debug.WriteLine(new { countMax }))*/ > 0);
+      return (countMax, options);
     }
 
     private readonly IBClientCore _ibClient;

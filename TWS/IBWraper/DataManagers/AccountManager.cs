@@ -102,15 +102,16 @@ namespace IBApp {
           Trace(new Exception(source, exc));
         }
       }
-      var el = new EventLoopScheduler(ts => new Thread(ts));
+      EventLoopScheduler elFactory() => new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true });
+      var elCD = elFactory();
       _contractDetailsObservable = Observable.FromEvent<ContDetHandler, (int reqId, ContractDetails contractDetails)>(
         onNext => (int a, ContractDetails b) => onNext((a, b)),
         h => IbClient.ContractDetails += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(IbClient.ContractDetails)}")),
         h => IbClient.ContractDetails -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(IbClient.ContractDetails)}")),
-        new EventLoopScheduler(ts => new Thread(ts))
+        elCD
         )
-        .ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
-        .SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
+        .ObserveOn(elCD)
+        .SubscribeOn(elCD)
         .Catch<(int reqId, ContractDetails contractDetails), Exception>(exc => {
           Trace(new Exception(nameof(IbClient.ContractDetails), exc));
           return new(int reqId, ContractDetails contractDetails)[0].ToObservable();
@@ -119,27 +120,29 @@ namespace IBApp {
         onNext => (int a) => Try(() => onNext(a), nameof(IbClient.ContractDetails)),
         h => IbClient.ContractDetailsEnd += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(IbClient.ContractDetailsEnd)}")),
         h => IbClient.ContractDetailsEnd -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(IbClient.ContractDetailsEnd)}")),
-        new EventLoopScheduler(ts => new Thread(ts))
-        ).ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
-        .SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
+        elCD
+        ).ObserveOn(elCD)
+        .SubscribeOn(elCD)
         .Catch<int, Exception>(exc => {
           Trace(new Exception(nameof(IbClient.ContractDetails), exc));
           return new int[0].ToObservable();
         });
 
+      var elSDOP = elFactory();
       _optionsChainObservable = Observable.FromEvent<OptionsChainHandler, (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)>(
         onNext => (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)
         => Try(() => onNext((reqId, exchange, underlyingConId, tradingClass, multiplier, expirations, strikes)), nameof(IbClient.SecurityDefinitionOptionParameter)),
         h => IbClient.SecurityDefinitionOptionParameter += h,
         h => IbClient.SecurityDefinitionOptionParameter -= h
-        );
+        ).ObserveOn(elSDOP)
+        .SubscribeOn(elSDOP);
       _optionsChainEndObservable = Observable.FromEvent<Action<int>, int>(
         onNext => (int a) => onNext(a),
         h => IbClient.SecurityDefinitionOptionParameterEnd += h,
         h => IbClient.SecurityDefinitionOptionParameterEnd -= h
         )
-        .ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
-        .SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
+        .ObserveOn(elSDOP)
+        .SubscribeOn(elSDOP)
         .Catch<int, Exception>(exc => {
           Trace(new Exception(nameof(IbClient.SecurityDefinitionOptionParameterEnd), exc));
           return new int[0].ToObservable();
@@ -149,11 +152,10 @@ namespace IBApp {
         onNext => (int reqId, int field, double price, int canAutoExecute)
         => Try(() => onNext((reqId, field, price, canAutoExecute)), nameof(IbClient.TickPrice)),
         h => IbClient.TickPrice += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(IbClient.TickPrice)}")),
-        h => IbClient.TickPrice -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(IbClient.TickPrice)}")),
-        new EventLoopScheduler(ts => new Thread(ts))
+        h => IbClient.TickPrice -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(IbClient.TickPrice)}"))
         )
-        .ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
-        .SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
+        .ObserveOn(elFactory())
+        .SubscribeOn(elFactory())
         .Catch<(int reqId, int field, double price, int canAutoExecute), Exception>(exc => {
           Trace(new Exception(nameof(IbClient.TickPrice), exc));
           return new(int reqId, int field, double price, int canAutoExecute)[0].ToObservable();
@@ -648,6 +650,8 @@ namespace IBApp {
       //.ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
       //.SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
     }
+    public (int c, IList<Contract> a) ReqCurrentOptions(string symbol) =>
+      IBWraper.RunUntilCount(2, 1, () => ReqCurrentOptionsAsync(symbol).ToEnumerable().ToArray());
     public IObservable<Contract> ReqCurrentOptionsAsync(string symbol) {
       return (
         from t in ReqOptionChains(symbol)
@@ -687,6 +691,7 @@ namespace IBApp {
       var cd = _contractDetailsObservable
         .Merge(_contractDetailsEndObservable.Select(rid => (reqId: rid, contractDetails: (ContractDetails)null)))
         .Where(t => t.reqId == reqId)
+        .Synchronize()
         .TakeWhile(t => t.contractDetails != null)
         .Do(t => TraceTemp(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails.Summary }))
         //.Timeout(TimeSpan.FromSeconds(_reqTimeout))
@@ -712,6 +717,7 @@ namespace IBApp {
       var cd = _optionsChainObservable
         .Merge(_optionsChainEndObservable.Select(rid => (reqId: rid, exchange: "", underlyingConId: 0, tradingClass: "", multiplier: "", expirations: (HashSet<string>)null, strikes: (HashSet<double>)null)))
         .Where(t => t.reqId == reqId)
+        .Synchronize()
         .TakeWhile(t => t.expirations != null)
         .Do(t => TraceTemp(new { ReqSecDefOptParamsImpl = t.reqId, t.tradingClass }))
         .Catch<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes), Exception>(exc => {

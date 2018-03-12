@@ -62,7 +62,7 @@ namespace ConsoleApp {
         //  exc => { });
 
       }
-      var disposables = new List<IDisposable>();
+      IList<Contract> options = new Contract[0];
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         HandleMessage("Sleep a little");
         //Thread.Sleep(20*1000);
@@ -74,10 +74,11 @@ namespace ConsoleApp {
           .Count(1, "ReqMarketPrice")
           .ForEach(mp => HandleMessage($"{symbol}:{new { mp = mp.ToJson() }}"));
 
-          var options = IBWraper.RunUntilCount(2,3, () => fw.AccountManager.ReqCurrentOptionsAsync(symbol).ToEnumerable().ToArray());
-          HandleMessage(new { options.c, options = options.a.Flatter(",") });
+          var reqOptions = fw.AccountManager.ReqCurrentOptions(symbol);
+          HandleMessage(new { reqOptions.c, options = (options = reqOptions.a).Flatter(",") });
         }
         symbols.ForEach(ProcessSymbol);
+        LoadHistory(ibClient, options);
         //var och = fw.AccountManager.BatterflyFactory(symbol).ToArray();
         //OpenTrade(och);
 
@@ -88,18 +89,7 @@ namespace ConsoleApp {
       });
 
       if(ibClient.LogOn("127.0.0.1", 7497 + "", 102 + "", false)) {
-        //ibClient.SetOfferSubscription(contract);
-        if(true) {
-          var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
-          HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
-          var counter = 0;
-          if(counter > 0)
-            new HistoryLoader<Rate>(ibClient, contract, 1440 * 3, dateEnd, TimeSpan.FromDays(3), TimeUnit.D, BarSize._1_min,
-               map,
-               list => HandleMessage(new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate } } + ""),
-               dates => HandleMessage(new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter } + ""),
-               exc => { });
-        }
+        ibClient.SetOfferSubscription(contract);
         //else {
         //  var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp => sp.LoadRates).ToArray());
         //  var dateStart = DateTime.UtcNow.Date.ToLocalTime().AddMonths(-1).AddDays(-2);
@@ -113,6 +103,20 @@ namespace ConsoleApp {
       ibClient.Logout();
       HandleMessage("Press any key ...");
       Console.ReadKey();
+    }
+
+    private static void LoadHistory(IBClientCore ibClient, IList<Contract> options) {
+      var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
+      HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
+      var counter = 0;
+      if(options.Any()) {
+        var c = options[0].LocalSymbol.ContractFactory();
+        new HistoryLoader<Rate>(ibClient, c, 1440 * 2, dateEnd, TimeSpan.FromDays(1), TimeUnit.S, BarSize._1_secs,
+           map,
+           list => HandleMessage($"{c} {new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate } }}"),
+           dates => HandleMessage(new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter } + ""),
+           exc => { });
+      }
     }
 
     private static void OnPriceChanged(Price price) {

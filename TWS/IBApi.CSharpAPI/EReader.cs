@@ -36,14 +36,6 @@ namespace IBApi {
     }
 
     public void Start() {
-      var t = new Thread(() => {
-        while(eClientSocket.IsConnected())
-          if(!putMessageToQueue())
-            break;
-      });
-      t.IsBackground = true;
-      t.Start();
-      return;
       if(MessageQueueThread?.Status == TaskStatus.Running)
         throw new Exception(new { MessageQueueThread = new { MessageQueueThread.Status } } + "");
       MessageQueueThread = Task.Factory.StartNew(() => {

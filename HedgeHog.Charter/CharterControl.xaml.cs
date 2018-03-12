@@ -112,7 +112,7 @@ namespace HedgeHog {
     #endregion
     public CharterControl(string name, CompositionContainer container = null) {
       if (container != null) container.SatisfyImportsOnce(this);
-      this.Name = name.Replace("/", "");
+      Name = name.Replace("/", "").Replace(" ", "");
       InitializeComponent();
       DispatcherScheduler.Current.Schedule(() => OnPropertyChanged(Metadata.CharterControlMetadata.Header));
     }
