@@ -16,12 +16,12 @@ namespace IBApp {
     _1_secs, _5_secs, _15_secs, _30_secs, _1_min, _2_mins,
     _3_mins, _5_mins, _15_mins, _30_mins, _1_hour, _1_day
   }
-  public class DelayException : SoftException {
+  public class DelayException :SoftException {
     public DelayException(TimeSpan delay) : base(new { delay } + "") { }
   }
   #region HistoryLoader
-  public class HistoryLoader<T> where T:HedgeHog.Bars.BarBaseDate {
-    private static int _currentTicker=0;
+  public class HistoryLoader<T> where T : HedgeHog.Bars.BarBaseDate {
+    private static int _currentTicker = 0;
     #region Fields
     public const int HISTORICAL_ID_BASE = 30000000;
     private readonly List<T> _list;
@@ -30,7 +30,7 @@ namespace IBApp {
     private readonly IBClient _ibClient;
     private readonly Contract _contract;
     private readonly DateTime _dateStart;
-    private  DateTime _endDate;
+    private DateTime _endDate;
     private readonly TimeUnit _timeUnit;
     private readonly BarSize _barSize;
     private readonly TimeSpan _duration;
@@ -43,8 +43,8 @@ namespace IBApp {
     #endregion
 
     #region ctor
-    public delegate T DataMapDelegate<T>(DateTime date, double open, double high, double low, double close, int volume, int count);
-    public HistoryLoader(IBClient ibClient
+    public delegate TDM DataMapDelegate<TDM>(DateTime date, double open, double high, double low, double close, int volume, int count);
+    public HistoryLoader(IBClientCore ibClient
       , Contract contract
       , int periodsBack
       , DateTime endDate
@@ -57,6 +57,8 @@ namespace IBApp {
       , Action<Exception> error) {
       _ibClient = ibClient;
       _contract = contract;
+      if(_contract.Exchange.IsNullOrEmpty()) 
+        _contract = ibClient.ReqContractDetailsSafe(contract).Summary.ContractFactory();
       _periodsBack = periodsBack;
       _reqId = (++_currentTicker) + HISTORICAL_ID_BASE;
       _list = new List<T>();
@@ -122,15 +124,15 @@ namespace IBApp {
     }
 
     private static Exception MakeError(Contract contract, int reqId, int code, string error, Exception exc) {
-      return exc ?? new Exception(new { HistoryLoader = new { reqId,contract , code, error } } + "");
+      return exc ?? new Exception(new { HistoryLoader = new { reqId, contract, code, error } } + "");
     }
 
     private void IbClient_HistoricalDataEnd(int reqId, string startDateTWS, string endDateTWS) {
       if(reqId != _reqId)
         return;
       _delay = TimeSpan.Zero;
-      _list.InsertRange(0, _list2.Distinct().SkipWhile(b=> _periodsBack == 0 && b.StartDate< _dateStart));
-      if((_periodsBack ==0 && _endDate <= _dateStart) || (_periodsBack > 0 && _list.Count >= _periodsBack)) {
+      _list.InsertRange(0, _list2.Distinct().SkipWhile(b => _periodsBack == 0 && b.StartDate < _dateStart));
+      if((_periodsBack == 0 && _endDate <= _dateStart) || (_periodsBack > 0 && _list.Count >= _periodsBack)) {
         CleanUp();
         _dataEnd(_list);
         _done(_list);
@@ -163,7 +165,7 @@ namespace IBApp {
         string whatToShow = "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         var ls = _contract.LocalSymbol ?? _contract.Symbol ?? "";
-        var useRTH = !ls.IsCurrenncy() && !ls.IsFuture() && !ls.IsETF() && _timeUnit != TimeUnit.S;
+        var useRTH = !ls.IsOption() && !ls.IsCurrenncy() && !ls.IsFuture() && !ls.IsETF() && _timeUnit != TimeUnit.S;
         _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, new List<TagValue>());
       } catch(Exception exc) {
         _error(exc);
@@ -173,11 +175,11 @@ namespace IBApp {
     #endregion
 
     #region Duration Helpers
-    static Dictionary<BarSize, Dictionary<TimeUnit, int[]>> BarSizeRanges=new Dictionary<BarSize, Dictionary<TimeUnit, int[]>> {
-      [BarSize._1_secs]= new Dictionary<TimeUnit, int[]> {
+    static Dictionary<BarSize, Dictionary<TimeUnit, int[]>> BarSizeRanges = new Dictionary<BarSize, Dictionary<TimeUnit, int[]>> {
+      [BarSize._1_secs] = new Dictionary<TimeUnit, int[]> {
         [TimeUnit.S] = new[] { 60, 1800 }
       },
-      [BarSize._1_min]= new Dictionary<TimeUnit, int[]> {
+      [BarSize._1_min] = new Dictionary<TimeUnit, int[]> {
         [TimeUnit.S] = new[] { 60, 28800 },
         [TimeUnit.D] = new[] { 1, 1 }
       }

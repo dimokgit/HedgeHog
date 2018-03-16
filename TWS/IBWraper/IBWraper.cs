@@ -15,11 +15,18 @@ using ReactiveUI;
 using static HedgeHog.Shared.TradesManagerStatic;
 namespace IBApp {
   public class IBWraper :HedgeHog.Shared.ITradesManager {
-    public static (int c, IList<T> a) RunUntilCount<T>(int count, int countMax, Func<T[]> func) {
-      T[] options = default;
+    public static string MakeOptionSymbol(string tradingClass, DateTime expiration, double strike, bool isCall) {
+      var date = expiration.ToTWSOptionDateString();
+      var cp = isCall ? "C" : "P";
+      var price = strike.ToString("00000.000").Replace(".", "");
+      return $"{tradingClass.PadRight(4)}  {date}{cp}{price}";
+    }
+
+    public static (int c, IList<T> a) RunUntilCount<T>(int count, int countMax, Func<IList<T>> func) {
+      IList<T> options = default;
       do {
         options = func();
-      } while(options.Length < count && (countMax--)/*.SideEffect(c => Debug.WriteLine(new { countMax }))*/ > 0);
+      } while(options.Count < count && (countMax--)/*.SideEffect(c => Debug.WriteLine(new { countMax }))*/ > 0);
       return (countMax, options);
     }
 
@@ -149,7 +156,7 @@ namespace IBApp {
       while(!isDone) {
         Thread.Sleep(300);
         if(lastTime.AddMinutes(10) < DateTime.Now) {
-          Trace(new { GetBarsBase = new { lastTime, DateTime.Now, error = "Timeout" } });
+          Trace(new { GetBarsBase = new { contract, lastTime, DateTime.Now, error = "Timeout" } });
           break;
         }
       }

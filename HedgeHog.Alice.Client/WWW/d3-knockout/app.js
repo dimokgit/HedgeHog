@@ -1234,17 +1234,18 @@
       var args = [pair];
       args.noNote = true;
       function getByKey(a, key) {
-        return (a.splice(a.findIndex(function (x) { return x.n == key; }), 1)[0] || {}).v;
+        var i = a.findIndex(function (x) { return x.n == key; });
+        return i < 0 ? null : (a.splice(i, 1)[0] || {}).v;
       }
       serverCall("getAccounting", args,
         function (acc) {
 
           var gte = getByKey(acc, "grossToExitRaw");
-          if (!self.grossToExit())
+          if (gte && !self.grossToExit())
             self.grossToExit(gte);
 
           var prof = getByKey(acc, "profitByHedgeRatioDiff");
-          if (!self.profitByHedgeRatioDiff())
+          if (prof && !self.profitByHedgeRatioDiff())
             self.profitByHedgeRatioDiff(prof);
 
           accounting(acc);
@@ -1575,7 +1576,7 @@
       }
 
       function _priceChanged(pairChanged) {
-        if (!isDocHidden() && pair === pairChanged.toUpperCase()) {
+        if (!isDocHidden() && pair.toUpperCase() === pairChanged.toUpperCase()) {
           if (_isPriceChangeInFlight())
             return;
           _inFlightPriceChanged = new Date();

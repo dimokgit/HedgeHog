@@ -17,11 +17,23 @@ namespace HedgeHog.Alice.Store {
     public TradingMacro() {
       GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
       this.ObservableForProperty(tm => tm.Pair, false, false)
-        .Where(oc => !string.IsNullOrWhiteSpace(oc.Value) && !IsInVirtualTrading)
+        .Where(_ => !IsInVirtualTrading)
+        .Select(oc => oc.Value)
+        .Scan((prev: "", curr: ""), (prev, curr) => (prev.curr, curr))
+        .Where(pair => !pair.curr.IsNullOrWhiteSpace())
         .Throttle(1.FromSeconds())
         .ObserveOn(Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher)
         .Subscribe(oc => {
+          _inPips = null;
+          _pointSize = double.NaN;
+          _BaseUnitSize = 0;
+          _mmr = 0;
           LoadActiveSettings();
+          _Rates.Clear();
+          if(!oc.prev.IsNullOrWhiteSpace()) OnLoadRates();
+          _pendingEntryOrders = null;
+          OnPropertyChanged(nameof(CompositeName));
+
           SubscribeToEntryOrderRelatedEvents();
         });
 

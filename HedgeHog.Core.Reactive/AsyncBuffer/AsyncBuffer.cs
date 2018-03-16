@@ -40,7 +40,7 @@ namespace HedgeHog {
       if(sample != TimeSpan.Zero)
         b = b.Sample(sample);
       _bufferDisposable = b
-        //.SubscribeOn(new EventLoopScheduler())
+        .ObserveOn(ThreadPoolScheduler.Instance)
         .Subscribe(a => {
           try {
             a();

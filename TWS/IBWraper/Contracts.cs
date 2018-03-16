@@ -23,6 +23,7 @@ namespace IBApp {
   public static class ContractSamples {
     public static Contract ContractFactory(this Contract contract) =>
       new Contract {
+        LocalSymbol = contract.LocalSymbol,
         Symbol = contract.Symbol,
         Exchange=contract.Exchange,
         SecType = contract.SecType,

@@ -916,7 +916,7 @@ namespace HedgeHog.Alice.Client {
         List<Action> runPriceQueue = new List<Action>();
         foreach(var tm in TradingMacrosCopy) {
           InitTradingMacro(tm);
-          if(!IsInVirtualTrading) {
+          if(tm.IsActive && !IsInVirtualTrading) {
             (sender as ICoreFX).SetOfferSubscription(tm.Pair);
             //tm.CurrentPrice = TradesManager.GetPrice(tm.Pair);
           }

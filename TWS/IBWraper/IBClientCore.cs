@@ -16,6 +16,12 @@ using System.Collections.Specialized;
 using System.Configuration;
 using MongoDB.Bson;
 using System.Reactive.Linq;
+using System.Reactive.Concurrency;
+using ContDetHandler = System.Action<int, IBApi.ContractDetails>;
+using OptionsChainHandler = System.Action<int, string, int, string, string, System.Collections.Generic.HashSet<string>, System.Collections.Generic.HashSet<double>>;
+using TickPriceHandler = System.Action<int, int, double, int>;
+using ReqSecDefOptParams = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
+using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 
 public class IBClientCore :IBClient, ICoreFX {
   class Configer {
@@ -43,11 +49,14 @@ public class IBClientCore :IBClient, ICoreFX {
   private readonly Action<object> _trace;
   TradingServerSessionStatus _sessionStatus;
   readonly private MarketDataManager _marketDataManager;
+  private readonly IObservable<(int reqId, ContractDetails contractDetails)> _contractDetailsObservable;
+  private readonly IObservable<int> _contractDetailsEndObservable;
   private static int _validOrderId;
   #endregion
 
   #region Properties
   public Action<object> Trace => _trace;
+  public Action<object> TraceTemp => o => { };
   private bool _verbose = true;
   public void Verbouse(object o) { if(_verbose) _trace(o); }
   #endregion
@@ -76,7 +85,254 @@ public class IBClientCore :IBClient, ICoreFX {
     CurrentTime += OnCurrentTime;
     _marketDataManager = new MarketDataManager(this);
     _marketDataManager.PriceChanged += OnPriceChanged;
+
+    #region Observables
+    void Try(Action a, string source) {
+      try {
+        a();
+      } catch(Exception exc) {
+        Trace(new Exception(source, exc));
+      }
+    }
+    var elCD = elFactory();
+    _contractDetailsObservable = Observable.FromEvent<ContDetHandler, (int reqId, ContractDetails contractDetails)>(
+      onNext => (int a, ContractDetails b) => onNext((a, b)),
+      h => ContractDetails += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(ContractDetails)}")),
+      h => ContractDetails -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(ContractDetails)}")),
+      elCD
+      )
+      .ObserveOn(elCD)
+      .SubscribeOn(elCD)
+      .Catch<(int reqId, ContractDetails contractDetails), Exception>(exc => {
+        Trace(new Exception(nameof(ContractDetails), exc));
+        return new(int reqId, ContractDetails contractDetails)[0].ToObservable();
+      });
+    _contractDetailsEndObservable = Observable.FromEvent<Action<int>, int>(
+      onNext => (int a) => Try(() => onNext(a), nameof(ContractDetails)),
+      h => ContractDetailsEnd += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(ContractDetailsEnd)}")),
+      h => ContractDetailsEnd -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(ContractDetailsEnd)}")),
+      elCD
+      ).ObserveOn(elCD)
+      .SubscribeOn(elCD)
+      .Catch<int, Exception>(exc => {
+        Trace(new Exception(nameof(ContractDetails), exc));
+        return new int[0].ToObservable();
+      });
+
+    var elSDOP = elFactory();
+    _optionsChainObservable = Observable.FromEvent<OptionsChainHandler, (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)>(
+      onNext => (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)
+      => Try(() => onNext((reqId, exchange, underlyingConId, tradingClass, multiplier, expirations, strikes)), nameof(SecurityDefinitionOptionParameter)),
+      h => SecurityDefinitionOptionParameter += h,
+      h => SecurityDefinitionOptionParameter -= h
+      ).ObserveOn(elSDOP)
+      .SubscribeOn(elSDOP);
+    _optionsChainEndObservable = Observable.FromEvent<Action<int>, int>(
+      onNext => (int a) => onNext(a),
+      h => SecurityDefinitionOptionParameterEnd += h,
+      h => SecurityDefinitionOptionParameterEnd -= h
+      )
+      .ObserveOn(elSDOP)
+      .SubscribeOn(elSDOP)
+      .Catch<int, Exception>(exc => {
+        Trace(new Exception(nameof(SecurityDefinitionOptionParameterEnd), exc));
+        return new int[0].ToObservable();
+      });
+
+    _marketDataObservable = Observable.FromEvent<TickPriceHandler, (int reqId, int field, double price, int canAutoExecute)>(
+      onNext => (int reqId, int field, double price, int canAutoExecute)
+      => Try(() => onNext((reqId, field, price, canAutoExecute)), nameof(TickPrice)),
+      h => TickPrice += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(TickPrice)}")),
+      h => TickPrice -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(TickPrice)}"))
+      )
+      .ObserveOn(elFactory())
+      .SubscribeOn(elFactory())
+      .Catch<(int reqId, int field, double price, int canAutoExecute), Exception>(exc => {
+        Trace(new Exception(nameof(TickPrice), exc));
+        return new(int reqId, int field, double price, int canAutoExecute)[0].ToObservable();
+      });
+
+    #endregion
   }
+
+  #region Req-* Observables
+  IScheduler elFactory() => ThreadPoolScheduler.Instance;// new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true });
+  IObservable<(int reqId, ContractDetails contractDetails)> ContractDetailsFactory()
+    => Observable.FromEvent<ContDetHandler, (int reqId, ContractDetails contractDetails)>(
+      onNext => (int a, ContractDetails b) => onNext((a, b)),
+      h => ContractDetails += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(ContractDetails)}")),
+      h => ContractDetails -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(ContractDetails)}"))
+      )
+    .ObserveOn(elFactory())
+    //.SubscribeOn(elFactory())
+    .Catch<(int reqId, ContractDetails contractDetails), Exception>(exc => {
+      Trace(new Exception(nameof(ContractDetails), exc));
+      return new(int reqId, ContractDetails contractDetails)[0].ToObservable();
+    });
+  IObservable<int> ContractDetailsEndFactory() => Observable.FromEvent<Action<int>, int>(
+      onNext => (int a) => onNext(a),
+      h => ContractDetailsEnd += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(ContractDetailsEnd)}")),
+      h => ContractDetailsEnd -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(ContractDetailsEnd)}"))
+      ).ObserveOn(elFactory())
+      //.SubscribeOn(elFactory())
+      .Catch<int, Exception>(exc => {
+        Trace(new Exception(nameof(ContractDetails), exc));
+        return new int[0].ToObservable();
+      });
+  ReqSecDefOptParams SecurityDefinitionOptionParameterFactory() => Observable.FromEvent<OptionsChainHandler, (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)>(
+      onNext => (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)
+      => onNext((reqId, exchange, underlyingConId, tradingClass, multiplier, expirations, strikes)),
+      h => SecurityDefinitionOptionParameter += h,
+      h => SecurityDefinitionOptionParameter -= h
+      ).ObserveOn(elFactory())
+      //.SubscribeOn(elFactory())
+    ;
+  IObservable<int> SecurityDefinitionOptionParameterEndFactory() => Observable.FromEvent<Action<int>, int>(
+      onNext => (int a) => onNext(a),
+      h => SecurityDefinitionOptionParameterEnd += h,
+      h => SecurityDefinitionOptionParameterEnd -= h
+      )
+      .ObserveOn(elFactory())
+      //.SubscribeOn(elFactory())
+    ;
+
+  IObservable<(int reqId, int field, double price, int canAutoExecute)> TickPriceFactory()
+    => Observable.FromEvent<TickPriceHandler, (int reqId, int field, double price, int canAutoExecute)>(
+      onNext => (int reqId, int field, double price, int canAutoExecute)
+      => onNext((reqId, field, price, canAutoExecute)),
+      h => TickPrice += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(TickPrice)}"))*/,
+      h => TickPrice -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(TickPrice)}"))*/
+      )
+      .ObserveOn(elFactory())
+      //.SubscribeOn(elFactory())
+      .Catch<(int reqId, int field, double price, int canAutoExecute), Exception>(exc => {
+        Trace(new Exception(nameof(TickPrice), exc));
+        return new(int reqId, int field, double price, int canAutoExecute)[0].ToObservable();
+      });
+
+  #endregion
+
+  #region Req-* functions
+  int NextReqId() => ValidOrderId();
+  //public IList<ContractDetails> ReqContractDetails(string symbol) => ReqContractDetails(new Contract() { LocalSymbol = symbol, SecType = "", Symbol = symbol });
+  public ContractDetails ReqContractDetailsSafe(Contract contract) {
+    var c = IBWraper.RunUntilCount(1, 5, () => ReqContractDetailsImpl(contract));
+    if(c.c < 0) throw new Exception($"{nameof(ReqContractDetailsSafe)} returned empty-handed.");
+    if(c.a.Count != 1)
+      throw new Exception($"{nameof(ReqContractDetailsSafe)} returned more the one contract. {c.a.Flatter(",")}");
+    return c.a.Single();
+  }
+  Func<Contract, IList<ContractDetails>> _ReqContractDetails;
+  public IList<ContractDetails> ReqContractDetails(string symbol) => ReqContractDetails(symbol.ContractFactory());
+
+  public IList<ContractDetails> ReqContractDetails(Contract contract) => (_ReqContractDetails
+    ?? (_ReqContractDetails = new Func<Contract, IList<ContractDetails>>(c => ReqContractDetailsImpl(c))
+    .Memoize(c => c.ToString())
+    ))(contract);
+  IList<ContractDetails> ReqContractDetailsImpl(Contract contract) {
+    return ReqContractDetailsAsync(contract).ToEnumerable().Select(t => t.cd).ToArray();
+  }
+  public IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsAsync(Contract contract) {
+    var reqId = NextReqId();
+    var cd = ContractDetailsFactory()
+      .Merge(ContractDetailsEndFactory().Select(rid => (reqId: rid, contractDetails: (ContractDetails)null)))
+      .Where(t => t.reqId == reqId)
+      //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
+      .TakeWhile(t => t.contractDetails != null)
+      //.Timeout(TimeSpan.FromSeconds(_reqTimeout))
+      //.Do(x => _verbous(new { ReqContractDetails = new { Started = x.reqId } }))
+      ;
+    //.Subscribe(t => callback(t.contractDetails),exc=> { throw exc; }, () => _verbous(new { ContractDetails = new { Completed = reqId } }));
+    ClientSocket.reqContractDetails(reqId, contract);
+    return cd;
+  }
+
+  Func<string, string, string, int, ReqSecDefOptParamsList> _ReqSecDefOptParamsList;
+  public ReqSecDefOptParamsList ReqSecDefOptParamsSync(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) => (_ReqSecDefOptParamsList
+    ?? (_ReqSecDefOptParamsList = new Func<string, string, string, int, ReqSecDefOptParamsList>((us, ex, st, comId)
+        => ReqSecDefOptParamsSyncImpl(us, ex, st, comId)))
+    //.Memoize()
+    )(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId);
+
+  public ReqSecDefOptParamsList ReqSecDefOptParamsSyncImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
+    return ReqSecDefOptParamsImpl(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId).ToEnumerable().ToArray();
+  }
+  public ReqSecDefOptParams ReqSecDefOptParamsImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
+    var reqId = NextReqId();
+    var cd = SecurityDefinitionOptionParameterFactory()
+      .Merge(SecurityDefinitionOptionParameterEndFactory().Select(rid => (reqId: rid, exchange: "", underlyingConId: 0, tradingClass: "", multiplier: "", expirations: (HashSet<string>)null, strikes: (HashSet<double>)null)))
+      .Where(t => t.reqId == reqId)
+      .TakeWhile(t => t.expirations != null)
+      .Do(t => TraceTemp(new { ReqSecDefOptParamsImpl = t.reqId, t.tradingClass }))
+      .Catch<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes), Exception>(exc => {
+        Trace(new { ReqSecDefOptParamsImpl = exc });
+        return new(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)[0].ToObservable();
+      })
+      //.Do(x => _verbous(new { ReqSecDefOptParams = new { Started = x.reqId } }))
+      //.Timeout(TimeSpan.FromSeconds(_reqTimeout))
+      ;
+    //.Subscribe(t => callback(t.contractDetails),exc=> { throw exc; }, () => _verbous(new { ContractDetails = new { Completed = reqId } }));
+    ClientSocket.reqSecDefOptParams(reqId, underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId);
+    return cd;
+  }
+
+  public (int c, IList<Contract> a) ReqCurrentOptions(string symbol) =>
+  IBWraper.RunUntilCount(2, 1, () => ReqCurrentOptionsAsync(symbol).ToEnumerable().ToArray());
+  public IObservable<Contract> ReqCurrentOptionsAsync(string symbol) {
+    return (
+      from t in ReqOptionChains(symbol)
+      from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(2).Select((strike, i) => (strike, i))
+      .Count(2, new { t.price, strikes = new { t.strikes.Length } })
+        //.Do(strike => Trace(new { strike }))
+      let option = IBWraper.MakeOptionSymbol(t.tradingClass, t.expiration, strike.strike, true)
+      from o in ReqContractDetailsAsync(option.ContractFactory())
+      select o.cd.Summary//.SideEffect(c=>Trace(new { optionContract = c }))
+     );
+  }
+
+  public IObservable<(string exchange, string tradingClass, string multiplier, DateTime expiration, double[] strikes, double price, string symbol, string currency)>
+  ReqOptionChains(string symbol) {
+    var optionChain = (
+      from cd in ReqContractDetailsAsync(symbol.ContractFactory()).Select(t => t.cd)
+      from price in ReqMarketPrice(cd.Summary)
+      from och in ReqSecDefOptParamsSync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
+      where och.exchange == "SMART"
+      from expiration in och.expirations.Select(e => e.FromTWSDateString())
+      select (och.exchange, och.tradingClass, och.multiplier, expiration, strikes: och.strikes.ToArray(), price, symbol = cd.Summary.Symbol, currency: cd.Summary.Currency)
+      )
+      .MinBy(t => t.expiration)
+      .SelectMany(l => l.OrderBy(t => t.strikes.Length).TakeLast(1))
+      .Take(1);
+    return optionChain;
+  }
+
+  public enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
+  public IObservable<double> ReqMarketPrice(string symbol)
+    => ReqContractDetailsAsync(symbol.ContractFactory()).SelectMany(c => ReqPrice(c.cd.Summary, TickType.MarketPrice).SelectMany(p => p));
+  public IObservable<double> ReqMarketPrice(Contract contract) => ReqPrice(contract, TickType.MarketPrice).SelectMany(p => p);
+  public IObservable<(double bid, double ask)> ReqBidAsk(Contract contract)
+    => ReqPrice(contract, TickType.Bid, TickType.Ask).Select(d => (d.Min(), d.Max()));
+  public IObservable<double[]> ReqPrice(Contract contract, params TickType[] tickType) {
+    var tt = tickType.Cast<int>().ToArray();
+    var reqId = NextReqId();
+    var cd = TickPriceFactory()
+      .Where(t => t.reqId == reqId)
+      //.Do(x => TraceTemp(new { ReqPrice = new { contract, started = x } }))
+      .Where(t => tt.Contains(t.field))
+      .Distinct(t => t.field)
+      //.Timeout(TimeSpan.FromSeconds(15))
+      .Take(tickType.Length)
+      .Select(t => t.price)
+      .ToArray()
+      //.Catch<double[], TimeoutException>(exc => {
+      //  Trace(new { ReqPrice = exc, contract });
+      //  return new double[0][].ToObservable();
+      //})
+      ;
+    ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null);
+    return cd;
+  }
+  #endregion
 
   private static object _validOrderIdLock = new object();
   private void OnNextValidId(int obj) {
@@ -95,7 +351,7 @@ public class IBClientCore :IBClient, ICoreFX {
       try {
         return Interlocked.Increment(ref _validOrderId);
       } finally {
-        Trace(new { _validOrderId });
+        //Trace(new { _validOrderId });
       }
     }
   }
@@ -310,6 +566,10 @@ public class IBClientCore :IBClient, ICoreFX {
 
   #region Events
   private EventHandler<LoggedInEventArgs> LoggedInEvent;
+  private ReqSecDefOptParams _optionsChainObservable;
+  private IObservable<int> _optionsChainEndObservable;
+  private IObservable<(int reqId, int field, double price, int canAutoExecute)> _marketDataObservable;
+
   public event EventHandler<LoggedInEventArgs> LoggedIn {
     add {
       if(LoggedInEvent == null || !LoggedInEvent.GetInvocationList().Contains(value))

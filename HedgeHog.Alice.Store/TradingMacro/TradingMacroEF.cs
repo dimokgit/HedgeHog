@@ -179,6 +179,7 @@ namespace HedgeHog.Alice.Store {
     /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
     [DataMemberAttribute()]
+    [WwwSetting(wwwSettingsBars)]
     public global::System.String Pair {
       get {
         return _Pair;

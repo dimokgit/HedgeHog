@@ -48,7 +48,7 @@ namespace ConsoleApp {
       void OpenTrade(IList<(string k, Contract c)> contracts) {
         HandleMessage("\n" + string.Join("\n", contracts));
         contracts.Take(1).ForEach(c =>
-        fw.AccountManager.ReqBidAsk(c.c)
+        ibClient.ReqBidAsk(c.c)
           .Subscribe(p => HandleMessage(new { c, p } + "")));
         HandleMessage($"Butterflys {contracts.Count()} are done");
         //contracts.Take(1).ForEach(c => fw.AccountManager.OpenTrade(c.c, 10));
@@ -66,15 +66,19 @@ namespace ConsoleApp {
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         HandleMessage("Sleep a little");
         //Thread.Sleep(20*1000);
-        var symbols = new[] { "SPY", "spx index", "VXX" };
+        var symbols = new[] { "SPY", "spx", "VXX" };
         void ProcessSymbol(string symbol) {
           //HandleMessage(new { symbol } + "");
           // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
-          fw.AccountManager.ReqMarketPrice(symbol).ToEnumerable()
+
+          ibClient.ReqMarketPrice(symbol).ToEnumerable()
           .Count(1, "ReqMarketPrice")
           .ForEach(mp => HandleMessage($"{symbol}:{new { mp = mp.ToJson() }}"));
 
-          var reqOptions = fw.AccountManager.ReqCurrentOptions(symbol);
+          //var cds = ibClient.ReqContractDetails(symbol);
+          //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
+
+          var reqOptions = ibClient.ReqCurrentOptions(symbol);
           HandleMessage(new { reqOptions.c, options = (options = reqOptions.a).Flatter(",") });
         }
         symbols.ForEach(ProcessSymbol);
@@ -113,8 +117,8 @@ namespace ConsoleApp {
         var c = options[0].LocalSymbol.ContractFactory();
         new HistoryLoader<Rate>(ibClient, c, 1440 * 2, dateEnd, TimeSpan.FromDays(1), TimeUnit.S, BarSize._1_secs,
            map,
-           list => HandleMessage($"{c} {new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate } }}"),
-           dates => HandleMessage(new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter } + ""),
+           list => HandleMessage($"{c} {new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate, Thread.CurrentThread.ManagedThreadId } }}"),
+           dates => HandleMessage($"{c} {new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter, Thread.CurrentThread.ManagedThreadId }}"),
            exc => { });
       }
     }

@@ -471,16 +471,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     partial void OnPairChanged() {
-      _inPips = null;
-      _pointSize = double.NaN;
-      _BaseUnitSize = 0;
-      _mmr = 0;
-      Log = new Exception("v_BlackoutTime is not availible");
-      //GlobalStorage.UseForexContext(f => {
-      //  this._blackoutTimes = f.v_BlackoutTime.ToArray();
-      //});
-      _pendingEntryOrders = null;
-      OnPropertyChanged(nameof(CompositeName));
     }
     partial void OnLimitBarChanged() { OnPropertyChanged(nameof(CompositeName)); }
 
@@ -4175,8 +4165,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
             InfoTooltip = "Loading Rates";
             //Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, ServerTime, (BarsPeriodType)BarPeriod);
             var sw = Stopwatch.StartNew();
-            if(before != null)
-              before();
+            before?.Invoke();
             var serverTime = ServerTime;
             var periodsBack = BarsCountCount();
             var useDefaultInterval = /*!DoStreatchRates || dontStreachRates ||*/  CorridorStats == null || CorridorStats.StartDate == DateTime.MinValue;

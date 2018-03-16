@@ -1003,7 +1003,7 @@ namespace HedgeHog.Alice.Client {
             list2.Add(row("CurrentLot", string.Join("/", trades.GroupBy(t => t.Pair).Select(g => g.Sum(t => t.Position)))));
           else if(ht)
             list2.Add(row("CurrentLot", tm.Trades.Lots() + (ht ? "/" + tm.PipAmount.AutoRound2("$", 2) : "")));
-          list2.Add(row("Trades Gross", $"{trades.Gross().AutoRound2("$", 2)}@{tm.ServerTime.TimeOfDay.ToString(@"hh\:mm\:ss")}"));
+          list2.Add(row($"{pair} Gross", $"{trades.Gross().AutoRound2("$", 2)}@{tm.ServerTime.TimeOfDay.ToString(@"hh\:mm\:ss")}"));
         }
         list2.Add(row("Trades Gross", $"{rc.TradesManager.GetTrades().Gross().AutoRound2("$", 2)}@{tm.ServerTime.TimeOfDay.ToString(@"hh\:mm\:ss")}"));
         if(tm.LastTradeLoss < -1000000)

@@ -26,11 +26,17 @@ namespace IBApp {
     private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, 0);
 
     public void AddRequest(Contract contract, string genericTickList = "") {
-      if(string.IsNullOrEmpty(contract.Exchange)) contract.Exchange = "SMART";
+      if(string.IsNullOrEmpty(contract.Exchange))
+        IbClient.ReqContractDetailsAsync(contract)
+        .Subscribe(req => AddRequestImpl(req.cd.Summary.ContractFactory(), genericTickList));
+      else AddRequestImpl(contract, genericTickList);
+    }
+    void AddRequestImpl(Contract contract, string genericTickList) {
       if(activeRequests.Any(ar => ar.Value.Item1.Instrument.ToUpper() == contract.Instrument.ToUpper())) {
         return;
       }
       var reqId = NextReqId();
+      Trace(new { reqId, contract });
       //IbClient.TickSize += OnTickSize;
       IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
       activeRequests.Add(reqId, (contract, new Price(contract.Instrument)));
@@ -69,6 +75,8 @@ namespace IBApp {
             //BID
             if(price2.Bid == priceMessage.Price)
               break;
+            if(price2.Ask <= 0)
+              price2.Ask = priceMessage.Price;
             if(priceMessage.Price > 0) {
               price2.Bid = priceMessage.Price;
               price2.Time2 = IbClient.ServerTime;
@@ -80,6 +88,8 @@ namespace IBApp {
             //ASK
             if(price2.Ask == priceMessage.Price)
               break;
+            if(price2.Bid <= 0)
+              price2.Bid = priceMessage.Price;
             if(priceMessage.Price > 0) {
               price2.Ask = priceMessage.Price;
               price2.Time2 = IbClient.ServerTime;

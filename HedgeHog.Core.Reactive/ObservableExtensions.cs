@@ -102,7 +102,7 @@ namespace HedgeHog {
       return subject.SubscribeToLatestOnBGThread(onNext, onError, () => { }, priority);
     }
 
-    static EventLoopScheduler BGTreadSchedulerFactory(ThreadPriority priority = ThreadPriority.Normal) {
+    public static EventLoopScheduler BGTreadSchedulerFactory(ThreadPriority priority = ThreadPriority.Normal) {
       return new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true, Priority = priority }; });
     }
     public static IDisposable SubscribeToLatestOnBGThread<TSource>(this IObservable<TSource> subject
