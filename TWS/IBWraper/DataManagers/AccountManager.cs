@@ -102,7 +102,7 @@ namespace IBApp {
           Trace(new Exception(source, exc));
         }
       }
-      EventLoopScheduler elFactory() => new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true });
+      IScheduler elFactory() => TaskPoolScheduler.Default;// new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true });
 
       var posObs = Observable.FromEvent<PositionHandker, (string account, Contract contract, double pos, double avgCost)>(
         onNext => (string a, Contract b, double c, double d) => Try(() => onNext((a, b, c, d)), nameof(IbClient.Position)),
@@ -132,11 +132,12 @@ namespace IBApp {
 
       #endregion
       #region Subscibtions
+      if(false)
       posObs
         .Where(x => x.account == _accountId)
         .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos, x.account } }))
         .ObserveOn(elFactory())
-        .SubscribeOn(elFactory())
+        //.SubscribeOn(elFactory())
         .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost))
         .SideEffect(s => _strams.Add(s));
       ooObs

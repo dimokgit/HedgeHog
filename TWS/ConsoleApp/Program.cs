@@ -64,9 +64,7 @@ namespace ConsoleApp {
       }
       IList<Contract> options = new Contract[0];
       ibClient.ManagedAccountsObservable.Subscribe(s => {
-        HandleMessage("Sleep a little");
-        //Thread.Sleep(20*1000);
-        var symbols = new[] { "SPY", "spx", "VXX" };
+        var symbols = new[] { /*"SPY", "spx" ,*/ "VXX" };
         void ProcessSymbol(string symbol) {
           //HandleMessage(new { symbol } + "");
           // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
@@ -79,10 +77,13 @@ namespace ConsoleApp {
           //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
 
           var reqOptions = ibClient.ReqCurrentOptions(symbol);
+          //Passager.ThrowIf(() => reqOptions.c < 1);
           HandleMessage(new { reqOptions.c, options = (options = reqOptions.a).Flatter(",") });
         }
         symbols.ForEach(ProcessSymbol);
-        LoadHistory(ibClient, options);
+        HandleMessage(nameof(ProcessSymbol) + " done");
+        //LoadHistory(ibClient, options);
+
         //var och = fw.AccountManager.BatterflyFactory(symbol).ToArray();
         //OpenTrade(och);
 
@@ -92,7 +93,7 @@ namespace ConsoleApp {
         //fw.AccountManager.ReqContractDetails(spx).Subscribe(cd => HandleMessage(cd.ToJson()), () => HandleMessage(new { ContractDetails = new { Completed = contract.LocalSymbol } } + ""));
       });
 
-      if(ibClient.LogOn("127.0.0.1", 7497 + "", 102 + "", false)) {
+      if(ibClient.LogOn("127.0.0.1", 7497 + "", 0 + "", false)) {
         ibClient.SetOfferSubscription(contract);
         //else {
         //  var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp => sp.LoadRates).ToArray());

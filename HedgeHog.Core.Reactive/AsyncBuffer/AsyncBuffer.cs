@@ -27,20 +27,14 @@ namespace HedgeHog {
       var buffer = new BroadcastBlock<Action>(n => n, new DataflowBlockOptions() { BoundedCapacity = boundedCapacity });
 
       _StartProcessDisposable = _StartProcessSubject
-        .ObserveOn(TaskPoolScheduler.Default)
-        //.SubscribeOn(new EventLoopScheduler())
         .Subscribe(a => buffer.SendAsync(a)
         , exc => Error.OnNext(exc));
       var b = buffer
-        .AsObservable()
-        .Catch<Action, Exception>(exc => {
-          Error.OnNext(exc);
-          return Observable.Return(new Action(() => { }));
-        });
+        .AsObservable();
       if(sample != TimeSpan.Zero)
         b = b.Sample(sample);
       _bufferDisposable = b
-        .ObserveOn(ThreadPoolScheduler.Instance)
+        .SubscribeOn(NewThreadScheduler.Default)
         .Subscribe(a => {
           try {
             a();

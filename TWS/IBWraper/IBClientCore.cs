@@ -22,6 +22,9 @@ using OptionsChainHandler = System.Action<int, string, int, string, string, Syst
 using TickPriceHandler = System.Action<int, int, double, int>;
 using ReqSecDefOptParams = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
+using ErrorHandler = System.Action<int, int, string, System.Exception>;
+using System.Reactive.Disposables;
+using System.Reactive.Subjects;
 
 public class IBClientCore :IBClient, ICoreFX {
   class Configer {
@@ -156,14 +159,13 @@ public class IBClientCore :IBClient, ICoreFX {
   }
 
   #region Req-* Observables
-  IScheduler elFactory() => ThreadPoolScheduler.Instance;// new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true });
+  IScheduler elFactory() => TaskPoolScheduler.Default;// new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true });
   IObservable<(int reqId, ContractDetails contractDetails)> ContractDetailsFactory()
     => Observable.FromEvent<ContDetHandler, (int reqId, ContractDetails contractDetails)>(
       onNext => (int a, ContractDetails b) => onNext((a, b)),
       h => ContractDetails += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(ContractDetails)}")),
       h => ContractDetails -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(ContractDetails)}"))
       )
-    .ObserveOn(elFactory())
     //.SubscribeOn(elFactory())
     .Catch<(int reqId, ContractDetails contractDetails), Exception>(exc => {
       Trace(new Exception(nameof(ContractDetails), exc));
@@ -173,7 +175,7 @@ public class IBClientCore :IBClient, ICoreFX {
       onNext => (int a) => onNext(a),
       h => ContractDetailsEnd += h.SideEffect(_ => TraceTemp($"Subscribed to {nameof(ContractDetailsEnd)}")),
       h => ContractDetailsEnd -= h.SideEffect(_ => TraceTemp($"UnSubscribed to {nameof(ContractDetailsEnd)}"))
-      ).ObserveOn(elFactory())
+      )
       //.SubscribeOn(elFactory())
       .Catch<int, Exception>(exc => {
         Trace(new Exception(nameof(ContractDetails), exc));
@@ -185,7 +187,7 @@ public class IBClientCore :IBClient, ICoreFX {
       h => SecurityDefinitionOptionParameter += h,
       h => SecurityDefinitionOptionParameter -= h
       ).ObserveOn(elFactory())
-      //.SubscribeOn(elFactory())
+    //.SubscribeOn(elFactory())
     ;
   IObservable<int> SecurityDefinitionOptionParameterEndFactory() => Observable.FromEvent<Action<int>, int>(
       onNext => (int a) => onNext(a),
@@ -193,7 +195,7 @@ public class IBClientCore :IBClient, ICoreFX {
       h => SecurityDefinitionOptionParameterEnd -= h
       )
       .ObserveOn(elFactory())
-      //.SubscribeOn(elFactory())
+    //.SubscribeOn(elFactory())
     ;
 
   IObservable<(int reqId, int field, double price, int canAutoExecute)> TickPriceFactory()
@@ -210,6 +212,14 @@ public class IBClientCore :IBClient, ICoreFX {
         return new(int reqId, int field, double price, int canAutoExecute)[0].ToObservable();
       });
 
+  IObservable<(int id, int errorCode, string errorMsg, Exception exc)> ErrorFactory() => Observable.FromEvent<ErrorHandler, (int id, int errorCode, string errorMsg, Exception exc)>(
+      onNext => (int id, int errorCode, string errorMsg, Exception exc) => onNext((id, errorCode, errorMsg, exc)),
+      h => Error += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(Error)}"))*/,
+      h => Error -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(Error)}"))*/
+      )
+      .ObserveOn(elFactory())
+    //.SubscribeOn(elFactory())
+    ;
   #endregion
 
   #region Req-* functions
@@ -234,19 +244,51 @@ public class IBClientCore :IBClient, ICoreFX {
   }
   public IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsAsync(Contract contract) {
     var reqId = NextReqId();
-    var cd = ContractDetailsFactory()
-      .Merge(ContractDetailsEndFactory().Select(rid => (reqId: rid, contractDetails: (ContractDetails)null)))
-      .Where(t => t.reqId == reqId)
-      //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
-      .TakeWhile(t => t.contractDetails != null)
-      //.Timeout(TimeSpan.FromSeconds(_reqTimeout))
-      //.Do(x => _verbous(new { ReqContractDetails = new { Started = x.reqId } }))
-      ;
-    //.Subscribe(t => callback(t.contractDetails),exc=> { throw exc; }, () => _verbous(new { ContractDetails = new { Completed = reqId } }));
+    //event Action<(int, ContractDetails)> stopError;// = (a) => (0, (ContractDetails)null);
+    var cd = WireToError<(int reqId, ContractDetails cd)>(
+      reqId,
+      ContractDetailsFactory(),
+      ContractDetailsEndFactory(),
+      (int rid) => (rid, (ContractDetails)null),
+      (0, (ContractDetails)null),
+      t => t.reqId,
+      t => t.cd != null,
+      e => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, e }}"))
+      .ObserveOn(elFactory());
+    //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
+    ;
     ClientSocket.reqContractDetails(reqId, contract);
+    //Trace(new { ReqContractDetailsImpl = reqId, contract });
     return cd;
   }
-
+  IObservable<T> WireToError<T>
+    (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<int, T> endFactory, T empty, Func<T, int> getReqId, Func<T, bool> isNotEnd, Action<(int id, int errorCode, string errorMsg, Exception exc)> onError) {
+    var end = new Subject<int>();
+    var error = new Subject<(int id, int errorCode, string errorMsg, Exception exc)>();
+    error.Merge(ErrorFactory())
+      .Where(t => t.id == reqId)
+      .TakeWhile(t => t.Item2 != -2)
+      .Subscribe(e => {
+        end.OnNext(reqId);
+        end.Dispose();
+        onError(e);
+        //;
+      }, () => TraceTemp($"ErrorHadler:{reqId} done"));
+    Func<int, T> next = _ => {
+      //Trace($"Nneed to unsub:{reqId}");
+      error.OnNext((reqId, -2, "", (Exception)null));
+      error.Dispose();
+      return empty;
+    };
+    var o = source
+      .Merge(endSubject.Merge(end).Select(endFactory))
+      .Where(t => getReqId(t) == reqId)
+      .OnErrorResumeNext(Observable.Return(1).Select(next))
+      .Where(t => getReqId(t) > 0)
+      .TakeWhile(isNotEnd)//t => t.Item2 != null)
+      ;
+    return o;
+  }
   Func<string, string, string, int, ReqSecDefOptParamsList> _ReqSecDefOptParamsList;
   public ReqSecDefOptParamsList ReqSecDefOptParamsSync(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) => (_ReqSecDefOptParamsList
     ?? (_ReqSecDefOptParamsList = new Func<string, string, string, int, ReqSecDefOptParamsList>((us, ex, st, comId)
