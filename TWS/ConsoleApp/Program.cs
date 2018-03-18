@@ -64,7 +64,7 @@ namespace ConsoleApp {
       }
       IList<Contract> options = new Contract[0];
       ibClient.ManagedAccountsObservable.Subscribe(s => {
-        var symbols = new[] { /*"SPY", "spx" ,*/ "VXX" };
+        var symbols = new[] { "SPY", "spx" , "VXX" };
         void ProcessSymbol(string symbol) {
           //HandleMessage(new { symbol } + "");
           // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
@@ -80,7 +80,7 @@ namespace ConsoleApp {
           //Passager.ThrowIf(() => reqOptions.c < 1);
           HandleMessage(new { reqOptions.c, options = (options = reqOptions.a).Flatter(",") });
         }
-        symbols.ForEach(ProcessSymbol);
+        symbols.Repeat(1000).ForEach(ProcessSymbol);
         HandleMessage(nameof(ProcessSymbol) + " done");
         //LoadHistory(ibClient, options);
 

@@ -25,6 +25,7 @@ using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, stri
 using ErrorHandler = System.Action<int, int, string, System.Exception>;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
+using System.Diagnostics;
 
 public class IBClientCore :IBClient, ICoreFX {
   class Configer {
@@ -186,7 +187,7 @@ public class IBClientCore :IBClient, ICoreFX {
       => onNext((reqId, exchange, underlyingConId, tradingClass, multiplier, expirations, strikes)),
       h => SecurityDefinitionOptionParameter += h,
       h => SecurityDefinitionOptionParameter -= h
-      ).ObserveOn(elFactory())
+      )
     //.SubscribeOn(elFactory())
     ;
   IObservable<int> SecurityDefinitionOptionParameterEndFactory() => Observable.FromEvent<Action<int>, int>(
@@ -194,7 +195,6 @@ public class IBClientCore :IBClient, ICoreFX {
       h => SecurityDefinitionOptionParameterEnd += h,
       h => SecurityDefinitionOptionParameterEnd -= h
       )
-      .ObserveOn(elFactory())
     //.SubscribeOn(elFactory())
     ;
 
@@ -205,7 +205,7 @@ public class IBClientCore :IBClient, ICoreFX {
       h => TickPrice += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(TickPrice)}"))*/,
       h => TickPrice -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(TickPrice)}"))*/
       )
-      .ObserveOn(elFactory())
+      //.ObserveOn(elFactory())
       //.SubscribeOn(elFactory())
       .Catch<(int reqId, int field, double price, int canAutoExecute), Exception>(exc => {
         Trace(new Exception(nameof(TickPrice), exc));
@@ -217,7 +217,6 @@ public class IBClientCore :IBClient, ICoreFX {
       h => Error += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(Error)}"))*/,
       h => Error -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(Error)}"))*/
       )
-      .ObserveOn(elFactory())
     //.SubscribeOn(elFactory())
     ;
   #endregion
@@ -242,6 +241,7 @@ public class IBClientCore :IBClient, ICoreFX {
   IList<ContractDetails> ReqContractDetailsImpl(Contract contract) {
     return ReqContractDetailsAsync(contract).ToEnumerable().Select(t => t.cd).ToArray();
   }
+  IScheduler esReqCont = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
   public IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsAsync(Contract contract) {
     var reqId = NextReqId();
     //event Action<(int, ContractDetails)> stopError;// = (a) => (0, (ContractDetails)null);
@@ -254,7 +254,7 @@ public class IBClientCore :IBClient, ICoreFX {
       t => t.reqId,
       t => t.cd != null,
       e => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, e }}"))
-      .ObserveOn(elFactory());
+      .ObserveOn(esReqCont);
     //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
     ;
     ClientSocket.reqContractDetails(reqId, contract);
@@ -265,7 +265,7 @@ public class IBClientCore :IBClient, ICoreFX {
     (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<int, T> endFactory, T empty, Func<T, int> getReqId, Func<T, bool> isNotEnd, Action<(int id, int errorCode, string errorMsg, Exception exc)> onError) {
     var end = new Subject<int>();
     var error = new Subject<(int id, int errorCode, string errorMsg, Exception exc)>();
-    error.Merge(ErrorFactory())
+    var d = error.Merge(ErrorFactory())
       .Where(t => t.id == reqId)
       .TakeWhile(t => t.Item2 != -2)
       .Subscribe(e => {
@@ -273,19 +273,21 @@ public class IBClientCore :IBClient, ICoreFX {
         end.Dispose();
         onError(e);
         //;
-      }, () => TraceTemp($"ErrorHadler:{reqId} done"));
+      }, () => Debug.WriteLine($"ErrorHadler:{reqId} done"));
     Func<int, T> next = _ => {
       //Trace($"Nneed to unsub:{reqId}");
       error.OnNext((reqId, -2, "", (Exception)null));
       error.Dispose();
+      end.Dispose();
+      d.Dispose();
       return empty;
     };
     var o = source
       .Merge(endSubject.Merge(end).Select(endFactory))
       .Where(t => getReqId(t) == reqId)
+      .TakeWhile(isNotEnd)//t => t.Item2 != null)
       .OnErrorResumeNext(Observable.Return(1).Select(next))
       .Where(t => getReqId(t) > 0)
-      .TakeWhile(isNotEnd)//t => t.Item2 != null)
       ;
     return o;
   }
@@ -299,6 +301,8 @@ public class IBClientCore :IBClient, ICoreFX {
   public ReqSecDefOptParamsList ReqSecDefOptParamsSyncImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
     return ReqSecDefOptParamsImpl(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId).ToEnumerable().ToArray();
   }
+
+  IScheduler esSecDef = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqSecDefOpt" });
   public ReqSecDefOptParams ReqSecDefOptParamsImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
     var reqId = NextReqId();
     var cd = SecurityDefinitionOptionParameterFactory()
@@ -310,6 +314,7 @@ public class IBClientCore :IBClient, ICoreFX {
         Trace(new { ReqSecDefOptParamsImpl = exc });
         return new(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)[0].ToObservable();
       })
+      .ObserveOn(esSecDef)
       //.Do(x => _verbous(new { ReqSecDefOptParams = new { Started = x.reqId } }))
       //.Timeout(TimeSpan.FromSeconds(_reqTimeout))
       ;
@@ -354,6 +359,8 @@ public class IBClientCore :IBClient, ICoreFX {
   public IObservable<double> ReqMarketPrice(Contract contract) => ReqPrice(contract, TickType.MarketPrice).SelectMany(p => p);
   public IObservable<(double bid, double ask)> ReqBidAsk(Contract contract)
     => ReqPrice(contract, TickType.Bid, TickType.Ask).Select(d => (d.Min(), d.Max()));
+
+  IScheduler esReqPrice = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice" });
   public IObservable<double[]> ReqPrice(Contract contract, params TickType[] tickType) {
     var tt = tickType.Cast<int>().ToArray();
     var reqId = NextReqId();
@@ -365,6 +372,7 @@ public class IBClientCore :IBClient, ICoreFX {
       //.Timeout(TimeSpan.FromSeconds(15))
       .Take(tickType.Length)
       .Select(t => t.price)
+      .ObserveOn(esReqPrice)
       .ToArray()
       //.Catch<double[], TimeoutException>(exc => {
       //  Trace(new { ReqPrice = exc, contract });
