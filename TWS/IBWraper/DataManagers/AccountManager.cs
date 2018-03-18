@@ -132,7 +132,6 @@ namespace IBApp {
 
       #endregion
       #region Subscibtions
-      if(false)
       posObs
         .Where(x => x.account == _accountId)
         .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos, x.account } }))

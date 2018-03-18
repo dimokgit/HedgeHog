@@ -23,7 +23,8 @@ namespace HedgeHog {
         return r;
       };
     }
-    public static Func<A, R> Memoize<A, R, K>(this Func<A, R> f, Func<A, K> key) {
+    public static Func<A, R> Memoize<A, R, K>(this Func<A, R> f, Func<A, K> key) => f.Memoize(key, _ => true);
+    public static Func<A, R> Memoize<A, R, K>(this Func<A, R> f, Func<A, K> key, Predicate<R> result) {
       var cache = new ConcurrentDictionary<K, R>();
       var syncMap = new ConcurrentDictionary<K, object>();
       return a => {
@@ -32,7 +33,8 @@ namespace HedgeHog {
         if(!cache.TryGetValue(k, out r)) {
           var sync = syncMap.GetOrAdd(k, new object());
           lock(sync) {
-            r = cache.GetOrAdd(k, _ => f(a));
+            r = f(a);
+            if(result(r)) cache.GetOrAdd(k, _ => r);
           }
           syncMap.TryRemove(k, out sync);
         }

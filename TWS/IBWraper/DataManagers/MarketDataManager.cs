@@ -27,8 +27,8 @@ namespace IBApp {
 
     public void AddRequest(Contract contract, string genericTickList = "") {
       if(string.IsNullOrEmpty(contract.Exchange))
-        IbClient.ReqContractDetailsAsync(contract)
-        .Subscribe(req => AddRequestImpl(req.cd.Summary.ContractFactory(), genericTickList));
+        IbClient.ReqContractDetails(contract)
+        .ForEach(req => AddRequestImpl(req.Summary.ContractFactory(), genericTickList));
       else AddRequestImpl(contract, genericTickList);
     }
     void AddRequestImpl(Contract contract, string genericTickList) {
@@ -36,8 +36,8 @@ namespace IBApp {
         return;
       }
       var reqId = NextReqId();
-      Trace(new { reqId, contract });
-      //IbClient.TickSize += OnTickSize;
+      Trace($"{nameof(AddRequest)}: {new { reqId, contract }}");
+
       IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
       activeRequests.Add(reqId, (contract, new Price(contract.Instrument)));
     }

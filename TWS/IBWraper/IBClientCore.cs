@@ -236,13 +236,13 @@ public class IBClientCore :IBClient, ICoreFX {
 
   public IList<ContractDetails> ReqContractDetails(Contract contract) => (_ReqContractDetails
     ?? (_ReqContractDetails = new Func<Contract, IList<ContractDetails>>(c => ReqContractDetailsImpl(c))
-    .Memoize(c => c.ToString())
+    .Memoize(c => c.ToString(), l => l.Any())
     ))(contract);
   IList<ContractDetails> ReqContractDetailsImpl(Contract contract) {
     return ReqContractDetailsAsync(contract).ToEnumerable().Select(t => t.cd).ToArray();
   }
   IScheduler esReqCont = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
-  public IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsAsync(Contract contract) {
+  IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsAsync(Contract contract) {
     var reqId = NextReqId();
     //event Action<(int, ContractDetails)> stopError;// = (a) => (0, (ContractDetails)null);
     var cd = WireToError<(int reqId, ContractDetails cd)>(
@@ -328,19 +328,17 @@ public class IBClientCore :IBClient, ICoreFX {
   public IObservable<Contract> ReqCurrentOptionsAsync(string symbol) {
     return (
       from t in ReqOptionChains(symbol)
-      from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(2).Select((strike, i) => (strike, i))
-      .Count(2, new { t.price, strikes = new { t.strikes.Length } })
-        //.Do(strike => Trace(new { strike }))
+      from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(3).Select((strike, i) => (strike, i))
       let option = IBWraper.MakeOptionSymbol(t.tradingClass, t.expiration, strike.strike, true)
-      from o in ReqContractDetailsAsync(option.ContractFactory())
-      select o.cd.Summary//.SideEffect(c=>Trace(new { optionContract = c }))
+      from o in ReqContractDetails(option.ContractFactory())
+      select o.Summary//.SideEffect(c=>Trace(new { optionContract = c }))
      );
   }
 
   public IObservable<(string exchange, string tradingClass, string multiplier, DateTime expiration, double[] strikes, double price, string symbol, string currency)>
   ReqOptionChains(string symbol) {
     var optionChain = (
-      from cd in ReqContractDetailsAsync(symbol.ContractFactory()).Select(t => t.cd)
+      from cd in ReqContractDetails(symbol.ContractFactory()).ToObservable()//.Select(t => t.cd)
       from price in ReqMarketPrice(cd.Summary)
       from och in ReqSecDefOptParamsSync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
       where och.exchange == "SMART"
@@ -355,7 +353,10 @@ public class IBClientCore :IBClient, ICoreFX {
 
   public enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
   public IObservable<double> ReqMarketPrice(string symbol)
-    => ReqContractDetailsAsync(symbol.ContractFactory()).SelectMany(c => ReqPrice(c.cd.Summary, TickType.MarketPrice).SelectMany(p => p));
+    => from cd in ReqContractDetails(symbol.ContractFactory()).ToObservable()
+       from prices in ReqPrice(cd.Summary, TickType.MarketPrice)
+       from p in prices
+       select p;
   public IObservable<double> ReqMarketPrice(Contract contract) => ReqPrice(contract, TickType.MarketPrice).SelectMany(p => p);
   public IObservable<(double bid, double ask)> ReqBidAsk(Contract contract)
     => ReqPrice(contract, TickType.Bid, TickType.Ask).Select(d => (d.Min(), d.Max()));
