@@ -275,7 +275,7 @@ namespace HedgeHog.Shared {
         if(BaseUnitSize == 0)
           BaseUnitSize = tradesManager.GetBaseUnitSize(Pair);
         Time2Close = price.Time2;
-        Close = Buy ? price.Bid : price.Ask;
+        Close = (Buy ? price.Bid : price.Ask) * BaseUnitSize;
         if(CommissionByTrade != null)
           Commission = CommissionByTrade(this);
         //Close = Buy ? price.BuyClose : price.SellClose;

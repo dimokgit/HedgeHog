@@ -67,6 +67,7 @@ namespace HedgeHog.Shared {
     double InPips(string pair, double? price);
     double InPoints(string pair, double? price);
     double GetPipSize(string pair);
+    //int GetMultiplier(string pair);
     int GetDigits(string pair);
     //double GetPipCost(string pair);
     int GetBaseUnitSize(string pair);

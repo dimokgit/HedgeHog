@@ -26,6 +26,7 @@ using ErrorHandler = System.Action<int, int, string, System.Exception>;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 
 public class IBClientCore :IBClient, ICoreFX {
   class Configer {
@@ -63,6 +64,8 @@ public class IBClientCore :IBClient, ICoreFX {
   public Action<object> TraceTemp => o => { };
   private bool _verbose = true;
   public void Verbouse(object o) { if(_verbose) _trace(o); }
+  public static readonly ConcurrentDictionary<string, ContractDetails> Contracts = new ConcurrentDictionary<string, IBApi.ContractDetails>();
+
   #endregion
 
   #region ICoreEX Implementation
@@ -242,7 +245,7 @@ public class IBClientCore :IBClient, ICoreFX {
     return ReqContractDetailsAsync(contract).ToEnumerable().Select(t => t.cd).ToArray();
   }
   IScheduler esReqCont = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
-  IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsAsync(Contract contract) {
+  public IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsAsync(Contract contract) {
     var reqId = NextReqId();
     //event Action<(int, ContractDetails)> stopError;// = (a) => (0, (ContractDetails)null);
     var cd = WireToError<(int reqId, ContractDetails cd)>(

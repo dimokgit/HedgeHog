@@ -553,6 +553,7 @@ namespace HedgeHog.Alice.Client {
     }
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
+
     static (string k, IBApi.Contract c)[] _butterflies = new(string k, IBApi.Contract)[0];
     public (string k, IBApi.Contract c)[] ReadButterflies(string pair) => _butterflies;
     public void BuildButterflies(string pair) {

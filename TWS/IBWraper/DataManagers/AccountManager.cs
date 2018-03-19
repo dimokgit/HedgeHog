@@ -132,12 +132,14 @@ namespace IBApp {
 
       #endregion
       #region Subscibtions
+      IScheduler esPositions = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Positions" });
+      IScheduler esPositions2 = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Positions2" });
       posObs
         .Where(x => x.account == _accountId)
         .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos, x.account } }))
-        .ObserveOn(elFactory())
-        //.SubscribeOn(elFactory())
-        .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost))
+        .ObserveOn(esPositions)
+        .SubscribeOn(esPositions2)
+        .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost), () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
       ooObs
         .Where(x => x.order.Account == _accountId)
@@ -235,7 +237,7 @@ namespace IBApp {
           .ForEach(a => a());
       }
 
-      TraceTrades("Positions: ", OpenTrades);
+      TraceTrades("OnPositions: ", OpenTrades);
     }
     Trade TradeFromPosition(Contract contract, double position, double avgCost) {
       var st = IbClient.ServerTime;
@@ -712,11 +714,15 @@ namespace IBApp {
         return 0;
       }
     }
-    private void TraceTrades(string label, IEnumerable<Trade> trades) => _defaultMessageHandler(label + (trades.Count() > 1 ? "\n" : "") + string.Join("\n", trades.Select(ot => new { ot.Pair, ot.Position, ot.Time, ot.Commission })));
+    private void TraceTrades(string label, IEnumerable<Trade> trades)
+      => _defaultMessageHandler(label
+        + (trades.Count() > 1 ? "\n" : "")
+        + string.Join("\n", trades.Select(ot => new { ot.Pair, ot.Position, ot.Open, ot.Time, ot.Commission })));
     public override string ToString() => new { IbClient, CurrentAccount = _accountId } + "";
     #endregion
   }
   public static class Mixins {
+    public static bool IsOption(this Contract c) => c.SecType == "OPT";
     public static bool IsOrderDone(this (string status, double remaining) order) =>
       EnumUtils.Contains<OrderCancelStatuses>(order.status) || EnumUtils.Contains<OrderDoneStatuses>(order.status) && order.remaining == 0;
 

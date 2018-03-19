@@ -117,7 +117,7 @@ namespace ConsoleApp {
       var counter = 0;
       if(options.Any()) {
         var c = options[0].LocalSymbol.ContractFactory();
-        new HistoryLoader<Rate>(ibClient, c, 3600 * 6, dateEnd, TimeSpan.FromDays(1), TimeUnit.S, BarSize._1_secs,
+        new HistoryLoader<Rate>(ibClient, c, 1800 * 1, dateEnd, TimeSpan.FromDays(1), TimeUnit.S, BarSize._1_secs,
            map,
            list => {
              HandleMessage($"{c} {new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate, Thread.CurrentThread.ManagedThreadId } }}");
