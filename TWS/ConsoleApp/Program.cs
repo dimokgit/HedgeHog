@@ -18,6 +18,7 @@ using HedgeHog.Core;
 using AutoMapper;
 using System.Reactive.Disposables;
 using System.Reactive.Concurrency;
+using System.Diagnostics;
 
 namespace ConsoleApp {
   class Program {
@@ -78,11 +79,11 @@ namespace ConsoleApp {
 
           var reqOptions = ibClient.ReqCurrentOptionsAsync(symbol).ToEnumerable().ToArray();
           Passager.ThrowIf(() => reqOptions.Length < 2);
-          HandleMessage($"{reqOptions.Flatter(",")}");
+          HandleMessage($"{(options = reqOptions).Flatter(",")}");
         }
-        symbols.Take(10).Repeat(100).ForEach(ProcessSymbol);
+        symbols.Take(10).Repeat(1).ForEach(ProcessSymbol);
         HandleMessage(nameof(ProcessSymbol) + " done");
-        //LoadHistory(ibClient, options);
+        LoadHistory(ibClient, options);
 
         //var och = fw.AccountManager.BatterflyFactory(symbol).ToArray();
         //OpenTrade(och);
@@ -116,12 +117,16 @@ namespace ConsoleApp {
       var counter = 0;
       if(options.Any()) {
         var c = options[0].LocalSymbol.ContractFactory();
-        new HistoryLoader<Rate>(ibClient, c, 1440 * 2, dateEnd, TimeSpan.FromDays(1), TimeUnit.S, BarSize._1_secs,
+        new HistoryLoader<Rate>(ibClient, c, 3600 * 6, dateEnd, TimeSpan.FromDays(1), TimeUnit.S, BarSize._1_secs,
            map,
-           list => HandleMessage($"{c} {new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate, Thread.CurrentThread.ManagedThreadId } }}"),
+           list => {
+             HandleMessage($"{c} {new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate, Thread.CurrentThread.ManagedThreadId } }}");
+             Debug.WriteLine(list.Csv());
+           },
            dates => HandleMessage($"{c} {new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter, Thread.CurrentThread.ManagedThreadId }}"),
            exc => { });
-      }
+      } else
+        HandleMessage(new { options = options.ToJson() });
     }
 
     private static void OnPriceChanged(Price price) {

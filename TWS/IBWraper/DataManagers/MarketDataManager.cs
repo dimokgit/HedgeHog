@@ -4,7 +4,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 using System.Text;
+using System.Threading;
 using HedgeHog.Shared;
 using IBApi;
 using IBSampleApp.util;
@@ -31,13 +34,19 @@ namespace IBApp {
         .ForEach(req => AddRequestImpl(req.Summary.ContractFactory(), genericTickList));
       else AddRequestImpl(contract, genericTickList);
     }
+    IScheduler es = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(MarketDataManager) });
     void AddRequestImpl(Contract contract, string genericTickList) {
       if(activeRequests.Any(ar => ar.Value.Item1.Instrument.ToUpper() == contract.Instrument.ToUpper())) {
         return;
       }
       var reqId = NextReqId();
       Trace($"{nameof(AddRequest)}: {new { reqId, contract }}");
-
+      IbClient.ErrorFactory()
+      .Where(t => t.id == reqId)
+      .Window(TimeSpan.FromSeconds(5), es)
+      .Take(2)
+      .Concat()
+      .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"AddRequest: {contract} Error done."));
       IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
       activeRequests.Add(reqId, (contract, new Price(contract.Instrument)));
     }
