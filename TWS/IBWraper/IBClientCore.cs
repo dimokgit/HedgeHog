@@ -27,6 +27,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Subjects;
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using System.Collections;
 
 public class IBClientCore :IBClient, ICoreFX {
   class Configer {
@@ -64,7 +65,7 @@ public class IBClientCore :IBClient, ICoreFX {
   public Action<object> TraceTemp => o => { };
   private bool _verbose = true;
   public void Verbouse(object o) { if(_verbose) _trace(o); }
-  public static readonly ConcurrentDictionary<string, ContractDetails> Contracts = new ConcurrentDictionary<string, IBApi.ContractDetails>();
+  public static readonly ConcurrentDictionary<string, ContractDetails> Contracts = new ConcurrentDictionary<string, IBApi.ContractDetails>(StringComparer.OrdinalIgnoreCase);
 
   #endregion
 
@@ -245,6 +246,20 @@ public class IBClientCore :IBClient, ICoreFX {
     return ReqContractDetailsAsync(contract).ToEnumerable().Select(t => t.cd).ToArray();
   }
   IScheduler esReqCont = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
+  public IObservable<(int reqId, ContractDetails cd)> ReqContractDetails2Async(Contract contract) {
+    var reqId = NextReqId();
+    var cd = ContractDetailsFactory()
+      .Merge(ContractDetailsEndFactory().Select(rid => (reqId: rid, contractDetails: (ContractDetails)null)))
+      .Where(t => t.reqId == reqId)
+      //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
+      .TakeWhile(t => t.contractDetails != null)
+      //.Timeout(TimeSpan.FromSeconds(_reqTimeout))
+      //.Do(x => _verbous(new { ReqContractDetails = new { Started = x.reqId } }))
+      ;
+    //.Subscribe(t => callback(t.contractDetails),exc=> { throw exc; }, () => _verbous(new { ContractDetails = new { Completed = reqId } }));
+    ClientSocket.reqContractDetails(reqId, contract);
+    return cd;
+  }
   public IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsAsync(Contract contract) {
     var reqId = NextReqId();
     //event Action<(int, ContractDetails)> stopError;// = (a) => (0, (ContractDetails)null);
@@ -295,18 +310,18 @@ public class IBClientCore :IBClient, ICoreFX {
     return o;
   }
   Func<string, string, string, int, ReqSecDefOptParamsList> _ReqSecDefOptParamsList;
-  public ReqSecDefOptParamsList ReqSecDefOptParamsSync(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) => (_ReqSecDefOptParamsList
+  public ReqSecDefOptParamsList ReqSecDefOptParams(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) => (_ReqSecDefOptParamsList
     ?? (_ReqSecDefOptParamsList = new Func<string, string, string, int, ReqSecDefOptParamsList>((us, ex, st, comId)
-        => ReqSecDefOptParamsSyncImpl(us, ex, st, comId)))
+        => ReqSecDefOptParamsImpl(us, ex, st, comId)))
     //.Memoize()
     )(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId);
 
-  public ReqSecDefOptParamsList ReqSecDefOptParamsSyncImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
-    return ReqSecDefOptParamsImpl(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId).ToEnumerable().ToArray();
+  public ReqSecDefOptParamsList ReqSecDefOptParamsImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
+    return ReqSecDefOptParamsAsync(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId).ToEnumerable().ToArray();
   }
 
   IScheduler esSecDef = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqSecDefOpt" });
-  public ReqSecDefOptParams ReqSecDefOptParamsImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
+  public ReqSecDefOptParams ReqSecDefOptParamsAsync(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
     var reqId = NextReqId();
     var cd = SecurityDefinitionOptionParameterFactory()
       .Merge(SecurityDefinitionOptionParameterEndFactory().Select(rid => (reqId: rid, exchange: "", underlyingConId: 0, tradingClass: "", multiplier: "", expirations: (HashSet<string>)null, strikes: (HashSet<double>)null)))
@@ -330,7 +345,7 @@ public class IBClientCore :IBClient, ICoreFX {
   IBWraper.RunUntilCount(2, 1, () => ReqCurrentOptionsAsync(symbol).ToEnumerable().ToArray());
   public IObservable<Contract> ReqCurrentOptionsAsync(string symbol) {
     return (
-      from t in ReqOptionChains(symbol)
+      from t in ReqOptionChainsAsync(symbol)
       from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(3).Select((strike, i) => (strike, i))
       let option = IBWraper.MakeOptionSymbol(t.tradingClass, t.expiration, strike.strike, true)
       from o in ReqContractDetails(option.ContractFactory())
@@ -339,11 +354,11 @@ public class IBClientCore :IBClient, ICoreFX {
   }
 
   public IObservable<(string exchange, string tradingClass, string multiplier, DateTime expiration, double[] strikes, double price, string symbol, string currency)>
-  ReqOptionChains(string symbol) {
+  ReqOptionChainsAsync(string symbol) {
     var optionChain = (
-      from cd in ReqContractDetails(symbol.ContractFactory()).ToObservable()//.Select(t => t.cd)
+      from cd in ReqContractDetailsAsync(symbol.ContractFactory()).Select(t => t.cd)
       from price in ReqMarketPrice(cd.Summary)
-      from och in ReqSecDefOptParamsSync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
+      from och in ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
       where och.exchange == "SMART"
       from expiration in och.expirations.Select(e => e.FromTWSDateString())
       select (och.exchange, och.tradingClass, och.multiplier, expiration, strikes: och.strikes.ToArray(), price, symbol = cd.Summary.Symbol, currency: cd.Summary.Currency)

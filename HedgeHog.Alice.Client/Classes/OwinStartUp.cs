@@ -555,12 +555,12 @@ namespace HedgeHog.Alice.Client {
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
     static (string k, IBApi.Contract c)[] _butterflies = new(string k, IBApi.Contract)[0];
-    public (string k, IBApi.Contract c)[] ReadButterflies(string pair) => _butterflies;
     public void BuildButterflies(string pair) {
+      var symbol = IBClientCore.Contracts[pair].Summary.Symbol;
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
-      var b = am.BatterflyFactory(pair)
-        .ToArray();
-      Clients.Caller.butterflies((_butterflies = b).ToArray(t => t.k));
+      am.BatterflyFactoryAsync(symbol)
+        .ToArray()
+        .Subscribe(b => Clients.Caller.butterflies((_butterflies = b).ToArray(t => t.k)));
     }
     [BasicAuthenticationFilter]
     public void OpenButterfly(string key, int quantity) {

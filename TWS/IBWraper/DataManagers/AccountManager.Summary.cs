@@ -24,7 +24,8 @@ namespace IBApp {
     private void OnUpdateAccountValue(string key, string value, string currency, string accountName) {
       if(currency == _accountCurrency) {
         switch(key) {
-          case "EquityWithLoanValue":
+          //case "EquityWithLoanValue":
+          case "NetLiquidation":
             Account.Equity = double.Parse(value);
             break;
           case "MaintMarginReq":

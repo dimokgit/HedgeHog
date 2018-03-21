@@ -1372,8 +1372,12 @@ namespace HedgeHog.Alice.Client {
     public static Offer[] LoadOffers() => TradesManagerStatic.dbOffers = GlobalStorage.LoadOffers();
 
     private void UpdateTradingAccount(Account account) {
-      OnNeedTradingStatistics();
-      AccountModel.Update(account, 0, TradingStatistics, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
+      if(account == null) {
+        Log = new Exception($"{nameof(UpdateTradingAccount)}:{new { account }}");
+      } else {
+        OnNeedTradingStatistics();
+        AccountModel.Update(account, 0, TradingStatistics, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
+      }
     }
     private ITargetBlock<Account> _UpdateTradingAccountTargetBlock;
     public ITargetBlock<Account> UpdateTradingAccountTargetBlock {

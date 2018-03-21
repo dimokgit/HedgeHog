@@ -30,11 +30,15 @@ namespace HedgeHog.Alice.Store {
           _mmr = 0;
           LoadActiveSettings();
           _Rates.Clear();
-          if(!oc.prev.IsNullOrWhiteSpace()) OnLoadRates();
+          if(!oc.prev.IsNullOrWhiteSpace()) {
+            TradesManager.CoreFX.SetOfferSubscription(Pair);
+            OnLoadRates();
+          }
           _pendingEntryOrders = null;
           OnPropertyChanged(nameof(CompositeName));
-
           SubscribeToEntryOrderRelatedEvents();
+          TradingMacrosByPair(oc.prev).Where(tm => tm.BarPeriod > BarsPeriodType.t1)
+          .ForEach(tm => tm.Pair = oc.curr);
         });
 
       this.WhenAnyValue(

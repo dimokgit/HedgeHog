@@ -18,39 +18,46 @@ namespace IBApp {
 
     private readonly ConcurrentDictionary<string, Price> _currentPrices = new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
     private Dictionary<int, (Contract contract, Price price)> activeRequests = new Dictionary<int, (Contract contract, Price price)>();
-
+    public Action<Contract, string> AddRequest = null;
+    public IObservable<(Contract c, string gl)> AddRequestObs { get; }
     public MarketDataManager(IBClientCore client) : base(client, TICK_ID_BASE) {
       IbClient.TickPrice += OnTickPrice;
       IbClient.TickPrice += OnTickPrice;
       IbClient.TickString += OnTickString; ;
       IbClient.TickGeneric += OnTickGeneric;
+      AddRequestObs = Observable.FromEvent<Action<Contract, string>, (Contract c, string gl)>(
+        next => (c, gl) => next((c, gl)), h => AddRequest += h, h => AddRequest -= h);
+      AddRequestObs
+        .ObserveOn(TaskPoolScheduler.Default)
+        .SubscribeOn(TaskPoolScheduler.Default)
+        .Distinct(t => t.Item1.Instrument)
+        .Subscribe(t => AddRequestSync(t.Item1, t.Item2));
     }
 
     private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, 0);
 
-    public void AddRequest(Contract contract, string genericTickList = "") {
-      if(string.IsNullOrEmpty(contract.Exchange)) {
-        IbClient.ReqContractDetailsAsync(contract)
-        .Subscribe(cd => AddRequestImpl(cd.cd.Summary.ContractFactory(), genericTickList));
-      } else AddRequestImpl(contract, genericTickList);
+    public void AddRequestSync(Contract contract, string genericTickList = "") {
+      var instrument = contract.Instrument;
+      IbClient.ReqContractDetails(instrument.ContractFactory())
+        .ForEach(cd => {
+          IBClientCore.Contracts.TryAdd(instrument, cd);
+          AddRequestImpl(cd.Summary.ContractFactory(), genericTickList);
+        });
     }
-    object _addRequestSync = new object();
     IScheduler es = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(MarketDataManager) });
     void AddRequestImpl(Contract contract, string genericTickList) {
-      lock(_addRequestSync) {
-        if(activeRequests.Any(ar => ar.Value.Item1.Instrument.ToUpper() == contract.Instrument.ToUpper()))
-          return;
-        var reqId = NextReqId();
-        Trace($"{nameof(AddRequest)}: {new { reqId, contract }}");
-        IbClient.ErrorFactory()
-        .Where(t => t.id == reqId)
-        .Window(TimeSpan.FromSeconds(5), es)
-        .Take(2)
-        .Concat()
-        .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"AddRequest: {contract} Error done."));
-        IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
-        activeRequests.Add(reqId, (contract, new Price(contract.Instrument)));
-      }
+      if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
+        return;
+      var reqId = NextReqId();
+      Trace($"AddRequest:{reqId}=>{contract}");
+      IbClient.ErrorFactory()
+      .Where(t => t.id == reqId)
+      .Window(TimeSpan.FromSeconds(5), es)
+      .Take(2)
+      .Concat()
+      .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"AddRequest: {contract} Error done."));
+      IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
+      activeRequests.Add(reqId, (contract, new Price(contract.Instrument)));
     }
 
     public bool TryGetPrice(string symbol, out Price price) {
@@ -149,16 +156,6 @@ namespace IBApp {
       }
     }
     protected void RaisePriceChanged(Price price) {
-      if(!IBClientCore.Contracts.ContainsKey(price.Pair))
-        IbClient.ReqContractDetailsAsync(price.Pair.ContractFactory())
-          .Subscribe(cd => {
-            IBClientCore.Contracts.TryAdd(price.Pair, cd.cd);
-            RaisePriceChangedImpl(price);
-          });
-      else
-        RaisePriceChangedImpl(price);
-    }
-    protected void RaisePriceChangedImpl(Price price) {
       _currentPrices.AddOrUpdate(price.Pair, price, (s, p) => price);
       PriceChangedEvent?.Invoke(price);
     }

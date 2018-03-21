@@ -198,6 +198,7 @@ namespace HedgeHog.Alice.Store {
     private bool _CanDoNetStopOrders;
     [Category(categoryActiveYesNo)]
     [DisplayName("Can Do Stop Orders")]
+    [WwwSetting]
     public bool CanDoNetStopOrders {
       get { return _CanDoNetStopOrders && IsTrader; }
       set {

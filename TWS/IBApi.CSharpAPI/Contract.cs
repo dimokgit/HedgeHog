@@ -33,7 +33,7 @@ namespace IBApi {
     private List<ComboLeg> comboLegs;
     private UnderComp underComp;
 
-    public string Instrument => LocalSymbol?.Replace(".", "") + "";
+    public string Instrument => (LocalSymbol?.Replace(".", "") + "").ToUpper();
 
     /**
     * @brief The unique IB contract identifier

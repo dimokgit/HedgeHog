@@ -58,7 +58,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\..\..\..\Data\Forex\Builds\Debug_RealMicro 3\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\Data\Forex\Builds\Debug_RealMicro 4\</OutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>

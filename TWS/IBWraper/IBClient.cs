@@ -103,7 +103,7 @@ public class IBClient :EWrapper {
       h => ManagedAccounts += h,
       h => ManagedAccounts -= h
       )
-      .ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
+      .ObserveOn(TaskPoolScheduler.Default)
       .Catch<string,Exception>(exc=> {
         Error(-1, 0, nameof(ManagedAccounts), exc);
         return new string[0].ToObservable();

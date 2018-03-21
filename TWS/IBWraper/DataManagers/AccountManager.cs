@@ -439,11 +439,11 @@ namespace IBApp {
     Action IfEmpty(object o) => () => throw new Exception(o.ToJson());
     #region Butterfly
     ConcurrentDictionary<string, Contract> Butterflies = new ConcurrentDictionary<string, Contract>();
-    public IObservable<(string k, Contract c)> BatterflyFactory2(string symbol) {
+    public IObservable<(string k, Contract c)> BatterflyFactoryAsync(string symbol) {
       var optionChain = (
-        from cd in IbClient.ReqContractDetails(symbol).ToObservable()
+        from cd in IbClient.ReqContractDetailsAsync(symbol.ContractFactory()).Select(cd => cd.cd)
         from price in IbClient.ReqMarketPrice(cd.Summary)
-        from och in IbClient.ReqSecDefOptParamsSyncImpl(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
+        from och in IbClient.ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
         where och.exchange == "SMART"
         from expiration in och.expirations.Select(e => e.FromTWSDateString())
         select new { och.exchange, och.underlyingConId, och.tradingClass, och.multiplier, expiration, och.strikes, price, symbol = cd.Summary.Symbol, currency = cd.Summary.Currency }
@@ -461,7 +461,7 @@ namespace IBApp {
         from inc in t.strikes.Zip(t.strikes.Skip(1), (p, n) => p.Abs(n)).OrderBy(d => d).Take(1)
         from strike in new[] { strikeMiddle.strike - inc, strikeMiddle.strike, strikeMiddle.strike + inc }
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, true)
-        from o in IbClient.ReqContractDetails(ContractSamples.Option(option))
+        from o in IbClient.ReqContractDetailsAsync(ContractSamples.Option(option)).Select(cd => cd.cd)
         select new { t.symbol, o.Summary.Exchange, o.Summary.ConId, o.Summary.Currency, t.price, strikeMiddle.i, strike, t.expiration }
        )
        .Buffer(6)
@@ -521,7 +521,7 @@ namespace IBApp {
     }
     public IEnumerable<(string k, Contract c)> BatterflyFactory(string symbol) {
       //var cds = ReqContractDetails(symbol.ContractFactory()).ToEnumerable().ToArray();
-      var ochs = IbClient.ReqOptionChains(symbol).ToEnumerable().ToArray();
+      var ochs = IbClient.ReqOptionChainsAsync(symbol).ToEnumerable().ToArray();
       var contracts0 = (
         from t in ochs
         from strikeMiddle in t.strikes.OrderBy(st => st.Abs(t.price)).Take(2).Select((strike, i) => (strike, i))
