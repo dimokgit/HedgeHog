@@ -271,8 +271,9 @@ public class IBClientCore :IBClient, ICoreFX {
       (0, (ContractDetails)null),
       t => t.reqId,
       t => t.cd != null,
-      e => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, e }}"))
-      .ObserveOn(esReqCont);
+      error => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, error }}"))
+      .ObserveOn(esReqCont)
+      .Do(t => Contracts.TryAdd(t.cd.Summary.Instrument, t.cd))
     //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
     ;
     ClientSocket.reqContractDetails(reqId, contract);
@@ -343,10 +344,10 @@ public class IBClientCore :IBClient, ICoreFX {
 
   public (int c, IList<Contract> a) ReqCurrentOptions(string symbol) =>
   IBWraper.RunUntilCount(2, 1, () => ReqCurrentOptionsAsync(symbol).ToEnumerable().ToArray());
-  public IObservable<Contract> ReqCurrentOptionsAsync(string symbol) {
+  public IObservable<Contract> ReqCurrentOptionsAsync(string symbol, int optionsCount = 3) {
     return (
       from t in ReqOptionChainsAsync(symbol)
-      from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(3).Select((strike, i) => (strike, i))
+      from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(optionsCount).Select((strike, i) => (strike, i))
       let option = IBWraper.MakeOptionSymbol(t.tradingClass, t.expiration, strike.strike, true)
       from o in ReqContractDetails(option.ContractFactory())
       select o.Summary//.SideEffect(c=>Trace(new { optionContract = c }))
@@ -385,7 +386,7 @@ public class IBClientCore :IBClient, ICoreFX {
     var reqId = NextReqId();
     var cd = TickPriceFactory()
       .Where(t => t.reqId == reqId)
-      //.Do(x => TraceTemp(new { ReqPrice = new { contract, started = x } }))
+      //.Do(x => Trace(new { ReqPrice = new { contract, started = x } }))
       .Where(t => tt.Contains(t.field))
       .Distinct(t => t.field)
       //.Timeout(TimeSpan.FromSeconds(15))
@@ -398,6 +399,12 @@ public class IBClientCore :IBClient, ICoreFX {
       //  return new double[0][].ToObservable();
       //})
       ;
+    ErrorFactory()
+    .Where(t => t.id == reqId)
+    .Window(TimeSpan.FromSeconds(2), TaskPoolScheduler.Default)
+    .Take(2)
+    .Concat()
+    .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"{nameof(ReqPrice)}: {contract} => Error done."));
     ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null);
     return cd;
   }

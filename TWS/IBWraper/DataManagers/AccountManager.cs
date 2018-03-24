@@ -20,6 +20,7 @@ using OptionsChainHandler = System.Action<int, string, int, string, string, Syst
 using TickPriceHandler = System.Action<int, int, double, int>;
 using ReqSecDefOptParams = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
+using ORDER_STATUS = System.Nullable<(string status, double filled, double remaining, bool isDone)>;
 using static IBApp.AccountManager;
 using System.Reactive.Disposables;
 using HedgeHog.Core;
@@ -143,16 +144,17 @@ namespace IBApp {
         .SideEffect(s => _strams.Add(s));
       ooObs
         .Where(x => x.order.Account == _accountId)
-        .DistinctUntilChanged(a => a.orderId)
+        .Distinct(a => a.orderId)
         //.Do(x => _verbous("* " + new { OpenOrder = new { x.contract.LocalSymbol, x.order.OrderId } }))
         .Subscribe(a => OnOrderStartedImpl(a.orderId, a.contract, a.order, a.orderState))
         .SideEffect(s => _strams.Add(s));
       osObs
-        .Where(t => _orderContracts.Any(oc => oc.Key == t.orderId && oc.Value.order.Account == _accountId))
+        .Where(t => OrderContracts.Any(oc => oc.Key == t.orderId && oc.Value.order.Account == _accountId))
         .Select(t => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() })
-        .DistinctUntilChanged()
-        .Do(x => _verbous("* " + new { OrderStatus = x, _orderContracts[x.orderId].order.Account }))
-        .Do(t => _orderContracts.Where(oc => oc.Key == t.orderId && t.status != "Inactive").ForEach(oc => (t.status, t.filled, t.remaining, t.isDone).With(os => _orderStatuses.AddOrUpdate(oc.Value.contract.Symbol, i => os, (i, u) => os))))
+        .Distinct()
+        .Do(x => _verbous("* " + new { OrderStatus = x, OrderContracts[x.orderId].order.Account }))
+        .Do(t => OrderContracts.Where(oc => oc.Key == t.orderId && t.status != "Inactive")
+        .ForEach(oc => oc.Value.status = (t.status, t.filled, t.remaining, t.isDone)))
         .Where(o => (o.status, o.remaining).IsOrderDone())
         .Subscribe(o => RaiseOrderRemoved(o.orderId))
         .SideEffect(s => _strams.Add(s));
@@ -192,13 +194,21 @@ namespace IBApp {
 
 
     #region OrderStatus
-    ConcurrentDictionary<int, (IBApi.Order order, IBApi.Contract contract)> _orderContracts = new ConcurrentDictionary<int, (IBApi.Order order, IBApi.Contract contract)>();
-    ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)> _orderStatuses = new ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)>();
-    public ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)> OrderStatuses { get => _orderStatuses; }
+    internal class OrdeContractHolder {
+      public readonly IBApi.Order order;
+      public readonly IBApi.Contract contract;
+      public ORDER_STATUS status;
+      public OrdeContractHolder(IBApi.Order order, IBApi.Contract contract) {
+        this.order = order;
+        this.contract = contract;
+      }
+    }
+    internal ConcurrentDictionary<int, OrdeContractHolder> OrderContracts { get; } = new ConcurrentDictionary<int, OrdeContractHolder>();
+    //public ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)> OrderStatuses { get; } = new ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)>();
 
     private void RaiseOrderRemoved(int orderId) {
-      if(_orderContracts.ContainsKey(orderId)) {
-        var cd = _orderContracts[orderId];
+      if(OrderContracts.ContainsKey(orderId)) {
+        var cd = OrderContracts[orderId];
         var o = cd.order;
         var c = cd.contract;
         RaiseOrderRemoved(new HedgeHog.Shared.Order {
@@ -257,10 +267,11 @@ namespace IBApp {
     #endregion
 
     private void OnError(int reqId, int code, string error, Exception exc) {
-      if(!_orderContracts.TryGetValue(reqId, out var oc)) return;
+      if(!OrderContracts.TryGetValue(reqId, out var oc)) return;
       IbClient.SetRequestHandled(reqId);
       if(new[] { 103, 110, 200, 201, 202, 203, 382, 383 }.Contains(code)) {
-        _orderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
+        //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
+        OrderContracts[reqId].status = null;
         RaiseOrderRemoved(reqId);
       }
       switch(code) {
@@ -406,7 +417,7 @@ namespace IBApp {
     private static bool IsEntryOrder(IBApi.Order o) => new[] { "MKT", "LMT" }.Contains(o.OrderType);
     private void OnOrderStartedImpl(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) {
       if(!o.WhatIf) {
-        _orderContracts.TryAdd(o.OrderId, (o, c));
+        OrderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, c));
         _verbous(new { OnOpenOrder = new { c, o, os } });
         RaiseOrderAdded(new HedgeHog.Shared.Order {
           IsBuy = o.Action == "BUY",
@@ -487,37 +498,58 @@ namespace IBApp {
         var price = strike.ToString("00000.000").Replace(".", "");
         return $"{tradingClass.PadRight(4)}  {date}{cp}{price}";
       }
-      Contract MakeButterfly(string instrument, string exchange, string currency, int[] conIds) {
-        //if(conIds.Zip(conIds.Skip(1), (p, n) => (p, n)).Any(t => t.p <= t.n)) throw new Exception($"Butterfly legs are out of order:{string.Join(",", conIds)}");
-        var c = new Contract() {
-          Symbol = instrument,
-          SecType = "BAG",
-          Exchange = exchange,
-          Currency = currency
-        };
-        var left = new ComboLeg() {
-          ConId = conIds[0],
-          Ratio = 1,
-          Action = "BUY",
-          Exchange = exchange
-        };
-        var middle = new ComboLeg() {
-          ConId = conIds[1],
-          Ratio = 2,
-          Action = "SELL",
-          Exchange = exchange
-        };
-        var right = new ComboLeg() {
-          ConId = conIds[2],
-          Ratio = 1,
-          Action = "BUY",
-          Exchange = exchange
-        };
-        c.ComboLegs = new List<ComboLeg> { left, middle, right };
-        return c;
-      }
       //.ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
       //.SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
+    }
+    public IObservable<(Contract contract, IList<Contract> options)> MakeButterflies(string symbol) =>
+       IbClient.ReqCurrentOptionsAsync(symbol, 4)
+        .ToArray()
+        .Select(a => a.OrderBy(c => c.Strike).ToArray())
+        .SelectMany(reqOptions =>
+          reqOptions
+          .Buffer(3, 1)
+          .Where(b => b.Count == 3)
+          .Select(options => MakeButterfly(symbol, options).Select(contract => (contract, options))))
+          .Concat();
+
+    public IObservable<Contract> MakeButterfly(string symbol, IList<Contract> contractOptions)
+      => IbClient.ReqContractDetailsAsync(symbol.ContractFactory())
+      .Select(cd => cd.cd.Summary)
+      .Select(contract => MakeButterfly(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray()));
+    public Contract MakeButterfly(Contract contract, IList<Contract> contractOptions)
+      => MakeButterfly(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray());
+    Contract MakeButterfly(string instrument, string exchange, string currency, IList<Contract> contractOptions)
+      => MakeButterfly(instrument, exchange, currency, contractOptions.Select(o => o.ConId).ToArray());
+    Contract MakeButterfly(string instrument, string exchange, string currency, IList<int> conIds) {
+      if(conIds.Count != 3)
+        throw new Exception($"{nameof(MakeButterfly)}:{new { conIds }}");
+      //if(conIds.Zip(conIds.Skip(1), (p, n) => (p, n)).Any(t => t.p <= t.n)) throw new Exception($"Butterfly legs are out of order:{string.Join(",", conIds)}");
+      var c = new Contract() {
+        Symbol = instrument,
+        SecType = "BAG",
+        Exchange = exchange,
+        Currency = currency
+      };
+      var left = new ComboLeg() {
+        ConId = conIds[0],
+        Ratio = 1,
+        Action = "BUY",
+        Exchange = exchange
+      };
+      var middle = new ComboLeg() {
+        ConId = conIds[1],
+        Ratio = 2,
+        Action = "SELL",
+        Exchange = exchange
+      };
+      var right = new ComboLeg() {
+        ConId = conIds[2],
+        Ratio = 1,
+        Action = "BUY",
+        Exchange = exchange
+      };
+      c.ComboLegs = new List<ComboLeg> { left, middle, right };
+      return c;
     }
     public IEnumerable<(string k, Contract c)> BatterflyFactory(string symbol) {
       //var cds = ReqContractDetails(symbol.ContractFactory()).ToEnumerable().ToArray();
@@ -611,7 +643,7 @@ namespace IBApp {
         var offset = isPreRTH ? 1.001 : 1;
         o.LmtPrice = Math.Round(buy ? price.Value.Ask * offset : price.Value.Bid / offset, d);
       }
-      _orderContracts.TryAdd(o.OrderId, (o, c));
+      OrderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, c));
       _verbous(new { plaseOrder = new { o, c } });
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
@@ -628,7 +660,7 @@ namespace IBApp {
         OutsideRth = isPreRTH,
         OverridePercentageConstraints = true
       };
-      _orderContracts.TryAdd(o.OrderId, (o, contract));
+      OrderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, contract));
       _verbous(new { plaseOrder = new { o, contract } });
       IbClient.ClientSocket.placeOrder(o.OrderId, contract, o);
       return null;
@@ -651,7 +683,7 @@ namespace IBApp {
         WhatIf = whatIf,
         OverridePercentageConstraints = true
       };
-      _orderContracts.TryAdd(o.OrderId, (o, c));
+      OrderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, c));
       _verbous(new { plaseOrder = new { o, c } });
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;

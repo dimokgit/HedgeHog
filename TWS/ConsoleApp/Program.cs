@@ -65,7 +65,7 @@ namespace ConsoleApp {
       }
       IList<Contract> options = new Contract[0];
       ibClient.ManagedAccountsObservable.Subscribe(s => {
-        var symbols = new[] { "VXX", "SPY", "spx" };
+        var symbols = new[] { "VXX" };//, "SPY", "spx" };
         void ProcessSymbol(string symbol) {
           //HandleMessage(new { symbol } + "");
           // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
@@ -77,9 +77,15 @@ namespace ConsoleApp {
           //var cds = ibClient.ReqContractDetails(symbol);
           //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
 
-          var reqOptions = ibClient.ReqCurrentOptionsAsync(symbol).ToEnumerable().ToArray();
-          Passager.ThrowIf(() => reqOptions.Length < 2);
-          HandleMessage($"{(options = reqOptions).Flatter(",")}");
+          options = fw.AccountManager.MakeButterflies(symbol)
+          .ToEnumerable()
+          .Select(c => c.contract)
+          .Do(burrefly => {
+            ibClient.SetOfferSubscription(burrefly);
+            ibClient.ReqPrice(burrefly, IBClientCore.TickType.Ask, IBClientCore.TickType.Bid, IBClientCore.TickType.MarketPrice)
+            .Subscribe(price => HandleMessage(new { burrefly, price }));
+            HandleMessage(new { burrefly, conIds = burrefly.ComboLegs.Select(l => l.ConId).Flatter(",") });
+          }).ToArray();
         }
         symbols.Take(10).Repeat(1).ForEach(ProcessSymbol);
         HandleMessage(nameof(ProcessSymbol) + " done");
@@ -94,7 +100,7 @@ namespace ConsoleApp {
         //fw.AccountManager.ReqContractDetails(spx).Subscribe(cd => HandleMessage(cd.ToJson()), () => HandleMessage(new { ContractDetails = new { Completed = contract.LocalSymbol } } + ""));
       });
 
-      if(ibClient.LogOn("127.0.0.1", 7497 + "", 0 + "", false)) {
+      if(ibClient.LogOn("127.0.0.1", 7497 + "", 10 + "", false)) {
         ibClient.SetOfferSubscription(contract);
         //else {
         //  var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp => sp.LoadRates).ToArray());
@@ -116,7 +122,7 @@ namespace ConsoleApp {
       HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
       var counter = 0;
       if(options.Any()) {
-        var c = options[0].LocalSymbol.ContractFactory();
+        var c = options[0].ContractFactory();
         new HistoryLoader<Rate>(ibClient, c, 1800 * 1, dateEnd, TimeSpan.FromDays(1), TimeUnit.S, BarSize._1_secs,
            map,
            list => {

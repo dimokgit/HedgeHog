@@ -262,10 +262,6 @@
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
       <Name>HedgeHog.Shared</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\HedgeHog.Signaler\HedgeHog.Signaler.csproj">
-      <Project>{6015B5BA-AC84-4F51-82EE-D6C90BDF1D43}</Project>
-      <Name>HedgeHog.Signaler</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\HedgeHog.UI\HedgeHog.UI.csproj">
       <Project>{7D258DF9-4DD8-4BB0-82AA-42DCC61374FA}</Project>
       <Name>HedgeHog.UI</Name>

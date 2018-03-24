@@ -515,9 +515,11 @@ namespace IBApp {
       return new Order[0];
     }
     public IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair = "")
-      => _accountManager?.OrderStatuses.
-      Where(os => pair.IsNullOrWhiteSpace() || os.Key.ToLower() == pair.ToLower())
-      .Select(os => pair.IsNullOrWhiteSpace() ? (os.Key + ":" + os.Value.status, os.Value.filled, os.Value.remaining, os.Value.isDone) : os.Value)
+      => _accountManager?.OrderContracts.Values
+      .Where(os => pair.IsNullOrWhiteSpace() || os.contract.Instrument == pair.ToLower())
+      .Select(os => pair.IsNullOrWhiteSpace() 
+      ? (os.contract + ":" + os.status.GetValueOrDefault().status, os.status.GetValueOrDefault().filled, os.status.GetValueOrDefault().remaining, os.status.GetValueOrDefault().isDone)
+      : os.status.Value)
       .ToArray()
       ?? new(string status, double filled, double remaining, bool isDone)[0];
 

@@ -22,12 +22,15 @@ namespace IBApp {
    */
   public static class ContractSamples {
     public static Contract ContractFactory(this Contract contract) =>
-      new Contract {
+      contract.ComboLegs?.Any() == true
+      ? contract
+      : new Contract {
         LocalSymbol = contract.LocalSymbol,
         Symbol = contract.Symbol,
-        Exchange=contract.Exchange,
+        Exchange = contract.Exchange,
         SecType = contract.SecType,
-        Currency = contract.Currency
+        Currency = contract.Currency,
+        ComboLegs = contract.ComboLegs
       };
 
     public static Contract ContractFactory(this string pair) =>
