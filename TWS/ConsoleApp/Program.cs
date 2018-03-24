@@ -84,7 +84,7 @@ namespace ConsoleApp {
             ibClient.SetOfferSubscription(burrefly);
             ibClient.ReqPrice(burrefly, IBClientCore.TickType.Ask, IBClientCore.TickType.Bid, IBClientCore.TickType.MarketPrice)
             .Subscribe(price => HandleMessage(new { burrefly, price }));
-            HandleMessage(new { burrefly, conIds = burrefly.ComboLegs.Select(l => l.ConId).Flatter(",") });
+            HandleMessage(new { burrefly });
           }).ToArray();
         }
         symbols.Take(10).Repeat(1).ForEach(ProcessSymbol);

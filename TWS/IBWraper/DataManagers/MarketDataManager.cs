@@ -44,7 +44,7 @@ namespace IBApp {
         var instrument = contract.Instrument;
         IbClient.ReqContractDetails(instrument.ContractFactory())
           .ForEach(cd => {
-            IBClientCore.Contracts.TryAdd(instrument, cd);
+            Contract.Contracts.TryAdd(instrument, cd);
             AddRequestImpl(cd.Summary.ContractFactory(), genericTickList);
           });
       }

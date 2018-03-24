@@ -62,6 +62,7 @@
     <Compile Include="ComboLeg.cs" />
     <Compile Include="CommissionReport.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="Contract_p.cs" />
     <Compile Include="Contract.cs" />
     <Compile Include="ContractCondition.cs" />
     <Compile Include="ContractDetails.cs" />
@@ -106,6 +107,12 @@
     <Compile Include="UnderComp.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="VolumeCondition.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\HedgeHog.Core\HedgeHog.Core.csproj">
+      <Project>{0ff063e1-e910-4d16-976b-15bc31d11159}</Project>
+      <Name>HedgeHog.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -753,8 +753,7 @@ namespace IBApp {
     public override string ToString() => new { IbClient, CurrentAccount = _accountId } + "";
     #endregion
   }
-  public static class Mixins {
-    public static bool IsOption(this Contract c) => c.SecType == "OPT";
+  static class Mixins {
     public static bool IsOrderDone(this (string status, double remaining) order) =>
       EnumUtils.Contains<OrderCancelStatuses>(order.status) || EnumUtils.Contains<OrderDoneStatuses>(order.status) && order.remaining == 0;
 

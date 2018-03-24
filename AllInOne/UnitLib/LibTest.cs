@@ -20,6 +20,19 @@ using System.IO;
 namespace HedgeHog.Tests {
   [TestClass()]
   public class LibTest {
+    [TestMethod]
+    public void StringDiff() {
+      var s1 = "aaabbccc";
+      var s2 = "aaadddccc";
+      var s3 = "aaaEEEEccc";
+      var mash1 = s1.Mash(s2, s3);
+      Console.WriteLine(new { mash1 });
+      Assert.AreEqual("aaa[bb][ddd][EEEE]ccc", mash1);
+      Assert.AreEqual("aaabbccc", s1.Mash());
+      Assert.AreEqual("", new string[0].Mash());
+    }
+
+
     [TestMethod()]
     public void OverlapRatioTest() {
       var ol = MathExtensions.OverlapRatio(0, 10, 5, 15);
@@ -123,14 +136,14 @@ Privet:2.3 3.4
         Thread.Sleep(1000);
       };
       var rq = new RingQueue<Action>(5);
-      for (int i = 1; i < 6; i++) {
+      for(int i = 1; i < 6; i++) {
         var i1 = i;
         rq.Enqueue(() => action(i1));
       }
       bool isCompleted = false;
       rq.ToObservable(NewThreadScheduler.Default).Subscribe(a => a(), () => isCompleted = true);
       var ii = 6;
-      while (!isCompleted) {
+      while(!isCompleted) {
         var i1 = ++ii;
         rq.Enqueue(() => action(i1));
         Thread.Sleep(1000);
@@ -155,7 +168,7 @@ Privet:2.3 3.4
         //        Debug.WriteLine(DateTime.Now.ToString("mm:ss.fff") + Environment.NewLine + string.Join("\t" + Environment.NewLine, s));
         Debug.WriteLine(DateTime.Now.ToString("mm:ss.fff") + Environment.NewLine + "\t" + s.Count);
       });
-      for (int i = 0; i < 1000000; i++)
+      for(int i = 0; i < 1000000; i++)
         bb.SendAsync(DateTime.Now.ToString(i + " mm:ss.fff"));
       Thread.Sleep(10000);
     }
@@ -173,12 +186,12 @@ Privet:2.3 3.4
     }
     public void Observe_Timer() {
       Observable.Timer(1.FromSeconds()).Subscribe(l => Debug.WriteLine(l), () => Debug.WriteLine("Done"));
-      Task.Factory.StartNew(() => { while (true) { } }).Wait(5.FromSeconds());
+      Task.Factory.StartNew(() => { while(true) { } }).Wait(5.FromSeconds());
     }
     public void DataFlow() {
       var bb = new BroadcastBlock<string>(s => { Debug.WriteLine("b:" + s); return s; });
       Task.Factory.StartNew(() => {
-        while (true) {
+        while(true) {
           var s = bb.Receive();
           Debug.WriteLine("a:" + s);
           Thread.Sleep(2000);
@@ -186,11 +199,11 @@ Privet:2.3 3.4
       });
       Task.Factory.StartNew(() => {
         var d = DateTime.Now;
-        while (d.AddSeconds(5) > DateTime.Now) {
+        while(d.AddSeconds(5) > DateTime.Now) {
           bb.SendAsync(DateTime.Now.ToString("mm:ss"));
         }
       });
-      Task.Factory.StartNew(() => { while (true) { } }).Wait(15.FromSeconds());
+      Task.Factory.StartNew(() => { while(true) { } }).Wait(15.FromSeconds());
     }
     public void Cache() {
       var key = "Dimok";
@@ -226,7 +239,7 @@ Privet:2.3 3.4
       var t = Task.Factory.StartNew(() => {
         try {
           oc.Add("Dimok");
-        } catch (Exception exc) {
+        } catch(Exception exc) {
           TestContext.WriteLine("{0}", exc);
         };
       });
@@ -264,7 +277,7 @@ Privet:2.3 3.4
 
     [TestMethod()]
     public void WeightedAverageTestHelper() {
-      var values = new List<Tuple<double, double>>() { 
+      var values = new List<Tuple<double, double>>() {
         new Tuple<double,double>(1,2),
         new Tuple<double,double>(2,3),
         new Tuple<double,double>(3,4),

@@ -556,7 +556,7 @@ namespace HedgeHog.Alice.Client {
 
     static (string k, IBApi.Contract c)[] _butterflies = new(string k, IBApi.Contract)[0];
     public void BuildButterflies(string pair) {
-      var symbol = IBClientCore.Contracts[pair].Summary.Symbol;
+      var symbol = IBApi.Contract.Contracts[pair].Summary.Symbol;
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       am.MakeButterflies(symbol)
         .ToArray()

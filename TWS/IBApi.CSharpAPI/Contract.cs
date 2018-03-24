@@ -2,6 +2,7 @@
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -13,7 +14,7 @@ namespace IBApi {
    * @brief class describing an instrument's definition
    * @sa ContractDetails
    */
-  public class Contract {
+  public partial class Contract {
     private int conId;
     private string symbol;
     private string secType;
@@ -32,8 +33,6 @@ namespace IBApi {
     private string comboLegsDescription;
     private List<ComboLeg> comboLegs;
     private UnderComp underComp;
-
-    public string Instrument => (LocalSymbol?.Replace(".", "") + "").ToUpper();
 
     /**
     * @brief The unique IB contract identifier
@@ -200,10 +199,6 @@ namespace IBApi {
     public UnderComp UnderComp {
       get { return underComp; }
       set { underComp = value; }
-    }
-
-    public override string ToString() {
-      return $"{localSymbol ?? Symbol} {SecType} {Exchange} {Currency}";
     }
   }
 }

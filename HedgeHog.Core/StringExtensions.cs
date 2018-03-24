@@ -9,16 +9,19 @@ namespace HedgeHog {
     public static bool IsNullOrWhiteSpace(this string s) { return string.IsNullOrWhiteSpace(s); }
     public static bool IsNullOrEmpty(this string s) { return string.IsNullOrEmpty(s); }
     public static string IfEmpty(this string s, string ifEmpty) { return string.IsNullOrWhiteSpace(s) ? ifEmpty : s; }
+    public static string IfNotEmpty(this string s, string prefix) { return string.IsNullOrWhiteSpace(s) ? s : prefix + s; }
     public static string Mash(this string s, params string[] ss) => new[] { s }.Concat(ss).ToArray().Mash();
     public static string Mash(this IList<string> ss) {
+      if(ss?.Count == 0) return "";
+      if(ss.Count == 1) return ss[0];
       var diffs = (from s in ss.Zip(ss.Skip(1), (s1, s2) => (s1, s2))
                    select Diff(s.s1, s.s2)).ToArray();
-      var leftCount = diffs.Min(d => d.left.Length);
-      var rightCount = diffs.Min(d => d.right.Length);
+      var leftCount = diffs.Select(d => d.left.Length).DefaultIfEmpty().Min();
+      var rightCount = diffs.Select(d => d.right.Length).DefaultIfEmpty().Min();
       var left = new string(ss.Take(1).Select(d => d.Take(leftCount)).Concat().ToArray());
       var right = new string(ss.Take(1).Select(d => d.TakeLast(rightCount)).Concat().ToArray());
       var middle = ss.Select(s => new string(s.Skip(leftCount).SkipLast(rightCount).ToArray()));
-      return $"{left}[{string.Join("][", middle)}]{right}";
+      return $"{left}[{string.Join("-", middle)}]{right}";
     }
     private static (char[] left, IEnumerable<char> mid1, IEnumerable<char> mid2, char[] right)
       Diff(string s1, string s2) {

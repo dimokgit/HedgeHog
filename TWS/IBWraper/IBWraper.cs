@@ -94,7 +94,7 @@ namespace IBApp {
 
     #region Methods
     //public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1 : 1;
-    public int GetBaseUnitSize(string pair) => IBClientCore.Contracts.TryGetValue(pair, out var m) ? int.Parse(m.Summary.Multiplier) : 0;
+    public int GetBaseUnitSize(string pair) => IBApi.Contract.Contracts.TryGetValue(pair, out var m) ? int.Parse(m.Summary.Multiplier) : 0;
 
     public double Leverage(string pair, bool isBuy) => GetBaseUnitSize(pair) / GetMMR(pair, isBuy);
     public Trade TradeFactory(string pair) => Trade.Create(this, pair, GetPipSize(pair), GetBaseUnitSize(pair), CommissionByTrade);
