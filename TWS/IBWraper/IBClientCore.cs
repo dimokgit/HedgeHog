@@ -241,8 +241,10 @@ namespace IBApp {
       .Memoize(c => c.ToString(), l => l.Any())
       ))(contract);
     IList<ContractDetails> ReqContractDetailsImpl(Contract contract) {
-      return ReqContractDetailsAsync(contract).ToEnumerable().Select(t => t.cd).ToArray();
+      return ReqContractDetailsAsync(contract).ToEnumerable().ToArray();
     }
+
+    IScheduler esReq = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Req-*" });
     IScheduler esReqCont = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
     public IObservable<(int reqId, ContractDetails cd)> ReqContractDetails2Async(Contract contract) {
       var reqId = NextReqId();
@@ -258,7 +260,7 @@ namespace IBApp {
       ClientSocket.reqContractDetails(reqId, contract);
       return cd;
     }
-    public IObservable<(int reqId, ContractDetails cd)> ReqContractDetailsAsync(Contract contract) {
+    public IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
       var reqId = NextReqId();
       //event Action<(int, ContractDetails)> stopError;// = (a) => (0, (ContractDetails)null);
       var cd = WireToError<(int reqId, ContractDetails cd)>(
@@ -272,6 +274,7 @@ namespace IBApp {
         error => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, error }}"))
         .ObserveOn(esReqCont)
         .Do(t => t.cd.Summary.AddToCache())
+        .Select(t => t.cd)
       //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
       ;
       ClientSocket.reqContractDetails(reqId, contract);
@@ -356,9 +359,9 @@ namespace IBApp {
     public IObservable<Contract> ReqCurrentOptionsAsync(string symbol, bool[] isCalls, int optionsCount = 3) {
       return (
         from t in ReqOptionChainsAsync(symbol)
-        from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(optionsCount).Select((strike, i) => (strike, i))
+        from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(optionsCount)
         from isCall in isCalls
-        let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike.strike, isCall)
+        let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, isCall)
         from o in ReqContractDetails(option.ContractFactory())
         select o.Summary.AddToCache()//.SideEffect(c=>Trace(new { optionContract = c }))
        );
@@ -367,7 +370,7 @@ namespace IBApp {
     public IObservable<(string exchange, string tradingClass, string multiplier, DateTime expiration, double[] strikes, double price, string symbol, string currency)>
     ReqOptionChainsAsync(string symbol) {
       var optionChain = (
-        from cd in ReqContractDetailsAsync(symbol.ContractFactory()).Select(t => t.cd)
+        from cd in ReqContractDetailsAsync(symbol.ContractFactory())
         from price in ReqMarketPrice(cd.Summary)
         from och in ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
         where och.exchange == "SMART"

@@ -65,8 +65,10 @@ namespace ConsoleApp {
       }
       IList<Contract> options = new Contract[0];
       ibClient.ManagedAccountsObservable.Subscribe(s => {
+        var option = "VXX   180329C00051500";
+        var cds = ibClient.ReqContractDetailsAsync(option.ContractFactory()).ToEnumerable().ToArray();
         var symbols = new[] { "VXX" };//, "SPY", "spx" };
-        void ProcessSymbol(string symbol) {
+        IList<Contract> ProcessSymbol(string symbol) {
           //HandleMessage(new { symbol } + "");
           // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
 
@@ -77,19 +79,20 @@ namespace ConsoleApp {
           //var cds = ibClient.ReqContractDetails(symbol);
           //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
 
-          options = fw.AccountManager.MakeButterflies(symbol).Take(2)
+          return fw.AccountManager.MakeButterflies(symbol).Take(2)
           .Merge(fw.AccountManager.MakeStraddle(symbol))
           .ToEnumerable()
           .Select(c => c.contract)
           .ToArray()
           .Do(burrefly => {
             HandleMessage(new { burrefly });
-          ibClient.SetOfferSubscription(burrefly);
-          ibClient.ReqPrice(burrefly)
-        .Subscribe(price => HandleMessage($"Observing:{price}"));
+            ibClient.SetOfferSubscription(burrefly);
+            ibClient.ReqPrice(burrefly)
+            .Subscribe(price => HandleMessage($"Observing:{price}"));
           }).ToArray();
         }
-        symbols.Take(10).Repeat(1).ForEach(ProcessSymbol);
+        options = symbols.Take(10).Repeat(1).Select(ProcessSymbol).Concat().ToArray();
+        Passager.ThrowIf(() => options.Count != 4);
         HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
         Contract.Contracts.ForEach(cached => HandleMessage(new { cached }));
         HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");

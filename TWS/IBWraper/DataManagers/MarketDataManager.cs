@@ -46,7 +46,7 @@ namespace IBApp {
           .ToEnumerable()
           .ToArray()
           .ForEach(cd => {
-            AddRequestImpl(cd.cd.Summary.ContractFactory(), genericTickList);
+            AddRequestImpl(cd.Summary.ContractFactory(), genericTickList);
           });
       }
     }

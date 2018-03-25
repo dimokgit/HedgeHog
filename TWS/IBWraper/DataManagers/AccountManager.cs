@@ -452,7 +452,7 @@ namespace IBApp {
     ConcurrentDictionary<string, Contract> Butterflies = new ConcurrentDictionary<string, Contract>();
     public IObservable<(string k, Contract c)> BatterflyFactoryAsync(string symbol) {
       var optionChain = (
-        from cd in IbClient.ReqContractDetailsAsync(symbol.ContractFactory()).Select(cd => cd.cd)
+        from cd in IbClient.ReqContractDetailsAsync(symbol.ContractFactory())
         from price in IbClient.ReqMarketPrice(cd.Summary)
         from och in IbClient.ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
         where och.exchange == "SMART"
@@ -472,7 +472,7 @@ namespace IBApp {
         from inc in t.strikes.Zip(t.strikes.Skip(1), (p, n) => p.Abs(n)).OrderBy(d => d).Take(1)
         from strike in new[] { strikeMiddle.strike - inc, strikeMiddle.strike, strikeMiddle.strike + inc }
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, true)
-        from o in IbClient.ReqContractDetailsAsync(ContractSamples.Option(option)).Select(cd => cd.cd)
+        from o in IbClient.ReqContractDetailsAsync(ContractSamples.Option(option))
         select new { t.symbol, o.Summary.Exchange, o.Summary.ConId, o.Summary.Currency, t.price, strikeMiddle.i, strike, t.expiration }
        )
        .Buffer(6)
@@ -525,7 +525,7 @@ namespace IBApp {
 
     public IObservable<Contract> MakeStraddle(string symbol, IList<Contract> contractOptions)
       => IbClient.ReqContractDetailsAsync(symbol.ContractFactory())
-      .Select(cd => cd.cd.Summary)
+      .Select(cd => cd.Summary)
       .Select(contract => MakeStraddle(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray()));
 
     Contract MakeStraddle(string instrument, string exchange, string currency, IList<int> conIds) {
@@ -556,7 +556,7 @@ namespace IBApp {
 
     public IObservable<Contract> MakeButterfly(string symbol, IList<Contract> contractOptions)
       => IbClient.ReqContractDetailsAsync(symbol.ContractFactory())
-      .Select(cd => cd.cd.Summary)
+      .Select(cd => cd.Summary)
       .Select(contract => MakeButterfly(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray()));
     public Contract MakeButterfly(Contract contract, IList<Contract> contractOptions)
       => MakeButterfly(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray());
