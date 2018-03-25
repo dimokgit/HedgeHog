@@ -11,16 +11,11 @@ using System.Threading.Tasks;
 using HedgeHog;
 using HedgeHog.Bars;
 using HedgeHog.Shared;
+using IBApi;
 using ReactiveUI;
 using static HedgeHog.Shared.TradesManagerStatic;
 namespace IBApp {
   public class IBWraper :HedgeHog.Shared.ITradesManager {
-    public static string MakeOptionSymbol(string tradingClass, DateTime expiration, double strike, bool isCall) {
-      var date = expiration.ToTWSOptionDateString();
-      var cp = isCall ? "C" : "P";
-      var price = strike.ToString("00000.000").Replace(".", "");
-      return $"{tradingClass.PadRight(4)}  {date}{cp}{price}";
-    }
 
     public static (int c, IList<T> a) RunUntilCount<T>(int count, int countMax, Func<IList<T>> func) {
       IList<T> options = default;
@@ -94,7 +89,7 @@ namespace IBApp {
 
     #region Methods
     //public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1 : 1;
-    public int GetBaseUnitSize(string pair) => IBApi.Contract.Contracts.TryGetValue(pair, out var m) ? int.Parse(m.Summary.Multiplier) : 0;
+    public int GetBaseUnitSize(string pair) => IBApi.Contract.Contracts.TryGetValue(pair, out var m) ? int.Parse(m.Multiplier) : 0;
 
     public double Leverage(string pair, bool isBuy) => GetBaseUnitSize(pair) / GetMMR(pair, isBuy);
     public Trade TradeFactory(string pair) => Trade.Create(this, pair, GetPipSize(pair), GetBaseUnitSize(pair), CommissionByTrade);
@@ -388,7 +383,7 @@ namespace IBApp {
       throw new NotImplementedException();
     }
 
-    public void ChangeOrderRate(Order order, double rate) {
+    public void ChangeOrderRate(HedgeHog.Shared.Order order, double rate) {
       throw new NotImplementedException();
     }
 
@@ -505,14 +500,14 @@ namespace IBApp {
       return null;
     }
 
-    public Order GetNetLimitOrder(Trade trade, bool getFromInternal = false) {
+    public HedgeHog.Shared.Order GetNetLimitOrder(Trade trade, bool getFromInternal = false) {
       RaiseShouldBeImplemented(nameof(GetNetLimitOrder));
       return null;
     }
 
-    public Order[] GetOrders(string pair) {
+    public HedgeHog.Shared.Order[] GetOrders(string pair) {
       RaiseShouldBeImplemented(nameof(GetOrders));
-      return new Order[0];
+      return new HedgeHog.Shared.Order[0];
     }
     public IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair = "")
       => _accountManager?.OrderContracts.Values

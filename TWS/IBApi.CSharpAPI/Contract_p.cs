@@ -10,13 +10,13 @@ namespace IBApi {
   public partial class Contract {
     public string Instrument => ComboLegsToString().IfEmpty((LocalSymbol?.Replace(".", "") + "").ToUpper());
 
-    public static readonly ConcurrentDictionary<string, ContractDetails> Contracts = new ConcurrentDictionary<string, ContractDetails>(StringComparer.OrdinalIgnoreCase);
+    public static readonly ConcurrentDictionary<string, Contract> Contracts = new ConcurrentDictionary<string, Contract>(StringComparer.OrdinalIgnoreCase);
     public override string ToString() =>
       ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol} {SecType}");// {Exchange} {Currency}";
 
     internal string ComboLegsToString() =>
       (from l in ComboLegs ?? new List<ComboLeg>()
-       join c in Contracts.Select(cd => cd.Value.Summary) on l.ConId equals c.ConId
+       join c in Contracts.Select(cd => cd.Value) on l.ConId equals c.ConId
        select c.LocalSymbol
        )
       .ToArray()

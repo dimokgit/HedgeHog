@@ -554,21 +554,19 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
-    static (string k, IBApi.Contract c)[] _butterflies = new(string k, IBApi.Contract)[0];
+    static IBApi.Contract[] _combos = new IBApi.Contract[0];
     public void BuildButterflies(string pair) {
-      var symbol = IBApi.Contract.Contracts[pair].Summary.Symbol;
+      var symbol = IBApi.Contract.Contracts[pair].Symbol;
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       am.MakeButterflies(symbol)
         .ToArray()
-        .Subscribe(b => Clients.Caller.butterflies((_butterflies = b.ToArray(key)).ToArray(t => t.k)));
-      (string k, IBApi.Contract c) key((IBApi.Contract contract, IList<IBApi.Contract> options) t) {
-        return (t.options[2].Instrument, t.contract);
-      }
+        .Subscribe(b => Clients.Caller.butterflies((_combos = b.ToArray(t => t.contract)).ToArray(c => c.Instrument)));
     }
     [BasicAuthenticationFilter]
-    public void OpenButterfly(string key, int quantity) {
+    public void OpenButterfly(string instrument, int quantity) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
-      am.OpenTrade(_butterflies.Single(t => t.k == key).c, quantity);
+      _combos.Where(t => t.Instrument == instrument)
+        .ForEach(c => am.OpenTrade(c, quantity));
     }
     #endregion
 

@@ -25,7 +25,7 @@ using static IBApp.AccountManager;
 using System.Reactive.Disposables;
 using HedgeHog.Core;
 using System.Threading;
-
+using static IBApp.IBApiMixins;
 namespace IBApp {
   public partial class AccountManager :DataManager, IDisposable {
     public enum OrderCancelStatuses { Cancelled };
@@ -502,7 +502,7 @@ namespace IBApp {
       //.SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
     }
     public IObservable<(Contract contract, IList<Contract> options)> MakeButterflies(string symbol) =>
-       IbClient.ReqCurrentOptionsAsync(symbol, 4)
+       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true }, 4)
         .ToArray()
         .Select(a => a.OrderBy(c => c.Strike).ToArray())
         .SelectMany(reqOptions =>
@@ -511,6 +511,48 @@ namespace IBApp {
           .Where(b => b.Count == 3)
           .Select(options => MakeButterfly(symbol, options).Select(contract => (contract, options))))
           .Concat();
+
+    public IObservable<(Contract contract, IList<Contract> options)> MakeStraddle(string symbol) =>
+       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true, false }, 2)
+        .ToArray()
+        .Select(a => a.OrderBy(c => c.Strike).ToArray())
+        .SelectMany(reqOptions =>
+          reqOptions
+          .Buffer(2)
+          .Where(b => b.Count == 2)
+          .Select(options => MakeStraddle(symbol, options).Select(contract => (contract, options))))
+          .Concat();
+
+    public IObservable<Contract> MakeStraddle(string symbol, IList<Contract> contractOptions)
+      => IbClient.ReqContractDetailsAsync(symbol.ContractFactory())
+      .Select(cd => cd.cd.Summary)
+      .Select(contract => MakeStraddle(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray()));
+
+    Contract MakeStraddle(string instrument, string exchange, string currency, IList<int> conIds) {
+      if(conIds.Count != 2)
+        throw new Exception($"{nameof(MakeStraddle)}:{new { conIds }}");
+      var c = new Contract() {
+        Symbol = instrument,
+        SecType = "BAG",
+        Exchange = exchange,
+        Currency = currency
+      };
+      var call = new ComboLeg() {
+        ConId = conIds[0],
+        Ratio = 1,
+        Action = "BUY",
+        Exchange = exchange
+      };
+      var put = new ComboLeg() {
+        ConId = conIds[1],
+        Ratio = 1,
+        Action = "SELL",
+        Exchange = exchange
+      };
+      c.ComboLegs = new List<ComboLeg> { call, put };
+      return c;
+    }
+
 
     public IObservable<Contract> MakeButterfly(string symbol, IList<Contract> contractOptions)
       => IbClient.ReqContractDetailsAsync(symbol.ContractFactory())
@@ -559,7 +601,7 @@ namespace IBApp {
         from strikeMiddle in t.strikes.OrderBy(st => st.Abs(t.price)).Take(2).Select((strike, i) => (strike, i))
         from inc in t.strikes.Zip(t.strikes.Skip(1), (p, n) => p.Abs(n)).OrderBy(d => d).Take(1)
         from strike in new[] { strikeMiddle.strike - inc, strikeMiddle.strike, strikeMiddle.strike + inc }
-        let option = IBWraper.MakeOptionSymbol(t.tradingClass, t.expiration, strike, true)
+        let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, true)
         from o in IbClient.ReqContractDetails(ContractSamples.Option(option))
         select new { t.symbol, o.Summary.Exchange, o.Summary.ConId, o.Summary.Currency, t.price, strikeMiddle.i, strike, t.expiration }
        )

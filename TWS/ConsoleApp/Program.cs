@@ -78,17 +78,19 @@ namespace ConsoleApp {
           //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
 
           options = fw.AccountManager.MakeButterflies(symbol)
+          .Merge(fw.AccountManager.MakeStraddle(symbol))
           .ToEnumerable()
           .Select(c => c.contract)
+          .ToArray()
           .Do(burrefly => {
-            ibClient.SetOfferSubscription(burrefly);
-            ibClient.ReqPrice(burrefly, IBClientCore.TickType.Ask, IBClientCore.TickType.Bid, IBClientCore.TickType.MarketPrice)
-            .Subscribe(price => HandleMessage(new { burrefly, price }));
             HandleMessage(new { burrefly });
+            ibClient.SetOfferSubscription(burrefly);
+            ibClient.ReqPrice(burrefly, IBClientCore.TickType.MarketPrice)
+            .Subscribe(price => HandleMessage(new { burrefly, price }));
           }).ToArray();
         }
         symbols.Take(10).Repeat(1).ForEach(ProcessSymbol);
-        HandleMessage(nameof(ProcessSymbol) + " done");
+        HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
         LoadHistory(ibClient, options);
 
         //var och = fw.AccountManager.BatterflyFactory(symbol).ToArray();
@@ -101,7 +103,7 @@ namespace ConsoleApp {
       });
 
       if(ibClient.LogOn("127.0.0.1", 7497 + "", 10 + "", false)) {
-        ibClient.SetOfferSubscription(contract);
+        //ibClient.SetOfferSubscription(contract);
         //else {
         //  var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp => sp.LoadRates).ToArray());
         //  var dateStart = DateTime.UtcNow.Date.ToLocalTime().AddMonths(-1).AddDays(-2);
