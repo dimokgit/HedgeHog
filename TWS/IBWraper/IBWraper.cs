@@ -89,7 +89,7 @@ namespace IBApp {
 
     #region Methods
     //public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1 : 1;
-    public int GetBaseUnitSize(string pair) => IBApi.Contract.Contracts.TryGetValue(pair, out var m) ? int.Parse(m.Multiplier) : 0;
+    public int GetBaseUnitSize(string pair) => IBApi.Contract.ContractDetails.TryGetValue(pair, out var m) ? int.Parse(m.Summary.Multiplier.IfEmpty("0")) : 0;
 
     public double Leverage(string pair, bool isBuy) => GetBaseUnitSize(pair) / GetMMR(pair, isBuy);
     public Trade TradeFactory(string pair) => Trade.Create(this, pair, GetPipSize(pair), GetBaseUnitSize(pair), CommissionByTrade);
@@ -535,7 +535,7 @@ namespace IBApp {
     //  throw new NotImplementedException();
     //}
 
-    public double GetPipSize(string pair) => TradesManagerStatic.GetPointSize(pair);
+    public double GetPipSize(string pair) => Math.Pow(10, Math.Log10(Contract.ContractDetails[pair].MinTick).Floor());
 
     public IEnumerable<Price> TryGetPrice(string pair) {
       if(TryGetPrice(pair, out var price))

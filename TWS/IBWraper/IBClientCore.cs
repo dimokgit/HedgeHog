@@ -68,8 +68,9 @@ namespace IBApp {
     #endregion
 
     #region ICoreEX Implementation
-    public void SetOfferSubscription(Contract contract) => _marketDataManager.AddRequest(contract, "233,221,236");
-    public void SetOfferSubscription(string pair) => SetOfferSubscription(ContractSamples.ContractFactory(pair));
+    public void SetOfferSubscription(Contract contract, Action<Contract> callback) => _marketDataManager.AddRequest(contract, "233,221,236", callback);
+    public void SetOfferSubscription(string pair) => SetOfferSubscription(ContractSamples.ContractFactory(pair), _=> { });
+    public void SetOfferSubscription(string pair, Action<Contract> callback) => SetOfferSubscription(ContractSamples.ContractFactory(pair), callback);
     public bool IsInVirtualTrading { get; set; }
     public DateTime ServerTime => DateTime.Now + _serverTimeOffset;
     public event EventHandler<LoggedInEventArgs> LoggedOff;
@@ -273,7 +274,7 @@ namespace IBApp {
         t => t.cd != null,
         error => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, error }}"))
         .ObserveOn(esReqCont)
-        .Do(t => t.cd.Summary.AddToCache())
+        .Do(t => t.cd.AddToCache().Summary.AddToCache())
         .Select(t => t.cd)
       //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
       ;
@@ -362,7 +363,7 @@ namespace IBApp {
         from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(optionsCount)
         from isCall in isCalls
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, isCall)
-        from o in ReqContractDetails(option.ContractFactory())
+        from o in ReqContractDetailsAsync(option.ContractFactory()).ToEnumerable()
         select o.Summary.AddToCache()//.SideEffect(c=>Trace(new { optionContract = c }))
        );
     }

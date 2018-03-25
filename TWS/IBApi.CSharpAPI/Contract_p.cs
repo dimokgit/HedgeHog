@@ -11,6 +11,7 @@ namespace IBApi {
     public bool IsCombo => ComboLegs?.Any() == true;
     public string Instrument => ComboLegsToString().IfEmpty((LocalSymbol?.Replace(".", "") + "").ToUpper());
 
+    public static readonly ConcurrentDictionary<string, ContractDetails> ContractDetails = new ConcurrentDictionary<string, ContractDetails>(StringComparer.OrdinalIgnoreCase);
     public static readonly ConcurrentDictionary<string, Contract> Contracts = new ConcurrentDictionary<string, Contract>(StringComparer.OrdinalIgnoreCase);
     public Contract AddToCache() { Contracts.TryAdd(Instrument, this); return this; }
 

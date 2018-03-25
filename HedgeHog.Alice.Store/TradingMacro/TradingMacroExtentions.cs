@@ -3846,6 +3846,10 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         _priceQueue.Dequeue();
       _priceQueue.Enqueue(price);
       Account account = e.Account;
+      if(account == null) {
+        Log = new Exception($"{nameof(RunPrice)}: {new { account }}");
+        return;
+      }
       if(IsInVirtualTrading && account.IsMarginCall && IsPrimaryMacro) {
         IsTradingActive = false;
         SuppRes.ForEach(sr => sr.CanTrade = false);

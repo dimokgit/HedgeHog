@@ -18,28 +18,28 @@ namespace IBApp {
 
     private readonly ConcurrentDictionary<string, Price> _currentPrices = new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
     private Dictionary<int, (Contract contract, Price price)> activeRequests = new Dictionary<int, (Contract contract, Price price)>();
-    public Action<Contract, string> AddRequest = (_, __) => {
+    public Action<Contract, string,Action<Contract>> AddRequest = (a1,a2,a3) => {
     };
-    public IObservable<(Contract c, string gl)> AddRequestObs { get; }
+    public IObservable<(Contract c, string gl,Action<Contract>)> AddRequestObs { get; }
     public MarketDataManager(IBClientCore client) : base(client, TICK_ID_BASE) {
       IbClient.TickPrice += OnTickPrice;
       IbClient.TickPrice += OnTickPrice;
       IbClient.TickString += OnTickString; ;
       IbClient.TickGeneric += OnTickGeneric;
-      AddRequestObs = Observable.FromEvent<Action<Contract, string>, (Contract c, string gl)>(
-        next => (c, gl) => next((c, gl)), h => AddRequest += h, h => AddRequest -= h);
+      AddRequestObs = Observable.FromEvent<Action<Contract, string,Action<Contract>>, (Contract c, string gl,Action<Contract>)>(
+        next => (c, gl,a) => next((c, gl,a)), h => AddRequest += h, h => AddRequest -= h);
       AddRequestObs
         .ObserveOn(TaskPoolScheduler.Default)
         .SubscribeOn(TaskPoolScheduler.Default)
         .Distinct(t => t.Item1.Instrument)
-        .Subscribe(t => AddRequestSync(t.Item1, t.Item2));
+        .Subscribe(t => AddRequestSync(t.Item1,t.Item3, t.Item2));
     }
 
     private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, 0);
 
-    void AddRequestSync(Contract contract, string genericTickList = "") {
+    void AddRequestSync(Contract contract,Action<Contract> callback , string genericTickList = "") {
       if(contract.IsCombo) {
-        AddRequestImpl(contract, genericTickList);
+        AddRequestImpl(contract.AddToCache(), genericTickList);
       } else {
         var instrument = contract.Instrument;
         IbClient.ReqContractDetailsAsync(instrument.ContractFactory())
@@ -49,6 +49,7 @@ namespace IBApp {
             AddRequestImpl(cd.Summary.ContractFactory(), genericTickList);
           });
       }
+      callback(contract);
     }
     IScheduler esAddRequest = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(MarketDataManager) });
     void AddRequestImpl(Contract contract, string genericTickList) {
