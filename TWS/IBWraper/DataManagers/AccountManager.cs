@@ -502,14 +502,14 @@ namespace IBApp {
       //.SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
     }
     public IObservable<(Contract contract, IList<Contract> options)> MakeButterflies(string symbol) =>
-       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true }, 4)
+       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true }, 10)
         .ToArray()
-        .Select(a => a.OrderBy(c => c.Strike).ToArray())
+        //.Select(a => a.OrderBy(c => c.Strike).ToArray())
         .SelectMany(reqOptions =>
           reqOptions
           .Buffer(3, 1)
           .Where(b => b.Count == 3)
-          .Select(options => MakeButterfly(symbol, options).Select(contract => (contract, options))))
+          .Select(options => MakeButterfly(symbol, options).Select(contract => (contract.AddToCache(), options))))
           .Concat();
 
     public IObservable<(Contract contract, IList<Contract> options)> MakeStraddle(string symbol) =>
@@ -520,7 +520,7 @@ namespace IBApp {
           reqOptions
           .Buffer(2)
           .Where(b => b.Count == 2)
-          .Select(options => MakeStraddle(symbol, options).Select(contract => (contract, options))))
+          .Select(options => MakeStraddle(symbol, options).Select(contract => (contract.AddToCache(), options))))
           .Concat();
 
     public IObservable<Contract> MakeStraddle(string symbol, IList<Contract> contractOptions)

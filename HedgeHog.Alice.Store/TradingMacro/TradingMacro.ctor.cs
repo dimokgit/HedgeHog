@@ -30,7 +30,7 @@ namespace HedgeHog.Alice.Store {
           _mmr = 0;
           LoadActiveSettings();
           _Rates.Clear();
-          if(!oc.prev.IsNullOrWhiteSpace()) {
+          if(!oc.prev.IsNullOrWhiteSpace() && TradesManager != null) {
             TradesManager.CoreFX.SetOfferSubscription(Pair);
             OnLoadRates();
           }

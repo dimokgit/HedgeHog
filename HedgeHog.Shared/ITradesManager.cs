@@ -257,7 +257,8 @@ namespace HedgeHog.Shared {
     public static bool IsFuture(this string s) => Regex.IsMatch(s, @"^\w{2,3}[HMUZ]\d{1,2}$", RegexOptions.IgnoreCase);
     public static bool IsCommodity(this string s) => _commodities.Contains(s.ToUpper());
     public static bool IsUSStock(this string s) => !s.IsCurrenncy() && !s.IsFuture() && !s.IsCommodity();
-    public static bool IsOption(this string s) => Regex.IsMatch(s, @"^[a-z ]{6}[0-9]{6}[CP][0-9]{8}$", RegexOptions.IgnoreCase);
+    public static bool IsOptionFull(this string s) => Regex.IsMatch(s, @"^[a-z ]{6}[0-9]{6}[CP][0-9]{8}$", RegexOptions.IgnoreCase);
+    public static bool IsOption(this string s) => Regex.IsMatch(s, @"^[a-z ]{6}[0-9]{6}", RegexOptions.IgnoreCase);
     static string[] _indices = new[] { "SPX" };
     public static bool IsIndex(this string s) => _indices.Contains(s.ToUpper());
     //public static bool IsIndex(this string s) => Regex.IsMatch(s, @"\sindex$", RegexOptions.IgnoreCase);

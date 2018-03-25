@@ -18,7 +18,8 @@ namespace IBApp {
 
     private readonly ConcurrentDictionary<string, Price> _currentPrices = new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
     private Dictionary<int, (Contract contract, Price price)> activeRequests = new Dictionary<int, (Contract contract, Price price)>();
-    public Action<Contract, string> AddRequest;
+    public Action<Contract, string> AddRequest = (_, __) => {
+    };
     public IObservable<(Contract c, string gl)> AddRequestObs { get; }
     public MarketDataManager(IBClientCore client) : base(client, TICK_ID_BASE) {
       IbClient.TickPrice += OnTickPrice;
@@ -36,8 +37,8 @@ namespace IBApp {
 
     private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, 0);
 
-    public void AddRequestSync(Contract contract, string genericTickList = "") {
-      if(contract.ComboLegs?.Any() == true) {
+    void AddRequestSync(Contract contract, string genericTickList = "") {
+      if(contract.IsCombo) {
         AddRequestImpl(contract, genericTickList);
       } else {
         var instrument = contract.Instrument;
@@ -45,27 +46,26 @@ namespace IBApp {
           .ToEnumerable()
           .ToArray()
           .ForEach(cd => {
-            Contract.Contracts.TryAdd(instrument, cd.cd.Summary);
             AddRequestImpl(cd.cd.Summary.ContractFactory(), genericTickList);
           });
       }
     }
     IScheduler esAddRequest = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(MarketDataManager) });
     void AddRequestImpl(Contract contract, string genericTickList) {
-      var reqId = NextReqId();
-      Trace($"AddRequest:{reqId}=>{contract}");
-      if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument)) {
-        Trace($"AddRequest:{reqId}=>{contract} Canceled");
-        return;
+      if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
+        Trace($"AddRequest:{contract} already requested");
+      else {
+        var reqId = NextReqId();
+        Trace($"AddRequest:{reqId}=>{contract}");
+        IbClient.ErrorFactory()
+          .Where(t => t.id == reqId)
+          .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
+          .Take(2)
+          .Merge()
+          .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"AddRequest: {contract} => {reqId} Error done."));
+        IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
+        activeRequests.Add(reqId, (contract, new Price(contract.Instrument)));
       }
-      IbClient.ErrorFactory()
-        .Where(t => t.id == reqId)
-        .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
-        .Take(2)
-        .Merge()
-        .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"AddRequest: {contract} => {reqId} Error done."));
-      IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
-      activeRequests.Add(reqId, (contract, new Price(contract.Instrument)));
     }
 
     public bool TryGetPrice(string symbol, out Price price) {

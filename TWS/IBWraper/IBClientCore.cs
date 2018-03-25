@@ -271,7 +271,7 @@ namespace IBApp {
         t => t.cd != null,
         error => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, error }}"))
         .ObserveOn(esReqCont)
-        .Do(t => Contract.Contracts.TryAdd(t.cd.Summary.Instrument, t.cd.Summary))
+        .Do(t => t.cd.Summary.AddToCache())
       //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
       ;
       ClientSocket.reqContractDetails(reqId, contract);
@@ -360,7 +360,7 @@ namespace IBApp {
         from isCall in isCalls
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike.strike, isCall)
         from o in ReqContractDetails(option.ContractFactory())
-        select o.Summary//.SideEffect(c=>Trace(new { optionContract = c }))
+        select o.Summary.AddToCache()//.SideEffect(c=>Trace(new { optionContract = c }))
        );
     }
 
@@ -418,23 +418,25 @@ namespace IBApp {
       ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null);
       return cd;
     }
-    int[] bidAsk = new int[] { 1, 2 };
+    int[] _bidAsk = new int[] { 1, 2 };
     public IObservable<(Contract contract, double bid, double ask)> ReqPrice(Contract contract) {
       var reqId = NextReqId();
       var cd = TickPriceFactory()
-        .Where(t => t.reqId == reqId && bidAsk.Contains(t.field))
+        .Where(t => t.reqId == reqId && _bidAsk.Contains(t.field))
         .Scan((contract, bid: 0.0, ask: 0.0), (p, n) => (contract, n.field == 1 ? n.price : p.bid, n.field == 2 ? n.price : p.ask))
         //.Do( x => Trace(new { ReqPrice = new { contract, started = x } }))
         ;
-      ErrorFactory()
-      .Where(t => t.id == reqId)
-      .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
-      .Take(2)
-      .Merge()
-      .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"{nameof(ReqPrice)}: {contract} => {reqId} Error done."));
+      WatchReqError(contract, reqId);
       ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null);
       return cd;
     }
+
+    private void WatchReqError(Contract contract, int reqId) => ErrorFactory()
+          .Where(t => t.id == reqId)
+          .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
+          .Take(2)
+          .Merge()
+          .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"{nameof(ReqPrice)}: {contract} => {reqId} Error done."));
     #endregion
 
     private static object _validOrderIdLock = new object();

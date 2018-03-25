@@ -44,6 +44,7 @@ using Microsoft.Expression.Interactivity.Layout;
 using HedgeHog.Metadata;
 using static HedgeHog.ReflectionCore;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }
@@ -112,7 +113,7 @@ namespace HedgeHog {
     #endregion
     public CharterControl(string name, CompositionContainer container = null) {
       if (container != null) container.SatisfyImportsOnce(this);
-      Name = name.Replace("/", "").Replace(" ", "");
+      Name = Regex.Replace( name,"[/ -]", "_");
       InitializeComponent();
       DispatcherScheduler.Current.Schedule(() => OnPropertyChanged(Metadata.CharterControlMetadata.Header));
     }
