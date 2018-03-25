@@ -79,7 +79,7 @@ namespace ConsoleApp {
           //var cds = ibClient.ReqContractDetails(symbol);
           //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
 
-          return fw.AccountManager.MakeButterflies(symbol).Take(2)
+          return fw.AccountManager.MakeButterflies2(symbol).Take(2)
           .Merge(fw.AccountManager.MakeStraddle(symbol))
           .ToEnumerable()
           .Select(c => c.contract)

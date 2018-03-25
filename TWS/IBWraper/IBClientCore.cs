@@ -68,6 +68,7 @@ namespace IBApp {
     #endregion
 
     #region ICoreEX Implementation
+    public void SetOfferSubscription(Contract contract) => _marketDataManager.AddRequest(contract, "233,221,236", _ => { });
     public void SetOfferSubscription(Contract contract, Action<Contract> callback) => _marketDataManager.AddRequest(contract, "233,221,236", callback);
     public void SetOfferSubscription(string pair) => SetOfferSubscription(ContractSamples.ContractFactory(pair), _=> { });
     public void SetOfferSubscription(string pair, Action<Contract> callback) => SetOfferSubscription(ContractSamples.ContractFactory(pair), callback);
