@@ -64,62 +64,56 @@ namespace ConsoleApp {
 
       }
       IList<Contract> options = new Contract[0];
-      //var option = "VXX   180329C00051500";
-      //var cds = ibClient.ReqContractDetailsAsync(option.ContractFactory()).ToEnumerable().ToArray();
-      (from ma in ibClient.ManagedAccountsObservable.Take(1).Do(_=> ibClient.ReqMarketPrice("SPY").Subscribe(mp => HandleMessage($"SPY:{new { mp = mp.ToJson() }}")))
-       from symbol in new[] { "SPX", "SPY", "VXX" }
-       from combos in ProcessSymbol(symbol).ToEnumerable().ToArray()
-       select combos
-       )
-       .ToArray()
-       .Subscribe(combosBySymbol => {
-         Passager.ThrowIf(() => combosBySymbol.Length != 3);
-         combosBySymbol.ForEach(combos => Passager.ThrowIf(() => combos.Length != 4));
-         //HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
-         //Contract.Contracts.ForEach(cached => HandleMessage(new { cached }));
-         HandleMessage(nameof(ProcessSymbol) + $" done =========================================================================");
-         //LoadHistory(ibClient, options);
-       });
-      //var och = fw.AccountManager.BatterflyFactory(symbol).ToArray();
-      //OpenTrade(och);
+      ibClient.ManagedAccountsObservable.Subscribe(s => {
+        var option = "VXX   180329C00051500";
+        var cds = ibClient.ReqContractDetailsAsync(option.ContractFactory()).ToEnumerable().ToArray();
+        var symbols = new[] { "SPX", "SPY", "VXX" };
+        IList<Contract> ProcessSymbol(string symbol) {
+          //HandleMessage(new { symbol } + "");
+          // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
 
-      //.Merge(fw.AccountManager.BatterflyFactory("SPY").ToArray())
-      //.Merge(fw.AccountManager.BatterflyFactory(fw, "VXX"))
-      //.Subscribe(och => { OpenTrade(och); },exc=>HandleError(exc));
-      //fw.AccountManager.ReqContractDetails(spx).Subscribe(cd => HandleMessage(cd.ToJson()), () => HandleMessage(new { ContractDetails = new { Completed = contract.LocalSymbol } } + ""));
-      IObservable<Contract[]> ProcessSymbol(string symbol) {
-        //HandleMessage(new { symbol } + "");
-        // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
+          ibClient.ReqMarketPrice(symbol).ToEnumerable()
+          .Count(1, "ReqMarketPrice")
+          .ForEach(mp => HandleMessage($"{symbol}:{new { mp = mp.ToJson() }}"));
 
-        return (from mps in ibClient.ReqMarketPrice(symbol)
-                from combos in fw.AccountManager.MakeButterflies(symbol).Take(2)
-                 .Merge(fw.AccountManager.MakeStraddle(symbol))
-                 .Select(c => c.contract)
-                 .Delay(TimeSpan.FromMilliseconds(100))
-                 .Do(burrefly => {
-                   HandleMessage(new { burrefly });
-                   ibClient.SetOfferSubscription(burrefly);
-                   //ibClient.ReqPriceMarket(burrefly).Subscribe(mp => HandleMessage($"{symbol}:{new { mp = mp.ToJson() }}"));
-                   ibClient.ReqPrice(burrefly).Subscribe(/*price => HandleMessage($"Observing:{price}")*/);
-                 }).ToArray()
-                select combos);
+          //var cds = ibClient.ReqContractDetails(symbol);
+          //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
 
-        //var cds = ibClient.ReqContractDetails(symbol);
-        //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
-        /*
-        return fw.AccountManager.MakeButterflies2(symbol).Take(2)
-        .Merge(fw.AccountManager.MakeStraddle(symbol))
-        .ToEnumerable()
-        .Select(c => c.contract)
-        .ToArray()
-        .Do(burrefly => {
-          HandleMessage(new { burrefly });
-          ibClient.SetOfferSubscription(burrefly);
-          ibClient.ReqPrice(burrefly)
-          .Subscribe(price => HandleMessage($"Observing:{price}"));
-        }).ToArray();
-        */
-      }
+          return fw.AccountManager.MakeButterflies(symbol).Take(2)
+          .Merge(fw.AccountManager.MakeStraddle(symbol).Take(3))
+          .ToEnumerable()
+          .Select(c => c.contract)
+          .ToArray()
+          .Do(burrefly => {
+            HandleMessage(new { burrefly });
+            ibClient.SetOfferSubscription(burrefly, _ => { });
+            ibClient.ReqPrice(burrefly)
+            .Throttle(TimeSpan.FromSeconds(1))
+            .Subscribe(price => HandleMessage($"Observing:{price}"));
+          }).ToArray();
+        }
+        var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15)).Subscribe();
+
+        Stopwatch sw = Stopwatch.StartNew();
+        var combos = symbols.Take(10).Repeat(1).Select(ProcessSymbol).ToList();
+        timeOut.Dispose();
+        sw.Stop();
+        Passager.ThrowIf(() => combos.Count != symbols.Length);
+        combos.ForEach(combo => Passager.ThrowIf(() => combo.Count != 5));
+        HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
+        Contract.Contracts.OrderBy(c => c + "").ForEach(cached => HandleMessage(new { cached }));
+        HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
+        HandleMessage(new { sw.ElapsedMilliseconds });
+        LoadHistory(ibClient, combos[0]);
+
+        //var och = fw.AccountManager.BatterflyFactory(symbol).ToArray();
+        //OpenTrade(och);
+
+        //.Merge(fw.AccountManager.BatterflyFactory("SPY").ToArray())
+        //.Merge(fw.AccountManager.BatterflyFactory(fw, "VXX"))
+        //.Subscribe(och => { OpenTrade(och); },exc=>HandleError(exc));
+        //fw.AccountManager.ReqContractDetails(spx).Subscribe(cd => HandleMessage(cd.ToJson()), () => HandleMessage(new { ContractDetails = new { Completed = contract.LocalSymbol } } + ""));
+      });
 
       if(ibClient.LogOn("127.0.0.1", 7497 + "", 10 + "", false)) {
         //ibClient.SetOfferSubscription(contract);

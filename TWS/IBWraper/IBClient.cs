@@ -148,29 +148,10 @@ public class IBClient :EWrapper {
     CurrentTime?.Invoke(time);
   }
 
-
-  #region TickPrice Subject
-  static object _TickPriceSubjectLocker = new object();
-  static ISubject<(int, int, double, int)> _TickPriceSubject;
-  public static ISubject<(int, int, double, int)> TickPriceSubject {
-    get {
-      lock(_TickPriceSubjectLocker)
-        if(_TickPriceSubject == null) {
-          _TickPriceSubject = new Subject<(int, int, double, int)>();
-        }
-      return _TickPriceSubject;
-    }
-  }
-  void OnTickPrice((int, int, double, int) p) {
-    TickPriceSubject.OnNext(p);
-  }
-  #endregion
-
   public event Action<int, int, double, int> TickPrice;
 
   void EWrapper.tickPrice(int tickerId, int field, double price, int canAutoExecute) {
     TickPrice?.Invoke(tickerId, field, price, canAutoExecute);
-    OnTickPrice((tickerId,field,price,canAutoExecute));
   }
 
   public event Action<int, int, int> TickSize;

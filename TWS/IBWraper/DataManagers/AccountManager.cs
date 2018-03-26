@@ -241,8 +241,8 @@ namespace IBApp {
           .Where(IsEqual(posMsg))
           .Select(ot => new Action(() => ot.Lots = posMsg.Quantity
             .SideEffect(Lots => _verbous(new { ChangePosition = new { ot.Pair, ot.IsBuy, Lots } }))))
-          .DefaultIfEmpty(() => contract.SideEffect(c
-          => IbClient.SetOfferSubscription(c, c2
+          .DefaultIfEmpty(() => contract.SideEffect(c 
+          => IbClient.SetOfferSubscription(c, c2 
           => OpenTrades.Add(TradeFromPosition(c2, position, averageCost)
           .SideEffect(t => _verbous(new { OpenPosition = new { t.Pair, t.IsBuy, t.Lots } }))))))
           .ToList()
@@ -461,14 +461,9 @@ namespace IBApp {
           .Where(b => b.Count == 3)
           .Select(options => MakeButterfly(symbol, options).Select(contract => (contract.AddToCache(), options))))
           .Concat();
-    public IObservable<(Contract contract, IList<Contract> options)> MakeButterflies2(string symbol) {
-      var x = IbClient.ReqCurrentOptionsAsync(symbol, new[] { true }, 10)
-       .ToArray()
-       .SelectMany(reqOptions => reqOptions.Buffer(3, 1).Where(b => b.Count == 3));
-      return x.SelectMany(options => MakeButterfly(symbol, options).Select(contract => (contract.AddToCache(), options)));
-    }
+
     public IObservable<(Contract contract, IList<Contract> options)> MakeStraddle(string symbol) =>
-       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true, false }, 2)
+       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true, false }, 5)
         .ToArray()
         .Select(a => a.OrderBy(c => c.Strike).ToArray())
         .SelectMany(reqOptions =>
