@@ -28,8 +28,9 @@ namespace IBApp {
       AddRequestObs = Observable.FromEvent<Action<Contract, string, Action<Contract>>, (Contract c, string gl, Action<Contract>)>(
         next => (c, gl, a) => next((c, gl, a)), h => AddRequest += h, h => AddRequest -= h);
       AddRequestObs
-        .ObserveOn(TaskPoolScheduler.Default)
-        .SubscribeOn(TaskPoolScheduler.Default)
+        .Delay(TimeSpan.FromMilliseconds(1000))
+        //.ObserveOn(TaskPoolScheduler.Default)
+        //.SubscribeOn(TaskPoolScheduler.Default)
         .Distinct(t => t.Item1.Instrument)
         .Subscribe(t => AddRequestSync(t.Item1, t.Item3, t.Item2));
     }

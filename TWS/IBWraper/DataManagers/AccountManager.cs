@@ -451,58 +451,6 @@ namespace IBApp {
 
     Action IfEmpty(object o) => () => throw new Exception(o.ToJson());
     #region Butterfly
-    ConcurrentDictionary<string, Contract> Butterflies = new ConcurrentDictionary<string, Contract>();
-    public IObservable<(string k, Contract c)> BatterflyFactoryAsync(string symbol) {
-      var optionChain = (
-        from cd in IbClient.ReqContractDetailsAsync(symbol.ContractFactory())
-        from price in IbClient.ReqMarketPrice(cd.Summary)
-        from och in IbClient.ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
-        where och.exchange == "SMART"
-        from expiration in och.expirations.Select(e => e.FromTWSDateString())
-        select new { och.exchange, och.underlyingConId, och.tradingClass, och.multiplier, expiration, och.strikes, price, symbol = cd.Summary.Symbol, currency = cd.Summary.Currency }
-      )
-      //.SkipWhile(t => t.expiration > DateTime.UtcNow.Date.AddDays(2))
-      //.SkipWhile(t => true)
-      //.Where(t => t.expiration == experationMin)
-      .ToArray()
-      .Select(a => a.OrderBy(t => t.expiration))
-      .Take(1);
-      var contracts0 = (
-        from tt in optionChain
-        from t in tt
-        from strikeMiddle in t.strikes.OrderBy(st => st.Abs(t.price)).Take(2).Select((strike, i) => (strike, i))
-        from inc in t.strikes.Zip(t.strikes.Skip(1), (p, n) => p.Abs(n)).OrderBy(d => d).Take(1)
-        from strike in new[] { strikeMiddle.strike - inc, strikeMiddle.strike, strikeMiddle.strike + inc }
-        let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, true)
-        from o in IbClient.ReqContractDetailsAsync(ContractSamples.Option(option))
-        select new { t.symbol, o.Summary.Exchange, o.Summary.ConId, o.Summary.Currency, t.price, strikeMiddle.i, strike, t.expiration }
-       )
-       .Buffer(6)
-       .SelectMany(b => b.OrderBy(c => c.i).ThenByDescending(c => c.strike).ToArray())
-       .Buffer(3)
-       .Select(b => new { b[0].symbol, b[0].Exchange, b[0].Currency, b[0].strike, b[0].expiration, conIds = b.Select(x => x.ConId).ToArray() });
-      var contracts = (
-        from b in contracts0
-        let c = MakeButterfly(b.symbol, b.Exchange, b.Currency, b.conIds)
-        select (k: b.symbol + ":" + b.strike + ":" + b.expiration.ToTWSDateString(), c)
-      )
-      //.ObserveOn(TaskPoolScheduler.Default)
-      //.Catch<(string k,Contract c), Exception>(exc => {
-      //  Trace(exc);
-      //  return new[] { ( k : "", c : (Contract)null ) }.ToObservable();
-      //})
-      ;
-      return contracts;
-      /// Locals
-      string MakeOptionSymbol(string tradingClass, DateTime expiration, double strike, bool isCall) {
-        var date = expiration.ToTWSOptionDateString();
-        var cp = isCall ? "C" : "P";
-        var price = strike.ToString("00000.000").Replace(".", "");
-        return $"{tradingClass.PadRight(4)}  {date}{cp}{price}";
-      }
-      //.ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
-      //.SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
-    }
     public IObservable<(Contract contract, IList<Contract> options)> MakeButterflies(string symbol) =>
        IbClient.ReqCurrentOptionsAsync(symbol, new[] { true }, 10)
         .ToArray()

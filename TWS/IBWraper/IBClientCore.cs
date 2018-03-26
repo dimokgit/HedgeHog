@@ -23,6 +23,7 @@ using TickPriceHandler = System.Action<int, int, double, int>;
 using ReqSecDefOptParams = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ErrorHandler = System.Action<int, int, string, System.Exception>;
+using OPTION_CHAIN = System.IObservable<(string exchange, string tradingClass, string multiplier, System.DateTime expiration, double[] strikes, double price, string symbol, string currency)>;
 using System.Reactive.Subjects;
 using System.Diagnostics;
 using static IBApp.IBApiMixins;
@@ -70,7 +71,7 @@ namespace IBApp {
     #region ICoreEX Implementation
     public void SetOfferSubscription(Contract contract) => _marketDataManager.AddRequest(contract, "233,221,236", _ => { });
     public void SetOfferSubscription(Contract contract, Action<Contract> callback) => _marketDataManager.AddRequest(contract, "233,221,236", callback);
-    public void SetOfferSubscription(string pair) => SetOfferSubscription(ContractSamples.ContractFactory(pair), _=> { });
+    public void SetOfferSubscription(string pair) => SetOfferSubscription(ContractSamples.ContractFactory(pair), _ => { });
     public void SetOfferSubscription(string pair, Action<Contract> callback) => SetOfferSubscription(ContractSamples.ContractFactory(pair), callback);
     public bool IsInVirtualTrading { get; set; }
     public DateTime ServerTime => DateTime.Now + _serverTimeOffset;
@@ -202,19 +203,20 @@ namespace IBApp {
       //.SubscribeOn(elFactory())
       ;
 
-    IObservable<(int reqId, int field, double price, int canAutoExecute)> TickPriceFactory()
+    static IScheduler esReqPrice = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice", Priority = ThreadPriority.Lowest });
+    static IScheduler esTickPrice = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "TickPrice",Priority=ThreadPriority.Highest });
+    IObservable<(int reqId, int field, double price, int canAutoExecute)> TickPriceFactoryFromEvent()
       => Observable.FromEvent<TickPriceHandler, (int reqId, int field, double price, int canAutoExecute)>(
         onNext => (int reqId, int field, double price, int canAutoExecute)
         => onNext((reqId, field, price, canAutoExecute)),
         h => TickPrice += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(TickPrice)}"))*/,
         h => TickPrice -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(TickPrice)}"))*/
-        )
-        //.ObserveOn(elFactory())
-        //.SubscribeOn(elFactory())
-        .Catch<(int reqId, int field, double price, int canAutoExecute), Exception>(exc => {
-          Trace(new Exception(nameof(TickPrice), exc));
-          return new(int reqId, int field, double price, int canAutoExecute)[0].ToObservable();
-        });
+        ).ObserveOn(esReqPrice);
+    IObservable<(int reqId, int field, double price, int canAutoExecute)> TickPriceObservable = TickPriceSubject
+      .SubscribeOn(esTickPrice)
+      .ObserveOn(esReqPrice)
+      .Do(_ => Thread.Sleep(40))
+      ;
 
     public IObservable<(int id, int errorCode, string errorMsg, Exception exc)> ErrorFactory() => Observable.FromEvent<ErrorHandler, (int id, int errorCode, string errorMsg, Exception exc)>(
         onNext => (int id, int errorCode, string errorMsg, Exception exc) => onNext((id, errorCode, errorMsg, exc)),
@@ -369,45 +371,64 @@ namespace IBApp {
        );
     }
 
-    public IObservable<(string exchange, string tradingClass, string multiplier, DateTime expiration, double[] strikes, double price, string symbol, string currency)>
-    ReqOptionChainsAsync(string symbol) {
+    public OPTION_CHAIN ReqOptionChainsAsync(string symbol) {
       var optionChain = (
         from cd in ReqContractDetailsAsync(symbol.ContractFactory())
-        from price in ReqMarketPrice(cd.Summary)
+        from price in ReqPriceMarket(cd.Summary)
         from och in ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
         where och.exchange == "SMART"
         from expiration in och.expirations.Select(e => e.FromTWSDateString())
         select (och.exchange, och.tradingClass, och.multiplier, expiration, strikes: och.strikes.ToArray(), price, symbol = cd.Summary.Symbol, currency: cd.Summary.Currency)
         )
-        .MinBy(t => t.expiration)
-        .SelectMany(l => l.OrderBy(t => t.strikes.Length).TakeLast(1))
-        .Take(1);
+        .Aggregate((p, n) => p.expiration < n.expiration ? p : n);
+      //return optionChain
+      //  .SelectMany(l => l.OrderBy(t => t.strikes.Length).TakeLast(1))
+      //  .Take(1);
       return optionChain;
     }
 
     public enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
     public IObservable<double> ReqMarketPrice(string symbol)
-      => from cd in ReqContractDetails(symbol.ContractFactory()).ToObservable()
-         from prices in ReqPrice(cd.Summary, TickType.MarketPrice)
-         from p in prices
+      => from cd in ReqContractDetailsAsync(symbol.ContractFactory())
+         from p in ReqPriceMarket(cd.Summary)
          select p;
     public IObservable<double> ReqMarketPrice(Contract contract) => ReqPrice(contract, TickType.MarketPrice).SelectMany(p => p);
     public IObservable<(double bid, double ask)> ReqBidAsk(Contract contract)
       => ReqPrice(contract, TickType.Bid, TickType.Ask).Select(d => (d.Min(), d.Max()));
 
-    IScheduler esReqPrice = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice" });
+
+    #region ReqMktData Subject
+    object _ReqMktDataSubjectLocker = new object();
+    ISubject<Action> _ReqMktDataSubject;
+    ISubject<Action> ReqMktDataSubject {
+      get {
+        lock(_ReqMktDataSubjectLocker)
+          if(_ReqMktDataSubject == null) {
+            _ReqMktDataSubject = new Subject<Action>();
+            _ReqMktDataSubject
+              .ObserveOn(NewThreadScheduler.Default)
+              .Do(_=>Thread.Sleep(100))
+              .Subscribe(s => s(), exc => { });
+          }
+        return _ReqMktDataSubject;
+      }
+    }
+    void OnReqMktData(Action p) {
+      ReqMktDataSubject.OnNext(p);
+    }
+    #endregion
+
     public IObservable<double[]> ReqPrice(Contract contract, params TickType[] tickType) {
       var tt = tickType.Cast<int>().ToArray();
       var reqId = NextReqId();
-      var cd = TickPriceFactory()
+      var cd = TickPriceObservable
+        //.Do(x => Trace(new { ReqPrice = new { contract, started = x } }))
         .Where(t => t.reqId == reqId)
-        //.Do( x => Trace(new { ReqPrice = new { contract, started = x } }))
         .Where(t => tt.Contains(t.field))
         .Distinct(t => t.field)
         //.Timeout(TimeSpan.FromSeconds(15))
         .Take(tickType.Length)
         .Select(t => t.price)
-        .ObserveOn(esReqPrice)
         .ToArray()
         //.Catch<double[], TimeoutException>(exc => {
         //  Trace(new { ReqPrice = exc, contract });
@@ -420,28 +441,42 @@ namespace IBApp {
       .Take(2)
       .Merge()
       .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"{nameof(ReqPrice)}: {contract} => {reqId} Error done."));
-      ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null);
+      OnReqMktData(() => ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null));
+      Trace($"{nameof(ReqPrice)}:{reqId} {contract}");
       return cd;
     }
     int[] _bidAsk = new int[] { 1, 2 };
     public IObservable<(Contract contract, double bid, double ask)> ReqPrice(Contract contract) {
       var reqId = NextReqId();
-      var cd = TickPriceFactory()
+      var cd = TickPriceObservable
         .Where(t => t.reqId == reqId && _bidAsk.Contains(t.field))
         .Scan((contract, bid: 0.0, ask: 0.0), (p, n) => (contract, n.field == 1 ? n.price : p.bid, n.field == 2 ? n.price : p.ask))
         //.Do( x => Trace(new { ReqPrice = new { contract, started = x } }))
         ;
-      WatchReqError(contract, reqId);
-      ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null);
+      WatchReqError(contract, reqId, () => Trace($"{nameof(ReqPrice)}: {contract} => {reqId} Error done."));
+      OnReqMktData(() => ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null));
+      return cd;
+    }
+    public IObservable<double> ReqPriceMarket(Contract contract) {
+      var reqId = NextReqId();
+      var cd = TickPriceObservable
+        //.Do(x => Trace($"{nameof(ReqPriceMarket)}:{new { contract, started = x }}"))
+        .Where(t => t.reqId == reqId && t.field == 37)
+        .Take(1)
+        .Select(t => t.price)
+        //.Do( x => Trace(new { ReqPrice = new { contract, started = x } }))
+        ;
+      WatchReqError(contract, reqId, () => Trace($"{nameof(ReqPriceMarket)}: {contract} => {reqId} Error done."));
+      OnReqMktData(() => ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null));
       return cd;
     }
 
-    private void WatchReqError(Contract contract, int reqId) => ErrorFactory()
+    private void WatchReqError(Contract contract, int reqId, Action error) => ErrorFactory()
           .Where(t => t.id == reqId)
           .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
           .Take(2)
           .Merge()
-          .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"{nameof(ReqPrice)}: {contract} => {reqId} Error done."));
+          .Subscribe(t => Trace($"{contract}: {t}"), error);
     #endregion
 
     private static object _validOrderIdLock = new object();
@@ -640,30 +675,7 @@ namespace IBApp {
 
         reader.Start();
 
-        Task.Factory.StartNew(() => {
-          while(ClientSocket.IsConnected() && !reader.MessageQueueThread.IsCompleted) {
-            _signal.waitForSignal();
-            reader.processMsgs();
-          }
-        }, TaskCreationOptions.LongRunning)
-        .ContinueWith(t => {
-          Observable.Interval(TimeSpan.FromSeconds(5))
-          .Select(_ => {
-            try {
-              RaiseError(new Exception(new { ClientSocket = new { IsConnected = ClientSocket.IsConnected() } } + ""));
-              ReLogin();
-              if(ClientSocket.IsConnected()) {
-                RaiseLoggedIn();
-                return true;
-              };
-            } catch {
-            }
-            return false;
-          })
-          .TakeWhile(b => b == false)
-          .Subscribe();
-        });
-
+        new Thread(() => { while(ClientSocket.IsConnected()) { _signal.waitForSignal(); reader.processMsgs(); } }) { IsBackground = true }.Start();
       } catch(Exception exc) {
         //HandleMessage(new ErrorMessage(-1, -1, "Please check your connection attributes.") + "");
         RaiseLoginError(exc);
