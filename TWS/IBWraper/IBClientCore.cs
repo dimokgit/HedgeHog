@@ -208,25 +208,8 @@ namespace IBApp {
 
     #region Req-* functions
     int NextReqId() => ValidOrderId();
-    //public IList<ContractDetails> ReqContractDetails(string symbol) => ReqContractDetails(new Contract() { LocalSymbol = symbol, SecType = "", Symbol = symbol });
-    public ContractDetails ReqContractDetailsSafe(Contract contract) {
-      var c = IBWraper.RunUntilCount(1, 5, () => ReqContractDetailsImpl(contract));
-      if(c.c < 0) throw new Exception($"{nameof(ReqContractDetailsSafe)} returned empty-handed.");
-      if(c.a.Count != 1)
-        throw new Exception($"{nameof(ReqContractDetailsSafe)} returned more the one contract. {c.a.Flatter(",")}");
-      return c.a.Single();
-    }
-    Func<Contract, IList<ContractDetails>> _ReqContractDetails;
-    //public IList<ContractDetails> ReqContractDetails(string symbol) => ReqContractDetails(symbol.ContractFactory());
 
-    public IList<ContractDetails> ReqContractDetails(Contract contract) => (_ReqContractDetails
-      ?? (_ReqContractDetails = new Func<Contract, IList<ContractDetails>>(c => ReqContractDetailsImpl(c))
-      .Memoize(c => c.ToString(), l => l.Any())
-      ))(contract);
-    IList<ContractDetails> ReqContractDetailsImpl(Contract contract) {
-      return ReqContractDetailsAsync(contract).ToEnumerable().ToArray();
-    }
-    IObservable<ContractDetails> ReqContractDetailsCached(Contract contract) {
+    public IObservable<ContractDetails> ReqContractDetailsCached(Contract contract) {
       return contract.FromDetailsCache().ToObservable().ToArray()
         .Where(c => c.Any())
         .Concat(Observable.Defer(() => ReqContractDetailsAsync(contract).ToArray()))
@@ -234,22 +217,7 @@ namespace IBApp {
         .SelectMany(b => b);
     }
 
-    IScheduler esReq = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Req-*" });
     IScheduler esReqCont = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
-    public IObservable<(int reqId, ContractDetails cd)> ReqContractDetails2Async(Contract contract) {
-      var reqId = NextReqId();
-      var cd = ContractDetailsObservable
-        .Merge(ContractDetailsEndObservable.Select(rid => (reqId: rid, contractDetails: (ContractDetails)null)))
-        .Where(t => t.reqId == reqId)
-        //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
-        .TakeWhile(t => t.contractDetails != null)
-        //.Timeout(TimeSpan.FromSeconds(_reqTimeout))
-        //.Do(x => _verbous(new { ReqContractDetails = new { Started = x.reqId } }))
-        ;
-      //.Subscribe(t => callback(t.contractDetails),exc=> { throw exc; }, () => _verbous(new { ContractDetails = new { Completed = reqId } }));
-      ClientSocket.reqContractDetails(reqId, contract);
-      return cd;
-    }
     public IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
       var reqId = NextReqId();
       //event Action<(int, ContractDetails)> stopError;// = (a) => (0, (ContractDetails)null);
@@ -348,15 +316,18 @@ namespace IBApp {
         from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(optionsCount)
         from isCall in isCalls
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, isCall)
-        from o in ReqContractDetails(option.ContractFactory())
+        from o in ReqContractDetailsCached(option.ContractFactory())
         select o.Summary.AddToCache()//.SideEffect(c=>Trace(new { optionContract = c }))
        );
     }
 
     public OPTION_CHAIN ReqOptionChainsAsync(string symbol) {
       var optionChain = (
-        from cd in ReqContractDetails(symbol.ContractFactory()).ToObservable()
-        from price in TryGetPrice(symbol).Select(p => p.Average).ToObservable()
+        from cd in ReqContractDetailsCached(symbol.ContractFactory())
+        from price in TryGetPrice(symbol)
+        .Where(p => p.Bid > 0 && p.Ask > 0)
+        .Select(p => p.Average)
+        .ToObservable()
         .Concat(Observable.Defer(() => ReqPriceMarket(cd.Summary)))
         .Take(1)
         from och in ReqSecDefOptParams(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
@@ -513,7 +484,6 @@ namespace IBApp {
     public IEnumerable<Price> TryGetPrice(string pair) {
       if(TryGetPrice(pair, out var price))
         yield return price;
-      else yield break;
     }
     public bool TryGetPrice(string symbol, out Price price) { return _marketDataManager.TryGetPrice(symbol, out price); }
     public Price GetPrice(string symbol) { return _marketDataManager.GetPrice(symbol); }

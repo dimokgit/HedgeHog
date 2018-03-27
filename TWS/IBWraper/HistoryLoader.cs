@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using IBApi;
 using HedgeHog;
 using HedgeHog.Shared;
+using System.Reactive.Linq;
 
 namespace IBApp {
   public enum TimeUnit { S, D, W, M, Y }
@@ -57,8 +58,10 @@ namespace IBApp {
       , Action<Exception> error) {
       _ibClient = ibClient;
       _contract = contract;
-      if(_contract.Exchange.IsNullOrEmpty()) 
-        _contract = ibClient.ReqContractDetailsSafe(contract).Summary.ContractFactory();
+      if(_contract.Exchange.IsNullOrEmpty())
+        _contract = ibClient.ReqContractDetailsCached(contract).ToEnumerable().ToArray().Select(cd => cd.Summary.ContractFactory())
+          .Count(1, new { HistoryLoader = new { _contract } })
+          .Single();
       _periodsBack = periodsBack;
       _reqId = (++_currentTicker) + HISTORICAL_ID_BASE;
       _list = new List<T>();

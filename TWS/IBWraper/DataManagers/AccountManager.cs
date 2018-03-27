@@ -476,7 +476,7 @@ namespace IBApp {
       .Merge();
 
     public IObservable<Contract> MakeStraddle(string symbol, IList<Contract> contractOptions)
-      => IbClient.ReqContractDetails(symbol.ContractFactory()).ToObservable()
+      => IbClient.ReqContractDetailsCached(symbol.ContractFactory())
       .Select(cd => cd.Summary)
       .Select(contract => MakeStraddle(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray()));
 
@@ -507,7 +507,7 @@ namespace IBApp {
 
 
     public IObservable<Contract> MakeButterfly(string symbol, IList<Contract> contractOptions)
-      => IbClient.ReqContractDetails(symbol.ContractFactory()).ToObservable()
+      => IbClient.ReqContractDetailsCached(symbol.ContractFactory())
       .Select(cd => cd.Summary)
       .Select(contract => MakeButterfly(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray()));
     public Contract MakeButterfly(Contract contract, IList<Contract> contractOptions)
@@ -545,64 +545,6 @@ namespace IBApp {
       c.ComboLegs = new List<ComboLeg> { left, middle, right };
       return c;
     }
-    public IEnumerable<(string k, Contract c)> BatterflyFactory(string symbol) {
-      //var cds = ReqContractDetails(symbol.ContractFactory()).ToEnumerable().ToArray();
-      var ochs = IbClient.ReqOptionChainsAsync(symbol).ToEnumerable().ToArray();
-      var contracts0 = (
-        from t in ochs
-        from strikeMiddle in t.strikes.OrderBy(st => st.Abs(t.price)).Take(2).Select((strike, i) => (strike, i))
-        from inc in t.strikes.Zip(t.strikes.Skip(1), (p, n) => p.Abs(n)).OrderBy(d => d).Take(1)
-        from strike in new[] { strikeMiddle.strike - inc, strikeMiddle.strike, strikeMiddle.strike + inc }
-        let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, true)
-        from o in IbClient.ReqContractDetails(ContractSamples.Option(option))
-        select new { t.symbol, o.Summary.Exchange, o.Summary.ConId, o.Summary.Currency, t.price, strikeMiddle.i, strike, t.expiration }
-       )
-       .Buffer(6)
-       .SelectMany(b => b.OrderBy(c => c.i).ThenByDescending(c => c.strike).ToArray())
-       .Buffer(3)
-       .Where(b => b.Count == 3)
-       .Select(b => new { b[0].symbol, b[0].Exchange, b[0].Currency, b[1].strike, b[0].expiration, conIds = b.Select(x => x.ConId).ToArray() });
-      var contracts = (
-        from b in contracts0
-        let c = MakeButterfly(b.symbol, b.Exchange, b.Currency, b.conIds)
-        select (b.symbol + ":" + b.strike + ":" + b.expiration.ToTWSDateString(), c)
-      )
-      ;
-      return contracts;
-      /// Locals
-      Contract MakeButterfly(string instrument, string exchange, string currency, int[] conIds) {
-        //if(conIds.Zip(conIds.Skip(1), (p, n) => (p, n)).Any(t => t.p <= t.n)) throw new Exception($"Butterfly legs are out of order:{string.Join(",", conIds)}");
-        var c = new Contract() {
-          Symbol = instrument,
-          SecType = "BAG",
-          Exchange = exchange,
-          Currency = currency
-        };
-        var left = new ComboLeg() {
-          ConId = conIds[0],
-          Ratio = 1,
-          Action = "BUY",
-          Exchange = exchange
-        };
-        var middle = new ComboLeg() {
-          ConId = conIds[1],
-          Ratio = 2,
-          Action = "SELL",
-          Exchange = exchange
-        };
-        var right = new ComboLeg() {
-          ConId = conIds[2],
-          Ratio = 1,
-          Action = "BUY",
-          Exchange = exchange
-        };
-        c.ComboLegs = new List<ComboLeg> { left, middle, right };
-        return c;
-      }
-      //.ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
-      //.SubscribeOn(new EventLoopScheduler(ts => new Thread(ts)))
-    }
-
     #endregion
 
     #region OpenOrder

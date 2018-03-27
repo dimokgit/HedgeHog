@@ -42,8 +42,8 @@ namespace IBApp {
         AddRequestImpl(contract.AddToCache(), genericTickList);
       } else {
         var instrument = contract.Instrument;
-        IbClient.ReqContractDetails(instrument.ContractFactory())
-          .ForEach(cd => {
+        IbClient.ReqContractDetailsCached(instrument.ContractFactory())
+          .Subscribe(cd => {
             AddRequestImpl(cd.Summary.ContractFactory(), genericTickList);
           });
       }
