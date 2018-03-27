@@ -1177,13 +1177,17 @@
     <table border="1" cellspacing="0" class="wwwInfo">
       <thead>
         <tr>
-          <td style="text-align:left">Batterfly</td>
+          <td style="text-align:left">Instrument</td>
+          <td style="text-align:left">Bid</td>
+          <td style="text-align:left">Ask</td>
           <td>Buy</td>
         </tr>
       </thead>
       <tbody data-bind="foreach:butterflies">
         <tr>
-          <td data-bind="text:$data"></td>
+          <td data-bind="text:i"></td>
+          <td data-bind="text:bid"></td>
+          <td data-bind="text:ask"></td>
           <td>
             <button data-bind="click:$parent.openButterfly.bind(null,$data)">Buy</button>
           </td>

@@ -746,7 +746,7 @@
     this.butterfliesDialog = ko.observable();
     this.openButterfly = function (key) {
       debugger;
-      serverCall("openButterfly", [key, 10]);
+      serverCall("openButterfly", [key.i, 10]);
     }
     this.showButterflies = function () {
       serverCall("buildButterflies", [pair]);

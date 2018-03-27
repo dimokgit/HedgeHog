@@ -25,7 +25,7 @@ namespace IBApp {
       return (countMax, options);
     }
 
-    private readonly IBClientCore _ibClient;
+    public readonly IBClientCore _ibClient;
     private AccountManager _accountManager;
     public AccountManager AccountManager { get { return _accountManager; } }
     private void Trace(object o) { _ibClient.Trace(o); }

@@ -241,8 +241,8 @@ namespace IBApp {
           .Where(IsEqual(posMsg))
           .Select(ot => new Action(() => ot.Lots = posMsg.Quantity
             .SideEffect(Lots => _verbous(new { ChangePosition = new { ot.Pair, ot.IsBuy, Lots } }))))
-          .DefaultIfEmpty(() => contract.SideEffect(c 
-          => IbClient.SetOfferSubscription(c, c2 
+          .DefaultIfEmpty(() => contract.SideEffect(c
+          => IbClient.SetOfferSubscription(c, c2
           => OpenTrades.Add(TradeFromPosition(c2, position, averageCost)
           .SideEffect(t => _verbous(new { OpenPosition = new { t.Pair, t.IsBuy, t.Lots } }))))))
           .ToList()
@@ -458,20 +458,21 @@ namespace IBApp {
         .SelectMany(reqOptions =>
           reqOptions
           .Buffer(3, 1)
-          .Where(b => b.Count == 3)
+          .TakeWhile(b => b.Count == 3)
           .Select(options => MakeButterfly(symbol, options).Select(contract => (contract.AddToCache(), options))))
-          .Concat();
+          .Merge();
 
     public IObservable<(Contract contract, IList<Contract> options)> MakeStraddle(string symbol) =>
-       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true, false }, 5)
-        .ToArray()
-        .Select(a => a.OrderBy(c => c.Strike).ToArray())
-        .SelectMany(reqOptions =>
-          reqOptions
-          .Buffer(2)
-          .Where(b => b.Count == 2)
-          .Select(options => MakeStraddle(symbol, options).Select(contract => (contract.AddToCache(), options))))
-          .Concat();
+      IbClient.ReqCurrentOptionsAsync(symbol, new[] { true, false }, 5)
+      .ToArray()
+      .Select(a => a.OrderBy(c => c.Strike).ToArray())
+      .SelectMany(reqOptions =>
+        reqOptions
+        .Buffer(2)
+        .TakeWhile(b => b.Count == 2)
+        .Select(options => MakeStraddle(symbol, options).Select(contract => (contract.AddToCache(), options)))
+      )
+      .Merge();
 
     public IObservable<Contract> MakeStraddle(string symbol, IList<Contract> contractOptions)
       => IbClient.ReqContractDetailsAsync(symbol.ContractFactory())
@@ -496,7 +497,7 @@ namespace IBApp {
       var put = new ComboLeg() {
         ConId = conIds[1],
         Ratio = 1,
-        Action = "SELL",
+        Action = "BUY",
         Exchange = exchange
       };
       c.ComboLegs = new List<ComboLeg> { call, put };

@@ -38,6 +38,7 @@ using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string P
   , (double All, double Up, double Down) Pip
   , bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
 using IBApp;
+using System.Diagnostics;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
@@ -554,19 +555,28 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
-    static IBApi.Contract[] _combos = new IBApi.Contract[0];
     public void BuildButterflies(string pair) {
       var symbol = IBApi.Contract.Contracts[pair].Symbol;
-      var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
-      am.MakeButterflies(symbol)
-        .ToArray()
-        .Subscribe(b => Clients.Caller.butterflies((_combos = b.ToArray(t => t.contract)).ToArray(c => c.Instrument)));
+      var ib = ((IBWraper)trader.Value.TradesManager);
+      var am = ib.AccountManager;
+      (from combo in am.MakeStraddle(symbol).Take(4)
+       from p in ib._ibClient.ReqPrice(combo.contract.SideEffect(c => ib._ibClient.SetOfferSubscription(c, _ => { })))
+       .SkipWhile(t => t.bid == 0 || t.ask == 0)
+       .FirstAsync()
+       select new { i = combo.contract.Instrument, p.bid, p.ask }
+       )
+       .ToArray()
+       .ToEnumerable()
+       .ToArray()
+       .ForEach(b => Clients.Caller.butterflies(b));
     }
     [BasicAuthenticationFilter]
     public void OpenButterfly(string instrument, int quantity) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
-      _combos.Where(t => t.Instrument == instrument)
-        .ForEach(c => am.OpenTrade(c, quantity));
+      if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
+        am.OpenTrade(contract, quantity);
+      else
+        throw new Exception(new { contract, not = "found" } + "");
     }
     #endregion
 
