@@ -308,7 +308,7 @@ namespace HedgeHog {
 
       return (!enumerable.Any()) ? thenSelector() : elseSelector();
     }
-    public static IEnumerable<TSource> DefaultIfEmpty<TSource>(this IEnumerable<TSource> source, Func<TSource> getDefaultValue) {
+    public static IEnumerable<TSource> RunIfEmpty<TSource>(this IEnumerable<TSource> source, Func<TSource> getDefaultValue) {
       using(var enumerator = source.GetEnumerator()) {
         if(enumerator.MoveNext()) {
           do {

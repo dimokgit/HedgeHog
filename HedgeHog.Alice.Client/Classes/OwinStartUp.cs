@@ -559,17 +559,30 @@ namespace HedgeHog.Alice.Client {
       var symbol = IBApi.Contract.Contracts[pair].Symbol;
       var ib = ((IBWraper)trader.Value.TradesManager);
       var am = ib.AccountManager;
-      (from combo in am.MakeStraddle(symbol).Take(4)
-       from p in ib._ibClient.ReqPrice(combo.contract.SideEffect(c => ib._ibClient.SetOfferSubscription(c, _ => { })))
-       .SkipWhile(t => t.bid == 0 || t.ask == 0)
-       .FirstAsync()
-       select new { i = combo.contract.Instrument, p.bid, p.ask }
+      (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
+      (from combo in am.MakeStraddle(symbol).Take(5)
+       from p in ib.TryGetPrice(combo.contract.Instrument).Select(p => (combo.contract, bid: p.Bid, ask: p.Ask, time: ib.ServerTime))
+       .ToObservable()
+       .Concat(Observable.Defer(() => ReqPrice(ib, priceEmpty, combo)))
+       .Take(1)
+       from strike in combo.options.Take(1).Select(o => o.Strike)
+       from up in ib.TryGetPrice(symbol).Select(p => p.Average)
+       select new { i = combo.contract.Instrument, p.bid, p.ask, time = p.time.ToString("HH:mm:ss"), delta = p.ask.Avg(p.bid) - (up - strike) }
        )
        .ToArray()
        .ToEnumerable()
        .ToArray()
-       .ForEach(b => Clients.Caller.butterflies(b));
+       .ForEach(b => base.Clients.Caller.butterflies(b.OrderBy(t => t.delta*t.ask.Avg(t.bid)).ToArray()));
     }
+
+    private static IObservable<(IBApi.Contract contract, double bid, double ask, DateTime time)> ReqPrice(IBWraper ib, (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty, (IBApi.Contract contract, IList<IBApi.Contract> options) combo) {
+      return ib._ibClient.ReqPrice(combo.contract.SideEffect(Subscribe))
+           .SkipWhile(t => t.bid == 0 || t.ask == 0)
+           .Window(TimeSpan.FromSeconds(10)).SelectMany(w => w.DefaultIfEmpty(priceEmpty))
+           .FirstAsync();
+      void Subscribe(IBApi.Contract c) => ib._ibClient.SetOfferSubscription(c, _ => { });
+    }
+
     [BasicAuthenticationFilter]
     public void OpenButterfly(string instrument, int quantity) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;

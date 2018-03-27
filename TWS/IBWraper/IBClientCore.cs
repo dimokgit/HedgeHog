@@ -20,10 +20,12 @@ using System.Reactive.Concurrency;
 using ContDetHandler = System.Action<int, IBApi.ContractDetails>;
 using OptionsChainHandler = System.Action<int, string, int, string, string, System.Collections.Generic.HashSet<string>, System.Collections.Generic.HashSet<double>>;
 using TickPriceHandler = System.Action<int, int, double, int>;
+using OptionPriceHandler = System.Action<int, int, double, double, double, double, double, double, double, double>;
 using ReqSecDefOptParams = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ErrorHandler = System.Action<int, int, string, System.Exception>;
 using OPTION_CHAIN = System.IObservable<(string exchange, string tradingClass, string multiplier, System.DateTime expiration, double[] strikes, double price, string symbol, string currency)>;
+using OPTION_PRICE_OBSERVABLE = System.IObservable<(int tickerId, int field, double impliedVolatility, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)>;
 using System.Reactive.Subjects;
 using System.Diagnostics;
 using static IBApp.IBApiMixins;
@@ -171,6 +173,21 @@ namespace IBApp {
       (_TickPriceObservable ?? (_TickPriceObservable = TickPriceFactoryFromEvent()));
     #endregion
 
+    #region OptionPrice
+    OPTION_PRICE_OBSERVABLE OptionPriceFactoryFromEvent()
+      => Observable.FromEvent<OptionPriceHandler, (int tickerId, int field, double impliedVolatility, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)>(
+        onNext => (int tickerId, int field, double impliedVolatility, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)
+        => onNext((tickerId, field, impliedVolatility, delta, optPrice, pvDividend, gamma, vega, theta, undPrice)),
+        h => TickOptionCommunication += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(TickPrice)}"))*/,
+        h => TickOptionCommunication -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(TickPrice)}"))*/
+        )
+      .ObserveOn(esReqPrice)
+      .Publish()
+      .RefCount();
+    OPTION_PRICE_OBSERVABLE _OptionPriceObservable;
+    OPTION_PRICE_OBSERVABLE OptionPriceObservable => (_OptionPriceObservable ?? (_OptionPriceObservable = OptionPriceFactoryFromEvent()));
+    #endregion
+
     #region Error
     static IScheduler esError = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Error", Priority = ThreadPriority.Lowest });
     IObservable<(int id, int errorCode, string errorMsg, Exception exc)> ErrorFactory() => Observable.FromEvent<ErrorHandler, (int id, int errorCode, string errorMsg, Exception exc)>(
@@ -234,7 +251,8 @@ namespace IBApp {
         (0, (ContractDetails)null),
         t => t.reqId,
         t => t.cd != null,
-        error => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, error }}")
+        error => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, error }}"),
+        () => Trace($"{nameof(ReqContractDetailsAsync)} {reqId} Error done")
         )
         .Do(t => t.cd.AddToCache().Summary.AddToCache())
         .Select(t => t.cd)
@@ -246,7 +264,7 @@ namespace IBApp {
       return cd;
     }
     IObservable<T> WireToError<T>
-      (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<int, T> endFactory, T empty, Func<T, int> getReqId, Func<T, bool> isNotEnd, Action<(int id, int errorCode, string errorMsg, Exception exc)> onError) {
+      (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<int, T> endFactory, T empty, Func<T, int> getReqId, Func<T, bool> isNotEnd, Action<(int id, int errorCode, string errorMsg, Exception exc)> onError,Action onEnd) {
       var end = new Subject<int>();
       var error = new Subject<(int id, int errorCode, string errorMsg, Exception exc)>();
       var d = error.Merge(ErrorFactory())
@@ -257,7 +275,7 @@ namespace IBApp {
           end.Dispose();
           onError(e);
           //;
-        }, () => Debug.WriteLine($"ErrorHadler:{reqId} done"));
+        }, onEnd);
       Func<int, T> next = _ => {
         //Trace($"Nneed to unsub:{reqId}");
         error.OnNext((reqId, -2, "", (Exception)null));
@@ -290,7 +308,7 @@ namespace IBApp {
     public ReqSecDefOptParamsList ReqSecDefOptParams(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) => (_ReqSecDefOptParamsList
       ?? (_ReqSecDefOptParamsList = new Func<string, string, string, int, ReqSecDefOptParamsList>((us, ex, st, comId)
           => ReqSecDefOptParamsImpl(us, ex, st, comId)))
-      //.Memoize()
+      .Memoize()
       )(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId);
 
     public ReqSecDefOptParamsList ReqSecDefOptParamsImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
@@ -314,24 +332,24 @@ namespace IBApp {
       return cd;
     }
 
-    public (int c, IList<Contract> a) ReqCurrentOptions(string symbol) =>
-    IBWraper.RunUntilCount(2, 1, () => ReqCurrentOptionsAsync(symbol, new[] { true }).ToEnumerable().ToArray());
     public IObservable<Contract> ReqCurrentOptionsAsync(string symbol, bool[] isCalls, int optionsCount = 3) {
       return (
         from t in ReqOptionChainsAsync(symbol)
         from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(optionsCount)
         from isCall in isCalls
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, isCall)
-        from o in ReqContractDetailsAsync(option.ContractFactory()).ToEnumerable()
+        from o in ReqContractDetails(option.ContractFactory())
         select o.Summary.AddToCache()//.SideEffect(c=>Trace(new { optionContract = c }))
        );
     }
 
     public OPTION_CHAIN ReqOptionChainsAsync(string symbol) {
       var optionChain = (
-        from cd in ReqContractDetailsAsync(symbol.ContractFactory())
-        from price in ReqPriceMarket(cd.Summary)
-        from och in ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
+        from cd in ReqContractDetails(symbol.ContractFactory()).ToObservable()
+        from price in TryGetPrice(symbol).Select(p => p.Average).ToObservable()
+        .Concat(Observable.Defer(() => ReqPriceMarket(cd.Summary)))
+        .Take(1)
+        from och in ReqSecDefOptParams(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
         where och.exchange == "SMART"
         from expiration in och.expirations.Select(e => e.FromTWSDateString())
         select (och.exchange, och.tradingClass, och.multiplier, expiration, strikes: och.strikes.ToArray(), price, symbol = cd.Summary.Symbol, currency: cd.Summary.Currency)
@@ -345,7 +363,7 @@ namespace IBApp {
 
     public enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
     public IObservable<double> ReqMarketPrice(string symbol)
-      => from cd in ReqContractDetailsAsync(symbol.ContractFactory())
+      => from cd in ReqContractDetails(symbol.ContractFactory()).ToObservable()
          from p in ReqPriceMarket(cd.Summary)
          select p;
     public IObservable<double> ReqMarketPrice(Contract contract) => ReqPrice(contract, TickType.MarketPrice).SelectMany(p => p);
@@ -402,17 +420,29 @@ namespace IBApp {
       return cd;
     }
     int[] _bidAsk = new int[] { 1, 2 };
-    public IObservable<(Contract contract, double bid, double ask)> ReqPrice(Contract contract) {
+    public IObservable<(Contract contract, double bid, double ask, DateTime time)> ReqPrice(Contract contract) {
       var reqId = NextReqId();
       var cd = TickPriceObservable
         .Where(t => t.reqId == reqId && _bidAsk.Contains(t.field))
-        .Scan((contract, bid: 0.0, ask: 0.0), (p, n) => (contract, n.field == 1 ? n.price : p.bid, n.field == 2 ? n.price : p.ask))
+        .Scan((contract, bid: 0.0, ask: 0.0, time: DateTime.MinValue), (p, n) => (contract, n.field == 1 ? n.price : p.bid, n.field == 2 ? n.price : p.ask, ServerTime))
         //.Do( x => Trace(new { ReqPrice = new { contract, started = x } }))
         ;
       WatchReqError(contract, reqId, () => Trace($"{nameof(ReqPrice)}: {contract} => {reqId} Error done."));
       ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null);
       return cd;
     }
+    public IObservable<(Contract contract, double bid, double ask)> ReqOptionPrice(Contract contract) {
+      var reqId = NextReqId();
+      var cd = OptionPriceObservable
+        .Where(t => t.tickerId == reqId)
+        .Do(t => Trace($"{nameof(ReqOptionPrice)}:t"))
+        .Scan((contract, bid: 0.0, ask: 0.0), (p, n) => (contract, n.field == 1 ? n.optPrice : p.bid, n.field == 2 ? n.optPrice : p.ask))
+        //.Do( x => Trace(new { ReqPrice = new { contract, started = x } }))
+        ;
+      ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null);
+      return cd;
+    }
+
     public IObservable<double> ReqPriceMarket(Contract contract) {
       var reqId = NextReqId();
       var cd = TickPriceObservable
@@ -460,6 +490,11 @@ namespace IBApp {
     }
     #endregion
 
+    public IEnumerable<Price> TryGetPrice(string pair) {
+      if(TryGetPrice(pair, out var price))
+        yield return price;
+      else yield break;
+    }
     public bool TryGetPrice(string symbol, out Price price) { return _marketDataManager.TryGetPrice(symbol, out price); }
     public Price GetPrice(string symbol) { return _marketDataManager.GetPrice(symbol); }
     #region Price Changed
@@ -634,7 +669,29 @@ namespace IBApp {
 
         reader.Start();
 
-        new Thread(() => { while(ClientSocket.IsConnected()) { _signal.waitForSignal(); reader.processMsgs(); } }) { IsBackground = true }.Start();
+        Task.Factory.StartNew(() => {
+          while(ClientSocket.IsConnected() && !reader.MessageQueueThread.IsCompleted) {
+            _signal.waitForSignal();
+            reader.processMsgs();
+          }
+        }, TaskCreationOptions.LongRunning)
+        .ContinueWith(t => {
+          Observable.Interval(TimeSpan.FromSeconds(5))
+          .Select(_ => {
+            try {
+              RaiseError(new Exception(new { ClientSocket = new { IsConnected = ClientSocket.IsConnected() } } + ""));
+              ReLogin();
+              if(ClientSocket.IsConnected()) {
+                RaiseLoggedIn();
+                return true;
+              };
+            } catch {
+            }
+            return false;
+          })
+          .TakeWhile(b => b == false)
+          .Subscribe();
+        });
       } catch(Exception exc) {
         //HandleMessage(new ErrorMessage(-1, -1, "Please check your connection attributes.") + "");
         RaiseLoginError(exc);

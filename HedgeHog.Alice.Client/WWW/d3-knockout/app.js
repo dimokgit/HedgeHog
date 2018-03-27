@@ -742,14 +742,16 @@
     };
     // #endregion
     // #region Butterflies
+    this.comboQuantity = ko.observable(1);
     this.butterflies = ko.observableArray();
     this.butterfliesDialog = ko.observable();
-    this.openButterfly = function (key) {
+    this.openButterfly = function (isBuy, key) {
       debugger;
-      serverCall("openButterfly", [key.i, 10]);
-    }
+      serverCall("openButterfly", [key.i, (isBuy ? 1 : -1) * this.comboQuantity()]);
+    }.bind(this);
     this.showButterflies = function () {
       serverCall("buildButterflies", [pair]);
+      this.butterflies([]);
       var shouldToggle = ko.observable(true);
       $(this.butterfliesDialog()).dialog({
         title: "Batterflies", width: "auto", dialogClass: "dialog-compact",
@@ -1021,6 +1023,10 @@
     this.chartData2 = ko.observable(defaultChartData(1));
     var priceEmpty = { ask: NaN, bid: NaN };
     this.price = ko.observable(priceEmpty);
+    this.priceAvg = ko.pureComputed(function () {
+      debugger;
+      return (self.price().ask + self.price().bid) / 2;
+    });
     // #region updateChart(2)
     this.updateChart = updateChart;
     this.updateChart2 = updateChart2;

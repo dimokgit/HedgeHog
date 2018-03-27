@@ -475,7 +475,7 @@ namespace IBApp {
       .Merge();
 
     public IObservable<Contract> MakeStraddle(string symbol, IList<Contract> contractOptions)
-      => IbClient.ReqContractDetailsAsync(symbol.ContractFactory())
+      => IbClient.ReqContractDetails(symbol.ContractFactory()).ToObservable()
       .Select(cd => cd.Summary)
       .Select(contract => MakeStraddle(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray()));
 
@@ -506,7 +506,7 @@ namespace IBApp {
 
 
     public IObservable<Contract> MakeButterfly(string symbol, IList<Contract> contractOptions)
-      => IbClient.ReqContractDetailsAsync(symbol.ContractFactory())
+      => IbClient.ReqContractDetails(symbol.ContractFactory()).ToObservable()
       .Select(cd => cd.Summary)
       .Select(contract => MakeButterfly(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray()));
     public Contract MakeButterfly(Contract contract, IList<Contract> contractOptions)
@@ -646,9 +646,9 @@ namespace IBApp {
       bool isPreRTH = false;
       var o = new IBApi.Order() {
         OrderId = NetOrderId(),
-        Action = "BUY",
+        Action = quantity > 0 ? "BUY" : "SELL",
         OrderType = orderType,
-        TotalQuantity = quantity,
+        TotalQuantity = quantity.Abs(),
         Tif = "DAY",
         OutsideRth = isPreRTH,
         OverridePercentageConstraints = true

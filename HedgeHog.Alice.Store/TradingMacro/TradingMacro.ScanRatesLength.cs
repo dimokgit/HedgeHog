@@ -71,7 +71,7 @@ namespace HedgeHog.Alice.Store {
             })
             .SkipWhile(a => { if(last.std < a.std) last = a; return _isOk(a.ok); })
             .Take(1)
-            .DefaultIfEmpty(() => {
+            .RunIfEmpty(() => {
               useResults = last.i.Ratio(indexMin) > 1.03;
               return last;
             })

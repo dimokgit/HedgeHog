@@ -36,14 +36,14 @@ namespace IBApi {
     }
 
     public void Start() {
-      new Thread(() =>
-      {
+      if(MessageQueueThread?.Status == TaskStatus.Running)
+        throw new Exception(new { MessageQueueThread = new { MessageQueueThread.Status } } + "");
+      MessageQueueThread = Task.Factory.StartNew(() => {
         while(eClientSocket.IsConnected())
           if(!putMessageToQueue())
             break;
-
-        eReaderSignal.issueSignal();
-      }) { IsBackground = true }.Start();
+      }, TaskCreationOptions.LongRunning);
+      MessageQueueThread.ContinueWith(_ => eReaderSignal.issueSignal());
     }
 
     EMessage getMsg() {
