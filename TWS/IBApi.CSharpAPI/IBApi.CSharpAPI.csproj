@@ -62,6 +62,7 @@
     <Compile Include="ComboLeg.cs" />
     <Compile Include="CommissionReport.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="ContractDetails_p.cs" />
     <Compile Include="Contract_p.cs" />
     <Compile Include="Contract.cs" />
     <Compile Include="ContractCondition.cs" />

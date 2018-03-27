@@ -1038,7 +1038,12 @@ namespace HedgeHog.Alice.Store {
     Func<ITradesManager> _TradesManager = () => null;
     public ITradesManager TradesManager { get { return _TradesManager(); } }
     public bool HasTicks => (TradesManager?.HasTicks).GetValueOrDefault();
+    private void TradesManager_PriceChanged(object sender, PriceChangedEventArgs e) => throw new NotImplementedException();
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
+      IObservable<EventPattern<PriceChangedEventArgs>> e = Observable.FromEventPattern<PriceChangedEventArgs>(
+        h => TradesManager.PriceChanged += TradesManager_PriceChanged,
+        h => TradesManager.PriceChanged -= TradesManager_PriceChanged
+        );
       _tradingMacros = tradingMacros;
       Action<Expression<Func<TradingMacro, bool>>> check = g => TradingMacrosByPair()
         .Scan(0, (t, tm) => t + (g.Compile()(tm) ? 1 : 0))

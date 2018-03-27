@@ -89,7 +89,8 @@ namespace IBApp {
 
     #region Methods
     //public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1 : 1;
-    public int GetBaseUnitSize(string pair) => IBApi.Contract.ContractDetails.TryGetValue(pair, out var m) ? int.Parse(m.Summary.Multiplier.IfEmpty("0")) : 0;
+    //public int GetBaseUnitSize(string pair) => IBApi.Contract.ContractDetails.TryGetValue(pair, out var m) ? int.Parse(m.Summary.Multiplier.IfEmpty("0")) : 0;
+    public int GetBaseUnitSize(string pair) => IBApi.Contract.FromCache(pair, m => int.Parse(m.Multiplier.IfEmpty("0"))).DefaultIfEmpty().Single();
 
     public double Leverage(string pair, bool isBuy) => GetBaseUnitSize(pair) / GetMMR(pair, isBuy);
     public Trade TradeFactory(string pair) => Trade.Create(this, pair, GetPipSize(pair), GetBaseUnitSize(pair), CommissionByTrade);
@@ -512,7 +513,7 @@ namespace IBApp {
     public IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair = "")
       => _accountManager?.OrderContracts.Values
       .Where(os => pair.IsNullOrWhiteSpace() || os.contract.Instrument == pair.ToLower())
-      .Select(os => pair.IsNullOrWhiteSpace() 
+      .Select(os => pair.IsNullOrWhiteSpace()
       ? (os.contract + ":" + os.status.GetValueOrDefault().status, os.status.GetValueOrDefault().filled, os.status.GetValueOrDefault().remaining, os.status.GetValueOrDefault().isDone)
       : os.status.Value)
       .ToArray()
@@ -535,7 +536,7 @@ namespace IBApp {
     //  throw new NotImplementedException();
     //}
 
-    public double GetPipSize(string pair) => Math.Pow(10, Math.Log10(Contract.ContractDetails[pair].MinTick).Floor());
+    public double GetPipSize(string pair) => ContractDetails.FromCache(pair, cd => Math.Pow(10, Math.Log10(cd.MinTick.Floor()))).DefaultIfEmpty().Single();
 
     public IEnumerable<Price> TryGetPrice(string pair) {
       if(TryGetPrice(pair, out var price))

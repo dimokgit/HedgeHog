@@ -158,6 +158,7 @@ namespace IBApp {
 
     #region TickPrice
     static IScheduler esReqPrice = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice", Priority = ThreadPriority.Lowest });
+    static IScheduler esReqPrice2 = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice2", Priority = ThreadPriority.Lowest });
     IObservable<(int reqId, int field, double price, int canAutoExecute)> TickPriceFactoryFromEvent()
       => Observable.FromEvent<TickPriceHandler, (int reqId, int field, double price, int canAutoExecute)>(
         onNext => (int reqId, int field, double price, int canAutoExecute)
@@ -165,11 +166,13 @@ namespace IBApp {
         h => TickPrice += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(TickPrice)}"))*/,
         h => TickPrice -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(TickPrice)}"))*/
         )
-      .ObserveOn(esReqPrice)
+      .SubscribeOn(esReqPrice)
       .Publish()
-      .RefCount();
+      .RefCount()
+      .ObserveOn(esReqPrice2)
+      ;
     IObservable<(int reqId, int field, double price, int canAutoExecute)> _TickPriceObservable;
-    IObservable<(int reqId, int field, double price, int canAutoExecute)> TickPriceObservable =>
+    internal IObservable<(int reqId, int field, double price, int canAutoExecute)> TickPriceObservable =>
       (_TickPriceObservable ?? (_TickPriceObservable = TickPriceFactoryFromEvent()));
     #endregion
 
@@ -214,7 +217,7 @@ namespace IBApp {
       return c.a.Single();
     }
     Func<Contract, IList<ContractDetails>> _ReqContractDetails;
-    public IList<ContractDetails> ReqContractDetails(string symbol) => ReqContractDetails(symbol.ContractFactory());
+    //public IList<ContractDetails> ReqContractDetails(string symbol) => ReqContractDetails(symbol.ContractFactory());
 
     public IList<ContractDetails> ReqContractDetails(Contract contract) => (_ReqContractDetails
       ?? (_ReqContractDetails = new Func<Contract, IList<ContractDetails>>(c => ReqContractDetailsImpl(c))
@@ -222,6 +225,13 @@ namespace IBApp {
       ))(contract);
     IList<ContractDetails> ReqContractDetailsImpl(Contract contract) {
       return ReqContractDetailsAsync(contract).ToEnumerable().ToArray();
+    }
+    IObservable<ContractDetails> ReqContractDetailsCached(Contract contract) {
+      return contract.FromDetailsCache().ToObservable().ToArray()
+        .Where(c => c.Any())
+        .Concat(Observable.Defer(() => ReqContractDetailsAsync(contract).ToArray()))
+        .Take(1)
+        .SelectMany(b => b);
     }
 
     IScheduler esReq = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Req-*" });
@@ -252,9 +262,9 @@ namespace IBApp {
         t => t.reqId,
         t => t.cd != null,
         error => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, error }}"),
-        () => Trace($"{nameof(ReqContractDetailsAsync)} {reqId} Error done")
+        () => { }//Trace($"{nameof(ReqContractDetailsAsync)} {reqId} Error done")
         )
-        .Do(t => t.cd.AddToCache().Summary.AddToCache())
+        .Do(t => t.cd.AddToCache())
         .Select(t => t.cd)
         .ObserveOn(esReqCont)
       //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
@@ -264,7 +274,7 @@ namespace IBApp {
       return cd;
     }
     IObservable<T> WireToError<T>
-      (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<int, T> endFactory, T empty, Func<T, int> getReqId, Func<T, bool> isNotEnd, Action<(int id, int errorCode, string errorMsg, Exception exc)> onError,Action onEnd) {
+      (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<int, T> endFactory, T empty, Func<T, int> getReqId, Func<T, bool> isNotEnd, Action<(int id, int errorCode, string errorMsg, Exception exc)> onError, Action onEnd) {
       var end = new Subject<int>();
       var error = new Subject<(int id, int errorCode, string errorMsg, Exception exc)>();
       var d = error.Merge(ErrorFactory())
@@ -362,8 +372,18 @@ namespace IBApp {
     }
 
     public enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
+    public IObservable<double> ReqMarketPrice_Bad(string symbol) =>
+      TryGetPrice(symbol)
+      .Where(p => p.Ask > 0 && p.Bid > 0)
+      .Select(p => p.Average)
+      .ToObservable()
+      .ToArray()
+      .Where(a => a.Any())
+      .Concat(Observable.Defer(() => ReqMarketPrice(symbol)).ToArray())
+      .Take(1)
+      .SelectMany(b => b);
     public IObservable<double> ReqMarketPrice(string symbol)
-      => from cd in ReqContractDetails(symbol.ContractFactory()).ToObservable()
+      => from cd in ReqContractDetailsCached(symbol.ContractFactory())
          from p in ReqPriceMarket(cd.Summary)
          select p;
     public IObservable<double> ReqMarketPrice(Contract contract) => ReqPrice(contract, TickType.MarketPrice).SelectMany(p => p);
@@ -452,8 +472,8 @@ namespace IBApp {
         .Select(t => t.price)
         //.Do( x => Trace(new { ReqPrice = new { contract, started = x } }))
         ;
-      WatchReqError(contract, reqId, () => Trace($"{nameof(ReqPriceMarket)}: {contract} => {reqId} Error done."));
-      ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null);
+      WatchReqError(contract, reqId, () => { });// Trace($"{nameof(ReqPriceMarket)}: {contract} => {reqId} Error done."));
+      ClientSocket.reqMktData(reqId, contract.ContractFactory(), "221,232", false, null);
       return cd;
     }
 

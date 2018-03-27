@@ -10,10 +10,6 @@ using System.Threading.Tasks;
 
 namespace IBApp {
   static class IBApiMixins {
-    public static ContractDetails AddToCache(this ContractDetails cd) {
-      Contract.ContractDetails.TryAdd(cd.Summary.Instrument, cd);
-      return cd;
-    }
     public static string MakeOptionSymbol(string tradingClass, DateTime expiration, double strike, bool isCall) {
       var date = expiration.ToTWSOptionDateString();
       var cp = isCall ? "C" : "P";

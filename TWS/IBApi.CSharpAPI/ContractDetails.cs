@@ -14,7 +14,7 @@ namespace IBApi
      * @brief extended contract details.
      * @sa Contract
      */
-    public class ContractDetails
+    public partial class ContractDetails
     {
         private Contract summary;
         private string marketName;

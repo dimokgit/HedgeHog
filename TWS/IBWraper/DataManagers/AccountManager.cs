@@ -224,6 +224,7 @@ namespace IBApp {
 
     #region Position
     void OnPosition(Contract contract, double position, double averageCost) {
+      return;
       var posMsg = new PositionMessage("", contract, position, averageCost);
       if(position == 0) {
         OpenTrades

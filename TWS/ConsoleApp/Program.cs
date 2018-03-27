@@ -65,9 +65,14 @@ namespace ConsoleApp {
       }
       IList<Contract> options = new Contract[0];
       ibClient.ManagedAccountsObservable.Subscribe(s => {
+        //var spx = ibClient.ReqContractDetails("SPX".ContractFactory());
+        //ibClient.SetOfferSubscription(spx[0].Summary, _ => { });
+        //return;
+        //LoadHistory(ibClient, "SPX");
+
         var option = "VXX   180329C00051500";
         var cds = ibClient.ReqContractDetailsAsync(option.ContractFactory()).ToEnumerable().ToArray();
-        var symbols = new[] { "SPX", "SPY", "VXX" };
+        var symbols = new[] { "SPX", "VXX","SPY" };
         IList<Contract> ProcessSymbol(string symbol) {
           //HandleMessage(new { symbol } + "");
           // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
@@ -92,7 +97,7 @@ namespace ConsoleApp {
             .Subscribe(price => HandleMessage($"Observing:{price}"));
           }).ToArray();
         }
-        var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15)).Subscribe();
+        var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15*1000)).Subscribe();
 
         Stopwatch sw = Stopwatch.StartNew();
         var combos = symbols.Take(10).Repeat(1).Select(ProcessSymbol).ToList();
