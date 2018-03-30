@@ -2703,7 +2703,7 @@ namespace Order2GoAddIn {
         var trades = GetClosedTrades(pair);
         if(trades.Length == -1)
           trades = GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now.AddDays(1).Date).ToArray();
-        return trades.DefaultIfEmpty(() => TradeFactory(pair)).OrderBy(t => t.Id).Last();
+        return trades.RunIfEmpty(() => TradeFactory(pair)).OrderBy(t => t.Id).Last();
       } catch(Exception exc) {
         RaiseError(exc);
         return null;

@@ -458,7 +458,7 @@ namespace IBApp {
     Action IfEmpty(object o) => () => throw new Exception(o.ToJson());
     #region Butterfly
     public IObservable<(Contract contract, IList<Contract> options)> MakeButterflies(string symbol, int count) =>
-       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true }, count * 3)
+       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true }, count)
         .ToArray()
         //.Select(a => a.OrderBy(c => c.Strike).ToArray())
         .SelectMany(reqOptions =>
@@ -481,7 +481,8 @@ namespace IBApp {
         select (strdl.mash, strdl.source.Select(x => x.trade).Gross(), strdl.source.Max(s => s.trade.Position)));
       return straddles;
     }
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strike)[]> CurrentStraddles(string symbol, int count) {
+    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strike)[]> 
+      CurrentStraddles(string symbol, int count) {
       (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
         from combo in MakeStraddle(symbol, count)
@@ -517,7 +518,7 @@ namespace IBApp {
     }
 
     public IObservable<(Contract contract, IList<Contract> options)> MakeStraddle(string symbol, int count) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, new[] { true, false }, count * 2)
+      IbClient.ReqCurrentOptionsAsync(symbol, new[] { true, false }, count)
       .ToArray()
       .Select(a => a.OrderBy(c => c.Strike).ToArray())
       .SelectMany(reqOptions =>

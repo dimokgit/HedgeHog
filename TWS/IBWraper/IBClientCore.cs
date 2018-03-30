@@ -220,7 +220,6 @@ namespace IBApp {
     IScheduler esReqCont = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
     public IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
       var reqId = NextReqId();
-      //event Action<(int, ContractDetails)> stopError;// = (a) => (0, (ContractDetails)null);
       var cd = WireToError<(int reqId, ContractDetails cd)>(
         reqId,
         ContractDetailsObservable,
@@ -232,8 +231,7 @@ namespace IBApp {
         error => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, error }}"),
         () => { }//Trace($"{nameof(ReqContractDetailsAsync)} {reqId} Error done")
         )
-        .Do(t => t.cd.AddToCache())
-        .Select(t => t.cd)
+        .Select(t => t.cd.AddToCache())
         .ObserveOn(esReqCont)
       //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
       ;
@@ -317,7 +315,7 @@ namespace IBApp {
         from isCall in isCalls
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, isCall)
         from o in ReqContractDetailsCached(option.ContractFactory())
-        select o.Summary.AddToCache()//.SideEffect(c=>Trace(new { optionContract = c }))
+        select o.AddToCache().Summary//.SideEffect(c=>Trace(new { optionContract = c }))
        );
     }
 

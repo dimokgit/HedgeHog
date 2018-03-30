@@ -92,7 +92,7 @@ namespace IBApp {
       }
     }
     private void OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
-      //Trace($"{nameof(OnTickPrice)}{(requestId, field, price, canAutoExecute)}");
+      Trace($"{nameof(OnTickPrice)}{(requestId, field, price, canAutoExecute)}");
       if(!activeRequests.ContainsKey(requestId)) return;
       var priceMessage = new TickPriceMessage(requestId, field, price, canAutoExecute);
       var price2 = activeRequests[requestId].price;

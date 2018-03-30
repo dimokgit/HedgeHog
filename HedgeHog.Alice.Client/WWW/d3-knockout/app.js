@@ -231,7 +231,7 @@
     return args;
   }
   var serverMethodsRefresh = [];
-  function serverCall(name, args, done, fail, allwais) {
+  function serverCall(name, args, done, fail, always) {
     var method = chat.server[name];
     if (!method) {
       showErrorPerm("Server method " + name + " not found.");

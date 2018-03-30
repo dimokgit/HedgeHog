@@ -112,7 +112,7 @@ namespace ConsoleApp {
             ibClient.SetOfferSubscription(burrefly, _ => { });
             ibClient.ReqPrice(burrefly)
             .Throttle(TimeSpan.FromSeconds(1))
-            .Subscribe(price => HandleMessageFake($"Observing:{price}"));
+            .Subscribe(price => HandleMessage($"Observing:{price}"));
           }).ToArray();
         }
         var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1000)).Subscribe();
