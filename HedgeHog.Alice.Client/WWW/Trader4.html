@@ -1175,17 +1175,43 @@
   <!--#region Butterflies-->
   <div data-bind="elementer:butterfliesDialog" style="display:none;padding:0">
     <table border="1" cellspacing="0" class="wwwInfo">
+      <tbody data-bind="foreach:liveCombos">
+        <tr>
+          <td data-bind="text:combo"></td>
+          <td data-bind="text:position"></td>
+          <td data-bind="text:d3.format('$.0f')(netPL()),css:{profit:netPL()>0,loss:netPL()<0}"></td>
+          <td>
+            <button data-bind="click:$parent.closeCombo.bind(null,combo)">Close</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <table border="1" cellspacing="0" class="wwwInfo">
       <caption>
-        <label>Quantity</label><input data-bind="value:comboQuantity" size="3" />
-        <label>Current</label><span data-bind="text:d3.format('.3f')(priceAvg())"></span>
+        <label>Quantity:</label><input data-bind="value:comboQuantity" size="3" />
+        <div style="display:inline-table">
+          <label>Current:</label><b data-bind="text:d3.format('.3f')(priceAvg())"></b>
+          <br />
+          <label>ByDelta:</label>
+          <!-- ko with: combosStats -->
+          <b data-bind="text:d3.format('.3f')(strikeDelta),css:{profit:strikeDelta>0,loss:strikeDelta<0}"></b>
+          <!-- /ko -->
+        </div>
+        <div data-bind="foreach:combosMin" style="display:inline-table">
+          <label>Avg:</label><b data-bind="text:d3.format('.3f')(avg)"></b>
+          <label>Spread:</label><b data-bind="text:d3.format('.3f')(spread)"></b>
+          <br />
+          <label>Bid:</label><b data-bind="text:d3.format('.3f')(bid)"></b>
+          <label>Ask:</label><b data-bind="text:d3.format('.3f')(ask)"></b>
+        </div>
       </caption>
       <thead>
         <tr>
           <td style="text-align:left">Instrument</td>
+          <td style="text-align:left">Avg</td>
+          <td style="text-align:left">Delta</td>
           <td style="text-align:left">Bid</td>
           <td style="text-align:left">Ask</td>
-          <td style="text-align:left">Delta</td>
-          <td style="text-align:left">Time</td>
           <td>Buy</td>
           <td>Sel</td>
         </tr>
@@ -1193,10 +1219,10 @@
       <tbody data-bind="foreach:butterflies">
         <tr>
           <td data-bind="text:i"></td>
+          <td data-bind="text:d3.format('.2f')(avg())"></td>
+          <td data-bind="text:d3.format('.2f')(delta())"></td>
           <td data-bind="text:bid"></td>
           <td data-bind="text:ask"></td>
-          <td data-bind="text:d3.format('.2f')(delta)"></td>
-          <td data-bind="text:time"></td>
           <td>
             <button data-bind="click:$parent.openButterfly.bind(null,true,$data)">Buy</button>
           </td>

@@ -19,7 +19,14 @@
  * Ask - ask data from server and forget. Server will fire "sendXXX" method related to askXXX
  * Send - method fired from server to sen info to clien
  */
+
+//Array.prototype.average = Array.prototype.average || function () {
+//  return this.sum() / (this.length || 1);
+//}
 (function () {
+  Array.prototype.sum = Array.prototype.sum || function () {
+    return this.reduce(function (sum, a) { return sum + Number(a) }, 0);
+  }
   var isMobile = /Mobi/.test(navigator.userAgent);
   var devVersion = "(v2)";
   //#region ko binding
@@ -224,7 +231,7 @@
     return args;
   }
   var serverMethodsRefresh = [];
-  function serverCall(name, args, done, fail) {
+  function serverCall(name, args, done, fail, allwais) {
     var method = chat.server[name];
     if (!method) {
       showErrorPerm("Server method " + name + " not found.");
@@ -237,7 +244,7 @@
     try {
       var r = chat.server[name].apply(chat.server, args)
         .always(function () {
-          //clearPendingMessages(name);
+          (always || $.noop)();
         }).fail(function (error) {
           notifyClose(note);
           if (fail) fail(error);
@@ -265,12 +272,26 @@
       else throw e;
     }
   }
+  var readingCombos = false;
+  function readCombos() {
+    if (readingCombos) return;
+    var args = [pair];
+    args.noNote = true;
+    readingCombos = true;
+    serverCall("readStraddles", args
+      , function () {
+      }, function () {
+        readingCombos = false;
+      });
+  }
+
   // #endregion
 
   // #region dataViewModel
   var dataViewModel = new DataViewModel();
   function DataViewModel() {
     var self = this;
+    this.canTrade = ko.observable(false);
     // #region formatters
     this.chartDateFormat = d3.timeFormat('%m/%d/%Y %H:%M:%S');
     // #endregion
@@ -743,14 +764,46 @@
     // #endregion
     // #region Butterflies
     this.comboQuantity = ko.observable(1);
-    this.butterflies = ko.observableArray();
+    this.butterflies = ko.mapping.fromJS(ko.observableArray());
+    this.liveStraddles = ko.mapping.fromJS(ko.observableArray());//;
+    this.liveCombos = ko.pureComputed(function () {
+      return self.liveStraddles();
+    }, this);
+    this.combosMin = ko.pureComputed(function () {
+      return this.butterflies()
+        .sort(function (v1, v2) { return v1.avg() - v2.avg(); })
+        .map(function (v) { return { bid: v.bid(), ask: v.ask(), spread: v.ask() - v.bid(), avg: v.avg() }; })
+        .slice(0, 1);
+    }, this);
+    this.combosStats = ko.pureComputed(function () {
+      var top2 = this.butterflies()
+        //.sort(function (v1, v2) { return v1.avg - v2.avg; })
+        .slice(0, 2);
+      var wSum = top2.map(function (v) { return v.strike() / v.delta(); }).sum();
+      var sum = top2.map(function (v) { return 1 / v.delta(); }).sum();
+      var strike = wSum / sum;
+      var price = this.price.peek();
+      return { strikeDelta: strike - (price.bid + price.ask) / 2 };
+    }, this);
     this.butterfliesDialog = ko.observable();
     this.openButterfly = function (isBuy, key) {
-      debugger;
-      serverCall("openButterfly", [key.i, (isBuy ? 1 : -1) * this.comboQuantity()]);
+      this.canTrade(false);
+      var combo = ko.utils.unwrapObservable(ko.utils.unwrapObservable(key).i);
+      serverCall("openButterfly", [combo, (isBuy ? 1 : -1) * this.comboQuantity()]
+        , null
+        , null
+        , function () { this.canTrade(false); }.bind(this)
+      );
     }.bind(this);
+    this.closeCombo = function (key) {
+      this.canTrade(false);
+      serverCall("closeCombo", [ko.utils.unwrapObservable(key)], null, null, function () { this.canTrade(false); }.bind(this));
+    }.bind(this);
+    var stopCombos = true;
     this.showButterflies = function () {
-      serverCall("buildButterflies", [pair]);
+      showCombos = true;
+      stopCombos = false;
+      readCombos.bind(this)();
       this.butterflies([]);
       var shouldToggle = ko.observable(true);
       $(this.butterfliesDialog()).dialog({
@@ -762,10 +815,13 @@
         },
         open: dialogCollapse(shouldToggle),
         close: function () {
+          showCombos = false;
+          stopCombos = true;
           $(this).dialog("destroy");
         }
       });
     }.bind(this);
+
     // #endregion
     // #region hedgingRatiosDialog
     var stophedgingRatios;
@@ -1024,7 +1080,6 @@
     var priceEmpty = { ask: NaN, bid: NaN };
     this.price = ko.observable(priceEmpty);
     this.priceAvg = ko.pureComputed(function () {
-      debugger;
       return (self.price().ask + self.price().bid) / 2;
     });
     // #region updateChart(2)
@@ -1547,6 +1602,7 @@
   //$.getScript(hubUrl, init);
   // Init SignaR client
   init();
+  var showCombos = false;
   function init() {
     //Set the hubs URL for the connection
     //$.connection.hub.url = "http://" + host + "/signalr";
@@ -1582,6 +1638,10 @@
       }
 
       function _priceChanged(pairChanged) {
+        if (showCombos) {
+          readCombos();
+          //chat.server.readStraddles();
+        }
         if (!isDocHidden() && pair.toUpperCase() === pairChanged.toUpperCase()) {
           if (_isPriceChangeInFlight())
             return;
@@ -1615,7 +1675,21 @@
       showWarningPerm(message);
     };
     chat.client.butterflies = function (butterflies) {
-      dataViewModel.butterflies(butterflies);
+      var map = {
+        key: function (item) {
+          return ko.utils.unwrapObservable(item.i);
+        }
+      };
+      ko.mapping.fromJS(butterflies, map, dataViewModel.butterflies);
+    };
+    chat.client.liveCombos = function (combos) {
+      var map = {
+        key: function (item) {
+          return ko.utils.unwrapObservable(item.combo);
+        }
+      };
+      ko.mapping.fromJS(combos, map, dataViewModel.liveStraddles);
+      readingCombos = false;
     };
     // #endregion
     // #region Start the connection.

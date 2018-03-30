@@ -71,6 +71,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByBPA1;
         case HedgeHog.Alice.VoltageFunction.Corr:
           return ShowVoltsByCorrelation;
+        case HedgeHog.Alice.VoltageFunction.Straddle:
+          return () => ShowVoltsByStraddle(voltIndex);
         case HedgeHog.Alice.VoltageFunction.Gross:
           return ShowVoltsByGross;
         case HedgeHog.Alice.VoltageFunction.GrossV:
@@ -347,6 +349,12 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByGross() {
       ShowVolts(TradesManager.GetTrades().Net2(), 0, GetVoltage2, SetVoltage2);
+      return null;
+    }
+    CorridorStatistics ShowVoltsByStraddle(int voltIndex) {
+      if(UseCalc())
+        StraddleHistory.BackwardsIterator().Take(1)
+          .ForEach(s => SetVolts(s.bid.Avg(s.ask), voltIndex));
       return null;
     }
     CorridorStatistics ShowVoltsByHV(int voltIndex) {

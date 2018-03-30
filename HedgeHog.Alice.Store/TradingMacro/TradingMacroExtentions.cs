@@ -43,6 +43,7 @@ using System.Reactive.Subjects;
 using System.Reactive.Concurrency;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson;
+using IBApp;
 
 namespace HedgeHog.Alice.Store {
   [JsonObject(MemberSerialization.OptOut)]
@@ -1038,12 +1039,8 @@ namespace HedgeHog.Alice.Store {
     Func<ITradesManager> _TradesManager = () => null;
     public ITradesManager TradesManager { get { return _TradesManager(); } }
     public bool HasTicks => (TradesManager?.HasTicks).GetValueOrDefault();
-    private void TradesManager_PriceChanged(object sender, PriceChangedEventArgs e) => throw new NotImplementedException();
+    IDisposable _priceChangeDisposable;
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
-      IObservable<EventPattern<PriceChangedEventArgs>> e = Observable.FromEventPattern<PriceChangedEventArgs>(
-        h => TradesManager.PriceChanged += TradesManager_PriceChanged,
-        h => TradesManager.PriceChanged -= TradesManager_PriceChanged
-        );
       _tradingMacros = tradingMacros;
       Action<Expression<Func<TradingMacro, bool>>> check = g => TradingMacrosByPair()
         .Scan(0, (t, tm) => t + (g.Compile()(tm) ? 1 : 0))
@@ -1097,8 +1094,24 @@ namespace HedgeHog.Alice.Store {
       RaisePositionsChanged();
       Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategies.Universal;
       IsTradingActive = IsInVirtualTrading;
-    }
 
+      _priceChangeDisposable?.Dispose();
+      StraddleHistory.Clear();
+      _priceChangeDisposable = Observable.FromEventPattern<PriceChangedEventArgs>(
+      h => TradesManager.PriceChanged += h,
+      h => TradesManager.PriceChanged -= h
+      )
+      .Where(price => price.EventArgs.Price.Pair == Pair)
+      .Throttle(TimeSpan.FromSeconds(0.3))
+      .SelectMany(price => ((IBWraper)TradesManager).AccountManager.CurrentStraddles(Pair, 2))
+      .SelectMany(x => x.Buffer(2))
+      .Take(1)
+      .Where(b => b.Count == 2)
+      .Subscribe(straddle => {
+        StraddleHistory.Add((straddle.Average(s => s.bid), straddle.Average(s => s.ask), straddle[0].time, straddle.Average(s => s.delta)));
+      });
+    }
+    List<(double bid, double ask, DateTime time, double delta)> StraddleHistory = new List<(double bid, double ask, DateTime time, double delta)>();
     private void HansleTick(PriceChangedEventArgs pce) {
       try {
         CurrentPrice = pce.Price;
@@ -1157,7 +1170,7 @@ namespace HedgeHog.Alice.Store {
           return;
         EnsureActiveSuppReses();
         RaisePositionsChanged();
-        UseRates(ra => ra.Distances(r=>r.PriceCMALast).Last().Item2)
+        UseRates(ra => ra.Distances(r => r.PriceCMALast).Last().Item2)
           .ForEach(d => _ratesArrayDistance = d);
         _strategyExecuteOnTradeOpen?.Invoke(e.Trade);
       } catch(Exception exc) {

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace IBApp {
   static class IBApiMixins {
+    public static IEnumerable<Contract> Sort(this IEnumerable<Contract> l) => l.OrderBy(c => c.Right);
     public static string MakeOptionSymbol(string tradingClass, DateTime expiration, double strike, bool isCall) {
       var date = expiration.ToTWSOptionDateString();
       var cp = isCall ? "C" : "P";

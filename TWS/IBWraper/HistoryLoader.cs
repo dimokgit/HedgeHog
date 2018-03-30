@@ -165,7 +165,7 @@ namespace IBApp {
     private void RequestHistoryDataChunk() {
       try {
         string barSizeSetting = (_barSize + "").Replace("_", " ").Trim();
-        string whatToShow = "MIDPOINT";
+        string whatToShow = _contract.IsIndex() ? "TRADES" : "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         var ls = _contract.LocalSymbol ?? _contract.Symbol ?? "";
         var useRTH = !ls.IsOption() && !ls.IsCurrenncy() && !ls.IsFuture() && !ls.IsETF() && _timeUnit != TimeUnit.S;

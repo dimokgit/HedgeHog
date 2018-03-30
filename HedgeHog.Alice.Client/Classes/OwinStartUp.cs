@@ -228,13 +228,12 @@ namespace HedgeHog.Alice.Client {
     Lazy<TraderModel> trader;
     static Exception Log { set { GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(value)); } }
     static ISubject<Action> _AskRatesSubject;
-    static ISubject<Action> AskRatesSubject {
-      get { return _AskRatesSubject; }
-    }
+    static ISubject<Action> AskRatesSubject { get { return _AskRatesSubject; } }
     static ISubject<Action> _AskRates2Subject;
-    static ISubject<Action> AskRates2Subject {
-      get { return _AskRates2Subject; }
-    }
+    static ISubject<Action> AskRates2Subject { get { return _AskRates2Subject; } }
+    static ISubject<Action> _combosSubject;
+    static ISubject<Action> CombosSubject { get { return _combosSubject; } }
+    static IDisposable CombosSubscribtion;
     //http://forex.timezoneconverter.com/?timezone=GMT&refresh=5
     static Dictionary<string, DateTimeOffset> _marketHours = new Dictionary<string, DateTimeOffset> {
     { "Frankfurt", DateTimeOffset.Parse("6:00 +0:00") } ,
@@ -252,6 +251,7 @@ namespace HedgeHog.Alice.Client {
       _AskRates2Subject.InitBufferedObservable<Action>(exc => Log = exc);
       _AskRates2Subject.Subscribe(a => a());
     }
+    private AccountManager AccountManager() => ((IBWraper)trader.Value.TradesManager).AccountManager;
     public MyHub() {
       try {
         remoteControl = App.container.GetExport<RemoteControlModel>();
@@ -555,31 +555,28 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
-    public void BuildButterflies(string pair) {
-      var symbol = IBApi.Contract.Contracts[pair].Symbol;
-      var ib = ((IBWraper)trader.Value.TradesManager);
-      var am = ib.AccountManager;
-      (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
-      (from combo in am.MakeStraddle(symbol).Take(5)
-       from p in ib.TryGetPrice(combo.contract.Instrument).Select(p => (combo.contract, bid: p.Bid, ask: p.Ask, time: ib.ServerTime))
-       .ToObservable()
-       .Concat(Observable.Defer(() => ReqPrice(ib, priceEmpty, combo)))
-       .Take(1)
-       from strike in combo.options.Take(1).Select(o => o.Strike)
-       from up in ib.TryGetPrice(symbol).Select(p => p.Average)
-       select new { i = combo.contract.Instrument, p.bid, p.ask, time = p.time.ToString("HH:mm:ss"), delta = p.ask.Avg(p.bid) - (up - strike) }
-       )
-       .ToArray()
-       .ToEnumerable()
-       .ToArray()
-       .ForEach(b => base.Clients.Caller.butterflies(b.OrderBy(t => t.delta*t.ask.Avg(t.bid)).ToArray()));
+    public void ReadStraddles(string pair) {
+      var am = AccountManager();
+      IBApi.Contract.FromCache(pair, c => c.Symbol)
+        .ForEach(symbol => am.CurrentStraddles(symbol, 4)
+        .Select(ts => ts.Select(t => new {
+          i = t.instrument,
+          t.bid,
+          t.ask,
+          avg = t.ask.Avg(t.bid),
+          time = t.time.ToString("HH:mm:ss"),
+          t.delta,
+          t.strike
+        }))
+       .Subscribe(b => base.Clients.Caller.butterflies(b)));
+      base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
     }
 
     private static IObservable<(IBApi.Contract contract, double bid, double ask, DateTime time)> ReqPrice(IBWraper ib, (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty, (IBApi.Contract contract, IList<IBApi.Contract> options) combo) {
       return ib._ibClient.ReqPrice(combo.contract.SideEffect(Subscribe))
-           .SkipWhile(t => t.bid == 0 || t.ask == 0)
-           .Window(TimeSpan.FromSeconds(10)).SelectMany(w => w.DefaultIfEmpty(priceEmpty))
-           .FirstAsync();
+        .SkipWhile(t => t.bid <= 0 || t.ask <= 0)
+        .Window(TimeSpan.FromSeconds(10)).SelectMany(w => w.DefaultIfEmpty(priceEmpty))
+        .FirstAsync();
       void Subscribe(IBApi.Contract c) => ib._ibClient.SetOfferSubscription(c, _ => { });
     }
 
@@ -590,6 +587,13 @@ namespace HedgeHog.Alice.Client {
         am.OpenTrade(contract, quantity);
       else
         throw new Exception(new { contract, not = "found" } + "");
+    }
+    [BasicAuthenticationFilter]
+    public void CloseCombo(string instrument) {
+      var am = AccountManager();
+      am.TradeStraddles()
+        .SelectMany(s => IBApi.Contract.FromCache(s.straddle, c => (c, s.position)))
+        .ForEach(c => am.OpenTrade(c.c, -c.position.ToInt()));
     }
     #endregion
 
@@ -1006,6 +1010,7 @@ namespace HedgeHog.Alice.Client {
         /*.Concat(wrStd.Cast<object>())*/.ToArray();
       return res;
     }
+
     public object[] GetAccounting(string pair) {
       var row = MonoidsCore.ToFunc("", (object)null, (n, v) => new { n, v });
       var list = new[] { row("", 0) }.Take(0).ToList();

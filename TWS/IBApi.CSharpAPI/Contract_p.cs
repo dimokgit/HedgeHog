@@ -10,7 +10,7 @@ namespace IBApi {
   public partial class Contract {
     public string Key => Instrument;
     public bool IsCombo => ComboLegs?.Any() == true;
-    public string Instrument => ComboLegsToString().IfEmpty((LocalSymbol?.Replace(".", "") + "").ToUpper());
+    public string Instrument => ComboLegsToString().IfEmpty((LocalSymbol.IfEmpty(Symbol)?.Replace(".", "") + "").ToUpper());
 
     static readonly ConcurrentDictionary<string, Contract> _contracts = new ConcurrentDictionary<string, Contract>(StringComparer.OrdinalIgnoreCase);
     public static IDictionary<string, Contract> Contracts => _contracts;
@@ -37,10 +37,11 @@ namespace IBApi {
        select c.LocalSymbol
        )
       .ToArray()
-      .Mash();
+      .MashDiffs();
   }
   public static class ContractMixins {
     public static bool IsOption(this Contract c) => c.SecType == "OPT";
+    public static bool IsIndex(this Contract c) => c.SecType == "IND";
   }
 
 }

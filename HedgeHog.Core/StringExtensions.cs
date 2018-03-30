@@ -10,8 +10,12 @@ namespace HedgeHog {
     public static bool IsNullOrEmpty(this string s) { return string.IsNullOrEmpty(s); }
     public static string IfEmpty(this string s, string ifEmpty) { return string.IsNullOrWhiteSpace(s) ? ifEmpty : s; }
     public static string IfNotEmpty(this string s, string prefix) { return string.IsNullOrWhiteSpace(s) ? s : prefix + s; }
-    public static string Mash(this string s, params string[] ss) => new[] { s }.Concat(ss).ToArray().Mash();
-    public static string Mash(this IList<string> ss) {
+    public static string MashDiffs(this string s, params string[] ss) => new[] { s }.Concat(ss).ToArray().MashDiffs();
+    public static (IList<T> source,string mash) MashDiffs<T>(this IList<T> source,Func<T,string> map) {
+      var mash = source.Select(map).ToArray().MashDiffs();
+      return (source, mash);
+    }
+    public static string MashDiffs(this IList<string> ss) {
       if(ss?.Count == 0) return "";
       if(ss.Count == 1) return ss[0];
       var diffs = (from s in ss.Zip(ss.Skip(1), (s1, s2) => (s1, s2))

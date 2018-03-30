@@ -19,10 +19,24 @@ using AutoMapper;
 using System.Reactive.Disposables;
 using System.Reactive.Concurrency;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace ConsoleApp {
   class Program {
+    [DllImport("kernel32.dll", ExactSpelling = true)]
+
+    private static extern IntPtr GetConsoleWindow();
+    private static IntPtr ThisConsole = GetConsoleWindow();
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    private const int HIDE = 0;
+    private const int MAXIMIZE = 3;
+    private const int MINIMIZE = 6;
+    private const int RESTORE = 9;
     static void Main(string[] args) {
+      ShowWindow(ThisConsole, MAXIMIZE);
       int _nextValidId = 0;
 
       TradesManagerStatic.AccountCurrency = "USD";
@@ -65,14 +79,17 @@ namespace ConsoleApp {
       }
       IList<Contract> options = new Contract[0];
       ibClient.ManagedAccountsObservable.Subscribe(s => {
+        //ShowTrades(fw);
+        //ibClient.ReqPrice("USD.JPY".ContractFactory()).Subscribe(price => HandleMessage(new { price })); return;
         //var spx = ibClient.ReqContractDetails("SPX".ContractFactory());
         //ibClient.SetOfferSubscription(spx[0].Summary, _ => { });
         //return;
-        //LoadHistory(ibClient, "SPX");
+        //LoadHistory(ibClient, new[] { "SPX".ContractFactory() });
+        //return;
 
         var option = "VXX   180329C00051500";
         var cds = ibClient.ReqContractDetailsAsync(option.ContractFactory()).ToEnumerable().ToArray();
-        var symbols = new[] { "SPX", "VXX","SPY" };
+        var symbols = new[] { "VXX", "SPY" };
         IList<Contract> ProcessSymbol(string symbol) {
           //HandleMessage(new { symbol } + "");
           // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
@@ -84,9 +101,10 @@ namespace ConsoleApp {
           //var cds = ibClient.ReqContractDetails(symbol);
           //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
 
-          return fw.AccountManager.MakeButterflies(symbol).Take(2)
-          .Merge(fw.AccountManager.MakeStraddle(symbol).Take(3))
+          return fw.AccountManager.MakeButterflies(symbol,3)
+          .Merge(fw.AccountManager.MakeStraddle(symbol, 3))
           .ToEnumerable()
+          .Do(t => t.options.ForEach(c => ibClient.SetOfferSubscription(c, _ => { })))
           .Select(c => c.contract)
           .ToArray()
           .Do(burrefly => {
@@ -94,17 +112,17 @@ namespace ConsoleApp {
             ibClient.SetOfferSubscription(burrefly, _ => { });
             ibClient.ReqPrice(burrefly)
             .Throttle(TimeSpan.FromSeconds(1))
-            .Subscribe(price => HandleMessage($"Observing:{price}"));
+            .Subscribe(price => HandleMessageFake($"Observing:{price}"));
           }).ToArray();
         }
-        var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15*1000)).Subscribe();
+        var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1000)).Subscribe();
 
         Stopwatch sw = Stopwatch.StartNew();
         var combos = symbols.Take(10).Repeat(1).Select(ProcessSymbol).ToList();
         timeOut.Dispose();
         sw.Stop();
         Passager.ThrowIf(() => combos.Count != symbols.Length);
-        combos.ForEach(combo => Passager.ThrowIf(() => combo.Count != 5));
+        combos.ForEach(combo => Passager.ThrowIf(() => combo.Count < 4));
         HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
         Contract.Contracts.OrderBy(c => c + "").ForEach(cached => HandleMessage(new { cached }));
         HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
@@ -137,6 +155,33 @@ namespace ConsoleApp {
       Console.ReadKey();
     }
 
+    private static void ShowTrades(IBWraper fw) => fw.AccountManager.PositionsObservable
+            .Distinct(p => p.contract.Key)
+            .Subscribe(pos => {
+              fw._ibClient.ReqPrice(pos.contract)
+              .Subscribe(_ => {
+                var trades = (from trade in fw.GetTrades()
+                              orderby trade.Pair
+                              orderby trade.IsBuy descending
+                              select new {
+                                trade.Pair, trade.Position, trade.NetPL2, trade.Open, trade.Close,
+                                PL = (trade.Close - trade.Open) * trade.Position
+                              }
+                             ).ToArray();
+                //var straddles = (from trade in fw.GetTrades()
+                //                 join c in Contract.Cache() on trade.Pair equals c.Key
+                //                 select new { c, trade } into g0
+                //                 group g0 by new { g0.c.Symbol, g0.c.Strike } into g
+                //                 from strdl in g.OrderBy(v => v.c.Instrument)
+                //                 .Buffer(2, 1)
+                //                 .Where(b => b.Count == 2)
+                //                 .Select(b => b.MashDiffs(x => x.c.Instrument))
+                //                 select new { combo = strdl.mash, netPL = strdl.source.Select(x => x.trade).Gross() }
+                //                 );
+                HandleMessage($"Trades:\n{trades.Flatter("\n")}");
+                HandleMessage($"Straddles:\n{fw.AccountManager.TradeStraddles().Flatter("\n")}");
+              });
+            });
     private static void LoadHistory(IBClientCore ibClient, IList<Contract> options) {
       var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
       HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
@@ -176,6 +221,7 @@ namespace ConsoleApp {
 
     private static void HandleMessage<T>(T message) => Console.WriteLine(DateTime.Now + ": " + message);
     private static void HandleMessage(string message) => Console.WriteLine(DateTime.Now + ": " + message);
+    private static void HandleMessageFake(string message) { }
     private static void HandleMessage(HistoricalDataMessage historicalDataEndMessage) {
       HandleMessage(historicalDataEndMessage + "");
     }

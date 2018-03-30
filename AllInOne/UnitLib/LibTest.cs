@@ -25,11 +25,11 @@ namespace HedgeHog.Tests {
       var s1 = "aaabbccc";
       var s2 = "aaadddccc";
       var s3 = "aaaEEEEccc";
-      var mash1 = s1.Mash(s2, s3);
+      var mash1 = s1.MashDiffs(s2, s3);
       Console.WriteLine(new { mash1 });
       Assert.AreEqual("aaa[bb][ddd][EEEE]ccc", mash1);
-      Assert.AreEqual("aaabbccc", s1.Mash());
-      Assert.AreEqual("", new string[0].Mash());
+      Assert.AreEqual("aaabbccc", s1.MashDiffs());
+      Assert.AreEqual("", new string[0].MashDiffs());
     }
 
 

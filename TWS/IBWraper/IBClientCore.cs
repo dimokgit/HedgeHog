@@ -343,7 +343,7 @@ namespace IBApp {
     }
 
     public enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
-    public IObservable<double> ReqMarketPrice_Bad(string symbol) =>
+    public IObservable<double> ReqPriceSafe(string symbol) =>
       TryGetPrice(symbol)
       .Where(p => p.Ask > 0 && p.Bid > 0)
       .Select(p => p.Average)
@@ -410,12 +410,16 @@ namespace IBApp {
       Trace($"{nameof(ReqPrice)}:{reqId} {contract}");
       return cd;
     }
-    int[] _bidAsk = new int[] { 1, 2 };
+    int[] _bidAsk = new int[] { 1, 2, 37 };
     public IObservable<(Contract contract, double bid, double ask, DateTime time)> ReqPrice(Contract contract) {
       var reqId = NextReqId();
       var cd = TickPriceObservable
         .Where(t => t.reqId == reqId && _bidAsk.Contains(t.field))
-        .Scan((contract, bid: 0.0, ask: 0.0, time: DateTime.MinValue), (p, n) => (contract, n.field == 1 ? n.price : p.bid, n.field == 2 ? n.price : p.ask, ServerTime))
+        .Scan((contract, bid: 0.0, ask: 0.0, time: DateTime.MinValue)
+        , (p, n) => (contract
+        , n.field == 1 || n.field == 37 && p.bid < 0 ? n.price : p.bid
+        , n.field == 2 || n.field == 37 && p.ask < 0 ? n.price : p.ask
+        , ServerTime))
         //.Do( x => Trace(new { ReqPrice = new { contract, started = x } }))
         ;
       WatchReqError(contract, reqId, () => Trace($"{nameof(ReqPrice)}: {contract} => {reqId} Error done."));

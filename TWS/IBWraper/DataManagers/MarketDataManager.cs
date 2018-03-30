@@ -25,6 +25,7 @@ namespace IBApp {
       IbClient.TickPriceObservable.Subscribe(t => OnTickPrice(t.reqId, t.field, t.price, t.canAutoExecute));
       IbClient.TickString += OnTickString; ;
       IbClient.TickGeneric += OnTickGeneric;
+      //IbClient.TickOptionCommunication += TickOptionCommunication; ;
       AddRequestObs = Observable.FromEvent<Action<Contract, string, Action<Contract>>, (Contract c, string gl, Action<Contract>)>(
         next => (c, gl, a) => next((c, gl, a)), h => AddRequest += h, h => AddRequest -= h);
       AddRequestObs
@@ -51,7 +52,7 @@ namespace IBApp {
     }
     IScheduler esAddRequest = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(MarketDataManager) });
     void AddRequestImpl(Contract contract, string genericTickList) {
-      if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
+      if(activeRequests.ToArray().Any(ar => ar.Value.contract.Instrument == contract.Instrument))
         Trace($"AddRequest:{contract} already requested");
       else {
         var reqId = NextReqId();
@@ -150,6 +151,11 @@ namespace IBApp {
           Trace(new { price2.Pair, price2.IsShortable, price });
           break;
       }
+    }
+
+    private void TickOptionCommunication(int tickerId, int field, double impliedVolatility
+      , double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice) {
+      Trace($"TickOption:{new { tickerId, field, impliedVolatility, delta, optPrice, pvDividend, gamma, vega, theta, undPrice }}");
     }
 
 

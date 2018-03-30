@@ -34,6 +34,7 @@ namespace HedgeHog.Alice {
     //TLW4,
     //TLDur,
     //TLDur2,
+    Straddle,
     Corr,
     Gross,
     GrossV,
