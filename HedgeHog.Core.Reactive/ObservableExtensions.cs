@@ -10,9 +10,45 @@ using System.Threading.Tasks.Dataflow;
 using System.Runtime.CompilerServices;
 using System.Reactive.Concurrency;
 using System.Reactive.Subjects;
+using System.Collections.Concurrent;
 
 namespace HedgeHog {
   public static class ObservableExtensions {
+    public static IObservable<TSource> RateLimit<TSource>(
+            this IObservable<TSource> source,
+            int itemsPerSecond,
+            IScheduler scheduler = null) {
+      scheduler = scheduler ?? Scheduler.Default;
+      var timeSpan = TimeSpan.FromSeconds(1);
+      var itemsEmitted = 0L;
+      return Observable.Create<TSource>(
+          observer => {
+            var buffer = new ConcurrentQueue<TSource>();
+            Action emit = delegate () {
+              while(Interlocked.Read(ref itemsEmitted) < itemsPerSecond) {
+                TSource item;
+                if(!buffer.TryDequeue(out item))
+                  break;
+                observer.OnNext(item);
+                Interlocked.Increment(ref itemsEmitted);
+
+              }
+            };
+
+            var sourceSub = source
+                      .Subscribe(x => {
+                        buffer.Enqueue(x);
+                        emit();
+
+                      });
+            var timer = Observable.Interval(timeSpan, scheduler)
+                      .Subscribe(x => {
+                        Interlocked.Exchange(ref itemsEmitted, 0);
+                        emit();
+                      }, observer.OnError, observer.OnCompleted);
+            return new CompositeDisposable(sourceSub, timer);
+          });
+    }
     public static IObservable<TSource> CatchAndStop<TSource>(
       this IObservable<TSource> source) => source.CatchAndStop(() => new Exception());
 

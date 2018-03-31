@@ -572,14 +572,6 @@ namespace HedgeHog.Alice.Client {
       base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
     }
 
-    private static IObservable<(IBApi.Contract contract, double bid, double ask, DateTime time)> ReqPrice(IBWraper ib, (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty, (IBApi.Contract contract, IList<IBApi.Contract> options) combo) {
-      return ib._ibClient.ReqPrice(combo.contract.SideEffect(Subscribe))
-        .SkipWhile(t => t.bid <= 0 || t.ask <= 0)
-        .Window(TimeSpan.FromSeconds(10)).SelectMany(w => w.DefaultIfEmpty(priceEmpty))
-        .FirstAsync();
-      void Subscribe(IBApi.Contract c) => ib._ibClient.SetOfferSubscription(c, _ => { });
-    }
-
     [BasicAuthenticationFilter]
     public void OpenButterfly(string instrument, int quantity) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;

@@ -501,9 +501,8 @@ namespace IBApp {
          .ToArray()
          );
       IObservable<(IBApi.Contract contract, double bid, double ask, DateTime time)> ReqPrice(IBClientCore ib, (IBApi.Contract contract, IList<IBApi.Contract> options) combo) {
-        return ib.ReqPrice(combo.contract.SideEffect(Subscribe))
-          .SkipWhile(t => t.bid <= 0 || t.ask <= 0)
-          .Window(TimeSpan.FromSeconds(10)).SelectMany(w => w.DefaultIfEmpty(priceEmpty))
+        return ib.ReqPrice(combo.contract.SideEffect(Subscribe), 1, false)
+          .DefaultIfEmpty(priceEmpty)
           .FirstAsync();
         void Subscribe(IBApi.Contract c) => ib.SetOfferSubscription(c, _ => { });
       }
