@@ -24,11 +24,14 @@ using OptionPriceHandler = System.Action<int, int, double, double, double, doubl
 using ReqSecDefOptParams = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ErrorHandler = System.Action<int, int, string, System.Exception>;
-using OPTION_CHAIN = System.IObservable<(string exchange, string tradingClass, string multiplier, System.DateTime expiration, double[] strikes, double price, string symbol, string currency)>;
+using OPTION_CHAIN_OBSERVABLE = System.IObservable<(string exchange, string tradingClass, string multiplier, System.DateTime[] expirations, double[] strikes, double price, string symbol, string currency)>;
+using OPTION_CHAIN_DICT = System.Collections.Concurrent.ConcurrentDictionary<string,(string exchange, string tradingClass, string multiplier, System.DateTime[] expirations, double[] strikes, double price, string symbol, string currency)>;
 using OPTION_PRICE_OBSERVABLE = System.IObservable<(int tickerId, int field, double impliedVolatility, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)>;
+using SEC_DEF_OPTIONS_DICT = System.Collections.Concurrent.ConcurrentDictionary<(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId), (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using System.Reactive.Subjects;
 using System.Diagnostics;
-using static IBApp.IBApiMixins;
+using static IBApi.IBApiMixins;
+using System.Collections.Concurrent;
 
 namespace IBApp {
   public class IBClientCore :IBClient, ICoreFX {
@@ -66,8 +69,8 @@ namespace IBApp {
     #region Properties
     public Action<object> Trace => _trace;
     public Action<object> TraceTemp => o => { };
-    private bool _verbose = true;
-    public void Verbouse(object o) { if(_verbose) _trace(o); }
+    private bool _verbose = false;
+    public void Verbose(object o) { if(_verbose) _trace(o); }
 
     #endregion
 
@@ -210,11 +213,9 @@ namespace IBApp {
     int NextReqId() => ValidOrderId();
 
     public IObservable<ContractDetails> ReqContractDetailsCached(Contract contract) {
-      return contract.FromDetailsCache().ToObservable().ToArray()
-        .Where(c => c.Any())
-        .Concat(Observable.Defer(() => ReqContractDetailsAsync(contract).ToArray()))
-        .Take(1)
-        .SelectMany(b => b);
+      return contract.FromDetailsCache().ToArray().ToObservable()
+        .Concat(Observable.Defer(() => ReqContractDetailsAsync(contract)))
+        .Take(1);
     }
 
     IScheduler esReqCont = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
@@ -231,7 +232,7 @@ namespace IBApp {
         error => Trace($"{nameof(ReqContractDetailsAsync)}: {new { c = contract, error }}"),
         () => { }//Trace($"{nameof(ReqContractDetailsAsync)} {reqId} Error done")
         )
-        .Select(t => t.cd.AddToCache())
+        .Select(t => t.cd.SideEffect(d => Verbose($"Adding {d.LongName}")).AddToCache())
         .ObserveOn(esReqCont)
       //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
       ;
@@ -280,16 +281,7 @@ namespace IBApp {
       return (o, end);
     }
 
-    Func<string, string, string, int, ReqSecDefOptParamsList> _ReqSecDefOptParamsList;
-    public ReqSecDefOptParamsList ReqSecDefOptParams(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) => (_ReqSecDefOptParamsList
-      ?? (_ReqSecDefOptParamsList = new Func<string, string, string, int, ReqSecDefOptParamsList>((us, ex, st, comId)
-          => ReqSecDefOptParamsImpl(us, ex, st, comId)))
-      .Memoize()
-      )(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId);
 
-    public ReqSecDefOptParamsList ReqSecDefOptParamsImpl(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
-      return ReqSecDefOptParamsAsync(underlyingSymbol, futFopExchange, underlyingSecType, underlyingConId).ToEnumerable().ToArray();
-    }
 
     IScheduler esSecDef = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqSecDefOpt" });
     public ReqSecDefOptParams ReqSecDefOptParamsAsync(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
@@ -308,37 +300,52 @@ namespace IBApp {
       return cd;
     }
 
-    public IObservable<Contract> ReqCurrentOptionsAsync(string symbol, bool[] isCalls, int optionsCount = 3) {
+    public IObservable<Contract> ReqCurrentOptionsAsync(string symbol, bool[] isCalls, int expirationsCount = 1, int strikesCount = 4) {
+      var x = (
+                from t in ReqOptionChainCache(symbol)
+                from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(strikesCount * 2).ToArray()
+                from isCall in isCalls
+                from expiration in t.expirations.Take(expirationsCount).ToArray()
+                select (t.tradingClass, expiration, strike, isCall)
+                )
+                .ToArray();
       return (
-        from t in ReqOptionChainsAsync(symbol)
-        from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(optionsCount)
-        from isCall in isCalls
-        let option = MakeOptionSymbol(t.tradingClass, t.expiration, strike, isCall)
+        from ts in x
+        from t in ts
+        let option = MakeOptionSymbol(t.tradingClass, t.expiration, t.strike, t.isCall)
         from o in ReqContractDetailsCached(option.ContractFactory())
         select o.AddToCache().Summary//.SideEffect(c=>Trace(new { optionContract = c }))
-       );
+       ).Take(strikesCount * expirationsCount);
     }
 
-    public OPTION_CHAIN ReqOptionChainsAsync(string symbol) {
-      var optionChain = (
-        from cd in ReqContractDetailsCached(symbol.ContractFactory())
-        from price in TryGetPrice(symbol)
+    public static OPTION_CHAIN_DICT OptionChainCache = new OPTION_CHAIN_DICT(StringComparer.OrdinalIgnoreCase);
+    public OPTION_CHAIN_OBSERVABLE ReqOptionChainCache(string symbol) =>
+      OptionChainCache.TryGetValue(symbol)
+      .ToArray()
+      .Do(x => {
+      })
+      .ToObservable()
+      .Concat(Observable.Defer(() => ReqOptionChainAsync(symbol)))
+      .Take(1);
+
+    public OPTION_CHAIN_OBSERVABLE ReqOptionChainAsync(string symbol) =>
+      ReqOptionChainsAsync(symbol)
+      .ToArray()
+      .SelectMany(a => a.OrderBy(x => x.expirations.Min()).ThenByDescending(x => x.strikes.Length))
+      .Where(a => a.exchange == "SMART")
+      .Take(1)
+      .Do(t => OptionChainCache.TryAdd(symbol, t));
+
+    public OPTION_CHAIN_OBSERVABLE ReqOptionChainsAsync(string symbol) =>
+      from cd in ReqContractDetailsCached(symbol.ContractFactory())
+      from price in TryGetPrice(symbol)
         .Where(p => p.Bid > 0 && p.Ask > 0)
         .Select(p => p.Average)
         .ToObservable()
         .Concat(Observable.Defer(() => ReqPriceMarket(cd.Summary)))
         .Take(1)
-        from och in ReqSecDefOptParams(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
-        where och.exchange == "SMART"
-        from expiration in och.expirations.Select(e => e.FromTWSDateString())
-        select (och.exchange, och.tradingClass, och.multiplier, expiration, strikes: och.strikes.ToArray(), price, symbol = cd.Summary.Symbol, currency: cd.Summary.Currency)
-        )
-        .Aggregate((p, n) => p.expiration < n.expiration ? p : n);
-      //return optionChain
-      //  .SelectMany(l => l.OrderBy(t => t.strikes.Length).TakeLast(1))
-      //  .Take(1);
-      return optionChain;
-    }
+      from och in ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
+      select (och.exchange, och.tradingClass, och.multiplier, expirations: och.expirations.Select(e => e.FromTWSDateString()).ToArray(), strikes: och.strikes.ToArray(), price, symbol = cd.Summary.Symbol, currency: cd.Summary.Currency);
 
     public enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
     public IObservable<double> ReqPriceSafe(string symbol) =>
@@ -465,7 +472,7 @@ namespace IBApp {
       lock(_validOrderIdLock) {
         _validOrderId = obj + 1;
       }
-      Verbouse(new { _validOrderId });
+      Verbose(new { _validOrderId });
     }
     /// <summary>
     /// https://docs.microsoft.com/en-us/dotnet/api/system.threading.interlocked.increment?f1url=https%3A%2F%2Fmsdn.microsoft.com%2Fquery%2Fdev15.query%3FappId%3DDev15IDEF1%26l%3DEN-US%26k%3Dk(System.Threading.Interlocked.Increment);k(SolutionItemsProject);k(TargetFrameworkMoniker-.NETFramework,Version%3Dv4.6.2);k(DevLang-csharp)%26rd%3Dtrue&view=netframework-4.7.1

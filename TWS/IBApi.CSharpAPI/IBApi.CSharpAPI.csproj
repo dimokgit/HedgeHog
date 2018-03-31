@@ -91,6 +91,7 @@
     <Compile Include="MarginCondition.cs" />
     <Compile Include="MessageValidator.cs" />
     <Compile Include="MinServerVer.cs" />
+    <Compile Include="Mixins.cs" />
     <Compile Include="OperatorCondition.cs" />
     <Compile Include="Order.cs" />
     <Compile Include="OrderComboLeg.cs" />

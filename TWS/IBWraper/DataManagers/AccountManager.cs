@@ -11,7 +11,7 @@ using System.Reactive.Subjects;
 using ReactiveUI;
 using PosArg = System.Tuple<string, IBApi.Contract, IBApp.PositionMessage>;
 using OpenOrderArg = System.Tuple<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
-using PositionHandker = System.Action<string, IBApi.Contract, double, double>;
+using PositionHandler = System.Action<string, IBApi.Contract, double, double>;
 using OrderStatusHandler = System.Action<int, string, double, double, double, int, int, double, int, string>;
 using PortfolioHandler = System.Action<IBApi.Contract, double, double, double, double, double, double, string>;
 using OpenOrderHandler = System.Action<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
@@ -21,11 +21,12 @@ using TickPriceHandler = System.Action<int, int, double, int>;
 using ReqSecDefOptParams = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ORDER_STATUS = System.Nullable<(string status, double filled, double remaining, bool isDone)>;
+using POSITION_OBSERVABLE = System.IObservable<(string account, IBApi.Contract contract, double pos, double avgCost)>;
 using static IBApp.AccountManager;
 using System.Reactive.Disposables;
 using HedgeHog.Core;
 using System.Threading;
-using static IBApp.IBApiMixins;
+using static IBApi.IBApiMixins;
 namespace IBApp {
   public partial class AccountManager :DataManager, IDisposable {
     public enum OrderCancelStatuses { Cancelled };
@@ -105,7 +106,7 @@ namespace IBApp {
       }
       IScheduler elFactory() => TaskPoolScheduler.Default;// new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true });
 
-      PositionsObservable = Observable.FromEvent<PositionHandker, (string account, Contract contract, double pos, double avgCost)>(
+      PositionsObservable = Observable.FromEvent<PositionHandler, (string account, Contract contract, double pos, double avgCost)>(
         onNext => (string a, Contract b, double c, double d) => Try(() => onNext((a, b, c, d)), nameof(IbClient.Position)),
         h => IbClient.Position += h,
         h => IbClient.Position -= h
@@ -165,6 +166,7 @@ namespace IBApp {
         .Select(t => new { t.contract.LocalSymbol, t.position, t.unrealisedPNL, t.accountName })
         .Timeout(TimeSpan.FromSeconds(5))
         .Catch((Exception e) => Observable.Return(new { LocalSymbol = "", position = 0.0, unrealisedPNL = 0.0, accountName = "" }))
+        //.Catch(Catcher)
         .Where(x => x.position != 0)
         .Subscribe(x => _verbous("* " + new { Portfolio = x }), () => _verbous($"portfolioStream is done."))
         .SideEffect(s => _strams.Add(s));
@@ -175,8 +177,6 @@ namespace IBApp {
       _defaultMessageHandler($"{nameof(AccountManager)}:{_accountId} is ready");
     }
 
-    private static IObservable<TSource> CatchMe<TSource>(Exception arg) => throw new NotImplementedException();
-    //static IObservable<TSource> CatchMe<TException, TSource>(TException exc) => Observable.Empty<TSource>();// where TException : Exception;;
     #region TraceSubject Subject
     object _TraceSubjectLocker = new object();
     ISubject<object> _TraceSubject;
@@ -229,7 +229,9 @@ namespace IBApp {
     #endregion
 
     #region Position
+    public static bool NoPositionsPlease = false;
     void OnPosition(Contract contract, double position, double averageCost) {
+      if(NoPositionsPlease) return;
       var posMsg = new PositionMessage("", contract, position, averageCost);
       if(position == 0) {
         OpenTrades
@@ -457,15 +459,15 @@ namespace IBApp {
 
     Action IfEmpty(object o) => () => throw new Exception(o.ToJson());
     #region Butterfly
-    public IObservable<(Contract contract, IList<Contract> options)> MakeButterflies(string symbol, int count) =>
-       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true }, count)
+    public IObservable<(Contract contract, Contract[] options)> MakeButterflies(string symbol) =>
+       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true })
         .ToArray()
         //.Select(a => a.OrderBy(c => c.Strike).ToArray())
         .SelectMany(reqOptions =>
           reqOptions
           .Buffer(3, 1)
           .TakeWhile(b => b.Count == 3)
-          .Select(options => MakeButterfly(symbol, options).Select(contract => (contract.AddToCache(), options))))
+          .Select(options => MakeButterfly(symbol, options).Select(contract => (contract.AddToCache(), options.ToArray()))))
           .Merge();
 
     public IEnumerable<(string straddle, double netPL, double position)> TradeStraddles() {
@@ -481,11 +483,11 @@ namespace IBApp {
         select (strdl.mash, strdl.source.Select(x => x.trade).Gross(), strdl.source.Max(s => s.trade.Position)));
       return straddles;
     }
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strike)[]> 
+    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strike)[]>
       CurrentStraddles(string symbol, int count) {
       (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
-        from combo in MakeStraddle(symbol, count)
+        from combo in MakeStraddle(symbol, 1, 4)
         from p in IbClient.TryGetPrice(combo.contract.Instrument).Select(p => (combo.contract, bid: p.Bid, ask: p.Ask, time: IbClient.ServerTime))
         .ToObservable()
         .Concat(Observable.Defer(() => ReqPrice(IbClient, combo)))
@@ -517,16 +519,15 @@ namespace IBApp {
       }
     }
 
-    public IObservable<(Contract contract, IList<Contract> options)> MakeStraddle(string symbol, int count) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, new[] { true, false }, count)
+    public IObservable<(Contract contract, Contract[] options)> MakeStraddle(string symbol, int expirationsCount, int count) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, new[] { true, false }, expirationsCount, count * 2)
+      //.Take(count*2)
       .ToArray()
-      .Select(a => a.OrderBy(c => c.Strike).ToArray())
-      .SelectMany(reqOptions =>
-        reqOptions
-        .Buffer(2)
-        .TakeWhile(b => b.Count == 2)
-        .Select(options => MakeStraddle(symbol, options).Select(contract => (contract.AddToCache(), options)))
-      )
+      .SelectMany(reqOptions => reqOptions
+      .GroupBy(c => new { c.Strike, c.LastTradeDateOrContractMonth })
+      .ToDictionary(c => c.Key, c => c.ToArray())
+      .Where(c => c.Value.Length == 2)
+      .Select(options => MakeStraddle(symbol, options.Value).Select(contract => (contract.AddToCache(), options.Value))))
       .Merge();
 
     public IObservable<Contract> MakeStraddle(string symbol, IList<Contract> contractOptions)
@@ -697,7 +698,7 @@ namespace IBApp {
       }
     }
 
-    public IObservable<(string account, Contract contract, double pos, double avgCost)> PositionsObservable { get; private set; }
+    public POSITION_OBSERVABLE PositionsObservable { get; private set; }
 
     #endregion
     void OnWhatIf(Action a) => WhatIfSubject.OnNext(a);

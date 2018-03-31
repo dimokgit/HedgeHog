@@ -27,9 +27,10 @@ namespace HedgeHog.Tests {
       var s3 = "aaaEEEEccc";
       var mash1 = s1.MashDiffs(s2, s3);
       Console.WriteLine(new { mash1 });
-      Assert.AreEqual("aaa[bb][ddd][EEEE]ccc", mash1);
+      Assert.AreEqual("aaa[bb-ddd-EEEE]ccc", mash1);
       Assert.AreEqual("aaabbccc", s1.MashDiffs());
       Assert.AreEqual("", new string[0].MashDiffs());
+      Assert.AreEqual("SPXW  180402[P0264-C0266]0000", new[] { "SPXW  180402P02640000", "SPXW  180402C02660000" }.MashDiffs());
     }
 
 

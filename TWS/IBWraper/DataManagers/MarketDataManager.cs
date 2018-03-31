@@ -56,11 +56,11 @@ namespace IBApp {
         Trace($"AddRequest:{contract} already requested");
       else {
         var reqId = NextReqId();
-        Trace($"AddRequest:{reqId}=>{contract}");
+        Verbose($"AddRequest:{reqId}=>{contract}");
         IbClient.ErrorObservable
           .Where(t => t.id == reqId)
           .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
-          .Take(2)
+          .Take(1)
           .Merge()
           .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"AddRequest: {contract} => {reqId} Error done."));
         IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
@@ -92,10 +92,10 @@ namespace IBApp {
       }
     }
     private void OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
-      Trace($"{nameof(OnTickPrice)}{(requestId, field, price, canAutoExecute)}");
       if(!activeRequests.ContainsKey(requestId)) return;
       var priceMessage = new TickPriceMessage(requestId, field, price, canAutoExecute);
       var price2 = activeRequests[requestId].price;
+      Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
       if(priceMessage.Price == 0)
         return;
       switch(priceMessage.Field) {

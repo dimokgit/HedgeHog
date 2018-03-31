@@ -13,14 +13,20 @@ using System.Reactive.Subjects;
 
 namespace HedgeHog {
   public static class ObservableExtensions {
+    public static IObservable<TSource> CatchAndStop<TSource>(
+      this IObservable<TSource> source) => source.CatchAndStop(() => new Exception());
+
+    public static IObservable<TSource> CatchAndStop<TSource, TException>(
+      this IObservable<TSource> source, Func<TException> witness
+      ) where TException : Exception
+      => source.Catch((TException exc) => Observable.Empty<TSource>());
     public static IObservable<T> Spy<T>(this IObservable<T> source, string opName = null) {
       opName = opName ?? "IObservable";
       Console.WriteLine("{0}: Observable obtained on Thread: {1}",
                         opName,
                         Thread.CurrentThread.ManagedThreadId);
 
-      return Observable.Create<T>(obs =>
-      {
+      return Observable.Create<T>(obs => {
         Console.WriteLine("{0}: Subscribed to on Thread: {1}",
                           opName,
                           Thread.CurrentThread.ManagedThreadId);
@@ -88,7 +94,7 @@ namespace HedgeHog {
       Func<List<T>, T, List<T>> accumulator = (list, arg2) => {
         list.Add(arg2);
 
-        if (list.Count > length)
+        if(list.Count > length)
           list.RemoveRange(0, (list.Count - length));
 
         return list;
@@ -125,22 +131,22 @@ namespace HedgeHog {
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public static ISubject<T> InitBufferedObservable<T>(this ISubject<T> subject, ref IObservable<T> observable, Action<Exception> onError) {
-      if (subject != null) {
-        if (observable == null) throw new Exception("observable is null");
+      if(subject != null) {
+        if(observable == null) throw new Exception("observable is null");
         return subject;
       }
-      if (observable != null) throw new Exception("observable is not null");
+      if(observable != null) throw new Exception("observable is not null");
       subject = new Subject<T>();
       observable = subject.InitBufferedObservable(onError);
       return subject;
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public static IObservable<T> InitBufferedObservable<T>(this IObservable<T> observable,ref ISubject<T> subject , Action<Exception> onError) {
-      if (observable != null) {
-        if (subject == null) throw new Exception("subject is null");
+    public static IObservable<T> InitBufferedObservable<T>(this IObservable<T> observable, ref ISubject<T> subject, Action<Exception> onError) {
+      if(observable != null) {
+        if(subject == null) throw new Exception("subject is null");
         return observable;
       }
-      if (subject == null) 
+      if(subject == null)
         subject = new Subject<T>();
       return observable = subject.InitBufferedObservable(onError);
     }
@@ -152,14 +158,12 @@ namespace HedgeHog {
     }
     public static IObservable<T> ObserveLatestOn<T>(
     this IObservable<T> source, IScheduler scheduler) {
-      return Observable.Create<T>(observer =>
-      {
+      return Observable.Create<T>(observer => {
         Notification<T> outsideNotification = null;
         var gate = new object();
         bool active = false;
         var cancelable = new MultipleAssignmentDisposable();
-        var disposable = source.Materialize().Subscribe(thisNotification =>
-        {
+        var disposable = source.Materialize().Subscribe(thisNotification => {
           bool wasNotAlreadyActive;
           lock(gate) {
             wasNotAlreadyActive = !active;

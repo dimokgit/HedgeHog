@@ -8,16 +8,15 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace IBApp {
-  static class IBApiMixins {
-    public static IEnumerable<Contract> Sort(this IEnumerable<Contract> l) => l.OrderBy(c => c.Right);
+namespace IBApi {
+  public static class IBApiMixins {
+    public static IEnumerable<Contract> Sort(this IEnumerable<Contract> l) => l.OrderBy(c=>c.Strike).ThenBy(c => c.Right);
     public static string MakeOptionSymbol(string tradingClass, DateTime expiration, double strike, bool isCall) {
       var date = expiration.ToTWSOptionDateString();
       var cp = isCall ? "C" : "P";
       var price = strike.ToString("00000.000").Replace(".", "");
       return $"{tradingClass.PadRight(6)}{date}{cp}{price}";
     }
-
     /// <summary>
     /// 
     /// </summary>

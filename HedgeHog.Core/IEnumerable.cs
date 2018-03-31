@@ -30,6 +30,11 @@ namespace HedgeHog {
       }
     }
 
+    public static IEnumerable<TValue> TryGetValue<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key) {
+      if(dict.TryGetValue(key, out var value))
+        yield return value;
+    }
+
     #region Counter
     public static IEnumerable<T> Count<T, C>(this IEnumerable<T> source, int expectedCount, C context) =>
       source.Count(expectedCount, (Action<int>)null, (Action<int>)null, context);

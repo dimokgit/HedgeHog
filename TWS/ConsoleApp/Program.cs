@@ -77,7 +77,7 @@ namespace ConsoleApp {
         //  exc => { });
 
       }
-      IList<Contract> options = new Contract[0];
+      AccountManager.NoPositionsPlease = true;
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         //ShowTrades(fw);
         //ibClient.ReqPrice("USD.JPY".ContractFactory()).Subscribe(price => HandleMessage(new { price })); return;
@@ -86,10 +86,28 @@ namespace ConsoleApp {
         //return;
         //LoadHistory(ibClient, new[] { "SPX".ContractFactory() });
         //return;
-
+        {
+          var symbol = "spx";
+          var straddlesCount = 10;
+          var expirationCount = 2;
+          fw.AccountManager.MakeStraddle(symbol, expirationCount, straddlesCount)
+          .ToEnumerable()
+          .ToArray()
+          .Count(straddlesCount * expirationCount, new { })
+          .Do(c => Passager.ThrowIf(() => !c.contract.Key.Contains("[C-P]")))
+          .ForEach(x => HandleMessage(x.contract));
+          fw.AccountManager.MakeStraddle(symbol, expirationCount, straddlesCount)
+          .ToEnumerable()
+          .ToArray()
+          .Count(straddlesCount * expirationCount, new { })
+          .Do(c => Passager.ThrowIf(() => !c.contract.Key.Contains("[C-P]")))
+          .ForEach(x => HandleMessage(x.contract));
+          IBClientCore.OptionChainCache.ForEach(HandleMessage);
+        }
+        return;
         var option = "VXX   180329C00051500";
         var cds = ibClient.ReqContractDetailsAsync(option.ContractFactory()).ToEnumerable().ToArray();
-        var symbols = new[] { "VXX", "SPY" };
+        var symbols = new[] { "SPX", "VXX", "SPY" };
         IList<Contract> ProcessSymbol(string symbol) {
           //HandleMessage(new { symbol } + "");
           // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
@@ -101,8 +119,8 @@ namespace ConsoleApp {
           //var cds = ibClient.ReqContractDetails(symbol);
           //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
 
-          return fw.AccountManager.MakeButterflies(symbol,3)
-          .Merge(fw.AccountManager.MakeStraddle(symbol, 3))
+          return fw.AccountManager.MakeButterflies(symbol).Take(3)
+          .Merge(fw.AccountManager.MakeStraddle(symbol, 1, 3))
           .ToEnumerable()
           .Do(t => t.options.ForEach(c => ibClient.SetOfferSubscription(c, _ => { })))
           .Select(c => c.contract)
@@ -122,7 +140,7 @@ namespace ConsoleApp {
         timeOut.Dispose();
         sw.Stop();
         Passager.ThrowIf(() => combos.Count != symbols.Length);
-        combos.ForEach(combo => Passager.ThrowIf(() => combo.Count < 4));
+        combos.ForEach(combo => Passager.ThrowIf(() => combo.Count < 2));
         HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
         Contract.Contracts.OrderBy(c => c + "").ForEach(cached => HandleMessage(new { cached }));
         HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
@@ -218,9 +236,12 @@ namespace ConsoleApp {
         Console.Error.WriteLine(new ErrorMessage(id, errorCode, str));
     }
 
-
-    private static void HandleMessage<T>(T message) => Console.WriteLine(DateTime.Now + ": " + message);
-    private static void HandleMessage(string message) => Console.WriteLine(DateTime.Now + ": " + message);
+    static readonly string _tracePrefix;// = "OnTickPrice";
+    private static void HandleMessage<T>(T message) => HandleMessage(message + "");
+    private static void HandleMessage(string message) {
+      if(_tracePrefix.IsNullOrEmpty() || message.StartsWith(_tracePrefix))
+        Console.WriteLine(DateTime.Now + ": " + message);
+    }
     private static void HandleMessageFake(string message) { }
     private static void HandleMessage(HistoricalDataMessage historicalDataEndMessage) {
       HandleMessage(historicalDataEndMessage + "");
