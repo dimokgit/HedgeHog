@@ -16,8 +16,10 @@ namespace IBApp {
     private int currentTicker = 0;
     private readonly int _baseReqId;
     public static bool UseVerbose = false;
+    public static bool DoShowRequestErrorDone = true;
 
     protected Action<object> Trace { get; }
+    protected Action<bool, object> TraceIf => (b, o) => { if(b) Trace(o); };
     protected Action<object> Verbose => o => { if(UseVerbose) Trace(o); };
     protected IBClientCore IbClient { get; private set; }
     #endregion

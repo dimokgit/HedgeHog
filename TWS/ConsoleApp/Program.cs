@@ -38,6 +38,7 @@ namespace ConsoleApp {
     static void Main(string[] args) {
       ShowWindow(ThisConsole, MAXIMIZE);
       int _nextValidId = 0;
+      DataManager.DoShowRequestErrorDone = false;
 
       TradesManagerStatic.AccountCurrency = "USD";
       var ibClient = IBClientCore.Create(o => HandleMessage(o + ""));
@@ -60,54 +61,30 @@ namespace ConsoleApp {
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       var contract = spy;
-      void OpenTrade(IList<(string k, Contract c)> contracts) {
-        HandleMessage("\n" + string.Join("\n", contracts));
-        contracts.Take(1).ForEach(c =>
-        ibClient.ReqBidAsk(c.c)
-          .Subscribe(p => HandleMessage(new { c, p } + "")));
-        HandleMessage($"Butterflys {contracts.Count()} are done");
-        //contracts.Take(1).ForEach(c => fw.AccountManager.OpenTrade(c.c, 10));
-        //var counter = 0;
-        //var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
-        //HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
-        //new HistoryLoader<Rate>(ibClient, contracts.First().c, 1440 * 3, dateEnd, TimeSpan.FromDays(4), TimeUnit.D, BarSize._1_min,
-        //  map,
-        //  list => HandleMessage(new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate } } + ""),
-        //  dates => HandleMessage(new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter } + ""),
-        //  exc => { });
-
-      }
       AccountManager.NoPositionsPlease = true;
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         //ShowTrades(fw);
-        //ibClient.ReqPrice("USD.JPY".ContractFactory()).Subscribe(price => HandleMessage(new { price })); return;
-        //var spx = ibClient.ReqContractDetails("SPX".ContractFactory());
-        //ibClient.SetOfferSubscription(spx[0].Summary, _ => { });
-        //return;
-        //LoadHistory(ibClient, new[] { "SPX".ContractFactory() });
-        //return;
-        {
-          var symbol = "spx";
-          var straddlesCount = 10;
-          var expirationCount = 2;
-          fw.AccountManager.MakeStraddle(symbol, expirationCount, straddlesCount)
-          .ToEnumerable()
-          .ToArray()
-          .Count(straddlesCount * expirationCount, new { })
-          .Do(c => Passager.ThrowIf(() => !c.contract.Key.Contains("[C-P]")))
-          .ForEach(x => HandleMessage(x.contract));
-          fw.AccountManager.MakeStraddle(symbol, expirationCount, straddlesCount)
-          .ToEnumerable()
-          .ToArray()
-          .Count(straddlesCount * expirationCount, new { })
-          .Do(c => Passager.ThrowIf(() => !c.contract.Key.Contains("[C-P]")))
-          .ForEach(x => HandleMessage(x.contract));
-          IBClientCore.OptionChainCache.ForEach(HandleMessage);
-        }
-        return;
+        //TestStraddleds();return;
         var option = "VXX   180329C00051500";
         var cds = ibClient.ReqContractDetailsAsync(option.ContractFactory()).ToEnumerable().ToArray();
         var symbols = new[] { "SPX", "VXX", "SPY" };
+        var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1)).Subscribe();
+        Stopwatch sw = Stopwatch.StartNew();
+        var combos = symbols.Take(10).Buffer(10).Repeat(1).Select(b => b.Select(ProcessSymbol).Count(3, new { }).ToArray())
+        .Do(list => {
+          //Passager.ThrowIf(() => list.Count != symbols.Length);
+          HandleMessage(new { sw.ElapsedMilliseconds });
+          sw.Restart();
+        })
+        .ToList();
+        sw.Stop();
+        timeOut.Dispose();
+        //combos.ForEach(combo => Passager.ThrowIf(() => combo.Count < 2));
+        HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
+        //Contract.Contracts.OrderBy(c => c + "").ForEach(cached => HandleMessage(new { cached }));
+        //HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
+        LoadHistory(ibClient, new[] { "spx".ContractFactory() });
+
         IList<Contract> ProcessSymbol(string symbol) {
           //HandleMessage(new { symbol } + "");
           // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
@@ -119,9 +96,7 @@ namespace ConsoleApp {
           //var cds = ibClient.ReqContractDetails(symbol);
           //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
 
-          return fw.AccountManager.MakeButterflies(symbol).Take(3)
-          .Merge(fw.AccountManager.MakeStraddle(symbol, 1, 3))
-          .ToEnumerable()
+          return TestStraddleds(symbol)
           .Do(t => t.options.ForEach(c => ibClient.SetOfferSubscription(c, _ => { })))
           .Select(c => c.contract)
           .ToArray()
@@ -129,31 +104,22 @@ namespace ConsoleApp {
             HandleMessage(new { burrefly });
             ibClient.SetOfferSubscription(burrefly, _ => { });
             ibClient.ReqPrice(burrefly)
-            .Throttle(TimeSpan.FromSeconds(1))
+            .Take(1)
             .Subscribe(price => HandleMessage($"Observing:{price}"));
           }).ToArray();
         }
-        var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1000)).Subscribe();
-
-        Stopwatch sw = Stopwatch.StartNew();
-        var combos = symbols.Take(10).Repeat(1).Select(ProcessSymbol).ToList();
-        timeOut.Dispose();
-        sw.Stop();
-        Passager.ThrowIf(() => combos.Count != symbols.Length);
-        combos.ForEach(combo => Passager.ThrowIf(() => combo.Count < 2));
-        HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
-        Contract.Contracts.OrderBy(c => c + "").ForEach(cached => HandleMessage(new { cached }));
-        HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
-        HandleMessage(new { sw.ElapsedMilliseconds });
-        LoadHistory(ibClient, combos[0]);
-
-        //var och = fw.AccountManager.BatterflyFactory(symbol).ToArray();
-        //OpenTrade(och);
-
-        //.Merge(fw.AccountManager.BatterflyFactory("SPY").ToArray())
-        //.Merge(fw.AccountManager.BatterflyFactory(fw, "VXX"))
-        //.Subscribe(och => { OpenTrade(och); },exc=>HandleError(exc));
-        //fw.AccountManager.ReqContractDetails(spx).Subscribe(cd => HandleMessage(cd.ToJson()), () => HandleMessage(new { ContractDetails = new { Completed = contract.LocalSymbol } } + ""));
+        (Contract contract, Contract[] options)[] TestStraddleds(string symbol) {
+          var straddlesCount = 6;
+          var expirationCount = 1;
+          var contracts = fw.AccountManager.MakeStraddle(symbol, expirationCount, straddlesCount)
+          .ToEnumerable()
+          .ToArray()
+          .Count(straddlesCount * expirationCount, i => { Debugger.Break(); }, i => { Debugger.Break(); }, new { straddlesCount, expirationCount })
+          .Do(c => Passager.ThrowIf(() => !c.contract.Key.Contains("[C-P]")))
+          .ToArray();
+          //Passager.ThrowIf(() => !IBClientCore.OptionChainCache.Count(1, new { }).Do(HandleMessage).Any(x => x.Value.tradingClass == "SPXW"));
+          return contracts;
+        }
       });
 
       if(ibClient.LogOn("127.0.0.1", 7497 + "", 10 + "", false)) {

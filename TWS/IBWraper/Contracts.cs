@@ -33,19 +33,20 @@ namespace IBApp {
         ComboLegs = contract.ComboLegs
       };
 
-    public static Contract ContractFactory(this string pair) =>
-     pair.IsCurrenncy()
-      ? FxContract(pair)
-      : pair.IsIndex()
-      ? Index(pair.Split(' ').First(), "")
-      : pair.IsOption()
-      ? Option(pair)
-      : pair.IsFuture()
-      ? Future(pair)
-      : pair.IsCommodity()
-      ? Commodity(pair)
-      : USStock(pair);
-
+    public static Contract ContractFactory(this string pair) {
+      pair = pair.ToUpper();
+      return pair.IsCurrenncy()
+       ? FxContract(pair)
+       : pair.IsIndex()
+       ? Index(pair.Split(' ').First(), "")
+       : pair.IsOption()
+       ? Option(pair)
+       : pair.IsFuture()
+       ? Future(pair)
+       : pair.IsCommodity()
+       ? Commodity(pair)
+       : USStock(pair);
+    }
     public static Contract FxContract(string pair) {
       return FxPair(pair);
     }

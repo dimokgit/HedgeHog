@@ -15,7 +15,6 @@ using IBSampleApp.util;
 namespace IBApp {
   public class MarketDataManager :DataManager {
     const int TICK_ID_BASE = 10000000;
-
     private readonly ConcurrentDictionary<string, Price> _currentPrices = new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
     private Dictionary<int, (Contract contract, Price price)> activeRequests = new Dictionary<int, (Contract contract, Price price)>();
     public Action<Contract, string, Action<Contract>> AddRequest = (a1, a2, a3) => {
@@ -62,7 +61,7 @@ namespace IBApp {
           .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
           .Take(1)
           .Merge()
-          .Subscribe(t => Trace($"{contract}: {t}"), () => Trace($"AddRequest: {contract} => {reqId} Error done."));
+          .Subscribe(t => Trace($"{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
         IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
         activeRequests.Add(reqId, (contract, new Price(contract.Instrument)));
       }
@@ -95,7 +94,7 @@ namespace IBApp {
       if(!activeRequests.ContainsKey(requestId)) return;
       var priceMessage = new TickPriceMessage(requestId, field, price, canAutoExecute);
       var price2 = activeRequests[requestId].price;
-      Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
+      //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
       if(priceMessage.Price == 0)
         return;
       switch(priceMessage.Field) {

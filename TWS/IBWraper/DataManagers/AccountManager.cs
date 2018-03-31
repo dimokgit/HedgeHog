@@ -1,32 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using HedgeHog;
+using HedgeHog.Core;
 using HedgeHog.Shared;
 using IBApi;
-using HedgeHog;
+using ReactiveUI;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using ReactiveUI;
-using PosArg = System.Tuple<string, IBApi.Contract, IBApp.PositionMessage>;
-using OpenOrderArg = System.Tuple<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
-using PositionHandler = System.Action<string, IBApi.Contract, double, double>;
-using OrderStatusHandler = System.Action<int, string, double, double, double, int, int, double, int, string>;
-using PortfolioHandler = System.Action<IBApi.Contract, double, double, double, double, double, double, string>;
-using OpenOrderHandler = System.Action<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
-using ContDetHandler = System.Action<int, IBApi.ContractDetails>;
-using OptionsChainHandler = System.Action<int, string, int, string, string, System.Collections.Generic.HashSet<string>, System.Collections.Generic.HashSet<double>>;
-using TickPriceHandler = System.Action<int, int, double, int>;
-using ReqSecDefOptParams = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
-using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
-using ORDER_STATUS = System.Nullable<(string status, double filled, double remaining, bool isDone)>;
-using POSITION_OBSERVABLE = System.IObservable<(string account, IBApi.Contract contract, double pos, double avgCost)>;
-using static IBApp.AccountManager;
-using System.Reactive.Disposables;
-using HedgeHog.Core;
 using System.Threading;
 using static IBApi.IBApiMixins;
+using static IBApp.AccountManager;
+using OpenOrderHandler = System.Action<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
+using ORDER_STATUS = System.Nullable<(string status, double filled, double remaining, bool isDone)>;
+using OrderStatusHandler = System.Action<int, string, double, double, double, int, int, double, int, string>;
+using PortfolioHandler = System.Action<IBApi.Contract, double, double, double, double, double, double, string>;
+using POSITION_OBSERVABLE = System.IObservable<(string account, IBApi.Contract contract, double pos, double avgCost)>;
+using PositionHandler = System.Action<string, IBApi.Contract, double, double>;
 namespace IBApp {
   public partial class AccountManager :DataManager, IDisposable {
     public enum OrderCancelStatuses { Cancelled };
@@ -165,9 +157,8 @@ namespace IBApp {
         .Where(x => x.accountName == _accountId)
         .Select(t => new { t.contract.LocalSymbol, t.position, t.unrealisedPNL, t.accountName })
         .Timeout(TimeSpan.FromSeconds(5))
-        .Catch((Exception e) => Observable.Return(new { LocalSymbol = "", position = 0.0, unrealisedPNL = 0.0, accountName = "" }))
-        //.Catch(Catcher)
         .Where(x => x.position != 0)
+        .CatchAndStop(() => new TimeoutException())
         .Subscribe(x => _verbous("* " + new { Portfolio = x }), () => _verbous($"portfolioStream is done."))
         .SideEffect(s => _strams.Add(s));
       #endregion
@@ -278,7 +269,6 @@ namespace IBApp {
 
     private void OnError(int reqId, int code, string error, Exception exc) {
       if(!OrderContracts.TryGetValue(reqId, out var oc)) return;
-      IbClient.SetRequestHandled(reqId);
       if(new[] { 103, 110, 200, 201, 202, 203, 382, 383 }.Contains(code)) {
         //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
         OrderContracts[reqId].status = null;
