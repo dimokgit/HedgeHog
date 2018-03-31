@@ -24,8 +24,10 @@ using OptionPriceHandler = System.Action<int, int, double, double, double, doubl
 using ReqSecDefOptParams = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ErrorHandler = System.Action<int, int, string, System.Exception>;
-using OPTION_CHAIN_OBSERVABLE = System.IObservable<(string exchange, string tradingClass, string multiplier, System.DateTime[] expirations, double[] strikes, double price, string symbol, string currency)>;
-using OPTION_CHAIN_DICT = System.Collections.Concurrent.ConcurrentDictionary<string, (string exchange, string tradingClass, string multiplier, System.DateTime[] expirations, double[] strikes, double price, string symbol, string currency)>;
+
+using OPTION_CHAIN_OBSERVABLE = System.IObservable<(string exchange, string tradingClass, string multiplier, System.DateTime[] expirations, double[] strikes, string symbol, string currency)>;
+using OPTION_CHAIN_DICT = System.Collections.Concurrent.ConcurrentDictionary<string, (string exchange, string tradingClass, string multiplier, System.DateTime[] expirations, double[] strikes, string symbol, string currency)>;
+
 using OPTION_PRICE_OBSERVABLE = System.IObservable<(int tickerId, int field, double impliedVolatility, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)>;
 using PRICE_OBSERVABLE = System.IObservable<(IBApi.Contract contract, double bid, double ask, System.DateTime time)>;
 using SEC_DEF_OPTIONS_DICT = System.Collections.Concurrent.ConcurrentDictionary<(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId), (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
@@ -214,6 +216,7 @@ namespace IBApp {
     #region Req-* functions
     int NextReqId() => ValidOrderId();
 
+    public IObservable<ContractDetails> ReqContractDetailsCached(string symbol) => ReqContractDetailsCached(symbol.ContractFactory());
     public IObservable<ContractDetails> ReqContractDetailsCached(Contract contract) {
       return contract.FromDetailsCache().ToArray().ToObservable()
         .Concat(Observable.Defer(() => ReqContractDetailsAsync(contract)))
@@ -299,10 +302,10 @@ namespace IBApp {
       return cd;
     }
 
-    public IObservable<Contract> ReqCurrentOptionsAsync(string symbol, bool[] isCalls, int expirationsCount = 1, int strikesCount = 4) {
+    public IObservable<Contract> ReqCurrentOptionsAsync(string symbol,double price, bool[] isCalls, int expirationsCount = 1, int strikesCount = 4) {
       var x = (
                 from t in ReqOptionChainCache(symbol)
-                from strike in t.strikes.OrderBy(st => st.Abs(t.price)).Take(strikesCount * 2).Select((s, i) => (s, i)).ToArray()
+                from strike in t.strikes.OrderBy(st => st.Abs(price)).Take(strikesCount * 2).Select((s, i) => (s, i)).ToArray()
                 from isCall in isCalls
                 from expiration in t.expirations.Take(expirationsCount).ToArray()
                 select (t.tradingClass, expiration, strike, isCall)
@@ -312,7 +315,7 @@ namespace IBApp {
         from ts in x
         from t in ts.OrderBy(t => t.strike.i).ThenBy(t => t.expiration)
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, t.strike.s, t.isCall)
-        from o in ReqContractDetailsCached(option.ContractFactory()).Synchronize()
+        from o in ReqContractDetailsCached(option).Synchronize()
         select o.AddToCache().Summary//.SideEffect(c=>Trace(new { optionContract = c }))
        ).Take(strikesCount * expirationsCount);
     }
@@ -337,14 +340,14 @@ namespace IBApp {
 
     public OPTION_CHAIN_OBSERVABLE ReqOptionChainsAsync(string symbol) =>
       from cd in ReqContractDetailsCached(symbol.ContractFactory())
-      from price in TryGetPrice(symbol)
-        .Where(p => p.Bid > 0 && p.Ask > 0)
-        .Select(p => p.Average)
-        .ToObservable()
-        .Concat(Observable.Defer(() => ReqPriceMarket(cd.Summary)))
-        .Take(1)
+      //from price in TryGetPrice(symbol)
+      //  .Where(p => p.Bid > 0 && p.Ask > 0)
+      //  .Select(p => p.Average)
+      //  .ToObservable()
+      //  .Concat(Observable.Defer(() => ReqPriceMarket(cd.Summary)))
+      //  .Take(1)
       from och in ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId).Synchronize()
-      select (och.exchange, och.tradingClass, och.multiplier, expirations: och.expirations.Select(e => e.FromTWSDateString()).ToArray(), strikes: och.strikes.ToArray(), price, symbol = cd.Summary.Symbol, currency: cd.Summary.Currency);
+      select (och.exchange, och.tradingClass, och.multiplier, expirations: och.expirations.Select(e => e.FromTWSDateString()).ToArray(), strikes: och.strikes.ToArray(), symbol = cd.Summary.Symbol, currency: cd.Summary.Currency);
 
     enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
     public IObservable<(double bid, double ask)> ReqPriceSafe(string symbol) =>
@@ -355,7 +358,7 @@ namespace IBApp {
       .Concat(Observable.Defer(() => ReqPrice(symbol, 1, false).Select(p => (p.bid, p.ask))))
       .Take(1);
 
-    public IObservable<double> ReqMarketPrice(string symbol)
+    public IObservable<double> ReqPriceMarket(string symbol)
       => from cd in ReqContractDetailsCached(symbol.ContractFactory())
          from p in ReqPriceMarket(cd.Summary)
          select p;
@@ -370,7 +373,7 @@ namespace IBApp {
             _ReqMktDataSubject = new Subject<Action>();
             _ReqMktDataSubject
               .ObserveOn(NewThreadScheduler.Default)
-              .RateLimit(50)
+              .RateLimit(40)
               //.Do(_ => Thread.Sleep(100))
               .Subscribe(s => s(), exc => { });
           }

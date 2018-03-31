@@ -449,8 +449,8 @@ namespace IBApp {
 
     Action IfEmpty(object o) => () => throw new Exception(o.ToJson());
     #region Butterfly
-    public IObservable<(Contract contract, Contract[] options)> MakeButterflies(string symbol) =>
-       IbClient.ReqCurrentOptionsAsync(symbol, new[] { true })
+    public IObservable<(Contract contract, Contract[] options)> MakeButterflies(string symbol, double price) =>
+       IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true })
         .ToArray()
         //.Select(a => a.OrderBy(c => c.Strike).ToArray())
         .SelectMany(reqOptions =>
@@ -477,7 +477,8 @@ namespace IBApp {
       CurrentStraddles(string symbol, int count) {
       (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
-        from combo in MakeStraddle(symbol, 1, 4)
+        from price in IbClient.ReqPriceSafe(symbol)
+        from combo in MakeStraddle(symbol, price.bid.Avg(price.ask), 1, 4)
         from p in IbClient.TryGetPrice(combo.contract.Instrument).Select(p => (combo.contract, bid: p.Bid, ask: p.Ask, time: IbClient.ServerTime))
         .ToObservable()
         .Concat(Observable.Defer(() => ReqPrice(IbClient, combo)))
@@ -508,11 +509,11 @@ namespace IBApp {
       }
     }
 
-    public IObservable<(Contract contract, Contract[] options)> MakeStraddle(string symbol, int expirationsCount, int count) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, new[] { true, false }, expirationsCount, count * 2)
+    public IObservable<(Contract contract, Contract[] options)> MakeStraddle(string symbol, double price, int expirationsCount, int count) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationsCount, count * 2)
       //.Take(count*2)
       .ToArray()
-      .SelectMany(reqOptions => reqOptions
+      .SelectMany(reqOptions => reqOptions//.OrderBy(o=>o.Strike.Abs(price)).Take(count)
       .GroupBy(c => new { c.Strike, c.LastTradeDateOrContractMonth })
       .ToDictionary(c => c.Key, c => c.ToArray())
       .Where(c => c.Value.Length == 2)
@@ -520,7 +521,7 @@ namespace IBApp {
       .Merge();
 
     public IObservable<Contract> MakeStraddle(string symbol, IList<Contract> contractOptions)
-      => IbClient.ReqContractDetailsCached(symbol.ContractFactory())
+      => IbClient.ReqContractDetailsCached(symbol)
       .Select(cd => cd.Summary)
       .Select(contract => MakeStraddle(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Sort().Select(o => o.ConId).ToArray()));
 
@@ -551,7 +552,7 @@ namespace IBApp {
 
 
     public IObservable<Contract> MakeButterfly(string symbol, IList<Contract> contractOptions)
-      => IbClient.ReqContractDetailsCached(symbol.ContractFactory())
+      => IbClient.ReqContractDetailsCached(symbol)
       .Select(cd => cd.Summary)
       .Select(contract => MakeButterfly(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray()));
     public Contract MakeButterfly(Contract contract, IList<Contract> contractOptions)

@@ -101,9 +101,7 @@ namespace ConsoleApp {
           //HandleMessage(new { symbol } + "");
           // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
 
-          ibClient.ReqMarketPrice(symbol).ToEnumerable()
-          .Count(1, "ReqMarketPrice")
-          .ForEach(mp => HandleMessage($"{symbol}:{new { mp = mp.ToJson() }}"));
+          //ibClient.ReqPriceMarket(symbol).ToEnumerable().Count(1, "ReqMarketPrice").ForEach(mp => HandleMessage($"{symbol}:{new { mp = mp.ToJson() }}"));
 
           //var cds = ibClient.ReqContractDetails(symbol);
           //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
@@ -123,7 +121,10 @@ namespace ConsoleApp {
         (Contract contract, Contract[] options)[] TestStraddleds(string symbol) {
           var straddlesCount = 6;
           var expirationCount = 1;
-          var contracts = fw.AccountManager.MakeStraddle(symbol, expirationCount, straddlesCount)
+          var price = ibClient.ReqPriceSafe(symbol).Select(p=>p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}"));
+          var contracts = (from p in price
+                           from str in fw.AccountManager.MakeStraddle(symbol, p, expirationCount, straddlesCount)
+                           select str)
           .ToEnumerable()
           .ToArray()
           .Count(straddlesCount * expirationCount, i => { Debugger.Break(); }, i => { Debugger.Break(); }, new { straddlesCount, expirationCount })
