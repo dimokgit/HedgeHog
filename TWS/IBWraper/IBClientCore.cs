@@ -302,7 +302,8 @@ namespace IBApp {
       return cd;
     }
 
-    public IObservable<Contract> ReqCurrentOptionsAsync(string symbol,double price, bool[] isCalls, int expirationsCount = 1, int strikesCount = 4) {
+    public IObservable<Contract> ReqCurrentOptionsAsync
+      (string symbol,double price, bool[] isCalls, int expirationsCount = 1, int strikesCount = 4) {
       var x = (
                 from t in ReqOptionChainCache(symbol)
                 from strike in t.strikes.OrderBy(st => st.Abs(price)).Take(strikesCount * 2).Select((s, i) => (s, i)).ToArray()

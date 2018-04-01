@@ -61,16 +61,70 @@ namespace ConsoleApp {
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       var contract = spy;
-      AccountManager.NoPositionsPlease = true;
+      AccountManager.NoPositionsPlease = false;
+      bool showTime = false;
       ibClient.ManagedAccountsObservable.Subscribe(s => {
+        var am = fw.AccountManager;
+        var cds = ibClient.ReqContractDetailsAsync("VXX   180329C00051500".ContractFactory()).ToEnumerable().Count(0, new { }).ToArray();
+        var symbols = new[] { "SPX", "VXX", "SPY" };
+        var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1000)).Subscribe();
+        Stopwatch sw = Stopwatch.StartNew();
+        var trades = am.OpenTrades.ItemsAdded
+        .ObserveOn(TaskPoolScheduler.Default)
+        .Take(6)
+        //.SelectMany(w => w.ToArray())
+        //.SelectMany(t => t)
+        .SelectMany(t => ibClient.ReqContractDetailsCached(t.Pair).Select(c => (t, c: c.Summary)))
+        .ObserveOn(TaskPoolScheduler.Default)
+        .ToEnumerable()
+        .OrderBy(t => t.c.Symbol).ThenBy(t => t.c.Strike)
+        .Select(t => (t.c, p: t.t.Position.ToInt()))
+        .Where(t => t.c.IsOption())
+        .ToArray();
+        HandleMessage2("Trades:\n" + trades
+          .Flatter("\n"));
+        var match = FindStraddle(trades, trades.Last());
+        HandleMessage2("Matches: Start");
+        var parsed = match.Select(m => {
+          HandleMessage2($"Match:{m}");
+          var posMin = m.leg1.p.Abs().Min(m.leg2.p.Abs()) * m.leg1.p.Sign();
+          var combo = new[] { (m.leg1.c, p: posMin), (m.leg2.c, p: posMin) }.OrderBy(x => x.c.Right).ToArray();
+          var rest = new[] { (m.leg1.c, p: m.leg1.p - posMin), (m.leg2.c, p: m.leg2.p - posMin) };
+          HandleMessage2("combo:\n" + combo.Flatter("\n"));
+          HandleMessage2("rest:\n" + rest.Flatter("\n"));
+          return (combo, rest);
+        }).ToArray();
+        trades = (
+        from trade in trades
+        join c in parsed.SelectMany(p => p.rest) on trade.c.Key equals c.c.Key into tg
+        from cc in tg.DefaultIfEmpty(trade)
+        where cc.p != 0
+        select cc
+        ).ToArray();
+        HandleMessage("Trades new:\n" + trades.Flatter("\n"));
+        HandleMessage("Matches: Done");
+        IList<((Contract c, int p) leg1, (Contract c, int p) leg2)> FindStraddle((Contract c, int p)[] positions, (Contract c, int p) leg) {
+          return positions
+          .Where(p => p.c.Symbol == leg.c.Symbol)
+          .Where(p => p.c.Strike == leg.c.Strike)
+          .Where(p => p.c.Right != leg.c.Right)
+          .Where(p => p.p.Sign() == leg.p.Sign())
+          .Select(m => (m, leg))
+          .ToArray()
+          ;
+        }
+        //.ForEach(trade => HandleMessage(new { trade.Pair}));
+        //ProcessSymbols();
         //ShowTrades(fw);
         //TestStraddleds();return;
-        var option = "VXX   180329C00051500";
-        var cds = ibClient.ReqContractDetailsAsync(option.ContractFactory()).ToEnumerable().ToArray();
-        var symbols = new[] { "SPX", "VXX", "SPY" };
-        //var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1)).Subscribe();
-        Stopwatch sw = Stopwatch.StartNew();
-        if(true) {
+        timeOut.Dispose();
+        HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
+        //Contract.Contracts.OrderBy(c => c + "").ForEach(cached => HandleMessage(new { cached }));
+        //HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
+        LoadHistory(ibClient, new[] { "spx".ContractFactory() });
+
+        #region Local Tests
+        void ProcessSymbols() {
           var combos = symbols.Take(10).Buffer(10).Repeat(1).Select(b => b.Select(ProcessSymbol).Count(3, new { }).ToArray())
           .Do(list => {
             //Passager.ThrowIf(() => list.Count != symbols.Length);
@@ -90,13 +144,6 @@ namespace ConsoleApp {
            .SelectMany(c => ibClient.ReqPrice(c, 1, false))
            .Subscribe(price => HandleMessage($"Observed:{price}"));
         }
-        //timeOut.Dispose();
-        //combos.ForEach(combo => Passager.ThrowIf(() => combo.Count < 2));
-        HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
-        //Contract.Contracts.OrderBy(c => c + "").ForEach(cached => HandleMessage(new { cached }));
-        //HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
-        LoadHistory(ibClient, new[] { "spx".ContractFactory() });
-
         IList<(Contract contract, Contract[] options)> ProcessSymbol(string symbol) {
           //HandleMessage(new { symbol } + "");
           // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
@@ -121,7 +168,7 @@ namespace ConsoleApp {
         (Contract contract, Contract[] options)[] TestStraddleds(string symbol) {
           var straddlesCount = 6;
           var expirationCount = 1;
-          var price = ibClient.ReqPriceSafe(symbol).Select(p=>p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}"));
+          var price = ibClient.ReqPriceSafe(symbol).Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}"));
           var contracts = (from p in price
                            from str in fw.AccountManager.MakeStraddle(symbol, p, expirationCount, straddlesCount)
                            select str)
@@ -139,6 +186,7 @@ namespace ConsoleApp {
           .SelectMany(b => b.Select(sym => ibClient.ReqContractDetailsAsync(sym.ContractFactory())))
           .Merge()
           .Subscribe();
+        #endregion
       });
 
       if(ibClient.LogOn("127.0.0.1", 7497 + "", 10 + "", false)) {
@@ -222,10 +270,14 @@ namespace ConsoleApp {
     }
 
     static readonly string _tracePrefix;// = "OnTickPrice";
-    private static void HandleMessage<T>(T message) => HandleMessage(message + "");
-    private static void HandleMessage(string message) {
+    private static void HandleMessage2<T>(T message) => HandleMessage(message + "", false);
+    private static void HandleMessage<T>(T message, bool showTime = true) => HandleMessage(message + "", showTime);
+    private static void HandleMessage(string message, bool showTime = true) {
       if(_tracePrefix.IsNullOrEmpty() || message.StartsWith(_tracePrefix))
-        Console.WriteLine(DateTime.Now + ": " + message);
+        if(showTime)
+          Console.WriteLine($"{DateTime.Now}: {message}");
+        else
+          Console.WriteLine(message);
     }
     private static void HandleMessageFake(string message) { }
     private static void HandleMessage(HistoricalDataMessage historicalDataEndMessage) {

@@ -46,7 +46,7 @@ namespace IBApp {
 
     #region Properties
     public Account Account { get; private set; }
-    private readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade>();
+    public readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade>();
     private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
     public Func<Trade, double> CommissionByTrade = t => t.Lots * .008;
 
@@ -102,7 +102,8 @@ namespace IBApp {
         onNext => (string a, Contract b, double c, double d) => Try(() => onNext((a, b, c, d)), nameof(IbClient.Position)),
         h => IbClient.Position += h,
         h => IbClient.Position -= h
-        ).Publish().RefCount();
+        )
+        ;
       var ooObs = Observable.FromEvent<OpenOrderHandler, (int orderId, Contract contract, IBApi.Order order, OrderState orderState)>(
         onNext => (int orderId, Contract contract, IBApi.Order order, OrderState orderState) =>
         Try(() => onNext((orderId, contract, order, orderState)), nameof(IbClient.OpenOrder)),
@@ -509,16 +510,18 @@ namespace IBApp {
       }
     }
 
-    public IObservable<(Contract contract, Contract[] options)> MakeStraddle(string symbol, double price, int expirationsCount, int count) =>
+    public IObservable<(Contract contract, Contract[] options)> MakeStraddle
+      (string symbol, double price, int expirationsCount, int count) =>
       IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationsCount, count * 2)
       //.Take(count*2)
       .ToArray()
-      .SelectMany(reqOptions => reqOptions//.OrderBy(o=>o.Strike.Abs(price)).Take(count)
+      .SelectMany(reqOptions => reqOptions.OrderBy(o=>o.Strike.Abs(price))
       .GroupBy(c => new { c.Strike, c.LastTradeDateOrContractMonth })
       .ToDictionary(c => c.Key, c => c.ToArray())
       .Where(c => c.Value.Length == 2)
       .Select(options => MakeStraddle(symbol, options.Value).Select(contract => (contract.AddToCache(), options.Value))))
-      .Merge();
+      .Merge()
+      .Take(count);
 
     public IObservable<Contract> MakeStraddle(string symbol, IList<Contract> contractOptions)
       => IbClient.ReqContractDetailsCached(symbol)
