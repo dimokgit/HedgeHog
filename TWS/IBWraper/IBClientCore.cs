@@ -81,6 +81,7 @@ namespace IBApp {
     #endregion
 
     #region ICoreEX Implementation
+    public Contract SetOfferSubscription(Contract contract) => contract.SideEffect(c => SetOfferSubscription(c, _ => { }));
     public void SetOfferSubscription(Contract contract, Action<Contract> callback) => _marketDataManager.AddRequest(contract, "233,221,236", callback);
     public void SetOfferSubscription(string pair) => SetOfferSubscription(ContractSamples.ContractFactory(pair), _ => { });
     public void SetOfferSubscription(string pair, Action<Contract> callback) => SetOfferSubscription(ContractSamples.ContractFactory(pair), callback);
@@ -361,12 +362,16 @@ namespace IBApp {
       select (och.exchange, och.tradingClass, och.multiplier, expirations: och.expirations.Select(e => e.FromTWSDateString()).ToArray(), strikes: och.strikes.ToArray(), symbol = cd.Summary.Symbol, currency: cd.Summary.Currency);
 
     enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
-    public IObservable<(double bid, double ask)> ReqPriceSafe(string symbol) =>
+
+    public IObservable<(double bid, double ask)> ReqPriceSafe(string symbol, double timeoutInSeconds, bool useErrorHandler, double defaultPrice) =>
+      ReqPriceSafe(symbol,timeoutInSeconds,useErrorHandler).DefaultIfEmpty((defaultPrice, defaultPrice));
+
+    public IObservable<(double bid, double ask)> ReqPriceSafe(string symbol, double timeoutInSeconds, bool useErrorHandler) =>
       TryGetPrice(symbol)
       .Where(p => p.Ask > 0 && p.Bid > 0)
       .Select(p => (p.Bid, p.Ask))
       .ToObservable()
-      .Concat(Observable.Defer(() => ReqPrices(symbol, 1, false).Select(p => (p.bid, p.ask))))
+      .Concat(Observable.Defer(() => ReqPrices(symbol, timeoutInSeconds, useErrorHandler).Select(p => (p.bid, p.ask))))
       .Take(1);
 
     public IObservable<double> ReqPriceMarket(string symbol)

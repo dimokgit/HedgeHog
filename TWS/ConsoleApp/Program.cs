@@ -145,7 +145,7 @@ namespace ConsoleApp {
         (Contract contract, Contract[] options)[] TestStraddleds(string symbol) {
           var straddlesCount = 6;
           var expirationCount = 1;
-          var price = ibClient.ReqPriceSafe(symbol).Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}"));
+          var price = ibClient.ReqPriceSafe(symbol, 1, true).Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}"));
           var contracts = (from p in price
                            from str in fw.AccountManager.MakeStraddle(symbol, p, expirationCount, straddlesCount)
                            select str)

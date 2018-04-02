@@ -229,9 +229,9 @@ namespace IBApp {
     public IObservable<(Contract contract, int position, double open,double close,double  pl)> ComboTrades(double priceTimeoutInSeconds) {
       var x =
       (from c in Positions.ParseCombos().ToObservable()
-       from price in IbClient.ReqPrices(c.contract, priceTimeoutInSeconds, true)
+       from price in IbClient.ReqPrices(c.contract, priceTimeoutInSeconds, true).Take(1)
        let close = (c.position > 0 ? price.bid : price.ask) * c.position * 100
-       select (c.contract, c.position, c.open, close, pl: close - c.open)
+       select (IbClient.SetOfferSubscription(c.contract), c.position, c.open, close, pl: close - c.open)
       );
       return x;
     }

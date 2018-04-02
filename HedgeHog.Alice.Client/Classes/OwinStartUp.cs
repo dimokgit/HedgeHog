@@ -251,7 +251,7 @@ namespace HedgeHog.Alice.Client {
       _AskRates2Subject.InitBufferedObservable<Action>(exc => Log = exc);
       _AskRates2Subject.Subscribe(a => a());
     }
-    private AccountManager AccountManager() => ((IBWraper)trader.Value.TradesManager).AccountManager;
+    private AccountManager AccountManager() => ((IBWraper)trader?.Value?.TradesManager).AccountManager;
     public MyHub() {
       try {
         remoteControl = App.container.GetExport<RemoteControlModel>();
@@ -557,19 +557,24 @@ namespace HedgeHog.Alice.Client {
 
     public void ReadStraddles(string pair) {
       var am = AccountManager();
-      IBApi.Contract.FromCache(pair, c => c.Symbol)
-        .ForEach(symbol => am.CurrentStraddles(symbol, 4)
-        .Select(ts => ts.Select(t => new {
-          i = t.instrument,
-          t.bid,
-          t.ask,
-          avg = t.ask.Avg(t.bid),
-          time = t.time.ToString("HH:mm:ss"),
-          t.delta,
-          t.strike
-        }))
-       .Subscribe(b => base.Clients.Caller.butterflies(b)));
-      base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
+      if(am != null) {
+        IBApi.Contract.FromCache(pair, c => c.Symbol)
+          .ForEach(symbol => am.CurrentStraddles(symbol, 4)
+          .Select(ts => ts.Select(t => new {
+            i = t.instrument,
+            t.bid,
+            t.ask,
+            avg = t.ask.Avg(t.bid),
+            time = t.time.ToString("HH:mm:ss"),
+            t.delta,
+            t.strike
+          }))
+         .Subscribe(b => base.Clients.Caller.butterflies(b)));
+        //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
+        am.ComboTrades(1)
+          .ToArray()
+          .Subscribe(cts => base.Clients.Caller.liveCombos(cts.OrderBy(ct => ct.contract.Key).ToArray(x => new { combo = x.contract.Key, netPL = x.pl, x.position })));
+      }
     }
 
     [BasicAuthenticationFilter]
@@ -583,9 +588,12 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void CloseCombo(string instrument) {
       var am = AccountManager();
-      am.TradeStraddles()
-        .SelectMany(s => IBApi.Contract.FromCache(s.straddle, c => (c, s.position)))
-        .ForEach(c => am.OpenTrade(c.c, -c.position.ToInt()));
+      if(am != null) {
+        am.ComboTrades(1)
+        .Where(ct => ct.contract.Key == instrument)
+        .Select(s => (s.contract, s.position))
+        .Subscribe(c => am.OpenTrade(c.contract, -c.position));
+      }
     }
     #endregion
 

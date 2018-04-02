@@ -29,7 +29,7 @@ namespace IBApp {
       CurrentStraddles(string symbol, int count) {
       (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
-        from price in IbClient.ReqPriceSafe(symbol)
+        from price in IbClient.ReqPriceSafe(symbol, 1, true)
         from combo in MakeStraddle(symbol, price.bid.Avg(price.ask), 1, 4)
         from p in IbClient.TryGetPrice(combo.contract.Instrument).Select(p => (combo.contract, bid: p.Bid, ask: p.Ask, time: IbClient.ServerTime))
         .ToObservable()
