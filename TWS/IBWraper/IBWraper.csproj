@@ -107,6 +107,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataManagers\AccountManager.Straddle.cs" />
     <Compile Include="DataManagers\AccountManager.Summary.cs" />
     <Compile Include="DataManagers\DataManager.cs" />
     <Compile Include="DataManagers\AccountManager.cs" />

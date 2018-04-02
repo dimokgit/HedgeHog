@@ -76,6 +76,7 @@ namespace HedgeHog {
     public static Func<A, B, R> Memoize<A, B, R>(this Func<A, B, R> f) => f.Tuplify().Memoize().Detuplify();
     public static Func<A, B, C, R> Memoize<A, B, C, R>(this Func<A, B, C, R> f) => f.Tuplify().Memoize().Detuplify();
     public static Func<A, B, C, D, R> Memoize<A, B, C, D, R>(this Func<A, B, C, D, R> f) => f.Tuplify().Memoize().Detuplify();
+    public static Func<A, B, C, D, R> Memoize<A, B, C, D, R, K>(this Func<A, B, C, D, R> f, Func<(A, B, C, D), K> k) => f.Tuplify().Memoize(k).Detuplify();
 
     public static Func<A, B, R> Memoize2<A, B, R>(this Func<A, B, R> f) {
       Func<Tuple<A, B>, R> tuplified = t => f(t.Item1, t.Item2);

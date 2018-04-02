@@ -12,9 +12,9 @@ namespace IBApi {
   public partial class Contract {
     DateTime? _lastTradeDateOrContractMonth;
     public DateTime LastTradeDateOrContractMonth2 =>
-      (_lastTradeDateOrContractMonth ?? 
+      (_lastTradeDateOrContractMonth ??
       (_lastTradeDateOrContractMonth = LastTradeDateOrContractMonth.FromTWSDateString())
-      ).Value; 
+      ).Value;
 
     public string Key => Instrument;
     public bool IsCombo => ComboLegs?.Any() == true;
@@ -35,12 +35,14 @@ namespace IBApi {
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     public override string ToString() => ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}");// {Exchange} {Currency}";
     internal string ComboLegsToString() =>
-      (from l in ComboLegs ?? new List<ComboLeg>()
-       join c in Contracts.Select(cd => cd.Value) on l.ConId equals c.ConId
-       select c.LocalSymbol
-       )
+      Legs().Select(c => c.Instrument)
       .ToArray()
       .MashDiffs();
+    public IEnumerable<Contract> Legs() =>
+      (from l in ComboLegs ?? new List<ComboLeg>()
+       join c in Contracts.Select(cd => cd.Value) on l.ConId equals c.ConId
+       select c
+       );
   }
   public static class ContractMixins {
     public static bool IsOption(this Contract c) => c.SecType == "OPT";

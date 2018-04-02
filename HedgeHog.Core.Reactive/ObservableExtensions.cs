@@ -57,29 +57,29 @@ namespace HedgeHog {
       ) where TException : Exception
       => source.Catch((TException exc) => Observable.Empty<TSource>());
     public static IObservable<T> Spy<T>(this IObservable<T> source, string opName = null) {
-      opName = opName ?? "IObservable";
+      opName = opName ?? typeof(T) + "";
       Console.WriteLine("{0}: Observable obtained on Thread: {1}",
                         opName,
-                        Thread.CurrentThread.ManagedThreadId);
+                        ThreadInfo());
 
       return Observable.Create<T>(obs => {
         Console.WriteLine("{0}: Subscribed to on Thread: {1}",
                           opName,
-                          Thread.CurrentThread.ManagedThreadId);
+                          ThreadInfo());
 
         try {
           var subscription = source
               .Do(x => Console.WriteLine("{0}: OnNext({1}) on Thread: {2}",
                                           opName,
                                           x,
-                                          Thread.CurrentThread.ManagedThreadId),
+                                          ThreadInfo()),
                   ex => Console.WriteLine("{0}: OnError({1}) on Thread: {2}",
                                            opName,
                                            ex,
-                                           Thread.CurrentThread.ManagedThreadId),
+                                           ThreadInfo()),
                   () => Console.WriteLine("{0}: OnCompleted() on Thread: {1}",
                                            opName,
-                                           Thread.CurrentThread.ManagedThreadId)
+                                           ThreadInfo())
               )
               .Subscribe(obs);
           return new CompositeDisposable(
@@ -87,11 +87,12 @@ namespace HedgeHog {
               Disposable.Create(() => Console.WriteLine(
                     "{0}: Cleaned up on Thread: {1}",
                     opName,
-                    Thread.CurrentThread.ManagedThreadId)));
+                    ThreadInfo())));
         } finally {
           Console.WriteLine("{0}: Subscription completed.", opName);
         }
       });
+      string ThreadInfo() => $"{Thread.CurrentThread.ManagedThreadId}:{Thread.CurrentThread.Name}";
     }
     public static IDisposable SubscribeWithoutOverlap<T>(this IObservable<T> source, Action<T> action, IScheduler scheduler = null) {
       var sampler = new Subject<Unit>();

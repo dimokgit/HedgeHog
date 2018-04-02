@@ -100,9 +100,11 @@ namespace IBApp {
 
       PositionsObservable = Observable.FromEvent<PositionHandler, (string account, Contract contract, double pos, double avgCost)>(
         onNext => (string a, Contract b, double c, double d) => Try(() => onNext((a, b, c, d)), nameof(IbClient.Position)),
-        h => IbClient.Position += h,
-        h => IbClient.Position -= h
+        h => IbClient.Position += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
+        h => IbClient.Position -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
         )
+        .Publish().RefCount()
+        //.Spy("**** AccountManager.PositionsObservable ****")
         ;
       var ooObs = Observable.FromEvent<OpenOrderHandler, (int orderId, Contract contract, IBApi.Order order, OrderState orderState)>(
         onNext => (int orderId, Contract contract, IBApi.Order order, OrderState orderState) =>
@@ -134,6 +136,7 @@ namespace IBApp {
         .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos, x.account } }))
         .ObserveOn(esPositions)
         .SubscribeOn(esPositions2)
+        //.Spy("**** AccountManager.OnPosition ****")
         //.Where(x => x.pos != 0)
         .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost), () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
@@ -222,7 +225,30 @@ namespace IBApp {
 
     #region Position
     public static bool NoPositionsPlease = false;
+
+    public IObservable<(Contract contract, int position, double open,double close,double  pl)> ComboTrades(double priceTimeoutInSeconds) {
+      var x =
+      (from c in Positions.ParseCombos().ToObservable()
+       from price in IbClient.ReqPrices(c.contract, priceTimeoutInSeconds, true)
+       let close = (c.position > 0 ? price.bid : price.ask) * c.position * 100
+       select (c.contract, c.position, c.open, close, pl: close - c.open)
+      );
+      return x;
+    }
+
+    public IObservable<(Contract contract, int position, double open)>
+      ContractPosition((IBApi.Contract contract, double pos, double avgCost) p) =>
+      IbClient.ReqContractDetailsCached(p.contract).Select(c => (contract: c.Summary, position: p.pos.ToInt(), open: p.avgCost * p.pos.Sign()));
+
+    ConcurrentDictionary<string, (Contract contract, int position, double open)> _positions = new ConcurrentDictionary<string, (Contract contract, int position, double open)>();
+    public ICollection<(Contract contract, int position, double open)> Positions => _positions.Values;
+    //public Subject<ICollection<(Contract contract, int position, double open)>> ContracPositionsSubject = new Subject<ICollection<(Contract contract, int position, double open)>>();
+
     void OnPosition(Contract contract, double position, double averageCost) {
+      ContractPosition((contract, position, averageCost)).Subscribe(cp => {
+        _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
+        //ContracPositionsSubject.OnNext(_positions.Values);
+      });
       if(NoPositionsPlease) return;
       var posMsg = new PositionMessage("", contract, position, averageCost);
       if(position == 0) {
@@ -450,149 +476,7 @@ namespace IBApp {
 
     Action IfEmpty(object o) => () => throw new Exception(o.ToJson());
     #region Butterfly
-    public IObservable<(Contract contract, Contract[] options)> MakeButterflies(string symbol, double price) =>
-       IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true })
-        .ToArray()
-        //.Select(a => a.OrderBy(c => c.Strike).ToArray())
-        .SelectMany(reqOptions =>
-          reqOptions
-          .Buffer(3, 1)
-          .TakeWhile(b => b.Count == 3)
-          .Select(options => MakeButterfly(symbol, options).Select(contract => (contract.AddToCache(), options.ToArray()))))
-          .Merge();
 
-    public IEnumerable<(string straddle, double netPL, double position)> TradeStraddles() {
-      var straddles = (
-        from trade in GetTrades()
-        join c in Contract.Cache() on trade.Pair equals c.Key
-        select new { c, trade } into g0
-        group g0 by new { g0.c.Symbol, g0.c.Strike } into g
-        from strdl in g.OrderBy(v => v.c.Instrument)
-        .Buffer(2, 1)
-        .Where(b => b.Count == 2)
-        .Select(b => b.MashDiffs(x => x.c.Instrument))
-        select (strdl.mash, strdl.source.Select(x => x.trade).Gross(), strdl.source.Max(s => s.trade.Position)));
-      return straddles;
-    }
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strike)[]>
-      CurrentStraddles(string symbol, int count) {
-      (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
-      return (
-        from price in IbClient.ReqPriceSafe(symbol)
-        from combo in MakeStraddle(symbol, price.bid.Avg(price.ask), 1, 4)
-        from p in IbClient.TryGetPrice(combo.contract.Instrument).Select(p => (combo.contract, bid: p.Bid, ask: p.Ask, time: IbClient.ServerTime))
-        .ToObservable()
-        .Concat(Observable.Defer(() => ReqPrice(IbClient, combo)))
-        .Take(1)
-        from strike in combo.options.Take(1).Select(o => o.Strike)
-        from up in IbClient.TryGetPrice(symbol).Select(p => p.Average)
-        select (
-          instrument: combo.contract.Instrument,
-          p.bid,
-          p.ask,
-          p.time,//.ToString("HH:mm:ss"),
-          delta: p.ask.Avg(p.bid) - (up - strike),
-          strike
-        )).ToArray()
-        .Select(b => b
-         .OrderBy(t => t.ask.Avg(t.bid))
-         .Select((t, i) => (t, i))
-         .OrderBy(t => t.i > 1)
-         .ThenBy(t => t.t.ask.Avg(t.t.bid) / t.t.delta)
-         .Select(t => t.t)
-         .ToArray()
-         );
-      IObservable<(IBApi.Contract contract, double bid, double ask, DateTime time)> ReqPrice(IBClientCore ib, (IBApi.Contract contract, IList<IBApi.Contract> options) combo) {
-        return ib.ReqPrice(combo.contract.SideEffect(Subscribe), 1, false)
-          .DefaultIfEmpty(priceEmpty)
-          .FirstAsync();
-        void Subscribe(IBApi.Contract c) => ib.SetOfferSubscription(c, _ => { });
-      }
-    }
-
-    public IObservable<(Contract contract, Contract[] options)> MakeStraddle
-      (string symbol, double price, int expirationsCount, int count) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationsCount, count * 2)
-      //.Take(count*2)
-      .ToArray()
-      .SelectMany(reqOptions => reqOptions.OrderBy(o=>o.Strike.Abs(price))
-      .GroupBy(c => new { c.Strike, c.LastTradeDateOrContractMonth })
-      .ToDictionary(c => c.Key, c => c.ToArray())
-      .Where(c => c.Value.Length == 2)
-      .Select(options => MakeStraddle(symbol, options.Value).Select(contract => (contract.AddToCache(), options.Value))))
-      .Merge()
-      .Take(count);
-
-    public IObservable<Contract> MakeStraddle(string symbol, IList<Contract> contractOptions)
-      => IbClient.ReqContractDetailsCached(symbol)
-      .Select(cd => cd.Summary)
-      .Select(contract => MakeStraddle(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Sort().Select(o => o.ConId).ToArray()));
-
-    Contract MakeStraddle(string instrument, string exchange, string currency, IList<int> conIds) {
-      if(conIds.Count != 2)
-        throw new Exception($"{nameof(MakeStraddle)}:{new { conIds }}");
-      var c = new Contract() {
-        Symbol = instrument,
-        SecType = "BAG",
-        Exchange = exchange,
-        Currency = currency
-      };
-      var call = new ComboLeg() {
-        ConId = conIds[0],
-        Ratio = 1,
-        Action = "BUY",
-        Exchange = exchange
-      };
-      var put = new ComboLeg() {
-        ConId = conIds[1],
-        Ratio = 1,
-        Action = "BUY",
-        Exchange = exchange
-      };
-      c.ComboLegs = new List<ComboLeg> { call, put };
-      return c;
-    }
-
-
-    public IObservable<Contract> MakeButterfly(string symbol, IList<Contract> contractOptions)
-      => IbClient.ReqContractDetailsCached(symbol)
-      .Select(cd => cd.Summary)
-      .Select(contract => MakeButterfly(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray()));
-    public Contract MakeButterfly(Contract contract, IList<Contract> contractOptions)
-      => MakeButterfly(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray());
-    Contract MakeButterfly(string instrument, string exchange, string currency, IList<Contract> contractOptions)
-      => MakeButterfly(instrument, exchange, currency, contractOptions.Select(o => o.ConId).ToArray());
-    Contract MakeButterfly(string instrument, string exchange, string currency, IList<int> conIds) {
-      if(conIds.Count != 3)
-        throw new Exception($"{nameof(MakeButterfly)}:{new { conIds }}");
-      //if(conIds.Zip(conIds.Skip(1), (p, n) => (p, n)).Any(t => t.p <= t.n)) throw new Exception($"Butterfly legs are out of order:{string.Join(",", conIds)}");
-      var c = new Contract() {
-        Symbol = instrument,
-        SecType = "BAG",
-        Exchange = exchange,
-        Currency = currency
-      };
-      var left = new ComboLeg() {
-        ConId = conIds[0],
-        Ratio = 1,
-        Action = "BUY",
-        Exchange = exchange
-      };
-      var middle = new ComboLeg() {
-        ConId = conIds[1],
-        Ratio = 2,
-        Action = "SELL",
-        Exchange = exchange
-      };
-      var right = new ComboLeg() {
-        ConId = conIds[2],
-        Ratio = 1,
-        Action = "BUY",
-        Exchange = exchange
-      };
-      c.ComboLegs = new List<ComboLeg> { left, middle, right };
-      return c;
-    }
     #endregion
 
     #region OpenOrder

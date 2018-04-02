@@ -64,57 +64,15 @@ namespace ConsoleApp {
       AccountManager.NoPositionsPlease = false;
       bool showTime = false;
       ibClient.ManagedAccountsObservable.Subscribe(s => {
+        HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         var am = fw.AccountManager;
+        TestParsedCombos();
         var cds = ibClient.ReqContractDetailsAsync("VXX   180329C00051500".ContractFactory()).ToEnumerable().Count(0, new { }).ToArray();
         var symbols = new[] { "SPX", "VXX", "SPY" };
         var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1000)).Subscribe();
         Stopwatch sw = Stopwatch.StartNew();
-        var trades = am.OpenTrades.ItemsAdded
-        .ObserveOn(TaskPoolScheduler.Default)
-        .Take(6)
-        //.SelectMany(w => w.ToArray())
-        //.SelectMany(t => t)
-        .SelectMany(t => ibClient.ReqContractDetailsCached(t.Pair).Select(c => (t, c: c.Summary)))
-        .ObserveOn(TaskPoolScheduler.Default)
-        .ToEnumerable()
-        .OrderBy(t => t.c.Symbol).ThenBy(t => t.c.Strike)
-        .Select(t => (t.c, p: t.t.Position.ToInt()))
-        .Where(t => t.c.IsOption())
-        .ToArray();
-        HandleMessage2("Trades:\n" + trades
-          .Flatter("\n"));
-        var match = FindStraddle(trades, trades.Last());
-        HandleMessage2("Matches: Start");
-        var parsed = match.Select(m => {
-          HandleMessage2($"Match:{m}");
-          var posMin = m.leg1.p.Abs().Min(m.leg2.p.Abs()) * m.leg1.p.Sign();
-          var combo = new[] { (m.leg1.c, p: posMin), (m.leg2.c, p: posMin) }.OrderBy(x => x.c.Right).ToArray();
-          var rest = new[] { (m.leg1.c, p: m.leg1.p - posMin), (m.leg2.c, p: m.leg2.p - posMin) };
-          HandleMessage2("combo:\n" + combo.Flatter("\n"));
-          HandleMessage2("rest:\n" + rest.Flatter("\n"));
-          return (combo, rest);
-        }).ToArray();
-        trades = (
-        from trade in trades
-        join c in parsed.SelectMany(p => p.rest) on trade.c.Key equals c.c.Key into tg
-        from cc in tg.DefaultIfEmpty(trade)
-        where cc.p != 0
-        select cc
-        ).ToArray();
-        HandleMessage("Trades new:\n" + trades.Flatter("\n"));
-        HandleMessage("Matches: Done");
-        IList<((Contract c, int p) leg1, (Contract c, int p) leg2)> FindStraddle((Contract c, int p)[] positions, (Contract c, int p) leg) {
-          return positions
-          .Where(p => p.c.Symbol == leg.c.Symbol)
-          .Where(p => p.c.Strike == leg.c.Strike)
-          .Where(p => p.c.Right != leg.c.Right)
-          .Where(p => p.p.Sign() == leg.p.Sign())
-          .Select(m => (m, leg))
-          .ToArray()
-          ;
-        }
         //.ForEach(trade => HandleMessage(new { trade.Pair}));
-        //ProcessSymbols();
+        ProcessSymbols();
         //ShowTrades(fw);
         //TestStraddleds();return;
         timeOut.Dispose();
@@ -124,11 +82,31 @@ namespace ConsoleApp {
         LoadHistory(ibClient, new[] { "spx".ContractFactory() });
 
         #region Local Tests
+        void TestParsedCombos() {
+          ibClient.PriceChangeObservable
+          //.Throttle(TimeSpan.FromSeconds(0.1))
+          .DistinctUntilChanged(_ => am.Positions.Count)
+          .Subscribe(pea => {
+            TestParsedCombosImpl();
+          });
+          void TestParsedCombosImpl() { // Combine positions
+            var swCombo = Stopwatch.StartNew();
+            am.ComboTrades(1)
+            .ToArray()
+            .ToEnumerable()
+            .ToArray()
+            .ForEach(comboPrices => {
+              HandleMessage2("Matches: Start");
+              comboPrices.ForEach(comboPrice => HandleMessage2(new { comboPrice }));
+              HandleMessage2($"Matches: Done in {swCombo.ElapsedMilliseconds} ms");
+            });
+          }
+        }
         void ProcessSymbols() {
-          var combos = symbols.Take(10).Buffer(10).Repeat(1).Select(b => b.Select(ProcessSymbol).Count(3, new { }).ToArray())
+          var combos = symbols.Take(10).Buffer(10).Repeat(1).Select(b => b.Select(ProcessSymbol).Count(symbols.Length, new { }).ToArray())
           .Do(list => {
             //Passager.ThrowIf(() => list.Count != symbols.Length);
-            HandleMessage(new { sw.ElapsedMilliseconds });
+            HandleMessage2(new { sw.ElapsedMilliseconds });
             sw.Restart();
           })
           .ToList();
@@ -141,8 +119,8 @@ namespace ConsoleApp {
            )
            .ToObservable()
            //.Do(_ => Thread.Sleep(200))
-           .SelectMany(c => ibClient.ReqPrice(c, 1, false))
-           .Subscribe(price => HandleMessage($"Observed:{price}"));
+           .SelectMany(option => ibClient.ReqPrices(option, 1, false))
+           .Subscribe(price => HandleMessage2($"Observed:{price}"));
         }
         IList<(Contract contract, Contract[] options)> ProcessSymbol(string symbol) {
           //HandleMessage(new { symbol } + "");
@@ -157,12 +135,11 @@ namespace ConsoleApp {
           .Do(t => t.options.ForEach(c => ibClient.SetOfferSubscription(c, _ => { })))
           .ToArray()
           .Do(burrefly => {
-            HandleMessage(new { straddle = burrefly.contract });
+            HandleMessage2(new { straddle = burrefly.contract });
             ibClient.SetOfferSubscription(burrefly.contract, _ => { });
-            ibClient.ReqPrice(burrefly.contract, 1, false)
-            .DefaultIfEmpty((burrefly.contract, double.NaN, double.NaN, DateTime.MinValue))
+            ibClient.ReqPrices(burrefly.contract, 2, false, double.NaN)
             .Take(1)
-            .Subscribe(price => HandleMessage($"Observed:{price}"));
+            .Subscribe(price => HandleMessage2($"Observed:{price}"));
           }).ToArray();
         }
         (Contract contract, Contract[] options)[] TestStraddleds(string symbol) {
@@ -209,7 +186,7 @@ namespace ConsoleApp {
     private static void ShowTrades(IBWraper fw) => fw.AccountManager.PositionsObservable
             .Distinct(p => p.contract.Key)
             .Subscribe(pos => {
-              fw._ibClient.ReqPrice(pos.contract, 1, false)
+              fw._ibClient.ReqPrices(pos.contract, 1, false)
               .Subscribe(_ => {
                 var trades = (from trade in fw.GetTrades()
                               orderby trade.Pair
@@ -275,7 +252,7 @@ namespace ConsoleApp {
     private static void HandleMessage(string message, bool showTime = true) {
       if(_tracePrefix.IsNullOrEmpty() || message.StartsWith(_tracePrefix))
         if(showTime)
-          Console.WriteLine($"{DateTime.Now}: {message}");
+          Console.WriteLine($"{DateTime.Now:mm:ss.f}: {message}");
         else
           Console.WriteLine(message);
     }

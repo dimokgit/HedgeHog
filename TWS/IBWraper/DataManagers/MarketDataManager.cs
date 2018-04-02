@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
@@ -16,7 +17,7 @@ namespace IBApp {
   public class MarketDataManager :DataManager {
     const int TICK_ID_BASE = 10000000;
     private readonly ConcurrentDictionary<string, Price> _currentPrices = new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
-    private Dictionary<int, (Contract contract, Price price)> activeRequests = new Dictionary<int, (Contract contract, Price price)>();
+    private ConcurrentDictionary<int, (Contract contract, Price price)> activeRequests = new ConcurrentDictionary<int, (Contract contract, Price price)>();
     public Action<Contract, string, Action<Contract>> AddRequest = (a1, a2, a3) => {
     };
     public IObservable<(Contract c, string gl, Action<Contract>)> AddRequestObs { get; }
@@ -41,8 +42,7 @@ namespace IBApp {
       if(contract.IsCombo) {
         AddRequestImpl(contract.AddToCache(), genericTickList);
       } else {
-        var instrument = contract.Instrument;
-        IbClient.ReqContractDetailsCached(instrument.ContractFactory())
+        IbClient.ReqContractDetailsCached(contract.Instrument)
           .Subscribe(cd => {
             AddRequestImpl(cd.Summary.ContractFactory(), genericTickList);
           });
@@ -51,7 +51,7 @@ namespace IBApp {
     }
     IScheduler esAddRequest = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(MarketDataManager) });
     void AddRequestImpl(Contract contract, string genericTickList) {
-      if(activeRequests.ToArray().Any(ar => ar.Value.contract.Instrument == contract.Instrument))
+      if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
         Trace($"AddRequest:{contract} already requested");
       else {
         var reqId = NextReqId();
@@ -62,8 +62,10 @@ namespace IBApp {
           .Take(1)
           .Merge()
           .Subscribe(t => Trace($"{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
-        IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>());
-        activeRequests.Add(reqId, (contract, new Price(contract.Instrument)));
+        IbClient.OnReqMktData(() => IbClient.ClientSocket.reqMktData(reqId, contract, genericTickList, false, new List<TagValue>()));
+        if(reqId == 0)
+          Debugger.Break();
+        activeRequests.TryAdd(reqId, (contract, new Price(contract.Instrument)));
       }
     }
 
