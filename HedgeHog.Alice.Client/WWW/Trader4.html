@@ -1177,7 +1177,9 @@
     <table border="1" cellspacing="0" class="wwwInfo">
       <tbody data-bind="foreach:liveCombos">
         <tr>
-          <td data-bind="text:combo"></td>
+          <td data-bind="text:combo" style="text-align:left"></td>
+          <td data-bind="text:d3.format('.2f')(open())"></td>
+          <td data-bind="text:d3.format('.2f')(close())"></td>
           <td data-bind="text:position"></td>
           <td data-bind="text:d3.format('$.0f')(netPL()),css:{profit:netPL()>0,loss:netPL()<0}"></td>
           <td>

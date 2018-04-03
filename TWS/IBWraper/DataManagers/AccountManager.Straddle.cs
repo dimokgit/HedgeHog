@@ -25,25 +25,23 @@ namespace IBApp {
         select (strdl.mash, strdl.source.Select(x => x.trade).Gross(), strdl.source.Max(s => s.trade.Position)));
       return straddles;
     }
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strike)[]>
+    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strike, (Contract contract, Contract[] options) combo)[]>
       CurrentStraddles(string symbol, int count) {
       (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
-        from price in IbClient.ReqPriceSafe(symbol, 1, true)
-        from combo in MakeStraddle(symbol, price.bid.Avg(price.ask), 1, 4)
-        from p in IbClient.TryGetPrice(combo.contract.Instrument).Select(p => (combo.contract, bid: p.Bid, ask: p.Ask, time: IbClient.ServerTime))
-        .ToObservable()
-        .Concat(Observable.Defer(() => ReqPrice(IbClient, combo)))
-        .Take(1)
+        from cd in IbClient.ReqContractDetailsCached(symbol)
+        from price in IbClient.ReqPriceSafe(cd.Summary, 1, true).Select(p=>p.ask.Avg(p.bid))
+        from combo in MakeStraddles(symbol, price, 1, count)
+        from p in IbClient.ReqPriceSafe(combo.contract, 1, true)
         from strike in combo.options.Take(1).Select(o => o.Strike)
-        from up in IbClient.TryGetPrice(symbol).Select(p => p.Average)
         select (
           instrument: combo.contract.Instrument,
           p.bid,
           p.ask,
           p.time,//.ToString("HH:mm:ss"),
-          delta: p.ask.Avg(p.bid) - (up - strike),
-          strike
+          delta: p.ask.Avg(p.bid) - (price - strike),
+          strike,
+          combo
         )).ToArray()
         .Select(b => b
          .OrderBy(t => t.ask.Avg(t.bid))
@@ -57,11 +55,11 @@ namespace IBApp {
         return ib.ReqPrices(combo.contract.SideEffect(Subscribe), 1, false)
           .DefaultIfEmpty(priceEmpty)
           .FirstAsync();
-        void Subscribe(IBApi.Contract c) => ib.SetOfferSubscription(c, _ => { });
+        void Subscribe(IBApi.Contract c) => ib.SetContractSubscription(c);
       }
     }
 
-    public IObservable<(Contract contract, Contract[] options)> MakeStraddle
+    public IObservable<(Contract contract, Contract[] options)> MakeStraddles
       (string symbol, double price, int expirationsCount, int count) =>
       IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationsCount, count * 2)
       //.Take(count*2)
@@ -106,7 +104,7 @@ namespace IBApp {
         Exchange = exchange
       };
       c.ComboLegs = new List<ComboLeg> { call, put };
-      return c;
+      return c.AddToCache();
     }
     #endregion
 

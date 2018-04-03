@@ -403,6 +403,10 @@
       <Project>{4A4FDF3C-8827-4E71-A705-7AD964408BB2}</Project>
       <Name>Order2GoAddIn</Name>
     </ProjectReference>
+    <ProjectReference Include="..\TWS\IBApi.CSharpAPI\IBApi.CSharpAPI.csproj">
+      <Project>{8EDE0744-96C2-40B0-A8DC-37DF79370203}</Project>
+      <Name>IBApi.CSharpAPI</Name>
+    </ProjectReference>
     <ProjectReference Include="..\TWS\IBWraper\IBWraper.csproj">
       <Project>{364BF321-6C2A-41A6-8CE5-05D8441FEB9A}</Project>
       <Name>IBWraper</Name>

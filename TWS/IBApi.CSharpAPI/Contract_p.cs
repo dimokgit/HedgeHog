@@ -32,6 +32,8 @@ namespace IBApi {
 
     public bool IsButterFly => ComboLegs?.Any() == true && String.Join("", comboLegs.Select(l => l.Ratio)) == "121";
 
+    public int ReqId { get; set; }
+
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     public override string ToString() => ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}");// {Exchange} {Currency}";
     internal string ComboLegsToString() =>

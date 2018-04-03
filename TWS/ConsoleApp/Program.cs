@@ -20,6 +20,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Concurrency;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Reactive;
 
 namespace ConsoleApp {
   class Program {
@@ -38,7 +39,6 @@ namespace ConsoleApp {
     static void Main(string[] args) {
       ShowWindow(ThisConsole, MAXIMIZE);
       int _nextValidId = 0;
-      DataManager.DoShowRequestErrorDone = false;
 
       TradesManagerStatic.AccountCurrency = "USD";
       var ibClient = IBClientCore.Create(o => HandleMessage(o + ""));
@@ -61,33 +61,65 @@ namespace ConsoleApp {
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       var contract = spy;
-      AccountManager.NoPositionsPlease = false;
-      bool showTime = false;
+      AccountManager.NoPositionsPlease = true;
+      DataManager.DoShowRequestErrorDone = true;
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         var am = fw.AccountManager;
-        TestParsedCombos();
+        var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
+        var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
+        TestCurrentStraddles(10000); return;
+        //TestCurrentStraddles();
         var cds = ibClient.ReqContractDetailsAsync("VXX   180329C00051500".ContractFactory()).ToEnumerable().Count(0, new { }).ToArray();
         var symbols = new[] { "SPX", "VXX", "SPY" };
         var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1000)).Subscribe();
         Stopwatch sw = Stopwatch.StartNew();
         //.ForEach(trade => HandleMessage(new { trade.Pair}));
-        ProcessSymbols();
+
+        ProcessSymbols(100).Concat(TestParsedCombos(1)).ToEnumerable()
+        .ForEach(_ => {
+          timeOut.Dispose();
+          LoadHistory(ibClient, new[] { "spx".ContractFactory() });
+        });
+
         //ShowTrades(fw);
         //TestStraddleds();return;
-        timeOut.Dispose();
-        HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
         //Contract.Contracts.OrderBy(c => c + "").ForEach(cached => HandleMessage(new { cached }));
         //HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
-        LoadHistory(ibClient, new[] { "spx".ContractFactory() });
 
         #region Local Tests
-        void TestParsedCombos() {
-          ibClient.PriceChangeObservable
+        void TestCurrentStraddles(int count) {
+          Observable.Interval(TimeSpan.FromMilliseconds(500))
+          .Take(count)
+          .SelectMany(pea => TestImpl()).Subscribe();
+          IObservable<Unit> TestImpl() { // Combine positions
+            //HandleMessage("Combos:");
+            //var swCombo = Stopwatch.StartNew();
+            return am.CurrentStraddles("SPX", 3)
+            .Select(ts => ts.Select(t => new {
+              i = t.instrument,
+              bid = t.bid.Round(2),
+              ask = t.ask.Round(2),
+              avg = t.ask.Avg(t.bid),
+              time = t.time.ToString("HH:mm:ss"),
+              delta = t.delta.Round(3),
+              t.strike
+            }))
+           .Select(combos => {
+             combos.ForEach(combo => HandleMessage2(new { combo }));
+             return Unit.Default;
+           });
+            //HandleMessage($"Done in {swCombo.ElapsedMilliseconds} ms");
+          }
+        }
+        IObservable<Unit> TestParsedCombos(int count) {
+          return ibClient.PriceChangeObservable
           //.Throttle(TimeSpan.FromSeconds(0.1))
-          .DistinctUntilChanged(_ => am.Positions.Count)
-          .Subscribe(pea => {
+          //.DistinctUntilChanged(_ => am.Positions.Count)
+          .Take(count)
+          .Select(pea => {
             TestParsedCombosImpl();
+            return Unit.Default;
           });
           void TestParsedCombosImpl() { // Combine positions
             var swCombo = Stopwatch.StartNew();
@@ -98,56 +130,75 @@ namespace ConsoleApp {
             .ForEach(comboPrices => {
               HandleMessage2("Matches: Start");
               comboPrices.ForEach(comboPrice => HandleMessage2(new { comboPrice }));
-              HandleMessage2($"Matches: Done in {swCombo.ElapsedMilliseconds} ms");
+              HandleMessage2($"Matches: Done in {swCombo.ElapsedMilliseconds} ms =========================================");
             });
           }
         }
-        void ProcessSymbols() {
-          var combos = symbols.Take(10).Buffer(10).Repeat(1).Select(b => b.Select(ProcessSymbol).Count(symbols.Length, new { }).ToArray())
-          .Do(list => {
-            //Passager.ThrowIf(() => list.Count != symbols.Length);
-            HandleMessage2(new { sw.ElapsedMilliseconds });
-            sw.Restart();
-          })
-          .ToList();
-          sw.Stop();
-          (from cls in combos
-           from cl in cls
-           from c in cl
-           from o in c.options
-           select o
-           )
-           .ToObservable()
-           //.Do(_ => Thread.Sleep(200))
-           .SelectMany(option => ibClient.ReqPrices(option, 1, false))
-           .Subscribe(price => HandleMessage2($"Observed:{price}"));
-        }
-        IList<(Contract contract, Contract[] options)> ProcessSymbol(string symbol) {
-          //HandleMessage(new { symbol } + "");
-          // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
+        IObservable<Unit> ProcessSymbols(int count) {
+          //return ibClient.PriceChangeObservable.Sample(TimeSpan.FromSeconds(0.1))
+          //.DistinctUntilChanged(_ => am.Positions.Count)
+          return Observable.Interval(TimeSpan.FromMilliseconds(100))
+          .Select(pea => {
+            TestImpl();
+            HandleMessage(nameof(ProcessSymbols) + " done =========================================================================");
+            return Unit.Default;
+          });
+          void TestImpl() {
+            var combos = symbols.Take(10).Buffer(10).Repeat(1).Select(b => b.Select(ProcessSymbol).Count(symbols.Length, new { }).ToArray())
+            .Do(list => {
+              //Passager.ThrowIf(() => list.Count != symbols.Length);
+              HandleMessage2(new { sw.ElapsedMilliseconds });
+              sw.Restart();
+            })
+            .ToList();
+            sw.Stop();
+            return;
+            (from cls in combos
+             from cl in cls
+             from c in cl
+             from o in c.options
+             select o
+             )
+             .ToObservable()
+             //.Do(_ => Thread.Sleep(200))
+             .SelectMany(option => ibClient.ReqPriceSafe(option, 1, false).Select(p => (option, p)))
+             .Subscribe(price => HandleMessage2($"Observed:{price}"));
+          }
+          IList<(Contract contract, Contract[] options)> ProcessSymbol(string symbol) {
+            //HandleMessage(new { symbol } + "");
+            // fw.AccountManager.BatterflyFactory("spx index").ToArray().ToEnumerable()
 
-          //ibClient.ReqPriceMarket(symbol).ToEnumerable().Count(1, "ReqMarketPrice").ForEach(mp => HandleMessage($"{symbol}:{new { mp = mp.ToJson() }}"));
+            //ibClient.ReqPriceMarket(symbol).ToEnumerable().Count(1, "ReqMarketPrice").ForEach(mp => HandleMessage($"{symbol}:{new { mp = mp.ToJson() }}"));
 
-          //var cds = ibClient.ReqContractDetails(symbol);
-          //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
-
-          return TestStraddleds(symbol)
-          .Do(t => t.options.ForEach(c => ibClient.SetOfferSubscription(c, _ => { })))
-          .ToArray()
-          .Do(burrefly => {
-            HandleMessage2(new { straddle = burrefly.contract });
-            ibClient.SetOfferSubscription(burrefly.contract, _ => { });
-            ibClient.ReqPrices(burrefly.contract, 2, false, double.NaN)
-            .Take(1)
-            .Subscribe(price => HandleMessage2($"Observed:{price}"));
-          }).ToArray();
+            //var cds = ibClient.ReqContractDetails(symbol);
+            //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
+            return am.CurrentStraddles(symbol, 4)
+            //.Do(t => t.options.ForEach(c => ibClient.SetOfferSubscription(c, _ => { })))
+            .ToEnumerable()
+            .ToArray()
+            .Do(straddles => straddles.Count(4, new { }))
+            .Concat()
+            .Do(c => Passager.ThrowIf(() => !c.combo.contract.Key.Contains("[C-P]")))
+            .Do(straddle => {
+              HandleMessage2(new { straddle = straddle.combo.contract });
+              //ibClient.SetOfferSubscription(straddle.combo.contract);
+              ibClient.ReqPriceSafe(straddle.combo.contract, 2, false, double.NaN)
+                .Take(1)
+                .Subscribe(price => {
+                  Passager.ThrowIf(() => price.ask <= 0 || price.bid <= 0);
+                  HandleMessage2($"Observed:{straddle.instrument}{price}");
+                });
+            })
+            .Select(straddle => straddle.combo)
+            .ToArray();
+          }
         }
         (Contract contract, Contract[] options)[] TestStraddleds(string symbol) {
-          var straddlesCount = 6;
+          var straddlesCount = 5;
           var expirationCount = 1;
-          var price = ibClient.ReqPriceSafe(symbol, 1, true).Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}"));
+          var price = ibClient.ReqContractDetailsCached(symbol).SelectMany(cd => ibClient.ReqPriceSafe(cd.Summary, 1, true).Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}")));
           var contracts = (from p in price
-                           from str in fw.AccountManager.MakeStraddle(symbol, p, expirationCount, straddlesCount)
+                           from str in fw.AccountManager.MakeStraddles(symbol, p, expirationCount, straddlesCount)
                            select str)
           .ToEnumerable()
           .ToArray()
@@ -183,33 +234,6 @@ namespace ConsoleApp {
       Console.ReadKey();
     }
 
-    private static void ShowTrades(IBWraper fw) => fw.AccountManager.PositionsObservable
-            .Distinct(p => p.contract.Key)
-            .Subscribe(pos => {
-              fw._ibClient.ReqPrices(pos.contract, 1, false)
-              .Subscribe(_ => {
-                var trades = (from trade in fw.GetTrades()
-                              orderby trade.Pair
-                              orderby trade.IsBuy descending
-                              select new {
-                                trade.Pair, trade.Position, trade.NetPL2, trade.Open, trade.Close,
-                                PL = (trade.Close - trade.Open) * trade.Position
-                              }
-                             ).ToArray();
-                //var straddles = (from trade in fw.GetTrades()
-                //                 join c in Contract.Cache() on trade.Pair equals c.Key
-                //                 select new { c, trade } into g0
-                //                 group g0 by new { g0.c.Symbol, g0.c.Strike } into g
-                //                 from strdl in g.OrderBy(v => v.c.Instrument)
-                //                 .Buffer(2, 1)
-                //                 .Where(b => b.Count == 2)
-                //                 .Select(b => b.MashDiffs(x => x.c.Instrument))
-                //                 select new { combo = strdl.mash, netPL = strdl.source.Select(x => x.trade).Gross() }
-                //                 );
-                HandleMessage($"Trades:\n{trades.Flatter("\n")}");
-                HandleMessage($"Straddles:\n{fw.AccountManager.TradeStraddles().Flatter("\n")}");
-              });
-            });
     private static void LoadHistory(IBClientCore ibClient, IList<Contract> options) {
       var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
       HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
@@ -219,10 +243,10 @@ namespace ConsoleApp {
         new HistoryLoader<Rate>(ibClient, c, 1800 * 1, dateEnd, TimeSpan.FromDays(1), TimeUnit.S, BarSize._1_secs,
            map,
            list => {
-             HandleMessage($"{c} {new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate, Thread.CurrentThread.ManagedThreadId } }}");
+             HandleMessage($"{c} {new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate, Thread = Thread.CurrentThread.ManagedThreadId } }}");
              Debug.WriteLine(list.Csv());
            },
-           dates => HandleMessage($"{c} {new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter, Thread.CurrentThread.ManagedThreadId }}"),
+           dates => HandleMessage($"{c} {new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter, Thread = Thread.CurrentThread.ManagedThreadId }}"),
            exc => { });
       } else
         HandleMessage(new { options = options.ToJson() });

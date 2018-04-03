@@ -39,6 +39,7 @@ using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string P
   , bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
 using IBApp;
 using System.Diagnostics;
+using IBApi;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
@@ -70,6 +71,7 @@ namespace HedgeHog.Alice.Client {
 
         NewThreadScheduler.Default.Schedule(TimeSpan.FromSeconds(1), () => {
           priceChanged = trader.PriceChanged
+          .Where(p => !Contract.FromCache(p.EventArgs.Price.Pair).Any(c => c.IsOption() || c.IsCombo))
             .Select(x => x.EventArgs.Price.Pair.Replace("/", "").ToLower())
             //.Where(pair => Pairs.Contains(pair))
             .Subscribe(pair => {
@@ -243,6 +245,7 @@ namespace HedgeHog.Alice.Client {
     { "Tokyo", DateTimeOffset.Parse("23:00 +0:00") }
     };
     static List<string> _marketHoursSet = new List<string>();
+    static ISubject<Action> _CurrentCombos;
     static MyHub() {
       _AskRatesSubject = new Subject<Action>();
       _AskRatesSubject.InitBufferedObservable<Action>(exc => Log = exc);
@@ -250,6 +253,14 @@ namespace HedgeHog.Alice.Client {
       _AskRates2Subject = new Subject<Action>();
       _AskRates2Subject.InitBufferedObservable<Action>(exc => Log = exc);
       _AskRates2Subject.Subscribe(a => a());
+      _CurrentCombos = new Subject<Action>();
+      _CurrentCombos
+        .ObserveOn(TaskPoolScheduler.Default)
+        .Sample(TimeSpan.FromSeconds(0.5))
+        .Subscribe(s => s(), exc => { });
+    }
+    static public void OnCurrentCombo(Action p) {
+      _CurrentCombos.OnNext(p);
     }
     private AccountManager AccountManager() => ((IBWraper)trader?.Value?.TradesManager).AccountManager;
     public MyHub() {
@@ -557,23 +568,27 @@ namespace HedgeHog.Alice.Client {
 
     public void ReadStraddles(string pair) {
       var am = AccountManager();
+      var loadCurrent = true;
       if(am != null) {
-        IBApi.Contract.FromCache(pair, c => c.Symbol)
-          .ForEach(symbol => am.CurrentStraddles(symbol, 4)
-          .Select(ts => ts.Select(t => new {
-            i = t.instrument,
-            t.bid,
-            t.ask,
-            avg = t.ask.Avg(t.bid),
-            time = t.time.ToString("HH:mm:ss"),
-            t.delta,
-            t.strike
-          }))
-         .Subscribe(b => base.Clients.Caller.butterflies(b)));
+        Action a = ()=>
+          IBApi.Contract.FromCache(pair, c => c.Symbol)
+            .ForEach(symbol => am.CurrentStraddles(symbol, 4)
+            .Select(ts => ts.Select(t => new {
+              i = t.instrument,
+              t.bid,
+              t.ask,
+              avg = t.ask.Avg(t.bid),
+              time = t.time.ToString("HH:mm:ss"),
+              t.delta,
+              t.strike
+            }))
+           .Subscribe(b => base.Clients.Caller.butterflies(b)));
+        OnCurrentCombo(a);
         //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
         am.ComboTrades(1)
           .ToArray()
-          .Subscribe(cts => base.Clients.Caller.liveCombos(cts.OrderBy(ct => ct.contract.Key).ToArray(x => new { combo = x.contract.Key, netPL = x.pl, x.position })));
+          .Subscribe(cts => base.Clients.Caller.liveCombos(cts.OrderBy(ct => ct.contract.Key).ToArray(x
+          => new { combo = x.contract.Key, netPL = x.pl, x.position, x.open, x.close })));
       }
     }
 

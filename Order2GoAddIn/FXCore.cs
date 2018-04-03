@@ -275,7 +275,7 @@ namespace Order2GoAddIn {
       lock(_deskLocker)
       try { return IsInVirtualTrading || Desk != null && Desk.IsLoggedIn(); } catch { return false; } } }
 
-    public void SetOfferSubscription(string pair) {
+    public void SetSymbolSubscription(string pair) {
       Desk.SetOfferSubscription(pair, "Enabled");
     }
 

@@ -31,7 +31,7 @@ namespace HedgeHog.Alice.Store {
           LoadActiveSettings();
           _Rates.Clear();
           if(!oc.prev.IsNullOrWhiteSpace() && TradesManager != null) {
-            TradesManager.CoreFX.SetOfferSubscription(Pair);
+            TradesManager.CoreFX.SetSymbolSubscription(Pair);
             OnLoadRates();
           }
           _pendingEntryOrders = null;

@@ -2807,7 +2807,7 @@ namespace Order2GoAddIn {
       if(!IsLoggedIn)
         return 0;
       Func<string, double> addLeverage = p => {
-        CoreFX.SetOfferSubscription(p);
+        CoreFX.SetSymbolSubscription(p);
         var offer = GetOffer(p);
         return GetBaseUnitSize(pair) / (isBuy? offer.MMRLong:offer.MMRShort);
       };

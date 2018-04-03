@@ -917,7 +917,7 @@ namespace HedgeHog.Alice.Client {
         foreach(var tm in TradingMacrosCopy) {
           InitTradingMacro(tm);
           if(tm.IsActive && !IsInVirtualTrading) {
-            (sender as ICoreFX).SetOfferSubscription(tm.Pair);
+            (sender as ICoreFX).SetSymbolSubscription(tm.Pair);
             //tm.CurrentPrice = TradesManager.GetPrice(tm.Pair);
           }
           tm.CurrentLot = tm.Trades.Sum(t => t.Lots);

@@ -6,6 +6,7 @@ using ReactiveUI;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
@@ -103,7 +104,7 @@ namespace IBApp {
         h => IbClient.Position += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
         h => IbClient.Position -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
         )
-        .Publish().RefCount()
+        //.Publish().RefCount()
         //.Spy("**** AccountManager.PositionsObservable ****")
         ;
       var ooObs = Observable.FromEvent<OpenOrderHandler, (int orderId, Contract contract, IBApi.Order order, OrderState orderState)>(
@@ -131,13 +132,15 @@ namespace IBApp {
       #region Subscibtions
       IScheduler esPositions = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Positions" });
       IScheduler esPositions2 = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Positions2" });
+      DataManager.DoShowRequestErrorDone = false;
       PositionsObservable
-        .Where(x => x.account == _accountId)
-        .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos, x.account } }))
-        .ObserveOn(esPositions)
-        .SubscribeOn(esPositions2)
+        .Where(x => x.account == _accountId && !NoPositionsPlease)
+        .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos, x.avgCost, x.account } }))
+        //.ObserveOn(esPositions)
+        //.SubscribeOn(esPositions2)
         //.Spy("**** AccountManager.OnPosition ****")
         //.Where(x => x.pos != 0)
+        .Distinct(x => new { x.contract.LocalSymbol, x.pos, x.avgCost, x.account })
         .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost), () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
       ooObs
@@ -226,12 +229,12 @@ namespace IBApp {
     #region Position
     public static bool NoPositionsPlease = false;
 
-    public IObservable<(Contract contract, int position, double open,double close,double  pl)> ComboTrades(double priceTimeoutInSeconds) {
+    public IObservable<(Contract contract, int position, double open, double close, double pl)> ComboTrades(double priceTimeoutInSeconds) {
       var x =
-      (from c in Positions.ParseCombos().ToObservable()
-       from price in IbClient.ReqPrices(c.contract, priceTimeoutInSeconds, true).Take(1)
+      (from c in Positions.ParseCombos().Do(c => IbClient.SetContractSubscription(c.contract)).ToObservable()
+       from price in IbClient.ReqPriceSafe(c.contract, priceTimeoutInSeconds, true).Take(1)
        let close = (c.position > 0 ? price.bid : price.ask) * c.position * 100
-       select (IbClient.SetOfferSubscription(c.contract), c.position, c.open, close, pl: close - c.open)
+       select (IbClient.SetContractSubscription(c.contract), c.position, c.open, close, pl: close - c.open)
       );
       return x;
     }
@@ -245,10 +248,12 @@ namespace IBApp {
     //public Subject<ICollection<(Contract contract, int position, double open)>> ContracPositionsSubject = new Subject<ICollection<(Contract contract, int position, double open)>>();
 
     void OnPosition(Contract contract, double position, double averageCost) {
-      ContractPosition((contract, position, averageCost)).Subscribe(cp => {
-        _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
-        //ContracPositionsSubject.OnNext(_positions.Values);
-      });
+      ContractPosition((contract, position, averageCost))
+        .Subscribe(cp => {
+          Debug.WriteLine($"_positions: {cp}");
+          _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
+          //ContracPositionsSubject.OnNext(_positions.Values);
+        });
       if(NoPositionsPlease) return;
       var posMsg = new PositionMessage("", contract, position, averageCost);
       if(position == 0) {
@@ -268,15 +273,17 @@ namespace IBApp {
           .Select(ot => new Action(() => ot.Lots = posMsg.Quantity
             .SideEffect(Lots => _verbous(new { ChangePosition = new { ot.Pair, ot.IsBuy, Lots } }))))
           .DefaultIfEmpty(() => contract.SideEffect(c
-          => IbClient.SetOfferSubscription(c, c2
-          => OpenTrades.Add(TradeFromPosition(c2, position, averageCost)
-          .SideEffect(t => _verbous(new { OpenPosition = new { t.Pair, t.IsBuy, t.Lots } }))))))
+          => OpenTrades.Add(TradeFromPosition(Subscribe(c), position, averageCost)
+          .SideEffect(t => _verbous(new { OpenPosition = new { t.Pair, t.IsBuy, t.Lots } })))))
           .ToList()
           .ForEach(a => a());
       }
 
       TraceTrades("OnPositions: ", OpenTrades);
     }
+
+    private Contract Subscribe(Contract c) => IbClient.SetContractSubscription(c);
+
     Trade TradeFromPosition(Contract contract, double position, double avgCost) {
       var st = IbClient.ServerTime;
       var trade = CreateTrade(contract.LocalSymbol);

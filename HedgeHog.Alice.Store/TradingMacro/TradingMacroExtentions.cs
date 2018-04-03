@@ -1102,13 +1102,18 @@ namespace HedgeHog.Alice.Store {
       h => TradesManager.PriceChanged -= h
       )
       .Where(price => price.EventArgs.Price.Pair == Pair)
-      .Throttle(TimeSpan.FromSeconds(0.3))
+      .Sample(TimeSpan.FromSeconds(0.5))
       .SelectMany(price => ((IBWraper)TradesManager).AccountManager.CurrentStraddles(Pair, 2))
-      .SelectMany(x => x.Buffer(2))
-      .Take(1)
+      .SelectMany(x => x.Buffer(2).Take(1))
       .Where(b => b.Count == 2)
       .Subscribe(straddle => {
         StraddleHistory.Add((straddle.Average(s => s.bid), straddle.Average(s => s.ask), straddle[0].time, straddle.Average(s => s.delta)));
+      },exc=> {
+        Log = exc;
+        Debugger.Break();
+      }, ()=> {
+        Log = new Exception("_priceChangeDisposable done");
+        Debugger.Break();
       });
     }
     List<(double bid, double ask, DateTime time, double delta)> StraddleHistory = new List<(double bid, double ask, DateTime time, double delta)>();
