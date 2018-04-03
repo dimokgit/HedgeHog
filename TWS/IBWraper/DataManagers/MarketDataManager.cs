@@ -58,7 +58,7 @@ namespace IBApp {
         Verbose($"AddRequest:{reqId}=>{contract}");
         IbClient.ErrorObservable
           .Where(t => t.id == reqId)
-          .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
+          .Window(TimeSpan.FromSeconds(2), TaskPoolScheduler.Default)
           .Take(1)
           .Merge()
           .Subscribe(t => Trace($"{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
@@ -97,7 +97,7 @@ namespace IBApp {
       if(!activeRequests.ContainsKey(requestId)) return;
       var priceMessage = new TickPriceMessage(requestId, field, price, canAutoExecute);
       var price2 = activeRequests[requestId].price;
-      Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
+      //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
       if(priceMessage.Price == 0)
         return;
       switch(priceMessage.Field) {

@@ -68,15 +68,14 @@ namespace ConsoleApp {
         var am = fw.AccountManager;
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
-        TestCurrentStraddles(10000); return;
-        //TestCurrentStraddles();
+        TestCurrentStraddles(10000); 
         var cds = ibClient.ReqContractDetailsAsync("VXX   180329C00051500".ContractFactory()).ToEnumerable().Count(0, new { }).ToArray();
         var symbols = new[] { "SPX", "VXX", "SPY" };
         var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1000)).Subscribe();
         Stopwatch sw = Stopwatch.StartNew();
         //.ForEach(trade => HandleMessage(new { trade.Pair}));
 
-        ProcessSymbols(100).Concat(TestParsedCombos(1)).ToEnumerable()
+        ProcessSymbols(1).Concat(TestParsedCombos(1)).ToEnumerable()
         .ForEach(_ => {
           timeOut.Dispose();
           LoadHistory(ibClient, new[] { "spx".ContractFactory() });
@@ -89,13 +88,13 @@ namespace ConsoleApp {
 
         #region Local Tests
         void TestCurrentStraddles(int count) {
-          Observable.Interval(TimeSpan.FromMilliseconds(500))
+          var swCombo = Stopwatch.StartNew();
+          Observable.Interval(TimeSpan.FromMilliseconds(1))
           .Take(count)
           .SelectMany(pea => TestImpl()).Subscribe();
           IObservable<Unit> TestImpl() { // Combine positions
             //HandleMessage("Combos:");
-            //var swCombo = Stopwatch.StartNew();
-            return am.CurrentStraddles("SPX", 3)
+            return am.CurrentStraddles("SPX", 6)
             .Select(ts => ts.Select(t => new {
               i = t.instrument,
               bid = t.bid.Round(2),
@@ -106,9 +105,13 @@ namespace ConsoleApp {
               t.strike
             }))
            .Select(combos => {
-             combos.ForEach(combo => HandleMessage2(new { combo }));
+             combos.ForEach(combo => HandleMessage(new { combo }));
+             //HandleMessage($"Conbos done ======================================");
+             HandleMessage($"Conbos done in {swCombo.ElapsedMilliseconds} ms =======================================");
+             swCombo.Restart();
              return Unit.Default;
-           });
+           })
+          .Sample(TimeSpan.FromSeconds(0.2));
             //HandleMessage($"Done in {swCombo.ElapsedMilliseconds} ms");
           }
         }

@@ -51,12 +51,6 @@ namespace IBApp {
          .Select(t => t.t)
          .ToArray()
          );
-      IObservable<(IBApi.Contract contract, double bid, double ask, DateTime time)> ReqPrice(IBClientCore ib, (IBApi.Contract contract, IList<IBApi.Contract> options) combo) {
-        return ib.ReqPrices(combo.contract.SideEffect(Subscribe), 1, false)
-          .DefaultIfEmpty(priceEmpty)
-          .FirstAsync();
-        void Subscribe(IBApi.Contract c) => ib.SetContractSubscription(c);
-      }
     }
 
     public IObservable<(Contract contract, Contract[] options)> MakeStraddles

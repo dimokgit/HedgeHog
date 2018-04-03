@@ -238,7 +238,7 @@ namespace IBApp {
       return contract.FromDetailsCache()
         .ToArray()
         .ToObservable()
-        .Do(cd => Trace(new { contractCache = cd.Summary }))
+        //.Do(cd => Trace(new { contractCache = cd.Summary }))
         //.ToArray()
         .Concat(Observable.Defer(() => {
           return ReqContractDetailsAsync(contract).Do(cd => Trace(new { contractAsync = cd.Summary }));
@@ -272,31 +272,13 @@ namespace IBApp {
     IObservable<T> WireToError<T>
       (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<int, T> endFactory, T empty, Func<T, int> getReqId, Func<T, bool> isNotEnd, Action<(int id, int errorCode, string errorMsg, Exception exc)> onError, Action onEnd) {
       SetRequestHandled(reqId);
-      var end = new Subject<int>();
-      var error = new Subject<(int id, int errorCode, string errorMsg, Exception exc)>();
-      var d = error.Merge(ErrorObservable)
-        .Where(t => t.id == reqId)
-        .TakeWhile(t => t.Item2 != -2)
-        .Subscribe(e => {
-          end.OnNext(reqId);
-          end.Dispose();
-          onError(e);
-        }, onEnd);
-      Func<int, T> next = _ => {
-        error.OnNext((reqId, -2, "", (Exception)null));
-        error.Dispose();
-        end.Dispose();
-        d.Dispose();
-        return empty;
-      };
-      var o = source
-        .TakeUntil(endSubject.Where(rid => rid == reqId).Merge(end))
+      return source
+        .TakeUntil(
+          endSubject.Where(rid => rid == reqId)
+          .Merge(ErrorObservable.Where(e => e.id == reqId).Do(onError).Select(e => e.id))
+          )
         .Where(t => getReqId(t) == reqId)
-        //.TakeWhile(isNotEnd)//t => t.Item2 != null)
-        .OnErrorResumeNext(Observable.Return(1).Select(next))
-        .Where(t => getReqId(t) > 0)
         ;
-      return o;
     }
     (IObservable<T> source, IObserver<T> stopper) StoppableObservable<T>
       (IObservable<T> source, Func<T, bool> isNotEnd) {
@@ -387,6 +369,7 @@ namespace IBApp {
       .Take(1)
       .Concat(Observable.Defer(() => {
         return TickPriceObservable
+        .Do(_ => Trace($"TickPriceObservable in waiting:{contract}"))
         .SkipWhile(_ => contract.ReqId == 0)
         .Where(t => t.reqId == contract.ReqId)
         .Select(tick => OnTickPrice(tick.reqId, tick.field, tick.price, tick.canAutoExecute))
@@ -457,6 +440,7 @@ namespace IBApp {
       return ReqPricesImpl(contract, timeoutInSeconds, useErrorHandler);
     }
     public PRICE_OBSERVABLE ReqPricesImpl(Contract contract, double timeoutInSeconds, bool useErrorHandler) {
+      Trace($"ReqPricesImpl:{contract}");
       var reqId = NextReqId();
       var cd = TickPriceObservable
         .Where(t => t.reqId == reqId)
@@ -471,7 +455,7 @@ namespace IBApp {
         .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
         ;
       if(useErrorHandler)
-        WatchReqError(nameof(ReqPrices), contract, reqId, () => TraceIf(DataManager.DoShowRequestErrorDone, $"{nameof(ReqPrices)}: {contract} => {reqId} Error done."));
+        WatchReqError("ReqPricesImpl", contract, reqId, () => TraceIf(DataManager.DoShowRequestErrorDone, $"ReqPricesImpl: {contract} => {reqId} Error done."));
       OnReqMktData(() => ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null));
       return cd;
     }
