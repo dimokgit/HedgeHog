@@ -136,11 +136,11 @@ namespace IBApp {
       PositionsObservable
         .Where(x => x.account == _accountId && !NoPositionsPlease)
         .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos, x.avgCost, x.account } }))
-        //.ObserveOn(esPositions)
-        //.SubscribeOn(esPositions2)
+        .ObserveOn(esPositions)
+        .SubscribeOn(esPositions2)
         //.Spy("**** AccountManager.OnPosition ****")
         //.Where(x => x.pos != 0)
-        .Distinct(x => new { x.contract.LocalSymbol, x.pos, x.avgCost, x.account })
+        //.Distinct(x => new { x.contract.LocalSymbol, x.pos, x.avgCost, x.account })
         .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost), () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
       ooObs
@@ -201,7 +201,11 @@ namespace IBApp {
     internal class OrdeContractHolder {
       public readonly IBApi.Order order;
       public readonly IBApi.Contract contract;
-      public ORDER_STATUS status;
+      ORDER_STATUS _status;
+      public ORDER_STATUS status {
+        get { return _status; }
+        set { _status = value; }
+      }
       public OrdeContractHolder(IBApi.Order order, IBApi.Contract contract) {
         this.order = order;
         this.contract = contract;
@@ -229,32 +233,50 @@ namespace IBApp {
     #region Position
     public static bool NoPositionsPlease = false;
 
-    public IObservable<(Contract contract, int position, double open, double close, double pl)> ComboTrades(double priceTimeoutInSeconds) {
-      var x =
-      (from c in Positions.ParseCombos().Do(c => IbClient.SetContractSubscription(c.contract)).ToObservable()
-       from price in IbClient.ReqPriceSafe(c.contract, priceTimeoutInSeconds, true).Take(1)
-       let close = (c.position > 0 ? price.bid : price.ask) * c.position * 100
-       select (IbClient.SetContractSubscription(c.contract), c.position, c.open, close, pl: close - c.open)
-      );
+    public IObservable<(Contract contract, int position, double open, double close, double pl, double underPrice, double strikeAvg, double openPrice)>
+      ComboTrades(double priceTimeoutInSeconds) {
+      var x = (
+        from c in ComboTradesImpl()
+        from underPrice in UnderPrice(c.contract)
+        from price in IbClient.ReqPriceSafe(c.contract, priceTimeoutInSeconds, true).Take(1)
+        let multiplier = c.contract.ComboMultiplier
+        let close = (c.position > 0 ? price.bid : price.ask) * c.position * multiplier
+        select (IbClient.SetContractSubscription(c.contract), c.position, c.open, close
+        , pl: close - c.open, underPrice, strikeAvg: c.contract.ComboStrike()
+        , c.open / c.position / multiplier)
+        );
+      return x;
+      IObservable<double> UnderPrice(Contract contract) {
+        if(!contract.IsOption && !contract.IsCombo) return Observable.Return(0.0);
+        return (
+        from symbol in IbClient.ReqContractDetailsCached(contract.Symbol)
+        from underPrice in IbClient.ReqPriceSafe(symbol.Summary, priceTimeoutInSeconds, false)
+        select underPrice.ask.Avg(underPrice.bid));
+      }
+    }
+
+    public IObservable<(Contract contract, int position, double open)> ComboTradesImpl() {
+      var positionsArray = (from p in Positions.ToObservable()
+                            from cd in IbClient.ReqContractDetailsCached(p.contract)
+                            select (contract: cd.Summary, p.position, p.open)
+                       ).ToArray();
+      var x = (
+        from positions in positionsArray
+        from c in positions.ParseCombos().Do(c => IbClient.SetContractSubscription(c.contract))
+        select c
+        );
       return x;
     }
 
-    public IObservable<(Contract contract, int position, double open)>
+    public (Contract contract, int position, double open)
       ContractPosition((IBApi.Contract contract, double pos, double avgCost) p) =>
-      IbClient.ReqContractDetailsCached(p.contract).Select(c => (contract: c.Summary, position: p.pos.ToInt(), open: p.avgCost * p.pos.Sign()));
+       (p.contract, position: p.pos.ToInt(), open: p.avgCost * p.pos);
 
     ConcurrentDictionary<string, (Contract contract, int position, double open)> _positions = new ConcurrentDictionary<string, (Contract contract, int position, double open)>();
     public ICollection<(Contract contract, int position, double open)> Positions => _positions.Values;
     //public Subject<ICollection<(Contract contract, int position, double open)>> ContracPositionsSubject = new Subject<ICollection<(Contract contract, int position, double open)>>();
 
     void OnPosition(Contract contract, double position, double averageCost) {
-      ContractPosition((contract, position, averageCost))
-        .Subscribe(cp => {
-          Debug.WriteLine($"_positions: {cp}");
-          _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
-          //ContracPositionsSubject.OnNext(_positions.Values);
-        });
-      if(NoPositionsPlease) return;
       var posMsg = new PositionMessage("", contract, position, averageCost);
       if(position == 0) {
         OpenTrades
@@ -280,6 +302,8 @@ namespace IBApp {
       }
 
       TraceTrades("OnPositions: ", OpenTrades);
+      var cp = ContractPosition((contract, position, averageCost));
+      _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
     }
 
     private Contract Subscribe(Contract c) => IbClient.SetContractSubscription(c);
@@ -523,22 +547,30 @@ namespace IBApp {
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
     }
+    static object _OpenTradeSync=new object();
     public PendingOrder OpenTrade(Contract contract, int quantity) {
-      var orderType = "MKT";
-      bool isPreRTH = false;
-      var o = new IBApi.Order() {
-        OrderId = NetOrderId(),
-        Action = quantity > 0 ? "BUY" : "SELL",
-        OrderType = orderType,
-        TotalQuantity = quantity.Abs(),
-        Tif = "DAY",
-        OutsideRth = isPreRTH,
-        OverridePercentageConstraints = true
-      };
-      OrderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, contract));
-      _verbous(new { plaseOrder = new { o, contract } });
-      IbClient.ClientSocket.placeOrder(o.OrderId, contract, o);
-      return null;
+      lock(_OpenTradeSync) {
+        var aos = OrderContracts.Where(oc => oc.Value.contract.Key == contract.Key).ToArray();
+        if(aos.Any()) {
+          aos.ForEach(ao => Trace($"{contract} already has active order order with status: {ao.Value.status}"));
+          return null;
+        }
+        var orderType = "MKT";
+        bool isPreRTH = false;
+        var o = new IBApi.Order() {
+          OrderId = NetOrderId(),
+          Action = quantity > 0 ? "BUY" : "SELL",
+          OrderType = orderType,
+          TotalQuantity = quantity.Abs(),
+          Tif = "DAY",
+          OutsideRth = isPreRTH,
+          OverridePercentageConstraints = true
+        };
+        OrderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, contract));
+        _verbous(new { plaseOrder = new { o, contract } });
+        IbClient.ClientSocket.placeOrder(o.OrderId, contract, o);
+        return null;
+      }
     }
     public PendingOrder OpenSpreadTrade((string pair, bool buy, int lots)[] legs, double takeProfit, double stopLoss, string remark, bool whatIf) {
       var isStock = legs.All(l => l.pair.IsUSStock());
@@ -626,7 +658,7 @@ namespace IBApp {
     private void TraceTrades(string label, IEnumerable<Trade> trades)
       => _defaultMessageHandler(label
         + (trades.Count() > 1 ? "\n" : "")
-        + string.Join("\n", trades.Select(ot => new { ot.Pair, ot.Position, ot.Open, ot.Time, ot.Commission })));
+        + string.Join("\n", trades.OrderBy(t => t.Pair).Select(ot => new { ot.Pair, ot.Position, ot.Open, ot.Time, ot.Commission })));
     public override string ToString() => new { IbClient, CurrentAccount = _accountId } + "";
     #endregion
   }

@@ -71,7 +71,7 @@ namespace HedgeHog.Alice.Client {
 
         NewThreadScheduler.Default.Schedule(TimeSpan.FromSeconds(1), () => {
           priceChanged = trader.PriceChanged
-          .Where(p => !Contract.FromCache(p.EventArgs.Price.Pair).Any(c => c.IsOption() || c.IsCombo))
+          .Where(p => !Contract.FromCache(p.EventArgs.Price.Pair).Any(c => c.IsOption || c.IsCombo))
             .Select(x => x.EventArgs.Price.Pair.Replace("/", "").ToLower())
             //.Where(pair => Pairs.Contains(pair))
             .Subscribe(pair => {
@@ -226,6 +226,8 @@ namespace HedgeHog.Alice.Client {
         return action;
       }
     }
+
+    private const string ALL_COMBOS = "ALL COMBOS";
     Lazy<RemoteControlModel> remoteControl;
     Lazy<TraderModel> trader;
     static Exception Log { set { GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(value)); } }
@@ -566,13 +568,15 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
-    public void ReadStraddles(string pair) {
+    public void ReadStraddles(string pair, string[] comboExits) {
+      int expirationDaysSkip = 1;
+      int gap = 0;
       var am = AccountManager();
       var loadCurrent = true;
       if(am != null) {
-        Action a = ()=>
+        Action a = () =>
           IBApi.Contract.FromCache(pair, c => c.Symbol)
-            .ForEach(symbol => am.CurrentStraddles(symbol, 4)
+            .ForEach(symbol => am.CurrentStraddles(symbol, expirationDaysSkip, 5, gap)
             .Select(ts => ts.Select(t => new {
               i = t.instrument,
               t.bid,
@@ -580,15 +584,65 @@ namespace HedgeHog.Alice.Client {
               avg = t.ask.Avg(t.bid),
               time = t.time.ToString("HH:mm:ss"),
               t.delta,
-              t.strike
+              strike = t.strikeAvg,
+              perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+              strikeDelta = t.strikeAvg - t.underPrice
             }))
            .Subscribe(b => base.Clients.Caller.butterflies(b)));
         OnCurrentCombo(a);
         //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
         am.ComboTrades(1)
           .ToArray()
-          .Subscribe(cts => base.Clients.Caller.liveCombos(cts.OrderBy(ct => ct.contract.Key).ToArray(x
-          => new { combo = x.contract.Key, netPL = x.pl, x.position, x.open, x.close })));
+          .Subscribe(cts => {
+            var combos = cts
+            .Where(ct => ct.position != 0)
+            .OrderByDescending(ct => ct.strikeAvg)
+            .ToArray(x
+              => new {
+                combo = x.contract.Key, netPL = x.pl, x.position, x.open
+                , x.close, delta = x.strikeAvg - x.underPrice, x.openPrice
+                , exit = 0, exitDelta = 0
+              });
+
+            var comboPortfolio = cts
+            .Where(ct => ct.position != 0 && ct.contract.IsCombo)
+            .Buffer(100)
+            .Select(cp => new {
+              combo = ALL_COMBOS,
+              netPL = cp.Sum(c => c.pl),
+              position = cp.Sum(c => c.position.Abs()),
+              open = cp.Sum(c => c.open),
+              close = cp.Sum(c => c.close),
+              delta = cp.Take(1).Select(p => cp.Average(c => c.strikeAvg) - p.underPrice).FirstOrDefault(),
+              openPrice = cp.Select(op => op.openPrice).DefaultIfEmpty().Average(),
+              exit = 0, exitDelta = 0
+            });
+
+            combos = combos.Concat(comboPortfolio).ToArray();
+            base.Clients.Caller.liveCombos(combos);
+
+            (from ce in comboExits.Select(s => s.Split(','))
+             join c in combos on ce[0] equals c.combo
+             let exit = TryExit(ce[1])
+             let exitDelta = TryExitDelta(ce[2])
+             where (exit != 0 && c.netPL > exit) || (exitDelta != 0 && c.delta.Abs() < exitDelta)
+             select c
+               )
+               .ForEach(combo => CloseCombo(combo.combo));
+            (from ce in comboExits.Select(s => s.Split(',')).Where(c => c[0] == ALL_COMBOS)
+             join c in combos on ce[0] equals c.combo
+             let exit = TryExit(ce[1])
+             let exitDelta = TryExitDelta(ce[2])
+             where (exit != 0 && c.netPL > exit) || (exitDelta != 0 && c.delta.Abs() < exitDelta)
+             select c
+             )
+             .SelectMany(combo => cts.Where(c => c.contract.IsCombo))
+             .ForEach(combo => CloseCombo(combo.contract.Key));
+          }, exc => {
+            Log = exc;
+          });
+        int TryExit(string s) => int.TryParse(s, out var i) ? i : int.MaxValue;
+        double TryExitDelta(string s) => double.TryParse(s, out var i) ? i : int.MinValue;
       }
     }
 

@@ -54,6 +54,7 @@
   <script src="Scripts/linq.js"></script>
   <script src="Scripts/json.date-extensions.min.js"></script>
   <script src="Scripts/traverse.js"></script>
+  <script src="Scripts/knockout.expander.js"></script>
   <!--<script src="Scripts/jquery.signalR-2.2.0.min.js"></script>-->
   <script src="Scripts/jquery.signalR.js"></script>
   <script src="signalr/hubs"></script>
@@ -1175,28 +1176,35 @@
   <!--#region Butterflies-->
   <div data-bind="elementer:butterfliesDialog" style="display:none;padding:0">
     <table border="1" cellspacing="0" class="wwwInfo">
+      <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
       <tbody data-bind="foreach:liveCombos">
         <tr>
-          <td data-bind="text:combo" style="text-align:left"></td>
-          <td data-bind="text:d3.format('.2f')(open())"></td>
+          <td data-bind="text:combo" style="text-align:left;color:white"></td>
+          <td data-bind="text:d3.format('.2f')(delta())" style="text-align:right;color:white"></td>
+          <td><input data-bind="value:exitDelta" size="3" /></td>
+          <td data-bind="text:d3.format('.2f')(openPrice())"></td>
           <td data-bind="text:d3.format('.2f')(close())"></td>
           <td data-bind="text:position"></td>
           <td data-bind="text:d3.format('$.0f')(netPL()),css:{profit:netPL()>0,loss:netPL()<0}"></td>
+          <td><input data-bind="value:exit" size="3" /></td>
           <td>
             <button data-bind="click:$parent.closeCombo.bind(null,combo)">Close</button>
           </td>
         </tr>
       </tbody>
     </table>
-    <table border="1" cellspacing="0" class="wwwInfo">
+    <table border="1" cellspacing="0" class="wwwInfo" data-bind="expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
       <caption>
         <label>Quantity:</label><input data-bind="value:comboQuantity" size="3" />
         <div style="display:inline-table">
-          <label>Current:</label><b data-bind="text:d3.format('.3f')(priceAvg())"></b>
-          <br />
-          <label>ByDelta:</label>
+          <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg())"></b>
           <!-- ko with: combosStats -->
-          <b data-bind="text:d3.format('.3f')(strikeDelta),css:{profit:strikeDelta>0,loss:strikeDelta<0}"></b>
+          <span class="glyphicon glyphicon-stats"></span>
+          <b data-bind="text:d3.format('.1f')(strikeDelta),css:{profit:strikeDelta>0,loss:strikeDelta<0}" style="margin-left:1ex"></b>
+          <span class="glyphicon glyphicon-resize-vertical"></span>
+          <b data-bind="text:d3.format('.2f')(spread)"></b>
+          <span class="glyphicon glyphicon-hourglass"></span>
+          <b data-bind="text:d3.format('.2f')(stDev)"></b>
           <!-- /ko -->
         </div>
         <div data-bind="foreach:combosMin" style="display:inline-table">
@@ -1207,22 +1215,23 @@
           <label>Ask:</label><b data-bind="text:d3.format('.3f')(ask)"></b>
         </div>
       </caption>
-      <thead>
-        <tr>
-          <td style="text-align:left">Instrument</td>
-          <td style="text-align:left">Avg</td>
-          <td style="text-align:left">Delta</td>
-          <td style="text-align:left">Bid</td>
-          <td style="text-align:left">Ask</td>
+      <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
+        <tr style="background-color: lightslategray;color: white;font-weight: bold;text-align: center;"  class="pgGroupRow">
+          <td>Straddles</td>
+          <td>/\</td>
+          <td>Avg</td>
+          <td>Perc</td>
+          <td>Bid</td>
+          <td>Ask</td>
           <td>Buy</td>
           <td>Sel</td>
         </tr>
-      </thead>
-      <tbody data-bind="foreach:butterflies">
-        <tr>
-          <td data-bind="text:i"></td>
+      <!-- ko foreach:butterflies -->
+        <tr style="">
+          <td data-bind="text:i" style="color:white;background-color: lightslategray"></td>
+          <td data-bind="text:d3.format('.2f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
           <td data-bind="text:d3.format('.2f')(avg())"></td>
-          <td data-bind="text:d3.format('.2f')(delta())"></td>
+          <td data-bind="text:d3.format('.2f')(perc())"></td>
           <td data-bind="text:bid"></td>
           <td data-bind="text:ask"></td>
           <td>
@@ -1232,7 +1241,7 @@
             <button data-bind="click:$parent.openButterfly.bind(null,false,$data)">Sell</button>
           </td>
         </tr>
-      </tbody>
+      <!-- /ko -->
     </table>
   </div>
   <!--#endregion-->

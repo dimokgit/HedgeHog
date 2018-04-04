@@ -17,7 +17,6 @@ namespace IBApi {
       ).Value;
 
     public string Key => Instrument;
-    public bool IsCombo => ComboLegs?.Any() == true;
     public string Instrument => ComboLegsToString().IfEmpty((LocalSymbol.IfEmpty(Symbol)?.Replace(".", "") + "").ToUpper());
 
     static readonly ConcurrentDictionary<string, Contract> _contracts = new ConcurrentDictionary<string, Contract>(StringComparer.OrdinalIgnoreCase);
@@ -30,8 +29,11 @@ namespace IBApi {
     public static IEnumerable<Contract> FromCache(string instrument) => Contracts.TryGetValue(instrument);
     public static IEnumerable<T> FromCache<T>(string instrument, Func<Contract, T> map) => Contracts.TryGetValue(instrument).Select(map);
 
+    public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).First();
+    public bool IsCombo => ComboLegs?.Any() == true;
+    public bool IsOption => SecType == "OPT";
     public bool IsButterFly => ComboLegs?.Any() == true && String.Join("", comboLegs.Select(l => l.Ratio)) == "121";
-
+    public double ComboStrike() => Strike > 0 ? Strike : Legs().Select(c => c.strike).DefaultIfEmpty().Average();
     public int ReqId { get; set; }
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
@@ -47,7 +49,6 @@ namespace IBApi {
        );
   }
   public static class ContractMixins {
-    public static bool IsOption(this Contract c) => c.SecType == "OPT";
     public static bool IsIndex(this Contract c) => c.SecType == "IND";
   }
 

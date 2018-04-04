@@ -514,7 +514,7 @@ namespace IBApp {
       => _accountManager?.OrderContracts.Values
       .Where(os => pair.IsNullOrWhiteSpace() || os.contract.Instrument == pair.ToLower())
       .Select(os => pair.IsNullOrWhiteSpace()
-      ? (os.contract + ":" + os.status.GetValueOrDefault().status, os.status.GetValueOrDefault().filled, os.status.GetValueOrDefault().remaining, os.status.GetValueOrDefault().isDone)
+      ? (os.contract + ":" + os.status.GetValueOrDefault().status, os.status.GetValueOrDefault().filled, os.status.GetValueOrDefault().remaining, os.status.HasValue ? os.status.Value.isDone : true)
       : os.status.Value)
       .ToArray()
       ?? new(string status, double filled, double remaining, bool isDone)[0];

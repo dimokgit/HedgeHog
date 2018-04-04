@@ -61,21 +61,26 @@ namespace ConsoleApp {
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       var contract = spy;
-      AccountManager.NoPositionsPlease = true;
+      AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         var am = fw.AccountManager;
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
-        TestCurrentStraddles(10000); 
+        Task.Delay(2000).ContinueWith(_ => {
+          //TestParsedCombos();
+          TestCurrentStraddles(1, 1);
+        }); return;
+        TestCurrentStraddles(1, 1); return;
+        TestCombosTrades(10).Subscribe(); return;
         var cds = ibClient.ReqContractDetailsAsync("VXX   180329C00051500".ContractFactory()).ToEnumerable().Count(0, new { }).ToArray();
         var symbols = new[] { "SPX", "VXX", "SPY" };
         var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1000)).Subscribe();
         Stopwatch sw = Stopwatch.StartNew();
         //.ForEach(trade => HandleMessage(new { trade.Pair}));
 
-        ProcessSymbols(1).Concat(TestParsedCombos(1)).ToEnumerable()
+        ProcessSymbols(1).Concat(TestCombosTrades(1)).ToEnumerable()
         .ForEach(_ => {
           timeOut.Dispose();
           LoadHistory(ibClient, new[] { "spx".ContractFactory() });
@@ -87,14 +92,14 @@ namespace ConsoleApp {
         //HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
 
         #region Local Tests
-        void TestCurrentStraddles(int count) {
+        void TestCurrentStraddles(int count, int gap) {
           var swCombo = Stopwatch.StartNew();
-          Observable.Interval(TimeSpan.FromMilliseconds(1))
+          Observable.Interval(TimeSpan.FromMilliseconds(1000))
           .Take(count)
           .SelectMany(pea => TestImpl()).Subscribe();
           IObservable<Unit> TestImpl() { // Combine positions
             //HandleMessage("Combos:");
-            return am.CurrentStraddles("SPX", 6)
+            return am.CurrentStraddles("SPX", 1, 6, gap)
             .Select(ts => ts.Select(t => new {
               i = t.instrument,
               bid = t.bid.Round(2),
@@ -102,29 +107,41 @@ namespace ConsoleApp {
               avg = t.ask.Avg(t.bid),
               time = t.time.ToString("HH:mm:ss"),
               delta = t.delta.Round(3),
-              t.strike
+              t.strikeAvg
             }))
            .Select(combos => {
-             combos.ForEach(combo => HandleMessage(new { combo }));
+             HandleMessage("Current Straddles:");
+             combos.OrderBy(c => c.strikeAvg).ForEach(combo => HandleMessage(new { combo }));
              //HandleMessage($"Conbos done ======================================");
-             HandleMessage($"Conbos done in {swCombo.ElapsedMilliseconds} ms =======================================");
+             HandleMessage($"Current Straddles done in {swCombo.ElapsedMilliseconds} ms =======================================");
              swCombo.Restart();
              return Unit.Default;
            })
-          .Sample(TimeSpan.FromSeconds(0.2));
+          ;
             //HandleMessage($"Done in {swCombo.ElapsedMilliseconds} ms");
           }
         }
-        IObservable<Unit> TestParsedCombos(int count) {
+        void TestParsedCombos() {
+          am.ComboTrades(20)
+          .ToArray()
+          .ToEnumerable()
+          .ToArray()
+          .ForEach(comboPrices => {
+            HandleMessage2("Matches: Start");
+            comboPrices.OrderBy(c => c.contract.Key).ForEach(comboPrice => HandleMessage2(new { comboPrice }));
+            HandleMessage2($"Matches: Done ==================");
+          });
+        }
+        IObservable<Unit> TestCombosTrades(int count) {
           return ibClient.PriceChangeObservable
           //.Throttle(TimeSpan.FromSeconds(0.1))
           //.DistinctUntilChanged(_ => am.Positions.Count)
           .Take(count)
           .Select(pea => {
-            TestParsedCombosImpl();
+            TestComboTradesImpl();
             return Unit.Default;
           });
-          void TestParsedCombosImpl() { // Combine positions
+          void TestComboTradesImpl() { // Combine positions
             var swCombo = Stopwatch.StartNew();
             am.ComboTrades(1)
             .ToArray()
@@ -175,7 +192,7 @@ namespace ConsoleApp {
 
             //var cds = ibClient.ReqContractDetails(symbol);
             //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
-            return am.CurrentStraddles(symbol, 4)
+            return am.CurrentStraddles(symbol, 1, 4, 0)
             //.Do(t => t.options.ForEach(c => ibClient.SetOfferSubscription(c, _ => { })))
             .ToEnumerable()
             .ToArray()
@@ -196,12 +213,13 @@ namespace ConsoleApp {
             .ToArray();
           }
         }
-        (Contract contract, Contract[] options)[] TestStraddleds(string symbol) {
+        (Contract contract, Contract[] options)[] TestStraddleds(string symbol, int gap) {
           var straddlesCount = 5;
           var expirationCount = 1;
+          int expirationDaysSkip = 0;
           var price = ibClient.ReqContractDetailsCached(symbol).SelectMany(cd => ibClient.ReqPriceSafe(cd.Summary, 1, true).Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}")));
           var contracts = (from p in price
-                           from str in fw.AccountManager.MakeStraddles(symbol, p, expirationCount, straddlesCount)
+                           from str in fw.AccountManager.MakeStraddles(symbol, p, expirationDaysSkip, expirationCount, straddlesCount, gap)
                            select str)
           .ToEnumerable()
           .ToArray()

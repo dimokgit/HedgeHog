@@ -25,22 +25,23 @@ namespace IBApp {
         select (strdl.mash, strdl.source.Select(x => x.trade).Gross(), strdl.source.Max(s => s.trade.Position)));
       return straddles;
     }
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strike, (Contract contract, Contract[] options) combo)[]>
-      CurrentStraddles(string symbol, int count) {
+    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (Contract contract, Contract[] options) combo)[]>
+      CurrentStraddles(string symbol, int expirationDaysSkip, int count, int gap) {
       (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
-        from price in IbClient.ReqPriceSafe(cd.Summary, 1, true).Select(p=>p.ask.Avg(p.bid))
-        from combo in MakeStraddles(symbol, price, 1, count)
-        from p in IbClient.ReqPriceSafe(combo.contract, 1, true)
-        from strike in combo.options.Take(1).Select(o => o.Strike)
+        from price in IbClient.ReqPriceSafe(cd.Summary, 5, false).Select(p => p.ask.Avg(p.bid))
+        from combo in MakeStraddles(symbol, price, expirationDaysSkip, 1, count, gap)
+        from p in IbClient.ReqPriceSafe(combo.contract, 2, true).DefaultIfEmpty()
+        let strikeAvg = combo.options.Average(o => o.Strike)
         select (
           instrument: combo.contract.Instrument,
           p.bid,
           p.ask,
           p.time,//.ToString("HH:mm:ss"),
-          delta: p.ask.Avg(p.bid) - (price - strike),
-          strike,
+          delta: p.ask.Avg(p.bid) - (price - strikeAvg),
+          strikeAvg,
+          price,
           combo
         )).ToArray()
         .Select(b => b
@@ -54,8 +55,23 @@ namespace IBApp {
     }
 
     public IObservable<(Contract contract, Contract[] options)> MakeStraddles
-      (string symbol, double price, int expirationsCount, int count) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationsCount, count * 2)
+      (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count, int gap) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count * 2 + gap * 2)
+      //.Take(count*2)
+      .ToArray()
+      .SelectMany(reqOptions => {
+        var strikes = reqOptions.OrderBy(o => o.Strike.Abs(price)).Take(count * 2 + gap * 2).OrderBy(c => c.Strike).ToArray();
+        var calls = strikes.Where(c => c.Right == "C");
+        var puts = strikes.Where(c => c.Right == "P");
+        return calls.Zip(puts.Skip(gap), (call, put) => new[] { call, put })
+          .Select(cp => (MakeStraddle(cp), cp))
+          .OrderBy(cp => cp.cp.Average(c => c.Strike).Abs(price));
+      })
+      .Take(count);
+
+    public IObservable<(Contract contract, Contract[] options)> MakeStraddles_Old
+      (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count * 2)
       //.Take(count*2)
       .ToArray()
       .SelectMany(reqOptions => reqOptions.OrderBy(o => o.Strike.Abs(price))
@@ -105,7 +121,7 @@ namespace IBApp {
 
     #region Make Butterfly
     public IObservable<(Contract contract, Contract[] options)> MakeButterflies(string symbol, double price) =>
-   IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true })
+   IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true }, 1, 1, 4)
     .ToArray()
     //.Select(a => a.OrderBy(c => c.Strike).ToArray())
     .SelectMany(reqOptions =>
@@ -160,13 +176,18 @@ namespace IBApp {
   public static class AccountManagerMixins {
     #region Parse Combos
     public static IList<(Contract contract, int position, double open)> ParseCombos(this ICollection<(Contract c, int p, double o)> positions) {
-      var trades = positions.ToList();
+      var tradesAll = ResortPositions(positions).ToList();
       List<(Contract c, int p, double o)> combos = new List<(Contract c, int p, double o)>();
+      List<(Contract c, int p, double o)> singles = new List<(Contract c, int p, double o)>();
+      var trades = tradesAll.GroupBy(t => (t.c.Strike, t.c.LastTradeDateOrContractMonth))
+        .OrderByDescending(t => t.Count())
+        .SelectMany(g => g.ToArray()).ToList();
       while(trades.Any()) {
-        var trade = ResortPositions(trades).First();
+        var trade = trades.First();
         var match = FindStraddle(trades, trade).Concat(FindStraddle(trades, trade, true)).Take(1);
         if(match.IsEmpty()) {
           trades.Remove(trade);
+          singles.Add(trade);
         } else {
           var parsed = match.Select(ParseMatch).ToArray();
           combos.AddRange(parsed.Select(p => p.combo));
@@ -174,7 +195,7 @@ namespace IBApp {
         }
         //ver("Trades new:\n" + trades.Flatter("\n"));
       }
-      return combos;
+      return combos.Concat(singles).ToArray();
     }
     static ((Contract c, int p, double o) combo, (Contract c, int p, double o)[] rest) ParseMatch(((Contract c, int p, double o) leg1, (Contract c, int p, double o) leg2) m) {
       //HandleMessage2($"Match:{m}");
@@ -193,8 +214,8 @@ namespace IBApp {
       from cc in tg.DefaultIfEmpty(trade)
       where cc.p != 0
       select cc;
-    static IList<(Contract c, int p, double o)> ResortPositions(IEnumerable<(Contract c, int p, double o)> positions)
-      => positions.OrderByDescending(t => t.p.Abs()).ToArray();
+    static List<(Contract c, int p, double o)> ResortPositions(this IEnumerable<(Contract c, int p, double o)> positions)
+      => positions.OrderByDescending(t => t.p.Abs()).ToList();
     static IEnumerable<((Contract c, int p, double o) leg1, (Contract c, int p, double o) leg2)> FindStraddle(IList<(Contract c, int p, double o)> positions, (Contract c, int p, double o) leg, bool wide = false) =>
       positions
       .Where(p => p.c.Symbol == leg.c.Symbol)

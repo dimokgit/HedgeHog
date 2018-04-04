@@ -241,7 +241,7 @@ namespace IBApp {
         //.Do(cd => Trace(new { contractCache = cd.Summary }))
         //.ToArray()
         .Concat(Observable.Defer(() => {
-          return ReqContractDetailsAsync(contract).Do(cd => Trace(new { contractAsync = cd.Summary }));
+          return ReqContractDetailsAsync(contract).Do(cd => Debug.WriteLine(new { contractAsync = cd.Summary }));
         }))
         .Take(1)
         //.SelectMany(a => a)
@@ -308,12 +308,13 @@ namespace IBApp {
     }
 
     public IObservable<Contract> ReqCurrentOptionsAsync
-      (string symbol, double price, bool[] isCalls, int expirationsCount = 1, int strikesCount = 4) {
+      (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount) {
+      var expStartDate = ServerTime.Date.AddDays(expirationDaysSkip);
       var x = (
                 from t in ReqOptionChainCache(symbol)
                 from strike in t.strikes.OrderBy(st => st.Abs(price)).Take(strikesCount * 2).Select((s, i) => (s, i)).ToArray()
                 from isCall in isCalls
-                from expiration in t.expirations.Take(expirationsCount).ToArray()
+                from expiration in t.expirations.SkipWhile(exd => exd < expStartDate).Take(expirationsCount).ToArray()
                 select (t.tradingClass, expiration, strike, isCall)
                 )
                 .ToArray();
@@ -321,9 +322,13 @@ namespace IBApp {
         from ts in x
         from t in ts.OrderBy(t => t.strike.i).ThenBy(t => t.expiration)
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, t.strike.s, t.isCall)
-        from o in ReqContractDetailsCached(option)
+        from o in ReqContractDetailsCached(option).Synchronize()
         select o.AddToCache().Summary//.SideEffect(c=>Trace(new { optionContract = c }))
-       ).Take(strikesCount * expirationsCount);
+       )
+       .Synchronize()
+       .ToArray()
+       .SelectMany(a => a)
+       .Take(strikesCount * expirationsCount);
     }
 
     public static OPTION_CHAIN_DICT OptionChainCache = new OPTION_CHAIN_DICT(StringComparer.OrdinalIgnoreCase);
@@ -360,37 +365,34 @@ namespace IBApp {
     public IObservable<(double bid, double ask, DateTime time)> ReqPriceSafe(Contract contract, double timeoutInSeconds, bool useErrorHandler, double defaultPrice) =>
       ReqPriceSafe(contract, timeoutInSeconds, useErrorHandler).DefaultIfEmpty((defaultPrice, defaultPrice, DateTime.MinValue));
 
-    public IObservable<(double bid, double ask, DateTime time)> ReqPriceSafe(Contract contract, double timeoutInSeconds, bool useErrorHandler) =>
-      TryGetPrice(SetContractSubscription(contract).Key)
-      .Where(p => p.Ask > 0 && p.Bid > 0)
-      .Select(p => (p.Bid, p.Ask, p.Time))
-      .ToObservable()
-      .ObserveOn(esReqPriceObserve)
-      .Take(1)
-      .Concat(Observable.Defer(() => {
-        return TickPriceObservable
-        .Do(_ => Trace($"TickPriceObservable in waiting:{contract}"))
-        .SkipWhile(_ => contract.ReqId == 0)
-        .Where(t => t.reqId == contract.ReqId)
-        .Select(tick => OnTickPrice(tick.reqId, tick.field, tick.price, tick.canAutoExecute))
-        .Scan((p, n) => (p.reqId, p.bid.IfNaNOrZero(n.bid), p.ask.IfNaNOrZero(n.ask), n.field))
-        .Where(p => p.bid > 0 && p.ask > 0)
-        .Select(p => (p.bid, p.ask, ServerTime))
-        .Take(1)
-        .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
-        ;
+    public IObservable<(double bid, double ask, DateTime time)> ReqPriceSafe(Contract contract, double timeoutInSeconds, bool useErrorHandler) {
+      var c = TryGetPrice(contract.Key);
+      if(c.Any()) return Observable.Return(c.Where(p => p.Ask > 0 && p.Bid > 0)
+      //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
+      .Select(p => (p.Bid, p.Ask, p.Time)).First());
 
-        //return ReqPrices(contract, timeoutInSeconds, useErrorHandler).Select(p => (p.bid, p.ask, p.time));
-      }))
+      SetContractSubscription(contract);
+      int RID() => new[] { contract.ReqId }.Concat(Contract.FromCache(contract.Instrument).Select(cc => cc.ReqId)).FirstOrDefault();
+      return TickPriceObservable
+      .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
+      .SkipWhile(_ => RID()/*.SideEffect(rid => { if(rid == 0) Trace($"IBClientCore.TickPriceObservable in waiting:{contract}:{_}"); })*/ == 0)
+      .Where(t => t.reqId == contract.ReqId)
+      .Select(tick => OnTickPrice(tick.reqId, tick.field, tick.price, tick.canAutoExecute))
+      .Scan((p, n) => (p.reqId, p.bid.IfNaNOrZero(n.bid), p.ask.IfNaNOrZero(n.ask), n.field))
+      .Where(p => p.bid > 0 && p.ask > 0)
+      .Do(p => Trace($"IBClientCore.TickPriceObservable:{contract}:{p}"))
+      .Select(p => (p.bid, p.ask, ServerTime))
       .Take(1)
       ;
 
-    private static (int reqId, double bid, double ask, int field) OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
+    }
+    private (int reqId, double bid, double ask, int field) OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
+      //Trace($"IBClientCore.OnTickPrice:{new { requestId, price, field }}");
       switch(field) {
         case 1:  // Bid
-          return (requestId, price, double.NaN, field);
+          return (requestId, price.Max(0), double.NaN, field);
         case 2:  //ASK
-          return (requestId, double.NaN, price, field);
+          return (requestId, double.NaN, price.Max(0), field);
         case 4:
         case 37:
           return (requestId, price, price, field);

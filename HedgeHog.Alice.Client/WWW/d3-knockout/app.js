@@ -27,6 +27,29 @@
   Array.prototype.sum = Array.prototype.sum || function () {
     return this.reduce(function (sum, a) { return sum + Number(a) }, 0);
   }
+  function standardDeviation(values) {
+    var avg = average(values);
+
+    var squareDiffs = values.map(function (value) {
+      var diff = value - avg;
+      var sqrDiff = diff * diff;
+      return sqrDiff;
+    });
+
+    var avgSquareDiff = average(squareDiffs);
+
+    var stdDev = Math.sqrt(avgSquareDiff);
+    return stdDev;
+    function average(data) {
+      var sum = data.reduce(function (sum, value) {
+        return sum + value;
+      }, 0);
+
+      var avg = sum / data.length;
+      return avg;
+    }
+  }
+
   var isMobile = /Mobi/.test(navigator.userAgent);
   var devVersion = "(v2)";
   //#region ko binding
@@ -273,9 +296,12 @@
     }
   }
   var readingCombos = false;
-  function readCombos() {
+  function readCombos(comboExists) {
+    if (!comboExists) {
+      showError("readCombos: comboExists is missing");
+    }
     if (readingCombos) return;
-    var args = [pair];
+    var args = [pair, comboExists];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
@@ -770,20 +796,24 @@
       return self.liveStraddles();
     }, this);
     this.combosMin = ko.pureComputed(function () {
+      return [];
       return this.butterflies()
         .sort(function (v1, v2) { return v1.avg() - v2.avg(); })
         .map(function (v) { return { bid: v.bid(), ask: v.ask(), spread: v.ask() - v.bid(), avg: v.avg() }; })
         .slice(0, 1);
     }, this);
     this.combosStats = ko.pureComputed(function () {
-      var top2 = this.butterflies()
+      var combos = this.butterflies();
+      var top2 = combos
         //.sort(function (v1, v2) { return v1.avg - v2.avg; })
         .slice(0, 2);
       var wSum = top2.map(function (v) { return v.strike() / v.delta(); }).sum();
       var sum = top2.map(function (v) { return 1 / v.delta(); }).sum();
       var strike = wSum / sum;
+      var spread = top2.map(function (v) { return v.ask() - v.bid(); }).sum() / 2;
       var price = this.price.peek();
-      return { strikeDelta: strike - (price.bid + price.ask) / 2 };
+      var stDev = standardDeviation(combos.map(function (v) { return (v.ask() + v.bid()) / 2; }));
+      return { strikeDelta: strike - (price.bid + price.ask) / 2, spread: spread, stDev: stDev };
     }, this);
     this.butterfliesDialog = ko.observable();
     this.openButterfly = function (isBuy, key) {
@@ -803,7 +833,7 @@
     this.showButterflies = function () {
       showCombos = true;
       stopCombos = false;
-      readCombos.bind(this)();
+      readCombos.bind(this)([]);
       this.butterflies([]);
       var shouldToggle = ko.observable(true);
       $(this.butterfliesDialog()).dialog({
@@ -1639,8 +1669,9 @@
 
       function _priceChanged(pairChanged) {
         if (showCombos) {
-          readCombos();
-          //chat.server.readStraddles();
+          readCombos(dataViewModel.liveStraddles().map(function (c) {
+            return ko.unwrap(c.combo) + "," + ko.unwrap(c.exit) + "," + ko.unwrap(c.exitDelta);
+          }));
         }
         if (!isDocHidden() && pair.toUpperCase() === pairChanged.toUpperCase()) {
           if (_isPriceChangeInFlight())
@@ -1683,10 +1714,18 @@
       ko.mapping.fromJS(butterflies, map, dataViewModel.butterflies);
     };
     chat.client.liveCombos = function (combos) {
+      var isNew = dataViewModel.liveStraddles().length == 0;
+      var ignore = isNew ? [] : ["exit"];
+      if (!isNew)
+        combos.forEach(function (v) {
+          delete v.exit;
+          delete v.exitDelta;
+        });
       var map = {
         key: function (item) {
           return ko.utils.unwrapObservable(item.combo);
-        }
+        },
+        'ignore': ignore
       };
       ko.mapping.fromJS(combos, map, dataViewModel.liveStraddles);
       readingCombos = false;

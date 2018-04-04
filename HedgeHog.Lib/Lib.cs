@@ -724,6 +724,9 @@ namespace HedgeHog {
     public static double IfNaNOrZero(this double d, double defaultValue) {
       return double.IsNaN(d) || d == 0 ? defaultValue : d;
     }
+    public static double IfNaNOrNegative(this double d, double defaultValue) {
+      return double.IsNaN(d) || d <= 0 ? defaultValue : d;
+    }
     public static double IfNaN(this double d, Func<double> defaultValue) {
       return double.IsNaN(d) ? defaultValue() : d;
     }
