@@ -366,7 +366,7 @@ namespace IBApp {
       ReqPriceSafe(contract, timeoutInSeconds, useErrorHandler).DefaultIfEmpty((defaultPrice, defaultPrice, DateTime.MinValue));
 
     public IObservable<(double bid, double ask, DateTime time)> ReqPriceSafe(Contract contract, double timeoutInSeconds, bool useErrorHandler) {
-      var c = TryGetPrice(contract.Key);
+      var c = TryGetPrice(contract);
       if(c.Any()) return Observable.Return(c.Where(p => p.Ask > 0 && p.Bid > 0)
       //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
       .Select(p => (p.Bid, p.Ask, p.Time)).First());
@@ -509,6 +509,15 @@ namespace IBApp {
       .Merge()
       .Subscribe(t => Trace($"{context}:{contract}:{t}"), complete);
     }
+    public void WatchReqError(int reqId,Action<(int id, int errorCode, string errorMsg, Exception exc)> error, Action complete) {
+      SetRequestHandled(reqId);
+      ErrorObservable
+      .Where(t => t.id == reqId)
+      .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
+      .Take(1)
+      .Merge()
+      .Subscribe(error, complete);
+    }
     #endregion
 
     #region NextValidId
@@ -535,7 +544,8 @@ namespace IBApp {
     }
     #endregion
 
-    public IEnumerable<Price> TryGetPrice(string pair) {
+    public IEnumerable<Price> TryGetPrice(Contract contract) => TryGetPrice(contract.Instrument);
+      public IEnumerable<Price> TryGetPrice(string pair) {
       if(TryGetPrice(pair, out var price))
         yield return price;
     }

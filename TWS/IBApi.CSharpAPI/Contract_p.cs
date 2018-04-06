@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -29,6 +30,11 @@ namespace IBApi {
     public static IEnumerable<Contract> FromCache(string instrument) => Contracts.TryGetValue(instrument);
     public static IEnumerable<T> FromCache<T>(string instrument, Func<Contract, T> map) => Contracts.TryGetValue(instrument).Select(map);
 
+    public double MinTick => ContractDetails.FromCache(this)
+      .Select(cd => cd.MinTick)
+      .IfEmpty(() => Legs().SelectMany(c => ContractDetails.FromCache(c).Select(cd => cd.MinTick)))
+      .Count(1, _ => Debugger.Break(), _ => Debugger.Break())
+      .DefaultIfEmpty(0.01).Single();
     public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).First();
     public bool IsCombo => ComboLegs?.Any() == true;
     public bool IsOption => SecType == "OPT";

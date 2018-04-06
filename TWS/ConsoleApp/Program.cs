@@ -69,8 +69,8 @@ namespace ConsoleApp {
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         Task.Delay(2000).ContinueWith(_ => {
-          //TestParsedCombos();
-          TestCurrentStraddles(1, 1);
+          TestParsedCombos();
+          //TestCurrentStraddles(1, 1);
         }); return;
         TestCurrentStraddles(1, 1); return;
         TestCombosTrades(10).Subscribe(); return;
@@ -122,14 +122,14 @@ namespace ConsoleApp {
           }
         }
         void TestParsedCombos() {
-          am.ComboTrades(20)
+          am.ComboTrades(2)
           .ToArray()
           .ToEnumerable()
           .ToArray()
           .ForEach(comboPrices => {
-            HandleMessage2("Matches: Start");
+            HandleMessage2("ComboTrades Start");
             comboPrices.OrderBy(c => c.contract.Key).ForEach(comboPrice => HandleMessage2(new { comboPrice }));
-            HandleMessage2($"Matches: Done ==================");
+            HandleMessage2($"ComboTrades Done ==================");
           });
         }
         IObservable<Unit> TestCombosTrades(int count) {

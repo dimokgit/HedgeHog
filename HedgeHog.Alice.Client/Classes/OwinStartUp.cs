@@ -264,7 +264,7 @@ namespace HedgeHog.Alice.Client {
     static public void OnCurrentCombo(Action p) {
       _CurrentCombos.OnNext(p);
     }
-    private AccountManager AccountManager() => ((IBWraper)trader?.Value?.TradesManager).AccountManager;
+    private AccountManager GetAccountManager() => ((IBWraper)trader?.Value?.TradesManager).AccountManager;
     public MyHub() {
       try {
         remoteControl = App.container.GetExport<RemoteControlModel>();
@@ -568,15 +568,14 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
-    public void ReadStraddles(string pair, string[] comboExits) {
+    public void ReadStraddles(string pair, int gap, string[] comboExits) {
       int expirationDaysSkip = 1;
-      int gap = 0;
-      var am = AccountManager();
-      var loadCurrent = true;
+      var am = GetAccountManager();
       if(am != null) {
         Action a = () =>
           IBApi.Contract.FromCache(pair, c => c.Symbol)
-            .ForEach(symbol => am.CurrentStraddles(symbol, expirationDaysSkip, 5, gap)
+            .ForEach(symbol
+            => am.CurrentStraddles(symbol, expirationDaysSkip, 5, gap)
             .Select(ts => ts.Select(t => new {
               i = t.instrument,
               t.bid,
@@ -586,10 +585,34 @@ namespace HedgeHog.Alice.Client {
               t.delta,
               strike = t.strikeAvg,
               perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
-              strikeDelta = t.strikeAvg - t.underPrice
+              strikeDelta = t.strikeAvg - t.underPrice,
+              isActive = false
             }))
            .Subscribe(b => base.Clients.Caller.butterflies(b)));
-        OnCurrentCombo(a);
+        Action currentOptions = () =>
+          IBApi.Contract.FromCache(pair, c => c.Symbol)
+            .ForEach(symbol
+            => am.CurrentOptions(symbol, expirationDaysSkip, 3)
+            .Select(ts => ts.Select(t => new {
+              i = t.instrument,
+              t.bid,
+              t.ask,
+              avg = t.ask.Avg(t.bid),
+              time = t.time.ToString("HH:mm:ss"),
+              t.delta,
+              strike = t.strikeAvg,
+              perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+              strikeDelta = t.strikeAvg - t.underPrice,
+              isActive = false
+            })
+            .OrderBy(t => t.delta.Abs())
+            .ThenBy(t => t.i)
+            )
+           .Subscribe(b => base.Clients.Caller.options(b)));
+        OnCurrentCombo(() => {
+          a();
+          currentOptions();
+        });
         //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
         am.ComboTrades(1)
           .ToArray()
@@ -601,6 +624,7 @@ namespace HedgeHog.Alice.Client {
               => new {
                 combo = x.contract.Key, netPL = x.pl, x.position, x.open
                 , x.close, delta = x.strikeAvg - x.underPrice, x.openPrice
+                , x.takeProfit, x.profit, x.orderId
                 , exit = 0, exitDelta = 0
               });
 
@@ -615,6 +639,7 @@ namespace HedgeHog.Alice.Client {
               close = cp.Sum(c => c.close),
               delta = cp.Take(1).Select(p => cp.Average(c => c.strikeAvg) - p.underPrice).FirstOrDefault(),
               openPrice = cp.Select(op => op.openPrice).DefaultIfEmpty().Average(),
+              takeProfit = 0.0, profit = 0.0, orderId = 0,
               exit = 0, exitDelta = 0
             });
 
@@ -647,6 +672,20 @@ namespace HedgeHog.Alice.Client {
     }
 
     [BasicAuthenticationFilter]
+    public void UpdateOrderLimit(int orderId, double limit) {
+      var am = GetAccountManager();
+      am.UpdateTrade(orderId, limit);
+    }
+    [BasicAuthenticationFilter]
+    public void UpdateOrderProfit(int orderId, double profit) {
+      var am = GetAccountManager();
+      am.ComboTrades(1)
+        .Where(ct => ct.orderId == orderId)
+        .Subscribe(ct => {
+          am.UpdateTradeByProfit(orderId, profit);
+        });
+    }
+    [BasicAuthenticationFilter]
     public void OpenButterfly(string instrument, int quantity) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
@@ -656,12 +695,19 @@ namespace HedgeHog.Alice.Client {
     }
     [BasicAuthenticationFilter]
     public void CloseCombo(string instrument) {
-      var am = AccountManager();
+      var am = GetAccountManager();
       if(am != null) {
         am.ComboTrades(1)
         .Where(ct => ct.contract.Key == instrument)
-        .Select(s => (s.contract, s.position))
-        .Subscribe(c => am.OpenTrade(c.contract, -c.position));
+        .Select(s => (s.contract, s.position, s.orderId))
+        .Subscribe(c => {
+          if(c.orderId != 0) {
+            var och = am.OrderContracts[c.orderId];
+            och.order.OrderType = "MKT";
+            am.PlaceOrder(och.order, och.contract);
+          } else
+            am.OpenTrade(c.contract, -c.position);
+        });
       }
     }
     #endregion

@@ -296,12 +296,12 @@
     }
   }
   var readingCombos = false;
-  function readCombos(comboExists) {
-    if (!comboExists) {
-      showError("readCombos: comboExists is missing");
-    }
-    if (readingCombos) return;
-    var args = [pair, comboExists];
+  function readCombos(force) {
+    if (!force && readingCombos) return;
+    var comboExits = dataViewModel.liveStraddles().map(function (c) {
+      return ko.unwrap(c.combo) + "," + ko.unwrap(c.exit) + "," + ko.unwrap(c.exitDelta);
+    });
+    var args = [pair, ko.unwrap(dataViewModel.comboGap), comboExits];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
@@ -789,8 +789,53 @@
     };
     // #endregion
     // #region Butterflies
+    this.activeCombos = ko.pureComputed(function () {
+      return this.currentCombos()
+        .filter(function (v) {
+          if (!v.isActive)
+            v.isActive = ko.observable(false);
+          return v.isActive();
+        })
+        .sort(function (l, r) {
+          return l.i() < r.i() ? 1 : -1;
+        });
+    },this);
     this.comboQuantity = ko.observable(1);
+    this.comboGap = ko.observable(0);
+    this.comboGap.subscribe(function (v) {
+      readCombos(true);
+      dataViewModel.butterflies([]);
+    })
+    this.newProfit = function (a, b, c) {
+      var profit = parseFloat(b.target.value);
+      if (!isNaN(profit)) {
+        var orderId = ko.unwrap(a.orderId);
+        showErrorPerm(JSON.stringify({ profit: profit }));
+        serverCall("updateOrderProfit", [orderId, profit]);
+      }
+    }
+    this.showNextInput = function (a, b, c) {
+      var v = $(b.target).toggle().text().replace("$", "");
+      $(b.target).next("input").eq(0).toggle().focus().val(v);
+    }
+    this.hideNextInput = function (a, b, c) {
+      $(b.target).toggle();
+      $(b.target).prev("span").toggle();
+    }
+    this.newTakeProfit = function (a, b, c) {
+      var limit = parseFloat(b.target.value);
+      if (!isNaN(limit)) {
+        var orderId = ko.unwrap(a.orderId);
+        showErrorPerm(JSON.stringify({ limit: limit }));
+        serverCall("updateOrderLimit", [orderId, limit]);
+      }
+    }
+
+    this.options = ko.mapping.fromJS(ko.observableArray());
     this.butterflies = ko.mapping.fromJS(ko.observableArray());
+    this.currentCombos = ko.pureComputed(function () {
+      return this.butterflies().concat(this.options()); 
+    },this);
     this.liveStraddles = ko.mapping.fromJS(ko.observableArray());//;
     this.liveCombos = ko.pureComputed(function () {
       return self.liveStraddles();
@@ -833,8 +878,9 @@
     this.showButterflies = function () {
       showCombos = true;
       stopCombos = false;
-      readCombos.bind(this)([]);
+      readCombos.bind(this)();
       this.butterflies([]);
+      this.options([]);
       var shouldToggle = ko.observable(true);
       $(this.butterfliesDialog()).dialog({
         title: "Batterflies", width: "auto", dialogClass: "dialog-compact",
@@ -1669,9 +1715,7 @@
 
       function _priceChanged(pairChanged) {
         if (showCombos) {
-          readCombos(dataViewModel.liveStraddles().map(function (c) {
-            return ko.unwrap(c.combo) + "," + ko.unwrap(c.exit) + "," + ko.unwrap(c.exitDelta);
-          }));
+          readCombos();
         }
         if (!isDocHidden() && pair.toUpperCase() === pairChanged.toUpperCase()) {
           if (_isPriceChangeInFlight())
@@ -1705,7 +1749,25 @@
     chat.client.warning = function (message) {
       showWarningPerm(message);
     };
+    chat.client.options = function (options) {
+      var isNew = dataViewModel.options().length == 0;
+      if (!isNew)
+        options.forEach(function (v) {
+          delete v.isActive;
+        });
+      var map = {
+        key: function (item) {
+          return ko.utils.unwrapObservable(item.i);
+        }
+      };
+      ko.mapping.fromJS(options, map, dataViewModel.options);
+    };
     chat.client.butterflies = function (butterflies) {
+      var isNew = dataViewModel.butterflies().length == 0;
+      if (!isNew)
+        butterflies.forEach(function (v) {
+          delete v.isActive;
+        });
       var map = {
         key: function (item) {
           return ko.utils.unwrapObservable(item.i);
@@ -1714,13 +1776,14 @@
       ko.mapping.fromJS(butterflies, map, dataViewModel.butterflies);
     };
     chat.client.liveCombos = function (combos) {
-      var isNew = dataViewModel.liveStraddles().length == 0;
+      var isNew = dataViewModel.liveStraddles().length != combos.length;
       var ignore = isNew ? [] : ["exit"];
       if (!isNew)
         combos.forEach(function (v) {
           delete v.exit;
           delete v.exitDelta;
         });
+      else dataViewModel.liveStraddles([]);
       var map = {
         key: function (item) {
           return ko.utils.unwrapObservable(item.combo);

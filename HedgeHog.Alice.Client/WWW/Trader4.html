@@ -328,6 +328,22 @@
     .hide {
       display: none;
     }
+
+    table.liveCombos tbody tr td,
+    table.liveCombos tbody tr td input
+    {
+      font-family: monospace;
+      /*white-space:pre-line;*/
+      padding: 0;
+    }
+    table tbody tr td.comboName {
+      color: white;
+      background-color: lightslategray
+    }
+    table tbody tr td.comboNameActive {
+      color: black;
+      background-color: white
+    }
   </style>
   <script>
     $(function () {
@@ -1175,72 +1191,90 @@
   <!--#endregion-->
   <!--#region Butterflies-->
   <div data-bind="elementer:butterfliesDialog" style="display:none;padding:0">
-    <table border="1" cellspacing="0" class="wwwInfo">
+    <table border="1" cellspacing="0" class="wwwInfo liveCombos">
       <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
       <tbody data-bind="foreach:liveCombos">
         <tr>
           <td data-bind="text:combo" style="text-align:left;color:white"></td>
           <td data-bind="text:d3.format('.2f')(delta())" style="text-align:right;color:white"></td>
-          <td><input data-bind="value:exitDelta" size="3" /></td>
+          <td><input data-bind="value:exitDelta" size="2" /></td>
           <td data-bind="text:d3.format('.2f')(openPrice())"></td>
-          <td data-bind="text:d3.format('.2f')(close())"></td>
+          <td data-bind="text:d3.format('.0f')(close())"></td>
           <td data-bind="text:position"></td>
           <td data-bind="text:d3.format('$.0f')(netPL()),css:{profit:netPL()>0,loss:netPL()<0}"></td>
-          <td><input data-bind="value:exit" size="3" /></td>
+          <td><!--<input data-bind-removed="value:exit" size="3" />--></td>
+          <td>
+            <span data-bind="text:d3.format('.2f')(takeProfit()),event:{click:$parent.showNextInput}"></span>
+            <input data-bind="event:{change:$parent.newTakeProfit,blur:$parent.hideNextInput}" size="4" style="display:none;overflow:visible" />
+          </td>
+          <td>
+            <span data-bind="text:d3.format('$.0f')(profit()),event:{click:$parent.showNextInput}"></span>
+            <input data-bind="event:{change:$parent.newProfit,blur:$parent.hideNextInput}" size="3" style="display:none" />
           <td>
             <button data-bind="click:$parent.closeCombo.bind(null,combo)">Close</button>
           </td>
         </tr>
       </tbody>
     </table>
-    <table border="1" cellspacing="0" class="wwwInfo" data-bind="expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
-      <caption>
+    <div>
+      <div>
         <label>Quantity:</label><input data-bind="value:comboQuantity" size="3" />
-        <div style="display:inline-table">
-          <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg())"></b>
-          <!-- ko with: combosStats -->
-          <span class="glyphicon glyphicon-stats"></span>
-          <b data-bind="text:d3.format('.1f')(strikeDelta),css:{profit:strikeDelta>0,loss:strikeDelta<0}" style="margin-left:1ex"></b>
-          <span class="glyphicon glyphicon-resize-vertical"></span>
-          <b data-bind="text:d3.format('.2f')(spread)"></b>
-          <span class="glyphicon glyphicon-hourglass"></span>
-          <b data-bind="text:d3.format('.2f')(stDev)"></b>
-          <!-- /ko -->
-        </div>
-        <div data-bind="foreach:combosMin" style="display:inline-table">
-          <label>Avg:</label><b data-bind="text:d3.format('.3f')(avg)"></b>
-          <label>Spread:</label><b data-bind="text:d3.format('.3f')(spread)"></b>
-          <br />
-          <label>Bid:</label><b data-bind="text:d3.format('.3f')(bid)"></b>
-          <label>Ask:</label><b data-bind="text:d3.format('.3f')(ask)"></b>
-        </div>
-      </caption>
+        <label>Gap:</label><input data-bind="value:comboGap" size="1" />
+      </div>
+      <div style="display:inline-table">
+        <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg())"></b>
+        <!-- ko with: combosStats -->
+        <span class="glyphicon glyphicon-stats"></span>
+        <b data-bind="text:d3.format('.1f')(strikeDelta),css:{profit:strikeDelta>0,loss:strikeDelta<0}" style="margin-left:1ex"></b>
+        <span class="glyphicon glyphicon-resize-vertical"></span>
+        <b data-bind="text:d3.format('.2f')(spread)"></b>
+        <span class="glyphicon glyphicon-hourglass"></span>
+        <b data-bind="text:d3.format('.2f')(stDev)"></b>
+        <!-- /ko -->
+      </div>
+      <div data-bind="foreach:combosMin" style="display:inline-table">
+        <label>Avg:</label><b data-bind="text:d3.format('.3f')(avg)"></b>
+        <label>Spread:</label><b data-bind="text:d3.format('.3f')(spread)"></b>
+        <br />
+        <label>Bid:</label><b data-bind="text:d3.format('.3f')(bid)"></b>
+        <label>Ask:</label><b data-bind="text:d3.format('.3f')(ask)"></b>
+      </div>
+    </div>
+    <div data-bind="foreach:activeCombos">
+      <div>
+        <input type="button" data-bind="value:i()+':'+d3.format('+.0f')(strikeDelta())"/>
+        <input type="button" data-bind="click:$parent.openButterfly.bind(null,false,$data)" value="SELL" />
+        <button data-bind="click:$parent.openButterfly.bind(null,true,$data)">BUY</button>
+        <button data-bind="event:{click:function(){isActive(false)}}">X</button>
+      </div>
+    </div>
+    <table border="1" cellspacing="0" class="wwwInfo" data-bind="expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
       <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
-        <tr style="background-color: lightslategray;color: white;font-weight: bold;text-align: center;"  class="pgGroupRow">
-          <td>Straddles</td>
-          <td>/\</td>
-          <td>Avg</td>
-          <td>Perc</td>
-          <td>Bid</td>
-          <td>Ask</td>
-          <td>Buy</td>
-          <td>Sel</td>
-        </tr>
-      <!-- ko foreach:butterflies -->
-        <tr style="">
-          <td data-bind="text:i" style="color:white;background-color: lightslategray"></td>
-          <td data-bind="text:d3.format('.2f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
-          <td data-bind="text:d3.format('.2f')(avg())"></td>
-          <td data-bind="text:d3.format('.2f')(perc())"></td>
-          <td data-bind="text:bid"></td>
-          <td data-bind="text:ask"></td>
-          <td>
-            <button data-bind="click:$parent.openButterfly.bind(null,true,$data)">Buy</button>
-          </td>
-          <td>
-            <button data-bind="click:$parent.openButterfly.bind(null,false,$data)">Sell</button>
-          </td>
-        </tr>
+      <tr style="background-color: lightslategray;color: white;font-weight: bold;text-align: center;" class="pgGroupRow">
+        <td>Straddles</td>
+        <td>/\</td>
+        <td>Avg</td>
+        <td>Perc</td>
+        <td>Bid</td>
+        <td>Ask</td>
+        <td>Buy</td>
+        <td>Sel</td>
+      </tr>
+      <!-- ko foreach:currentCombos -->
+      <tr data-bind="event:{click:function(){isActive(!isActive())}}">
+        <td data-bind="text:i,css:{comboName:!isActive(),comboNameActive:isActive()}"></td>
+        <td data-bind="text:d3.format('.2f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
+        <td data-bind="text:d3.format('.2f')(avg())"></td>
+        <td data-bind="text:d3.format('.2f')(perc())"></td>
+        <td data-bind="text:d3.format('.2f')(bid())"></td>
+        <td data-bind="text:d3.format('.2f')(ask())"></td>
+        <td>
+          <button data-bind="click:$parent.openButterfly.bind(null,true,$data)">Buy</button>
+        </td>
+        <td>
+          <button data-bind="click:$parent.openButterfly.bind(null,false,$data)">Sell</button>
+        </td>
+      </tr>
       <!-- /ko -->
     </table>
   </div>
