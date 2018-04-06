@@ -54,42 +54,6 @@ namespace IBApp {
          .ToArray()
          );
     }
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, Contract option)[]>
-      CurrentOptions(string symbol, int expirationDaysSkip, int count) =>
-      (
-        from cd in IbClient.ReqContractDetailsCached(symbol)
-        from price in IbClient.ReqPriceSafe(cd.Summary, 5, false).Select(p => p.ask.Avg(p.bid))
-        from option in MakeOptions(symbol, price, expirationDaysSkip, 1, count * 2)
-        from p in IbClient.ReqPriceSafe(option, 2, true).DefaultIfEmpty()
-        select (
-          instrument: option.Instrument,
-          p.bid,
-          p.ask,
-          p.time,//.ToString("HH:mm:ss"),
-          delta: p.ask.Avg(p.bid) - (price - option.Strike),
-          option.Strike,
-          price,
-          option
-        )).ToArray()
-        .Select(b => b
-         .OrderBy(t => t.ask.Avg(t.bid))
-         .Select((t, i) => (t, i))
-         .OrderBy(t => t.i > 3)
-         .ThenBy(t => t.t.ask.Avg(t.t.bid) / t.t.delta)
-         .ThenBy(t => t.t.option.Right)
-         .Select(t => t.t)
-         .ToArray()
-         );
-
-    public IObservable<Contract> MakeOptions
-      (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count * 2)
-      //.Take(count*2)
-      .ToArray()
-      .SelectMany(reqOptions => {
-        return reqOptions.OrderBy(o => o.Strike.Abs(price)).Take(count * 2).ToArray();
-      })
-      .Take(count);
     public IObservable<(Contract contract, Contract[] options)> MakeStraddles
       (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count, int gap) =>
       IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count * 2 + gap * 2)
@@ -208,13 +172,51 @@ namespace IBApp {
     }
     #endregion
 
+    #region Options
+    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, Contract option)[]>
+  CurrentOptions(string symbol, int expirationDaysSkip, int count) =>
+  (
+    from cd in IbClient.ReqContractDetailsCached(symbol)
+    from price in IbClient.ReqPriceSafe(cd.Summary, 5, false).Select(p => p.ask.Avg(p.bid))
+    from option in MakeOptions(symbol, price, expirationDaysSkip, 1, count * 2)
+    from p in IbClient.ReqPriceSafe(option, 2, true).DefaultIfEmpty()
+    select (
+      instrument: option.Instrument,
+      p.bid,
+      p.ask,
+      p.time,//.ToString("HH:mm:ss"),
+      delta: p.ask.Avg(p.bid) - (price - option.Strike),
+      option.Strike,
+      price,
+      option
+    )).ToArray()
+    .Select(b => b
+     .OrderBy(t => t.ask.Avg(t.bid))
+     .Select((t, i) => (t, i))
+     .OrderBy(t => t.i > 3)
+     .ThenBy(t => t.t.ask.Avg(t.t.bid) / t.t.delta)
+     .ThenBy(t => t.t.option.Right)
+     .Select(t => t.t)
+     .ToArray()
+     );
+
+    public IObservable<Contract> MakeOptions
+      (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count * 2)
+      //.Take(count*2)
+      .ToArray()
+      .SelectMany(reqOptions => {
+        return reqOptions.OrderBy(o => o.Strike.Abs(price)).Take(count * 2).ToArray();
+      })
+      .Take(count);
+    #endregion
   }
   public static class AccountManagerMixins {
     #region Parse Combos
-    public static IList<(Contract contract, int position, double open, double minTick)> ParseCombos(this ICollection<(Contract c, int p, double o, double minTick)> positions) {
+    public static IList<(Contract contract, int position, double open)> ParseCombos(this ICollection<(Contract c, int p, double o)> positions) {
       var tradesAll = ResortPositions(positions).ToList();
-      var combos = new List<(Contract c, int p, double o, double mt)>();
-      var singles = new List<(Contract c, int p, double o, double mt)>();
+      var combos = new List<(Contract c, int p, double o)>();
+      var singles = new List<(Contract c, int p, double o)>();
       var trades = tradesAll.GroupBy(t => (t.c.Strike, t.c.LastTradeDateOrContractMonth))
         .OrderByDescending(t => t.Count())
         .SelectMany(g => g.ToArray()).ToList();
@@ -233,26 +235,26 @@ namespace IBApp {
       }
       return combos.Concat(singles).ToArray();
     }
-    static ((Contract c, int p, double o, double mt) combo, (Contract c, int p, double o, double mt)[] rest) ParseMatch(((Contract c, int p, double o, double mt) leg1, (Contract c, int p, double o, double mt) leg2) m) {
+    static ((Contract c, int p, double o) combo, (Contract c, int p, double o)[] rest) ParseMatch(((Contract c, int p, double o) leg1, (Contract c, int p, double o) leg2) m) {
       //HandleMessage2($"Match:{m}");
       var posMin = m.leg1.p.Abs().Min(m.leg2.p.Abs()) * m.leg1.p.Sign();
       var legsCombo = new[] { m.leg1.c, m.leg2.c };
       var straddle = AccountManager.MakeStraddle(legsCombo).AddToCache();
-      var combo = (c: straddle, p: posMin, o: m.leg1.o + m.leg2.o, m.leg1.mt.Max(m.leg2.mt));
-      var rest = new[] { (m.leg1.c, p: m.leg1.p - posMin, m.leg1.o, m.leg1.mt), (m.leg2.c, p: m.leg2.p - posMin, m.leg2.o, m.leg2.mt) };
+      var combo = (c: straddle, p: posMin, o: m.leg1.o + m.leg2.o);
+      var rest = new[] { (m.leg1.c, p: m.leg1.p - posMin, m.leg1.o), (m.leg2.c, p: m.leg2.p - posMin, m.leg2.o) };
       //HandleMessage2("combo:\n" + combo);
       //HandleMessage2("rest:\n" + rest.Flatter("\n"));
       return (combo, rest);
     }
-    static IEnumerable<(Contract c, int p, double o, double mt)> RePosition(IList<(Contract c, int p, double o, double mt)> tradePositions, IEnumerable<((Contract c, int p, double o, double mt) combo, (Contract c, int p, double o, double mt)[] rest)> parsedPositions) =>
+    static IEnumerable<(Contract c, int p, double o)> RePosition(IList<(Contract c, int p, double o)> tradePositions, IEnumerable<((Contract c, int p, double o) combo, (Contract c, int p, double o)[] rest)> parsedPositions) =>
       from trade in tradePositions
       join c in parsedPositions.SelectMany((p => p.rest)) on trade.c.Key equals c.c.Key into tg
       from cc in tg.DefaultIfEmpty(trade)
       where cc.p != 0
       select cc;
-    static List<(Contract c, int p, double o, double mt)> ResortPositions(this IEnumerable<(Contract c, int p, double o, double mt)> positions)
+    static List<(Contract c, int p, double o)> ResortPositions(this IEnumerable<(Contract c, int p, double o)> positions)
       => positions.OrderByDescending(t => t.p.Abs()).ToList();
-    static IEnumerable<((Contract c, int p, double o, double mt) leg1, (Contract c, int p, double o, double mt) leg2)> FindStraddle(IList<(Contract c, int p, double o, double mt)> positions, (Contract c, int p, double o, double mt) leg, bool wide = false) =>
+    static IEnumerable<((Contract c, int p, double o) leg1, (Contract c, int p, double o) leg2)> FindStraddle(IList<(Contract c, int p, double o)> positions, (Contract c, int p, double o) leg, bool wide = false) =>
       positions
       .Where(p => p.c.Symbol == leg.c.Symbol)
       .Where(p => wide || p.c.Strike == leg.c.Strike)

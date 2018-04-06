@@ -440,15 +440,18 @@ namespace IBApp {
     #endregion
 
     private void UpdateOrder((int orderId, Contract contract, IBApi.Order order, OrderState orderState) t) {
-      if(OrderContracts.TryGetValue(t.orderId, out var och))
+      OrderContracts.AddOrUpdate(t.orderId, new OrdeContractHolder(t.order, t.contract), (id, och) => {
         och.order.LmtPrice = t.order.LmtPrice;
+        return och;
+      });
+
     }
 
     private static bool IsEntryOrder(IBApi.Order o) => new[] { "MKT", "LMT" }.Contains(o.OrderType);
     private void OnOrderStartedImpl(int reqId, IBApi.Contract c, IBApi.Order o, IBApi.OrderState os) {
       if(!o.WhatIf) {
         OrderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, c));
-        _verbous(new { OnOpenOrder = new { c, o, os } });
+        _verbous(new { OnOpenOrderImpl = new { c, o, os } });
         RaiseOrderAdded(new HedgeHog.Shared.Order {
           IsBuy = o.Action == "BUY",
           Lot = (int)o.TotalQuantity,
@@ -522,8 +525,8 @@ namespace IBApp {
     public bool UpdateTradeByProfit(int orderId, double profit) {
       if(!OrderContracts.TryGetValue(orderId, out var och))
         return false;
-      var pos = Positions.FirstOrDefault(p => p.contract.Instrument == och.contract.Instrument);
-      var minTick = pos.contract.MinTick;
+      var pos = Positions.ParseCombos().FirstOrDefault(p => p.contract.Instrument == och.contract.Instrument);
+      var minTick = pos.contract.MinTick();
       var limit = Math.Round(priceFromProfit(profit, pos.position, och.contract.ComboMultiplier, pos.open) / minTick) * minTick;
       UpdateTrade(orderId, limit);
       return true;
@@ -552,6 +555,7 @@ namespace IBApp {
         var orderType = "MKT";
         bool isPreRTH = false;
         var order = new IBApi.Order() {
+          Account = _accountId,
           OrderId = NetOrderId(),
           Action = quantity > 0 ? "BUY" : "SELL",
           OrderType = orderType,
@@ -583,13 +587,14 @@ namespace IBApp {
       .Where(o => o.OrderType == "LMT")
       .Select(o => o.LmtPrice)
       .Concat(IbClient.TryGetPrice(contract).Select(p => parent.IsBuy() ? p.Ask : p.Bid))
-      .IfEmpty(() => Trace($"No take profit order for {parent}"))
+      .OnEmpty(() => Trace($"No take profit order for {parent}"))
       .Select(lmtPrice => {
         parent.Transmit = false;
         var takeProfit = lmtPrice * 0.2 * (parent.IsBuy() ? 1 : -1);
         return new IBApi.Order() {
+          Account = _accountId,
           ParentId = parent.OrderId,
-          LmtPrice = lmtPrice + takeProfit,
+          LmtPrice = OrderPrice(lmtPrice + takeProfit, contract),
           OrderId = NetOrderId(),
           Action = parent.Action == "BUY" ? "SELL" : "BUY",
           OrderType = "LMT",
@@ -618,6 +623,7 @@ namespace IBApp {
       var orderType = "MKT";
       var c = ContractSamples.StockComboContract();
       var o = new IBApi.Order() {
+        Account = _accountId,
         OrderId = NetOrderId(),
         Action = legs[0].buy ? "BUY" : "SELL",
         OrderType = orderType,
@@ -632,6 +638,9 @@ namespace IBApp {
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
     }
+    double OrderPrice(double orderPrice, Contract contract) =>
+      contract.MinTick().With(minTick => Math.Round(orderPrice / minTick) * minTick);
+
     #endregion
 
     #region FetchMMR
@@ -660,7 +669,7 @@ namespace IBApp {
       OnWhatIf(() => OpenTradeWhatIf(pair, false));
     }
     public void FetchMMRs() => GetTrades()
-      .IfEmpty(() => {
+      .OnEmpty(() => {
         _defaultMessageHandler(nameof(FetchMMR) + " started");
         TradesManagerStatic.dbOffers.Where(o => !o.Pair.IsCurrenncy()).ToObservable().Subscribe(o => FetchMMR(o.Pair));
       })

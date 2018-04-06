@@ -284,7 +284,7 @@ namespace HedgeHog.Alice.Store {
           tm.TradeTrendLines
           .OrderByDescending(tl => tl.EndDate)
           .Where(tl => !tl.IsEmpty)
-          .IfEmpty(() => { if(!IsAsleep) throw new Exception(nameof(TrendLevelByTradeLevel) + "() returned empty handed."); })
+          .OnEmpty(() => { if(!IsAsleep) throw new Exception(nameof(TrendLevelByTradeLevel) + "() returned empty handed."); })
           .Where(tl => IsTLFresh(tm, tl, tm.WavesRsdPerc / 100.0)))
           .Take(1)
           .Concat()
@@ -572,7 +572,7 @@ namespace HedgeHog.Alice.Store {
     }
     void SetBSfromTL(Func<TL, double> buy, Func<TL, double> sell) {
       TrendLevelByTradeLevel()
-        .IfEmpty(() => new Exception($"{nameof(TrendLevelByTradeLevel)} returned zero Trend Lines."))
+        .OnEmpty(() => new Exception($"{nameof(TrendLevelByTradeLevel)} returned zero Trend Lines."))
         .ForEach(tl => {
           SellLevel.RateEx = sell(tl);
           BuyLevel.RateEx = buy(tl);

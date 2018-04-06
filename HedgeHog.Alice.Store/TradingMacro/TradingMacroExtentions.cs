@@ -1051,7 +1051,7 @@ namespace HedgeHog.Alice.Store {
       //check(tm => tm.IsTrender);
       TradingMacrosByPair()
         .Where(tm => tm.IsTrender)
-        .IfEmpty(new Action(() => { throw new Exception("Pair " + Pair + " does not have any Trenders"); }));
+        .OnEmpty(new Action(() => { throw new Exception("Pair " + Pair + " does not have any Trenders"); }));
       TradingMacrosByPair()
         .GroupBy(tm => tm.PairIndex)
         .Where(g => g.Count() > 1)

@@ -30,11 +30,15 @@ namespace IBApi {
     public static IEnumerable<Contract> FromCache(string instrument) => Contracts.TryGetValue(instrument);
     public static IEnumerable<T> FromCache<T>(string instrument, Func<Contract, T> map) => Contracts.TryGetValue(instrument).Select(map);
 
-    public double MinTick => ContractDetails.FromCache(this)
+    public double MinTick() {
+      return ContractDetails.FromCache(this)
       .Select(cd => cd.MinTick)
-      .IfEmpty(() => Legs().SelectMany(c => ContractDetails.FromCache(c).Select(cd => cd.MinTick)))
+      .Where(mt => mt > 0)
+      .IfEmpty(() => Legs().SelectMany(c => ContractDetails.FromCache(c)).MaxByOrEmpty(cd => cd.MinTick).Select(cd => cd.MinTick).Take(1))
       .Count(1, _ => Debugger.Break(), _ => Debugger.Break())
-      .DefaultIfEmpty(0.01).Single();
+      .DefaultIfEmpty(0.01)
+      .Single();
+    }
     public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).First();
     public bool IsCombo => ComboLegs?.Any() == true;
     public bool IsOption => SecType == "OPT";

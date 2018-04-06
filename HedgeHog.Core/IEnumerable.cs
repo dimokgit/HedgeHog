@@ -276,7 +276,18 @@ namespace HedgeHog {
     public static IEnumerable<double> NaNIfEmpty(this IEnumerable<double> enumerable) {
       return enumerable.DefaultIfEmpty(double.NaN);
     }
-    public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
+    public static IEnumerable<T> IfEmpty_<T>(this IEnumerable<T> enumerable,
+            Action emptyAction) {
+
+      var isEmpty = true;
+      foreach(var e in enumerable) {
+        isEmpty = false;
+        yield return e;
+      }
+      if(isEmpty)
+        emptyAction();
+    }
+    public static IEnumerable<T> OnEmpty<T>(this IEnumerable<T> enumerable,
             Action emptyAction) {
 
       var isEmpty = true;

@@ -1255,10 +1255,9 @@
         <td>/\</td>
         <td>Avg</td>
         <td>Perc</td>
+        <td>Delta</td>
         <td>Bid</td>
         <td>Ask</td>
-        <td>Buy</td>
-        <td>Sel</td>
       </tr>
       <!-- ko foreach:currentCombos -->
       <tr data-bind="event:{click:function(){isActive(!isActive())}}">
@@ -1266,14 +1265,9 @@
         <td data-bind="text:d3.format('.2f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
         <td data-bind="text:d3.format('.2f')(avg())"></td>
         <td data-bind="text:d3.format('.2f')(perc())"></td>
+        <td data-bind="text:d3.format('.2f')(delta())"></td>
         <td data-bind="text:d3.format('.2f')(bid())"></td>
         <td data-bind="text:d3.format('.2f')(ask())"></td>
-        <td>
-          <button data-bind="click:$parent.openButterfly.bind(null,true,$data)">Buy</button>
-        </td>
-        <td>
-          <button data-bind="click:$parent.openButterfly.bind(null,false,$data)">Sell</button>
-        </td>
       </tr>
       <!-- /ko -->
     </table>

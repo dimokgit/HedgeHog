@@ -428,7 +428,7 @@ namespace HedgeHog.Alice.Store {
          => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.IfEmpty(() => tlRanges(tlDef))/*.DefaultIfEmpty(skipByTL(tlDef))*/.ToArray(), isMin = s > 0 })
          .Where(x => x.s > 0)
          .SelectMany(p => calcTrendLines(p.s, p.isMin, color, p.skip).Concat(() => calcTrendLines(p.s, p.isMin, color, skipEmpty)).Take(1))
-         .IfEmpty(() => tlDef.Value.AsIList())
+         .IfEmpty(() => new[] { tlDef.Value })
          .Do(ctl => tl(Lazy.Create(() => ctl)))
          .AsSingleable();
 
@@ -641,7 +641,7 @@ namespace HedgeHog.Alice.Store {
          => ints.Pairwise((s, c) => new { s = s.Abs(), skip = skipFirst.IfEmpty(() => tlRanges(tlDef)).DefaultIfEmpty(skipByTL(tlDef)).ToArray(), isMin = s > 0 })
          .Where(x => x.s > 0)
          .SelectMany(p => calcTrendLines(p.s, p.isMin, color, p.skip).Concat(() => calcTrendLines(p.s, p.isMin, color, skipEmpty)).Take(1))
-         .IfEmpty(() => tlDef.Value.AsIList())
+         .IfEmpty(() => new[] { tlDef.Value })
          .Do(ctl => tl(Lazy.Create(() => ctl)))
          .AsSingleable();
 

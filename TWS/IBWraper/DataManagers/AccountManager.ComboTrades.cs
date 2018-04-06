@@ -12,7 +12,7 @@ namespace IBApp {
   public partial class AccountManager {
     public static double priceFromProfit(double profit, int position, int multiplier, double open)
       => (profit + open) / position / multiplier;
-    public IObservable<(Contract contract, int position, double open, double close, double pl, double underPrice, double strikeAvg, double openPrice, double takeProfit, double profit, int orderId,double minTick)>
+    public IObservable<(Contract contract, int position, double open, double close, double pl, double underPrice, double strikeAvg, double openPrice, double takeProfit, double profit, int orderId)>
       ComboTrades(double priceTimeoutInSeconds) {
       var combos = (
         from c in ComboTradesImpl()
@@ -26,7 +26,6 @@ namespace IBApp {
         , c.takeProfit
         , profit: c.takeProfit * c.position * multiplier - c.open
         , c.orderId
-        , c.minTick
         )
         );
       return combos;
@@ -39,16 +38,16 @@ namespace IBApp {
       }
     }
 
-    public IObservable<(Contract contract, int position, double open, double takeProfit, int orderId, double minTick)> ComboTradesImpl() {
+    public IObservable<(Contract contract, int position, double open, double takeProfit, int orderId)> ComboTradesImpl() {
       var positionsArray = (from p in Positions.ToObservable()
                             from cd in IbClient.ReqContractDetailsCached(p.contract)
-                            select (contract: cd.Summary, p.position, p.open, cd.MinTick)
+                            select (contract: cd.Summary, p.position, p.open)
                        ).ToArray();
       var combos = (
         from positions in positionsArray
         from c in positions.ParseCombos().Do(c => IbClient.SetContractSubscription(c.contract))
         let order = OrderContracts.Values.Where(oc => !oc.isDone && oc.contract.Key == c.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
-        select (c.contract, c.position, c.open, order.LmtPrice, order.OrderId, c.minTick)
+        select (c.contract, c.position, c.open, order.LmtPrice, order.OrderId)
         );
       return combos;
       return combos.GroupJoin(
@@ -56,8 +55,8 @@ namespace IBApp {
         combo => combo.contract.Key.ToObservable(),
         oc => oc.contract.Key.ToObservable(),
         (combo, ocs) => ocs
-          .Select(oc => (combo.contract, combo.position, combo.open, takeProfit: oc.order.LmtPrice, oc.order.OrderId, combo.minTick))
-          .DefaultIfEmpty((combo.contract, combo.position, combo.open, takeProfit: 0.0, 0, 0.0))
+          .Select(oc => (combo.contract, combo.position, combo.open, takeProfit: oc.order.LmtPrice, oc.order.OrderId))
+          .DefaultIfEmpty((combo.contract, combo.position, combo.open, takeProfit: 0.0, 0))
         ).Merge()
         ;
     }
