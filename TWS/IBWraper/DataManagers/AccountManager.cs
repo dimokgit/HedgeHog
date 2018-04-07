@@ -525,7 +525,7 @@ namespace IBApp {
     public bool UpdateTradeByProfit(int orderId, double profit) {
       if(!OrderContracts.TryGetValue(orderId, out var och))
         return false;
-      var pos = Positions.ParseCombos().FirstOrDefault(p => p.contract.Instrument == och.contract.Instrument);
+      var pos = Positions.ParseCombos(OrderContracts.Values).FirstOrDefault(p => p.contract.Instrument == och.contract.Instrument);
       var minTick = pos.contract.MinTick();
       var limit = Math.Round(priceFromProfit(profit, pos.position, och.contract.ComboMultiplier, pos.open) / minTick) * minTick;
       UpdateTrade(orderId, limit);
@@ -716,6 +716,7 @@ namespace IBApp {
     public static bool IsPreSubmited(this IBApi.OrderState order) => order.Status == "PreSubmitted";
 
     public static bool IsBuy(this IBApi.Order o) => o.Action == "BUY";
+    public static double TotalPosition(this IBApi.Order o) => o.IsBuy() ? o.TotalQuantity : -o.TotalQuantity;
 
     private static (string symbol, bool isBuy) Key(string symbol, bool isBuy) => (symbol.WrapPair(), isBuy);
     private static (string symbol, bool isBuy) Key2(string symbol, bool isBuy) => Key(symbol, !isBuy);

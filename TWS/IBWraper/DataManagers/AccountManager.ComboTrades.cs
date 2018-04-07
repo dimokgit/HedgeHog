@@ -45,7 +45,7 @@ namespace IBApp {
                        ).ToArray();
       var combos = (
         from positions in positionsArray
-        from c in positions.ParseCombos().Do(c => IbClient.SetContractSubscription(c.contract))
+        from c in positions.ParseCombos(OrderContracts.Values).Do(c => IbClient.SetContractSubscription(c.contract))
         let order = OrderContracts.Values.Where(oc => !oc.isDone && oc.contract.Key == c.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
         select (c.contract, c.position, c.open, order.LmtPrice, order.OrderId)
         );

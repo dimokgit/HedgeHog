@@ -213,7 +213,39 @@ namespace IBApp {
   }
   public static class AccountManagerMixins {
     #region Parse Combos
-    public static IList<(Contract contract, int position, double open)> ParseCombos(this ICollection<(Contract c, int p, double o)> positions) {
+    public static IList<(Contract contract, int position, double open)> ParseCombos
+      (this ICollection<(Contract c, int p, double o)> positions, ICollection<AccountManager.OrdeContractHolder> openOrders) {
+      var cartasian = (from combo in positions.CartesianProductSelf()
+                       select combo.MashDiffs(c => c.c.Instrument)).ToArray();
+      var matches = (from oc in openOrders
+                     join mashedCombo in cartasian on oc.contract.Instrument equals mashedCombo.mash
+                     let p = oc.order.TotalPosition().ToInt() * (oc.order.ParentId != 0 ? -1 : 1)
+                     select (combo: oc.contract, positions: oc.contract.Legs().Select(c => (c, p)).ToArray(), oc.order.OrderId)
+                     ).ToArray();
+      var legs = matches.SelectMany(m => m.positions).ToArray();
+      var update = (from pos in positions
+                    join leg in legs on pos.c.Key equals leg.c.Key
+                    select (p: pos, q: leg.p)
+                    ).ToArray();
+
+      var legs2 = matches.SelectMany(m => m.positions.Select(p => (p, m.OrderId))).ToArray();
+      var orderPositions = (from pos in positions
+                            join leg in legs2 on pos.c.Key equals leg.p.c.Key
+                            let pos2 = (pos.c, leg.p.p, pos.o, leg.OrderId)
+                            group pos2 by pos2.OrderId into gpos
+                            from op in gpos.Select(gp => (gp.c, gp.p, gp.o)).ToArray().ParseCombos(new AccountManager.OrdeContractHolder[0])
+                            select op
+                            ).ToArray();
+      positions = (from pos in positions
+                   join u in update on pos.c.Key equals u.p.c.Key into gpos
+                   from t in gpos.DefaultIfEmpty((p: pos, q: 0))
+                   let t2 = (t.p.c, p: t.p.p - t.q, t.p.o)
+                   where t2.p != 0
+                   select t2
+                   ).ToArray();
+
+      ;
+      //(from match in matches)
       var tradesAll = ResortPositions(positions).ToList();
       var combos = new List<(Contract c, int p, double o)>();
       var singles = new List<(Contract c, int p, double o)>();
@@ -233,9 +265,11 @@ namespace IBApp {
         }
         //ver("Trades new:\n" + trades.Flatter("\n"));
       }
-      return combos.Concat(singles).ToArray();
+      var xc = matches.SelectMany(m => m.positions);
+      return orderPositions.Concat(combos).Concat(singles).ToArray();
     }
-    static ((Contract c, int p, double o) combo, (Contract c, int p, double o)[] rest) ParseMatch(((Contract c, int p, double o) leg1, (Contract c, int p, double o) leg2) m) {
+    static ((Contract c, int p, double o) combo, (Contract c, int p, double o)[] rest)
+      ParseMatch(((Contract c, int p, double o) leg1, (Contract c, int p, double o) leg2) m) {
       //HandleMessage2($"Match:{m}");
       var posMin = m.leg1.p.Abs().Min(m.leg2.p.Abs()) * m.leg1.p.Sign();
       var legsCombo = new[] { m.leg1.c, m.leg2.c };
@@ -246,15 +280,18 @@ namespace IBApp {
       //HandleMessage2("rest:\n" + rest.Flatter("\n"));
       return (combo, rest);
     }
-    static IEnumerable<(Contract c, int p, double o)> RePosition(IList<(Contract c, int p, double o)> tradePositions, IEnumerable<((Contract c, int p, double o) combo, (Contract c, int p, double o)[] rest)> parsedPositions) =>
+    static IEnumerable<(Contract c, int p, double o)>
+      RePosition(IList<(Contract c, int p, double o)> tradePositions, IEnumerable<((Contract c, int p, double o) combo, (Contract c, int p, double o)[] rest)> parsedPositions) =>
       from trade in tradePositions
       join c in parsedPositions.SelectMany((p => p.rest)) on trade.c.Key equals c.c.Key into tg
       from cc in tg.DefaultIfEmpty(trade)
       where cc.p != 0
       select cc;
-    static List<(Contract c, int p, double o)> ResortPositions(this IEnumerable<(Contract c, int p, double o)> positions)
+    static List<(Contract c, int p, double o)>
+      ResortPositions(this IEnumerable<(Contract c, int p, double o)> positions)
       => positions.OrderByDescending(t => t.p.Abs()).ToList();
-    static IEnumerable<((Contract c, int p, double o) leg1, (Contract c, int p, double o) leg2)> FindStraddle(IList<(Contract c, int p, double o)> positions, (Contract c, int p, double o) leg, bool wide = false) =>
+    static IEnumerable<((Contract c, int p, double o) leg1, (Contract c, int p, double o) leg2)>
+      FindStraddle(IList<(Contract c, int p, double o)> positions, (Contract c, int p, double o) leg, bool wide = false) =>
       positions
       .Where(p => p.c.Symbol == leg.c.Symbol)
       .Where(p => wide || p.c.Strike == leg.c.Strike)
