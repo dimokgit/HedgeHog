@@ -596,18 +596,18 @@ namespace HedgeHog.Alice.Client {
 
     #region LoginCommand
 
-    ReactiveCommand<object> _LoginCommand;
-    public ReactiveCommand<object> LoginCommand {
+    ReactiveCommand<TradingAccount, Unit> _LoginCommand;
+    public ReactiveCommand<TradingAccount, Unit> LoginCommand {
       get {
         if(_LoginCommand == null) {
-          _LoginCommand = ReactiveUI.Legacy.ReactiveCommand.Create(null, ThreadPoolScheduler.Instance);
-          _LoginCommand.Subscribe(Login);
+          _LoginCommand = ReactiveUI.ReactiveCommand.Create<TradingAccount>(Login);
+          //_LoginCommand.Subscribe(Login);
         }
 
         return _LoginCommand;
       }
     }
-    void Login(object tradingAccount) {
+    void Login(TradingAccount tradingAccount) {
       var ta = tradingAccount as TradingAccount;
       LoginAsync(_isIB ? IB_IPAddress + "" : ta.AccountId, _isIB ? IB_IPPort + "" : ta.AccountSubId, _isIB ? IB_ClientId + "" : ta.Password, ta.IsDemo);
     }

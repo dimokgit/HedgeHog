@@ -69,18 +69,6 @@ namespace IBApp {
       })
       .Take(count);
 
-    public IObservable<(Contract contract, Contract[] options)> MakeStraddles_Old
-      (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count * 2)
-      //.Take(count*2)
-      .ToArray()
-      .SelectMany(reqOptions => reqOptions.OrderBy(o => o.Strike.Abs(price))
-      .GroupBy(c => new { c.Strike, c.LastTradeDateOrContractMonth })
-      .ToDictionary(c => c.Key, c => c.ToArray())
-      .Where(c => c.Value.Length == 2)
-      .Select(options => (MakeStraddle(options.Value), options.Value)))
-      .Take(count);
-
     public static Contract MakeStraddle(IList<Contract> contractOptions) =>
       MakeStraddleCache(contractOptions[0].Symbol, contractOptions[0].Exchange, contractOptions[0].Currency
         , contractOptions.OrderBy(c => c.Right).Select(c => c.ConId).ToArray());
@@ -116,6 +104,38 @@ namespace IBApp {
       c.ComboLegs = new List<ComboLeg> { call, put };
       return c.AddToCache();
     }
+
+    static IList<ComboLeg> CombosLegs(IEnumerable<Contract> combos) =>
+      (from combo in combos
+       from leg in combo.ComboLegs ?? new List<ComboLeg>()
+       group leg by leg.ConId into legConId
+       select legConId.Select(lk
+        => new ComboLeg { ConId = lk.ConId, Ratio = legConId.Sum(l => l.Ratio), Action = lk.Action, Exchange = lk.Exchange }).First()
+       ).ToArray();
+
+    static IEnumerable<Contract> SortCombos(IEnumerable<Contract> options) =>
+      (from c in options
+       group c by c.Right into gc
+       orderby gc.Key
+       select gc.OrderByDescending(v => v.Strike)
+       ).Concat();
+
+    public static Contract MakeCombo(IList<Contract> combos) =>
+      MakeComboCache(combos[0].Symbol, combos[0].Exchange, combos[0].Currency
+        , CombosLegs(combos).OrderBy(c => c.ConId).ToArray());
+
+    static Func<string, string, string, IList<ComboLeg>, Contract> MakeComboCache
+      = new Func<string, string, string, IList<ComboLeg>, Contract>(MakeCombo)
+      .Memoize(t => (t.Item1, t.Item2, t.Item3, t.Item4.Select(l => $"{l.ConId}{l.Ratio}{l.Action}").Flatter("")));
+
+    static Contract MakeCombo(string instrument, string exchange, string currency, IList<ComboLeg> comboLegs) =>
+       new Contract() {
+         Symbol = instrument,
+         SecType = "BAG",
+         Exchange = exchange,
+         Currency = currency,
+         ComboLegs = new List<ComboLeg>(comboLegs.OrderBy(l => l.ConId))
+       }.AddToCache();
     #endregion
 
 
@@ -219,12 +239,12 @@ namespace IBApp {
                        select combo.MashDiffs(c => c.c.Instrument)).ToArray();
       var matches = (from oc in openOrders
                      join mashedCombo in cartasian on oc.contract.Instrument equals mashedCombo.mash
-                     let p = oc.order.TotalPosition().ToInt() * (oc.order.ParentId != 0 ? -1 : 1)
+                     let p = -oc.order.TotalPosition().ToInt()
                      select (combo: oc.contract, positions: oc.contract.Legs().Select(c => (c, p)).ToArray(), oc.order.OrderId)
                      ).ToArray();
       var legs = matches.SelectMany(m => m.positions).ToArray();
       var update = (from pos in positions
-                    join leg in legs on pos.c.Key equals leg.c.Key
+                    join leg in legs on new { pos.c.Key, ps = pos.p.Sign() } equals new { leg.c.Key, ps = leg.p.Sign() }
                     select (p: pos, q: leg.p)
                     ).ToArray();
 

@@ -382,10 +382,20 @@ namespace IBApp {
       .Where(p => p.bid > 0 && p.ask > 0)
       .Do(p => Trace($"IBClientCore.TickPriceObservable:{contract}:{p}"))
       .Select(p => (p.bid, p.ask, ServerTime))
+      .Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
       .Take(1)
       ;
-
     }
+    public IObservable<(double bid, double ask, DateTime time)> ReqPriceComboSafe(Contract combo, double timeoutInSeconds, bool useErrorHandler) {
+      var x = combo.Legs()
+        .ToObservable()
+        .SelectMany(contract => ReqPriceSafe(contract, timeoutInSeconds, useErrorHandler).Take(1))
+        .ToArray()
+        .Where(a => a.Any())
+        .Select(prices => (prices.Sum(p => p.bid), prices.Sum(p => p.ask), ServerTime));
+      return x;
+    }
+
     private (int reqId, double bid, double ask, int field) OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
       //Trace($"IBClientCore.OnTickPrice:{new { requestId, price, field }}");
       switch(field) {
@@ -509,7 +519,7 @@ namespace IBApp {
       .Merge()
       .Subscribe(t => Trace($"{context}:{contract}:{t}"), complete);
     }
-    public void WatchReqError(int reqId,Action<(int id, int errorCode, string errorMsg, Exception exc)> error, Action complete) {
+    public void WatchReqError(int reqId, Action<(int id, int errorCode, string errorMsg, Exception exc)> error, Action complete) {
       SetRequestHandled(reqId);
       ErrorObservable
       .Where(t => t.id == reqId)
@@ -545,7 +555,7 @@ namespace IBApp {
     #endregion
 
     public IEnumerable<Price> TryGetPrice(Contract contract) => TryGetPrice(contract.Instrument);
-      public IEnumerable<Price> TryGetPrice(string pair) {
+    public IEnumerable<Price> TryGetPrice(string pair) {
       if(TryGetPrice(pair, out var price))
         yield return price;
     }

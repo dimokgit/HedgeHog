@@ -69,9 +69,10 @@ namespace ConsoleApp {
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         Task.Delay(2000).ContinueWith(_ => {
-          TestParsedCombos();
-          //TestCurrentStraddles(1, 1);
+          TestMakeComboTrade();
         }); return;
+        TestParsedCombos();
+        TestCurrentStraddles(1, 1);
         TestCurrentStraddles(1, 1); return;
         TestCombosTrades(10).Subscribe(); return;
         var cds = ibClient.ReqContractDetailsAsync("VXX   180329C00051500".ContractFactory()).ToEnumerable().Count(0, new { }).ToArray();
@@ -92,6 +93,21 @@ namespace ConsoleApp {
         //HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
 
         #region Local Tests
+        void TestMakeComboTrade() {
+          am.ComboTrades(2)
+          .ToArray()
+          .Select(cts => AccountManager.MakeCombo(cts.Select(ct => ct.contract).Where(ct => ct.IsCombo).ToArray()))
+          .ToEnumerable()
+          .ToArray()
+          .ForEach(comboPrice => {
+            HandleMessage2("ComboTrade Start");
+            ibClient.ReqPriceSafe(comboPrice, 4, true)
+            .Subscribe(price => HandleMessage($"Observed {comboPrice} price:{price}"));
+            HandleMessage2(new { comboPrice });
+            HandleMessage2($"ComboTrade Done ==================");
+          });
+
+        }
         void TestCurrentStraddles(int count, int gap) {
           var swCombo = Stopwatch.StartNew();
           Observable.Interval(TimeSpan.FromMilliseconds(1000))
