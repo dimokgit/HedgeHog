@@ -104,40 +104,7 @@ namespace IBApp {
       c.ComboLegs = new List<ComboLeg> { call, put };
       return c.AddToCache();
     }
-
-    static IList<ComboLeg> CombosLegs(IEnumerable<Contract> combos) =>
-      (from combo in combos
-       from leg in combo.ComboLegs ?? new List<ComboLeg>()
-       group leg by leg.ConId into legConId
-       select legConId.Select(lk
-        => new ComboLeg { ConId = lk.ConId, Ratio = legConId.Sum(l => l.Ratio), Action = lk.Action, Exchange = lk.Exchange }).First()
-       ).ToArray();
-
-    static IEnumerable<Contract> SortCombos(IEnumerable<Contract> options) =>
-      (from c in options
-       group c by c.Right into gc
-       orderby gc.Key
-       select gc.OrderByDescending(v => v.Strike)
-       ).Concat();
-
-    public static Contract MakeCombo(IList<Contract> combos) =>
-      MakeComboCache(combos[0].Symbol, combos[0].Exchange, combos[0].Currency
-        , CombosLegs(combos).OrderBy(c => c.ConId).ToArray());
-
-    static Func<string, string, string, IList<ComboLeg>, Contract> MakeComboCache
-      = new Func<string, string, string, IList<ComboLeg>, Contract>(MakeCombo)
-      .Memoize(t => (t.Item1, t.Item2, t.Item3, t.Item4.Select(l => $"{l.ConId}{l.Ratio}{l.Action}").Flatter("")));
-
-    static Contract MakeCombo(string instrument, string exchange, string currency, IList<ComboLeg> comboLegs) =>
-       new Contract() {
-         Symbol = instrument,
-         SecType = "BAG",
-         Exchange = exchange,
-         Currency = currency,
-         ComboLegs = new List<ComboLeg>(comboLegs.OrderBy(l => l.ConId))
-       }.AddToCache();
     #endregion
-
 
     #region Make Butterfly
     public IObservable<(Contract contract, Contract[] options)> MakeButterflies(string symbol, double price) =>

@@ -69,7 +69,8 @@ namespace ConsoleApp {
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         Task.Delay(2000).ContinueWith(_ => {
-          TestMakeComboTrade();
+          TestMakeComboAll(true);
+          LoadHistory(ibClient, new[] { "spy".ContractFactory() });
         }); return;
         TestParsedCombos();
         TestCurrentStraddles(1, 1);
@@ -93,17 +94,20 @@ namespace ConsoleApp {
         //HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
 
         #region Local Tests
-        void TestMakeComboTrade() {
-          am.ComboTrades(2)
-          .ToArray()
-          .Select(cts => AccountManager.MakeCombo(cts.Select(ct => ct.contract).Where(ct => ct.IsCombo).ToArray()))
-          .ToEnumerable()
-          .ToArray()
+        void TestMakeComboAll(bool placeOrder) {
+          HandleMessage2("ComboTrade Start");
+          AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass) => pos.contract.TradingClass == tradingClass)
           .ForEach(comboPrice => {
-            HandleMessage2("ComboTrade Start");
-            ibClient.ReqPriceSafe(comboPrice, 4, true)
-            .Subscribe(price => HandleMessage($"Observed {comboPrice} price:{price}"));
-            HandleMessage2(new { comboPrice });
+            HandleMessage2(new { comboPrice.contract });
+            ibClient.ReqPriceSafe(comboPrice.contract, 4, true)
+            .ToEnumerable()
+            .ForEach(price => {
+              HandleMessage($"Observed {comboPrice.contract} price:{price}");
+              if(placeOrder) {
+                HandleMessage2($"Placing SELL order for{comboPrice.contract}");
+                am.OpenTrade(comboPrice.contract, -1, price.ask.Avg(price.bid) * 0.55, false);
+              }
+            });
             HandleMessage2($"ComboTrade Done ==================");
           });
 
@@ -138,13 +142,13 @@ namespace ConsoleApp {
           }
         }
         void TestParsedCombos() {
-          am.ComboTrades(2)
+          am.ComboTrades(1)
           .ToArray()
           .ToEnumerable()
           .ToArray()
           .ForEach(comboPrices => {
             HandleMessage2("ComboTrades Start");
-            comboPrices.OrderBy(c => c.contract.Key).ForEach(comboPrice => HandleMessage2(new { comboPrice }));
+            comboPrices.ForEach(comboPrice => HandleMessage2(new { comboPrice }));
             HandleMessage2($"ComboTrades Done ==================");
           });
         }
@@ -277,6 +281,7 @@ namespace ConsoleApp {
       var counter = 0;
       if(options.Any()) {
         var c = options[0].ContractFactory();
+        HandleMessage($"Loading History for {c}");
         new HistoryLoader<Rate>(ibClient, c, 1800 * 1, dateEnd, TimeSpan.FromDays(1), TimeUnit.S, BarSize._1_secs,
            map,
            list => {

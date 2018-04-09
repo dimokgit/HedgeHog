@@ -807,11 +807,11 @@
       dataViewModel.butterflies([]);
     })
     this.newProfit = function (a, b, c) {
-      var profit = parseFloat(b.target.value);
-      if (!isNaN(profit)) {
-        var orderId = ko.unwrap(a.orderId);
-        showErrorPerm(JSON.stringify({ profit: profit }));
-        serverCall("updateOrderProfit", [orderId, profit]);
+      var profitAmount = parseFloat(b.target.value);
+      if (!isNaN(profitAmount)) {
+        var instrument = a.combo();
+        var orderId = a.orderId();
+        serverCall("updateCloseOrderProfit", [instrument, orderId, profitAmount]);
       }
     }
     this.showNextInput = function (a, b, c) {
@@ -825,9 +825,9 @@
     this.newTakeProfit = function (a, b, c) {
       var limit = parseFloat(b.target.value);
       if (!isNaN(limit)) {
-        var orderId = ko.unwrap(a.orderId);
-        showErrorPerm(JSON.stringify({ limit: limit }));
-        serverCall("updateOrderLimit", [orderId, limit]);
+        var instrument = a.combo();
+        var orderId = a.orderId();
+        serverCall("updateCloseOrderLimit", [instrument, orderId, limit]);
       }
     }
 

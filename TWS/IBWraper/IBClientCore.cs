@@ -221,7 +221,7 @@ namespace IBApp {
       h => Error += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(Error)}"))*/,
       h => Error -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(Error)}"))*/
       ).ObserveOn(esError)
-      .Spy("Error")
+      //.Spy("Error")
       .Publish()
       .RefCount();
     IObservable<(int id, int errorCode, string errorMsg, Exception exc)> _ErrorObservable;
@@ -366,6 +366,27 @@ namespace IBApp {
       ReqPriceSafe(contract, timeoutInSeconds, useErrorHandler).DefaultIfEmpty((defaultPrice, defaultPrice, DateTime.MinValue));
 
     public IObservable<(double bid, double ask, DateTime time)> ReqPriceSafe(Contract contract, double timeoutInSeconds, bool useErrorHandler) {
+      var c = TryGetPrice(contract);
+      if(c.Any()) return Observable.Return(c.Where(p => p.Ask > 0 && p.Bid > 0)
+      //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
+      .Select(p => (p.Bid, p.Ask, p.Time)).First());
+
+      SetContractSubscription(contract);
+      int RID() => new[] { contract.ReqId }.Concat(Contract.FromCache(contract.Instrument).Select(cc => cc.ReqId)).FirstOrDefault();
+      return TickPriceObservable
+      .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
+      .Select(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time)).ToArray())
+      .Where(t => t.Any())
+      .SelectMany(p=>p)
+      .Where(p => p.Bid > 0 && p.Ask > 0)
+      .Do(p => Trace($"IBClientCore.TickPriceObservable:{contract}:{p}"))
+      .Select(p => (p.Bid, p.Ask, ServerTime))
+      .Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
+      .Take(1)
+      ;
+    }
+
+    public IObservable<(double bid, double ask, DateTime time)> ReqPriceSafe_Bad(Contract contract, double timeoutInSeconds, bool useErrorHandler) {
       var c = TryGetPrice(contract);
       if(c.Any()) return Observable.Return(c.Where(p => p.Ask > 0 && p.Bid > 0)
       //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))

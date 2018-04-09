@@ -593,33 +593,35 @@ namespace HedgeHog.Alice.Client {
           IBApi.Contract.FromCache(pair, c => c.Symbol)
             .ForEach(symbol
             => am.CurrentOptions(symbol, expirationDaysSkip, 3)
-            .Select(ts => ts.Select(t => new {
-              i = t.instrument,
-              t.bid,
-              t.ask,
-              avg = t.ask.Avg(t.bid),
-              time = t.time.ToString("HH:mm:ss"),
-              t.delta,
-              strike = t.strikeAvg,
-              perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
-              strikeDelta = t.strikeAvg - t.underPrice,
-              isActive = false
-            })
-            .OrderBy(t => t.delta.Abs())
-            .ThenBy(t => t.i)
+            .Select(ts => ts
+              .Where(t => t.option.Right == "P")
+              .Select(t => new {
+                i = t.instrument,
+                t.bid,
+                t.ask,
+                avg = t.ask.Avg(t.bid),
+                time = t.time.ToString("HH:mm:ss"),
+                t.delta,
+                strike = t.strikeAvg,
+                perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+                strikeDelta = t.strikeAvg - t.underPrice,
+                isActive = false
+              })
+            .OrderByDescending(t => t.delta)
+            //.ThenBy(t => t.i)
             )
            .Subscribe(b => base.Clients.Caller.options(b)));
-        OnCurrentCombo(() => {
-          a();
-          currentOptions();
-        });
+        if(!pair.IsNullOrWhiteSpace())
+          OnCurrentCombo(() => {
+            a();
+            currentOptions();
+          });
         //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
         am.ComboTrades(1)
           .ToArray()
           .Subscribe(cts => {
             var combos = cts
             .Where(ct => ct.position != 0)
-            .OrderByDescending(ct => ct.strikeAvg)
             .ToArray(x
               => new {
                 combo = x.contract.Key, netPL = x.pl, x.position, x.open
@@ -628,22 +630,6 @@ namespace HedgeHog.Alice.Client {
                 , exit = 0, exitDelta = 0
               });
 
-            var comboPortfolio = cts
-            .Where(ct => ct.position != 0 && ct.contract.IsCombo)
-            .Buffer(100)
-            .Select(cp => new {
-              combo = ALL_COMBOS,
-              netPL = cp.Sum(c => c.pl),
-              position = cp.Sum(c => c.position.Abs()),
-              open = cp.Sum(c => c.open),
-              close = cp.Sum(c => c.close),
-              delta = cp.Take(1).Select(p => cp.Average(c => c.strikeAvg) - p.underPrice).FirstOrDefault(),
-              openPrice = cp.Select(op => op.openPrice).DefaultIfEmpty().Average(),
-              takeProfit = 0.0, profit = 0.0, orderId = 0,
-              exit = 0, exitDelta = 0
-            });
-
-            combos = combos.Concat(comboPortfolio).ToArray();
             base.Clients.Caller.liveCombos(combos);
 
             (from ce in comboExits.Select(s => s.Split(','))
@@ -672,24 +658,54 @@ namespace HedgeHog.Alice.Client {
     }
 
     [BasicAuthenticationFilter]
-    public void UpdateOrderLimit(int orderId, double limit) {
+    public void UpdateCloseOrderLimit(string instrument, int orderId, double limit) {
       var am = GetAccountManager();
-      am.UpdateTrade(orderId, limit);
+      am.ComboTrades(2)
+        .Where(ct => ct.orderId == orderId && ct.contract.Instrument == instrument)
+        .ToArray()
+        .Subscribe(trades => {
+          if(trades.IsEmpty()) {
+            if(orderId != 0)
+              Log = new Exception($"{nameof(UpdateCloseOrderLimit)}:{new { instrument, orderId, not = "found" }}");
+            else
+              am.UpdateOrder(orderId, limit);
+          } else
+            trades.ForEach(trade => am.OpenOrUpdateOrder(instrument, -trade.position, orderId, limit));
+          am.OpenOrderObservable
+          .TakeUntil(DateTimeOffset.Now.AddSeconds(5))
+          .Throttle(TimeSpan.FromSeconds(1))
+          .Subscribe(_ => ReadStraddles("", 0, new string[0]));
+        });
     }
     [BasicAuthenticationFilter]
-    public void UpdateOrderProfit(int orderId, double profit) {
+    public void UpdateCloseOrderProfit(string instrument, int orderId, double profitAmount) {
       var am = GetAccountManager();
-      am.ComboTrades(1)
-        .Where(ct => ct.orderId == orderId)
-        .Subscribe(ct => {
-          am.UpdateTradeByProfit(orderId, profit);
+      am.ComboTrades(2)
+        .Where(ct => ct.orderId == orderId && ct.contract.Instrument == instrument)
+        .ToArray()
+        .Subscribe(trades => {
+          try {
+            if(trades.IsEmpty()) {
+              if(orderId != 0)
+                Log = new Exception($"{nameof(UpdateCloseOrderLimit)}:{new { instrument, orderId, not = "found" }}");
+              else
+                trades.ForEach(t => am.UpdateTradeByProfit(orderId, t.position, t.open, profitAmount));
+            } else
+              trades.ForEach(trade => am.OpenOrUpdateOrderByProfit(instrument, trade.position, orderId, trade.open, profitAmount));
+            am.OpenOrderObservable
+            .TakeUntil(DateTimeOffset.Now.AddSeconds(5))
+            .Throttle(TimeSpan.FromSeconds(1))
+            .Subscribe(_ => ReadStraddles("", 0, new string[0]));
+          } catch(Exception exc) {
+            Log = exc;
+          }
         });
     }
     [BasicAuthenticationFilter]
     public void OpenButterfly(string instrument, int quantity) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
-        am.OpenTrade(contract, quantity);
+        am.OpenTrade(contract, quantity, 0, false);
       else
         throw new Exception(new { contract, not = "found" } + "");
     }
@@ -706,7 +722,7 @@ namespace HedgeHog.Alice.Client {
             och.order.OrderType = "MKT";
             am.PlaceOrder(och.order, och.contract);
           } else
-            am.OpenTrade(c.contract, -c.position);
+            am.OpenTrade(c.contract, -c.position, 0, false);
         });
       }
     }

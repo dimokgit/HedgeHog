@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Text.RegularExpressions;
 using System.Threading;
 using static IBApi.IBApiMixins;
 using static IBApp.AccountManager;
@@ -32,6 +33,8 @@ namespace IBApp {
     private const string ACCOUNT_SUMMARY_TAGS = "AccountType,NetLiquidation,TotalCashValue,SettledCash,AccruedCash,BuyingPower,EquityWithLoanValue,PreviousEquityWithLoanValue,"
              + "GrossPositionValue,ReqTEquity,ReqTMargin,SMA,InitMarginReq,MaintMarginReq,AvailableFunds,ExcessLiquidity,Cushion,FullInitMarginReq,FullMaintMarginReq,FullAvailableFunds,"
              + "FullExcessLiquidity,LookAheadNextChange,LookAheadInitMarginReq ,LookAheadMaintMarginReq,LookAheadAvailableFunds,LookAheadExcessLiquidity,HighestSeverity,DayTradesRemaining,Leverage";
+    private const string GTC = "GTC";
+
     //private const int BaseUnitSize = 1;
     #endregion
 
@@ -50,6 +53,8 @@ namespace IBApp {
     public readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade>();
     private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
     public Func<Trade, double> CommissionByTrade = t => t.Lots * .008;
+    public POSITION_OBSERVABLE PositionsObservable { get; private set; }
+    public IObservable<(int orderId, Contract contract, IBApi.Order order, OrderState orderState)> OpenOrderObservable { get; private set; }
 
     Func<string, Trade> CreateTrade { get; set; }
 
@@ -104,15 +109,15 @@ namespace IBApp {
         h => IbClient.Position += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
         h => IbClient.Position -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
         )
-        //.Publish().RefCount()
+        .Publish().RefCount()
         //.Spy("**** AccountManager.PositionsObservable ****")
         ;
-      var ooObs = Observable.FromEvent<OpenOrderHandler, (int orderId, Contract contract, IBApi.Order order, OrderState orderState)>(
+      OpenOrderObservable = Observable.FromEvent<OpenOrderHandler, (int orderId, Contract contract, IBApi.Order order, OrderState orderState)>(
         onNext => (int orderId, Contract contract, IBApi.Order order, OrderState orderState) =>
         Try(() => onNext((orderId, contract, order, orderState)), nameof(IbClient.OpenOrder)),
         h => IbClient.OpenOrder += h,
         h => IbClient.OpenOrder -= h
-        );
+        ).Publish().RefCount();
       var osObs = Observable.FromEvent<OrderStatusHandler, (int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)>(
         onNext
         => (int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)
@@ -136,14 +141,18 @@ namespace IBApp {
       PositionsObservable
         .Where(x => x.account == _accountId && !NoPositionsPlease)
         .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos, x.avgCost, x.account } }))
-        .ObserveOn(esPositions)
-        .SubscribeOn(esPositions2)
+        //.SubscribeOn(esPositions2)
         //.Spy("**** AccountManager.OnPosition ****")
         //.Where(x => x.pos != 0)
         //.Distinct(x => new { x.contract.LocalSymbol, x.pos, x.avgCost, x.account })
+        .SelectMany(p =>
+          from cd in IbClient.ReqContractDetailsCached(p.contract)
+          select (p.account, contract: cd.Summary, p.pos, p.avgCost)
+        )
+        .ObserveOn(esPositions)
         .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost), () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
-      ooObs
+      OpenOrderObservable
         .Where(x => x.order.Account == _accountId)
         .Do(UpdateOrder)
         .Distinct(a => a.orderId)
@@ -294,8 +303,7 @@ namespace IBApp {
 
     private void OnError(int reqId, int code, string error, Exception exc) {
       if(!OrderContracts.TryGetValue(reqId, out var oc)) return;
-      if(new[] { 103, 110, 200, 201, 202, 203, 382, 383 }.Contains(code)) {
-        //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
+      if(new[] { 202 }.Contains(code)) {
         OrderContracts[reqId].status = null;
         RaiseOrderRemoved(reqId);
       }
@@ -507,7 +515,7 @@ namespace IBApp {
         OrderType = orderType,
         Account = _accountId,
         TotalQuantity = whatIf ? lots : pair.IsUSStock() ? lots : lots,
-        Tif = "DAY",
+        Tif = GTC,
         OutsideRth = isPreRTH,
         WhatIf = whatIf,
         OverridePercentageConstraints = true
@@ -522,16 +530,40 @@ namespace IBApp {
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
     }
-    public bool UpdateTradeByProfit(int orderId, double profit) {
+    public void OpenOrUpdateOrderByProfit(string instrument, int position, int orderId, double openAmount, double profitAmount) {
+      if(OrderContracts.TryGetValue(orderId, out var och)) {
+        if(och.isDone)
+          throw new Exception($"{nameof(OpenOrUpdateOrder)}:{new { orderId, och.isDone }}");
+        UpdateTradeByProfit(orderId, position, openAmount, profitAmount);
+      } else {
+        Contract.FromCache(instrument)
+          .Count(1, new { OpenOrUpdateOrder = new { instrument, unexpected = "count in cache" } })
+          .ForEach(c => {
+            var lmtPrice = OrderPrice(priceFromProfit(profitAmount, position, c.ComboMultiplier, openAmount), c);
+            OpenTrade(c, position, lmtPrice, false);
+          });
+      }
+    }
+    public bool UpdateTradeByProfit(int orderId, int position, double openAmount, double profitAmount) {
       if(!OrderContracts.TryGetValue(orderId, out var och))
         return false;
-      var pos = Positions.ParseCombos(OrderContracts.Values).FirstOrDefault(p => p.contract.Instrument == och.contract.Instrument);
-      var minTick = pos.contract.MinTick();
-      var limit = Math.Round(priceFromProfit(profit, pos.position, och.contract.ComboMultiplier, pos.open) / minTick) * minTick;
-      UpdateTrade(orderId, limit);
+      //var pos = Positions.ParseCombos(OrderContracts.Values).Single();
+      var limit = OrderPrice(priceFromProfit(profitAmount, position, och.contract.ComboMultiplier, openAmount), och.contract);
+      UpdateOrder(orderId, limit);
       return true;
     }
-    public void UpdateTrade(int orderId, double lmpPrice) {
+    public void OpenOrUpdateOrder(string instrument, int position, int orderId, double lmpPrice) {
+      if(OrderContracts.TryGetValue(orderId, out var och)) {
+        if(och.isDone)
+          throw new Exception($"{nameof(OpenOrUpdateOrder)}:{new { orderId, och.isDone }}");
+        UpdateOrder(orderId, lmpPrice);
+      } else {
+        Contract.FromCache(instrument)
+          .Count(1, new { OpenOrUpdateOrder = new { instrument, unexpected = "count in cache" } })
+          .ForEach(c => OpenTrade(c, position, lmpPrice, false));
+      }
+    }
+    public void UpdateOrder(int orderId, double lmpPrice) {
       if(!OrderContracts.TryGetValue(orderId, out var och))
         throw new Exception($"UpdateTrade: {new { orderId, not = "found" }}");
       if(och.isDone)
@@ -539,35 +571,69 @@ namespace IBApp {
       var order = och.order;
       //var minTick = och.contract.MinTick;
       order.LmtPrice = lmpPrice;//  Math.Round(lmpPrice / minTick) * minTick;
-      order.OpenClose = "C";
+      if(order.OpenClose.IsNullOrWhiteSpace())
+        order.OpenClose = "C";
+      IbClient.WatchReqError(orderId, e => OnUpdateError(e, $"{nameof(UpdateOrder)}:{och.contract}:"), () => { });
       IbClient.ClientSocket.placeOrder(order.OrderId, och.contract, order);
     }
+    private void OnUpdateError((int reqId, int code, string error, Exception exc) e, string trace) {
+      Trace(trace + e);
+      if(!OrderContracts.TryGetValue(e.reqId, out var oc)) return;
+      if(new[] { /*103, 110,*/ 200, 201, 202, 203, 382, 383 }.Contains(e.code)) {
+        //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
+        OrderContracts[e.reqId].status = null;
+        RaiseOrderRemoved(e.reqId);
+      }
+    }
+    private void OnOpenError((int reqId, int code, string error, Exception exc) e, string trace) {
+      Trace(trace + e);
+      if(!OrderContracts.TryGetValue(e.reqId, out var oc)) return;
+      if(new[] { 103, 110, 200, 201, 203, 382, 383 }.Contains(e.code)) {
+        //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
+        OrderContracts[e.reqId].status = null;
+        RaiseOrderRemoved(e.reqId);
+      }
+      switch(e.code) {
+        case 404:
+          var contract = oc.contract + "";
+          var order = oc.order + "";
+          _defaultMessageHandler("Requesting Global Cancel should be initiated");
+          //IbClient.ClientSocket.reqGlobalCancel();
+          break;
+      }
+    }
+
+
     static object _OpenTradeSync = new object();
-    public PendingOrder OpenTrade(Contract contract, int quantity) {
+    public PendingOrder OpenTrade(Contract contract, int quantity, double price, bool useTakeProfit) {
       lock(_OpenTradeSync) {
         var aos = OrderContracts.Values
           .Where(oc => !oc.isDone && oc.contract.Key == contract.Key)
           .ToArray();
         if(aos.Any()) {
-          aos.ForEach(ao => Trace($"OpenTrade: {contract} already has active order order with status: {ao.status}"));
+          aos.ForEach(ao => {
+            Trace($"OpenTrade: {contract} already has active order order with status: {ao.status}.\nUpdating {new { price }}");
+            UpdateOrder(ao.order.OrderId, OrderPrice(price, contract));
+          });
           return null;
         }
-        var orderType = "MKT";
-        bool isPreRTH = false;
+        var orderType = price == 0 ? "MKT" : "LMT";
+        bool isPreRTH = orderType != "MKT";
         var order = new IBApi.Order() {
           Account = _accountId,
           OrderId = NetOrderId(),
           Action = quantity > 0 ? "BUY" : "SELL",
           OrderType = orderType,
+          LmtPrice = OrderPrice(price, contract),
           TotalQuantity = quantity.Abs(),
-          Tif = "DAY",
+          Tif = GTC,
           OutsideRth = isPreRTH,
           OverridePercentageConstraints = true
         };
-        var tpOrder = MakeTakeProfitOrder(order, contract);
+        var tpOrder = useTakeProfit ? MakeTakeProfitOrder(order, contract) : new IBApi.Order[0];
         new[] { order }.Concat(tpOrder)
           .ForEach(o => {
-            IbClient.WatchReqError(o.OrderId, Error, () => Trace(new { o.OrderId, Error = "done" }));
+            IbClient.WatchReqError(o.OrderId, e => Error(contract, e), () => Trace(new { o.OrderId, Error = "done" }));
             OrderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, contract));
             _verbous(new { plaseOrder = new { o, contract } });
             IbClient.ClientSocket.placeOrder(o.OrderId, contract, o);
@@ -575,10 +641,12 @@ namespace IBApp {
         return null;
       }
       /// Locals
-      void Error((int id, int errorCode, string errorMsg, Exception exc) t) {
-        if(OrderContracts.TryRemove(t.id, out var och)) {
-          Trace($"{nameof(OpenTrade)}:{t}");
-        }
+      void Error(Contract c, (int id, int errorCode, string errorMsg, Exception exc) t) {
+        var trace = $"{nameof(OpenTrade)}:{c}:";
+        var isWarning = Regex.IsMatch(t.errorMsg, @"\sWarning:") || t.errorCode == 103;
+        if(!isWarning) OnOpenError(t, trace);
+        else
+          Trace(trace + t);
       }
     }
     IBApi.Order[] MakeTakeProfitOrder(IBApi.Order parent, Contract contract) {
@@ -608,6 +676,24 @@ namespace IBApp {
         ;
     }
 
+    private void OnUpdateError(int reqId, int code, string error, Exception exc) {
+      if(!OrderContracts.TryGetValue(reqId, out var oc)) return;
+      if(new[] { /*103, 110,*/ 200, 201, 202, 203, 382, 383 }.Contains(code)) {
+        //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
+        OrderContracts[reqId].status = null;
+        RaiseOrderRemoved(reqId);
+      }
+      switch(code) {
+        case 404:
+          var contract = oc.contract + "";
+          var order = oc.order + "";
+          _verbous(new { contract, code, error, order });
+          _defaultMessageHandler("Request Global Cancel");
+          IbClient.ClientSocket.reqGlobalCancel();
+          break;
+      }
+    }
+
     public int PlaceOrder(IBApi.Order order, Contract contract) {
       if(order.OrderId == 0)
         order.OrderId = NextReqId();
@@ -628,7 +714,7 @@ namespace IBApp {
         Action = legs[0].buy ? "BUY" : "SELL",
         OrderType = orderType,
         TotalQuantity = legs[0].lots,
-        Tif = "DAY",
+        Tif = GTC,
         OutsideRth = isPreRTH,
         WhatIf = whatIf,
         OverridePercentageConstraints = true
@@ -659,8 +745,6 @@ namespace IBApp {
         return _WhatIfSubject;
       }
     }
-
-    public POSITION_OBSERVABLE PositionsObservable { get; private set; }
 
     #endregion
     void OnWhatIf(Action a) => WhatIfSubject.OnNext(a);

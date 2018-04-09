@@ -44,6 +44,7 @@ using System.Reactive.Concurrency;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson;
 using IBApp;
+using COMBO_HISTORY = System.Collections.Generic.List<(double bid, double ask, System.DateTime time, double delta)>;
 
 namespace HedgeHog.Alice.Store {
   [JsonObject(MemberSerialization.OptOut)]
@@ -1117,7 +1118,8 @@ namespace HedgeHog.Alice.Store {
         Debugger.Break();
       });
     }
-    List<(double bid, double ask, DateTime time, double delta)> StraddleHistory = new List<(double bid, double ask, DateTime time, double delta)>();
+    COMBO_HISTORY StraddleHistory = new COMBO_HISTORY();
+    COMBO_HISTORY VerticalPutHistory = new COMBO_HISTORY();
     private void HansleTick(PriceChangedEventArgs pce) {
       try {
         CurrentPrice = pce.Price;

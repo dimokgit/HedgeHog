@@ -38,13 +38,16 @@ namespace HedgeHog {
     #region Counter
     public static IEnumerable<T> Count<T, C>(this IEnumerable<T> source, int expectedCount, C context) =>
       source.Count(expectedCount, (Action<int>)null, (Action<int>)null, context);
-    public static IEnumerable<T> Count<T, E>(this IEnumerable<T> source, int expectedCount, E onLess, E onMore) where E : Exception {
+    public static IEnumerable<T> Count<T, E, C>(this IEnumerable<T> source, int expectedCount, E onLessOrMore, C context) where E : Exception =>
+      source.Count(expectedCount, onLessOrMore, onLessOrMore, context);
+    public static IEnumerable<T> Count<T, E, C>(this IEnumerable<T> source, int expectedCount, E onLess, E onMore, C context) where E : Exception {
       return source.Count(expectedCount,
         onLess == null ? (Action<int>)null : _ => { throw onLess; },
-        onMore == null ? (Action<int>)null : _ => { throw onMore; });
+        onMore == null ? (Action<int>)null : _ => { throw onMore; },
+        context);
     }
-    public static IEnumerable<T> Count<T>(this IEnumerable<T> source, int expectedCount, Action<int> onLess, Action<int> onMore) =>
-    source.Count(expectedCount, onLess, onMore, (string)null);
+    public static IEnumerable<T> Count<T>(this IEnumerable<T> source, int expectedCount, Action<int> onLess, Action<int> onMore)
+      => source.Count(expectedCount, onLess, onMore, (string)null);
     public static IEnumerable<T> Count<T, C>(this IEnumerable<T> source, int expectedCount, Action<int> onLess, Action<int> onMore, C context) {
       if(source == null) throw new ArgumentNullException("source");
       var counter = 0;

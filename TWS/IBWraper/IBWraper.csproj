@@ -107,6 +107,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataManagers\AccountManager.ComboAll.cs" />
     <Compile Include="DataManagers\AccountManager.ComboTrades.cs" />
     <Compile Include="DataManagers\AccountManager.Straddle.cs" />
     <Compile Include="DataManagers\AccountManager.Summary.cs" />

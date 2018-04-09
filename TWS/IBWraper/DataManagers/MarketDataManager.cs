@@ -56,12 +56,7 @@ namespace IBApp {
       else {
         var reqId = NextReqId();
         Verbose($"AddRequest:{reqId}=>{contract}");
-        IbClient.ErrorObservable
-          .Where(t => t.id == reqId)
-          .Window(TimeSpan.FromSeconds(2), TaskPoolScheduler.Default)
-          .Take(1)
-          .Merge()
-          .Subscribe(t => Trace($"{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
+        IbClient.WatchReqError(reqId, t => Trace($"{nameof(AddRequestImpl)}:{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
         IbClient.OnReqMktData(() => IbClient.ClientSocket.reqMktData(reqId, contract.ContractFactory(), genericTickList, false, new List<TagValue>()));
         if(reqId == 0)
           Debugger.Break();
