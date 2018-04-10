@@ -799,7 +799,7 @@
         .sort(function (l, r) {
           return l.i() < r.i() ? 1 : -1;
         });
-    },this);
+    }, this);
     this.comboQuantity = ko.observable(1);
     this.comboGap = ko.observable(0);
     this.comboGap.subscribe(function (v) {
@@ -811,7 +811,7 @@
       if (!isNaN(profitAmount)) {
         var instrument = a.combo();
         var orderId = a.orderId();
-        serverCall("updateCloseOrderProfit", [instrument, orderId, profitAmount]);
+        serverCall("updateCloseOrder", [instrument, orderId, null, profitAmount]);
       }
     }
     this.showNextInput = function (a, b, c) {
@@ -827,18 +827,18 @@
       if (!isNaN(limit)) {
         var instrument = a.combo();
         var orderId = a.orderId();
-        serverCall("updateCloseOrderLimit", [instrument, orderId, limit]);
+        serverCall("updateCloseOrder", [instrument, orderId, limit, null]);
       }
     }
 
     this.options = ko.mapping.fromJS(ko.observableArray());
     this.butterflies = ko.mapping.fromJS(ko.observableArray());
     this.currentCombos = ko.pureComputed(function () {
-      return this.butterflies().concat(this.options()); 
-    },this);
+      return this.butterflies().concat(this.options());
+    }, this);
     this.liveStraddles = ko.mapping.fromJS(ko.observableArray());//;
     this.liveCombos = ko.pureComputed(function () {
-      return self.liveStraddles();
+      return self.liveStraddles().filter(function (v) { return v.combo; });
     }, this);
     this.combosMin = ko.pureComputed(function () {
       return [];

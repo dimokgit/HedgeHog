@@ -620,78 +620,51 @@ namespace HedgeHog.Alice.Client {
         am.ComboTrades(1)
           .ToArray()
           .Subscribe(cts => {
-            var combos = cts
-            .Where(ct => ct.position != 0)
-            .ToArray(x
-              => new {
-                combo = x.contract.Key, netPL = x.pl, x.position, x.open
-                , x.close, delta = x.strikeAvg - x.underPrice, x.openPrice
-                , x.takeProfit, x.profit, x.orderId
-                , exit = 0, exitDelta = 0
-              });
+            try {
+              var combos = cts
+              .Where(ct => ct.position != 0)
+              .ToArray(x
+                => new {
+                  combo = x.contract.Key, netPL = x.pl, x.position, x.open
+                  , x.close, delta = x.strikeAvg - x.underPrice, x.openPrice
+                  , x.takeProfit, x.profit, x.orderId
+                  , exit = 0, exitDelta = 0
+                });
 
-            base.Clients.Caller.liveCombos(combos);
+              base.Clients.Caller.liveCombos(combos);
 
-            (from ce in comboExits.Select(s => s.Split(','))
-             join c in combos on ce[0] equals c.combo
-             let exit = TryExit(ce[1])
-             let exitDelta = TryExitDelta(ce[2])
-             where (exit != 0 && c.netPL > exit) || (exitDelta != 0 && c.delta.Abs() < exitDelta)
-             select c
-               )
-               .ForEach(combo => CloseCombo(combo.combo));
-            (from ce in comboExits.Select(s => s.Split(',')).Where(c => c[0] == ALL_COMBOS)
-             join c in combos on ce[0] equals c.combo
-             let exit = TryExit(ce[1])
-             let exitDelta = TryExitDelta(ce[2])
-             where (exit != 0 && c.netPL > exit) || (exitDelta != 0 && c.delta.Abs() < exitDelta)
-             select c
-             )
-             .SelectMany(combo => cts.Where(c => c.contract.IsCombo))
-             .ForEach(combo => CloseCombo(combo.contract.Key));
+              (from ce in comboExits.Where(s => !s.IsNullOrWhiteSpace()).Select(s => s.Split(','))
+               join c in combos on ce[0] equals c.combo
+               //let exit = TryExit(ce[1])
+               let exitDelta = TryExitDelta(ce[2])
+               where (exitDelta != 0 && c.delta.Abs() < exitDelta)
+               select c
+               ).ForEach(combo => CloseCombo(combo.combo));
+            } catch(Exception exc) {
+              Log = exc;
+            }
           }, exc => {
             Log = exc;
           });
-        int TryExit(string s) => int.TryParse(s, out var i) ? i : int.MaxValue;
         double TryExitDelta(string s) => double.TryParse(s, out var i) ? i : int.MinValue;
       }
     }
 
     [BasicAuthenticationFilter]
-    public void UpdateCloseOrderLimit(string instrument, int orderId, double limit) {
+    public void UpdateCloseOrder(string instrument, int orderId, double? limit, double? profit) {
+      if(limit.HasValue && profit.HasValue)
+        throw new ArgumentException(new { limit, profit, error = "Only one can have value" } + "");
+      if(!limit.HasValue && !profit.HasValue)
+        throw new ArgumentException(new { limit, profit, error = "One must have a value" } + "");
       var am = GetAccountManager();
       am.ComboTrades(2)
-        .Where(ct => ct.orderId == orderId && ct.contract.Instrument == instrument)
-        .ToArray()
-        .Subscribe(trades => {
-          if(trades.IsEmpty()) {
-            if(orderId != 0)
-              Log = new Exception($"{nameof(UpdateCloseOrderLimit)}:{new { instrument, orderId, not = "found" }}");
-            else
-              am.UpdateOrder(orderId, limit);
-          } else
-            trades.ForEach(trade => am.OpenOrUpdateOrder(instrument, -trade.position, orderId, limit));
-          am.OpenOrderObservable
-          .TakeUntil(DateTimeOffset.Now.AddSeconds(5))
-          .Throttle(TimeSpan.FromSeconds(1))
-          .Subscribe(_ => ReadStraddles("", 0, new string[0]));
-        });
-    }
-    [BasicAuthenticationFilter]
-    public void UpdateCloseOrderProfit(string instrument, int orderId, double profitAmount) {
-      var am = GetAccountManager();
-      am.ComboTrades(2)
-        .Where(ct => ct.orderId == orderId && ct.contract.Instrument == instrument)
-        .ToArray()
-        .Subscribe(trades => {
+        .Where(ct => ct.contract.Instrument == instrument)
+        .Subscribe(trade => {
           try {
-            if(trades.IsEmpty()) {
-              if(orderId != 0)
-                Log = new Exception($"{nameof(UpdateCloseOrderLimit)}:{new { instrument, orderId, not = "found" }}");
-              else
-                trades.ForEach(t => am.UpdateTradeByProfit(orderId, t.position, t.open, profitAmount));
-            } else
-              trades.ForEach(trade => am.OpenOrUpdateOrderByProfit(instrument, trade.position, orderId, trade.open, profitAmount));
+            if(limit.HasValue)
+              am.OpenOrUpdateLimitOrder(instrument, trade.position, orderId, limit.Value);
+            else
+              am.OpenOrUpdateLimitOrderByProfit(instrument, trade.position, orderId, trade.open, profit.Value);
             am.OpenOrderObservable
             .TakeUntil(DateTimeOffset.Now.AddSeconds(5))
             .Throttle(TimeSpan.FromSeconds(1))

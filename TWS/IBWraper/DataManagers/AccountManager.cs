@@ -530,37 +530,30 @@ namespace IBApp {
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
     }
-    public void OpenOrUpdateOrderByProfit(string instrument, int position, int orderId, double openAmount, double profitAmount) {
-      if(OrderContracts.TryGetValue(orderId, out var och)) {
-        if(och.isDone)
-          throw new Exception($"{nameof(OpenOrUpdateOrder)}:{new { orderId, och.isDone }}");
-        UpdateTradeByProfit(orderId, position, openAmount, profitAmount);
-      } else {
+    public void OpenOrUpdateLimitOrderByProfit(string instrument, int position, int orderId, double openAmount, double profitAmount) {
+      if(OrderContracts.TryGetValue(orderId, out var och)&& !och.isDone) {
+        if(och.contract.Instrument != instrument)
+          throw new Exception($"{nameof(OpenOrUpdateLimitOrderByProfit)}:{new { orderId, och.contract.Instrument, dontMatch = instrument }}");
+        var limit = OrderPrice(priceFromProfit(profitAmount, position, och.contract.ComboMultiplier, openAmount), och.contract);
+        UpdateOrder(orderId, limit);
+      } else { // Create new order
         Contract.FromCache(instrument)
           .Count(1, new { OpenOrUpdateOrder = new { instrument, unexpected = "count in cache" } })
           .ForEach(c => {
             var lmtPrice = OrderPrice(priceFromProfit(profitAmount, position, c.ComboMultiplier, openAmount), c);
-            OpenTrade(c, position, lmtPrice, false);
+            OpenTrade(c, -position, lmtPrice, false);
           });
       }
     }
-    public bool UpdateTradeByProfit(int orderId, int position, double openAmount, double profitAmount) {
-      if(!OrderContracts.TryGetValue(orderId, out var och))
-        return false;
-      //var pos = Positions.ParseCombos(OrderContracts.Values).Single();
-      var limit = OrderPrice(priceFromProfit(profitAmount, position, och.contract.ComboMultiplier, openAmount), och.contract);
-      UpdateOrder(orderId, limit);
-      return true;
-    }
-    public void OpenOrUpdateOrder(string instrument, int position, int orderId, double lmpPrice) {
-      if(OrderContracts.TryGetValue(orderId, out var och)) {
-        if(och.isDone)
-          throw new Exception($"{nameof(OpenOrUpdateOrder)}:{new { orderId, och.isDone }}");
-        UpdateOrder(orderId, lmpPrice);
+    public void OpenOrUpdateLimitOrder(string instrument, int position, int orderId, double lmpPrice) {
+      if(OrderContracts.TryGetValue(orderId, out var och) && !och.isDone) {
+        if(och.contract.Instrument != instrument)
+          throw new Exception($"{nameof(OpenOrUpdateLimitOrder)}:{new { orderId, och.contract.Instrument, dontMatch = instrument }}");
+        UpdateOrder(orderId, OrderPrice(lmpPrice, och.contract));
       } else {
         Contract.FromCache(instrument)
           .Count(1, new { OpenOrUpdateOrder = new { instrument, unexpected = "count in cache" } })
-          .ForEach(c => OpenTrade(c, position, lmpPrice, false));
+          .ForEach(c => OpenTrade(c, -position, lmpPrice, false));
       }
     }
     public void UpdateOrder(int orderId, double lmpPrice) {
