@@ -20,12 +20,12 @@ namespace IBApp {
         from price in IbClient.ReqPriceSafe(c.contract, priceTimeoutInSeconds, true).DefaultIfEmpty().Take(1)
         let multiplier = c.contract.ComboMultiplier
         let position = c.position.Abs() * c.open.Sign()
-        let close = ((c.position > 0 ? price.bid : price.ask) * position * multiplier).Round(4)
+        let close = ((c.open.Sign() > 0 ? price.bid : price.ask) * position * multiplier).Round(4)
         select (c: IbClient.SetContractSubscription(c.contract), c.position, c.open, close
         , pl: close - c.open, underPrice, strikeAvg: c.contract.ComboStrike()
         , openPrice: c.open / c.position.Abs() / multiplier
         , c.takeProfit
-        , profit: (c.takeProfit * position * multiplier - c.open).Round(2)
+        , profit: (c.takeProfit * c.position * multiplier - c.open).Round(2)
         , c.orderId
         )
         );
@@ -55,7 +55,7 @@ namespace IBApp {
         );
       var comboAll = (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
                       let order = OrderContracts.Values.Where(oc => !oc.isDone && oc.contract.Key == ca.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
-                      select (ca.contract, ca.positions.Sum(p => p.open).Sign(), ca.positions.Sum(p => p.open), order.LmtPrice, order.OrderId)).ToArray();
+                      select (ca.contract, 1, ca.positions.Sum(p => p.open), order.LmtPrice, order.OrderId)).ToArray();
       return combos.Concat(comboAll).Distinct(c => c.contract.Instrument);
     }
   }

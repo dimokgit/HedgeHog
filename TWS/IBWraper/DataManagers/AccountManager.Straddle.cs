@@ -25,7 +25,38 @@ namespace IBApp {
         select (strdl.mash, strdl.source.Select(x => x.trade).Gross(), strdl.source.Max(s => s.trade.Position)));
       return straddles;
     }
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (Contract contract, Contract[] options) combo)[]>
+
+    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo)[]>
+      CurrentStraddles(string symbol, double strikeLevel, int expirationDaysSkip, int count, int gap) {
+      return (
+        from cd in IbClient.ReqContractDetailsCached(symbol)
+        from price in IbClient.ReqPriceSafe(cd.Summary, 5, false).Select(p => p.ask.Avg(p.bid))
+        from combo in MakeStraddles(symbol, strikeLevel.IfNaN(price), expirationDaysSkip, 1, count, gap)
+        from p in IbClient.ReqPriceSafe(combo.contract, 2, true).DefaultIfEmpty()
+        let pa = p.ask.Avg(p.bid)
+        let strikeAvg = combo.options.Average(o => o.Strike)
+        select (
+          instrument: combo.contract.Instrument,
+          p.bid,
+          p.ask,
+          p.time,//.ToString("HH:mm:ss"),
+          delta: pa - combo.options.Sum(o => o.IntrinsicValue(price)),
+          strikeAvg,
+          price,
+          breakEven: (up: strikeAvg + pa, dn: strikeAvg - pa),
+          combo
+        )).ToArray()
+        .Select(b => b
+         .OrderBy(t => t.ask.Avg(t.bid))
+         .Select((t, i) => (t, i))
+         .OrderBy(t => t.i > 1)
+         .ThenBy(t => t.t.ask.Avg(t.t.bid) / t.t.delta)
+         .ThenByDescending(t => t.t.delta)
+         .Select(t => t.t)
+         .ToArray()
+         );
+    }
+    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo)[]>
       CurrentStraddles(string symbol, int expirationDaysSkip, int count, int gap) {
       (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
@@ -39,9 +70,10 @@ namespace IBApp {
           p.bid,
           p.ask,
           p.time,//.ToString("HH:mm:ss"),
-          delta: p.ask.Avg(p.bid) - (price - strikeAvg),
+          delta: p.ask.Avg(p.bid) - combo.options.Sum(o => o.IntrinsicValue(price)),
           strikeAvg,
           price,
+          breakEven: (up: strikeAvg + price, dn: strikeAvg - price),
           combo
         )).ToArray()
         .Select(b => b
@@ -160,21 +192,23 @@ namespace IBApp {
     #endregion
 
     #region Options
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, Contract option)[]>
+    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract option)[]>
   CurrentOptions(string symbol, int expirationDaysSkip, int count) =>
   (
     from cd in IbClient.ReqContractDetailsCached(symbol)
     from price in IbClient.ReqPriceSafe(cd.Summary, 5, false).Select(p => p.ask.Avg(p.bid))
     from option in MakeOptions(symbol, price, expirationDaysSkip, 1, count * 2)
     from p in IbClient.ReqPriceSafe(option, 2, true).DefaultIfEmpty()
+    let pa = p.ask.Avg(p.bid)
     select (
       instrument: option.Instrument,
       p.bid,
       p.ask,
       p.time,//.ToString("HH:mm:ss"),
-      delta: p.ask.Avg(p.bid) - (price - option.Strike),
+      delta: option.ExtrinsicValue(pa, price),
       option.Strike,
       price,
+      breakEven: (up: option.Strike + pa, dn: option.Strike - pa),
       option
     )).ToArray()
     .Select(b => b

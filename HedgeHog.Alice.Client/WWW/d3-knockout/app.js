@@ -301,7 +301,7 @@
     var comboExits = dataViewModel.liveStraddles().map(function (c) {
       return ko.unwrap(c.combo) + "," + ko.unwrap(c.exit) + "," + ko.unwrap(c.exitDelta);
     });
-    var args = [pair, ko.unwrap(dataViewModel.comboGap), comboExits];
+    var args = [pair, dataViewModel.comboGap(), parseFloat(dataViewModel.comboCurrentStrikeLevel()), comboExits];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
@@ -801,6 +801,7 @@
         });
     }, this);
     this.comboQuantity = ko.observable(1);
+    this.comboCurrentStrikeLevel = ko.observable("");
     this.comboGap = ko.observable(0);
     this.comboGap.subscribe(function (v) {
       readCombos(true);

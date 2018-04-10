@@ -568,14 +568,14 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
-    public void ReadStraddles(string pair, int gap, string[] comboExits) {
+    public void ReadStraddles(string pair, int gap, double? strikeLevel, string[] comboExits) {
       int expirationDaysSkip = 1;
       var am = GetAccountManager();
       if(am != null) {
         Action a = () =>
           IBApi.Contract.FromCache(pair, c => c.Symbol)
             .ForEach(symbol
-            => am.CurrentStraddles(symbol, expirationDaysSkip, 5, gap)
+            => am.CurrentStraddles(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 5, gap)
             .Select(ts => ts.Select(t => new {
               i = t.instrument,
               t.bid,
@@ -586,6 +586,7 @@ namespace HedgeHog.Alice.Client {
               strike = t.strikeAvg,
               perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
               strikeDelta = t.strikeAvg - t.underPrice,
+              be=new { t.breakEven.up, t.breakEven.dn },
               isActive = false
             }))
            .Subscribe(b => base.Clients.Caller.butterflies(b)));
@@ -605,9 +606,10 @@ namespace HedgeHog.Alice.Client {
                 strike = t.strikeAvg,
                 perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
                 strikeDelta = t.strikeAvg - t.underPrice,
+                be = new { t.breakEven.up, t.breakEven.dn },
                 isActive = false
               })
-            .OrderByDescending(t => t.delta)
+            .OrderBy(t => t.strike)
             //.ThenBy(t => t.i)
             )
            .Subscribe(b => base.Clients.Caller.options(b)));
@@ -668,7 +670,7 @@ namespace HedgeHog.Alice.Client {
             am.OpenOrderObservable
             .TakeUntil(DateTimeOffset.Now.AddSeconds(5))
             .Throttle(TimeSpan.FromSeconds(1))
-            .Subscribe(_ => ReadStraddles("", 0, new string[0]));
+            .Subscribe(_ => ReadStraddles("", 0, 0, new string[0]));
           } catch(Exception exc) {
             Log = exc;
           }
@@ -678,7 +680,7 @@ namespace HedgeHog.Alice.Client {
     public void OpenButterfly(string instrument, int quantity) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
-        am.OpenTrade(contract, quantity, 0, false);
+        am.OpenTrade(contract, quantity, 0, true);
       else
         throw new Exception(new { contract, not = "found" } + "");
     }

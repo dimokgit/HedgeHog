@@ -1223,6 +1223,7 @@
       </div>
       <div style="display:inline-table">
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg())"></b>
+        <input data-bind="value:comboCurrentStrikeLevel" size="3" />
         <!-- ko with: combosStats -->
         <span class="glyphicon glyphicon-stats"></span>
         <b data-bind="text:d3.format('.1f')(strikeDelta),css:{profit:strikeDelta>0,loss:strikeDelta<0}" style="margin-left:1ex"></b>
@@ -1253,6 +1254,8 @@
       <tr style="background-color: lightslategray;color: white;font-weight: bold;text-align: center;" class="pgGroupRow">
         <td>Straddles</td>
         <td>/\</td>
+        <td>Up</td>
+        <td>Dn</td>
         <td>Avg</td>
         <td>Perc</td>
         <td>Delta</td>
@@ -1263,6 +1266,8 @@
       <tr data-bind="event:{click:function(){isActive(!isActive())}}">
         <td data-bind="text:i,css:{comboName:!isActive(),comboNameActive:isActive()}"></td>
         <td data-bind="text:d3.format('.2f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
+        <td data-bind="text:d3.format('.1f')(be.up())"></td>
+        <td data-bind="text:d3.format('.1f')(be.dn())"></td>
         <td data-bind="text:d3.format('.2f')(avg())"></td>
         <td data-bind="text:d3.format('.2f')(perc())"></td>
         <td data-bind="text:d3.format('.2f')(delta())"></td>

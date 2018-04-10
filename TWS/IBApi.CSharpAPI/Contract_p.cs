@@ -11,6 +11,22 @@ namespace IBApi {
   public static class Mixin {
   }
   public partial class Contract {
+    public double IntrinsicValue(double undePrice) =>
+      !IsOption
+      ? 0
+      : IsCall
+      ? (undePrice - Strike).Max(0)
+      : IsPut
+      ? (Strike - undePrice).Max(0)
+      : 0;
+    public double ExtrinsicValue(double optionPrice, double undePrice) =>
+      !IsOption
+      ? 0
+      : IsCall
+      ? optionPrice - (undePrice - Strike).Max(0)
+      : IsPut
+      ? optionPrice - (Strike - undePrice).Max(0)
+      : 0;
     DateTime? _lastTradeDateOrContractMonth;
     public DateTime LastTradeDateOrContractMonth2 =>
       (_lastTradeDateOrContractMonth ??
@@ -41,6 +57,8 @@ namespace IBApi {
     }
     public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).First();
     public bool IsCombo => ComboLegs?.Any() == true;
+    public bool IsCall => IsOption && Right == "C";
+    public bool IsPut => IsOption && Right == "P";
     public bool IsOption => SecType == "OPT";
     public bool IsButterFly => ComboLegs?.Any() == true && String.Join("", comboLegs.Select(l => l.Ratio)) == "121";
     public double ComboStrike() => Strike > 0 ? Strike : Legs().Select(c => c.strike).DefaultIfEmpty().Average();
