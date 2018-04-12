@@ -366,54 +366,34 @@ namespace IBApp {
       ReqPriceSafe(contract, timeoutInSeconds, useErrorHandler).DefaultIfEmpty((defaultPrice, defaultPrice, DateTime.MinValue));
 
     public IObservable<(double bid, double ask, DateTime time)> ReqPriceSafe(Contract contract, double timeoutInSeconds, bool useErrorHandler) {
-      var c = TryGetPrice(contract);
-      if(c.Any()) return Observable.Return(c.Where(p => p.Ask > 0 && p.Bid > 0)
+      var c = TryGetPrice(contract).Where(p => p.Ask > 0 && p.Bid > 0).ToArray();
+      if(c.Any()) return c
       //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
-      .Select(p => (p.Bid, p.Ask, p.Time)).First());
+      .Select(p => (p.Bid, p.Ask, p.Time)).ToObservable();
 
       SetContractSubscription(contract);
-      int RID() => new[] { contract.ReqId }.Concat(Contract.FromCache(contract.Instrument).Select(cc => cc.ReqId)).FirstOrDefault();
       return TickPriceObservable
       .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
       .Select(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time)).ToArray())
       .Where(t => t.Any())
-      .SelectMany(p=>p)
-      .Where(p => p.Bid > 0 && p.Ask > 0)
+      .SelectMany(p => p)
+      .Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60))
       .Do(p => Trace($"IBClientCore.TickPriceObservable:{contract}:{p}"))
-      .Select(p => (p.Bid, p.Ask, ServerTime))
+      //.Select(p => (p.Bid, p.Ask, p.Time))
       .Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
       .Take(1)
       ;
     }
 
-    public IObservable<(double bid, double ask, DateTime time)> ReqPriceSafe_Bad(Contract contract, double timeoutInSeconds, bool useErrorHandler) {
-      var c = TryGetPrice(contract);
-      if(c.Any()) return Observable.Return(c.Where(p => p.Ask > 0 && p.Bid > 0)
-      //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
-      .Select(p => (p.Bid, p.Ask, p.Time)).First());
-
-      SetContractSubscription(contract);
-      int RID() => new[] { contract.ReqId }.Concat(Contract.FromCache(contract.Instrument).Select(cc => cc.ReqId)).FirstOrDefault();
-      return TickPriceObservable
-      .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
-      .SkipWhile(_ => RID()/*.SideEffect(rid => { if(rid == 0) Trace($"IBClientCore.TickPriceObservable in waiting:{contract}:{_}"); })*/ == 0)
-      .Where(t => t.reqId == contract.ReqId)
-      .Select(tick => OnTickPrice(tick.reqId, tick.field, tick.price, tick.canAutoExecute))
-      .Scan((p, n) => (p.reqId, p.bid.IfNaNOrZero(n.bid), p.ask.IfNaNOrZero(n.ask), n.field))
-      .Where(p => p.bid > 0 && p.ask > 0)
-      .Do(p => Trace($"IBClientCore.TickPriceObservable:{contract}:{p}"))
-      .Select(p => (p.bid, p.ask, ServerTime))
-      .Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
-      .Take(1)
-      ;
-    }
     public IObservable<(double bid, double ask, DateTime time)> ReqPriceComboSafe(Contract combo, double timeoutInSeconds, bool useErrorHandler) {
-      var x = combo.Legs()
+      double ask((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time) price) => cl.leg.Action == "BUY" ? price.ask : -price.bid;
+      double bid((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time) price) => cl.leg.Action == "BUY" ? price.bid : -price.ask;
+      var x = combo.LegsEx()
         .ToObservable()
-        .SelectMany(contract => ReqPriceSafe(contract, timeoutInSeconds, useErrorHandler).Take(1))
+        .SelectMany(cl => ReqPriceSafe(cl.contract, timeoutInSeconds, useErrorHandler).Select(price => (cl, price)).Take(1))
         .ToArray()
         .Where(a => a.Any())
-        .Select(prices => (prices.Sum(p => p.bid), prices.Sum(p => p.ask), ServerTime));
+        .Select(t => (t.Sum(t2 => bid(t2.cl, t2.price)), t.Sum(t2 => ask(t2.cl, t2.price)), t.Min(t2 => t2.price.time)));
       return x;
     }
 

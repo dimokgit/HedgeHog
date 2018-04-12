@@ -1105,11 +1105,10 @@ namespace HedgeHog.Alice.Store {
       .Where(price => price.EventArgs.Price.Pair == Pair)
       .Sample(TimeSpan.FromSeconds(0.5))
       .Where(_ => ((IBWraper)TradesManager)?.AccountManager != null)
-      .SelectMany(price => ((IBWraper)TradesManager).AccountManager.CurrentStraddles(Pair, 0, 2, 0))
-      .SelectMany(x => x.Buffer(2).Take(1))
-      .Where(b => b.Count == 2)
+      .SelectMany(price => ((IBWraper)TradesManager).AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), 0, 4, 0))
+      .Select(x => x.OrderByDescending(t => t.deltaBid).Take(2).ToArray())
       .Subscribe(straddle => {
-        StraddleHistory.Add((straddle.Average(s => s.bid), straddle.Average(s => s.ask), straddle[0].time, straddle.Average(s => s.delta)));
+        StraddleHistory.Add((straddle.Average(s => s.deltaBid), straddle.Average(s => s.ask), straddle[0].time, straddle.Average(s => s.delta)));
       }, exc => {
         Log = exc;
         Debugger.Break();
@@ -2679,6 +2678,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region PipAmount
+    private double CurrentPriceAvg(double def) => CurrentPrice.YieldNotNull(c => c.Ask.Avg(c.Bid)).DefaultIfEmpty(def).Single();
     private double CurrentPriceAvg() => CurrentPrice.YieldNotNull(c => c.Ask.Avg(c.Bid)).DefaultIfEmpty().Single();
     public double PipAmountByLot(int lot) =>
       TradesManager == null || CurrentPrice == null ? 0 : TradesManagerStatic.PipAmount(Pair, lot, CurrentPriceAvg(), PointSize);

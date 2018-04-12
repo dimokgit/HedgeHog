@@ -575,7 +575,7 @@ namespace HedgeHog.Alice.Client {
         Action a = () =>
           IBApi.Contract.FromCache(pair, c => c.Symbol)
             .ForEach(symbol
-            => am.CurrentStraddles(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 5, gap)
+            => am.CurrentStraddles(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 5, 0)
             .Select(ts => ts.Select(t => new {
               i = t.instrument,
               t.bid,
@@ -586,14 +586,17 @@ namespace HedgeHog.Alice.Client {
               strike = t.strikeAvg,
               perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
               strikeDelta = t.strikeAvg - t.underPrice,
-              be=new { t.breakEven.up, t.breakEven.dn },
+              be = new { t.breakEven.up, t.breakEven.dn },
               isActive = false
-            }))
-           .Subscribe(b => base.Clients.Caller.butterflies(b)));
+            })
+            .OrderByDescending(x => x.strike)
+            .Take(3)
+            .OrderByDescending(x => x.delta))
+            .Subscribe(b => base.Clients.Caller.butterflies(b)));
         Action currentOptions = () =>
           IBApi.Contract.FromCache(pair, c => c.Symbol)
             .ForEach(symbol
-            => am.CurrentOptions(symbol, expirationDaysSkip, 3)
+            => am.CurrentOptions(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3)
             .Select(ts => ts
               .Where(t => t.option.Right == "P")
               .Select(t => new {
@@ -609,14 +612,38 @@ namespace HedgeHog.Alice.Client {
                 be = new { t.breakEven.up, t.breakEven.dn },
                 isActive = false
               })
-            .OrderBy(t => t.strike)
+            .OrderByDescending(t => t.delta)
+            //.ThenBy(t => t.i)
+            )
+           .Subscribe(b => base.Clients.Caller.bullPuts(b)));
+        Action currentBullPut = () =>
+          IBApi.Contract.FromCache(pair, c => c.Symbol)
+            .ForEach(symbol
+            => am.CurrentBullPuts(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3, gap)
+            .Select(ts => ts
+              .Select(t => new {
+                i = t.instrument,
+                t.bid,
+                t.ask,
+                avg = t.ask.Avg(t.bid),
+                time = t.time.ToString("HH:mm:ss"),
+                t.delta,
+                strike = t.strikeAvg,
+                perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+                strikeDelta = t.strikeAvg - t.underPrice,
+                be = new { t.breakEven.up, t.breakEven.dn },
+                isActive = false
+              })
+            .OrderByDescending(t => t.delta)
             //.ThenBy(t => t.i)
             )
            .Subscribe(b => base.Clients.Caller.options(b)));
+
         if(!pair.IsNullOrWhiteSpace())
           OnCurrentCombo(() => {
             a();
             currentOptions();
+            currentBullPut();
           });
         //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
         am.ComboTrades(1)

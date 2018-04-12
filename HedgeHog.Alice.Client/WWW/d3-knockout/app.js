@@ -802,6 +802,9 @@
     }, this);
     this.comboQuantity = ko.observable(1);
     this.comboCurrentStrikeLevel = ko.observable("");
+    this.toggleComboCurrentStrikeLevel = function () {
+      self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? self.priceAvg() : "");
+    }
     this.comboGap = ko.observable(0);
     this.comboGap.subscribe(function (v) {
       readCombos(true);
@@ -832,10 +835,13 @@
       }
     }
 
+    this.bullPuts = ko.mapping.fromJS(ko.observableArray());
     this.options = ko.mapping.fromJS(ko.observableArray());
     this.butterflies = ko.mapping.fromJS(ko.observableArray());
     this.currentCombos = ko.pureComputed(function () {
-      return this.butterflies().concat(this.options());
+      return this.butterflies()
+        .concat(this.bullPuts())
+        .concat(this.options());
     }, this);
     this.liveStraddles = ko.mapping.fromJS(ko.observableArray());//;
     this.liveCombos = ko.pureComputed(function () {
@@ -882,6 +888,7 @@
       readCombos.bind(this)();
       this.butterflies([]);
       this.options([]);
+      this.bullPuts([]);
       var shouldToggle = ko.observable(true);
       $(this.butterfliesDialog()).dialog({
         title: "Batterflies", width: "auto", dialogClass: "dialog-compact",
@@ -1749,6 +1756,19 @@
     };
     chat.client.warning = function (message) {
       showWarningPerm(message);
+    };
+    chat.client.bullPuts = function (options) {
+      var isNew = dataViewModel.bullPuts().length == 0;
+      if (!isNew)
+        options.forEach(function (v) {
+          delete v.isActive;
+        });
+      var map = {
+        key: function (item) {
+          return ko.utils.unwrapObservable(item.i);
+        }
+      };
+      ko.mapping.fromJS(options, map, dataViewModel.bullPuts);
     };
     chat.client.options = function (options) {
       var isNew = dataViewModel.options().length == 0;

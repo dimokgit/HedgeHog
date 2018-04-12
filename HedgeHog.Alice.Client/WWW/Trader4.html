@@ -1222,7 +1222,7 @@
         <label>Gap:</label><input data-bind="value:comboGap" size="1" />
       </div>
       <div style="display:inline-table">
-        <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg())"></b>
+        <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>
         <input data-bind="value:comboCurrentStrikeLevel" size="3" />
         <!-- ko with: combosStats -->
         <span class="glyphicon glyphicon-stats"></span>

@@ -69,9 +69,9 @@ namespace ConsoleApp {
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         Task.Delay(2000).ContinueWith(_ => {
-          TestMakeComboAll(true);
-          LoadHistory(ibClient, new[] { "spy".ContractFactory() });
+          TestMakeBullPut(false);
         }); return;
+        LoadHistory(ibClient, new[] { "spy".ContractFactory() });
         TestParsedCombos();
         TestCurrentStraddles(1, 1);
         TestCurrentStraddles(1, 1); return;
@@ -94,6 +94,26 @@ namespace ConsoleApp {
         //HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
 
         #region Local Tests
+        void TestMakeBullPut(bool placeOrder) {
+          HandleMessage2("MakeBullPut Start");
+          am.CurrentBullPuts("SPX",double.NaN,1,3,0)
+          .ToEnumerable()
+          .Concat()
+          .ForEach(comboPrice => {
+            HandleMessage2(new { comboPrice.combo.contract });
+            ibClient.ReqPriceSafe(comboPrice.combo.contract, 4, true)
+            .ToEnumerable()
+            .ForEach(price => {
+              HandleMessage($"Observed {comboPrice.combo.contract} price:{price}");
+              if(placeOrder) {
+                HandleMessage2($"Placing SELL order for{comboPrice.combo.contract}");
+                am.OpenTrade(comboPrice.combo.contract, -1, price.ask.Avg(price.bid) * 0.55, false);
+              }
+            });
+            HandleMessage2($"MakeBullPut Done ==================");
+          });
+
+        }
         void TestMakeComboAll(bool placeOrder) {
           HandleMessage2("ComboTrade Start");
           AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass) => pos.contract.TradingClass == tradingClass)

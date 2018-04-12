@@ -109,6 +109,7 @@
   <ItemGroup>
     <Compile Include="DataManagers\AccountManager.ComboAll.cs" />
     <Compile Include="DataManagers\AccountManager.ComboTrades.cs" />
+    <Compile Include="DataManagers\AccountManager.BullPut.cs" />
     <Compile Include="DataManagers\AccountManager.Straddle.cs" />
     <Compile Include="DataManagers\AccountManager.Summary.cs" />
     <Compile Include="DataManagers\DataManager.cs" />
