@@ -47,7 +47,7 @@ namespace IBApp {
       .ToArray()
       .SelectMany(reqOptions => {
         var puts = reqOptions.Where(c => c.Right == "P").OrderBy(o => o.Strike.Abs(price)).Take(count * 2 + gap * 2).OrderByDescending(c => c.Strike).ToArray();
-        //puts.ForEach(put => Trace(new { put }));
+        puts.ForEach(put => Trace(new { put }));
         return puts.Zip(puts.Skip(gap + 1), (sell, buy) => new[] { sell, buy })
           .Select(cp => (MakeBullPut(cp), cp))
           .OrderBy(cp => cp.cp.Average(c => c.Strike).Abs(price));
@@ -58,7 +58,8 @@ namespace IBApp {
       MakeBullPutCache(contractOptions[0].Symbol, contractOptions[0].Exchange, contractOptions[0].Currency
         , contractOptions.Select(c => c.ConId).ToArray());
     static Func<string, string, string, IList<int>, Contract> MakeBullPutCache
-      = new Func<string, string, string, IList<int>, Contract>(MakeBullPut);//.Memoize(t => (t.Item1, t.Item2, t.Item3, t.Item4.Flatter("")));
+      = new Func<string, string, string, IList<int>, Contract>(MakeBullPut);
+    //.Memoize(t => (t.Item1, t.Item2, t.Item3, t.Item4.Flatter("")));
     static Contract MakeBullPut(string instrument, string exchange, string currency, IList<int> conIds) {
       if(conIds.Count != 2)
         throw new Exception($"{nameof(MakeBullPut)}:{new { conIds }}");

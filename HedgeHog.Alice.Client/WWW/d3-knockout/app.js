@@ -792,9 +792,9 @@
     this.activeCombos = ko.pureComputed(function () {
       return this.currentCombos()
         .filter(function (v) {
-          if (!v.isActive)
+          if (v && !v.isActive)
             v.isActive = ko.observable(false);
-          return v.isActive();
+          return v && v.isActive();
         })
         .sort(function (l, r) {
           return l.i() < r.i() ? 1 : -1;

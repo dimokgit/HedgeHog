@@ -34,7 +34,7 @@ namespace IBApp {
     private static (string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo,double deltaBid)
       CurrentComboInfo(double underPrice, (Contract contract, Contract[] options) combo, (double bid, double ask, DateTime time) p) {
       var strikeAvg = combo.options.Average(o => o.Strike);
-      double pa = p.ask.Abs(p.bid);
+      double pa = p.ask.Avg(p.bid);
       var iv = combo.options.Sum(o => o.IntrinsicValue(underPrice));
       return (
               instrument: combo.contract.Instrument,

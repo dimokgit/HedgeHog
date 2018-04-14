@@ -1241,12 +1241,12 @@
         <label>Ask:</label><b data-bind="text:d3.format('.3f')(ask)"></b>
       </div>
     </div>
-    <div data-bind="foreach:activeCombos">
+    <div data-bind1="foreach:activeCombos" style="display:none">
       <div>
-        <input type="button" data-bind="value:i()+':'+d3.format('+.0f')(strikeDelta())"/>
-        <input type="button" data-bind="click:$parent.openButterfly.bind(null,false,$data)" value="SELL" />
-        <button data-bind="click:$parent.openButterfly.bind(null,true,$data)">BUY</button>
-        <button data-bind="event:{click:function(){isActive(false)}}">X</button>
+        <input type="button" data-bind1="value:i()+':'+d3.format('+.0f')(strikeDelta())"/>
+        <input type="button" data-bind1="click:$parent.openButterfly.bind(null,false,$data)" value="SELL" />
+        <button data-bind1="click:$parent.openButterfly.bind(null,true,$data)">BUY</button>
+        <button data-bind1="event:{click:function(){isActive(false)}}">X</button>
       </div>
     </div>
     <table border="1" cellspacing="0" class="wwwInfo" data-bind="expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
@@ -1261,10 +1261,11 @@
         <td>Delta</td>
         <td>Bid</td>
         <td>Ask</td>
+        <td>Trade</td>
       </tr>
       <!-- ko foreach:currentCombos -->
-      <tr data-bind="event:{click:function(){isActive(!isActive())}}">
-        <td data-bind="text:i,css:{comboName:!isActive(),comboNameActive:isActive()}"></td>
+      <tr data-bind="event:{click1:function(){isActive(!isActive())}}">
+        <td data-bind="text:i,css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
         <td data-bind="text:d3.format('.2f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
         <td data-bind="text:d3.format('.1f')(be.up())"></td>
         <td data-bind="text:d3.format('.1f')(be.dn())"></td>
@@ -1273,6 +1274,10 @@
         <td data-bind="text:d3.format('.2f')(delta())"></td>
         <td data-bind="text:d3.format('.2f')(bid())"></td>
         <td data-bind="text:d3.format('.2f')(ask())"></td>
+        <td>
+          <button data-bind="click:$parent.openButterfly.bind(null,false,$data)">Sell</button>
+          <button data-bind="click:$parent.openButterfly.bind(null,true,$data)">Buy</button>
+        </td>
       </tr>
       <!-- /ko -->
     </table>

@@ -20,7 +20,7 @@ namespace IBApp {
         from price in IbClient.ReqPriceSafe(c.contract, priceTimeoutInSeconds, true).DefaultIfEmpty().Take(1)
         let multiplier = c.contract.ComboMultiplier
         let position = c.position.Abs() * c.open.Sign()
-        let close = ((c.open.Sign() > 0 ? price.bid : price.ask) * position * multiplier).Round(4)
+        let close = ((c.open.Sign() > 0 ? price.bid : price.ask) * c.position * multiplier).Round(4)
         select (c: IbClient.SetContractSubscription(c.contract), c.position, c.open, close
         , pl: close - c.open, underPrice, strikeAvg: c.contract.ComboStrike()
         , openPrice: c.open / c.position.Abs() / multiplier
@@ -48,9 +48,10 @@ namespace IBApp {
 
     public IEnumerable<(Contract contract, int position, double open, double takeProfit, int orderId)> ComboTradesImpl() {
       var positions = Positions.Where(p => p.position != 0).ToArray();
+      var orders = OrderContracts.Values.Where(oc => !oc.isDone).ToArray();
       var combos = (
-        from c in positions.ParseCombos(OrderContracts.Values).Do(c => IbClient.SetContractSubscription(c.contract))
-        let order = OrderContracts.Values.Where(oc => !oc.isDone && oc.contract.Key == c.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
+        from c in positions.ParseCombos(orders).Do(c => IbClient.SetContractSubscription(c.contract))
+        let order = orders.Where(oc => oc.contract.Key == c.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
         select (c.contract, c.position, c.open, order.LmtPrice, order.OrderId)
         );
       var comboAll = (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
