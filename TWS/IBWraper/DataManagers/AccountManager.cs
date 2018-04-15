@@ -531,7 +531,7 @@ namespace IBApp {
       return null;
     }
     public void OpenOrUpdateLimitOrderByProfit(string instrument, int position, int orderId, double openAmount, double profitAmount) {
-      if(OrderContracts.TryGetValue(orderId, out var och)&& !och.isDone) {
+      if(OrderContracts.TryGetValue(orderId, out var och) && !och.isDone) {
         if(och.contract.Instrument != instrument)
           throw new Exception($"{nameof(OpenOrUpdateLimitOrderByProfit)}:{new { orderId, och.contract.Instrument, dontMatch = instrument }}");
         var limit = OrderPrice(priceFromProfit(profitAmount, position, och.contract.ComboMultiplier, openAmount), och.contract);
@@ -556,17 +556,21 @@ namespace IBApp {
           .ForEach(c => OpenTrade(c, -position, lmpPrice, false));
       }
     }
-    public void UpdateOrder(int orderId, double lmpPrice) {
+    public void UpdateOrder(int orderId, double lmpPrice, int minTickMultiplier = 1) {
       if(!OrderContracts.TryGetValue(orderId, out var och))
         throw new Exception($"UpdateTrade: {new { orderId, not = "found" }}");
       if(och.isDone)
         throw new Exception($"UpdateTrade: {new { orderId, och.isDone }}");
       var order = och.order;
       //var minTick = och.contract.MinTick;
-      order.LmtPrice = lmpPrice;//  Math.Round(lmpPrice / minTick) * minTick;
+      order.LmtPrice = OrderPrice(lmpPrice, och.contract, minTickMultiplier);//  Math.Round(lmpPrice / minTick) * minTick;
       if(order.OpenClose.IsNullOrWhiteSpace())
         order.OpenClose = "C";
-      IbClient.WatchReqError(orderId, e => OnUpdateError(e, $"{nameof(UpdateOrder)}:{och.contract}:"), () => { });
+      IbClient.WatchReqError(orderId, e => {
+        OnUpdateError(e, $"{nameof(UpdateOrder)}:{och.contract}:{new { order.LmtPrice }}");
+        if(e.errorCode == 110)
+          UpdateOrder(orderId, lmpPrice, ++minTickMultiplier);
+      }, () => { });
       IbClient.ClientSocket.placeOrder(order.OrderId, och.contract, order);
     }
     private void OnUpdateError((int reqId, int code, string error, Exception exc) e, string trace) {
@@ -598,7 +602,7 @@ namespace IBApp {
 
 
     static object _OpenTradeSync = new object();
-    public PendingOrder OpenTrade(Contract contract, int quantity, double price, bool useTakeProfit) {
+    public PendingOrder OpenTrade(Contract contract, int quantity, double price, bool useTakeProfit, int minTickMultiplier = 1) {
       lock(_OpenTradeSync) {
         var aos = OrderContracts.Values
           .Where(oc => !oc.isDone && oc.contract.Key == contract.Key)
@@ -606,7 +610,7 @@ namespace IBApp {
         if(aos.Any()) {
           aos.ForEach(ao => {
             Trace($"OpenTrade: {contract} already has active order order with status: {ao.status}.\nUpdating {new { price }}");
-            UpdateOrder(ao.order.OrderId, OrderPrice(price, contract));
+            UpdateOrder(ao.order.OrderId, OrderPrice(price, contract, minTickMultiplier));
           });
           return null;
         }
@@ -617,16 +621,21 @@ namespace IBApp {
           OrderId = NetOrderId(),
           Action = quantity > 0 ? "BUY" : "SELL",
           OrderType = orderType,
-          LmtPrice = OrderPrice(price, contract),
+          LmtPrice = OrderPrice(price, contract, minTickMultiplier),
           TotalQuantity = quantity.Abs(),
           Tif = GTC,
           OutsideRth = isPreRTH,
           OverridePercentageConstraints = true
         };
-        var tpOrder = useTakeProfit ? MakeTakeProfitOrder(order, contract) : new IBApi.Order[0];
+        var tpOrder = useTakeProfit ? MakeTakeProfitOrder(order, contract, minTickMultiplier) : new IBApi.Order[0];
         new[] { order }.Concat(tpOrder)
           .ForEach(o => {
-            IbClient.WatchReqError(o.OrderId, e => Error(contract, e), () => Trace(new { o.OrderId, Error = "done" }));
+            IbClient.WatchReqError(o.OrderId, e => {
+              if(e.errorCode == 110) {
+                OpenTrade(contract, quantity, price, useTakeProfit, ++minTickMultiplier);
+              } else
+                Error(contract, e);
+            }, () => Trace(new { o.OrderId, Error = "done" }));
             OrderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, contract));
             _verbous(new { plaseOrder = new { o, contract } });
             IbClient.ClientSocket.placeOrder(o.OrderId, contract, o);
@@ -642,7 +651,7 @@ namespace IBApp {
           Trace(trace + t);
       }
     }
-    IBApi.Order[] MakeTakeProfitOrder(IBApi.Order parent, Contract contract) {
+    IBApi.Order[] MakeTakeProfitOrder(IBApi.Order parent, Contract contract, int minTickMultilier) {
       bool isPreRTH = true;
       return new[] { parent }
       .Where(o => o.OrderType == "LMT")
@@ -655,7 +664,7 @@ namespace IBApp {
         return new IBApi.Order() {
           Account = _accountId,
           ParentId = parent.OrderId,
-          LmtPrice = OrderPrice(lmtPrice + takeProfit, contract),
+          LmtPrice = OrderPrice(lmtPrice + takeProfit, contract, minTickMultilier),
           OrderId = NetOrderId(),
           Action = parent.Action == "BUY" ? "SELL" : "BUY",
           OrderType = "LMT",
@@ -717,9 +726,13 @@ namespace IBApp {
       IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       return null;
     }
-    double OrderPrice(double orderPrice, Contract contract) =>
-      contract.MinTick().With(minTick => Math.Round(orderPrice / minTick) * minTick);
-
+    double OrderPrice(double orderPrice, Contract contract) => OrderPrice(orderPrice, contract, 1);
+    double OrderPrice(double orderPrice, Contract contract, int minTickMultilier) {
+      var minTick = contract.MinTick() * minTickMultilier;
+      var p = (Math.Round(orderPrice / minTick) * minTick);
+      p= Math.Round(p, 4);
+      return p;
+    }
     #endregion
 
     #region FetchMMR

@@ -107,6 +107,11 @@ namespace IBApp {
       _marketDataManager = new MarketDataManager(this);
       _marketDataManager.PriceChanged += OnPriceChanged;
 
+      //SecurityDefinitionOptionParameter += IBClientCore_SecurityDefinitionOptionParameter;
+      //SecurityDefinitionOptionParameterEnd += IBClientCore_SecurityDefinitionOptionParameterEnd;
+      //void IBClientCore_SecurityDefinitionOptionParameterEnd(int obj) => throw new NotImplementedException();
+      //void IBClientCore_SecurityDefinitionOptionParameter(int arg1, string arg2, int arg3, string arg4, string arg5, HashSet<string> arg6, HashSet<double> arg7) => throw new NotImplementedException();
+
       PriceChangeObservable = Observable.FromEventPattern<PriceChangedEventArgs>(
         h => PriceChanged += h,
         h => PriceChanged -= h
@@ -123,6 +128,7 @@ namespace IBApp {
         }
       }
     }
+
     #endregion
 
     #region Req-* Observables
@@ -307,6 +313,20 @@ namespace IBApp {
       return cd;
     }
 
+    public IObservable<Contract> ReqOptionChainOldAsync(string sympol) {
+      var fopDate = DateTime.Now.Date;
+      return Observable.Range(0, 4)
+          .Select(i => fopDate.AddDays(i))
+          .SelectMany(fd => {
+            var twsDate = fd.ToTWSDateString();
+            return ReqContractDetailsAsync(new Contract { Symbol = sympol.Substring(0, 2), SecType = "FOP", Exchange = "GLOBEX", Currency = "USD", LastTradeDateOrContractMonth = twsDate }).ToArray()
+            .Do(__ => {
+            });
+          })
+          .SkipWhile(a => a.Length == 0)
+          .Take(1)
+          .SelectMany(cds => cds.Select(cd => cd.AddToCache().Summary));
+    }
     public IObservable<Contract> ReqCurrentOptionsAsync
       (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount) {
       var expStartDate = ServerTime.Date.AddDays(expirationDaysSkip);
@@ -327,6 +347,7 @@ namespace IBApp {
         select (t.strike.i, o: o.AddToCache().Summary)
        )
        .ToArray()
+       .Concat(Observable.Defer(() => ReqOptionChainOldAsync(symbol).Select((o, i) => (i, o)).ToArray()))
        .SelectMany(a => a.OrderBy(t => t.i).ThenBy(t => t.o.Strike).Select(t => t.o))
        .Take(strikesCount * expirationsCount);
     }
@@ -357,7 +378,7 @@ namespace IBApp {
         //  .ToObservable()
         //  .Concat(Observable.Defer(() => ReqPriceMarket(cd.Summary)))
         //  .Take(1)
-      from och in ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, "", cd.Summary.SecType, cd.Summary.ConId)
+      from och in ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, cd.Summary.IsFuture ? cd.Summary.Exchange : "", cd.Summary.SecType, cd.Summary.ConId)
       select (och.exchange, och.tradingClass, och.multiplier, expirations: och.expirations.Select(e => e.FromTWSDateString()).ToArray(), strikes: och.strikes.ToArray(), symbol = cd.Summary.Symbol, currency: cd.Summary.Currency);
 
     enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
@@ -524,6 +545,7 @@ namespace IBApp {
       SetRequestHandled(reqId);
       ErrorObservable
       .Where(t => t.id == reqId)
+      .DistinctUntilChanged(e => e.errorCode)
       .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
       .Take(1)
       .Merge()

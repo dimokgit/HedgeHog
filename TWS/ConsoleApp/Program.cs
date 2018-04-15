@@ -69,14 +69,30 @@ namespace ConsoleApp {
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         Task.Delay(2000).ContinueWith(_ => {
-          TestMakeBullPut("SPX", false);
+          var fopDate = DateTime.Now.Date;
+          IScheduler esReqContract = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContractDet" });
+          Observable.Range(0, 4)
+          .Select(i => fopDate.AddDays(i))
+          .SelectMany(fd => {
+            var twsDate = fd.ToTWSDateString();
+            HandleMessage(new { twsDate });
+            return ibClient.ReqContractDetailsAsync(new Contract { Symbol = "ES", SecType = "FOP", Exchange = "GLOBEX", Currency = "USD", LastTradeDateOrContractMonth = twsDate }).ToArray()
+            .Do(__ => {
+            });
+          })
+          .SkipWhile(a => a.Length == 0)
+          .Take(1)
+          .Subscribe(cds => {
+            cds.Take(50).ForEach(cd => HandleMessage2(cd.Summary));
+          });
+          //TestMakeBullPut("ESM8", false);
         }); return;
         LoadHistory(ibClient, new[] { "spy".ContractFactory() });
         TestParsedCombos();
         TestCurrentStraddles(1, 1);
         TestCurrentStraddles(1, 1); return;
         TestCombosTrades(10).Subscribe(); return;
-        var cds = ibClient.ReqContractDetailsAsync("VXX   180329C00051500".ContractFactory()).ToEnumerable().Count(0, new { }).ToArray();
+        var cdsVXX = ibClient.ReqContractDetailsAsync("VXX   180329C00051500".ContractFactory()).ToEnumerable().Count(0, new { }).ToArray();
         var symbols = new[] { "SPX", "VXX", "SPY" };
         var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1000)).Subscribe();
         Stopwatch sw = Stopwatch.StartNew();
@@ -101,6 +117,9 @@ namespace ConsoleApp {
           .Concat()
           .Count(5, $"{nameof(TestMakeBullPut)}")
           .ForEach(comboPrice => {
+            ibClient.ReqContractDetailsAsync(comboPrice.combo.contract)
+            .Subscribe(cd => {
+            });
             comboPrice.combo.contract.Legs().Buffer(2).ForEach(b => Passager.ThrowIf(() => b[0].Strike - b[1].Strike != 5));
             HandleMessage2(new { comboPrice.combo.contract });
             ibClient.ReqPriceSafe(comboPrice.combo.contract, 4, true)

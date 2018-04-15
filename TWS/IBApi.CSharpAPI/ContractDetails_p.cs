@@ -19,5 +19,7 @@ namespace IBApi {
       if(ContractDetailsCache.TryGetValue(instrument, out var contract))
         yield return map(contract);
     }
+    public override string ToString() => 
+      base.ToString();
   }
 }

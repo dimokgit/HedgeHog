@@ -28,7 +28,7 @@ namespace IBApi {
       ? optionPrice - (Strike - undePrice).Max(0)
       : 0;
     DateTime? _lastTradeDateOrContractMonth;
-    public DateTime LastTradeDateOrContractMonth2 =>
+    public DateTime Expiration =>
       (_lastTradeDateOrContractMonth ??
       (_lastTradeDateOrContractMonth = LastTradeDateOrContractMonth.FromTWSDateString())
       ).Value;
@@ -59,7 +59,8 @@ namespace IBApi {
     public bool IsCombo => ComboLegs?.Any() == true;
     public bool IsCall => IsOption && Right == "C";
     public bool IsPut => IsOption && Right == "P";
-    public bool IsOption => SecType == "OPT";
+    public bool IsOption => SecType == "OPT" || SecType == "FOP";
+    public bool IsFuture => SecType == "FUT";
     public bool IsButterFly => ComboLegs?.Any() == true && String.Join("", comboLegs.Select(l => l.Ratio)) == "121";
     public double ComboStrike() => Strike > 0 ? Strike : Legs().Select(c => c.strike).DefaultIfEmpty().Average();
     public int ReqId { get; set; }
@@ -68,6 +69,7 @@ namespace IBApi {
     public override string ToString() => ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}");// {Exchange} {Currency}";
     internal string ComboLegsToString() =>
       Legs().Select(c => c.Instrument)
+      .OrderBy(s=>s)
       .ToArray()
       .MashDiffs();
     public IEnumerable<Contract> Legs() =>

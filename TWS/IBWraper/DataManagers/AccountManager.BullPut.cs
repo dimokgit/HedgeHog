@@ -57,8 +57,8 @@ namespace IBApp {
       MakeBullPutCache(contractOptions[0].Symbol, contractOptions[0].Exchange, contractOptions[0].Currency
         , contractOptions.Select(c => c.ConId).ToArray());
     static Func<string, string, string, IList<int>, Contract> MakeBullPutCache
-      = new Func<string, string, string, IList<int>, Contract>(MakeBullPut);
-    //.Memoize(t => (t.Item1, t.Item2, t.Item3, t.Item4.Flatter("")));
+      = new Func<string, string, string, IList<int>, Contract>(MakeBullPut)
+      .Memoize(t => (t.Item1, t.Item2, t.Item3, t.Item4.Flatter("")));
     static Contract MakeBullPut(string instrument, string exchange, string currency, IList<int> conIds) {
       if(conIds.Count != 2)
         throw new Exception($"{nameof(MakeBullPut)}:{new { conIds }}");
