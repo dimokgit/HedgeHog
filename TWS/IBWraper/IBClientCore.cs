@@ -318,16 +318,16 @@ namespace IBApp {
                 select (t.tradingClass, expiration, strike, isCall)
                 )
                 .ToArray();
+
       return (
         from ts in x
-        from t in ts.OrderBy(t => t.strike.i).ThenBy(t => t.expiration)
+        from t in ts.OrderBy(t => t.strike.i).ThenBy(t => t.expiration).ToArray()
         let option = MakeOptionSymbol(t.tradingClass, t.expiration, t.strike.s, t.isCall)
         from o in ReqContractDetailsCached(option).Synchronize()
-        select o.AddToCache().Summary//.SideEffect(c=>Trace(new { optionContract = c }))
+        select (t.strike.i, o: o.AddToCache().Summary)
        )
-       .Synchronize()
        .ToArray()
-       .SelectMany(a => a)
+       .SelectMany(a => a.OrderBy(t => t.i).ThenBy(t => t.o.Strike).Select(t => t.o))
        .Take(strikesCount * expirationsCount);
     }
 

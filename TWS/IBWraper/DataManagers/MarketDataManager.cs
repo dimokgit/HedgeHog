@@ -49,7 +49,6 @@ namespace IBApp {
       }
       callback(contract);
     }
-    IScheduler esAddRequest = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(MarketDataManager) });
     void AddRequestImpl(Contract contract, string genericTickList) {
       if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
         Trace($"AddRequest:{contract} already requested");

@@ -69,7 +69,7 @@ namespace ConsoleApp {
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         Task.Delay(2000).ContinueWith(_ => {
-          TestMakeBullPut(false);
+          TestMakeBullPut("SPX", false);
         }); return;
         LoadHistory(ibClient, new[] { "spy".ContractFactory() });
         TestParsedCombos();
@@ -94,12 +94,14 @@ namespace ConsoleApp {
         //HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
 
         #region Local Tests
-        void TestMakeBullPut(bool placeOrder) {
+        void TestMakeBullPut(string symbol, bool placeOrder) {
           HandleMessage2("MakeBullPut Start");
-          am.CurrentBullPuts("SPX",double.NaN,1,3,0)
+          am.CurrentBullPuts(symbol, double.NaN, 1, 5, 0)
           .ToEnumerable()
           .Concat()
+          .Count(5, $"{nameof(TestMakeBullPut)}")
           .ForEach(comboPrice => {
+            comboPrice.combo.contract.Legs().Buffer(2).ForEach(b => Passager.ThrowIf(() => b[0].Strike - b[1].Strike != 5));
             HandleMessage2(new { comboPrice.combo.contract });
             ibClient.ReqPriceSafe(comboPrice.combo.contract, 4, true)
             .ToEnumerable()
