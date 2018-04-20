@@ -569,11 +569,12 @@ namespace HedgeHog.Alice.Client {
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
     public void ReadStraddles(string pair, int gap, double? strikeLevel, string[] comboExits) {
-      int expirationDaysSkip = 1;
+      int expirationDaysSkip = 0;
       var am = GetAccountManager();
+      var symbols = IBApi.Contract.FromCache(pair, c => c.IsFuture ? c.LocalSymbol : c.Symbol).ToArray();
       if(am != null) {
         Action a = () =>
-          IBApi.Contract.FromCache(pair, c => c.Symbol)
+          symbols
             .ForEach(symbol
             => am.CurrentStraddles(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 5, 0)
             .Select(ts => ts.Select(t => new {
@@ -594,7 +595,7 @@ namespace HedgeHog.Alice.Client {
             .OrderByDescending(x => x.delta))
             .Subscribe(b => base.Clients.Caller.butterflies(b)));
         Action currentOptions = () =>
-          IBApi.Contract.FromCache(pair, c => c.Symbol)
+          symbols
             .ForEach(symbol
             => am.CurrentOptions(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3)
             .Select(ts => ts
@@ -617,7 +618,7 @@ namespace HedgeHog.Alice.Client {
             )
            .Subscribe(b => base.Clients.Caller.bullPuts(b)));
         Action currentBullPut = () =>
-          IBApi.Contract.FromCache(pair, c => c.Symbol)
+          symbols
             .ForEach(symbol
             => am.CurrentBullPuts(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3, gap)
             .Select(ts => ts

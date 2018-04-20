@@ -313,8 +313,30 @@ namespace IBApp {
       return cd;
     }
 
-    public IObservable<Contract> ReqOptionChainOldAsync(string sympol) {
-      var fopDate = DateTime.Now.Date;
+    public static ConcurrentDictionary<(string symbol, DateTime expDate), Contract[]> OptionChainOldCache = new ConcurrentDictionary<(string symbol, DateTime expDate), Contract[]>();
+
+    bool _ReqOptionChainOldCacheInRun = false;
+    public IObservable<Contract[]> ReqOptionChainOldCache(string symbol, DateTime expDate) {
+      if(_ReqOptionChainOldCacheInRun) return new Contract[0][].ToObservable();
+      return
+        OptionChainOldCache.TryGetValue((symbol, expDate))
+      .ToArray()
+      .Do(x => {
+      })
+      .ToObservable()
+      .Concat(Observable.Defer(() => {
+        _ReqOptionChainOldCacheInRun = true;
+        return ReqOptionChainOldAsync(symbol, expDate).ToArray().Do(a => OptionChainOldCache.TryAdd((symbol, expDate), a));
+      }
+      ))
+      .Take(1)
+      .Do(_ => _ReqOptionChainOldCacheInRun = false);
+    }
+    public IObservable<Contract[]> ReqOptionChainOldCache(string sympol, int expirationDaysSkip) =>
+      ReqOptionChainOldCache(sympol, DateTime.Now.Date.AddDays(expirationDaysSkip));
+    public IObservable<Contract> ReqOptionChainOldAsync(string sympol, DateTime expirationDate) {
+      var fopDate = expirationDate;
+      Trace(new { fopDate });
       return Observable.Range(0, 4)
           .Select(i => fopDate.AddDays(i))
           .SelectMany(fd => {
@@ -328,6 +350,16 @@ namespace IBApp {
           .SelectMany(cds => cds.Select(cd => cd.AddToCache().Summary));
     }
     public IObservable<Contract> ReqCurrentOptionsAsync
+      (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount) {
+      var expStartDate = ServerTime.Date.AddDays(expirationDaysSkip);
+      return ReqOptionChainOldCache(symbol, expStartDate)
+          .Select(a => a.OrderBy(c => c.Strike.Abs(price)).ThenBy(c => c.Right).Select((o, i) => (i, o))
+          .ToArray())
+          .SelectMany(a => a.OrderBy(t => t.i).ThenBy(t => t.o.Strike).Select(t => t.o))
+          .Take(strikesCount * expirationsCount);
+    }
+
+    public IObservable<Contract> ReqCurrentOptionsFastAsync
       (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount) {
       var expStartDate = ServerTime.Date.AddDays(expirationDaysSkip);
       var x = (
@@ -347,7 +379,11 @@ namespace IBApp {
         select (t.strike.i, o: o.AddToCache().Summary)
        )
        .ToArray()
-       .Concat(Observable.Defer(() => ReqOptionChainOldAsync(symbol).Select((o, i) => (i, o)).ToArray()))
+       .TakeUntil(DateTimeOffset.Now.AddSeconds(1))
+       .Concat(Observable.Defer(() => ReqOptionChainOldCache(symbol, expStartDate)
+          .Select(a => a.OrderBy(c => c.Strike.Abs(price)).ThenBy(c => c.Right).Select((o, i) => (i, o))
+          .ToArray())
+       ))
        .SelectMany(a => a.OrderBy(t => t.i).ThenBy(t => t.o.Strike).Select(t => t.o))
        .Take(strikesCount * expirationsCount);
     }
@@ -392,6 +428,9 @@ namespace IBApp {
       //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
       .Select(p => (p.Bid, p.Ask, p.Time)).ToObservable();
 
+      if(contract.IsCombo)
+        return ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler);
+
       SetContractSubscription(contract);
       return TickPriceObservable
       .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
@@ -407,6 +446,17 @@ namespace IBApp {
     }
 
     public IObservable<(double bid, double ask, DateTime time)> ReqPriceComboSafe(Contract combo, double timeoutInSeconds, bool useErrorHandler) {
+      double ask((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time) price) => (cl.leg.Action == "BUY" ? 1 : -1) * price.ask;
+      double bid((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time) price) => (cl.leg.Action == "BUY" ? 1 : -1) * price.bid;
+      var x = combo.LegsEx()
+        .ToObservable()
+        .SelectMany(cl => ReqPriceSafe(cl.contract, timeoutInSeconds, useErrorHandler).Select(price => (cl, price)).Take(1))
+        .ToArray()
+        .Where(a => a.Any())
+        .Select(t => (t.Sum(t2 => bid(t2.cl, t2.price) * t2.cl.leg.Ratio), t.Sum(t2 => ask(t2.cl, t2.price) * t2.cl.leg.Ratio), t.Min(t2 => t2.price.time)));
+      return x;
+    }
+    public IObservable<(double bid, double ask, DateTime time)> ReqPriceComboSafe_Old(Contract combo, double timeoutInSeconds, bool useErrorHandler) {
       double ask((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time) price) => cl.leg.Action == "BUY" ? price.ask : -price.bid;
       double bid((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time) price) => cl.leg.Action == "BUY" ? price.bid : -price.ask;
       var x = combo.LegsEx()
@@ -414,7 +464,7 @@ namespace IBApp {
         .SelectMany(cl => ReqPriceSafe(cl.contract, timeoutInSeconds, useErrorHandler).Select(price => (cl, price)).Take(1))
         .ToArray()
         .Where(a => a.Any())
-        .Select(t => (t.Sum(t2 => bid(t2.cl, t2.price)), t.Sum(t2 => ask(t2.cl, t2.price)), t.Min(t2 => t2.price.time)));
+        .Select(t => (t.Sum(t2 => bid(t2.cl, t2.price) * t2.cl.leg.Ratio), t.Sum(t2 => ask(t2.cl, t2.price) * t2.cl.leg.Ratio), t.Min(t2 => t2.price.time)));
       return x;
     }
 

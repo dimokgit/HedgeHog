@@ -12,6 +12,11 @@ namespace HedgeHog.Tests {
   [TestClass()]
   public class MathExtensionsTest {
     [TestMethod]
+    public void GDC() {
+      var gdc = new[] { -20, 40, 12 }.GCD();
+      Assert.AreEqual(4, gdc);
+    }
+    [TestMethod]
     public void CompoundAmount() {
       double interestRate = 0.1 / 100, days = 200 * 10, Amount = 50000;
       Console.WriteLine(new { Amount = Amount.CompoundAmount(interestRate, days) });

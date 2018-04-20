@@ -20,7 +20,7 @@ namespace IBApp {
         from price in IbClient.ReqPriceSafe(c.contract, priceTimeoutInSeconds, true).DefaultIfEmpty().Take(1)
         let multiplier = c.contract.ComboMultiplier
         let position = c.position.Abs() * c.open.Sign()
-        let close = ((c.open.Sign() > 0 ? price.bid : price.ask) * c.position * multiplier).Round(4)
+        let close = ((position > 0 ? price.bid : price.ask) * c.position * multiplier).Round(4)
         select (c: IbClient.SetContractSubscription(c.contract), c.position, c.open, close
         , pl: close - c.open, underPrice, strikeAvg: c.contract.ComboStrike()
         , openPrice: c.open / c.position.Abs() / multiplier
@@ -39,8 +39,9 @@ namespace IBApp {
          );
       IObservable<double> UnderPrice(Contract contract) {
         if(!contract.IsOption && !contract.IsCombo) return Observable.Return(0.0);
+        var underSymbol = contract.Symbol + (contract.HasFutureOption ? "M8" : "");
         return (
-        from symbol in IbClient.ReqContractDetailsCached(contract.Symbol)
+        from symbol in IbClient.ReqContractDetailsCached(underSymbol)
         from underPrice in IbClient.ReqPriceSafe(symbol.Summary, priceTimeoutInSeconds, false)
         select underPrice.ask.Avg(underPrice.bid));
       }
@@ -56,7 +57,7 @@ namespace IBApp {
         );
       var comboAll = (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
                       let order = OrderContracts.Values.Where(oc => !oc.isDone && oc.contract.Key == ca.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
-                      select (ca.contract, 1, ca.positions.Sum(p => p.open), order.LmtPrice, order.OrderId)).ToArray();
+                      select (ca.contract, position: 1, open: ca.positions.Sum(p => p.open), order.LmtPrice, order.OrderId)).ToArray();
       return combos.Concat(comboAll).Distinct(c => c.contract.Instrument);
     }
   }

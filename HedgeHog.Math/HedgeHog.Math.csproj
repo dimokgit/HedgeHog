@@ -96,6 +96,7 @@
     <Compile Include="AlgLib\solvers.cs" />
     <Compile Include="AlgLib\specialfunctions.cs" />
     <Compile Include="AlgLib\statistics.cs" />
+    <Compile Include="GCD.cs" />
     <Compile Include="GIS\Point.cs" />
     <Compile Include="GIS\Utility.cs" />
     <Compile Include="GroupAdjacent.cs" />

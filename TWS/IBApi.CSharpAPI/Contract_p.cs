@@ -60,16 +60,19 @@ namespace IBApi {
     public bool IsCall => IsOption && Right == "C";
     public bool IsPut => IsOption && Right == "P";
     public bool IsOption => SecType == "OPT" || SecType == "FOP";
+    public bool IsFutureOption => SecType == "FOP";
+    public bool HasFutureOption => IsFutureOption || Legs().Any(l => l.IsFutureOption);
     public bool IsFuture => SecType == "FUT";
     public bool IsButterFly => ComboLegs?.Any() == true && String.Join("", comboLegs.Select(l => l.Ratio)) == "121";
-    public double ComboStrike() => Strike > 0 ? Strike : Legs().Select(c => c.strike).DefaultIfEmpty().Average();
+    public double ComboStrike() => Strike > 0 ? Strike : LegsEx().Sum(c => c.contract.strike * c.leg.Ratio) / LegsEx().Sum(c => c.leg.Ratio);
     public int ReqId { get; set; }
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
-    public override string ToString() => ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}");// {Exchange} {Currency}";
+    string ExpirationToString() => SecType == "FOP" && LocalSymbol.IsNullOrWhiteSpace() ? " " + LastTradeDateOrContractMonth : "";
+    public override string ToString() => ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
     internal string ComboLegsToString() =>
       Legs().Select(c => c.Instrument)
-      .OrderBy(s=>s)
+      .OrderBy(s => s)
       .ToArray()
       .MashDiffs();
     public IEnumerable<Contract> Legs() =>

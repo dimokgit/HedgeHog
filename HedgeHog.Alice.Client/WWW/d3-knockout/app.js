@@ -845,7 +845,12 @@
     }, this);
     this.liveStraddles = ko.mapping.fromJS(ko.observableArray());//;
     this.liveCombos = ko.pureComputed(function () {
-      return self.liveStraddles().filter(function (v) { return v.combo; });
+      return self.liveStraddles()
+        .filter(function (v) { return v && v.combo; })
+        .map(function (v) {
+          if (!v.exitDelta)
+            v.exitDelta = ko.observable();
+        });
     }, this);
     this.combosMin = ko.pureComputed(function () {
       return [];

@@ -1107,6 +1107,7 @@ namespace HedgeHog.Alice.Store {
       .Where(_ => ((IBWraper)TradesManager)?.AccountManager != null)
       .SelectMany(price => ((IBWraper)TradesManager).AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), 0, 4, 0))
       .Select(x => x.OrderByDescending(t => t.deltaBid).Take(2).ToArray())
+      .Where(straddle => straddle.Any())
       .Subscribe(straddle => {
         StraddleHistory.Add((straddle.Average(s => s.deltaBid), straddle.Average(s => s.ask), straddle[0].time, straddle.Average(s => s.delta)));
       }, exc => {

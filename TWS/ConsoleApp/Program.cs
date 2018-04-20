@@ -69,21 +69,19 @@ namespace ConsoleApp {
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         Task.Delay(2000).ContinueWith(_ => {
-          var fopDate = DateTime.Now.Date;
-          IScheduler esReqContract = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContractDet" });
-          Observable.Range(0, 4)
-          .Select(i => fopDate.AddDays(i))
-          .SelectMany(fd => {
-            var twsDate = fd.ToTWSDateString();
-            HandleMessage(new { twsDate });
-            return ibClient.ReqContractDetailsAsync(new Contract { Symbol = "ES", SecType = "FOP", Exchange = "GLOBEX", Currency = "USD", LastTradeDateOrContractMonth = twsDate }).ToArray()
-            .Do(__ => {
-            });
-          })
-          .SkipWhile(a => a.Length == 0)
-          .Take(1)
-          .Subscribe(cds => {
-            cds.Take(50).ForEach(cd => HandleMessage2(cd.Summary));
+          ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 1, 10)
+          .ToArray()
+          .ToEnumerable()
+          .ForEach(cds => {
+            cds.Take(50).ForEach(cd => HandleMessage2(cd));
+            HandleMessage("ReqCurrentOptionsAsync =============================");
+          });
+          ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 1, 10)
+          .ToArray()
+          .ToEnumerable()
+          .ForEach(cds => {
+            cds.Take(50).ForEach(cd => HandleMessage2(cd));
+            HandleMessage("ReqCurrentOptionsAsync =============================");
           });
           //TestMakeBullPut("ESM8", false);
         }); return;
