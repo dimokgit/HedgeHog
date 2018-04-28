@@ -17,6 +17,7 @@ using System.Reactive;
 using System.Reactive.Subjects;
 using System.Diagnostics;
 using DynamicExpresso;
+using IBApp;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -1716,7 +1717,7 @@ namespace HedgeHog.Alice.Store {
         //.Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         //.Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
         .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk), nameof(Store.TradingMacro.PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round((int)3) } : new { })
-        .Add((object)(new { MacdDist = tm.MacdDistances(RatesArray).TakeLast(1).Select(d=>d.AutoRound2(3)).SingleOrDefault() }))
+        .Add((object)(new { MacdDist = tm.MacdDistances(RatesArray).TakeLast(1).Select(d => d.AutoRound2(3)).SingleOrDefault() }))
         .Add((object)(new { HistVol = $"{HV(this)}" }))
         .Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
         //.Add(HVP(this).Select(hvp => (object)new { HistVolDif = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVP).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
@@ -1735,7 +1736,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public double StdOverCurrPriceRatio() => StdOverCurrPriceRatio(StDevByHeight, CurrentPriceAvg());
-    double StdOverCurrPriceRatio(double stDevByHeight,double price) => InPips(stDevByHeight) / price * 100;
+    double StdOverCurrPriceRatio(double stDevByHeight, double price) => InPips(stDevByHeight) / price * 100;
     public IEnumerable<double> HistoricalVolatilityUp() => HistoricalVolatility();
     //UseRates(ra => InPips(RatesForHV(ra).HistoricalVolatility(t => t.prev < t.next)));
     public IEnumerable<double> HistoricalVolatilityDown() => HistoricalVolatility();
@@ -2527,6 +2528,15 @@ namespace HedgeHog.Alice.Store {
     public void TradeConditionsTrigger() {
       if(!IsRatesLengthStableGlobal()) return;
       if(!IsTrader) return;
+      var am = ((IBWraper)TradesManager).AccountManager;
+      var hasOptions = am.Positions.Any(p => p.position != 0 && (p.contract.IsOption || p.contract.IsCombo));
+      hasOptions = hasOptions || TradesManager.GetOrderStatuses().Any(os => !os.isDone);
+      if(!hasOptions) {
+        TradeConditionsEval()
+          .DistinctLastUntilChanged(td => td)
+          .Where(td => td.HasAny())
+          .ForEach(_ => CurrentPut?.ForEach(p => am.OpenTrade(p.option, -1, 0, true)));
+      }
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
       if(IsHedgedTrading && BarsCountCalc == RatesArray.Count) {
         if(IsTradingActive)

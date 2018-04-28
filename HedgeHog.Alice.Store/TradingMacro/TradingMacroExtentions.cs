@@ -45,6 +45,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson;
 using IBApp;
 using COMBO_HISTORY = System.Collections.Generic.List<(double bid, double ask, System.DateTime time, double delta)>;
+using IBApi;
 
 namespace HedgeHog.Alice.Store {
   [JsonObject(MemberSerialization.OptOut)]
@@ -1096,15 +1097,36 @@ namespace HedgeHog.Alice.Store {
       Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategies.Universal;
       IsTradingActive = IsInVirtualTrading;
 
-      _priceChangeDisposable?.Dispose();
-      StraddleHistory.Clear();
-      _priceChangeDisposable = Observable.FromEventPattern<PriceChangedEventArgs>(
+      _priceChangeObservable = Observable.FromEventPattern<PriceChangedEventArgs>(
       h => TradesManager.PriceChanged += h,
       h => TradesManager.PriceChanged -= h
       )
-      .Where(price => price.EventArgs.Price.Pair == Pair)
-      .Sample(TimeSpan.FromSeconds(0.5))
       .Where(_ => ((IBWraper)TradesManager)?.AccountManager != null)
+      .Where(price => price.EventArgs.Price.Pair == Pair)
+      .Publish().RefCount();
+
+      _currentOptionDisposable?.Dispose();
+      _currentOptionDisposable = (
+        from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
+        let bid = price.EventArgs.Price.Bid
+        from x in ((IBWraper)TradesManager).AccountManager.CurrentOptions(Pair, bid, 0, 2)
+        where x.Any()
+        select x.Where(x2 => x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(1).ToArray()
+        )
+        .Subscribe(put => {
+          CurrentPut = put; ;
+        }, exc => {
+          Log = exc;
+          Debugger.Break();
+        }, () => {
+          Log = new Exception("_currentOptionDisposable done");
+          Debugger.Break();
+        });
+
+      _priceChangeDisposable?.Dispose();
+      StraddleHistory.Clear();
+      _priceChangeDisposable = _priceChangeObservable
+      .Sample(TimeSpan.FromSeconds(0.5))
       .SelectMany(price => ((IBWraper)TradesManager).AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), 0, 4, 0))
       .Select(x => x.OrderByDescending(t => t.deltaBid).Take(2).ToArray())
       .Where(straddle => straddle.Any())
@@ -1163,7 +1185,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    void TradesManager_OrderRemoved(Order order) {
+    void TradesManager_OrderRemoved(Shared.Order order) {
       if(!IsMyOrder(order))
         return;
       EnsureActiveSuppReses();
@@ -1187,7 +1209,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     bool IsMyTrade(Trade trade) { return trade.Pair == Pair && IsTrader; }
-    bool IsMyOrder(Order order) { return order.Pair == Pair && IsTrader; }
+    bool IsMyOrder(Shared.Order order) { return order.Pair == Pair && IsTrader; }
     public void UnSubscribeToTradeClosedEVent(ITradesManager tradesManager) {
       if(PriceChangedSubscribsion != null)
         PriceChangedSubscribsion.Dispose();
@@ -3108,10 +3130,10 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
 
     #region GetEntryOrders
-    private Order[] GetEntryOrders() {
-      return TradesManager?.GetOrders(Pair) ?? new Order[0];
+    private Shared.Order[] GetEntryOrders() {
+      return TradesManager?.GetOrders(Pair) ?? new Shared.Order[0];
     }
-    private Order[] GetEntryOrders(bool isBuy) {
+    private Shared.Order[] GetEntryOrders(bool isBuy) {
       return GetEntryOrders().IsBuy(isBuy);
     }
     #endregion
@@ -5016,6 +5038,9 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       }
     }
 
+    private IObservable<EventPattern<PriceChangedEventArgs>> _priceChangeObservable;
+    private IDisposable _currentOptionDisposable;
+
     #endregion
 
     public double WaveDistanceInPips { get { return InPips(WaveDistance); } }
@@ -5286,7 +5311,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
 
     public Lazy<double> RatesHeightCma { get; set; } = new Lazy<double>(() => 0);
-
+    public (string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract option)[] CurrentPut { get; private set; }
   }
   public static class WaveInfoExtentions {
     public static Dictionary<CorridorCalculationMethod, double> ScanWaveWithAngle<T>(this IList<T> rates, Func<T, double> price, double pointSize, CorridorCalculationMethod corridorMethod) {

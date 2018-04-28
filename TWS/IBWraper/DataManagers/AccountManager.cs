@@ -601,16 +601,17 @@ namespace IBApp {
     }
 
 
+    public void CancelAllOrders() => IbClient.ClientSocket.reqGlobalCancel();
     static object _OpenTradeSync = new object();
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, bool useTakeProfit, int minTickMultiplier = 1) {
       lock(_OpenTradeSync) {
         var aos = OrderContracts.Values
-          .Where(oc => !oc.isDone && oc.contract.Key == contract.Key)
+          .Where(oc => !oc.isDone && oc.contract.Key == contract.Key && oc.order.TotalPosition().Sign() == quantity.Sign())
           .ToArray();
         if(aos.Any()) {
           aos.ForEach(ao => {
             Trace($"OpenTrade: {contract} already has active order order with status: {ao.status}.\nUpdating {new { price }}");
-            UpdateOrder(ao.order.OrderId, OrderPrice(price, contract, minTickMultiplier));
+            //UpdateOrder(ao.order.OrderId, OrderPrice(price, contract, minTickMultiplier));
           });
           return null;
         }
@@ -631,10 +632,10 @@ namespace IBApp {
         new[] { order }.Concat(tpOrder)
           .ForEach(o => {
             IbClient.WatchReqError(o.OrderId, e => {
-              if(e.errorCode == 110) {
+              if(e.errorCode == 110 && minTickMultiplier < 5) {
                 OpenTrade(contract, quantity, price, useTakeProfit, ++minTickMultiplier);
               } else
-                Error(contract, e);
+                Error(contract, e,new { minTickMultiplier });
             }, () => Trace(new { o.OrderId, Error = "done" }));
             OrderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, contract));
             _verbous(new { plaseOrder = new { o, contract } });
@@ -643,8 +644,8 @@ namespace IBApp {
         return null;
       }
       /// Locals
-      void Error(Contract c, (int id, int errorCode, string errorMsg, Exception exc) t) {
-        var trace = $"{nameof(OpenTrade)}:{c}:";
+      void Error(Contract c, (int id, int errorCode, string errorMsg, Exception exc) t, object context) {
+        var trace = $"{nameof(OpenTrade)}:{c}:" + (context == null ? "" : context + ":");
         var isWarning = Regex.IsMatch(t.errorMsg, @"\sWarning:") || t.errorCode == 103;
         if(!isWarning) OnOpenError(t, trace);
         else
@@ -730,7 +731,7 @@ namespace IBApp {
     double OrderPrice(double orderPrice, Contract contract, int minTickMultilier) {
       var minTick = contract.MinTick() * minTickMultilier;
       var p = (Math.Round(orderPrice / minTick) * minTick);
-      p= Math.Round(p, 4);
+      p = Math.Round(p, 4);
       return p;
     }
     #endregion

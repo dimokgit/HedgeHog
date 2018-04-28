@@ -353,8 +353,8 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByStraddle(int voltIndex) {
       if(UseCalc())
-        StraddleHistory.BackwardsIterator().Take(1)
-          .ForEach(s => SetVolts(s.bid, voltIndex));
+        StraddleHistory.Select(s=>s.bid).Cma(2).BackwardsIterator().Take(1)
+          .ForEach(s => SetVolts(s, voltIndex));
       return null;
     }
     CorridorStatistics ShowVoltsByHV(int voltIndex) {

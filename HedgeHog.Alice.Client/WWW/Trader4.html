@@ -1220,6 +1220,7 @@
       <div>
         <label>Quantity:</label><input data-bind="value:comboQuantity" size="3" />
         <label>Gap:</label><input data-bind="value:comboGap" size="1" />
+        <button data-bind="click:cancelAllOrders">Clear Order</button>
       </div>
       <div style="display:inline-table">
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>

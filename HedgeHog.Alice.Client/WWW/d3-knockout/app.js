@@ -805,7 +805,7 @@
     this.toggleComboCurrentStrikeLevel = function () {
       self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? self.priceAvg() : "");
     }
-    this.comboGap = ko.observable(0);
+    this.comboGap = ko.observable(1);
     this.comboGap.subscribe(function (v) {
       readCombos(true);
       dataViewModel.butterflies([]);
@@ -850,6 +850,7 @@
         .map(function (v) {
           if (!v.exitDelta)
             v.exitDelta = ko.observable();
+          return v;
         });
     }, this);
     this.combosMin = ko.pureComputed(function () {
@@ -886,6 +887,9 @@
       this.canTrade(false);
       serverCall("closeCombo", [ko.utils.unwrapObservable(key)], null, null, function () { this.canTrade(false); }.bind(this));
     }.bind(this);
+    this.cancelAllOrders = function (key) {
+      serverCall("cancelAllOrders", []);
+    };
     var stopCombos = true;
     this.showButterflies = function () {
       showCombos = true;
