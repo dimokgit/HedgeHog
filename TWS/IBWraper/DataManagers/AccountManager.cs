@@ -628,18 +628,18 @@ namespace IBApp {
           OutsideRth = isPreRTH,
           OverridePercentageConstraints = true
         };
-        var tpOrder = useTakeProfit ? MakeTakeProfitOrder(order, contract, minTickMultiplier) : new IBApi.Order[0];
-        new[] { order }.Concat(tpOrder)
+        var tpOrder = (useTakeProfit ? MakeTakeProfitOrder(order, contract, minTickMultiplier) : new IBApi.Order[0]).Select(x => new { order = x, useTakeProfit = false }).ToArray();
+        new[] { new { order, useTakeProfit } }.Concat(tpOrder)
           .ForEach(o => {
-            IbClient.WatchReqError(o.OrderId, e => {
-              if(e.errorCode == 110 && minTickMultiplier < 5) {
-                OpenTrade(contract, quantity, price, useTakeProfit, ++minTickMultiplier);
+            IbClient.WatchReqError(o.order.OrderId, e => {
+              if(e.errorCode == 110 && minTickMultiplier < 5 && o.order.LmtPrice != 0) {
+                OpenTrade(contract, quantity, price, o.useTakeProfit, ++minTickMultiplier);
               } else
-                Error(contract, e,new { minTickMultiplier });
-            }, () => Trace(new { o.OrderId, Error = "done" }));
-            OrderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, contract));
+                Error(contract, e, new { minTickMultiplier });
+            }, () => Trace(new { o.order, Error = "done" }));
+            OrderContracts.TryAdd(o.order.OrderId, new OrdeContractHolder(o.order, contract));
             _verbous(new { plaseOrder = new { o, contract } });
-            IbClient.ClientSocket.placeOrder(o.OrderId, contract, o);
+            IbClient.ClientSocket.placeOrder(o.order.OrderId, contract, o.order);
           });
         return null;
       }

@@ -2529,12 +2529,19 @@ namespace HedgeHog.Alice.Store {
       if(!IsRatesLengthStableGlobal()) return;
       if(!IsTrader) return;
       var am = ((IBWraper)TradesManager).AccountManager;
-      var hasOptions = am.Positions.Any(p => p.position != 0 && (p.contract.IsOption || p.contract.IsCombo));
-      hasOptions = hasOptions || TradesManager.GetOrderStatuses().Any(os => !os.isDone);
+      var hasOptions = (from put in CurrentPut
+                        join p in am.Positions on put.instrument equals p.contract.Instrument
+                        select true
+                        ).Any();
+      hasOptions = hasOptions ||
+        (from put in CurrentPut
+         join oc in am.OrderContracts.Values.Where(o => !o.isDone) on put.instrument equals oc.contract.Instrument
+         select true
+         ).Any();
       if(!hasOptions) {
         TradeConditionsEval()
-          .DistinctLastUntilChanged(td => td)
-          .Where(td => td.HasAny())
+          .DistinctUntilChanged(td => td)
+          .Where(td => td.HasUp())
           .ForEach(_ => CurrentPut?.ForEach(p => am.OpenTrade(p.option, -1, 0, true)));
       }
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
