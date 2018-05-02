@@ -628,14 +628,20 @@ namespace IBApp {
           OutsideRth = isPreRTH,
           OverridePercentageConstraints = true
         };
-        var tpOrder = (useTakeProfit ? MakeTakeProfitOrder(order, contract, minTickMultiplier) : new IBApi.Order[0]).Select(x => new { order = x, useTakeProfit = false }).ToArray();
-        new[] { new { order, useTakeProfit } }.Concat(tpOrder)
-          .ForEach(o => {
-            IbClient.WatchReqError(o.order.OrderId, e => {
+        var tpOrder = (useTakeProfit ? MakeTakeProfitOrder(order, contract, minTickMultiplier) : new(IBApi.Order order, double price)[0].ToObservable()).Select(x => new { x.order, x.price, useTakeProfit = false });
+        new[] { new { order, price, useTakeProfit } }.ToObservable().Merge(tpOrder)
+          .ToArray()
+          .SelectMany(x => x)
+          .Subscribe(o => {
+            var reqId = o.order.OrderId;
+            IbClient.WatchReqError(() => reqId, e => {
+              Error(contract, e, new { minTickMultiplier });
               if(e.errorCode == 110 && minTickMultiplier < 5 && o.order.LmtPrice != 0) {
-                OpenTrade(contract, quantity, price, o.useTakeProfit, ++minTickMultiplier);
-              } else
-                Error(contract, e, new { minTickMultiplier });
+                o.order.LmtPrice = OrderPrice(o.price, contract, ++minTickMultiplier);
+                reqId = o.order.OrderId = NetOrderId();
+                IbClient.ClientSocket.placeOrder(o.order.OrderId, contract, o.order);
+                //OpenTrade(contract, quantity, price, o.useTakeProfit, ++minTickMultiplier);
+              }
             }, () => Trace(new { o.order, Error = "done" }));
             OrderContracts.TryAdd(o.order.OrderId, new OrdeContractHolder(o.order, contract));
             _verbous(new { plaseOrder = new { o, contract } });
@@ -652,20 +658,22 @@ namespace IBApp {
           Trace(trace + t);
       }
     }
-    IBApi.Order[] MakeTakeProfitOrder(IBApi.Order parent, Contract contract, int minTickMultilier) {
-      bool isPreRTH = true;
+    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder(IBApi.Order parent, Contract contract, int minTickMultilier) {
+      bool isPreRTH = false;
       return new[] { parent }
       .Where(o => o.OrderType == "LMT")
       .Select(o => o.LmtPrice)
-      .Concat(IbClient.TryGetPrice(contract).Select(p => parent.IsBuy() ? p.Ask : p.Bid))
-      .OnEmpty(() => Trace($"No take profit order for {parent}"))
+      .ToObservable()
+      .Concat(Observable.Defer(() => IbClient.ReqPriceSafe(contract, 1, true).Select(p => parent.IsBuy() ? p.ask : p.bid)))
+      //.OnEmpty(() => Trace($"No take profit order for {parent}"))
       .Select(lmtPrice => {
         parent.Transmit = false;
         var takeProfit = lmtPrice * 0.2 * (parent.IsBuy() ? 1 : -1);
-        return new IBApi.Order() {
+        var price = lmtPrice + takeProfit;
+        return (new IBApi.Order() {
           Account = _accountId,
           ParentId = parent.OrderId,
-          LmtPrice = OrderPrice(lmtPrice + takeProfit, contract, minTickMultilier),
+          LmtPrice = OrderPrice(price, contract, minTickMultilier),
           OrderId = NetOrderId(),
           Action = parent.Action == "BUY" ? "SELL" : "BUY",
           OrderType = "LMT",
@@ -674,8 +682,10 @@ namespace IBApp {
           OutsideRth = isPreRTH,
           OverridePercentageConstraints = true,
           Transmit = true
-        };
-      }).ToArray()
+        }, price);
+      })
+      .Take(1)
+      .OnEmpty(() => Trace($"No take profit order for {parent}"))
         ;
     }
 

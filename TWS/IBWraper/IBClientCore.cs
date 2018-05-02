@@ -601,6 +601,16 @@ namespace IBApp {
       .Merge()
       .Subscribe(error, complete);
     }
+    public void WatchReqError(Func<int> reqId, Action<(int id, int errorCode, string errorMsg, Exception exc)> error, Action complete) {
+      SetRequestHandled(reqId());
+      ErrorObservable
+      .Where(t => t.id == reqId())
+      .DistinctUntilChanged(e => (reqId(), e.errorCode))
+      .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
+      .Take(1)
+      .Merge()
+      .Subscribe(error, complete);
+    }
     #endregion
 
     #region NextValidId

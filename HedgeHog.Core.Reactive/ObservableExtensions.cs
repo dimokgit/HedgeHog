@@ -14,6 +14,11 @@ using System.Collections.Concurrent;
 
 namespace HedgeHog {
   public static class ObservableExtensions {
+    public static IObservable<T> OnEmpty<T>(this IObservable<T> source, Action onEmpty) {
+      var isEmpty = true;
+      return source.Do(_ => isEmpty = false).Finally(() => { if(isEmpty) onEmpty(); });
+    }
+
     public static IObservable<TSource> RateLimit<TSource>(
             this IObservable<TSource> source,
             int itemsPerSecond,

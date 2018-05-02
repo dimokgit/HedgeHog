@@ -244,6 +244,22 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
+    public TradeConditionDelegate TLTipOk {
+      get {
+        return () => {
+          var ask = TLBlue.PriceAvg3.PositionRatio(RatesMin, RatesMax);
+          var bid = TLBlue.PriceAvg2.PositionRatio(RatesMax, RatesMin);
+          _tipRatioCurrent = ask.Max(bid);
+          return TipRatio < 0
+          ? TradeDirectionByBool(ask < TipRatio.Abs() && bid < TipRatio.Abs())
+          : IsTresholdAbsOk(ask, TipRatio)
+          ? TradeDirections.Down
+          : IsTresholdAbsOk(bid, TipRatio)
+          ? TradeDirections.Up
+          : TradeDirections.None;
+        };
+      }
+    }
 
     /// <summary>
     /// Volt range cross count
@@ -320,153 +336,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region TLs
-    public TradeConditionDelegate SlowOk {
-      get {
-        var ok = ToFunc(() => (from tm in TradingMacroTrender()
-                               from tlLast in tm.TrendLinesByDate.TakeLast(1)
-                               from tlSlow in tm.TrendLinesTrendsAll.OrderByDescending(tl => tl.TimeSpan.TotalMinutes).Take(1)
-                               select new { tlSlow, ok = tlLast == tlSlow, tls = tm.TrendLinesTrendsAll }
-           ));
-        return () => ok()
-      .Do(x => setSelected(x.tls, x.tlSlow))
-      .Select(x => TradeDirectionByBool(x.ok))
-      .SingleOrDefault();
-      }
-    }
-    static string[] _minTradeLevelSuffix = new[] { "Min", "Down" };
-    static string[] _maxTradeLevelSuffix = new[] { "Max", "Up" };
-    bool IsReverse => _minTradeLevelSuffix.Any(ml => (LevelBuyBy + "").EndsWith(ml)) && _maxTradeLevelSuffix.Any(ml => (LevelSellBy + "").EndsWith(ml));
-    [TradeConditionSetCorridor]
-    public TradeConditionDelegate TLSOk {
-      get {
-        var ok = TLSImpl(100);
-        return () => ok();
-      }
-    }
-    [TradeConditionSetCorridor]
-    public TradeConditionDelegateHide TLS2Ok {
-      get {
-        var ok = TLSImpl(3);
-        return () => ok();
-      }
-    }
-
-    static void setSelected(IEnumerable<TL> tls, TL tlSelected) => tls.ForEach(tl0 => tl0.IsSelected = tlSelected == tl0);
-
-    private TradeConditionDelegate TLSImpl(int skip = 0) {
-      var ok = ToFunc(() => (from tm in TradingMacroTrender()
-                             from x in tm.TrendLinesByDate.Select((tl, i) => new { tl, i })
-                             orderby x.tl.TimeSpan.TotalMinutes descending
-                             select new { x.tl, x.i, tm }
-         ));
-      return () => ok()
-      .Take(1)
-      .Do(x => SetBSfromTL(x.tl, IsReverse))
-      .Do(x => setSelected(x.tm.TrendLinesTrendsAll, x.tl))
-      .Select(x => TradeDirectionByBool(x.i <= skip))
-      .SingleOrDefault();
-    }
-
-    [TradeConditionSetCorridor]
-    public TradeConditionDelegate TLLOk {
-      get {
-        var ok = TTLImpl(0);
-        return () => ok();
-      }
-    }
-    [TradeConditionSetCorridor]
-    public TradeConditionDelegate TLL2Ok {
-      get {
-        var ok = TTLImpl(1);
-        return () => ok();
-      }
-    }
-
-    private TradeConditionDelegate TTLImpl(int skip) {
-      Func<TL[], TL[]> tls1 = tls => tls.Where(tl => !tl.IsEmpty).OrderByDescending(tl => tl.EndDate).Skip(skip).Take(1).ToArray();
-      Func<TL, DateTime[]> dateRange = tl => {
-        var slack = (tl.TimeSpan.TotalMinutes * .1).FromMinutes();
-        return new[] { tl.StartDate.Add(slack), tl.EndDate.Subtract(slack) };
-      };
-      //Func<TL, bool> tlOk = tl => tl.Color != TrendLevelsPreset.Blue + "";
-      return () => (from tm in TradingMacroTrender()
-                    let tls = tm.TrendLinesTrendsAll.Where(tl => !tl.IsEmpty).ToArray()
-                    let dateOverlapOk = !tls.Permutation().Any(t => dateRange(t.Item1).DoSetsOverlap(dateRange(t.Item2)))
-                    where dateOverlapOk
-                    from tl in tls1(tls)
-                    select new { tls, tl }
-                    )
-                    .Do(x => SetBSfromTL(x.tl, IsReverse))//, x.tls, isReverse()))
-                    .Do(x => setSelected(x.tls, x.tl))
-                    .Select(_ => TradeDirections.Both)
-                    .DefaultIfEmpty()
-                    .Single();
-    }
-
-    public TradeConditionDelegateHide TLHOk {
-      get {
-        TradingMacroTrader(tm => Log = new Exception(new { TLHOk = new { tm.TipRatio } } + ""));
-        Func<IEnumerable<double>, IEnumerable<double>> abs = (rs) => rs.Scan((d1, d2) => InPips(d1.Abs(d2)));
-        Func<IList<double>, IEnumerable<double>, bool> testInside = (outer, inner) => inner.All(d => d.Between(outer[0], outer[1]));
-        Func<TL, IList<double>> priceMinMax = tl => tl.PriceMin.Concat(tl.PriceMax).ToArray();
-        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat/*.Permutation(3)*/.Reverse() };
-        var ok = MonoidsCore.ToFunc((TradingMacro tm, IEnumerable<TL> flats) => {
-          //var flats = trendFlats(tm);
-          var isInside = flats.Pairwise((tl1, tl2) => testInside(priceMinMax(tl1), priceMinMax(tl2))).All(b => b);
-          if(!isInside)
-            return new { td = TradeDirections.None, flat = flats.Last() };
-          var perms = flats.ToArray().Permutation((tl1, tl2) => new { absMin = abs(tl1.PriceMin.Concat(tl2.PriceMin)), absMax = abs(tl1.PriceMax.Concat(tl2.PriceMax)) }).ToArray();
-          var pipTres = InPips(tm.RatesHeight * tm.TipRatio);
-          var upAvg = perms.SelectMany(p => p.absMax).DefaultIfEmpty(double.NaN).Distinct().Average();
-          var downAvg = perms.SelectMany(p => p.absMin).DefaultIfEmpty(double.NaN).Distinct().Average();
-          var upOk = upAvg <= pipTres ? TradeDirections.Both : TradeDirections.None;
-          var downOk = downAvg <= pipTres ? TradeDirections.Both : TradeDirections.None;
-          var useLast = GetTradeLevelsPreset().Any(tlp => tlp == TradeLevelsPreset.Lime);
-          return new { td = upOk | downOk, flat = flats.FirstOrLast(useLast).Single() };
-        });
-        return () => TradingMacroTrender(tm => trendFlats(tm).Select(f => ok(tm, f)))
-        .SelectMany(x => x)
-        .Where(x => x.td.HasAny())
-        //.Do(x => {
-        //  x.flat.PriceMax.ForEach(r => BuyLevel.RateEx = r);
-        //  x.flat.PriceMin.ForEach(r => SellLevel.RateEx = r);
-        //})
-        .Select(x => x.td)
-        .DefaultIfEmpty()
-        .Aggregate((td1, td2) => td1 | td2);
-
-      }
-    }
-
-    public TradeConditionDelegateHide TLH2Ok {
-      get {
-        TradingMacroTrader(tm => Log = new Exception(new { TLH2Ok = new { tm.TipRatio } } + ""));
-        Func<IEnumerable<double>, IEnumerable<double>> abs = (rs) => rs.Scan((d1, d2) => InPips(d1.Abs(d2)));
-        Func<IList<double>, IEnumerable<double>, bool> testInside = (outer, inner) => inner.All(d => d.Between(outer[0], outer[1]));
-        Func<TL, IList<double>> priceMinMax = tl => tl.PriceMin.Concat(tl.PriceMax).ToArray();
-        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.Reverse()/*.Permutation(3)*/ };
-        var ok = MonoidsCore.ToFunc((TradingMacro)null, (IEnumerable<TL>)null, (tm, flats) => {
-          //var flats = trendFlats(tm);
-          var isInside = flats.Pairwise((tl1, tl2) => testInside(priceMinMax(tl1), priceMinMax(tl2))).All(b => b);
-          if(!isInside)
-            return TradeDirections.None;
-          ;
-          var perms = flats.ToArray().Permutation((tl1, tl2) => new { absMin = abs(tl1.PriceMin.Concat(tl2.PriceMin)), absMax = abs(tl1.PriceMax.Concat(tl2.PriceMax)) }).ToArray();
-          var pipTres = InPips(tm.RatesHeight * tm.TipRatio);
-          var upAvg = perms.SelectMany(p => p.absMax).DefaultIfEmpty(double.NaN).Distinct().Average();
-          var downAvg = perms.SelectMany(p => p.absMin).DefaultIfEmpty(double.NaN).Distinct().Average();
-          var upOk = upAvg <= pipTres;
-          var downOk = downAvg <= pipTres;
-          return upOk && downOk ? TradeDirections.Both : TradeDirections.None;
-        });
-        return () => TradingMacroTrender(tm => trendFlats(tm).Select(f => ok(tm, f)))
-        .SelectMany(x => x)
-        .DefaultIfEmpty()
-        .Aggregate((td1, td2) => td1 | td2);
-
-      }
-    }
-
     bool IsTLFresh(TL tl, double percentage = 1) {
       return IsTLFresh(this, tl, percentage);
     }
@@ -481,76 +350,6 @@ namespace HedgeHog.Alice.Store {
       var rateDate = tm.RatesArray[index].StartDate;
       return percentage >= 0 ? tl.EndDate >= rateDate : tl.EndDate <= rateDate;
 
-    }
-    [TradeConditionSetCorridor]
-    public TradeConditionDelegateHide TLHTCOk {
-      get {
-        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat/*.Permutation(3)*/.Reverse() };
-        var ok = MonoidsCore.ToFunc((TradingMacro)null, (tm) =>
-          from tlRed in tm.TrendLinesFlat.TakeLast(1)
-          from tlBig in tm.TrendLinesFlat.SkipLast(1).OrderByDescending(tl => tl.EndDate).ThenByDescending(tl => tl.Count).Take(1)
-          let isBigOutRed = tlBig.StartDate > tlRed.EndDate
-          select new { tlBig, td = isBigOutRed && IsTLFresh(tm, tlRed) ? TradeDirections.Both : TradeDirections.None }
-          );
-        return () => TradingMacroTrender(tm => ok(tm))
-        .SelectMany(x => x)
-        .Do(x => {
-          x.tlBig.RateMax.ForEach(max => BuyLevel.RateEx = max.AskHigh);
-          x.tlBig.RateMin.ForEach(min => SellLevel.RateEx = min.BidLow);
-        })
-        .DefaultIfEmpty()
-        .Select(x => x.td)
-        .Aggregate((td1, td2) => td1 | td2);
-      }
-    }
-
-    public TradeConditionDelegateHide TLH3Ok {
-      get {
-        Func<TradingMacro, IEnumerable<TL>[]> trendFlats = tm => new[] { tm.TrendLinesFlat.OrderByDescending(tl => tl.Count)/*.Permutation(3)*/.ToArray() };
-        var ok = MonoidsCore.ToFunc((TradingMacro)null, (tm) => {
-          var flats = tm.TrendLinesFlat;
-          return from tlBig in flats.TakeLast(1)
-                 from tlLast in flats.SkipLast(1).MaxByOrEmpty(tl => tl.EndDate)
-                 let rateDate = tm.RatesArray[tm.RatesArray.Count - tlBig.Count / 2].StartDate
-                 let bigTimeSpan = (tlBig.EndDate - tlBig.StartDate).TotalMinutes
-                 let tlBigIsLast = tlBig.EndDate > tlLast.EndDate.AddMinutes(bigTimeSpan / 10)
-                 let tlBigIsFresh = tlBig.EndDate > rateDate
-                 select tlBigIsLast && tlBigIsFresh ? TradeDirections.Both : TradeDirections.None;
-        });
-        return () => TradingMacroTrender(tm => ok(tm))
-        .SelectMany(x => x)
-        .DefaultIfEmpty()
-        .Aggregate((td1, td2) => td1 | td2);
-
-      }
-    }
-    [TradeConditionSetCorridor]
-    public TradeConditionDelegateHide TLH4Ok {
-      get {
-        var ok = MonoidsCore.ToFunc((TradingMacro tm, TL flat1, TL flat2) => {
-          var offset = flat2.TimeSpan.TotalMinutes.Max(flat1.TimeSpan.TotalMinutes) * 0.5;
-          var dateRange = new[] { flat1.EndDate.AddMinutes(-offset), flat1.EndDate.AddMinutes(offset) };
-          var isLatesFlat = tm.TrendLinesFlat.OrderByDescending(tl => tl.EndDate).Take(1).Any(tl => tl == flat2);
-          var td = flat2.StDev > flat1.StDev &&
-          IsTLFresh(tm, flat2) &&
-          flat2.StartDate.Between(dateRange[0], dateRange[1])
-          ? TradeDirections.Both
-          : TradeDirections.None;
-          return new { tl = flat2, td };
-        });
-        return () => TradingMacroTrender(tm => tm.TrendLinesFlat
-        .CartesianProductSelf()
-        .Select(flats => new { flats, tm }))
-        .SelectMany(x => x.Select(y => ok(y.tm, y.flats[0], y.flats[1])))
-        .Where(x => x.td.HasAny())
-        .OrderByDescending(x => x.tl.EndDate)
-        .Take(1)
-        .Do(x => SetBSfromTL(x.tl))
-        .Select(x => x.td)
-        .DefaultIfEmpty()
-        .Single();
-
-      }
     }
 
     void SetBSfromTL(TL tl, bool isReversed = false) {
@@ -580,30 +379,6 @@ namespace HedgeHog.Alice.Store {
         });
     }
 
-    public TradeConditionDelegate TLFOk {
-      get {
-        Func<TL, DateTime[]> tlDates = tl => (tl.TimeSpan.TotalMinutes / 10).With(t => new[] { tl.StartDate.AddMinutes(-t), tl.EndDate.AddMinutes(t) });
-        return () => (from tm in TradingMacroTrender()
-                      from tr in TradingMacroTrader()
-
-                      where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
-                      let flats = tm.TrendLinesTrendsAll
-
-                      from tlMin in flats.MinByOrEmpty(tl => tl.StartDate).Take(1)
-                      where tlMin.StartDate > tr.LastTrade.TimeClose
-
-                      from tlFirst in flats.Take(1)
-                      where IsTLFresh(tm, tlFirst, 0.5)
-
-                      from sd in flats.TakeLast(1).Select(tlLast => tlDates(tlLast))
-                      select flats.SkipLast(1).Select(tlDates).All(se => se.Any(tld => tld.Between(sd[0], sd[1])))
-                      )
-                      .Where(ok => ok)
-                      .Select(_ => TradeDirections.Both)
-                      .DefaultIfEmpty()
-                      .Aggregate((td1, td2) => td1 | td2);
-      }
-    }
     static TradeLevelBy[][] _levelBysForTrendLines = new[] {
         new[] { TradeLevelBy.LimeMax, TradeLevelBy.LimeMin},
         new[] { TradeLevelBy.GreenMax, TradeLevelBy.GreenMin },
@@ -641,76 +416,6 @@ namespace HedgeHog.Alice.Store {
       return (from tl in tradeLevelBys
               join bs in levelBys on tl equals bs
               select bs).Count() == 2;
-    }
-
-    [TradeConditionCanSetCorridor]
-    public TradeConditionDelegate TLF2Ok {
-      get {
-        TradingMacroTrader(tm => Log = new Exception(new { TLF2Ok = new { tm.WavesRsdPerc } } + ""));
-        //Action<SuppRes> setBuy = (sr) => tl => sr.RateEx = tl.PriceAvg3;
-        Func<SuppRes, Action<TL>> setSell = (sr) => tl => sr.RateEx = tl.PriceAvg2;
-        return () => (from tm in TradingMacroTrender()
-                      from tr in TradingMacroTrader()
-                        // No empty TLs
-                      let flats = tm.TrendLinesTrendsAll
-                      // No recent trade
-                      from tlMin in flats.SkipLast(1).OrderBy(tl => tl.StartDate).Take(1)
-                      where tlMin.StartDate > tr.LastTrade.TimeClose
-                      // All lined up forwards
-                      where flats.SkipLast(1).Pairwise().All(t => t.Item1.EndDate > t.Item2.EndDate)
-                      from tlSmall in flats.Take(1)
-                        // First TL is fresh
-                      where IsTLFresh(tm, tlSmall, WavesRsdPerc / 100.0)
-                      // Small is outside Big
-                      from bigMM in flats.TakeLast(1).SelectMany(tl => tl.PriceMin.Concat(tl.PriceMax).Pairwise())
-                      where tlSmall.PriceMax.Concat(tlSmall.PriceMin).All(p => !p.Between(bigMM))
-
-                      let td =
-                        (bigMM.Map((min, _) => tlSmall.PriceMin.Any(p => p < min)) ? TradeDirections.Up : TradeDirections.None) |
-                        (bigMM.Map((_, max) => tlSmall.PriceMax.Any(p => p > max)) ? TradeDirections.Down : TradeDirections.None)
-                      select td
-                      )
-                      .AsSingleable()
-                      //.Do(x => SetBSfromTL( tl => tl.PriceAvg3, tl => tl.PriceAvg2))
-                      .LastOrDefault();
-      }
-    }
-
-    [TradeConditionCanSetCorridor]
-    public TradeConditionDelegate TLF3Ok {
-      get {
-        TradingMacroTrader(tm => Log = new Exception(new { TLF3Ok = new { tm.WavesRsdPerc } } + ""));
-        //Action<SuppRes> setBuy = (sr) => tl => sr.RateEx = tl.PriceAvg3;
-        Func<SuppRes, Action<TL>> setSell = (sr) => tl => sr.RateEx = tl.PriceAvg2;
-        return () => (from tm in TradingMacroTrender()
-                      from tr in TradingMacroTrader()
-                        // No empty TLs
-                      where tm.TrendLinesTrendsAll.All(TL.NotEmpty)
-                      let flats = tm.TrendLinesTrendsAll
-                      // No recent trade
-                      //from tlMin in flats.SkipLast(1).OrderBy(tl => tl.StartDate).Take(1)
-                      //where tlMin.StartDate > tr.LastTrade.TimeClose
-                      // All lined up forwards
-                      where flats.SkipLast(1).Pairwise().All(t => t.Item1.EndDate > t.Item2.EndDate)
-                      // First TL is fresh
-                      where flats.Take(1).Any(tl => IsTLFresh(tm, tl, WavesRsdPerc / 100.0))
-                      from tlSmall in flats.Take(1)
-                      from tlBig in flats.TakeLast(1)
-                        // Small is outside Big
-                      from bigMM in tlBig.PriceMin.Concat(tlBig.PriceMax).Pairwise((min, max) => new { min, max })
-                      where !tlSmall.PriceMax.Concat(tlSmall.PriceMin).Average().Between(bigMM.min, bigMM.max)
-                      // Lime is wider Blue
-                      where tlSmall.PriceAvg2 - tlSmall.PriceAvg3 > tlBig.PriceAvg2 - tlBig.PriceAvg3
-
-                      let td =
-                        ((tlSmall.PriceMin.Any(p => p < bigMM.min)) ? TradeDirections.Up : TradeDirections.None) |
-                        ((tlSmall.PriceMax.Any(p => p > bigMM.max)) ? TradeDirections.Down : TradeDirections.None)
-                      select td
-                      )
-                      .AsSingleable()
-                      //.Do(x => SetBSfromTL( tl => tl.PriceAvg3, tl => tl.PriceAvg2))
-                      .LastOrDefault();
-      }
     }
     #endregion
 
@@ -767,21 +472,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region Edges
-    public TradeConditionDelegate RPGOk {
-      get {
-        TradingMacroTrader(tm => Log = new Exception(new { TLF3Ok = new { tm.WavesRsdPerc } } + ""));
-        Func<TL, DateTime> endDate = tl => tl.EndDate.AddMinutes(-tl.TimeSpan.TotalMinutes / 3);
-        return () => (from tm in TradingMacroTrender()
-                      from tr in TradingMacroTrader()
-                      where TLPlum.StartDate > endDate(TLRed)
-                      where TLGreen.StartDate > endDate(TLPlum)
-                      select TradeDirections.Both
-                      )
-                      .AsSingleable()
-                      .LastOrDefault();
-      }
-    }
-
     public TradeConditionDelegateHide EdgesOk {
       get {
         return () => {
@@ -803,19 +493,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
     Lazy<SetEdgeLinesAsyncBuffer> _setEdgeLinesAsyncBuffer = Lazy.Create(() => new SetEdgeLinesAsyncBuffer());
-
-    public TradeConditionDelegateHide EdgesAOk {
-      get {
-        return () => {
-          return UseRates(rates => rates.Select(_priceAvg).ToArray())
-          .Select(rates => {
-            _setEdgeLinesAsyncBuffer.Value.Push(() => SetAvgLines(rates));
-            return TradeDirections.Both;
-          })
-          .SingleOrDefault();
-        };
-      }
-    }
 
     private void SetAvgLines(IList<double> rates) {
       var edges = rates.EdgeByAverage(InPoints(1)).ToArray();
@@ -1716,7 +1393,7 @@ namespace HedgeHog.Alice.Store {
         .Add((object)(showBBSD ? (object)new { BoilBand = this._boilingerStDev.Value.Select<global::System.Tuple<double, double>, string>(t => string.Format("{0:n2}:{1:n2}", this.InPips(t.Item1), this.InPips(t.Item2))) } : new { }))
         //.Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         //.Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
-        .Add(TradeConditionsHave(nameof(BSTipOk), nameof(BSTipROk), nameof(Store.TradingMacro.PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round((int)3) } : new { })
+        .Add(TradeConditionsHave(nameof(TLTipOk), nameof(BSTipOk), nameof(BSTipROk), nameof(Store.TradingMacro.PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round((int)3) } : new { })
         .Add((object)(new { MacdDist = tm.MacdDistances(RatesArray).TakeLast(1).Select(d => d.AutoRound2(3)).SingleOrDefault() }))
         .Add((object)(new { HistVol = $"{HV(this)}" }))
         .Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))

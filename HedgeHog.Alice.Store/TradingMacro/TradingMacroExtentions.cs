@@ -1111,7 +1111,7 @@ namespace HedgeHog.Alice.Store {
         let bid = price.EventArgs.Price.Bid
         from x in ((IBWraper)TradesManager).AccountManager.CurrentOptions(Pair, bid, 0, 2)
         where x.Any()
-        select x.Where(x2 => x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(1).ToArray()
+        select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(1).ToArray()
         )
         .Subscribe(put => {
           CurrentPut = put; ;
@@ -1127,8 +1127,8 @@ namespace HedgeHog.Alice.Store {
       StraddleHistory.Clear();
       _priceChangeDisposable = _priceChangeObservable
       .Sample(TimeSpan.FromSeconds(0.5))
-      .SelectMany(price => ((IBWraper)TradesManager).AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), 0, 4, 0))
-      .Select(x => x.OrderByDescending(t => t.deltaBid).Take(2).ToArray())
+      .SelectMany(price => ((IBWraper)TradesManager).AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), 0, 8, 0))
+      .Select(x => x.OrderByDescending(t => t.deltaBid).Take(4).ToArray())
       .Where(straddle => straddle.Any())
       .Subscribe(straddle => {
         StraddleHistory.Add((straddle.Average(s => s.deltaBid), straddle.Average(s => s.ask), straddle[0].time, straddle.Average(s => s.delta)));
