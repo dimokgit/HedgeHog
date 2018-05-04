@@ -445,18 +445,26 @@ namespace IBApp {
       ;
     }
 
-    public IObservable<(double bid, double ask, DateTime time)> ReqPriceComboSafe(Contract combo, double timeoutInSeconds, bool useErrorHandler) {
+    public IObservable<(double bid, double ask, DateTime time)> ReqPriceComboSafe_New(Contract combo, double timeoutInSeconds, bool useErrorHandler) {
       double ask((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time) price) => (cl.leg.Action == "BUY" ? 1 : -1) * price.ask;
-      double bid((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time) price) => (cl.leg.Action == "BUY" ? 1 : -1) * price.bid;
+      double bidCalc((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time) price) => (cl.leg.Action == "BUY" ? 1 : -1) * price.bid;
       var x = combo.LegsEx()
         .ToObservable()
         .SelectMany(cl => ReqPriceSafe(cl.contract, timeoutInSeconds, useErrorHandler).Select(price => (cl, price)).Take(1))
         .ToArray()
         .Where(a => a.Any())
-        .Select(t => (t.Sum(t2 => bid(t2.cl, t2.price) * t2.cl.leg.Ratio), t.Sum(t2 => ask(t2.cl, t2.price) * t2.cl.leg.Ratio), t.Min(t2 => t2.price.time)));
+        .Select(t => {
+          var bids = t.Select(t2 => bidCalc(t2.cl, t2.price) * t2.cl.leg.Ratio).ToArray();
+          var bid = bids.Sum();
+          return (
+           bid,
+           t.Sum(t2 => ask(t2.cl, t2.price) * t2.cl.leg.Ratio),
+           t.Min(t2 => t2.price.time)
+           );
+        });
       return x;
     }
-    public IObservable<(double bid, double ask, DateTime time)> ReqPriceComboSafe_Old(Contract combo, double timeoutInSeconds, bool useErrorHandler) {
+    public IObservable<(double bid, double ask, DateTime time)> ReqPriceComboSafe(Contract combo, double timeoutInSeconds, bool useErrorHandler) {
       double ask((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time) price) => cl.leg.Action == "BUY" ? price.ask : -price.bid;
       double bid((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time) price) => cl.leg.Action == "BUY" ? price.bid : -price.ask;
       var x = combo.LegsEx()

@@ -365,7 +365,7 @@ namespace HedgeHog.Alice.Store {
         return res
         .Take(1)
         .Select(x => {
-          var tlRates = CalcTrendLines(x.start, x.count, tagTL(pl, x.dist), !isMin);
+          var tlRates = CalcTrendLines(x.start, x.count, tagTL(pl, x.dist), !isMin && false);
           var tl = IsTrendsEmpty(tlRates);
           return def(tlRates, x.start, x.count, x.dist);
         })

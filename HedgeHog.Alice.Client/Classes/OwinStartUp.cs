@@ -586,7 +586,7 @@ namespace HedgeHog.Alice.Client {
                   time = t.time.ToString("HH:mm:ss"),
                   t.delta,
                   strike = t.strikeAvg,
-                  perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+                  perc = (t.bid / t.underPrice * 100),
                   strikeDelta = t.strikeAvg - t.underPrice,
                   be = new { t.breakEven.up, t.breakEven.dn },
                   isActive = false
@@ -594,7 +594,7 @@ namespace HedgeHog.Alice.Client {
                 cs = strikeLevel.HasValue && true
                 ? cs.OrderByDescending(x => x.strike)
                 : cs.OrderByDescending(x => x.delta);
-                return cs.Take(3);
+                return cs.Take(1);
               })
               .Subscribe(b => base.Clients.Caller.butterflies(b));
             });
@@ -618,8 +618,8 @@ namespace HedgeHog.Alice.Client {
                  isActive = false,
                  cp = t.option.Right
                }).OrderBy(t => t.strikeDelta.Abs());
-              var puts = options.Where(t => t.cp == "P").Take(3).OrderBy(t => t.strike);
-              var calls = options.Where(t => t.cp == "C").Take(6).OrderBy(t => t.strike).Take(3);
+              var puts = options.Where(t => t.cp == "P").Take(3).OrderBy(t => t.strike).Take(1);
+              var calls = options.Where(t => t.cp == "C").Take(6).OrderBy(t => t.strike).Take(1);
               return puts.Concat(calls).ToArray();
             }
             //.ThenBy(t => t.i)
@@ -663,7 +663,9 @@ namespace HedgeHog.Alice.Client {
               .Where(ct => ct.position != 0)
               .ToArray(x
                 => new {
-                  combo = x.contract.Key, netPL = x.pl, x.position, x.open
+                  combo = x.contract.Key, netPL = x.pl, x.position, x.closePrice
+                  , x.price.bid
+                  , x.price.ask
                   , x.close, delta = x.strikeAvg - x.underPrice, x.openPrice
                   , x.takeProfit, x.profit, x.orderId
                   , exit = 0, exitDelta = 0
@@ -677,7 +679,10 @@ namespace HedgeHog.Alice.Client {
                let exitDelta = TryExitDelta(ce[2])
                where (exitDelta != 0 && c.delta.Abs() < exitDelta)
                select c
-               ).ForEach(combo => CloseCombo(combo.combo));
+               ).ForEach(combo => {
+                 am?.CancelAllOrders();
+                 CloseCombo(combo.combo);
+               });
             } catch(Exception exc) {
               Log = exc;
             }
@@ -732,8 +737,10 @@ namespace HedgeHog.Alice.Client {
             var och = am.OrderContracts[c.orderId];
             och.order.OrderType = "MKT";
             am.PlaceOrder(och.order, och.contract);
-          } else
+          } else {
+            am.CancelAllOrders();
             am.OpenTrade(c.contract, -c.position, 0, false);
+          }
         });
       }
     }

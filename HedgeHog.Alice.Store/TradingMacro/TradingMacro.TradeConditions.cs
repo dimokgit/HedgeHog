@@ -2207,7 +2207,8 @@ namespace HedgeHog.Alice.Store {
       if(!IsTrader) return;
       var am = ((IBWraper)TradesManager).AccountManager;
       var hasOptions = (from put in CurrentPut
-                        join p in am.Positions on put.instrument equals p.contract.Instrument
+                        from p in am.Positions.Where(p => p.position != 0 && p.contract.IsPut)
+                        where put.strikeAvg + p.price.Abs() > p.contract.Strike
                         select true
                         ).Any();
       hasOptions = hasOptions ||

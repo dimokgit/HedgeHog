@@ -152,6 +152,19 @@ namespace IBApp {
         .ObserveOn(esPositions)
         .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost), () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
+      PositionsObservable
+        .Throttle(TimeSpan.FromSeconds(2))
+        .Subscribe(_ => {
+          var combosAll = ComboTradesAllImpl().ToArray();
+          Trace(new { combosAll=combosAll.Flatter("") });
+          combosAll
+          .Do(comboAll => Trace(new { comboAll }))
+          .Where(ca => ca.orderId == 0)
+          .ForEach(ca => {
+            CancelAllOrders();
+            OpenOrUpdateLimitOrderByProfit(ca.contract.Instrument, ca.position, 0, ca.open, ca.open.Abs() * 0.2);
+          });
+        }).SideEffect(s => _strams.Add(s));
       OpenOrderObservable
         .Where(x => x.order.Account == _accountId)
         .Do(UpdateOrder)
@@ -244,12 +257,12 @@ namespace IBApp {
     #region Position
     public static bool NoPositionsPlease = false;
 
-    public (Contract contract, int position, double open)
+    public (Contract contract, int position, double open, double price)
       ContractPosition((IBApi.Contract contract, double pos, double avgCost) p) =>
-       (p.contract, position: p.pos.ToInt(), open: p.avgCost * p.pos);
+       (p.contract, position: p.pos.ToInt(), open: p.avgCost * p.pos, p.avgCost / p.contract.ComboMultiplier);
 
-    ConcurrentDictionary<string, (Contract contract, int position, double open)> _positions = new ConcurrentDictionary<string, (Contract contract, int position, double open)>();
-    public ICollection<(Contract contract, int position, double open)> Positions => _positions.Values;
+    ConcurrentDictionary<string, (Contract contract, int position, double open, double price)> _positions = new ConcurrentDictionary<string, (Contract contract, int position, double open, double price)>();
+    public ICollection<(Contract contract, int position, double open, double price)> Positions => _positions.Values;
     //public Subject<ICollection<(Contract contract, int position, double open)>> ContracPositionsSubject = new Subject<ICollection<(Contract contract, int position, double open)>>();
 
     void OnPosition(Contract contract, double position, double averageCost) {
@@ -313,7 +326,7 @@ namespace IBApp {
           var order = oc.order + "";
           _verbous(new { contract, code, error, order });
           _defaultMessageHandler("Request Global Cancel");
-          IbClient.ClientSocket.reqGlobalCancel();
+          CancelAllOrders();
           break;
       }
     }
@@ -561,11 +574,16 @@ namespace IBApp {
         throw new Exception($"UpdateTrade: {new { orderId, not = "found" }}");
       if(och.isDone)
         throw new Exception($"UpdateTrade: {new { orderId, och.isDone }}");
+      if(lmpPrice == 0) {
+        IbClient.ClientSocket.cancelOrder(orderId);
+        return;
+      }
       var order = och.order;
       //var minTick = och.contract.MinTick;
       order.LmtPrice = OrderPrice(lmpPrice, och.contract, minTickMultiplier);//  Math.Round(lmpPrice / minTick) * minTick;
       if(order.OpenClose.IsNullOrWhiteSpace())
         order.OpenClose = "C";
+      order.VolatilityType = 0;
       IbClient.WatchReqError(orderId, e => {
         OnUpdateError(e, $"{nameof(UpdateOrder)}:{och.contract}:{new { order.LmtPrice }}");
         if(e.errorCode == 110)
@@ -702,7 +720,7 @@ namespace IBApp {
           var order = oc.order + "";
           _verbous(new { contract, code, error, order });
           _defaultMessageHandler("Request Global Cancel");
-          IbClient.ClientSocket.reqGlobalCancel();
+          CancelAllOrders();
           break;
       }
     }

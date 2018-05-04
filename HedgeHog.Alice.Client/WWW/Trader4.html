@@ -1196,10 +1196,12 @@
       <tbody data-bind="foreach:liveCombos">
         <tr>
           <td data-bind="text:combo" style="text-align:left;color:white"></td>
-          <td data-bind="text:d3.format('.2f')(delta())" style="text-align:right;color:white"></td>
-          <td><input data-bind="value:exitDelta" size="2" /></td>
+          <td data-bind="text:d3.format('+.1f')(delta())" style="text-align:right;color:white"></td>
+          <td><input data-bind="value:exitDelta" size="1" /></td>
           <td data-bind="text:d3.format('.2f')(openPrice())"></td>
-          <td data-bind="text:d3.format('.0f')(close())"></td>
+          <td data-bind="text:d3.format('.2f')(closePrice())"></td>
+          <td data-bind="text:d3.format('.2f')(bid())"></td>
+          <td data-bind="text:d3.format('.2f')(ask())"></td>
           <td data-bind="text:position"></td>
           <td data-bind="text:d3.format('$.0f')(netPL()),css:{profit:netPL()>0,loss:netPL()<0}"></td>
           <td><!--<input data-bind-removed="value:exit" size="3" />--></td>
@@ -1211,7 +1213,7 @@
             <span data-bind="text:d3.format('$.0f')(profit()),event:{click:$parent.showNextInput}"></span>
             <input data-bind="event:{change:$parent.newProfit,blur:$parent.hideNextInput}" size="3" style="display:none" />
           <td>
-            <button data-bind="click:$parent.closeCombo.bind(null,combo)">Close</button>
+            <button data-bind="click:$parent.closeCombo.bind(null,combo)" title="Close Position">X</button>
           </td>
         </tr>
       </tbody>
@@ -1227,7 +1229,7 @@
         <input data-bind="value:comboCurrentStrikeLevel" size="3" />
         <!-- ko with: combosStats -->
         <span class="glyphicon glyphicon-stats"></span>
-        <b data-bind="text:d3.format('.1f')(strikeDelta),css:{profit:strikeDelta>0,loss:strikeDelta<0}" style="margin-left:1ex"></b>
+        <b data-bind="text:d3.format('+.1f')(strikeDelta),css:{profit:strikeDelta>0,loss:strikeDelta<0}" style="margin-left:1ex"></b>
         <span class="glyphicon glyphicon-resize-vertical"></span>
         <b data-bind="text:d3.format('.2f')(spread)"></b>
         <span class="glyphicon glyphicon-hourglass"></span>
@@ -1255,22 +1257,22 @@
       <tr style="background-color: lightslategray;color: white;font-weight: bold;text-align: center;" class="pgGroupRow">
         <td>Straddles</td>
         <td>/\</td>
-        <td>Up</td>
+        <!--<td>Up</td>
         <td>Dn</td>
-        <td>Avg</td>
+        <td>Avg</td>-->
         <td>Perc</td>
         <td>Delta</td>
         <td>Bid</td>
         <td>Ask</td>
-        <td>Trade</td>
+        <td style="text-align:center">Trade</td>
       </tr>
       <!-- ko foreach:currentCombos -->
       <tr data-bind="event:{click1:function(){isActive(!isActive())}}">
         <td data-bind="text:i,css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
-        <td data-bind="text:d3.format('.2f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
-        <td data-bind="text:d3.format('.1f')(be.up())"></td>
-        <td data-bind="text:d3.format('.1f')(be.dn())"></td>
-        <td data-bind="text:d3.format('.2f')(avg())"></td>
+        <td data-bind="text:d3.format('+.1f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
+        <!--<td data-bind1="text:d3.format('.1f')(be.up())"></td>
+        <td data-bind1="text:d3.format('.1f')(be.dn())"></td>
+        <td data-bind1="text:d3.format('.2f')(avg())"></td>-->
         <td data-bind="text:d3.format('.2f')(perc())"></td>
         <td data-bind="text:d3.format('.2f')(delta())"></td>
         <td data-bind="text:d3.format('.2f')(bid())"></td>
