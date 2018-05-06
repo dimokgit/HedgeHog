@@ -19,7 +19,6 @@ namespace IBApp {
         from underPrice in UnderPrice(c.contract).DefaultIfEmpty()
         from price in IbClient.ReqPriceSafe(c.contract, priceTimeoutInSeconds, true).DefaultIfEmpty().Take(1)
         let multiplier = c.contract.ComboMultiplier
-        let position = c.open.Sign()
         let closePrice = (c.position > 0 ? price.bid : price.ask)
         let close = (closePrice * c.position * multiplier).Round(4)
         select (c: IbClient.SetContractSubscription(c.contract), c.position, c.open, close

@@ -8,7 +8,7 @@ using System.Text;
 
 namespace HedgeHog.Alice.Store {
   public class TraderModelPersist :HedgeHog.Models.ModelBase {
-    public static string CurrentDirectory() => System.Net.Dns.GetHostName() + "::" + Lib.CurrentDirectory.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries).Last();
+    public static string CurrentDirectory() => System.Net.Dns.GetHostName().ToLower() + "::" + Lib.CurrentDirectory.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries).Last().ToLower();
 
     public TraderModelPersist() {
       _key = CurrentDirectory();
