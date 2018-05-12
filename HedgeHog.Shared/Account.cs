@@ -39,7 +39,7 @@ namespace HedgeHog.Shared {
     [DataMember]
     public bool Hedging { get; set; }
     [DataMember]
-    Trade[] _trades = new Trade[] { };
+    IList<Trade> _trades = new Trade[] { };
     [DataMember]
     Order[] _orders = null;
     [DataMember]
@@ -56,7 +56,7 @@ namespace HedgeHog.Shared {
     public WiredException Error { get; set; }
 
 
-    public Trade[] Trades { get { return _trades; } set { _trades = value; } }
+    public IList<Trade> Trades { get { return _trades; } set { _trades = value; } }
     public Order[] Orders { get { return _orders; } set { _orders = value; } }
 
     public double PL { get { return Trades.GrossInPips(); } }

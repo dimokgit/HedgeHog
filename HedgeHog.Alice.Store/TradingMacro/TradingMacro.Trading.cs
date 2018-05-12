@@ -62,7 +62,7 @@ namespace HedgeHog.Alice.Store {
           var lotToOpen = !closeOnly ? t.Lot.HedgedLotAll(isBuy) : 0;
           t.tm.OpenTrade(t.IsBuy, lotToOpen + lotToClose, reason + ": hedge open");
         });
-        if(TradesManager.GetTrades().Length == 1) {
+        if(TradesManager.GetTrades().Count == 1) {
           TradesManager.CloseAllTrades();
         }
       }

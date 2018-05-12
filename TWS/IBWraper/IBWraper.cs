@@ -205,10 +205,10 @@ namespace IBApp {
       }
     }
 
-    public Trade[] GetTrades() => AccountManager?.GetTrades() ?? new Trade[0];
+    public IList<Trade> GetTrades() => AccountManager?.GetTrades() ?? new Trade[0];
     public Trade[] GetTrades(string pair) => GetTrades().Where(t => t.Pair.WrapPair() == pair.WrapPair()).ToArray();
     public Trade[] GetTradesInternal(string Pair) => GetTrades(Pair);
-    public Trade[] GetClosedTrades(string pair) => AccountManager?.GetClosedTrades() ?? new Trade[0];
+    public IList<Trade> GetClosedTrades(string pair) => AccountManager?.GetClosedTrades() ?? new Trade[0];
 
     #endregion
 
@@ -240,7 +240,7 @@ namespace IBApp {
         PriceChangedEvent -= value;
       }
     }
-    void RaisePriceChanged(Price price, Account account, Trade[] trades) {
+    void RaisePriceChanged(Price price, Account account, IList<Trade> trades) {
       var e = new PriceChangedEventArgs(price, account, trades);
       PriceChangedEvent?.Invoke(this, e);
     }
@@ -536,7 +536,8 @@ namespace IBApp {
     //  throw new NotImplementedException();
     //}
 
-    public double GetPipSize(string pair) => ContractDetails.FromCache(pair, cd => Math.Pow(10, Math.Log10(cd.MinTick.Floor()))).DefaultIfEmpty().Single();
+    public double GetPipSize(string pair) => ContractDetails.FromCache(pair, cd => cd.MinTick < 1 ? 0.01 : cd.MinTick).DefaultIfEmpty(double.NaN).Single();
+    //cd => Math.Pow(10, Math.Log10(cd.MinTick.Floor()))).DefaultIfEmpty().Single();
 
     public IEnumerable<Price> TryGetPrice(string pair) {
       if(TryGetPrice(pair, out var price))

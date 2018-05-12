@@ -8,8 +8,8 @@ namespace HedgeHog.Shared {
   public class PriceChangedEventArgs : EventArgs {
     public Price Price { get; set; }
     public Account Account { get; set; }
-    public Trade[] Trades { get; set; }
-    public PriceChangedEventArgs( Price price, Account account, Trade[] trades) {
+    public IList<Trade> Trades { get; set; }
+    public PriceChangedEventArgs( Price price, Account account,IList<Trade> trades) {
       Price = price;
       Account = account;
       Trades = trades;

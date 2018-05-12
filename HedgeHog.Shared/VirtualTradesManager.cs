@@ -293,13 +293,13 @@ namespace HedgeHog.Shared {
       }
     }
 
-    public Trade[] GetTrades() {
+    public IList<Trade> GetTrades() {
       return tradesOpened.ToArray();
     }
     public void ResetClosedTrades(string Pair) {
       tradesClosed.Clear();
     }
-    public Trade[] GetClosedTrades(string Pair) {
+    public IList<Trade> GetClosedTrades(string Pair) {
       return tradesClosed.Where(t => t.Pair.ToLower() == Pair.ToLower()).ToArray();
     }
     public void SetClosedTrades(IEnumerable<Trade> trades) {

@@ -568,7 +568,7 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
-    public void ReadStraddles(string pair, int gap, double? strikeLevel, string[] comboExits) {
+    public void ReadStraddles(string pair, int gap, int numOfCombos, double? strikeLevel, string[] comboExits) {
       int expirationDaysSkip = gap;
       var am = GetAccountManager();
       var symbols = IBApi.Contract.FromCache(pair, c => c.IsFuture ? c.LocalSymbol : c.Symbol).ToArray();
@@ -594,14 +594,15 @@ namespace HedgeHog.Alice.Client {
                 cs = strikeLevel.HasValue && true
                 ? cs.OrderByDescending(x => x.strike)
                 : cs.OrderByDescending(x => x.delta);
-                return cs.Take(1);
+                return cs.Take(numOfCombos);
               })
               .Subscribe(b => base.Clients.Caller.butterflies(b));
             });
+        const int NUB_OF_OPTIONS = 6;
         Action currentOptions = () =>
           symbols
             .ForEach(symbol
-            => am.CurrentOptions(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 6)
+            => am.CurrentOptions(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, NUB_OF_OPTIONS)
             .Select(ts => {
               var options = ts
                .Select(t => new {
@@ -618,9 +619,14 @@ namespace HedgeHog.Alice.Client {
                  isActive = false,
                  cp = t.option.Right
                }).OrderBy(t => t.strikeDelta.Abs());
-              var puts = options.Where(t => t.cp == "P").Take(3).OrderBy(t => t.strike).Take(1);
-              var calls = options.Where(t => t.cp == "C").Take(6).OrderBy(t => t.strike).Take(1);
-              return puts.Concat(calls).ToArray();
+
+              var puts = options.Where(t => t.cp == "P").Take(NUB_OF_OPTIONS);
+              puts = strikeLevel.HasValue ? puts.OrderBy(t => t.strike) : puts.OrderByDescending(t => t.delta);
+
+              var calls = options.Where(t => t.cp == "C").Take(NUB_OF_OPTIONS);
+              calls = strikeLevel.HasValue ? calls.OrderBy(t => t.strike) : calls.OrderByDescending(t => t.delta);
+
+              return puts.Take(numOfCombos).Concat(calls.Take(numOfCombos)).ToArray();
             }
             //.ThenBy(t => t.i)
             )
@@ -680,7 +686,7 @@ namespace HedgeHog.Alice.Client {
                where (exitDelta != 0 && c.delta.Abs() < exitDelta)
                select c
                ).ForEach(combo => {
-                 am?.CancelAllOrders();
+                 am?.CancelAllOrders("Closing combo by exitDelta");
                  CloseCombo(combo.combo);
                });
             } catch(Exception exc) {
@@ -711,7 +717,7 @@ namespace HedgeHog.Alice.Client {
             am.OpenOrderObservable
             .TakeUntil(DateTimeOffset.Now.AddSeconds(5))
             .Throttle(TimeSpan.FromSeconds(1))
-            .Subscribe(_ => ReadStraddles("", 0, 0, new string[0]));
+            .Subscribe(_ => ReadStraddles("", 0, 1, 0, new string[0]));
           } catch(Exception exc) {
             Log = exc;
           }
@@ -731,15 +737,16 @@ namespace HedgeHog.Alice.Client {
       if(am != null) {
         am.ComboTrades(1)
         .Where(ct => ct.contract.Key == instrument)
-        .Select(s => (s.contract, s.position, s.orderId))
+        .Select(s => (s.contract, s.position, s.orderId, s.closePrice))
         .Subscribe(c => {
           if(c.orderId != 0) {
             var och = am.OrderContracts[c.orderId];
-            och.order.OrderType = "MKT";
+            och.order.OrderType = "LMT";
+            och.order.LmtPrice = c.closePrice;
             am.PlaceOrder(och.order, och.contract);
           } else {
-            am.CancelAllOrders();
-            am.OpenTrade(c.contract, -c.position, 0, false);
+            am.CancelAllOrders("CloseCombo");
+            am.OpenTrade(c.contract, -c.position, c.closePrice, false);
           }
         });
       }
@@ -747,7 +754,7 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void CancelAllOrders() {
       var am = GetAccountManager();
-      am?.CancelAllOrders();
+      am?.CancelAllOrders(nameof(CancelAllOrders));
     }
     #endregion
 
@@ -1221,7 +1228,7 @@ namespace HedgeHog.Alice.Client {
           list2.Add(row("grossToExitRaw", trader.Value.GrossToExit));
           list2.Add(row("profitByHedgeRatioDiff", trader.Value.ProfitByHedgeRatioDiff));
         }
-        tm.CurrentPut.ForEach(p => list2.Add(row("Curr Put", p.option.Key)));
+        tm.CurrentPut?.ForEach(p => list2.Add(row("Curr Put", p.option.Key)));
         return list2;
       }).Concat();
       return list.Concat(more).ToArray();

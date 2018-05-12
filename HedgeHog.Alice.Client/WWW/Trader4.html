@@ -495,6 +495,7 @@
               </li>
               <li><button data-bind="click:refreshCharts">Refresh Charts</button></li>
               <li><button data-bind="click:wrapTradeInCorridor">Wrap Trade</button></li>
+              <li><button data-bind="click:cancelAllOrders">Clear Orders</button></li>
             </ul>
           </li>
           <li class="nav-divider">|</li>
@@ -712,7 +713,7 @@
   </div>
   <!--#endregion-->
   <!--#region Charts-->
-  <div data-bind="lineChart: chartData,lineChartPrice: price,chartNum:0"></div>
+  <div data-bind="lineChart: chartData,lineChartPrice: price,chartNum:0,elementer:chartElement"></div>
   <div data-bind="lineChart: chartData2,lineChartPrice: price,chartNum:1"></div>
   <!--#endregion-->
   <!--#region Dialogs-->
@@ -1200,8 +1201,8 @@
           <td><input data-bind="value:exitDelta" size="1" /></td>
           <td data-bind="text:d3.format('.2f')(openPrice())"></td>
           <td data-bind="text:d3.format('.2f')(closePrice())"></td>
-          <td data-bind="text:d3.format('.2f')(bid())"></td>
-          <td data-bind="text:d3.format('.2f')(ask())"></td>
+          <!--<td data-bind1="text:d3.format('.2f')(bid())"></td>
+          <td data-bind1="text:d3.format('.2f')(ask())"></td>-->
           <td data-bind="text:position"></td>
           <td data-bind="text:d3.format('$.0f')(netPL()),css:{profit:netPL()>0,loss:netPL()<0}"></td>
           <td><!--<input data-bind-removed="value:exit" size="3" />--></td>
@@ -1222,7 +1223,7 @@
       <div>
         <label>Quantity:</label><input data-bind="value:comboQuantity" size="3" />
         <label>Gap:</label><input data-bind="value:comboGap" size="1" />
-        <button data-bind="click:cancelAllOrders">Clear Order</button>
+        <label>Combos#:</label><input data-bind="value:numOfCombos" size="1" />
       </div>
       <div style="display:inline-table">
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>
@@ -1252,7 +1253,7 @@
         <button data-bind1="event:{click:function(){isActive(false)}}">X</button>
       </div>
     </div>
-    <table border="1" cellspacing="0" class="wwwInfo" data-bind="expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
+    <table border="1" cellspacing="0" class="wwwInfo" data-bind="visible:currentCombos().length, expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
       <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
       <tr style="background-color: lightslategray;color: white;font-weight: bold;text-align: center;" class="pgGroupRow">
         <td>Straddles</td>

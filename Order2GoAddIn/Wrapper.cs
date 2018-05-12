@@ -198,7 +198,7 @@ namespace Order2GoAddIn {
       }
     }
     public void RaisePriceChanged( Price price) {
-      RaisePriceChanged( price, GetAccount(), GetTrades());
+      RaisePriceChanged( price, GetAccount(), GetTrades().ToArray());
     }
     void RaisePriceChanged(Price price, Account account, Trade[] trades) {
       var e = new PriceChangedEventArgs( price, account, trades);
@@ -1067,7 +1067,7 @@ namespace Order2GoAddIn {
 
     #region GetTrades
     Trade[] _emptyTrades = new Trade[0];
-    public Trade[] GetTrades() {
+    public IList<Trade> GetTrades() {
       try {
         return OpenTrades.Any() ? OpenTrades.Values.ToArray() : _emptyTrades;
       } catch(Exception exc) {
@@ -1081,7 +1081,7 @@ namespace Order2GoAddIn {
     public Trade GetTrade(bool buy, bool last) { return last ? GetTradeLast(buy) : GetTradeFirst(buy); }
     public Trade GetTradeFirst(bool buy) { return GetTrades(buy).OrderBy(t => t.Id).FirstOrDefault(); }
     public Trade GetTradeLast(bool buy) { return GetTrades(buy).OrderBy(t => t.Id).LastOrDefault(); }
-    public Trade[] GetTrades(bool buy) { return GetTrades().Where(t => t.Buy == buy).ToArray(); }
+    public IList<Trade> GetTrades(bool buy) { return GetTrades().Where(t => t.Buy == buy).ToArray(); }
     public Trade[] GetTrades(string pair) { return GetTrades().ByPair(pair); }
     public Trade[] GetTrades(string pair, bool buy) {
       return GetTrades().ByPair(pair).Where(t => t.Buy == buy).ToArray();
@@ -1102,7 +1102,7 @@ namespace Order2GoAddIn {
     }
     static bool wasRowDeleted(Exception exc) { return exc.Message.ToLower().Contains("row was deleted"); }
 
-    public Trade[] GetClosedTrades(string Pair) {
+    public IList<Trade> GetClosedTrades(string Pair) {
       //      lock (getTradesLock) {
       try {
         return (from t in GetRows(TABLE_CLOSED_TRADES)
@@ -2701,7 +2701,7 @@ namespace Order2GoAddIn {
     public Trade GetLastTrade(string pair) {
       try {
         var trades = GetClosedTrades(pair);
-        if(trades.Length == -1)
+        if(trades.Count == -1)
           trades = GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now.AddDays(1).Date).ToArray();
         return trades.RunIfEmpty(() => TradeFactory(pair)).OrderBy(t => t.Id).Last();
       } catch(Exception exc) {

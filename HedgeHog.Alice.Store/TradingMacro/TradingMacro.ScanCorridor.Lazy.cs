@@ -134,8 +134,8 @@ namespace HedgeHog.Alice.Store {
         return;
       if(double.IsInfinity(volt) || double.IsNaN(volt))
         return;
-      UseRates(rates => rates.Where(r => GetVoltByIndex(voltIndex)(r).IsNaN()).ToList())
-        .SelectMany(rates => rates).ForEach(r => SetVoltByIndex(voltIndex)(r, volt));
+      UseRates(rates => rates.BackwardsIterator().TakeWhile(r => GetVoltByIndex(voltIndex)(r).IsNaN())
+        .ForEach(r => SetVoltByIndex(voltIndex)(r, volt)));
       //SetVoltage(RateLast, volt);
       var voltRates = RatesArray.Select(GetVoltByIndex(voltIndex)).SkipWhile(v => v.IsNaN()).ToArray();
       if(voltRates.Any()) {

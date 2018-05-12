@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client {
   public class Static {
-    public static double GetEntryOrderLimit(ITradesManager tm, Trade[] trades,int lot, bool addProfit, double currentLoss) {
-      if (trades.Length == 0) return 0;
+    public static double GetEntryOrderLimit(ITradesManager tm,IList<Trade> trades,int lot, bool addProfit, double currentLoss) {
+      if (trades.IsEmpty()) return 0;
       var lotOld = trades.Sum(t => t.Lots);
       currentLoss = currentLoss.Abs();
       var profitInPips = 0.0;

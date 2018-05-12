@@ -18,6 +18,7 @@ using System.Reactive.Subjects;
 using System.Diagnostics;
 using DynamicExpresso;
 using IBApp;
+using System.Threading;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -2206,8 +2207,9 @@ namespace HedgeHog.Alice.Store {
       if(!IsRatesLengthStableGlobal()) return;
       if(!IsTrader) return;
       var am = ((IBWraper)TradesManager).AccountManager;
+      var puts = am.Positions.Where(p => p.position != 0 && p.contract.IsPut);
       var hasOptions = (from put in CurrentPut
-                        from p in am.Positions.Where(p => p.position != 0 && p.contract.IsPut)
+                        from p in puts
                         where put.strikeAvg + p.price.Abs() > p.contract.Strike
                         select true
                         ).Any();
@@ -2220,7 +2222,14 @@ namespace HedgeHog.Alice.Store {
         TradeConditionsEval()
           .DistinctUntilChanged(td => td)
           .Where(td => td.HasUp())
-          .ForEach(_ => CurrentPut?.ForEach(p => am.OpenTrade(p.option, -1, 0, true)));
+          .Take(1)
+          .ForEach(_ => {
+            var pos = -puts.Select(p => p.position.Abs()).DefaultIfEmpty(TradingRatio.ToInt()).Max();
+            CurrentPut?.ForEach(p => {
+              Log = new Exception($"{nameof(TradeConditionsTrigger)}:{nameof(am.OpenTrade)}:{new { p.option, pos, Thread.CurrentThread.ManagedThreadId }}");
+              am.OpenTrade(p.option, pos, 0, true);
+            });
+          });
       }
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
       if(IsHedgedTrading && BarsCountCalc == RatesArray.Count) {

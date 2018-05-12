@@ -42,8 +42,8 @@ using Loggly.Config;
 
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs :EventArgs {
-    public Trade[] MasterTrades { get; set; }
-    public MasterListChangedEventArgs(Trade[] masterTrades)
+    public IList<Trade> MasterTrades { get; set; }
+    public MasterListChangedEventArgs(IList<Trade> masterTrades)
       : base() {
       this.MasterTrades = masterTrades;
     }
@@ -251,7 +251,7 @@ namespace HedgeHog.Alice.Client {
     public delegate void MasterListChangedeventHandler(object sender, MasterListChangedEventArgs e);
     public event MasterListChangedeventHandler MasterListChangedEvent;
 
-    protected virtual void RaiseMasterListChangedEvent(Trade[] trades) {
+    protected virtual void RaiseMasterListChangedEvent(IList<Trade> trades) {
       if(MasterListChangedEvent != null)
         MasterListChangedEvent(this, new MasterListChangedEventArgs(trades));
     }
@@ -1489,7 +1489,7 @@ namespace HedgeHog.Alice.Client {
       try {
         var a = e.Account;
         a.Trades = TradesManager.GetTrades();
-        if(a.Trades.Any(t => t.Pair == pair) || a.Trades.Length == 0) {
+        if(a.Trades.Any(t => t.Pair == pair) || a.Trades.IsEmpty()) {
           a.Orders = TradesManager.GetOrders("");
           OnInvokeSyncronize(a);
         }

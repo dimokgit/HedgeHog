@@ -211,7 +211,7 @@ namespace HedgeHog {
       Array.Copy(source.ToArray(), start, a, 0, count);
       return a;
     }
-    public static T[] GetRange<T>(this IList<T> source, double size) {
+    public static T[] GetRangeRatio<T>(this IList<T> source, double size) {
       var count = (source.Count * size).ToInt();
       if(count < 0)
         return source.GetRange(-count);

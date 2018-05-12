@@ -50,7 +50,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public ITradesManager TradesManager { get { return MasterModel.TradesManager; } }
-    public Trade[] GetClosedTrades(string pair) { return TradesManager.GetClosedTrades(pair); }
+    public IList<Trade> GetClosedTrades(string pair) { return TradesManager.GetClosedTrades(pair); }
     public string VirtualPair { get; set; }
     public DateTime VirtualStartDate { get; set; }
 

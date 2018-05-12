@@ -72,7 +72,11 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.Corr:
           return ShowVoltsByCorrelation;
         case HedgeHog.Alice.VoltageFunction.Straddle:
-          return () => ShowVoltsByStraddle(voltIndex);
+          return () => ShowVoltsByStraddle(sh => sh.bid.Avg(sh.ask), voltIndex);
+        case HedgeHog.Alice.VoltageFunction.PutStrdl:
+          return () => ShowVoltsByStraddleSpread();
+        case HedgeHog.Alice.VoltageFunction.StraddleA:
+          return () => ShowVoltsByStraddle(sh => sh.ask, voltIndex);
         case HedgeHog.Alice.VoltageFunction.Gross:
           return ShowVoltsByGross;
         case HedgeHog.Alice.VoltageFunction.GrossV:
@@ -351,12 +355,39 @@ namespace HedgeHog.Alice.Store {
       ShowVolts(TradesManager.GetTrades().Net2(), 0, GetVoltage2, SetVoltage2);
       return null;
     }
-    CorridorStatistics ShowVoltsByStraddle(int voltIndex) {
+    CorridorStatistics ShowVoltsByStraddleSpread() {
       if(UseCalc())
-        StraddleHistory.Select(s=>s.bid).Cma(2).BackwardsIterator().Take(1)
-          .ForEach(s => SetVolts(s, voltIndex));
+        CurrentPut.ForEach(put => {
+          UseStraddleHistory(sh => sh.GetRange(RatesArray.Count).MinMax(t => t.bid))
+          .Select(mm => mm.Height() - put.ask.Abs(put.bid))
+          .ForEach(v => SetVolts(v, 1));
+        });
       return null;
     }
+    CorridorStatistics ShowVoltsByStraddle(Func<(double bid, double ask, DateTime time, double delta), double> value, int voltIndex) {
+      if(UseCalc()) {
+        SetVoltsByStraddle()
+          .TakeLast(1)
+          .ForEach(s => SetVolts(s, voltIndex));
+      }
+      return null;
+      IEnumerable<double> SetVoltsByStraddle() {
+        var volts = RatesArray.BackwardsIterator().TakeWhile(r => GetVoltByIndex(voltIndex)(r).IsNaN()).ToList();
+        volts.Reverse();
+        var startDate = volts.Select(r => r.StartDate).Take(1);
+        return UseStraddleHistory(straddleHistory => {
+          var straddles = (from sd in startDate
+                           select straddleHistory.BackwardsIterator().TakeWhile(sh => sh.time >= sd)
+                           ).Concat().ToList();
+          straddles.Reverse();
+          var shs = volts.Zip(r => r.StartDate, straddles, sh => sh.time, (r, sh) => (r, sh));
+          return shs.SkipWhile(t => !GetVoltByIndex(voltIndex)(t.r).IsNaN())
+            .Select(t => value(t.sh).SideEffect(v => SetVoltByIndex(voltIndex)(t.r, v)));
+        }).Concat();
+      }
+    }
+
+
     CorridorStatistics ShowVoltsByHV(int voltIndex) {
       if(UseCalc())
         UseRates(ra => ra.Select(_priceAvg).Cma(5, 5).HistoricalVolatility())
@@ -368,7 +399,7 @@ namespace HedgeHog.Alice.Store {
       if(UseCalc()) {
         var c = RatesArray.Count - 1;
         if(GetVoltByIndex(voltIndex)(RatesInternal[c]).IsNaN())
-          UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b=>b.Count==c).ForEach(b => {
+          UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b => b.Count == c).ForEach(b => {
             var std = b.StandardDeviation(_priceAvg);
             var stdr = b.Select(_priceAvg).ToArray().StDevByRegressoin();
             SetVoltByIndex(voltIndex)(b.Last(), Math.Log(std / stdr));

@@ -45,6 +45,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson;
 using IBApp;
 using COMBO_HISTORY = System.Collections.Generic.List<(double bid, double ask, System.DateTime time, double delta)>;
+using CURRENT_PUT = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option)>;
 using IBApi;
 
 namespace HedgeHog.Alice.Store {
@@ -1097,48 +1098,63 @@ namespace HedgeHog.Alice.Store {
       Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategies.Universal;
       IsTradingActive = IsInVirtualTrading;
 
-      _priceChangeObservable = Observable.FromEventPattern<PriceChangedEventArgs>(
-      h => TradesManager.PriceChanged += h,
-      h => TradesManager.PriceChanged -= h
-      )
-      .Where(_ => ((IBWraper)TradesManager)?.AccountManager != null)
-      .Where(price => price.EventArgs.Price.Pair == Pair)
-      .Publish().RefCount();
-
-      _currentOptionDisposable?.Dispose();
-      _currentOptionDisposable = (
-        from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
-        let bid = price.EventArgs.Price.Bid
-        from x in ((IBWraper)TradesManager).AccountManager.CurrentOptions(Pair, bid, 0, 2)
-        where x.Any()
-        select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(1).ToArray()
+      var ibWraper = TradesManager as IBWraper;
+      if(ibWraper == null)
+        Log = new Exception(new { ibWraper } + "");
+      else {
+        _priceChangeObservable = Observable.FromEventPattern<PriceChangedEventArgs>(
+        h => TradesManager.PriceChanged += h,
+        h => TradesManager.PriceChanged -= h
         )
-        .Subscribe(put => {
-          CurrentPut = put; ;
-        }, exc => {
-          Log = exc;
-          Debugger.Break();
-        }, () => {
-          Log = new Exception("_currentOptionDisposable done");
-          Debugger.Break();
-        });
+        .Where(_ => ibWraper?.AccountManager != null)
+        .Where(price => price.EventArgs.Price.Pair == Pair)
+        .Publish().RefCount();
+        int ExpirationDaysSkip() => TradesManager.ServerTime.TimeOfDay > new TimeSpan(16, 0, 0) ? 1 : 0;
 
-      _priceChangeDisposable?.Dispose();
-      StraddleHistory.Clear();
-      _priceChangeDisposable = _priceChangeObservable
-      .Sample(TimeSpan.FromSeconds(0.5))
-      .SelectMany(price => ((IBWraper)TradesManager).AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), 0, 8, 0))
-      .Select(x => x.OrderByDescending(t => t.deltaBid).Take(4).ToArray())
-      .Where(straddle => straddle.Any())
-      .Subscribe(straddle => {
-        StraddleHistory.Add((straddle.Average(s => s.deltaBid), straddle.Average(s => s.ask), straddle[0].time, straddle.Average(s => s.delta)));
-      }, exc => {
-        Log = exc;
-        Debugger.Break();
-      }, () => {
-        Log = new Exception("_priceChangeDisposable done");
-        Debugger.Break();
-      });
+        _currentOptionDisposable?.Dispose();
+        _currentOptionDisposable = (
+          from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
+          let bid = price.EventArgs.Price.Bid
+          from x in ibWraper.AccountManager.CurrentOptions(Pair, bid, ExpirationDaysSkip(), 2)
+          where x.Any()
+          select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(1).ToList()
+          )
+          .Subscribe(put => {
+            CurrentPut = put; ;
+          }, exc => {
+            Log = exc;
+            Debugger.Break();
+          }, () => {
+            Log = new Exception("_currentOptionDisposable done");
+            Debugger.Break();
+          });
+
+        _priceChangeDisposable?.Dispose();
+        StraddleHistory.Clear();
+        int shcp = 5;
+        _priceChangeDisposable = _priceChangeObservable
+        .Sample(TimeSpan.FromSeconds(0.5))
+        .SelectMany(price => ibWraper.AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), ExpirationDaysSkip(), 8, 0))
+        .Select(x => x.OrderByDescending(t => t.deltaBid).Take(4).ToArray())
+        .Where(straddle => straddle.Any() && straddle.All(s => s.deltaBid > 0))
+        .Subscribe(straddle =>
+          UseStraddleHistory(shs => {
+            shs.BackwardsIterator().Take(1)
+            .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
+            .ToList()
+            .ForEach(sh => shs.Add((
+              sh.bid.Cma(shcp, straddle.Average(s => s.deltaBid)),
+              sh.ask.Cma(shcp, straddle.Average(s => s.deltaAsk)),
+              straddle[0].time,
+              sh.delta.Cma(shcp, straddle.Average(s => s.delta))))
+            );
+          })
+          , exc => {
+            Log = exc;
+          }, () => {
+            Log = new Exception("_priceChangeDisposable done");
+          });
+      }
     }
     COMBO_HISTORY StraddleHistory = new COMBO_HISTORY();
     COMBO_HISTORY VerticalPutHistory = new COMBO_HISTORY();
@@ -1756,7 +1772,7 @@ namespace HedgeHog.Alice.Store {
     }
     static IEnumerable<double> PPMFromEnd(TradingMacro tm, double size) {
       return tm.UseRates(rates => {
-        var rs = rates.GetRange(size);
+        var rs = rates.GetRangeRatio(size);
         return new { rs, da = rs.Select(tm.GetPriceMA).Where(d => !d.IsNaN()).Distances().ToArray() };
       })
       .Where(x => x.da.Any())
@@ -2874,7 +2890,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       //  if (value.Length > 0) ResetLock();
       //}
     }
-    public Trade[] TradesClosed {
+    public IList<Trade> TradesClosed {
       get {
         return TradesManager == null ? new Trade[0] : TradesManager.GetClosedTrades(Pair);/* _trades.ToArray();*/
       }
@@ -3003,8 +3019,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
             _ratesArrayAsyncBuffer.Push(() => RatesArraySafe.Any());
         } else if(priceDate == lastRateDate)
           UseRatesInternal(ri => ri.Last().AddTick(price.Time.Round(roundTo).ToUniversalTime(), price.Ask, price.Bid));
-        else if(IsTradingHour()) {
-          Log = new Exception(new { AddCurrentTick = new { priceDate, lastRateDate } } + "");
+        else if(false && IsTradingHour()) {
+          Log = new Exception($"{nameof(AddCurrentTick)}: {new { priceDate, lastRateDate }}");
         }
 
       }
@@ -4166,7 +4182,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       }
     }
     object _innerRateLocker = new object();
-    string _UseRatesInternalSource = string.Empty;
     public IEnumerable<T> UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
       if(!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds)) {
         var message = new { Pair, PairIndex, Method = nameof(UseRatesInternal), Caller, timeoutInMilliseconds } + "";
@@ -4192,6 +4207,33 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     public void UseRatesInternal(Action<ReactiveList<Rate>> action, [CallerMemberName] string Caller = "") {
       Func<ReactiveList<Rate>, Unit> f = rates => { action(rates); return Unit.Default; };
       UseRatesInternal(f, 3000, Caller).Count();
+    }
+
+    public IEnumerable<T> UseStraddleHistory<T>(Func<COMBO_HISTORY, T> func, int timeoutInMilliseconds = 500, [CallerMemberName] string Caller = "") {
+      if(!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds)) {
+        var message = new { Pair, PairIndex, Method = nameof(UseRatesInternal), Caller, timeoutInMilliseconds } + "";
+        Log = new TimeoutException(message);
+        yield break;
+      }
+      Stopwatch sw = Stopwatch.StartNew();
+      T ret;
+      try {
+        ret = func(StraddleHistory);
+      } catch(Exception exc) {
+        Log = exc;
+        yield break;
+      } finally {
+        Monitor.Exit(_innerRateLocker);
+        if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
+          var message = new { Pair, PairIndex, Method = nameof(UseStraddleHistory), Caller, SpentMoreThen = timeoutInMilliseconds + " ms" } + "";
+          Log = new TimeoutException(message);
+        }
+      }
+      yield return ret;
+    }
+    public void UseStraddleHistory(Action<COMBO_HISTORY> action, [CallerMemberName] string Caller = "") {
+      Func<COMBO_HISTORY, Unit> f = rates => { action(rates); return Unit.Default; };
+      UseStraddleHistory(f, 3000, Caller).Count();
     }
 
     public IEnumerable<Rate> FindRateByDate(DateTime time) => FindRateByDate(this, time);
@@ -5311,7 +5353,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
 
     public Lazy<double> RatesHeightCma { get; set; } = new Lazy<double>(() => 0);
-    public (string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract option)[] CurrentPut { get; private set; }
+    public CURRENT_PUT CurrentPut { get; private set; } = new CURRENT_PUT();
   }
   public static class WaveInfoExtentions {
     public static Dictionary<CorridorCalculationMethod, double> ScanWaveWithAngle<T>(this IList<T> rates, Func<T, double> price, double pointSize, CorridorCalculationMethod corridorMethod) {

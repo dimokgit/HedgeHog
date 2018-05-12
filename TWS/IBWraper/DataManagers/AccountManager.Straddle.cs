@@ -12,7 +12,7 @@ namespace IBApp {
   public partial class AccountManager {
 
     #region Make Straddles
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo, double deltaBid)[]>
+    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo, double deltaBid, double deltaAsk)[]>
       CurrentStraddles(string symbol, double strikeLevel, int expirationDaysSkip, int count, int gap) {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
@@ -31,7 +31,7 @@ namespace IBApp {
          );
     }
 
-    private static (string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo,double deltaBid)
+    private static (string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo, double deltaBid, double deltaAsk)
       CurrentComboInfo(double underPrice, (Contract contract, Contract[] options) combo, (double bid, double ask, DateTime time) p) {
       var strikeAvg = combo.options.Average(o => o.Strike);
       double pa = p.ask.Avg(p.bid);
@@ -46,7 +46,8 @@ namespace IBApp {
               underPrice,
               breakEven: (up: strikeAvg + pa, dn: strikeAvg - pa),
               combo,
-              deltaBid: p.bid - iv
+              deltaBid: p.bid - iv,
+              deltaAsk: p.ask - iv
             );
     }
 

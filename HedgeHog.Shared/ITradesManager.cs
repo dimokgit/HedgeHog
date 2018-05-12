@@ -90,9 +90,9 @@ namespace HedgeHog.Shared {
     Trade TradeFactory(string pair);
     Trade[] GetTradesInternal(string Pair);
     Trade[] GetTrades(string pair);
-    Trade[] GetTrades();
+    IList<Trade> GetTrades();
     Trade GetLastTrade(string pair);
-    Trade[] GetClosedTrades(string pair);
+    IList<Trade> GetClosedTrades(string pair);
     void ResetClosedTrades(string pair);
 
 

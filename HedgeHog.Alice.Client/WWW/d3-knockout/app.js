@@ -301,7 +301,7 @@
     var comboExits = dataViewModel.liveStraddles().map(function (c) {
       return ko.unwrap(c.combo) + "," + ko.unwrap(c.exit) + "," + ko.unwrap(c.exitDelta);
     });
-    var args = [pair, dataViewModel.comboGap(), parseFloat(dataViewModel.comboCurrentStrikeLevel()), comboExits];
+    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), parseFloat(dataViewModel.comboCurrentStrikeLevel()), comboExits];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
@@ -806,6 +806,7 @@
       self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? self.priceAvg() : "");
     }
     this.comboGap = ko.observable(1);
+    this.numOfCombos = ko.observable(0);
     this.comboGap.subscribe(function (v) {
       readCombos(true);
       dataViewModel.butterflies([]);
@@ -874,6 +875,9 @@
       return { strikeDelta: strike - (price.bid + price.ask) / 2, spread: spread, stDev: stDev };
     }, this);
     this.butterfliesDialog = ko.observable();
+    this.butterfliesDialog.subscribe(function () {
+      setTimeout(self.showButterflies, 1000);
+    });
     this.openButterfly = function (isBuy, key) {
       this.canTrade(false);
       var combo = ko.utils.unwrapObservable(ko.utils.unwrapObservable(key).i);
@@ -890,6 +894,7 @@
     this.cancelAllOrders = function (key) {
       serverCall("cancelAllOrders", []);
     };
+    this.chartElement = ko.observable();
     var stopCombos = true;
     this.showButterflies = function () {
       showCombos = true;
@@ -911,7 +916,8 @@
           showCombos = false;
           stopCombos = true;
           $(this).dialog("destroy");
-        }
+        },
+        position: { my: "left top", at: "left top", of: self.chartElement() }
       });
     }.bind(this);
 
@@ -2040,7 +2046,7 @@
   /* jshint ignore:end */
   function showErrorPerm(message, settings) {
     if (isMobile) return showWarning(message, settings);
-    return showError(message, $.extend({ delay: 0, hide: false }, settings));
+    return showError(message, $.extend({ delay: 5000, hide: false }, settings));
   }
   function dateAdd(date, interval, units) {
     var ret = new Date(date); //don't change original date
