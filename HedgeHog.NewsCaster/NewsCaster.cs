@@ -5,7 +5,6 @@ using HAP = HtmlAgilityPack;
 using HedgeHog;
 using System.Xml.Linq;
 using Newtonsoft.Json;
-using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 
 namespace HedgeHog.NewsCaster {

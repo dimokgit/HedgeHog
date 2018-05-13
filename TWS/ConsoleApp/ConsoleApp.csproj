@@ -72,12 +72,13 @@
     <Reference Include="Passager, Version=0.2.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\AllInOne\packages\Passager.0.2.2\lib\net452\Passager.dll</HintPath>
     </Reference>
-    <Reference Include="ReactiveUI, Version=7.4.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\AllInOne\packages\reactiveui-core.7.4.0\lib\Net45\ReactiveUI.dll</HintPath>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="ReactiveUI, Version=8.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\AllInOne\packages\ReactiveUI.8.0.1\lib\net461\ReactiveUI.dll</HintPath>
     </Reference>
-    <Reference Include="Splat, Version=1.6.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\AllinOne\packages\Splat.1.6.2\lib\Net45\Splat.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Splat, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\AllInOne\packages\Splat.4.0.0\lib\net461\Splat.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -86,28 +87,16 @@
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Drawing.Primitives, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\AllInOne\packages\System.Drawing.Primitives.4.3.0\lib\net45\System.Drawing.Primitives.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Interactive, Version=3.0.1000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
       <HintPath>..\..\AllInOne\packages\System.Interactive.3.1.1\lib\net45\System.Interactive.dll</HintPath>
     </Reference>
-    <Reference Include="System.Reactive.Core, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\AllinOne\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Reactive.Interfaces, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\AllinOne\packages\Rx-Interfaces.2.2.5\lib\net45\System.Reactive.Interfaces.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Reactive.Linq, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\AllinOne\packages\Rx-Linq.2.2.5\lib\net45\System.Reactive.Linq.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Reactive.PlatformServices, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\AllinOne\packages\Rx-PlatformServices.2.2.5\lib\net45\System.Reactive.PlatformServices.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Reactive.Windows.Threading, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\AllinOne\packages\Rx-XAML.2.2.5\lib\net45\System.Reactive.Windows.Threading.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="System.Reactive.Windows.Threading, Version=3.0.1000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
+      <HintPath>..\..\AllInOne\packages\System.Reactive.Windows.Threading.3.1.1\lib\net45\System.Reactive.Windows.Threading.dll</HintPath>
     </Reference>
     <Reference Include="System.Runtime, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\..\AllInOne\packages\System.Runtime.4.3.0\lib\net462\System.Runtime.dll</HintPath>
@@ -122,6 +111,8 @@
     <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\..\AllInOne\packages\System.ValueTuple.4.4.0\lib\net461\System.ValueTuple.dll</HintPath>
     </Reference>
+    <Reference Include="System.Windows" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />

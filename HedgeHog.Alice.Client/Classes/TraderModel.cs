@@ -29,7 +29,6 @@ using System.Threading.Tasks.Dataflow;
 using HedgeHog.Shared.Messages;
 using ReactiveUI;
 using System.Reactive;
-using ReactiveUI.Legacy;
 using static HedgeHog.ReflectionCore;
 using IBApp;
 using static HedgeHog.Core.JsonExtensions;
