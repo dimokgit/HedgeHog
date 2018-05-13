@@ -2214,10 +2214,11 @@ namespace HedgeHog.Alice.Store {
                         select true
                         ).Any();
       hasOptions = hasOptions ||
+        am.UseOrderContracts(OrderContracts=>
         (from put in CurrentPut
-         join oc in am.OrderContracts.Values.Where(o => !o.isDone) on put.instrument equals oc.contract.Instrument
+         join oc in OrderContracts.Values.Where(o => !o.isDone) on put.instrument equals oc.contract.Instrument
          select true
-         ).Any();
+         )).Concat().Any();
       if(!hasOptions) {
         TradeConditionsEval()
           .DistinctUntilChanged(td => td)

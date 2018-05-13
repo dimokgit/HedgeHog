@@ -344,6 +344,12 @@
       color: black;
       background-color: white
     }
+    table.orders {
+      border-collapse: collapse;
+    }
+    table.orders tbody tr td{
+      padding: 0px 2px;
+    }
   </style>
   <script>
     $(function () {
@@ -1216,6 +1222,15 @@
           <td>
             <button data-bind="click:$parent.closeCombo.bind(null,combo)" title="Close Position">X</button>
           </td>
+        </tr>
+      </tbody>
+    </table>
+    <table class="orders" cellpadding="0" cellspacing="0" border="1">
+      <tbody data-bind="foreach:orders">
+        <tr>
+          <td data-bind="text:order"></td>
+          <td data-bind="text:status"></td>
+          <td data-bind="text:filled"></td>
         </tr>
       </tbody>
     </table>

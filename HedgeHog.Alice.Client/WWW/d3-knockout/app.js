@@ -836,6 +836,7 @@
       }
     }
 
+    this.orders = ko.mapping.fromJS(ko.observableArray());
     this.bullPuts = ko.mapping.fromJS(ko.observableArray());
     this.options = ko.mapping.fromJS(ko.observableArray());
     this.butterflies = ko.mapping.fromJS(ko.observableArray());
@@ -1828,6 +1829,9 @@
       };
       ko.mapping.fromJS(combos, map, dataViewModel.liveStraddles);
       readingCombos = false;
+    };
+    chat.client.orders = function (orders) {
+      ko.mapping.fromJS(orders, {}, dataViewModel.orders);
     };
     // #endregion
     // #region Start the connection.

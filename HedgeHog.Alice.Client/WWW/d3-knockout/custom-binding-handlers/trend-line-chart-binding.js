@@ -745,7 +745,7 @@
         });
       }
       function altitudeByArea(area) { return Math.sqrt(Math.sqrt(3) * area); }
-      if (closedTrades && closedTrades.length)
+      if (closedTrades && closedTrades.length) {
         (function () {
           var ud = ["up", "down"],
             openSize = 100,
@@ -778,6 +778,14 @@
             .selectMany(map)
             .where("ct => ct != null && ct.x > ct.dateMin")
             .toArray();
+          var trdIndex = 0;
+          try {
+            cts.forEach(function (ct) {
+              setTimeLine(ct.x, "tradeTime." + trdIndex, "black", 2);
+            });
+          } catch (e) {
+            console.log("tradeTime error:\n" + e);
+          }
           var closedTradesDelta = getClosedTradesDelta(cts);
           closedTradesDelta
             .exit()
@@ -802,7 +810,8 @@
               return "translate(" + x(d.x) + "," + (y(d.y) + d.offsetSign * (openAltitude / 2 + d.strokeWidth)) + ") rotate(" + d.rotate + ")";
             });
 
-        })();
+        })()
+      }
       else getClosedTradesDelta([]).exit().remove();
       // #endregion
 

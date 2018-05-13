@@ -189,7 +189,7 @@ namespace HedgeHog.Alice.Client {
           isOk = wr.IsFatnessOk
         });
       var tmg = TradesManager;
-      var trades0 = tmg.GetTrades(pair);
+      var trades0 = tmg.GetTrades();
       Func<bool, Trade[]> getTrades = isBuy => trades0.Where(t => t.IsBuy == isBuy).ToArray();
       var trades = new ExpandoObject();
       var tradeFoo = MonoidsCore.ToFunc(false, isBuy => new { o = getTrades(isBuy).NetOpen(), t = getTrades(isBuy).Max(t => t.Time) });

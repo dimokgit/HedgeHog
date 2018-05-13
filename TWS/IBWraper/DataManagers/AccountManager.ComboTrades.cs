@@ -51,7 +51,7 @@ namespace IBApp {
 
     public IEnumerable<(Contract contract, int position, double open, double takeProfit, int orderId)> ComboTradesImpl() {
       var positions = Positions.Where(p => p.position != 0).ToArray();
-      var orders = OrderContracts.Values.Where(oc => !oc.isDone).ToArray();
+      var orders = OrderContractsInternal.Values.Where(oc => !oc.isDone).ToArray();
       var combos = (
         from c in positions/*.ParseCombos(orders)*/.Do(c => IbClient.SetContractSubscription(c.contract))
         let order = orders.Where(oc => oc.contract.Key == c.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
@@ -63,7 +63,7 @@ namespace IBApp {
     public COMBO_TRADES_IMPL ComboTradesAllImpl() {
       var positions = Positions.Where(p => p.position != 0 && p.contract.IsOption).ToArray();
       return (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
-              let order = OrderContracts.Values.Where(oc => !oc.isDone && oc.contract.Key == ca.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
+              let order = OrderContractsInternal.Values.Where(oc => !oc.isDone && oc.contract.Key == ca.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
               select (ca.contract, position: 1, open: ca.positions.Sum(p => p.open), order.LmtPrice, order.OrderId));
     }
   }

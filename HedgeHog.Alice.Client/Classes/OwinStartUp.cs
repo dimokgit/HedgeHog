@@ -695,6 +695,10 @@ namespace HedgeHog.Alice.Client {
           }, exc => {
             Log = exc;
           });
+        base.Clients.Caller.orders(am.OrderContractsInternal.Values
+          .Select(oc =>
+          new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
+          ).OrderBy(oc => oc.order));
         double TryExitDelta(string s) => double.TryParse(s, out var i) ? i : int.MinValue;
       }
     }
@@ -740,10 +744,12 @@ namespace HedgeHog.Alice.Client {
         .Select(s => (s.contract, s.position, s.orderId, s.closePrice))
         .Subscribe(c => {
           if(c.orderId != 0) {
-            var och = am.OrderContracts[c.orderId];
-            och.order.OrderType = "LMT";
-            och.order.LmtPrice = c.closePrice;
-            am.PlaceOrder(och.order, och.contract);
+            am.UseOrderContracts(orderContracts => orderContracts[c.orderId])
+            .ForEach(och => {
+              och.order.OrderType = "LMT";
+              och.order.LmtPrice = c.closePrice;
+              am.PlaceOrder(och.order, och.contract);
+            });
           } else {
             am.CancelAllOrders("CloseCombo");
             am.OpenTrade(c.contract, -c.position, c.closePrice, false);
@@ -1088,7 +1094,7 @@ namespace HedgeHog.Alice.Client {
     public Trade[] ReadClosedTrades(string pair) {
       try {
         return new[] { new { p = MakePair(pair), rc = remoteControl.Value } }.SelectMany(x =>
-          x.rc.GetClosedTrades(x.p).Concat(x.rc.TradesManager.GetTrades(x.p)))
+          x.rc.GetClosedTrades(x.p).Concat(x.rc.TradesManager.GetTrades()))
           .ToArray();
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
