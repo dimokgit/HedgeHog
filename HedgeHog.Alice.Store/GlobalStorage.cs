@@ -123,6 +123,7 @@ namespace HedgeHog.Alice.Store {
       public Microsoft.EntityFrameworkCore.DbSet<TradingMacroSettings> TradingMacroSettings { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<TradingAccount> TradingAccount { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<TraderModelPersist> TraderSettings { get; set; }
+      public Microsoft.EntityFrameworkCore.DbSet<TradePersist> Trades { get; set; }
     }
 
     #endregion
