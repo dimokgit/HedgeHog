@@ -309,8 +309,10 @@ namespace IBApp {
          .SideEffect(_ => _verbous(new { RemovedPosition = new { ot.Pair, ot.IsBuy, ot.Lots } })));
         OpenTrades
           .Where(IsEqual(posMsg))
-          .Select(ot => new Action(() => ot.Lots = posMsg.Quantity
-            .SideEffect(Lots => _verbous(new { ChangePosition = new { ot.Pair, ot.IsBuy, Lots } }))))
+          .Select(ot 
+            => new Action(() => ot.Lots = posMsg.Quantity
+            .SideEffect(Lots => _verbous(new { ChangePosition = new { ot.Pair, ot.IsBuy, Lots } })))
+            )
           .DefaultIfEmpty(() => contract.SideEffect(c
           => OpenTrades.Add(TradeFromPosition(Subscribe(c), position, averageCost)
           .SideEffect(t => _verbous(new { OpenPosition = new { t.Pair, t.IsBuy, t.Lots } })))))

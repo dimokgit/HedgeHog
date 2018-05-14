@@ -1152,6 +1152,9 @@ namespace HedgeHog.Alice.Client {
             tm.HistoryMaximumLot = amountK;
           var ts = tm.SetTradeStatistics(trade);
         });
+        GlobalStorage.UseForexMongo(c => {
+          c.Trades.Add(trade);
+        }, true);
       } catch(Exception exc) {
         Log = exc;
       }
@@ -1232,7 +1235,12 @@ namespace HedgeHog.Alice.Client {
           OnZeroPositiveLoss(tm);
           SaveTradeAction.Post(trade);
         });
-        GlobalStorage.UseForexMongo(c => c.Trades.Add(trade), true);
+        GlobalStorage.UseForexMongo(c => {
+          var savedTrade = c.Trades.Where(t => t.Pair == trade.Pair).ToArray().Where(t => t.IsClosed() == false).ToArray();
+          c.Trades.RemoveRange(savedTrade);
+          savedTrade.ForEach(st => trade.Time = trade.Time.Min(st.Time));
+          c.Trades.Add(trade);
+        }, true);
       } catch(Exception exc) {
         Log = exc;
       }
