@@ -70,6 +70,7 @@ namespace HedgeHog.Alice.Store {
 
 
           var hasCalm3 = TradeConditionsHave(Calm3Ok);
+          var TrendHeightPerc = 2.0;
           var ws = new WaveRange(1) {
             Distance = pwmp(w => w.Distance, 1 / TrendHeightPerc),
             DistanceCma = avg2(wrs, w => w.DistanceCma, w => w.Distance),

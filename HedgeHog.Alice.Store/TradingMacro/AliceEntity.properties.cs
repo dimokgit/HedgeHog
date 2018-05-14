@@ -1399,17 +1399,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => WaveStDevPowerS);
       }
     }
-    double _trendHeightPerc;
-    [Description("ThredA.Height.Percentage(ThredB.Height): -200 - 200")]
-    [WwwSetting(Group = wwwSettingsTradingParams)]
-    [Category(categoryActive)]
-    public double TrendHeightPerc {
-      get { return _trendHeightPerc; }
-      set {
-        _trendHeightPerc = value;
-        OnPropertyChanged(() => TrendHeightPerc);
-      }
-    }
 
     double _trendEquinoxPerc;
     [WwwSetting(wwwSettingsCorridorEquinox)]

@@ -358,12 +358,19 @@ namespace HedgeHog.Alice.Store {
     CorridorStatistics ShowVoltsByStraddleSpread() {
       if(UseCalc())
         CurrentPut.ForEach(put => {
-          UseStraddleHistory(sh => sh.GetRange(RatesArray.Count).MinMax(t => t.bid))
-          .Select(mm => mm.Height() - put.ask.Abs(put.bid))
+          CurrentStraddleBidHeight()
+          .Select(h => {
+            var s = put.ask.Abs(put.bid);
+            var p = put.bid * 0.2;
+            return h / 2 - s - p;
+          })
           .ForEach(v => SetVolts(v, 1));
         });
       return null;
     }
+
+    private IEnumerable<double> CurrentStraddleBidHeight() => UseStraddleHistory(sh => sh.GetRange(RatesArray.Count.Min(sh.Count)).MinMax(t => t.bid).Height());
+
     CorridorStatistics ShowVoltsByStraddle(Func<(double bid, double ask, DateTime time, double delta), double> value, int voltIndex) {
       if(UseCalc()) {
         SetVoltsByStraddle()

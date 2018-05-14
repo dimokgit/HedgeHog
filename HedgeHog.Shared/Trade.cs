@@ -79,8 +79,6 @@ namespace HedgeHog.Shared {
     }
     private Trade() {
     }
-    [DataMember]
-    public string Id { get; set; }
     string _Pair;
 
     [DataMember]
@@ -183,9 +181,6 @@ namespace HedgeHog.Shared {
         Time = _time2.Kind != DateTimeKind.Local ? TimeZoneInfo.ConvertTimeFromUtc(_time2, TimeZoneInfo.Local) : _time2;
       }
     }
-    [DataMember]
-    [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
-    public DateTime Time { get; private set; }
     public void SetTime(DateTime time) {
       Time = time;
     }

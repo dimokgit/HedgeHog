@@ -1232,6 +1232,7 @@ namespace HedgeHog.Alice.Client {
           OnZeroPositiveLoss(tm);
           SaveTradeAction.Post(trade);
         });
+        GlobalStorage.UseForexMongo(c => c.Trades.Add(trade), true);
       } catch(Exception exc) {
         Log = exc;
       }

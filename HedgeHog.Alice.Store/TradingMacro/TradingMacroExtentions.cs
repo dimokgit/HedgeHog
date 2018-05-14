@@ -1109,13 +1109,13 @@ namespace HedgeHog.Alice.Store {
         .Where(_ => ibWraper?.AccountManager != null)
         .Where(price => price.EventArgs.Price.Pair == Pair)
         .Publish().RefCount();
-        int ExpirationDaysSkip() => TradesManager.ServerTime.TimeOfDay > new TimeSpan(16, 0, 0) ? 1 : 0;
+        int ExpirationDaysSkip(int start) => TradesManager.ServerTime.TimeOfDay > new TimeSpan(16, 0, 0) ? start + 1 : start;
 
         _currentOptionDisposable?.Dispose();
         _currentOptionDisposable = (
           from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
           let bid = price.EventArgs.Price.Bid
-          from x in ibWraper.AccountManager.CurrentOptions(Pair, bid, ExpirationDaysSkip(), 2)
+          from x in ibWraper.AccountManager.CurrentOptions(Pair, bid, ExpirationDaysSkip(OptionsDaysGap), 2)
           where x.Any()
           select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(1).ToList()
           )
@@ -1134,7 +1134,7 @@ namespace HedgeHog.Alice.Store {
         int shcp = 5;
         _priceChangeDisposable = _priceChangeObservable
         .Sample(TimeSpan.FromSeconds(0.5))
-        .SelectMany(price => ibWraper.AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), ExpirationDaysSkip(), 8, 0))
+        .SelectMany(price => ibWraper.AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), ExpirationDaysSkip(OptionsDaysGap), 8, 0))
         .Select(x => x.OrderByDescending(t => t.deltaBid).Take(4).ToArray())
         .Where(straddle => straddle.Any() && straddle.All(s => s.deltaBid > 0))
         .Subscribe(straddle =>
@@ -3090,9 +3090,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       return inPips ? InPips(ret) : ret;
     }
 
-    bool? _magnetDirtection;
-    DateTime? _corridorTradeDate;
-
     Action StrategyAction {
       get {
         switch((Strategy & ~Strategies.Auto)) {
@@ -3101,7 +3098,10 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           case Strategies.Universal:
             return StrategyEnterUniversal;
           case Strategies.None:
-            return () => { };
+            return () => {
+              TradeDirectionTriggersRun();
+              TradeConditionsTrigger();
+            };
         }
         throw new NotSupportedException("Strategy " + Strategy + " is not supported.");
       }
@@ -5081,6 +5081,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
 
     private IObservable<EventPattern<PriceChangedEventArgs>> _priceChangeObservable;
+    private int _optionsDaysGap;
     private IDisposable _currentOptionDisposable;
 
     #endregion
@@ -5354,6 +5355,16 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
     public Lazy<double> RatesHeightCma { get; set; } = new Lazy<double>(() => 0);
     public CURRENT_PUT CurrentPut { get; private set; } = new CURRENT_PUT();
+    [WwwSetting(wwwSettingsTradingParams)]
+    public int OptionsDaysGap {
+      get => _optionsDaysGap;
+      set {
+        if(_optionsDaysGap == value)
+          return;
+        _optionsDaysGap = value;
+        OnPropertyChanged(nameof(OptionsDaysGap));
+      }
+    }
   }
   public static class WaveInfoExtentions {
     public static Dictionary<CorridorCalculationMethod, double> ScanWaveWithAngle<T>(this IList<T> rates, Func<T, double> price, double pointSize, CorridorCalculationMethod corridorMethod) {

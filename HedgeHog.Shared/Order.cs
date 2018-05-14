@@ -94,7 +94,7 @@ namespace HedgeHog.Shared {
     public Double Limit { get; set; }
     [DataMember]
     DateTime _Time;
-    public DateTime Time {
+    public override DateTime Time {
       get { return _Time; }
       set { 
         _Time = value;

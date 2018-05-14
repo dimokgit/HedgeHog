@@ -695,6 +695,7 @@ namespace HedgeHog.Alice.Client {
           }, exc => {
             Log = exc;
           });
+        if(false)
         base.Clients.Caller.orders(am.OrderContractsInternal.Values
           .Select(oc =>
           new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
@@ -1093,9 +1094,22 @@ namespace HedgeHog.Alice.Client {
     static string MakePair(string pair) { return TradesManagerStatic.IsCurrenncy(pair) ? pair.Substring(0, 3) + "/" + pair.Substring(3, 3) : pair; }
     public Trade[] ReadClosedTrades(string pair) {
       try {
-        return new[] { new { p = MakePair(pair), rc = remoteControl.Value } }.SelectMany(x =>
-          x.rc.GetClosedTrades(x.p).Concat(x.rc.TradesManager.GetTrades()))
-          .ToArray();
+        var tms = GetTradingMacros(pair).Where(tm => tm.BarPeriod > BarsPeriodType.t1).Take(1).ToArray();
+        var rc = remoteControl.Value;
+        var trades = rc.GetClosedTrades("").Concat(rc.TradesManager.GetTrades()).ToArray();
+        var tradesNew = (
+          from tm in tms
+          from trade in trades
+          let rateOpen = tm.RatesArray.FuzzyFinder(trade.Time, (t, r1, r2) => t.Between(r1.StartDate, r2.StartDate)).Take(1).ToArray()
+          let rateClose = tm.RatesArray.FuzzyFinder(trade.TimeClose, (t, r1, r2) => t.Between(r1.StartDate, r2.StartDate)).Take(1).ToArray()
+          select (trade, rateOpen, rateClose)
+         ).Select(t => {
+           var trade = t.trade.Clone();
+           t.rateOpen.ForEach(r => trade.Open = r.PriceAvg);
+           t.rateClose.ForEach(r => trade.Close = r.PriceAvg);
+           return trade;
+         }).ToArray();
+        return tradesNew;
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
@@ -1219,9 +1233,9 @@ namespace HedgeHog.Alice.Client {
         var pos = tm.PendingEntryOrders.Concat(tm.TradingMacroHedged(tmh => tmh.PendingEntryOrders).Concat()).ToArray();
         if(pos.Any())
           list2.Add(row("Pending", pos.Select(po => po.Key).ToArray().ToJson(false)));
-        var oss = rc.TradesManager.GetOrderStatuses().Where(os => !os.isDone).ToArray();
+        var oss = rc.TradesManager.GetOrderStatuses();
         if(oss.Any()) {
-          var s = string.Join("<br/>", oss.Select(os => $"{os.status}:{os.filled}<<{os.remaining}"));
+          var s = string.Join("<br/>", oss.Select(os => $"{os.status}:{os.filled}<{os.remaining}"));
           list2.Add(row("Orders", s));
         }
         if(tm.IsHedgedTrading)

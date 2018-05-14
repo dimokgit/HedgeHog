@@ -22,6 +22,9 @@ namespace HedgeHog {
     public static int FuzzyFind<T, U>(this IList<T> sortedList, U value, Func<U, T, T, bool> isBetween) {
       return sortedList.FuzzyIndex(value, isBetween).First();
     }
+    public static T[] FuzzyFinder<T, U>(this IList<T> sortedList, U value, Func<U, T, T, bool> isBetween) {
+      return sortedList.FuzzyIndex(value, isBetween, (v, list, left, right) => right).Select(i => sortedList[i]).ToArray();
+    }
     public static int[] FuzzyIndex<T, U>(this IList<T> sortedList, U value, Func<U, T, T, bool> isBetween) {
       return sortedList.FuzzyIndex(value, isBetween, (v, list, left, right) => right);
     }

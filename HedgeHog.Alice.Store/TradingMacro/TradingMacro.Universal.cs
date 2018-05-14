@@ -19,7 +19,7 @@ using System.Reactive.Disposables;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    private CompositeDisposable _strategyTradesCountHandler;
+    private IDisposable _strategyTradesCountHandler;
     private void StrategyEnterUniversal() {
       if(!RatesArray.Any() || !IsTrader)
         return;
@@ -246,10 +246,11 @@ namespace HedgeHog.Alice.Store {
           !IsPrimaryMacro ||
           (!sr.IsExitOnly && !sr.InManual && !CanOpenTradeByDirection(sr.IsBuy));
         Action<double> onTradesCount = tc => { };
-        if(_strategyTradesCountHandler == null)
-          _strategyTradesCountHandler = (CompositeDisposable)BuyLevel.WhenAnyValue(x => x.TradesCount).Merge(SellLevel.WhenAnyValue(x => x.TradesCount))
+        if(_strategyTradesCountHandler == null) {
+          _strategyTradesCountHandler = BuyLevel.WhenAnyValue(x => x.TradesCount).Merge(SellLevel.WhenAnyValue(x => x.TradesCount))
             .Throttle(TimeSpan.FromSeconds(.5))
             .Subscribe(tc => onTradesCount(tc));
+        }
         #region enterCrossHandler
         Func<SuppRes, bool> enterCrossHandler = (suppRes) => {
           if(CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled(suppRes) || HaveTrades(suppRes.IsBuy) || isHedgeChild || IsHedgedTrading)
