@@ -126,6 +126,7 @@ namespace HedgeHog.Shared {
     void RaisePriceChanged(Price price);
 
     event EventHandler<TradeEventArgs> TradeAdded;
+    event EventHandler<TradeEventArgs> TradeChanged;
     event TradeRemovedEventHandler TradeRemoved;
     event EventHandler<ErrorEventArgs> Error;
     event EventHandler<RequestEventArgs> RequestFailed;
@@ -203,6 +204,7 @@ namespace HedgeHog.Shared {
 
 
   public static class TradesManagerStatic {
+    public static int ExpirationDaysSkip(int start) => DateTime.Now.TimeOfDay > new TimeSpan(16, 0, 0) ? start + 1 : start;
     public static IMapper TradeMapper() => TradeMapper(opt => opt);//.ForMember(t => t.TradesManager, o => o.Ignore()));
     public static IMapper TradeMapper(Func<IMappingExpression<Trade, Trade>, IMappingExpression<Trade, Trade>> opt)
       => new MapperConfiguration(cfg => opt(cfg.CreateMap<Trade, Trade>())).CreateMapper();

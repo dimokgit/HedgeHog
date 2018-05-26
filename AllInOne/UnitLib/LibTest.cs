@@ -13,10 +13,11 @@ using HedgeHog.DateTimeZone;
 using System.Reflection;
 using System.Threading.Tasks.Dataflow;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.IO;
+using System.Reactive.Subjects;
+
 namespace HedgeHog.Tests {
   [TestClass()]
   public class LibTest {

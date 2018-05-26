@@ -901,6 +901,7 @@ namespace HedgeHog.Alice.Client {
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
           TradesManager.TradeAdded += fw_TradeAdded;
+          TradesManager.TradeChanged += fw_TradeChanged;
           TradesManager.TradeClosed += fw_TradeClosed;
           TradesManager.Error += fw_Error;
         }
@@ -939,11 +940,13 @@ namespace HedgeHog.Alice.Client {
     void CoreFX_LoggedOffEvent(object sender, EventArgs e) {
       if(TradesManager != null) {
         TradesManager.TradeAdded -= fw_TradeAdded;
+        TradesManager.TradeChanged -= fw_TradeChanged;
         TradesManager.Error -= fw_Error;
 
         TradingMacrosCopy.ToList().ForEach(tm => new Action(() => InitTradingMacro(tm, true)).InvoceOnUI());
       }
     }
+
     object _showChartQueueLocker = new object();
     static ISubject<Action> _showChartQueue;
     ISubject<Action> ShowChartQueue {
@@ -1152,13 +1155,29 @@ namespace HedgeHog.Alice.Client {
             tm.HistoryMaximumLot = amountK;
           var ts = tm.SetTradeStatistics(trade);
         });
-        GlobalStorage.UseForexMongo(c => {
-          c.Trades.Add(trade);
-        }, true);
+        AddTradeToDb(trade);
       } catch(Exception exc) {
         Log = exc;
       }
     }
+
+    private void AddTradeToDb(Trade trade) => GlobalStorage.UseForexMongo(c => {
+      var savedTrades = c.Trades.Where(st => st.Pair == trade.Pair && st.Kind != PositionBase.PositionKind.Closed).ToArray();
+      savedTrades.OrderBy(st => st.Time2).Take(1).ForEach(st => trade.Time2 = st.Time2);
+      c.Trades.RemoveRange(savedTrades);
+      c.SaveChanges();
+      c.Trades.Add(trade);
+    }, true, () => Log = new Exception($"Trade Saved:{new { trade.Pair, trade.Lots, trade.Time, trade.Open, trade.TimeClose, trade.Close, trade.GrossPL }}"));
+
+    private void fw_TradeChanged(object sender, TradeEventArgs e) => GlobalStorage.UseForexMongo(c => {
+      var trade = e.Trade;
+      var savedTrade = c.Trades.Where(st => st.Pair == trade.Pair && st.Kind != PositionBase.PositionKind.Closed);
+      if(savedTrade.IsEmpty()) {
+        c.Trades.Add(trade);
+      } else {
+        savedTrade.Where(st => st.Lots < trade.Lots).ForEach(st => st.Lots = trade.Lots);
+      }
+    }, true, () => Log = new Exception($"Trade Updated:{new { e.Trade.Pair, e.Trade.Lots, e.Trade.Time, e.Trade.Open, e.Trade.TimeClose, e.Trade.Close, e.Trade.GrossPL }}"));
 
     void fw_Error(object sender, HedgeHog.Shared.ErrorEventArgs e) {
       Log = e.Error;
@@ -1238,7 +1257,8 @@ namespace HedgeHog.Alice.Client {
         GlobalStorage.UseForexMongo(c => {
           var savedTrade = c.Trades.Where(t => t.Pair == trade.Pair).ToArray().Where(t => t.IsClosed() == false).ToArray();
           c.Trades.RemoveRange(savedTrade);
-          savedTrade.ForEach(st => trade.Time = trade.Time.Min(st.Time));
+          c.SaveChanges();
+          trade.Time = savedTrade.Select(st => st.Time).DefaultIfEmpty(trade.Time).Min();
           c.Trades.Add(trade);
         }, true);
       } catch(Exception exc) {

@@ -24,7 +24,13 @@ namespace IBApp {
       baseOrder.AlgoParams.Add(new TagValue("adaptivePriority", priority));
     }
 
-    public PendingOrder OpenTrade(Contract contract, int quantity, double price, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+    public void OpenLimitOrder(Contract contract, int quantity, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+      IbClient.ReqPriceSafe(contract, 1, true).Select(p => quantity > 0 ? p.ask : p.bid)
+       .Subscribe(price => OpenTrade(contract, "FOK", quantity, price, useTakeProfit, minTickMultiplier, Caller));
+    }
+    public PendingOrder OpenTrade(Contract contract, int quantity, double price, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
+      OpenTrade(contract, "", quantity, price, useTakeProfit, minTickMultiplier, Caller);
+    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
       var timeoutInMilliseconds = 5000;
       if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
         var message = new { contract, quantity, Method = nameof(OpenTrade), Caller, timeoutInMilliseconds } + "";
@@ -41,7 +47,7 @@ namespace IBApp {
         });
         return null;
       }
-      var orderType = price == 0 ? "MKT" : "LMT";
+      var orderType = price == 0 ? "MKT" : type.IfEmpty("LMT");
       bool isPreRTH = orderType != "MKT";
       var order = new IBApi.Order() {
         Account = _accountId,
@@ -54,8 +60,8 @@ namespace IBApp {
         OutsideRth = isPreRTH,
         OverridePercentageConstraints = true
       };
-      if(!contract.IsCombo && !contract.IsFutureOption)
-        FillAdaptiveParams(order, "Normal");
+      //if(!contract.IsCombo && !contract.IsFutureOption)
+      //  FillAdaptiveParams(order, "Normal");
       var tpOrder = (useTakeProfit ? MakeTakeProfitOrder(order, contract, minTickMultiplier) : new(IBApi.Order order, double price)[0].ToObservable()).Select(x => new { x.order, x.price, useTakeProfit = false });
       new[] { new { order, price, useTakeProfit } }.ToObservable().Merge(tpOrder)
         .ToArray()

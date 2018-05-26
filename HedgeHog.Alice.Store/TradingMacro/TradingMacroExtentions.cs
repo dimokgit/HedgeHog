@@ -45,7 +45,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson;
 using IBApp;
 using COMBO_HISTORY = System.Collections.Generic.List<(double bid, double ask, System.DateTime time, double delta)>;
-using CURRENT_PUT = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option)>;
+using CURRENT_OPTION = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option)>;
 using IBApi;
 
 namespace HedgeHog.Alice.Store {
@@ -1109,51 +1109,66 @@ namespace HedgeHog.Alice.Store {
         .Where(_ => ibWraper?.AccountManager != null)
         .Where(price => price.EventArgs.Price.Pair == Pair)
         .Publish().RefCount();
-        int ExpirationDaysSkip(int start) => TradesManager.ServerTime.TimeOfDay > new TimeSpan(16, 0, 0) ? start + 1 : start;
 
-        _currentOptionDisposable?.Dispose();
-        _currentOptionDisposable = (
-          from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
-          let bid = price.EventArgs.Price.Bid
-          from x in ibWraper.AccountManager.CurrentOptions(Pair, bid, ExpirationDaysSkip(OptionsDaysGap), 2)
-          where x.Any()
-          select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(1).ToList()
-          )
-          .Subscribe(put => {
-            CurrentPut = put; ;
-          }, exc => {
-            Log = exc;
-            Debugger.Break();
-          }, () => {
-            Log = new Exception("_currentOptionDisposable done");
-            Debugger.Break();
-          });
+        if(IsTrader) {
+          int ExpDayToSkip() => OpenPuts().Select(p => (p.contract.Expiration - ServerTime.Date).Days).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
+          _currentOptionDisposable?.Dispose();
+          _currentOptionDisposable = (
+            from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
+            let bid = price.EventArgs.Price.Bid
+            from x in ibWraper.AccountManager.CurrentOptions(Pair, bid, ExpDayToSkip(), 2)
+            where x.Any()
+            select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(2).ToList()
+            )
+            .Subscribe(put => {
+              CurrentPut = put.Take(1).ToList();
+              CurrentOptions = put;
+            }, exc => {
+              Log = exc;
+              Debugger.Break();
+            }, () => {
+              Log = new Exception("_currentOptionDisposable done");
+              Debugger.Break();
+            });
 
-        _priceChangeDisposable?.Dispose();
-        StraddleHistory.Clear();
-        int shcp = 5;
-        _priceChangeDisposable = _priceChangeObservable
-        .Sample(TimeSpan.FromSeconds(0.5))
-        .SelectMany(price => ibWraper.AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), ExpirationDaysSkip(OptionsDaysGap), 8, 0))
-        .Select(x => x.OrderByDescending(t => t.deltaBid).Take(4).ToArray())
-        .Where(straddle => straddle.Any() && straddle.All(s => s.deltaBid > 0))
-        .Subscribe(straddle =>
-          UseStraddleHistory(shs => {
-            shs.BackwardsIterator().Take(1)
-            .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
-            .ToList()
-            .ForEach(sh => shs.Add((
-              sh.bid.Cma(shcp, straddle.Average(s => s.deltaBid)),
-              sh.ask.Cma(shcp, straddle.Average(s => s.deltaAsk)),
-              straddle[0].time,
-              sh.delta.Cma(shcp, straddle.Average(s => s.delta))))
-            );
-          })
-          , exc => {
-            Log = exc;
-          }, () => {
-            Log = new Exception("_priceChangeDisposable done");
-          });
+          _priceChangeDisposable?.Dispose();
+          StraddleHistory.Clear();
+          int shcp = 5;
+          var straddleStartId = DateTime.Now.Ticks;
+          long _id = 0;
+          var straddleTime = DateTime.UtcNow.AddDays(-3);
+          var straddleCount = 2;
+          GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t=>t.time>straddleTime).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
+          _priceChangeDisposable = _priceChangeObservable
+          //.Sample(TimeSpan.FromSeconds(0.5))
+          .SelectMany(price => ibWraper.AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), ExpDayToSkip(), 4, 0))
+          .Select(x => x.OrderByDescending(t => t.deltaBid).Take(straddleCount).ToArray())
+          .Where(straddle => straddle.Length == straddleCount && straddle.All(s => s.deltaBid > 0))
+          .Subscribe(straddle =>
+            UseStraddleHistory(shs => {
+              shs.BackwardsIterator().Take(1)
+              .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
+              .ToList()
+              .ForEach(sh => shs.Add((
+                bid: sh.bid.Cma(shcp, straddle.Select(s => s.deltaBid).RootMeanPower(0.5)),
+                ask: sh.ask.Cma(shcp, straddle.Select(s => s.deltaAsk).RootMeanPower(0.5)),
+                time: straddle[0].time,
+                delta: sh.delta.Cma(shcp, straddle.Select(s => s.delta).RootMeanPower(0.5)))
+                .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory {
+                  _id = straddleStartId + Interlocked.Increment(ref _id),
+                  ask = t.ask,
+                  bid = t.bid,
+                  delta = t.delta,
+                  time = t.time
+                })))
+              ));
+            })
+            , exc => {
+              Log = exc;
+            }, () => {
+              Log = new Exception("_priceChangeDisposable done");
+            });
+        }
       }
     }
     COMBO_HISTORY StraddleHistory = new COMBO_HISTORY();
@@ -5354,7 +5369,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
 
     public Lazy<double> RatesHeightCma { get; set; } = new Lazy<double>(() => 0);
-    public CURRENT_PUT CurrentPut { get; private set; } = new CURRENT_PUT();
+    public CURRENT_OPTION CurrentPut { get; private set; } = new CURRENT_OPTION();
+    public CURRENT_OPTION CurrentOptions { get; private set; } = new CURRENT_OPTION();
     [WwwSetting(wwwSettingsTradingParams)]
     public int OptionsDaysGap {
       get => _optionsDaysGap;

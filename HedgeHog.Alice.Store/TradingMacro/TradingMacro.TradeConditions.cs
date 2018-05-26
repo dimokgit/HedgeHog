@@ -2206,15 +2206,15 @@ namespace HedgeHog.Alice.Store {
     public void TradeConditionsTrigger() {
       if(!IsRatesLengthStableGlobal()) return;
       if(!IsTrader) return;
-      var am = ((IBWraper)TradesManager).AccountManager;
-      var puts = am.Positions.Where(p => p.position != 0 && p.contract.IsPut);
+      var am = IBAccountManager();
+      var puts = OpenPuts();
       var hasOptions = (from put in CurrentPut
                         from p in puts
                         where put.strikeAvg + p.price.Abs() > p.contract.Strike
                         select true
                         ).Any();
       hasOptions = hasOptions ||
-        am.UseOrderContracts(OrderContracts=>
+        am.UseOrderContracts(OrderContracts =>
         (from put in CurrentPut
          join oc in OrderContracts.Values.Where(o => !o.isDone) on put.instrument equals oc.contract.Instrument
          select true
@@ -2301,6 +2301,9 @@ namespace HedgeHog.Alice.Store {
       )
       .ForEach(trade => CloseTrades(nameof(TradeConditionsShouldClose)));
     }
+
+    private IEnumerable<(IBApi.Contract contract, int position, double open, double price)> OpenPuts() => IBAccountManager().Positions.Where(p => p.position != 0 && p.contract.IsPut);
+    private AccountManager IBAccountManager() => ((IBWraper)TradesManager).AccountManager;
 
     bool _isTurnOnOnly = false;
     [Category(categoryActiveYesNo)]

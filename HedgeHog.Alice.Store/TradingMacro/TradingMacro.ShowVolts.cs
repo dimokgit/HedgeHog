@@ -357,19 +357,16 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByStraddleSpread() {
       if(UseCalc())
-        CurrentPut.ForEach(put => {
-          CurrentStraddleBidHeight()
-          .Select(h => {
-            var s = put.ask.Abs(put.bid);
-            var p = put.bid * 0.2;
-            return h / 2 - s - p;
-          })
-          .ForEach(v => SetVolts(v, 1));
-        });
+        CurrentPut.ForEach(put =>
+        CurrentStraddleBidMinMax()
+        .Select(mm => {
+          return (mm[0].Percentage(mm[1]) - put.ask.Percentage(put.bid)).ToPercent();
+        })
+        .ForEach(v => SetVolts(v, 1)));
       return null;
     }
 
-    private IEnumerable<double> CurrentStraddleBidHeight() => UseStraddleHistory(sh => sh.GetRange(RatesArray.Count.Min(sh.Count)).MinMax(t => t.bid).Height());
+    private IEnumerable<double[]> CurrentStraddleBidMinMax() => UseStraddleHistory(sh => sh.GetRange(RatesArray.Count.Min(sh.Count)).MinMax(t => t.bid));
 
     CorridorStatistics ShowVoltsByStraddle(Func<(double bid, double ask, DateTime time, double delta), double> value, int voltIndex) {
       if(UseCalc()) {
@@ -384,7 +381,7 @@ namespace HedgeHog.Alice.Store {
         var startDate = volts.Select(r => r.StartDate).Take(1);
         return UseStraddleHistory(straddleHistory => {
           var straddles = (from sd in startDate
-                           select straddleHistory.BackwardsIterator().TakeWhile(sh => sh.time >= sd)
+                           select straddleHistory.BackwardsIterator().TakeWhile(sh => sh.time >= sd).IfEmpty(() => straddleHistory.TakeLast(1))
                            ).Concat().ToList();
           straddles.Reverse();
           var shs = volts.Zip(r => r.StartDate, straddles, sh => sh.time, (r, sh) => (r, sh));

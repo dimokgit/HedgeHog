@@ -63,8 +63,8 @@ namespace IBApp {
     public COMBO_TRADES_IMPL ComboTradesAllImpl() {
       var positions = Positions.Where(p => p.position != 0 && p.contract.IsOption).ToArray();
       return (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
-              let order = OrderContractsInternal.Values.Where(oc => !oc.isDone && oc.contract.Key == ca.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
-              select (ca.contract, position: 1, open: ca.positions.Sum(p => p.open), order.LmtPrice, order.OrderId));
+              let order = OrderContractsInternal.Values.Where(oc => !oc.isDone && oc.contract.Key == ca.contract.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
+              select (ca.contract.contract, position: ca.contract.positions, open: ca.positions.Sum(p => p.open), order.LmtPrice, order.OrderId));
     }
   }
 }

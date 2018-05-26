@@ -386,6 +386,7 @@ namespace HedgeHog.Shared {
 
     public event TradeRemovedEventHandler TradeRemoved;
     public event EventHandler<OrderEventArgs> OrderChanged;
+    public event EventHandler<TradeEventArgs> TradeChanged;
 
     private ConcurrentDictionary<string, Price> PriceCurrent = new ConcurrentDictionary<string, Price>();
 

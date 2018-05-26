@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Linq.Expressions;
 using System.ComponentModel.DataAnnotations;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace HedgeHog.Shared {
   [Serializable]

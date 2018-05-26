@@ -7,10 +7,10 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using static HedgeHog.MathCore;
 namespace IBApp {
   public partial class AccountManager {
-    public static (TPositions[] positions, Contract contract)[] MakeComboAll<TPositions>(IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, string, bool> filterByTradingClass) =>
+    public static (TPositions[] positions, (Contract contract,int positions)contract)[] MakeComboAll<TPositions>(IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, string, bool> filterByTradingClass) =>
       combosAll
       .Where(c => c.c.IsOption || c.c.IsCombo)
       .GroupBy(combo => (combo.c.Symbol, combo.c.TradingClass, combo.c.Exchange, combo.c.Currency, combo.c.Expiration))
@@ -34,18 +34,22 @@ namespace IBApp {
           => new ComboLeg { ConId = leg.ConId, Ratio = legConId.Sum(l => l.Ratio), Action = leg.Action, Exchange = leg.Exchange }).First()
          ).ToArray();
 
-    static Func<string, string, string, IList<ComboLeg>, Contract> MakeComboCache
-      = new Func<string, string, string, IList<ComboLeg>, Contract>(MakeCombo)
+    static Func<string, string, string, IList<ComboLeg>, (Contract contract,int positions)> MakeComboCache
+      = new Func<string, string, string, IList<ComboLeg>, (Contract contract,int positions)>(MakeCombo)
       .Memoize(t => (t.Item1, t.Item2, t.Item3, t.Item4.Select(l => $"{l.ConId}{l.Ratio}{l.Action}").Flatter("")));
 
-    static Contract MakeCombo(string instrument, string exchange, string currency, IList<ComboLeg> comboLegs) =>
-       new Contract() {
-         Symbol = instrument,
-         SecType = "BAG",
-         Exchange = exchange,
-         Currency = currency,
-         ComboLegs = new List<ComboLeg>(comboLegs.OrderBy(l => l.ConId))
-       }.AddToCache();
+    static (Contract contract,int positions) MakeCombo(string instrument, string exchange, string currency, IList<ComboLeg> comboLegs) {
+      var positions = comboLegs.Select(l => l.Ratio).ToArray().GCD();
+      comboLegs.ForEach(l => l.Ratio /= positions);
+      var contract =new Contract() {
+        Symbol = instrument,
+        SecType = "BAG",
+        Exchange = exchange,
+        Currency = currency,
+        ComboLegs = new List<ComboLeg>(comboLegs.OrderBy(l => l.ConId))
+      }.AddToCache();
+      return (contract, positions);
+    }
 
     static IEnumerable<Contract> SortCombos(IEnumerable<Contract> options) =>
       (from c in options

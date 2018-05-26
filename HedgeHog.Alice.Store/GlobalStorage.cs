@@ -26,6 +26,7 @@ using System.Net;
 using System.Runtime.ExceptionServices;
 using AutoMapper;
 using MongoDB.Bson;
+using Microsoft.EntityFrameworkCore;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage :Models.ModelBase {
@@ -120,10 +121,15 @@ namespace HedgeHog.Alice.Store {
     #region ForexDbContext
     public class ForexDbContext :MongoDB.ForexDbContext {
       public ForexDbContext(string connection) : base(connection) { }
+      protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
+        optionsBuilder.EnableSensitiveDataLogging();
+        base.OnConfiguring(optionsBuilder);
+      }
       public Microsoft.EntityFrameworkCore.DbSet<TradingMacroSettings> TradingMacroSettings { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<TradingAccount> TradingAccount { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<TraderModelPersist> TraderSettings { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<Shared.Trade> Trades { get; set; }
+      public Microsoft.EntityFrameworkCore.DbSet<StraddleHistory> StraddleHistories { get; set; }
     }
 
     #endregion
@@ -133,10 +139,13 @@ namespace HedgeHog.Alice.Store {
     static ForexDbContext _ForexMongoFactory;
     static ForexDbContext ForexMongoFactory => _ForexMongoFactory ?? (_ForexMongoFactory = new ForexDbContext(mongoConnectionString));
     public static T UseForexMongo<T>(Func<ForexDbContext, T> func) => func(ForexMongoFactory);
-    public static void UseForexMongo(Action<ForexDbContext> action, bool save = false) {
+    public static void UseForexMongo(Action<ForexDbContext> action, bool save = false, Action onSave = null) {
       var c = ForexMongoFactory;
       action(c);
-      if(save) c.SaveChanges();
+      if(save) {
+        c.SaveChanges();
+        onSave?.Invoke();
+      }
     }
     public static void ForexMongoSave() => UseForexMongo(c => c.SaveChanges());
     #endregion

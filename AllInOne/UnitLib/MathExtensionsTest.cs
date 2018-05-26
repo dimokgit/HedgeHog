@@ -15,7 +15,9 @@ namespace HedgeHog.Tests {
     public void GDC() {
       var gdc = new[] { -20, 40, 12 }.GCD();
       Assert.AreEqual(4, gdc);
+      Assert.IsTrue(new[] { 1, 4, 4 }.SequenceEqual(new[] { 5, 20, 20 }.AdjustByGcd().values));
     }
+
     [TestMethod]
     public void CompoundAmount() {
       double interestRate = 0.5 / 100, days = 256 * 5, Amount = 30000;

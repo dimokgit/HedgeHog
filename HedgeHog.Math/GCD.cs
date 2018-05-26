@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static class GCDExtension {
+    public static (int gcd, int[] values) AdjustByGcd(this int[] ints) {
+      var gcd = ints.GCD();
+      var x = ints.Select(i => i / gcd).ToArray();
+      return (gcd, x);
+    }
+
     public static int GCD(this int[] numbers) => numbers.Aggregate(GCD);
 
     static int GCD(int a, int b) => 

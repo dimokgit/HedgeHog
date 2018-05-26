@@ -95,6 +95,7 @@ namespace UnitLib {
       public string LevelSellBy { get; set; }
       public string LevelSellCloseBy { get; set; }
       public string MovingAverageType { get; set; }
+      public int OptionsDaysGap	 { get; set; }
       public string Outsiders { get; set; }
       public string RatesLengthBy { get; set; }
       public int RiskRewardThresh { get; set; }

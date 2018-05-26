@@ -69,6 +69,7 @@ namespace IBApp {
         throw new Exception(new { _ibClient.ManagedAccount, error = "Not Found" } + "");
       _accountManager = new AccountManager(_ibClient, ma, CreateTrade, CommissionByTrade, Trace);
       _accountManager.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
+      _accountManager.TradeChanged += (s, e) => RaiseTradeChanged(e.Trade);
       _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
       _accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
       _accountManager.OrderAdded += RaiseOrderAdded;
@@ -302,6 +303,24 @@ namespace IBApp {
       TradeAddedEvent?.Invoke(this, new TradeEventArgs(trade));
     }
     #endregion
+
+
+    #region TradeChanged Event
+    event EventHandler<TradeEventArgs> TradeChangedEvent;
+    public event EventHandler<TradeEventArgs> TradeChanged {
+      add {
+        if(TradeChangedEvent == null || !TradeChangedEvent.GetInvocationList().Contains(value))
+          TradeChangedEvent += value;
+      }
+      remove {
+        TradeChangedEvent -= value;
+      }
+    }
+    protected void RaiseTradeChanged(Trade trade) {
+      if(TradeChangedEvent != null) TradeChangedEvent(this, new TradeEventArgs(trade));
+    }
+    #endregion
+
 
     #region TradeRemovedEvent
     event TradeRemovedEventHandler TradeRemovedEvent;

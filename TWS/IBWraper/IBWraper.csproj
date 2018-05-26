@@ -165,6 +165,10 @@
       <Project>{c8436d96-349c-4ea7-a58b-3d21ba93be22}</Project>
       <Name>HedgeHog.Lib</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\HedgeHog.Math\HedgeHog.Math.csproj">
+      <Project>{21c4a910-0c04-436d-b797-4d564db29627}</Project>
+      <Name>HedgeHog.Math</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\HedgeHog.Shared\HedgeHog.Shared.csproj">
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
       <Name>HedgeHog.Shared</Name>

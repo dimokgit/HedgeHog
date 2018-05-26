@@ -52,7 +52,7 @@ namespace IBApp {
 
     #region Properties
     public Account Account { get; private set; }
-    public readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade>();
+    public readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade> { ChangeTrackingEnabled = true };
     private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
     public Func<Trade, double> CommissionByTrade = t => t.Lots * .008;
     public POSITION_OBSERVABLE PositionsObservable { get; private set; }
@@ -91,7 +91,12 @@ namespace IBApp {
       IbClient.UpdateAccountValue += OnUpdateAccountValue;
       IbClient.UpdatePortfolio += OnUpdatePortfolio;
 
-      OpenTrades.ItemsAdded.Subscribe(RaiseTradeAdded).SideEffect(s => _strams.Add(s));
+      OpenTrades.ItemsAdded.Delay(TimeSpan.FromSeconds(5)).Subscribe(RaiseTradeAdded).SideEffect(s => _strams.Add(s));
+      OpenTrades.ItemChanged
+        .Where(e=>e.PropertyName=="Lots")
+        .Select(e=>e.Sender)
+        .Subscribe(RaiseTradeChanged)
+        .SideEffect(s => _strams.Add(s));
       OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved).SideEffect(s => _strams.Add(s));
       ClosedTrades.ItemsAdded.Subscribe(RaiseTradeClosed).SideEffect(s => _strams.Add(s));
       ibClient.Error += OnError;
@@ -309,7 +314,7 @@ namespace IBApp {
          .SideEffect(_ => _verbous(new { RemovedPosition = new { ot.Pair, ot.IsBuy, ot.Lots } })));
         OpenTrades
           .Where(IsEqual(posMsg))
-          .Select(ot 
+          .Select(ot
             => new Action(() => ot.Lots = posMsg.Quantity
             .SideEffect(Lots => _verbous(new { ChangePosition = new { ot.Pair, ot.IsBuy, Lots } })))
             )
@@ -323,8 +328,8 @@ namespace IBApp {
       TraceTrades("OnPositions: ", OpenTrades);
       var cp = ContractPosition((contract, position, averageCost));
       _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
-      if(IbClient.ClientId == 0 && !_positions.Values.Any(p => p.position != 0))
-        CancelAllOrders("Canceling stale orders");
+      //if(IbClient.ClientId == 0 && !_positions.Values.Any(p => p.position != 0))
+      //  CancelAllOrders("Canceling stale orders");
     }
 
     private Contract Subscribe(Contract c) => IbClient.SetContractSubscription(c);
@@ -422,6 +427,24 @@ namespace IBApp {
       TradeAddedEvent?.Invoke(this, new TradeEventArgs(trade));
     }
     #endregion
+
+
+    #region TradeChanged Event
+    event EventHandler<TradeEventArgs> TradeChangedEvent;
+    public event EventHandler<TradeEventArgs> TradeChanged {
+      add {
+        if(TradeChangedEvent == null || !TradeChangedEvent.GetInvocationList().Contains(value))
+          TradeChangedEvent += value;
+      }
+      remove {
+        TradeChangedEvent -= value;
+      }
+    }
+    protected void RaiseTradeChanged(Trade trade) {
+      TradeChangedEvent?.Invoke(this, new TradeEventArgs(trade));
+    }
+    #endregion
+
 
     #region TradeRemoved Event
     event EventHandler<TradeEventArgs> TradeRemovedEvent;
@@ -640,7 +663,7 @@ namespace IBApp {
       UseOrderContracts(orderContracts => {
         Trace(trace + e);
         if(!orderContracts.TryGetValue(e.reqId, out var oc)) return;
-        if(new[] { /*103, 110,*/ 200, 201, 202, 203, 382, 383 }.Contains(e.code)) {
+        if(new[] { /*103, 110,*/ 200, 201, 202, 203, 321, 382, 383 }.Contains(e.code)) {
           //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
           RaiseOrderRemoved(oc);
           orderContracts.TryRemove(e.reqId, out var oc2);
@@ -651,7 +674,7 @@ namespace IBApp {
       UseOrderContracts(orderContracts => {
         Trace(trace + e);
         if(!orderContracts.TryGetValue(e.reqId, out var oc)) return;
-        if(new[] { 103, 110, 200, 201, 203, 382, 383 }.Contains(e.code)) {
+        if(new[] { 103, 110, 200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
           //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
           RaiseOrderRemoved(oc);
           orderContracts.TryRemove(e.reqId, out var oc2);

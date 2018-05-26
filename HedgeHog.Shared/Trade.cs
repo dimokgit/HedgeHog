@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Xml.Linq;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace HedgeHog.Shared {
   public static class TradeExtensions {
@@ -207,7 +208,14 @@ namespace HedgeHog.Shared {
     public DateTime DateClose { get { return TimeClose.Date; } }
     public int DaysSinceClose { get { return Math.Floor((DateTime.Now - TimeClose).TotalDays).ToInt(); } }
     [DataMember]
-    public int Lots { get; set; }
+    public int Lots {
+      get => _lots;
+      set {
+        if(_lots == value) return;
+        _lots = value;
+        OnPropertyChanged(nameof(Lots));
+      }
+    }
     public double Position => IsBuy ? Lots : -Lots;
     public int AmountK { get { return Lots / (BaseUnitSize == 0 ? 1000 : BaseUnitSize); } }
 
@@ -277,6 +285,8 @@ namespace HedgeHog.Shared {
       }
     }
     Func<Trade, double> _commissionByTrade;
+    private int _lots;
+
     public Func<Trade, double> CommissionByTrade {
       get { return _commissionByTrade; }
       set { _commissionByTrade = value; }

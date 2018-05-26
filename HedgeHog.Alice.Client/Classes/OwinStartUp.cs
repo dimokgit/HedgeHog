@@ -569,7 +569,7 @@ namespace HedgeHog.Alice.Client {
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
     public void ReadStraddles(string pair, int gap, int numOfCombos, double? strikeLevel, string[] comboExits) {
-      int expirationDaysSkip = gap;
+      int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(gap);
       var am = GetAccountManager();
       var symbols = IBApi.Contract.FromCache(pair, c => c.IsFuture ? c.LocalSymbol : c.Symbol).ToArray();
       if(am != null) {
@@ -696,10 +696,10 @@ namespace HedgeHog.Alice.Client {
             Log = exc;
           });
         if(false)
-        base.Clients.Caller.orders(am.OrderContractsInternal.Values
-          .Select(oc =>
-          new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
-          ).OrderBy(oc => oc.order));
+          base.Clients.Caller.orders(am.OrderContractsInternal.Values
+            .Select(oc =>
+            new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
+            ).OrderBy(oc => oc.order));
         double TryExitDelta(string s) => double.TryParse(s, out var i) ? i : int.MinValue;
       }
     }
@@ -732,7 +732,7 @@ namespace HedgeHog.Alice.Client {
     public void OpenButterfly(string instrument, int quantity) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
-        am.OpenTrade(contract, quantity, 0, true);
+        am.OpenLimitOrder(contract, quantity, true);
       else
         throw new Exception(new { contract, not = "found" } + "");
     }
@@ -1112,7 +1112,7 @@ namespace HedgeHog.Alice.Client {
         return tradesNew;
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        throw;
+        return new Trade[0];
       }
     }
     public object GetWaveRanges(string pair, int chartNum) {
@@ -1368,15 +1368,15 @@ namespace HedgeHog.Alice.Client {
         GetTradingMacro(pair, chartNum).ForEach(action);
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        throw;
       }
     }
     T UseTradingMacro<T>(string pair, int chartNum, Func<TradingMacro, T> func) {
       try {
-        return GetTradingMacro(pair, chartNum).Select(func).IfEmpty(() => { throw new Exception(new { TradingMacroNotFound = new { pair, chartNum } } + ""); }).First();
+        return GetTradingMacro(pair, chartNum).Select(func)
+          .IfEmpty(() => { throw new Exception(new { TradingMacroNotFound = new { pair, chartNum } } + ""); }).First();
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        throw;
+        return default;
       }
     }
     T[] UseTraderMacro<T>(string pair, Func<TradingMacro, T> func) {
@@ -1395,7 +1395,7 @@ namespace HedgeHog.Alice.Client {
         return GetTradingMacros(pair).Skip(chartNum).Select(func);
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        throw;
+        return new T[0];
       }
     }
     void UseTradingMacro2(string pair, int chartNum, Action<TradingMacro> func) {
@@ -1403,7 +1403,6 @@ namespace HedgeHog.Alice.Client {
         GetTradingMacro(pair, chartNum).ForEach(func);
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        throw;
       }
     }
 

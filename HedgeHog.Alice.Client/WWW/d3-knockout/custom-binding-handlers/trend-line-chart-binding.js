@@ -610,12 +610,15 @@
               });
 
             var color = "lime";
-            svg.select("path.line.dataTps2")
-              .datum(data)
-              .attr("d", line3)
-              .style("stroke", color).style("opacity", 0.7);
-            y3Axis.style("display", "");
-
+            try {
+              svg.select("path.line.dataTps2")
+                .datum(data)
+                .attr("d", line3)
+                .style("stroke", color).style("opacity", 0.7);
+              y3Axis.style("display", "");
+            } catch (e) {
+              console.log = "Showing path.line.dataTps2:" + e;
+            }
             //var minMax = [yMin, yMax].sort(function (a, b) { return Math.abs(a) - Math.abs(b); });
             //setHLine(minMax[0], "tpsMin2", "darkred", 1, "", y3);
             //setHLine(Math.abs(minMax[0]), "tpsMax2", "darkred", 1, "", y3);
@@ -778,14 +781,6 @@
             .selectMany(map)
             .where("ct => ct != null && ct.x > ct.dateMin")
             .toArray();
-          var trdIndex = 0;
-          try {
-            cts.forEach(function (ct) {
-              setTimeLine(ct.x, "tradeTime." + trdIndex, "black", 2);
-            });
-          } catch (e) {
-            console.log("tradeTime error:\n" + e);
-          }
           var closedTradesDelta = getClosedTradesDelta(cts);
           closedTradesDelta
             .exit()
