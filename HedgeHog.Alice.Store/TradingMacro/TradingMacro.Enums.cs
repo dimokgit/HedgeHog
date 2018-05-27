@@ -77,8 +77,6 @@ namespace HedgeHog.Alice.Store {
     StDevSplits = 46,
     StDevSplits3 = 48,
     Fft = 64,
-    OneTwoThree = 5,
-    OneToFour = 6,
     OneToFive = 7,
     AllFive = 8,
     M1Wave = 9,

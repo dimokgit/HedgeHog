@@ -66,7 +66,9 @@ namespace ConsoleApp {
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         var am = fw.AccountManager;
-        var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
+          LoadHistory(ibClient, new[] { "spy".ContractFactory() });
+          return;
+          var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         Task.Delay(2000).ContinueWith(_ => {
           ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 1, 10)
@@ -85,7 +87,6 @@ namespace ConsoleApp {
           });
           //TestMakeBullPut("ESM8", false);
         }); return;
-        LoadHistory(ibClient, new[] { "spy".ContractFactory() });
         TestParsedCombos();
         TestCurrentStraddles(1, 1);
         TestCurrentStraddles(1, 1); return;
@@ -138,13 +139,13 @@ namespace ConsoleApp {
           AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass) => pos.contract.TradingClass == tradingClass)
           .ForEach(comboPrice => {
             HandleMessage2(new { comboPrice.contract });
-            ibClient.ReqPriceSafe(comboPrice.contract, 4, true)
+            ibClient.ReqPriceSafe(comboPrice.contract.contract, 4, true)
             .ToEnumerable()
             .ForEach(price => {
               HandleMessage($"Observed {comboPrice.contract} price:{price}");
               if(placeOrder) {
                 HandleMessage2($"Placing SELL order for{comboPrice.contract}");
-                am.OpenTrade(comboPrice.contract, -1, price.ask.Avg(price.bid) * 0.55, false);
+                am.OpenTrade(comboPrice.contract.contract, -1, price.ask.Avg(price.bid) * 0.55, false);
               }
             });
             HandleMessage2($"ComboTrade Done ==================");

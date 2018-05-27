@@ -3794,10 +3794,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
             GetShowVoltageFunction(VoltageFunction2, 1)();
             return null;
           };
-        case ScanCorridorFunction.OneTwoThree:
-          return ScanCorridorBy123;
-        case ScanCorridorFunction.OneToFour:
-          return ScanCorridorBy1234;
         case ScanCorridorFunction.OneToFive:
           return ScanCorridorBy12345;
         case ScanCorridorFunction.AllFive:
