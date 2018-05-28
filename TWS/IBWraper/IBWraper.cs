@@ -210,6 +210,7 @@ namespace IBApp {
     public Trade[] GetTrades(string pair) => GetTrades().Where(t => t.Pair.WrapPair() == pair.WrapPair()).ToArray();
     public Trade[] GetTradesInternal(string Pair) => GetTrades(Pair);
     public IList<Trade> GetClosedTrades(string pair) => AccountManager?.GetClosedTrades() ?? new Trade[0];
+    public void SetClosedTrades(IEnumerable<Trade> trades) => AccountManager.SetClosedTrades(trades);
 
     #endregion
 

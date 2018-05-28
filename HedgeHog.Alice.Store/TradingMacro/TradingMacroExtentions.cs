@@ -1111,12 +1111,14 @@ namespace HedgeHog.Alice.Store {
         .Publish().RefCount();
 
         if(IsTrader) {
+          SyncStraddleHistoryObservable?.Dispose();
+          SyncStraddleHistoryObservable = SyncStraddleHistorySubject.Take(1).Subscribe(SyncStraddleHistoryM1);
           int ExpDayToSkip() => OpenPuts().Select(p => (p.contract.Expiration - ServerTime.Date).Days).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
           _currentOptionDisposable?.Dispose();
           _currentOptionDisposable = (
             from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
             let bid = price.EventArgs.Price.Bid
-            from x in ibWraper.AccountManager.CurrentOptions(Pair, bid, ExpDayToSkip(), 2)
+            from x in ibWraper.AccountManager.CurrentOptions(Pair, bid, ExpDayToSkip(), 3)
             where x.Any()
             select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(2).ToList()
             )
@@ -1136,42 +1138,56 @@ namespace HedgeHog.Alice.Store {
           int shcp = 5;
           var straddleStartId = DateTime.Now.Ticks;
           long _id = 0;
-          var straddleTime = DateTime.UtcNow.AddDays(-3);
-          var straddleCount = 2;
-          GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t=>t.time>straddleTime).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
-          _priceChangeDisposable = _priceChangeObservable
-          //.Sample(TimeSpan.FromSeconds(0.5))
-          .SelectMany(price => ibWraper.AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), ExpDayToSkip(), 4, 0))
-          .Select(x => x.OrderByDescending(t => t.deltaBid).Take(straddleCount).ToArray())
-          .Where(straddle => straddle.Length == straddleCount && straddle.All(s => s.deltaBid > 0))
-          .Subscribe(straddle =>
-            UseStraddleHistory(shs => {
-              shs.BackwardsIterator().Take(1)
-              .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
-              .ToList()
-              .ForEach(sh => shs.Add((
-                bid: sh.bid.Cma(shcp, straddle.Select(s => s.deltaBid).RootMeanPower(0.5)),
-                ask: sh.ask.Cma(shcp, straddle.Select(s => s.deltaAsk).RootMeanPower(0.5)),
-                time: straddle[0].time,
-                delta: sh.delta.Cma(shcp, straddle.Select(s => s.delta).RootMeanPower(0.5)))
-                .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory {
-                  _id = straddleStartId + Interlocked.Increment(ref _id),
-                  ask = t.ask,
-                  bid = t.bid,
-                  delta = t.delta,
-                  time = t.time
-                })))
-              ));
-            })
-            , exc => {
-              Log = exc;
-            }, () => {
-              Log = new Exception("_priceChangeDisposable done");
+          //var straddleTime = DateTime.Now.AddSeconds(-BarsCountMax).SetKind();
+          TradingMacroM1(tmM1 => {
+            tmM1.WhenAny(tm => tm.IsRatesLengthStable, irs => irs.Value)
+            .Where(irs => irs)
+            .Take(1)
+            .Subscribe(x => {
+              var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime();
+              GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.time >= startDate).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
+              SyncStraddleHistoryT1(this);
+              SyncStraddleHistoryM1(tmM1);
+              CollectStraddleHistory();
             });
+          });
+
+          void CollectStraddleHistory() {
+            var straddleCount = 2;
+            _priceChangeDisposable = _priceChangeObservable
+            //.Sample(TimeSpan.FromSeconds(0.5))
+            .SelectMany(price => ibWraper.AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), ExpDayToSkip(), 4, 0))
+            .Select(x => x.OrderByDescending(t => t.deltaBid).Take(straddleCount).ToArray())
+            .Where(straddle => straddle.Length == straddleCount && straddle.All(s => s.deltaBid > 0))
+            .Subscribe(straddle =>
+              UseStraddleHistory(shs => {
+                shs.BackwardsIterator().Take(1)
+                .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
+                .ToList()
+                .ForEach(sh => shs.Add((
+                  bid: sh.bid.Cma(shcp, straddle.Select(s => s.deltaBid).RootMeanPower(0.5)),
+                  ask: sh.ask.Cma(shcp, straddle.Select(s => s.deltaAsk).RootMeanPower(0.5)),
+                  time: straddle.Max(t => t.time),
+                  delta: sh.delta.Cma(shcp, straddle.Select(s => s.delta).RootMeanPower(0.5)))
+                  .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory {
+                    _id = straddleStartId + Interlocked.Increment(ref _id),
+                    ask = t.ask,
+                    bid = t.bid,
+                    delta = t.delta,
+                    time = t.time
+                  })))
+                ));
+              })
+              , exc => {
+                Log = exc;
+              }, () => {
+                Log = new Exception("_priceChangeDisposable done");
+              });
+          }
         }
       }
     }
-    COMBO_HISTORY StraddleHistory = new COMBO_HISTORY();
+    static COMBO_HISTORY StraddleHistory = new COMBO_HISTORY();
     COMBO_HISTORY VerticalPutHistory = new COMBO_HISTORY();
     private void HansleTick(PriceChangedEventArgs pce) {
       try {
@@ -3024,20 +3040,22 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         UseRatesInternal(ri => ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false)));
       } else {
         var roundTo = BarPeriod == BarsPeriodType.t1 ? RoundTo.Second : RoundTo.Minute;
-        var lastRateDate = UseRatesInternal(ri => ri.BackwardsIterator().Select(r => r.StartDate.Round(roundTo)).FirstOrDefault()).Single();
-        var priceDate = price.Time.Round(roundTo);
-        if(priceDate > lastRateDate) {
-          UseRatesInternal(ri => ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false)));
-          if(BarPeriod > 0)
-            OnLoadRates();
-          else
-            _ratesArrayAsyncBuffer.Push(() => RatesArraySafe.Any());
-        } else if(priceDate == lastRateDate)
-          UseRatesInternal(ri => ri.Last().AddTick(price.Time.Round(roundTo).ToUniversalTime(), price.Ask, price.Bid));
-        else if(false && IsTradingHour()) {
-          Log = new Exception($"{nameof(AddCurrentTick)}: {new { priceDate, lastRateDate }}");
-        }
-
+        UseRatesInternal(ri => ri.BackwardsIterator().Select(r => r.StartDate.Round(roundTo)).Take(1))
+          .Concat()
+          .ForEach(lastRateDate => {
+            var priceDate = price.Time.Round(roundTo);
+            if(priceDate > lastRateDate) {
+              UseRatesInternal(ri => ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false)));
+              if(BarPeriod > 0)
+                OnLoadRates();
+              else
+                _ratesArrayAsyncBuffer.Push(() => RatesArraySafe.Any());
+            } else if(priceDate == lastRateDate)
+              UseRatesInternal(ri => ri.Last().AddTick(price.Time.Round(roundTo).ToUniversalTime(), price.Ask, price.Bid));
+            else if(false && IsTradingHour()) {
+              Log = new Exception($"{nameof(AddCurrentTick)}: {new { priceDate, lastRateDate }}");
+            }
+          });
       }
     }
 
@@ -5337,6 +5355,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     private double[] _ratesArrayCoeffs = new double[0];
 
     private IDisposable _orderAddedSubsciption;
+    private IDisposable SyncStraddleHistoryObservable;
 
     public double[] RatesArrayCoeffs { get => _ratesArrayCoeffs; set => _ratesArrayCoeffs = value; }
 

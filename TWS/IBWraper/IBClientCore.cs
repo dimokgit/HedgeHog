@@ -83,7 +83,9 @@ namespace IBApp {
 
     #region ICoreEX Implementation
     public Contract SetContractSubscription(Contract contract) => contract.SideEffect(c => SetContractSubscription(c, _ => { }));
-    void SetContractSubscription(Contract contract, Action<Contract> callback) => _marketDataManager.AddRequest(contract, "233,221,236", callback);
+    void SetContractSubscription(Contract contract, Action<Contract> callback) {
+      _marketDataManager.AddRequest(contract, "233,221,236", callback);
+    }
     public void SetSymbolSubscription(string pair) => SetContractSubscription(ContractSamples.ContractFactory(pair));
     public bool IsInVirtualTrading { get; set; }
     public DateTime ServerTime => DateTime.Now + _serverTimeOffset;
@@ -192,8 +194,8 @@ namespace IBApp {
       => Observable.FromEvent<TickPriceHandler, (int reqId, int field, double price, int canAutoExecute)>(
         onNext => (int reqId, int field, double price, int canAutoExecute)
         => onNext((reqId, field, price, canAutoExecute)),
-        h => TickPrice += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(TickPrice)}"))*/,
-        h => TickPrice -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(TickPrice)}"))*/
+        h => TickPrice += h.SideEffect(_ => Trace($"Subscribed to {nameof(TickPrice)}")),
+        h => TickPrice -= h.SideEffect(_ => Trace($"UnSubscribed to {nameof(TickPrice)}"))
         )
       .SubscribeOn(esReqPriceSubscribe)
       .Publish()
@@ -256,18 +258,21 @@ namespace IBApp {
 
     public IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
       var reqId = NextReqId();
+      Verbose($"{nameof(ReqContractDetailsAsync)}:{contract} Start");
       var cd = WireToError<(int reqId, ContractDetails cd)>(
         reqId,
         ContractDetailsObservable,
         ContractDetailsEndObservable,
         (int rid) => (rid, (ContractDetails)null),
-        (0, (ContractDetails)null),
         t => t.reqId,
         t => t.cd != null,
-        error => Trace($"ReqContract:{contract}-{error}"),
-        () => TraceIf(DataManager.DoShowRequestErrorDone, $"{nameof(ReqContractDetailsAsync)} {reqId} Error done")
+        error => Trace($"{nameof(ReqContractDetailsAsync)}:{contract}-{error}"),
+        () => TraceIf(DataManager.DoShowRequestErrorDone || _verbose, $"{nameof(ReqContractDetailsAsync)} {reqId} Error done")
         )
-        .Select(t => t.cd.SideEffect(d => Verbose($"Adding {d.LongName}")).AddToCache())
+        .ToArray()
+        .Do(a => a.ForEach(t => t.cd.AddToCache()))
+        .SelectMany(a => a.Select(t => t.cd))
+      //.Select(t => t.cd.SideEffect(d => Verbose($"Adding {d.Summary} to cache")).AddToCache())
       //.ObserveOn(esReqCont)
       //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Summary, Thread.CurrentThread.ManagedThreadId }))
       ;
@@ -276,7 +281,7 @@ namespace IBApp {
       return cd;
     }
     IObservable<T> WireToError<T>
-      (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<int, T> endFactory, T empty, Func<T, int> getReqId, Func<T, bool> isNotEnd, Action<(int id, int errorCode, string errorMsg, Exception exc)> onError, Action onEnd) {
+      (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<int, T> endFactory, Func<T, int> getReqId, Func<T, bool> isNotEnd, Action<(int id, int errorCode, string errorMsg, Exception exc)> onError, Action onEnd) {
       SetRequestHandled(reqId);
       return source
         .TakeUntil(
@@ -472,7 +477,7 @@ namespace IBApp {
         .SelectMany(cl => ReqPriceSafe(cl.contract, timeoutInSeconds, useErrorHandler).Select(price => (cl, price)).Take(1))
         .ToArray()
         .Where(a => a.Any())
-        .Select(t => (t.Sum(t2 => bid(t2.cl, t2.price) * t2.cl.leg.Ratio), t.Sum(t2 => ask(t2.cl, t2.price) * t2.cl.leg.Ratio), t.Min(t2 => t2.price.time)));
+        .Select(t => (t.Sum(t2 => bid(t2.cl, t2.price) * t2.cl.leg.Ratio), t.Sum(t2 => ask(t2.cl, t2.price) * t2.cl.leg.Ratio), t.Max(t2 => t2.price.time)));
       return x;
     }
 
@@ -645,12 +650,15 @@ namespace IBApp {
     }
     #endregion
 
-    public IEnumerable<Price> TryGetPrice(Contract contract) => TryGetPrice(contract.Instrument);
+    public IEnumerable<Price> TryGetPrice(Contract contract) {
+      if(_marketDataManager.TryGetPrice(contract, out var price))
+        yield return price;
+    }
     public IEnumerable<Price> TryGetPrice(string pair) {
       if(TryGetPrice(pair, out var price))
         yield return price;
     }
-    public bool TryGetPrice(string symbol, out Price price) { return _marketDataManager.TryGetPrice(symbol, out price); }
+    public bool TryGetPrice(string symbol, out Price price) { return _marketDataManager.TryGetPrice(symbol.ContractFactory(), out price); }
     public Price GetPrice(string symbol) { return _marketDataManager.GetPrice(symbol); }
     #region Price Changed
     private void OnPriceChanged(Price price) {

@@ -1,0 +1,20 @@
+{
+  "name": "WWW",
+  "description": "",
+  "main": "",
+  "license": "MIT",
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "d3": "^4.2.3",
+    "pnotify": "^3.2.1",
+    "jquery-ui": "^1.12.1"
+  }
+}

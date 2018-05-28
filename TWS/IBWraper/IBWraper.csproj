@@ -130,7 +130,6 @@
     <Compile Include="DataManagers\AccountManager.cs" />
     <Compile Include="Contracts.cs" />
     <Compile Include="DataManagers\MarketDataManager.cs" />
-    <Compile Include="EpochTimeExtensions.cs" />
     <Compile Include="Messages\AccountSummaryMessage.cs" />
     <Compile Include="Messages\AccountValueMessage.cs" />
     <Compile Include="Messages\ErrorMessage.cs" />

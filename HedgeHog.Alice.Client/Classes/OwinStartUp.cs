@@ -388,7 +388,7 @@ namespace HedgeHog.Alice.Client {
       return UseTradingMacro2(pair, 0, tm => tm.TradeDirectionTriggersAllInfo((tc, name) => name)).Concat().ToArray();
     }
     public string[] GetTradeDirectionTriggers(string pair) {
-      return UseTradingMacro2(pair,0, tm => tm.TradeDirectionTriggersInfo((tc, name) => name)).Concat().ToArray();
+      return UseTradingMacro2(pair, 0, tm => tm.TradeDirectionTriggersInfo((tc, name) => name)).Concat().ToArray();
     }
     [BasicAuthenticationFilter]
     public void SetTradeDirectionTriggers(string pair, string[] names) {
@@ -524,7 +524,6 @@ namespace HedgeHog.Alice.Client {
        .Select(t => {
          var rate = t.tm.FindRateByDate(time).Concat(t.tm.TradingMacroM1(tm => tm.FindRateByDate(time)).Concat()).First();
          var trade = Trade.Create(null, t.Pair, trm.GetPipSize(t.Pair), trm.GetBaseUnitSize(t.Pair), trader.Value.CommissionByTrade);
-         trade.Id = DateTime.Now.Ticks + "";
          trade.Buy = t.IsBuy;
          trade.IsBuy = t.IsBuy;
          trade.Time2 = rate.StartDate;
@@ -771,7 +770,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     public string[] GetTradingConditions(string pair) {
-      return UseTradingMacro2(pair,0, tm => tm.TradeConditionsInfo((tc, p, name) => name)).Concat().ToArray();
+      return UseTradingMacro2(pair, 0, tm => tm.TradeConditionsInfo((tc, p, name) => name)).Concat().ToArray();
     }
     [BasicAuthenticationFilter]
     public void SetTradingConditions(string pair, string[] names) {
@@ -1100,6 +1099,9 @@ namespace HedgeHog.Alice.Client {
         var tradesNew = (
           from tm in tms
           from trade in trades
+          from dateMin in tm.RatesArray.Take(1).Select(r=>r.StartDate)
+          where trade.Time >= dateMin
+          orderby trade.Time descending
           let rateOpen = tm.RatesArray.FuzzyFinder(trade.Time, (t, r1, r2) => t.Between(r1.StartDate, r2.StartDate)).Take(1).ToArray()
           let rateClose = tm.RatesArray.FuzzyFinder(trade.TimeClose, (t, r1, r2) => t.Between(r1.StartDate, r2.StartDate)).Take(1).ToArray()
           select (trade, rateOpen, rateClose)

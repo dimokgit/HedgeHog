@@ -22,7 +22,7 @@ namespace HedgeHog.Shared {
       get => _time;
       set {
         _time = value;
-        Id = value.Ticks + "";
+        Id = value.ToEpochTime() + "";
       }
     }
     public enum PositionKind { Unknown, Open, Closed };

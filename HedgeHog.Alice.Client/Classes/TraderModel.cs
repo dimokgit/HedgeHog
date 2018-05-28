@@ -1320,6 +1320,7 @@ namespace HedgeHog.Alice.Client {
             if(account == null) {
               Thread.Sleep(1000);
               account = TradesManager.GetAccount();
+              TradesManager.SetClosedTrades(GlobalStorage.UseForexMongo(c => c.Trades.Where(t => t.Kind == PositionBase.PositionKind.Closed).ToArray()));
             }
             if(account != null)
               GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {

@@ -2043,6 +2043,12 @@ namespace HedgeHog.Alice.Store {
         .Take(1)
         .Select(selector);
     }
+    public void TradingMacroM1(Action<TradingMacro> selector) {
+      TradingMacroM1()
+        .OrderBy(tm => tm.BarPeriod)
+        .Take(1)
+        .ForEach(selector);
+    }
     public IEnumerable<U> TradingMacroM1<T, U>(Func<TradingMacro, IEnumerable<T>> selector, Func<IEnumerable<T>, IEnumerable<U>> many) {
       return TradingMacroM1(selector).SelectMany(many);
     }

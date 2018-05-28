@@ -93,6 +93,7 @@ namespace HedgeHog.Shared {
     IList<Trade> GetTrades();
     Trade GetLastTrade(string pair);
     IList<Trade> GetClosedTrades(string pair);
+    void SetClosedTrades(IEnumerable<Trade> trades);
     void ResetClosedTrades(string pair);
 
 

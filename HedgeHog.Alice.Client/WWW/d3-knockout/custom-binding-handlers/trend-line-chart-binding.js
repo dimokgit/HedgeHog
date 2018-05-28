@@ -425,9 +425,9 @@
       var openTradeGross = ko.unwrap(chartData.openTradeGross);
       var tpsHigh = chartData.tpsHigh;
       var tpsLow = chartData.tpsLow;
-      var tps2High = chartData.tps2High;
-      var tps2Low = chartData.tps2Low;
-      var tpsCurr2 = chartData.tpsCurr2;
+      var tps2High = chartData.tps2High || [];
+      var tps2Low = chartData.tps2Low || [];
+      var tpsCurr2 = chartData.tpsCurr2 || NaN;
       var chartNum = chartData.chartNum;
       var hasTps = tpsChartNum.indexOf(chartNum) >= 0;
       var canBuy = chartData.canBuy;
@@ -533,7 +533,9 @@
       var yDomain2 = d3.extent(data, function (d) { return tipValue(d.v); });
       y2.domain([Math.min(y2ScaleShift[0] || yDomain2[0], yDomain2[0]), Math.max(y2ScaleShift[1] || yDomain2[1], yDomain2[1])]);
       var yDomain3 = d3.extent(data, function (d) { return tipValue2(d.v2); });
-      y3.domain([Math.min(tps2Low || 0, yDomain3[0]), Math.max(tps2High || 0, yDomain3[1])]);
+      y3.domain([Math.min(tps2Low[0] || 0, yDomain3[0]), Math.max(tps2High[0] || 0, yDomain3[1])]);
+      if (isNaN(y3(0)))
+        debugger;
       // #endregion
 
       // #region transform axises

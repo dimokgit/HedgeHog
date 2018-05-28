@@ -24,6 +24,7 @@
 //  return this.sum() / (this.length || 1);
 //}
 (function () {
+  PNotify.prototype.options.styling = "fontawesome";
   Array.prototype.sum = Array.prototype.sum || function () {
     return this.reduce(function (sum, a) { return sum + Number(a) }, 0);
   }
@@ -156,13 +157,14 @@
   var resetPlotterThrottleTime2 = 1 * 1000;
   var resetPlotter = _.throttle(askRates, resetPlotterThrottleTime);
   var resetPlotter2 = _.throttle(askRates2, resetPlotterThrottleTime2);
-  var dateMin = new Date("1/1/9999");
+  var dateMin = new Date("1/1/1900");
   var ratesInFlight = dateMin;
   var ratesInFlight2 = dateMin;
   function keyNote(text) { return typeof text === "string" ? { keyNote: text } : text.keyNote; };
   var openInFlightNote = _.throttle(showError, 2 * 1000);
   var openInFlightNotePerm = _.throttle(showWarning, 2 * 1000);
   function isInFlight(date, index) {
+    return false;
     var secsInFlight = getSecondsBetween(new Date(), date);
     if (secsInFlight > 3)
       openInFlightNotePerm("In flight(" + index + ") > " + secsInFlight, keyNote("InFlightDelay"));
@@ -598,7 +600,8 @@
     this.wrapTradeInCorridor = wrapTradeInCorridor;
     this.moveCorridorWavesCount = moveCorridorWavesCount;
     this.tradeConditions = ko.observableArray([]);
-    var closedTrades = [];
+    var closedTrades = ko.observableArray();
+    this.closedTrades = ko.observableArray();
     var mustShowClosedTrades2 = ko.observable(true);
     this.mustShowClosedTrades = ko.pureComputed(function () { return mustShowClosedTrades2() });
     this.showClosedTrades2Text = ko.pureComputed(function () { return mustShowClosedTrades2() ? "ON" : "OFF"; });
@@ -607,15 +610,14 @@
       askRates2();
     };
     this.toggleClosedTrades = function () {
-      if (closedTrades.length) {
-        closedTrades = [];
-        resetPlotter();
-      } else readClosedTrades();
+      mustShowClosedTrades2(true);
+      readClosedTrades();
     };
     this.readClosedTrades = readClosedTrades;
     function readClosedTrades() {
       serverCall("readClosedTrades", [pair], function (trades) {
-        closedTrades = prepDates(trades).map(function (t) {
+        self.closedTrades(prepDates(trades));
+        closedTrades = self.closedTrades().map(function (t) {
           return {
             dates: [t.Time, t.TimeClose],
             timeOpen: t.Time,
@@ -628,6 +630,8 @@
             isClosed: t.KindString === "Closed"
           };
         });
+        resetPlotter();
+        resetPlotter2();
       });
     }
     // #endregion
@@ -906,7 +910,7 @@
       this.bullPuts([]);
       var shouldToggle = ko.observable(true);
       $(this.butterfliesDialog()).dialog({
-        title: "Batterflies", width: "auto", dialogClass: "dialog-compact",
+        title: "Combos", width: "auto", minHeight: "50px", dialogClass: "dialog-compact",
         dragStart: function () { shouldToggle(false); },
         dragStop: function (event, ui) {
           setTimeout(function () { shouldToggle(true); }, 100);
@@ -1727,7 +1731,7 @@
     chat = $.connection.myHub;
     // #region Create functions that the hub can call to broadcast messages.
     var priceChanged = (function () {
-      var _inFlightPriceChanged = dateMin;
+      var _inFlightPriceChanged = new Date("1/1/9999");
       return _priceChanged;
 
       function _isPriceChangeInFlight() {
@@ -1753,7 +1757,7 @@
               showErrorPerm(e);
             })
             .always(function () {
-              _inFlightPriceChanged = dateMin;
+              _inFlightPriceChanged = new Date("1/1/9999");
             });
         }
       }

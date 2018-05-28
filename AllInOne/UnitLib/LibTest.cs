@@ -328,20 +328,20 @@ Privet:2.3 3.4
     }
     public void FuzzyFindTestImpl(double value) {
       var values = Enumerable.Range(0, (value * 2).ToInt()).Select(i => (double)i).ToArray();
-      var index = values.FuzzyFind(value, MathCore.Between);
+      var index = values.FuzzyIndex(value, MathCore.Between);
       Assert.AreEqual(index, Math.Ceiling(value));
 
       values = Enumerable.Range(0, (value * 2 + 2).ToInt()).Select(i => (double)i).ToArray();
-      index = values.FuzzyFind(value, MathCore.Between);
+      index = values.FuzzyIndex(value, MathCore.Between);
       Assert.AreEqual(index, Math.Ceiling(value));
 
       values = Enumerable.Range(0, (value * 2 - 2).ToInt()).Select(i => (double)i).ToArray();
-      index = values.FuzzyFind(value, MathCore.Between);
+      index = values.FuzzyIndex(value, MathCore.Between);
       Assert.AreEqual(index, Math.Ceiling(value));
 
-      index = values.FuzzyFind(-1, MathCore.Between);
+      index = values.FuzzyIndex(-1, MathCore.Between);
       Assert.AreEqual(index, -1);
-      index = values.FuzzyFind(values.Length * 2, MathCore.Between);
+      index = values.FuzzyIndex(values.Length * 2, MathCore.Between);
       Assert.AreEqual(index, -1);
 
     }

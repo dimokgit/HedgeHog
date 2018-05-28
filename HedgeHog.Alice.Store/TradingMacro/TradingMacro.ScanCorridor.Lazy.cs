@@ -3,7 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Concurrency;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -85,7 +88,7 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    private CorridorStatistics ShowVolts(double volt,  Func<Rate, double> getVolt = null, Action<Rate, double> setVolt = null) {
+    private CorridorStatistics ShowVolts(double volt, Func<Rate, double> getVolt = null, Action<Rate, double> setVolt = null) {
       return ShowVolts(volt, VoltAverageIterations, getVolt, setVolt);
     }
     private CorridorStatistics ShowVolts(double volt, int averageIterations, Func<Rate, double> getVolt = null, Action<Rate, double> setVolt = null) {
@@ -137,7 +140,9 @@ namespace HedgeHog.Alice.Store {
       UseRates(rates => rates.BackwardsIterator().TakeWhile(r => GetVoltByIndex(voltIndex)(r).IsNaN())
         .ForEach(r => SetVoltByIndex(voltIndex)(r, volt)));
       //SetVoltage(RateLast, volt);
-      var voltRates = RatesArray.Select(GetVoltByIndex(voltIndex)).SkipWhile(v => v.IsNaN()).ToArray();
+      var voltRates = RatesArray.Select(GetVoltByIndex(voltIndex)).SkipWhile(v => v.IsNaN())
+        .Scan((p, n) => n.IsNaN() ? p : n)
+        .ToArray();
       if(voltRates.Any()) {
         GeneralPurposeSubject.OnNext(() => {
           try {
@@ -170,6 +175,34 @@ namespace HedgeHog.Alice.Store {
           });
         });
       });
+    }
+    static Subject<TradingMacro> SyncStraddleHistorySubject = new Subject<TradingMacro>();
+    void SyncStraddleHistoryM1(TradingMacro tm) {
+      var zip = (from shs in UseStraddleHistory(staddleHistory =>
+         (from sh in StraddleHistory
+          group sh by sh.time.Round() into g
+          orderby g.Key
+          select new { bid = g.Average(t => t.bid), time = g.Key.ToLocalTime() }
+          ).ToList())
+                 let endDate = shs.Last().time.ToLocalTime()
+                 from z in tm.UseRates(ra => ra.TakeWhile(r => r.StartDate <= endDate).Zip(r => r.StartDate, shs, sh => sh.time, (r, sh) => (r, sh)).ToArray())
+                 from t in z
+                 select t
+                 ).ToArray();
+      zip.ForEach(t => SetVoltage(t.r, t.sh.bid));
+    }
+    void SyncStraddleHistoryT1(TradingMacro tm) {
+      var zip = (from shs in UseStraddleHistory(staddleHistory =>
+         (from sh in StraddleHistory
+          orderby sh.time
+          select new { bid = sh.bid, time = sh.time.ToLocalTime() }
+          ).ToList())
+                 let endDate = shs.Last().time.ToLocalTime()
+                 from z in tm.UseRates(ra => ra.TakeWhile(r => r.StartDate <= endDate).Zip(r => r.StartDate, shs, sh => sh.time, (r, sh) => (r, sh)).ToArray())
+                 from t in z
+                 select t
+                 ).ToArray();
+      zip.ForEach(t => SetVoltage(t.r, t.sh.bid));
     }
     private void SetVoltsByPpm() {
       SetVots(WaveRangeAvg.PipsPerMinute, 2);

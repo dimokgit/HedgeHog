@@ -732,17 +732,6 @@ namespace HedgeHog.Alice.Client {
       //  GlobalStorage.AliceContext.ObjectStateManager.ObjectStateManagerChanged += ObjectStateManager_ObjectStateManagerChanged;
     }
 
-    private void LoadClosedTrades() {
-      var fileName = "ClosedTrades.xml";
-      if(!File.Exists("ClosedTrades.xml"))
-        return;
-      foreach(var tradeString in File.ReadAllLines("ClosedTrades.xml").Where(s => !string.IsNullOrWhiteSpace(s))) {
-        var trade = TradesManager.TradeFactory("").FromString(tradeString);
-        MasterModel.AddCosedTrade(trade);
-        //if (trade.TimeClose > DateTime.Now.AddMonths(-1)) ClosedTrades.Add(trade);
-      }
-      File.Move(fileName, fileName + ".old");
-    }
     // TODO Why TradingMacrosCopy.ToObservable()
     ~RemoteControlModel() {
       if(MasterModel != null) {

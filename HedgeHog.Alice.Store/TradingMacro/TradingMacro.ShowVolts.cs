@@ -72,7 +72,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.Corr:
           return ShowVoltsByCorrelation;
         case HedgeHog.Alice.VoltageFunction.Straddle:
-          return () => ShowVoltsByStraddle(sh => sh.bid.Avg(sh.ask), voltIndex);
+          return () => ShowVoltsByStraddle(sh => sh.bid, voltIndex);
         case HedgeHog.Alice.VoltageFunction.PutStrdl:
           return () => ShowVoltsByStraddleSpread();
         case HedgeHog.Alice.VoltageFunction.StraddleA:
@@ -357,12 +357,12 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByStraddleSpread() {
       if(UseCalc())
-        CurrentPut.ForEach(put =>
-        CurrentStraddleBidMinMax()
-        .Select(mm => {
-          return (mm[0].Percentage(mm[1]) - put.ask.Percentage(put.bid)).ToPercent();
-        })
-        .ForEach(v => SetVolts(v, 1)));
+        CurrentPut.ForEach(put => (
+        from vl in GetVoltageAverage()
+        from vh in GetVoltageHigh()
+        where !vl.IsNaN() && !vh.IsNaN()
+        select (vl.Percentage(vh) - put.ask.Percentage(put.bid)).ToPercent()
+        ).ForEach(v => SetVolts(v, 1)));
       return null;
     }
 
@@ -376,15 +376,24 @@ namespace HedgeHog.Alice.Store {
       }
       return null;
       IEnumerable<double> SetVoltsByStraddle() {
+        (from r in RatesArray.Take(0)
+         where GetVoltage(r).IsNaN()
+         select r.StartDate)
+        .ForEach(mergeDate =>
+          UseStraddleHistory(straddleHistory => {
+            var mergeShs = straddleHistory.SkipWhile(sh => sh.time < mergeDate).ToArray();
+            RatesArray.SkipLast(1).Zip(r => r.StartDate, mergeShs, sh => sh.time, (r, sh) => (r, sh))
+            .ForEach(t => SetVoltage(t.r, t.sh.bid));
+          }));
         var volts = RatesArray.BackwardsIterator().TakeWhile(r => GetVoltByIndex(voltIndex)(r).IsNaN()).ToList();
         volts.Reverse();
         var startDate = volts.Select(r => r.StartDate).Take(1);
         return UseStraddleHistory(straddleHistory => {
           var straddles = (from sd in startDate
-                           select straddleHistory.BackwardsIterator().TakeWhile(sh => sh.time >= sd).IfEmpty(() => straddleHistory.TakeLast(1))
+                           select straddleHistory.BackwardsIterator().TakeWhile(sh => sh.time >= sd)
                            ).Concat().ToList();
           straddles.Reverse();
-          var shs = volts.Zip(r => r.StartDate, straddles, sh => sh.time, (r, sh) => (r, sh));
+          var shs = volts.Zip(r => r.StartDate.ToUniversalTime(), straddles, sh => sh.time, (r, sh) => (r, sh));
           return shs.SkipWhile(t => !GetVoltByIndex(voltIndex)(t.r).IsNaN())
             .Select(t => value(t.sh).SideEffect(v => SetVoltByIndex(voltIndex)(t.r, v)));
         }).Concat();

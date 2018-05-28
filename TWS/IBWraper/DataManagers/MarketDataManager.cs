@@ -64,10 +64,13 @@ namespace IBApp {
       }
     }
 
-    public bool TryGetPrice(string symbol, out Price price) {
+    public bool TryGetPrice(Contract contract, out Price price) {
       price = null;
-      if(!_currentPrices.ContainsKey(symbol))
+      var symbol = contract.Instrument;
+      if(!_currentPrices.ContainsKey(symbol)) {
+        IbClient.SetContractSubscription(contract);
         return false;
+      }
       price = _currentPrices[symbol];
       return true;
     }

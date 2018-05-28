@@ -93,8 +93,8 @@ namespace IBApp {
 
       OpenTrades.ItemsAdded.Delay(TimeSpan.FromSeconds(5)).Subscribe(RaiseTradeAdded).SideEffect(s => _strams.Add(s));
       OpenTrades.ItemChanged
-        .Where(e=>e.PropertyName=="Lots")
-        .Select(e=>e.Sender)
+        .Where(e => e.PropertyName == "Lots")
+        .Select(e => e.Sender)
         .Subscribe(RaiseTradeChanged)
         .SideEffect(s => _strams.Add(s));
       OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved).SideEffect(s => _strams.Add(s));
@@ -558,6 +558,7 @@ namespace IBApp {
     #region Trades
     public IList<Trade> GetTrades() { return OpenTrades.ToList(); }
     public IList<Trade> GetClosedTrades() { return ClosedTrades.ToList(); }
+    public void SetClosedTrades(IEnumerable<Trade> trades) => ClosedTrades.AddRange(new ReactiveList<Trade>(trades));
     #endregion
 
     Action IfEmpty(object o) => () => throw new Exception(o.ToJson());

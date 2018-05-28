@@ -2860,6 +2860,7 @@ namespace Order2GoAddIn {
     public void FetchMMRs() => throw new NotImplementedException();
     public bool TryGetPrice(string pair, out Price price) => throw new NotImplementedException();
     public IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair = "") => throw new NotImplementedException();
+    public void SetClosedTrades(IEnumerable<Trade> trades) => throw new NotImplementedException();
   }
 
   #region Data Classes

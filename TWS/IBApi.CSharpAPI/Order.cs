@@ -38,7 +38,7 @@ namespace IBApi {
     private double lmtPrice;
     private double auxPrice;
     public override string ToString() {
-      return new { OrderId, Action, TotalQuantity, LmtPrice } + "";
+      return new { OrderId, Action, TotalQuantity, LmtPrice, OrderType, Tif, OutsideRth } + "";
     }
     // extended order fields
     // "Time in Force" - DAY, GTC, etc.

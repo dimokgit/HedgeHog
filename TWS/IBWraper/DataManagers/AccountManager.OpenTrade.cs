@@ -69,7 +69,7 @@ namespace IBApp {
         .Subscribe(o => {
           var reqId = o.order.OrderId;
           IbClient.WatchReqError(() => reqId, e => {
-            Error(contract, e, new { minTickMultiplier });
+            Error(contract,o.order, e, new { minTickMultiplier });
             if(e.errorCode == 110 && minTickMultiplier <= 5 && o.order.LmtPrice != 0) {
               o.order.LmtPrice = OrderPrice(o.price, contract, ++minTickMultiplier);
               reqId = o.order.OrderId = NetOrderId();
@@ -85,15 +85,15 @@ namespace IBApp {
       return null;
       /// Locals
       void ExitMomitor() {
-        _verbous($"{nameof(OpenTrade)}: exiting {new { _OpenTradeSync }} monitor");
+        _verbous($"{nameof(OpenTrade)}: exiting {nameof(_OpenTradeSync)} monitor");
         Monitor.Exit(_OpenTradeSync);
       }
-      void Error(Contract c, (int id, int errorCode, string errorMsg, Exception exc) t, object context) {
+      void Error(Contract c, IBApi.Order o, (int id, int errorCode, string errorMsg, Exception exc) t, object context) {
         var trace = $"{nameof(OpenTrade)}:{c}:" + (context == null ? "" : context + ":");
         var isWarning = Regex.IsMatch(t.errorMsg, @"\sWarning:") || t.errorCode == 103;
         if(!isWarning) OnOpenError(t, trace);
         else
-          Trace(trace + t);
+          Trace(trace + t+"\n"+o);
       }
     }
     IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder(IBApi.Order parent, Contract contract, int minTickMultilier) {
