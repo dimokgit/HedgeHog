@@ -1043,6 +1043,7 @@ namespace HedgeHog.Alice.Store {
     public ITradesManager TradesManager { get { return _TradesManager(); } }
     public bool HasTicks => (TradesManager?.HasTicks).GetValueOrDefault();
     IDisposable _priceChangeDisposable;
+    public int ExpDayToSkip() => OpenPuts().Select(p => (p.contract.Expiration - ServerTime.Date).Days).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
       _tradingMacros = tradingMacros;
       Action<Expression<Func<TradingMacro, bool>>> check = g => TradingMacrosByPair()
@@ -1113,7 +1114,6 @@ namespace HedgeHog.Alice.Store {
         if(IsTrader) {
           SyncStraddleHistoryObservable?.Dispose();
           SyncStraddleHistoryObservable = SyncStraddleHistorySubject.Take(1).Subscribe(SyncStraddleHistoryM1);
-          int ExpDayToSkip() => OpenPuts().Select(p => (p.contract.Expiration - ServerTime.Date).Days).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
           _currentOptionDisposable?.Dispose();
           _currentOptionDisposable = (
             from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
@@ -1143,6 +1143,7 @@ namespace HedgeHog.Alice.Store {
             tmM1.WhenAny(tm => tm.IsRatesLengthStable, irs => irs.Value)
             .Where(irs => irs)
             .Take(1)
+            .ObserveOn(NewThreadScheduler.Default)
             .Subscribe(x => {
               var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime();
               GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.time >= startDate).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));

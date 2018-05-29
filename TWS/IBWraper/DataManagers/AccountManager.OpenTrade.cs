@@ -26,7 +26,7 @@ namespace IBApp {
 
     public void OpenLimitOrder(Contract contract, int quantity, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
       IbClient.ReqPriceSafe(contract, 1, true).Select(p => quantity > 0 ? p.ask : p.bid)
-       .Subscribe(price => OpenTrade(contract, "FOK", quantity, price, useTakeProfit, minTickMultiplier, Caller));
+       .Subscribe(price => OpenTrade(contract, "", quantity, price, useTakeProfit, minTickMultiplier, Caller));
     }
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
       OpenTrade(contract, "", quantity, price, useTakeProfit, minTickMultiplier, Caller);
@@ -48,7 +48,7 @@ namespace IBApp {
         return null;
       }
       var orderType = price == 0 ? "MKT" : type.IfEmpty("LMT");
-      bool isPreRTH = orderType != "MKT";
+      bool isPreRTH = orderType == "LMT";
       var order = new IBApi.Order() {
         Account = _accountId,
         OrderId = NetOrderId(),

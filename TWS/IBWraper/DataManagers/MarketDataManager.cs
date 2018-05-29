@@ -30,7 +30,7 @@ namespace IBApp {
       AddRequestObs
         //.Delay(TimeSpan.FromMilliseconds(1000))
         .ObserveOn(TaskPoolScheduler.Default)
-        //.SubscribeOn(TaskPoolScheduler.Default)
+        .SubscribeOn(TaskPoolScheduler.Default)
         .Distinct(t => t.Item1.Instrument)
         .Subscribe(t => AddRequestSync(t.Item1, t.Item3, t.Item2));
     }
