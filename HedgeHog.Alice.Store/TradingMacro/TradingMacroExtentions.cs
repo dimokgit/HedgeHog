@@ -1113,7 +1113,6 @@ namespace HedgeHog.Alice.Store {
 
         if(IsTrader) {
           SyncStraddleHistoryObservable?.Dispose();
-          SyncStraddleHistoryObservable = SyncStraddleHistorySubject.Take(1).Subscribe(SyncStraddleHistoryM1);
           _currentOptionDisposable?.Dispose();
           _currentOptionDisposable = (
             from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
@@ -1140,15 +1139,18 @@ namespace HedgeHog.Alice.Store {
           long _id = 0;
           //var straddleTime = DateTime.Now.AddSeconds(-BarsCountMax).SetKind();
           TradingMacroM1(tmM1 => {
-            tmM1.WhenAny(tm => tm.IsRatesLengthStable, irs => irs.Value)
-            .Where(irs => irs)
+            tmM1.WhenAny(tm => tm.RatesDuration, irs => irs.Value)
+            .Where(irs => irs > 0)
             .Take(1)
             .ObserveOn(NewThreadScheduler.Default)
             .Subscribe(x => {
               var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime();
+              GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories.Where(t => t.time < startDate)), true);
               GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.time >= startDate).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
               SyncStraddleHistoryT1(this);
+              Log = new Exception($"{nameof(SyncStraddleHistoryT1)} - done");
               SyncStraddleHistoryM1(tmM1);
+              Log = new Exception($"{nameof(SyncStraddleHistoryM1)} - done");
               CollectStraddleHistory();
             });
           });

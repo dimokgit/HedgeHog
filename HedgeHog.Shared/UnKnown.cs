@@ -11,6 +11,7 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace HedgeHog.Shared {
   [Serializable]
   [DataContract]
+  [BsonIgnoreExtraElements]
   public abstract class PositionBase :INotifyPropertyChanged {
     [Key]
     [DataMember]
@@ -18,6 +19,7 @@ namespace HedgeHog.Shared {
     private DateTime _time;
     [DataMember]
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
+    [BsonIgnore]
     public virtual DateTime Time {
       get => _time;
       set {

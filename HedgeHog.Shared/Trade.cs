@@ -70,6 +70,7 @@ namespace HedgeHog.Shared {
   public delegate void OrderRemovedEventHandler(Order order);
   [Serializable]
   [DataContract]
+  [BsonIgnoreExtraElements]
   public class Trade :PositionBase {
     /// <summary>
     /// Not Implemented exception
@@ -201,6 +202,7 @@ namespace HedgeHog.Shared {
     [DataMember]
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
     [DisplayName("Time Close")]
+    [BsonIgnore]
     public DateTime TimeClose {
       get { return _TimeClose; }
       set { _TimeClose = value; }

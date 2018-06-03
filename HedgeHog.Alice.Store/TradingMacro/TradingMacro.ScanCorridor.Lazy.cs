@@ -176,7 +176,6 @@ namespace HedgeHog.Alice.Store {
         });
       });
     }
-    static Subject<TradingMacro> SyncStraddleHistorySubject = new Subject<TradingMacro>();
     void SyncStraddleHistoryM1(TradingMacro tm) {
       var zip = (from shs in UseStraddleHistory(staddleHistory =>
          (from sh in StraddleHistory
