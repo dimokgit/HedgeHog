@@ -477,6 +477,9 @@
                 <button data-bind="click:showButterflies" title="Show Butterflies">
                   <i class="glyphicon glyphicon-retweet"></i>
                 </button>
+                <button data-bind="click:showContractCache" title="Show Contract Cache">
+                  <i class="glyphicon glyphicon-retweet"></i>
+                </button>
 
               </li>
             </ul>
@@ -764,7 +767,7 @@
             <tbody data-bind="foreach:tradeConditions">
               <tr>
                 <td><input type="checkbox" data-bind="checked:checked,attr:{id:'chk'+name}" /></td>
-                <td><label data-bind="text:name,attr:{for:'chk'+name}"></label></td>
+                <td><label data-bind="text:name,attr:{for:'chk'+name}" style="margin:0"></label></td>
               </tr>
             </tbody>
           </table>
@@ -875,6 +878,18 @@
         </tbody>
       </table>
     </div>
+  </div>
+  <!--#endregion-->
+  <!--#region wwwSettings-->
+  <div data-bind="elementer:contractCacheDialog" style="display:none">
+    <table border="1" class="wwwInfo">
+      <tbody data-bind="foreach:contractCache">
+        <tr>
+          <td data-bind="text:Instrument"></td>
+          <td data-bind="text:ConId"></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
   <!--#endregion-->
   <!--#region replayDialog-->
@@ -1263,12 +1278,8 @@
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>
         <input data-bind="value:comboCurrentStrikeLevel" size="3" />
         <!-- ko with: combosStats -->
-        <span class="glyphicon glyphicon-stats"></span>
-        <b data-bind="text:d3.format('+.1f')(strikeDelta),css:{profit:strikeDelta>0,loss:strikeDelta<0}" style="margin-left:1ex"></b>
         <span class="glyphicon glyphicon-resize-vertical"></span>
         <b data-bind="text:d3.format('.2f')(spread)"></b>
-        <span class="glyphicon glyphicon-hourglass"></span>
-        <b data-bind="text:d3.format('.2f')(stDev)"></b>
         <!-- /ko -->
       </div>
       <div data-bind="foreach:combosMin" style="display:inline-table">
@@ -1281,7 +1292,7 @@
     </div>
     <div data-bind1="foreach:activeCombos" style="display:none">
       <div>
-        <input type="button" data-bind1="value:i()+':'+d3.format('+.0f')(strikeDelta())"/>
+        <input type="button" data-bind1="value:i()+':'+d3.format('+.0f')(strikeDelta())" />
         <input type="button" data-bind1="click:$parent.openButterfly.bind(null,false,$data)" value="SELL" />
         <button data-bind1="click:$parent.openButterfly.bind(null,true,$data)">BUY</button>
         <button data-bind1="event:{click:function(){isActive(false)}}">X</button>

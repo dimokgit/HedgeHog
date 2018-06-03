@@ -27,6 +27,7 @@ using System.Runtime.ExceptionServices;
 using AutoMapper;
 using MongoDB.Bson;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage :Models.ModelBase {
@@ -143,7 +144,13 @@ namespace HedgeHog.Alice.Store {
       var c = ForexMongoFactory;
       action(c);
       if(save) {
-        c.SaveChanges();
+        try {
+          c.SaveChanges();
+        }catch(Exception exc) {
+          if(Debugger.IsAttached)
+          Debugger.Break();
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
+        }
         onSave?.Invoke();
       }
     }

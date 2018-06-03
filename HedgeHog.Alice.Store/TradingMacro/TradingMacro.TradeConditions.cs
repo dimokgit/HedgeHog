@@ -2222,32 +2222,33 @@ namespace HedgeHog.Alice.Store {
     public void TradeConditionsTrigger() {
       if(!IsRatesLengthStableGlobal()) return;
       if(!IsTrader) return;
-      var am = IBAccountManager();
-      var puts = OpenPuts();
-      var hasOptions = (from put in CurrentPut
-                        from p in puts
-                        where put.strikeAvg + p.price.Abs() > p.contract.Strike
-                        select true
-                        ).Any();
-      hasOptions = hasOptions ||
-        am.UseOrderContracts(OrderContracts =>
-        (from put in CurrentPut
-         join oc in OrderContracts.Values.Where(o => !o.isDone) on put.instrument equals oc.contract.Instrument
-         select true
-         )).Concat().Any();
-      if(!hasOptions) {
-        TradeConditionsEval()
-          .DistinctUntilChanged(td => td)
-          .Where(td => td.HasUp())
-          .Take(1)
-          .ForEach(_ => {
-            var pos = -puts.Select(p => p.position.Abs()).DefaultIfEmpty(TradingRatio.ToInt()).Max();
-            CurrentPut?.ForEach(p => {
-              Log = new Exception($"{nameof(TradeConditionsTrigger)}:{nameof(am.OpenTrade)}:{new { p.option, pos, Thread.CurrentThread.ManagedThreadId }}");
-              am.OpenTrade(p.option, pos, 0, true);
+      UseAccountManager(am => {
+        var puts = OpenPuts();
+        var hasOptions = (from put in CurrentPut
+                          from p in puts
+                          where put.strikeAvg + p.price.Abs() > p.contract.Strike
+                          select true
+                          ).Any();
+        hasOptions = hasOptions ||
+          am.UseOrderContracts(OrderContracts =>
+          (from put in CurrentPut
+           join oc in OrderContracts.Values.Where(o => !o.isDone) on put.instrument equals oc.contract.Instrument
+           select true
+           )).Concat().Any();
+        if(!hasOptions) {
+          TradeConditionsEval()
+            .DistinctUntilChanged(td => td)
+            .Where(td => td.HasUp())
+            .Take(1)
+            .ForEach(_ => {
+              var pos = -puts.Select(p => p.position.Abs()).DefaultIfEmpty(TradingRatio.ToInt()).Max();
+              CurrentPut?.ForEach(p => {
+                Log = new Exception($"{nameof(TradeConditionsTrigger)}:{nameof(am.OpenTrade)}:{new { p.option, pos, Thread.CurrentThread.ManagedThreadId }}");
+                am.OpenTrade(p.option, pos, 0, true);
+              });
             });
-          });
-      }
+        }
+      });
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
       if(IsHedgedTrading && BarsCountCalc == RatesArray.Count) {
         if(IsTradingActive)
@@ -2318,8 +2319,14 @@ namespace HedgeHog.Alice.Store {
       .ForEach(trade => CloseTrades(nameof(TradeConditionsShouldClose)));
     }
 
-    private IEnumerable<(IBApi.Contract contract, int position, double open, double price)> OpenPuts() => IBAccountManager().Positions.Where(p => p.position != 0 && p.contract.IsPut);
-    private AccountManager IBAccountManager() => ((IBWraper)TradesManager).AccountManager;
+    private IEnumerable<(IBApi.Contract contract, int position, double open, double price)> OpenPuts() 
+      => UseAccountManager(am=>am.Positions.Where(p => p.position != 0 && p.contract.IsPut)).Concat();
+    private void UseAccountManager(Action<AccountManager> action) => UseAccountManager(am => { action(am); return Unit.Default; }).Count();
+    private IEnumerable<T> UseAccountManager<T>(Func<AccountManager, T> func) {
+      var am = ((IBWraper)TradesManager)?.AccountManager;
+      if(am == null) yield break;
+      yield return func(am);
+    }
 
     bool _isTurnOnOnly = false;
     [Category(categoryActiveYesNo)]

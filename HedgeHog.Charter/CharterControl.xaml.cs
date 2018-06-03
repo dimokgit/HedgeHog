@@ -115,7 +115,7 @@ namespace HedgeHog {
       if (container != null) container.SatisfyImportsOnce(this);
       Name = Regex.Replace( name,"[/ -]", "_");
       InitializeComponent();
-      DispatcherScheduler.Current.Schedule(() => OnPropertyChanged(Metadata.CharterControlMetadata.Header));
+      RxApp.MainThreadScheduler.Schedule(1.FromSeconds(), () => OnPropertyChanged(Metadata.CharterControlMetadata.Header));
     }
 
     #region tm

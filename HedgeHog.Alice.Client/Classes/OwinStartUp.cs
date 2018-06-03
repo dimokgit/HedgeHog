@@ -40,6 +40,7 @@ using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string P
 using IBApp;
 using System.Diagnostics;
 using IBApi;
+using HedgeHog.DateTimeZone;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
@@ -278,85 +279,87 @@ namespace HedgeHog.Alice.Client {
 
     static DateTime _newsReadLastDate = DateTime.MinValue;
     static List<DateTimeOffset> _newsDates = new List<DateTimeOffset>();
-    public object AskChangedPrice(string pair) {
-      var tm0 = UseTradingMacro2(pair, 0, tm => tm).FirstOrDefault();
-      if(tm0 == null)
-        return new { };
-      var tm1 = UseTradingMacro2(pair, 1, tm => tm).SingleOrDefault();
-      var tmTrader = tm0.TradingMacroTrader().Single();
-      var tmTrender = tm0.TradingMacroTrender().Last();
-      var isVertual = tmTrader.IsInVirtualTrading;
+    public object[] AskChangedPrice(string pair) {
+      return (from tm0 in UseTradingMacro2(pair, 0, tm => tm)
+              from tm1 in UseTradingMacro2(pair, 1, tm => tm)
+              from tmTrader in tm0.TradingMacroTrader()
+              from tmTrender in tm0.TradingMacroTrender().TakeLast(1)
+              select new { tm0, tm1, tmTrader, tmTrender }
+      ).Select(t => {
+        var isVertual = t.tmTrader.IsInVirtualTrading;
 
-      #region marketHours
-      if(!tmTrader.IsInVirtualTrading)
+        #region marketHours
+        if(!t.tmTrader.IsInVirtualTrading)
+          _marketHours
+            .Where(mh => !_marketHoursSet.Contains(mh.Key))
+            .Where(mh => (t.tmTrader.ServerTime.ToUniversalTime().TimeOfDay - mh.Value.TimeOfDay).TotalMinutes.Between(-15, 0))
+            .Do(mh => Clients.All.marketIsOpening(new { mh.Key, mh.Value }))
+            .ForEach(mh => _marketHoursSet.Add(mh.Key));
         _marketHours
-          .Where(mh => !_marketHoursSet.Contains(mh.Key))
-          .Where(mh => (tmTrader.ServerTime.ToUniversalTime().TimeOfDay - mh.Value.TimeOfDay).TotalMinutes.Between(-15, 0))
-          .Do(mh => Clients.All.marketIsOpening(new { mh.Key, mh.Value }))
-          .ForEach(mh => _marketHoursSet.Add(mh.Key));
-      _marketHours
-        .Where(mh => (tmTrader.ServerTime.ToUniversalTime().TimeOfDay - mh.Value.TimeOfDay).TotalMinutes > 1)
-        .ForEach(mh => _marketHoursSet.Remove(mh.Key));
-      #endregion
+          .Where(mh => (t.tmTrader.ServerTime.ToUniversalTime().TimeOfDay - mh.Value.TimeOfDay).TotalMinutes > 1)
+          .ForEach(mh => _marketHoursSet.Remove(mh.Key));
+        #endregion
 
-      #region News
-      var doNews = false;
-      if(doNews && tmTrader.DoNews && DateTime.Now.Subtract(_newsReadLastDate).TotalMinutes > 1) {
-        _newsReadLastDate = DateTime.Now;
-        var now = DateTimeOffset.UtcNow;
-        var then = now.AddMinutes(60);
-        var news = ReadNewsFromDb()
-          .Where(n => !_newsDates.Contains(n.Time))
-          .Where(n => n.Time > now && n.Time < then)
-          .ToArray();
-        if(news.Any()) {
-          _newsDates.AddRange(news.Select(n => n.Time));
-          Clients.All.newsIsComming(news.Select(n => new { n.Time, n.Name }).ToArray());
+        #region News
+        var doNews = false;
+        if(doNews && t.tmTrader.DoNews && DateTime.Now.Subtract(_newsReadLastDate).TotalMinutes > 1) {
+          _newsReadLastDate = DateTime.Now;
+          var now = DateTimeOffset.UtcNow;
+          var then = now.AddMinutes(60);
+          var news = ReadNewsFromDb()
+            .Where(n => !_newsDates.Contains(n.Time))
+            .Where(n => n.Time > now && n.Time < then)
+            .ToArray();
+          if(news.Any()) {
+            _newsDates.AddRange(news.Select(n => n.Time));
+            Clients.All.newsIsComming(news.Select(n => new { n.Time, n.Name }).ToArray());
+          }
         }
-      }
-      #endregion
-      var timeFormat = (isVertual ? "MMM/d " : "") + "HH:mm:ss";
-      var digits = tmTrader.Digits();
-      Func<TradingMacro, string> timeFrame = tm => tm.BarPeriod > Bars.BarsPeriodType.t1
-      ? (tm.RatesArray.Count * tm.BarPeriodInt).FromMinutes().TotalDays.Round(1) + ""
-      : TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"h\:mm");
-      var cgp = tmTrader.CurrentGrossInPips;
-      var otgp = tmTrader.OpenTradesGross2InPips;
-      var ht = trader.Value?.TradesManager.GetTrades().Any();
-      return new {
-        time = tm0.ServerTime.ToString(timeFormat),
-        prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 3),
-        otg = IntOrDouble(tmTrader.OpenTradesGross2InPips, 3),
-        tps = tm0.TicksPerSecondAverage.Round(1),
-        dur = timeFrame(tmTrader)
-          + (tm1 != null ? "," + timeFrame(tm1) : ""),// + "|" + TimeSpan.FromMinutes(tm1.RatesDuration).ToString(@"h\:mm"),
-        hgt = string.Join("/", new[] {
-          tmTrender.RatesHeightInPips.ToInt()+"",
-          tmTrader.BuySellHeightInPips.ToInt()+"",
-          tmTrender.TLBlue.Angle.Abs().Round(1)+"°"
+        #endregion
+        var timeFormat = (isVertual ? "MMM/d " : "") + "HH:mm:ss";
+        var digits = t.tmTrader.Digits();
+        Func<TradingMacro, string> timeFrame = tm => tm.BarPeriod > Bars.BarsPeriodType.t1
+        ? (tm.RatesArray.Count * tm.BarPeriodInt).FromMinutes().TotalDays.Round(1) + ""
+        : TimeSpan.FromMinutes(t.tm0.RatesDuration).ToString(@"h\:mm");
+        var cgp = t.tmTrader.CurrentGrossInPips;
+        var otgp = t.tmTrader.OpenTradesGross2InPips;
+        var ht = trader.Value?.TradesManager.GetTrades().Any();
+        return (object)new {
+          time = t.tm0.ServerTime.ToString(timeFormat),
+          prf = IntOrDouble(t.tmTrader.CurrentGrossInPipTotal, 3),
+          otg = IntOrDouble(t.tmTrader.OpenTradesGross2InPips, 3),
+          tps = t.tm0.TicksPerSecondAverage.Round(1),
+          dur = timeFrame(t.tmTrader)
+            + (t.tm1 != null ? "," + timeFrame(t.tm1) : ""),// + "|" + TimeSpan.FromMinutes(tm1.RatesDuration).ToString(@"h\:mm"),
+          hgt = string.Join("/", new[] {
+          t.tmTrender.RatesHeightInPips.ToInt()+"",
+          t.tmTrader.BuySellHeightInPips.ToInt()+"",
+          t.tmTrender.TLBlue.Angle.Abs().Round(1)+"°"
         }),
-        rsdMin = tm0.RatesStDevMinInPips,
-        rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
-        S = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
-        price = tmTrader.CurrentPrice.YieldNotNull().Select(cp => new { ask = cp.Ask, bid = cp.Bid }).DefaultIfEmpty(new object()).Single(),
-        tci = GetTradeConditionsInfo(tmTrader),
-        wp = tmTrader.WaveHeightPower.Round(1),
-        ip = remoteControl.Value.ReplayArguments.InPause ? 1 : 0,
-        com = new { b = tmTrader.CenterOfMassBuy.Round(digits), s = tmTrader.CenterOfMassSell.Round(digits), dates = tmTrader.CenterOfMassDates ?? new DateTime[0] },
-        com2 = new { b = tmTrader.CenterOfMassBuy2.Round(digits), s = tmTrader.CenterOfMassSell2.Round(digits), dates = tmTrader.CenterOfMass2Dates ?? new DateTime[0] },
-        com3 = new { b = tmTrader.CenterOfMassBuy3.Round(digits), s = tmTrader.CenterOfMassSell3.Round(digits), dates = tmTrader.CenterOfMass3Dates ?? new DateTime[0] },
-        com4 = new { b = tmTrader.CenterOfMassBuy4.Round(digits), s = tmTrader.CenterOfMassSell4.Round(digits), dates = tmTrader.CenterOfMass4Dates ?? new DateTime[0] },
-        bth = tmTrader.BeforeHours.Select(t => new { t.upDown, t.dates }).ToArray(),
-        //afh2 = new[] { new { dates = tmTrader.ServerTime.Date.AddDays(-1).AddHours(16).With(d => new[] { d, d.AddHours(4) }) } },
-        afh = GetBackDates(tmTrader.ServerTime.Date, 6)
-          .Select(date => new { dates = date.AddHours(16).With(d => new[] { d, d.AddHours(4) }) })
-          .ToArray(),
-        tpls = tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
-        tts = HasMinMaxTradeLevels(tmTrader) ? tmTrender.TradeTrends : "",
-        tti = GetTradeTrendIndexImpl(tmTrader, tmTrender),
-        ht
-        //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
-      };
+          rsdMin = t.tm0.RatesStDevMinInPips,
+          rsdMin2 = t.tm1 == null ? 0 : t.tm1.RatesStDevMinInPips,
+          S = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
+          price = t.tmTrader.CurrentPrice.YieldNotNull().Select(cp => new { ask = cp.Ask, bid = cp.Bid }).DefaultIfEmpty(new object()).Single(),
+          tci = GetTradeConditionsInfo(t.tmTrader),
+          wp = t.tmTrader.WaveHeightPower.Round(1),
+          ip = remoteControl.Value.ReplayArguments.InPause ? 1 : 0,
+          com = new { b = t.tmTrader.CenterOfMassBuy.Round(digits), s = t.tmTrader.CenterOfMassSell.Round(digits), dates = t.tmTrader.CenterOfMassDates ?? new DateTime[0] },
+          com2 = new { b = t.tmTrader.CenterOfMassBuy2.Round(digits), s = t.tmTrader.CenterOfMassSell2.Round(digits), dates = t.tmTrader.CenterOfMass2Dates ?? new DateTime[0] },
+          com3 = new { b = t.tmTrader.CenterOfMassBuy3.Round(digits), s = t.tmTrader.CenterOfMassSell3.Round(digits), dates = t.tmTrader.CenterOfMass3Dates ?? new DateTime[0] },
+          com4 = new { b = t.tmTrader.CenterOfMassBuy4.Round(digits), s = t.tmTrader.CenterOfMassSell4.Round(digits), dates = t.tmTrader.CenterOfMass4Dates ?? new DateTime[0] },
+          bth = t.tmTrader.BeforeHours.Select(tr => new { tr.upDown, tr.dates }).ToArray(),
+          //afh2 = new[] { new { dates = t.tmTrader.ServerTime.Date.AddDays(-1).AddHours(16).With(d => new[] { d, d.AddHours(4) }) } },
+          afh = GetBackDates(t.tmTrader.ServerTime.Date, 6)
+            .Select(date => new { dates = date.AddHours(16).With(d => new[] { d, d.AddHours(4) }) })
+            .ToArray(),
+          tpls = t.tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
+          tts = HasMinMaxTradeLevels(t.tmTrader) ? t.tmTrender.TradeTrends : "",
+          tti = GetTradeTrendIndexImpl(t.tmTrader, t.tmTrender),
+          ht
+          //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
+        };
+      })
+      .ToArray();
       DateTime[] GetBackDates(DateTime start, int daysBack) =>
         Enumerable.Range(0, 1000)
           .Select(d => start.AddDays(-d))
@@ -764,6 +767,14 @@ namespace HedgeHog.Alice.Client {
       var am = GetAccountManager();
       am?.CancelAllOrders(nameof(CancelAllOrders));
     }
+    public object[] ReadContractsCache() {
+      return Contract.Cache()
+        .OrderBy(x => x.LastTradeDateOrContractMonth)
+        .ThenBy(x => x.Strike)
+        .ThenBy(x => x.IsPut)
+        .Select(c => new { c.Instrument, c.ConId })
+        .ToArray();
+    }
     #endregion
 
     #region TradeConditions
@@ -1093,6 +1104,7 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
     static string MakePair(string pair) { return TradesManagerStatic.IsCurrenncy(pair) ? pair.Substring(0, 3) + "/" + pair.Substring(3, 3) : pair; }
+    bool IsEOW(DateTime date) => date.DayOfWeek == DayOfWeek.Friday && date.InNewYork().TimeOfDay > new TimeSpan(16, 0, 0);
     public Trade[] ReadClosedTrades(string pair) {
       try {
         var tms = GetTradingMacros(pair).Where(tm => tm.BarPeriod > BarsPeriodType.t1).Take(1).ToArray();
@@ -1104,13 +1116,16 @@ namespace HedgeHog.Alice.Client {
           from dateMin in tm.RatesArray.Take(1).Select(r => r.StartDate)
           where trade.Time >= dateMin
           orderby trade.Time descending
-          let rateOpen = tm.RatesArray.FuzzyFinder(trade.Time, (t, r1, r2) => t.Between(r1.StartDate, r2.StartDate)).Take(1).ToArray()
-          let rateClose = tm.RatesArray.FuzzyFinder(trade.TimeClose, (t, r1, r2) => t.Between(r1.StartDate, r2.StartDate)).Take(1).ToArray()
+          let rateOpen = tm.RatesArray.FuzzyFinder(trade.Time, (t, r1, r2) => t.Between(r1.StartDate, r2.StartDate)).Take(1)
+          .IfEmpty(() => IsEOW(trade.Time) ? tm.RatesArray.TakeLast(1) : new Rate[0]).ToArray()
+          let rateClose = tm.RatesArray.FuzzyFinder(trade.TimeClose, (t, r1, r2) => t.Between(r1.StartDate, r2.StartDate)).Take(1)
+          .IfEmpty(() => IsEOW(trade.Time) ? tm.RatesArray.TakeLast(1) : new Rate[0]).ToArray().ToArray()
+          where rateOpen.Any() && (trade.Kind != PositionBase.PositionKind.Closed || rateClose.Any())
           select (trade, rateOpen, rateClose)
          ).Select(t => {
            var trade = t.trade.Clone();
-           t.rateOpen.ForEach(r => trade.Open = r.PriceAvg);
-           t.rateClose.ForEach(r => trade.Close = r.PriceAvg);
+           t.rateOpen.Select(r => r.PriceAvg).ForEach(p => trade.Open = p);
+           t.rateClose.Select(r => r.PriceAvg).ForEach(p => trade.Close = p);
            return trade;
          }).ToArray();
         return tradesNew;
@@ -1399,7 +1414,7 @@ namespace HedgeHog.Alice.Client {
     }
     IEnumerable<T> UseTradingMacro2<T>(string pair, int chartNum, Func<TradingMacro, T> func) {
       try {
-        return GetTradingMacros(pair).Skip(chartNum).Select(func);
+        return GetTradingMacros(pair).Skip(chartNum).Take(1).Select(func);
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         return new T[0];

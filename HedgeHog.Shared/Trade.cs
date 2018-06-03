@@ -264,7 +264,7 @@ namespace HedgeHog.Shared {
     public void UpdateByPrice(object sender, PriceChangedEventArgs e) {
       UpdateByPrice(sender as ITradesManager, e.Price);
     }
-    int BaseUnitSize { get; set; }
+    public int BaseUnitSize { get; private set; }
     public void UpdateByPrice(ITradesManager tradesManager) {
       if(!tradesManager.TryGetPrice(Pair, out var price)) return;
       UpdateByPrice(tradesManager, price);

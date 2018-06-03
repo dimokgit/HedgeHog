@@ -79,6 +79,18 @@
       });
     }
   };
+  ko.extenders.default = function (target, defValue) {
+    var defaulted = ko.pureComputed({
+      read: function () {
+        var val = target();
+        return val == null ? defValue : val;
+      },
+      write: function (newValue) {
+        target(newValue);
+      }
+    });
+    return defaulted;
+  };
   //#endregion
   // #region Globals
   "use strict";
@@ -223,7 +235,7 @@
   function askPriceChanged() {
     return chat.server.askChangedPrice(pair)
       .done(function (response) {
-        addMessage(response);
+        response.forEach(addMessage);
       })
       .fail(function (e) {
         showErrorPerm(e, keyNote("askPriceChanged"));
@@ -308,6 +320,7 @@
     readingCombos = true;
     serverCall("readStraddles", args
       , function () {
+      }, function () {
       }, function () {
         readingCombos = false;
       });
@@ -792,6 +805,24 @@
       //$(wwwSettingsGridElement).jqPropertyGrid(properties);
     };
     // #endregion
+    // #region Contract Cache
+    var contractCacheElement;
+    this.contractCacheDialog = function (element) {
+      contractCacheElement = element;
+    }
+    this.contractCache = ko.observableArray();
+    this.showContractCache = function () {
+      serverCall("readContractsCache", [], function (cc) {
+        self.contractCache(cc);
+      });
+      $(contractCacheElement).dialog({
+        title: "Contract Cache", width: "auto", //dialogClass: "dialog-compact",
+        dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
+        close: function () { $(this).dialog("destroy"); }
+      });
+      //$(wwwSettingsGridElement).jqPropertyGrid(properties);
+    };
+    // #endregion
     // #region Butterflies
     this.activeCombos = ko.pureComputed(function () {
       return this.currentCombos()
@@ -810,11 +841,13 @@
       self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? self.priceAvg() : "");
     }
     this.comboGap = ko.observable(1);
+    this.comboGap.subscribe(refreshCombos);
     this.numOfCombos = ko.observable(0);
-    this.comboGap.subscribe(function (v) {
+    this.numOfCombos.subscribe(refreshCombos);
+    function refreshCombos(v) {
       readCombos(true);
       dataViewModel.butterflies([]);
-    })
+    }
     this.newProfit = function (a, b, c) {
       var profitAmount = parseFloat(b.target.value);
       if (!isNaN(profitAmount)) {
@@ -871,13 +904,8 @@
       var top2 = combos
         //.sort(function (v1, v2) { return v1.avg - v2.avg; })
         .slice(0, 2);
-      var wSum = top2.map(function (v) { return v.strike() / v.delta(); }).sum();
-      var sum = top2.map(function (v) { return 1 / v.delta(); }).sum();
-      var strike = wSum / sum;
       var spread = top2.map(function (v) { return v.ask() - v.bid(); }).sum() / 2;
-      var price = this.price.peek();
-      var stDev = standardDeviation(combos.map(function (v) { return (v.ask() + v.bid()) / 2; }));
-      return { strikeDelta: strike - (price.bid + price.ask) / 2, spread: spread, stDev: stDev };
+      return { spread: spread };
     }, this);
     this.butterfliesDialog = ko.observable();
     this.butterfliesDialog.subscribe(function () {
@@ -1181,8 +1209,8 @@
       }];
     this.chartData = ko.observable(defaultChartData(0));
     this.chartData2 = ko.observable(defaultChartData(1));
-    var priceEmpty = { ask: NaN, bid: NaN };
-    this.price = ko.observable(priceEmpty);
+    var priceEmpty = { ask: 0, bid: 0 };
+    this.price = ko.observable(priceEmpty).extend({ default: priceEmpty });
     this.priceAvg = ko.pureComputed(function () {
       return (self.price().ask + self.price().bid) / 2;
     });
@@ -1750,8 +1778,8 @@
             return;
           _inFlightPriceChanged = new Date();
           chat.server.askChangedPrice(pair)
-            .done(function (response) {
-              addMessage(response);
+            .done(function (responses) {
+              responses.forEach(addMessage);
             })
             .fail(function (e) {
               showErrorPerm(e);

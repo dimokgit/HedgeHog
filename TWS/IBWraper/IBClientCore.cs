@@ -22,7 +22,6 @@ using OptionsChainHandler = System.Action<int, string, int, string, string, Syst
 using TickPriceHandler = System.Action<int, int, double, int>;
 using OptionPriceHandler = System.Action<int, int, double, double, double, double, double, double, double, double>;
 using ReqSecDefOptParams = System.IObservable<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
-using ReqSecDefOptParamsList = System.Collections.Generic.IList<(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using ErrorHandler = System.Action<int, int, string, System.Exception>;
 
 using OPTION_CHAIN_OBSERVABLE = System.IObservable<(string exchange, string tradingClass, string multiplier, System.DateTime[] expirations, double[] strikes, string symbol, string currency)>;
@@ -30,7 +29,6 @@ using OPTION_CHAIN_DICT = System.Collections.Concurrent.ConcurrentDictionary<str
 
 using OPTION_PRICE_OBSERVABLE = System.IObservable<(int tickerId, int field, double impliedVolatility, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)>;
 using PRICE_OBSERVABLE = System.IObservable<(IBApi.Contract contract, double bid, double ask, System.DateTime time)>;
-using SEC_DEF_OPTIONS_DICT = System.Collections.Concurrent.ConcurrentDictionary<(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId), (int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, System.Collections.Generic.HashSet<string> expirations, System.Collections.Generic.HashSet<double> strikes)>;
 using System.Reactive.Subjects;
 using System.Diagnostics;
 using static IBApi.IBApiMixins;
@@ -319,6 +317,13 @@ namespace IBApp {
     }
 
     public static ConcurrentDictionary<(string symbol, DateTime expDate), Contract[]> OptionChainOldCache = new ConcurrentDictionary<(string symbol, DateTime expDate), Contract[]>();
+
+    public static void ClearCache() {
+      Contract.Contracts.Clear();
+      IBApi.ContractDetails.ClearCache();
+      OptionChainCache.Clear();
+      OptionChainCache.Clear();
+    }
 
     bool _ReqOptionChainOldCacheInRun = false;
     public IObservable<Contract[]> ReqOptionChainOldCache(string symbol, DateTime expDate) {

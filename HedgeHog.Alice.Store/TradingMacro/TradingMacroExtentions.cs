@@ -1248,8 +1248,6 @@ namespace HedgeHog.Alice.Store {
           return;
         EnsureActiveSuppReses();
         RaisePositionsChanged();
-        UseRates(ra => ra.Distances(r => r.PriceCMALast).Last().Item2)
-          .ForEach(d => _ratesArrayDistance = d);
         _strategyExecuteOnTradeOpen?.Invoke(e.Trade);
       } catch(Exception exc) {
         Log = exc;
@@ -3415,8 +3413,10 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       if(trades.Lots() == 0)
         return 0;
       var com = CommissionByTrade(trade);
-      var rate = TradesManager.RateForPipAmount(CurrentPrice);
-      return TradesManagerStatic.MoneyAndLotToPips(Pair, com, trades.Lots(), rate, PointSize);
+      return CurrentPrice.YieldNotNull().Select(cp => {
+        var rate = TradesManager.RateForPipAmount(cp);
+        return TradesManagerStatic.MoneyAndLotToPips(Pair, com, trades.Lots(), rate, PointSize);
+      }).DefaultIfEmpty().Single();
     }
     public double CalculateTakeProfitInPips(double customRatio = double.NaN, bool dontAdjust = true) {
       return InPips(CalculateTakeProfit(customRatio, dontAdjust));
@@ -3702,11 +3702,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       switch(function) {
         case TradingMacroTakeProfitFunction.StDev:
           return useTrenderComm(tm => tm.StDevByHeight * xRatio);
-        case TradingMacroTakeProfitFunction.Distance:
-          var tpd = double.NaN;
-          Trades.TakeLast(1).SelectMany(t => UseRatesInternal(ri => ri.BackwardsIterator().TakeWhile(r => r.StartDate >= t.Time).Distances(r => r.PriceCMALast).Last().Item2))
-          .ForEach(d => tpd = d);
-          return _ratesArrayDistance.IfNaN(StDevByPriceAvg) * xRatio - tpd.IfNaN(0);
         case TradingMacroTakeProfitFunction.BBand:
           return useTrenderComm(tm => tm.BBWithRatio.SingleOrDefault() * xRatio);
         case TradingMacroTakeProfitFunction.StDevP:

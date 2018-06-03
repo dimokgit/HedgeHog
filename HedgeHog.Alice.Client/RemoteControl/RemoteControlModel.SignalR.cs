@@ -51,7 +51,7 @@ namespace HedgeHog.Alice.Client {
       var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
       var tpsHigh = tm.GetVoltageHigh().SingleOrDefault();
       var tpsLow = tm.GetVoltageAverage().SingleOrDefault();
-      var tps2High = tm.GetVoltage2High().Where(v=>!v.IsNaN()).ToArray();
+      var tps2High = tm.GetVoltage2High().Where(v => !v.IsNaN()).ToArray();
       var tps2Low = tm.GetVoltage2Low().Where(v => !v.IsNaN()).ToArray();
       var tpsCurr2 = tm.UseRates(ra => ra.BackwardsIterator().Select(tm.GetVoltage2).SkipWhile(double.IsNaN).FirstOrDefault()).DefaultIfEmpty(0).Single();
 
@@ -85,7 +85,7 @@ namespace HedgeHog.Alice.Client {
         manualBuy = tmTrader.BuyLevel.InManual,
         buyCount = tmTrader.BuyLevel.TradesCount,
         sell = tmTrader.SellLevel.Rate.Round(digits),
-        sellClose = tmTrader.SellCloseLevel.Rate.Round(digits),
+        sellClose = tmTrader.SellCloseLevel.Rate.Round(digits).With(d => d == 0 ? tmTrader.RatesArray[0].PriceAvg : d),
         canSell = tmTrader.SellLevel.CanTrade,
         manualSell = tmTrader.SellLevel.InManual,
         sellCount = tmTrader.SellLevel.TradesCount,

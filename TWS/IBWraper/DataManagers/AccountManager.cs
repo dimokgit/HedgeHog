@@ -180,7 +180,6 @@ namespace IBApp {
         .Subscribe(a => OnOrderStartedImpl(a.orderId, a.contract, a.order, a.orderState))
         .SideEffect(s => _strams.Add(s));
       osObs
-        .Do(t => _verbous(t))
         .Where(t => UseOrderContracts(ocs => ocs.Where(oc => oc.Key == t.orderId && oc.Value.order.Account == _accountId)).Concat().Any())
         .Select(t => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() })
         .Distinct()
@@ -249,7 +248,7 @@ namespace IBApp {
     public IEnumerable<T> UseOrderContracts<T>(Func<ConcurrentDictionary<int, OrdeContractHolder>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
       var message = $"{nameof(UseOrderContracts)}:{new { Caller, timeoutInMilliseconds }}";
       if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
-        throw new TimeoutException(message);
+        throw new TimeoutException(message + " could't enter Monitor");
       }
       Stopwatch sw = Stopwatch.StartNew();
       T ret;
@@ -261,7 +260,7 @@ namespace IBApp {
       } finally {
         Monitor.Exit(_OpenTradeSync);
         if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
-          Trace(message + $" SpentMoreThen {timeoutInMilliseconds} ms");
+          Trace(message + $" Spent {sw.ElapsedMilliseconds} ms");
         }
       }
       yield return ret;
