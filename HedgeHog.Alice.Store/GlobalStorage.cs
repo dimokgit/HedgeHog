@@ -139,19 +139,22 @@ namespace HedgeHog.Alice.Store {
     static string mongoConnectionString = "mongodb://dimok:1Aaaaaaa@ds040017.mlab.com:40017/forex";
     static ForexDbContext _ForexMongoFactory;
     static ForexDbContext ForexMongoFactory => _ForexMongoFactory ?? (_ForexMongoFactory = new ForexDbContext(mongoConnectionString));
-    public static T UseForexMongo<T>(Func<ForexDbContext, T> func) => func(ForexMongoFactory);
+    static object _forexDbContextLocker = new object();
+    public static T UseForexMongo<T>(Func<ForexDbContext, T> func) { lock(_forexDbContextLocker) return func(ForexMongoFactory); }
     public static void UseForexMongo(Action<ForexDbContext> action, bool save = false, Action onSave = null) {
       var c = ForexMongoFactory;
-      action(c);
-      if(save) {
-        try {
-          c.SaveChanges();
-        }catch(Exception exc) {
-          if(Debugger.IsAttached)
-          Debugger.Break();
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
+      lock(_forexDbContextLocker) {
+        action(c);
+        if(save) {
+          try {
+            c.SaveChanges();
+          } catch(Exception exc) {
+            if(Debugger.IsAttached)
+              Debugger.Break();
+            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
+          }
+          onSave?.Invoke();
         }
-        onSave?.Invoke();
       }
     }
     public static void ForexMongoSave() => UseForexMongo(c => c.SaveChanges());

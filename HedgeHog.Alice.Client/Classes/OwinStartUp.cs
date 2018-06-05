@@ -583,6 +583,7 @@ namespace HedgeHog.Alice.Client {
                 .Select(ts => {
                   var cs = ts.Select(t => new {
                     i = t.instrument,
+                    d = (t.combo.contract.IsFutureOption ? t.combo.contract.Expiration.Day + " " : ""),
                     t.bid,
                     t.ask,
                     avg = t.ask.Avg(t.bid),
@@ -610,6 +611,7 @@ namespace HedgeHog.Alice.Client {
                 var options = ts
                  .Select(t => new {
                    i = t.instrument,
+                   d = (t.option.IsFutureOption ? t.option.Expiration.Day + " " : ""),
                    t.bid,
                    t.ask,
                    avg = t.ask.Avg(t.bid),

@@ -1314,7 +1314,7 @@
       </tr>
       <!-- ko foreach:currentCombos -->
       <tr data-bind="event:{click1:function(){isActive(!isActive())}}">
-        <td data-bind="text:i,css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
+        <td data-bind="text:d()+i(),css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
         <td data-bind="text:d3.format('+.1f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
         <!--<td data-bind1="text:d3.format('.1f')(be.up())"></td>
         <td data-bind1="text:d3.format('.1f')(be.dn())"></td>

@@ -328,8 +328,12 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate VAOk {
       get {
         return () => {
-          double dc = RatesArray.Select(GetVoltage).Where(Lib.IsNotNaN).DistinctUntilChanged().Count();
-          return (_distVolt = (dc / RatesArray.Count)) > .6 ? TradeDirections.Both : TradeDirections.None;
+          double dc = RatesArray.Select(GetVoltage).Where(Lib.IsNotNaN)
+          .GroupByAdjacent(d=>d)
+          .Select(g=>g.Count())
+          .DefaultIfEmpty()
+          .Max();
+          return (_distVolt = (dc / RatesArray.Count)) < .05 ? TradeDirections.Both : TradeDirections.None;
         };
       }
     }

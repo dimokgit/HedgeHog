@@ -7,9 +7,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 namespace HedgeHog.Tests {
+
   namespace UnitLib {
     [TestClass]
     public class EnumerableExTest {
+      [TestMethod()]
+      public void GroupByAdjacent() {
+        var source = new[] { 1, 1, 1, 0, 0, 1, 1, 1, 1, 1 };
+        var res = source.GroupByAdjacent(i => i).OrderBy(g => g.Count()).Last();
+        Assert.AreEqual(5, res.Count());
+      }
       [TestMethod()]
       public void GetCmasList() {
         var r = new Random();

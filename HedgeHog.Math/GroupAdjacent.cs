@@ -37,7 +37,7 @@ namespace HedgeHog {
       if (haveLast)
         yield return last;
     }
-    static IEnumerable<IGrouping<TKey, TSource>>
+    public static IEnumerable<IGrouping<TKey, TSource>>
       GroupByAdjacent<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TKey, bool> keyComparer = null) {
         keyComparer = keyComparer ?? EqualityComparer<TKey>.Default.Equals;
       TKey last = default(TKey);
