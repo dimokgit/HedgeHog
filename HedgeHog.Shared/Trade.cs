@@ -81,15 +81,7 @@ namespace HedgeHog.Shared {
     }
     private Trade() {
     }
-    string _Pair;
 
-    [DataMember]
-    public string Pair {
-      get { return _Pair; }
-      set {
-        _Pair = value;
-      }
-    }
     [DataMember]
     [DisplayName("BS")]
     public bool Buy { get; set; }

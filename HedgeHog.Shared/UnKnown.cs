@@ -16,6 +16,8 @@ namespace HedgeHog.Shared {
     [Key]
     [DataMember]
     public string Id { get; set; }
+    [DataMember]
+    public string Pair { get; set; }
     private DateTime _time;
     [DataMember]
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]

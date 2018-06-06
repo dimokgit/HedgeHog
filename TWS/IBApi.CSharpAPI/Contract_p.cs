@@ -11,6 +11,8 @@ namespace IBApi {
   public static class Mixin {
   }
   public partial class Contract {
+    private string HashKey => Instrument +
+      (IsCombo ? ":" + ComboLegs.OrderBy(l => l.Ratio).Select(l => $"{l.ConId}-{l.Ratio}").Flatter(":") : "");
     public double IntrinsicValue(double undePrice) =>
       !IsOption
       ? 0
@@ -38,7 +40,11 @@ namespace IBApi {
 
     static readonly ConcurrentDictionary<string, Contract> _contracts = new ConcurrentDictionary<string, Contract>(StringComparer.OrdinalIgnoreCase);
     public static IDictionary<string, Contract> Contracts => _contracts;
-    public Contract AddToCache() { _contracts.TryAdd(Key, this); return this; }
+    public Contract AddToCache() {
+      if(!_contracts.TryAdd(Key, this) && _contracts[Key].HashKey != HashKey)
+        _contracts.AddOrUpdate(Key, this, (k, c) => this);
+      return this;
+    }
     public IEnumerable<ContractDetails> FromDetailsCache() => ContractDetails.FromCache(this);
     public IEnumerable<Contract> FromCache() => FromCache(Key);
     public IEnumerable<T> FromCache<T>(Func<Contract, T> map) => FromCache(Key, map);
