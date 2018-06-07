@@ -15,7 +15,7 @@ namespace IBApp {
     #region Fields/Properties
     private int currentTicker = 0;
     private readonly int _baseReqId;
-    public static bool UseVerbose = false;
+    public static bool UseVerbose = true;
     public static bool DoShowRequestErrorDone = true;
 
     protected Action<object> Trace { get; }

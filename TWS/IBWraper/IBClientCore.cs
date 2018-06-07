@@ -532,15 +532,6 @@ namespace IBApp {
     int[] _bidAsk = new int[] { 1, 2, 37 };
     //      .Concat(Observable.Defer(() => ReqContractDetailsCached(symbol.ContractFactory()).SelectMany(cd => ReqPrice(cd.Summary, 1, false)).Select(p => (p.bid, p.ask))).ToArray())
 
-    public PRICE_OBSERVABLE ReqPrices(string symbol, double timeoutInSeconds, bool useErrorHandler) =>
-      ReqContractDetailsCached(symbol.ContractFactory()).SelectMany(cd => ReqPrices(cd.Summary, timeoutInSeconds, useErrorHandler));
-    public PRICE_OBSERVABLE ReqPrices(Contract contract, double timeoutInSeconds, bool useErrorHandler, double priceDefaul) =>
-      ReqPrices(contract, timeoutInSeconds, useErrorHandler).DefaultIfEmpty((contract, priceDefaul, priceDefaul, DateTime.MinValue));
-    public PRICE_OBSERVABLE ReqPrices(Contract contract, double timeoutInSeconds, bool useErrorHandler) {
-      if(contract.IsCombo)
-        return ReqPriceCombo(contract, timeoutInSeconds, useErrorHandler);
-      return ReqPricesImpl(contract, timeoutInSeconds, useErrorHandler);
-    }
     public PRICE_OBSERVABLE ReqPricesImpl(Contract contract, double timeoutInSeconds, bool useErrorHandler) {
       Trace($"ReqPricesImpl:{contract}");
       var reqId = NextReqId();
@@ -561,10 +552,6 @@ namespace IBApp {
       OnReqMktData(() => ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, null));
       return cd;
     }
-    public PRICE_OBSERVABLE ReqPriceCombo(Contract combo, double timeoutInSeconds, bool useErrorHandler) =>
-      ReqPricesImpl(combo, timeoutInSeconds, useErrorHandler)
-          .Concat(Observable.Defer(() => ReqPriceCombo(combo, combo.Legs(), timeoutInSeconds, useErrorHandler)))
-          .Take(1);
     public PRICE_OBSERVABLE ReqPriceCombo(Contract combo, IEnumerable<Contract> oprions, double timeoutInSeconds, bool useErrorHandler) {
       var x = oprions
         .ToObservable()

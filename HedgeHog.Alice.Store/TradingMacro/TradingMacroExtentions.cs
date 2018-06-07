@@ -1159,7 +1159,7 @@ namespace HedgeHog.Alice.Store {
             var straddleCount = 2;
             _priceChangeDisposable = _priceChangeObservable
             //.Sample(TimeSpan.FromSeconds(0.5))
-            .SelectMany(price => ibWraper.AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap), 4, 0))
+            .SelectMany(price => ibWraper.AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), 4, 0))
             .Select(x => x.OrderByDescending(t => t.deltaBid).Take(straddleCount).ToArray())
             .Where(straddle => straddle.Length == straddleCount && straddle.All(s => s.deltaBid > 0))
             .Subscribe(straddle =>

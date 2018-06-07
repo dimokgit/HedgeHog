@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using System.ComponentModel;
 using HedgeHog;
 using AutoMapper;
+using HedgeHog.DateTimeZone;
 
 namespace HedgeHog.Shared {
   public delegate void LoginErrorHandler(Exception exc);
@@ -205,7 +206,7 @@ namespace HedgeHog.Shared {
 
 
   public static class TradesManagerStatic {
-    public static int ExpirationDaysSkip(int start) => DateTime.Now.TimeOfDay > new TimeSpan(16, 0, 0) ? start + 1 : start;
+    public static int ExpirationDaysSkip(int start) => DateTime.Now.InNewYork().TimeOfDay > new TimeSpan(16, 0, 0) ? start + 1 : start;
     public static IMapper TradeMapper() => TradeMapper(opt => opt);//.ForMember(t => t.TradesManager, o => o.Ignore()));
     public static IMapper TradeMapper(Func<IMappingExpression<Trade, Trade>, IMappingExpression<Trade, Trade>> opt)
       => new MapperConfiguration(cfg => opt(cfg.CreateMap<Trade, Trade>())).CreateMapper();

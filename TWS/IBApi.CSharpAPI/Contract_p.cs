@@ -56,18 +56,18 @@ namespace IBApi {
       return ContractDetails.FromCache(this)
       .Select(cd => cd.MinTick)
       .Where(mt => mt > 0)
-      .IfEmpty(() => Legs().SelectMany(c => ContractDetails.FromCache(c)).MaxByOrEmpty(cd => cd.MinTick).Select(cd => cd.MinTick).Take(1))
+      .IfEmpty(() => Legs().SelectMany(c => ContractDetails.FromCache(c.c)).MaxByOrEmpty(cd => cd.MinTick).Select(cd => cd.MinTick).Take(1))
       .Count(1, _ => Debugger.Break(), _ => Debugger.Break())
       .DefaultIfEmpty(0.01)
       .Single();
     }
-    public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).First();
+    public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).First();
     public bool IsCombo => ComboLegs?.Any() == true;
     public bool IsCall => IsOption && Right == "C";
     public bool IsPut => IsOption && Right == "P";
     public bool IsOption => SecType == "OPT" || SecType == "FOP";
     public bool IsFutureOption => SecType == "FOP";
-    public bool HasFutureOption => IsFutureOption || Legs().Any(l => l.IsFutureOption);
+    public bool HasFutureOption => IsFutureOption || Legs().Any(l => l.c.IsFutureOption);
     public bool IsFuture => SecType == "FUT";
     public bool IsButterFly => ComboLegs?.Any() == true && String.Join("", comboLegs.Select(l => l.Ratio)) == "121";
     public double ComboStrike() => Strike > 0 ? Strike : LegsEx().Sum(c => c.contract.strike * c.leg.Ratio) / LegsEx().Sum(c => c.leg.Ratio);
@@ -77,14 +77,14 @@ namespace IBApi {
     string ExpirationToString() => SecType == "FOP" && LocalSymbol.IsNullOrWhiteSpace() ? " " + LastTradeDateOrContractMonth : "";
     public override string ToString() => ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
     internal string ComboLegsToString() =>
-      Legs().Select(c => c.Instrument)
+      Legs().Select(t => t.c.Instrument + (t.r > 1 ? ":" + t.r : ""))
       .OrderBy(s => s)
       .ToArray()
       .MashDiffs();
-    public IEnumerable<Contract> Legs() =>
+    public IEnumerable<(Contract c, int r)> Legs() =>
       (from l in ComboLegs ?? new List<ComboLeg>()
        join c in Contracts.Select(cd => cd.Value) on l.ConId equals c.ConId
-       select c
+       select (c, l.Ratio)
        );
     public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx() =>
       (from l in ComboLegs ?? new List<ComboLeg>()

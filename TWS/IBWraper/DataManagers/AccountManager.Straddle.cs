@@ -240,13 +240,13 @@ namespace IBApp {
                      ).ToArray();
       var legs = matches.SelectMany(m => m.positions).ToArray();
       var update = (from pos in positions
-                    join leg in legs on new { pos.c.Key, ps = pos.p.Sign() } equals new { leg.c.Key, ps = leg.p.Sign() }
+                    join leg in legs on new { pos.c.Key, ps = pos.p.Sign() } equals new { leg.c.c.Key, ps = leg.p.Sign() }
                     select (p: pos, q: leg.p)
                     ).ToArray();
 
       var legs2 = matches.SelectMany(m => m.positions.Select(p => (p, m.OrderId))).ToArray();
       var orderPositions = (from pos in positions
-                            join leg in legs2 on pos.c.Key equals leg.p.c.Key
+                            join leg in legs2 on pos.c.Key equals leg.p.c.c.Key
                             let pos2 = (pos.c, leg.p.p, pos.o, leg.OrderId)
                             group pos2 by pos2.OrderId into gpos
                             from op in gpos.Select(gp => (gp.c, gp.p, gp.o)).ToArray().ParseCombos(new AccountManager.OrdeContractHolder[0])

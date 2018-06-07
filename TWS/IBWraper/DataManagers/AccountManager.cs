@@ -160,17 +160,10 @@ namespace IBApp {
         .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost), () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
       PositionsObservable
+        .Take(0)
         .Throttle(TimeSpan.FromSeconds(2))
         .Subscribe(_ => {
-          var combosAll = ComboTradesAllImpl().ToArray();
-          Trace(new { combosAll = combosAll.Flatter("") });
-          combosAll
-          .Do(comboAll => Trace(new { comboAll }))
-          .Where(ca => ca.orderId == 0)
-          .ForEach(ca => {
-            CancelAllOrders("Updating combo exit");
-            OpenOrUpdateLimitOrderByProfit(ca.contract.Instrument, ca.position, 0, ca.open, 0.2);
-          });
+          ResetPortfolioExitOrder();
         }).SideEffect(s => _strams.Add(s));
       OpenOrderObservable
         .Where(x => x.order.Account == _accountId)
@@ -180,6 +173,7 @@ namespace IBApp {
         .Subscribe(a => OnOrderStartedImpl(a.orderId, a.contract, a.order, a.orderState))
         .SideEffect(s => _strams.Add(s));
       osObs
+        .Do(t => Verbose("* OrderStatus " + new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() }))
         .Where(t => UseOrderContracts(ocs => ocs.Where(oc => oc.Key == t.orderId && oc.Value.order.Account == _accountId)).Concat().Any())
         .Select(t => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() })
         .Distinct()
@@ -189,7 +183,9 @@ namespace IBApp {
         ))
         .Where(o => (o.status, o.remaining).IsOrderDone())
         .SelectMany(o => UseOrderContracts(ocs => ocs.Where(oc => oc.Key == o.orderId)).Concat())
-        .Subscribe(o => RaiseOrderRemoved(o.Value))
+        .Select(x => x.Value)
+        .Do(_ => NewThreadScheduler.Default.Schedule(2.FromSeconds(), ResetPortfolioExitOrder))
+        .Subscribe(o => RaiseOrderRemoved(o))
         .SideEffect(s => _strams.Add(s));
 
       portObs
@@ -205,6 +201,18 @@ namespace IBApp {
       IbClient.ClientSocket.reqAllOpenOrders();
 
       _defaultMessageHandler($"{nameof(AccountManager)}:{_accountId} is ready");
+    }
+
+    private void ResetPortfolioExitOrder() {
+      var combosAll = ComboTradesAllImpl().ToArray();
+      Trace(new { combosAll = combosAll.Flatter("") });
+      combosAll
+      .Do(comboAll => Trace(new { comboAll }))
+      .Where(ca => ca.orderId == 0)
+      .ForEach(ca => {
+        CancelAllOrders("Updating combo exit");
+        OpenOrUpdateLimitOrderByProfit(ca.contract.Instrument, ca.position, 0, ca.open, 0.25);
+      });
     }
 
     #region TraceSubject Subject

@@ -119,7 +119,7 @@ namespace ConsoleApp {
             ibClient.ReqContractDetailsAsync(comboPrice.combo.contract)
             .Subscribe(cd => {
             });
-            comboPrice.combo.contract.Legs().Buffer(2).ForEach(b => Passager.ThrowIf(() => b[0].Strike - b[1].Strike != 5));
+            comboPrice.combo.contract.Legs().Buffer(2).ForEach(b => Passager.ThrowIf(() => b[0].c.Strike - b[1].c.Strike != 5));
             HandleMessage2(new { comboPrice.combo.contract });
             ibClient.ReqPriceSafe(comboPrice.combo.contract, 4, true)
             .ToEnumerable()

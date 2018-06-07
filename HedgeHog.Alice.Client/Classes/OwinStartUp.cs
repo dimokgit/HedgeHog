@@ -596,9 +596,9 @@ namespace HedgeHog.Alice.Client {
                     isActive = false
                   });
                   cs = strikeLevel.HasValue && true
-                  ? cs.OrderByDescending(x => x.strike)
+                  ? cs.OrderByDescending(x => x.strikeDelta)
                   : cs.OrderByDescending(x => x.delta);
-                  return cs.Take(numOfCombos);
+                  return cs.Take(numOfCombos).OrderByDescending(x=>x.strike).ToArray();
                 })
                 .Subscribe(b => base.Clients.Caller.butterflies(b));
               });
@@ -626,12 +626,12 @@ namespace HedgeHog.Alice.Client {
                  }).OrderBy(t => t.strikeDelta.Abs());
 
                 var puts = options.Where(t => t.cp == "P").Take(NUB_OF_OPTIONS);
-                puts = strikeLevel.HasValue ? puts.OrderBy(t => t.strike) : puts.OrderByDescending(t => t.delta);
+                puts = strikeLevel.HasValue ? puts.OrderBy(t => t.strikeDelta) : puts.OrderByDescending(t => t.delta);
 
                 var calls = options.Where(t => t.cp == "C").Take(NUB_OF_OPTIONS);
-                calls = strikeLevel.HasValue ? calls.OrderBy(t => t.strike) : calls.OrderByDescending(t => t.delta);
+                calls = strikeLevel.HasValue ? calls.OrderBy(t => t.strikeDelta) : calls.OrderByDescending(t => t.delta);
 
-                return puts.Take(numOfCombos).Concat(calls.Take(numOfCombos)).ToArray();
+                return puts.Take(numOfCombos).OrderByDescending(x => x.strike).Concat(calls.Take(numOfCombos).OrderByDescending(x => x.strike)).ToArray();
               }
               //.ThenBy(t => t.i)
               )
