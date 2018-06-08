@@ -184,7 +184,14 @@ namespace IBApp {
         .Where(o => (o.status, o.remaining).IsOrderDone())
         .SelectMany(o => UseOrderContracts(ocs => ocs.Where(oc => oc.Key == o.orderId)).Concat())
         .Select(x => x.Value)
-        .Do(_ => NewThreadScheduler.Default.Schedule(2.FromSeconds(), ResetPortfolioExitOrder))
+        .Do(_ => {
+          Verbose($"{nameof(ResetPortfolioExitOrder)}: scheduled");
+          NewThreadScheduler.Default.Schedule(2.FromSeconds(), ()=> {
+            Verbose($"{nameof(ResetPortfolioExitOrder)}: started");
+            ResetPortfolioExitOrder();
+            Verbose($"{nameof(ResetPortfolioExitOrder)}: finished");
+          });
+        })
         .Subscribe(o => RaiseOrderRemoved(o))
         .SideEffect(s => _strams.Add(s));
 

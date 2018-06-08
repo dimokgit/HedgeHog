@@ -1043,7 +1043,7 @@ namespace HedgeHog.Alice.Store {
     public ITradesManager TradesManager { get { return _TradesManager(); } }
     public bool HasTicks => (TradesManager?.HasTicks).GetValueOrDefault();
     IDisposable _priceChangeDisposable;
-    public int ExpDayToSkip() => OpenPuts().Select(p => (p.contract.Expiration - ServerTime.Date).Days).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
+    public int ExpDayToSkip() => OpenPuts().Select(p => (p.contract.Expiration - ServerTime.Date).Days).OrderBy(d => d).Take(1).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
       _tradingMacros = tradingMacros;
       Action<Expression<Func<TradingMacro, bool>>> check = g => TradingMacrosByPair()

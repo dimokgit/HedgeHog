@@ -333,7 +333,7 @@ namespace HedgeHog.Alice.Store {
           .Select(g=>g.Count())
           .DefaultIfEmpty()
           .Max();
-          return (_distVolt = (dc / RatesArray.Count)) < .05 ? TradeDirections.Both : TradeDirections.None;
+          return (_distVolt = (dc / RatesArray.Count).ToPercent()) <= 5 ? TradeDirections.Both : TradeDirections.None;
         };
       }
     }
@@ -1408,7 +1408,7 @@ namespace HedgeHog.Alice.Store {
         //.Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         //.Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
         .Add(TradeConditionsHave(nameof(TLTipOk), nameof(BSTipOk), nameof(BSTipROk), nameof(Store.TradingMacro.PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round((int)3) } : new { })
-        .Add(TradeConditionsHave(nameof(VAOk)) ? (object)new { DistVolts=_distVolt.ToPercent()+"%" } : new { })
+        .Add(TradeConditionsHave(nameof(VAOk)) ? (object)new { DistVolts=_distVolt+"%" } : new { })
         //.Add((object)(new { MacdDist = tm.MacdDistances(RatesArray).TakeLast(1).Select(d => d.AutoRound2(3)).SingleOrDefault() }))
         //.Add((object)(new { HistVol = $"{HV(this)}" }))
         //.Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
@@ -2230,7 +2230,7 @@ namespace HedgeHog.Alice.Store {
         var puts = OpenPuts();
         var hasOptions = (from put in CurrentPut
                           from p in puts
-                          where put.strikeAvg + p.price.Abs() > p.contract.Strike
+                          where p.contract.LastTradeDateOrContractMonth==p.contract.LastTradeDateOrContractMonth && put.strikeAvg + p.price.Abs() > p.contract.Strike
                           select true
                           ).Any();
         hasOptions = hasOptions ||

@@ -77,10 +77,15 @@ namespace IBApi {
     string ExpirationToString() => SecType == "FOP" && LocalSymbol.IsNullOrWhiteSpace() ? " " + LastTradeDateOrContractMonth : "";
     public override string ToString() => ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
     internal string ComboLegsToString() =>
-      Legs().Select(t => t.c.Instrument + (t.r > 1 ? ":" + t.r : ""))
+      Legs()
+      .ToArray()
+      .With(legs => (legs, r: legs.Select(l => l.r).DefaultIfEmpty().Max())
+      .With(t =>
+      t.legs
+      .Select(l => l.c.Instrument + (t.r > 1 ? ":" + l.r : ""))
       .OrderBy(s => s)
       .ToArray()
-      .MashDiffs();
+      .MashDiffs()));
     public IEnumerable<(Contract c, int r)> Legs() =>
       (from l in ComboLegs ?? new List<ComboLeg>()
        join c in Contracts.Select(cd => cd.Value) on l.ConId equals c.ConId

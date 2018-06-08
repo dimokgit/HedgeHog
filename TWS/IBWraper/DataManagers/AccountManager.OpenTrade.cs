@@ -45,6 +45,7 @@ namespace IBApp {
           Trace($"OpenTrade: {contract} already has active order order with status: {ao.status}.\nUpdating {new { price }}");
           //UpdateOrder(ao.order.OrderId, OrderPrice(price, contract, minTickMultiplier));
         });
+        ExitMomitor();
         return null;
       }
       var orderType = price == 0 ? "MKT" : type.IfEmpty("LMT");

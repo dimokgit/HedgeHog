@@ -598,7 +598,7 @@ namespace HedgeHog.Alice.Client {
                   cs = strikeLevel.HasValue && true
                   ? cs.OrderByDescending(x => x.strikeDelta)
                   : cs.OrderByDescending(x => x.delta);
-                  return cs.Take(numOfCombos).OrderByDescending(x=>x.strike).ToArray();
+                  return cs.Take(numOfCombos).OrderByDescending(x => x.strike).ToArray();
                 })
                 .Subscribe(b => base.Clients.Caller.butterflies(b));
               });
@@ -672,14 +672,27 @@ namespace HedgeHog.Alice.Client {
               try {
                 var combos = cts
                 .Where(ct => ct.position != 0)
+                .OrderBy(ct => ct.contract.Legs().Count())
+                .ThenBy(ct => ct.contract.IsOption)
+                .ThenByDescending(ct => ct.contract.LastTradeDateOrContractMonth)
                 .ToArray(x
                   => new {
-                    combo = x.contract.Key, netPL = x.pl, x.position, x.closePrice
-                    , x.price.bid
-                    , x.price.ask
-                    , x.close, delta = x.strikeAvg - x.underPrice, x.openPrice
+                    combo = x.contract.Key
+                    , netPL = x.pl
+                    , x.position
+                    , x.closePrice
+                    , x.price.bid, x.price.ask
+                    , x.close
+                    , delta = x.contract.IsOption ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs()
+                    , x.openPrice
                     , x.takeProfit, x.profit, x.orderId
                     , exit = 0, exitDelta = 0
+                    , color = !x.contract.IsOption ? ""
+                    : (x.strikeAvg - x.underPrice < 0 && x.contract.IsPut)
+                    ? "#ffd3d9"
+                    : (x.strikeAvg - x.underPrice > 0 && x.contract.IsCall)
+                    ? "#ffd3d9"
+                    : "chartreuse"
                   });
 
                 base.Clients.Caller.liveCombos(combos);
