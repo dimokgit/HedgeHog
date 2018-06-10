@@ -1237,7 +1237,7 @@
       <tbody data-bind="foreach:liveCombos">
         <tr>
           <td data-bind="text:combo" style="text-align:left;color:white"></td>
-          <td data-bind="text:d3.format('+.1f')(delta())" style="text-align:right;color:white"></td>
+          <td data-bind="text:d3.format('+.1f')(delta()),style:{color:color()}" style="text-align:right"></td>
           <td><input data-bind="value:exitDelta" size="1" /></td>
           <td data-bind="text:d3.format('.2f')(openPrice())"></td>
           <td data-bind="text:d3.format('.2f')(closePrice())"></td>

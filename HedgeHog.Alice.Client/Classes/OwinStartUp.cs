@@ -675,25 +675,28 @@ namespace HedgeHog.Alice.Client {
                 .OrderBy(ct => ct.contract.Legs().Count())
                 .ThenBy(ct => ct.contract.IsOption)
                 .ThenByDescending(ct => ct.contract.LastTradeDateOrContractMonth)
-                .ToArray(x
-                  => new {
+                .ToArray(x => {
+                  var hasStrike = x.contract.IsOption || x.contract.IsCombo;
+                  var delta = hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs();
+                  return new {
                     combo = x.contract.Key
-                    , netPL = x.pl
-                    , x.position
-                    , x.closePrice
-                    , x.price.bid, x.price.ask
-                    , x.close
-                    , delta = x.contract.IsOption ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs()
-                    , x.openPrice
-                    , x.takeProfit, x.profit, x.orderId
-                    , exit = 0, exitDelta = 0
-                    , color = !x.contract.IsOption ? ""
-                    : (x.strikeAvg - x.underPrice < 0 && x.contract.IsPut)
-                    ? "#ffd3d9"
-                    : (x.strikeAvg - x.underPrice > 0 && x.contract.IsCall)
-                    ? "#ffd3d9"
-                    : "chartreuse"
-                  });
+                      , netPL = x.pl
+                      , x.position
+                      , x.closePrice
+                      , x.price.bid, x.price.ask
+                      , x.close
+                      , delta
+                      , x.openPrice
+                      , x.takeProfit, x.profit, x.orderId
+                      , exit = 0, exitDelta = 0
+                      , color = !hasStrike ? "white"
+                      : delta > 0 && x.contract.IsPut
+                      ? "#ffd3d9"
+                      : delta < 0 && x.contract.IsCall
+                      ? "#ffd3d9"
+                      : "chartreuse"
+                  };
+                });
 
                 base.Clients.Caller.liveCombos(combos);
 

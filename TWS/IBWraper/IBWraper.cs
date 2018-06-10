@@ -67,7 +67,7 @@ namespace IBApp {
       var ma = obj.Splitter(',').Where(a => _ibClient.ManagedAccount.IsNullOrWhiteSpace() || a == _ibClient.ManagedAccount).FirstOrDefault();
       if(ma == null)
         throw new Exception(new { _ibClient.ManagedAccount, error = "Not Found" } + "");
-      _accountManager = new AccountManager(_ibClient, ma, CreateTrade, CommissionByTrade, Trace);
+      _accountManager = new AccountManager(_ibClient, ma, CreateTrade, CommissionByTrade);
       _accountManager.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
       _accountManager.TradeChanged += (s, e) => RaiseTradeChanged(e.Trade);
       _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
@@ -531,11 +531,11 @@ namespace IBApp {
       return new HedgeHog.Shared.Order[0];
     }
     public IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair = "")
-      => _accountManager?.UseOrderContracts(orderContracts => orderContracts.Values
-      .Where(os => pair.IsNullOrWhiteSpace() || os.contract.Instrument == pair.ToLower())
+      => _accountManager?.UseOrderContracts(orderContracts => orderContracts
+      .Where(os => pair.IsNullOrWhiteSpace() || os.Value.contract.Instrument == pair.ToLower())
       .Select(os => pair.IsNullOrWhiteSpace()
-      ? (os.contract + ":" + os.status.status, os.status.filled, os.status.remaining,  os.status.isDone )
-      : os.status)
+      ? ($"{os.Value.contract}:{os.Value.status.status}:[{os.Key}]", os.Value.status.filled, os.Value.status.remaining, os.Value.isDone)
+      : ($"{os.Value.status.status}:[{os.Key}]", os.Value.status.filled, os.Value.status.remaining, os.Value.isDone))
       .ToArray()).Concat().ToList()
       ?? new(string status, double filled, double remaining, bool isDone)[0].ToList();
 

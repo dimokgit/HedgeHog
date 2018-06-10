@@ -72,9 +72,11 @@ namespace IBApp {
           IbClient.WatchReqError(() => reqId, e => {
             Error(contract,o.order, e, new { minTickMultiplier });
             if(e.errorCode == 110 && minTickMultiplier <= 5 && o.order.LmtPrice != 0) {
+              OrderContractsInternal.TryRemove(reqId, out var old);
               o.order.LmtPrice = OrderPrice(o.price, contract, ++minTickMultiplier);
               reqId = o.order.OrderId = NetOrderId();
-              _verbous(new { replaceOrder = new { o, contract } });
+              Trace(new { replaceOrder = new { o, contract } });
+              OrderContractsInternal.TryAdd(o.order.OrderId, new OrdeContractHolder(o.order, contract));
               IbClient.ClientSocket.placeOrder(o.order.OrderId, contract, o.order);
               //OpenTrade(contract, quantity, price, o.useTakeProfit, ++minTickMultiplier);
             }
@@ -86,7 +88,7 @@ namespace IBApp {
       return null;
       /// Locals
       void ExitMomitor() {
-        _verbous($"{nameof(OpenTrade)}: exiting {nameof(_OpenTradeSync)} monitor");
+        Trace($"{nameof(OpenTrade)}: exiting {nameof(_OpenTradeSync)} monitor");
         Monitor.Exit(_OpenTradeSync);
       }
       void Error(Contract c, IBApi.Order o, (int id, int errorCode, string errorMsg, Exception exc) t, object context) {
@@ -128,25 +130,25 @@ namespace IBApp {
         ;
     }
 
-    private void OnUpdateError(int reqId, int code, string error, Exception exc) {
-      UseOrderContracts(orderContracts => {
-        if(!orderContracts.TryGetValue(reqId, out var oc)) return;
-        if(new[] { /*103, 110,*/ 200, 201, 202, 203, 382, 383 }.Contains(code)) {
-          //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
-          Trace($"{nameof(OnUpdateError)}: {new { reqId, code, error }}");
-          RaiseOrderRemoved(oc);
-          orderContracts.TryRemove(reqId, out var oc2);
-        }
-        switch(code) {
-          case 404:
-            var contract = oc.contract + "";
-            var order = oc.order + "";
-            _verbous(new { contract, code, error, order });
-            _defaultMessageHandler("Request Global Cancel");
-            CancelAllOrders("Request Global Cancel");
-            break;
-        }
-      });
-    }
+    //private void OnUpdateError(int reqId, int code, string error, Exception exc) {
+    //  UseOrderContracts(orderContracts => {
+    //    if(!orderContracts.TryGetValue(reqId, out var oc)) return;
+    //    if(new[] { /*103, 110,*/ 200, 201, 202, 203, 382, 383 }.Contains(code)) {
+    //      //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
+    //      Trace($"{nameof(OnUpdateError)}: {new { reqId, code, error }}");
+    //      RaiseOrderRemoved(oc);
+    //      orderContracts.TryRemove(reqId, out var oc2);
+    //    }
+    //    switch(code) {
+    //      case 404:
+    //        var contract = oc.contract + "";
+    //        var order = oc.order + "";
+    //        _verbous(new { contract, code, error, order });
+    //        _defaultMessageHandler("Request Global Cancel");
+    //        CancelAllOrders("Request Global Cancel");
+    //        break;
+    //    }
+    //  });
+    //}
   }
 }

@@ -831,7 +831,7 @@ namespace IBApp {
           }
         }, TaskCreationOptions.LongRunning)
         .ContinueWith(t => {
-          Observable.Interval(TimeSpan.FromSeconds(5))
+          Observable.Interval(TimeSpan.FromMinutes(10))
           .Select(_ => {
             try {
               RaiseError(new Exception(new { ClientSocket = new { IsConnected = ClientSocket.IsConnected() } } + ""));

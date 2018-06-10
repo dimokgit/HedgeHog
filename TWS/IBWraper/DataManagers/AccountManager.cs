@@ -44,9 +44,8 @@ namespace IBApp {
     private bool accountSummaryRequestActive = false;
     private bool accountUpdateRequestActive = false;
     private string _accountId;
-    private readonly Action<object> _defaultMessageHandler;
-    private bool _useVerbouse = true;
-    private Action<object> _verbous => _useVerbouse ? _defaultMessageHandler : o => { };
+    private bool _useVerbouse = false;
+    private Action<object> _verbous => _useVerbouse ? Trace : o => { };
     private readonly string _accountCurrency = "USD";
     #endregion
 
@@ -73,12 +72,11 @@ namespace IBApp {
 
     #region Ctor
     List<IDisposable> _strams = new List<IDisposable>();
-    public AccountManager(IBClientCore ibClient, string accountId, Func<string, Trade> createTrade, Func<Trade, double> commissionByTrade, Action<object> onMessage) : base(ibClient, ACCOUNT_ID_BASE) {
+    public AccountManager(IBClientCore ibClient, string accountId, Func<string, Trade> createTrade, Func<Trade, double> commissionByTrade) : base(ibClient, ACCOUNT_ID_BASE) {
       CommissionByTrade = commissionByTrade;
       CreateTrade = createTrade;
       Account = new Account();
       _accountId = accountId;
-      _defaultMessageHandler = onMessage ?? new Action<object>(o => { throw new NotImplementedException(new { onMessage } + ""); });
 
       RequestAccountSummary();
       SubscribeAccountUpdates();
@@ -167,9 +165,9 @@ namespace IBApp {
         }).SideEffect(s => _strams.Add(s));
       OpenOrderObservable
         .Where(x => x.order.Account == _accountId)
-        .Do(UpdateOrder)
+        .Do(x => _verbous($"* OpenOrder {new { x.contract.LocalSymbol, x.order.OrderId } }"))
+        //.Do(UpdateOrder)
         .Distinct(a => a.orderId)
-        //.Do(x => _verbous("* " + new { OpenOrder = new { x.contract.LocalSymbol, x.order.OrderId } }))
         .Subscribe(a => OnOrderStartedImpl(a.orderId, a.contract, a.order, a.orderState))
         .SideEffect(s => _strams.Add(s));
       osObs
@@ -179,14 +177,14 @@ namespace IBApp {
         .Distinct()
         .Do(x => UseOrderContracts(oc => _verbous("* " + new { OrderStatus = x, oc[x.orderId].order.Account })))
         .Do(t => UseOrderContracts(ocs => ocs.Where(oc => oc.Key == t.orderId && t.status != "Inactive")
-          .ForEach(oc => oc.Value.status = (t.status, t.filled, t.remaining, t.isDone))
+          .ForEach(oc => oc.Value.status = (t.status, t.filled, t.remaining))
         ))
         .Where(o => (o.status, o.remaining).IsOrderDone())
         .SelectMany(o => UseOrderContracts(ocs => ocs.Where(oc => oc.Key == o.orderId)).Concat())
         .Select(x => x.Value)
         .Do(_ => {
           Verbose($"{nameof(ResetPortfolioExitOrder)}: scheduled");
-          NewThreadScheduler.Default.Schedule(2.FromSeconds(), ()=> {
+          NewThreadScheduler.Default.Schedule(2.FromSeconds(), () => {
             Verbose($"{nameof(ResetPortfolioExitOrder)}: started");
             ResetPortfolioExitOrder();
             Verbose($"{nameof(ResetPortfolioExitOrder)}: finished");
@@ -207,7 +205,7 @@ namespace IBApp {
 
       IbClient.ClientSocket.reqAllOpenOrders();
 
-      _defaultMessageHandler($"{nameof(AccountManager)}:{_accountId} is ready");
+      Trace($"{nameof(AccountManager)}:{_accountId} is ready");
     }
 
     private void ResetPortfolioExitOrder() {
@@ -232,7 +230,7 @@ namespace IBApp {
             _TraceSubject = new Subject<object>();
             _TraceSubject
               .DistinctUntilChanged()
-              .Subscribe(s => _defaultMessageHandler(s), exc => { });
+              .Subscribe(s => Trace(s), exc => { });
           }
         return _TraceSubject;
       }
@@ -248,16 +246,16 @@ namespace IBApp {
     public class OrdeContractHolder {
       public readonly IBApi.Order order;
       public readonly IBApi.Contract contract;
-      (string status, double filled, double remaining, bool isDone) _status;
-      public (string status, double filled, double remaining, bool isDone) status {
+      (string status, double filled, double remaining) _status;
+      public (string status, double filled, double remaining) status {
         get { return _status; }
         set { _status = value; }
       }
-      public bool isDone => status.isDone;
+      public bool isDone => (status.status,status.remaining).IsOrderDone();
       public OrdeContractHolder(IBApi.Order order, IBApi.Contract contract) {
         this.order = order;
         this.contract = contract;
-        this.status = ("new", 0, order.TotalQuantity, false);
+        this.status = ("new", 0, order.TotalQuantity);
       }
     }
     public IEnumerable<T> UseOrderContracts<T>(Func<ConcurrentDictionary<int, OrdeContractHolder>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
@@ -377,7 +375,7 @@ namespace IBApp {
             var contract = oc.contract + "";
             var order = oc.order + "";
             _verbous(new { contract, code, error, order });
-            _defaultMessageHandler("Request Global Cancel");
+            Trace("Request Global Cancel");
             CancelAllOrders("Request Global Cancel");
             break;
         }
@@ -531,10 +529,11 @@ namespace IBApp {
     void RaiseOrderRemoved(HedgeHog.Shared.Order args) => OrderRemovedEvent?.Invoke(args);
     #endregion
 
-    private void UpdateOrder((int orderId, Contract contract, IBApi.Order order, OrderState orderState) t) {
+    private void UpdateOrder_Remove((int orderId, Contract contract, IBApi.Order order, OrderState orderState) t) {
       UseOrderContracts(orderContracts =>
         orderContracts.AddOrUpdate(t.orderId, new OrdeContractHolder(t.order, t.contract), (id, och) => {
           och.order.LmtPrice = t.order.LmtPrice;
+          och.status = (och.status.status, och.status.filled, och.status.remaining);
           return och;
         }));
     }
@@ -544,7 +543,7 @@ namespace IBApp {
       if(!o.WhatIf) {
         UseOrderContracts(orderContracts => {
           orderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, c));
-          _verbous(new { OnOpenOrderImpl = new { c, o, os } });
+          Trace(new { OnOpenOrderImpl = new { c, o, os } });
           RaiseOrderAdded(new HedgeHog.Shared.Order {
             IsBuy = o.Action == "BUY",
             Lot = (int)o.TotalQuantity,
@@ -560,10 +559,10 @@ namespace IBApp {
         if(levelrage != 0 && !double.IsInfinity(levelrage))
           if(isBuy) {
             offer.MMRLong = 1 / levelrage;
-            _defaultMessageHandler(new { offer = new { offer.Pair, offer.MMRLong } });
+            Trace(new { offer = new { offer.Pair, offer.MMRLong } });
           } else {
             offer.MMRShort = 1 / levelrage;
-            _defaultMessageHandler(new { offer = new { offer.Pair, offer.MMRShort } });
+            Trace(new { offer = new { offer.Pair, offer.MMRShort } });
           }
       }
     }
@@ -614,7 +613,7 @@ namespace IBApp {
           o.LmtPrice = Math.Round(buy ? price.Value.Ask * offset : price.Value.Bid / offset, d);
         }
         orderContracts.TryAdd(o.OrderId, new OrdeContractHolder(o, c));
-        _verbous(new { plaseOrder = new { o, c } });
+        _verbous(new { placeOrder = new { o, c } });
         IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       });
       return null;
@@ -667,29 +666,18 @@ namespace IBApp {
           order.OpenClose = "C";
         order.VolatilityType = 0;
         IbClient.WatchReqError(orderId, e => {
-          OnUpdateError(e, $"{nameof(UpdateOrder)}:{och.contract}:{new { order.LmtPrice }}");
+          OnOpenError(e, $"{nameof(UpdateOrder)}:{och.contract}:{new { order.LmtPrice }}");
           if(e.errorCode == 110)
             UpdateOrder(orderId, lmpPrice, ++minTickMultiplier);
         }, () => { });
         IbClient.ClientSocket.placeOrder(order.OrderId, och.contract, order);
       });
     }
-    private void OnUpdateError((int reqId, int code, string error, Exception exc) e, string trace) {
-      UseOrderContracts(orderContracts => {
-        Trace(trace + e);
-        if(!orderContracts.TryGetValue(e.reqId, out var oc)) return;
-        if(new[] { /*103, 110,*/ 200, 201, 202, 203, 321, 382, 383 }.Contains(e.code)) {
-          //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
-          RaiseOrderRemoved(oc);
-          orderContracts.TryRemove(e.reqId, out var oc2);
-        }
-      });
-    }
     private void OnOpenError((int reqId, int code, string error, Exception exc) e, string trace) {
       UseOrderContracts(orderContracts => {
         Trace(trace + e);
         if(!orderContracts.TryGetValue(e.reqId, out var oc)) return;
-        if(new[] { 103, 110, 200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
+        if(new[] { 200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
           //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
           RaiseOrderRemoved(oc);
           orderContracts.TryRemove(e.reqId, out var oc2);
@@ -698,7 +686,7 @@ namespace IBApp {
           case 404:
             var contract = oc.contract + "";
             var order = oc.order + "";
-            _defaultMessageHandler("Requesting Global Cancel should be initiated");
+            Trace("Requesting Global Cancel should be initiated");
             //IbClient.ClientSocket.reqGlobalCancel();
             break;
         }
@@ -758,7 +746,7 @@ namespace IBApp {
             _WhatIfSubject = new Subject<Action>();
             _WhatIfSubject
               //.Throttle(TimeSpan.FromSeconds(1))
-              .Subscribe(a => a(), exc => _defaultMessageHandler(exc));
+              .Subscribe(a => a(), exc => Trace(exc));
           }
         return _WhatIfSubject;
       }
@@ -772,7 +760,7 @@ namespace IBApp {
     }
     public void FetchMMRs() => GetTrades()
       .OnEmpty(() => {
-        _defaultMessageHandler(nameof(FetchMMR) + " started");
+        Trace(nameof(FetchMMR) + " started");
         TradesManagerStatic.dbOffers.Where(o => !o.Pair.IsCurrenncy()).ToObservable().Subscribe(o => FetchMMR(o.Pair));
       })
       .ForEach(t => OnTraceSubject(new { FetchMMRs = new { t.Pair, t.IsBuy, t.Lots, Message = "Won't run" } }));
@@ -804,7 +792,7 @@ namespace IBApp {
       }
     }
     private void TraceTrades(string label, IEnumerable<Trade> trades)
-      => _defaultMessageHandler(label
+      => Trace(label
         + (trades.Count() > 1 ? "\n" : "")
         + string.Join("\n", trades.OrderBy(t => t.Pair).Select(ot => new { ot.Pair, ot.Position, ot.Open, ot.Time, ot.Commission })));
     public override string ToString() => new { IbClient, CurrentAccount = _accountId } + "";
