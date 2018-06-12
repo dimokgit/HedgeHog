@@ -48,7 +48,7 @@ namespace IBApp {
     private void OnAccountSummary(int requestId, string account, string tag, string value, string currency) {
       if(currency == _accountCurrency && account == _accountId) {
         switch(tag) {
-          case "EquityWithLoanValue":
+          case "NetLiquidation":
             Account.Equity = double.Parse(value);
             break;
           case "MaintMarginReq":

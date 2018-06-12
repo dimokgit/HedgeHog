@@ -44,7 +44,7 @@ namespace IBApp {
     private bool accountSummaryRequestActive = false;
     private bool accountUpdateRequestActive = false;
     private string _accountId;
-    private bool _useVerbouse = false;
+    private bool _useVerbouse = true;
     private Action<object> _verbous => _useVerbouse ? Trace : o => { };
     private readonly string _accountCurrency = "USD";
     #endregion
@@ -251,7 +251,7 @@ namespace IBApp {
         get { return _status; }
         set { _status = value; }
       }
-      public bool isDone => (status.status,status.remaining).IsOrderDone();
+      public bool isDone => (status.status, status.remaining).IsOrderDone();
       public OrdeContractHolder(IBApi.Order order, IBApi.Contract contract) {
         this.order = order;
         this.contract = contract;
@@ -302,12 +302,12 @@ namespace IBApp {
     #region Position
     public static bool NoPositionsPlease = false;
 
-    public (Contract contract, int position, double open, double price)
+    public (Contract contract, int position, double open, double price, double pipCost)
       ContractPosition((IBApi.Contract contract, double pos, double avgCost) p) =>
-       (p.contract, position: p.pos.ToInt(), open: p.avgCost * p.pos, p.avgCost / p.contract.ComboMultiplier);
+       (p.contract, position: p.pos.ToInt(), open: p.avgCost * p.pos, p.avgCost / p.contract.ComboMultiplier, pipCost: 0.01 * p.contract.ComboMultiplier * p.pos.Abs());
 
-    ConcurrentDictionary<string, (Contract contract, int position, double open, double price)> _positions = new ConcurrentDictionary<string, (Contract contract, int position, double open, double price)>();
-    public ICollection<(Contract contract, int position, double open, double price)> Positions => _positions.Values;
+    ConcurrentDictionary<string, (Contract contract, int position, double open, double price, double pipCost)> _positions = new ConcurrentDictionary<string, (Contract contract, int position, double open, double price, double pipCost)>();
+    public ICollection<(Contract contract, int position, double open, double price,double pipCost)> Positions => _positions.Values;
     //public Subject<ICollection<(Contract contract, int position, double open)>> ContracPositionsSubject = new Subject<ICollection<(Contract contract, int position, double open)>>();
 
     void OnPosition(Contract contract, double position, double averageCost) {
@@ -635,6 +635,10 @@ namespace IBApp {
             });
         }
       });
+    }
+    public void OpenOrUpdateLimitOrderByProfit2(string instrument, int position, int orderId,double openPrice, double pipCost, double profitAmount) {
+      var limit = profitAmount >= 1 ? profitAmount / pipCost : openPrice * profitAmount;
+      OpenOrUpdateLimitOrder(instrument, position, orderId, openPrice + limit * position.Sign());
     }
     public void OpenOrUpdateLimitOrder(string instrument, int position, int orderId, double lmpPrice) {
       UseOrderContracts(orderContracts => {

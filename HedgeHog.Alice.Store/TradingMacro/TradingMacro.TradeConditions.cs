@@ -332,8 +332,8 @@ namespace HedgeHog.Alice.Store {
           .GroupByAdjacent(d=>d)
           .Select(g=>g.Count())
           .DefaultIfEmpty()
-          .Max();
-          return (_distVolt = (dc / RatesArray.Count).ToPercent()) <= 5 ? TradeDirections.Both : TradeDirections.None;
+          .RootMeanPower(0.25);
+          return (_distVolt = (dc / RatesArray.Count).ToPercent()) <= RiskRewardThresh ? TradeDirections.Both : TradeDirections.None;
         };
       }
     }
@@ -2323,7 +2323,7 @@ namespace HedgeHog.Alice.Store {
       .ForEach(trade => CloseTrades(nameof(TradeConditionsShouldClose)));
     }
 
-    private IEnumerable<(IBApi.Contract contract, int position, double open, double price)> OpenPuts() 
+    private IEnumerable<(IBApi.Contract contract, int position, double open, double price,double pipCost)> OpenPuts() 
       => UseAccountManager(am=>am.Positions.Where(p => p.position != 0 && p.contract.IsPut)).Concat();
     private void UseAccountManager(Action<AccountManager> action) => UseAccountManager(am => { action(am); return Unit.Default; }).Count();
     private IEnumerable<T> UseAccountManager<T>(Func<AccountManager, T> func) {

@@ -1285,7 +1285,8 @@ namespace HedgeHog.Alice.Client {
           list2.Add(row("grossToExitRaw", trader.Value.GrossToExit));
           list2.Add(row("profitByHedgeRatioDiff", trader.Value.ProfitByHedgeRatioDiff));
         }
-        tm.CurrentPut?.ForEach(p => list2.Add(row("Curr Put", p.option.Key)));
+        tm.CurrentPut?.ForEach(p => 
+        list2.Add(row("Curr Put", $"{p.option.Key}{(p.option.IsFutureOption ? ":" + p.option.LastTradeDateOrContractMonth : "")}")));
         return list2;
       }).Concat();
       return list.Concat(more).ToArray();
