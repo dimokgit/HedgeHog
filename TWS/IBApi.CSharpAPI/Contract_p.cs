@@ -52,6 +52,7 @@ namespace IBApi {
     public static IEnumerable<Contract> FromCache(string instrument) => Contracts.TryGetValue(instrument);
     public static IEnumerable<T> FromCache<T>(string instrument, Func<Contract, T> map) => Contracts.TryGetValue(instrument).Select(map);
 
+    public double PipCost() => MinTick() * ComboMultiplier;
     public double MinTick() {
       return ContractDetails.FromCache(this)
       .Select(cd => cd.MinTick)

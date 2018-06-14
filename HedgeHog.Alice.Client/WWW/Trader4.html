@@ -1306,6 +1306,7 @@
         <!--<td>Up</td>
         <td>Dn</td>
         <td>Avg</td>-->
+        <td>PL%</td>
         <td>Perc</td>
         <td>Delta</td>
         <td>Bid</td>
@@ -1317,8 +1318,9 @@
         <td data-bind="text:d()+i(),css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
         <td data-bind="text:d3.format('+.1f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
         <!--<td data-bind1="text:d3.format('.1f')(be.up())"></td>
-        <td data-bind1="text:d3.format('.1f')(be.dn())"></td>
-        <td data-bind1="text:d3.format('.2f')(avg())"></td>-->
+  <td data-bind1="text:d3.format('.1f')(be.dn())"></td>
+  <td data-bind1="text:d3.format('.2f')(avg())"></td>-->
+        <td data-bind="text:d3.format('.2f')(maxPlPerc())"></td>
         <td data-bind="text:d3.format('.2f')(perc())"></td>
         <td data-bind="text:d3.format('.2f')(delta())"></td>
         <td data-bind="text:d3.format('.2f')(bid())"></td>

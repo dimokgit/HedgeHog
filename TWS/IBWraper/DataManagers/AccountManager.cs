@@ -216,7 +216,7 @@ namespace IBApp {
       .Where(ca => ca.orderId == 0)
       .ForEach(ca => {
         CancelAllOrders("Updating combo exit");
-        OpenOrUpdateLimitOrderByProfit(ca.contract.Instrument, ca.position, 0, ca.open, 0.25);
+        OpenOrUpdateLimitOrderByProfit2(ca.contract.Instrument, ca.position, 0, ca.open, 0.25);
       });
     }
 
@@ -307,7 +307,7 @@ namespace IBApp {
        (p.contract, position: p.pos.ToInt(), open: p.avgCost * p.pos, p.avgCost / p.contract.ComboMultiplier, pipCost: 0.01 * p.contract.ComboMultiplier * p.pos.Abs());
 
     ConcurrentDictionary<string, (Contract contract, int position, double open, double price, double pipCost)> _positions = new ConcurrentDictionary<string, (Contract contract, int position, double open, double price, double pipCost)>();
-    public ICollection<(Contract contract, int position, double open, double price,double pipCost)> Positions => _positions.Values;
+    public ICollection<(Contract contract, int position, double open, double price, double pipCost)> Positions => _positions.Values;
     //public Subject<ICollection<(Contract contract, int position, double open)>> ContracPositionsSubject = new Subject<ICollection<(Contract contract, int position, double open)>>();
 
     void OnPosition(Contract contract, double position, double averageCost) {
@@ -618,12 +618,12 @@ namespace IBApp {
       });
       return null;
     }
-    public void OpenOrUpdateLimitOrderByProfit(string instrument, int position, int orderId, double openAmount, double profitAmount) {
+    public void OpenOrUpdateLimitOrderByProfit2(string instrument, int position, int orderId, double openAmount, double profitAmount) {
       UseOrderContracts(orderContracts => {
         var pa = profitAmount >= 1 ? profitAmount : openAmount.Abs() * profitAmount;
         if(orderContracts.TryGetValue(orderId, out var och) && !och.isDone) {
           if(och.contract.Instrument != instrument)
-            throw new Exception($"{nameof(OpenOrUpdateLimitOrderByProfit)}:{new { orderId, och.contract.Instrument, dontMatch = instrument }}");
+            throw new Exception($"{nameof(OpenOrUpdateLimitOrderByProfit2)}:{new { orderId, och.contract.Instrument, dontMatch = instrument }}");
           var limit = OrderPrice(priceFromProfit(pa, position, och.contract.ComboMultiplier, openAmount), och.contract);
           UpdateOrder(orderId, limit);
         } else { // Create new order
@@ -636,20 +636,18 @@ namespace IBApp {
         }
       });
     }
-    public void OpenOrUpdateLimitOrderByProfit2(string instrument, int position, int orderId,double openPrice, double pipCost, double profitAmount) {
-      var limit = profitAmount >= 1 ? profitAmount / pipCost : openPrice * profitAmount;
-      OpenOrUpdateLimitOrder(instrument, position, orderId, openPrice + limit * position.Sign());
+    public void OpenOrUpdateLimitOrderByProfit3(Contract contract, int position, int orderId, double openPrice, double profitAmount) {
+      var limit = profitAmount >= 1 ? profitAmount / contract.PipCost() * position : openPrice * profitAmount;
+      OpenOrUpdateLimitOrder(contract, position, orderId, openPrice + limit);
     }
-    public void OpenOrUpdateLimitOrder(string instrument, int position, int orderId, double lmpPrice) {
+    public void OpenOrUpdateLimitOrder(Contract contract, int position, int orderId, double lmpPrice) {
       UseOrderContracts(orderContracts => {
         if(orderContracts.TryGetValue(orderId, out var och) && !och.isDone) {
-          if(och.contract.Instrument != instrument)
-            throw new Exception($"{nameof(OpenOrUpdateLimitOrder)}:{new { orderId, och.contract.Instrument, dontMatch = instrument }}");
+          if(och.contract.Instrument != contract.Instrument)
+            throw new Exception($"{nameof(OpenOrUpdateLimitOrder)}:{new { orderId, och.contract.Instrument, dontMatch = contract.Instrument }}");
           UpdateOrder(orderId, OrderPrice(lmpPrice, och.contract));
         } else {
-          Contract.FromCache(instrument)
-            .Count(1, new { OpenOrUpdateOrder = new { instrument, unexpected = "count in cache" } })
-            .ForEach(c => OpenTrade(c, -position, lmpPrice, false));
+          OpenTrade(contract, -position, lmpPrice, false);
         }
       });
     }

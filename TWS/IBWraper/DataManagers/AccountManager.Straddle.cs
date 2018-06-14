@@ -187,7 +187,7 @@ namespace IBApp {
     #endregion
 
     #region Options
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract option)[]>
+    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract option, double deltaBid, double deltaAsk)[]>
   CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count) =>
   (
     from cd in IbClient.ReqContractDetailsCached(symbol)
@@ -204,7 +204,9 @@ namespace IBApp {
       option.Strike,
       price,
       breakEven: (up: option.Strike + pa, dn: option.Strike - pa),
-      option
+      option,
+      deltaBid: option.ExtrinsicValue(p.bid, price),
+      deltaAsk: option.ExtrinsicValue(p.ask, price)
     )).ToArray()
     .Select(b => b
      .OrderBy(t => t.ask.Avg(t.bid))

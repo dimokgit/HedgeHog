@@ -45,7 +45,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson;
 using IBApp;
 using COMBO_HISTORY = System.Collections.Generic.List<(double bid, double ask, System.DateTime time, double delta)>;
-using CURRENT_OPTION = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option)>;
+using CURRENT_OPTION = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option,double deltaBid, double deltaAsk)>;
 using IBApi;
 
 namespace HedgeHog.Alice.Store {
@@ -1096,7 +1096,7 @@ namespace HedgeHog.Alice.Store {
       }
       TradesManager.OrderRemoved += TradesManager_OrderRemoved;
       RaisePositionsChanged();
-      Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategies.Universal;
+      Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategy;
       IsTradingActive = IsInVirtualTrading;
 
       var ibWraper = TradesManager as IBWraper;

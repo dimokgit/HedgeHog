@@ -315,11 +315,15 @@
     var comboExits = dataViewModel.liveStraddles().map(function (c) {
       return ko.unwrap(c.combo) + "," + ko.unwrap(c.exit) + "," + ko.unwrap(c.exitDelta);
     });
-    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), parseFloat(dataViewModel.comboCurrentStrikeLevel()), comboExits];
+    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), comboExits];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
-      , function () {
+      , function (xx) {
+        xx.forEach(function (x) {
+          if (!dataViewModel.comboQuantity())
+            dataViewModel.comboQuantity(x.TradingRatio);
+        });
       }, function () {
       }, function () {
         readingCombos = false;
@@ -835,7 +839,7 @@
           return l.i() < r.i() ? 1 : -1;
         });
     }, this);
-    this.comboQuantity = ko.observable(1);
+    this.comboQuantity = ko.observable();
     this.comboCurrentStrikeLevel = ko.observable("");
     this.toggleComboCurrentStrikeLevel = function () {
       self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? self.priceAvg() : "");
@@ -1864,6 +1868,9 @@
     };
     chat.client.orders = function (orders) {
       ko.mapping.fromJS(orders, {}, dataViewModel.orders);
+    };
+    chat.client.mustReadStraddles = function () {
+      readCombos(true);
     };
     // #endregion
     // #region Start the connection.

@@ -78,7 +78,7 @@ namespace HedgeHog.Alice.Client {
           ratesForChart2 = TradingMacro.GroupTicksToSeconds(ratesForChart2, volts).ToList();
       }
       var getRates = MonoidsCore.ToFunc((IList<Rate>)null, rates3 => rates3.Select(map).ToList());
-      var tradeLevels = !tmTrader.HasBuyLevel ? new object { } : new {
+      var tradeLevels = tmTrader.Strategy!= Strategies.Universal || !tmTrader.HasBuyLevel ? new object { } : new {
         buy = tmTrader.BuyLevel.Rate.Round(digits),
         buyClose = tmTrader.BuyCloseLevel.Rate.Round(digits),
         canBuy = tmTrader.BuyLevel.CanTrade,

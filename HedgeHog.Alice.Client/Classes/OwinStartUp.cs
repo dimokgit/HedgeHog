@@ -570,161 +570,164 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
-    public void ReadStraddles(string pair, int gap, int numOfCombos, double? strikeLevel, string[] comboExits) {
+    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, string[] comboExits) => 
       UseTraderMacro(pair, tm => {
-        int expirationDaysSkip = tm.ExpDayToSkip();
-        var am = GetAccountManager();
-        var symbols = IBApi.Contract.FromCache(pair, c => c.IsFuture ? c.LocalSymbol : c.Symbol).ToArray();
-        if(am != null) {
-          Action a = () =>
-            symbols
-              .ForEach(symbol => {
-                am.CurrentStraddles(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 5, gap)
-                .Select(ts => {
-                  var cs = ts.Select(t => new {
-                    i = t.instrument,
-                    d = (t.combo.contract.IsFutureOption ? t.combo.contract.Expiration.Day + " " : ""),
-                    t.bid,
-                    t.ask,
-                    avg = t.ask.Avg(t.bid),
-                    time = t.time.ToString("HH:mm:ss"),
-                    t.delta,
-                    strike = t.strikeAvg,
-                    perc = (t.bid / t.underPrice * 100),
-                    strikeDelta = t.strikeAvg - t.underPrice,
-                    be = new { t.breakEven.up, t.breakEven.dn },
-                    isActive = false
-                  });
-                  cs = strikeLevel.HasValue && true
-                  ? cs.OrderByDescending(x => x.strikeDelta)
-                  : cs.OrderByDescending(x => x.delta);
-                  return cs.Take(numOfCombos).OrderByDescending(x => x.strike).ToArray();
-                })
-                .Subscribe(b => base.Clients.Caller.butterflies(b));
-              });
-          const int NUB_OF_OPTIONS = 6;
-          Action currentOptions = () =>
-            symbols
-              .ForEach(symbol
-              => am.CurrentOptions(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, NUB_OF_OPTIONS)
+      int expirationDaysSkip = tm.ExpDayToSkip();
+      var am = GetAccountManager();
+      var symbols = IBApi.Contract.FromCache(pair, c => c.IsFuture ? c.LocalSymbol : c.Symbol).ToArray();
+      if(am != null) {
+        Action a = () =>
+          symbols
+            .ForEach(symbol => {
+              am.CurrentStraddles(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 5, gap)
               .Select(ts => {
-                var options = ts
-                 .Select(t => new {
-                   i = t.instrument,
-                   d = (t.option.IsFutureOption ? t.option.Expiration.Day + " " : ""),
-                   t.bid,
-                   t.ask,
-                   avg = t.ask.Avg(t.bid),
-                   time = t.time.ToString("HH:mm:ss"),
-                   t.delta,
-                   strike = t.strikeAvg,
-                   perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
-                   strikeDelta = t.strikeAvg - t.underPrice,
-                   be = new { t.breakEven.up, t.breakEven.dn },
-                   isActive = false,
-                   cp = t.option.Right
-                 }).OrderBy(t => t.strikeDelta.Abs());
-
-                var puts = options.Where(t => t.cp == "P").Take(NUB_OF_OPTIONS);
-                puts = strikeLevel.HasValue ? puts.OrderBy(t => t.strikeDelta) : puts.OrderByDescending(t => t.delta);
-
-                var calls = options.Where(t => t.cp == "C").Take(NUB_OF_OPTIONS);
-                calls = strikeLevel.HasValue ? calls.OrderBy(t => t.strikeDelta) : calls.OrderByDescending(t => t.delta);
-
-                return puts.Take(numOfCombos).OrderByDescending(x => x.strike).Concat(calls.Take(numOfCombos).OrderByDescending(x => x.strike)).ToArray();
-              }
-              //.ThenBy(t => t.i)
-              )
-             .Subscribe(b => base.Clients.Caller.bullPuts(b)));
-          Action currentBullPut = () =>
-            symbols
-              .ForEach(symbol
-              => am.CurrentBullPuts(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3, gap)
-              .Select(ts => ts
-                .Select(t => new {
+                var cs = ts.Select(t => new {
                   i = t.instrument,
+                  d = (t.combo.contract.IsFutureOption ? t.combo.contract.Expiration.Day + " " : ""),
                   t.bid,
                   t.ask,
                   avg = t.ask.Avg(t.bid),
                   time = t.time.ToString("HH:mm:ss"),
                   t.delta,
                   strike = t.strikeAvg,
-                  perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+                  perc = (t.bid / t.underPrice * 100),
                   strikeDelta = t.strikeAvg - t.underPrice,
                   be = new { t.breakEven.up, t.breakEven.dn },
-                  isActive = false
-                })
-              .OrderByDescending(t => t.delta)
-              //.ThenBy(t => t.i)
-              )
-             .Subscribe(b => base.Clients.Caller.options(b)));
-
-          if(!pair.IsNullOrWhiteSpace())
-            OnCurrentCombo(() => {
-              a();
-              currentOptions();
-              //currentBullPut();
-            });
-          //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
-          am.ComboTrades(1)
-            .ToArray()
-            .Subscribe(cts => {
-              try {
-                var combos = cts
-                .Where(ct => ct.position != 0)
-                .OrderBy(ct => ct.contract.Legs().Count())
-                .ThenBy(ct => ct.contract.IsOption)
-                .ThenByDescending(ct => ct.contract.LastTradeDateOrContractMonth)
-                .ToArray(x => {
-                  var hasStrike = x.contract.IsOption || x.contract.IsCombo;
-                  var delta = hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs();
-                  return new {
-                    combo = x.contract.Key
-                      , netPL = x.pl
-                      , x.position
-                      , x.closePrice
-                      , x.price.bid, x.price.ask
-                      , x.close
-                      , delta
-                      , x.openPrice
-                      , x.takeProfit, x.profit, x.orderId
-                      , exit = 0, exitDelta = 0
-                      , color = !hasStrike ? "white"
-                      : delta > 0 && x.contract.IsPut
-                      ? "#ffd3d9"
-                      : delta < 0 && x.contract.IsCall
-                      ? "#ffd3d9"
-                      : "chartreuse"
-                  };
+                  isActive = false,
+                  maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100
                 });
+                cs = strikeLevel.HasValue && true
+                ? cs.OrderByDescending(x => x.strikeDelta)
+                : cs.OrderByDescending(x => x.delta);
+                return cs.Take(numOfCombos).OrderByDescending(x => x.strike).ToArray();
+              })
+              .Subscribe(b => base.Clients.Caller.butterflies(b));
+            });
+        const int NUB_OF_OPTIONS = 6;
+        Action currentOptions = () =>
+          symbols
+            .ForEach(symbol
+            => am.CurrentOptions(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, NUB_OF_OPTIONS)
+            .Select(ts => {
+              var options = ts
+               .Select(t => new {
+                 i = t.instrument,
+                 d = (t.option.IsFutureOption ? t.option.Expiration.Day + " " : ""),
+                 t.bid,
+                 t.ask,
+                 avg = t.ask.Avg(t.bid),
+                 time = t.time.ToString("HH:mm:ss"),
+                 t.delta,
+                 strike = t.strikeAvg,
+                 perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+                 strikeDelta = t.strikeAvg - t.underPrice,
+                 be = new { t.breakEven.up, t.breakEven.dn },
+                 isActive = false,
+                 cp = t.option.Right,
+                 maxPlPerc = t.deltaBid * quantity * t.option.ComboMultiplier / am.Account.Equity * 100
+               }).OrderBy(t => t.strikeDelta.Abs());
 
-                base.Clients.Caller.liveCombos(combos);
+              var puts = options.Where(t => t.cp == "P").Take(NUB_OF_OPTIONS);
+              puts = strikeLevel.HasValue ? puts.OrderBy(t => t.strikeDelta) : puts.OrderByDescending(t => t.delta);
 
-                (from ce in comboExits.Where(s => !s.IsNullOrWhiteSpace()).Select(s => s.Split(','))
-                 join c in combos on ce[0] equals c.combo
+              var calls = options.Where(t => t.cp == "C").Take(NUB_OF_OPTIONS);
+              calls = strikeLevel.HasValue ? calls.OrderBy(t => t.strikeDelta) : calls.OrderByDescending(t => t.delta);
+
+              return puts.Take(numOfCombos).OrderByDescending(x => x.strike).Concat(calls.Take(numOfCombos).OrderByDescending(x => x.strike)).ToArray();
+            }
+            //.ThenBy(t => t.i)
+            )
+           .Subscribe(b => base.Clients.Caller.bullPuts(b)));
+        Action currentBullPut = () =>
+          symbols
+            .ForEach(symbol
+            => am.CurrentBullPuts(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3, gap)
+            .Select(ts => ts
+              .Select(t => new {
+                i = t.instrument,
+                t.bid,
+                t.ask,
+                avg = t.ask.Avg(t.bid),
+                time = t.time.ToString("HH:mm:ss"),
+                t.delta,
+                strike = t.strikeAvg,
+                perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+                strikeDelta = t.strikeAvg - t.underPrice,
+                be = new { t.breakEven.up, t.breakEven.dn },
+                isActive = false,
+                maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100
+              })
+            .OrderByDescending(t => t.delta)
+            //.ThenBy(t => t.i)
+            )
+           .Subscribe(b => base.Clients.Caller.options(b)));
+
+        if(!pair.IsNullOrWhiteSpace())
+          OnCurrentCombo(() => {
+            a();
+            currentOptions();
+            //currentBullPut();
+          });
+        //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
+        am.ComboTrades(1)
+          .ToArray()
+          .Subscribe(cts => {
+            try {
+              var combos = cts
+              .Where(ct => ct.position != 0)
+              .OrderBy(ct => ct.contract.Legs().Count())
+              .ThenBy(ct => ct.contract.IsOption)
+              .ThenByDescending(ct => ct.contract.LastTradeDateOrContractMonth)
+              .ToArray(x => {
+                var hasStrike = x.contract.IsOption || x.contract.IsCombo;
+                var delta = hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs();
+                return new {
+                  combo = x.contract.Key
+                    , netPL = x.pl
+                    , x.position
+                    , x.closePrice
+                    , x.price.bid, x.price.ask
+                    , x.close
+                    , delta
+                    , x.openPrice
+                    , x.takeProfit, x.profit, x.orderId
+                    , exit = 0, exitDelta = 0
+                    , color = !hasStrike ? "white"
+                    : delta > 0 && x.contract.IsPut
+                    ? "#ffd3d9"
+                    : delta < 0 && x.contract.IsCall
+                    ? "#ffd3d9"
+                    : "chartreuse"
+                };
+              });
+
+              base.Clients.Caller.liveCombos(combos);
+
+              (from ce in comboExits.Where(s => !s.IsNullOrWhiteSpace()).Select(s => s.Split(','))
+               join c in combos on ce[0] equals c.combo
                  //let exit = TryExit(ce[1])
                  let exitDelta = TryExitDelta(ce[2])
-                 where (exitDelta != 0 && c.delta.Abs() < exitDelta)
-                 select c
-                 ).ForEach(combo => {
-                   am?.CancelAllOrders("Closing combo by exitDelta");
-                   CloseCombo(combo.combo);
-                 });
-              } catch(Exception exc) {
-                Log = exc;
-              }
-            }, exc => {
+               where (exitDelta != 0 && c.delta.Abs() < exitDelta)
+               select c
+               ).ForEach(combo => {
+                 am?.CancelAllOrders("Closing combo by exitDelta");
+                 CloseCombo(combo.combo);
+               });
+            } catch(Exception exc) {
               Log = exc;
-            });
-          if(false)
-            base.Clients.Caller.orders(am.OrderContractsInternal.Values
-              .Select(oc =>
-              new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
-              ).OrderBy(oc => oc.order));
-          double TryExitDelta(string s) => double.TryParse(s, out var i) ? i : int.MinValue;
-        }
-      });
-    }
+            }
+          }, exc => {
+            Log = exc;
+          });
+        if(false)
+          base.Clients.Caller.orders(am.OrderContractsInternal.Values
+            .Select(oc =>
+            new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
+            ).OrderBy(oc => oc.order));
+        double TryExitDelta(string s) => double.TryParse(s, out var i) ? i : int.MinValue;
+      }
+      return new { tm.TradingRatio };
+    });
 
     [BasicAuthenticationFilter]
     public void UpdateCloseOrder(string instrument, int orderId, double? limit, double? profit) {
@@ -738,13 +741,17 @@ namespace HedgeHog.Alice.Client {
         .Subscribe(trade => {
           try {
             if(limit.HasValue)
-              am.OpenOrUpdateLimitOrder(instrument, trade.position, orderId, limit.Value);
-            else
-              am.OpenOrUpdateLimitOrderByProfit(instrument, trade.position, orderId, trade.open, profit.Value);
+              am.OpenOrUpdateLimitOrder(trade.contract, trade.position, orderId, limit.Value);
+            else {
+              var p = profit.Value > 1 ? profit.Value
+              : profit.Value >= 0.01 ? profit.Value
+              : am.Account.Equity * profit.Value;
+              am.OpenOrUpdateLimitOrderByProfit2(trade.contract.Instrument, trade.position, orderId, trade.open, p);
+            }
             am.OpenOrderObservable
             .TakeUntil(DateTimeOffset.Now.AddSeconds(5))
             .Throttle(TimeSpan.FromSeconds(1))
-            .Subscribe(_ => ReadStraddles("", 0, 1, 0, new string[0]));
+            .Subscribe(_ => Clients.Caller.MustReadStraddles());
           } catch(Exception exc) {
             Log = exc;
           }
@@ -1285,7 +1292,7 @@ namespace HedgeHog.Alice.Client {
           list2.Add(row("grossToExitRaw", trader.Value.GrossToExit));
           list2.Add(row("profitByHedgeRatioDiff", trader.Value.ProfitByHedgeRatioDiff));
         }
-        tm.CurrentPut?.ForEach(p => 
+        tm.CurrentPut?.ForEach(p =>
         list2.Add(row("Curr Put", $"{p.option.Key}{(p.option.IsFutureOption ? ":" + p.option.LastTradeDateOrContractMonth : "")}")));
         return list2;
       }).Concat();
