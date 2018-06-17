@@ -1304,13 +1304,14 @@
         <td>Straddles</td>
         <td>/\</td>
         <!--<td>Up</td>
-        <td>Dn</td>
-        <td>Avg</td>-->
+  <td>Dn</td>
+  <td>Avg</td>-->
         <td>PL%</td>
         <td>Perc</td>
         <td>Delta</td>
         <td>Bid</td>
         <td>Ask</td>
+        <td>PL$</td>
         <td style="text-align:center">Trade</td>
       </tr>
       <!-- ko foreach:currentCombos -->
@@ -1325,6 +1326,7 @@
         <td data-bind="text:d3.format('.2f')(delta())"></td>
         <td data-bind="text:d3.format('.2f')(bid())"></td>
         <td data-bind="text:d3.format('.2f')(ask())"></td>
+        <td data-bind="text:d3.format('$.0f')(maxPL())"></td>
         <td>
           <button data-bind="click:$parent.openButterfly.bind(null,false,$data)">Sell</button>
           <button data-bind="click:$parent.openButterfly.bind(null,true,$data)">Buy</button>

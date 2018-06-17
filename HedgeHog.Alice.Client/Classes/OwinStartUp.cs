@@ -594,7 +594,8 @@ namespace HedgeHog.Alice.Client {
                   strikeDelta = t.strikeAvg - t.underPrice,
                   be = new { t.breakEven.up, t.breakEven.dn },
                   isActive = false,
-                  maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100
+                  maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100,
+                  maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier
                 });
                 cs = strikeLevel.HasValue && true
                 ? cs.OrderByDescending(x => x.strikeDelta)
@@ -624,14 +625,16 @@ namespace HedgeHog.Alice.Client {
                  be = new { t.breakEven.up, t.breakEven.dn },
                  isActive = false,
                  cp = t.option.Right,
-                 maxPlPerc = t.deltaBid * quantity * t.option.ComboMultiplier / am.Account.Equity * 100
+                 maxPlPerc = t.deltaBid * quantity * t.option.ComboMultiplier / am.Account.Equity * 100,
+                 maxPL = t.deltaBid * quantity * t.option.ComboMultiplier
+
                }).OrderBy(t => t.strikeDelta.Abs());
 
-              var puts = options.Where(t => t.cp == "P").Take(NUB_OF_OPTIONS);
-              puts = strikeLevel.HasValue ? puts.OrderBy(t => t.strikeDelta) : puts.OrderByDescending(t => t.delta);
+              var puts = options.Where(t => t.cp == "P").Take(NUB_OF_OPTIONS).ToArray();
+              puts = (strikeLevel.HasValue ? puts.OrderBy(t => t.strikeDelta) : puts.OrderByDescending(t => t.delta)).ToArray();
 
-              var calls = options.Where(t => t.cp == "C").Take(NUB_OF_OPTIONS);
-              calls = strikeLevel.HasValue ? calls.OrderBy(t => t.strikeDelta) : calls.OrderByDescending(t => t.delta);
+              var calls = options.Where(t => t.cp == "C").Take(NUB_OF_OPTIONS).ToArray();
+              calls = (strikeLevel.HasValue ? calls.OrderBy(t => t.strikeDelta) : calls.OrderByDescending(t => t.delta)).ToArray();
 
               return puts.Take(numOfCombos).OrderByDescending(x => x.strike).Concat(calls.Take(numOfCombos).OrderByDescending(x => x.strike)).ToArray();
             }
@@ -655,7 +658,8 @@ namespace HedgeHog.Alice.Client {
                 strikeDelta = t.strikeAvg - t.underPrice,
                 be = new { t.breakEven.up, t.breakEven.dn },
                 isActive = false,
-                maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100
+                maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100,
+                maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier
               })
             .OrderByDescending(t => t.delta)
             //.ThenBy(t => t.i)

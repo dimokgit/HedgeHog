@@ -64,13 +64,16 @@ namespace IBApp {
     }
     public COMBO_TRADES_IMPL ComboTradesAllImpl() {
       var positions = Positions.Where(p => p.position != 0 && p.contract.IsOption).ToArray();
-      var expDate = positions.DefaultIfEmpty().Min(p => p.contract.Expiration);
-      positions = positions.Where(p => p.contract.Expiration == expDate).ToArray();
-      return (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
-              let order = OrderContractsInternal.Values.Where(oc => !oc.isDone && oc.contract.Key == ca.contract.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
-              let open = ca.positions.Sum(p => p.open)
-              let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
-              select (ca.contract.contract, position: ca.contract.positions, open, openPrice, order.LmtPrice, order.OrderId));
+      //var expDate = positions.Select(p => p.contract.Expiration).DefaultIfEmpty().Min();
+      //var positionsByExpiration = positions.Where(p => p.contract.Expiration == expDate).ToArray();
+      var positionsByExpiration = positions.GroupBy(p => p.contract.Expiration);
+      return positionsByExpiration.Select(g => ComboTradesAllImpl2(g.ToArray())).Concat();
     }
+
+    private COMBO_TRADES_IMPL ComboTradesAllImpl2((Contract contract, int position, double open, double price, double pipCost)[] positions) => (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
+                                                                                                                                                let order = OrderContractsInternal.Values.Where(oc => !oc.isDone && oc.contract.Key == ca.contract.contract.Key).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
+                                                                                                                                                let open = ca.positions.Sum(p => p.open)
+                                                                                                                                                let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
+                                                                                                                                                select (ca.contract.contract, position: ca.contract.positions, open, openPrice, order.LmtPrice, order.OrderId));
   }
 }
