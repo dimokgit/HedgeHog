@@ -425,7 +425,7 @@ namespace IBApp {
         //  .Concat(Observable.Defer(() => ReqPriceMarket(cd.Summary)))
         //  .Take(1)
       from och in ReqSecDefOptParamsAsync(cd.Summary.LocalSymbol, cd.Summary.IsFuture ? cd.Summary.Exchange : "", cd.Summary.SecType, cd.Summary.ConId)
-      select (och.exchange, och.tradingClass, och.multiplier, expirations: och.expirations.Select(e => e.FromTWSDateString()).ToArray(), strikes: och.strikes.ToArray(), symbol = cd.Summary.Symbol, currency: cd.Summary.Currency);
+      select (och.exchange, och.tradingClass, och.multiplier, expirations: och.expirations.Select(e => e.FromTWSDateString(DateTime.MaxValue)).ToArray(), strikes: och.strikes.ToArray(), symbol = cd.Summary.Symbol, currency: cd.Summary.Currency);
 
     enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
 
@@ -677,36 +677,6 @@ namespace IBApp {
 
     #endregion
 
-    #region OrderAddedEvent
-    event EventHandler<OrderEventArgs> OrderAddedEvent;
-    public event EventHandler<OrderEventArgs> OrderAdded {
-      add {
-        if(OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
-          OrderAddedEvent += value;
-      }
-      remove {
-        OrderAddedEvent -= value;
-      }
-    }
-
-    void RaiseOrderAdded(object sender, OrderEventArgs args) => OrderAddedEvent?.Invoke(sender, args);
-    #endregion
-    #region OrderRemovedEvent
-    event OrderRemovedEventHandler OrderRemovedEvent;
-    public event OrderRemovedEventHandler OrderRemoved {
-      add {
-        if(OrderRemovedEvent == null || !OrderRemovedEvent.GetInvocationList().Contains(value))
-          OrderRemovedEvent += value;
-      }
-      remove {
-        OrderRemovedEvent -= value;
-      }
-    }
-
-    void RaiseOrderRemoved(HedgeHog.Shared.Order args) => OrderRemovedEvent?.Invoke(args);
-    #endregion
-
-
     private void OnCurrentTime(long obj) {
       var ct = obj.ToDateTimeFromEpoch(DateTimeKind.Utc).ToLocalTime();
       _serverTimeOffset = ct - DateTime.Now;
@@ -741,46 +711,6 @@ namespace IBApp {
       else
         Trace(new { IBCC = new { id, error = errorCode, message } });
     }
-
-    #region TradeAdded Event
-    //public class TradeEventArgs : EventArgs {
-    //  public Trade Trade { get; private set; }
-    //  public TradeEventArgs(Trade trade) : base() {
-    //    Trade = trade;
-    //  }
-    //}
-    event EventHandler<TradeEventArgs> TradeAddedEvent;
-    public event EventHandler<TradeEventArgs> TradeAdded {
-      add {
-        if(TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
-          TradeAddedEvent += value;
-      }
-      remove {
-        TradeAddedEvent -= value;
-      }
-    }
-    protected void RaiseTradeAdded(Trade trade) {
-      if(TradeAddedEvent != null)
-        TradeAddedEvent(this, new TradeEventArgs(trade));
-    }
-    #endregion
-
-    #region TradeRemoved Event
-    event EventHandler<TradeEventArgs> TradeRemovedEvent;
-    public event EventHandler<TradeEventArgs> TradeRemoved {
-      add {
-        if(TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
-          TradeRemovedEvent += value;
-      }
-      remove {
-        TradeRemovedEvent -= value;
-      }
-    }
-    protected void RaiseTradeRemoved(Trade trade) {
-      if(TradeRemovedEvent != null)
-        TradeRemovedEvent(this, new TradeEventArgs(trade));
-    }
-    #endregion
 
     #region TradeClosedEvent
     event EventHandler<TradeEventArgs> TradeClosedEvent;

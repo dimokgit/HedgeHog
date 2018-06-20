@@ -26,11 +26,11 @@ namespace IBApp {
 
     public void OpenLimitOrder(Contract contract, int quantity, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
       IbClient.ReqPriceSafe(contract, 1, true).Select(p => quantity > 0 ? p.ask : p.bid)
-       .Subscribe(price => OpenTrade(contract, "", quantity, price, useTakeProfit, minTickMultiplier, Caller));
+       .Subscribe(price => OpenTrade(contract, "", quantity, price, useTakeProfit, DateTime.MaxValue, minTickMultiplier, Caller));
     }
-    public PendingOrder OpenTrade(Contract contract, int quantity, double price, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
-      OpenTrade(contract, "", quantity, price, useTakeProfit, minTickMultiplier, Caller);
-    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+    public PendingOrder OpenTrade(Contract contract, int quantity, double price, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
+      OpenTrade(contract, "", quantity, price, useTakeProfit, goodTillDate, minTickMultiplier, Caller);
+    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
       var timeoutInMilliseconds = 5000;
       if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
         var message = new { contract, quantity, Method = nameof(OpenTrade), Caller, timeoutInMilliseconds } + "";
@@ -57,10 +57,14 @@ namespace IBApp {
         OrderType = orderType,
         LmtPrice = OrderPrice(price, contract, minTickMultiplier),
         TotalQuantity = quantity.Abs(),
-        Tif = GTC,
         OutsideRth = isPreRTH,
         OverridePercentageConstraints = true
       };
+      if(!goodTillDate.IsMax()) {
+        order.Tif = GTD;
+        order.GoodTillDate = goodTillDate.ToTWSString();
+      }else
+        order.Tif = GTC;
       //if(!contract.IsCombo && !contract.IsFutureOption)
       //  FillAdaptiveParams(order, "Normal");
       var tpOrder = (useTakeProfit ? MakeTakeProfitOrder(order, contract, minTickMultiplier) : new(IBApi.Order order, double price)[0].ToObservable()).Select(x => new { x.order, x.price, useTakeProfit = false });
@@ -70,7 +74,7 @@ namespace IBApp {
         .Subscribe(o => {
           var reqId = o.order.OrderId;
           IbClient.WatchReqError(() => reqId, e => {
-            Error(contract,o.order, e, new { minTickMultiplier });
+            Error(contract, o.order, e, new { minTickMultiplier });
             if(e.errorCode == 110 && minTickMultiplier <= 5 && o.order.LmtPrice != 0) {
               OrderContractsInternal.TryRemove(reqId, out var old);
               o.order.LmtPrice = OrderPrice(o.price, contract, ++minTickMultiplier);
@@ -96,7 +100,7 @@ namespace IBApp {
         var isWarning = Regex.IsMatch(t.errorMsg, @"\sWarning:") || t.errorCode == 103;
         if(!isWarning) OnOpenError(t, trace);
         else
-          Trace(trace + t+"\n"+o);
+          Trace(trace + t + "\n" + o);
       }
     }
     IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder(IBApi.Order parent, Contract contract, int minTickMultilier) {

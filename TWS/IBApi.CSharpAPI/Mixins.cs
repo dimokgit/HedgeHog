@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace IBApi {
   public static class IBApiMixins {
-    public static IEnumerable<Contract> Sort(this IEnumerable<Contract> l) => l.OrderBy(c=>c.Strike).ThenBy(c => c.Right);
+    public static IEnumerable<Contract> Sort(this IEnumerable<Contract> l) => l.OrderBy(c => c.Strike).ThenBy(c => c.Right);
     public static string MakeOptionSymbol(string tradingClass, DateTime expiration, double strike, bool isCall) {
       var date = expiration.ToTWSOptionDateString();
       var cp = isCall ? "C" : "P";
@@ -38,7 +38,8 @@ namespace IBApi {
       return date.ToDateTime("yyyyMMdd", DateTimeKind.Local) +
         time.ToDateTime("HH:mm:ss", DateTimeKind.Local).TimeOfDay;
     }
-    public static DateTime FromTWSDateString(this string d) {
+    public static DateTime FromTWSDateString(this string d, DateTime defaultDate) {
+      if(d.IsNullOrWhiteSpace()) return defaultDate;
       var date = Regex.Split(d, @"\s+")[0];
       return date.ToDateTime("yyyyMMdd", DateTimeKind.Local);
     }

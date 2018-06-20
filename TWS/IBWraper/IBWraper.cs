@@ -47,10 +47,6 @@ namespace IBApp {
       _ibClient = (IBClientCore)CoreFX;
       _ibClient.PriceChanged += OnPriceChanged;
       _ibClient.CommissionByTrade = commissionByTrade;
-      _ibClient.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
-      _ibClient.TradeRemoved += (s, e) => { RaiseTradeClosed(e.Trade); RaiseTradeRemoved(e.Trade); };
-      _ibClient.OrderAdded += RaiseOrderAdded;
-      _ibClient.OrderRemoved += RaiseOrderRemoved;
       _ibClient.ManagedAccounts += OnManagedAccounts;
     }
     #endregion

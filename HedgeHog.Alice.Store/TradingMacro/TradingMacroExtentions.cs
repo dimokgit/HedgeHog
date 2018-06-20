@@ -45,7 +45,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson;
 using IBApp;
 using COMBO_HISTORY = System.Collections.Generic.List<(double bid, double ask, System.DateTime time, double delta)>;
-using CURRENT_OPTION = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option,double deltaBid, double deltaAsk)>;
+using CURRENT_OPTION = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option, double deltaBid, double deltaAsk)>;
 using IBApi;
 
 namespace HedgeHog.Alice.Store {
@@ -1146,7 +1146,7 @@ namespace HedgeHog.Alice.Store {
             .Subscribe(x => {
               var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime();
               GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories.Where(t => t.time < startDate)), true);
-              GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.time >= startDate).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
+              GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == Pair && t.time >= startDate).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
               SyncStraddleHistoryT1(this);
               Log = new Exception($"{nameof(SyncStraddleHistoryT1)} - done");
               SyncStraddleHistoryM1(tmM1);
@@ -1172,13 +1172,14 @@ namespace HedgeHog.Alice.Store {
                   ask: sh.ask.Cma(shcp, straddle.Select(s => s.deltaAsk).RootMeanPower(0.5)),
                   time: straddle.Max(t => t.time),
                   delta: sh.delta.Cma(shcp, straddle.Select(s => s.delta).RootMeanPower(0.5)))
-                  .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory {
-                    _id = straddleStartId + Interlocked.Increment(ref _id),
-                    ask = t.ask,
-                    bid = t.bid,
-                    delta = t.delta,
-                    time = t.time
-                  })))
+                  .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory(
+                    straddleStartId + Interlocked.Increment(ref _id),
+                    Pair,
+                    t.bid,
+                    t.ask,
+                    t.delta,
+                    t.time
+                  ))))
                 ));
               })
               , exc => {
@@ -1190,7 +1191,7 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    static COMBO_HISTORY StraddleHistory = new COMBO_HISTORY();
+    COMBO_HISTORY StraddleHistory = new COMBO_HISTORY();
     COMBO_HISTORY VerticalPutHistory = new COMBO_HISTORY();
     private void HansleTick(PriceChangedEventArgs pce) {
       try {
@@ -4240,15 +4241,14 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       if(!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds)) {
         var message = new { Pair, PairIndex, Method = nameof(UseRatesInternal), Caller, timeoutInMilliseconds } + "";
         Log = new TimeoutException(message);
-        yield break;
+        return new T[0];
       }
       Stopwatch sw = Stopwatch.StartNew();
-      T ret;
       try {
-        ret = func(StraddleHistory);
+        return TradingMacroTrader(tm => func(tm.StraddleHistory));
       } catch(Exception exc) {
         Log = exc;
-        yield break;
+        return new T[0];
       } finally {
         Monitor.Exit(_innerRateLocker);
         if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
@@ -4256,7 +4256,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           Log = new TimeoutException(message);
         }
       }
-      yield return ret;
     }
     public void UseStraddleHistory(Action<COMBO_HISTORY> action, [CallerMemberName] string Caller = "") {
       Func<COMBO_HISTORY, Unit> f = rates => { action(rates); return Unit.Default; };

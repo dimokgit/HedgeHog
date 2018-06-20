@@ -183,7 +183,7 @@ namespace HedgeHog.Alice.Store {
           orderby g.Key
           select new { bid = g.Average(t => t.bid), time = g.Key.ToLocalTime() }
           ).ToList())
-                 let endDate = shs.Last().time.ToLocalTime()
+                 from endDate in shs.BackwardsIterator().Take(1).Select(t => t.time.ToLocalTime())
                  from z in tm.UseRates(ra => ra.TakeWhile(r => r.StartDate <= endDate).Zip(r => r.StartDate, shs, sh => sh.time, (r, sh) => (r, sh)).ToArray())
                  from t in z
                  select t
@@ -196,7 +196,7 @@ namespace HedgeHog.Alice.Store {
           orderby sh.time
           select new { bid = sh.bid, time = sh.time.ToLocalTime() }
           ).ToList())
-                 let endDate = shs.Last().time.ToLocalTime()
+                 from endDate in shs.BackwardsIterator().Take(1).Select(t => t.time.ToLocalTime())
                  from z in tm.UseRates(ra => ra.TakeWhile(r => r.StartDate <= endDate).Zip(r => r.StartDate, shs, sh => sh.time, (r, sh) => (r, sh)).ToArray())
                  from t in z
                  select t

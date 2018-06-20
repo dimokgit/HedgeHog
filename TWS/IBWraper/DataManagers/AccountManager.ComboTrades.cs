@@ -43,7 +43,7 @@ namespace IBApp {
          );
       IObservable<double> UnderPrice(Contract contract) {
         if(!contract.IsOption && !contract.IsCombo) return Observable.Return(0.0);
-        var underSymbol = contract.Symbol + (contract.HasFutureOption ? "M8" : "");
+        var underSymbol = contract.Symbol + (contract.HasFutureOption ? "U8" : "");
         return (
         from symbol in IbClient.ReqContractDetailsCached(underSymbol)
         from underPrice in IbClient.ReqPriceSafe(symbol.Summary, priceTimeoutInSeconds, false)

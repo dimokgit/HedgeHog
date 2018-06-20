@@ -329,8 +329,8 @@ namespace HedgeHog.Alice.Store {
       get {
         return () => {
           double dc = RatesArray.Select(GetVoltage).Where(Lib.IsNotNaN)
-          .GroupByAdjacent(d=>d)
-          .Select(g=>g.Count())
+          .GroupByAdjacent(d => d)
+          .Select(g => g.Count())
           .DefaultIfEmpty()
           .RootMeanPower(0.25);
           return (_distVolt = (dc / RatesArray.Count).ToPercent()) <= RiskRewardThresh ? TradeDirections.Both : TradeDirections.None;
@@ -1408,7 +1408,7 @@ namespace HedgeHog.Alice.Store {
         //.Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         //.Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
         .Add(TradeConditionsHave(nameof(TLTipOk), nameof(BSTipOk), nameof(BSTipROk), nameof(Store.TradingMacro.PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round((int)3) } : new { })
-        .Add(TradeConditionsHave(nameof(VAOk)) ? (object)new { DistVolts=_distVolt+"%" } : new { })
+        .Add(TradeConditionsHave(nameof(VAOk)) ? (object)new { DistVolts = _distVolt + "%" } : new { })
         //.Add((object)(new { MacdDist = tm.MacdDistances(RatesArray).TakeLast(1).Select(d => d.AutoRound2(3)).SingleOrDefault() }))
         //.Add((object)(new { HistVol = $"{HV(this)}" }))
         //.Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
@@ -2227,19 +2227,23 @@ namespace HedgeHog.Alice.Store {
       if(!IsRatesLengthStableGlobal()) return;
       if(!IsTrader) return;
       UseAccountManager(am => {
-        var puts = OpenPuts();
-        var hasOptions = (from put in CurrentPut
-                          from p in puts
-                          where p.contract.LastTradeDateOrContractMonth==p.contract.LastTradeDateOrContractMonth && put.strikeAvg + p.price.Abs() > p.contract.Strike
+        var puts = OpenPuts().ToList();
+        var distanceOk = (from curPut in CurrentPut
+                          from openPut in puts.OrderBy(p => p.contract.Strike).Take(1).ToList()
+                          let strikeAvg = curPut.strikeAvg
+                          let openPutPrice = openPut.price.Abs()
+                          let openPutStrike = openPut.contract.Strike
+                          where curPut.option.LastTradeDateOrContractMonth == openPut.contract.LastTradeDateOrContractMonth
+                          && strikeAvg + openPutPrice > openPutStrike
                           select true
-                          ).Any();
-        hasOptions = hasOptions ||
+                          ).IsEmpty();
+        var hasOptions = puts.Count +
           am.UseOrderContracts(OrderContracts =>
           (from put in CurrentPut
            join oc in OrderContracts.Values.Where(o => !o.isDone) on put.instrument equals oc.contract.Instrument
            select true
-           )).Concat().Any();
-        if(!hasOptions) {
+           )).Concat().Count();
+        if(distanceOk && hasOptions < TradeCountMax) {
           TradeConditionsEval()
             .DistinctUntilChanged(td => td)
             .Where(td => td.HasUp())
@@ -2248,7 +2252,7 @@ namespace HedgeHog.Alice.Store {
               var pos = -puts.Select(p => p.position.Abs()).DefaultIfEmpty(TradingRatio.ToInt()).Max();
               CurrentPut?.ForEach(p => {
                 Log = new Exception($"{nameof(TradeConditionsTrigger)}:{nameof(am.OpenTrade)}:{new { p.option, pos, Thread.CurrentThread.ManagedThreadId }}");
-                am.OpenTrade(p.option, pos, 0, true);
+                am.OpenTrade(p.option, pos, p.ask, true, ServerTime.AddMinutes(5));
               });
             });
         }
@@ -2323,8 +2327,8 @@ namespace HedgeHog.Alice.Store {
       .ForEach(trade => CloseTrades(nameof(TradeConditionsShouldClose)));
     }
 
-    private IEnumerable<(IBApi.Contract contract, int position, double open, double price,double pipCost)> OpenPuts() 
-      => UseAccountManager(am=>am.Positions.Where(p => p.position != 0 && p.contract.IsPut)).Concat();
+    private IEnumerable<(IBApi.Contract contract, int position, double open, double price, double pipCost)> OpenPuts()
+      => UseAccountManager(am => am.Positions.Where(p => p.position != 0 && p.contract.IsPut)).Concat();
     private void UseAccountManager(Action<AccountManager> action) => UseAccountManager(am => { action(am); return Unit.Default; }).Count();
     private IEnumerable<T> UseAccountManager<T>(Func<AccountManager, T> func) {
       var am = ((IBWraper)TradesManager)?.AccountManager;

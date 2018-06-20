@@ -36,6 +36,7 @@ namespace IBApp {
              + "GrossPositionValue,ReqTEquity,ReqTMargin,SMA,InitMarginReq,MaintMarginReq,AvailableFunds,ExcessLiquidity,Cushion,FullInitMarginReq,FullMaintMarginReq,FullAvailableFunds,"
              + "FullExcessLiquidity,LookAheadNextChange,LookAheadInitMarginReq ,LookAheadMaintMarginReq,LookAheadAvailableFunds,LookAheadExcessLiquidity,HighestSeverity,DayTradesRemaining,Leverage";
     private const string GTC = "GTC";
+    private const string GTD = "GTD";
 
     //private const int BaseUnitSize = 1;
     #endregion
@@ -631,7 +632,7 @@ namespace IBApp {
             .Count(1, new { OpenOrUpdateOrder = new { instrument, unexpected = "count in cache" } })
             .ForEach(c => {
               var lmtPrice = OrderPrice(priceFromProfit(pa, position, c.ComboMultiplier, openAmount), c);
-              OpenTrade(c, -position, lmtPrice, false);
+              OpenTrade(c, -position, lmtPrice, false, DateTime.MaxValue);
             });
         }
       });
@@ -647,7 +648,7 @@ namespace IBApp {
             throw new Exception($"{nameof(OpenOrUpdateLimitOrder)}:{new { orderId, och.contract.Instrument, dontMatch = contract.Instrument }}");
           UpdateOrder(orderId, OrderPrice(lmpPrice, och.contract));
         } else {
-          OpenTrade(contract, -position, lmpPrice, false);
+          OpenTrade(contract, -position, lmpPrice, false, DateTime.MaxValue);
         }
       });
     }
@@ -679,7 +680,7 @@ namespace IBApp {
       UseOrderContracts(orderContracts => {
         Trace(trace + e);
         if(!orderContracts.TryGetValue(e.reqId, out var oc)) return;
-        if(new[] { 200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
+        if(new[] { 110,200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
           //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
           RaiseOrderRemoved(oc);
           orderContracts.TryRemove(e.reqId, out var oc2);

@@ -32,7 +32,7 @@ namespace IBApi {
     DateTime? _lastTradeDateOrContractMonth;
     public DateTime Expiration =>
       (_lastTradeDateOrContractMonth ??
-      (_lastTradeDateOrContractMonth = LastTradeDateOrContractMonth.FromTWSDateString())
+      (_lastTradeDateOrContractMonth = LastTradeDateOrContractMonth.FromTWSDateString(DateTime.Now.Date))
       ).Value;
 
     public string Key => Instrument;
