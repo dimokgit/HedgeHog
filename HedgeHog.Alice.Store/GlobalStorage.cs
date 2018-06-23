@@ -149,8 +149,6 @@ namespace HedgeHog.Alice.Store {
           try {
             c.SaveChanges();
           } catch(Exception exc) {
-            if(Debugger.IsAttached)
-              Debugger.Break();
             GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
           }
           onSave?.Invoke();

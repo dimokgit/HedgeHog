@@ -1157,6 +1157,9 @@ namespace HedgeHog.Alice.Store {
 
           void CollectStraddleHistory() {
             var straddleCount = 2;
+            DateTime saveTime = DateTime.MinValue;
+            void ResetSaveTime() => saveTime = DateTime.Now.AddMinutes(1);
+            ResetSaveTime();
             _priceChangeDisposable = _priceChangeObservable
             //.Sample(TimeSpan.FromSeconds(0.5))
             .SelectMany(price => ibWraper.AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), 4, 0))
@@ -1167,11 +1170,13 @@ namespace HedgeHog.Alice.Store {
                 shs.BackwardsIterator().Take(1)
                 .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
                 .ToList()
-                .ForEach(sh => shs.Add((
+                .ForEach(sh => shs.Add(
+                  (
                   bid: sh.bid.Cma(shcp, straddle.Select(s => s.deltaBid).RootMeanPower(0.5)),
                   ask: sh.ask.Cma(shcp, straddle.Select(s => s.deltaAsk).RootMeanPower(0.5)),
                   time: straddle.Max(t => t.time),
-                  delta: sh.delta.Cma(shcp, straddle.Select(s => s.delta).RootMeanPower(0.5)))
+                  delta: sh.delta.Cma(shcp, straddle.Select(s => s.delta).RootMeanPower(0.5))
+                  )
                   .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory(
                     straddleStartId + Interlocked.Increment(ref _id),
                     Pair,
@@ -1179,7 +1184,10 @@ namespace HedgeHog.Alice.Store {
                     t.ask,
                     t.delta,
                     t.time
-                  ))))
+                  ))
+                  , saveTime < DateTime.Now
+                  , ResetSaveTime
+                  ))
                 ));
               })
               , exc => {

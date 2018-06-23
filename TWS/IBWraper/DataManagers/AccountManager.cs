@@ -183,15 +183,12 @@ namespace IBApp {
         .Where(o => (o.status, o.remaining).IsOrderDone())
         .SelectMany(o => UseOrderContracts(ocs => ocs.Where(oc => oc.Key == o.orderId)).Concat())
         .Select(x => x.Value)
-        .Do(_ => {
+        .Do(o => RaiseOrderRemoved(o))
+        .Throttle(TimeSpan.FromMinutes(1))
+        .Subscribe(_ => {
           Verbose($"{nameof(ResetPortfolioExitOrder)}: scheduled");
-          NewThreadScheduler.Default.Schedule(2.FromSeconds(), () => {
-            Verbose($"{nameof(ResetPortfolioExitOrder)}: started");
-            ResetPortfolioExitOrder();
-            Verbose($"{nameof(ResetPortfolioExitOrder)}: finished");
-          });
+          NewThreadScheduler.Default.Schedule(2.FromSeconds(), ResetPortfolioExitOrder);
         })
-        .Subscribe(o => RaiseOrderRemoved(o))
         .SideEffect(s => _strams.Add(s));
 
       portObs
@@ -210,6 +207,7 @@ namespace IBApp {
     }
 
     private void ResetPortfolioExitOrder() {
+      Trace($"{nameof(ResetPortfolioExitOrder)}: skipped");
       var combosAll = ComboTradesAllImpl().ToArray();
       Trace(new { combosAll = combosAll.Flatter("") });
       combosAll
@@ -680,7 +678,7 @@ namespace IBApp {
       UseOrderContracts(orderContracts => {
         Trace(trace + e);
         if(!orderContracts.TryGetValue(e.reqId, out var oc)) return;
-        if(new[] { 110,200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
+        if(new[] { 110, 200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
           //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
           RaiseOrderRemoved(oc);
           orderContracts.TryRemove(e.reqId, out var oc2);
@@ -774,26 +772,6 @@ namespace IBApp {
     private static Func<Trade, bool> IsEqual2(PositionMessage position) => ot => ot.Key2().Equals(position.Key());
     private static Func<Trade, bool> IsEqual2(Trade trade) => ot => ot.Key().Equals(trade.Key2());
 
-    private int CloseTrade(DateTime execTime, double execPrice, Trade closedTrade, int closeLots) {
-      if(closeLots >= closedTrade.Lots) {// Full close
-        closedTrade.Time2Close = execTime;
-        closedTrade.Close = execPrice;
-
-        if(!OpenTrades.Remove(closedTrade))
-          throw new Exception($"Couldn't remove {nameof(closedTrade)} from {nameof(OpenTrades)}");
-        ClosedTrades.Add(closedTrade);
-        return closeLots - closedTrade.Lots;
-      } else {// Partial close
-        var trade = closedTrade.Clone();
-        trade.CommissionByTrade = closedTrade.CommissionByTrade;
-        trade.Lots = closeLots;
-        trade.Time2Close = execTime;
-        trade.Close = execPrice;
-        closedTrade.Lots -= trade.Lots;
-        ClosedTrades.Add(trade);
-        return 0;
-      }
-    }
     private void TraceTrades(string label, IEnumerable<Trade> trades)
       => Trace(label
         + (trades.Count() > 1 ? "\n" : "")

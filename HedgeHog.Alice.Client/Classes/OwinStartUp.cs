@@ -570,6 +570,7 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
+    static double DaysTillExpiration(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays;
     public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, string[] comboExits) =>
       UseTraderMacro(pair, tm => {
         int expirationDaysSkip = tm.ExpDayToSkip();
@@ -582,10 +583,10 @@ namespace HedgeHog.Alice.Client {
                 am.CurrentStraddles(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 5, gap)
                 .Select(ts => {
                   var cs = ts.Select(t => {
-                    var d = ((t.combo.contract.Expiration - tm.ServerTime.Date).TotalDays + 1);
+                    var d = DaysTillExpiration(t.combo.contract.Expiration);
                     return new {
                       i = t.instrument,
-                      d = (t.combo.contract.IsFutureOption ? d + " " : ""),
+                      d = (t.combo.contract.IsFutureOption ? d.Round(1) + " " : ""),
                       t.bid,
                       t.ask,
                       avg = t.ask.Avg(t.bid),
@@ -615,10 +616,10 @@ namespace HedgeHog.Alice.Client {
               .Select(ts => {
                 var options = ts
                  .Select(t => {
-                   var d = ((t.option.Expiration - tm.ServerTime.Date).TotalDays + 1);
+                   var d = DaysTillExpiration(t.option.Expiration);
                    return new {
                      i = t.instrument,
-                     d = (t.option.IsFutureOption ? d + " " : ""),
+                     d = (t.option.IsFutureOption ? d.Round(1) + " " : ""),
                      t.bid,
                      t.ask,
                      avg = t.ask.Avg(t.bid),
@@ -664,7 +665,7 @@ namespace HedgeHog.Alice.Client {
                   be = new { t.breakEven.up, t.breakEven.dn },
                   isActive = false,
                   maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100
-                  / ((t.combo.contract.Expiration - tm.ServerTime.Date).TotalDays + 1),
+                  / DaysTillExpiration(t.combo.contract.Expiration),
                   maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier
                 })
               .OrderByDescending(t => t.delta)

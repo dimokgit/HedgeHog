@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using HedgeHog;
 using HedgeHog.Bars;
+using HedgeHog.Core;
 using HedgeHog.Shared;
 using IBApi;
 using ReactiveUI;
@@ -348,7 +349,14 @@ namespace IBApp {
       }
     }
     void RaiseTradeClosed(Trade trade) {
-      TradeClosedEvent?.Invoke(this, new TradeEventArgs(trade));
+      try {
+        if(TradeClosedEvent != null) {
+          var tradeArg = new TradeEventArgs(trade);
+          TradeClosedEvent(this, tradeArg);
+        }
+      } catch(Exception exc) {
+        Trace($"{nameof(RaiseTradeClosed)}:\n{exc.Inners().Select(e => e.Message).ToJson()}");
+      }
     }
     #endregion
 
