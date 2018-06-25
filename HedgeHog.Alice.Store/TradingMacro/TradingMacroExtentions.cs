@@ -1116,14 +1116,17 @@ namespace HedgeHog.Alice.Store {
           _currentOptionDisposable?.Dispose();
           _currentOptionDisposable = (
             from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
-            let bid = price.EventArgs.Price.Bid
-            from x in ibWraper.AccountManager.CurrentOptions(Pair, bid, ExpDayToSkip(), 3)
-            where x.Any()
-            select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(2).ToList()
+            let priceBid = price.EventArgs.Price.Bid
+            from options in ibWraper.AccountManager.CurrentOptions(Pair, priceBid, ExpDayToSkip(), 3)
+            where options.Any()
+            select (priceBid, options)
+            //select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(2).ToList()
             )
-            .Subscribe(put => {
-              CurrentPut = put.Take(1).ToList();
-              CurrentOptions = put;
+            .Subscribe(x => {
+              CurrentPut = x.options.Where(p => p.option.IsPut && p.strikeAvg <= x.priceBid).OrderByDescending(t => t.strikeAvg).Take(1).ToList();
+              CurrentCall = x.options.Where(p => p.option.IsCall && p.strikeAvg >= x.priceBid).OrderBy(t => t.strikeAvg).Take(1).ToList();
+              //var currPuts = x.options.OrderBy(o=>o.b)
+              CurrentOptions = x.options.ToList();
             }, exc => {
               Log = exc;
               Debugger.Break();
@@ -1156,10 +1159,52 @@ namespace HedgeHog.Alice.Store {
           });
 
           void CollectStraddleHistory() {
-            var straddleCount = 2;
+            var straddleCount = 10;
             DateTime saveTime = DateTime.MinValue;
             void ResetSaveTime() => saveTime = DateTime.Now.AddMinutes(1);
             ResetSaveTime();
+            _priceChangeDisposable = (
+              from price in _priceChangeObservable
+              from x in ibWraper.AccountManager.CurrentOptions(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), straddleCount * 2)
+              from callBody in x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(1)
+              from callWing in x.Where(t => t.option.IsCall && t.strikeAvg <= callBody.strikeAvg - 25).OrderByDescending(t => t.strikeAvg).Take(1)
+              select (callBody, callWing)
+            )
+            .Where(straddle => straddle.callBody.bid > 0 && straddle.callWing.deltaAsk > 0)
+            .Subscribe(straddle => {
+              var deltaBody = straddle.callBody.deltaBid;
+              var deltaWing = straddle.callWing.deltaAsk;
+              UseStraddleHistory(shs => {
+                shs.BackwardsIterator().Take(1)
+                .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
+                .ToList()
+                .ForEach(sh => shs.Add(
+                  (
+                  bid: sh.bid.Cma(shcp, deltaBody - deltaWing),
+                  ask: 0,
+                  time: straddle.callBody.time.Max(straddle.callWing.time),
+                  delta: 0
+                  )
+                  .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory(
+                    straddleStartId + Interlocked.Increment(ref _id),
+                    Pair,
+                    t.bid,
+                    t.ask,
+                    t.delta,
+                    t.time
+                  ))
+                  , saveTime < DateTime.Now
+                  , ResetSaveTime
+                  ))
+                ));
+              });
+            }
+              , exc => {
+                Log = exc;
+              }, () => {
+                Log = new Exception("_priceChangeDisposable done");
+              });
+            return;
             _priceChangeDisposable = _priceChangeObservable
             //.Sample(TimeSpan.FromSeconds(0.5))
             .SelectMany(price => ibWraper.AccountManager.CurrentStraddles(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), 4, 0))
@@ -5390,6 +5435,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
     public Lazy<double> RatesHeightCma { get; set; } = new Lazy<double>(() => 0);
     public CURRENT_OPTION CurrentPut { get; private set; } = new CURRENT_OPTION();
+    public CURRENT_OPTION CurrentCall { get; private set; } = new CURRENT_OPTION();
     public CURRENT_OPTION CurrentOptions { get; private set; } = new CURRENT_OPTION();
     [WwwSetting(wwwSettingsTradingParams)]
     public int OptionsDaysGap {
