@@ -24,8 +24,10 @@ namespace IBApp {
       baseOrder.AlgoParams.Add(new TagValue("adaptivePriority", priority));
     }
 
-    public void OpenLimitOrder(Contract contract, int quantity, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
-      IbClient.ReqPriceSafe(contract, 1, true).Select(p => quantity > 0 ? p.ask : p.bid)
+    public void OpenLimitOrder(Contract contract, int quantity, bool useMarketPrice, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+      double ask((double ask, double bid, DateTime time) p) => useMarketPrice ? p.ask : p.bid;
+      double bid(double a, double b) => useMarketPrice ? b : a;
+      IbClient.ReqPriceSafe(contract, 1, true).Select(p => quantity > 0 ? ask(p) : bid(p.ask, p.bid))
        .Subscribe(price => OpenTrade(contract, "", quantity, price, useTakeProfit, DateTime.MaxValue, minTickMultiplier, Caller));
     }
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
@@ -63,7 +65,7 @@ namespace IBApp {
       if(!goodTillDate.IsMax()) {
         order.Tif = GTD;
         order.GoodTillDate = goodTillDate.ToTWSString();
-      }else
+      } else
         order.Tif = GTC;
       //if(!contract.IsCombo && !contract.IsFutureOption)
       //  FillAdaptiveParams(order, "Normal");

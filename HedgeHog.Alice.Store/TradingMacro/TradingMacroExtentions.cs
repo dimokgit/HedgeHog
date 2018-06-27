@@ -1161,49 +1161,9 @@ namespace HedgeHog.Alice.Store {
           void CollectStraddleHistory() {
             var straddleCount = 10;
             DateTime saveTime = DateTime.MinValue;
-            void ResetSaveTime() => saveTime = DateTime.Now.AddMinutes(1);
-            ResetSaveTime();
-            _priceChangeDisposable = (
-              from price in _priceChangeObservable
-              from x in ibWraper.AccountManager.CurrentOptions(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), straddleCount * 2)
-              from callBody in x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(1)
-              from callWing in x.Where(t => t.option.IsCall && t.strikeAvg <= callBody.strikeAvg - 25).OrderByDescending(t => t.strikeAvg).Take(1)
-              select (callBody, callWing)
-            )
-            .Where(straddle => straddle.callBody.bid > 0 && straddle.callWing.deltaAsk > 0)
-            .Subscribe(straddle => {
-              var deltaBody = straddle.callBody.deltaBid;
-              var deltaWing = straddle.callWing.deltaAsk;
-              UseStraddleHistory(shs => {
-                shs.BackwardsIterator().Take(1)
-                .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
-                .ToList()
-                .ForEach(sh => shs.Add(
-                  (
-                  bid: sh.bid.Cma(shcp, deltaBody - deltaWing),
-                  ask: 0,
-                  time: straddle.callBody.time.Max(straddle.callWing.time),
-                  delta: 0
-                  )
-                  .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory(
-                    straddleStartId + Interlocked.Increment(ref _id),
-                    Pair,
-                    t.bid,
-                    t.ask,
-                    t.delta,
-                    t.time
-                  ))
-                  , saveTime < DateTime.Now
-                  , ResetSaveTime
-                  ))
-                ));
-              });
-            }
-              , exc => {
-                Log = exc;
-              }, () => {
-                Log = new Exception("_priceChangeDisposable done");
-              });
+            DateTime ResetSaveTime() => DateTime.Now.AddMinutes(1);
+            saveTime = ResetSaveTime();
+            TimeValueHistory(ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
             return;
             _priceChangeDisposable = _priceChangeObservable
             //.Sample(TimeSpan.FromSeconds(0.5))
@@ -1231,7 +1191,7 @@ namespace HedgeHog.Alice.Store {
                     t.time
                   ))
                   , saveTime < DateTime.Now
-                  , ResetSaveTime
+                  , () => saveTime = ResetSaveTime()
                   ))
                 ));
               })
@@ -1244,6 +1204,95 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+
+    private void TimeValueHistory(IBWraper ibWraper, int shcp, long straddleStartId, Func<long> _id, int straddleCount, Func<DateTime> resetSaveTime) {
+      DateTime saveTime = resetSaveTime();
+      _priceChangeDisposable = (
+        from price in _priceChangeObservable
+        from x in ibWraper.AccountManager.CurrentOptions(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), straddleCount)
+        let calls = x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(2)
+        let puts = x.Where(t => t.option.IsPut).OrderByDescending(t => t.deltaBid).Take(2)
+        select calls.Concat(puts).ToArray()
+      )
+      .Where(a => a.Length == 4)
+      .Select(a => a.Average(p => p.deltaBid))
+      .Subscribe(straddle => {
+        UseStraddleHistory(shs => {
+          shs.BackwardsIterator().Take(1)
+          .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
+          .ToList()
+          .ForEach(sh => shs.Add(
+            (
+            bid: sh.bid.Cma(shcp, straddle),
+            ask: 0,
+            time: ServerTime,
+            delta: 0
+            )
+            .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory(
+              straddleStartId + _id(),
+              Pair,
+              t.bid,
+              t.ask,
+              t.delta,
+              t.time
+            ))
+            , saveTime < DateTime.Now
+            , () => saveTime = resetSaveTime()
+            ))
+          ));
+        });
+      }
+        , exc => {
+          Log = exc;
+        }, () => {
+          Log = new Exception("_priceChangeDisposable done");
+        });
+    }
+    private long BullCallHistory(IBWraper ibWraper, int shcp, long straddleStartId, long _id, int straddleCount, DateTime saveTime, Action ResetSaveTime) {
+      _priceChangeDisposable = (
+        from price in _priceChangeObservable
+        from x in ibWraper.AccountManager.CurrentOptions(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), straddleCount * 2)
+        from callBody in x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(1)
+        from callWing in x.Where(t => t.option.IsCall && t.strikeAvg <= callBody.strikeAvg - 25).OrderByDescending(t => t.strikeAvg).Take(1)
+        select (callBody, callWing)
+      )
+      .Where(straddle => straddle.callBody.bid > 0 && straddle.callWing.deltaAsk > 0)
+      .Subscribe(straddle => {
+        var deltaBody = straddle.callBody.deltaBid;
+        var deltaWing = straddle.callWing.deltaAsk;
+        UseStraddleHistory(shs => {
+          shs.BackwardsIterator().Take(1)
+          .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
+          .ToList()
+          .ForEach(sh => shs.Add(
+            (
+            bid: sh.bid.Cma(shcp, deltaBody - deltaWing),
+            ask: 0,
+            time: straddle.callBody.time.Max(straddle.callWing.time),
+            delta: 0
+            )
+            .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory(
+              straddleStartId + Interlocked.Increment(ref _id),
+              Pair,
+              t.bid,
+              t.ask,
+              t.delta,
+              t.time
+            ))
+            , saveTime < DateTime.Now
+            , ResetSaveTime
+            ))
+          ));
+        });
+      }
+        , exc => {
+          Log = exc;
+        }, () => {
+          Log = new Exception("_priceChangeDisposable done");
+        });
+      return _id;
+    }
+
     COMBO_HISTORY StraddleHistory = new COMBO_HISTORY();
     COMBO_HISTORY VerticalPutHistory = new COMBO_HISTORY();
     private void HansleTick(PriceChangedEventArgs pce) {

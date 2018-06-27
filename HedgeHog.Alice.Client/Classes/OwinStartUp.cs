@@ -673,10 +673,19 @@ namespace HedgeHog.Alice.Client {
               )
              .Subscribe(b => base.Clients.Caller.options(b)));
 
+          Action openOrders = () =>
+          am.UseOrderContracts(orderContracts =>
+          (from oc in orderContracts.Select(h => h.Value)
+           where oc.status.status == "Submitted"
+           select new { i = oc.contract.Instrument, id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, p = oc.order.LmtPrice }
+          ).ToArray()
+          ).ForEach(b => base.Clients.Caller.openOrders(b));
+
           if(!pair.IsNullOrWhiteSpace())
             OnCurrentCombo(() => {
               a();
               currentOptions();
+              openOrders();
               //currentBullPut();
             });
           //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
@@ -741,6 +750,10 @@ namespace HedgeHog.Alice.Client {
       });
 
     [BasicAuthenticationFilter]
+    public void CancelOrder(int orderId) {
+      GetAccountManager().UpdateOrder(orderId, 0);
+    }
+    [BasicAuthenticationFilter]
     public void UpdateCloseOrder(string instrument, int orderId, double? limit, double? profit) {
       if(limit.HasValue && profit.HasValue)
         throw new ArgumentException(new { limit, profit, error = "Only one can have value" } + "");
@@ -769,10 +782,10 @@ namespace HedgeHog.Alice.Client {
         });
     }
     [BasicAuthenticationFilter]
-    public void OpenButterfly(string instrument, int quantity) {
+    public void OpenButterfly(string instrument, int quantity, bool useMarketPrice) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
-        am.OpenLimitOrder(contract, quantity, true);
+        am.OpenLimitOrder(contract, quantity, useMarketPrice, true);
       else
         throw new Exception(new { contract, not = "found" } + "");
     }

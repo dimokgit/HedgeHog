@@ -37,6 +37,7 @@ namespace IBApp {
              + "FullExcessLiquidity,LookAheadNextChange,LookAheadInitMarginReq ,LookAheadMaintMarginReq,LookAheadAvailableFunds,LookAheadExcessLiquidity,HighestSeverity,DayTradesRemaining,Leverage";
     private const string GTC = "GTC";
     private const string GTD = "GTD";
+    private const int E110 = 110;
 
     //private const int BaseUnitSize = 1;
     #endregion
@@ -208,6 +209,7 @@ namespace IBApp {
 
     private void ResetPortfolioExitOrder() {
       Trace($"{nameof(ResetPortfolioExitOrder)}: skipped");
+      return;
       var combosAll = ComboTradesAllImpl().ToArray();
       Trace(new { combosAll = combosAll.Flatter("") });
       combosAll
@@ -260,7 +262,8 @@ namespace IBApp {
     public IEnumerable<T> UseOrderContracts<T>(Func<ConcurrentDictionary<int, OrdeContractHolder>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
       var message = $"{nameof(UseOrderContracts)}:{new { Caller, timeoutInMilliseconds }}";
       if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
-        throw new TimeoutException(message + " could't enter Monitor");
+        Trace(message + " could't enter Monitor");
+        yield break;
       }
       Stopwatch sw = Stopwatch.StartNew();
       T ret;
@@ -668,7 +671,7 @@ namespace IBApp {
         order.VolatilityType = 0;
         IbClient.WatchReqError(orderId, e => {
           OnOpenError(e, $"{nameof(UpdateOrder)}:{och.contract}:{new { order.LmtPrice }}");
-          if(e.errorCode == 110)
+          if(e.errorCode == E110)
             UpdateOrder(orderId, lmpPrice, ++minTickMultiplier);
         }, () => { });
         IbClient.ClientSocket.placeOrder(order.OrderId, och.contract, order);
@@ -678,7 +681,7 @@ namespace IBApp {
       UseOrderContracts(orderContracts => {
         Trace(trace + e);
         if(!orderContracts.TryGetValue(e.reqId, out var oc)) return;
-        if(new[] { 110, 200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
+        if(new[] { 200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
           //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
           RaiseOrderRemoved(oc);
           orderContracts.TryRemove(e.reqId, out var oc2);

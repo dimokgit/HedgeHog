@@ -1290,6 +1290,20 @@
         <label>Ask:</label><b data-bind="text:d3.format('.3f')(ask)"></b>
       </div>
     </div>
+    <table>
+      <tbody data-bind="foreach:openOrders">
+        <tr>
+          <td data-bind="text:i"></td>
+          <td data-bind="text:p"></td>
+          <td data-bind="text:f"></td>
+          <td>&lt;</td>
+          <td data-bind="text:r"></td>
+          <td>
+            <button data-bind="click:$parent.cancelOrder.bind(null,$data)" title="Cancel Order">X</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
     <div data-bind1="foreach:activeCombos" style="display:none">
       <div>
         <input type="button" data-bind1="value:i()+':'+d3.format('+.0f')(strikeDelta())" />
@@ -1298,6 +1312,7 @@
         <button data-bind1="event:{click:function(){isActive(false)}}">X</button>
       </div>
     </div>
+
     <table border="1" cellspacing="0" class="wwwInfo" data-bind="visible:currentCombos().length, expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
       <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
       <tr style="background-color: lightslategray;color: white;font-weight: bold;text-align: center;" class="pgGroupRow">
@@ -1328,8 +1343,8 @@
         <td data-bind="text:d3.format('.2f')(ask())"></td>
         <td data-bind="text:d3.format('$.0f')(maxPL())"></td>
         <td>
-          <button data-bind="click:$parent.openButterfly.bind(null,false,$data)">Sell</button>
-          <button data-bind="click:$parent.openButterfly.bind(null,true,$data)">Buy</button>
+          <button data-bind="click:$parent.openButterfly.bind(null,false,$data,true)">Sell</button>
+          <button data-bind="click:$parent.openButterfly.bind(null,false,$data,false)">SELL</button>
         </td>
       </tr>
       <!-- /ko -->

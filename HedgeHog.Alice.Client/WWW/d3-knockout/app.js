@@ -852,6 +852,10 @@
       readCombos(true);
       dataViewModel.butterflies([]);
     }
+    this.cancelOrder = function (data) {
+      var orderId = ko.unwrap(data.id);
+      serverCall("cancelOrder", [orderId]);
+    }
     this.newProfit = function (a, b, c) {
       var profitAmount = parseFloat(b.target.value);
       if (!isNaN(profitAmount)) {
@@ -880,6 +884,7 @@
     this.orders = ko.mapping.fromJS(ko.observableArray());
     this.bullPuts = ko.mapping.fromJS(ko.observableArray());
     this.options = ko.mapping.fromJS(ko.observableArray());
+    this.openOrders = ko.mapping.fromJS(ko.observableArray());
     this.butterflies = ko.mapping.fromJS(ko.observableArray());
     this.currentCombos = ko.pureComputed(function () {
       return this.butterflies()
@@ -915,10 +920,10 @@
     this.butterfliesDialog.subscribe(function () {
       setTimeout(self.showButterflies, 1000);
     });
-    this.openButterfly = function (isBuy, key) {
+    this.openButterfly = function (isBuy, key, useMarketPrice) {
       this.canTrade(false);
       var combo = ko.utils.unwrapObservable(ko.utils.unwrapObservable(key).i);
-      serverCall("openButterfly", [combo, (isBuy ? 1 : -1) * this.comboQuantity()]
+      serverCall("openButterfly", [combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice]
         , null
         , null
         , function () { this.canTrade(false); }.bind(this)
@@ -1834,6 +1839,14 @@
         }
       };
       ko.mapping.fromJS(options, map, dataViewModel.options);
+    };
+    chat.client.openOrders = function (orders) {
+      var map = {
+        key: function (item) {
+          return ko.utils.unwrapObservable(item.id);
+        }
+      };
+      ko.mapping.fromJS(orders, map, dataViewModel.openOrders);
     };
     chat.client.butterflies = function (butterflies) {
       var isNew = dataViewModel.butterflies().length == 0;
