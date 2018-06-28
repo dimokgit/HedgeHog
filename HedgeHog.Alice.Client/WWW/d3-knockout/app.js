@@ -336,7 +336,7 @@
   var dataViewModel = new DataViewModel();
   function DataViewModel() {
     var self = this;
-    this.canTrade = ko.observable(false);
+    this.canTrade = ko.observable(true);
     // #region formatters
     this.chartDateFormat = d3.timeFormat('%m/%d/%Y %H:%M:%S');
     // #endregion
@@ -922,11 +922,19 @@
     });
     this.openButterfly = function (isBuy, key, useMarketPrice) {
       this.canTrade(false);
-      var combo = ko.utils.unwrapObservable(ko.utils.unwrapObservable(key).i);
+      var combo = ko.unwrap(ko.unwrap(key).i);
       serverCall("openButterfly", [combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice]
         , null
         , null
-        , function () { this.canTrade(false); }.bind(this)
+        , function () { this.canTrade(true); }.bind(this)
+      );
+    }.bind(this);
+    this.openPairWithQuantity = function (isBuy, useMarketPrice) {
+      this.canTrade(false);
+      serverCall("openButterfly", [pair, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice]
+        , null
+        , null
+        , function () { this.canTrade(true); }.bind(this)
       );
     }.bind(this);
     this.closeCombo = function (key) {

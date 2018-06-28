@@ -1412,7 +1412,7 @@ namespace HedgeHog.Alice.Store {
         //.Add((object)(new { MacdDist = tm.MacdDistances(RatesArray).TakeLast(1).Select(d => d.AutoRound2(3)).SingleOrDefault() }))
         //.Add((object)(new { HistVol = $"{HV(this)}" }))
         //.Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
-        //.Add(HVP(this).Select(hvp => (object)new { HistVolDif = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVP).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
+        .Add(HVP(this).Select(hvp => (object)new { HistVolDif = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVP).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
@@ -2256,7 +2256,7 @@ namespace HedgeHog.Alice.Store {
               var pos = -puts.Select(p => p.position.Abs()).DefaultIfEmpty(TradingRatio.ToInt()).Max();
               CurrentPut?.ForEach(p => {
                 Log = new Exception($"{nameof(TradeConditionsTrigger)}:{nameof(am.OpenTrade)}:{new { p.option, pos, Thread.CurrentThread.ManagedThreadId }}");
-                am.OpenTrade(p.option, pos, p.ask, true, ServerTime.AddMinutes(5));
+                am.OpenTrade(p.option, pos, p.ask, 0.2, true, ServerTime.AddMinutes(5));
               });
             });
         }

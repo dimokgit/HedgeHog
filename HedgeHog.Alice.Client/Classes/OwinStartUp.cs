@@ -785,7 +785,9 @@ namespace HedgeHog.Alice.Client {
     public void OpenButterfly(string instrument, int quantity, bool useMarketPrice) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
-        am.OpenLimitOrder(contract, quantity, useMarketPrice, true);
+        UseTraderMacro(instrument, tm =>
+         tm.HistoricalVolatilityByPips().ForEach(hv
+         => am.OpenLimitOrder(contract, quantity, hv, useMarketPrice, true)));
       else
         throw new Exception(new { contract, not = "found" } + "");
     }
@@ -806,7 +808,7 @@ namespace HedgeHog.Alice.Client {
             });
           } else {
             am.CancelAllOrders("CloseCombo");
-            am.OpenTrade(c.contract, -c.position, c.closePrice, false, DateTime.MaxValue);
+            am.OpenTrade(c.contract, -c.position, c.closePrice, 0.0, false, DateTime.MaxValue);
           }
         });
       }

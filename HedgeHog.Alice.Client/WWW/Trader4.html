@@ -358,6 +358,9 @@
       table.orders tbody tr td {
         padding: 0px 2px;
       }
+  button{
+    line-height:80%;
+  }
   </style>
   <script>
     $(function () {
@@ -1238,7 +1241,7 @@
         <tr>
           <td data-bind="text:combo" style="text-align:left;color:white"></td>
           <td data-bind="text:d3.format('+.1f')(delta()),style:{color:color()}" style="text-align:right"></td>
-          <td><input data-bind="value:exitDelta" size="1" /></td>
+          <td><input data-bind="value:exitDelta" size="1" style="display:none" /></td>
           <td data-bind="text:d3.format('.2f')(openPrice())"></td>
           <td data-bind="text:d3.format('.2f')(closePrice())"></td>
           <!--<td data-bind1="text:d3.format('.2f')(bid())"></td>
@@ -1281,6 +1284,8 @@
         <span class="glyphicon glyphicon-resize-vertical"></span>
         <b data-bind="text:d3.format('.2f')(spread)"></b>
         <!-- /ko -->
+        <button class="small" data-bind="click:openPairWithQuantity.bind($root,true,true),enable:canTrade">Buy</button>
+        <button class="small" data-bind="click:openPairWithQuantity.bind($root,true,false),enable:canTrade">BUY</button>
       </div>
       <div data-bind="foreach:combosMin" style="display:inline-table">
         <label>Avg:</label><b data-bind="text:d3.format('.3f')(avg)"></b>
@@ -1343,8 +1348,8 @@
         <td data-bind="text:d3.format('.2f')(ask())"></td>
         <td data-bind="text:d3.format('$.0f')(maxPL())"></td>
         <td>
-          <button data-bind="click:$parent.openButterfly.bind(null,false,$data,true)">Sell</button>
-          <button data-bind="click:$parent.openButterfly.bind(null,false,$data,false)">SELL</button>
+          <button data-bind="click:$parent.openButterfly.bind($root,false,$data,true),enabled:$root.canTrade">Sell</button>
+          <button data-bind="click:$parent.openButterfly.bind($root,false,$data,false),enabled:$root.canTrade">SELL</button>
         </td>
       </tr>
       <!-- /ko -->

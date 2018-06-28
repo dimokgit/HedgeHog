@@ -633,7 +633,7 @@ namespace IBApp {
             .Count(1, new { OpenOrUpdateOrder = new { instrument, unexpected = "count in cache" } })
             .ForEach(c => {
               var lmtPrice = OrderPrice(priceFromProfit(pa, position, c.ComboMultiplier, openAmount), c);
-              OpenTrade(c, -position, lmtPrice, false, DateTime.MaxValue);
+              OpenTrade(c, -position, lmtPrice, 0.0, false, DateTime.MaxValue);
             });
         }
       });
@@ -649,7 +649,7 @@ namespace IBApp {
             throw new Exception($"{nameof(OpenOrUpdateLimitOrder)}:{new { orderId, och.contract.Instrument, dontMatch = contract.Instrument }}");
           UpdateOrder(orderId, OrderPrice(lmpPrice, och.contract));
         } else {
-          OpenTrade(contract, -position, lmpPrice, false, DateTime.MaxValue);
+          OpenTrade(contract, -position, lmpPrice, 0.0, false, DateTime.MaxValue);
         }
       });
     }
