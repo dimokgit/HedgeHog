@@ -682,7 +682,7 @@ namespace HedgeHog.Alice.Client {
 
           Action openOrders = () =>
           am.UseOrderContracts(orderContracts =>
-          (from oc in orderContracts.Select(h => h.Value)
+          (from oc in orderContracts
            where oc.status.status == "Submitted"
            select new { i = oc.contract.Instrument, id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, p = oc.order.LmtPrice }
           ).ToArray()
@@ -747,7 +747,7 @@ namespace HedgeHog.Alice.Client {
               Log = exc;
             });
           if(false)
-            base.Clients.Caller.orders(am.OrderContractsInternal.Values
+            base.Clients.Caller.orders(am.OrderContractsInternal
               .Select(oc =>
               new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
               ).OrderBy(oc => oc.order));
@@ -796,7 +796,7 @@ namespace HedgeHog.Alice.Client {
          tm.HistoricalVolatilityByPips().ForEach(hv
          => am.OpenLimitOrder(contract, quantity, hv, useMarketPrice, true)));
       else
-        throw new Exception(new { contract, not = "found" } + "");
+        throw new Exception(new { instrument, not = "found" } + "");
     }
     [BasicAuthenticationFilter]
     public void CloseCombo(string instrument) {

@@ -338,6 +338,20 @@ namespace HedgeHog {
           yield return getDefaultValue();
       }
     }
+    public static void RunIfEmpty<TSource>(this IEnumerable<TSource> source, Action getDefaultValue)
+      => source.RunIfEmptyImpl(getDefaultValue).Count();
+    static IEnumerable<TSource> RunIfEmptyImpl<TSource>(this IEnumerable<TSource> source, Action getDefaultValue) {
+      using(var enumerator = source.GetEnumerator()) {
+        if(enumerator.MoveNext()) {
+          do {
+            yield return enumerator.Current;
+          }
+          while(enumerator.MoveNext());
+        } else {
+          getDefaultValue();
+        }
+      }
+    }
     /// <summary>
     /// If more then one - returns else
     /// </summary>

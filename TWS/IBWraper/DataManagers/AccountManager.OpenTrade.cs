@@ -30,6 +30,13 @@ namespace IBApp {
       IbClient.ReqPriceSafe(contract, 1, true).Select(p => quantity > 0 ? ask(p) : bid(p.ask, p.bid))
        .Subscribe(price => OpenTrade(contract, "", quantity, price, profit, useTakeProfit, DateTime.MaxValue, minTickMultiplier, Caller));
     }
+
+    public PendingOrder OpenTrade(string pair, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+      if(!IBApi.Contract.Contracts.TryGetValue(pair, out var contract))
+        throw new Exception($"Pair:{pair} is not fround in Contracts");
+      return OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, minTickMultiplier, Caller);
+    }
+
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
       OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, minTickMultiplier, Caller);
     public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
@@ -39,13 +46,13 @@ namespace IBApp {
         Trace(new TimeoutException(message));
         return null;
       }
-      var aos = OrderContractsInternal.Values
+      var aos = OrderContractsInternal
         .Where(oc => !oc.isDone && oc.contract.Key == contract.Key && oc.order.TotalPosition().Sign() == quantity.Sign())
         .ToArray();
       if(aos.Any()) {
         aos.ForEach(ao => {
           Trace($"OpenTrade: {contract} already has active order order with status: {ao.status}.\nUpdating {new { price }}");
-          //UpdateOrder(ao.order.OrderId, OrderPrice(price, contract, minTickMultiplier));
+          UpdateOrder(ao.order.OrderId, OrderPrice(price, contract, minTickMultiplier));
         });
         ExitMomitor();
         return null;
@@ -78,16 +85,16 @@ namespace IBApp {
           IbClient.WatchReqError(() => reqId, e => {
             Error(contract, o.order, e, new { minTickMultiplier });
             if(e.errorCode == 110 && minTickMultiplier <= 5 && o.order.LmtPrice != 0) {
-              OrderContractsInternal.TryRemove(reqId, out var old);
+              OrderContractsInternal.RemoveAll(och => och.order.OrderId == reqId);
               o.order.LmtPrice = OrderPrice(o.price, contract, ++minTickMultiplier);
               reqId = o.order.OrderId = NetOrderId();
               Trace(new { replaceOrder = new { o, contract } });
-              OrderContractsInternal.TryAdd(o.order.OrderId, new OrdeContractHolder(o.order, contract));
+              OrderContractsInternal.Add(new OrdeContractHolder(o.order, contract));
               IbClient.ClientSocket.placeOrder(o.order.OrderId, contract, o.order);
               //OpenTrade(contract, quantity, price, o.useTakeProfit, ++minTickMultiplier);
             }
           }, () => Trace(new { o.order, Error = "done" }));
-          OrderContractsInternal.TryAdd(o.order.OrderId, new OrdeContractHolder(o.order, contract));
+          OrderContractsInternal.Add(new OrdeContractHolder(o.order, contract));
           _verbous(new { plaseOrder = new { o, contract } });
           IbClient.ClientSocket.placeOrder(o.order.OrderId, contract, o.order);
         }, exc => ExitMomitor(), ExitMomitor);

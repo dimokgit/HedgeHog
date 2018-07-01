@@ -536,10 +536,10 @@ namespace IBApp {
     }
     public IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair = "")
       => _accountManager?.UseOrderContracts(orderContracts => orderContracts
-      .Where(os => pair.IsNullOrWhiteSpace() || os.Value.contract.Instrument == pair.ToLower())
+      .Where(os => pair.IsNullOrWhiteSpace() || os.contract.Instrument == pair.ToLower())
       .Select(os => pair.IsNullOrWhiteSpace()
-      ? ($"{os.Value.contract}:{os.Value.status.status}:[{os.Key}]", os.Value.status.filled, os.Value.status.remaining, os.Value.isDone)
-      : ($"{os.Value.status.status}:[{os.Key}]", os.Value.status.filled, os.Value.status.remaining, os.Value.isDone))
+      ? ($"{os.contract}:{os.status.status}:[{os.order.OrderId}]", os.status.filled, os.status.remaining, os.isDone)
+      : ($"{os.status.status}:[{os.order.OrderId}]", os.status.filled, os.status.remaining, os.isDone))
       .ToArray()).Concat().ToList()
       ?? new(string status, double filled, double remaining, bool isDone)[0].ToList();
 
@@ -592,7 +592,7 @@ namespace IBApp {
     }
 
     public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
-      return AccountManager.OpenTrade(pair, buy, lots, takeProfit, stopLoss, remark, price);
+      return AccountManager.OpenTrade(pair, lots * (buy ? 1 : -1), (buy ? price?.Ask : price?.Bid).GetValueOrDefault(), takeProfit, false, DateTime.MaxValue);
     }
 
     public PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment) {

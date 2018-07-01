@@ -21,6 +21,7 @@ namespace IBApp {
     protected Action<object> Trace { get; }
     protected Action<bool, object> TraceIf => (b, o) => { if(b) Trace(o); };
     protected Action<object> Verbose => o => { if(UseVerbose) Trace(o); };
+    protected Action<object> Verbose0 => o => {};
     protected IBClientCore IbClient { get; private set; }
     #endregion
 
