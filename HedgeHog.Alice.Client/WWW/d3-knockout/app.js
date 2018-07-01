@@ -923,7 +923,7 @@
     this.openButterfly = function (isBuy, key, useMarketPrice) {
       this.canTrade(false);
       var combo = ko.unwrap(ko.unwrap(key).i);
-      serverCall("openButterfly", [combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice]
+      serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice]
         , null
         , null
         , function () { this.canTrade(true); }.bind(this)
@@ -931,7 +931,7 @@
     }.bind(this);
     this.openPairWithQuantity = function (isBuy, useMarketPrice) {
       this.canTrade(false);
-      serverCall("openButterfly", [pair, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice]
+      serverCall("openButterfly", [pair, pair, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice]
         , null
         , null
         , function () { this.canTrade(true); }.bind(this)

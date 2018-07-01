@@ -1329,9 +1329,10 @@
         <td>PL%</td>
         <td>Perc</td>
         <td>Delta</td>
-        <td>Bid</td>
+        <!--<td>Bid</td>-->
         <td>Ask</td>
         <td>PL$</td>
+        <td>UPL$</td>
         <td style="text-align:center">Trade</td>
       </tr>
       <!-- ko foreach:currentCombos -->
@@ -1344,9 +1345,10 @@
         <td data-bind="text:d3.format('.2f')(maxPlPerc())"></td>
         <td data-bind="text:d3.format('.2f')(perc())"></td>
         <td data-bind="text:d3.format('.2f')(delta())"></td>
-        <td data-bind="text:d3.format('.2f')(bid())"></td>
+        <!--<td data-bind="text:d3.format('.2f')(bid())"></td>-->
         <td data-bind="text:d3.format('.2f')(ask())"></td>
         <td data-bind="text:d3.format('$.0f')(maxPL())"></td>
+        <td data-bind="text:d3.format('$.0f')(underPL())"></td>
         <td>
           <button data-bind="click:$parent.openButterfly.bind($root,false,$data,true),enabled:$root.canTrade">Sell</button>
           <button data-bind="click:$parent.openButterfly.bind($root,false,$data,false),enabled:$root.canTrade">SELL</button>

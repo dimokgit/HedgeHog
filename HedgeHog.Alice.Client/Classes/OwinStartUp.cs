@@ -570,17 +570,18 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
-    static double DaysTillExpiration(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays;
+    static double DaysTillExpiration(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
     public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, string[] comboExits) =>
       UseTraderMacro(pair, tm => {
         int expirationDaysSkip = tm.ExpDayToSkip();
         var am = GetAccountManager();
-        var symbols = IBApi.Contract.FromCache(pair, c => c.IsFuture ? c.LocalSymbol : c.Symbol).ToArray();
+        string CacheKey(Contract c) => c.IsFuture ? c.LocalSymbol : c.Symbol;
+        var underContracts = IBApi.Contract.FromCache(pair).ToArray();
         if(am != null) {
-          Action a = () =>
-            symbols
-              .ForEach(symbol => {
-                am.CurrentStraddles(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 5, gap)
+          Action straddles = () =>
+            underContracts
+              .ForEach(underContract => {
+                am.CurrentStraddles(CacheKey(underContract), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, numOfCombos, gap)
                 .Select(ts => {
                   var cs = ts.Select(t => {
                     var d = DaysTillExpiration(t.combo.contract.Expiration);
@@ -591,14 +592,15 @@ namespace HedgeHog.Alice.Client {
                       t.ask,
                       avg = t.ask.Avg(t.bid),
                       time = t.time.ToString("HH:mm:ss"),
-                      t.delta,
+                      delta = t.deltaBid,
                       strike = t.strikeAvg,
                       perc = (t.bid / t.underPrice * 100),
                       strikeDelta = t.strikeAvg - t.underPrice,
                       be = new { t.breakEven.up, t.breakEven.dn },
                       isActive = false,
                       maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100 / d,
-                      maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier
+                      maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier,
+                      underPL = 0
                     };
                   });
                   cs = strikeLevel.HasValue && true
@@ -610,13 +612,17 @@ namespace HedgeHog.Alice.Client {
               });
           const int NUB_OF_OPTIONS = 6;
           Action currentOptions = () =>
-            symbols
-              .ForEach(symbol
-              => am.CurrentOptions(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, NUB_OF_OPTIONS)
+            underContracts
+              .ForEach(underContract
+              => am.CurrentOptions(CacheKey(underContract), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, numOfCombos)
               .Select(ts => {
+                var underPosition = am.Positions.Where(p => p.contract.Instrument == underContract.Instrument).ToList().FirstOrDefault();
                 var options = ts
                  .Select(t => {
                    var d = DaysTillExpiration(t.option.Expiration);
+                   var maxPL = t.deltaBid * quantity * t.option.ComboMultiplier;
+                   var strikeDelta = t.strikeAvg - t.underPrice;
+                   var underPL = (t.strikeAvg - underPosition.price) * quantity * underContract.ComboMultiplier + maxPL;
                    return new {
                      i = t.instrument,
                      d = (t.option.IsFutureOption ? d.Round(1) + " " : ""),
@@ -624,33 +630,34 @@ namespace HedgeHog.Alice.Client {
                      t.ask,
                      avg = t.ask.Avg(t.bid),
                      time = t.time.ToString("HH:mm:ss"),
-                     t.delta,
+                     delta = t.deltaBid,
                      strike = t.strikeAvg,
                      perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
-                     strikeDelta = t.strikeAvg - t.underPrice,
+                     strikeDelta,
                      be = new { t.breakEven.up, t.breakEven.dn },
                      isActive = false,
                      cp = t.option.Right,
                      maxPlPerc = t.deltaBid * quantity * t.option.ComboMultiplier / am.Account.Equity * 100 / d,
-                     maxPL = t.deltaBid * quantity * t.option.ComboMultiplier
+                     maxPL,
+                     underPL
                    };
                  }).OrderBy(t => t.strikeDelta.Abs());
 
-                var puts = options.Where(t => t.cp == "P").Take(NUB_OF_OPTIONS).ToArray();
+                var puts = options.Where(t => t.cp == "P").Take(numOfCombos).ToArray();
                 puts = (strikeLevel.HasValue ? puts.OrderBy(t => t.strikeDelta) : puts.OrderByDescending(t => t.delta)).ToArray();
 
-                var calls = options.Where(t => t.cp == "C").Take(NUB_OF_OPTIONS).ToArray();
+                var calls = options.Where(t => t.cp == "C").Take(numOfCombos).ToArray();
                 calls = (strikeLevel.HasValue ? calls.OrderBy(t => t.strikeDelta) : calls.OrderByDescending(t => t.delta)).ToArray();
 
-                return puts.Take(numOfCombos).OrderByDescending(x => x.strike).Concat(calls.Take(numOfCombos).OrderByDescending(x => x.strike)).ToArray();
+                return puts.OrderByDescending(x => x.strike).Concat(calls.OrderByDescending(x => x.strike)).ToArray();
               }
               //.ThenBy(t => t.i)
               )
              .Subscribe(b => base.Clients.Caller.bullPuts(b)));
           Action currentBullPut = () =>
-            symbols
+            underContracts
               .ForEach(symbol
-              => am.CurrentBullPuts(symbol, strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3, gap)
+              => am.CurrentBullPuts(CacheKey(symbol), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3, gap)
               .Select(ts => ts
                 .Select(t => new {
                   i = t.instrument,
@@ -683,7 +690,7 @@ namespace HedgeHog.Alice.Client {
 
           if(!pair.IsNullOrWhiteSpace())
             OnCurrentCombo(() => {
-              a();
+              //straddles();
               currentOptions();
               openOrders();
               //currentBullPut();
@@ -782,10 +789,10 @@ namespace HedgeHog.Alice.Client {
         });
     }
     [BasicAuthenticationFilter]
-    public void OpenButterfly(string instrument, int quantity, bool useMarketPrice) {
+    public void OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
-        UseTraderMacro(instrument, tm =>
+        UseTraderMacro(pair, tm =>
          tm.HistoricalVolatilityByPips().ForEach(hv
          => am.OpenLimitOrder(contract, quantity, hv, useMarketPrice, true)));
       else
