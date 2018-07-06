@@ -131,6 +131,8 @@
     });
   });
   // #endregion
+
+  // #region shortcuts
   var scOptions = { 'disable_in_input': true };
   $(function (e) {
     shortcut.add("B", function () {
@@ -162,6 +164,7 @@
       dataViewModel.manualToggle();
     }, scOptions);
   });
+  // #endregion
 
 
   // #region Reset plotter
@@ -881,6 +884,7 @@
       }
     }
 
+    this.stockOptionsInfo = ko.mapping.fromJS(ko.observableArray());
     this.orders = ko.mapping.fromJS(ko.observableArray());
     this.bullPuts = ko.mapping.fromJS(ko.observableArray());
     this.options = ko.mapping.fromJS(ko.observableArray());
@@ -929,9 +933,9 @@
         , function () { this.canTrade(true); }.bind(this)
       );
     }.bind(this);
-    this.openPairWithQuantity = function (isBuy, useMarketPrice) {
+    this.openPairWithQuantity = function () {
       this.canTrade(false);
-      serverCall("openButterfly", [pair, pair, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice]
+      serverCall("openCoveredOption", [pair, this.comboQuantity(), this.comboCurrentStrikeLevel()]
         , null
         , null
         , function () { this.canTrade(true); }.bind(this)
@@ -1822,6 +1826,7 @@
     chat.client.warning = function (message) {
       showWarningPerm(message);
     };
+    // #region Stock Options
     chat.client.bullPuts = function (options) {
       var isNew = dataViewModel.bullPuts().length == 0;
       if (!isNew)
@@ -1854,6 +1859,7 @@
           return ko.utils.unwrapObservable(item.id);
         }
       };
+      dataViewModel.openOrders.remove(function (e) { return !e || !ko.unwrap(e.i); });
       ko.mapping.fromJS(orders, map, dataViewModel.openOrders);
     };
     chat.client.butterflies = function (butterflies) {
@@ -1890,9 +1896,15 @@
     chat.client.orders = function (orders) {
       ko.mapping.fromJS(orders, {}, dataViewModel.orders);
     };
+    chat.client.stockOptionsInfo = function (stockOptionsInfo) {
+      ko.mapping.fromJS(stockOptionsInfo, {}, dataViewModel.stockOptionsInfo);
+    };
+
+    //stockOptionsInfo
     chat.client.mustReadStraddles = function () {
       readCombos(true);
     };
+    // #endregion
     // #endregion
     // #region Start the connection.
     //$.connection.hub.logging = true;
@@ -2112,27 +2124,11 @@
     if (isMobile) return showWarning(message, settings);
     return showError(message, $.extend({ delay: 5000, hide: false }, settings));
   }
-  function dateAdd(date, interval, units) {
-    var ret = new Date(date); //don't change original date
-    switch (interval.toLowerCase()) {
-      case 'year': ret.setFullYear(ret.getFullYear() + units); break;
-      case 'quarter': ret.setMonth(ret.getMonth() + 3 * units); break;
-      case 'month': ret.setMonth(ret.getMonth() + units); break;
-      case 'week': ret.setDate(ret.getDate() + 7 * units); break;
-      case 'day': ret.setDate(ret.getDate() + units); break;
-      case 'hour': ret.setTime(ret.getTime() + units * 3600000); break;
-      case 'minute': ret.setTime(ret.getTime() + units * 60000); break;
-      case 'second': ret.setTime(ret.getTime() + units * 1000); break;
-      default: ret = undefined; break;
-    }
-    return ret;
-  }
-  function cma(MA, Periods, NewValue) {
-    if (MA === null || MA === undefined) {
-      return NewValue;
-    }
-    return MA + (NewValue - MA) / (Periods + 1);
-  }
+
+  window.addEventListener("error", function (e) {
+    showError(JSON.stringify(e), keyNote("Global Error"));
+    return false;
+  });
   // #endregion
 
   function addMessage(response) {
@@ -2216,6 +2212,27 @@
       return document[hidden];
     };
   })();
+  function dateAdd(date, interval, units) {
+    var ret = new Date(date); //don't change original date
+    switch (interval.toLowerCase()) {
+      case 'year': ret.setFullYear(ret.getFullYear() + units); break;
+      case 'quarter': ret.setMonth(ret.getMonth() + 3 * units); break;
+      case 'month': ret.setMonth(ret.getMonth() + units); break;
+      case 'week': ret.setDate(ret.getDate() + 7 * units); break;
+      case 'day': ret.setDate(ret.getDate() + units); break;
+      case 'hour': ret.setTime(ret.getTime() + units * 3600000); break;
+      case 'minute': ret.setTime(ret.getTime() + units * 60000); break;
+      case 'second': ret.setTime(ret.getTime() + units * 1000); break;
+      default: ret = undefined; break;
+    }
+    return ret;
+  }
+  function cma(MA, Periods, NewValue) {
+    if (MA === null || MA === undefined) {
+      return NewValue;
+    }
+    return MA + (NewValue - MA) / (Periods + 1);
+  }
   function getQueryVariable(variable) {
     var query = window.location.search.substring(1);
     var vars = query.split('&');

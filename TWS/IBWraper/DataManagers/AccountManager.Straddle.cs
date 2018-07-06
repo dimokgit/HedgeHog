@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CURRENT_OPTIONS = System.Collections.Generic.IList<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option, double deltaBid, double deltaAsk)>;
 
 namespace IBApp {
   public partial class AccountManager {
@@ -187,36 +188,35 @@ namespace IBApp {
     #endregion
 
     #region Options
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract option, double deltaBid, double deltaAsk)[]>
-  CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count) =>
-  (
-    from cd in IbClient.ReqContractDetailsCached(symbol)
-    from price in IbClient.ReqPriceSafe(cd.Summary, 5, false).Select(p => p.ask.Avg(p.bid))
-    from option in MakeOptions(symbol, strikeLevel.IfNaN(price), expirationDaysSkip, 1, count * 2)
-    from p in IbClient.ReqPriceSafe(option, 2, true).DefaultIfEmpty()
-    let pa = p.ask.Avg(p.bid)
-    select (
-      instrument: option.Instrument,
-      p.bid,
-      p.ask,
-      p.time,//.ToString("HH:mm:ss"),
-      delta: option.ExtrinsicValue(pa, price),
-      option.Strike,
-      price,
-      breakEven: (up: option.Strike + pa, dn: option.Strike - pa),
-      option,
-      deltaBid: option.ExtrinsicValue(p.bid, price),
-      deltaAsk: option.ExtrinsicValue(p.ask, price)
-    )).ToArray()
-    .Select(b => b
-     .OrderBy(t => t.ask.Avg(t.bid))
-     .Select((t, i) => (t, i))
-     .OrderBy(t => t.i > 3)
-     .ThenBy(t => t.t.ask.Avg(t.t.bid) / t.t.delta)
-     .ThenBy(t => t.t.option.Right)
-     .Select(t => t.t)
-     .ToArray()
-     );
+    //public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count) =>
+    public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count) =>
+      (from cd in IbClient.ReqContractDetailsCached(symbol)
+       from price in IbClient.ReqPriceSafe(cd.Summary, 5, false).Select(p => p.ask.Avg(p.bid))
+       from option in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count * 2)
+       from p in IbClient.ReqPriceSafe(option, 2, true).DefaultIfEmpty()
+       let pa = p.ask.Avg(p.bid)
+       select (
+         instrument: option.Instrument,
+         p.bid,
+         p.ask,
+         p.time,//.ToString("HH:mm:ss"),
+         delta: option.ExtrinsicValue(pa, price),
+         option.Strike,
+         price,
+         breakEven: (up: option.Strike + pa, dn: option.Strike - pa),
+         option,
+         deltaBid: option.ExtrinsicValue(p.bid, price),
+         deltaAsk: option.ExtrinsicValue(p.ask, price)
+       ))
+      .ToArray()
+      .Select(b => b
+      .OrderBy(t => t.ask.Avg(t.bid))
+      .Select((t, i) => (t, i))
+      .OrderBy(t => t.i > 3)
+      .ThenBy(t => t.t.ask.Avg(t.t.bid) / t.t.delta)
+      .ThenBy(t => t.t.option.Right)
+      .Select(t => t.t)
+      .ToArray());
 
     public IObservable<Contract> MakeOptions
       (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count) =>

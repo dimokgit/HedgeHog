@@ -1284,8 +1284,7 @@
         <span class="glyphicon glyphicon-resize-vertical"></span>
         <b data-bind="text:d3.format('.2f')(spread)"></b>
         <!-- /ko -->
-        <button class="small" data-bind="click:openPairWithQuantity.bind($root,true,true),enable:canTrade">Buy</button>
-        <button class="small" data-bind="click:openPairWithQuantity.bind($root,true,false),enable:canTrade">BUY</button>
+        <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
       </div>
       <div data-bind="foreach:combosMin" style="display:inline-table">
         <label>Avg:</label><b data-bind="text:d3.format('.3f')(avg)"></b>
@@ -1295,14 +1294,12 @@
         <label>Ask:</label><b data-bind="text:d3.format('.3f')(ask)"></b>
       </div>
     </div>
-    <table>
+    <table border="1">
       <tbody data-bind="foreach:openOrders">
         <tr>
           <td data-bind="text:i"></td>
           <td data-bind="text:p"></td>
-          <td data-bind="text:f"></td>
-          <td>&lt;</td>
-          <td data-bind="text:r"></td>
+          <td data-bind="text:f()+'<'+r()"></td>
           <td>
             <button data-bind="click:$parent.cancelOrder.bind(null,$data)" title="Cancel Order">X</button>
           </td>
@@ -1321,8 +1318,10 @@
     <table border="1" cellspacing="0" class="wwwInfo" data-bind="visible:currentCombos().length, expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
       <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
       <tr style="background-color: lightslategray;color: white;font-weight: bold;text-align: center;" class="pgGroupRow">
-        <td>Straddles</td>
-        <td>/\</td>
+        <td data-bind="foreach:stockOptionsInfo">
+          <span data-bind="text:exp"></span>:<span data-bind="text:dte"></span>
+        </td>
+        <td>></td>
         <!--<td>Up</td>
   <td>Dn</td>
   <td>Avg</td>-->
@@ -1337,7 +1336,7 @@
       </tr>
       <!-- ko foreach:currentCombos -->
       <tr data-bind="event:{click1:function(){isActive(!isActive())}}">
-        <td data-bind="text:d()+i(),css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
+        <td data-bind="text:i,css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
         <td data-bind="text:d3.format('+.1f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
         <!--<td data-bind1="text:d3.format('.1f')(be.up())"></td>
   <td data-bind1="text:d3.format('.1f')(be.dn())"></td>

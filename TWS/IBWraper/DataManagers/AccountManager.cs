@@ -170,20 +170,23 @@ namespace IBApp {
         .Where(x => x.order.Account == _accountId)
         .Do(x => Verbose0($"* OpenOrder: {new { x.order.OrderId, x.orderState.Status, x.contract.LocalSymbol } }"))
         //.Do(UpdateOrder)
-        .Distinct(a => a.orderId)
+        .Distinct(a => new { a.orderId, a.order.LmtPrice })
         .Subscribe(a => OnOrderImpl(a.orderId, a.contract, a.order, a.orderState))
         .SideEffect(s => _strams.Add(s));
       osObs
         .Do(t => Verbose0("* OrderStatus " + new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() }))
         .Where(t => UseOrderContracts(ocs => ocs.ByOrderId(t.orderId)).Concat().Any(oc => oc.order.Account == _accountId))
-        //.Select(t => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld })
+        .SelectMany(t => UseOrderContracts(ocs => ocs.ByOrderId(t.orderId, och => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, och.order.LmtPrice })).Concat())
         .Distinct()
         .Do(t => Verbose("* OrderStatus " + new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() }))
         //.Do(x => UseOrderContracts(oc => _verbous("* " + new { OrderStatus = x, Account = oc.ByOrderId(x.orderId, och => och.order.Account).SingleOrDefault() })))
         .Do(t => UseOrderContracts(ocs => {
           ocs.ByOrderId(t.orderId).Where(oc => t.status != "Inactive")
             //.SelectMany(oc => new[] { oc }.Concat(ocs.ByOrderId(oc.order.ParentId).Where(och => och.isNew)))
-            .ForEach(oc => oc.status = (t.status, t.filled, t.remaining));
+            .ForEach(oc => {
+              oc.status = (t.status, t.filled, t.remaining);
+              oc.order.LmtPrice = t.LmtPrice;
+            });
           IbClient.ClientSocket.reqAllOpenOrders();
         }
         ))
@@ -264,14 +267,41 @@ namespace IBApp {
         this.contract = contract;
         this.status = ("new", 0, order.TotalQuantity);
       }
+      public OrdeContractHolder(IBApi.Order order, IBApi.Contract contract, string status, double filled, double remaining) {
+        this.order = order;
+        this.contract = contract;
+        this.status = (status, filled, remaining);
+      }
 
       public bool Equals(OrdeContractHolder other) => order + "," + contract == other.order + "," + other.contract;
     }
-    public IEnumerable<T> UseOrderContracts<T>(Func<List<OrdeContractHolder>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
+    public Action[] UseOrderContractsDeferred(Action<List<OrdeContractHolder>> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
       var message = $"{nameof(UseOrderContracts)}:{new { Caller, timeoutInMilliseconds }}";
       if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
         Trace(message + " could't enter Monitor");
-        yield break;
+        return new Action[0];
+      }
+      Stopwatch sw = Stopwatch.StartNew();
+      Action ret =  () => {
+        Monitor.Exit(_OpenTradeSync) ;
+        if(sw.ElapsedMilliseconds > timeoutInMilliseconds) 
+          Trace(message + $" Spent {sw.ElapsedMilliseconds} ms");
+        };
+      try {
+        func(OrderContractsInternal);
+        return new[] { ret };
+      } catch(Exception exc) {
+        Trace(exc);
+        ret();
+      }
+      return new Action[0];
+    }
+
+    public IList<T> UseOrderContracts<T>(Func<List<OrdeContractHolder>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
+      var message = $"{nameof(UseOrderContracts)}:{new { Caller, timeoutInMilliseconds }}";
+      if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
+        Trace(message + " could't enter Monitor");
+        return new T[0];
       }
       Stopwatch sw = Stopwatch.StartNew();
       T ret;
@@ -279,14 +309,14 @@ namespace IBApp {
         ret = func(OrderContractsInternal);
       } catch(Exception exc) {
         Trace(exc);
-        yield break;
+        return new T[0];
       } finally {
         Monitor.Exit(_OpenTradeSync);
         if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
           Trace(message + $" Spent {sw.ElapsedMilliseconds} ms");
         }
       }
-      yield return ret;
+      return new[] { ret };
     }
     public void UseOrderContracts<T>(Func<List<OrdeContractHolder>, IEnumerable<T>> func, Action<T> action, [CallerMemberName] string Caller = "") {
       UseOrderContracts(_ => {
@@ -382,7 +412,7 @@ namespace IBApp {
 
     private void OnError(int reqId, int code, string error, Exception exc) {
       UseOrderContracts(orderContracts =>
-        orderContracts.ByOrderId(reqId).ForEach(oc => {
+        orderContracts.ByOrderId(reqId).ToList().ForEach(oc => {
           if(new[] { ORDER_CAMCELLED }.Contains(code)) {
             RaiseOrderRemoved(oc);
             orderContracts.Remove(oc);
@@ -543,15 +573,20 @@ namespace IBApp {
       if(!o.WhatIf) {
         UseOrderContracts(orderContracts => {
           Trace($"{nameof(OnOrderImpl)}:{o},{c},{os.Status}");
-          if(orderContracts.ByOrderId(reqId).IsEmpty())
-            orderContracts.Add(new OrdeContractHolder(o, c));
-          else
+          var ochs = orderContracts.ByOrderId(o.OrderId).ToList();
+          if(ochs.IsEmpty()) {
+            orderContracts.TryAdd(new OrdeContractHolder(o, c));
             RaiseOrderAdded(new HedgeHog.Shared.Order {
               IsBuy = o.Action == "BUY",
               Lot = (int)o.TotalQuantity,
               Pair = c.Instrument,
               IsEntryOrder = IsEntryOrder(o)
             });
+          } else {
+            ochs.ForEach(och => {
+              och.order.LmtPrice = o.LmtPrice;
+            });
+          }
         });
       } else if(GetTrades().IsEmpty()) {
         //RaiseOrderRemoved(o.OrderId);
@@ -685,7 +720,7 @@ namespace IBApp {
     private void OnOpenError((int reqId, int code, string error, Exception exc) e, string trace) {
       UseOrderContracts(orderContracts => {
         Trace(trace + e);
-        orderContracts.ByOrderId(e.reqId).ForEach(oc => {
+        orderContracts.ByOrderId(e.reqId).ToList().ForEach(oc => {
           if(new[] { 200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
             //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
             RaiseOrderRemoved(oc);
@@ -722,7 +757,7 @@ namespace IBApp {
           WhatIf = whatIf,
           OverridePercentageConstraints = true
         };
-        orderContracts.Add(new OrdeContractHolder(o, c));
+        orderContracts.TryAdd(new OrdeContractHolder(o, c));
         _verbous(new { plaseOrder = new { o, c } });
         IbClient.ClientSocket.placeOrder(o.OrderId, c, o);
       });

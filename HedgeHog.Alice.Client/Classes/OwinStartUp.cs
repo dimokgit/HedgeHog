@@ -570,7 +570,8 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
 
-    static double DaysTillExpiration(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
+    static double DaysTillExpiration2(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
+    static double DaysTillExpiration(DateTime expiration) => (expiration - DateTime.Now.Date).TotalDays + 1;
     public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, string[] comboExits) =>
       UseTraderMacro(pair, tm => {
         int expirationDaysSkip = tm.ExpDayToSkip();
@@ -617,15 +618,14 @@ namespace HedgeHog.Alice.Client {
               => am.CurrentOptions(CacheKey(underContract), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, numOfCombos)
               .Select(ts => {
                 var underPosition = am.Positions.Where(p => p.contract.Instrument == underContract.Instrument).ToList().FirstOrDefault();
+                var exp = ts.Select(t => new { dte = DaysTillExpiration(t.option.Expiration).Round(1), exp = t.option.LastTradeDateOrContractMonth }).Take(1).ToArray();
                 var options = ts
                  .Select(t => {
-                   var d = DaysTillExpiration(t.option.Expiration);
                    var maxPL = t.deltaBid * quantity * t.option.ComboMultiplier;
                    var strikeDelta = t.strikeAvg - t.underPrice;
                    var underPL = (t.strikeAvg - underPosition.price) * quantity * underContract.ComboMultiplier + maxPL;
                    return new {
                      i = t.instrument,
-                     d = (t.option.IsFutureOption ? d.Round(1) + " " : ""),
                      t.bid,
                      t.ask,
                      avg = t.ask.Avg(t.bid),
@@ -637,7 +637,7 @@ namespace HedgeHog.Alice.Client {
                      be = new { t.breakEven.up, t.breakEven.dn },
                      isActive = false,
                      cp = t.option.Right,
-                     maxPlPerc = t.deltaBid * quantity * t.option.ComboMultiplier / am.Account.Equity * 100 / d,
+                     maxPlPerc = t.deltaBid * quantity * t.option.ComboMultiplier / am.Account.Equity * 100 / exp[0].dte,
                      maxPL,
                      underPL
                    };
@@ -649,11 +649,14 @@ namespace HedgeHog.Alice.Client {
                 var calls = options.Where(t => t.cp == "C").Take(numOfCombos).ToArray();
                 calls = (strikeLevel.HasValue ? calls.OrderBy(t => t.strikeDelta) : calls.OrderByDescending(t => t.delta)).ToArray();
 
-                return puts.OrderByDescending(x => x.strike).Concat(calls.OrderByDescending(x => x.strike)).ToArray();
+                return (exp, b: puts.OrderByDescending(x => x.strike).Concat(calls.OrderByDescending(x => x.strike)).ToArray());
               }
               //.ThenBy(t => t.i)
               )
-             .Subscribe(b => base.Clients.Caller.bullPuts(b)));
+             .Subscribe(t => {
+               base.Clients.Caller.bullPuts(t.b);
+               base.Clients.Caller.stockOptionsInfo(t.exp);
+             }));
           Action currentBullPut = () =>
             underContracts
               .ForEach(symbol
@@ -684,7 +687,7 @@ namespace HedgeHog.Alice.Client {
           am.UseOrderContracts(orderContracts =>
           (from oc in orderContracts
            where oc.status.status == "Submitted"
-           select new { i = oc.contract.Instrument, id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, p = oc.order.LmtPrice }
+           select new { i = oc.contract.Instrument + " " + oc.contract.LastTradeDateOrContractMonth, id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, p = oc.order.LmtPrice }
           ).ToArray()
           ).ForEach(b => base.Clients.Caller.openOrders(b));
 
@@ -797,6 +800,13 @@ namespace HedgeHog.Alice.Client {
          => am.OpenLimitOrder(contract, quantity, hv, useMarketPrice, true)));
       else
         throw new Exception(new { instrument, not = "found" } + "");
+    }
+    [BasicAuthenticationFilter]
+    public void OpenCoveredOption(string pair, int quantity, double? price) {
+      Contract.Contracts.TryGetValue(pair, out var contract);
+      if(contract == null)
+        throw new Exception(new { pair, not = "found" } + "");
+      GetAccountManager().OpenCoveredOption(contract, quantity, price.GetValueOrDefault());
     }
     [BasicAuthenticationFilter]
     public void CloseCombo(string instrument) {
