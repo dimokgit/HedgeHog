@@ -262,6 +262,7 @@ namespace IBApp {
       }
       public bool isDone => (status.status, status.remaining).IsOrderDone();
       public bool isNew => status.status == "new";
+      public bool isSubmitted => status.status == "Submitted";
       public OrdeContractHolder(IBApi.Order order, IBApi.Contract contract) {
         this.order = order;
         this.contract = contract;

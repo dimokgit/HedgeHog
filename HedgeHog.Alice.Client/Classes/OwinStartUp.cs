@@ -686,14 +686,14 @@ namespace HedgeHog.Alice.Client {
           Action openOrders = () =>
           am.UseOrderContracts(orderContracts =>
           (from oc in orderContracts
-           where oc.status.status == "Submitted"
+           where oc.isSubmitted
            select new { i = oc.contract.Instrument + " " + oc.contract.LastTradeDateOrContractMonth, id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, p = oc.order.LmtPrice }
           ).ToArray()
           ).ForEach(b => base.Clients.Caller.openOrders(b));
 
           if(!pair.IsNullOrWhiteSpace())
             OnCurrentCombo(() => {
-              //straddles();
+              straddles();
               currentOptions();
               openOrders();
               //currentBullPut();
