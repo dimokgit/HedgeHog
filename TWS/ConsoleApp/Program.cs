@@ -63,12 +63,17 @@ namespace ConsoleApp {
       var contract = spy;
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
+      const int twsPort = 7496;
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         var am = fw.AccountManager;
-          LoadHistory(ibClient, new[] { "spy".ContractFactory() });
-          return;
-          var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
+        (from options in am.CurrentOptions("VXX", 0, 2, 3)
+         select options)
+        .Subscribe(options => options.ForEach(o => Console.WriteLine(o)));
+        return;
+        LoadHistory(ibClient, new[] { "spy".ContractFactory() });
+        return;
+        var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         Task.Delay(2000).ContinueWith(_ => {
           ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 1, 10)
@@ -127,7 +132,7 @@ namespace ConsoleApp {
               HandleMessage($"Observed {comboPrice.combo.contract} price:{price}");
               if(placeOrder) {
                 HandleMessage2($"Placing SELL order for{comboPrice.combo.contract}");
-                am.OpenTrade(comboPrice.combo.contract, -1, price.ask.Avg(price.bid) * 0.55, false);
+                am.OpenTrade(comboPrice.combo.contract, -1, price.ask.Avg(price.bid) * 0.55, 0, false, DateTime.MinValue);
               }
             });
             HandleMessage2($"MakeBullPut Done ==================");
@@ -145,7 +150,7 @@ namespace ConsoleApp {
               HandleMessage($"Observed {comboPrice.contract} price:{price}");
               if(placeOrder) {
                 HandleMessage2($"Placing SELL order for{comboPrice.contract}");
-                am.OpenTrade(comboPrice.contract.contract, -1, price.ask.Avg(price.bid) * 0.55, false);
+                am.OpenTrade(comboPrice.contract.contract, -1, price.ask.Avg(price.bid) * 0.55, 0, false, DateTime.MinValue);
               }
             });
             HandleMessage2($"ComboTrade Done ==================");
@@ -298,7 +303,7 @@ namespace ConsoleApp {
         #endregion
       });
 
-      if(ibClient.LogOn("127.0.0.1", 7497 + "", 10 + "", false)) {
+      if(ibClient.LogOn("127.0.0.1", twsPort + "", 10 + "", false)) {
         //ibClient.SetOfferSubscription(contract);
         //else {
         //  var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp => sp.LoadRates).ToArray());

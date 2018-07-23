@@ -2226,41 +2226,6 @@ namespace HedgeHog.Alice.Store {
     public void TradeConditionsTrigger() {
       if(!IsRatesLengthStableGlobal()) return;
       if(!IsTrader) return;
-      UseAccountManager(am => {
-        var puts = OpenPuts().ToList();
-        var distanceOk = (from curPut in CurrentPut
-                          from openPut in puts.OrderBy(p => p.contract.Strike).Take(1).ToList()
-                          let strikeAvg = curPut.strikeAvg
-                          let openPutPrice = openPut.price.Abs()
-                          let openPutStrike = openPut.contract.Strike
-                          where curPut.option.LastTradeDateOrContractMonth == openPut.contract.LastTradeDateOrContractMonth
-                          && strikeAvg + openPutPrice > openPutStrike
-                          select true
-                          ).IsEmpty();
-        var hasOptions = puts.Count +
-          am.UseOrderContracts(OrderContracts =>
-          (from put in CurrentPut
-           join oc in OrderContracts.Where(o => !o.isDone & o.order.Action == "SELL") on put.instrument equals oc.contract.Instrument
-           select true
-           )).Concat().Count();
-        var hasSellOrdes = am.UseOrderContracts(OrderContracts =>
-        (from oc in OrderContracts.Where(o => !o.isDone && o.contract.IsPut && !o.contract.IsCombo && o.order.Action == "SELL")
-         select true
-         )).Concat().Count();
-        if(distanceOk && hasOptions < TradeCountMax) {
-          TradeConditionsEval()
-            .DistinctUntilChanged(td => td)
-            .Where(td => td.HasUp())
-            .Take(1)
-            .ForEach(_ => {
-              var pos = -puts.Select(p => p.position.Abs()).DefaultIfEmpty(TradingRatio.ToInt()).Max();
-              CurrentPut?.ForEach(p => {
-                Log = new Exception($"{nameof(TradeConditionsTrigger)}:{nameof(am.OpenTrade)}:{new { p.option, pos, Thread.CurrentThread.ManagedThreadId }}");
-                am.OpenTrade(p.option, pos, p.ask, 0.2, true, ServerTime.AddMinutes(5));
-              });
-            });
-        }
-      });
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
       if(IsHedgedTrading && BarsCountCalc == RatesArray.Count) {
         if(IsTradingActive)

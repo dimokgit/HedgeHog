@@ -156,12 +156,12 @@ namespace UnitLib {
     ///</summary>
     [TestMethod()]
     public void ValueByPisitionTest() {
-      double sampleCurrent = 601; // TODO: Initialize to an appropriate value
-      double sampleLow = 10; // TODO: Initialize to an appropriate value
-      double sampleHigh = 1000; // TODO: Initialize to an appropriate value
-      double realLow = 120; // TODO: Initialize to an appropriate value
-      double realHigh = 840; // TODO: Initialize to an appropriate value
-      int expected = 550; // TODO: Initialize to an appropriate value
+      double sampleCurrent = 601; 
+      double sampleLow = 10; 
+      double sampleHigh = 1000;
+      double realLow = 120; 
+      double realHigh = 840;
+      int expected = 550;
       double actual;
       actual = sampleCurrent.ValueByPosition(sampleLow, sampleHigh, realLow, realHigh);
       Assert.AreEqual(expected, actual.ToInt());
@@ -172,7 +172,7 @@ namespace UnitLib {
     ///</summary>
     [TestMethod()]
     public void BetweenTest() {
-      double value = 5; // TODO: Initialize to an appropriate value
+      double value = 5;
       Assert.IsTrue(value.Between(1, 5));
       Assert.IsTrue(value.Between(5, 5));
       Assert.IsTrue(value.Between(5, 15));
@@ -270,7 +270,7 @@ namespace UnitLib {
       return;
       DateTime dt = DateTime.Parse("1/1/1990  15:34");
       int period = 3;
-      DateTime expected = new DateTime(); // TODO: Initialize to an appropriate value
+      DateTime expected = new DateTime();
       DateTime actual;
       actual = dt.Round(period);
       Assert.AreEqual(expected, actual);

@@ -105,12 +105,11 @@ namespace HedgeHog.Alice.Client {
           httpListener().AuthenticationSchemes = AuthenticationSchemes.IntegratedWindowsAuthentication;
         }
       };
+      setAuthScheme?.Invoke(remoteControl.Value);
       app.Use((context, next) => {
         try {
           if(context == null)
             App.SetSignalRSubjectSubject(() => {
-              setAuthScheme?.Invoke(remoteControl.Value);
-              setAuthScheme = null;
               //var tm = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == Pair);
               try {
                 GlobalHost.ConnectionManager.GetHubContext<MyHub>()

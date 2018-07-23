@@ -31,7 +31,6 @@ namespace HedgeHog.Alice.Store {
       Func<double> currentGross = () => CurrentGross;
       Func<bool> isCurrentGrossOk = () => CurrentGrossInPips >= -SpreadForCorridorInPips;
       #endregion
-      _isSelfStrategy = true;
       var reverseStrategy = new ObservableValue<bool>(false);
       Func<SuppRes, bool> isBuyR = sr => reverseStrategy.Value ? !sr.IsBuy : sr.IsBuy;
       Func<SuppRes, bool> isSellR = sr => reverseStrategy.Value ? !sr.IsSell : sr.IsSell;

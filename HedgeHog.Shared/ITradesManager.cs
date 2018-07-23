@@ -265,7 +265,7 @@ namespace HedgeHog.Shared {
     public static bool IsFOPtion(this string s) => Regex.IsMatch(s, @"^[a-z ]{5}\s[CP][0-9]{2-6}$", RegexOptions.IgnoreCase);
     //E3AJ8 C2665
     public static bool IsOption(this string s) => s.IsOptionFull() || s.IsFOPtion();
-    static string[] _indices = new[] { "SPX" };
+    static string[] _indices = new[] { "SPX", "VIX", "ES" };
     public static bool IsIndex(this string s) => _indices.Contains(s.ToUpper());
     //public static bool IsIndex(this string s) => Regex.IsMatch(s, @"\sindex$", RegexOptions.IgnoreCase);
     static string[] _etfs = new[] { "SPY", "TVIX", "VXX", "UVXY", "SVXY", "QQQ" };

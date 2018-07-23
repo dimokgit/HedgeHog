@@ -177,8 +177,8 @@ namespace HedgeHog.Alice.Store {
       });
     }
     void SyncStraddleHistoryM1(TradingMacro tm) {
-      var zip = (from shs in UseStraddleHistory(staddleHistory =>
-         (from sh in StraddleHistory
+      var zip = (from shs in UseStraddleHistory(straddleHistory =>
+         (from sh in straddleHistory
           group sh by sh.time.Round() into g
           orderby g.Key
           select new { bid = g.Average(t => t.bid), time = g.Key.ToLocalTime() }
@@ -191,8 +191,8 @@ namespace HedgeHog.Alice.Store {
       zip.ForEach(t => SetVoltage(t.r, t.sh.bid));
     }
     void SyncStraddleHistoryT1(TradingMacro tm) {
-      var zip = (from shs in UseStraddleHistory(staddleHistory =>
-         (from sh in StraddleHistory
+      var zip = (from shs in UseStraddleHistory(straddleHistory =>
+         (from sh in straddleHistory
           orderby sh.time
           select new { bid = sh.bid, time = sh.time.ToLocalTime() }
           ).ToList())

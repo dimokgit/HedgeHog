@@ -347,11 +347,18 @@ namespace IBApp {
     public IObservable<Contract> ReqOptionChainOldAsync(string sympol, DateTime expirationDate) {
       var fopDate = expirationDate;
       Trace(new { fopDate });
-      return Observable.Range(0, 4)
+      Contract MakeFutureContract(string twsDate) => new Contract { Symbol = sympol.Substring(0, 2), SecType = "FOP", Exchange = "GLOBEX", Currency = "USD", LastTradeDateOrContractMonth = twsDate };
+      Contract MakeIndexContract(string twsDate) => new Contract { Symbol = sympol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate };
+      Contract MakeStockContract(string twsDate) => new Contract { Symbol = sympol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate };
+      Contract MakeContract(string twsDate) =>
+        sympol.IsFuture() ? MakeFutureContract(twsDate)
+        : sympol.IsIndex() ? MakeIndexContract(twsDate)
+        : MakeStockContract(twsDate);
+      return Observable.Range(0, 6)
           .Select(i => fopDate.AddDays(i))
           .SelectMany(fd => {
             var twsDate = fd.ToTWSDateString();
-            return ReqContractDetailsAsync(new Contract { Symbol = sympol.Substring(0, 2), SecType = "FOP", Exchange = "GLOBEX", Currency = "USD", LastTradeDateOrContractMonth = twsDate }).ToArray()
+            return ReqContractDetailsAsync(MakeContract(twsDate)).ToArray()
             .Do(__ => {
             });
           })

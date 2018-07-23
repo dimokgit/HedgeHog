@@ -98,8 +98,8 @@ namespace IBApp {
         .Select(e => e.Sender)
         .Subscribe(RaiseTradeChanged)
         .SideEffect(s => _strams.Add(s));
-      OpenTrades.ItemsRemoved.Subscribe(RaiseTradeRemoved).SideEffect(s => _strams.Add(s));
-      ClosedTrades.ItemsAdded.Subscribe(RaiseTradeClosed).SideEffect(s => _strams.Add(s));
+      OpenTrades.ItemsRemoved.SubscribeOn(TaskPoolScheduler.Default).Subscribe(RaiseTradeRemoved).SideEffect(s => _strams.Add(s));
+      ClosedTrades.ItemsAdded.SubscribeOn(TaskPoolScheduler.Default).Subscribe(RaiseTradeClosed).SideEffect(s => _strams.Add(s));
       ibClient.Error += OnError;
 
       #region Observables
@@ -428,7 +428,6 @@ namespace IBApp {
     protected virtual void Dispose(bool disposing) {
       if(!disposedValue) {
         if(disposing) {
-          // TODO: dispose managed state (managed objects).
           _strams.ForEach(s => s.Dispose());
         }
 

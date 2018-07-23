@@ -1147,7 +1147,7 @@ namespace HedgeHog.Alice.Store {
             .Take(1)
             .ObserveOn(NewThreadScheduler.Default)
             .Subscribe(x => {
-              var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime();
+              var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime().AddDays(-5);
               GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories.Where(t => t.time < startDate)), true);
               GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == Pair && t.time >= startDate).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
               SyncStraddleHistoryT1(this);
@@ -1163,7 +1163,7 @@ namespace HedgeHog.Alice.Store {
             DateTime saveTime = DateTime.MinValue;
             DateTime ResetSaveTime() => DateTime.Now.AddMinutes(1);
             saveTime = ResetSaveTime();
-            TimeValueHistory(ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
+            TimeValueHistory(Pair, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
             return;
             _priceChangeDisposable = _priceChangeObservable
             //.Sample(TimeSpan.FromSeconds(0.5))
@@ -1205,11 +1205,13 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private void TimeValueHistory(IBWraper ibWraper, int shcp, long straddleStartId, Func<long> _id, int straddleCount, Func<DateTime> resetSaveTime) {
+    private void TimeValueHistory(string pair, IBWraper ibWraper, int shcp, long straddleStartId, Func<long> _id, int straddleCount, Func<DateTime> resetSaveTime) {
       DateTime saveTime = resetSaveTime();
+      //var nextFriday = TradesManagerStatic.ExpirationDaysSkip(0);
+      var nextFriday = (DateTime.Today.GetNextWeekday(DayOfWeek.Friday) - DateTime.Today).TotalDays.ToInt();
       _priceChangeDisposable = (
         from price in _priceChangeObservable
-        from x in ibWraper.AccountManager.CurrentOptions(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), straddleCount)
+        from x in ibWraper.AccountManager.CurrentOptions(pair, CurrentPriceAvg(double.NaN), nextFriday, straddleCount)
         let calls = x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(2)
         let puts = x.Where(t => t.option.IsPut).OrderByDescending(t => t.deltaBid).Take(2)
         select calls.Concat(puts).ToArray()
@@ -1230,7 +1232,7 @@ namespace HedgeHog.Alice.Store {
             )
             .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory(
               straddleStartId + _id(),
-              Pair,
+              pair,
               t.bid,
               t.ask,
               t.delta,
@@ -1557,7 +1559,6 @@ namespace HedgeHog.Alice.Store {
         RateLast = null;
         _waves = null;
         _sessionInfo = "";
-        _isSelfStrategy = false;
         WaveShort.Reset();
         CloseAtZero = false;
         CurrentLoss = HistoryMaximumLot = 0;
@@ -3234,21 +3235,53 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
             return StrategyEnterUniversal;
           case Strategies.Universal:
             return StrategyEnterUniversal;
+          case Strategies.ShortPut:
+            return StrategyShortPut;
           case Strategies.None:
-            return () => {
-              TradeDirectionTriggersRun();
-              TradeConditionsTrigger();
-            };
+            return () => { };
         }
         throw new NotSupportedException("Strategy " + Strategy + " is not supported.");
       }
     }
-    bool _isSelfStrategy = false;
+
+    private void StrategyShortPut() => UseAccountManager(am => {
+      var puts = OpenPuts().ToList();
+      var distanceOk = (from curPut in CurrentPut
+                        from openPut in puts.OrderBy(p => p.contract.Strike).Take(1).ToList()
+                        let strikeAvg = curPut.strikeAvg
+                        let openPutPrice = openPut.price.Abs()
+                        let openPutStrike = openPut.contract.Strike
+                        where curPut.option.LastTradeDateOrContractMonth == openPut.contract.LastTradeDateOrContractMonth
+                        && strikeAvg + openPutPrice > openPutStrike
+                        select true
+                        ).IsEmpty();
+      var hasOptions = puts.Count +
+        am.UseOrderContracts(OrderContracts =>
+        (from put in CurrentPut
+         join oc in OrderContracts.Where(o => !o.isDone & o.order.Action == "SELL") on put.instrument equals oc.contract.Instrument
+         select true
+         )).Concat().Count();
+      var hasSellOrdes = am.UseOrderContracts(OrderContracts =>
+      (from oc in OrderContracts.Where(o => !o.isDone && o.contract.IsPut && !o.contract.IsCombo && o.order.Action == "SELL")
+       select true
+       )).Concat().Count();
+      if(distanceOk && hasOptions < TradeCountMax) {
+        TradeConditionsEval()
+          .DistinctUntilChanged(td => td)
+          .Where(td => td.HasUp())
+          .Take(1)
+          .ForEach(_ => {
+            var pos = -puts.Select(p => p.position.Abs()).DefaultIfEmpty(TradingRatio.ToInt()).Max();
+            CurrentPut?.ForEach(p => {
+              Log = new Exception($"{nameof(TradeConditionsTrigger)}:{nameof(am.OpenTrade)}:{new { p.option, pos, Thread.CurrentThread.ManagedThreadId }}");
+              am.OpenTrade(p.option, pos, p.ask, 0.2, true, ServerTime.AddMinutes(5));
+            });
+          });
+      }
+    });
     void RunStrategy() {
       StrategyAction();
     }
-    double? _buyPriceToLevelSign;
-    double? _sellPriceToLevelSign;
     delegate double GetPriceLastForTradeLevelDelegate();
     delegate double GetPricePrevForTradeLevelDelegate();
 

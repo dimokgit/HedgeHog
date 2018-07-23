@@ -28,7 +28,7 @@ namespace Westwind.Web.WebApi {
   /// to encode the Authorization header on all requests (not just the login).
   /// </remarks>
   [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-  public class BasicAuthenticationFilter : Microsoft.AspNet.SignalR.AuthorizeAttribute {
+  public class BasicAuthenticationFilter :Microsoft.AspNet.SignalR.AuthorizeAttribute {
     public static AuthenticationSchemes AuthenticationSchemes { get; set; }
     bool Active = true;
 
@@ -43,22 +43,16 @@ namespace Westwind.Web.WebApi {
     public BasicAuthenticationFilter(bool active) {
       Active = active;
     }
-    public bool IsLocalRequest(HubCallerContext hubContext) {
-      Func<string, IEnumerable<string>> ipBase = ip => (hubContext.Request.Environment[ip] + "").Split('.').Take(2);
-      return ipBase("server.LocalIpAddress").SequenceEqual(ipBase("server.RemoteIpAddress"));
-    }
+    public bool IsLocalRequest(HubCallerContext hubContext) => (bool)hubContext.Request.Environment["server.IsLocal"];
     public override bool AuthorizeHubConnection(HubDescriptor hubDescriptor, IRequest request) {
       return true;// base.AuthorizeHubConnection(hubDescriptor, request);
     }
     public override bool AuthorizeHubMethodInvocation(IHubIncomingInvokerContext hubIncomingInvokerContext, bool appliesToMethod) {
       return
-        IsLocalRequest(hubIncomingInvokerContext.Hub.Context) ||
-        !appliesToMethod ||
-        ((HttpListener)hubIncomingInvokerContext.Hub.Context.Request.Environment["System.Net.HttpListener"]).AuthenticationSchemes == AuthenticationSchemes.Anonymous ||
-        (
-        hubIncomingInvokerContext.Hub.Context.User != null &&
-        hubIncomingInvokerContext.Hub.Context.User.IsInRole("Traders")
-        )
+        IsLocalRequest(hubIncomingInvokerContext.Hub.Context)
+        || !appliesToMethod
+        || ((HttpListener)hubIncomingInvokerContext.Hub.Context.Request.Environment["System.Net.HttpListener"]).AuthenticationSchemes == AuthenticationSchemes.Anonymous
+        || hubIncomingInvokerContext.Hub.Context.User?.IsInRole("Traders") == true
       ;//OnAuthorization(hubIncomingInvokerContext);
     }
     protected override bool UserAuthorized(IPrincipal user) {

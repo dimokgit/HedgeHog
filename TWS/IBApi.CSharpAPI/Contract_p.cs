@@ -75,8 +75,9 @@ namespace IBApi {
     public int ReqId { get; set; }
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
-    string ExpirationToString() => SecType == "FOP" && LocalSymbol.IsNullOrWhiteSpace() ? " " + LastTradeDateOrContractMonth : "";
-    public override string ToString() => ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
+    string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
+    public override string ToString() => 
+      ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
     internal string ComboLegsToString() =>
       Legs()
       .ToArray()

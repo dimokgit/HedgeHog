@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
@@ -68,10 +69,18 @@ namespace IBApp {
       _accountManager.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
       _accountManager.TradeChanged += (s, e) => RaiseTradeChanged(e.Trade);
       _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
+
       _accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
+      //_accountManager.TradeClosed += _accountManager_TradeClosed; ;
+      // TODO: RaiseTradeClosed needs testing
+      Observable.FromEventPattern<TradeEventArgs>(h => _accountManager.TradeClosed += h, h => h -= _accountManager_TradeClosed)
+        .SubscribeOn(TaskPoolScheduler.Default)
+        .Subscribe(eh => RaiseTradeClosed(eh.EventArgs.Trade));
       _accountManager.OrderAdded += RaiseOrderAdded;
       _accountManager.OrderRemoved += RaiseOrderRemoved;
     }
+
+    private void _accountManager_TradeClosed(object sender, TradeEventArgs e) => RaiseTradeClosed(e.Trade);
 
     private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
       var price = e.Price;

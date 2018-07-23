@@ -54,7 +54,7 @@ namespace IBApp {
         Trace($"AddRequest:{contract} already requested");
       else {
         var reqId = NextReqId();
-        Trace($"AddRequest:{reqId}=>{contract}");
+        Verbose0($"AddRequest:{reqId}=>{contract}");
         IbClient.WatchReqError(reqId, t => Trace($"{nameof(AddRequestImpl)}:{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
         IbClient.OnReqMktData(() => IbClient.ClientSocket.reqMktData(reqId, contract.ContractFactory(), genericTickList, false, new List<TagValue>()));
         if(reqId == 0)

@@ -218,7 +218,9 @@ namespace HedgeHog.Alice.Store {
     None = 0,
     Auto = 1,
     Hot = 2,
-    Universal = Hot * 2, UniversalA = Universal + Auto
+    Universal = Hot * 2,
+    UniversalA = Universal + Auto,
+    ShortPut = Universal * 2
   }
   public enum MovingAverageValues {
     PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3

@@ -261,8 +261,8 @@ Privet:2.3 3.4
     ///</summary>
     [TestMethod()]
     public void ParseRaramRangeTest() {
-      string param = "2-4,1"; // TODO: Initialize to an appropriate value
-      string expected = "2 3 4"; // TODO: Initialize to an appropriate value
+      string param = "2-4,1"; 
+      string expected = "2 3 4"; 
       string actual;
       actual = Lib.ParseParamRange(param);
       Assert.AreEqual(expected, actual);
@@ -270,8 +270,8 @@ Privet:2.3 3.4
 
     [TestMethod()]
     public void EvaluateTest() {
-      string expression = "Math.Pow(10,2)"; // TODO: Initialize to an appropriate value
-      double expected = 100; // TODO: Initialize to an appropriate value
+      string expression = "Math.Pow(10,2)"; 
+      double expected = 100;
       double actual;
       actual = Lib.Evaluate<double>(expression);
       Assert.AreEqual(expected, actual);

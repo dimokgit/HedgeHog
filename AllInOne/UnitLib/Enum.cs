@@ -11,9 +11,6 @@ namespace UnitLib {
   [TestClass]
   public class Enums {
     public Enums() {
-      //
-      // TODO: Add constructor logic here
-      //
     }
 
     private TestContext testContextInstance;
