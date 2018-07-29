@@ -34,10 +34,10 @@ namespace Order2GoAddIn {
 
 
   #region EventArgs classes
-  public class OrderErrorEventArgs : ErrorEventArgs {
+  public class OrderErrorEventArgs :ErrorEventArgs {
     public OrderErrorEventArgs(Exception exception) : base(exception) { }
   }
-  public class PendingOrderEventArgs : EventArgs {
+  public class PendingOrderEventArgs :EventArgs {
     public PendingOrder Order;
     public PendingOrderEventArgs(PendingOrder po) {
       this.Order = po;
@@ -48,7 +48,7 @@ namespace Order2GoAddIn {
   [ClassInterface(ClassInterfaceType.AutoDual), ComSourceInterfaces(typeof(IOrder2GoEvents))]
   [Guid("2EC43CB6-ED3D-465c-9AF3-C0BBC622663E")]
   [ComVisible(true)]
-  public class FXCoreWrapper : IDisposable, ITradesManager {
+  public class FXCoreWrapper :IDisposable, ITradesManager {
     private readonly string ERROR_FILE_NAME = "FXCM.log";
     public Func<Trade, double> CommissionByTrade { get; set; }
 
@@ -88,7 +88,7 @@ namespace Order2GoAddIn {
     #endregion
 
     #region Exceptions
-    public class OrderExecutionException : Exception {
+    public class OrderExecutionException :Exception {
       public OrderExecutionException(string Message, Exception inner) : base(Message, inner) { }
     }
     #endregion
@@ -99,7 +99,7 @@ namespace Order2GoAddIn {
     event EventHandler<PendingOrderEventArgs> PendingOrderCompletedEvent;
     public event EventHandler<PendingOrderEventArgs> PendingOrderCompleted {
       add {
-        if (PendingOrderCompletedEvent == null || !PendingOrderCompletedEvent.GetInvocationList().Contains(value))
+        if(PendingOrderCompletedEvent == null || !PendingOrderCompletedEvent.GetInvocationList().Contains(value))
           PendingOrderCompletedEvent += value;
       }
       remove {
@@ -116,7 +116,7 @@ namespace Order2GoAddIn {
     event EventHandler<OrderErrorEventArgs> OrderErrorEvent;
     public event EventHandler<OrderErrorEventArgs> OrderError {
       add {
-        if (OrderErrorEvent == null || !OrderErrorEvent.GetInvocationList().Contains(value))
+        if(OrderErrorEvent == null || !OrderErrorEvent.GetInvocationList().Contains(value))
           OrderErrorEvent += value;
       }
       remove {
@@ -136,7 +136,7 @@ namespace Order2GoAddIn {
     event EventHandler<ErrorEventArgs> ErrorEvent;
     public event EventHandler<ErrorEventArgs> Error {
       add {
-        if (ErrorEvent == null || !ErrorEvent.GetInvocationList().Contains(value))
+        if(ErrorEvent == null || !ErrorEvent.GetInvocationList().Contains(value))
           ErrorEvent += value;
       }
       remove {
@@ -163,7 +163,7 @@ namespace Order2GoAddIn {
     event RowChangedEventHandler RowChangedEvent;
     public event RowChangedEventHandler RowChanged {
       add {
-        if (RowChangedEvent == null || !RowChangedEvent.GetInvocationList().Contains(value))
+        if(RowChangedEvent == null || !RowChangedEvent.GetInvocationList().Contains(value))
           RowChangedEvent += value;
       }
       remove {
@@ -190,18 +190,18 @@ namespace Order2GoAddIn {
     event EventHandler<PriceChangedEventArgs> PriceChangedEvent;
     public event EventHandler<PriceChangedEventArgs> PriceChanged {
       add {
-        if (PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
+        if(PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
           PriceChangedEvent += value;
       }
       remove {
         PriceChangedEvent -= value;
       }
     }
-    public void RaisePriceChanged( Price price) {
-      RaisePriceChanged( price, GetAccount(), GetTrades().ToArray());
+    public void RaisePriceChanged(Price price) {
+      RaisePriceChanged(price, GetAccount(), GetTrades().ToArray());
     }
     void RaisePriceChanged(Price price, Account account, Trade[] trades) {
-      var e = new PriceChangedEventArgs( price, account, trades);
+      var e = new PriceChangedEventArgs(price, account, trades);
       if(_PriceChangedBroadcast != null)
         PriceChangedBroadcast.SendAsync(e);
       if(PriceChangedEvent != null)
@@ -213,7 +213,7 @@ namespace Order2GoAddIn {
     event OrderRemovedEventHandler OrderRemovedEvent;
     public event OrderRemovedEventHandler OrderRemoved {
       add {
-        if (OrderRemovedEvent == null || !OrderRemovedEvent.GetInvocationList().Contains(value))
+        if(OrderRemovedEvent == null || !OrderRemovedEvent.GetInvocationList().Contains(value))
           OrderRemovedEvent += value;
       }
       remove {
@@ -230,11 +230,11 @@ namespace Order2GoAddIn {
     event EventHandler<TradeEventArgs> TradeAddedEvent;
     public event EventHandler<TradeEventArgs> TradeAdded {
       add {
-        if (TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
+        if(TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
           TradeAddedEvent += value;
       }
       remove {
-        if (TradeAddedEvent != null)
+        if(TradeAddedEvent != null)
           TradeAddedEvent -= value;
       }
     }
@@ -248,7 +248,7 @@ namespace Order2GoAddIn {
     event EventHandler<TradeEventArgs> TradeChangedEvent;
     public event EventHandler<TradeEventArgs> TradeChanged {
       add {
-        if (TradeChangedEvent == null || !TradeChangedEvent.GetInvocationList().Contains(value))
+        if(TradeChangedEvent == null || !TradeChangedEvent.GetInvocationList().Contains(value))
           TradeChangedEvent += value;
       }
       remove {
@@ -266,7 +266,7 @@ namespace Order2GoAddIn {
     event EventHandler<RequestEventArgs> RequestCompleteEvent;
     public event EventHandler<RequestEventArgs> RequestComplete {
       add {
-        if (RequestCompleteEvent == null || !RequestCompleteEvent.GetInvocationList().Contains(value))
+        if(RequestCompleteEvent == null || !RequestCompleteEvent.GetInvocationList().Contains(value))
           RequestCompleteEvent += value;
       }
       remove {
@@ -281,7 +281,7 @@ namespace Order2GoAddIn {
     #endregion
 
     #region SessionStatusChangedEvent
-    public class SesstionStatusEventArgs : EventArgs {
+    public class SesstionStatusEventArgs :EventArgs {
       public TradingServerSessionStatus Status { get; set; }
       public SesstionStatusEventArgs(TradingServerSessionStatus status) {
         this.Status = status;
@@ -291,7 +291,7 @@ namespace Order2GoAddIn {
     event EventHandler<SesstionStatusEventArgs> SessionStatusChangedEvent;
     public event EventHandler<SesstionStatusEventArgs> SessionStatusChanged {
       add {
-        if (SessionStatusChangedEvent == null || !SessionStatusChangedEvent.GetInvocationList().Contains(value))
+        if(SessionStatusChangedEvent == null || !SessionStatusChangedEvent.GetInvocationList().Contains(value))
           SessionStatusChangedEvent += value;
       }
       remove {
@@ -309,7 +309,7 @@ namespace Order2GoAddIn {
     event EventHandler<OrderEventArgs> OrderAddedEvent;
     public event EventHandler<OrderEventArgs> OrderAdded {
       add {
-        if (OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
+        if(OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
           OrderAddedEvent += value;
       }
       remove {
@@ -327,7 +327,7 @@ namespace Order2GoAddIn {
     event EventHandler<OrderEventArgs> OrderChangedEvent;
     public event EventHandler<OrderEventArgs> OrderChanged {
       add {
-        if (OrderChangedEvent == null || !OrderChangedEvent.GetInvocationList().Contains(value))
+        if(OrderChangedEvent == null || !OrderChangedEvent.GetInvocationList().Contains(value))
           OrderChangedEvent += value;
       }
       remove {
@@ -342,10 +342,10 @@ namespace Order2GoAddIn {
     #endregion
 
     #region TradeRemovedEvent
-    event TradeRemovedEventHandler TradeRemovedEvent;
-    public event TradeRemovedEventHandler TradeRemoved {
+    event EventHandler<TradeEventArgs> TradeRemovedEvent;
+    public event EventHandler<TradeEventArgs> TradeRemoved {
       add {
-        if (TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
+        if(TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
           TradeRemovedEvent += value;
       }
       remove {
@@ -354,7 +354,7 @@ namespace Order2GoAddIn {
     }
     void RaiseTradeRemoved(Trade trade) {
       if(TradeRemovedEvent != null)
-        TradeRemovedEvent(trade);
+        TradeRemovedEvent(this, new TradeEventArgs(trade));
     }
     #endregion
 
@@ -362,11 +362,11 @@ namespace Order2GoAddIn {
     event EventHandler<TradeEventArgs> TradeClosedEvent;
     public event EventHandler<TradeEventArgs> TradeClosed {
       add {
-        if (TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
+        if(TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
           TradeClosedEvent += value;
       }
       remove {
-        if (TradeClosedEvent != null)
+        if(TradeClosedEvent != null)
           TradeClosedEvent -= value;
       }
     }
@@ -380,7 +380,7 @@ namespace Order2GoAddIn {
     event EventHandler<RequestEventArgs> RequestFailedEvent;
     public event EventHandler<RequestEventArgs> RequestFailed {
       add {
-        if (RequestFailedEvent == null || !RequestFailedEvent.GetInvocationList().Contains(value))
+        if(RequestFailedEvent == null || !RequestFailedEvent.GetInvocationList().Contains(value))
           RequestFailedEvent += value;
       }
       remove {
@@ -2515,7 +2515,7 @@ namespace Order2GoAddIn {
           case "offers":
             var price = GetPrice(new NameValueParser(rowText));
             SetCurrentPrice(price);
-            RaisePriceChanged( price);
+            RaisePriceChanged(price);
             break;
           case TABLE_ACCOUNTS:
             GetAccount(new NameValueParser(rowText));
@@ -2803,13 +2803,13 @@ namespace Order2GoAddIn {
 
     C.ConcurrentDictionary<string, double> leverages = new C.ConcurrentDictionary<string, double>();
 
-    public double Leverage(string pair,bool isBuy) {
+    public double Leverage(string pair, bool isBuy) {
       if(!IsLoggedIn)
         return 0;
       Func<string, double> addLeverage = p => {
         CoreFX.SetSymbolSubscription(p);
         var offer = GetOffer(p);
-        return GetBaseUnitSize(pair) / (isBuy? offer.MMRLong:offer.MMRShort);
+        return GetBaseUnitSize(pair) / (isBuy ? offer.MMRLong : offer.MMRShort);
       };
       return leverages.GetOrAdd(pair, addLeverage);
     }
@@ -2919,7 +2919,7 @@ namespace Order2GoAddIn {
   #endregion
 
   [Serializable]
-  public class EntryOrderFailedException : Exception {
+  public class EntryOrderFailedException :Exception {
     public EntryOrderFailedException() { }
     public EntryOrderFailedException(string message) : base(message) { }
     public EntryOrderFailedException(string message, Exception inner) : base(message, inner) { }
@@ -2928,7 +2928,7 @@ namespace Order2GoAddIn {
     StreamingContext context)
       : base(info, context) { }
   }
-  public class TradeNotFoundException : Exception {
+  public class TradeNotFoundException :Exception {
     public string TradeId { get; set; }
     public TradeNotFoundException(string tradeId)
       : base("The trade with the specified identifier[" + tradeId + "] is not found.") {

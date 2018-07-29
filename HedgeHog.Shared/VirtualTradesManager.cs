@@ -240,7 +240,7 @@ namespace HedgeHog.Shared {
     }
     public void CloseTrade(Trade trade) {
       tradesClosed.Add(trade);
-      TradeRemoved(trade);
+      TradeRemoved(this, new TradeEventArgs(trade));
       OnTradeClosed(trade);
       tradesOpened.Remove(trade);
       RaiseOrderRemoved(new Order() { Pair = trade.Pair });
@@ -288,7 +288,7 @@ namespace HedgeHog.Shared {
       bool PairCmp(Trade trade) {
         if(pair == null) throw new NullReferenceException(new { pair } + "");
         if(trade == null) throw new NullReferenceException(new { trade } + "");
-        if(trade.Pair == null) throw new NullReferenceException(new { trade =new { trade.Pair } } + "");
+        if(trade.Pair == null) throw new NullReferenceException(new { trade = new { trade.Pair } } + "");
         return trade.Pair.ToLower() == pair.ToLower();
       }
     }
@@ -384,7 +384,7 @@ namespace HedgeHog.Shared {
 
 
 
-    public event TradeRemovedEventHandler TradeRemoved;
+    public event EventHandler<TradeEventArgs> TradeRemoved;
     public event EventHandler<OrderEventArgs> OrderChanged;
     public event EventHandler<TradeEventArgs> TradeChanged;
 

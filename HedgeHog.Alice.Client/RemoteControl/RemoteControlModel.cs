@@ -891,7 +891,7 @@ namespace HedgeHog.Alice.Client {
           }
           TradesManager.TradeAdded += fw_TradeAdded;
           TradesManager.TradeChanged += fw_TradeChanged;
-          TradesManager.TradeClosed += fw_TradeClosed;
+          TradesManager.TradeRemoved += fw_TradeClosed;
           TradesManager.Error += fw_Error;
         }
         List<Action> runPriceQueue = new List<Action>();

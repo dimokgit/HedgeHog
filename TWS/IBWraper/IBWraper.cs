@@ -330,8 +330,8 @@ namespace IBApp {
 
 
     #region TradeRemovedEvent
-    event TradeRemovedEventHandler TradeRemovedEvent;
-    public event TradeRemovedEventHandler TradeRemoved {
+    event EventHandler<TradeEventArgs> TradeRemovedEvent;
+    public event EventHandler<TradeEventArgs> TradeRemoved {
       add {
         if(TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
           TradeRemovedEvent += value;
@@ -341,7 +341,7 @@ namespace IBApp {
       }
     }
     void RaiseTradeRemoved(Trade trade) {
-      TradeRemovedEvent?.Invoke(trade);
+      TradeRemovedEvent?.Invoke(this, new TradeEventArgs(trade));
     }
     #endregion
 

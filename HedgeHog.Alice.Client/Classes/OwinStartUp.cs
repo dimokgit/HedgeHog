@@ -571,9 +571,9 @@ namespace HedgeHog.Alice.Client {
 
     static double DaysTillExpiration2(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
     static double DaysTillExpiration(DateTime expiration) => (expiration - DateTime.Now.Date).TotalDays + 1;
-    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, string[] comboExits) =>
+    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip, string[] comboExits) =>
       UseTraderMacro(pair, tm => {
-        int expirationDaysSkip = tm.ExpDayToSkip();
+        int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(expDaysSkip);
         var am = GetAccountManager();
         string CacheKey(Contract c) => c.IsFuture ? c.LocalSymbol : c.Symbol;
         var underContracts = IBApi.Contract.FromCache(pair).ToArray();
@@ -755,7 +755,7 @@ namespace HedgeHog.Alice.Client {
               ).OrderBy(oc => oc.order));
           double TryExitDelta(string s) => double.TryParse(s, out var i) ? i : int.MinValue;
         }
-        return new { tm.TradingRatio };
+        return new { tm.TradingRatio, tm.OptionsDaysGap };
       });
 
     [BasicAuthenticationFilter]

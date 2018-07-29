@@ -1423,12 +1423,12 @@ namespace HedgeHog.Alice.Client {
       if(MasterTradeRemoved != null)
         MasterTradeRemoved(this, new MasterTradeEventArgs(trade));
     }
-    void FWMaster_TradeRemoved(Trade trade) {
+    void FWMaster_TradeRemoved(object sender, TradeEventArgs e) {
       if(IsInVirtualTrading) {
         var account = TradesManager.GetAccount();
-        account.Balance += trade.NetPL;
+        account.Balance += e.Trade.NetPL;
       }
-      OnMasterTradeRemoved(trade);
+      OnMasterTradeRemoved(e.Trade);
     }
 
     void FWMaster_Error(object sender, HedgeHog.Shared.ErrorEventArgs e) {

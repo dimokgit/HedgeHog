@@ -129,7 +129,7 @@ namespace HedgeHog.Shared {
 
     event EventHandler<TradeEventArgs> TradeAdded;
     event EventHandler<TradeEventArgs> TradeChanged;
-    event TradeRemovedEventHandler TradeRemoved;
+    event EventHandler<TradeEventArgs> TradeRemoved;
     event EventHandler<ErrorEventArgs> Error;
     event EventHandler<RequestEventArgs> RequestFailed;
     event OrderRemovedEventHandler OrderRemoved;

@@ -318,7 +318,7 @@
     var comboExits = dataViewModel.liveStraddles().map(function (c) {
       return ko.unwrap(c.combo) + "," + ko.unwrap(c.exit) + "," + ko.unwrap(c.exitDelta);
     });
-    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), comboExits];
+    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), dataViewModel.expDaysSkip() || 0, comboExits];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
@@ -326,6 +326,8 @@
         xx.forEach(function (x) {
           if (!dataViewModel.comboQuantity())
             dataViewModel.comboQuantity(x.TradingRatio);
+          if (!dataViewModel.expDaysSkip())
+            dataViewModel.expDaysSkip(x.OptionsDaysGap);
         });
       }, function () {
       }, function () {
@@ -842,6 +844,7 @@
           return l.i() < r.i() ? 1 : -1;
         });
     }, this);
+    this.expDaysSkip = ko.observable();
     this.comboQuantity = ko.observable();
     this.comboCurrentStrikeLevel = ko.observable("");
     this.toggleComboCurrentStrikeLevel = function () {

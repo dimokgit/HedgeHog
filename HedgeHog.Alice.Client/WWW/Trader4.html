@@ -1273,9 +1273,19 @@
     </table>
     <div>
       <div>
-        <label>Quantity:</label><input data-bind="value:comboQuantity" size="3" />
+        <label>Exp#:</label><select data-bind="value:expDaysSkip" size="1">
+          <option value=""></option>
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+        <label>Qty:</label><input data-bind="value:comboQuantity" size="1" />
         <label>Gap:</label><input data-bind="value:comboGap" size="1" />
-        <label>Combos#:</label><input data-bind="value:numOfCombos" size="1" />
+        <label>Cmbs#:</label><input data-bind="value:numOfCombos" size="1" />
       </div>
       <div style="display:inline-table">
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>

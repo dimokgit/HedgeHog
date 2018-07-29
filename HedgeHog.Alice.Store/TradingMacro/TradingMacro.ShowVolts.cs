@@ -76,7 +76,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.PutStrdl:
           return () => ShowVoltsByStraddleSpread();
         case HedgeHog.Alice.VoltageFunction.StraddleA:
-          return () => ShowVoltsByStraddle(sh => sh.ask, voltIndex);
+          return () => ShowVoltsByStraddle(sh => sh.ask == 0 ? 0 : sh.ask / sh.delta - 1, voltIndex);
         case HedgeHog.Alice.VoltageFunction.Gross:
           return ShowVoltsByGross;
         case HedgeHog.Alice.VoltageFunction.GrossV:
