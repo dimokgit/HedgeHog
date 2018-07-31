@@ -38,8 +38,8 @@ namespace IBApi {
     private double lmtPrice;
     private double auxPrice;
     public override string ToString() {
-      return (ParentId != 0 ? new { OrderId = OrderId + "<-" + ParentId, Action, TotalQuantity, LmtPrice, OrderType, Tif, OutsideRth } :
-        new { OrderId = OrderId + "", Action, TotalQuantity, LmtPrice, OrderType, Tif, OutsideRth }) + "";
+      return (ParentId != 0 ? new { OrderId = OrderId + "<-" + ParentId, Action, TotalQuantity, LmtPrice, OrderType, Tif, OutsideRth, GoodTillDate } :
+        new { OrderId = OrderId + "", Action, TotalQuantity, LmtPrice, OrderType, Tif, OutsideRth, GoodTillDate }) + "";
     }
     // extended order fields
     // "Time in Force" - DAY, GTC, etc.

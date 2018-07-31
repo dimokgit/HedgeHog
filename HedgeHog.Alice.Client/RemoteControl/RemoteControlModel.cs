@@ -1105,9 +1105,7 @@ namespace HedgeHog.Alice.Client {
           charter.SetTradeLines(tm.Trades);
           charter.SuppResMinimumDistance = tm.Strategy.HasFlag(Strategies.Hot) ? tm.SuppResMinimumDistance : 0;
 
-          var times = tm.NewEventsCurrent.Where(_ => tm.CanShowNews).Select(ne => ne.Time.DateTime)
-            .Concat(tm.Fractals.Where(_ => !tm.CanShowNews).SelectMany(r => r.Select(r1 => r1.StartDate)))
-            .Concat(tm.FractalTimes.Where(_ => !tm.CanShowNews));
+          var times = tm.NewEventsCurrent.Where(_ => tm.CanShowNews).Select(ne => ne.Time.DateTime)   ;
           charter.DrawNewsTimes(times.ToArray());
           var tradeTime = tm.DoShowTradeOnChart ? tm.Trades.Select(t => t.Time).DefaultIfEmpty(tm.LastTrade.TimeClose).Where(d => !d.IsMin()) : new DateTime[0];
 

@@ -1336,6 +1336,7 @@ namespace HedgeHog.Alice.Client {
         }
         tm.CurrentPut?.ForEach(p =>
         list2.Add(row("Curr Put", $"{p.option.Key}{(p.option.IsFutureOption ? ":" + p.option.LastTradeDateOrContractMonth : "")}")));
+        tm.CurrentStraddle?.ForEach(p => list2.Add(row("Curr Strdl", $"{p.combo.contract}")));
         return list2;
       }).Concat();
       return list.Concat(more).ToArray();

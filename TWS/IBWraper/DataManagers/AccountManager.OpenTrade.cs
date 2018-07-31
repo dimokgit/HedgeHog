@@ -16,6 +16,7 @@ namespace IBApp {
     public void CancelAllOrders(string message) {
       Trace($"{nameof(CancelAllOrders)}: {message}");
       IbClient.ClientSocket.reqGlobalCancel();
+      UseOrderContracts(ocs => ocs.RemoveAll(oc => oc.isNew));
     }
     static object _OpenTradeSync = new object();
     public static void FillAdaptiveParams(IBApi.Order baseOrder, string priority) {
@@ -128,7 +129,7 @@ namespace IBApp {
           Action = parent.Action == "BUY" ? "SELL" : "BUY",
           OrderType = "LMT",
           TotalQuantity = parent.TotalQuantity,
-          Tif = parent.Tif,
+          Tif = GTC,
           OutsideRth = isPreRTH,
           OverridePercentageConstraints = true,
           Transmit = true

@@ -283,11 +283,11 @@ namespace IBApp {
         return new Action[0];
       }
       Stopwatch sw = Stopwatch.StartNew();
-      Action ret =  () => {
-        Monitor.Exit(_OpenTradeSync) ;
-        if(sw.ElapsedMilliseconds > timeoutInMilliseconds) 
+      Action ret = () => {
+        Monitor.Exit(_OpenTradeSync);
+        if(sw.ElapsedMilliseconds > timeoutInMilliseconds)
           Trace(message + $" Spent {sw.ElapsedMilliseconds} ms");
-        };
+      };
       try {
         func(OrderContractsInternal);
         return new[] { ret };
@@ -510,7 +510,7 @@ namespace IBApp {
     protected void RaiseTradeRemoved(Trade trade) {
       ClosedTrades.Add(trade);
       RaiseTradeClosed(trade);
-      TradeRemovedEvent?.Invoke(this, new TradeEventArgs(trade));
+      //TradeRemovedEvent?.Invoke(this, new TradeEventArgs(trade));
     }
     #endregion
 
@@ -766,7 +766,7 @@ namespace IBApp {
     }
     double OrderPrice(double orderPrice, Contract contract) => OrderPrice(orderPrice, contract, 1);
     double OrderPrice(double orderPrice, Contract contract, int minTickMultilier) {
-      var minTick = contract.MinTick() * minTickMultilier;
+      var minTick = contract.IsCombo && contract.HasFutureOption ? 0.25 : contract.MinTick() * minTickMultilier;
       var p = (Math.Round(orderPrice / minTick) * minTick);
       p = Math.Round(p, 4);
       return p;

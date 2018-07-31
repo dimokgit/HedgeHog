@@ -1394,7 +1394,7 @@ namespace HedgeHog.Alice.Store {
           //StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
           //BolngrAvg= InPips(_boilingerAvg,1),
           ProfitPip = CalculateTakeProfitInPips().Round((int)1),
-          RiskRewrd = RiskRewardRatio().ToPercent() + "%/" + InPips((double?)RiskRewardDenominator).AutoRound2((int)2),
+          //RiskRewrd = RiskRewardRatio().ToPercent() + "%/" + InPips((double?)RiskRewardDenominator).AutoRound2((int)2),
           //TlTmeMnMx = string.Join(",", TLsTimeRatio(tm, true).Concat(TLsTimeRatio(tm, false)).Select(tr => tr.ToString("n0") + "%")),
           //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
           //Plum_Edge = tm.TrendLinesPlumTrends.EdgeDiff.SingleOrDefault().Round(1),
@@ -2298,6 +2298,11 @@ namespace HedgeHog.Alice.Store {
 
     private IEnumerable<(IBApi.Contract contract, int position, double open, double price, double pipCost)> OpenPuts()
       => UseAccountManager(am => am.Positions.Where(p => p.position != 0 && p.contract.IsPut)).Concat();
+    private IEnumerable<(IBApi.Contract call, IBApi.Contract put)> OpenStraddles(AccountManager am)
+      => from call in am.Positions.Where(p => p.position != 0 && p.contract.IsCall)
+         from put in am.Positions.Where(p => p.position != 0 && p.contract.IsPut)
+         where call.contract.LastTradeDateOrContractMonth == put.contract.LastTradeDateOrContractMonth
+         select (call.contract, put.contract);
     private void UseAccountManager(Action<AccountManager> action) => UseAccountManager(am => { action(am); return Unit.Default; }).Count();
     private IEnumerable<T> UseAccountManager<T>(Func<AccountManager, T> func) {
       var am = ((IBWraper)TradesManager)?.AccountManager;

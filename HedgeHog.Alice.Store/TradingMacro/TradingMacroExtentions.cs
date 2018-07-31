@@ -46,6 +46,7 @@ using MongoDB.Bson;
 using IBApp;
 using COMBO_HISTORY = System.Collections.Generic.List<(double bid, double ask, System.DateTime time, double delta)>;
 using CURRENT_OPTION = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option, double deltaBid, double deltaAsk)>;
+using CURRENT_STRADDLE = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (IBApi.Contract contract, IBApi.Contract[] options) combo)>;
 using IBApi;
 
 namespace HedgeHog.Alice.Store {
@@ -1127,13 +1128,18 @@ namespace HedgeHog.Alice.Store {
               CurrentCall = x.options.Where(p => p.option.IsCall && p.strikeAvg >= x.priceBid).OrderBy(t => t.strikeAvg).Take(1).ToList();
               //var currPuts = x.options.OrderBy(o=>o.b)
               CurrentOptions = x.options.ToList();
-            }, exc => {
-              Log = exc;
-              Debugger.Break();
-            }, () => {
-              Log = new Exception("_currentOptionDisposable done");
-              Debugger.Break();
-            });
+            }, exc => { Log = exc; Debugger.Break(); }, () => { Log = new Exception("_currentOptionDisposable done"); Debugger.Break(); });
+
+          _currentStraddleDisposable?.Dispose();
+          _currentStraddleDisposable = (
+            from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
+            let priceBid = price.EventArgs.Price.Bid
+            from straddles in ibWraper.AccountManager.CurrentStraddles(Pair, ExpDayToSkip(), 5, 0)
+            let cs = straddles.Where(s => s.strikeAvg > priceBid).OrderBy(s => s.strikeAvg).Skip(1).Take(1).ToList()
+            where cs.Any()
+            select cs)
+            .Subscribe(x => CurrentStraddle = x, exc => { Log = exc; Debugger.Break(); }, () => { Log = new Exception("_currentStraddleDisposable done"); Debugger.Break(); });
+
 
           _priceChangeDisposable?.Dispose();
           StraddleHistory.Clear();
@@ -1193,7 +1199,7 @@ namespace HedgeHog.Alice.Store {
           .ForEach(sh => shs.Add(
             (
             bid: sh.bid.Cma(shcp, straddle.Average(p => p.deltaBid)),
-            ask: straddle.Where(s=>s.option.IsCall).Average(p => p.deltaBid),
+            ask: straddle.Where(s => s.option.IsCall).Average(p => p.deltaBid),
             time: ServerTime,
             delta: straddle.Where(s => s.option.IsPut).Average(p => p.deltaBid)
             )
@@ -1548,7 +1554,6 @@ namespace HedgeHog.Alice.Store {
         MagnetPrice = double.NaN;
         var indexCurrent = 0;
         LastTrade = TradesManager.TradeFactory(Pair);
-        FractalTimes = FractalTimes.Take(0);
         LineTimeMinFunc = null;
         ResetTakeProfitManual();
         StDevByHeight = double.NaN;
@@ -3196,60 +3201,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       return inPips ? InPips(ret) : ret;
     }
 
-    Action StrategyAction {
-      get {
-        switch((Strategy & ~Strategies.Auto)) {
-          case Strategies.Hot:
-            return StrategyEnterUniversal;
-          case Strategies.Universal:
-            return StrategyEnterUniversal;
-          case Strategies.ShortPut:
-            return StrategyShortPut;
-          case Strategies.None:
-            return () => { };
-        }
-        throw new NotSupportedException("Strategy " + Strategy + " is not supported.");
-      }
-    }
-
-    private void StrategyShortPut() => UseAccountManager(am => {
-      var puts = OpenPuts().ToList();
-      var distanceOk = (from curPut in CurrentPut
-                        from openPut in puts.OrderBy(p => p.contract.Strike).Take(1).ToList()
-                        let strikeAvg = curPut.strikeAvg
-                        let openPutPrice = openPut.price.Abs()
-                        let openPutStrike = openPut.contract.Strike
-                        where curPut.option.LastTradeDateOrContractMonth == openPut.contract.LastTradeDateOrContractMonth
-                        && strikeAvg + openPutPrice > openPutStrike
-                        select true
-                        ).IsEmpty();
-      var hasOptions = puts.Count +
-        am.UseOrderContracts(OrderContracts =>
-        (from put in CurrentPut
-         join oc in OrderContracts.Where(o => !o.isDone & o.order.Action == "SELL") on put.instrument equals oc.contract.Instrument
-         select true
-         )).Concat().Count();
-      var hasSellOrdes = am.UseOrderContracts(OrderContracts =>
-      (from oc in OrderContracts.Where(o => !o.isDone && o.contract.IsPut && !o.contract.IsCombo && o.order.Action == "SELL")
-       select true
-       )).Concat().Count();
-      if(distanceOk && hasOptions < TradeCountMax) {
-        TradeConditionsEval()
-          .DistinctUntilChanged(td => td)
-          .Where(td => td.HasUp())
-          .Take(1)
-          .ForEach(_ => {
-            var pos = -puts.Select(p => p.position.Abs()).DefaultIfEmpty(TradingRatio.ToInt()).Max();
-            CurrentPut?.ForEach(p => {
-              Log = new Exception($"{nameof(TradeConditionsTrigger)}:{nameof(am.OpenTrade)}:{new { p.option, pos, Thread.CurrentThread.ManagedThreadId }}");
-              am.OpenTrade(p.option, pos, p.ask, 0.2, true, ServerTime.AddMinutes(5));
-            });
-          });
-      }
-    });
-    void RunStrategy() {
-      StrategyAction();
-    }
     delegate double GetPriceLastForTradeLevelDelegate();
     delegate double GetPricePrevForTradeLevelDelegate();
 
@@ -5218,6 +5169,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     private IObservable<EventPattern<PriceChangedEventArgs>> _priceChangeObservable;
     private int _optionsDaysGap;
     private IDisposable _currentOptionDisposable;
+    private IDisposable _currentStraddleDisposable;
 
     #endregion
 
@@ -5493,6 +5445,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     public CURRENT_OPTION CurrentPut { get; private set; } = new CURRENT_OPTION();
     public CURRENT_OPTION CurrentCall { get; private set; } = new CURRENT_OPTION();
     public CURRENT_OPTION CurrentOptions { get; private set; } = new CURRENT_OPTION();
+    public CURRENT_STRADDLE CurrentStraddle { get; private set; } = new CURRENT_STRADDLE();
     [WwwSetting(wwwSettingsTradingParams)]
     public int OptionsDaysGap {
       get => _optionsDaysGap;

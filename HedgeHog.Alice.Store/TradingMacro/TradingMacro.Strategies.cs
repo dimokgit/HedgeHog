@@ -18,9 +18,103 @@ using HedgeHog.Shared.Messages;
 using System.Dynamic;
 using TL = HedgeHog.Bars.Rate.TrendLevels;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
+
+    Action StrategyAction {
+      get {
+        switch((Strategy & ~Strategies.Auto)) {
+          case Strategies.Hot:
+            return StrategyEnterUniversal;
+          case Strategies.Universal:
+            return StrategyEnterUniversal;
+          case Strategies.ShortPut:
+            return StrategyShortPut;
+          case Strategies.ShortStraddle:
+            return StrategyShortStraddle;
+          case Strategies.Long:
+            return StrategyLong;
+          case Strategies.None:
+            return () => { };
+        }
+        throw new NotSupportedException("Strategy " + Strategy + " is not supported.");
+      }
+    }
+
+    private void StrategyShortPut() => UseAccountManager(am => {
+      var puts = OpenPuts().ToList();
+      var distanceOk = (from curPut in CurrentPut
+                        from openPut in puts.OrderBy(p => p.contract.Strike).Take(1).ToList()
+                        let strikeAvg = curPut.strikeAvg
+                        let openPutPrice = openPut.price.Abs()
+                        let openPutStrike = openPut.contract.Strike
+                        where curPut.option.LastTradeDateOrContractMonth == openPut.contract.LastTradeDateOrContractMonth
+                        && strikeAvg + openPutPrice > openPutStrike
+                        select true
+                        ).IsEmpty();
+      var hasOptions = puts.Count +
+        am.UseOrderContracts(OrderContracts =>
+        (from put in CurrentPut
+         join oc in OrderContracts.Where(o => !o.isDone & o.order.Action == "SELL") on put.instrument equals oc.contract.Instrument
+         select true
+         )).Concat().Count();
+      var hasSellOrdes = am.UseOrderContracts(OrderContracts =>
+      (from oc in OrderContracts.Where(o => !o.isDone && o.contract.IsPut && !o.contract.IsCombo && o.order.Action == "SELL")
+       select true
+       )).Concat().Count();
+      if(distanceOk && hasOptions < TradeCountMax) {
+        TradeConditionsEval()
+          .DistinctUntilChanged(td => td)
+          .Where(td => td.HasUp())
+          .Take(1)
+          .ForEach(_ => {
+            var pos = -puts.Select(p => p.position.Abs()).DefaultIfEmpty(TradingRatio.ToInt()).Max();
+            CurrentPut?.ForEach(p => {
+              Log = new Exception($"{nameof(TradeConditionsTrigger)}:{nameof(am.OpenTrade)}:{new { p.option, pos, Thread.CurrentThread.ManagedThreadId }}");
+              am.OpenTrade(p.option, pos, p.ask, 0.2, true, ServerTime.AddMinutes(5));
+            });
+          });
+      }
+    });
+    private void StrategyShortStraddle() => UseAccountManager(am => {
+      var straddles = OpenStraddles(am);
+      var hasOrders = am.UseOrderContracts(ocs => ocs.Where(o => !o.isDone)).Concat().Any();
+      if(straddles.IsEmpty() && !hasOrders) {
+        TradeConditionsEval()
+          .DistinctUntilChanged(td => td)
+          .Where(td => td.HasUp())
+          .Take(1)
+          .ForEach(_ => {
+            var pos = -TradingRatio.ToInt();
+            CurrentStraddle?.ForEach(p => {
+              Log = new Exception($"{nameof(StrategyShortStraddle)}:{nameof(am.OpenTrade)}:{new { p.combo.contract, pos, Thread.CurrentThread.ManagedThreadId }}");
+              am.OpenTrade(p.combo.contract, pos, p.ask, 0.2, true, ServerTime.AddMinutes(10));
+            });
+          });
+      }
+    });
+    private void StrategyLong() => UseAccountManager(am => {
+      var hasOrders = am.UseOrderContracts(ocs => ocs.Where(o => o.contract.Symbol == Pair && !o.isDone)).Concat().Any();
+      if(Trades.IsEmpty() && !hasOrders) {
+        TradeConditionsEval()
+          .DistinctUntilChanged(td => td)
+          .Where(td => td.HasUp())
+          .Take(1)
+          .ForEach(_ => {
+            var pos = TradingRatio.ToInt();
+            CurrentStraddle?.ForEach(p => {
+              Log = new Exception($"{nameof(StrategyLong)}:{nameof(am.OpenTrade)}:{new { Pair }}");
+              am.OpenTrade(Pair, pos, p.bid, p.bid + CalculateTakeProfit(), true, ServerTime.AddMinutes(10));
+            });
+          });
+      }
+    });
+    void RunStrategy() {
+      StrategyAction();
+    }
+
 
     public void CleanStrategyParameters() {
       DoAdjustExitLevelByTradeTime = false;
@@ -291,14 +385,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
 
-    Models.ObservableValue<bool> _isCorridorDistanceOk = new Models.ObservableValue<bool>(false);
-
-    IEnumerable<Rate> _waveMiddle {
-      get {
-        return WaveShort.Rates.Skip(WaveTradeStart.Rates.Count);
-      }
-    }
-
     void ForEachSuppRes(params Action<SuppRes>[] actions) {
       (from sr in SuppRes
        from action in actions
@@ -535,368 +621,7 @@ namespace HedgeHog.Alice.Store {
         tm.SuppRes.ForEach(sr1 => sr1.CanTrade = false);
       });
     }
-    public static IDictionary<bool, double[]> FractalsRsd(IList<Rate> rates, int fractalLength, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var prices = rates.Select(r => new { PriceHigh = priceHigh(r), PriceLow = priceLow(r) }).ToArray();
-      var indexMiddle = fractalLength / 2;
-      var zipped = prices.Zip(prices.Skip(1), (f, s) => new[] { f, s }.ToList());
-      for(var i = 2; i < fractalLength; i++)
-        zipped = zipped.Zip(prices.Skip(i), (z, v) => { z.Add(v); return z; });
-      var zipped2 = zipped.Where(z => z.Count == fractalLength)
-        .Select(z => new { max = z.Max(a => a.PriceHigh), min = z.Min(a => a.PriceLow), middle = z[indexMiddle] })
-        .Select(a => new { price = a.middle, isUp = a.max == a.middle.PriceHigh, IsDpwm = a.middle.PriceLow == a.min })
-        .ToArray();
-      return zipped2
-        .Where(a => a.isUp || a.IsDpwm)
-        .GroupBy(a => a.isUp, a => a.isUp ? a.price.PriceHigh : a.price.PriceLow)
-        .ToDictionary(g => g.Key, g => g.ToArray());
-    }
-    IList<Rate> CorridorByVerticalLineCrosses(IList<Rate> rates, int lengthMin, out double levelOut) {
-      Func<double, Tuple<Rate, Rate>, bool> isOk = (l, t) => l.Between(t.Item1.PriceAvg, t.Item2.PriceAvg);
-      IList<Tuple<Rate, Rate>> ratesFused = rates.Zip(rates.Skip(1), (f, s) => new Tuple<Rate, Rate>(f, s)).ToArray();
-      var maxIntervals = new { span = TimeSpan.Zero, level = double.NaN }.Yield().ToList();
-      var height = rates.Take(lengthMin).Height();
-      var levelMIn = rates.Take(lengthMin).Min(t => t.PriceAvg);
-      var levels = Enumerable.Range(1, InPips(height).ToInt() - 1).Select(i => levelMIn + InPoints(i)).ToArray();
-      levels.ForEach(level => {
-        var ratesCrossed = ratesFused.Where(t => isOk(level, t)).Select(t => t.Item2).ToArray();
-        if(ratesCrossed.Length > 3) {
-          var ratesCrossesLinked = ratesCrossed.ToLinkedList();
-          var span = TimeSpan.MaxValue;
-          var corridorOk = false;
-          //ratesCrossesLinked.ForEach(fs => 
-          for(var node = ratesCrossesLinked.First.Next; node != null; node = node.Next) {
-            var interval = node.Previous.Value.StartDate - node.Value.StartDate;
-            if(interval > span) {
-              while(!maxIntervals.Any() && node != null && (rates[0].StartDate - node.Value.StartDate).Duration().TotalMinutes < lengthMin) {
-                node = node.Next;
-              }
-              corridorOk = node != null;
-            }
-            if(node != null)
-              span = rates[0].StartDate - node.Value.StartDate;
-            if(corridorOk || node == null)
-              break;
-          };
-          if(corridorOk)
-            maxIntervals.Add(new { span = span, level });
-        }
-      });
-      var maxInterval = maxIntervals.Where(mi => mi.span.Duration().TotalMinutes >= lengthMin)
-        .OrderByDescending(a => a.span).FirstOrDefault();
-      if(maxInterval == null) {
-        levelOut = double.NaN;
-        return null;
-      } else
-        try {
-          levelOut = maxInterval.level;
-          var dateStop = rates[0].StartDate.Subtract(maxInterval.span);
-          return rates.TakeWhile(r => r.StartDate >= dateStop).ToArray();
-        } catch(Exception exc) {
-          throw;
-        }
-    }
 
-    IList<Rate> CorridorByVerticalLineCrosses2(IList<Rate> ratesOriginal, Func<Rate, double> price, int lengthMin, out double levelOut) {
-      var rates = ratesOriginal.Select((rate, index) => new { index, rate }).ToArray();
-      Func<double, Rate, Rate, bool> isOk = (l, Item1, Item2) => l.Between(price(Item1), price(Item2));
-      var ratesFused = rates.Zip(rates.Skip(1), (f, s) => new { f.index, Item1 = f.rate, Item2 = s.rate }).ToArray();
-      var maxIntervals = new { length = 0, level = double.NaN }.Yield().ToList();
-      var height = rates.Take(lengthMin).Height(a => price(a.rate));
-      var levelMIn = rates.Take(lengthMin).Min(t => price(t.rate));
-      var levels = Enumerable.Range(1, InPips(height).ToInt() - 1).Select(i => levelMIn + InPoints(i)).ToArray();
-      levels.ForEach(level => {
-        var ratesCrossed = ratesFused.Where(t => isOk(level, t.Item1, t.Item2)).Select(a => new { a.index, rate = a.Item2 }).ToArray();
-        if(ratesCrossed.Length > 3) {
-          var span = int.MaxValue;
-          var corridorOk = false;
-          for(var i = 1; i < ratesCrossed.Count(); i++) {
-            var node = ratesCrossed[i];
-            var interval = node.index - ratesCrossed[i - 1].index;
-            if(interval > span) {
-              if(node.index < lengthMin) {
-                node = ratesCrossed.Zip(ratesCrossed.Skip(1), (a, b) => new { length = b.index - a.index, item = b })
-                  .Where(a => a.length < span && a.item.index > lengthMin)
-                  .Select(a => a.item).FirstOrDefault();
-              }
-              corridorOk = node != null;
-            }
-            if(node != null)
-              span = node.index;
-            if(corridorOk || node == null)
-              break;
-          };
-          if(corridorOk)
-            maxIntervals.Add(new { length = span, level });
-        }
-      });
-      var maxInterval = maxIntervals.Where(mi => mi.length >= lengthMin).OrderByDescending(a => a.length).FirstOrDefault();
-      if(maxInterval == null) {
-        levelOut = double.NaN;
-        return null;
-      } else
-        try {
-          levelOut = maxInterval.level;
-          return ratesOriginal.Take(maxInterval.length).ToArray();
-        } catch {
-          throw;
-        }
-    }
-
-    IList<Rate> CorridorByVerticalLineLongestCross(Rate[] ratesOriginal, Func<Rate, double> price) {
-      var point = InPoints(1);
-      Func<long, long, double> getHeight = (index1, index2) => {
-        var rates1 = new Rate[index2 - index1 + 1];
-        Array.Copy(ratesOriginal, index1, rates1, 0, rates1.Length);
-        var price0 = price(rates1[0]);
-        return rates1.Average(r => price0.Abs(price(r)) / point).Round(0);
-      };
-      var rates = ratesOriginal.Select((rate, index) => new { index, rate }).ToArray();
-      Func<double, Rate, Rate, bool> isOk = (l, Item1, Item2) => l.Between(price(Item1), price(Item2));
-      var ratesFused = rates.Zip(rates.Skip(1), (f, s) => new { f.index, Item1 = f.rate, Item2 = s.rate }).ToArray();
-      var levelMin = ratesOriginal.Min(price);
-      var levels = Enumerable.Range(1, InPips(ratesOriginal.Height(price)).ToInt() - 1)
-        .Select(level => levelMin + level * point).ToArray().AsParallel();
-      var ratesByLevels = levels.Select(level => {
-        var ratesCrossed = ratesFused.Where(t => isOk(level, t.Item1, t.Item2)).Select(a => new { a.index, rate = a.Item2 }).ToArray();
-        var h0 = 0.0;
-        var d0 = 0;
-        return ratesCrossed.Zip(ratesCrossed.Skip(1)
-          , (prev, next) => new { prev, next, distance = d0 = next.index - prev.index, height = h0 = getHeight(prev.index, next.index), dToH = (d0 / h0).Round(1) });
-      }).SelectMany(a => a.Where(b => b.height > 0))
-      .Distinct((a, b) => a.prev.index == b.prev.index && a.distance == b.distance)
-      .ToList();
-      var distanceMin = ratesByLevels.AverageByIterations(a => a.distance, (a, d) => a > d, 2).Average(a => a.distance);
-      Func<double, double, bool> comp = (a, b) => a <= b;
-      //ratesByLevels = ratesByLevels.Where(a => a.distance >= distanceMin).ToList().SortByLambda((a, b) => comp(a.dToH, b.dToH));
-      //var dToHMin = ratesByLevels.AverageByIterations(a => a.dToH, comp, 2).Average(a => a.dToH);
-      var winner = ratesByLevels/*.TakeWhile(a => comp(a.dToH, dToHMin))*/.OrderByDescending(a => a.distance).FirstOrDefault();
-      if(winner == null)
-        return null;
-      var ratesOut = new Rate[winner.next.index - winner.prev.index + 1];
-      Array.Copy(ratesOriginal, winner.prev.index, ratesOut, 0, ratesOut.Length);
-      return ratesOut;
-    }
-
-    IList<Rate> CorridorByVerticalLineLongestCross2(Rate[] ratesOriginal, int indexMax, Func<Rate, double> price) {
-      var point = InPoints(1);
-      var rountTo = TradesManager.GetDigits(Pair) - 1;
-      Func<long, long, double> getHeight = (index1, index2) => {
-        var rates1 = new Rate[index2 - index1 + 1];
-        Array.Copy(ratesOriginal, index1, rates1, 0, rates1.Length);
-        var price0 = price(rates1[0]);
-        return rates1.Average(r => price0.Abs(price(r)) / point).Round(0);
-      };
-      var rates = ratesOriginal.Select((rate, index) => new { index, rate }).ToArray();
-      Func<double, Rate, Rate, bool> isOk = (l, Item1, Item2) => l.Between(price(Item1), price(Item2));
-      var ratesFused = rates.Zip(rates.Skip(1), (f, s) => new { f.index, Item1 = f.rate, Item2 = s.rate }).ToArray();
-      var levelMin = (ratesOriginal.Min(price) * Math.Pow(10, rountTo)).Ceiling() / Math.Pow(10, rountTo);
-      var levels = Enumerable.Range(0, InPips(ratesOriginal.Height(price)).ToInt())
-        .Select(level => levelMin + level * point).ToArray();
-      var ratesByLevels = levels.AsParallel().Select(level => {
-        var ratesCrossed = ratesFused.Where(t => isOk(level, t.Item1, t.Item2)).Select(a => new { a.index, rate = a.Item2 }).ToArray();
-        return ratesCrossed.Zip(ratesCrossed.Skip(1), (prev, next) => new { prev, next, distance = next.index - prev.index });
-      }).SelectMany(a => a.Where(b => b.prev.index <= indexMax))
-      .Distinct((a, b) => a.prev.index == b.prev.index && a.distance == b.distance)
-      .ToList();
-      var distanceMin = ratesByLevels.AverageByIterations(a => a.distance, (a, d) => a > d, 2).Average(a => a.distance);
-      Func<double, double, bool> comp = (a, b) => a <= b;
-      //ratesByLevels = ratesByLevels.Where(a => a.distance >= distanceMin).ToList().SortByLambda((a, b) => comp(a.dToH, b.dToH));
-      //var dToHMin = ratesByLevels.AverageByIterations(a => a.dToH, comp, 2).Average(a => a.dToH);
-      var winner = ratesByLevels/*.TakeWhile(a => comp(a.dToH, dToHMin))*/.OrderByDescending(a => a.distance).FirstOrDefault();
-      if(winner == null)
-        return null;
-      var ratesOut = new Rate[winner.next.index - winner.prev.index + 1];
-      Array.Copy(ratesOriginal, winner.prev.index, ratesOut, 0, ratesOut.Length);
-      return ratesOut;
-    }
-
-    class CorridorByStDev_Results {
-      public double Level { get; set; }
-      public double StDev { get; set; }
-      public int Count { get; set; }
-      public override string ToString() {
-        return new { Level, StDev, Count } + "";
-      }
-    }
-    IList<CorridorByStDev_Results> StDevsByHeight(IList<Rate> ratesReversed, double height) {
-      var price = _priceAvg;
-      var point = InPoints(1);
-      var rountTo = TradesManager.GetDigits(Pair) - 1;
-      var rates = ratesReversed.Select((rate, index) => new { index, rate }).ToArray();
-      Func<double, double, Rate, bool> isOk = (h, l, rate) => rate.PriceAvg.Between(l, h);
-      var levelMin = (ratesReversed.Select(price).DefaultIfEmpty(double.NaN).Min() * Math.Pow(10, rountTo)).Ceiling() / Math.Pow(10, rountTo);
-      var ratesHeightInPips = InPips(ratesReversed.Height(price)).Floor();
-      var corridorHeightInPips = InPips(height);
-      var half = height / 2;
-      var halfInPips = InPips(half).ToInt();
-      var levels = Enumerable.Range(halfInPips, ratesHeightInPips.Sub(halfInPips).Max(halfInPips))
-        .Select(levelInner => levelMin + levelInner * point).ToArray();
-      var levelsByCount = levels.AsParallel().Select(levelInner => {
-        var ratesInner = ratesReversed.Where(r => isOk(levelInner - half, levelInner + half, r)).ToArray();
-        if(ratesInner.Length < 2)
-          return null;
-        return new { level = levelInner, stDev = ratesInner.StDev(_priceAvg), count = ratesInner.Length };
-      }).Where(a => a != null).ToList();
-      return levelsByCount.Select(a => new CorridorByStDev_Results() {
-        Level = a.level,
-        StDev = a.stDev,
-        Count = a.count
-      }).ToArray();
-    }
-    IList<CorridorByStDev_Results> StDevsByHeight1(IList<Rate> ratesReversed, double height) {
-      var price = _priceAvg;
-      var point = InPoints(1);
-      var rountTo = TradesManager.GetDigits(Pair) - 1;
-      var rates = ratesReversed.Select((rate, index) => new { index, rate }).ToArray();
-      Func<double, double, Rate, bool> isOk = (h, l, rate) => rate.PriceAvg.Between(l, h);
-      var levelMin = (ratesReversed.Select(price).DefaultIfEmpty(double.NaN).Min() * Math.Pow(10, rountTo)).Ceiling() / Math.Pow(10, rountTo);
-      var ratesHeightInPips = InPips(ratesReversed.Height(price)).Floor();
-      var corridorHeightInPips = InPips(height);
-      var half = height / 2;
-      var halfInPips = InPips(half).ToInt() * 0;
-      var rangeHeightInPips = ratesHeightInPips - halfInPips * 2;
-      var levels = ParallelEnumerable.Range(halfInPips, rangeHeightInPips.Max(0))
-        .Select(levelInner => levelMin + levelInner * point);
-      var levelsByCount = levels.Select(levelInner => {
-        var ratesInner = ratesReversed.Where(r => isOk(levelInner - half, levelInner + half, r)).ToArray();
-        if(ratesInner.Length < 2)
-          return null;
-        return new { level = levelInner, stDev = ratesInner.StDev(_priceAvg), count = ratesInner.Length };
-      }).Where(a => a != null).ToList();
-      return levelsByCount.Select(a => new CorridorByStDev_Results() {
-        Level = a.level,
-        StDev = a.stDev,
-        Count = a.count
-      }).ToArray();
-    }
-
-    IList<CorridorByStDev_Results> StDevsByHeight2(IList<Rate> ratesReversed, double height) {
-      var price = _priceAvg;
-      var point = InPoints(1);
-      var rountTo = TradesManager.GetDigits(Pair) - 1;
-      var rates = ratesReversed.Select((rate, index) => new { index, rate }).ToArray();
-      Func<double, double, Rate, bool> isOk = (h, l, rate) => rate.PriceAvg.Between(l, h);
-      var levelMin = (ratesReversed.Select(price).DefaultIfEmpty(double.NaN).Min() * Math.Pow(10, rountTo)).Ceiling() / Math.Pow(10, rountTo);
-      var ratesHeightInPips = InPips(ratesReversed.Height(price)).Floor();
-      var corridorHeightInPips = InPips(height);
-      var half = height;
-      var halfInPips = 0 * InPips(half).ToInt();
-      var levels = Enumerable.Range(halfInPips, ratesHeightInPips.Sub(halfInPips * 2).Max(halfInPips))
-        .Select(levelInner => levelMin + levelInner * point).ToArray();
-      var levelsByCount = levels.AsParallel().Select(levelInner => {
-        var ratesInner = ratesReversed.Where(r => isOk(levelInner - half, levelInner + half, r)).ToArray();
-        if(ratesInner.Length < 2)
-          return null;
-        return new { level = levelInner, stDev = ratesInner.StDev(_priceAvg), count = ratesInner.Length };
-      }).Where(a => a != null).ToList();
-      return levelsByCount.Select(a => new CorridorByStDev_Results() {
-        Level = a.level,
-        StDev = a.stDev,
-        Count = a.count
-      }).ToArray();
-    }
-    IList<CorridorByStDev_Results> StDevsByHeight3(IList<Rate> ratesReversed, double height) {
-      var half = height / 2;
-      var price = _priceAvg;
-      var point = InPoints(1);
-      var rountTo = TradesManager.GetDigits(Pair) - 1;
-      var prices = ratesReversed.Select(price).DefaultIfEmpty(double.NaN).ToArray();
-      var levelMin = (prices.Min() * Math.Pow(10, rountTo)).Ceiling() / Math.Pow(10, rountTo);
-      var levelMax = (prices.Max() * Math.Pow(10, rountTo)).Ceiling() / Math.Pow(10, rountTo);
-      var levels = Range.Double(levelMin + half * 2, levelMax - half * 2, point).ToArray();
-      return StDevsByHeightBase(ratesReversed, half, price, levels);
-    }
-
-    private static IList<CorridorByStDev_Results> StDevsByHeightBase(IList<Rate> ratesReversed, double half, Func<Rate, double> price, double[] levels) {
-      Func<double, double, Rate, bool> isOk = (h, l, rate) => rate.PriceAvg.Between(l, h);
-      var levelsByCount = levels.AsParallel().Select(levelInner => {
-        var ratesInner = ratesReversed.Where(r => isOk(levelInner - half, levelInner + half, r)).ToArray();
-        if(ratesInner.Length < 2)
-          return null;
-        return new { level = levelInner, stDev = ratesInner.StDev(price), count = ratesInner.Length };
-      }).Where(a => a != null).ToList();
-      return levelsByCount.Select(a => new CorridorByStDev_Results() {
-        Level = a.level,
-        StDev = a.stDev,
-        Count = a.count
-      }).ToArray();
-    }
-
-    IList<CorridorByStDev_Results> CorridorByStDev(IList<Rate> ratesReversed, double height) {
-      var price = _priceAvg;
-      var point = InPoints(1);
-      var rountTo = TradesManager.GetDigits(Pair) - 1;
-      var rates = ratesReversed.Select((rate, index) => new { index, rate }).ToArray();
-      Func<double, double, Rate, bool> isOk = (h, l, rate) => rate.PriceAvg.Between(l, h);
-      var levelMin = (ratesReversed.Min(price) * Math.Pow(10, rountTo)).Ceiling() / Math.Pow(10, rountTo);
-      var ratesHeightInPips = InPips(ratesReversed.Height(price)).Floor();
-      var corridorHeightInPips = InPips(height);
-      var half = height / 2;
-      var halfInPips = InPips(half).ToInt();
-      var levels = Enumerable.Range(halfInPips, ratesHeightInPips.Sub(halfInPips).Max(halfInPips))
-        .Select(levelInner => levelMin + levelInner * point).ToArray();
-      var levelsByCount = levels.AsParallel().Select(levelInner => {
-        var ratesInner = ratesReversed.Where(r => isOk(levelInner - half, levelInner + half, r)).ToArray();
-        if(ratesInner.Length < 2)
-          return null;
-        return new { level = levelInner, stDev = ratesInner.StDev(_priceAvg), count = ratesInner.Length };
-      }).Where(a => a != null).ToList();
-      StDevLevelsCountsAverage = levelsByCount.Select(a => (double)a.count).ToArray().AverageByIterations(2, true).DefaultIfEmpty(double.NaN).Average().ToInt();
-      levelsByCount.Sort(a => -a.stDev);
-      var levelsGrouped = levelsByCount//.Where(a => a.count >= StDevLevelsCountsAverage).ToArray()
-        .GroupByLambda((a, b) => a.level.Abs(b.level) < height * 2)
-        .Select(k => new { k.Key.level, k.Key.stDev, k.Key.count }).ToList();
-      levelsGrouped.Sort(a => -a.stDev);
-      return levelsGrouped.Select(a => new CorridorByStDev_Results() {
-        Level = a.level,
-        StDev = a.stDev,
-        Count = a.count
-      }).ToArray();
-    }
-
-    #region StDevLevelsRatio
-    private double _StDevLevelsCountsAverage;
-    public double StDevLevelsCountsAverage {
-      get { return _StDevLevelsCountsAverage; }
-      set {
-        if(_StDevLevelsCountsAverage != value) {
-          _StDevLevelsCountsAverage = value;
-          OnPropertyChanged("StDevLevelsCountsAverage");
-        }
-      }
-    }
-
-    #endregion
-    double CorridorByDensity(IList<Rate> ratesOriginal, double height) {
-      var price = _priceAvg;
-      var point = InPoints(1);
-      var rountTo = TradesManager.GetDigits(Pair) - 1;
-      var rates = ratesOriginal.Select((rate, index) => new { index, rate }).ToArray();
-      Func<double, double, Rate, bool> isOk = (h, l, rate) => rate.PriceAvg.Between(l, h);
-      var levelMin = (ratesOriginal.Min(price) * Math.Pow(10, rountTo)).Ceiling() / Math.Pow(10, rountTo);
-      var ratesHeightInPips = InPips(ratesOriginal.Height(price)).ToInt();
-      var corridorHeightInPips = InPips(height);
-      var half = height / 2;
-      var halfInPips = InPips(half).ToInt();
-      var levels = Enumerable.Range(halfInPips, ratesHeightInPips - halfInPips)
-        .Select(level => levelMin + level * point).ToArray();
-      var levelsByCount = levels.AsParallel().Select(level =>
-        new { level, count = ratesOriginal.Count(r => isOk(level - half, level + half, r)) }
-      ).ToList();
-      return levelsByCount.Aggregate((p, n) => p.count > n.count ? p : n).level;
-    }
-
-    double _MagnetPriceRatio = double.NaN;
-
-    public double MagnetPriceRatio {
-      get { return _MagnetPriceRatio; }
-      set {
-        if(_MagnetPriceRatio == value)
-          return;
-        _MagnetPriceRatio = value;
-        OnPropertyChanged(() => MagnetPriceRatio);
-      }
-    }
 
     List<double> _CenterOfMassLevels = new List<double>();
 
@@ -905,32 +630,6 @@ namespace HedgeHog.Alice.Store {
       private set { _CenterOfMassLevels = value; }
     }
 
-    ILookup<bool, Rate> _Fractals = "".ToLookup(c => true, c => (Rate)null);
-    public ILookup<bool, Rate> Fractals {
-      get { return _Fractals; }
-      set { _Fractals = value; }
-    }
-
-    IEnumerable<DateTime> _fractalTimes = new DateTime[0];
-    double VoltsBelowAboveLengthMinCalc {
-      get {
-        return VoltsBelowAboveLengthMin.Abs() > 10 ? VoltsBelowAboveLengthMin : VoltsFrameLength * VoltsBelowAboveLengthMin;
-      }
-    }
-
-    private double _VoltsBelowAboveLengthMin = 60;
-    [Category(categoryXXX)]
-    public double VoltsBelowAboveLengthMin {
-      get { return _VoltsBelowAboveLengthMin; }
-      set {
-        _VoltsBelowAboveLengthMin = value;
-        OnPropertyChanged("VoltsBelowAboveLengthMin");
-      }
-    }
-    public IEnumerable<DateTime> FractalTimes {
-      get { return _fractalTimes; }
-      set { _fractalTimes = value; }
-    }
     public int FftMax { get; set; }
 
     public bool MustExitOnReverse { get; set; }

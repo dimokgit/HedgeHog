@@ -20,21 +20,5 @@ namespace HedgeHog.Alice.Store {
         });
       return crosses.ToArray();
     }
-    private CorridorStatistics ScanCorridorByHorizontalLineCrosses1(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      double level;
-      var rates = CorridorByVerticalLineCrosses2(ratesForCorridor.ReverseIfNot(), _priceAvg, CorridorDistanceRatio.ToInt(), out level);
-      var corridorOk = rates != null && rates.Any() && (!IsCorridorForwardOnly || rates.LastBC().StartDate >= CorridorStats.StartDate)
-        && MagnetPrice.IfNaN(0).Abs(level) > rates.Height();
-      if (corridorOk) {
-        MagnetPrice = level;
-        WaveShort.ResetRates(rates);
-      } else if (CorridorStats.Rates != null && CorridorStats.Rates.Any()) {
-        var dateStop = CorridorStats.Rates.LastBC().StartDate;
-        WaveShort.ResetRates(ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateStop).ToArray());
-      } else
-        WaveShort.ResetRates(ratesForCorridor.ReverseIfNot());
-
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
-    }
   }
 }
