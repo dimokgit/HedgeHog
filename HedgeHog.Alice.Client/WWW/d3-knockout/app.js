@@ -328,6 +328,8 @@
             dataViewModel.comboQuantity(x.TradingRatio);
           if (!dataViewModel.expDaysSkip())
             dataViewModel.expDaysSkip(x.OptionsDaysGap);
+          if (dataViewModel.strategyCurrent() != x.Strategy)
+            dataViewModel.strategyCurrent(x.Strategy);
         });
       }, function () {
       }, function () {
@@ -1424,7 +1426,11 @@
     var movingAverageType = this.movingAverageType = ko.observableArray()
     var barsPeriodType = this.barsPeriodType = ko.observableArray()
     var strategyType = this.strategyType = ko.observableArray();
-
+    var strategyCurrent = this.strategyCurrent = ko.observable();
+    strategyCurrent.subscribe(function (s) {
+      if (s)
+        serverCall("setStrategy", [pair, s]);
+    });
     var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
     // #endregion
     // #region GetAccounting

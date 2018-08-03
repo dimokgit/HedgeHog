@@ -755,7 +755,7 @@ namespace HedgeHog.Alice.Client {
               ).OrderBy(oc => oc.order));
           double TryExitDelta(string s) => double.TryParse(s, out var i) ? i : int.MinValue;
         }
-        return new { tm.TradingRatio, tm.OptionsDaysGap };
+        return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "" };
       });
 
     [BasicAuthenticationFilter]
@@ -1008,6 +1008,10 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void ToggleStartDate(string pair, int chartNumber) {
       UseTradingMacro(pair, chartNumber, tm => tm.ToggleCorridorStartDate());
+    }
+    [BasicAuthenticationFilter]
+    public void SetStrategy(string pair, string strategy) {
+      UseTradingMacro(pair, tm => tm.Strategy = EnumUtils.Parse<Strategies>(strategy));
     }
     [BasicAuthenticationFilter]
     public bool ToggleIsActive(string pair, int chartNumber) {

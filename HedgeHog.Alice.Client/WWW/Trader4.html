@@ -1294,6 +1294,7 @@
         <span class="glyphicon glyphicon-resize-vertical"></span>
         <b data-bind="text:d3.format('.2f')(spread)"></b>
         <!-- /ko -->
+        <select data-bind="options:strategyType,optionsText:'text',optionsValue:'text',value:strategyCurrent"></select>
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
       </div>
       <div data-bind="foreach:combosMin" style="display:inline-table">

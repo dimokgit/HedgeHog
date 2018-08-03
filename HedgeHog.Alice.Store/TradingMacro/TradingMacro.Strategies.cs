@@ -96,7 +96,7 @@ namespace HedgeHog.Alice.Store {
       }
     });
     private void StrategyLong() => UseAccountManager(am => {
-      var hasOrders = am.UseOrderContracts(ocs => ocs.Where(o => o.contract.Symbol == Pair && !o.isDone)).Concat().Any();
+      var hasOrders = am.UseOrderContracts(ocs => ocs.Where(o => o.contract.Instrument == Pair && !o.isDone)).Concat().Any();
       if(Trades.IsEmpty() && !hasOrders) {
         TradeConditionsEval()
           .DistinctUntilChanged(td => td)
@@ -104,10 +104,9 @@ namespace HedgeHog.Alice.Store {
           .Take(1)
           .ForEach(_ => {
             var pos = TradingRatio.ToInt();
-            CurrentStraddle?.ForEach(p => {
-              Log = new Exception($"{nameof(StrategyLong)}:{nameof(am.OpenTrade)}:{new { Pair }}");
-              am.OpenTrade(Pair, pos, p.bid, p.bid + CalculateTakeProfit(), true, ServerTime.AddMinutes(10));
-            });
+            Log = new Exception($"{nameof(StrategyLong)}:{nameof(am.OpenTrade)}:{new { Pair }}");
+            var p = CurrentPrice.Bid;
+            am.OpenTrade(Pair, pos, p, CalculateTakeProfit(), true, ServerTime.AddMinutes(10));
           });
       }
     });
@@ -276,12 +275,12 @@ namespace HedgeHog.Alice.Store {
         _SetCorridorDistanceByDistanceIsRunning--;
       }
     }
-/// <summary>
-/// 
-/// </summary>
-/// <param name="revs"></param>
-/// <param name="ratio"></param>
-/// <returns></returns>
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="revs"></param>
+    /// <param name="ratio"></param>
+    /// <returns></returns>
     private static int CalcCountByDistanceRatio(IList<double> revs, double ratio) {
       var ds = revs.Zip(revs.Skip(1), (r1, r2) => r1.Abs(r2)).ToArray();
       var total = ds.Sum() * ratio;
