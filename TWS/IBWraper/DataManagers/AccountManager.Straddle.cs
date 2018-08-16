@@ -189,10 +189,11 @@ namespace IBApp {
 
     #region Options
     //public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count) =>
-    public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count) =>
+    public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count, Func<Contract, bool> filter) =>
       (from cd in IbClient.ReqContractDetailsCached(symbol)
        from price in IbClient.ReqPriceSafe(cd.Summary, 5, false).Select(p => p.ask.Avg(p.bid))
        from option in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count * 2)
+       where filter(option)
        from p in IbClient.ReqPriceSafe(option, 2, true).DefaultIfEmpty()
        let pa = p.ask.Avg(p.bid)
        select (

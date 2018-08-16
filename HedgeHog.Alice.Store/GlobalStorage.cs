@@ -142,7 +142,9 @@ namespace HedgeHog.Alice.Store {
     static ForexDbContext ForexMongoFactory => _ForexMongoFactory ?? (_ForexMongoFactory = new ForexDbContext(mongoConnectionString));
     static object _forexDbContextLocker = new object();
     public static T UseForexMongo<T>(Func<ForexDbContext, T> func) { lock(_forexDbContextLocker) return func(ForexMongoFactory); }
-    public static void UseForexMongo(Action<ForexDbContext> action, bool save = false, Action onSave = null) {
+    public static void UseForexMongo(Action<ForexDbContext> action, bool save, Action onSave)
+      => UseForexMongo(action, save, onSave, null);
+    public static void UseForexMongo(Action<ForexDbContext> action, bool save = false, Action onSave = null, Action<ForexDbContext, Exception> onError = null) {
       var c = ForexMongoFactory;
       lock(_forexDbContextLocker) {
         action(c);
@@ -150,7 +152,8 @@ namespace HedgeHog.Alice.Store {
           try {
             c.SaveChanges();
           } catch(Exception exc) {
-            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
+            if(onError != null) onError(c, exc);
+            else GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
           }
           onSave?.Invoke();
         }

@@ -65,13 +65,20 @@ namespace ConsoleApp {
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7496;
       ibClient.ManagedAccountsObservable.Subscribe(s => {
+        {// VIX
+          ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXQ8", SecType = "FUT", Currency = "USD" })
+          .ToArray()
+          .Select(cds=>cds.Select(cd=>cd.Summary).OrderBy(c=>c.LastTradeDateOrContractMonth))
+          .Subscribe(c => Console.WriteLine(c.ToJson(true)));
+          return;
+        }
+        LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
+        return;
         HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         var am = fw.AccountManager;
-        (from options in am.CurrentOptions("VXX", 0, 2, 3)
+        (from options in am.CurrentOptions("VXX", 0, 2, 3, c => true)
          select options)
         .Subscribe(options => options.ForEach(o => Console.WriteLine(o)));
-        return;
-        LoadHistory(ibClient, new[] { "spy".ContractFactory() });
         return;
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();

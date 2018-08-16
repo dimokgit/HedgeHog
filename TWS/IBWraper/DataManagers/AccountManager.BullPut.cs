@@ -43,10 +43,11 @@ namespace IBApp {
     public IObservable<(Contract contract, Contract[] options)> MakeBullPuts
     (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count, int gap) =>
       IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, (count + gap + 1) * 2)
+      .Where(c => c.IsPut)
       //.Take(count*2)
       .ToArray()
       .SelectMany(reqOptions => {
-        var puts = reqOptions.Where(c => c.Right == "P").OrderBy(o => o.Strike.Abs(price)).Take((count  + gap + 1) * 2).OrderByDescending(c => c.Strike).ToArray();
+        var puts = reqOptions.OrderBy(o => o.Strike.Abs(price)).Take((count + gap + 1) * 2).OrderByDescending(c => c.Strike).ToArray();
         return puts.Zip(puts.Skip(gap + 1), (sell, buy) => new[] { sell, buy })
           .Select(cp => (MakeBullPut(cp), cp))
           .OrderBy(cp => cp.cp.Average(c => c.Strike).Abs(price));

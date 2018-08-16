@@ -84,7 +84,16 @@ namespace IBApp {
     void SetContractSubscription(Contract contract, Action<Contract> callback) {
       _marketDataManager.AddRequest(contract, "233,221,236", callback);
     }
-    public void SetSymbolSubscription(string pair) => SetContractSubscription(ContractSamples.ContractFactory(pair));
+    public void SetSymbolSubscription(string pair) {
+      if(pair.IsFuture()) {
+        var contract = new Contract { LocalSymbol = pair, SecType = "FUT", Currency = "USD" };
+        ReqContractDetailsAsync(contract)
+          .Take(1)
+          .OnEmpty(() => throw new Exception(new { contract, not = "found" } + ""))
+          .Subscribe(cd => SetContractSubscription(cd.Summary));
+      } else
+        SetContractSubscription(ContractSamples.ContractFactory(pair));
+    }
     public bool IsInVirtualTrading { get; set; }
     public DateTime ServerTime => DateTime.Now + _serverTimeOffset;
     public event EventHandler<LoggedInEventArgs> LoggedOff;
@@ -342,7 +351,7 @@ namespace IBApp {
       .Take(1)
       .Do(_ => _ReqOptionChainOldCacheInRun = false);
     }
-    public IObservable<Contract[]> ReqOptionChainOldCache(string sympol, int expirationDaysSkip) =>
+    public IObservable<Contract[]> ReqOptionChainOldCache(string sympol, int expirationDaysSkip, Func<Contract, bool> filter) =>
       ReqOptionChainOldCache(sympol, DateTime.Now.Date.AddDays(expirationDaysSkip));
     public IObservable<Contract> ReqOptionChainOldAsync(string sympol, DateTime expirationDate) {
       var fopDate = expirationDate;

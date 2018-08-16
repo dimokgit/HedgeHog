@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using static HedgeHog.MathCore;
 namespace IBApp {
   public partial class AccountManager {
-    public static (TPositions[] positions, (Contract contract,int positions)contract)[] MakeComboAll<TPositions>(IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, string, bool> filterByTradingClass) =>
+    public static (TPositions[] positions, (Contract contract, int positions) contract)[] MakeComboAll<TPositions>(IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, string, bool> filterByTradingClass) =>
       combosAll
       .Where(c => c.c.IsOption || c.c.IsCombo)
       .GroupBy(combo => (combo.c.Symbol, combo.c.TradingClass, combo.c.Exchange, combo.c.Currency, combo.c.Expiration))
@@ -23,7 +23,17 @@ namespace IBApp {
         )
       )
       .ToArray();
-
+    public static (TPositions[] positions, (Contract contract, int positions) contract)[] MakeUnderlyingComboAll<TPositions>(IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions) {
+      var isUnderCombo = combosAll.Count(c => c.c.IsOption) == 1 && combosAll.Count(c => !c.c.IsOption) == 1;
+      var underCombos = combosAll
+      .GroupBy(combo => combo.c.Symbol)
+      .Where(g => g.Count() > 1)
+      .Select(g => (option: g.Where(c => c.c.IsOption).ToArray(), under: g.Where(c => !c.c.IsOption).ToArray()))
+      .Where(t => t.option.Length == 1 && t.under.Length == 1)
+      .Select(combos => (positions.ToArray(), combos.under.Single()))
+      .ToArray();
+      return underCombos;
+    }
     static ComboLeg ComboLeg((Contract c, int p) combo) =>
       new ComboLeg { ConId = combo.c.ConId, Ratio = combo.p.Abs(), Action = combo.p.Sign() > 0 ? "BUY" : "SELL", Exchange = combo.c.Exchange };
     static IList<ComboLeg> CombosLegs(IEnumerable<(Contract c, int p)> combos) =>
@@ -34,14 +44,14 @@ namespace IBApp {
           => new ComboLeg { ConId = leg.ConId, Ratio = legConId.Sum(l => l.Ratio), Action = leg.Action, Exchange = leg.Exchange }).First()
          ).ToArray();
 
-    static Func<string, string, string, IList<ComboLeg>, (Contract contract,int positions)> MakeComboCache
-      = new Func<string, string, string, IList<ComboLeg>, (Contract contract,int positions)>(MakeCombo)
+    static Func<string, string, string, IList<ComboLeg>, (Contract contract, int positions)> MakeComboCache
+      = new Func<string, string, string, IList<ComboLeg>, (Contract contract, int positions)>(MakeCombo)
       .Memoize(t => (t.Item1, t.Item2, t.Item3, t.Item4.Select(l => $"{l.ConId}{l.Ratio}{l.Action}").Flatter("")));
 
-    static (Contract contract,int positions) MakeCombo(string instrument, string exchange, string currency, IList<ComboLeg> comboLegs) {
+    static (Contract contract, int positions) MakeCombo(string instrument, string exchange, string currency, IList<ComboLeg> comboLegs) {
       var positions = comboLegs.Select(l => l.Ratio).ToArray().GCD();
       comboLegs.ForEach(l => l.Ratio /= positions);
-      var contract =new Contract() {
+      var contract = new Contract() {
         Symbol = instrument,
         SecType = "BAG",
         Exchange = exchange,

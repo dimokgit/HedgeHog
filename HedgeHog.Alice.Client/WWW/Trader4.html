@@ -1249,6 +1249,7 @@
           <td data-bind="text:position"></td>
           <td data-bind="text:d3.format('$.0f')(netPL()),css:{profit:netPL()>0,loss:netPL()<0}"></td>
           <td><!--<input data-bind-removed="value:exit" size="3" />--></td>
+          <td data-bind="text:pmc"></td>
           <td>
             <span data-bind="text:d3.format('.2f')(takeProfit()),event:{click:$parent.showNextInput}"></span>
             <input data-bind="event:{change:$parent.newTakeProfit,blur:$parent.hideNextInput}" size="4" style="display:none;overflow:visible" />
@@ -1286,6 +1287,9 @@
         <label>Qty:</label><input data-bind="value:comboQuantity" size="1" />
         <label>Gap:</label><input data-bind="value:comboGap" size="1" />
         <label>Cmbs#:</label><input data-bind="value:numOfCombos" size="1" />
+        <label><input type="radio" value="S" data-bind="checked: showOptionType" />S</label>
+        <label><input type="radio" value="C" data-bind="checked: showOptionType" />C</label>
+        <label><input type="radio" value="P" data-bind="checked: showOptionType" />P</label>
       </div>
       <div style="display:inline-table">
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>

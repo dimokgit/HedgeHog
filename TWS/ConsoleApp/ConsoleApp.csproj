@@ -69,6 +69,7 @@
     <Reference Include="MongoExtensions, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\AllInOne\packages\MongoExtensions.1.1.0\lib\net462\MongoExtensions.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed" />
     <Reference Include="Passager, Version=0.2.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\AllInOne\packages\Passager.0.2.2\lib\net452\Passager.dll</HintPath>
     </Reference>

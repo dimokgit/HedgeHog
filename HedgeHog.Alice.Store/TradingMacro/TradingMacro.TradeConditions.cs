@@ -2297,7 +2297,11 @@ namespace HedgeHog.Alice.Store {
     }
 
     private IEnumerable<(IBApi.Contract contract, int position, double open, double price, double pipCost)> OpenPuts()
-      => UseAccountManager(am => am.Positions.Where(p => p.position != 0 && p.contract.IsPut)).Concat();
+      => UseAccountManager(am => 
+      from c in IBApi.Contract.FromCache(Pair)
+      join p in am.Positions.Where(p => p.position != 0  && p.contract.IsPut) on c.Symbol equals p.contract.Symbol
+      select p
+      ).Concat();
     private IEnumerable<(IBApi.Contract call, IBApi.Contract put)> OpenStraddles(AccountManager am)
       => from call in am.Positions.Where(p => p.position != 0 && p.contract.IsCall)
          from put in am.Positions.Where(p => p.position != 0 && p.contract.IsPut)

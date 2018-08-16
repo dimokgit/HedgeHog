@@ -571,7 +571,7 @@ namespace HedgeHog.Alice.Client {
 
     static double DaysTillExpiration2(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
     static double DaysTillExpiration(DateTime expiration) => (expiration - DateTime.Now.Date).TotalDays + 1;
-    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip, string[] comboExits) =>
+    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip, string optionTypeMap, string[] comboExits) =>
       UseTraderMacro(pair, tm => {
         int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(expDaysSkip);
         var am = GetAccountManager();
@@ -611,10 +611,11 @@ namespace HedgeHog.Alice.Client {
                 .Subscribe(b => base.Clients.Caller.butterflies(b));
               });
           const int NUB_OF_OPTIONS = 6;
-          Action currentOptions = () =>
+          Action<string> currentOptions = (map) =>
             underContracts
               .ForEach(underContract
-              => am.CurrentOptions(CacheKey(underContract), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, numOfCombos)
+              => am.CurrentOptions(CacheKey(underContract), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, (numOfCombos * 1.5).Ceiling()
+              , c => map.Contains(c.Right))
               .Select(ts => {
                 var underPosition = am.Positions.Where(p => p.contract.Instrument == underContract.Instrument).ToList().FirstOrDefault();
                 var exp = ts.Select(t => new { dte = DaysTillExpiration(t.option.Expiration).Round(1), exp = t.option.LastTradeDateOrContractMonth }).Take(1).ToArray();
@@ -642,13 +643,9 @@ namespace HedgeHog.Alice.Client {
                    };
                  }).OrderBy(t => t.strikeDelta.Abs());
 
-                var puts = options.Where(t => t.cp == "P").Take(numOfCombos).ToArray();
-                puts = (strikeLevel.HasValue ? puts.OrderBy(t => t.strikeDelta) : puts.OrderByDescending(t => t.delta)).ToArray();
-
-                var calls = options.Where(t => t.cp == "C").Take(numOfCombos).ToArray();
-                calls = (strikeLevel.HasValue ? calls.OrderBy(t => t.strikeDelta) : calls.OrderByDescending(t => t.delta)).ToArray();
-
-                return (exp, b: puts.OrderByDescending(x => x.strike).Concat(calls.OrderByDescending(x => x.strike)).ToArray());
+                var puts = options.Where(t => t.cp == "P" && t.strikeDelta < 5);
+                var calls = options.Where(t => t.cp == "C" && t.strikeDelta > -5);
+                return (exp, b: calls.OrderByDescending(x => x.strike).Concat(puts.OrderByDescending(x => x.strike)).ToArray());
               }
               //.ThenBy(t => t.i)
               )
@@ -692,8 +689,9 @@ namespace HedgeHog.Alice.Client {
 
           if(!pair.IsNullOrWhiteSpace())
             OnCurrentCombo(() => {
-              straddles();
-              currentOptions();
+              if(optionTypeMap.Contains("S"))
+                straddles();
+              currentOptions(optionTypeMap);
               openOrders();
               //currentBullPut();
             });
@@ -721,6 +719,7 @@ namespace HedgeHog.Alice.Client {
                       , x.openPrice
                       , x.takeProfit, x.profit, x.orderId
                       , exit = 0, exitDelta = 0
+                      , pmc = x.pmc.ToInt()
                       , color = !hasStrike ? "white"
                       : delta > 0 && x.contract.IsPut
                       ? "#ffd3d9"

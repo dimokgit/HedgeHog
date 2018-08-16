@@ -8,7 +8,7 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using COMBO_TRADES_IMPL = System.Collections.Generic.IEnumerable<(IBApi.Contract contract, int position, double open, double openPrice, double takeProfit, int orderId)>;
-using COMBO_TRADES = System.IObservable<(IBApi.Contract contract, int position, double open, double close, double pl, double underPrice, double strikeAvg, double openPrice, double closePrice, (double bid, double ask) price, double takeProfit, double profit, int orderId)>;
+using COMBO_TRADES = System.IObservable<(IBApi.Contract contract, int position, double open, double close, double pl, double underPrice, double strikeAvg, double openPrice, double closePrice, (double bid, double ask) price, double takeProfit, double profit, double pmc, int orderId)>;
 namespace IBApp {
   public partial class AccountManager {
     public static double priceFromProfit(double profit, double position, int multiplier, double open)
@@ -23,13 +23,21 @@ namespace IBApp {
         let close = (closePrice * c.position * multiplier).Round(4)
         let openPrice = c.open / c.position.Abs() / multiplier
         let isOk = openPrice == c.openPrice ? true : throw new Exception(new { calc = new { openPrice }, c.openPrice } + "")
-        select (c: IbClient.SetContractSubscription(c.contract), c.position, c.open, close
-        , pl: close - c.open, underPrice, strikeAvg: c.contract.ComboStrike()
+        let pmc = Account.ExcessLiquidity / (multiplier * c.position.Abs())
+        select (
+        c: IbClient.SetContractSubscription(c.contract)
+        , c.position
+        , c.open
+        , close
+        , pl: close - c.open
+        , underPrice
+        , strikeAvg: c.contract.ComboStrike()
         , openPrice
         , closePrice
         , price: (price.bid, price.ask)
         , c.takeProfit
         , profit: (c.takeProfit * c.position * multiplier - c.open).Round(2)
+        , pmc
         , c.orderId
         )
         );
@@ -76,5 +84,12 @@ namespace IBApp {
        let open = ca.positions.Sum(p => p.open)
        let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
        select (ca.contract.contract, position: ca.contract.positions, open, openPrice, order.LmtPrice, order.OrderId));
+    //public COMBO_TRADES_IMPL ComboTradesUnder() {
+    //  var positions = Positions.Where(p => p.position != 0).ToArray();
+    //  //var expDate = positions.Select(p => p.contract.Expiration).DefaultIfEmpty().Min();
+    //  //var positionsByExpiration = positions.Where(p => p.contract.Expiration == expDate).ToArray();
+    //  return MakeUnderlyingComboAll(positions.Select(p => (p.contract, p.position)), positions);
+    //}
+
   }
 }

@@ -118,7 +118,7 @@ namespace IBApp {
       , Action<RateLoadingCallbackArgs<TBar>> callBack = null
       ) where TBar : Rate, new() {
 
-      var contract = ContractSamples.ContractFactory(pair);
+      var contract = Contract.FromCache(pair).Count(1, new { pair }).Single();
       var isDone = false;
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);

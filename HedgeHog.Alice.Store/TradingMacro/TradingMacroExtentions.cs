@@ -1118,7 +1118,7 @@ namespace HedgeHog.Alice.Store {
           _currentOptionDisposable = (
             from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
             let priceBid = price.EventArgs.Price.Bid
-            from options in ibWraper.AccountManager.CurrentOptions(Pair, priceBid, ExpDayToSkip(), 3)
+            from options in ibWraper.AccountManager.CurrentOptions(Pair, priceBid, ExpDayToSkip(), 3, c => true)
             where options.Any()
             select (priceBid, options)
             //select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(2).ToList()
@@ -1184,7 +1184,7 @@ namespace HedgeHog.Alice.Store {
       int nextFriday() => (DateTime.Today.GetNextWeekday(DayOfWeek.Friday) - DateTime.Today).TotalDays.ToInt();
       _priceChangeDisposable = (
         from price in _priceChangeObservable
-        from x in ibWraper.AccountManager.CurrentOptions(pair, double.NaN, TradesManagerStatic.ExpirationDaysSkip(0), straddleCount)
+        from x in ibWraper.AccountManager.CurrentOptions(pair, double.NaN, TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, c => true)
         let calls = x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(2)
         let puts = x.Where(t => t.option.IsPut).OrderByDescending(t => t.deltaBid).Take(2)
         select calls.Concat(puts).Where(p => p.deltaBid > 0).ToArray()
@@ -1213,6 +1213,19 @@ namespace HedgeHog.Alice.Store {
             ))
             , saveTime < DateTime.Now
             , () => saveTime = resetSaveTime()
+            , (c, exc) => {
+              Log = exc;
+              try {
+                var e = from h in straddleHistoryDbSet(c)
+                        group h by h._id into g
+                        where g.Count() > 1
+                        select c.Remove(g.First());
+                e.Count();
+                c.SaveChanges();
+              } catch(Exception exc2) {
+                Log = exc2;
+              }
+            }
             ))
           ));
         });
@@ -1226,7 +1239,7 @@ namespace HedgeHog.Alice.Store {
     private long BullCallHistory(IBWraper ibWraper, int shcp, long straddleStartId, long _id, int straddleCount, DateTime saveTime, Action ResetSaveTime) {
       _priceChangeDisposable = (
         from price in _priceChangeObservable
-        from x in ibWraper.AccountManager.CurrentOptions(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), straddleCount)
+        from x in ibWraper.AccountManager.CurrentOptions(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, c => c.IsCall)
         from callBody in x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(1)
         from callWing in x.Where(t => t.option.IsCall && t.strikeAvg <= callBody.strikeAvg - 25).OrderByDescending(t => t.strikeAvg).Take(1)
         select (callBody, callWing)
