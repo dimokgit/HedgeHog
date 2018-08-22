@@ -694,8 +694,8 @@ namespace HedgeHog.Alice.Store {
              from tmMap in tm.UseRates(ra => RatioMap((ra, _priceAvg, null))).ToArray()
              from tmMap2 in tm2.UseRates(ra => RatioMap((ra, getter, tm.VoltsFullScaleMinMax))).ToArray()
              let mm = tmMap2.Zip(tmMap, (r, t) => new { r = t.t.r, r2 = r.t.r, d = t.t.v - r.t.v }).MinMaxBy(t => t.d)
-             let htb = tm.HedgeBuySell(true).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount.Up, 1, 1) }).ToArray()
-             let hts = tm.HedgeBuySell(false).Select(t => new { lots = t.Value.tm.GetLotsToTrade(t.Value.TradeAmount.Down, 1, 1) }).ToArray()
+             let htb = tm.HedgeBuySell(true).Select(t => new { lots = t.tm.GetLotsToTrade(t.TradeAmount.Up, 1, 1) }).ToArray()
+             let hts = tm.HedgeBuySell(false).Select(t => new { lots = t.tm.GetLotsToTrade(t.TradeAmount.Down, 1, 1) }).ToArray()
              where mm.Any() && hts.Any() && htb.Any()
              let t = new[] {
              (profit:(htb[0].lots * mm[1].r.BidLow + (-corrs) * htb[1].lots * mm[1].r2.BidLow) -

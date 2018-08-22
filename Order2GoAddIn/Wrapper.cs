@@ -2793,6 +2793,8 @@ namespace Order2GoAddIn {
 
     public IConnectableObservable<OrderEventArgs> OrderAddedObservable => throw new NotImplementedException();
 
+    public IConnectableObservable<PriceChangedEventArgs> PriceChangedObservable => throw new NotImplementedException();
+
     static object converterLocker = new object();
     DateTime ConvertDateToLocal(DateTime date) {
       return TimeZoneInfo.ConvertTimeFromUtc(date, TimeZoneInfo.Local);

@@ -1183,7 +1183,7 @@ namespace HedgeHog.Alice.Store {
       //var nextFriday = TradesManagerStatic.ExpirationDaysSkip(0);
       int nextFriday() => (DateTime.Today.GetNextWeekday(DayOfWeek.Friday) - DateTime.Today).TotalDays.ToInt();
       _priceChangeDisposable = (
-        from price in _priceChangeObservable
+        from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
         from x in ibWraper.AccountManager.CurrentOptions(pair, double.NaN, TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, c => true)
         let calls = x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(2)
         let puts = x.Where(t => t.option.IsPut).OrderByDescending(t => t.deltaBid).Take(2)
@@ -1238,7 +1238,7 @@ namespace HedgeHog.Alice.Store {
     }
     private long BullCallHistory(IBWraper ibWraper, int shcp, long straddleStartId, long _id, int straddleCount, DateTime saveTime, Action ResetSaveTime) {
       _priceChangeDisposable = (
-        from price in _priceChangeObservable
+        from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
         from x in ibWraper.AccountManager.CurrentOptions(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, c => c.IsCall)
         from callBody in x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(1)
         from callWing in x.Where(t => t.option.IsCall && t.strikeAvg <= callBody.strikeAvg - 25).OrderByDescending(t => t.strikeAvg).Take(1)
@@ -1410,16 +1410,6 @@ namespace HedgeHog.Alice.Store {
     }
     bool HasShutdownStarted { get { return ((bool)GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(new Func<bool>(() => GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.HasShutdownStarted), new object[0])); } }
 
-    public DateTime AddWorkingDays(DateTime start, int workingDates) {
-      var sign = Math.Sign(workingDates);
-      return Enumerable
-          .Range(1, int.MaxValue)
-          .Select(x => start.AddDays(x * sign))
-          .Where(date => date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
-          .Select((date, i) => new { date, i })
-          .SkipWhile(a => a.i <= workingDates.Abs())
-          .First().date;
-    }
     class BarsBuffer {
       List<Rate> _buffer = new List<Rate>();
       private DateTime _lastDate;
@@ -1509,7 +1499,7 @@ namespace HedgeHog.Alice.Store {
         if(!IsInVirtualTrading)
           UnSubscribeToTradeClosedEVent(TradesManager);
         SetPlayBackInfo(true, args.DateStart.GetValueOrDefault(), args.DelayInSeconds.FromSeconds());
-        var dateStartDownload = AddWorkingDays(args.DateStart.Value, -(BarsCountCount() / 1440.0).Ceiling());
+        var dateStartDownload = args.DateStart.Value.AddWorkingDays(-(BarsCountCount() / 1440.0).Ceiling());
         var actionBlock = new ActionBlock<Action>(a => a());
         var dbBarPeriod = BarPeriodInt.Max(0);
         Action<RateLoadingCallbackArgs<Rate>> cb = callBackArgs => PriceHistory.SaveTickCallBack(dbBarPeriod, Pair, o => Log = new Exception(o + ""), actionBlock, callBackArgs);

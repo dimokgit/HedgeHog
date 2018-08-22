@@ -352,7 +352,7 @@ namespace IBApp {
       .Do(_ => _ReqOptionChainOldCacheInRun = false);
     }
     public IObservable<Contract[]> ReqOptionChainOldCache(string sympol, int expirationDaysSkip, Func<Contract, bool> filter) =>
-      ReqOptionChainOldCache(sympol, DateTime.Now.Date.AddDays(expirationDaysSkip));
+      ReqOptionChainOldCache(sympol, DateTime.Now.Date.AddWorkingDays(expirationDaysSkip));
     public IObservable<Contract> ReqOptionChainOldAsync(string sympol, DateTime expirationDate) {
       var fopDate = expirationDate;
       Trace(new { fopDate });
@@ -377,7 +377,7 @@ namespace IBApp {
     }
     public IObservable<Contract> ReqCurrentOptionsAsync
       (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount) {
-      var expStartDate = ServerTime.Date.AddDays(expirationDaysSkip);
+      var expStartDate = ServerTime.Date.AddBusinessDays(expirationDaysSkip);
       return ReqOptionChainOldCache(symbol, expStartDate)
           .Select(a => a.OrderBy(c => c.Strike.Abs(price)).ThenBy(c => c.Right).Select((o, i) => (i, o))
           .ToArray())
@@ -387,7 +387,7 @@ namespace IBApp {
 
     public IObservable<Contract> ReqCurrentOptionsFastAsync
       (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount) {
-      var expStartDate = ServerTime.Date.AddDays(expirationDaysSkip);
+      var expStartDate = ServerTime.Date.AddWorkingDays(expirationDaysSkip);
       var x = (
                 from t in ReqOptionChainCache(symbol)
                 from strike in t.strikes.OrderBy(st => st.Abs(price)).Take(strikesCount * 2).Select((s, i) => (s, i)).ToArray()

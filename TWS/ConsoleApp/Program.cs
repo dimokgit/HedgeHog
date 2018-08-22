@@ -63,12 +63,13 @@ namespace ConsoleApp {
       var contract = spy;
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7496;
+      const int twsPort = 7497;
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         {// VIX
-          ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXQ8", SecType = "FUT", Currency = "USD" })
+          ibClient.ReqContractDetailsAsync(new Contract { Symbol = "ES", SecType = "FUT", Currency = "USD" })
+          //ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXQ8", SecType = "FUT", Currency = "USD" })
           .ToArray()
-          .Select(cds=>cds.Select(cd=>cd.Summary).OrderBy(c=>c.LastTradeDateOrContractMonth))
+          .Select(cds => cds.Select(cd => cd.Summary).OrderBy(c => c.LastTradeDateOrContractMonth))
           .Subscribe(c => Console.WriteLine(c.ToJson(true)));
           return;
         }

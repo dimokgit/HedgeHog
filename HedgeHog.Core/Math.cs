@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using FluentDate;
 namespace HedgeHog {
   public static class MathCore {
     public static int Max(this int d1, int d2) {
@@ -184,7 +184,7 @@ namespace HedgeHog {
       return d1 < d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
     }
     public static bool Between(this DateTime value, DateTime[] d) {
-      return value.Between(d[0],d[1]);
+      return value.Between(d[0], d[1]);
     }
     public static bool Between(this DateTime value, DateTime d1, DateTime d2) {
       return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
@@ -327,6 +327,60 @@ namespace HedgeHog {
       int daysToAdd = ((int)day - (int)start.DayOfWeek + 7) % 7;
       return start.AddDays(daysToAdd);
     }
+    public static bool isWeekend(this DateTime from) {
+      return from.DayOfWeek == DayOfWeek.Saturday || from.DayOfWeek == DayOfWeek.Sunday;
+    }
+    public static int GetWorkingDays(this DateTime from, DateTime to) {
+      var dayDifference = (int)to.Subtract(from).TotalDays;
+      return Enumerable
+          .Range(1, dayDifference)
+          .Select(x => from.AddDays(x))
+          .Count(x => x.DayOfWeek != DayOfWeek.Saturday && x.DayOfWeek != DayOfWeek.Sunday);
+    }
+    public static DateTime AddWorkingDays(this DateTime start, int workingDates) {
+      if(start.isWeekend() && workingDates == 0)
+        workingDates = 1;
+      var sign = Math.Sign(workingDates);
+      return Enumerable
+          .Range(1, int.MaxValue)
+          .Select(x => start.AddDays(x * sign))
+          .Where(date => date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
+          .Select((date, i) => new { date, i })
+          .SkipWhile(a => a.i <= workingDates.Abs())
+          .First().date;
+    }
+    /// <summary>
+    /// Adds the given number of business days to the <see cref="DateTime"/>.
+    /// </summary>
+    /// <param name="current">The date to be changed.</param>
+    /// <param name="days">Number of business days to be added.</param>
+    /// <returns>A <see cref="DateTime"/> increased by a given number of business days.</returns>
+    public static DateTime AddBusinessDays(this DateTime current, int days) {
+      var sign = days == 0 ? 1 : Math.Sign(days);
+      var unsignedDays = Math.Abs(days);
+      while(current.DayOfWeek == DayOfWeek.Saturday || current.DayOfWeek == DayOfWeek.Sunday) {
+        current = current.AddDays(sign);
+      }
+      for(var i = 0; i < unsignedDays; i++) {
+        do {
+          current = current.AddDays(sign);
+        }
+        while(current.DayOfWeek == DayOfWeek.Saturday ||
+            current.DayOfWeek == DayOfWeek.Sunday);
+      }
+      return current;
+    }
+
+    /// <summary>
+    /// Subtracts the given number of business days to the <see cref="DateTime"/>.
+    /// </summary>
+    /// <param name="current">The date to be changed.</param>
+    /// <param name="days">Number of business days to be subtracted.</param>
+    /// <returns>A <see cref="DateTime"/> increased by a given number of business days.</returns>
+    public static DateTime SubtractBusinessDays(this DateTime current, int days) {
+      return AddBusinessDays(current, -days);
+    }
+
     /// <summary>
     /// Returns Slope from regression coeffisients array of two values
     /// </summary>

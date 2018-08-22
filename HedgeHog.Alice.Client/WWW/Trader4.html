@@ -1245,7 +1245,7 @@
           <td data-bind="text:d3.format('.2f')(openPrice())"></td>
           <td data-bind="text:d3.format('.2f')(closePrice())"></td>
           <!--<td data-bind1="text:d3.format('.2f')(bid())"></td>
-          <td data-bind1="text:d3.format('.2f')(ask())"></td>-->
+        <td data-bind1="text:d3.format('.2f')(ask())"></td>-->
           <td data-bind="text:position"></td>
           <td data-bind="text:d3.format('$.0f')(netPL()),css:{profit:netPL()>0,loss:netPL()<0}"></td>
           <td><!--<input data-bind-removed="value:exit" size="3" />--></td>
@@ -1260,6 +1260,19 @@
           <td>
             <button data-bind="click:$parent.closeCombo.bind(null,combo)" title="Close Position">X</button>
           </td>
+        </tr>
+      </tbody>
+    </table>
+    <table class="orders" cellpadding="0" cellspacing="0" border="1">
+      <tbody data-bind="foreach:hedgeOptions">
+        <tr>
+          <td data-bind="text:name"></td>
+          <td data-bind="text:qty"></td>
+          <td data-bind="text:d3.format('$.2f')(ask())"></td>
+          <td data-bind="text:d3.format('$.0f')(loss())"></td>
+          <td data-bind="text:lossPoints"></td>
+          <td data-bind="text:lppd"></td>
+          <td data-bind="text:wds()+'wd'"></td>
         </tr>
       </tbody>
     </table>
@@ -1338,8 +1351,8 @@
         </td>
         <td>></td>
         <!--<td>Up</td>
-  <td>Dn</td>
-  <td>Avg</td>-->
+      <td>Dn</td>
+      <td>Avg</td>-->
         <td>PL%</td>
         <td>Perc</td>
         <td>Delta</td>
@@ -1354,8 +1367,8 @@
         <td data-bind="text:i,css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
         <td data-bind="text:d3.format('+.1f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
         <!--<td data-bind1="text:d3.format('.1f')(be.up())"></td>
-  <td data-bind1="text:d3.format('.1f')(be.dn())"></td>
-  <td data-bind1="text:d3.format('.2f')(avg())"></td>-->
+      <td data-bind1="text:d3.format('.1f')(be.dn())"></td>
+      <td data-bind1="text:d3.format('.2f')(avg())"></td>-->
         <td data-bind="text:d3.format('.2f')(maxPlPerc())"></td>
         <td data-bind="text:d3.format('.2f')(perc())"></td>
         <td data-bind="text:d3.format('.2f')(delta())"></td>

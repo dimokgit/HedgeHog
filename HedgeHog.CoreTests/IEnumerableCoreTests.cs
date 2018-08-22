@@ -48,5 +48,15 @@ namespace HedgeHog.Tests {
       Assert.AreEqual(3, new[] { 1, 2 }.SingleOrElse(() => 3));
       Assert.AreEqual(3, new[] { 3 }.SingleOrElse(() => 3));
     }
+
+    [TestMethod()]
+    public void AddBusinessDays() {
+      var start = DateTime.Now.Date.AddDays(4);
+      Assert.AreEqual(start.AddDays(2), start.AddBusinessDays(0));
+      Assert.AreEqual(start.AddDays(3), start.AddBusinessDays(1));
+      start = DateTime.Now.Date;
+      Assert.AreEqual(start.AddDays(2), start.AddBusinessDays(2));
+      Assert.AreEqual(start.AddDays(7), start.AddBusinessDays(5));
+    }
   }
 }

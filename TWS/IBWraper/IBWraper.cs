@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -37,13 +38,23 @@ namespace IBApp {
     #region ctor
     static IBWraper() {
       _orderAddedSubject = new Subject<OrderEventArgs>();
+      _priceChangedSubject = new Subject<PriceChangedEventArgs>();
     }
     public IBWraper(ICoreFX coreFx, Func<Trade, double> commissionByTrade) {
       CommissionByTrade = commissionByTrade;
-      var hot = _orderAddedSubject.Publish();
-      hot.Connect();
-      OrderAddedObservable = hot.Replay();
-      OrderAddedObservable.Connect();
+
+      {
+        var hot = _orderAddedSubject.Publish();
+        hot.Connect();
+        OrderAddedObservable = hot.Replay();
+        OrderAddedObservable.Connect();
+      }
+      {
+        var hot = _priceChangedSubject.Publish();
+        hot.Connect();
+        PriceChangedObservable = hot.Replay();
+        PriceChangedObservable.Connect();
+      }
 
       CoreFX = coreFx;
       _ibClient = (IBClientCore)CoreFX;
@@ -251,6 +262,7 @@ namespace IBApp {
     void RaisePriceChanged(Price price, Account account, IList<Trade> trades) {
       var e = new PriceChangedEventArgs(price, account, trades);
       PriceChangedEvent?.Invoke(this, e);
+      //_priceChangedSubject.OnNext(e);
     }
 
     public void RaisePriceChanged(Price price) {
@@ -260,6 +272,9 @@ namespace IBApp {
 
     #region OrderAddedEvent
     public static Subject<OrderEventArgs> _orderAddedSubject { get; set; }
+
+    private static readonly Subject<PriceChangedEventArgs> _priceChangedSubject;
+
     public IConnectableObservable<OrderEventArgs> OrderAddedObservable { get; private set; }
 
     event EventHandler<OrderEventArgs> OrderAddedEvent;
@@ -393,6 +408,7 @@ namespace IBApp {
     }
 
     public bool IsInTest { get; set; }
+    public IConnectableObservable<PriceChangedEventArgs> PriceChangedObservable { get; }
 
     public event EventHandler<OrderEventArgs> OrderChanged;
     public event EventHandler<RequestEventArgs> RequestFailed;

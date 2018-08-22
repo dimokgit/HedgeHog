@@ -2237,7 +2237,6 @@ namespace HedgeHog.Alice.Store {
             .ForEach(e => {
               var isBuy = e.eval.HasUp();
               if(!HedgeBuySell(isBuy)
-                .Select(x => x.Value)
                 .Select(t => t.tm.HaveTrades(t.IsBuy))
                 .Any(b => b)) {
                 if(CanOpenTradeByDirection(isBuy))

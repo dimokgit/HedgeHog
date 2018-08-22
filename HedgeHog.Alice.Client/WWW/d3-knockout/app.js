@@ -318,7 +318,8 @@
     var comboExits = dataViewModel.liveStraddles().map(function (c) {
       return ko.unwrap(c.combo) + "," + ko.unwrap(c.exit) + "," + ko.unwrap(c.exitDelta);
     });
-    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), dataViewModel.expDaysSkip() || 0, dataViewModel.showOptionType(), comboExits];
+    var expDaysSkip = dataViewModel.expDaysSkip() || 0;
+    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), comboExits];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
@@ -890,6 +891,7 @@
     }
 
     this.stockOptionsInfo = ko.mapping.fromJS(ko.observableArray());
+    this.hedgeOptions = ko.mapping.fromJS(ko.observableArray());
     this.showOptionType = ko.observable("P");
     this.showOptionType.subscribe(function () { this.showButterflies() }.bind(this));
     this.orders = ko.mapping.fromJS(ko.observableArray());
@@ -1909,6 +1911,9 @@
     };
     chat.client.stockOptionsInfo = function (stockOptionsInfo) {
       ko.mapping.fromJS(stockOptionsInfo, {}, dataViewModel.stockOptionsInfo);
+    };
+    chat.client.hedgeOptions = function (hedgeOptions) {
+      ko.mapping.fromJS(hedgeOptions, {}, dataViewModel.hedgeOptions);
     };
 
     //stockOptionsInfo

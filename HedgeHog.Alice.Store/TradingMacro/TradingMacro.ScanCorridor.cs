@@ -33,14 +33,6 @@ namespace HedgeHog.Alice.Store {
 
     private const string MULTI_VALUE_SEPARATOR = ";";
     private const double TLsOverlap = 0.9;
-    public int GetWorkingDays(DateTime from, DateTime to) {
-      var dayDifference = (int)to.Subtract(from).TotalDays;
-      return Enumerable
-          .Range(1, dayDifference)
-          .Select(x => from.AddDays(x))
-          .Count(x => x.DayOfWeek != DayOfWeek.Saturday && x.DayOfWeek != DayOfWeek.Sunday);
-    }
-
 
     static double[] EMPTY_DOUBLE = new double[0];
     public IEnumerable<T> VoltageHigh<T>(Func<double, T> func) => GetVoltageHigh().Select(func);

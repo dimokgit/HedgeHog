@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP
+using TM_HEDGE = System.Collections.Generic.IEnumerable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP
   , (double All, double Up, double Down) TradeRatio
   , (double All, double Up, double Down) TradeRatioM1
   , (double All, double Up, double Down) TradeAmount
@@ -16,7 +16,7 @@ using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string P
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    public IEnumerable<TM_HEDGE> HedgeBuySell(bool isBuy) =>
+    public TM_HEDGE HedgeBuySell(bool isBuy) =>
       (TradesManager?.GetAccount()?.Equity * TradingRatio / 2).YieldNotNull(equity => {
         var hbss = (from tmh in GetHedgedTradingMacros(Pair)
                     from corr in tmh.tm.TMCorrelation(tmh.tmh)
@@ -41,7 +41,7 @@ namespace HedgeHog.Alice.Store {
                     HVPR: (x.hvpr * 100).AutoRound2(3),
                     HVPM1R: (x.hvpM1r * 100).AutoRound2(3)
                     ));
-        return hbss.Select(hbs => new TM_HEDGE(hbs));
+        return hbss;
       }).Concat();
 
     public void OpenHedgedTrades(bool isBuy, bool closeOnly, string reason) {
@@ -49,7 +49,6 @@ namespace HedgeHog.Alice.Store {
         AdjustHedgedTrades(isBuy, reason);
       else {
         var hbs = HedgeBuySell(isBuy)
-        .Select(x => x.Value)
         .OrderByDescending(tm => tm.Pair == Pair)
         .ToArray();
 
@@ -71,7 +70,6 @@ namespace HedgeHog.Alice.Store {
     public void AdjustHedgedTrades(bool isBuy, string reason) {
       var exc = new Exception($"{nameof(AdjustHedgedTrades)}: there is no hadged trades to adjust.");
       var hbs = HedgeBuySell(isBuy)
-        .Select(x => x.Value)
         .OrderByDescending(tm => tm.Pair == Pair)
         .Select(t => (t.Pair, Position: t.Lot.HedgedPositionAll(t.IsBuy)))
         .ToArray();

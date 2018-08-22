@@ -51,6 +51,7 @@ namespace HedgeHog.Shared {
   }
   public interface IPricer {
     event EventHandler<PriceChangedEventArgs> PriceChanged;
+    IConnectableObservable<PriceChangedEventArgs> PriceChangedObservable { get; }
   }
   public interface ITradesManager :IPricer {
     ICoreFX CoreFX { get; set; }
@@ -206,7 +207,7 @@ namespace HedgeHog.Shared {
 
 
   public static class TradesManagerStatic {
-    public static int ExpirationDaysSkip(int start) => DateTime.Now.InNewYork().TimeOfDay > new TimeSpan(16, 0, 0) ? start + 1 : start;
+    public static int ExpirationDaysSkip(int start) => !DateTime.Now.InNewYork().isWeekend() && DateTime.Now.InNewYork().TimeOfDay > new TimeSpan(16, 0, 0) ? start + 1 : start;
     public static IMapper TradeMapper() => TradeMapper(opt => opt);//.ForMember(t => t.TradesManager, o => o.Ignore()));
     public static IMapper TradeMapper(Func<IMappingExpression<Trade, Trade>, IMappingExpression<Trade, Trade>> opt)
       => new MapperConfiguration(cfg => opt(cfg.CreateMap<Trade, Trade>())).CreateMapper();

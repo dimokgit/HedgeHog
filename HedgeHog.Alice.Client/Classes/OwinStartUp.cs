@@ -28,8 +28,7 @@ using HedgeHog.Bars;
 using Microsoft.Owin.Security;
 using Microsoft.AspNet.SignalR.Hubs;
 using static HedgeHog.Core.JsonExtensions;
-using TM_HEDGE_OLD = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP, double TradeRatio, double TradeAmount, double MMR, int Lot, double Pip, int Corr, bool IsBuy)>;
-using TM_HEDGE = System.Nullable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP
+using TM_HEDGE = System.Collections.Generic.IEnumerable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP
   , (double All, double Up, double Down) TradeRatio
   , (double All, double Up, double Down) TradeRatioM1
   , (double All, double Up, double Down) TradeAmount
@@ -469,7 +468,6 @@ namespace HedgeHog.Alice.Client {
           }).ToArray();
         return new {
           hrs = hbss
-          .Select(x => x.Value)
           .Select(t => new {
             t.Pair,
             HV = t.HV.AutoRound2(3),
@@ -501,7 +499,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    IEnumerable<TM_HEDGE> HedgeBuySell(string pair, bool isBuy) {
+    TM_HEDGE HedgeBuySell(string pair, bool isBuy) {
       return from hbs in UseTraderMacro(pair, tm => tm.HedgeBuySell(isBuy))
              from bs in hbs
              select bs;
@@ -520,7 +518,6 @@ namespace HedgeHog.Alice.Client {
         time = trader.Value.TradesManager.ServerTime.AddSeconds(-1);
       var trm = trader.Value.TradesManager;
       TradingMacro.HedgeTradesVirtual.Add(HedgeBuySell(pair, isBuy)
-       .Select(x => x.Value)
        .OrderByDescending(tm => tm.Pair == pair)
        .ToArray()
        .Select(t => {
@@ -610,15 +607,40 @@ namespace HedgeHog.Alice.Client {
                 })
                 .Subscribe(b => base.Clients.Caller.butterflies(b));
               });
-          const int NUB_OF_OPTIONS = 6;
+          var sl = strikeLevel.GetValueOrDefault(double.NaN);
+          var noc = (numOfCombos * 1.5).Ceiling();
+
+          am.CurrentOptions("VIX", sl, expirationDaysSkip * 3, 3, c => c.Right == "C")
+          .Select(ts => {
+            var call = ts.Where(t => t.strikeAvg > t.underPrice).OrderBy(t => t.strikeAvg).Take(1);
+            return call.Select(t => {
+              var underMult = underContracts[0].ComboMultiplier;
+              var hedge = HedgeBuySell(pair, true).ToArray();
+              var hedgeQty = (quantity * underMult * hedge[0].TradeRatioM1.All / hedge[1].TradeRatioM1.All / t.option.ComboMultiplier).ToInt();
+              var loss = t.ask * hedgeQty * t.option.ComboMultiplier;
+              var lossPoints = (loss / quantity / underMult).ToInt();
+              var wds = DateTime.Now.Date.GetWorkingDays(t.option.Expiration);
+              return new {
+                name = t.option.LocalSymbol,
+                qty = hedgeQty,
+                t.ask,
+                loss,
+                lossPoints,
+                lppd = ((double)lossPoints / wds).AutoRound2(2),
+                wds
+              };
+            })
+            .ToArray();
+          })
+          .Subscribe(x => base.Clients.Caller.hedgeOptions(x));
+
           Action<string> currentOptions = (map) =>
             underContracts
               .ForEach(underContract
-              => am.CurrentOptions(CacheKey(underContract), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, (numOfCombos * 1.5).Ceiling()
-              , c => map.Contains(c.Right))
+              => am.CurrentOptions(CacheKey(underContract), sl, expirationDaysSkip, noc, c => map.Contains(c.Right))
               .Select(ts => {
                 var underPosition = am.Positions.Where(p => p.contract.Instrument == underContract.Instrument).ToList().FirstOrDefault();
-                var exp = ts.Select(t => new { dte = DaysTillExpiration(t.option.Expiration).Round(1), exp = t.option.LastTradeDateOrContractMonth }).Take(1).ToArray();
+                var exp = ts.Select(t => new { dte = DateTime.Now.Date.GetWorkingDays(t.option.Expiration), exp = t.option.LastTradeDateOrContractMonth }).Take(1).ToArray();
                 var options = ts
                  .Select(t => {
                    var maxPL = t.deltaBid * quantity * t.option.ComboMultiplier;
@@ -795,7 +817,7 @@ namespace HedgeHog.Alice.Client {
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
         UseTraderMacro(pair, tm =>
          tm.HistoricalVolatilityByPips().ForEach(hv
-         => am.OpenLimitOrder(contract, quantity, hv, useMarketPrice, true)));
+         => am.OpenLimitOrder(contract, quantity, hv, useMarketPrice, false)));
       else
         throw new Exception(new { instrument, not = "found" } + "");
     }
