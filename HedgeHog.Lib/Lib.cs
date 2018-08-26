@@ -766,7 +766,7 @@ namespace HedgeHog {
       return d.Round((digits - digitsReal).Max(0));
     }
     public static double? RoundBySample(this double v, double sample) {
-      return Math.Round(v / sample, 1) * sample;
+      return Math.Round(v / sample, 0) * sample;
     }
     public static double? RoundBySqrt(this double v, int decimals) {
       return Math.Round(Math.Sqrt(v), decimals);

@@ -49,7 +49,9 @@ namespace HedgeHog.Alice.Store {
           var p = period == 0 ? 1 / 60.0 : period;
           dateStart = q.LocalDateTime.Add(p.FromMinutes());
         }
-        fw.GetBarsBase(pair, period, 0, dateStart.Max(DateTime.Now.AddYears(-1)), DateTime.Now, new List<Rate>(), null, showProgress);
+        if(period == 0)
+          dateStart = dateStart.Max(DateTime.Now.AddYears(-1));
+        fw.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
       } catch(Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
@@ -64,13 +66,20 @@ namespace HedgeHog.Alice.Store {
       //context.Configuration.AutoDetectChangesEnabled = false;
       context.Configuration.ValidateOnSaveEnabled = false;
       Action a = () =>
-        args.NewRates.Distinct().Do(t => {
+        args.NewRates.Distinct(r => r.StartDate2).Do(t => {
           context.t_Bar.Add(FillBar(period, pair, context.t_Bar.Create(), t));
         }).TakeLast(1)
         .ForEach(_ => {
           try {
             context.SaveConcurrent();
-          } catch(Exception exc) {
+          } 
+          catch(System.Data.Entity.Infrastructure.DbUpdateException exc) when(exc.InnerException is System.Data.Entity.Core.UpdateException) {
+            // get failed entries
+            var entries = exc.Entries;
+            foreach(var entry in entries) {
+              // change state to remove it from context 
+              entry.State = System.Data.Entity.EntityState.Detached;
+            }
             progressCallback?.Invoke(exc);
           }
           context.Dispose();

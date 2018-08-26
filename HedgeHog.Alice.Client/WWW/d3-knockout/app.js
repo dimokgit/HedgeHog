@@ -91,6 +91,22 @@
     });
     return defaulted;
   };
+  ko.extenders.persist = function (target, key) {
+    var initialValue = target();
+    // Load existing value from localStorage if set
+    if (typeof (localStorage) === "undefined") return;
+    if (key && localStorage.getItem(key) !== null) {
+      try {
+        target(JSON.parse(localStorage.getItem(key)));
+      } catch (e) {
+      }
+    }
+    // Subscribe to new values and add them to localStorage
+    target.subscribe(function (newValue) {
+      localStorage.setItem(key, ko.toJSON(newValue));
+    });
+    return target;
+  };
   //#endregion
   // #region Globals
   "use strict";
@@ -319,7 +335,8 @@
       return ko.unwrap(c.combo) + "," + ko.unwrap(c.exit) + "," + ko.unwrap(c.exitDelta);
     });
     var expDaysSkip = dataViewModel.expDaysSkip() || 0;
-    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), comboExits];
+    var hedgeDate = dataViewModel.hedgeVirtualDate();
+    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, comboExits];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
@@ -853,9 +870,9 @@
     this.toggleComboCurrentStrikeLevel = function () {
       self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? self.priceAvg() : "");
     }
-    this.comboGap = ko.observable(1);
+    this.comboGap = ko.observable(1).extend({ persis: "comboGap" });
     this.comboGap.subscribe(refreshCombos);
-    this.numOfCombos = ko.observable(0);
+    this.numOfCombos = ko.observable(0).extend({ persis: "numOfCombos" });
     this.numOfCombos.subscribe(refreshCombos);
     function refreshCombos(v) {
       readCombos(true);

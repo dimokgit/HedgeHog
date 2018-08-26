@@ -150,7 +150,7 @@ namespace IBApp {
       if(reqId == _reqId) {
         var date2 = date.FromTWSString();
         if(date2 < _endDate)
-          _endDate = date2;
+          _endDate = _contract.Symbol == "VIX" && date2.TimeOfDay==new TimeSpan(3,15,0) ? date2.Round(MathCore.RoundTo.Hour) : date2;
         _list2.Add(_map(date2, open, high, low, close, volume, count));
       }
     }
@@ -168,7 +168,7 @@ namespace IBApp {
         string whatToShow = _contract.IsIndex() ? "TRADES" : "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         var ls = _contract.LocalSymbol ?? _contract.Symbol ?? "";
-        var useRTH = !ls.IsOption() && !ls.IsCurrenncy() && !ls.IsFuture() && !ls.IsETF() && !ls.IsIndex() && _timeUnit != TimeUnit.S;
+        var useRTH = true;// !ls.IsOption() && !ls.IsCurrenncy() && !ls.IsFuture() && !ls.IsETF() && !ls.IsIndex() && _timeUnit != TimeUnit.S;
         _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, new List<TagValue>());
       } catch(Exception exc) {
         _error(exc);

@@ -101,7 +101,7 @@ namespace HedgeHog.Alice.Client {
       app.UseCors(CorsOptions.AllowAll);
       Action<RemoteControlModel> setAuthScheme = rc => {
         if(!rc.IsInVirtualTrading) {
-          httpListener().AuthenticationSchemes = AuthenticationSchemes.IntegratedWindowsAuthentication;
+          httpListener().AuthenticationSchemes = AuthenticationSchemes.Anonymous;
         }
       };
       setAuthScheme?.Invoke(remoteControl.Value);
@@ -568,7 +568,7 @@ namespace HedgeHog.Alice.Client {
 
     static double DaysTillExpiration2(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
     static double DaysTillExpiration(DateTime expiration) => (expiration - DateTime.Now.Date).TotalDays + 1;
-    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip, string optionTypeMap, string[] comboExits) =>
+    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip, string optionTypeMap,DateTime hedgeDate, string[] comboExits) =>
       UseTraderMacro(pair, tm => {
         int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(expDaysSkip);
         var am = GetAccountManager();
@@ -610,9 +610,10 @@ namespace HedgeHog.Alice.Client {
           var sl = strikeLevel.GetValueOrDefault(double.NaN);
           var noc = (numOfCombos * 1.5).Ceiling();
 
-          am.CurrentOptions("VIX", sl, expirationDaysSkip * 3, 3, c => c.Right == "C")
+          var hedgeSkipDates = DateTime.Now.Date.GetWorkingDays(hedgeDate);
+          am.CurrentOptions("VIX", sl, hedgeSkipDates, 5, c => c.Right == "C")
           .Select(ts => {
-            var call = ts.Where(t => t.strikeAvg > t.underPrice).OrderBy(t => t.strikeAvg).Take(1);
+            var call = ts.Where(t => t.strikeAvg > t.underPrice.RoundBySample(0.5)).OrderBy(t => t.strikeAvg).Skip(1).Take(1).ToList();
             return call.Select(t => {
               var underMult = underContracts[0].ComboMultiplier;
               var hedge = HedgeBuySell(pair, true).ToArray();

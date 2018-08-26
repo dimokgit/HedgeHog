@@ -21,6 +21,7 @@ using System.Reactive.Concurrency;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Reactive;
+using HedgeHog.Alice.Store;
 
 namespace ConsoleApp {
   class Program {
@@ -65,6 +66,10 @@ namespace ConsoleApp {
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7497;
       ibClient.ManagedAccountsObservable.Subscribe(s => {
+        ibClient.ReqContractDetailsCached("VIX")
+        .Subscribe(_ => PriceHistory.AddTicks(fw, 1, "VIX", DateTime.Now.AddYears(-5), o => HandleMessage(o + "")));
+        return;
+        LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
         {// VIX
           ibClient.ReqContractDetailsAsync(new Contract { Symbol = "ES", SecType = "FUT", Currency = "USD" })
           //ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXQ8", SecType = "FUT", Currency = "USD" })
@@ -73,8 +78,6 @@ namespace ConsoleApp {
           .Subscribe(c => Console.WriteLine(c.ToJson(true)));
           return;
         }
-        LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
-        return;
         HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         var am = fw.AccountManager;
         (from options in am.CurrentOptions("VXX", 0, 2, 3, c => true)
