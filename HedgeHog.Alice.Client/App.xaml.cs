@@ -47,8 +47,9 @@ namespace HedgeHog.Alice.Client {
           var trader = container.GetExportedValue<TraderModel>();
           if(trader.IpPort > 0) {
             trader.IpPortActual = trader.IpPort;
+            var protocol = trader.IpPort == 443 ? "https" : "http";
             while(true) {
-              string url = "http://+:" + trader.IpPortActual + "/";
+              string url = $"{protocol}://+:{trader.IpPortActual}/";
               GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new { trying = new { url } }));
               try {
                 _webApp = WebApp.Start<StartUp>(url);

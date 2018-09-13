@@ -330,8 +330,11 @@ namespace HedgeHog {
     public static bool isWeekend(this DateTime from) {
       return from.DayOfWeek == DayOfWeek.Saturday || from.DayOfWeek == DayOfWeek.Sunday;
     }
+    public static int GetWorkingDays(this DateTime from, int days) => from.GetWorkingDays(from.AddDays(days));
     public static int GetWorkingDays(this DateTime from, DateTime to) {
       var dayDifference = (int)to.Subtract(from).TotalDays;
+      if(dayDifference < 0) throw new ArgumentException(new { dayDifference, @is = "negative" } + "");
+      if(dayDifference == 0) return 0;
       return Enumerable
           .Range(1, dayDifference)
           .Select(x => from.AddDays(x))

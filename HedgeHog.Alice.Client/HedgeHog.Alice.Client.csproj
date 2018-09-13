@@ -1747,6 +1747,8 @@
     <Content Include="WWW\index.html" />
     <Resource Include="WWW\Scripts\AUTHORS.txt" />
     <Content Include="WWW\Scripts\bootstrap-notify.min.js" />
+    <Content Include="WWW\Scripts\bootstrap-toggle.min.css" />
+    <Content Include="WWW\Scripts\bootstrap-toggle.min.js" />
     <Content Include="WWW\Scripts\cldr.js" />
     <Content Include="WWW\Scripts\cldr\event.js" />
     <Content Include="WWW\Scripts\cldr\supplemental.js" />

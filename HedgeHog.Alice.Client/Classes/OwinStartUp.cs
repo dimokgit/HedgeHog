@@ -101,7 +101,7 @@ namespace HedgeHog.Alice.Client {
       app.UseCors(CorsOptions.AllowAll);
       Action<RemoteControlModel> setAuthScheme = rc => {
         if(!rc.IsInVirtualTrading) {
-          httpListener().AuthenticationSchemes = AuthenticationSchemes.Anonymous;
+          httpListener().AuthenticationSchemes = AuthenticationSchemes.IntegratedWindowsAuthentication;
         }
       };
       setAuthScheme?.Invoke(remoteControl.Value);
@@ -117,6 +117,12 @@ namespace HedgeHog.Alice.Client {
                 GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
               }
             });
+
+          var localPath = context.Request.Path.Value.ToLower();
+          Debug.WriteLine(new { localPath });
+          if(localPath == "/signalr/connect")
+            context.Response.StatusCode = (int)HttpStatusCode.OK;
+
 
           if(context.Request.Path.Value.ToLower().StartsWith("/hello")) {
             var key = context.Request.Path.Value.ToLower().Split('/').Last();
@@ -568,7 +574,7 @@ namespace HedgeHog.Alice.Client {
 
     static double DaysTillExpiration2(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
     static double DaysTillExpiration(DateTime expiration) => (expiration - DateTime.Now.Date).TotalDays + 1;
-    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip, string optionTypeMap,DateTime hedgeDate, string[] comboExits) =>
+    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip, string optionTypeMap, DateTime hedgeDate, string[] comboExits) =>
       UseTraderMacro(pair, tm => {
         int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(expDaysSkip);
         var am = GetAccountManager();
@@ -610,14 +616,15 @@ namespace HedgeHog.Alice.Client {
           var sl = strikeLevel.GetValueOrDefault(double.NaN);
           var noc = (numOfCombos * 1.5).Ceiling();
 
-          var hedgeSkipDates = DateTime.Now.Date.GetWorkingDays(hedgeDate);
+          var hedgeSkipDates = DateTime.Now.Date.GetWorkingDays(29) + expirationDaysSkip;
           am.CurrentOptions("VIX", sl, hedgeSkipDates, 5, c => c.Right == "C")
           .Select(ts => {
             var call = ts.Where(t => t.strikeAvg > t.underPrice.RoundBySample(0.5)).OrderBy(t => t.strikeAvg).Skip(1).Take(1).ToList();
             return call.Select(t => {
               var underMult = underContracts[0].ComboMultiplier;
-              var hedge = HedgeBuySell(pair, true).ToArray();
-              var hedgeQty = (quantity * underMult * hedge[0].TradeRatioM1.All / hedge[1].TradeRatioM1.All / t.option.ComboMultiplier).ToInt();
+              var hedgeBS = HedgeBuySell(pair, true).ToArray();
+              var hedges = hedgeBS.Buffer(2).Where(b => b.Count == 2).ToArray();
+              var hedgeQty = hedges.Select(hedge => (quantity * underMult * hedge[0].TradeRatioM1.All / hedge[1].TradeRatioM1.All / t.option.ComboMultiplier).ToInt()).SingleOrDefault();
               var loss = t.ask * hedgeQty * t.option.ComboMultiplier;
               var lossPoints = (loss / quantity / underMult).ToInt();
               var wds = DateTime.Now.Date.GetWorkingDays(t.option.Expiration);

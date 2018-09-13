@@ -2316,6 +2316,7 @@ namespace HedgeHog.Alice.Store {
           if(_PriceSpreadAverageSubject == null) {
             _PriceSpreadAverageSubject = new Subject<(DateTime d, Action a)>();
             _PriceSpreadAverageSubject
+              .Where(t => t.d.Year <= DateTime.Now.Year)
               .DistinctUntilChanged(t => t.d.Round(RoundTo.Minute))
               .Subscribe(t => t.a(), LogExc);
           }

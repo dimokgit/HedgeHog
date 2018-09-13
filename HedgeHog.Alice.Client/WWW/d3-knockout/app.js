@@ -1797,6 +1797,8 @@
     });
     $.connection.hub.start(function () {
       closeReconnectNote();
+      showErrorPerm($.connection.hub.transport.name);
+      console.log("Connected, transport = " + $.connection.hub.transport.name);
     });
     $.connection.hub.disconnected(function () {
       closeDisconnectNote();

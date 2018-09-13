@@ -48,8 +48,10 @@ namespace Westwind.Web.WebApi {
       return true;// base.AuthorizeHubConnection(hubDescriptor, request);
     }
     public override bool AuthorizeHubMethodInvocation(IHubIncomingInvokerContext hubIncomingInvokerContext, bool appliesToMethod) {
+      bool isConnect = hubIncomingInvokerContext.Hub.Context.Request.LocalPath == "/signalr/connect";
       return
         IsLocalRequest(hubIncomingInvokerContext.Hub.Context)
+        || isConnect
         || !appliesToMethod
         || ((HttpListener)hubIncomingInvokerContext.Hub.Context.Request.Environment["System.Net.HttpListener"]).AuthenticationSchemes == AuthenticationSchemes.Anonymous
         || hubIncomingInvokerContext.Hub.Context.User?.IsInRole("Traders") == true
