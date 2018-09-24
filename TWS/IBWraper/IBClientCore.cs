@@ -363,8 +363,8 @@ namespace IBApp {
         sympol.IsFuture() ? MakeFutureContract(twsDate)
         : sympol.IsIndex() ? MakeIndexContract(twsDate)
         : MakeStockContract(twsDate);
-      return Observable.Range(0, 6)
-          .Select(i => fopDate.AddDays(i))
+      return Observable.Range(0, sympol.HasOptions() ? 7 : 0)
+          .Select(i => fopDate.AddBusinessDays(i))
           .SelectMany(fd => {
             var twsDate = fd.ToTWSDateString();
             return ReqContractDetailsAsync(MakeContract(twsDate)).ToArray()

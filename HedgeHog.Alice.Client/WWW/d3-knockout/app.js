@@ -348,9 +348,11 @@
             dataViewModel.expDaysSkip(x.OptionsDaysGap);
           if (dataViewModel.strategyCurrent() != x.Strategy)
             dataViewModel.strategyCurrent(x.Strategy);
+          dataViewModel.distanceFromHigh(x.DistanceFromHigh);
         });
-      }, function () {
-      }, function () {
+      }
+      , null
+      , function () {
         readingCombos = false;
       });
   }
@@ -865,6 +867,7 @@
         });
     }, this);
     this.expDaysSkip = ko.observable();
+    this.distanceFromHigh = ko.observable();
     this.comboQuantity = ko.observable();
     this.comboCurrentStrikeLevel = ko.observable("");
     this.toggleComboCurrentStrikeLevel = function () {

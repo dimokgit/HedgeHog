@@ -1326,6 +1326,7 @@
       <div style="display:inline-table">
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>
         <input data-bind="value:comboCurrentStrikeLevel" size="3" />
+        <label data-bind="text:d3.format('.2%')(distanceFromHigh())"></label>
         <!-- ko with: combosStats -->
         <span class="glyphicon glyphicon-resize-vertical"></span>
         <b data-bind="text:d3.format('.2f')(spread)"></b>

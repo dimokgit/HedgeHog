@@ -784,7 +784,8 @@ namespace HedgeHog.Alice.Client {
               ).OrderBy(oc => oc.order));
           double TryExitDelta(string s) => double.TryParse(s, out var i) ? i : int.MinValue;
         }
-        return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "" };
+        var distFromHigh = tm.TradingMacroM1(tmM1 => 1 - tm.CurrentPrice.Average / tmM1.RatesMax).SingleOrDefault();
+        return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh };
       });
 
     [BasicAuthenticationFilter]

@@ -264,6 +264,8 @@ namespace HedgeHog.Shared {
     public static bool IsUSStock(this string s) => !s.IsCurrenncy() && !s.IsFuture() && !s.IsCommodity();
     public static bool IsOptionFull(this string s) => Regex.IsMatch(s, @"^[a-z ]{6}[0-9]{6}[CP][0-9]{8}$", RegexOptions.IgnoreCase);
     public static bool IsFOPtion(this string s) => Regex.IsMatch(s, @"^[a-z ]{5}\s[CP][0-9]{2-6}$", RegexOptions.IgnoreCase);
+    public static bool HasOptions(this string s) => !(s.Substring(0, 2) == "VX" && s.IsFuture());
+
     //E3AJ8 C2665
     public static bool IsOption(this string s) => s.IsOptionFull() || s.IsFOPtion();
     static string[] _indices = new[] { "SPX", "VIX", "ES" };
