@@ -84,7 +84,7 @@ namespace HedgeHog.Alice.Store {
 
     #region TradeConditionEval
     private string _TradeConditionEval;
-    [WwwSetting(wwwSettingsTradingConditions)]
+    [WwwSetting(Group = wwwSettingsTradingConditions, Hide = true)]
     public string TradeConditionEval {
       get { return _TradeConditionEval; }
       set {
@@ -322,6 +322,12 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate THOk {
       get {
         return () => TradeDirectionByBool(IsTradingHour());
+      }
+    }
+    public TradeConditionDelegate PFRHOk {
+      get {
+        TradingMacroTrader(tm => Log = new Exception(new { PFRHOk = new { tm.PercFromRatesHigh } } + ""));
+        return () => TradingMacroM1(tm=>TradeDirectionByBool(tm.RatioFromRatesHigh * 100 > PercFromRatesHigh)).SingleOrDefault();
       }
     }
     private double _distVolt;
@@ -2296,9 +2302,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     private IEnumerable<(IBApi.Contract contract, int position, double open, double price, double pipCost)> OpenPuts()
-      => UseAccountManager(am => 
+      => UseAccountManager(am =>
       from c in IBApi.Contract.FromCache(Pair)
-      join p in am.Positions.Where(p => p.position != 0  && p.contract.IsPut) on c.Symbol equals p.contract.Symbol
+      join p in am.Positions.Where(p => p.position != 0 && p.contract.IsPut) on c.Symbol equals p.contract.Symbol
       select p
       ).Concat();
     private IEnumerable<(IBApi.Contract call, IBApi.Contract put)> OpenStraddles(AccountManager am)

@@ -19,6 +19,8 @@ namespace HedgeHog.Alice.Store {
     public double CorridorSDRatio { get; set; }
     public double EquinoxPerc { get; set; }
     public bool IsContinuousTrading { get; set; }
+    
+    public double PercFromRatesHigh { get; set; }
     public double RatesDistanceMin { get; set; }
     public double RatesHeightMin { get; set; }
     public string RatesMinutesMin { get; set; }

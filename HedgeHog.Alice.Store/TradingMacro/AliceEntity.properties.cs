@@ -988,8 +988,19 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    bool _IsContinuousTrading;
+    double _PercFromRatesHigh = 0.5;
     [WwwSetting(Group = wwwSettingsTradingConditions)]
+    [Category(categoryActive)]
+    public double PercFromRatesHigh {
+      get { return _PercFromRatesHigh; }
+      set {
+        _PercFromRatesHigh = value;
+        OnPropertyChanged(nameof(PercFromRatesHigh));
+      }
+    }
+
+    bool _IsContinuousTrading;
+    [WwwSetting(Group = wwwSettingsTradingConditions, Hide = true)]
     [Category(categoryActive)]
     [Description("buySellLevels.CanTrade can be set even when Trades.Count > 0")]
     public bool IsContinuousTrading {
@@ -1061,20 +1072,6 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Trading Ratio By PMC")]
     [WwwSetting(wwwSettingsTradingConditions)]
     public bool TradingRatioByPMC { get; set; }
-
-    [Category(categoryXXX_NU)]
-    [DisplayName("Trade On BOW")]
-    [Description("If ExitOnFriday, consider this as well")]
-    [WwwSetting(wwwSettingsTradingConditions)]
-    public bool TradeOnBOW {
-      get { return TradeByFirstWave.GetValueOrDefault(); }
-      set {
-        if(TradeByFirstWave == value)
-          return;
-        TradeByFirstWave = value;
-        OnPropertyChanged(() => TradeOnBOW);
-      }
-    }
 
     //[DisplayName("Gann Angles Offset in Rads")]
     //[Category(categoryCorridor)]

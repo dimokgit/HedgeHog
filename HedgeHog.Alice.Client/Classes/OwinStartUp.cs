@@ -1194,7 +1194,7 @@ namespace HedgeHog.Alice.Client {
         var e = (IDictionary<string, object>)new ExpandoObject();
         Func<object, object> convert = o => o != null && o.GetType().IsEnum ? o + "" : o;
         Func<PropertyInfo, string> dn = pi => pi.GetCustomAttributes<DisplayNameAttribute>().Select(a => a.DisplayName).DefaultIfEmpty(pi.Name).Single();
-        tm.GetPropertiesByAttibute<WwwSettingAttribute>(_ => true)
+        tm.GetPropertiesByAttibute<WwwSettingAttribute>(_ => !_.Hide)
           .Where(x => !x.Item1.Group.ToLower().StartsWith("hide"))
           .Select(x => new { x.Item1.Group, p = x.Item2, dn = dn(x.Item2) })
           .OrderBy(x => x.dn)

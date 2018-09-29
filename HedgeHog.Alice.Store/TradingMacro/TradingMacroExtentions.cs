@@ -2364,7 +2364,7 @@ namespace HedgeHog.Alice.Store {
             //if (IsAsleep)
             //ResetBarsCountCalc();
             RatesHeight = RatesArray.Height(r => r.AskHigh, r => r.BidLow, out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
-
+            RatioFromRatesHigh = 1- CurrentPrice.Average / RatesMax;
             SetCentersOfMassSubject.OnNext(() => { SetBeforeHours(); SetCentersOfMass(); });
             if(IsAsleep) {
               BarsCountCalc = BarsCount;
@@ -4670,6 +4670,9 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         OnPropertyChanged(() => RatesHeightInPips);
       }
     }
+
+    public double RatioFromRatesHigh { get; private set; }
+
     public double RatesHeightInPips { get { return InPips(RatesHeight); } }
 
     public double RatesHeightByRegression { get; private set; }

@@ -20,11 +20,11 @@ namespace HedgeHog {
     }
   }
   public class WwwSettingAttribute : WwwAttribute {
-    public bool Hide { get; private set; }
+    public bool Hide { get; set; } = false;
     public WwwSettingAttribute() : base() {
     }
     public WwwSettingAttribute(string group) : base(group) {
-
+      Hide = false;
     }
     public WwwSettingAttribute(string group,bool hide) : base(group) {
       Hide = hide;
