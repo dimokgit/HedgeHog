@@ -53,6 +53,8 @@ namespace IBApp {
         }
       }
     }
+
+    private const string GENERIC_TICK_LIST = "233,221,236,165";
     #endregion
 
     #region Fields
@@ -82,7 +84,7 @@ namespace IBApp {
     #region ICoreEX Implementation
     public Contract SetContractSubscription(Contract contract) => contract.SideEffect(c => SetContractSubscription(c, _ => { }));
     void SetContractSubscription(Contract contract, Action<Contract> callback) {
-      _marketDataManager.AddRequest(contract, "233,221,236", callback);
+      _marketDataManager.AddRequest(contract, GENERIC_TICK_LIST, callback);
     }
     public void SetSymbolSubscription(string pair) {
       if(pair.IsFuture()) {

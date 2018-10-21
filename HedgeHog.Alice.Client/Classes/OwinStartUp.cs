@@ -617,30 +617,31 @@ namespace HedgeHog.Alice.Client {
           var noc = (numOfCombos * 1.5).Ceiling();
 
           var hedgeSkipDates = DateTime.Now.Date.GetWorkingDays(29) + expirationDaysSkip;
-          am.CurrentOptions("VIX", sl, hedgeSkipDates, 5, c => c.Right == "C")
-          .Select(ts => {
-            var call = ts.Where(t => t.strikeAvg > t.underPrice.RoundBySample(0.5)).OrderBy(t => t.strikeAvg).Skip(1).Take(1).ToList();
-            return call.Select(t => {
-              var underMult = underContracts[0].ComboMultiplier;
-              var hedgeBS = HedgeBuySell(pair, true).ToArray();
-              var hedges = hedgeBS.Buffer(2).Where(b => b.Count == 2).ToArray();
-              var hedgeQty = hedges.Select(hedge => (quantity * underMult * hedge[0].TradeRatioM1.All / hedge[1].TradeRatioM1.All / t.option.ComboMultiplier).ToInt()).SingleOrDefault();
-              var loss = t.ask * hedgeQty * t.option.ComboMultiplier;
-              var lossPoints = (loss / quantity / underMult).ToInt();
-              var wds = DateTime.Now.Date.GetWorkingDays(t.option.Expiration);
-              return new {
-                name = t.option.LocalSymbol,
-                qty = hedgeQty,
-                t.ask,
-                loss,
-                lossPoints,
-                lppd = ((double)lossPoints / wds).AutoRound2(2),
-                wds
-              };
+          if(false)
+            am.CurrentOptions("VIX", sl, hedgeSkipDates, 5, c => c.Right == "C")
+            .Select(ts => {
+              var call = ts.Where(t => t.strikeAvg > t.underPrice.RoundBySample(0.5)).OrderBy(t => t.strikeAvg).Skip(1).Take(1).ToList();
+              return call.Select(t => {
+                var underMult = underContracts[0].ComboMultiplier;
+                var hedgeBS = HedgeBuySell(pair, true).ToArray();
+                var hedges = hedgeBS.Buffer(2).Where(b => b.Count == 2).ToArray();
+                var hedgeQty = hedges.Select(hedge => (quantity * underMult * hedge[0].TradeRatioM1.All / hedge[1].TradeRatioM1.All / t.option.ComboMultiplier).ToInt()).SingleOrDefault();
+                var loss = t.ask * hedgeQty * t.option.ComboMultiplier;
+                var lossPoints = (loss / quantity / underMult).ToInt();
+                var wds = DateTime.Now.Date.GetWorkingDays(t.option.Expiration);
+                return new {
+                  name = t.option.LocalSymbol,
+                  qty = hedgeQty,
+                  t.ask,
+                  loss,
+                  lossPoints,
+                  lppd = ((double)lossPoints / wds).AutoRound2(2),
+                  wds
+                };
+              })
+              .ToArray();
             })
-            .ToArray();
-          })
-          .Subscribe(x => base.Clients.Caller.hedgeOptions(x));
+            .Subscribe(x => base.Clients.Caller.hedgeOptions(x));
 
           Action<string> currentOptions = (map) =>
             underContracts

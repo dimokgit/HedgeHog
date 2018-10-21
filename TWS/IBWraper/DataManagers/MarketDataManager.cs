@@ -97,6 +97,8 @@ namespace IBApp {
       //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
       if(priceMessage.Price == 0)
         return;
+      const int LOW_52 = 19;
+      const int HIGH_52 = 20;
       switch(priceMessage.Field) {
         case 1: { // Bid
             if(price2.Bid == priceMessage.Price)
@@ -146,6 +148,12 @@ namespace IBApp {
         case 46:
           price2.IsShortable = price > 2.5;
           Trace(new { price2.Pair, price2.IsShortable, price });
+          break;
+        case LOW_52:
+          price2.Low52 = price;
+          break;
+        case HIGH_52:
+          price2.High52 = price;
           break;
       }
     }
