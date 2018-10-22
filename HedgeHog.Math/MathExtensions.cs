@@ -813,22 +813,22 @@ namespace HedgeHog {
       return extreams.Where(d => d != null).OrderBy(d => d.i).Select(d => fill(new Extream<T>(d.rate, d.slope, d.i))).ToArray();
     }
 
-    public static IEnumerable<Tuple<int, U, double>> Extreams<T, U>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, U> date) {
+    public static IEnumerable<(int index, U date, double slope)> Extreams<T, U>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, U> date) {
       return values
         .Where(_ => waveWidth > 0)
-        .Select((rate, i) => new { y = value(rate), x = date(rate), i })
-        .Where(x => !x.y.IsNaN())
+        .Select((rate, index) => new { value = value(rate), date = date(rate), index })
+        .Where(x => !x.value.IsNaN())
         .Buffer(waveWidth.Max(1), 1)
         .Where(chank => chank.Count == waveWidth)
         .Select(chunk => {
-          var slope = chunk.LinearSlope(r => r.y);
+          var slope = chunk.LinearSlope(r => r.value);
           var list = chunk.SafeList();
-          list.SortByLambda(c => c.y);
+          list.SortByLambda(c => c.value);
           var extream = slope > 0 ? list.Last() : list.First();
-          return new { slope, extream.x, i = extream.i };
+          return (extream.index, extream.date, slope);
         })
-        .DistinctLastUntilChanged(a => a.slope.SignUp())
-        .Select(r => Tuple.Create(r.i, r.x, r.slope));//.SkipLast(1);
+        .DistinctLastUntilChanged(a => a.slope.SignUp());
+        //.Select(r => (r.index, r.date, r.slope));//.SkipLast(1);
     }
     /// <summary>
     /// Try not to materialize it.

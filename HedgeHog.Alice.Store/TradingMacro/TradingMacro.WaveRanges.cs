@@ -115,7 +115,7 @@ namespace HedgeHog.Alice.Store {
 
         #endregion
 
-        if(!IsCorridorFrozen()) {
+        if(true || !IsCorridorFrozen()) {
           var wrwt = makeWaves(rates, PriceCmaLevels, CmaPasses);
           if(wrwt == null)
             return;
@@ -200,10 +200,11 @@ namespace HedgeHog.Alice.Store {
       var bufferCount = (rates.Count).Div(maxCount).Max(1).ToInt();
 
       var ratesCma = GetCmas(rates, period, cmaPasses);
+      var csv = ratesCma.Csv("{0},{1},{2}", t => t.rate.PriceAvg, t => t.cma, t => t.cma2);
       var dmas = ratesCma
         .Select((t, i) => new { t, i })
-        .DistinctUntilChanged(z => z.t.Item2.Sign(z.t.Item3))
-        .Select(z => new { Price = z.t.Item2, StartDate = z.t.Item1.StartDate, z.i })
+        .DistinctUntilChanged(z => z.t.cma.Sign(z.t.Item3))
+        .Select(z => new { Price = z.t.cma, z.t.rate.StartDate, z.i })
         .ToArray();
 
       var widths = dmas.Zip(dmas.Skip(1), (dma1, dma2) => (double)dma2.i - dma1.i).DefaultIfEmpty(0.0).ToArray();
@@ -212,13 +213,13 @@ namespace HedgeHog.Alice.Store {
       var ratesForWave2 = (BarPeriod == BarsPeriodType.t1
         ? dmas
         .Buffer(bufferCount)
-        .Select(b => new { Price = b.Average(r => r.Price), StartDate = b.Last().StartDate })
-        : ratesCma.Select(r => new { Price = r.Item2, r.Item1.StartDate })
+        .Select(b => new { cma = b.Average(r => r.Price), StartDate = b.Last().StartDate })
+        : ratesCma.Select(r => new { r.cma, r.rate.StartDate })
         ).ToArray();
 
-      var extreams = ratesForWave2.Extreams(waveWidth, r => r.Price, r => r.StartDate).ToArray();
+      var extreams = ratesForWave2.Extreams(waveWidth, r => r.cma, r => r.StartDate).ToArray();
       var slopeMin = extreams.Select(t => t.Item3.Abs()).DefaultIfEmpty().Average();
-      var extreams2 = extreams.Scan(Tuple.Create(0, DateTime.Now, 0.0), (p, t) => {
+      var extreams2 = extreams.Scan((0, DateTime.Now, 0.0), (p, t) => {
         return p.Item1 == 0 ? t
           : t.Item1 - p.Item1 < waveWidth.Div(waveWidthAvgIterCnt)
           //: t.Item3.Abs() > slopeMin.Div(waveWidthAvgIterCnt)
@@ -228,11 +229,12 @@ namespace HedgeHog.Alice.Store {
           : t;
       });
       Func<DateTime, Rate, Rate, bool> isBetween = (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate);
-      Func<List<Tuple<int, DateTime, double>>> newList = () => new List<Tuple<int, DateTime, double>>();
-      var extreams21 = extreams.Scan(newList(), (l, t) => {
+      //List<(int, DateTime, double)> newList() => new List<(int, DateTime, double)>();
+      var newList2 = extreams.Take(0);
+      var extreams21 = extreams.Scan(newList2.ToList(), (l, t) => {
         //if(l.Count > 0 && t.Item1 - l[0].Item1 > waveWidth / 2)
         if(l.Count > 0 && t.Item3.Abs() > slopeMin / waveWidthAvgIterCnt)
-          l = newList();
+          l = newList2.ToList();
         l.Add(t);
         return l;
       })
@@ -268,11 +270,11 @@ namespace HedgeHog.Alice.Store {
       var ratesForWave2 = (BarPeriod == BarsPeriodType.t1
         ? dmas
         .Buffer(bufferCount)
-        .Select(b => new { Price = b.Average(r => r.Price), StartDate = b.Last().StartDate })
-        : ratesCma.Select(r => new { Price = r.Item2, r.Item1.StartDate })
+        .Select(b => new { cma = b.Average(r => r.Price), StartDate = b.Last().StartDate })
+        : ratesCma.Select(((Rate rate, double cma, double cma2) r) => new { cma = r.Item2, r.Item1.StartDate })
         ).ToArray();
 
-      var extreams = ratesForWave2.Extreams(waveWidth, r => r.Price, r => r.StartDate).ToArray();
+      var extreams = ratesForWave2.Extreams(waveWidth, r => r.cma, r => r.StartDate).ToArray();
       Func<DateTime, Rate, Rate, bool> isBetween = (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate);
       var extreams3 = extreams
         .DistinctUntilChanged(t => t.Item1)

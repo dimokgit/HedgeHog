@@ -259,7 +259,7 @@ namespace HedgeHog.Alice.Store {
         .Select(tl => Lazy.Create(() => tl, TrendLines2.Value, exc => Log = exc))
         .ForEach(tl => setTLs(TrendLines2, tl, () => TrendLines2 = tl));
       var overlapSlack = TLsOverlap - 1;
-      Func<TL, bool> isTLMinMax = tl => TrendLinesMinMax.Single(t => t.Item1.Color == tl.Color).Item2;
+      Func<TL, bool?> isTLMinMax = tl => (TrendLinesMinMax.SingleOrDefault(t => t.Item1.Color == tl.Color)?.Item2);
       Func<TL, TL[]> tlsPrev = tl => TrendLinesTrendsAll
         .Skip(TrendLinesTrendsAll.ToList().IndexOf(tl) + 1)
         .SkipWhile(tl0 => isTLMinMax(tl0) != isTLMinMax(tl))
@@ -302,6 +302,12 @@ namespace HedgeHog.Alice.Store {
 
       GetShowVoltageFunction()();
       GetShowVoltageFunction(VoltageFunction2, 1)();
+      Trends2
+        .Where(tl => tl.TL.IsEmpty)
+        .Select(t => t.Set)
+        .Take(1)
+        .Zip(WaveRangesWithTail, (tl, wr) => (tl, trend: CalcTrendLines(wr.Range, _ => _)))
+        .ForEach(t => t.tl(t.trend));
       return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();
     }
 

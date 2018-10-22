@@ -3401,11 +3401,17 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           rates[i].PriceRsiP = cmas2[i];
       }
     }
-    private IList<Tuple<Rate, double, double>> GetCmas(IList<Rate> rates, double period, int cmaPasses) {
+    private IList<Tuple<Rate, double, double>> GetCmas_Old(IList<Rate> rates, double period, int cmaPasses) {
       // Set primary CMA
       var cmas = GetCma(rates, (int?)null, period, cmaPasses);
       // Set secondary CMA
       return rates.Zip(cmas, Tuple.Create).Zip(GetCma2(cmas), (t, c) => Tuple.Create(t.Item1, t.Item2, c)).ToList();
+    }
+    private IList<(Rate rate, double cma, double cma2)> GetCmas(IList<Rate> rates, double period, int cmaPasses) {
+      // Set primary CMA
+      var cmas = GetCma(rates, (int?)null, period, cmaPasses);
+      // Set secondary CMA
+      return rates.Zip(cmas,(rate,cma)=> (rate, cma)).Zip(GetCma2(cmas), (t, cma2) => (t.rate, t.cma, cma2)).ToList();
     }
 
     private IList<double> GetCma2(IList<double> cmas, int? count = null, double? period = null) {
