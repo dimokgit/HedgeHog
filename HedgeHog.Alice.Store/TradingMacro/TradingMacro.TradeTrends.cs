@@ -51,12 +51,12 @@ namespace HedgeHog.Alice.Store {
       }
     }
     TL[] Trends => new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
-    (TL TL, Action<IList<Rate>> Set)[] Trends2 => new(TL, Action<IList<Rate>>)[] {
-      ( TLLime, tl => TLLime2(tl)),
-      (TLGreen, tl => TLGreen2(tl)),
-      (TLPlum, tl => TLPlum2(tl)),
-      (TLRed, tl => TLRed2(tl)),
-      (TLBlue, tl => TLBlue2(tl))
+    (string TL, Action<IList<Rate>> Set)[] Trends2 => new(string, Action<IList<Rate>>)[] {
+      ( TrendLime, tl => TLLime2(tl)),
+      (TrendGreen, tl => TLGreen2(tl)),
+      (TrendPlum, tl => TLPlum2(tl)),
+      (TrendRed, tl => TLRed2(tl)),
+      (TrendBlue, tl => TLBlue2(tl))
     };//, TLGreen, TLPlum, TLRed, TLBlue };
     int[][] TrendRanges => new[] { TrendLimeInt(), TrendGreenInt(), TrendPlumInt(), TrendRedInt(), TrendBlueInt() };
     public static TL IsTrendsEmpty(Lazy<IList<Rate>> trends) {

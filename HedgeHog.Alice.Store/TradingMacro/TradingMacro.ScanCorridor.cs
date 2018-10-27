@@ -303,7 +303,7 @@ namespace HedgeHog.Alice.Store {
       GetShowVoltageFunction()();
       GetShowVoltageFunction(VoltageFunction2, 1)();
       Trends2
-        .Where(tl => tl.TL.IsEmpty)
+        .Where(tl => tl.TL.IsNullOrEmpty())
         .Select(t => t.Set)
         .Take(1)
         .Zip(WaveRangesWithTail, (tl, wr) => (tl, trend: CalcTrendLines(wr.Range, _ => _)))
