@@ -66,7 +66,7 @@ namespace ConsoleApp {
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7497;
       ibClient.ManagedAccountsObservable.Subscribe(s => {
-        ibClient.ReqContractDetailsCached("VIX")
+        ibClient.ReqContractDetailsCached("ESH9")
         .Subscribe(_ => PriceHistory.AddTicks(fw, 1, "VIX", DateTime.Now.AddYears(-5), o => HandleMessage(o + "")));
         return;
         LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });

@@ -145,8 +145,6 @@
       }
       // #endregion
 
-      svg.append("path").attr("class", "line data");
-      svg.append("path").attr("class", "line data bid");
       if (hasTps) {
         svg.append("path").attr("class", "line dataTps").style("stroke", "black").style("opacity", tpsOpacity);
         svg.append("path")
@@ -155,6 +153,8 @@
           .style("opacity", tpsOpacity)
           .attr("transform", "translate(0,0)");
       }
+      svg.append("path").attr("class", "line dataBid");
+      svg.append("path").attr("class", "line data");
       // #region create chart elements
 
       // create crosshairs
@@ -570,7 +570,7 @@
 
         // #region  lineBid
         var bidColor = doShowChartBid == "p" ? "Wisteria" : openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue";
-        svg.select("path.line.data.bid")
+        svg.select("path.line.dataBid")
           .style("display", lineBid ? "" : "none")
           //.style("stroke", bidColor)
           .datum(lineBid ? data : [])
