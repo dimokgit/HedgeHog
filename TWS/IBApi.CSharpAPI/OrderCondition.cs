@@ -1,4 +1,7 @@
-﻿using System;
+﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+ * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -82,6 +85,21 @@ namespace IBApi
             var conditions = Enum.GetValues(typeof(OrderConditionType)).OfType<OrderConditionType>().Select(t => Create(t)).ToList();
 
             return conditions.FirstOrDefault(c => c.TryParse(cond));
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as OrderCondition;
+
+            if (other == null)
+                return false;
+
+            return this.IsConjunctionConnection == other.IsConjunctionConnection && this.Type == other.Type;
+        }
+
+        public override int GetHashCode()
+        {
+            return IsConjunctionConnection.GetHashCode() + Type.GetHashCode();
         }
     }
 

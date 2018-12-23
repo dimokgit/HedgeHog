@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2015 Interactive Brokers LLC. All rights reserved.  This code is subject to the terms
+/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 using System;
 using System.Collections.Generic;
@@ -9,6 +9,17 @@ namespace IBApi
 {
     public class DefaultEWrapper : EWrapper
     {
+		//
+		// Note to updaters:
+		//
+		//
+		// Please ensure that implementations of new EWrapper methods are declared
+		// as virtual, since the only purpose for this class to be public is so that
+		// API clients that only wish to consume a subset of the EWrapper interface
+		// can create a class that inherits from it and then override just the methods
+		// needed (ie Adapter pattern), rather than implementing EWrapper directly.
+		//
+		
         public virtual void error(Exception e)
         {
         }
@@ -25,7 +36,7 @@ namespace IBApi
         {
         }
 
-        public virtual void tickPrice(int tickerId, int field, double price, int canAutoExecute)
+        public virtual void tickPrice(int tickerId, int field, double price, TickAttrib attribs)
         {
         }
 
@@ -45,7 +56,7 @@ namespace IBApi
         {
         }
 
-        public virtual void deltaNeutralValidation(int reqId, UnderComp underComp)
+        public virtual void deltaNeutralValidation(int reqId, DeltaNeutralContract deltaNeutralContract)
         {
         }
 
@@ -85,7 +96,7 @@ namespace IBApi
         {
         }
 
-        public virtual void updatePortfolio(Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName)
+        public virtual void updatePortfolio(Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealizedPNL, double realizedPNL, string accountName)
         {
         }
 
@@ -97,7 +108,7 @@ namespace IBApi
         {
         }
 
-        public virtual void orderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)
+        public virtual void orderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
         {
         }
 
@@ -133,7 +144,7 @@ namespace IBApi
         {
         }
 
-        public virtual void historicalData(int reqId, string date, double open, double high, double low, double close, int volume, int count, double WAP, bool hasGaps)
+        public virtual void historicalData(int reqId, Bar bar)
         {
         }
 
@@ -209,36 +220,136 @@ namespace IBApi
         {
         }
 
-        public void connectAck()
+        public virtual void connectAck()
         {            
         }
 
-        public void positionMulti(int requestId, string account, string modelCode, Contract contract, double pos, double avgCost)
+        public virtual void positionMulti(int requestId, string account, string modelCode, Contract contract, double pos, double avgCost)
         {
         }
 
-        public void positionMultiEnd(int requestId)
+        public virtual void positionMultiEnd(int requestId)
         {
         }
 
-        public void accountUpdateMulti(int requestId, string account, string modelCode, string key, string value, string currency)
+        public virtual void accountUpdateMulti(int requestId, string account, string modelCode, string key, string value, string currency)
         {
         }
 
-        public void accountUpdateMultiEnd(int requestId)
+        public virtual void accountUpdateMultiEnd(int requestId)
         {
         }
 
 
-        public void securityDefinitionOptionParameter(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)
+        public virtual void securityDefinitionOptionParameter(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)
         {
         }
 
-        public void securityDefinitionOptionParameterEnd(int reqId)
+        public virtual void securityDefinitionOptionParameterEnd(int reqId)
         {
         }
 
-        public void softDollarTiers(int reqId, SoftDollarTier[] tiers)
+        public virtual void softDollarTiers(int reqId, SoftDollarTier[] tiers)
+        {
+        }
+
+        public virtual void familyCodes(FamilyCode[] familyCodes)
+        {
+        }
+
+        public virtual void symbolSamples(int reqId, ContractDescription[] contractDescriptions)
+        {
+        }
+
+        public virtual void mktDepthExchanges(DepthMktDataDescription[] descriptions)
+        {
+        }
+
+        public virtual void tickNews(int tickerId, long timeStamp, string providerCode, string articleId, string headline, string extraData)
+        {
+        }
+
+        public virtual void smartComponents(int reqId, Dictionary<int, KeyValuePair<string, char>> theMap)
+        {
+        }
+
+        public virtual void tickReqParams(int tickerId, double minTick, string bboExchange, int snapshotPermissions)
+        {
+        }
+
+        public virtual void newsProviders(NewsProvider[] newsProviders)
+        {
+        }
+
+        public virtual void newsArticle(int requestId, int articleType, string articleText)
+        {
+        }
+
+        public virtual void historicalNews(int requestId, string time, string providerCode, string articleId, string headline)
+        {
+        }
+
+        public virtual void historicalNewsEnd(int requestId, bool hasMore)
+        {
+        }
+
+        public virtual void headTimestamp(int reqId, string headTimestamp)
+        {
+        }
+
+
+        public virtual void histogramData(int reqId, HistogramEntry[] data)
+        {
+        }
+
+        public virtual void historicalDataUpdate(int reqId, Bar bar)
+        {
+        }
+
+        public virtual void rerouteMktDataReq(int reqId, int conId, string exchange)
+        {
+        }
+
+        public virtual void rerouteMktDepthReq(int reqId, int conId, string exchange)
+        {
+        }
+
+        public virtual void marketRule(int marketRuleId, PriceIncrement[] priceIncrements)
+        {
+        }
+
+
+        public virtual void pnl(int reqId, double dailyPnL, double unrealizedPnL, double realizedPnL)
+        {
+
+        }
+
+        public virtual void pnlSingle(int reqId, int pos, double dailyPnL, double realizedPnL, double value, double unrealizedPnL)
+        {
+
+        }
+
+        public void historicalTicks(int reqId, HistoricalTick[] ticks, bool done)
+        {
+        }
+
+        public void historicalTicksBidAsk(int reqId, HistoricalTickBidAsk[] ticks, bool done)
+        {
+        }
+
+        public void historicalTicksLast(int reqId, HistoricalTickLast[] ticks, bool done)
+        {
+        }
+
+        public void tickByTickAllLast(int reqId, int tickType, long time, double price, int size, TickAttrib attribs, string exchange, string specialConditions)
+        {
+        }
+
+        public void tickByTickBidAsk(int reqId, long time, double bidPrice, double askPrice, int bidSize, int askSize, TickAttrib attribs)
+        {
+        }
+
+        public void tickByTickMidPoint(int reqId, long time, double midPoint)
         {
         }
     }

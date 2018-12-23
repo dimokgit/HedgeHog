@@ -54,7 +54,7 @@ namespace IBApp {
         var underSymbol = contract.Symbol + (contract.HasFutureOption ? "U8" : "");
         return (
         from symbol in IbClient.ReqContractDetailsCached(underSymbol)
-        from underPrice in IbClient.ReqPriceSafe(symbol.Summary, priceTimeoutInSeconds, false)
+        from underPrice in IbClient.ReqPriceSafe(symbol.Contract, priceTimeoutInSeconds, false)
         select underPrice.ask.Avg(underPrice.bid));
       }
     }

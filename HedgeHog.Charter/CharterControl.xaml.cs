@@ -1873,7 +1873,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
             other.Position = new Point(other.Position.X + e.Position.X - e.PreviousPosition.X, other.Position.Y + e.Position.Y - e.PreviousPosition.Y);
           RaiseShowChart();
         } catch (Exception exc) {
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
+          LogMessage.Send(exc);
         }
       };
 
@@ -2192,7 +2192,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
           plotter.FitToView();
         } catch (InvalidOperationException) {
         } catch (Exception exc) {
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
+          LogMessage.Send(exc);
         }
       }), DispatcherPriority.DataBind);
     }

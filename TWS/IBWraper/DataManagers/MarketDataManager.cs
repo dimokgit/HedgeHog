@@ -21,7 +21,7 @@ namespace IBApp {
     public Action<Contract, string, Action<Contract>> AddRequest;// = (a1, a2, a3) => {    };
     public IObservable<(Contract c, string gl, Action<Contract>)> AddRequestObs { get; }
     public MarketDataManager(IBClientCore client) : base(client, TICK_ID_BASE) {
-      IbClient.TickPriceObservable.Subscribe(t => OnTickPrice(t.reqId, t.field, t.price, t.canAutoExecute));
+      IbClient.TickPriceObservable.Subscribe(t => OnTickPrice(t.RequestId, t.Field, t.Price, t.attribs));
       IbClient.TickString += OnTickString; ;
       IbClient.TickGeneric += OnTickGeneric;
       //IbClient.TickOptionCommunication += TickOptionCommunication; ;
@@ -35,7 +35,7 @@ namespace IBApp {
         .Subscribe(t => AddRequestSync(t.Item1, t.Item3, t.Item2));
     }
 
-    private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, 0);
+    private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, new TickAttrib());
 
     void AddRequestSync(Contract contract, Action<Contract> callback, string genericTickList = "") {
       if(contract.IsCombo) {
@@ -44,7 +44,7 @@ namespace IBApp {
         IbClient.ReqContractDetailsCached(contract.Instrument)
           .Take(1)
           .Subscribe(cd => {
-            AddRequestImpl(cd.Summary, genericTickList);
+            AddRequestImpl(cd.Contract, genericTickList);
           });
       }
       callback(contract);
@@ -56,7 +56,7 @@ namespace IBApp {
         var reqId = NextReqId();
         Verbose0($"AddRequest:{reqId}=>{contract}");
         IbClient.WatchReqError(reqId, t => Trace($"{nameof(AddRequestImpl)}:{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
-        IbClient.OnReqMktData(() => IbClient.ClientSocket.reqMktData(reqId, contract.ContractFactory(), genericTickList, false, new List<TagValue>()));
+        IbClient.OnReqMktData(() => IbClient.ClientSocket.reqMktData(reqId, contract.ContractFactory(), genericTickList, false, false, new List<TagValue>()));
         if(reqId == 0)
           Debugger.Break();
         activeRequests.TryAdd(reqId, (contract, new Price(contract.Instrument)));
@@ -90,9 +90,9 @@ namespace IBApp {
           break;
       }
     }
-    private void OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
+    private void OnTickPrice(int requestId, int field, double price, TickAttrib attrib) {
       if(!activeRequests.ContainsKey(requestId)) return;
-      var priceMessage = new TickPriceMessage(requestId, field, price, canAutoExecute);
+      var priceMessage = new TickPriceMessage(requestId, field, price, attrib);
       var price2 = activeRequests[requestId].price;
       //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
       if(priceMessage.Price == 0)

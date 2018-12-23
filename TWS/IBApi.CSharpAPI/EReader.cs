@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2015 Interactive Brokers LLC. All rights reserved.  This code is subject to the terms
+﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading;
 using System.Linq;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace IBApi {
   /**
@@ -18,7 +17,6 @@ namespace IBApi {
     Queue<EMessage> msgQueue = new Queue<EMessage>();
     EDecoder processMsgsDecoder;
     const int defaultInBufSize = ushort.MaxValue / 8;
-    public Task MessageQueueThread;
 
     bool UseV100Plus {
       get {
@@ -36,14 +34,18 @@ namespace IBApi {
     }
 
     public void Start() {
-      if(MessageQueueThread?.Status == TaskStatus.Running)
-        throw new Exception(new { MessageQueueThread = new { MessageQueueThread.Status } } + "");
-      MessageQueueThread = Task.Factory.StartNew(() => {
-        while(eClientSocket.IsConnected())
-          if(!putMessageToQueue())
-            break;
-      }, TaskCreationOptions.LongRunning);
-      MessageQueueThread.ContinueWith(_ => eReaderSignal.issueSignal());
+      new Thread(() => {
+        try {
+          while(eClientSocket.IsConnected())
+            if(!putMessageToQueue())
+              break;
+        } catch(Exception ex) {
+          eClientSocket.Wrapper.error(ex);
+          eClientSocket.eDisconnect();
+        }
+
+        eReaderSignal.issueSignal();
+      }) { IsBackground = true }.Start();
     }
 
     EMessage getMsg() {
@@ -73,7 +75,7 @@ namespace IBApi {
         return true;
       } catch(Exception ex) {
         if(eClientSocket.IsConnected())
-          eClientSocket.Wrapper.error(ex);
+          eClientSocket.Wrapper.error(ex.Message);
 
         return false;
       }
@@ -91,18 +93,7 @@ namespace IBApi {
           throw new EClientException(EClientErrors.BAD_LENGTH);
         }
 
-        var buf = new List<byte>();
-        var offset = 0;
-
-        while(offset < msgSize) {
-          var readBuf = eClientSocket.ReadByteArray(msgSize - offset);
-
-          buf.AddRange(readBuf);
-
-          offset += readBuf.Length;
-        }
-
-        return new EMessage(buf.ToArray());
+        return new EMessage(eClientSocket.ReadByteArray(msgSize));
       }
 
       if(inBuf.Count == 0)
@@ -131,7 +122,7 @@ namespace IBApi {
     }
 
     private void AppendInBuf() {
-      inBuf.AddRange(eClientSocket.ReadByteArray(inBuf.Capacity - inBuf.Count));
+      inBuf.AddRange(eClientSocket.ReadAtLeastNBytes(inBuf.Capacity - inBuf.Count));
     }
   }
 }

@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved.  This code is subject to the terms
+/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -65,5 +65,24 @@ namespace IBApi
         CancelAccountUpdatesMulti = 77,
         RequestSecurityDefinitionOptionalParameters = 78,
         RequestSoftDollarTiers = 79,
+        RequestFamilyCodes = 80,
+        RequestMatchingSymbols = 81,
+        RequestMktDepthExchanges = 82,
+        RequestSmartComponents = 83,
+        RequestNewsArticle = 84,
+        RequestNewsProviders = 85,
+        RequestHistoricalNews = 86,
+        RequestHeadTimestamp = 87,
+        RequestHistogramData = 88,
+        CancelHistogramData = 89,
+        CancelHeadTimestamp = 90,
+        RequestMarketRule = 91,
+        ReqPnL = 92,
+        CancelPnL = 93,
+        ReqPnLSingle = 94,
+        CancelPnLSingle = 95,
+        ReqHistoricalTicks = 96,
+        ReqTickByTickData = 97,
+        CancelTickByTickData = 98
     }
 }

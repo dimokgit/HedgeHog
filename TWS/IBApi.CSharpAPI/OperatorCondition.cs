@@ -1,4 +1,7 @@
-﻿using System;
+﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+ * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +18,23 @@ namespace IBApi
         public override string ToString()
         {
             return header + (IsMore ? ">= " : "<= ") + Value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as OperatorCondition;
+
+            if (other == null)
+                return false;
+
+            return base.Equals(obj)
+                && this.Value.Equals(other.Value)
+                && this.IsMore == other.IsMore;
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode() + Value.GetHashCode() + IsMore.GetHashCode();
         }
 
         protected override bool TryParse(string cond)

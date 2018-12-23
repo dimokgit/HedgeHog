@@ -2,6 +2,7 @@
 using HedgeHog.Core;
 using HedgeHog.Shared;
 using IBApi;
+using IBSampleApp.messages;
 using ReactiveUI;
 using System;
 using System.Collections.Concurrent;
@@ -17,12 +18,12 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using static IBApi.IBApiMixins;
 using static IBApp.AccountManager;
-using OpenOrderHandler = System.Action<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
+using OpenOrderHandler = System.Action<IBSampleApp.messages.OpenOrderMessage>;
 using ORDER_STATUS = System.Nullable<(string status, double filled, double remaining, bool isDone)>;
-using OrderStatusHandler = System.Action<int, string, double, double, double, int, int, double, int, string>;
-using PortfolioHandler = System.Action<IBApi.Contract, double, double, double, double, double, double, string>;
-using POSITION_OBSERVABLE = System.IObservable<(string account, IBApi.Contract contract, double pos, double avgCost)>;
-using PositionHandler = System.Action<string, IBApi.Contract, double, double>;
+using OrderStatusHandler = System.Action<IBSampleApp.messages.OrderStatusMessage>;
+using PortfolioHandler = System.Action<IBApp.UpdatePortfolioMessage>;
+using POSITION_OBSERVABLE = System.IObservable<IBApp.PositionMessage>;
+using PositionHandler = System.Action<IBApp.PositionMessage>;
 namespace IBApp {
   public partial class AccountManager :DataManager, IDisposable {
     public enum OrderCancelStatuses { Cancelled, PendingCancel };
@@ -58,7 +59,7 @@ namespace IBApp {
     private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
     public Func<Trade, double> CommissionByTrade = t => t.Lots * .008;
     public POSITION_OBSERVABLE PositionsObservable { get; private set; }
-    public IObservable<(int orderId, Contract contract, IBApi.Order order, OrderState orderState)> OpenOrderObservable { get; private set; }
+    public IObservable<OpenOrderMessage> OpenOrderObservable { get; private set; }
 
     Func<string, Trade> CreateTrade { get; set; }
 
@@ -112,31 +113,29 @@ namespace IBApp {
       }
       IScheduler elFactory() => TaskPoolScheduler.Default;// new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true });
 
-      PositionsObservable = Observable.FromEvent<PositionHandler, (string account, Contract contract, double pos, double avgCost)>(
-        onNext => (string a, Contract b, double c, double d) => Try(() => onNext((a, b, c, d)), nameof(IbClient.Position)),
+      PositionsObservable = Observable.FromEvent<PositionHandler, PositionMessage>(
+        onNext => (PositionMessage m) => Try(() => onNext(m), nameof(IbClient.Position)),
         h => IbClient.Position += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
         h => IbClient.Position -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
         )
         .Publish().RefCount()
         //.Spy("**** AccountManager.PositionsObservable ****")
         ;
-      OpenOrderObservable = Observable.FromEvent<OpenOrderHandler, (int orderId, Contract contract, IBApi.Order order, OrderState orderState)>(
-        onNext => (int orderId, Contract contract, IBApi.Order order, OrderState orderState) =>
-        Try(() => onNext((orderId, contract, order, orderState)), nameof(IbClient.OpenOrder)),
+      OpenOrderObservable = Observable.FromEvent<OpenOrderHandler, OpenOrderMessage>(
+        onNext => (OpenOrderMessage m) =>
+        Try(() => onNext(m), nameof(IbClient.OpenOrder)),
         h => IbClient.OpenOrder += h,
         h => IbClient.OpenOrder -= h
         ).Publish().RefCount();
-      var osObs = Observable.FromEvent<OrderStatusHandler, (int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)>(
+      var osObs = Observable.FromEvent<OrderStatusHandler, OrderStatusMessage>(
         onNext
-        => (int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld)
-        => Try(() => onNext((orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld)), nameof(IbClient.OrderStatus)),
+        => (OrderStatusMessage m) => Try(() => onNext(m), nameof(IbClient.OrderStatus)),
         h => IbClient.OrderStatus += h,
         h => IbClient.OrderStatus -= h
         );
 
-      var portObs = Observable.FromEvent<PortfolioHandler, (Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName)>(
-        onNext => (Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName)
-        => Try(() => onNext((contract, position, marketPrice, marketValue, averageCost, unrealisedPNL, realisedPNL, accountName)), nameof(IbClient.UpdatePortfolio)),
+      var portObs = Observable.FromEvent<PortfolioHandler, UpdatePortfolioMessage>(
+        onNext => (UpdatePortfolioMessage m) => Try(() => onNext(m), nameof(IbClient.UpdatePortfolio)),
         h => IbClient.UpdatePortfolio += h,
         h => IbClient.UpdatePortfolio -= h
         );
@@ -147,18 +146,18 @@ namespace IBApp {
       IScheduler esPositions2 = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Positions2" });
       DataManager.DoShowRequestErrorDone = false;
       PositionsObservable
-        .Where(x => x.account == _accountId && !NoPositionsPlease)
-        .Do(x => _verbous("* " + new { Position = new { x.contract.LocalSymbol, x.pos, x.avgCost, x.account } }))
+        .Where(x => x.Account == _accountId && !NoPositionsPlease)
+        .Do(x => _verbous("* " + new { Position = new { x.Contract.LocalSymbol, x.Position, x.AverageCost, x.Account } }))
         //.SubscribeOn(esPositions2)
         //.Spy("**** AccountManager.OnPosition ****")
         //.Where(x => x.pos != 0)
         //.Distinct(x => new { x.contract.LocalSymbol, x.pos, x.avgCost, x.account })
         .SelectMany(p =>
-          from cd in IbClient.ReqContractDetailsCached(p.contract)
-          select (p.account, contract: cd.Summary, p.pos, p.avgCost)
+          from cd in IbClient.ReqContractDetailsCached(p.Contract)
+          select (p.Account, contract: cd.Contract, p.Position, p.AverageCost)
         )
         .ObserveOn(esPositions)
-        .Subscribe(a => OnPosition(a.contract, a.pos, a.avgCost), () => { Trace("posObs done"); })
+        .Subscribe(a => OnPosition(a.contract, a.Position, a.AverageCost), () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
       PositionsObservable
         .Take(0)
@@ -167,31 +166,31 @@ namespace IBApp {
           ResetPortfolioExitOrder();
         }).SideEffect(s => _strams.Add(s));
       OpenOrderObservable
-        .Where(x => x.order.Account == _accountId)
-        .Do(x => Verbose0($"* OpenOrder: {new { x.order.OrderId, x.orderState.Status, x.contract.LocalSymbol } }"))
+        .Where(x => x.Order.Account == _accountId)
+        .Do(x => Verbose0($"* OpenOrder: {new { x.Order.OrderId, x.OrderState.Status, x.Contract.LocalSymbol } }"))
         //.Do(UpdateOrder)
-        .Distinct(a => new { a.orderId, a.order.LmtPrice })
-        .Subscribe(a => OnOrderImpl(a.orderId, a.contract, a.order, a.orderState))
+        .Distinct(a => new { a.OrderId, a.Order.LmtPrice })
+        .Subscribe(a => OnOrderImpl(a.OrderId, a.Contract, a.Order, a.OrderState))
         .SideEffect(s => _strams.Add(s));
       osObs
-        .Do(t => Verbose0("* OrderStatus " + new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() }))
-        .Where(t => UseOrderContracts(ocs => ocs.ByOrderId(t.orderId)).Concat().Any(oc => oc.order.Account == _accountId))
-        .SelectMany(t => UseOrderContracts(ocs => ocs.ByOrderId(t.orderId, och => new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, och.order.LmtPrice })).Concat())
+        .Do(t => Verbose0("* OrderStatus " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
+        .Where(t => UseOrderContracts(ocs => ocs.ByOrderId(t.OrderId)).Concat().Any(oc => oc.order.Account == _accountId))
+        .SelectMany(t => UseOrderContracts(ocs => ocs.ByOrderId(t.OrderId, och => new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, och.order.LmtPrice })).Concat())
         .Distinct()
-        .Do(t => Verbose("* OrderStatus " + new { t.orderId, t.status, t.filled, t.remaining, t.whyHeld, isDone = (t.status, t.remaining).IsOrderDone() }))
+        .Do(t => Verbose("* OrderStatus " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
         //.Do(x => UseOrderContracts(oc => _verbous("* " + new { OrderStatus = x, Account = oc.ByOrderId(x.orderId, och => och.order.Account).SingleOrDefault() })))
         .Do(t => UseOrderContracts(ocs => {
-          ocs.ByOrderId(t.orderId).Where(oc => t.status != "Inactive")
+          ocs.ByOrderId(t.OrderId).Where(oc => t.Status != "Inactive")
             //.SelectMany(oc => new[] { oc }.Concat(ocs.ByOrderId(oc.order.ParentId).Where(och => och.isNew)))
             .ForEach(oc => {
-              oc.status = (t.status, t.filled, t.remaining);
+              oc.status = (t.Status, t.Filled, t.Remaining);
               oc.order.LmtPrice = t.LmtPrice;
             });
           IbClient.ClientSocket.reqAllOpenOrders();
         }
         ))
-        .Where(o => (o.status, o.remaining).IsOrderDone())
-        .SelectMany(o => UseOrderContracts(ocs => ocs.ByOrderId(o.orderId)).Concat())
+        .Where(o => (o.Status, o.Remaining).IsOrderDone())
+        .SelectMany(o => UseOrderContracts(ocs => ocs.ByOrderId(o.OrderId)).Concat())
         .Do(o => RaiseOrderRemoved(o))
         .Throttle(TimeSpan.FromMinutes(1))
         .Subscribe(_ => {
@@ -201,10 +200,10 @@ namespace IBApp {
         .SideEffect(s => _strams.Add(s));
 
       portObs
-        .Where(x => x.accountName == _accountId)
-        .Select(t => new { t.contract.LocalSymbol, t.position, t.unrealisedPNL, t.accountName })
+        .Where(x => x.AccountName == _accountId)
+        .Select(t => new { t.Contract.LocalSymbol, t.Position, t.UnrealisedPNL, t.AccountName })
         .Timeout(TimeSpan.FromSeconds(5))
-        .Where(x => x.position != 0)
+        .Where(x => x.Position != 0)
         .CatchAndStop(() => new TimeoutException())
         .Subscribe(x => _verbous("* " + new { Portfolio = x }), () => _verbous($"portfolioStream is done."))
         .SideEffect(s => _strams.Add(s));
@@ -590,10 +589,11 @@ namespace IBApp {
           }
         });
       } else if(GetTrades().IsEmpty()) {
+        // TODO: WhatIf leverage, MMR
         //RaiseOrderRemoved(o.OrderId);
         var offer = TradesManagerStatic.GetOffer(c.Instrument);
         var isBuy = o.IsBuy();
-        var levelrage = (o.LmtPrice * o.TotalQuantity) / (double.Parse(os.InitMargin) - InitialMarginRequirement);
+        var levelrage = (o.LmtPrice * o.TotalQuantity) / (double.Parse(os.InitMarginChange));
         if(levelrage != 0 && !double.IsInfinity(levelrage))
           if(isBuy) {
             offer.MMRLong = 1 / levelrage;

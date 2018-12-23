@@ -13,53 +13,56 @@ using PosArg = System.Tuple<string, IBApi.Contract, IBApp.PositionMessage>;
 using System.Diagnostics;
 using OpenOrderArg = System.Tuple<int, IBApi.Contract, IBApi.Order, IBApi.OrderState>;
 using OrderStatusArg = System.Tuple<int, string, double, double, bool, double>;
+using IBSampleApp.messages;
+
 namespace IBApp {
   partial class AccountManager :DataManager {
     public double InitialMarginRequirement { get; private set; }
 
-    private void OnUpdatePortfolio(Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName) {
-      var pu = new UpdatePortfolioMessage(contract, position, marketPrice, marketValue, averageCost, unrealisedPNL, realisedPNL, accountName);
+    private void OnUpdatePortfolio(UpdatePortfolioMessage m) {
+      var pu = new UpdatePortfolioMessage(m.Contract, m.Position, m.MarketPrice, m.MarketValue, m.AverageCost, m.UnrealisedPNL, m.RealisedPNL, m.AccountName);
     }
 
-    private void OnUpdateAccountValue(string key, string value, string currency, string accountName) {
-      if(currency == _accountCurrency) {
-        switch(key) {
+    private void OnUpdateAccountValue(AccountValueMessage m) {
+      if(m.Currency == _accountCurrency) {
+        switch(m.Key) {
           //case "EquityWithLoanValue":
           case "NetLiquidation":
-            Account.Equity = double.Parse(value);
+            Account.Equity = double.Parse(m.Value);
             break;
           case "MaintMarginReq":
-            Account.UsableMargin = double.Parse(value);
+            Account.UsableMargin = double.Parse(m.Value);
             break;
           case "ExcessLiquidity":
-            Account.ExcessLiquidity = double.Parse(value);
+            Account.ExcessLiquidity = double.Parse(m.Value);
             break;
           case "UnrealizedPnL":
-            Account.Balance = Account.Equity - double.Parse(value);
+            Account.Balance = Account.Equity - double.Parse(m.Value);
             break;
           case "InitMarginReq":
-            InitialMarginRequirement = double.Parse(value);
+            InitialMarginRequirement = double.Parse(m.Value);
             break;
         }
         //_defaultMessageHandler(new AccountValueMessage(key, value, currency, accountName));
       }
     }
 
-    private void OnAccountSummary(int requestId, string account, string tag, string value, string currency) {
-      if(currency == _accountCurrency && account == _accountId) {
-        switch(tag) {
+    //private void OnAccountSummary(int requestId, string account, string tag, string value, string currency) {
+    private void OnAccountSummary(AccountSummaryMessage msg) {
+      if(msg.Currency == _accountCurrency && msg.Account == _accountId) {
+        switch(msg.Tag) {
           case "NetLiquidation":
-            Account.Equity = double.Parse(value);
+            Account.Equity = double.Parse(msg.Value);
             break;
           case "MaintMarginReq":
-            Account.UsableMargin = double.Parse(value);
+            Account.UsableMargin = double.Parse(msg.Value);
             break;
         }
         //_defaultMessageHandler(new AccountSummaryMessage(requestId, account, tag, value, currency));
       }
     }
 
-    private void OnAccountSummaryEnd(int obj) {
+    private void OnAccountSummaryEnd(AccountSummaryEndMessage msg) {
       accountSummaryRequestActive = false;
     }
 

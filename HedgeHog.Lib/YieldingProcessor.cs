@@ -86,7 +86,7 @@ namespace HedgeHog {
           if (error != null)
             error(t, exc);
           else
-            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
+            LogMessage.Send(exc);
         }
       });
     }

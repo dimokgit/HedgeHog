@@ -1,4 +1,7 @@
-﻿using System;
+﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+ * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
+
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -49,6 +52,22 @@ namespace IBApi
         public override string ToString()
         {
             return TriggerMethod.ToFriendlyString() + " " + base.ToString();
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as PriceCondition;
+
+            if (other == null)
+                return false;
+
+            return base.Equals(obj)
+                && this.TriggerMethod == other.TriggerMethod;
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode() + TriggerMethod.GetHashCode();
         }
 
         public double Price { get; set; }

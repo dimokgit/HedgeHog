@@ -17,7 +17,7 @@ namespace IBApp {
       CurrentStraddles(string symbol, double strikeLevel, int expirationDaysSkip, int count, int gap) {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
-        from price in IbClient.ReqPriceSafe(cd.Summary, 5, false).Select(p => p.ask.Avg(p.bid))
+        from price in IbClient.ReqPriceSafe(cd.Contract, 5, false).Select(p => p.ask.Avg(p.bid))
         from combo in MakeStraddles(symbol, strikeLevel.IfNaN(price), expirationDaysSkip, 1, count, gap)
         from p in IbClient.ReqPriceSafe(combo.contract, 2, true).DefaultIfEmpty()
         select CurrentComboInfo(price, combo, p)).ToArray()
@@ -57,7 +57,7 @@ namespace IBApp {
       (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
-        from price in IbClient.ReqPriceSafe(cd.Summary, 5, false).Select(p => p.ask.Avg(p.bid))
+        from price in IbClient.ReqPriceSafe(cd.Contract, 5, false).Select(p => p.ask.Avg(p.bid))
         from combo in MakeStraddles(symbol, price, expirationDaysSkip, 1, count, gap)
         from p in IbClient.ReqPriceSafe(combo.contract, 2, true).DefaultIfEmpty()
         let strikeAvg = combo.options.Average(o => o.Strike)
@@ -102,7 +102,7 @@ namespace IBApp {
         , contractOptions.OrderBy(c => c.Right).Select(c => c.ConId).ToArray());
     public IObservable<Contract> MakeStraddle(string symbol, IList<Contract> contractOptions)
       => IbClient.ReqContractDetailsCached(symbol)
-      .Select(cd => cd.Summary)
+      .Select(cd => cd.Contract)
       .Select(contract => MakeStraddleCache(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Sort().Select(o => o.ConId).ToArray()));
 
     static Func<string, string, string, IList<int>, Contract> MakeStraddleCache
@@ -148,7 +148,7 @@ namespace IBApp {
 
     public IObservable<Contract> MakeButterfly(string symbol, IList<Contract> contractOptions)
   => IbClient.ReqContractDetailsCached(symbol)
-  .Select(cd => cd.Summary)
+  .Select(cd => cd.Contract)
   .Select(contract => MakeButterfly(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray()));
     public Contract MakeButterfly(Contract contract, IList<Contract> contractOptions)
       => MakeButterfly(contract.Instrument, contract.Exchange, contract.Currency, contractOptions.Select(o => o.ConId).ToArray());
@@ -191,7 +191,7 @@ namespace IBApp {
     //public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count) =>
     public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count, Func<Contract, bool> filter) =>
       (from cd in IbClient.ReqContractDetailsCached(symbol)
-       from price in IbClient.ReqPriceSafe(cd.Summary, 5, false).Select(p => p.ask.Avg(p.bid))
+       from price in IbClient.ReqPriceSafe(cd.Contract, 5, false).Select(p => p.ask.Avg(p.bid))
        from option in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count * 2)
        where filter(option)
        from p in IbClient.ReqPriceSafe(option, 2, true).DefaultIfEmpty()

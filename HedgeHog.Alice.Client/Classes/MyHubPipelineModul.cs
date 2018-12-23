@@ -11,7 +11,7 @@ namespace HedgeHog.Alice.Client {
     protected override void OnIncomingError(ExceptionContext exceptionContext, IHubIncomingInvokerContext invokerContext) {
       dynamic caller = invokerContext.Hub.Clients.Caller;
       caller.ExceptionHandler(exceptionContext.Error.Message);
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exceptionContext.Error));
+      LogMessage.Send(exceptionContext.Error);
       //exceptionContext.Result = new { error = exceptionContext.Error.Message };
     }
   }

@@ -65,19 +65,20 @@ namespace ConsoleApp {
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7497;
+      ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm=>HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
-        ibClient.ReqContractDetailsCached("ESH9")
-        .Subscribe(_ => PriceHistory.AddTicks(fw, 1, "VIX", DateTime.Now.AddYears(-5), o => HandleMessage(o + "")));
-        return;
-        LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
         {// VIX
           ibClient.ReqContractDetailsAsync(new Contract { Symbol = "ES", SecType = "FUT", Currency = "USD" })
           //ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXQ8", SecType = "FUT", Currency = "USD" })
           .ToArray()
-          .Select(cds => cds.Select(cd => cd.Summary).OrderBy(c => c.LastTradeDateOrContractMonth))
+          .Select(cds => cds.Select(cd => cd.Contract).OrderBy(c => c.LastTradeDateOrContractMonth))
           .Subscribe(c => Console.WriteLine(c.ToJson(true)));
           return;
         }
+        return;
+        ibClient.ReqContractDetailsCached("ESH9")
+        .Subscribe(_ => PriceHistory.AddTicks(fw, 1, "ESH9", DateTime.Now.AddYears(-5), o => HandleMessage(o + "")));
+        LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
         HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         var am = fw.AccountManager;
         (from options in am.CurrentOptions("VXX", 0, 2, 3, c => true)
@@ -293,7 +294,7 @@ namespace ConsoleApp {
           var straddlesCount = 5;
           var expirationCount = 1;
           int expirationDaysSkip = 0;
-          var price = ibClient.ReqContractDetailsCached(symbol).SelectMany(cd => ibClient.ReqPriceSafe(cd.Summary, 1, true).Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}")));
+          var price = ibClient.ReqContractDetailsCached(symbol).SelectMany(cd => ibClient.ReqPriceSafe(cd.Contract, 1, true).Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}")));
           var contracts = (from p in price
                            from str in fw.AccountManager.MakeStraddles(symbol, p, expirationDaysSkip, expirationCount, straddlesCount, gap)
                            select str)
@@ -333,7 +334,7 @@ namespace ConsoleApp {
 
     private static void LoadHistory(IBClientCore ibClient, IList<Contract> options) {
       var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
-      HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, int volume, int count) => new Rate(date, high, low, true);
+      HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, long volume, int count) => new Rate(date, high, low, true);
       var counter = 0;
       if(options.Any()) {
         var c = options[0].ContractFactory();

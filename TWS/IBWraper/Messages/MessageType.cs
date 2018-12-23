@@ -30,6 +30,7 @@ namespace IBApp
         ScannerParameters = 19,
         ScannerData = 20,
         TickOptionComputation = 21,
+        TickOption = 22,
         TickGeneric = 45,
         Tickstring = 46,
         TickEFP = 47,

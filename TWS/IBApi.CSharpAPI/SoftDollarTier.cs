@@ -1,14 +1,32 @@
-﻿using System;
+﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+ * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace IBApi
 {
+    /**
+     * @class SoftDollarTier
+     * @brief A container for storing Soft Dollar Tier information
+     */
     public class SoftDollarTier
     {
+        /**
+         * @brief The name of the Soft Dollar Tier
+         */
         public string Name { get; private set; }
+
+        /**
+         * @brief The value of the Soft Dollar Tier
+         */
         public string Value { get; private set; }
+
+        /**
+         * @brief The display name of the Soft Dollar Tier
+         */
         public string DisplayName { get; private set; }
 
         public SoftDollarTier(string name, string value, string displayName)

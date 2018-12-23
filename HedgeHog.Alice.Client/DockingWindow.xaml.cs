@@ -257,7 +257,7 @@ namespace HedgeHog.Alice.Client {
         try {
           pane.RemoveFromParent();
         }catch(Exception exc) {
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
+          LogMessage.Send(exc);
         }
         paneGroup.AddItem(pane, Telerik.Windows.Controls.Docking.DockPosition.Right) ;
         pane.IsHidden = false;
@@ -323,7 +323,7 @@ namespace HedgeHog.Alice.Client {
             if (Log.IsPinned != isPinned)
               Log.IsPinned = isPinned;
           } catch (Exception exc) {
-            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
+            LogMessage.Send(exc);
           }
         });
       }

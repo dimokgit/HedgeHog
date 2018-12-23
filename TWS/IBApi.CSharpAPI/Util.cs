@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved.  This code is subject to the terms
+﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -86,5 +86,14 @@ namespace IBApi
             return (value == Double.MaxValue) ? "" : "" + value;
         }
 
+        public static string UnixSecondsToString(long seconds, string format)
+        {
+            return new DateTime(1970, 1, 1, 0, 0, 0).AddSeconds(Convert.ToDouble(seconds)).ToString(format);
+        }
+
+        public static string formatDoubleString(String str)
+        {
+            return String.IsNullOrEmpty(str) ? "" : String.Format("{0,0:N2}", Double.Parse(str));
+        }
     }
 }

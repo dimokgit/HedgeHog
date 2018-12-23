@@ -59,7 +59,7 @@ namespace HedgeHog {
         if (!count.Between(s - step-1, e + step))
           if (step.Abs() > 1) doContinue = true;
           else
-            if (count.Abs(s) > 1) GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new Exception(new { func = "IteratorLoopPow: !count.between(start,end)", count, start = s, end = e } + "")));
+            if (count.Abs(s) > 1) throw new Exception(new { func = "IteratorLoopPow: !count.between(start,end)", count, start = s, end = e } + "");
         if (ns(count).Abs() <= 1)
           return count;
         if (doContinue) continue;

@@ -9,8 +9,8 @@ namespace IBApi {
   partial class ContractDetails {
     static readonly ConcurrentDictionary<string, ContractDetails> ContractDetailsCache = new ConcurrentDictionary<string, ContractDetails>(StringComparer.OrdinalIgnoreCase);
     public static void ClearCache() { ContractDetailsCache.Clear(); }
-    public ContractDetails AddToCache() { ContractDetailsCache.TryAdd(summary.AddToCache().Key, this); return this; }
-    public IEnumerable<ContractDetails> FromCache() => FromCache(summary);
+    public ContractDetails AddToCache() { ContractDetailsCache.TryAdd(contract.AddToCache().Key, this); return this; }
+    public IEnumerable<ContractDetails> FromCache() => FromCache(contract);
     public static IEnumerable<ContractDetails> FromCache(Contract contract) => FromCache(contract.Key);
     public static IEnumerable<ContractDetails> FromCache(string instrument) {
       if(ContractDetailsCache.TryGetValue(instrument, out var contract))

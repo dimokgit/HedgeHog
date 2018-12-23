@@ -64,15 +64,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccountSummaryTags.cs" />
+    <Compile Include="Bar.cs" />
+    <Compile Include="BitMask.cs" />
     <Compile Include="ComboLeg.cs" />
     <Compile Include="CommissionReport.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="ContractDescription.cs" />
     <Compile Include="ContractDetails_p.cs" />
     <Compile Include="Contract_p.cs" />
     <Compile Include="Contract.cs" />
     <Compile Include="ContractCondition.cs" />
     <Compile Include="ContractDetails.cs" />
     <Compile Include="DefaultEWrapper.cs" />
+    <Compile Include="DeltaNeutralContract.cs" />
+    <Compile Include="DepthMktDataDescription.cs" />
     <Compile Include="EClientErrors.cs" />
     <Compile Include="EClientException.cs" />
     <Compile Include="EClientMsgSink.cs" />
@@ -90,6 +95,11 @@
     <Compile Include="Execution.cs" />
     <Compile Include="ExecutionCondition.cs" />
     <Compile Include="ExecutionFilter.cs" />
+    <Compile Include="FamilyCode.cs" />
+    <Compile Include="HistogramEntry.cs" />
+    <Compile Include="HistoricalTick.cs" />
+    <Compile Include="HistoricalTickBidAsk.cs" />
+    <Compile Include="HistoricalTickLast.cs" />
     <Compile Include="IBParamsList.cs" />
     <Compile Include="IDecoder.cs" />
     <Compile Include="IncomingMessage.cs" />
@@ -97,6 +107,7 @@
     <Compile Include="MessageValidator.cs" />
     <Compile Include="MinServerVer.cs" />
     <Compile Include="Mixins.cs" />
+    <Compile Include="NewsProvider.cs" />
     <Compile Include="OperatorCondition.cs" />
     <Compile Include="Order.cs" />
     <Compile Include="OrderComboLeg.cs" />
@@ -105,10 +116,12 @@
     <Compile Include="OutgoingMessages.cs" />
     <Compile Include="PercentChangeCondition.cs" />
     <Compile Include="PriceCondition.cs" />
+    <Compile Include="PriceIncrement.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScannerSubscription.cs" />
     <Compile Include="SoftDollarTier.cs" />
     <Compile Include="TagValue.cs" />
+    <Compile Include="TickAttrib.cs" />
     <Compile Include="TickType.cs" />
     <Compile Include="TimeCondition.cs" />
     <Compile Include="UnderComp.cs" />

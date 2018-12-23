@@ -513,7 +513,7 @@ namespace HedgeHog {
           plotter.FitToView();
         } catch (InvalidOperationException) {
         } catch (Exception exc) {
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
+          LogMessage.Send(exc);
         }
       }), DispatcherPriority.DataBind);
     }

@@ -15,6 +15,7 @@ using HedgeHog.Bars;
 using HedgeHog.Core;
 using HedgeHog.Shared;
 using IBApi;
+using IBSampleApp.messages;
 using ReactiveUI;
 using static HedgeHog.Shared.TradesManagerStatic;
 namespace IBApp {
@@ -67,13 +68,13 @@ namespace IBApp {
     public Trade CreateTrade(string symbol)
       => Trade.Create(this, symbol, GetPointSize(symbol), GetBaseUnitSize(symbol), null);
 
-    private void OnManagedAccounts(string obj) {
+    private void OnManagedAccounts(ManagedAccountsMessage m) {
       if(_accountManager != null) {
         Trace(new { _accountManager, isNot = (string)null });
         _accountManager.Dispose();
         //return;
       }
-      var ma = obj.Splitter(',').Where(a => _ibClient.ManagedAccount.IsNullOrWhiteSpace() || a == _ibClient.ManagedAccount).FirstOrDefault();
+      var ma = m.ManagedAccounts.Where(a => _ibClient.ManagedAccount.IsNullOrWhiteSpace() || a == _ibClient.ManagedAccount).FirstOrDefault();
       if(ma == null)
         throw new Exception(new { _ibClient.ManagedAccount, error = "Not Found" } + "");
       _accountManager = new AccountManager(_ibClient, ma, CreateTrade, CommissionByTrade);
@@ -116,7 +117,7 @@ namespace IBApp {
     public double InPips(string pair, double? price) => price.GetValueOrDefault() / GetPipSize(pair);
     public double RateForPipAmount(Price price) { return price.Ask.Avg(price.Bid); }
     public double RateForPipAmount(double ask, double bid) { return ask.Avg(bid); }
-    TBar ToRate<TBar>(DateTime date, double open, double high, double low, double close, int volume, int count) where TBar : Rate, new() {
+    TBar ToRate<TBar>(DateTime date, double open, double high, double low, double close, long volume, int count) where TBar : Rate, new() {
       return Rate.Create<TBar>(date, high, low, true);
     }
     public void GetBarsBase<TBar>(string pair

@@ -53,7 +53,7 @@ namespace HedgeHog.Alice.Store {
           dateStart = dateStart.Max(DateTime.Now.AddYears(-1));
         fw.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        ReactiveUI.MessageBus.Current.SendMessage(new LogMessage(exc));
       }
     }
 

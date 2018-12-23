@@ -78,7 +78,7 @@ namespace HedgeHog.Alice.Client {
               try {
                 myHub().Clients.All.priceChanged(pair);
               } catch(Exception exc) {
-                GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+                LogMessage.Send(exc);
               }
             });
           tradesChanged =
@@ -90,7 +90,7 @@ namespace HedgeHog.Alice.Client {
               try {
                 myHub().Clients.All.tradesChanged(pair);
               } catch(Exception exc) {
-                GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+                LogMessage.Send(exc);
               }
             });
           lasrWwwErrorChanged = remoteControl.Value.ReplayArguments.LastWwwErrorObservable
@@ -114,7 +114,7 @@ namespace HedgeHog.Alice.Client {
                 GlobalHost.ConnectionManager.GetHubContext<MyHub>()
                   .Clients.All.addMessage();
               } catch(Exception exc) {
-                GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+                LogMessage.Send(exc);
               }
             });
 
@@ -179,7 +179,7 @@ namespace HedgeHog.Alice.Client {
             }
           }
         } catch(Exception exc) {
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+          LogMessage.Send(exc);
         }
         return next();
       });
@@ -218,7 +218,7 @@ namespace HedgeHog.Alice.Client {
       MethodDescriptor method = invokerContext.MethodDescriptor;
       var args = string.Join(", ", invokerContext.Args);
       var log = $"{method.Hub.Name}.{method.Name}({args}) threw the following uncaught exception: {exceptionContext.Error}";
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(log));
+      LogMessage.Send(log);
 
       base.OnIncomingError(exceptionContext, invokerContext);
     }
@@ -235,7 +235,7 @@ namespace HedgeHog.Alice.Client {
     private const string ALL_COMBOS = "ALL COMBOS";
     Lazy<RemoteControlModel> remoteControl;
     Lazy<TraderModel> trader;
-    static Exception Log { set { GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(value)); } }
+    static Exception Log { set { LogMessage.Send(value); } }
     static ISubject<Action> _AskRatesSubject;
     static ISubject<Action> AskRatesSubject { get { return _AskRatesSubject; } }
     static ISubject<Action> _AskRates2Subject;
@@ -500,7 +500,7 @@ namespace HedgeHog.Alice.Client {
         };
 
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
+        LogMessage.Send(exc);
         return new { hrs = new object[0], stats = new object[0] };
       }
     }
@@ -994,7 +994,7 @@ namespace HedgeHog.Alice.Client {
         App.SignalRInterval = int.Parse(newInyterval);
         App.ResetSignalR();
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
       }
     }
     public void CloseTrades(string pair) {
@@ -1003,7 +1003,7 @@ namespace HedgeHog.Alice.Client {
           .AsParallel()
           .ForAll(tm => tm.CloseTrades("SignalR: CloseTrades"));
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
       }
     }
     public void CloseTradesAll(string pair) {
@@ -1016,14 +1016,14 @@ namespace HedgeHog.Alice.Client {
         .ToArray();
         tms.AsParallel().ForAll(tm => tm.CloseTrades($"SignalR: {nameof(CloseTradesAll)}"));
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
       }
     }
     public void MoveTradeLevel(string pair, bool isBuy, double pips) {
       try {
         GetTradingMacro(pair).ForEach(tm => tm.MoveBuySellLeve(isBuy, pips));
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
       }
     }
     public void SetTradeRate(string pair, bool isBuy, double price) {
@@ -1033,7 +1033,7 @@ namespace HedgeHog.Alice.Client {
       try {
         GetTradingMacro(pair).ForEach(tm => tm.ResetSuppResesInManual());
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
       }
     }
     [BasicAuthenticationFilter]
@@ -1232,7 +1232,7 @@ namespace HedgeHog.Alice.Client {
          }).ToArray();
         return tradesNew;
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
         return new Trade[0];
       }
     }
@@ -1463,7 +1463,7 @@ namespace HedgeHog.Alice.Client {
       try {
         return GetTradingMacro(pair, chartNum).Where(predicate).Take(1);
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
         return new TradingMacro[0];
       }
     }
@@ -1493,7 +1493,7 @@ namespace HedgeHog.Alice.Client {
       try {
         GetTradingMacro(pair, chartNum).ForEach(action);
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
       }
     }
     T UseTradingMacroOld<T>(string pair, int chartNum, Func<TradingMacro, T> func) {
@@ -1501,7 +1501,7 @@ namespace HedgeHog.Alice.Client {
         return GetTradingMacro(pair, chartNum).Select(func)
           .IfEmpty(() => { throw new Exception(new { TradingMacroNotFound = new { pair, chartNum } } + ""); }).First();
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
         return default;
       }
     }
@@ -1512,7 +1512,7 @@ namespace HedgeHog.Alice.Client {
       try {
         return GetTradingMacros(pair).Where(where).Select(func).ToArray();
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
         return new T[0];
       }
     }
@@ -1520,7 +1520,7 @@ namespace HedgeHog.Alice.Client {
       try {
         return GetTradingMacros(pair).Skip(chartNum).Take(1).Select(func);
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
         return new T[0];
       }
     }
@@ -1528,7 +1528,7 @@ namespace HedgeHog.Alice.Client {
       try {
         GetTradingMacro(pair, chartNum).ForEach(func);
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        LogMessage.Send(exc);
       }
     }
 

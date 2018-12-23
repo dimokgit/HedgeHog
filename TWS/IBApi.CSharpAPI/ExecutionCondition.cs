@@ -1,4 +1,7 @@
-﻿using System;
+﻿/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+ * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -78,6 +81,24 @@ namespace IBApi
             outStream.AddParameter(SecType);
             outStream.AddParameter(Exchange);
             outStream.AddParameter(Symbol);
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as ExecutionCondition;
+
+            if (other == null)
+                return false;
+
+            return base.Equals(obj) 
+                && this.Exchange.Equals(other.Exchange)
+                && this.SecType.Equals(other.SecType)
+                && this.Symbol.Equals(other.Symbol);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode() + Exchange.GetHashCode() + SecType.GetHashCode() + Symbol.GetHashCode();
         }
     }
 }

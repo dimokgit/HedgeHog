@@ -44,7 +44,7 @@ namespace IBApp {
     #endregion
 
     #region ctor
-    public delegate TDM DataMapDelegate<TDM>(DateTime date, double open, double high, double low, double close, int volume, int count);
+    public delegate TDM DataMapDelegate<TDM>(DateTime date, double open, double high, double low, double close, long volume, int count);
     public HistoryLoader(IBClientCore ibClient
       , Contract contract
       , int periodsBack
@@ -59,7 +59,7 @@ namespace IBApp {
       _ibClient = ibClient;
       _contract = contract;
       if(_contract.Exchange.IsNullOrEmpty())
-        _contract = ibClient.ReqContractDetailsCached(contract).ToEnumerable().ToArray().Select(cd => cd.Summary.ContractFactory())
+        _contract = ibClient.ReqContractDetailsCached(contract).ToEnumerable().ToArray().Select(cd => cd.Contract.ContractFactory())
           .Count(1, new { HistoryLoader = new { _contract } })
           .Single();
       _periodsBack = periodsBack;
@@ -130,8 +130,8 @@ namespace IBApp {
       return exc ?? new Exception(new { HistoryLoader = new { reqId, contract, code, error } } + "");
     }
 
-    private void IbClient_HistoricalDataEnd(int reqId, string startDateTWS, string endDateTWS) {
-      if(reqId != _reqId)
+    private void IbClient_HistoricalDataEnd(HistoricalDataEndMessage m) {
+      if(m.RequestId != _reqId)
         return;
       _delay = TimeSpan.Zero;
       _list.InsertRange(0, _list2.Distinct().SkipWhile(b => _periodsBack == 0 && b.StartDate < _dateStart));
@@ -146,12 +146,12 @@ namespace IBApp {
         RequestNextDataChunk();
       }
     }
-    private void IbClient_HistoricalData(int reqId, string date, double open, double high, double low, double close, int volume, int count, double WAP, bool hasGaps) {
-      if(reqId == _reqId) {
-        var date2 = date.FromTWSString();
+    private void IbClient_HistoricalData(HistoricalDataMessage m) {
+      if(m.RequestId == _reqId) {
+        var date2 = m.Date.FromTWSString();
         if(date2 < _endDate)
           _endDate = _contract.Symbol == "VIX" && date2.TimeOfDay == new TimeSpan(3, 15, 0) ? date2.Round(MathCore.RoundTo.Hour) : date2;
-        _list2.Add(_map(date2, open, high, low, close, volume, count));
+        _list2.Add(_map(date2, m.Open, m.High, m.Low, m.Close, m.Volume, m.Count));
       }
     }
     #endregion
@@ -169,7 +169,8 @@ namespace IBApp {
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         var ls = _contract.LocalSymbol ?? _contract.Symbol ?? "";
         var useRTH = !ls.IsOption() && !ls.IsCurrenncy() && !ls.IsFuture() && !ls.IsETF() && !ls.IsIndex() && _timeUnit != TimeUnit.S;
-        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, new List<TagValue>());
+        // TODO: reqHistoricalData - keepUpToDate
+        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, false, new List<TagValue>());
       } catch(Exception exc) {
         _error(exc);
         CleanUp();

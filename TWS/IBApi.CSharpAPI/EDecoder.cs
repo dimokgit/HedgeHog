@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2013 Interactive Brokers LLC. All rights reserved.  This code is subject to the terms
+/* Copyright (C) 2018 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -9,6 +9,7 @@ using System.Threading;
 using System.Net.Sockets;
 using System.IO;
 using System.Net;
+using System.Text.RegularExpressions;
 
 namespace IBApi
 {
@@ -40,7 +41,7 @@ namespace IBApi
                 ProcessConnectAck();
 
                 return nDecodedLen;
-            }            
+            }
 
             return ProcessIncomingMessage(ReadInt()) ? nDecodedLen : -1;
         }
@@ -82,275 +83,705 @@ namespace IBApi
             switch (incomingMessage)
             {
                 case IncomingMessage.TickPrice:
-                    {
-                        TickPriceEvent();
-                        break;
-                    }
+                    TickPriceEvent();
+                    break;
 
                 case IncomingMessage.TickSize:
-                    {
-                        TickSizeEvent();
-                        break;
-                    }
+                    TickSizeEvent();
+                    break;
 
                 case IncomingMessage.Tickstring:
-                    {
-                        TickStringEvent();
-                        break;
-                    }
+                    TickStringEvent();
+                    break;
+
                 case IncomingMessage.TickGeneric:
-                    {
-                        TickGenericEvent();
-                        break;
-                    }
+                    TickGenericEvent();
+                    break;
+
                 case IncomingMessage.TickEFP:
-                    {
-                        TickEFPEvent();
-                        break;
-                    }
+                    TickEFPEvent();
+                    break;
+
                 case IncomingMessage.TickSnapshotEnd:
-                    {
-                        TickSnapshotEndEvent();
-                        break;
-                    }
+                    TickSnapshotEndEvent();
+                    break;
+
                 case IncomingMessage.Error:
-                    {
-                        ErrorEvent();
-                        break;
-                    }
+                    ErrorEvent();
+                    break;
+
                 case IncomingMessage.CurrentTime:
-                    {
-                        CurrentTimeEvent();
-                        break;
-                    }
+                    CurrentTimeEvent();
+                    break;
+
                 case IncomingMessage.ManagedAccounts:
-                    {
-                        ManagedAccountsEvent();
-                        break;
-                    }
+                    ManagedAccountsEvent();
+                    break;
+
                 case IncomingMessage.NextValidId:
-                    {
-                        NextValidIdEvent();
-                        break;
-                    }
+                    NextValidIdEvent();
+                    break;
+
                 case IncomingMessage.DeltaNeutralValidation:
-                    {
-                        DeltaNeutralValidationEvent();
-                        break;
-                    }
+                    DeltaNeutralValidationEvent();
+                    break;
+
                 case IncomingMessage.TickOptionComputation:
-                    {
-                        TickOptionComputationEvent();
-                        break;
-                    }
+                    TickOptionComputationEvent();
+                    break;
+
                 case IncomingMessage.AccountSummary:
-                    {
-                        AccountSummaryEvent();
-                        break;
-                    }
+                    AccountSummaryEvent();
+                    break;
+
                 case IncomingMessage.AccountSummaryEnd:
-                    {
-                        AccountSummaryEndEvent();
-                        break;
-                    }
+                    AccountSummaryEndEvent();
+                    break;
+
                 case IncomingMessage.AccountValue:
-                    {
-                        AccountValueEvent();
-                        break;
-                    }
+                    AccountValueEvent();
+                    break;
+
                 case IncomingMessage.PortfolioValue:
-                    {
-                        PortfolioValueEvent();
-                        break;
-                    }
+                    PortfolioValueEvent();
+                    break;
+
                 case IncomingMessage.AccountUpdateTime:
-                    {
-                        AccountUpdateTimeEvent();
-                        break;
-                    }
+                    AccountUpdateTimeEvent();
+                    break;
+
                 case IncomingMessage.AccountDownloadEnd:
-                    {
-                        AccountDownloadEndEvent();
-                        break;
-                    }
+                    AccountDownloadEndEvent();
+                    break;
+
                 case IncomingMessage.OrderStatus:
-                    {
-                        OrderStatusEvent();
-                        break;
-                    }
+                    OrderStatusEvent();
+                    break;
+
                 case IncomingMessage.OpenOrder:
-                    {
-                        OpenOrderEvent();
-                        break;
-                    }
+                    OpenOrderEvent();
+                    break;
+
                 case IncomingMessage.OpenOrderEnd:
-                    {
-                        OpenOrderEndEvent();
-                        break;
-                    }
+                    OpenOrderEndEvent();
+                    break;
+
                 case IncomingMessage.ContractData:
-                    {
-                        ContractDataEvent();
-                        break;
-                    }
+                    ContractDataEvent();
+                    break;
+
                 case IncomingMessage.ContractDataEnd:
-                    {
-                        ContractDataEndEvent();
-                        break;
-                    }
+                    ContractDataEndEvent();
+                    break;
+
                 case IncomingMessage.ExecutionData:
-                    {
-                        ExecutionDataEvent();
-                        break;
-                    }
+                    ExecutionDataEvent();
+                    break;
+
                 case IncomingMessage.ExecutionDataEnd:
-                    {
-                        ExecutionDataEndEvent();
-                        break;
-                    }
+                    ExecutionDataEndEvent();
+                    break;
+
                 case IncomingMessage.CommissionsReport:
-                    {
-                        CommissionReportEvent();
-                        break;
-                    }
+                    CommissionReportEvent();
+                    break;
+
                 case IncomingMessage.FundamentalData:
-                    {
-                        FundamentalDataEvent();
-                        break;
-                    }
+                    FundamentalDataEvent();
+                    break;
+
                 case IncomingMessage.HistoricalData:
-                    {
-                        HistoricalDataEvent();
-                        break;
-                    }
+                    HistoricalDataEvent();
+                    break;
+
                 case IncomingMessage.MarketDataType:
-                    {
-                        MarketDataTypeEvent();
-                        break;
-                    }
+                    MarketDataTypeEvent();
+                    break;
+
                 case IncomingMessage.MarketDepth:
-                    {
-                        MarketDepthEvent();
-                        break;
-                    }
+                    MarketDepthEvent();
+                    break;
+
                 case IncomingMessage.MarketDepthL2:
-                    {
-                        MarketDepthL2Event();
-                        break;
-                    }
+                    MarketDepthL2Event();
+                    break;
+
                 case IncomingMessage.NewsBulletins:
-                    {
-                        NewsBulletinsEvent();
-                        break;
-                    }
+                    NewsBulletinsEvent();
+                    break;
+
                 case IncomingMessage.Position:
-                    {
-                        PositionEvent();
-                        break;
-                    }
+                    PositionEvent();
+                    break;
+
                 case IncomingMessage.PositionEnd:
-                    {
-                        PositionEndEvent();
-                        break;
-                    }
+                    PositionEndEvent();
+                    break;
+
                 case IncomingMessage.RealTimeBars:
-                    {
-                        RealTimeBarsEvent();
-                        break;
-                    }
+                    RealTimeBarsEvent();
+                    break;
+
                 case IncomingMessage.ScannerParameters:
-                    {
-                        ScannerParametersEvent();
-                        break;
-                    }
+                    ScannerParametersEvent();
+                    break;
+
                 case IncomingMessage.ScannerData:
-                    {
-                        ScannerDataEvent();
-                        break;
-                    }
+                    ScannerDataEvent();
+                    break;
+
                 case IncomingMessage.ReceiveFA:
-                    {
-                        ReceiveFAEvent();
-                        break;
-                    }
+                    ReceiveFAEvent();
+                    break;
+
                 case IncomingMessage.BondContractData:
-                    {
-                        BondContractDetailsEvent();
-                        break;
-                    }
+                    BondContractDetailsEvent();
+                    break;
+
                 case IncomingMessage.VerifyMessageApi:
-                    {
-                        VerifyMessageApiEvent();
-                        break;
-                    }
+                    VerifyMessageApiEvent();
+                    break;
+
                 case IncomingMessage.VerifyCompleted:
-                    {
-                        VerifyCompletedEvent();
-                        break;
-                    }
+                    VerifyCompletedEvent();
+                    break;
+
                 case IncomingMessage.DisplayGroupList:
-                    {
-                        DisplayGroupListEvent();
-                        break;
-                    }
+                    DisplayGroupListEvent();
+                    break;
+
                 case IncomingMessage.DisplayGroupUpdated:
-                    {
-                        DisplayGroupUpdatedEvent();
-                        break;
-                    }
+                    DisplayGroupUpdatedEvent();
+                    break;
+
                 case IncomingMessage.VerifyAndAuthMessageApi:
-                    {
-                        VerifyAndAuthMessageApiEvent();
-                        break;
-                    }
+                    VerifyAndAuthMessageApiEvent();
+                    break;
+
                 case IncomingMessage.VerifyAndAuthCompleted:
-                    {
-                        VerifyAndAuthCompletedEvent();
-                        break;
-                    }
+                    VerifyAndAuthCompletedEvent();
+                    break;
+
                 case IncomingMessage.PositionMulti:
-                    {
-                        PositionMultiEvent();
-                        break;
-                    }
+                    PositionMultiEvent();
+                    break;
+
                 case IncomingMessage.PositionMultiEnd:
-                    {
-                        PositionMultiEndEvent();
-                        break;
-                    }
+                    PositionMultiEndEvent();
+                    break;
+
                 case IncomingMessage.AccountUpdateMulti:
-                    {
-                        AccountUpdateMultiEvent();
-                        break;
-                    }
+                    AccountUpdateMultiEvent();
+                    break;
+
                 case IncomingMessage.AccountUpdateMultiEnd:
-                    {
-                        AccountUpdateMultiEndEvent();
-                        break;
-                    }
+                    AccountUpdateMultiEndEvent();
+                    break;
+
                 case IncomingMessage.SecurityDefinitionOptionParameter:
-                    {
-                        SecurityDefinitionOptionParameterEvent();
-                        break;
-                    }
+                    SecurityDefinitionOptionParameterEvent();
+                    break;
+
                 case IncomingMessage.SecurityDefinitionOptionParameterEnd:
-                    {
-                        SecurityDefinitionOptionParameterEndEvent();
-                        break;
-                    }
+                    SecurityDefinitionOptionParameterEndEvent();
+                    break;
+
                 case IncomingMessage.SoftDollarTier:
-                    {
-                        SoftDollarTierEvent();
-                        break;
-                    }
+                    SoftDollarTierEvent();
+                    break;
+
+                case IncomingMessage.FamilyCodes:
+                    FamilyCodesEvent();
+                    break;
+
+                case IncomingMessage.SymbolSamples:
+                    SymbolSamplesEvent();
+                    break;
+
+                case IncomingMessage.MktDepthExchanges:
+                    MktDepthExchangesEvent();
+                    break;
+
+                case IncomingMessage.TickNews:
+                    TickNewsEvent();
+                    break;
+
+                case IncomingMessage.TickReqParams:
+                    TickReqParamsEvent();
+                    break;
+
+                case IncomingMessage.SmartComponents:
+                    SmartComponentsEvent();
+                    break;
+
+                case IncomingMessage.NewsProviders:
+                    NewsProvidersEvent();
+                    break;
+
+                case IncomingMessage.NewsArticle:
+                    NewsArticleEvent();
+                    break;
+
+                case IncomingMessage.HistoricalNews:
+                    HistoricalNewsEvent();
+                    break;
+
+                case IncomingMessage.HistoricalNewsEnd:
+                    HistoricalNewsEndEvent();
+                    break;
+
+                case IncomingMessage.HeadTimestamp:
+                    HeadTimestampEvent();
+                    break;
+
+                case IncomingMessage.HistogramData:
+                    HistogramDataEvent();
+                    break;
+
+                case IncomingMessage.HistoricalDataUpdate:
+                    HistoricalDataUpdateEvent();
+                    break;
+
+                case IncomingMessage.RerouteMktDataReq:
+                    RerouteMktDataReqEvent();
+                    break;
+
+                case IncomingMessage.RerouteMktDepthReq:
+                    RerouteMktDepthReqEvent();
+                    break;
+
+                case IncomingMessage.MarketRule:
+                    MarketRuleEvent();
+                    break;
+
+                case IncomingMessage.PnL:
+                    PnLEvent();
+                    break;
+
+                case IncomingMessage.PnLSingle:
+                    PnLSingleEvent();
+                    break;
+
+                case IncomingMessage.HistoricalTick:
+                    HistoricalTickEvent();
+                    break;
+
+                case IncomingMessage.HistoricalTickBidAsk:
+                    HistoricalTickBidAskEvent();
+                    break;
+
+                case IncomingMessage.HistoricalTickLast:
+                    HistoricalTickLastEvent();
+                    break;
+
+                case IncomingMessage.TickByTick:
+                    TickByTickEvent();
+                    break;
+
                 default:
-                    {
-                        eWrapper.error(IncomingMessage.NotValid, EClientErrors.UNKNOWN_ID.Code, EClientErrors.UNKNOWN_ID.Message);
-                        return false;
-                    }
+                    eWrapper.error(IncomingMessage.NotValid, EClientErrors.UNKNOWN_ID.Code, EClientErrors.UNKNOWN_ID.Message);
+                    return false;
             }
 
             return true;
+        }
+
+        private void TickByTickEvent()
+        {
+            int reqId = ReadInt();
+            int tickType = ReadInt();
+            long time = ReadLong();
+            BitMask mask;
+            TickAttrib attribs;
+
+            switch (tickType)
+            {
+                case 0: // None
+                    break;
+                case 1: // Last
+                case 2: // AllLast
+                    double price = ReadDouble();
+                    int size = ReadInt();
+                    mask = new BitMask(ReadInt());
+                    attribs = new TickAttrib();
+                    attribs.PastLimit = mask[0];
+                    attribs.Unreported = mask[1];
+                    String exchange = ReadString();
+                    String specialConditions = ReadString();
+                    eWrapper.tickByTickAllLast(reqId, tickType, time, price, size, attribs, exchange, specialConditions);
+                    break;
+                case 3: // BidAsk
+                    double bidPrice = ReadDouble();
+                    double askPrice = ReadDouble();
+                    int bidSize = ReadInt();
+                    int askSize = ReadInt();
+                    mask = new BitMask(ReadInt());
+                    attribs = new TickAttrib();
+                    attribs.BidPastLow = mask[0];
+                    attribs.AskPastHigh = mask[1];
+                    eWrapper.tickByTickBidAsk(reqId, time, bidPrice, askPrice, bidSize, askSize, attribs);
+                    break;
+                case 4: // MidPoint
+                    double midPoint = ReadDouble();
+                    eWrapper.tickByTickMidPoint(reqId, time, midPoint);
+                    break;
+            }
+        }
+
+        private void HistoricalTickLastEvent()
+        {
+            int reqId = ReadInt();
+            int nTicks = ReadInt();
+            HistoricalTickLast[] ticks = new HistoricalTickLast[nTicks];
+
+            for (int i = 0; i < nTicks; i++)
+            {
+                var time = ReadLong();
+                var mask = ReadInt();
+                var price = ReadDouble();
+                var size = ReadLong();
+                var exchange = ReadString();
+                var specialConditions = ReadString();
+
+                ticks[i] = new HistoricalTickLast(time, mask, price, size, exchange, specialConditions);
+            }
+
+            bool done = ReadBoolFromInt();
+
+            eWrapper.historicalTicksLast(reqId, ticks, done);
+        }
+
+        private void HistoricalTickBidAskEvent()
+        {
+            int reqId = ReadInt();
+            int nTicks = ReadInt();
+            HistoricalTickBidAsk[] ticks = new HistoricalTickBidAsk[nTicks];
+
+            for (int i = 0; i < nTicks; i++)
+            {
+                var time = ReadLong();
+                var mask = ReadInt();
+                var priceBid = ReadDouble();
+                var priceAsk = ReadDouble();
+                var sizeBid = ReadLong();
+                var sizeAsk = ReadLong();
+
+                ticks[i] = new HistoricalTickBidAsk(time, mask, priceBid, priceAsk, sizeBid, sizeAsk);
+            }
+
+            bool done = ReadBoolFromInt();
+
+            eWrapper.historicalTicksBidAsk(reqId, ticks, done);
+        }
+
+        private void HistoricalTickEvent()
+        {
+            int reqId = ReadInt();
+            int nTicks = ReadInt();
+            HistoricalTick[] ticks = new HistoricalTick[nTicks];
+
+            for (int i = 0; i < nTicks; i++)
+            {
+                var time = ReadLong();
+                ReadInt();// for consistency
+                var price = ReadDouble();
+                var size = ReadLong();
+
+                ticks[i] = new HistoricalTick(time, price, size);
+            }
+
+            bool done = ReadBoolFromInt();
+
+            eWrapper.historicalTicks(reqId, ticks, done);
+        }
+
+        private void MarketRuleEvent()
+        {
+            int marketRuleId = ReadInt();
+            PriceIncrement[] priceIncrements = new PriceIncrement[0];
+            int nPriceIncrements = ReadInt();
+
+            if (nPriceIncrements > 0)
+            {
+                Array.Resize(ref priceIncrements, nPriceIncrements);
+
+                for (int i = 0; i < nPriceIncrements; ++i)
+                {
+                    priceIncrements[i] = new PriceIncrement(ReadDouble(), ReadDouble());
+                }
+            }
+
+            eWrapper.marketRule(marketRuleId, priceIncrements);
+        }
+
+        private void RerouteMktDepthReqEvent()
+        {
+            var reqId = ReadInt();
+            var conId = ReadInt();
+            string exchange = ReadString();
+
+            eWrapper.rerouteMktDepthReq(reqId, conId, exchange);
+        }
+
+        private void RerouteMktDataReqEvent()
+        {
+            var reqId = ReadInt();
+            var conId = ReadInt();
+            string exchange = ReadString();
+
+            eWrapper.rerouteMktDataReq(reqId, conId, exchange);
+        }
+
+        private void HistoricalDataUpdateEvent()
+        {
+            int requestId = ReadInt();
+            int barCount = ReadInt();
+            string date = ReadString();
+            double open = ReadDouble();
+            double close = ReadDouble();
+            double high = ReadDouble();
+            double low = ReadDouble();
+            double WAP = ReadDouble();
+            long volume = ReadLong();
+
+            eWrapper.historicalDataUpdate(requestId, new Bar(date, open, high, low,
+                                    close, volume, barCount, WAP));
+        }
+
+
+        private void PnLSingleEvent()
+        {
+            int reqId = ReadInt();
+            int pos = ReadInt();
+            double dailyPnL = ReadDouble();
+            double unrealizedPnL = double.MaxValue;
+            double realizedPnL = double.MaxValue;
+
+            if (serverVersion >= MinServerVer.UNREALIZED_PNL)
+            {
+                unrealizedPnL = ReadDouble();
+            }
+
+            if (serverVersion >= MinServerVer.REALIZED_PNL)
+            {
+                realizedPnL = ReadDouble();
+            }
+
+            double value = ReadDouble();
+
+            eWrapper.pnlSingle(reqId, pos, dailyPnL, unrealizedPnL, realizedPnL, value);
+        }
+
+        private void PnLEvent()
+        {
+            int reqId = ReadInt();
+            double dailyPnL = ReadDouble();
+            double unrealizedPnL = double.MaxValue;
+            double realizedPnL = double.MaxValue;
+
+            if (serverVersion >= MinServerVer.UNREALIZED_PNL)
+            {
+                unrealizedPnL = ReadDouble();
+            }
+
+            if (serverVersion >= MinServerVer.REALIZED_PNL)
+            {
+                realizedPnL = ReadDouble();
+            }
+
+            eWrapper.pnl(reqId, dailyPnL, unrealizedPnL, realizedPnL);
+        }
+
+        private void HistogramDataEvent()
+        {
+            var reqId = ReadInt();
+            var n = ReadInt();
+            var data = new HistogramEntry[n];
+
+            for (int i = 0; i < n; i++)
+            {
+                data[i].Price = ReadDouble();
+                data[i].Size = ReadLong();
+            }
+
+            eWrapper.histogramData(reqId, data);
+        }
+
+        private void HeadTimestampEvent()
+        {
+            int reqId = ReadInt();
+            string headTimestamp = ReadString();
+
+            eWrapper.headTimestamp(reqId, headTimestamp);
+        }
+
+        private void HistoricalNewsEvent()
+        {
+            int requestId = ReadInt();
+            string time = ReadString();
+            string providerCode = ReadString();
+            string articleId = ReadString();
+            string headline = ReadString();
+
+            eWrapper.historicalNews(requestId, time, providerCode, articleId, headline);
+        }
+
+        private void HistoricalNewsEndEvent()
+        {
+            int requestId = ReadInt();
+            bool hasMore = ReadBoolFromInt();
+
+            eWrapper.historicalNewsEnd(requestId, hasMore);
+        }
+
+        private void NewsArticleEvent()
+        {
+            int requestId = ReadInt();
+            int articleType = ReadInt();
+            string articleText = ReadString();
+
+            eWrapper.newsArticle(requestId, articleType, articleText);
+        }
+
+        private void NewsProvidersEvent()
+        {
+            NewsProvider[] newsProviders = new NewsProvider[0];
+            int nNewsProviders = ReadInt();
+
+            if (nNewsProviders > 0)
+            {
+                Array.Resize(ref newsProviders, nNewsProviders);
+
+                for (int i = 0; i < nNewsProviders; ++i)
+                {
+                    newsProviders[i] = new NewsProvider(ReadString(), ReadString());
+                }
+            }
+
+            eWrapper.newsProviders(newsProviders);
+        }
+
+        private void SmartComponentsEvent()
+        {
+            int reqId = ReadInt();
+            int n = ReadInt();
+            var theMap = new Dictionary<int, KeyValuePair<string, char>>();
+
+            for (int i = 0; i < n; i++)
+            {
+                int bitNumber = ReadInt();
+                String exchange = ReadString();
+                char exchangeLetter = ReadChar();
+
+                theMap.Add(bitNumber, new KeyValuePair<string, char>(exchange, exchangeLetter));
+            }
+
+            eWrapper.smartComponents(reqId, theMap);
+        }
+
+        private void TickReqParamsEvent()
+        {
+            int tickerId = ReadInt();
+            double minTick = ReadDouble();
+            String bboExchange = ReadString();
+            int snapshotPermissions = ReadInt();
+
+            eWrapper.tickReqParams(tickerId, minTick, bboExchange, snapshotPermissions);
+        }
+
+        private void TickNewsEvent()
+        {
+            int tickerId = ReadInt();
+            long timeStamp = ReadLong();
+            string providerCode = ReadString();
+            string articleId = ReadString();
+            string headline = ReadString();
+            string extraData = ReadString();
+
+            eWrapper.tickNews(tickerId, timeStamp, providerCode, articleId, headline, extraData);
+        }
+
+        private void SymbolSamplesEvent()
+        {
+            int reqId = ReadInt();
+            ContractDescription[] contractDescriptions = new ContractDescription[0];
+            int nContractDescriptions = ReadInt();
+
+            if (nContractDescriptions > 0)
+            {
+                Array.Resize(ref contractDescriptions, nContractDescriptions);
+
+                for (int i = 0; i < nContractDescriptions; ++i)
+                {
+                    // read contract fields
+                    Contract contract = new Contract();
+                    contract.ConId = ReadInt();
+                    contract.Symbol = ReadString();
+                    contract.SecType = ReadString();
+                    contract.PrimaryExch = ReadString();
+                    contract.Currency = ReadString();
+
+                    // read derivative sec types list
+                    string[] derivativeSecTypes = new string[0];
+                    int nDerivativeSecTypes = ReadInt();
+                    if (nDerivativeSecTypes > 0)
+                    {
+                        Array.Resize(ref derivativeSecTypes, nDerivativeSecTypes);
+                        for (int j = 0; j < nDerivativeSecTypes; ++j)
+                        {
+                            derivativeSecTypes[j] = ReadString();
+                        }
+                    }
+
+                    ContractDescription contractDescription = new ContractDescription(contract, derivativeSecTypes);
+                    contractDescriptions[i] = contractDescription;
+                }
+            }
+
+            eWrapper.symbolSamples(reqId, contractDescriptions);
+        }
+
+        private void FamilyCodesEvent()
+        {
+            FamilyCode[] familyCodes = new FamilyCode[0];
+            int nFamilyCodes = ReadInt();
+
+            if (nFamilyCodes > 0)
+            {
+                Array.Resize(ref familyCodes, nFamilyCodes);
+
+                for (int i = 0; i < nFamilyCodes; ++i)
+                {
+                    familyCodes[i] = new FamilyCode(ReadString(), ReadString());
+                }
+            }
+
+            eWrapper.familyCodes(familyCodes);
+        }
+
+        private void MktDepthExchangesEvent()
+        {
+            DepthMktDataDescription[] depthMktDataDescriptions = new DepthMktDataDescription[0];
+            int nDescriptions = ReadInt();
+
+            if (nDescriptions > 0)
+            {
+                Array.Resize(ref depthMktDataDescriptions, nDescriptions);
+
+                for (int i = 0; i < nDescriptions; i++)
+                {
+                    if (serverVersion >= MinServerVer.SERVICE_DATA_TYPE)
+                    {
+                        depthMktDataDescriptions[i] = new DepthMktDataDescription(ReadString(), ReadString(), ReadString(), ReadString(), ReadIntMax());
+                    }
+                    else
+                    {
+                        depthMktDataDescriptions[i] = new DepthMktDataDescription(ReadString(), ReadString(), "", ReadBoolFromInt() ? "Deep2" : "Deep", Int32.MaxValue);
+                    }
+                }
+            }
+
+            eWrapper.mktDepthExchanges(depthMktDataDescriptions);
         }
 
         private void SoftDollarTierEvent()
@@ -424,10 +855,6 @@ namespace IBApi
             bool isSuccessful = String.Compare(ReadString(), "true", true) == 0;
             string errorText = ReadString();
 
-            //if (isSuccessful)
-            //    parent.startApi();
-#warning TODO: implement call to start api in client
-
             eWrapper.verifyCompleted(isSuccessful, errorText);
         }
 
@@ -444,10 +871,6 @@ namespace IBApi
             int msgVersion = ReadInt();
             bool isSuccessful = String.Compare(ReadString(), "true", true) == 0;
             string errorText = ReadString();
-
-            //if (isSuccessful)
-            //    parent.startApi();
-#warning TODO: implement call to start api in client
 
             eWrapper.verifyAndAuthCompleted(isSuccessful, errorText);
         }
@@ -468,27 +891,57 @@ namespace IBApi
             int tickType = ReadInt();
             double price = ReadDouble();
             int size = 0;
+            
             if (msgVersion >= 2)
                 size = ReadInt();
-            int canAutoExecute = 0;
-            if (msgVersion >= 3)
-                canAutoExecute = ReadInt();
 
-            eWrapper.tickPrice(requestId, tickType, price, canAutoExecute);
+            TickAttrib attr = new TickAttrib();
+
+            if (msgVersion >= 3)
+            {
+                int attrMask = ReadInt();
+
+                attr.CanAutoExecute = attrMask == 1;
+
+                if (serverVersion >= MinServerVer.PAST_LIMIT)
+                {
+                    BitMask mask = new BitMask(attrMask);
+
+                    attr.CanAutoExecute = mask[0];
+                    attr.PastLimit = mask[1];
+
+                    if (serverVersion >= MinServerVer.PRE_OPEN_BID_ASK)
+                    {
+                        attr.PreOpen = mask[2];
+                    }
+                }
+            }
+
+
+            eWrapper.tickPrice(requestId, tickType, price, attr);
 
             if (msgVersion >= 2)
             {
                 int sizeTickType = -1;//not a tick
                 switch (tickType)
                 {
-                    case 1:
-                        sizeTickType = 0;//BID_SIZE
+                    case TickType.BID:
+                        sizeTickType = TickType.BID_SIZE;
                         break;
-                    case 2:
-                        sizeTickType = 3;//ASK_SIZE
+                    case TickType.ASK:
+                        sizeTickType = TickType.ASK_SIZE;
                         break;
-                    case 4:
-                        sizeTickType = 5;//LAST_SIZE
+                    case TickType.LAST:
+                        sizeTickType = TickType.LAST_SIZE;
+                        break;
+                    case TickType.DELAYED_BID:
+                        sizeTickType = TickType.DELAYED_BID_SIZE;
+                        break;
+                    case TickType.DELAYED_ASK:
+                        sizeTickType = TickType.DELAYED_ASK_SIZE;
+                        break;
+                    case TickType.DELAYED_LAST:
+                        sizeTickType = TickType.DELAYED_LAST_SIZE;
                         break;
                 }
                 if (sizeTickType != -1)
@@ -589,11 +1042,11 @@ namespace IBApi
         {
             int msgVersion = ReadInt();
             int requestId = ReadInt();
-            UnderComp underComp = new UnderComp();
-            underComp.ConId = ReadInt();
-            underComp.Delta = ReadDouble();
-            underComp.Price = ReadDouble();
-            eWrapper.deltaNeutralValidation(requestId, underComp);
+            DeltaNeutralContract deltaNeutralContract = new DeltaNeutralContract();
+            deltaNeutralContract.ConId = ReadInt();
+            deltaNeutralContract.Delta = ReadDouble();
+            deltaNeutralContract.Price = ReadDouble();
+            eWrapper.deltaNeutralValidation(requestId, deltaNeutralContract);
         }
 
         private void TickOptionComputationEvent()
@@ -602,26 +1055,30 @@ namespace IBApi
             int requestId = ReadInt();
             int tickType = ReadInt();
             double impliedVolatility = ReadDouble();
-            if (impliedVolatility < 0)
+            if (impliedVolatility.Equals(-1))
+            { // -1 is the "not yet computed" indicator
                 impliedVolatility = Double.MaxValue;
+            }
             double delta = ReadDouble();
-            if (Math.Abs(delta) > 1)
+            if (delta.Equals(-2))
+            { // -2 is the "not yet computed" indicator
                 delta = Double.MaxValue;
+            }
             double optPrice = Double.MaxValue;
             double pvDividend = Double.MaxValue;
             double gamma = Double.MaxValue;
             double vega = Double.MaxValue;
             double theta = Double.MaxValue;
             double undPrice = Double.MaxValue;
-            if (msgVersion >= 6 || tickType == TickType.MODEL_OPTION)
+            if (msgVersion >= 6 || tickType == TickType.MODEL_OPTION || tickType == TickType.DELAYED_MODEL_OPTION)
             {
                 optPrice = ReadDouble();
-                if (optPrice < 0)
+                if (optPrice.Equals(-1))
                 { // -1 is the "not yet computed" indicator
                     optPrice = Double.MaxValue;
                 }
                 pvDividend = ReadDouble();
-                if (pvDividend < 0)
+                if (pvDividend.Equals(-1))
                 { // -1 is the "not yet computed" indicator
                     pvDividend = Double.MaxValue;
                 }
@@ -629,22 +1086,22 @@ namespace IBApi
             if (msgVersion >= 6)
             {
                 gamma = ReadDouble();
-                if (Math.Abs(gamma) > 1)
+                if (gamma.Equals(-2))
                 { // -2 is the "not yet computed" indicator
                     gamma = Double.MaxValue;
                 }
                 vega = ReadDouble();
-                if (Math.Abs(vega) > 1)
+                if (vega.Equals(-2))
                 { // -2 is the "not yet computed" indicator
                     vega = Double.MaxValue;
                 }
                 theta = ReadDouble();
-                if (Math.Abs(theta) > 1)
+                if (theta.Equals(-2))
                 { // -2 is the "not yet computed" indicator
                     theta = Double.MaxValue;
                 }
                 undPrice = ReadDouble();
-                if (undPrice < 0)
+                if (undPrice.Equals(-1))
                 { // -1 is the "not yet computed" indicator
                     undPrice = Double.MaxValue;
                 }
@@ -694,11 +1151,11 @@ namespace IBApi
 
             ContractDetails contract = new ContractDetails();
 
-            contract.Summary.Symbol = ReadString();
-            contract.Summary.SecType = ReadString();
+            contract.Contract.Symbol = ReadString();
+            contract.Contract.SecType = ReadString();
             contract.Cusip = ReadString();
             contract.Coupon = ReadDouble();
-            contract.Maturity = ReadString();
+            readLastTradeDate(contract, true);
             contract.IssueDate = ReadString();
             contract.Ratings = ReadString();
             contract.BondType = ReadString();
@@ -707,12 +1164,16 @@ namespace IBApi
             contract.Callable = ReadBoolFromInt();
             contract.Putable = ReadBoolFromInt();
             contract.DescAppend = ReadString();
-            contract.Summary.Exchange = ReadString();
-            contract.Summary.Currency = ReadString();
+            contract.Contract.Exchange = ReadString();
+            contract.Contract.Currency = ReadString();
             contract.MarketName = ReadString();
-            contract.Summary.TradingClass = ReadString();
-            contract.Summary.ConId = ReadInt();
+            contract.Contract.TradingClass = ReadString();
+            contract.Contract.ConId = ReadInt();
             contract.MinTick = ReadDouble();
+            if (serverVersion >= MinServerVer.MD_SIZE_MULTIPLIER)
+            {
+                contract.MdSizeMultiplier = ReadInt();
+            }
             contract.OrderTypes = ReadString();
             contract.ValidExchanges = ReadString();
             if (msgVersion >= 2)
@@ -746,6 +1207,15 @@ namespace IBApi
                     }
                 }
             }
+            if (serverVersion >= MinServerVer.AGG_GROUP)
+            {
+                contract.AggGroup = ReadInt();
+            }
+            if (serverVersion >= MinServerVer.MARKET_RULES)
+            {
+                contract.MarketRuleIds = ReadString();
+            }
+
             eWrapper.bondContractDetails(requestId, contract);
         }
 
@@ -819,7 +1289,7 @@ namespace IBApi
 
         private void OrderStatusEvent()
         {
-            int msgVersion = ReadInt();
+            int msgVersion = serverVersion >= MinServerVer.MARKET_CAP_PRICE ? int.MaxValue : ReadInt();
             int id = ReadInt();
             string status = ReadString();
             double filled = serverVersion >= MinServerVer.FRACTIONAL_POSITIONS ? ReadDouble() : (double)ReadInt();
@@ -856,7 +1326,14 @@ namespace IBApi
                 whyHeld = ReadString();
             }
 
-            eWrapper.orderStatus(id, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld);
+            double mktCapPrice = double.MaxValue;
+
+            if (serverVersion >= MinServerVer.MARKET_CAP_PRICE)
+            {
+                mktCapPrice = ReadDouble();
+            }
+
+            eWrapper.orderStatus(id, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice);
         }
 
         private void OpenOrderEvent()
@@ -1179,11 +1656,11 @@ namespace IBApi
             {
                 if (ReadBoolFromInt())
                 {
-                    UnderComp underComp = new UnderComp();
-                    underComp.ConId = ReadInt();
-                    underComp.Delta = ReadDouble();
-                    underComp.Price = ReadDouble();
-                    contract.UnderComp = underComp;
+                    DeltaNeutralContract deltaNeutralContract = new DeltaNeutralContract();
+                    deltaNeutralContract.ConId = ReadInt();
+                    deltaNeutralContract.Delta = ReadDouble();
+                    deltaNeutralContract.Price = ReadDouble();
+                    contract.DeltaNeutralContract = deltaNeutralContract;
                 }
             }
 
@@ -1217,9 +1694,18 @@ namespace IBApi
             {
                 order.WhatIf = ReadBoolFromInt();
                 orderState.Status = ReadString();
-                orderState.InitMargin = ReadString();
-                orderState.MaintMargin = ReadString();
-                orderState.EquityWithLoan = ReadString();
+                if (serverVersion >= MinServerVer.WHAT_IF_EXT_FIELDS)
+                {
+                    orderState.InitMarginBefore = ReadString();
+                    orderState.MaintMarginBefore = ReadString();
+                    orderState.EquityWithLoanBefore = ReadString();
+                    orderState.InitMarginChange = ReadString();
+                    orderState.MaintMarginChange = ReadString();
+                    orderState.EquityWithLoanChange = ReadString();
+                }
+                orderState.InitMarginAfter = ReadString();
+                orderState.MaintMarginAfter = ReadString();
+                orderState.EquityWithLoanAfter = ReadString();
                 orderState.Commission = ReadDoubleMax();
                 orderState.MinCommission = ReadDoubleMax();
                 orderState.MaxCommission = ReadDoubleMax();
@@ -1268,12 +1754,22 @@ namespace IBApi
                 order.AdjustedStopPrice = ReadDoubleMax();
                 order.AdjustedStopLimitPrice = ReadDoubleMax();
                 order.AdjustedTrailingAmount = ReadDoubleMax();
-                order.AdjustableTrailingUnit = ReadInt();                
+                order.AdjustableTrailingUnit = ReadInt();
             }
 
             if (serverVersion >= MinServerVer.SOFT_DOLLAR_TIER)
             {
                 order.Tier = new SoftDollarTier(ReadString(), ReadString(), ReadString());
+            }
+
+            if (serverVersion >= MinServerVer.CASH_QTY)
+            {
+                order.CashQty = ReadDoubleMax();
+            }
+
+            if (serverVersion >= MinServerVer.AUTO_PRICE_FOR_HEDGE)
+            {
+                order.DontUseAutoPriceForHedge = ReadBoolFromInt();
             }
 
             eWrapper.openOrder(order.OrderId, contract, order, orderState);
@@ -1292,19 +1788,23 @@ namespace IBApi
             if (msgVersion >= 3)
                 requestId = ReadInt();
             ContractDetails contract = new ContractDetails();
-            contract.Summary.Symbol = ReadString();
-            contract.Summary.SecType = ReadString();
-            contract.Summary.LastTradeDateOrContractMonth = ReadString();
-            contract.Summary.Strike = ReadDouble();
-            contract.Summary.Right = ReadString();
-            contract.Summary.Exchange = ReadString();
-            contract.Summary.Currency = ReadString();
-            contract.Summary.LocalSymbol = ReadString();
+            contract.Contract.Symbol = ReadString();
+            contract.Contract.SecType = ReadString();
+            readLastTradeDate(contract, false);
+            contract.Contract.Strike = ReadDouble();
+            contract.Contract.Right = ReadString();
+            contract.Contract.Exchange = ReadString();
+            contract.Contract.Currency = ReadString();
+            contract.Contract.LocalSymbol = ReadString();
             contract.MarketName = ReadString();
-            contract.Summary.TradingClass = ReadString();
-            contract.Summary.ConId = ReadInt();
+            contract.Contract.TradingClass = ReadString();
+            contract.Contract.ConId = ReadInt();
             contract.MinTick = ReadDouble();
-            contract.Summary.Multiplier = ReadString();
+            if (serverVersion >= MinServerVer.MD_SIZE_MULTIPLIER)
+            {
+                contract.MdSizeMultiplier = ReadInt();
+            }
+            contract.Contract.Multiplier = ReadString();
             contract.OrderTypes = ReadString();
             contract.ValidExchanges = ReadString();
             if (msgVersion >= 2)
@@ -1318,7 +1818,7 @@ namespace IBApi
             if (msgVersion >= 5)
             {
                 contract.LongName = ReadString();
-                contract.Summary.PrimaryExch = ReadString();
+                contract.Contract.PrimaryExch = ReadString();
             }
             if (msgVersion >= 6)
             {
@@ -1350,6 +1850,23 @@ namespace IBApi
                     }
                 }
             }
+            if (serverVersion >= MinServerVer.AGG_GROUP)
+            {
+                contract.AggGroup = ReadInt();
+            }
+            if (serverVersion >= MinServerVer.UNDERLYING_INFO)
+            {
+                contract.UnderSymbol = ReadString();
+                contract.UnderSecType = ReadString();
+            }
+            if (serverVersion >= MinServerVer.MARKET_RULES)
+            {
+                contract.MarketRuleIds = ReadString();
+            }
+            if (serverVersion >= MinServerVer.REAL_EXPIRATION_DATE)
+            {
+                contract.RealExpirationDate = ReadString();
+            }
 
             eWrapper.contractDetails(requestId, contract);
         }
@@ -1364,7 +1881,13 @@ namespace IBApi
 
         private void ExecutionDataEvent()
         {
-            int msgVersion = ReadInt();
+            int msgVersion = serverVersion;
+
+            if (serverVersion < MinServerVer.LAST_LIQUIDITY)
+            {
+                msgVersion = ReadInt();
+            }
+
             int requestId = -1;
             if (msgVersion >= 7)
                 requestId = ReadInt();
@@ -1414,7 +1937,7 @@ namespace IBApi
             }
             if (msgVersion >= 6)
             {
-                exec.CumQty = ReadInt();
+                exec.CumQty = ReadDouble();
                 exec.AvgPrice = ReadDouble();
             }
             if (msgVersion >= 8)
@@ -1429,6 +1952,11 @@ namespace IBApi
             if (serverVersion >= MinServerVer.MODELS_SUPPORT)
             {
                 exec.ModelCode = ReadString();
+            }
+
+            if (serverVersion >= MinServerVer.LAST_LIQUIDITY)
+            {
+                exec.LastLiquidity = new Liquidity(ReadInt());
             }
 
             eWrapper.execDetails(requestId, contract, exec);
@@ -1464,18 +1992,25 @@ namespace IBApi
 
         private void HistoricalDataEvent()
         {
-            int msgVersion = ReadInt();
+            int msgVersion = int.MaxValue;
+
+            if (serverVersion < MinServerVer.SYNT_REALTIME_BARS)
+            {
+                msgVersion = ReadInt();
+            }
+
             int requestId = ReadInt();
             string startDateStr = "";
             string endDateStr = "";
-            string completedIndicator = "finished";
+
             if (msgVersion >= 2)
             {
                 startDateStr = ReadString();
                 endDateStr = ReadString();
-                completedIndicator += "-" + startDateStr + "-" + endDateStr;
             }
+
             int itemCount = ReadInt();
+            
             for (int ctr = 0; ctr < itemCount; ctr++)
             {
                 string date = ReadString();
@@ -1483,17 +2018,23 @@ namespace IBApi
                 double high = ReadDouble();
                 double low = ReadDouble();
                 double close = ReadDouble();
-                int volume = ReadInt();
+                long volume = serverVersion < MinServerVer.SYNT_REALTIME_BARS ? ReadInt() : ReadLong();
                 double WAP = ReadDouble();
-                string hasGaps = ReadString();
+
+                if (serverVersion < MinServerVer.SYNT_REALTIME_BARS)
+                {
+                    /*string hasGaps = */ReadString();
+                }
+
                 int barCount = -1;
+                
                 if (msgVersion >= 3)
                 {
                     barCount = ReadInt();
                 }
-                eWrapper.historicalData(requestId, date, open, high, low,
-                                        close, volume, barCount, WAP,
-                                        Boolean.Parse(hasGaps));
+
+                eWrapper.historicalData(requestId, new Bar(date, open, high, low,
+                                        close, volume, barCount, WAP));
             }
 
             // send end of dataset marker.
@@ -1600,25 +2141,25 @@ namespace IBApi
 
         private void ScannerDataEvent()
         {
-            ContractDetails conDet = new ContractDetails();
             int msgVersion = ReadInt();
             int requestId = ReadInt();
             int numberOfElements = ReadInt();
             for (int i = 0; i < numberOfElements; i++)
             {
                 int rank = ReadInt();
+                ContractDetails conDet = new ContractDetails();
                 if (msgVersion >= 3)
-                    conDet.Summary.ConId = ReadInt();
-                conDet.Summary.Symbol = ReadString();
-                conDet.Summary.SecType = ReadString();
-                conDet.Summary.LastTradeDateOrContractMonth = ReadString();
-                conDet.Summary.Strike = ReadDouble();
-                conDet.Summary.Right = ReadString();
-                conDet.Summary.Exchange = ReadString();
-                conDet.Summary.Currency = ReadString();
-                conDet.Summary.LocalSymbol = ReadString();
+                    conDet.Contract.ConId = ReadInt();
+                conDet.Contract.Symbol = ReadString();
+                conDet.Contract.SecType = ReadString();
+                conDet.Contract.LastTradeDateOrContractMonth = ReadString();
+                conDet.Contract.Strike = ReadDouble();
+                conDet.Contract.Right = ReadString();
+                conDet.Contract.Exchange = ReadString();
+                conDet.Contract.Currency = ReadString();
+                conDet.Contract.LocalSymbol = ReadString();
                 conDet.MarketName = ReadString();
-                conDet.Summary.TradingClass = ReadString();
+                conDet.Contract.TradingClass = ReadString();
                 string distance = ReadString();
                 string benchmark = ReadString();
                 string projection = ReadString();
@@ -1741,6 +2282,12 @@ namespace IBApi
             return str == null ? false : (Int32.Parse(str) != 0);
         }
 
+        public char ReadChar()
+        {
+            string str = ReadString();
+            return str == null ? '\0' : str[0];
+        }
+
         public string ReadString()
         {
             byte b = dataReader.ReadByte();
@@ -1771,6 +2318,34 @@ namespace IBApi
                 nDecodedLen += strBuilder.Length;
 
                 return strBuilder.ToString();
+            }
+        }
+
+        private void readLastTradeDate(ContractDetails contract, bool isBond)
+        {
+            string lastTradeDateOrContractMonth = ReadString();
+            if (lastTradeDateOrContractMonth != null)
+            {
+                string[] splitted = Regex.Split(lastTradeDateOrContractMonth, "\\s+");
+                if (splitted.Length > 0)
+                {
+                    if (isBond)
+                    {
+                        contract.Maturity = splitted[0];
+                    }
+                    else
+                    {
+                        contract.Contract.LastTradeDateOrContractMonth = splitted[0];
+                    }
+                }
+                if (splitted.Length > 1)
+                {
+                    contract.LastTradeTime = splitted[1];
+                }
+                if (isBond && splitted.Length > 2)
+                {
+                    contract.TimeZoneId = splitted[2];
+                }
             }
         }
     }

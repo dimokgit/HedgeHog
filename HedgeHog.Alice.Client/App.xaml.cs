@@ -36,6 +36,7 @@ namespace HedgeHog.Alice.Client {
     static public List<Window> ChildWindows = new List<Window>();
     static public List<string> WwwMessageWarning = new List<string>();
     App() {
+      MessageBus.Current.Listen<LogMessage>().Subscribe(lm => AsyncMessageBox.BeginMessageBoxAsync(lm.Exception + ""));
       ReactiveUI.MessageBus.Current.Listen<WwwWarningMessage>().Subscribe(wm => WwwMessageWarning.Add(wm.Message));
       DataFlowProcessors.Initialize();
       this.DispatcherUnhandledException += App_DispatcherUnhandledException;
@@ -50,28 +51,28 @@ namespace HedgeHog.Alice.Client {
             var protocol = trader.IpPort == 443 ? "https" : "http";
             while(true) {
               string url = $"{protocol}://+:{trader.IpPortActual}/";
-              GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new { trying = new { url } }));
+              LogMessage.Send(new { trying = new { url } });
               try {
                 _webApp = WebApp.Start<StartUp>(url);
-                GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new { url }));
+                LogMessage.Send(new { url });
                 break;
               } catch(Exception exc) {
                 var he = exc.InnerException as System.Net.HttpListenerException;
                 if(exc == null || he.ErrorCode != 183) {
-                  GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new Exception(new { url } + "", exc)));
+                  LogMessage.Send(new Exception(new { url } + "", exc));
                   return;
                 }
-                GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new { port = trader.IpPortActual, isBusy = true } + ""));
+                LogMessage.Send(new { port = trader.IpPortActual, isBusy = true } + "");
                 trader.IpPortActual++;
                 if(trader.IpPortActual > trader.IpPort + 10) {
-                  GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new { trader.IpPortActual, trader.IpPort, Limit = 10 }));
+                  LogMessage.Send(new { trader.IpPortActual, trader.IpPort, Limit = 10 } + "");
                   return;
                 }
               }
             }
           }
         } catch(CompositionException cex) {
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(cex.ToJson()));
+          LogMessage.Send(cex);
           AsyncMessageBox.BeginMessageBoxAsync(cex + "");
         } catch(Exception exc) {
           AsyncMessageBox.BeginMessageBoxAsync(exc + "");
@@ -81,7 +82,7 @@ namespace HedgeHog.Alice.Client {
 
     void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e) {
       try {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(e.Exception));
+        LogMessage.Send(e.Exception);
       } catch { }
       if(!IsHandled(e.Exception))
         AsyncMessageBox.BeginMessageBoxAsync(e.Exception.ToString());
@@ -90,7 +91,7 @@ namespace HedgeHog.Alice.Client {
     void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
       var exc = (Exception)e.ExceptionObject;
       try {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
+        LogMessage.Send(exc);
       } catch {
       }
       FileLogger.LogToFile(exc);
