@@ -638,7 +638,7 @@ namespace IBApp {
     private static object _validOrderIdLock = new object();
     private void OnNextValidId(int obj) {
       lock(_validOrderIdLock) {
-        _validOrderId = NextOrderId + 1;
+        _validOrderId = obj + 1;
       }
       Verbose(new { _validOrderId });
     }

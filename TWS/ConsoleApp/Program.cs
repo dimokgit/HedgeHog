@@ -65,13 +65,24 @@ namespace ConsoleApp {
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7497;
-      ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm=>HandleMessage(lm.ToJson()));
+      ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
+        var am = fw.AccountManager;
         {
-          var c = new Contract { LocalSymbol = "VXF9", SecType = "FUT", Currency = "USD" };
-          var c2 = "VXF9".ContractFactory();
-          ibClient.ReqContractDetailsCached("ESH9")
-          .Subscribe(_ => HandleMessage(_.Contract.ToJson(true)));
+          (from under in ibClient.ReqContractDetailsCached("ESH9")
+           from price in ibClient.ReqPriceSafe(under.Contract, 2000, true)
+           from options in am.CurrentOptions(under.Contract.LocalSymbol, price.ask.Avg(price.bid), 0, 1, o => o.IsCall).Take(1)
+           from option in options
+           select new { under = under.Contract, price, option }
+          ).Subscribe(_ => {
+            HandleMessage(_.ToJson(true));
+            if(false)
+            am.OpenTrade(_.option.option, "", 1, 0, 0, false, DateTime.MaxValue, OrderConditionParam.PriceFactory(_.under, 3000, true, false));
+          });
+          //ibClient.ReqOptionChainCache("ESH9")
+          //.Subscribe(cd => {
+          //  am.OpenTrade(cd.Contract,"", -1, 0, 0, false, DateTime.MinValue,new AccountManager.PriceConditionParam(cd.Contract,3000,true,false));
+          //});
           //.Subscribe(_ => PriceHistory.AddTicks(fw, 1, "ESH9", DateTime.Now.AddYears(-5), o => HandleMessage(o + "")));
           return;
         }
@@ -89,7 +100,6 @@ namespace ConsoleApp {
         }
         LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
         HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
-        var am = fw.AccountManager;
         (from options in am.CurrentOptions("VXX", 0, 2, 3, c => true)
          select options)
         .Subscribe(options => options.ForEach(o => Console.WriteLine(o)));

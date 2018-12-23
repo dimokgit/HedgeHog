@@ -125,6 +125,7 @@
     <Compile Include="DataManagers\AccountManager.BullPut.cs" />
     <Compile Include="DataManagers\AccountManager.CoveredOption.cs" />
     <Compile Include="DataManagers\AccountManager.OpenTrade.cs" />
+    <Compile Include="DataManagers\AccountManager.PriceConditionParam.cs" />
     <Compile Include="DataManagers\AccountManager.Straddle.cs" />
     <Compile Include="DataManagers\AccountManager.Summary.cs" />
     <Compile Include="DataManagers\DataManager.cs" />

@@ -40,7 +40,9 @@ namespace IBApp {
 
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
       OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, minTickMultiplier, Caller);
-    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "")
+    => OpenTrade(contract, type, quantity, price, profit, useTakeProfit, goodTillDate, (OrderCondition)null, minTickMultiplier, Caller);
+    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, OrderCondition condition, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
       var timeoutInMilliseconds = 5000;
       if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
         var message = new { contract, quantity, Method = nameof(OpenTrade), Caller, timeoutInMilliseconds } + "";
@@ -59,8 +61,9 @@ namespace IBApp {
         return null;
       }
       var orderType = price == 0 ? "MKT" : type.IfEmpty("LMT");
-      bool isPreRTH = orderType == "LMT";
+      bool isPreRTH = true;// orderType == "LMT";
       var order = OrderFactory(contract, quantity, price, goodTillDate, minTickMultiplier, orderType, isPreRTH);
+      if(condition != null) order.Conditions.Add(condition);
       //if(!contract.IsCombo && !contract.IsFutureOption)
       //  FillAdaptiveParams(order, "Normal");
       var tpOrder = (useTakeProfit ? MakeTakeProfitOrder(order, contract, profit, minTickMultiplier) : new(IBApi.Order order, double price)[0].ToObservable()).Select(x => new { x.order, x.price, useTakeProfit = false });
@@ -89,7 +92,6 @@ namespace IBApp {
         Monitor.Exit(_OpenTradeSync);
       }
     }
-
     private IBApi.Order OrderFactory(Contract contract, int quantity, double price, DateTime goodTillDate, int minTickMultiplier, string orderType, bool isPreRTH) {
       var order = new IBApi.Order() {
         Account = _accountId,

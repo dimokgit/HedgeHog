@@ -109,11 +109,6 @@ namespace IBApi {
       private set { clientSocket = value; }
     }
 
-    public int NextOrderId {
-      get { return nextOrderId; }
-      set { nextOrderId = value; }
-    }
-
     public event Action<int, int, string, Exception> Error;
 
     void EWrapper.error(Exception e) {
@@ -216,8 +211,6 @@ namespace IBApi {
 
       if(tmp != null)
         sc.Post((t) => tmp(orderId), null);
-
-      NextOrderId = orderId;
     }
 
     public event Action<int, DeltaNeutralContract> DeltaNeutralValidation;
