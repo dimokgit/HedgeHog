@@ -76,7 +76,7 @@ namespace IBApp {
     public static Contract Future(string symbol) {
       Contract contract = new Contract();
       contract.SecType = "FUT";
-      contract.Exchange = "GLOBEX";
+      //contract.Exchange = "GLOBEX";
       contract.Currency = "USD";
       contract.LocalSymbol = symbol;
       contract.IncludeExpired = true;

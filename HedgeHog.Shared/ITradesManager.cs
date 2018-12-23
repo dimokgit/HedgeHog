@@ -259,7 +259,7 @@ namespace HedgeHog.Shared {
     }
 
     public static bool IsCurrenncy(this string s) => _currencies.Any(c => s.ToUpper().StartsWith(c)) && _currencies.Any(c => s.ToUpper().EndsWith(c));
-    public static bool IsFuture(this string s) => Regex.IsMatch(s, @"^\w{2,3}[HMQUZ]\d{1,2}$", RegexOptions.IgnoreCase);
+    public static bool IsFuture(this string s) => Regex.IsMatch(s, @"^\w{2,3}[HMQUZ]\d{1,2}|VX[A-Z]\d$", RegexOptions.IgnoreCase);
     public static bool IsCommodity(this string s) => _commodities.Contains(s.ToUpper());
     public static bool IsUSStock(this string s) => !s.IsCurrenncy() && !s.IsFuture() && !s.IsCommodity();
     public static bool IsOptionFull(this string s) => Regex.IsMatch(s, @"^[a-z ]{6}[0-9]{6}[CP][0-9]{8}$", RegexOptions.IgnoreCase);

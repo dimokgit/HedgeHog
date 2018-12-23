@@ -67,17 +67,26 @@ namespace ConsoleApp {
       const int twsPort = 7497;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm=>HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
-        {// VIX
-          ibClient.ReqContractDetailsAsync(new Contract { Symbol = "ES", SecType = "FUT", Currency = "USD" })
-          //ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXQ8", SecType = "FUT", Currency = "USD" })
-          .ToArray()
-          .Select(cds => cds.Select(cd => cd.Contract).OrderBy(c => c.LastTradeDateOrContractMonth))
-          .Subscribe(c => Console.WriteLine(c.ToJson(true)));
+        {
+          var c = new Contract { LocalSymbol = "VXF9", SecType = "FUT", Currency = "USD" };
+          var c2 = "VXF9".ContractFactory();
+          ibClient.ReqContractDetailsCached("ESH9")
+          .Subscribe(_ => HandleMessage(_.Contract.ToJson(true)));
+          //.Subscribe(_ => PriceHistory.AddTicks(fw, 1, "ESH9", DateTime.Now.AddYears(-5), o => HandleMessage(o + "")));
           return;
         }
+        ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXF9", SecType = "FUT", Currency = "USD" })
+        //ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXQ8", SecType = "FUT", Currency = "USD" })
+        .ToArray()
+        .Select(cds => cds.Select(cd => cd.Contract)
+        .OrderBy(c => c.LastTradeDateOrContractMonth)
+        .Where(c => c.Expiration > DateTime.Now && Regex.IsMatch(c.TradingClass, "^[A-Z]{2,}$"))
+        .Take(100)
+        )
+        .Subscribe(c => Console.WriteLine(c.ToJson(true)));
         return;
-        ibClient.ReqContractDetailsCached("ESH9")
-        .Subscribe(_ => PriceHistory.AddTicks(fw, 1, "ESH9", DateTime.Now.AddYears(-5), o => HandleMessage(o + "")));
+        {// VIX
+        }
         LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
         HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         var am = fw.AccountManager;
