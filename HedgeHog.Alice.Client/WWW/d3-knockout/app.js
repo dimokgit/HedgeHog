@@ -823,8 +823,8 @@
       return [
         { n: "doShowChartBid", v: self.doShowChartBid, t: gettype(self.doShowChartBid()) },
         { n: "refreshChartsInterval", v: self.refreshChartsInterval, t: gettype(self.refreshChartsInterval()) },
-        { n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
-        { n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
+        //{ n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
+        //{ n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
       ];
     });
     this.showWwwSettings = function () {
@@ -871,7 +871,7 @@
     this.comboQuantity = ko.observable();
     this.comboCurrentStrikeLevel = ko.observable("");
     this.toggleComboCurrentStrikeLevel = function () {
-      self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? self.priceAvg() : "");
+      self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? Math.round(self.priceAvg()) : "");
     }
     this.comboGap = ko.observable(1).extend({ persis: "comboGap" });
     this.comboGap.subscribe(refreshCombos);
@@ -881,6 +881,13 @@
       readCombos(true);
       dataViewModel.butterflies([]);
     }
+    this.histVolM1 = ko.observable(0);
+    this.histVolM1.subscribe(function (hv) {
+      if (this.numOfCombos() != 0) return;
+      var i = 5;
+      var nc = Math.ceil(hv / i) + 2;
+      this.numOfCombos(nc);
+    }, this);
     this.cancelOrder = function (data) {
       var orderId = ko.unwrap(data.id);
       serverCall("cancelOrder", [orderId]);
@@ -956,7 +963,7 @@
     this.openButterfly = function (isBuy, key, useMarketPrice) {
       this.canTrade(false);
       var combo = ko.unwrap(ko.unwrap(key).i);
-      serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice]
+      serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel()]
         , null
         , null
         , function () { this.canTrade(true); }.bind(this)
@@ -1107,6 +1114,7 @@
       var foo = getWwwInfo.bind(null, chartNum);
       serverCall("getWwwInfo", args,
         function (info) {
+          self.histVolM1(Math.ceil(parseInt((info.HistVolDif || {}).split('/')[1]) || 0));
           wwwInfoRaw(info);
           if (!stopWwwInfo)
             setTimeout(foo, 1000);

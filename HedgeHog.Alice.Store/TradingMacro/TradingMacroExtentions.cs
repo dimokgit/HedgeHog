@@ -3368,6 +3368,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       }
     }
 
+    partial void OnPriceCmaLevelsChanged() => UseRates(ra => SetMA(ra));
     private IList<double> GetCma(IList<Rate> rates, int? count = null, double? cmaPeriod = null, int? cmaPasses = null) {
       count = count ?? rates.Count;
       cmaPeriod = cmaPeriod ?? CmaPeriodByRatesCount(count.Value);

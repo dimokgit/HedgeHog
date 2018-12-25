@@ -822,13 +822,18 @@ namespace HedgeHog.Alice.Client {
         });
     }
     [BasicAuthenticationFilter]
-    public void OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice) {
+    public void OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
-      if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
-        UseTraderMacro(pair, tm =>
-         tm.HistoricalVolatilityByPips().ForEach(hv
-         => am.OpenLimitOrder(contract, quantity, hv, useMarketPrice, false)));
-      else
+      if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract)) {
+        if(!useMarketPrice && conditionPrice.HasValue)
+          Contract.FromCache(pair).ForEach(under =>
+            am.OpenTrade(contract, quantity, 0, 0, false, DateTime.MaxValue
+            , OrderConditionParam.PriceFactory(under, conditionPrice.Value, contract.IsCall, false)));
+        else
+          UseTraderMacro(pair, tm =>
+           tm.HistoricalVolatilityByPips().ForEach(hv
+           => am.OpenLimitOrder(contract, quantity, hv, useMarketPrice, false)));
+      } else
         throw new Exception(new { instrument, not = "found" } + "");
     }
     [BasicAuthenticationFilter]
