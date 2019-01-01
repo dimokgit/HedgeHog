@@ -273,7 +273,7 @@ namespace IBApp {
         (int rid) => new ContractDetailsMessage(rid, (ContractDetails)null),
         t => t.RequestId,
         t => t.ContractDetails != null,
-        error => Trace($"{nameof(ReqContractDetailsAsync)}:{contract}-{error}"),
+        error => Trace($"{nameof(ReqContractDetailsAsync)}:{contract}[{contract.Instrument}]-{error}"),
         () => TraceIf(DataManager.DoShowRequestErrorDone || _verbose, $"{nameof(ReqContractDetailsAsync)} {reqId} Error done")
         )
         .ToArray()
@@ -312,7 +312,7 @@ namespace IBApp {
     public ReqSecDefOptParams ReqSecDefOptParamsAsync(string underlyingSymbol, string futFopExchange, string underlyingSecType, int underlyingConId) {
       var reqId = NextReqId();
       var cd = SecurityDefinitionOptionParameterObservable
-        .TakeUntil(SecurityDefinitionOptionParameterEndObservable.Where(rid => rid == reqId))
+        .TakeUntil(SecurityDefinitionOptionParameterEndObservable.Where(rid => rid == reqId).Do(_ => TraceTemp("ReqSecDefOptParamsAsync: end")))
         .Where(t => t.ReqId == reqId)
         .TakeWhile(t => t.Expirations != null)
         .Do(t => TraceTemp(new { ReqSecDefOptParamsImpl = t.ReqId, t.TradingClass }))
@@ -325,7 +325,8 @@ namespace IBApp {
       return cd;
     }
 
-    public static ConcurrentDictionary<(string symbol, DateTime expDate), Contract[]> OptionChainOldCache = new ConcurrentDictionary<(string symbol, DateTime expDate), Contract[]>();
+    public static ConcurrentDictionary<(string symbol, DateTime expDate, double strike), Contract[]> OptionChainOldCache = new ConcurrentDictionary<(string symbol, DateTime expDate, double strike), Contract[]>();
+    public static ConcurrentDictionary<(string symbol, DateTime expDate, double strike), bool> OptionChainOldCacheInRun = new ConcurrentDictionary<(string symbol, DateTime expDate, double strike), bool>();
 
     public static void ClearCache() {
       Contract.Contracts.Clear();
@@ -335,44 +336,48 @@ namespace IBApp {
     }
 
     bool _ReqOptionChainOldCacheInRun = false;
-    public IObservable<Contract[]> ReqOptionChainOldCache(string symbol, DateTime expDate) {
-      if(_ReqOptionChainOldCacheInRun) return new Contract[0][].ToObservable();
+
+    public IObservable<Contract[]> ReqOptionChainOldCache(string symbol, DateTime expDate, double strike = 0) {
+      var key = (symbol, expDate, strike);
+      //if(_ReqOptionChainOldCacheInRun) return new Contract[0][].ToObservable();
+      if(OptionChainOldCacheInRun.TryGetValue(key, out var r) && r) return new Contract[0][].ToObservable();
       return
-        OptionChainOldCache.TryGetValue((symbol, expDate))
+        OptionChainOldCache.TryGetValue((symbol, expDate, strike))
       .ToArray()
       .Do(x => {
       })
       .ToObservable()
       .Concat(Observable.Defer(() => {
         _ReqOptionChainOldCacheInRun = true;
-        return ReqOptionChainOldAsync(symbol, expDate).ToArray().Do(a => OptionChainOldCache.TryAdd((symbol, expDate), a));
+        OptionChainOldCacheInRun.AddOrUpdate(key, true, (k,r2) => true);
+        return ReqOptionChainOldAsync(symbol, expDate, strike).ToArray().Do(a => OptionChainOldCache.TryAdd((symbol, expDate, strike), a));
       }
       ))
       .Take(1)
-      .Do(_ => _ReqOptionChainOldCacheInRun = false);
+      .Do(_ => OptionChainOldCacheInRun.AddOrUpdate(key, false, (k, r2) => false));
     }
     public IObservable<Contract[]> ReqOptionChainOldCache(string sympol, int expirationDaysSkip, Func<Contract, bool> filter) =>
       ReqOptionChainOldCache(sympol, DateTime.Now.Date.AddWorkingDays(expirationDaysSkip));
-    public IObservable<Contract> ReqOptionChainOldAsync(string sympol, DateTime expirationDate) {
+    public IObservable<Contract> ReqOptionChainOldAsync(string sympol, DateTime expirationDate, double strike = 0) {
       var fopDate = expirationDate;
       Trace(new { fopDate });
-      Contract MakeFutureContract(string twsDate) => new Contract { Symbol = sympol.Substring(0, 2), SecType = "FOP", Exchange = "GLOBEX", Currency = "USD", LastTradeDateOrContractMonth = twsDate };
-      Contract MakeIndexContract(string twsDate) => new Contract { Symbol = sympol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate };
-      Contract MakeStockContract(string twsDate) => new Contract { Symbol = sympol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate };
+      Contract MakeFutureContract(string twsDate) => new Contract { Symbol = sympol.Substring(0, 2), SecType = "FOP", Exchange = "GLOBEX", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
+      Contract MakeIndexContract(string twsDate) => new Contract { Symbol = sympol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
+      Contract MakeStockContract(string twsDate) => new Contract { Symbol = sympol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
       Contract MakeContract(string twsDate) =>
         sympol.IsFuture() ? MakeFutureContract(twsDate)
         : sympol.IsIndex() ? MakeIndexContract(twsDate)
         : MakeStockContract(twsDate);
       return Observable.Range(0, sympol.HasOptions() ? 7 : 0)
-          .Select(i => fopDate.AddBusinessDays(i))
+          .Select(i => fopDate.IsMin() ? fopDate : fopDate.AddBusinessDays(i))
           .SelectMany(fd => {
-            var twsDate = fd.ToTWSDateString();
+            var twsDate = fd.IsMin() ? "" : fd.ToTWSDateString();
             return ReqContractDetailsAsync(MakeContract(twsDate)).ToArray()
             .Do(__ => {
             });
           })
           .SkipWhile(a => a.Length == 0)
-          .Take(1)
+          .Take(fopDate.IsMin() ? int.MaxValue : 1)
           .SelectMany(cds => cds.Select(cd => cd.AddToCache().Contract));
     }
     public IObservable<Contract> ReqCurrentOptionsAsync

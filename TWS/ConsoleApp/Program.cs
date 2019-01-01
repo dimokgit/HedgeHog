@@ -68,6 +68,16 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        void TestCurrentRollOvers(Action after = null) {
+          am.CurrentRollOvers("ESH9")
+          .Subscribe(_ => {
+            _.ForEach(__ => HandleMessage(__));
+            HandleMessage("TestCurrentRollOvers:  done");
+            after?.Invoke();
+          });
+        }
+        TestCurrentRollOvers(() => TestCurrentRollOvers());
+        return;
         {
           (from under in ibClient.ReqContractDetailsCached("ESH9")
            from price in ibClient.ReqPriceSafe(under.Contract, 2000, true)
@@ -77,7 +87,7 @@ namespace ConsoleApp {
           ).Subscribe(_ => {
             HandleMessage(_.ToJson(true));
             if(false)
-            am.OpenTrade(_.option.option, "", 1, 0, 0, false, DateTime.MaxValue, OrderConditionParam.PriceFactory(_.under, 3000, true, false));
+              am.OpenTrade(_.option.option, "", 1, 0, 0, false, DateTime.MaxValue, OrderConditionParam.PriceFactory(_.under, 3000, true, false));
           });
           //ibClient.ReqOptionChainCache("ESH9")
           //.Subscribe(cd => {

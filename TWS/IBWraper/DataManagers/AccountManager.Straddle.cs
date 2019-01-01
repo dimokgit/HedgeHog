@@ -229,6 +229,25 @@ namespace IBApp {
       })
       .Take(count);
     #endregion
+    public IObservable<Contract[]> CurrentRollOvers(string underSymbol) =>
+      (from under in IbClient.ReqContractDetailsCached(underSymbol)
+      from price in IbClient.ReqPriceSafe(under.Contract, 2000, true)
+      let priceAvg = price.ask.Avg(price.bid)
+      let symbol = under.Contract.LocalSymbol
+      from options in IbClient.ReqOptionChainOldCache(under.Contract.LocalSymbol, DateTime.Now.Date, 0)
+      let strikes = options.Select(o => o.Strike).Distinct().OrderBy(st => st).ToArray()
+      from options2 in IbClient.ReqOptionChainOldCache(under.Contract.LocalSymbol, DateTime.MinValue, strikes.OrderBy(strike => strike.Abs(priceAvg)).First())
+      let exps = options2.Select(o => o.Expiration).Distinct().OrderBy(ex => ex).ToArray()
+      from strike in strikes.OrderBy(strike => strike.Abs(priceAvg)).Take(3)
+      from exp in exps
+      where exp < DateTime.Now.AddMonths(2)
+      from cds in IbClient.ReqOptionChainOldCache(symbol, exp, strike)
+      from cd in cds
+      select cd
+      ).ToArray()
+      .Select(a => a.OrderBy(c => c.Expiration).ThenBy(c => c.Strike).ToArray())
+;
+
   }
   public static class AccountManagerMixins {
     #region Parse Combos
