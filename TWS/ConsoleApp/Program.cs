@@ -68,34 +68,74 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        void TestCurrentRollOvers(Action after = null) {
-          am.CurrentRollOvers("ESH9")
-          .Subscribe(_ => {
-            _.ForEach(__ => HandleMessage(__));
-            HandleMessage("TestCurrentRollOvers:  done");
-            after?.Invoke();
-          });
-        }
-        TestCurrentRollOvers(() => TestCurrentRollOvers());
-        return;
         {
-          (from under in ibClient.ReqContractDetailsCached("ESH9")
-           from price in ibClient.ReqPriceSafe(under.Contract, 2000, true)
-           from options in am.CurrentOptions(under.Contract.LocalSymbol, price.ask.Avg(price.bid), 0, 1, o => o.IsCall).Take(1)
-           from option in options
-           select new { under = under.Contract, price, option }
-          ).Subscribe(_ => {
-            HandleMessage(_.ToJson(true));
-            if(false)
-              am.OpenTrade(_.option.option, "", 1, 0, 0, false, DateTime.MaxValue, OrderConditionParam.PriceFactory(_.under, 3000, true, false));
-          });
-          //ibClient.ReqOptionChainCache("ESH9")
-          //.Subscribe(cd => {
-          //  am.OpenTrade(cd.Contract,"", -1, 0, 0, false, DateTime.MinValue,new AccountManager.PriceConditionParam(cd.Contract,3000,true,false));
-          //});
-          //.Subscribe(_ => PriceHistory.AddTicks(fw, 1, "ESH9", DateTime.Now.AddYears(-5), o => HandleMessage(o + "")));
+          Task.Delay(2000).ContinueWith(_ => ReadRolls("E1CF9 C2510"));
+          void ReadRolls(string instrument) {
+            HandleMessage("ReadRolls: start");
+            (from combo in am.ComboTrades(1)
+             where combo.SideEffect(_ => HandleMessage(combo)).contract.Instrument == instrument
+             from under in combo.contract.UnderContract
+             from rolls in am.CurrentRollOvers(instrument, 4, 3)
+             from roll in rolls
+             from rp in ibClient.ReqPriceSafe(roll, 10, false)
+             where roll.IsCall == combo.contract.IsCall
+             select new { roll, days = (roll.Expiration - DateTime.Now.Date).TotalDays, rp.bid, delta=rp.delta.Round(1) }
+             )
+             .ToArray()
+             .Subscribe(_ => {
+               HandleMessage("\n" + _.OrderBy(t => t.bid).Flatter("\n"));
+               HandleMessage("ReadRolls: end");
+             });
+          }
           return;
         }
+        {
+          void TestCurrentRollOvers(int num, Action after = null) {
+            HandleMessage($"TestCurrentRollOvers:  start {num}");
+            am.CurrentRollOvers("ESH9", 1, 8)
+            .Subscribe(_ => {
+              _.ForEach(__ => HandleMessage(__));
+              HandleMessage($"TestCurrentRollOvers:  done {num}");
+              after?.Invoke();
+            });
+          }
+          TestCurrentRollOvers(1, () => TestCurrentRollOvers(2, () => TestCurrentRollOvers(3, () => TestCurrentRollOvers(4))));
+          TestCurrentRollOvers(5);
+        }
+        {
+          void TestAllStrikesAndExpirations(int num, Action afrer = null) {
+            HandleMessage($"TestAllStrikesAndExpirations: Start {num}");
+            ibClient.ReqStrikesAndExpirations("ESH9")
+            .Subscribe(_ => {
+              HandleMessage(new { strikes = _.strikes.Length, exps = _.expirations.Length });
+              HandleMessage($"TestAllStrikesAndExpirations: End {num}");
+              afrer?.Invoke();
+            });
+          }
+          TestAllStrikesAndExpirations(1);
+          TestAllStrikesAndExpirations(2, () => TestAllStrikesAndExpirations(3));
+        }
+        {
+          TestCurrentOptions(0);
+          void TestCurrentOptions(int expirationDaysToSkip) {
+            (from under in ibClient.ReqContractDetailsCached("VXF9")
+             from price in ibClient.ReqPriceSafe(under.Contract, 2000, true)
+             from options in am.CurrentOptions(under.Contract.LocalSymbol, price.ask.Avg(price.bid), expirationDaysToSkip, 1, o => o.IsCall).Take(1)
+             from option in options
+             select new { under = under.Contract, price, option }
+            ).Subscribe(_ => {
+              HandleMessage(_.ToJson(true));
+              if(false)
+                am.OpenTrade(_.option.option, "", 1, 0, 0, false, DateTime.MaxValue, OrderConditionParam.PriceFactory(_.under, 3000, true, false));
+            });
+          }
+          return;
+        }
+        //ibClient.ReqOptionChainCache("ESH9")
+        //.Subscribe(cd => {
+        //  am.OpenTrade(cd.Contract,"", -1, 0, 0, false, DateTime.MinValue,new AccountManager.PriceConditionParam(cd.Contract,3000,true,false));
+        //});
+        //.Subscribe(_ => PriceHistory.AddTicks(fw, 1, "ESH9", DateTime.Now.AddYears(-5), o => HandleMessage(o + "")));
         ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXF9", SecType = "FUT", Currency = "USD" })
         //ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXQ8", SecType = "FUT", Currency = "USD" })
         .ToArray()

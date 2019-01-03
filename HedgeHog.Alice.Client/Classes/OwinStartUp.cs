@@ -718,12 +718,21 @@ namespace HedgeHog.Alice.Client {
           ).ToArray()
           ).ForEach(b => base.Clients.Caller.openOrders(b));
 
+          Action rollOvers = () =>
+            am.CurrentRollOver(numOfCombos)
+            .Take(optionTypeMap == "R" ? 100 : 0)
+            .ToArray()
+             .Subscribe(_ => {
+               base.Clients.Caller.rollOvers(_.OrderBy(t => t.bid).Select(t => new { t.i, t.o, t.bid, t.days, t.delta }).ToArray());
+             });
+
           if(!pair.IsNullOrWhiteSpace())
             OnCurrentCombo(() => {
               if(optionTypeMap.Contains("S"))
                 straddles();
               currentOptions(optionTypeMap);
               openOrders();
+              rollOvers();
               //currentBullPut();
             });
           //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
@@ -751,6 +760,7 @@ namespace HedgeHog.Alice.Client {
                       , x.takeProfit, x.profit, x.orderId
                       , exit = 0, exitDelta = 0
                       , pmc = x.pmc.ToInt()
+                      , mcu = x.mcUnder.ToInt()
                       , color = !hasStrike ? "white"
                       : delta > 0 && x.contract.IsPut
                       ? "#ffd3d9"
@@ -788,7 +798,6 @@ namespace HedgeHog.Alice.Client {
         var distFromHigh = tm.TradingMacroM1(tmM1 => 1 - tm.CurrentPrice.Average / tmM1.RatesMax).SingleOrDefault();
         return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh };
       });
-
     [BasicAuthenticationFilter]
     public void CancelOrder(int orderId) {
       GetAccountManager().UpdateOrder(orderId, 0);

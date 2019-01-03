@@ -8,8 +8,64 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using COMBO_TRADES_IMPL = System.Collections.Generic.IEnumerable<(IBApi.Contract contract, int position, double open, double openPrice, double takeProfit, int orderId)>;
-using COMBO_TRADES = System.IObservable<(IBApi.Contract contract, int position, double open, double close, double pl, double underPrice, double strikeAvg, double openPrice, double closePrice, (double bid, double ask) price, double takeProfit, double profit, double pmc, int orderId)>;
+using COMBO_TRADES = System.IObservable<IBApp.ComboTrade>;
 namespace IBApp {
+  public class ComboTrade {
+    public ComboTrade(IBApi.Contract contract, int position, double open, double close, double pl, double change, double underPrice
+      , double strikeAvg, double openPrice, double closePrice, (double bid, double ask) price, double takeProfit, double profit
+      , double pmc, double mcUnder, int orderId) {
+      this.contract = contract;
+      this.position = position;
+      this.open = open;
+      this.close = close;
+      this.pl = pl;
+      this.change = change;
+      this.underPrice = underPrice;
+      this.strikeAvg = strikeAvg;
+      this.openPrice = openPrice;
+      this.closePrice = closePrice;
+      this.price = price;
+      this.takeProfit = takeProfit;
+      this.profit = profit;
+      this.pmc = pmc;
+      this.mcUnder = mcUnder;
+      this.orderId = orderId;
+    }
+    public override string ToString() => new {
+      this.contract,
+      this.position,
+      this.open,
+      this.close,
+      this.pl,
+      this.change,
+      this.underPrice,
+      this.strikeAvg,
+      this.openPrice,
+      this.closePrice,
+      this.price,
+      this.takeProfit,
+      this.profit,
+      this.pmc,
+      this.mcUnder,
+      this.orderId
+    } + "";
+    public Contract contract { get; }
+    public int position { get; }
+    public double open { get; }
+    public double close { get; }
+    public double pl { get; }
+    public double change { get; }
+    public double underPrice { get; }
+    public double strikeAvg { get; }
+    public double openPrice { get; }
+    public double closePrice { get; }
+    public (double bid, double ask) price { get; }
+    public double takeProfit { get; }
+    public double profit { get; }
+    public double pmc { get; }
+    public double mcUnder { get; }
+    public int orderId { get; }
+  }
   public partial class AccountManager {
     public static double priceFromProfit(double profit, double position, int multiplier, double open)
       => (profit + open) / position / multiplier;
@@ -22,14 +78,19 @@ namespace IBApp {
         let closePrice = (c.position > 0 ? price.bid : price.ask)
         let close = (closePrice * c.position * multiplier).Round(4)
         let openPrice = c.open / c.position.Abs() / multiplier
-        let isOk = openPrice == c.openPrice ? true : throw new Exception(new { calc = new { openPrice }, c.openPrice } + "")
-        let pmc = Account.ExcessLiquidity / (multiplier * c.position.Abs())
-        select (
-        c: IbClient.SetContractSubscription(c.contract)
+        let delta = price.delta != 0 ? price.delta.Abs() : 1
+        let pmc = Account.ExcessLiquidity / (multiplier * c.position.Abs()) / (delta.Between(0, 1) ? delta : 1)
+        let mcUnder = c.position > 0 ? 0
+        : c.contract.IsCall ? underPrice + pmc : c.contract.IsPut ? underPrice - pmc : 0
+        let pl = close - c.open
+        let change = pl / c.position.Abs() / multiplier
+        select new ComboTrade(
+         IbClient.SetContractSubscription(c.contract)
         , c.position
         , c.open
         , close
-        , pl: close - c.open
+        , pl
+        , change
         , underPrice
         , strikeAvg: c.contract.ComboStrike()
         , openPrice
@@ -38,24 +99,28 @@ namespace IBApp {
         , c.takeProfit
         , profit: (c.takeProfit * c.position * multiplier - c.open).Round(2)
         , pmc
+        , mcUnder
         , c.orderId
         )
         );
       return combos
         .ToArray()
         .SelectMany(cmbs => cmbs
-          .OrderBy(c => c.c.Legs().Count())
-          .ThenBy(c => c.c.IsOption)
+          .OrderBy(c => c.contract.Legs().Count())
+          .ThenBy(c => c.contract.IsOption)
           .ThenByDescending(c => c.strikeAvg - c.underPrice)
-          .ThenByDescending(c => c.c.Instrument)
+          .ThenByDescending(c => c.contract.Instrument)
          );
       IObservable<double> UnderPrice(Contract contract) {
-        if(!contract.IsOption && !contract.IsCombo) return Observable.Return(0.0);
-        var underSymbol = contract.Symbol + (contract.HasFutureOption ? "U8" : "");
+        var cds = contract.FromDetailsCache().Concat(contract.Legs().SelectMany(l => l.c.FromDetailsCache()));
         return (
-        from symbol in IbClient.ReqContractDetailsCached(underSymbol)
-        from underPrice in IbClient.ReqPriceSafe(symbol.Contract, priceTimeoutInSeconds, false)
-        select underPrice.ask.Avg(underPrice.bid));
+          from cd in cds.ToObservable()
+          where !cd.UnderSymbol.IsNullOrEmpty()
+          from u in IbClient.ReqContractDetailsCached(cd.UnderSymbol)
+          from symbol in IbClient.ReqContractDetailsCached(u.Contract)
+          from underPrice in IbClient.ReqPriceSafe(u.Contract, priceTimeoutInSeconds, false)
+          select underPrice.ask.Avg(underPrice.bid)
+          ).Take(1);
       }
     }
 

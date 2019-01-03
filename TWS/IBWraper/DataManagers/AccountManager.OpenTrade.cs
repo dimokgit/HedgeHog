@@ -26,7 +26,7 @@ namespace IBApp {
     }
 
     public void OpenLimitOrder(Contract contract, int quantity, double profit, bool useMarketPrice, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
-      double ask((double ask, double bid, DateTime time) p) => useMarketPrice ? p.ask : p.bid;
+      double ask((double ask, double bid, DateTime time, double) p) => useMarketPrice ? p.ask : p.bid;
       double bid(double a, double b) => useMarketPrice ? b : a;
       IbClient.ReqPriceSafe(contract, 1, true).Select(p => quantity > 0 ? ask(p) : bid(p.ask, p.bid))
        .Subscribe(price => OpenTrade(contract, "", quantity, price, profit, useTakeProfit, DateTime.MaxValue, minTickMultiplier, Caller));
@@ -43,7 +43,7 @@ namespace IBApp {
     public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "")
     => OpenTrade(contract, type, quantity, price, profit, useTakeProfit, goodTillDate, (OrderCondition)null, minTickMultiplier, Caller);
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, OrderCondition condition, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
-      OpenTrade(contract,"", quantity, price, profit, useTakeProfit, goodTillDate, condition, minTickMultiplier , Caller );
+      OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, condition, minTickMultiplier, Caller);
     public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, OrderCondition condition, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
       var timeoutInMilliseconds = 5000;
       if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
@@ -68,7 +68,7 @@ namespace IBApp {
       if(condition != null) order.Conditions.Add(condition);
       //if(!contract.IsCombo && !contract.IsFutureOption)
       //  FillAdaptiveParams(order, "Normal");
-      var tpOrder = (useTakeProfit ? MakeTakeProfitOrder(order, contract, profit, minTickMultiplier) : new(IBApi.Order order, double price)[0].ToObservable()).Select(x => new { x.order, x.price, useTakeProfit = false });
+      var tpOrder = (useTakeProfit ? MakeTakeProfitOrder(order, contract, profit, minTickMultiplier) : new (IBApi.Order order, double price)[0].ToObservable()).Select(x => new { x.order, x.price, useTakeProfit = false });
       new[] { new { order, price, useTakeProfit } }.ToObservable().Merge(tpOrder)
         .ToArray()
         .SelectMany(x => x)

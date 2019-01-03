@@ -926,6 +926,7 @@
     this.options = ko.mapping.fromJS(ko.observableArray());
     this.openOrders = ko.mapping.fromJS(ko.observableArray());
     this.butterflies = ko.mapping.fromJS(ko.observableArray());
+    this.rollOvers = ko.mapping.fromJS(ko.observableArray());
     this.currentCombos = ko.pureComputed(function () {
       return this.butterflies()
         .concat(this.bullPuts())
@@ -1870,6 +1871,14 @@
       showWarningPerm(message);
     };
     // #region Stock Options
+    chat.client.rollOvers = function (options) {
+      var map = {
+        key: function (item) {
+          return ko.utils.unwrapObservable(item.i);
+        }
+      };
+      ko.mapping.fromJS(options, map, dataViewModel.rollOvers);
+    };
     chat.client.bullPuts = function (options) {
       var isNew = dataViewModel.bullPuts().length == 0;
       if (!isNew)

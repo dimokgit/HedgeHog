@@ -1251,7 +1251,7 @@
           <td data-bind="text:position"></td>
           <td data-bind="text:d3.format('$.0f')(netPL()),css:{profit:netPL()>0,loss:netPL()<0}"></td>
           <td><!--<input data-bind-removed="value:exit" size="3" />--></td>
-          <td data-bind="text:pmc"></td>
+          <td><span data-bind="text:pmc"></span>:<span data-bind="text:mcu"></span></td>
           <td>
             <span data-bind="text:d3.format('.2f')(takeProfit()),event:{click:$parent.showNextInput}"></span>
             <input data-bind="event:{change:$parent.newTakeProfit,blur:$parent.hideNextInput}" size="4" style="display:none;overflow:visible" />
@@ -1307,26 +1307,26 @@
         </select>
         <label>Qty:</label><input data-bind="value:comboQuantity" size="1" />
         <label>Gap:</label><select data-bind="value:comboGap" size="1">
-  <option value="0">0</option>
-  <option value="1">1</option>
-  <option value="2">2</option>
-  <option value="3">3</option>
-  <option value="4">4</option>
-  <option value="5">5</option>
-  <option value="6">6</option>
-  <option value="7">7</option>
-  <option value="8">8</option>
-  <option value="9">9</option>
-  <option value="10">10</option>
-  <option value="10">11</option>
-  <option value="10">12</option>
-  <option value="10">13</option>
-  <option value="10">14</option>
-  <option value="10">15</option>
-  <option value="10">16</option>
-  <option value="10">17</option>
-  <option value="10">18</option>
-</select>
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="10">11</option>
+          <option value="10">12</option>
+          <option value="10">13</option>
+          <option value="10">14</option>
+          <option value="10">15</option>
+          <option value="10">16</option>
+          <option value="10">17</option>
+          <option value="10">18</option>
+        </select>
         <label>Cmbs#:</label><select data-bind="value:numOfCombos" size="1">
           <option value="0">0</option>
           <option value="1">1</option>
@@ -1353,6 +1353,7 @@
         <label><input type="radio" value="S" data-bind="checked: showOptionType" />S</label>
         <label><input type="radio" value="C" data-bind="checked: showOptionType" />C</label>
         <label><input type="radio" value="P" data-bind="checked: showOptionType" />P</label>
+        <label><input type="radio" value="R" data-bind="checked: showOptionType" />R</label>
       </div>
       <div style="display:inline-table">
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>
@@ -1394,6 +1395,16 @@
       </div>
     </div>
 
+    <table border="1" cellspacing="0" class="wwwInfo" data-bind="visible:rollOvers().length, expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
+      <tbody data-bind="foreach:rollOvers">
+      <tr>
+        <td data-bind="text:o"></td>
+        <td data-bind="text:days"></td>
+        <td data-bind="text:bid"></td>
+        <td data-bind="text:delta"></td>
+      </tr>
+      </tbody>
+    </table>
     <table border="1" cellspacing="0" class="wwwInfo" data-bind="visible:currentCombos().length, expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
       <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
       <tr style="background-color: lightslategray;color: white;font-weight: bold;text-align: center;" class="pgGroupRow">

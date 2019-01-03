@@ -45,6 +45,9 @@ namespace IBApi {
         _contracts.AddOrUpdate(Key, this, (k, c) => this);
       return this;
     }
+    public IEnumerable<Contract> UnderContract => (from cd in FromDetailsCache()
+                                                   from cdu in ContractDetails.FromCache(cd.UnderSymbol)
+                                                   select cdu.Contract);
     public IEnumerable<ContractDetails> FromDetailsCache() => ContractDetails.FromCache(this);
     public IEnumerable<Contract> FromCache() => FromCache(Key);
     public IEnumerable<T> FromCache<T>(Func<Contract, T> map) => FromCache(Key, map);
@@ -76,7 +79,7 @@ namespace IBApi {
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
-    public override string ToString() => 
+    public override string ToString() =>
       ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
     internal string ComboLegsToString() =>
       Legs()

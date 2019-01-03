@@ -2,6 +2,7 @@
 using HedgeHog.Shared;
 using IBApi;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
@@ -33,7 +34,7 @@ namespace IBApp {
     }
 
     private static (string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo, double deltaBid, double deltaAsk)
-      CurrentComboInfo(double underPrice, (Contract contract, Contract[] options) combo, (double bid, double ask, DateTime time) p) {
+      CurrentComboInfo(double underPrice, (Contract contract, Contract[] options) combo, (double bid, double ask, DateTime time, double delta) p) {
       var strikeAvg = combo.options.Average(o => o.Strike);
       double pa = p.ask.Avg(p.bid);
       var iv = combo.options.Sum(o => o.IntrinsicValue(underPrice));
@@ -229,25 +230,38 @@ namespace IBApp {
       })
       .Take(count);
     #endregion
-    public IObservable<Contract[]> CurrentRollOvers(string underSymbol) =>
-      (from under in IbClient.ReqContractDetailsCached(underSymbol)
-      from price in IbClient.ReqPriceSafe(under.Contract, 2000, true)
-      let priceAvg = price.ask.Avg(price.bid)
-      let symbol = under.Contract.LocalSymbol
-      from options in IbClient.ReqOptionChainOldCache(under.Contract.LocalSymbol, DateTime.Now.Date, 0)
-      let strikes = options.Select(o => o.Strike).Distinct().OrderBy(st => st).ToArray()
-      from options2 in IbClient.ReqOptionChainOldCache(under.Contract.LocalSymbol, DateTime.MinValue, strikes.OrderBy(strike => strike.Abs(priceAvg)).First())
-      let exps = options2.Select(o => o.Expiration).Distinct().OrderBy(ex => ex).ToArray()
-      from strike in strikes.OrderBy(strike => strike.Abs(priceAvg)).Take(3)
-      from exp in exps
-      where exp < DateTime.Now.AddMonths(2)
-      from cds in IbClient.ReqOptionChainOldCache(symbol, exp, strike)
-      from cd in cds
-      select cd
-      ).ToArray()
-      .Select(a => a.OrderBy(c => c.Expiration).ThenBy(c => c.Strike).ToArray())
-;
 
+    string _spy(string text) => $"{DateTime.Now:mm:ss.f}: {text} -- ";
+    public IObservable<Contract[]> CurrentRollOvers(string symbol, int strikes, int weeks) =>
+      (from cd in IbClient.ReqContractDetailsCached(symbol)
+       let contract = cd.Contract
+       from underContract in contract.UnderContract.DefaultIfEmpty(contract)
+       let underSymbol = underContract.LocalSymbol
+       from allStkExp in IbClient.ReqStrikesAndExpirations(underSymbol)//.Spy(_spy("AllStrikesAndExpirations"))
+       let exps = allStkExp.expirations.Where(ex => ex > DateTime.Now).OrderBy(ex => ex).ToArray()
+       from under in IbClient.ReqContractDetailsCached(underSymbol)//.Spy(_spy("ReqContractDetailsCached"))
+       from price in IbClient.ReqPriceSafe(under.Contract, 2000, true)//.Spy(_spy("ReqPriceSafe"))
+       let priceAvg = price.ask.Avg(price.bid)
+       let strikes2 = allStkExp.strikes.OrderBy(strike => strike.Abs(priceAvg)).ToArray()
+       from strikeFirst in strikes2.Take(1)
+       from strike in strikes2.Where(strike => !contract.IsOption || contract.IsCall && strike >= strikeFirst || contract.IsPut && strike <= strikeFirst).Take(strikes)
+       from exp in exps
+       where exp > IbClient.ServerTime.Date && exp < DateTime.Now.AddDays(weeks * 7)
+       from cds in IbClient.ReqOptionChainOldCache(underSymbol, exp, strike)//.Spy(_spy("ReqOptionChainOldCache 2"))
+       from cdRoll in cds
+       where !contract.IsOption || contract.IsCall == cdRoll.IsCall
+       select cdRoll
+      ).ToArray()
+      .Select(a => a.OrderBy(c => c.Expiration).ThenBy(c => c.Strike).ToArray());//.Spy(_spy("CurrentRollOvers"));
+
+    public IObservable<(string i, string o, int days, double bid, double delta)> CurrentRollOver(int strikesCount) =>
+      (from c in ComboTrades(2).Where(ct => ct.contract.IsOption).Take(1)
+       from rolls in CurrentRollOvers(c.contract.LocalSymbol, strikesCount, 2)
+       from roll in rolls
+       where roll.IsCall == c.contract.IsCall
+       from rp in IbClient.ReqPriceSafe(roll, 3, false)
+       select (i: roll.Instrument, o: roll + "", days: (roll.Expiration - DateTime.Now.Date).TotalDays.ToInt(), rp.bid, delta: rp.delta.Round(1))
+       );
   }
   public static class AccountManagerMixins {
     #region Parse Combos

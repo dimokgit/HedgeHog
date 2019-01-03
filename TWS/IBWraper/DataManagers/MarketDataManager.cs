@@ -9,6 +9,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
+using HedgeHog;
 using HedgeHog.Shared;
 using IBApi;
 using IBSampleApp.util;
@@ -22,6 +23,7 @@ namespace IBApp {
     public IObservable<(Contract c, string gl, Action<Contract>)> AddRequestObs { get; }
     public MarketDataManager(IBClientCore client) : base(client, TICK_ID_BASE) {
       IbClient.TickPriceObservable.Subscribe(t => OnTickPrice(t.RequestId, t.Field, t.Price, t.attribs));
+      IbClient.OptionPriceObservable.Subscribe(t=> OnOptionPrice(t));
       IbClient.TickString += OnTickString; ;
       IbClient.TickGeneric += OnTickGeneric;
       //IbClient.TickOptionCommunication += TickOptionCommunication; ;
@@ -99,6 +101,76 @@ namespace IBApp {
         return;
       const int LOW_52 = 19;
       const int HIGH_52 = 20;
+      switch(priceMessage.Field) {
+        case 1: { // Bid
+            if(price2.Bid == priceMessage.Price)
+              break;
+            if(price2.Ask <= 0)
+              price2.Ask = priceMessage.Price;
+            if(priceMessage.Price > 0) {
+              price2.Bid = priceMessage.Price;
+              price2.Time2 = IbClient.ServerTime;
+              RaisePriceChanged(price2);
+            }
+            break;
+          }
+        case 2: { //ASK
+            if(price2.Ask == priceMessage.Price)
+              break;
+            if(price2.Bid <= 0)
+              price2.Bid = priceMessage.Price;
+            if(priceMessage.Price > 0) {
+              price2.Ask = priceMessage.Price;
+              price2.Time2 = IbClient.ServerTime;
+              RaisePriceChanged(price2);
+            }
+            break;
+          }
+        case 4: {
+            if(priceMessage.Price > 0)
+              if(price2.Ask <= 0)
+                price2.Ask = priceMessage.Price;
+            if(price2.Bid <= 0)
+              price2.Bid = priceMessage.Price;
+            price2.Time2 = IbClient.ServerTime;
+            RaisePriceChanged(price2);
+            break;
+          }
+        case 0:
+        case 3:
+        case 5:
+          RaisePriceChanged(price2);
+          break;
+        case 37:
+          if(price2.Bid <= 0 && price2.Ask <= 0) {
+            price2.Bid = price2.Ask = price;
+            RaisePriceChanged(price2);
+          }
+          break;
+        case 46:
+          price2.IsShortable = price > 2.5;
+          Trace(new { price2.Pair, price2.IsShortable, price });
+          break;
+        case LOW_52:
+          price2.Low52 = price;
+          break;
+        case HIGH_52:
+          price2.High52 = price;
+          break;
+      }
+    }
+
+    private void OnOptionPrice(TickOptionMessage t) {
+      if(!activeRequests.ContainsKey(t.RequestId)) return;
+      var priceMessage = new TickPriceMessage(t.RequestId, t.Field, t.OptPrice, null);
+      var price2 = activeRequests[t.RequestId].price;
+      //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
+      if(priceMessage.Price == 0)
+        return;
+      const int LOW_52 = 19;
+      const int HIGH_52 = 20;
+      price2.GreekDelta = (t.Delta.Abs().Between(0, 1) ? t.Delta : 1).Round(1);
+      var price = t.OptPrice;
       switch(priceMessage.Field) {
         case 1: { // Bid
             if(price2.Bid == priceMessage.Price)
