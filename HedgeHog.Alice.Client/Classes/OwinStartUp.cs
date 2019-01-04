@@ -263,7 +263,7 @@ namespace HedgeHog.Alice.Client {
       _CurrentCombos = new Subject<Action>();
       _CurrentCombos
         .ObserveOn(TaskPoolScheduler.Default)
-        .Sample(TimeSpan.FromSeconds(0.5))
+        .Sample(TimeSpan.FromSeconds(1))
         .Subscribe(s => s(), exc => { });
     }
     static public void OnCurrentCombo(Action p) {
@@ -574,13 +574,21 @@ namespace HedgeHog.Alice.Client {
 
     static double DaysTillExpiration2(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
     static double DaysTillExpiration(DateTime expiration) => (expiration - DateTime.Now.Date).TotalDays + 1;
-    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip, string optionTypeMap, DateTime hedgeDate, string[] comboExits) =>
+    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip, string optionTypeMap, DateTime hedgeDate, string rollCombo) =>
       UseTraderMacro(pair, tm => {
         int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(expDaysSkip);
         var am = GetAccountManager();
         string CacheKey(Contract c) => c.IsFuture ? c.LocalSymbol : c.Symbol;
         var underContracts = IBApi.Contract.FromCache(pair).ToArray();
         if(am != null) {
+          Action rollOvers = () => {
+            if(!rollCombo.IsNullOrWhiteSpace() && optionTypeMap == "R")
+              am.CurrentRollOver(rollCombo, numOfCombos, expDaysSkip.Max(2))
+              .ToArray()
+               .Subscribe(_ => {
+                 base.Clients.Caller.rollOvers(_.OrderBy(t => t.bid).Select(t => new { t.i, t.o, t.bid, t.days, t.delta, t.ppd }).ToArray());
+               });
+          };
           Action straddles = () =>
             underContracts
               .ForEach(underContract => {
@@ -718,14 +726,6 @@ namespace HedgeHog.Alice.Client {
           ).ToArray()
           ).ForEach(b => base.Clients.Caller.openOrders(b));
 
-          Action rollOvers = () =>
-            am.CurrentRollOver(numOfCombos)
-            .Take(optionTypeMap == "R" ? 100 : 0)
-            .ToArray()
-             .Subscribe(_ => {
-               base.Clients.Caller.rollOvers(_.OrderBy(t => t.bid).Select(t => new { t.i, t.o, t.bid, t.days, t.delta }).ToArray());
-             });
-
           if(!pair.IsNullOrWhiteSpace())
             OnCurrentCombo(() => {
               if(optionTypeMap.Contains("S"))
@@ -733,9 +733,11 @@ namespace HedgeHog.Alice.Client {
               currentOptions(optionTypeMap);
               openOrders();
               rollOvers();
+              ComboTrades();
               //currentBullPut();
             });
           //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
+          void ComboTrades() =>
           am.ComboTrades(1)
             .ToArray()
             .Subscribe(cts => {
@@ -771,17 +773,6 @@ namespace HedgeHog.Alice.Client {
                 });
 
                 base.Clients.Caller.liveCombos(combos);
-
-                (from ce in comboExits.Where(s => !s.IsNullOrWhiteSpace()).Select(s => s.Split(','))
-                 join c in combos on ce[0] equals c.combo
-                 //let exit = TryExit(ce[1])
-                 let exitDelta = TryExitDelta(ce[2])
-                 where (exitDelta != 0 && c.delta.Abs() < exitDelta)
-                 select c
-                 ).ForEach(combo => {
-                   am?.CancelAllOrders("Closing combo by exitDelta");
-                   CloseCombo(combo.combo);
-                 });
               } catch(Exception exc) {
                 Log = exc;
               }
@@ -793,11 +784,14 @@ namespace HedgeHog.Alice.Client {
               .Select(oc =>
               new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
               ).OrderBy(oc => oc.order));
-          double TryExitDelta(string s) => double.TryParse(s, out var i) ? i : int.MinValue;
         }
         var distFromHigh = tm.TradingMacroM1(tmM1 => 1 - tm.CurrentPrice.Average / tmM1.RatesMax).SingleOrDefault();
         return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh };
       });
+    [BasicAuthenticationFilter]
+    public void RollTrade(string currentSymbol,string rollSymbol) {
+      GetAccountManager().OpenRollTrade(currentSymbol,rollSymbol);
+    }
     [BasicAuthenticationFilter]
     public void CancelOrder(int orderId) {
       GetAccountManager().UpdateOrder(orderId, 0);

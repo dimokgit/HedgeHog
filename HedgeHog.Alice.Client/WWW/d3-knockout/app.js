@@ -318,7 +318,7 @@
             delay: isCustom ? 5000 : 1000
           });
         })
-        ;
+      ;
       if ($.isFunction(done)) r.done(function (data) {
         done(data, note);
       });
@@ -330,13 +330,10 @@
   }
   var readingCombos = false;
   function readCombos(force) {
-    if (!force && readingCombos) return;
-    var comboExits = dataViewModel.liveStraddles().map(function (c) {
-      return ko.unwrap(c.combo) + "," + ko.unwrap(c.exit) + "," + ko.unwrap(c.exitDelta);
-    });
+    if (!force && readingCombos || dataViewModel.freezeCombos()) return;
     var expDaysSkip = dataViewModel.expDaysSkip() || 0;
     var hedgeDate = dataViewModel.hedgeVirtualDate();
-    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, comboExits];
+    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, dataViewModel.rollCombo()];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
@@ -866,16 +863,17 @@
           return l.i() < r.i() ? 1 : -1;
         });
     }, this);
+    this.freezeCombos = ko.observable(false);
     this.expDaysSkip = ko.observable();
     this.distanceFromHigh = ko.observable();
-    this.comboQuantity = ko.observable();
+    this.comboQuantity = ko.observable().extend({ persist: "comboQuantity" });
     this.comboCurrentStrikeLevel = ko.observable("");
     this.toggleComboCurrentStrikeLevel = function () {
       self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? Math.round(self.priceAvg()) : "");
     }
-    this.comboGap = ko.observable(1).extend({ persis: "comboGap" });
+    this.comboGap = ko.observable(1).extend({ persist: "comboGap" });
     this.comboGap.subscribe(refreshCombos);
-    this.numOfCombos = ko.observable(0).extend({ persis: "numOfCombos" });
+    this.numOfCombos = ko.observable(0).extend({ persist: "numOfCombos" });
     this.numOfCombos.subscribe(refreshCombos);
     function refreshCombos(v) {
       readCombos(true);
@@ -888,6 +886,11 @@
       var nc = Math.ceil(hv / i) + 2;
       this.numOfCombos(nc);
     }, this);
+    this.rollTrade = function (data) {
+      var i = ko.unwrap(data.i);
+      if (!i) showWarning("Select trade to roll");
+      else serverCall("rollTrade", [rollCombo(), i]);
+    }
     this.cancelOrder = function (data) {
       var orderId = ko.unwrap(data.id);
       serverCall("cancelOrder", [orderId]);
@@ -919,7 +922,7 @@
 
     this.stockOptionsInfo = ko.mapping.fromJS(ko.observableArray());
     this.hedgeOptions = ko.mapping.fromJS(ko.observableArray());
-    this.showOptionType = ko.observable("P");
+    this.showOptionType = ko.observable("P").extend({ persist: "showOptionType" });
     this.showOptionType.subscribe(function () { this.showButterflies() }.bind(this));
     this.orders = ko.mapping.fromJS(ko.observableArray());
     this.bullPuts = ko.mapping.fromJS(ko.observableArray());
@@ -927,6 +930,11 @@
     this.openOrders = ko.mapping.fromJS(ko.observableArray());
     this.butterflies = ko.mapping.fromJS(ko.observableArray());
     this.rollOvers = ko.mapping.fromJS(ko.observableArray());
+    this.rollOversSorted = ko.pureComputed(function () {
+      return this.rollOvers().sort(function (l, r) {
+        return ko.unwrap(l.ppd) > ko.unwrap(r.ppd) ? -1 : 1;
+      });
+    }, this);
     this.currentCombos = ko.pureComputed(function () {
       return this.butterflies()
         .concat(this.bullPuts())
@@ -1450,6 +1458,7 @@
     // #endregion
     // #endregion
     // #region Read Enums
+    var rollCombo = this.rollCombo = ko.observable();
     var tradingMacroTakeProfitFunction = this.tradingMacroTakeProfitFunction = ko.observableArray();
     var tradeLevelBys = this.tradeLevelBys = ko.observableArray();
     var scanCorridorFunction = this.scanCorridorFunction = ko.observableArray();

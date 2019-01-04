@@ -1287,7 +1287,7 @@
         </tr>
       </tbody>
     </table>
-    <div>
+    <div data-bind="style:{backgroundColor:freezeCombos()?'mistyrose':''}">
       <div>
         <label>Exp#:</label><select data-bind="value:expDaysSkip" size="1">
           <option value=""></option>
@@ -1354,6 +1354,7 @@
         <label><input type="radio" value="C" data-bind="checked: showOptionType" />C</label>
         <label><input type="radio" value="P" data-bind="checked: showOptionType" />P</label>
         <label><input type="radio" value="R" data-bind="checked: showOptionType" />R</label>
+        <label><input type="checkbox" data-bind="checked: freezeCombos" />F</label>
       </div>
       <div style="display:inline-table">
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>
@@ -1365,6 +1366,7 @@
         <!-- /ko -->
         <select data-bind="options:strategyType,optionsText:'text',optionsValue:'text',value:strategyCurrent"></select>
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
+        <select data-bind="options:liveCombos,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>
       <div data-bind="foreach:combosMin" style="display:inline-table">
         <label>Avg:</label><b data-bind="text:d3.format('.3f')(avg)"></b>
@@ -1396,13 +1398,19 @@
     </div>
 
     <table border="1" cellspacing="0" class="wwwInfo" data-bind="visible:rollOvers().length, expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
-      <tbody data-bind="foreach:rollOvers">
-      <tr>
-        <td data-bind="text:o"></td>
-        <td data-bind="text:days"></td>
-        <td data-bind="text:bid"></td>
-        <td data-bind="text:delta"></td>
-      </tr>
+      <tbody data-bind="foreach:rollOversSorted">
+        <tr>
+          <td data-bind="text:o"></td>
+          <td data-bind="text:days"></td>
+          <td data-bind="text:bid"></td>
+          <td data-bind="text:delta"></td>
+          <td data-bind="text:ppd"></td>
+          <td>
+            <button data-bind="click:$parent.rollTrade.bind(null,$data)" title="Roll Trade">
+              <span class="glyphicon glyphicon-fast-forward"></span>
+            </button>
+          </td>
+        </tr>
       </tbody>
     </table>
     <table border="1" cellspacing="0" class="wwwInfo" data-bind="visible:currentCombos().length, expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">

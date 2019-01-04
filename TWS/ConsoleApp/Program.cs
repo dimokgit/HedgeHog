@@ -68,6 +68,14 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        return;
+        {
+          Task.Delay(3000).ContinueWith(_ => {
+            am.CurrentRollOvers("EW1F9 P2480", 4, 2)
+            .ToArray()
+            .Subscribe(ros => am.OpenRollTrade("EW1F9 P2480", "E1AF9 P2455"));
+          });
+        }
         {
           Task.Delay(2000).ContinueWith(_ => ReadRolls("E1CF9 C2510"));
           void ReadRolls(string instrument) {
@@ -87,7 +95,6 @@ namespace ConsoleApp {
                HandleMessage("ReadRolls: end");
              });
           }
-          return;
         }
         {
           void TestCurrentRollOvers(int num, Action after = null) {

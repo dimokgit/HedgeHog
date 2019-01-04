@@ -84,5 +84,39 @@ namespace IBApp {
       c.ComboLegs = new List<ComboLeg> { call, put };
       return c.AddToCache();
     }
+
+    IObservable<(Contract currentContract, Contract rollContract, ComboTrade currentTrade)> CreateRoll(string currentSymbol, string rollSymbol) =>
+      (from cd in IbClient.ReqContractDetailsCached(currentSymbol)
+       let cc = cd.Contract
+       from rcd in IbClient.ReqContractDetailsCached(rollSymbol)
+       from uc in cc.UnderContract
+       from ct in ComboTrades(5)
+       where ct.contract.ConId == cc.ConId
+       select (cc, MakeRollContract(cc, rcd.Contract, uc), ct));
+
+    static Contract MakeRollContract(Contract current, Contract roll, Contract under) {
+      var c = new Contract() {
+        Symbol = under.Symbol,
+        SecType = "BAG",
+        Exchange = under.Exchange,
+        Currency = under.Currency
+      };
+      var call = new ComboLeg() {
+        ConId = current.ConId,
+        Ratio = 1,
+        Action = "BUY",
+        Exchange = current.Exchange
+      };
+      var put = new ComboLeg() {
+        ConId = roll.ConId,
+        Ratio = 1,
+        Action = "SELL",
+        Exchange = roll.Exchange
+      };
+      c.ComboLegs = new List<ComboLeg> { call, put };
+      return c.AddToCache();
+    }
+
   }
 }
+

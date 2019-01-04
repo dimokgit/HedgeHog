@@ -144,6 +144,11 @@ namespace IBApp {
         ;
     }
 
+    public void OpenRollTrade(string currentSymbol,string rollSymbol) {
+      CreateRoll(currentSymbol, rollSymbol)
+        .Subscribe(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false, DateTime.MaxValue
+        , OrderConditionParam.PriceFactory(rc.currentContract.UnderContract.Single(), 100000, true, false)));
+    }
     //private void OnUpdateError(int reqId, int code, string error, Exception exc) {
     //  UseOrderContracts(orderContracts => {
     //    if(!orderContracts.TryGetValue(reqId, out var oc)) return;

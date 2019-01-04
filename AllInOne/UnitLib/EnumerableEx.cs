@@ -6,11 +6,27 @@ using HedgeHog;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Threading;
+
 namespace HedgeHog.Tests {
 
   namespace UnitLib {
     [TestClass]
     public class EnumerableExTest {
+      [TestMethod()]
+      public void Yield() {
+        var y = Y("");
+        var res = y.Single();
+        Console.WriteLine(res);
+        Thread.Sleep(5000);
+        Console.WriteLine(y.Single());
+        IEnumerable<DateTime> Y(string date) {
+          if(date == "") {
+            var d = DateTime.Now;
+            yield return d;
+          }
+        }
+      }
       [TestMethod()]
       public void GroupByAdjacent() {
         var source = new[] { 1, 1, 1, 0, 0, 1, 1, 1, 1, 1 };
