@@ -11,6 +11,13 @@ using COMBO_TRADES_IMPL = System.Collections.Generic.IEnumerable<(IBApi.Contract
 using COMBO_TRADES = System.IObservable<IBApp.ComboTrade>;
 namespace IBApp {
   public class ComboTrade {
+    public bool IsVirtual { get; private set; }
+    public double Change => closePrice * position.Sign() - openPrice;
+    public ComboTrade(Contract contract) {
+      this.contract = contract;
+      position = 1;
+      IsVirtual = true;
+    }
     public ComboTrade(IBApi.Contract contract, int position, double open, double close, double pl, double change, double underPrice
       , double strikeAvg, double openPrice, double closePrice, (double bid, double ask) price, double takeProfit, double profit
       , double pmc, double mcUnder, int orderId) {
@@ -72,14 +79,13 @@ namespace IBApp {
     public COMBO_TRADES ComboTrades(double priceTimeoutInSeconds) {
       var combos = (
         from c in ComboTradesImpl().ToObservable()
-        from underPrice in UnderPrice(c.contract).DefaultIfEmpty()
+        from underPrice in UnderPrice(c.contract, priceTimeoutInSeconds).DefaultIfEmpty()
         from price in IbClient.ReqPriceSafe(c.contract, priceTimeoutInSeconds, true).DefaultIfEmpty().Take(1)
         let multiplier = c.contract.ComboMultiplier
         let closePrice = (c.position > 0 ? price.bid : price.ask)
         let close = (closePrice * c.position * multiplier).Round(4)
-        let openPrice = c.open / c.position.Abs() / multiplier
         let delta = price.delta != 0 ? price.delta.Abs() : 1
-        let pmc = Account.ExcessLiquidity / (multiplier * c.position.Abs()) / (delta.Between(0, 1) ? delta : 1)
+        let pmc = Account.ExcessLiquidity / (multiplier * c.position.Abs()) / (delta.Between(-1, 0) ? delta : 0).Abs()
         let mcUnder = c.position > 0 ? 0
         : c.contract.IsCall ? underPrice + pmc : c.contract.IsPut ? underPrice - pmc : 0
         let pl = close - c.open
@@ -93,7 +99,7 @@ namespace IBApp {
         , change
         , underPrice
         , strikeAvg: c.contract.ComboStrike()
-        , openPrice
+        , c.openPrice
         , closePrice
         , price: (price.bid, price.ask)
         , c.takeProfit
@@ -111,19 +117,18 @@ namespace IBApp {
           .ThenByDescending(c => c.strikeAvg - c.underPrice)
           .ThenByDescending(c => c.contract.Instrument)
          );
-      IObservable<double> UnderPrice(Contract contract) {
-        var cds = contract.FromDetailsCache().Concat(contract.Legs().SelectMany(l => l.c.FromDetailsCache()));
-        return (
-          from cd in cds.ToObservable()
-          where !cd.UnderSymbol.IsNullOrEmpty()
-          from u in IbClient.ReqContractDetailsCached(cd.UnderSymbol)
-          from symbol in IbClient.ReqContractDetailsCached(u.Contract)
-          from underPrice in IbClient.ReqPriceSafe(u.Contract, priceTimeoutInSeconds, false)
-          select underPrice.ask.Avg(underPrice.bid)
-          ).Take(1);
-      }
     }
 
+    IObservable<double> UnderPrice(Contract contract,double priceTimeoutInSeconds) {
+      var cds = contract.FromDetailsCache().Concat(contract.Legs().SelectMany(l => l.c.FromDetailsCache()))
+        .Select(c=>c.Contract.IsOption?c.UnderSymbol:c.Contract.LocalSymbol).Take(1);
+      return (
+        from underSymbol in cds.ToObservable()
+        from u in IbClient.ReqContractDetailsCached(underSymbol)
+        from underPrice in IbClient.ReqPriceSafe(u.Contract, priceTimeoutInSeconds, false)
+        select underPrice.ask.Avg(underPrice.bid)
+        ).Take(1);
+    }
     public IEnumerable<(Contract contract, int position, double open, double openPrice, double takeProfit, int orderId)> ComboTradesImpl() {
       var positions = Positions.Where(p => p.position != 0).ToArray();
       var orders = OrderContractsInternal.Where(oc => !oc.isDone).ToArray();

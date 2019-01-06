@@ -330,7 +330,7 @@
   }
   var readingCombos = false;
   function readCombos(force) {
-    if (!force && readingCombos || dataViewModel.freezeCombos()) return;
+    if (!force && readingCombos || dataViewModel.freezeCombos() || !showCombos) return;
     var expDaysSkip = dataViewModel.expDaysSkip() || 0;
     var hedgeDate = dataViewModel.hedgeVirtualDate();
     var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, dataViewModel.rollCombo()];
@@ -1003,7 +1003,7 @@
       this.options([]);
       this.bullPuts([]);
       var shouldToggle = ko.observable(true);
-      $(this.butterfliesDialog()).dialog({
+      $(self.butterfliesDialog()).dialog({
         title: "Combos", width: "auto", minHeight: "50px", dialogClass: "dialog-compact",
         dragStart: function () { shouldToggle(false); },
         dragStop: function (event, ui) {
@@ -1792,7 +1792,10 @@
     function dialogCollapse(shouldToggle) {
       return function () {
         $(this).prev().click(function () {
-          if (shouldToggle()) $(this).next().toggle();
+          debugger;
+          if (shouldToggle()) {
+            showCombos = $(this).next().toggle().is(":visible");
+          }
         });
       }
     }
@@ -1844,9 +1847,7 @@
       }
 
       function _priceChanged(pairChanged) {
-        if (showCombos) {
-          readCombos();
-        }
+        readCombos();
         if (!isDocHidden() && pair.toUpperCase() === pairChanged.toUpperCase()) {
           if (_isPriceChangeInFlight())
             return;

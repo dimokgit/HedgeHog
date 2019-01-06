@@ -17,15 +17,20 @@ using IBSampleApp.util;
 namespace IBApp {
   public class MarketDataManager :DataManager {
     const int TICK_ID_BASE = 10000000;
-    private readonly ConcurrentDictionary<string, Price> _currentPrices = new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
+    static private readonly ConcurrentDictionary<string, Price> _currentPrices = new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
+    static IEnumerable<Price> CurrentPriceCache(string symbol)  {
+      if( _currentPrices.TryGetValue(symbol,out var price))
+        yield return price;
+    }
     private ConcurrentDictionary<int, (Contract contract, Price price)> activeRequests = new ConcurrentDictionary<int, (Contract contract, Price price)>();
     public Action<Contract, string, Action<Contract>> AddRequest;// = (a1, a2, a3) => {    };
     public IObservable<(Contract c, string gl, Action<Contract>)> AddRequestObs { get; }
     public MarketDataManager(IBClientCore client) : base(client, TICK_ID_BASE) {
       IbClient.TickPriceObservable.Subscribe(t => OnTickPrice(t.RequestId, t.Field, t.Price, t.attribs));
-      IbClient.OptionPriceObservable.Subscribe(t=> OnOptionPrice(t));
+      IbClient.OptionPriceObservable.Subscribe(t => OnOptionPrice(t));
       IbClient.TickString += OnTickString; ;
       IbClient.TickGeneric += OnTickGeneric;
+      Observable.Interval(TimeSpan.FromMinutes(1)).Subscribe(ActiveRequestCleaner);
       //IbClient.TickOptionCommunication += TickOptionCommunication; ;
       AddRequestObs = Observable.FromEvent<Action<Contract, string, Action<Contract>>, (Contract c, string gl, Action<Contract>)>(
         next => (c, gl, a) => next((c, gl, a)), h => AddRequest += h, h => AddRequest -= h);
@@ -35,6 +40,16 @@ namespace IBApp {
         .SubscribeOn(TaskPoolScheduler.Default)
         .Distinct(t => t.Item1.Instrument)
         .Subscribe(t => AddRequestSync(t.Item1, t.Item3, t.Item2));
+      void ActiveRequestCleaner(long _) {
+        var now = IbClient.ServerTime.AddMinutes(-0.5);
+        activeRequests.Where(ar => ar.Value.price.Time < now).ToArray().ForEach(ar => {
+          IbClient.CancelPrice(ar.Key);
+          if(activeRequests.TryRemove(ar.Key, out var t)) {
+            var removed = _currentPrices.TryRemove(t.price.Pair, out var p);
+            Trace(new { Request = new { removed, ar.Value.contract } });
+          }
+        });
+      }
     }
 
     private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, new TickAttrib());
@@ -144,6 +159,7 @@ namespace IBApp {
         case 37:
           if(price2.Bid <= 0 && price2.Ask <= 0) {
             price2.Bid = price2.Ask = price;
+            price2.Time2 = IbClient.ServerTime;
             RaisePriceChanged(price2);
           }
           break;

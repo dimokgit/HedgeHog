@@ -339,7 +339,7 @@ namespace IBApp {
     public IObservable<(DateTime[] expirations, double[] strikes)> ReqStrikesAndExpirations(string underSymbol) {
       lock(_allStrikesAndExpirations) {
         if(_allStrikesAndExpirations.TryGetValue(underSymbol, out var cache)) return cache;
-        var increments = new[] { 50.0, 10, 5, 2.5, 1, 0.5 };
+        var increments = new[] { 50.0, 10, 5, 2.5, 1 };
         IEnumerable<double> CurrentIncrement(double price) => increments.OrderBy(i => (price * 0.002).Abs(i)).Take(1).Select(i => (price / i).ToInt() * i);
         var newCache = (from under in ReqContractDetailsCached(underSymbol)
                         from price in ReqPriceSafe(under.Contract, 2000, true)
@@ -356,16 +356,14 @@ namespace IBApp {
     }
     public IObservable<Contract[]> ReqOptionChainOldCache(string symbol, DateTime expDate, double strike = 0, bool waitForAllStrikes = true) {
       var key = (symbol, expDate, strike);
-      return
-        OptionChainOldCache.TryGetValue(key)
-      .ToArray()
-      .Do(x => {
-      })
-      .ToObservable()
-      .Concat(Observable.Defer(() => {
-        return ReqOptionChainOldAsync(symbol, expDate, strike, waitForAllStrikes).ToArray().Do(a => OptionChainOldCache.TryAdd(key, a));
-      }))
-      .Take(1);
+      return OptionChainOldCache.TryGetValue(key)
+        .ToArray()
+        .Do(x => { })
+        .ToObservable()
+        .Concat(Observable.Defer(() =>
+          ReqOptionChainOldAsync(symbol, expDate, strike, waitForAllStrikes).ToArray().Do(a => OptionChainOldCache.TryAdd(key, a))
+          ))
+          .Take(1);
     }
     public IObservable<Contract[]> ReqOptionChainOldCache(string sympol, int expirationDaysSkip, Func<Contract, bool> filter) =>
       ReqOptionChainOldCache(sympol, DateTime.Now.Date.AddWorkingDays(expirationDaysSkip));
@@ -391,7 +389,8 @@ namespace IBApp {
                     from tws in fd.IsMin()
                     ? new[] { "" }
                     : stkExp.expirations.DefaultIfEmpty(fd).OrderBy(ex => ex).Where(ex => ex >= fd.Date).Take(1).Select(ex => ex.ToTWSDateString())
-                    from cd in ReqContractDetailsAsync(MakeContract(tws))
+                    let c = MakeContract(tws)
+                    from cd in ReqContractDetailsAsync(c)
                     select cd)
             .ToArray()
             .Do(__ => {
@@ -664,6 +663,8 @@ namespace IBApp {
       .Merge()
       .Subscribe(error, complete);
     }
+    public void CancelPrice(int reqId) => ClientSocket.cancelMktData(reqId);
+
     #endregion
 
     #region NextValidId

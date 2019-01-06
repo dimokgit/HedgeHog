@@ -21,7 +21,7 @@ using System.Reactive.Concurrency;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Reactive;
-using HedgeHog.Alice.Store;
+using MarkdownLog;
 
 namespace ConsoleApp {
   class Program {
@@ -68,6 +68,21 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        {
+          var rollSymbols = new[] { "VIX" , "ESH9" };//"VXX   190111P00043000"
+          Task.Delay(5000).ContinueWith(_ => rollSymbols.ForEach(rs => ReadRolls(rs, false, DateTime.Now.Date)));
+          void ReadRolls(string instrument, bool isCall, DateTime exp) {
+            HandleMessage("ReadRolls: start " + instrument);
+            (from roll in exp.IsMin() ? am.CurrentRollOver(instrument, 2, 10) : am.CurrentRollOver(instrument, isCall, exp, 2, 10)
+             select new { roll.roll, days = roll.days.ToString("00"), bid = roll.bid.ToString("0.00"), perc = roll.perc.ToString("0.0"), dpw = roll.dpw.ToInt(), roll.ppw, roll.amount, roll.delta }
+             )
+             .ToArray()
+             .Subscribe(_ => {
+               HandleMessage("\n" + _.OrderByDescending(t => t.dpw).ToMarkdownTable(TableOptions.Default).ToMarkdown());
+               HandleMessage("ReadRolls: end " + instrument);
+             });
+          }
+        }
         return;
         {
           Task.Delay(3000).ContinueWith(_ => {
@@ -75,26 +90,6 @@ namespace ConsoleApp {
             .ToArray()
             .Subscribe(ros => am.OpenRollTrade("EW1F9 P2480", "E1AF9 P2455"));
           });
-        }
-        {
-          Task.Delay(2000).ContinueWith(_ => ReadRolls("E1CF9 C2510"));
-          void ReadRolls(string instrument) {
-            HandleMessage("ReadRolls: start");
-            (from combo in am.ComboTrades(1)
-             where combo.SideEffect(_ => HandleMessage(combo)).contract.Instrument == instrument
-             from under in combo.contract.UnderContract
-             from rolls in am.CurrentRollOvers(instrument, 4, 3)
-             from roll in rolls
-             from rp in ibClient.ReqPriceSafe(roll, 10, false)
-             where roll.IsCall == combo.contract.IsCall
-             select new { roll, days = (roll.Expiration - DateTime.Now.Date).TotalDays, rp.bid, delta=rp.delta.Round(1) }
-             )
-             .ToArray()
-             .Subscribe(_ => {
-               HandleMessage("\n" + _.OrderBy(t => t.bid).Flatter("\n"));
-               HandleMessage("ReadRolls: end");
-             });
-          }
         }
         {
           void TestCurrentRollOvers(int num, Action after = null) {
