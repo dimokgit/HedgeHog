@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using System.Runtime.Caching;
 using System.Text;
 using System.Threading;
 using HedgeHog;
@@ -17,11 +18,7 @@ using IBSampleApp.util;
 namespace IBApp {
   public class MarketDataManager :DataManager {
     const int TICK_ID_BASE = 10000000;
-    static private readonly ConcurrentDictionary<string, Price> _currentPrices = new ConcurrentDictionary<string, Price>(StringComparer.OrdinalIgnoreCase);
-    static IEnumerable<Price> CurrentPriceCache(string symbol)  {
-      if( _currentPrices.TryGetValue(symbol,out var price))
-        yield return price;
-    }
+    static private readonly MemoryCache _currentPrices = MemoryCache.Default;
     private ConcurrentDictionary<int, (Contract contract, Price price)> activeRequests = new ConcurrentDictionary<int, (Contract contract, Price price)>();
     public Action<Contract, string, Action<Contract>> AddRequest;// = (a1, a2, a3) => {    };
     public IObservable<(Contract c, string gl, Action<Contract>)> AddRequestObs { get; }
@@ -30,7 +27,6 @@ namespace IBApp {
       IbClient.OptionPriceObservable.Subscribe(t => OnOptionPrice(t));
       IbClient.TickString += OnTickString; ;
       IbClient.TickGeneric += OnTickGeneric;
-      Observable.Interval(TimeSpan.FromMinutes(1)).Subscribe(ActiveRequestCleaner);
       //IbClient.TickOptionCommunication += TickOptionCommunication; ;
       AddRequestObs = Observable.FromEvent<Action<Contract, string, Action<Contract>>, (Contract c, string gl, Action<Contract>)>(
         next => (c, gl, a) => next((c, gl, a)), h => AddRequest += h, h => AddRequest -= h);
@@ -38,18 +34,8 @@ namespace IBApp {
         //.Delay(TimeSpan.FromMilliseconds(1000))
         .ObserveOn(TaskPoolScheduler.Default)
         .SubscribeOn(TaskPoolScheduler.Default)
-        .Distinct(t => t.Item1.Instrument)
+        //.Distinct(t => t.Item1.Instrument)
         .Subscribe(t => AddRequestSync(t.Item1, t.Item3, t.Item2));
-      void ActiveRequestCleaner(long _) {
-        var now = IbClient.ServerTime.AddMinutes(-0.5);
-        activeRequests.Where(ar => ar.Value.price.Time < now).ToArray().ForEach(ar => {
-          IbClient.CancelPrice(ar.Key);
-          if(activeRequests.TryRemove(ar.Key, out var t)) {
-            var removed = _currentPrices.TryRemove(t.price.Pair, out var p);
-            Trace(new { Request = new { removed, ar.Value.contract } });
-          }
-        });
-      }
     }
 
     private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, new TickAttrib());
@@ -68,7 +54,7 @@ namespace IBApp {
     }
     void AddRequestImpl(Contract contract, string genericTickList) {
       if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
-        Trace($"AddRequest:{contract} already requested");
+        Verbose($"AddRequest:{contract} already requested");
       else {
         var reqId = NextReqId();
         Verbose0($"AddRequest:{reqId}=>{contract}");
@@ -84,17 +70,17 @@ namespace IBApp {
     public bool TryGetPrice(Contract contract, out Price price) {
       price = null;
       var symbol = contract.Instrument;
-      if(!_currentPrices.ContainsKey(symbol)) {
+      if(!_currentPrices.Contains(symbol)) {
         IbClient.SetContractSubscription(contract);
         return false;
       }
-      price = _currentPrices[symbol];
+      price = (Price)_currentPrices[symbol];
       return true;
     }
     public Price GetPrice(string symbol) {
-      if(!_currentPrices.ContainsKey(symbol))
+      if(!_currentPrices.Contains(symbol))
         throw new KeyNotFoundException(new { _currentPrices = new { symbol, not = " found" } } + "");
-      return _currentPrices[symbol];
+      return (Price)_currentPrices[symbol];
     }
     private void OnTickString(int tickerId, int tickType, string value) {
       //Trace($"{nameof(OnTickGeneric)}{(tickerId, tickType, value)}");
@@ -103,14 +89,15 @@ namespace IBApp {
       switch(tickType) {
         // RT Volume
         case 48:
-          RaisePriceChanged(price);
+          RaisePriceChanged(t);
           break;
       }
     }
     private void OnTickPrice(int requestId, int field, double price, TickAttrib attrib) {
       if(!activeRequests.ContainsKey(requestId)) return;
+      var ar = activeRequests[requestId];
       var priceMessage = new TickPriceMessage(requestId, field, price, attrib);
-      var price2 = activeRequests[requestId].price;
+      var price2 = ar.price;
       //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
       if(priceMessage.Price == 0)
         return;
@@ -125,7 +112,7 @@ namespace IBApp {
             if(priceMessage.Price > 0) {
               price2.Bid = priceMessage.Price;
               price2.Time2 = IbClient.ServerTime;
-              RaisePriceChanged(price2);
+              RaisePriceChanged(ar);
             }
             break;
           }
@@ -137,7 +124,7 @@ namespace IBApp {
             if(priceMessage.Price > 0) {
               price2.Ask = priceMessage.Price;
               price2.Time2 = IbClient.ServerTime;
-              RaisePriceChanged(price2);
+              RaisePriceChanged(ar);
             }
             break;
           }
@@ -148,19 +135,19 @@ namespace IBApp {
             if(price2.Bid <= 0)
               price2.Bid = priceMessage.Price;
             price2.Time2 = IbClient.ServerTime;
-            RaisePriceChanged(price2);
+            RaisePriceChanged(ar);
             break;
           }
         case 0:
         case 3:
         case 5:
-          RaisePriceChanged(price2);
+          RaisePriceChanged(ar);
           break;
         case 37:
           if(price2.Bid <= 0 && price2.Ask <= 0) {
             price2.Bid = price2.Ask = price;
             price2.Time2 = IbClient.ServerTime;
-            RaisePriceChanged(price2);
+            RaisePriceChanged(ar);
           }
           break;
         case 46:
@@ -179,7 +166,8 @@ namespace IBApp {
     private void OnOptionPrice(TickOptionMessage t) {
       if(!activeRequests.ContainsKey(t.RequestId)) return;
       var priceMessage = new TickPriceMessage(t.RequestId, t.Field, t.OptPrice, null);
-      var price2 = activeRequests[t.RequestId].price;
+      var ar = activeRequests[t.RequestId];
+      var price2 = ar.price;
       //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
       if(priceMessage.Price == 0)
         return;
@@ -196,7 +184,7 @@ namespace IBApp {
             if(priceMessage.Price > 0) {
               price2.Bid = priceMessage.Price;
               price2.Time2 = IbClient.ServerTime;
-              RaisePriceChanged(price2);
+              RaisePriceChanged(ar);
             }
             break;
           }
@@ -208,7 +196,7 @@ namespace IBApp {
             if(priceMessage.Price > 0) {
               price2.Ask = priceMessage.Price;
               price2.Time2 = IbClient.ServerTime;
-              RaisePriceChanged(price2);
+              RaisePriceChanged(ar);
             }
             break;
           }
@@ -219,18 +207,18 @@ namespace IBApp {
             if(price2.Bid <= 0)
               price2.Bid = priceMessage.Price;
             price2.Time2 = IbClient.ServerTime;
-            RaisePriceChanged(price2);
+            RaisePriceChanged(ar);
             break;
           }
         case 0:
         case 3:
         case 5:
-          RaisePriceChanged(price2);
+          RaisePriceChanged(ar);
           break;
         case 37:
           if(price2.Bid <= 0 && price2.Ask <= 0) {
             price2.Bid = price2.Ask = price;
-            RaisePriceChanged(price2);
+            RaisePriceChanged(ar);
           }
           break;
         case 46:
@@ -263,9 +251,43 @@ namespace IBApp {
         PriceChangedEvent -= value;
       }
     }
-    protected void RaisePriceChanged(Price price) {
-      _currentPrices.AddOrUpdate(price.Pair, price, (s, p) => price);
-      PriceChangedEvent?.Invoke(price);
+    protected void RaisePriceChanged((Contract contract, Price price) t) {
+      if(!_currentPrices.Contains(t.price.Pair)) {
+        {
+          var cip = t.contract.IsOption? new CacheItemPolicy() {
+            RemovedCallback = ce => {
+              ActiveRequestCleaner((Price)ce.CacheItem.Value);
+            },
+            SlidingExpiration = 60.FromSeconds()
+          }:new CacheItemPolicy();
+          if(!_currentPrices.Add(t.price.Pair, t.price, cip))
+              throw new Exception("RaisePriceChanged");
+        }
+      }
+      PriceChangedEvent?.Invoke(t.price);
+    }
+    void ActiveRequestCleaner(Price price) {
+      activeRequests.Where(kv => kv.Value.price == price).ToList().ForEach(CancelPriceRequest);
+    }
+
+    private void CancelPriceRequest(KeyValuePair<int, (Contract contract, Price price)> ar) {
+      IbClient.CancelPrice(ar.Key);
+      if(activeRequests.TryRemove(ar.Key, out var t)) {
+        Trace($"{nameof(activeRequests)} - removed {ar.Value.contract}");
+      }
+    }
+
+    void ActiveRequestsCleaner(Contract c) {
+      activeRequests.Where(ar => ar.Value.contract == c).Skip(1).ToList()
+        .ForEach(ar => {
+          if(activeRequests.TryRemove(ar.Key, out var t)) {
+            CancelPriceRequest(ar);
+            Trace($"{nameof(ActiveRequestsCleaner)}: removed duplicated {new { ar.Value.contract, ar.Key }}");
+            ActiveRequestCleaner(ar.Value.price);
+          } else
+            Trace($"{nameof(ActiveRequestsCleaner)}: error removing duplicated {new { ar.Value.contract, ar.Key }}");
+
+        });
     }
     #endregion
 

@@ -1897,7 +1897,7 @@ namespace HedgeHog.Alice.Store {
     Price _currentPrice;
     public Price CurrentPrice {
       get {
-        return _currentPrice;
+        return _currentPrice ?? (TradesManager.TryGetPrice(Pair, out var p) ? p : null);
       }
       set {
         _currentPrice = value;

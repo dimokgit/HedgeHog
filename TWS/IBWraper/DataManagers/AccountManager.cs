@@ -329,6 +329,27 @@ namespace IBApp {
       Func<List<OrdeContractHolder>, Unit> f = rates => { action(rates); return Unit.Default; };
       UseOrderContracts(f, 3000, Caller).Count();
     }
+    public IList<T> UseOrderContracts<T>(Func<IBClientCore, List<OrdeContractHolder>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
+      var message = $"{nameof(UseOrderContracts)}:{new { Caller, timeoutInMilliseconds }}";
+      if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
+        Trace(message + " could't enter Monitor");
+        return new T[0];
+      }
+      Stopwatch sw = Stopwatch.StartNew();
+      T ret;
+      try {
+        ret = func(IbClient, OrderContractsInternal);
+      } catch(Exception exc) {
+        Trace(exc);
+        return new T[0];
+      } finally {
+        Monitor.Exit(_OpenTradeSync);
+        if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
+          Trace(message + $" Spent {sw.ElapsedMilliseconds} ms");
+        }
+      }
+      return new[] { ret };
+    }
 
     public List<OrdeContractHolder> OrderContractsInternal { get; } = new List<OrdeContractHolder>();
     //public ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)> OrderStatuses { get; } = new ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)>();

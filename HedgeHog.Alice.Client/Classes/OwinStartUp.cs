@@ -252,7 +252,7 @@ namespace HedgeHog.Alice.Client {
     { "Tokyo", DateTimeOffset.Parse("23:00 +0:00") }
     };
     static List<string> _marketHoursSet = new List<string>();
-    static ISubject<Action> _CurrentCombos;
+    static ISubject<(string key, Action action)> _CurrentCombos;
     static MyHub() {
       _AskRatesSubject = new Subject<Action>();
       _AskRatesSubject.InitBufferedObservable<Action>(exc => Log = exc);
@@ -260,13 +260,14 @@ namespace HedgeHog.Alice.Client {
       _AskRates2Subject = new Subject<Action>();
       _AskRates2Subject.InitBufferedObservable<Action>(exc => Log = exc);
       _AskRates2Subject.Subscribe(a => a());
-      _CurrentCombos = new Subject<Action>();
+      _CurrentCombos = new Subject<(string key, Action action)>();
       _CurrentCombos
         .ObserveOn(TaskPoolScheduler.Default)
+        .Distinct(s => s.key)
         .Sample(TimeSpan.FromSeconds(1))
-        .Subscribe(s => s(), exc => { });
+        .Subscribe(s => s.action(), exc => { });
     }
-    static public void OnCurrentCombo(Action p) {
+    static public void OnCurrentCombo((string key, Action action) p) {
       _CurrentCombos.OnNext(p);
     }
     private AccountManager GetAccountManager() => ((IBWraper)trader?.Value?.TradesManager).AccountManager;
@@ -587,7 +588,11 @@ namespace HedgeHog.Alice.Client {
             .ToArray()
             //.Where(a => a.Length > 0)
              .Subscribe(_ => {
-               base.Clients.Caller.rollOvers(_.OrderBy(t => t.bid).Select(t => new { i = t.roll.Instrument, o = t.roll, t.bid, t.days, t.delta, t.ppw }).ToArray());
+               base.Clients.Caller.rollOvers(_.OrderByDescending(t => t.dpw).Select(t =>
+               new {
+                 i = t.roll.Instrument, o = t.roll.ShortString, t.days, bid = t.bid.AutoRound2(3), perc = t.perc.ToString("0.0"), dpw = t.dpw.ToInt()
+               , exp = t.roll.LastTradeDateOrContractMonth.Substring(4)
+               }).ToArray());
              });
           };
           Action straddles = () =>
@@ -718,15 +723,19 @@ namespace HedgeHog.Alice.Client {
              .Subscribe(b => base.Clients.Caller.options(b)));
 
           Action openOrders = () =>
-          am.UseOrderContracts(orderContracts =>
-          (from oc in orderContracts
+          am.UseOrderContracts((ibc, orderContracts) =>
+          (from oc in orderContracts.ToObservable()
            where oc.isSubmitted
-           select new { i = oc.contract.Instrument + " " + oc.contract.LastTradeDateOrContractMonth, id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, p = oc.order.LmtPrice }
-          ).ToArray()
-          ).ForEach(b => base.Clients.Caller.openOrders(b));
+           from p in ibc.ReqPriceSafe(oc.contract, 1, false).DefaultIfEmpty()
+           select new {
+             i = oc.contract.Instrument + " " + oc.contract.LastTradeDateOrContractMonth.Substring(4)
+           , id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, lp = oc.order.LmtPrice
+           , p = oc.order.Action == "BUY" ? p.ask : p.bid
+           }).ToArray()
+          ).ForEach(s => s.Subscribe(b => base.Clients.Caller.openOrders(b)));
 
           if(!pair.IsNullOrWhiteSpace())
-            OnCurrentCombo(() => {
+            OnCurrentCombo((new { DateTime.Now.Ticks } + "", () => {
               if(optionTypeMap.Contains("S"))
                 straddles();
               currentOptions(optionTypeMap);
@@ -734,7 +743,8 @@ namespace HedgeHog.Alice.Client {
               rollOvers();
               ComboTrades();
               //currentBullPut();
-            });
+            }
+            ));
           //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
           void ComboTrades() =>
           am.ComboTrades(1)
@@ -784,7 +794,7 @@ namespace HedgeHog.Alice.Client {
               new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
               ).OrderBy(oc => oc.order));
         }
-        var distFromHigh = tm.TradingMacroM1(tmM1 => 1 - tm.CurrentPrice.Average / tmM1.RatesMax).SingleOrDefault();
+        var distFromHigh = tm.TradingMacroM1(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
         return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh };
       });
     [BasicAuthenticationFilter]

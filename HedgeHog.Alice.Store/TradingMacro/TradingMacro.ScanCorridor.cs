@@ -302,12 +302,17 @@ namespace HedgeHog.Alice.Store {
 
       GetShowVoltageFunction()();
       GetShowVoltageFunction(VoltageFunction2, 1)();
-      Trends2
-        .Where(tl => tl.TL.IsNullOrEmpty())
-        .Select(t => t.Set)
-        .Take(1)
-        .Zip(WaveRangesWithTail, (tl, wr) => (tl, trend: CalcTrendLines(wr.Range, _ => _)))
-        .ForEach(t => t.tl(t.trend));
+      var minMax = UseRates(ra => ra.Select((r, i) => (r, i, j: i)).MinMaxBy(r => r.r.PriceAvg)).Concat().ToArray();
+      {
+        var mm = minMax.Take(1).Concat(minMax.Skip(1).Select(x => (x.r, x.i, j: RatesArray.Count - x.i))).OrderByDescending(x => x.j).Take(1).ToList();
+        var ii = UseRates(ra => ra.FuzzyIndex(TLPlum.EndDate, (d, p, n) => d.Between(p.StartDate, n.StartDate))).Concat().ToArray();
+        Trends2
+          .Where(tl => tl.TL.IsNullOrEmpty())
+          .Select(t => t.Set)
+          .Take(1)
+          .Zip(ii, (tl, i) => (tl, trend: CalcTrendLines(RatesArray.GetRange(i, RatesArray.Count - i), _ => _)))
+          .ForEach(t => t.tl(t.trend));
+      }
       return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();
     }
 

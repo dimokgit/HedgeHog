@@ -272,11 +272,13 @@
     return addPendingMessage(key, message, $.extend({ type: NOTE_ERROR }, settings));
   }
   function addPendingMessage(key, message, settings) {
+    clearPendingMessages(key);
     pendingMessages[key] = pendingMessages[key] || [];
-    var note = showInfoPerm(message, $.extend({
+    settings = $.extend({
       hide: false,
       icon: 'fa fa-spinner fa-spin',
-    }, settings));
+    }, settings);
+    var note = (settings.type == NOTE_ERROR ? showErrorPerm : showInfoPerm)(message, settings);
     pendingMessages[key].push(note);
     return note;
   }
@@ -1459,6 +1461,7 @@
     // #endregion
     // #region Read Enums
     var rollCombo = this.rollCombo = ko.observable();
+    rollCombo.subscribe(function (rc) { readCombos(); });
     var tradingMacroTakeProfitFunction = this.tradingMacroTakeProfitFunction = ko.observableArray();
     var tradeLevelBys = this.tradeLevelBys = ko.observableArray();
     var scanCorridorFunction = this.scanCorridorFunction = ko.observableArray();
@@ -1953,7 +1956,6 @@
         'ignore': ignore
       };
       ko.mapping.fromJS(combos, map, dataViewModel.liveStraddles);
-      readingCombos = false;
     };
     chat.client.orders = function (orders) {
       ko.mapping.fromJS(orders, {}, dataViewModel.orders);

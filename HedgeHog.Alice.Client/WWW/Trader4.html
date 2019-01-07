@@ -1381,6 +1381,7 @@
         <tr>
           <td data-bind="text:i"></td>
           <td data-bind="text:p"></td>
+          <td data-bind="text:lp"></td>
           <td data-bind="text:f()+'<'+r()"></td>
           <td>
             <button data-bind="click:$parent.cancelOrder.bind(null,$data)" title="Cancel Order">X</button>
@@ -1403,8 +1404,9 @@
           <td data-bind="text:o"></td>
           <td data-bind="text:days"></td>
           <td data-bind="text:bid"></td>
-          <td data-bind="text:delta"></td>
-          <td data-bind="text:ppw"></td>
+          <td data-bind="text:perc()+'%'"></td>
+          <td data-bind="text:'$'+dpw()"></td>
+          <td data-bind="text:exp"></td>
           <td>
             <button data-bind="click:$parent.rollTrade.bind(null,$data)" title="Roll Trade">
               <span class="glyphicon glyphicon-fast-forward"></span>

@@ -69,6 +69,11 @@ namespace ConsoleApp {
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         {
+          (from i in Observable.Interval(5.FromSeconds())
+           from p in ibClient.ReqPriceSafe("ESH9".ContractFactory(), 1, false)
+           select p
+           ).Take(10)
+           .Subscribe(p => HandleMessage(p));
           var rollSymbols = new[] { "VIX" , "ESH9" };//"VXX   190111P00043000"
           Task.Delay(5000).ContinueWith(_ => rollSymbols.ForEach(rs => ReadRolls(rs, false, DateTime.Now.Date)));
           void ReadRolls(string instrument, bool isCall, DateTime exp) {
