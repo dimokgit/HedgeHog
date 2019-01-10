@@ -163,7 +163,8 @@ namespace HedgeHog.Alice.Store {
       UseRates(rates => rates.BackwardsIterator().TakeWhile(r => getVolt(r).IsNaN()).ToList()).ForEach(ratesEmpty => {
         ratesEmpty.Reverse();
         ratesEmpty.Select(r => r.StartDate).Take(1).ForEach(startDate => {
-          var tm = TradingMacroOther().First(t => t.IsTrader);
+          TradingMacroOther().Where(t => t.IsTrader).Take(1)
+          .ForEach(tm =>
           tm.UseRates(rates => rates.BackwardsIterator().TakeWhile(r => getVoltM1(tm)(r).IsNotNaN() && r.StartDate >= startDate).ToList()).ForEach(ratesT1 => {
             ratesT1.Reverse();
             (from r in ratesT1
@@ -172,7 +173,7 @@ namespace HedgeHog.Alice.Store {
              join rateEmpty in ratesEmpty on dv.d equals rateEmpty.StartDate
              select new { r = rateEmpty, dv.v }
             ).ForEach(x => setVoltM1(tm)(x.r, x.v));
-          });
+          }));
         });
       });
     }

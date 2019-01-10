@@ -97,6 +97,7 @@ namespace HedgeHog.Alice.Client {
       } catch(Exception exc) { Log = exc; }
     }
     char[] _testParamValuesSeparators = new[] { '^', '\t' };
+    private readonly bool replayOnly = true;
     async Task FillTestParams(TradingMacro tmOriginal, Action<IList<KeyValuePair<string, object>[]>> paramsTransformation) {
       var c = _testParamValuesSeparators;
       if(!_testParamsRaw.Any()) {
@@ -116,20 +117,21 @@ namespace HedgeHog.Alice.Client {
           ReplayArguments.LastWwwError = "";
           var strats = TaskMonad.RunSync(() => ReadStrategies(tmOriginal, (name, desc, content, uri, diff) => new { name, content, diff }));
           Func<string, bool> isTest = s => s.ToLower().Trim().EndsWith("{t}");
-          await strats.Select(s => s.First())
-            .Take(2)
-            .OrderByDescending(s => isTest(s.name))
-            .Where(s => isTest(s.name) || s.diff.IsEmpty())
-            .OnEmpty(() => { LogWww(new Exception(ReplayArguments.LastWwwError = "Current settings don't match any strategy")); })
-            .Select(strategy => {
-              tmOriginal.TestFileName = strategy.name;
-              var paramsDict = Lib.ReadParametersFromString(strategy.content);
-              _testParamsRaw.AddRange(
-              paramsDict
-                .Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v))
-                .ToArray()));
-              return tmOriginal.LoadActiveSettings(strategy.name, TradingMacro.ActiveSettingsStore.Gist);
-            }).WhenAll();
+          if(!replayOnly)
+            await strats.Select(s => s.First())
+              .Take(2)
+              .OrderByDescending(s => isTest(s.name))
+              .Where(s => isTest(s.name) || s.diff.IsEmpty())
+              .OnEmpty(() => { LogWww(new Exception(ReplayArguments.LastWwwError = "Current settings don't match any strategy")); })
+              .Select(strategy => {
+                tmOriginal.TestFileName = strategy.name;
+                var paramsDict = Lib.ReadParametersFromString(strategy.content);
+                _testParamsRaw.AddRange(
+                paramsDict
+                  .Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v))
+                  .ToArray()));
+                return tmOriginal.LoadActiveSettings(strategy.name, TradingMacro.ActiveSettingsStore.Gist);
+              }).WhenAll();
         } else {
           var testParams = tmOriginal.GetPropertiesByAttibute<CategoryAttribute>(a => a.Category == TradingMacro.categoryTest);
           var paramsDict = testParams.ToDictionary(p => p.Item2.Name.Substring(4), p => p.Item2.GetValue(tmOriginal, null).ToString().ParseParamRange());

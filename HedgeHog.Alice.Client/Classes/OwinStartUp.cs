@@ -270,7 +270,7 @@ namespace HedgeHog.Alice.Client {
     static public void OnCurrentCombo((string key, Action action) p) {
       _CurrentCombos.OnNext(p);
     }
-    private AccountManager GetAccountManager() => ((IBWraper)trader?.Value?.TradesManager).AccountManager;
+    private AccountManager GetAccountManager() => (trader?.Value?.TradesManager as IBWraper)?.AccountManager;
     public MyHub() {
       try {
         remoteControl = App.container.GetExport<RemoteControlModel>();
@@ -577,222 +577,229 @@ namespace HedgeHog.Alice.Client {
     static double DaysTillExpiration(DateTime expiration) => (expiration - DateTime.Now.Date).TotalDays + 1;
     public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip, string optionTypeMap, DateTime hedgeDate, string rollCombo) =>
       UseTraderMacro(pair, tm => {
-        int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(expDaysSkip);
-        var am = GetAccountManager();
-        string CacheKey(Contract c) => c.IsFuture ? c.LocalSymbol : c.Symbol;
-        var underContracts = IBApi.Contract.FromCache(pair).ToArray();
-        if(am != null) {
-          Action rollOvers = () => {
-            var show = !rollCombo.IsNullOrWhiteSpace() && optionTypeMap == "R";
-            am.CurrentRollOver(rollCombo, show ? numOfCombos : 0, expDaysSkip.Max(2))
-            .ToArray()
-            //.Where(a => a.Length > 0)
-             .Subscribe(_ => {
-               base.Clients.Caller.rollOvers(_.OrderByDescending(t => t.dpw).Select(t =>
-               new {
-                 i = t.roll.Instrument, o = t.roll.ShortString, t.days, bid = t.bid.AutoRound2(3), perc = t.perc.ToString("0.0"), dpw = t.dpw.ToInt()
-               , exp = t.roll.LastTradeDateOrContractMonth.Substring(4)
-               }).ToArray());
-             });
-          };
-          Action straddles = () =>
-            underContracts
-              .ForEach(underContract => {
-                am.CurrentStraddles(CacheKey(underContract), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, numOfCombos, gap)
-                .Select(ts => {
-                  var cs = ts.Select(t => {
-                    var d = DaysTillExpiration(t.combo.contract.Expiration);
+        if(!tm.IsInVirtualTrading) {
+          int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(expDaysSkip);
+          var am = GetAccountManager();
+          string CacheKey(Contract c) => c.IsFuture ? c.LocalSymbol : c.Symbol;
+          var underContracts = IBApi.Contract.FromCache(pair).ToArray();
+          if(am != null) {
+            Action rollOvers = () => {
+              var show = !rollCombo.IsNullOrWhiteSpace() && optionTypeMap == "R";
+              am.CurrentRollOver(rollCombo, show ? numOfCombos : 0, expDaysSkip.Max(2))
+              .ToArray()
+               //.Where(a => a.Length > 0)
+               .Subscribe(_ => {
+                 base.Clients.Caller.rollOvers(_.OrderByDescending(t => t.dpw).Select(t =>
+                 new {
+                   i = t.roll.Instrument, o = t.roll.ShortString, t.days, bid = t.bid.AutoRound2(3), perc = t.perc.ToString("0.0"), dpw = t.dpw.ToInt()
+                 , exp = t.roll.LastTradeDateOrContractMonth.Substring(4), d = t.delta.Round(1)
+                 }).ToArray());
+               });
+            };
+            Action straddles = () =>
+              underContracts
+                .ForEach(underContract => {
+                  am.CurrentStraddles(CacheKey(underContract), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, numOfCombos, gap)
+                  .Select(ts => {
+                    var cs = ts.Select(t => {
+                      var d = DaysTillExpiration(t.combo.contract.Expiration);
+                      return new {
+                        i = t.instrument,
+                        d = (t.combo.contract.IsFutureOption ? d.Round(1) + " " : ""),
+                        t.bid,
+                        t.ask,
+                        avg = t.ask.Avg(t.bid),
+                        time = t.time.ToString("HH:mm:ss"),
+                        delta = t.deltaBid,
+                        strike = t.strikeAvg,
+                        perc = (t.bid / t.underPrice * 100),
+                        strikeDelta = t.strikeAvg - t.underPrice,
+                        be = new { t.breakEven.up, t.breakEven.dn },
+                        isActive = false,
+                        maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100 / d,
+                        maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier,
+                        underPL = 0
+                      };
+                    });
+                    cs = strikeLevel.HasValue && true
+                    ? cs.OrderByDescending(x => x.strikeDelta)
+                    : cs.OrderByDescending(x => x.delta);
+                    return cs.Take(numOfCombos).OrderByDescending(x => x.strike).ToArray();
+                  })
+                  .Subscribe(b => base.Clients.Caller.butterflies(b));
+                });
+            var sl = strikeLevel.GetValueOrDefault(double.NaN);
+
+            var hedgeSkipDates = DateTime.Now.Date.GetWorkingDays(29) + expirationDaysSkip;
+            if(false)
+              am.CurrentOptions("VIX", sl, hedgeSkipDates, 5, c => c.Right == "C")
+              .Select(ts => {
+                var call = ts.Where(t => t.strikeAvg > t.underPrice.RoundBySample(0.5)).OrderBy(t => t.strikeAvg).Skip(1).Take(1).ToList();
+                return call.Select(t => {
+                  var underMult = underContracts[0].ComboMultiplier;
+                  var hedgeBS = HedgeBuySell(pair, true).ToArray();
+                  var hedges = hedgeBS.Buffer(2).Where(b => b.Count == 2).ToArray();
+                  var hedgeQty = hedges.Select(hedge => (quantity * underMult * hedge[0].TradeRatioM1.All / hedge[1].TradeRatioM1.All / t.option.ComboMultiplier).ToInt()).SingleOrDefault();
+                  var loss = t.ask * hedgeQty * t.option.ComboMultiplier;
+                  var lossPoints = (loss / quantity / underMult).ToInt();
+                  var wds = DateTime.Now.Date.GetWorkingDays(t.option.Expiration);
+                  return new {
+                    name = t.option.LocalSymbol,
+                    qty = hedgeQty,
+                    t.ask,
+                    loss,
+                    lossPoints,
+                    lppd = ((double)lossPoints / wds).AutoRound2(2),
+                    wds
+                  };
+                })
+                .ToArray();
+              })
+              .Subscribe(x => base.Clients.Caller.hedgeOptions(x));
+
+            Action<string> currentOptions = (map) => {
+              var noc = new[] { "C", "P" }.Contains(map) ? (numOfCombos * 1.5).Ceiling() : 0;
+              underContracts.ForEach(underContract =>
+              am.CurrentOptions(CacheKey(underContract), sl, expirationDaysSkip, noc, c => map.Contains(c.Right))
+              .Select(ts => {
+                var underPosition = am.Positions.Where(p => p.contract.Instrument == underContract.Instrument).ToList().FirstOrDefault();
+                var exp = ts.Select(t => new { dte = DateTime.Now.Date.GetWorkingDays(t.option.Expiration), exp = t.option.LastTradeDateOrContractMonth }).Take(1).ToArray();
+                var options = ts
+                .Select(t => {
+                  var maxPL = t.deltaBid * quantity * t.option.ComboMultiplier;
+                  var strikeDelta = t.strikeAvg - t.underPrice;
+                  var _sd = t.strikeAvg - sl.IfNaNOrZero(t.underPrice);
+                  var underPL = (t.strikeAvg - underPosition.price) * quantity * underContract.ComboMultiplier + maxPL;
+                  return new {
+                    i = t.option.Instrument,
+                    l = t.option.ShortWithDate,
+                    t.bid,
+                    t.ask,
+                    avg = t.ask.Avg(t.bid),
+                    time = t.time.ToString("HH:mm:ss"),
+                    delta = t.deltaBid,
+                    strike = t.strikeAvg,
+                    perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+                    strikeDelta,
+                    be = new { t.breakEven.up, t.breakEven.dn },
+                    isActive = false,
+                    cp = t.option.Right,
+                    maxPlPerc = t.deltaBid * quantity * t.option.ComboMultiplier / am.Account.Equity * 100 / exp[0].dte,
+                    maxPL,
+                    underPL,
+                    _sd
+                  };
+                })
+                .OrderBy(t => t.strike.Abs(sl))
+                .ToArray();
+
+                var puts = options.Where(t => t.cp == "P" && t._sd < 5);
+                var calls = options.Where(t => t.cp == "C" && t._sd > -5);
+                return (exp, b: calls.OrderByDescending(x => x.strike).Concat(puts.OrderByDescending(x => x.strike)).ToArray());
+              })
+              .Subscribe(t => {
+                base.Clients.Caller.bullPuts(t.b);
+                base.Clients.Caller.stockOptionsInfo(t.exp);
+              }));
+            };
+            Action currentBullPut = () =>
+              underContracts
+                .ForEach(symbol
+                => am.CurrentBullPuts(CacheKey(symbol), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3, gap)
+                .Select(ts => ts
+                  .Select(t => new {
+                    i = t.instrument,
+                    t.bid,
+                    t.ask,
+                    avg = t.ask.Avg(t.bid),
+                    time = t.time.ToString("HH:mm:ss"),
+                    t.delta,
+                    strike = t.strikeAvg,
+                    perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+                    strikeDelta = t.strikeAvg - t.underPrice,
+                    be = new { t.breakEven.up, t.breakEven.dn },
+                    isActive = false,
+                    maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100
+                    / DaysTillExpiration(t.combo.contract.Expiration),
+                    maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier
+                  })
+                .OrderByDescending(t => t.delta)
+                //.ThenBy(t => t.i)
+                )
+               .Subscribe(b => base.Clients.Caller.options(b)));
+
+            Action openOrders = () =>
+            am.UseOrderContracts((ibc, orderContracts) =>
+            (from oc in orderContracts.ToObservable()
+             where oc.isSubmitted
+             from p in ibc.ReqPriceSafe(oc.contract, 1, false).DefaultIfEmpty()
+             select new {
+               i = oc.contract.ShortWithDate
+             , id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, lp = oc.order.LmtPrice
+             , p = oc.order.Action == "BUY" ? p.ask : p.bid
+             }).ToArray()
+            ).ForEach(s => s.Subscribe(b => base.Clients.Caller.openOrders(b)));
+
+            if(!pair.IsNullOrWhiteSpace())
+              OnCurrentCombo((new { DateTime.Now.Ticks } + "", () => {
+                if(optionTypeMap.Contains("S"))
+                  straddles();
+                currentOptions(optionTypeMap);
+                openOrders();
+                rollOvers();
+                ComboTrades();
+                //currentBullPut();
+              }
+              ));
+            //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
+            void ComboTrades() =>
+            am.ComboTrades(1)
+              .ToArray()
+              .Subscribe(cts => {
+                try {
+                  var combos = cts
+                  .Where(ct => ct.position != 0)
+                  .OrderBy(ct => ct.contract.Legs().Count())
+                  .ThenBy(ct => ct.contract.IsOption)
+                  .ThenByDescending(ct => ct.contract.LastTradeDateOrContractMonth)
+                  .ToArray(x => {
+                    var hasStrike = x.contract.IsOption || x.contract.IsCombo;
+                    var delta = hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs();
                     return new {
-                      i = t.instrument,
-                      d = (t.combo.contract.IsFutureOption ? d.Round(1) + " " : ""),
-                      t.bid,
-                      t.ask,
-                      avg = t.ask.Avg(t.bid),
-                      time = t.time.ToString("HH:mm:ss"),
-                      delta = t.deltaBid,
-                      strike = t.strikeAvg,
-                      perc = (t.bid / t.underPrice * 100),
-                      strikeDelta = t.strikeAvg - t.underPrice,
-                      be = new { t.breakEven.up, t.breakEven.dn },
-                      isActive = false,
-                      maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100 / d,
-                      maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier,
-                      underPL = 0
+                      combo = x.contract.Key
+                        , netPL = x.pl
+                        , x.position
+                        , x.closePrice
+                        , x.price.bid, x.price.ask
+                        , x.close
+                        , delta
+                        , x.openPrice
+                        , x.takeProfit, x.profit, x.orderId
+                        , exit = 0, exitDelta = 0
+                        , pmc = x.pmc.ToInt()
+                        , mcu = x.mcUnder.ToInt()
+                        , color = !hasStrike ? "white"
+                        : delta > 0 && x.contract.IsPut
+                        ? "#ffd3d9"
+                        : delta < 0 && x.contract.IsCall
+                        ? "#ffd3d9"
+                        : "chartreuse"
                     };
                   });
-                  cs = strikeLevel.HasValue && true
-                  ? cs.OrderByDescending(x => x.strikeDelta)
-                  : cs.OrderByDescending(x => x.delta);
-                  return cs.Take(numOfCombos).OrderByDescending(x => x.strike).ToArray();
-                })
-                .Subscribe(b => base.Clients.Caller.butterflies(b));
-              });
-          var sl = strikeLevel.GetValueOrDefault(double.NaN);
 
-          var hedgeSkipDates = DateTime.Now.Date.GetWorkingDays(29) + expirationDaysSkip;
-          if(false)
-            am.CurrentOptions("VIX", sl, hedgeSkipDates, 5, c => c.Right == "C")
-            .Select(ts => {
-              var call = ts.Where(t => t.strikeAvg > t.underPrice.RoundBySample(0.5)).OrderBy(t => t.strikeAvg).Skip(1).Take(1).ToList();
-              return call.Select(t => {
-                var underMult = underContracts[0].ComboMultiplier;
-                var hedgeBS = HedgeBuySell(pair, true).ToArray();
-                var hedges = hedgeBS.Buffer(2).Where(b => b.Count == 2).ToArray();
-                var hedgeQty = hedges.Select(hedge => (quantity * underMult * hedge[0].TradeRatioM1.All / hedge[1].TradeRatioM1.All / t.option.ComboMultiplier).ToInt()).SingleOrDefault();
-                var loss = t.ask * hedgeQty * t.option.ComboMultiplier;
-                var lossPoints = (loss / quantity / underMult).ToInt();
-                var wds = DateTime.Now.Date.GetWorkingDays(t.option.Expiration);
-                return new {
-                  name = t.option.LocalSymbol,
-                  qty = hedgeQty,
-                  t.ask,
-                  loss,
-                  lossPoints,
-                  lppd = ((double)lossPoints / wds).AutoRound2(2),
-                  wds
-                };
-              })
-              .ToArray();
-            })
-            .Subscribe(x => base.Clients.Caller.hedgeOptions(x));
-
-          Action<string> currentOptions = (map) => {
-            var noc = new[] { "C", "P" }.Contains(map) ? (numOfCombos * 1.5).Ceiling() : 0;
-            underContracts.ForEach(underContract =>
-            am.CurrentOptions(CacheKey(underContract), sl, expirationDaysSkip, noc, c => map.Contains(c.Right))
-            .Select(ts => {
-              var underPosition = am.Positions.Where(p => p.contract.Instrument == underContract.Instrument).ToList().FirstOrDefault();
-              var exp = ts.Select(t => new { dte = DateTime.Now.Date.GetWorkingDays(t.option.Expiration), exp = t.option.LastTradeDateOrContractMonth }).Take(1).ToArray();
-              var options = ts
-              .Select(t => {
-                var maxPL = t.deltaBid * quantity * t.option.ComboMultiplier;
-                var strikeDelta = t.strikeAvg - t.underPrice;
-                var underPL = (t.strikeAvg - underPosition.price) * quantity * underContract.ComboMultiplier + maxPL;
-                return new {
-                  i = t.instrument,
-                  t.bid,
-                  t.ask,
-                  avg = t.ask.Avg(t.bid),
-                  time = t.time.ToString("HH:mm:ss"),
-                  delta = t.deltaBid,
-                  strike = t.strikeAvg,
-                  perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
-                  strikeDelta,
-                  be = new { t.breakEven.up, t.breakEven.dn },
-                  isActive = false,
-                  cp = t.option.Right,
-                  maxPlPerc = t.deltaBid * quantity * t.option.ComboMultiplier / am.Account.Equity * 100 / exp[0].dte,
-                  maxPL,
-                  underPL
-                };
-              }).OrderBy(t => t.strikeDelta.Abs());
-
-              var puts = options.Where(t => t.cp == "P" && t.strikeDelta < 5);
-              var calls = options.Where(t => t.cp == "C" && t.strikeDelta > -5);
-              return (exp, b: calls.OrderByDescending(x => x.strike).Concat(puts.OrderByDescending(x => x.strike)).ToArray());
-            })
-            .Subscribe(t => {
-              base.Clients.Caller.bullPuts(t.b);
-              base.Clients.Caller.stockOptionsInfo(t.exp);
-            }));
-          };
-          Action currentBullPut = () =>
-            underContracts
-              .ForEach(symbol
-              => am.CurrentBullPuts(CacheKey(symbol), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3, gap)
-              .Select(ts => ts
-                .Select(t => new {
-                  i = t.instrument,
-                  t.bid,
-                  t.ask,
-                  avg = t.ask.Avg(t.bid),
-                  time = t.time.ToString("HH:mm:ss"),
-                  t.delta,
-                  strike = t.strikeAvg,
-                  perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
-                  strikeDelta = t.strikeAvg - t.underPrice,
-                  be = new { t.breakEven.up, t.breakEven.dn },
-                  isActive = false,
-                  maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100
-                  / DaysTillExpiration(t.combo.contract.Expiration),
-                  maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier
-                })
-              .OrderByDescending(t => t.delta)
-              //.ThenBy(t => t.i)
-              )
-             .Subscribe(b => base.Clients.Caller.options(b)));
-
-          Action openOrders = () =>
-          am.UseOrderContracts((ibc, orderContracts) =>
-          (from oc in orderContracts.ToObservable()
-           where oc.isSubmitted
-           from p in ibc.ReqPriceSafe(oc.contract, 1, false).DefaultIfEmpty()
-           select new {
-             i = oc.contract.Instrument + " " + oc.contract.LastTradeDateOrContractMonth.Substring(4)
-           , id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, lp = oc.order.LmtPrice
-           , p = oc.order.Action == "BUY" ? p.ask : p.bid
-           }).ToArray()
-          ).ForEach(s => s.Subscribe(b => base.Clients.Caller.openOrders(b)));
-
-          if(!pair.IsNullOrWhiteSpace())
-            OnCurrentCombo((new { DateTime.Now.Ticks } + "", () => {
-              if(optionTypeMap.Contains("S"))
-                straddles();
-              currentOptions(optionTypeMap);
-              openOrders();
-              rollOvers();
-              ComboTrades();
-              //currentBullPut();
-            }
-            ));
-          //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
-          void ComboTrades() =>
-          am.ComboTrades(1)
-            .ToArray()
-            .Subscribe(cts => {
-              try {
-                var combos = cts
-                .Where(ct => ct.position != 0)
-                .OrderBy(ct => ct.contract.Legs().Count())
-                .ThenBy(ct => ct.contract.IsOption)
-                .ThenByDescending(ct => ct.contract.LastTradeDateOrContractMonth)
-                .ToArray(x => {
-                  var hasStrike = x.contract.IsOption || x.contract.IsCombo;
-                  var delta = hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs();
-                  return new {
-                    combo = x.contract.Key
-                      , netPL = x.pl
-                      , x.position
-                      , x.closePrice
-                      , x.price.bid, x.price.ask
-                      , x.close
-                      , delta
-                      , x.openPrice
-                      , x.takeProfit, x.profit, x.orderId
-                      , exit = 0, exitDelta = 0
-                      , pmc = x.pmc.ToInt()
-                      , mcu = x.mcUnder.ToInt()
-                      , color = !hasStrike ? "white"
-                      : delta > 0 && x.contract.IsPut
-                      ? "#ffd3d9"
-                      : delta < 0 && x.contract.IsCall
-                      ? "#ffd3d9"
-                      : "chartreuse"
-                  };
-                });
-
-                base.Clients.Caller.liveCombos(combos);
-              } catch(Exception exc) {
+                  base.Clients.Caller.liveCombos(combos);
+                } catch(Exception exc) {
+                  Log = exc;
+                }
+              }, exc => {
                 Log = exc;
-              }
-            }, exc => {
-              Log = exc;
-            });
-          if(false)
-            base.Clients.Caller.orders(am.OrderContractsInternal
-              .Select(oc =>
-              new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
-              ).OrderBy(oc => oc.order));
+              });
+            if(false)
+              base.Clients.Caller.orders(am.OrderContractsInternal
+                .Select(oc =>
+                new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
+                ).OrderBy(oc => oc.order));
+          }
         }
         var distFromHigh = tm.TradingMacroM1(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
         return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh };
@@ -854,6 +861,10 @@ namespace HedgeHog.Alice.Client {
       if(contract == null)
         throw new Exception(new { pair, not = "found" } + "");
       GetAccountManager().OpenCoveredOption(contract, quantity, price.GetValueOrDefault());
+    }
+    [BasicAuthenticationFilter]
+    public void OpenCovered(string pair, string option, int quantity, double price) {
+      GetAccountManager().OpenCoveredOption(pair, option, quantity, price);
     }
     [BasicAuthenticationFilter]
     public void CloseCombo(string instrument) {
@@ -994,7 +1005,7 @@ namespace HedgeHog.Alice.Client {
         : DateTime.Parse(startWhen);
       remoteControl.Value.ReplayArguments.DateStart = dateStart;
       remoteControl.Value.ReplayArguments.IsWww = true;
-      UseTradingMacro(pair, tm => remoteControl.Value.StartReplayCommand.Execute(tm));
+      UseTraderMacro(pair, tm => remoteControl.Value.StartReplayCommand.Execute(tm));
       return ReadReplayArguments(pair);
     }
     public object StopReplay(string pair) {

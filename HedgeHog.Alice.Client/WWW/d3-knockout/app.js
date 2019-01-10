@@ -988,6 +988,16 @@
         , function () { this.canTrade(true); }.bind(this)
       );
     }.bind(this);
+    this.openCovered = function (data) {
+      debugger;
+      var option = ko.unwrap(data.i);
+      this.canTrade(false);
+      serverCall("openCovered", [pair, option, this.comboQuantity(), this.comboCurrentStrikeLevel()]
+        , null
+        , null
+        , function () { this.canTrade(true); }.bind(this)
+      );
+    }.bind(this);
     this.closeCombo = function (key) {
       this.canTrade(false);
       serverCall("closeCombo", [ko.utils.unwrapObservable(key)], null, null, function () { this.canTrade(false); }.bind(this));

@@ -87,7 +87,7 @@ namespace HedgeHog.Shared {
     //  return _pipCostDictionary[pair];
     //}
 
-    public int GetBaseUnitSize(string pair) { return baseUnits[pair]; }
+    public int GetBaseUnitSize(string pair) { return baseUnits.TryGetValue(pair, out var bu) ? bu : 1; }
 
     public Func<Trade, double> CommissionByTrade { get; set; }
 
@@ -588,7 +588,7 @@ namespace HedgeHog.Shared {
     }
 
     public void FetchMMRs() => throw new NotImplementedException();
-    (string status, double filled, double remaining, bool isDone)[] _orderStatuses = new(string status, double filled, double remaining, bool isDone)[0];
+    (string status, double filled, double remaining, bool isDone)[] _orderStatuses = new (string status, double filled, double remaining, bool isDone)[0];
     public IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair) => _orderStatuses;
   }
 

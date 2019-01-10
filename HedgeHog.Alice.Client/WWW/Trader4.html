@@ -1251,7 +1251,7 @@
           <td data-bind="text:position"></td>
           <td data-bind="text:d3.format('$.0f')(netPL()),css:{profit:netPL()>0,loss:netPL()<0}"></td>
           <td><!--<input data-bind-removed="value:exit" size="3" />--></td>
-          <td><span data-bind="text:pmc"></span>:<span data-bind="text:mcu"></span></td>
+          <td><span data-bind1="text:pmc"></span>:<span data-bind1="text:mcu"></span></td>
           <td>
             <span data-bind="text:d3.format('.2f')(takeProfit()),event:{click:$parent.showNextInput}"></span>
             <input data-bind="event:{change:$parent.newTakeProfit,blur:$parent.hideNextInput}" size="4" style="display:none;overflow:visible" />
@@ -1407,6 +1407,7 @@
           <td data-bind="text:perc()+'%'"></td>
           <td data-bind="text:'$'+dpw()"></td>
           <td data-bind="text:exp"></td>
+          <td data-bind="text:d"></td>
           <td>
             <button data-bind="click:$parent.rollTrade.bind(null,$data)" title="Roll Trade">
               <span class="glyphicon glyphicon-fast-forward"></span>
@@ -1436,7 +1437,7 @@
       </tr>
       <!-- ko foreach:currentCombos -->
       <tr data-bind="event:{click1:function(){isActive(!isActive())}}">
-        <td data-bind="text:i,css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
+        <td data-bind="text:l,css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
         <td data-bind="text:d3.format('+.1f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
         <!--<td data-bind1="text:d3.format('.1f')(be.up())"></td>
       <td data-bind1="text:d3.format('.1f')(be.dn())"></td>
@@ -1450,7 +1451,7 @@
         <td data-bind="text:d3.format('$.0f')(underPL())"></td>
         <td>
           <button data-bind="click:$parent.openButterfly.bind($root,false,$data,true),enabled:$root.canTrade">Sell</button>
-          <button data-bind="click:$parent.openButterfly.bind($root,false,$data,false),enabled:$root.canTrade">SELL</button>
+          <button data-bind="click:$parent.openCovered,enabled:$root.canTrade">SELL</button>
         </td>
       </tr>
       <!-- /ko -->

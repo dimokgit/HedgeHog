@@ -142,6 +142,17 @@ namespace HedgeHog.Alice.Store {
     }
 
     private CorridorStatistics ScanCorridorBy12345(bool? skipAll, List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesForCorr = _ratesArrayCoeffs.Take(1)
+        .Select(_ => {
+          var redRates = RatesArray.GetRange(RatesArray.Count - 2, 2);
+          redRates.Reverse();
+          WaveShort.Rates = redRates;
+          return new { redRates, trend = new { StDev = 0, Coeffs = new[] { 0.0, 0.0 } } };
+        })
+      .ToArray();
+      if(RatesArray.Count < 60)
+        return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();
+
       bool mustResetAllTrendLevels = true || _mustResetAllTrendLevels;
       _mustResetAllTrendLevels = false;
       List<RateGroup> grouped = GroupRates(ratesForCorridor);
@@ -291,21 +302,11 @@ namespace HedgeHog.Alice.Store {
         .Take(1)
         .ForEach(_ => _mustResetAllTrendLevels = true);
 
-      var ratesForCorr = _ratesArrayCoeffs.Take(1)
-        .Select(_ => {
-          var redRates = RatesArray.GetRange(RatesArray.Count - 2, 2);
-          redRates.Reverse();
-          WaveShort.Rates = redRates;
-          return new { redRates, trend = new { StDev = 0, Coeffs = new[] { 0.0, 0.0 } } };
-        })
-      .ToArray();
-
       GetShowVoltageFunction()();
       GetShowVoltageFunction(VoltageFunction2, 1)();
-      var minMax = UseRates(ra => ra.Select((r, i) => (r, i, j: i)).MinMaxBy(r => r.r.PriceAvg)).Concat().ToArray();
       {
-        var mm = minMax.Take(1).Concat(minMax.Skip(1).Select(x => (x.r, x.i, j: RatesArray.Count - x.i))).OrderByDescending(x => x.j).Take(1).ToList();
-        var ii = UseRates(ra => ra.FuzzyIndex(TLPlum.EndDate, (d, p, n) => d.Between(p.StartDate, n.StartDate))).Concat().ToArray();
+        var endDates = Trends.Skip(1).SkipWhile(tl => tl.IsEmpty).Take(1).Select(a => a.EndDate);
+        var ii = endDates.Select(endDate=> UseRates(ra => ra.FuzzyIndex(endDate, (d, p, n) => d.Between(p.StartDate, n.StartDate)))).Concat().Concat().ToArray();
         Trends2
           .Where(tl => tl.TL.IsNullOrEmpty())
           .Select(t => t.Set)

@@ -1197,7 +1197,7 @@ namespace HedgeHog.Bars {
     }
 
     public static double Spread(this IList<Rate> rates, int iterations = 2) {
-      return rates.PriceHikes().Average();
+      return rates.PriceHikes().DefaultIfEmpty().Average();
       //return rates.Average(r => r.Spread);
       //var spreads = rates.Select(r => r.PriceHigh - r.PriceLow).ToArray();
       //if (spreads.Length == 0) return double.NaN;

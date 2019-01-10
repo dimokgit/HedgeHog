@@ -52,6 +52,7 @@ using IBApi;
 namespace HedgeHog.Alice.Store {
   [JsonObject(MemberSerialization.OptOut)]
   public partial class TradingMacro {
+    public override string ToString() => new { Pair, BarPeriod, PairIndex } + "";
     public bool IsLoaded { get; set; }
 
     List<SuppRes> _suppRes = new List<SuppRes>();
