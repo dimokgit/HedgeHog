@@ -492,7 +492,7 @@ namespace IBApp {
       .Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60))
       .Do(p => Trace($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
       //.Select(p => (p.Bid, p.Ask, p.Time))
-      .Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
+      //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
       .Take(1)
       ;
     }
@@ -516,7 +516,8 @@ namespace IBApp {
         });
       return x;
     }
-    public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceComboSafe(Contract combo, double timeoutInSeconds, bool useErrorHandler) {
+    public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceComboSafe(Contract combo, double timeoutInSeconds, bool useErrorHandler, [CallerMemberName] string Caller = "") {
+      Trace($"{nameof(ReqPriceComboSafe)}:{combo} <= {Caller}");
       double ask((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time, double) price) => cl.leg.Action == "BUY" ? price.ask : -price.bid;
       double bid((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time, double) price) => cl.leg.Action == "BUY" ? price.bid : -price.ask;
       var x = combo.LegsEx()

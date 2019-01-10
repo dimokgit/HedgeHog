@@ -97,12 +97,12 @@ namespace IBApi {
       (from l in ComboLegs ?? new List<ComboLeg>()
        join c in Contracts.Select(cd => cd.Value) on l.ConId equals c.ConId
        select (c, l.Ratio)
-       );
+       ).Memoize();
     public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx() =>
       (from l in ComboLegs ?? new List<ComboLeg>()
        join c in Contracts.Select(cd => cd.Value) on l.ConId equals c.ConId
        select (c, l)
-       );
+       ).Memoize();
   }
   public static class ContractMixins {
     public static bool IsIndex(this Contract c) => c.SecType == "IND";
