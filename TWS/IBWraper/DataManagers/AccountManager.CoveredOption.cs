@@ -22,6 +22,12 @@ namespace IBApp {
           OpenCoveredOption(contract, "", quantity, price, call.option, DateTime.MaxValue, minTickMultiplier, Caller);
         });
     }
+    public void OpenCoveredOption(string instrument, string option, int quantity, double price, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+      (from i in IbClient.ReqContractDetailsCached(instrument).Select(cd => cd.Contract)
+       from o in IbClient.ReqContractDetailsCached(option).Select(cd => cd.Contract)
+       select (i, o)
+       ).Subscribe(t => OpenCoveredOption(t.i, "", quantity, price, t.o, DateTime.MaxValue, minTickMultiplier, Caller));
+    }
     public void OpenCoveredOption(Contract contract, string type, int quantity, double price, Contract contractOCO, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
       UseOrderContracts(orderContracts => {
         var aos = orderContracts

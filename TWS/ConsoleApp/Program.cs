@@ -22,6 +22,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Reactive;
 using MarkdownLog;
+using HedgeHog.Alice.Store;
 
 namespace ConsoleApp {
   class Program {
@@ -69,12 +70,35 @@ namespace ConsoleApp {
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         {
+          TestCurrentOptions(0);
+          void TestCurrentOptions(int expirationDaysToSkip, bool doMore = true) {
+            (from under in ibClient.ReqContractDetailsCached("ESH9")
+             from price in ibClient.ReqPriceSafe(under.Contract, 2000, true)
+             from options in am.CurrentOptions(under.Contract.LocalSymbol, price.ask.Avg(price.bid), expirationDaysToSkip, 10, o => o.IsCall)
+             from option in options
+             select new { price.bid, option.option }
+            )
+            .ToArray()
+            .Subscribe(_ => {
+              HandleMessage("\n" + _.ToMarkdownTable());
+              if(doMore)
+                TestCurrentOptions(0, false);
+              //if(false)
+              //am.OpenTrade(_.option.option, "", 1, 0, 0, false, DateTime.MaxValue, OrderConditionParam.PriceFactory(_.under, 3000, true, false));
+            });
+          }
+          return;
+        }
+        ibClient.ReqContractDetailsCached("ESH9")
+        .Subscribe(cd => PriceHistory.AddTicks(fw, 0, "ESH9", DateTime.Now.AddMonths(-2), o => HandleMessage(o + "")));
+        return;
+        {
           (from i in Observable.Interval(5.FromSeconds())
            from p in ibClient.ReqPriceSafe("ESH9".ContractFactory(), 1, false)
            select p
            ).Take(10)
            .Subscribe(p => HandleMessage(p));
-          var rollSymbols = new[] { "VIX" , "ESH9" };//"VXX   190111P00043000"
+          var rollSymbols = new[] { "VIX", "ESH9" };//"VXX   190111P00043000"
           Task.Delay(5000).ContinueWith(_ => rollSymbols.ForEach(rs => ReadRolls(rs, false, DateTime.Now.Date)));
           void ReadRolls(string instrument, bool isCall, DateTime exp) {
             HandleMessage("ReadRolls: start " + instrument);
@@ -122,27 +146,10 @@ namespace ConsoleApp {
           TestAllStrikesAndExpirations(1);
           TestAllStrikesAndExpirations(2, () => TestAllStrikesAndExpirations(3));
         }
-        {
-          TestCurrentOptions(0);
-          void TestCurrentOptions(int expirationDaysToSkip) {
-            (from under in ibClient.ReqContractDetailsCached("VXF9")
-             from price in ibClient.ReqPriceSafe(under.Contract, 2000, true)
-             from options in am.CurrentOptions(under.Contract.LocalSymbol, price.ask.Avg(price.bid), expirationDaysToSkip, 1, o => o.IsCall).Take(1)
-             from option in options
-             select new { under = under.Contract, price, option }
-            ).Subscribe(_ => {
-              HandleMessage(_.ToJson(true));
-              if(false)
-                am.OpenTrade(_.option.option, "", 1, 0, 0, false, DateTime.MaxValue, OrderConditionParam.PriceFactory(_.under, 3000, true, false));
-            });
-          }
-          return;
-        }
         //ibClient.ReqOptionChainCache("ESH9")
         //.Subscribe(cd => {
         //  am.OpenTrade(cd.Contract,"", -1, 0, 0, false, DateTime.MinValue,new AccountManager.PriceConditionParam(cd.Contract,3000,true,false));
         //});
-        //.Subscribe(_ => PriceHistory.AddTicks(fw, 1, "ESH9", DateTime.Now.AddYears(-5), o => HandleMessage(o + "")));
         ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXF9", SecType = "FUT", Currency = "USD" })
         //ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXQ8", SecType = "FUT", Currency = "USD" })
         .ToArray()

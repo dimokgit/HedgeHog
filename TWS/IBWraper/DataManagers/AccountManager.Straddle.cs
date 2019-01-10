@@ -289,7 +289,9 @@ namespace IBApp {
       from roll in rolls
       where roll.IsCall == IsCall
       from rp in IbClient.ReqPriceSafe(roll, 3, false)
-      where rp.bid > -trade.change
+      let strikeSign = (trade.contract.IsCall ? -1 : trade.contract.IsPut ? 1 : 0) * trade.position.Sign()
+      let strikeDelta = (roll.Strike - trade.underPrice) * strikeSign
+      where rp.bid > strikeDelta.Max(-trade.change)
       let days = (roll.Expiration - Expiration).TotalDays.Floor()
       let workDays = Expiration.GetWorkingDays(roll.Expiration)
       let amount = rp.bid * trade.position.Abs() * roll.ComboMultiplier
