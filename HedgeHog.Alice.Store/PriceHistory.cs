@@ -1,18 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using HedgeHog.Bars;
 using HedgeHog.DB;
-using HedgeHog.Bars;
-using System.Diagnostics;
-using Order2GoAddIn;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
-using System.Reactive;
 using HedgeHog.Shared;
 using HedgeHog.Shared.Messages;
-using EntityFramework.BulkInsert.Extensions;
-using System.Runtime.CompilerServices;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks.Dataflow;
 
 namespace HedgeHog.Alice.Store {
   public static class PriceHistory {

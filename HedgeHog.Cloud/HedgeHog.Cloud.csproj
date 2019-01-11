@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HedgeHog.Cloud</RootNamespace>
     <AssemblyName>HedgeHog.Cloud</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\TicketBuster\</SolutionDir>
     <RestorePackages>true</RestorePackages>
@@ -70,7 +70,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ImapX, Version=2.0.0.18, Culture=neutral, PublicKeyToken=5992873d65130d1f, processorArchitecture=MSIL">
-      <HintPath>..\AllInOne\packages\ImapX.2.0.0.18\lib\net452\ImapX.dll</HintPath>
+      <HintPath>..\AllInOne\packages\ImapX.2.0.0.18\lib\net46\ImapX.dll</HintPath>
     </Reference>
     <Reference Include="Octokit, Version=0.29.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\Octokit.0.29.0\lib\net45\Octokit.dll</HintPath>
