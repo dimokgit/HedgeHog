@@ -19,6 +19,7 @@ using System.Diagnostics;
 using DynamicExpresso;
 using IBApp;
 using System.Threading;
+using ReactiveUI.Legacy;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -2111,11 +2112,11 @@ namespace HedgeHog.Alice.Store {
 
     #region TradeConditions
     List<EventHandler<SuppRes.CrossedEvetArgs>> _crossEventHandlers = new List<EventHandler<Store.SuppRes.CrossedEvetArgs>>();
-    public ReactiveUI.ReactiveList<Tuple<TradeConditionDelegate, PropertyInfo>> _TradeConditions;
+    public ReactiveList<Tuple<TradeConditionDelegate, PropertyInfo>> _TradeConditions;
     public IList<Tuple<TradeConditionDelegate, PropertyInfo>> TradeConditions {
       get {
         if(_TradeConditions == null) {
-          _TradeConditions = new ReactiveUI.ReactiveList<Tuple<TradeConditionDelegate, PropertyInfo>>();
+          _TradeConditions = new ReactiveList<Tuple<TradeConditionDelegate, PropertyInfo>>();
           _TradeConditions.ItemsAdded.Subscribe(tc => {
           });
         }

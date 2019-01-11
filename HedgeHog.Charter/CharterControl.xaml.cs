@@ -45,6 +45,7 @@ using HedgeHog.Metadata;
 using static HedgeHog.ReflectionCore;
 using System.IO;
 using System.Text.RegularExpressions;
+using ReactiveUI.Legacy;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }

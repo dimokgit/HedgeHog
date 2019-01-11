@@ -138,9 +138,9 @@ namespace HedgeHog.Bars {
       IMapper mapper = new MapperConfiguration(cfg 
         => cfg.CreateMap<TBar, TBar>()
         .ForMember(r => r.StartDate2, o => o.Ignore())
-        .ForSourceMember(r => r.StartDate2, o => o.Ignore())
+        .ForSourceMember(r => r.StartDate2, o => o.DoNotValidate())
         .ForMember(r => r.StartDate, o => o.Ignore())
-        .ForSourceMember(r => r.StartDate, o => o.Ignore())
+        .ForSourceMember(r => r.StartDate, o => o.DoNotValidate())
         )
         .CreateMapper();
       logs.Zip(cmas,(l,c)=>new {l,c }).ForEach(x => {

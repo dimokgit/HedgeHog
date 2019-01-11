@@ -10,6 +10,7 @@ using ReactiveUI;
 using System.Collections.Concurrent;
 using System.Reactive.Subjects;
 using System.Reactive.Linq;
+using ReactiveUI.Legacy;
 
 namespace HedgeHog.Shared {
   public class VirtualTradesManager :ITradesManager {

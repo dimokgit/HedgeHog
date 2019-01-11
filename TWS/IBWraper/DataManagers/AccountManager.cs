@@ -4,6 +4,7 @@ using HedgeHog.Shared;
 using IBApi;
 using IBSampleApp.messages;
 using ReactiveUI;
+using ReactiveUI.Legacy;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

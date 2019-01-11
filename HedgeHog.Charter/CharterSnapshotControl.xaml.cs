@@ -21,6 +21,7 @@ using HedgeHog.DB;
 using ReactiveUI;
 using System.Collections.Specialized;
 using System.Reactive.Concurrency;
+using ReactiveUI.Legacy;
 
 namespace HedgeHog {
   public class DatePoint{

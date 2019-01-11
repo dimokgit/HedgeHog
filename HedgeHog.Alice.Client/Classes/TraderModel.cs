@@ -34,7 +34,6 @@ using IBApp;
 using static HedgeHog.Core.JsonExtensions;
 using Newtonsoft.Json;
 using System.Net;
-using AutoMapper;
 using System.Reactive.Subjects;
 using Loggly;
 using Loggly.Config;

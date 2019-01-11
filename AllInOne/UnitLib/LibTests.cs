@@ -8,6 +8,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics;
 using System.Reflection;
 using static HedgeHog.Core.JsonExtensions;
+using ReactiveUI.Legacy;
+
 namespace HedgeHog.Tests {
   [TestClass()]
   public class LibTests {
@@ -90,7 +92,7 @@ namespace HedgeHog.Tests {
 
     [TestMethod()]
     public void InnerListTest() {
-      ReactiveUI.ReactiveList<int> rl = new ReactiveUI.ReactiveList<int>(new[] { 1, 2, 3 });
+      ReactiveList<int> rl = new ReactiveList<int>(new[] { 1, 2, 3 });
       Assert.IsTrue(rl.InnerList().SequenceEqual(rl));
       Assert.AreEqual(rl.Last(), rl.InnerList().CopyLast(1)[0]);
       Assert.IsTrue(rl.Skip(1).SequenceEqual(rl.InnerList().CopyLast(2)));

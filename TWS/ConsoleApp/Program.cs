@@ -15,7 +15,6 @@ using HedgeHog;
 using HedgeHog.Shared;
 using HedgeHog.Bars;
 using HedgeHog.Core;
-using AutoMapper;
 using System.Reactive.Disposables;
 using System.Reactive.Concurrency;
 using System.Diagnostics;

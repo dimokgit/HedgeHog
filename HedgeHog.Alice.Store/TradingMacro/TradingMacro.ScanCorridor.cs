@@ -15,6 +15,7 @@ using TL = HedgeHog.Bars.Rate.TrendLevels;
 using TLS = System.Lazy<System.Collections.Generic.IList<HedgeHog.Bars.Rate>>;
 using static HedgeHog.MathCore;
 using static HedgeHog.Core.JsonExtensions;
+using ReactiveUI.Legacy;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {

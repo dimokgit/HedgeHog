@@ -14,6 +14,7 @@ using ReactiveUI;
 using System.ComponentModel;
 using System.Reactive;
 using System.Reactive.Disposables;
+using ReactiveUI.Legacy;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {

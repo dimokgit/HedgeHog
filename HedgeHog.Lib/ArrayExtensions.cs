@@ -7,16 +7,17 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Reflection;
 using ReactiveUI;
+using ReactiveUI.Legacy;
 
 namespace HedgeHog {
   public static partial class Lib {
-    public static List<T> InnerList<T>(this ReactiveUI.ReactiveList<T>source){
+#pragma warning disable CS0618 // Type or member is obsolete
+    public static List<T> InnerList<T>(this ReactiveList<T>source) {
+#pragma warning restore CS0618 // Type or member is obsolete
       var field = typeof(ReactiveList<T>).GetField("_inner", BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance);
       return (List<T>)field.GetValue(source);
     }
-    public static List<T> CopyLast<T>(this ReactiveList<T> source, int count) {
-      return source.ToList().CopyLast(count);
-    }
+    public static List<T> CopyLast<T>(this ReactiveList<T> source, int count) => source.ToList().CopyLast(count);
     public static List<T> CopyLast<T>(this List<T> source, int count) {
       var startIndex = Math.Max(0, source.Count - count);
       return source.GetRange(startIndex, source.Count - startIndex);

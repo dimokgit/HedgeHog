@@ -48,6 +48,7 @@ using COMBO_HISTORY = System.Collections.Generic.List<(double bid, double ask, S
 using CURRENT_OPTION = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option, double deltaBid, double deltaAsk)>;
 using CURRENT_STRADDLE = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (IBApi.Contract contract, IBApi.Contract[] options) combo)>;
 using IBApi;
+using ReactiveUI.Legacy;
 
 namespace HedgeHog.Alice.Store {
   [JsonObject(MemberSerialization.OptOut)]
@@ -3997,7 +3998,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
 
     ReactiveList<NewsEvent> _newEventsCurrent = new ReactiveList<NewsEvent>();
-    public ReactiveUI.ReactiveList<NewsEvent> NewEventsCurrent { get { return _newEventsCurrent; } }
+    public ReactiveList<NewsEvent> NewEventsCurrent { get { return _newEventsCurrent; } }
     Queue<Price> _priceQueue = new Queue<Price>();
     private void RunPrice(PriceChangedEventArgs e, Trade[] trades) {
       Price price = e.Price;
