@@ -58,8 +58,8 @@ namespace IBApp {
       (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
-        from price in IbClient.ReqPriceSafe(cd.Contract, 5, false).Select(p => p.ask.Avg(p.bid))
-        from combo in MakeStraddles(symbol, price, expirationDaysSkip, 1, count, gap)
+        from underPrice in IbClient.ReqPriceSafe(cd.Contract, 5, false).Select(p => p.bid)
+        from combo in MakeStraddles(symbol, underPrice, expirationDaysSkip, 1, count, gap)
         from p in IbClient.ReqPriceSafe(combo.contract, 2, true).DefaultIfEmpty()
         let strikeAvg = combo.options.Average(o => o.Strike)
         select (
@@ -67,10 +67,10 @@ namespace IBApp {
           p.bid,
           p.ask,
           p.time,//.ToString("HH:mm:ss"),
-          delta: p.ask.Avg(p.bid) - combo.options.Sum(o => o.IntrinsicValue(price)),
+          delta: combo.options.Sum(o => o.ExtrinsicValue(p.bid, underPrice)),
           strikeAvg,
-          price,
-          breakEven: (up: strikeAvg + price, dn: strikeAvg - price),
+          underPrice,
+          breakEven: (up: strikeAvg + underPrice, dn: strikeAvg - underPrice),
           combo
         )).ToArray()
         .Select(b => b
@@ -242,7 +242,7 @@ namespace IBApp {
          ? IbClient.ReqContractDetailsCached(VXXFix(cd.UnderSymbol)).Select(ucd => ucd.Contract)
          : Observable.Return(cd.Contract)
        let underSymbol = underContract.LocalSymbol
-       let expiration = contract.IsOption ? contract.Expiration : DateTime.Now.Date.AddDays(-1)
+       let expiration = contract.IsOption ? contract.Expiration : DateTime.Now.Date.AddDays(0)
        from allStkExp in IbClient.ReqStrikesAndExpirations(underSymbol)//.Spy(_spy("AllStrikesAndExpirations"))
        let exps = allStkExp.expirations.Where(ex => ex > expiration && ex <= expiration.AddDays(weeks * 7)).OrderBy(ex => ex).ToArray()
        from under in IbClient.ReqContractDetailsCached(underSymbol)//.Spy(_spy("ReqContractDetailsCached"))
@@ -250,7 +250,8 @@ namespace IBApp {
        let priceAvg = price.ask.Avg(price.bid)
        let strikes2 = allStkExp.strikes.OrderBy(strike => strike.Abs(priceAvg)).ToArray()
        from strikeFirst in strikes2.Take(1)
-       from strike in strikes2.Where(strike => !contract.IsOption || contract.IsCall && strike >= strikeFirst || contract.IsPut && strike <= strikeFirst).Take(strikes)
+       let strikes3 = strikes2.Where(strike => !contract.IsOption || (contract.IsCall && strike >= strikeFirst) || (contract.IsPut && strike <= strikeFirst)).Take(strikes).ToArray()
+       from strike in strikes3
        from exp in exps
        from cds in IbClient.ReqOptionChainOldCache(underSymbol, exp, strike)//.Spy(_spy("ReqOptionChainOldCache 2"))
        from cdRoll in cds
@@ -287,18 +288,19 @@ namespace IBApp {
       let symbol = trade.contract.LocalSymbol
       from rolls in CurrentRollOvers(symbol, strikesCount, weeks)
       from roll in rolls
-      where roll.IsCall == IsCall
-      from rp in IbClient.ReqPriceSafe(roll, 3, false)
+      where !trade.contract.IsOption || roll.IsCall == IsCall
       let strikeSign = (trade.contract.IsCall ? -1 : trade.contract.IsPut ? 1 : 0) * trade.position.Sign()
       let strikeDelta = (roll.Strike - trade.underPrice) * strikeSign
-      where rp.bid > strikeDelta.Max(-trade.change)
+      from up in UnderPrice(trade.contract, 3)
+      from rp in IbClient.ReqPriceSafe(roll, 3, false)
+      let bid = roll.ExtrinsicValue(rp.bid, up.bid)
+      where !trade.contract.IsOption || bid > strikeDelta.Max(-trade.change)
       let days = (roll.Expiration - Expiration).TotalDays.Floor()
       let workDays = Expiration.GetWorkingDays(roll.Expiration)
-      let amount = rp.bid * trade.position.Abs() * roll.ComboMultiplier
+      let amount = bid * trade.position.Abs() * (trade.contract.IsOption ? roll.ComboMultiplier : 1)
       let w = 5.0 / workDays
-      from up in UnderPrice(trade.contract, 3)
-      let perc = rp.bid / up
-      select (trade, roll, days, rp.bid, ppw: (rp.bid * w).AutoRound2(2), amount, amount * w, (perc * 100).AutoRound2(3), delta: rp.delta.Round(1));
+      let perc = bid / up.bid
+      select (trade, roll, days, bid, ppw: (bid * w).AutoRound2(2), amount, amount * w, (perc * 100).AutoRound2(3), delta: rp.delta.Round(1));
   }
   public static class AccountManagerMixins {
     #region Parse Combos

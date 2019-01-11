@@ -999,16 +999,22 @@ namespace HedgeHog.Alice.Client {
       return ra;
     }
     public object StartReplay(string pair, string startWhen) {
+      SetReplayDate(startWhen);
+      remoteControl.Value.ReplayArguments.IsWww = true;
+      UseTraderMacro(pair, tm => remoteControl.Value.StartReplayCommand.Execute(tm));
+      return ReadReplayArguments(pair);
+    }
+
+    private void SetReplayDate(string startWhen) {
       TimeSpan ts;
       DateTime dateStart = TimeSpan.TryParse(startWhen, out ts)
         ? DateTime.Now.Subtract(ts)
         : DateTime.Parse(startWhen);
       remoteControl.Value.ReplayArguments.DateStart = dateStart;
-      remoteControl.Value.ReplayArguments.IsWww = true;
-      UseTraderMacro(pair, tm => remoteControl.Value.StartReplayCommand.Execute(tm));
-      return ReadReplayArguments(pair);
     }
-    public object StopReplay(string pair) {
+
+    public object StopReplay(string pair, string startWhen) {
+      SetReplayDate(startWhen);
       remoteControl.Value.ReplayArguments.MustStop = true;
       return ReadReplayArguments(pair);
     }

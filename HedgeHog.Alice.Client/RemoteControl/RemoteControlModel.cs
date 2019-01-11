@@ -7,7 +7,6 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Hosting;
-using Order2GoAddIn;
 using Owin;
 using ReactiveUI;
 using System;

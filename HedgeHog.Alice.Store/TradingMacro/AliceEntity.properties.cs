@@ -746,7 +746,7 @@ namespace HedgeHog.Alice.Store {
     private TimeSpan[][] _tradingHoursRangeTimeSpans = new TimeSpan[0][];
     string _TradingHoursRange = "";
     [DisplayName("Trading Hours")]
-    [Description("21:00-5:00")]
+    [Description("[['20:30','23:59'],['0:00','15:00']]")]
     [Category(categoryActive)]
     [WwwSetting(wwwSettingsTradingParams)]
     public string TradingHoursRange {

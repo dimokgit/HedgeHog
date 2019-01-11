@@ -1672,7 +1672,7 @@
     //#region replayDialog
     var replayDialog = this.replayDialog = ko.observable();
     var isReplayOn = this.isReplayOn = ko.observable(false);
-    var replayDateStart = this.replayDateStart = ko.observable();
+    var replayDateStart = this.replayDateStart = ko.observable().extend({ persist: "replayDateStart" });
     var readReplayProcID = 0;
     function clearReadReplayArguments() {
       clearInterval(readReplayProcID);
@@ -1712,7 +1712,7 @@
       readReplayProcID = setInterval(readReplayArguments, 3 * 1000);
     }
     this.stopReplay = function () {
-      serverCall("stopReplay", [pair], readReplayArguments);
+      serverCall("stopReplay", [pair, replayDateStart()], readReplayArguments);
     }
     // #endregion
 

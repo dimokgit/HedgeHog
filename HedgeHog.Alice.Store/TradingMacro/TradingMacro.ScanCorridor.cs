@@ -306,8 +306,15 @@ namespace HedgeHog.Alice.Store {
       GetShowVoltageFunction()();
       GetShowVoltageFunction(VoltageFunction2, 1)();
       {
-        var endDates = Trends.Skip(1).SkipWhile(tl => tl.IsEmpty).Take(1).Select(a => a.EndDate);
-        var ii = endDates.Select(endDate=> UseRates(ra => ra.FuzzyIndex(endDate, (d, p, n) => d.Between(p.StartDate, n.StartDate)))).Concat().Concat().ToArray();
+        var endDates = Trends.Where(tl => tl.Color != null && tl.Color != TradeLevelsPreset.Blue + "" && !tl.IsEmpty)
+          .OrderByDescending(tl => tl.EndDate)
+          .Take(1)
+          .Select(a => a.EndDate);
+        var ii = (from ed in endDates
+                  from i1 in UseRates(ra => ra.FuzzyIndex(ed, (d, p, n) => d.Between(p.StartDate, n.StartDate)))
+                  from i in i1
+                  select i
+                  ).ToArray();
         Trends2
           .Where(tl => tl.TL.IsNullOrEmpty())
           .Select(t => t.Set)

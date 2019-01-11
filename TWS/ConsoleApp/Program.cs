@@ -68,6 +68,9 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        ibClient.ReqContractDetailsCached("ESH9")
+        .Subscribe(cd => PriceHistory.AddTicks(fw, 0, "ESH9", DateTime.Now.AddDays(-5), o => HandleMessage(o + "")));
+        return;
         {
           TestCurrentOptions(0);
           void TestCurrentOptions(int expirationDaysToSkip, bool doMore = true) {
@@ -88,9 +91,6 @@ namespace ConsoleApp {
           }
           return;
         }
-        ibClient.ReqContractDetailsCached("ESH9")
-        .Subscribe(cd => PriceHistory.AddTicks(fw, 0, "ESH9", DateTime.Now.AddMonths(-2), o => HandleMessage(o + "")));
-        return;
         {
           (from i in Observable.Interval(5.FromSeconds())
            from p in ibClient.ReqPriceSafe("ESH9".ContractFactory(), 1, false)

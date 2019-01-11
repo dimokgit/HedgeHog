@@ -1137,7 +1137,8 @@ namespace HedgeHog.Alice.Store {
             from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
             let priceBid = price.EventArgs.Price.Bid
             from straddles in ibWraper.AccountManager.CurrentStraddles(Pair, ExpDayToSkip(), 5, 0)
-            let cs = straddles.Where(s => s.strikeAvg > priceBid).OrderBy(s => s.strikeAvg).Skip(1).Take(1).ToList()
+            //let cs = straddles.Where(s => s.strikeAvg > priceBid).OrderBy(s => s.strikeAvg).Skip(1).Take(1).ToList()
+            let cs = straddles.OrderByDescending(s => s.delta).Take(1).ToList()
             where cs.Any()
             select cs)
             .Subscribe(x => CurrentStraddle = x, exc => { Log = exc; Debugger.Break(); }, () => { Log = new Exception("_currentStraddleDisposable done"); Debugger.Break(); });

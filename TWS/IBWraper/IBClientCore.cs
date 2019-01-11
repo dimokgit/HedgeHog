@@ -517,7 +517,7 @@ namespace IBApp {
       return x;
     }
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceComboSafe(Contract combo, double timeoutInSeconds, bool useErrorHandler, [CallerMemberName] string Caller = "") {
-      Trace($"{nameof(ReqPriceComboSafe)}:{combo} <= {Caller}");
+      //Trace($"{nameof(ReqPriceComboSafe)}:{combo} <= {Caller}");
       double ask((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time, double) price) => cl.leg.Action == "BUY" ? price.ask : -price.bid;
       double bid((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time, double) price) => cl.leg.Action == "BUY" ? price.bid : -price.ask;
       var x = combo.LegsEx()

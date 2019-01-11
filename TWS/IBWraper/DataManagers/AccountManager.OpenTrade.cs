@@ -44,7 +44,7 @@ namespace IBApp {
     => OpenTrade(contract, type, quantity, price, profit, useTakeProfit, goodTillDate, (OrderCondition)null, minTickMultiplier, Caller);
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, OrderCondition condition, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
       OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, condition, minTickMultiplier, Caller);
-    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, OrderCondition condition, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, OrderCondition condition = null, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
       var timeoutInMilliseconds = 5000;
       if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
         var message = new { contract, quantity, Method = nameof(OpenTrade), Caller, timeoutInMilliseconds } + "";
@@ -144,10 +144,12 @@ namespace IBApp {
         ;
     }
 
-    public void OpenRollTrade(string currentSymbol,string rollSymbol) {
+    public void OpenRollTrade(string currentSymbol, string rollSymbol) {
       CreateRoll(currentSymbol, rollSymbol)
         .Subscribe(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false, DateTime.MaxValue
-        , OrderConditionParam.PriceFactory(rc.currentContract.UnderContract.Single(), 100000, true, false)));
+        , null
+        //OrderConditionParam.PriceFactory(rc.currentContract.UnderContract.Single(), 100000, true, false)
+        ));
     }
     //private void OnUpdateError(int reqId, int code, string error, Exception exc) {
     //  UseOrderContracts(orderContracts => {
