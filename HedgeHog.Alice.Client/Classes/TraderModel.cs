@@ -894,7 +894,6 @@ namespace HedgeHog.Alice.Client {
     void AddNewSlaveAccount() {
       throw new NotImplementedException();
       string account, password;
-      FXCM.Lib.GetNewAccount(out account, out password);
       SaveTradingSlaves();
     }
     #endregion
