@@ -725,12 +725,7 @@ namespace HedgeHog.Bars {
       get { return _Distance1; }
       set { _Distance1 = value; }
     }
-
-    double _CrossesDensity = double.NaN;
-    public double CrossesDensity {
-      get { return _CrossesDensity; }
-      set { _CrossesDensity = value; }
-    }
+    public double CrossesDensity { get; set; } = double.NaN;
 
     #region TpsAverage
     private double _TpsAverage = double.NaN;

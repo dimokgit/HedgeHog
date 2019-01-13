@@ -49,6 +49,7 @@ using CURRENT_OPTION = System.Collections.Generic.List<(string instrument, doubl
 using CURRENT_STRADDLE = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (IBApi.Contract contract, IBApi.Contract[] options) combo)>;
 using IBApi;
 using ReactiveUI.Legacy;
+using static HedgeHog.IEnumerableCore;
 
 namespace HedgeHog.Alice.Store {
   [JsonObject(MemberSerialization.OptOut)]
@@ -1048,7 +1049,7 @@ namespace HedgeHog.Alice.Store {
     IDisposable _priceChangeDisposable;
     public int ExpDayToSkip() => OpenPuts().Select(p => (p.contract.Expiration - ServerTime.Date).Days).OrderBy(d => d).Take(1).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
-      _tradingMacros = tradingMacros;
+      _tradingMacros = tradingMacros.ToArray();
       Action<Expression<Func<TradingMacro, bool>>> check = g => TradingMacrosByPair()
         .Scan(0, (t, tm) => t + (g.Compile()(tm) ? 1 : 0))
         .SkipWhile(c => c <= 1)
@@ -1137,7 +1138,7 @@ namespace HedgeHog.Alice.Store {
             from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
             let priceBid = price.EventArgs.Price.Bid
             from straddles in ibWraper.AccountManager.CurrentStraddles(Pair, ExpDayToSkip(), 5, 0)
-            //let cs = straddles.Where(s => s.strikeAvg > priceBid).OrderBy(s => s.strikeAvg).Skip(1).Take(1).ToList()
+              //let cs = straddles.Where(s => s.strikeAvg > priceBid).OrderBy(s => s.strikeAvg).Skip(1).Take(1).ToList()
             let cs = straddles.OrderByDescending(s => s.delta).Take(1).ToList()
             where cs.Any()
             select cs)
@@ -2367,7 +2368,7 @@ namespace HedgeHog.Alice.Store {
             //if (IsAsleep)
             //ResetBarsCountCalc();
             RatesHeight = RatesArray.Height(r => r.AskHigh, r => r.BidLow, out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
-            RatioFromRatesHigh = 1- CurrentPrice.Average / RatesMax;
+            RatioFromRatesHigh = 1 - (CurrentPrice?.Average).GetValueOrDefault() / RatesMax;
             SetCentersOfMassSubject.OnNext(() => { SetBeforeHours(); SetCentersOfMass(); });
             if(IsAsleep) {
               BarsCountCalc = BarsCount;
@@ -2384,7 +2385,7 @@ namespace HedgeHog.Alice.Store {
             if(IsInVirtualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
             #endregion
-            if(BarPeriod > BarsPeriodType.t1)
+            if(BarPeriod > BarsPeriodType.m1)
               ScanForWaveRanges2(RatesArray);
 
             OnPriceSpreadAverage(()
@@ -2399,6 +2400,7 @@ namespace HedgeHog.Alice.Store {
                   Log = new Exception(new { RatesArraySafe = new { RatesInternal = new { RatesInternal.Count }, BarsCount, Error = "Too low" } } + "");
                   return;
                 }
+                SetHVs();
                 SpreadForCorridor = UseRates(rates => rates.Spread()).FirstOrDefault();
                 RatesHeightCma = Lazy.Create(() => UseRates(rates => rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax)).FirstOrDefault());
                 OnRatesArrayChaged();
@@ -3415,7 +3417,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       // Set primary CMA
       var cmas = GetCma(rates, (int?)null, period, cmaPasses);
       // Set secondary CMA
-      return rates.Zip(cmas,(rate,cma)=> (rate, cma)).Zip(GetCma2(cmas), (t, cma2) => (t.rate, t.cma, cma2)).ToList();
+      return rates.Zip(cmas, (rate, cma) => (rate, cma)).Zip(GetCma2(cmas), (t, cma2) => (t.rate, t.cma, cma2)).ToList();
     }
 
     private IList<double> GetCma2(IList<double> cmas, int? count = null, double? period = null) {
@@ -3437,6 +3439,27 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       return rates.Scan(double.NaN, (ma, r) => ma.Cma(period, value(r)))
               .Reverse()
               .Scan(double.NaN, (ma, d) => ma.Cma(period, d));
+    }
+
+    ActionAsyncBuffer _setHVsAsyncBuffer;
+    ActionAsyncBuffer SetHVsAsyncBuffer => _setHVsAsyncBuffer ?? (_setHVsAsyncBuffer = new ActionAsyncBuffer(() => SetHVsImpl()));
+
+    void SetHVs() => SetHVsAsyncBuffer.Push(Unit.Default);
+    void SetHVsImpl() {
+      //Log = new Exception($"ShowVoltsByHV: {this} start");
+      (from ts in UseRatesInternal(ri => ri.Select((r, i) => (r, i)).Skip(BarsCount).Where(ra => GetHV(ra.r).IsNaN())).ToArray()
+       from t in ts
+       from ra in UseRatesInternal(ri => Try(() => ri.CopyToArray(t.i.Min(BarsCountMax) - 1380, 1380), exc => {
+         Log = new Exception(new { t.i } + "", exc);
+         return new Rate[0];
+       }))
+       where ra.Any()
+       from hv in HistoricalVolatility(ra)
+       select (t.r, hv)
+       ).AsParallel().ForAll(t => {
+         SetHV(t.r, t.hv);
+       });
+      //Log = new Exception($"ShowVoltsByHV: {this} done");
     }
 
     public void ScanCorridor(List<Rate> ratesForCorridor, Action callback = null) {

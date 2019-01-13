@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -11,6 +12,15 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
 namespace HedgeHog {
+  public class ActionAsyncBuffer :AsyncBuffer<ActionAsyncBuffer, Unit> {
+    private readonly Action a;
+    public ActionAsyncBuffer(Action a) : base() {
+      this.a = a;
+    }
+    public ActionAsyncBuffer() : base() { }
+    protected override Action PushImpl(Unit context) => a;
+  }
+
   public abstract class AsyncBuffer<TDerived, TContext> : IDisposable
     where TDerived : AsyncBuffer<TDerived, TContext>, new() {
 

@@ -119,7 +119,7 @@ namespace HedgeHog.Alice.Client {
             });
 
           var localPath = context.Request.Path.Value.ToLower();
-          Debug.WriteLine(new { localPath });
+          //Debug.WriteLine(new { localPath });
           if(localPath == "/signalr/connect")
             context.Response.StatusCode = (int)HttpStatusCode.OK;
 
@@ -287,8 +287,8 @@ namespace HedgeHog.Alice.Client {
     public object[] AskChangedPrice(string pair) {
       return (from tm0 in UseTradingMacro2(pair, 0, tm => tm)
               from tm1 in UseTradingMacro2(pair, 1, tm => tm)
-              from tmTrader in tm0.TradingMacroTrader()
-              from tmTrender in tm0.TradingMacroTrender().TakeLast(1)
+              from tmTrader in tm0.TradingMacroTrader().Concat(tm1.TradingMacroTrader()).Take(1)
+              from tmTrender in tm0.TradingMacroTrender().Concat(tm1.TradingMacroTrender()).TakeLast(1)
               select new { tm0, tm1, tmTrader, tmTrender }
       ).Select(t => {
         var isVertual = t.tmTrader.IsInVirtualTrading;
@@ -325,15 +325,15 @@ namespace HedgeHog.Alice.Client {
         var digits = t.tmTrader.Digits();
         Func<TradingMacro, string> timeFrame = tm => tm.BarPeriod > Bars.BarsPeriodType.t1
         ? (tm.RatesArray.Count * tm.BarPeriodInt).FromMinutes().TotalDays.Round(1) + ""
-        : TimeSpan.FromMinutes(t.tm0.RatesDuration).ToString(@"h\:mm");
+        : TimeSpan.FromMinutes(t.tmTrader.RatesDuration).ToString(@"h\:mm");
         var cgp = t.tmTrader.CurrentGrossInPips;
         var otgp = t.tmTrader.OpenTradesGross2InPips;
         var ht = trader.Value?.TradesManager.GetTrades().Any();
         return (object)new {
-          time = t.tm0.ServerTime.ToString(timeFormat),
+          time = t.tmTrader.ServerTime.ToString(timeFormat),
           prf = IntOrDouble(t.tmTrader.CurrentGrossInPipTotal, 3),
           otg = IntOrDouble(t.tmTrader.OpenTradesGross2InPips, 3),
-          tps = t.tm0.TicksPerSecondAverage.Round(1),
+          tps = t.tmTrader.TicksPerSecondAverage.Round(1),
           dur = timeFrame(t.tmTrader)
             + (t.tm1 != null ? "," + timeFrame(t.tm1) : ""),// + "|" + TimeSpan.FromMinutes(tm1.RatesDuration).ToString(@"h\:mm"),
           hgt = string.Join("/", new[] {
@@ -341,7 +341,7 @@ namespace HedgeHog.Alice.Client {
           t.tmTrader.BuySellHeightInPips.ToInt()+"",
           t.tmTrender.TLBlue.Angle.Abs().Round(1)+"°"
         }),
-          rsdMin = t.tm0.RatesStDevMinInPips,
+          rsdMin = t.tmTrader.RatesStDevMinInPips,
           rsdMin2 = t.tm1 == null ? 0 : t.tm1.RatesStDevMinInPips,
           S = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
           price = t.tmTrader.CurrentPrice.YieldNotNull().Select(cp => new { ask = cp.Ask, bid = cp.Bid }).DefaultIfEmpty(new object()).Single(),
@@ -354,7 +354,7 @@ namespace HedgeHog.Alice.Client {
           com4 = new { b = t.tmTrader.CenterOfMassBuy4.Round(digits), s = t.tmTrader.CenterOfMassSell4.Round(digits), dates = t.tmTrader.CenterOfMass4Dates ?? new DateTime[0] },
           bth = t.tmTrader.BeforeHours.Select(tr => new { tr.upDown, tr.dates }).ToArray(),
           //afh2 = new[] { new { dates = t.tmTrader.ServerTime.Date.AddDays(-1).AddHours(16).With(d => new[] { d, d.AddHours(4) }) } },
-          afh = GetBackDates(t.tmTrader.ServerTime.Date, 6)
+          afh = GetBackDates(t.tmTrader.ServerTime.Date, 9)
             .Select(date => new { dates = date.AddHours(16).With(d => new[] { d, d.AddHours(4) }) })
             .ToArray(),
           tpls = t.tmTrader.GetTradeLevelsPreset().Select(e => e + "").ToArray(),
@@ -367,10 +367,11 @@ namespace HedgeHog.Alice.Client {
       .ToArray();
       DateTime[] GetBackDates(DateTime start, int daysBack) =>
         Enumerable.Range(0, 1000)
-          .Select(d => start.AddDays(-d))
-          .Where(d => !new[] { DayOfWeek.Saturday, DayOfWeek.Sunday }.Contains(d.DayOfWeek))
-          .Take(daysBack)
-          .ToArray();
+        .Where(_ => !start.IsMin())
+        .Select(d => start.AddDays(-d))
+        .Where(d => !new[] { DayOfWeek.Saturday, DayOfWeek.Sunday }.Contains(d.DayOfWeek))
+        .Take(daysBack)
+        .ToArray();
     }
 
     private static bool HasMinMaxTradeLevels(TradingMacro tmTrader) {
@@ -990,13 +991,13 @@ namespace HedgeHog.Alice.Client {
 
     #region ReplayArguments
     public object ReadReplayArguments(string pair) {
-      var ra = UseTradingMacro(pair, tm => new {
+      var ra = UseTraderMacro(pair, tm => new {
         remoteControl.Value.ReplayArguments.DateStart,
         isReplayOn = tm.IsInPlayback,
         remoteControl.Value.ReplayArguments.LastWwwError
       });
-      remoteControl.Value.ReplayArguments.LastWwwError = "";
-      return ra;
+      remoteControl.WithNotNull(r=>r.Value.ReplayArguments.LastWwwError = "");
+      return ra.Single();
     }
     public object StartReplay(string pair, string startWhen) {
       SetReplayDate(startWhen);
@@ -1019,8 +1020,8 @@ namespace HedgeHog.Alice.Client {
       return ReadReplayArguments(pair);
     }
     #endregion
-    public object GetWwwInfo(string pair, int chartNum) {
-      return UseTradingMacro2(pair, chartNum, tm => tm.WwwInfo()).DefaultIfEmpty(new { }).First();
+    public object GetWwwInfo(string pair) {
+      return UseTraderMacro(pair, tm => tm.WwwInfo()).DefaultIfEmpty(new { }).First();
     }
 
     public void Send(string pair, string newInyterval) {
@@ -1444,7 +1445,7 @@ namespace HedgeHog.Alice.Client {
     public void SetHedgedPair(string pair, string pairHedge) => UseTraderMacro(pair, tm => {
       if(pair != pairHedge) tm.PairHedge = pairHedge;
     });
-    public string ReadHedgedPair(string pair) => UseTraderMacro(pair, tm => tm.PairHedge).SingleOrDefault();
+    public string ReadHedgedPair(string pair) => UseTradingMacro2(pair, 0, tm => tm.PairHedge).SingleOrDefault();
 
     public void SetCanTrade(string pair, bool canTrade, bool isBuy) {
       GetTradingMacro(pair).ForEach(tm => {
@@ -1483,7 +1484,7 @@ namespace HedgeHog.Alice.Client {
     private IEnumerable<TradingMacro> GetTradingMacros() {
       return remoteControl?.Value?
         .TradingMacrosCopy
-        .Where(tm => tm.IsActive)
+        //.Where(tm => tm.IsActive)
         .OrderBy(tm => tm.TradingGroup)
         .ThenBy(tm => tm.PairIndex)
         .AsEnumerable()

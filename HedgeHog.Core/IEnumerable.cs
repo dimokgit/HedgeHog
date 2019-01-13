@@ -55,9 +55,7 @@ namespace HedgeHog {
       string Context() => context.IsDefault() ? "" : $" Context: {context}";
       foreach(var v in source) {
         if(++counter > expectedCount) {
-          (onMore != null
-            ? onMore
-            : c => { throw new Exception($"Sequence has more items[{c}] then expected[{expectedCount}].{Context()}"); }
+          (onMore ?? (c => { throw new Exception($"Sequence has more items[{c}] then expected[{expectedCount}].{Context()}"); })
             )(counter);
           handled = true;
           break;
@@ -65,7 +63,7 @@ namespace HedgeHog {
         yield return v;
       }
       if(!handled && counter != expectedCount)
-        (onLess != null ? onLess : c => { throw new Exception($"Sequence has less items[{c}] then expected[{expectedCount}].{Context()}"); })(counter);
+        (onLess ?? (c => { throw new Exception($"Sequence has less items[{c}] then expected[{expectedCount}].{Context()}"); }))(counter);
     }
     #endregion
 
@@ -417,6 +415,7 @@ namespace HedgeHog {
     public static U With<T, U>(this T v, Func<T, U> m) { return m(v); }
     public static V With<T, U, V>(this T v, Func<T, U> m, Func<T, U, V> r) { return r(v, m(v)); }
     public static void With<T>(this T v, Action<T> m) { m(v); }
+    public static void WithNotNull<T>(this T v, Action<T> m) { if(v != null) m(v); }
     public static T SideEffect<T>(this T v, Action<T> io) { io(v); return v; }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<T> value) { return source.Concat(value.Yield()); }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<IEnumerable<T>> value) {
@@ -424,6 +423,20 @@ namespace HedgeHog {
         yield return v;
       foreach(var v in value())
         yield return v;
+    }
+    public static T Try<T>(Func<T> func, Func<Exception, T> error) {
+      try {
+        return func();
+      } catch(Exception exc) {
+        return error(exc);
+      }
+    }
+    public static void Try(Action func, Action<Exception> error) {
+      try {
+        func();
+      } catch(Exception exc) {
+        error(exc);
+      }
     }
     public static IEnumerable<U> Yield<U>(this Func<U> m) { yield return m(); }
     public static IEnumerable<U> Yield<T, U>(this T v, Func<T, U> m) { yield return m(v); }

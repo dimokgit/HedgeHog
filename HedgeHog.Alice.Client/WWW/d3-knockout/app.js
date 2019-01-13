@@ -1,3 +1,4 @@
+"use strict";
 /// <reference path="../Scripts/linq.js" />
 /// <reference path="../bower_components/d3/d3.js" />
 // jscs:disable
@@ -109,7 +110,6 @@
   };
   //#endregion
   // #region Globals
-  "use strict";
   if (!Array.prototype.find) {
     Object.defineProperty(Array.prototype, "find", {
       value: function (predicate) {
@@ -1126,16 +1126,16 @@
           $(this).dialog("destroy");
         }
       });
-      getWwwInfo(chartNum);
+      getWwwInfo();
 
     }
-    function getWwwInfo(chartNum) {
-      var args = [pair, chartNum];
+    function getWwwInfo() {
+      var args = [pair];
       args.noNote = true;
-      var foo = getWwwInfo.bind(null, chartNum);
+      var foo = getWwwInfo;
       serverCall("getWwwInfo", args,
         function (info) {
-          self.histVolM1(Math.ceil(parseInt((info.HistVolDif || {}).split('/')[1]) || 0));
+          self.histVolM1(Math.ceil(parseInt((info.HistVol || {}).split('/')[1]) || 0));
           wwwInfoRaw(info);
           if (!stopWwwInfo)
             setTimeout(foo, 1000);
@@ -1682,7 +1682,8 @@
       serverCall("readReplayArguments", withNoNote(pair), function (ra) {
         lastRefreshDate(new Date(1900, 0));
         lastRefreshDate2(new Date(1900, 0));
-        replayDateStart(d3.timeFormat("%m/%d/%y %H:%M")(new Date(ra.DateStart)));
+        if (ra.DateStart)
+          teStart(d3.timeFormat("%m/%d/%y %H:%M")(new Date(ra.DateStart)));
         isReplayOn(ra.isReplayOn);
         if (ra.isReplayOn && !readReplayProcID)
           readReplayProcID = setInterval(readReplayArguments, 5 * 1000);
@@ -1861,7 +1862,7 @@
 
       function _priceChanged(pairChanged) {
         readCombos();
-        if (!isDocHidden() && pair.toUpperCase() === pairChanged.toUpperCase()) {
+        if (!isDocHidden()/* && pair.toUpperCase() === pairChanged.toUpperCase()*/) {
           if (_isPriceChangeInFlight())
             return;
           _inFlightPriceChanged = new Date();
@@ -2202,10 +2203,13 @@
     return showError(message, $.extend({ delay: 5000, hide: false }, settings));
   }
 
-  window.addEventListener("error", function (e) {
+  // #region Global Error
+  function globalError(e) {
     showError(JSON.stringify(e), keyNote("Global Error"));
+    window.removeEventListener("error", globalError);
     return false;
-  });
+  }
+  window.addEventListener("error", globalError);
   // #endregion
 
   function addMessage(response) {

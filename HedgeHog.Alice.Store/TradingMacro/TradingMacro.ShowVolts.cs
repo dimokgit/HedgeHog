@@ -91,6 +91,8 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByVoltsDerivative;
         case HedgeHog.Alice.VoltageFunction.HV:
           return () => ShowVoltsByHV(voltIndex);
+        case HedgeHog.Alice.VoltageFunction.HVR:
+          return () => ShowVoltsByHVR(voltIndex);
         case HedgeHog.Alice.VoltageFunction.StdRatio:
           return () => ShowVoltsByStdRatio(voltIndex);
         case VoltageFunction.StdOverPrice:
@@ -401,11 +403,27 @@ namespace HedgeHog.Alice.Store {
     }
 
 
+    CorridorStatistics ShowVoltsByHVR(int voltIndex) {
+      var ok = UseCalc();
+      var vhss = UseRates(GetHVs);
+      var vhss2 = TradingMacroOther(Pair).Where(tm => tm.IsActive && tm.BarPeriod == BarPeriod).Select(tm => tm.UseRates(GetHVs2)).Concat().ToArray();
+      (from vhs in vhss
+       from vhs2 in vhss2
+       from z in vhs.Zip(vhs2, (a, b) => (a, b))
+       select z
+       ).AsParallel().ForAll(t2 => SetVoltByIndex(voltIndex)(t2.a.r, t2.b / t2.a.hv));
+      //vs2.Zip(vs2).ForEach(t => SetVolts(t.Item2 / t.Item1, voltIndex));
+      return null;
+      (Rate r, double hv)[] GetHVs(List<Rate> ra) => ra.Select(r => (r, hv: GetHV(r))).ToArray();
+      double[] GetHVs2(List<Rate> ra) => ra.Select(GetHV).ToArray();
+    }
+
+
     CorridorStatistics ShowVoltsByHV(int voltIndex) {
-      if(UseCalc())
-        UseRates(ra => ra.Select(_priceAvg).Cma(5, 5).HistoricalVolatility())
-          .Take(1)
-          .ForEach(hvp => SetVolts(hvp * 100000, voltIndex));
+      if(UseCalc()) {
+        UseRates(ra => ra.Where(r => GetVoltByIndex(voltIndex)(r).IsNaN()).ForEach(r => SetVoltByIndex(voltIndex)(r, CalcVolt(GetHV(r)))));
+        double CalcVolt(double v) => v * 1000;
+      }
       return null;
     }
     CorridorStatistics ShowVoltsByStdRatio(int voltIndex) {
@@ -889,7 +907,7 @@ namespace HedgeHog.Alice.Store {
     [WwwSetting]
     public double CoMEndHour { get; set; } = 9.5;
 
-    public (double[] upDown, DateTime[] dates)[] BeforeHours = new(double[], DateTime[])[0];
+    public (double[] upDown, DateTime[] dates)[] BeforeHours = new (double[], DateTime[])[0];
     private void SetBeforeHours() {
       var startHour = CoMStartHour;
       var endHour = CoMEndHour;

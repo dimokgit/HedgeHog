@@ -51,6 +51,9 @@ namespace HedgeHog.Alice.Store {
     public Action<Rate, string, double> SetVoltageKey = (r, k, v) => r.DistanceHistory = v;
     public Func<Rate, double> GetVoltage2 = r => r.Distance1;
     public Action<Rate, double> SetVoltage2 = (r, v) => r.Distance1 = v;
+    public Action<Rate, double> SetHV = (r, v) => r.CrossesDensity = v;
+    public Func<Rate, double> GetHV = (r) => r.CrossesDensity;
+
 
     #region _corridors
     DateTime _corridorStartDate1 = DateTime.MinValue;
@@ -309,6 +312,7 @@ namespace HedgeHog.Alice.Store {
         var endDates = Trends.Where(tl => tl.Color != null && tl.Color != TradeLevelsPreset.Blue + "" && !tl.IsEmpty)
           .OrderByDescending(tl => tl.EndDate)
           .Take(1)
+          .DefaultIfEmpty(TLBlue)
           .Select(a => a.EndDate);
         var ii = (from ed in endDates
                   from i1 in UseRates(ra => ra.FuzzyIndex(ed, (d, p, n) => d.Between(p.StartDate, n.StartDate)))

@@ -483,8 +483,8 @@ namespace HedgeHog.Alice.Store {
       var minutes = (corridorValues.Last().StartDate - corridorValues[0].StartDate).Duration().TotalMinutes;
       var isTicks = BarPeriod == BarsPeriodType.t1;
       var angleBM = HasTicks ? 1 / 60.0 : isTicks ? 0.1 : 1.0;
-      Func<IList<Rate>, Tuple<double, double, double>> price = rl => Tuple.Create(rl.Max(r => r.AskHigh), rl.Min(r => r.BidLow), rl.Average(_priceAvg));
-      Func<Rate, Tuple<double, double, double>> price0 = r => Tuple.Create(r.AskHigh, r.BidLow, r.PriceAvg);
+      Func<IList<Rate>, (double ask, double bid, double avg)> price = rl => (rl.Max(r => r.AskHigh), rl.Min(r => r.BidLow), rl.Average(r => r.PriceCMALast));
+      Func<Rate, (double ask, double bid, double avg)> price0 = r => (r.AskHigh, r.BidLow, r.PriceCMALast);
       var groupped = corridorValues.GroupedDistinct(r => r.StartDate.AddMilliseconds(-r.StartDate.Millisecond), price);
       double h, l, h1, l1;
       var doubles = isTicks && BarPeriodCalc != BarsPeriodType.s1 ? groupped.ToList() : corridorValues.ToList(price0);
@@ -551,9 +551,9 @@ namespace HedgeHog.Alice.Store {
       return rates;
     }
     // TODO: MinMaxMM
-    private double CalcCorridorStDev(List<Tuple<double, double, double>> doubles, double[] coeffs) {
+    private double CalcCorridorStDev(List<(double ask, double bid, double avg)> doubles, double[] coeffs) {
       var cm = Trades.Any() && CorridorCalcMethod != CorridorCalculationMethod.MinMax ? CorridorCalculationMethod.Height : CorridorCalcMethod;
-      var ds = doubles.Select(r => r.Item3);
+      var ds = doubles.Select(r => r.avg);
 
       switch(cm) {
         case CorridorCalculationMethod.PowerMeanPower:
@@ -566,7 +566,7 @@ namespace HedgeHog.Alice.Store {
           var mm = ds.ToArray().MinMaxByRegressoin2(coeffs).Select(d => d.Abs()).Max();
           return mm / 2;
         case CorridorCalculationMethod.MinMaxMM:
-          var mm2 = doubles.MinMaxByRegressoin2(t => t.Item2, t => t.Item1, coeffs).Select(d => d.Abs()).Max();
+          var mm2 = doubles.MinMaxByRegressoin2(t => t.bid, t => t.ask, coeffs).Select(d => d.Abs()).Max();
           return mm2 / 2;
         case CorridorCalculationMethod.RootMeanSquare:
           return ds.ToArray().StDevByRegressoin(coeffs).SquareMeanRoot(ds.StandardDeviation());

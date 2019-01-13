@@ -131,6 +131,8 @@ namespace IBApp {
       ) where TBar : Rate, new() {
 
       var contract = Contract.FromCache(pair).Count(1, new { pair }).Single();
+      if(contract.IsFuture)
+        contract = new Contract { SecType = "CONTFUT", Exchange = contract.Exchange,TradingClass=contract.TradingClass, Symbol = contract.FromDetailsCache().Single().MarketName };
       var isDone = false;
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);

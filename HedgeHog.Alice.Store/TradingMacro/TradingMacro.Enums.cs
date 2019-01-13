@@ -43,6 +43,7 @@ namespace HedgeHog.Alice {
     RatioDiff,
     VoltDrv,
     HV,
+    HVR,
     StdRatio,
     StdOverPrice,
     M1WR

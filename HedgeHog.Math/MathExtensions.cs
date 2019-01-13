@@ -8,7 +8,7 @@ using HedgeHog;
 using System.Collections;
 using System.Reflection;
 using System.ComponentModel;
-using IDouble = System.Collections.Generic.IEnumerable<System.Double>;
+using IDouble = System.Collections.Generic.IList<System.Double>;
 using System.Threading.Tasks;
 
 namespace HedgeHog {
@@ -1217,13 +1217,19 @@ namespace HedgeHog {
       return !(bsRates.Min() > bsRatesCT.Max() || bsRates.Max() < bsRatesCT.Min());
     }
 
-    public static double HistoricalVolatility(this IDouble source) => source.HistoricalVolatility((d1, d2) => Math.Log(d2 / d1));
-    public static double HistoricalVolatility(this IDouble source, Func<double, double, double> calc) => source.Pairwise(calc).StandardDeviation();
-
+    public static double HistoricalVolatilityByPoint(this IDouble source) => source.HistoricalVolatility() * source.Average();
+    public static double HistoricalVolatility(this IDouble source) => source.HistoricalVolatility((d1, d2) => Math.Log(d2 / d1),out var avg);
+    public static double HistoricalVolatility(this IDouble source,out double avg) => source.HistoricalVolatility((d1, d2) => Math.Log(d2 / d1),out avg);
+    public static double HistoricalVolatility(this IDouble source, Func<double, double, double> calc)
+      => source.HistoricalVolatility(calc, out var avg);
+    public static double HistoricalVolatility(this IDouble source, Func<double, double, double> calc,out double avg) 
+      => source.Pairwise(calc).ToArray().AverageByIterations(-2).StandardDeviation(out avg);
     public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), bool> condition)
-      => source.HistoricalVolatility(condition, t => Math.Log(t.prev / t.next));
-    public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), bool> condition, Func<(double prev, double next), double> calc)
-      => source.Pairwise((prev, next) => (prev, next)).Where(condition).Select(calc).StandardDeviation();
+      => source.HistoricalVolatility(condition, t => Math.Log(t.prev / t.next),out var avg);
+    public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), bool> condition, Func<(double prev, double next), double> calc,out double avg)
+      => source.Pairwise((prev, next) => (prev, next)).Where(condition).Select(calc).StandardDeviation(out avg);
+
+    public static double HistoricalVolatilitySmoothed(this IDouble source) => source.HistoricalVolatility((d1, d2) => Math.Log(d2 / d1).Abs(), out var avg);
 
     #region Helpers
 
