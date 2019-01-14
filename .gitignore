@@ -40,3 +40,4 @@ sync.ffs_db
 .vs/
 bower_components/
 AllInOne/.vs/AllInOne/v15/sqlite3/storage.ide
+/HedgeHog.Alice.Client/WWW/node_modules

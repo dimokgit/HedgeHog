@@ -89,24 +89,23 @@ namespace HedgeHog {
     /// <param name="lastHarmonicRatioIndex">Ranges from 0 to 100. 100 being 1:1</param>
     /// <returns></returns>
     public static IList<double> Fft(this IList<double> prices, double lastHarmonicRatioIndex) {
+      if(prices?.Any() == false) return new double[0];
       var lastHarmonic = GetFftHarmonicsByRatesCountAndRatio(prices.Count, 0.1.Max(lastHarmonicRatioIndex));
-      Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
       var mirror = prices.Mirror(prices.Last()).Reverse().ToArray();
       mirror = prices.Concat(mirror).ToArray();
       var mirror2 = prices.Mirror(prices[0]).Reverse().ToArray();
       mirror = mirror2.Concat(mirror).ToArray();
       var bins = mirror.Fft0();
+      IEnumerable<alglib.complex> repeat(int count) { return Enumerable.Repeat(new alglib.complex(0), count); }
       var bins1 = bins.Take(lastHarmonic).Concat(repeat(bins.Count - lastHarmonic)).ToArray();
-      double[] ifft;
-      alglib.fftr1dinv(bins1, out ifft);
+      alglib.fftr1dinv(bins1, out var ifft);
       return ifft.CopyToArray(prices.Count, prices.Count);
     }
 
     public static double ComplexValue(this alglib.complex b) { return Math.Sqrt(b.x * b.x + b.y * b.y); }
 
     public static double FftFrequency(this IEnumerable<double> signalIn, bool reversed) {
-      alglib.complex[] bins;
-      return signalIn.FftFrequency(reversed, out bins);
+      return signalIn.FftFrequency(reversed, out var bins);
     }
     public static double FftFrequency(this IEnumerable<double> signalIn, bool reversed, out alglib.complex[] bins) {
       bins = (alglib.complex[])FftSignalBins(signalIn, reversed);
@@ -114,30 +113,27 @@ namespace HedgeHog {
     }
 
     public static IList<alglib.complex> FftSignalBins(this IEnumerable<double> signalIn, bool reversed = false) {
-      alglib.complex[] bins;
       double[] signal = signalIn.SafeArray();
       var line = signal.ToArray().Regression(1);
       IEnumerable<double> ratesFft = signal;
       if(reversed)
         ratesFft = ratesFft.Reverse();
-      alglib.fftr1d(ratesFft.Zip(line, (r, l) => r - l).ToArray(), out bins);
+      alglib.fftr1d(ratesFft.Zip(line, (r, l) => r - l).ToArray(), out var bins);
       return bins;
     }
     public static IList<alglib.complex> FftBins(this IEnumerable<double> values) {
-      alglib.complex[] bins;
       var signal = values.SafeArray();
       var avg = signal.Average();
       var line = Enumerable.Repeat(avg, signal.Length);
-      alglib.fftr1d(signal.Zip(line, (r, l) => r - l).ToArray(), out bins);
+      alglib.fftr1d(signal.Zip(line, (r, l) => r - l).ToArray(), out var bins);
       return bins;
     }
     public static IList<alglib.complex> Fft0(this IEnumerable<double> values) {
-      alglib.complex[] bins;
-      alglib.fftr1d(values.SafeArray(), out bins);
+      alglib.fftr1d(values.SafeArray(), out var bins);
       return bins;
     }
     public static IList<alglib.complex> FftHarmonic(this IList<alglib.complex> bins, int harmonic) {
-      Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
+      IEnumerable<alglib.complex> repeat(int count) { return Enumerable.Repeat(new alglib.complex(0), count); }
       return bins.Take(1)
         .Concat(repeat(harmonic - 1))
         .Concat(new[] { bins[harmonic] })
@@ -147,7 +143,7 @@ namespace HedgeHog {
 
     public static IList<alglib.complex> FftHarmonic(this IList<alglib.complex> bins, int harmonic, int range) {
       var c = new alglib.complex(0);
-      Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(c, count); };
+      IEnumerable<alglib.complex> repeat(int count) { return Enumerable.Repeat(c, count); }
       return bins.Select((b, i) => {
         if(i == 0)
           return b;
@@ -258,8 +254,7 @@ namespace HedgeHog {
       return CrossesInMiddle(values, out index);
     }
     public static IList<double> CrossesInMiddle(this IEnumerable<double> values1, IEnumerable<double> values2) {
-      int index;
-      return values1.CrossesInMiddle(values2, out index);
+      return values1.CrossesInMiddle(values2, out int index);
     }
     public static IList<double> CrossesInMiddle(this IEnumerable<double> values1, IEnumerable<double> values2, out int index) {
       var values = values1.Zip(values2, (v1, v2) => v1 - v2);
@@ -335,7 +330,7 @@ namespace HedgeHog {
       return list.Zip(list.Skip(1), (f, s) => new Tuple<T, T, int>(f, s, index++));
     }
     public static IEnumerable<T> Crosses<T>(this IList<T> list, IList<T> signal, Func<T, double> getValue) {
-      Func<T, T, double> sign = (v1, v2) => Math.Sign(getValue(v1) - getValue(v2));
+      double sign(T v1, T v2) => Math.Sign(getValue(v1) - getValue(v2));
       return list.Mash()
         .Zip(signal, (m, s) => new { signFirst = sign(m.Item1, s), signSecond = sign(m.Item2, s), first = m.Item1 })
         .Where(a => a.signFirst != a.signSecond)
@@ -347,7 +342,7 @@ namespace HedgeHog {
       return list.Crosses(Enumerable.Repeat(signal, list.Count).ToArray(), getValue);
     }
     public static IEnumerable<T> Crosses<T>(this IList<T> list, IList<double> signal, Func<T, double> getValue) {
-      Func<T, double, double> sign = (v1, v2) => Math.Sign(getValue(v1) - v2);
+      double sign(T v1, double v2) => Math.Sign(getValue(v1) - v2);
       return list.Mash()
         .Zip(signal, (m, s) => new { signFirst = sign(m.Item1, s), signSecond = sign(m.Item2, s), first = m.Item1 })
         .Where(a => a.signFirst != a.signSecond)
@@ -376,7 +371,7 @@ namespace HedgeHog {
     }
 
     public static IEnumerable<Tuple<double, int>> CrossesWithIndex(this IList<double> list, IList<double> signal) {
-      Func<double, double, int> sign = (d1, d2) => { var s = Math.Sign(d1 - d2); return s >= 0 ? 1 : -1; };
+      int sign(double d1, double d2) { var s = Math.Sign(d1 - d2); return s >= 0 ? 1 : -1; }
       return list.MashWithIndex()
         .Zip(signal, (m, s) => new { signFirst = sign(m.Item1, s), signSecond = sign(m.Item2, s), first = m.Item1, index = m.Item3 })
         .Where(a => a.signFirst != a.signSecond)
@@ -805,11 +800,11 @@ namespace HedgeHog {
             extreams.Add(p);
           return n;
         });
-      Func<Extream<T>, Extream<T>> fill = ext => {
-        Func<Func<IEnumerable<T>, Func<T, double>, IOrderedEnumerable<T>>> s = () => ext.Slope > 0 ? (Func<IEnumerable<T>, Func<T, double>, IOrderedEnumerable<T>>)Enumerable.OrderByDescending : Enumerable.OrderBy;
+      Extream<T> fill(Extream<T> ext) {
+        Func<IEnumerable<T>, Func<T, double>, IOrderedEnumerable<T>> s() => ext.Slope > 0 ? (Func<IEnumerable<T>, Func<T, double>, IOrderedEnumerable<T>>)Enumerable.OrderByDescending : Enumerable.OrderBy;
         ext.Element0 = s()(input.SafeArray().CopyToArray(ext.Index, range), value).First();
         return ext;
-      };
+      }
       return extreams.Where(d => d != null).OrderBy(d => d.i).Select(d => fill(new Extream<T>(d.rate, d.slope, d.i))).ToArray();
     }
 
@@ -828,7 +823,7 @@ namespace HedgeHog {
           return (extream.index, extream.date, slope);
         })
         .DistinctLastUntilChanged(a => a.slope.SignUp());
-        //.Select(r => (r.index, r.date, r.slope));//.SkipLast(1);
+      //.Select(r => (r.index, r.date, r.slope));//.SkipLast(1);
     }
     /// <summary>
     /// Try not to materialize it.
@@ -1012,8 +1007,7 @@ namespace HedgeHog {
       .Select(a => lengthAndSlope(a.length, a.slopeSign));
     }
     public static double RsdNormalized(this IList<double> values) {
-      double level;
-      var norm = values.Normalize(out level).ToArray();
+      var norm = values.Normalize(out double level).ToArray();
       return norm.Rsd();
     }
     public static double RsdNormalized<T>(this IList<T> values, Func<T, double> value) {
@@ -1056,14 +1050,13 @@ namespace HedgeHog {
       var r2 = avg + stDev;
       return values.Where(v => v.Between(r1, r2));
     }
-    public static IEnumerable<double> AverageByStDevHigh(this IList<double> values) {
+    public static IEnumerable<double> AverageByStDevHigh(this IList<double> values, double lower = 1, double upper = 2) {
       if(values.Count < 2)
         return values.DefaultIfEmpty(double.NaN);
-      var avg = values.Average();
-      var stDev = values.StDev();
-      var r1 = avg + stDev;
-      var r2 = avg + stDev * 2;
-      return values.Where(v => v.Between(r1, r2));
+      var stDev = values.StandardDeviation(out var avg);
+      var r1 = avg + stDev * lower;
+      var r2 = avg + stDev * upper;
+      return values.Where(v => v.Abs().Between(r1, r2));
     }
 
     public static IEnumerable<double> AverageInRange(this IList<double> a, int high) {
@@ -1218,18 +1211,28 @@ namespace HedgeHog {
     }
 
     public static double HistoricalVolatilityByPoint(this IDouble source) => source.HistoricalVolatility() * source.Average();
-    public static double HistoricalVolatility(this IDouble source) => source.HistoricalVolatility((d1, d2) => Math.Log(d2 / d1),out var avg);
-    public static double HistoricalVolatility(this IDouble source,out double avg) => source.HistoricalVolatility((d1, d2) => Math.Log(d2 / d1),out avg);
-    public static double HistoricalVolatility(this IDouble source, Func<double, double, double> calc)
-      => source.HistoricalVolatility(calc, out var avg);
-    public static double HistoricalVolatility(this IDouble source, Func<double, double, double> calc,out double avg) 
-      => source.Pairwise(calc).ToArray().AverageByIterations(-2).StandardDeviation(out avg);
-    public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), bool> condition)
-      => source.HistoricalVolatility(condition, t => Math.Log(t.prev / t.next),out var avg);
-    public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), bool> condition, Func<(double prev, double next), double> calc,out double avg)
-      => source.Pairwise((prev, next) => (prev, next)).Where(condition).Select(calc).StandardDeviation(out avg);
+    public static double HistoricalVolatility(this IDouble source) => source.HistoricalVolatility(out var avg);
 
-    public static double HistoricalVolatilitySmoothed(this IDouble source) => source.HistoricalVolatility((d1, d2) => Math.Log(d2 / d1).Abs(), out var avg);
+    public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), double> calc) => source.HistoricalVolatility(calc, out var avg);
+
+    public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), double> calc, out double avg)
+      => source.HistoricalVolatility(out avg, calc, null);
+
+    private static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), bool> condition)
+      => source.HistoricalVolatility(out var avg, null, condition);
+
+    public static double HistoricalVolatility(
+      this IDouble source,
+      out double avg,
+      Func<(double prev, double next), double> calc = null,
+      Func<(double prev, double next), bool> condition = null) {
+      var s = source.Pairwise((prev, next) => (prev, next));
+      if(condition != null) s = s.Where(condition);
+      var a = s.Select(calc ?? Log).ToArray();
+      var hv = a/*.AverageByStDevHigh(-1, 0.5)*/.StandardDeviation(out avg);
+      return hv;
+      double Log((double prev, double next) t) => Math.Log(t.prev / t.next).Abs();
+    }
 
     #region Helpers
 
@@ -1238,10 +1241,9 @@ namespace HedgeHog {
       return seq.Pairwise(Tuple.Create);
     }
     public static IEnumerable<TResult> Pairwise<TSequence, TResult>(this IEnumerable<TSequence> seq, Func<TSequence, TSequence, TResult> resultSelector) {
-      TSequence prev = default(TSequence);
-      using(IEnumerator<TSequence> e = seq.GetEnumerator()) {
+      TSequence prev = default;
+      using(var e = seq.GetEnumerator()) {
         if(e.MoveNext()) prev = e.Current;
-
         while(e.MoveNext()) yield return resultSelector(prev, prev = e.Current);
       }
     }

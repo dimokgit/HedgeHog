@@ -1049,7 +1049,11 @@ namespace HedgeHog.Alice.Store {
     IDisposable _priceChangeDisposable;
     public int ExpDayToSkip() => OpenPuts().Select(p => (p.contract.Expiration - ServerTime.Date).Days).OrderBy(d => d).Take(1).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
-      _tradingMacros = tradingMacros.ToArray();
+      _tradingMacros = tradingMacros;
+      if(TradingMacroTrader(Pair).Count() > 1) {
+        Log = new Exception("More then one Trader Macros is not allowed");
+        if(_IsTrader) IsTrader = false;
+      }
       Action<Expression<Func<TradingMacro, bool>>> check = g => TradingMacrosByPair()
         .Scan(0, (t, tm) => t + (g.Compile()(tm) ? 1 : 0))
         .SkipWhile(c => c <= 1)
@@ -3449,10 +3453,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       //Log = new Exception($"ShowVoltsByHV: {this} start");
       (from ts in UseRatesInternal(ri => ri.Select((r, i) => (r, i)).Skip(BarsCount).Where(ra => GetHV(ra.r).IsNaN())).ToArray()
        from t in ts
-       from ra in UseRatesInternal(ri => Try(() => ri.CopyToArray(t.i.Min(BarsCountMax) - 1380, 1380), exc => {
-         Log = new Exception(new { t.i } + "", exc);
-         return new Rate[0];
-       }))
+       from ra in UseRatesInternal(ri => ri.CopyToArray(t.i.Min(BarsCountMax) - 1380, 1380))
        where ra.Any()
        from hv in HistoricalVolatility(ra)
        select (t.r, hv)
@@ -3567,7 +3568,9 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     [Category(categoryTrading)]
     [WwwSetting]
     public bool IsTrader {
-      get { return TradingMacrosByPair().Count() == 1 || _IsTrader; }
+      get {
+        return TradingMacrosByPair().Count() == 1 || _IsTrader;
+      }
       set {
         if(_IsTrader != value) {
           _IsTrader = value;

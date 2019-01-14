@@ -588,7 +588,7 @@ namespace IBApp {
     //  throw new NotImplementedException();
     //}
 
-    public double GetPipSize(string pair) => ContractDetails.FromCache(pair, cd => cd.MinTick < 1 ? 0.01 : cd.MinTick).DefaultIfEmpty(double.NaN).Single();
+    public double GetPipSize(string pair) => 1.0;// ContractDetails.FromCache(pair, cd => cd.MinTick < 1 ? 0.01 : cd.MinTick).DefaultIfEmpty(double.NaN).Single();
     //cd => Math.Pow(10, Math.Log10(cd.MinTick.Floor()))).DefaultIfEmpty().Single();
 
     public IEnumerable<Price> TryGetPrice(string pair) {

@@ -1080,8 +1080,8 @@ namespace HedgeHog.Alice.Client {
       UseTradingMacro(pair, tm => tm.Strategy = EnumUtils.Parse<Strategies>(strategy));
     }
     [BasicAuthenticationFilter]
-    public bool ToggleIsActive(string pair, int chartNumber) {
-      return UseTradingMacro2(pair, chartNumber, tm => tm.ToggleIsActive()).DefaultIfEmpty().First();
+    public bool ToggleIsActive(string pair) {
+      return UseTraderMacro(pair, tm => tm.ToggleIsActive()).DefaultIfEmpty().First();
     }
     [BasicAuthenticationFilter]
     public void FlipTradeLevels(string pair) {
@@ -1445,7 +1445,7 @@ namespace HedgeHog.Alice.Client {
     public void SetHedgedPair(string pair, string pairHedge) => UseTraderMacro(pair, tm => {
       if(pair != pairHedge) tm.PairHedge = pairHedge;
     });
-    public string ReadHedgedPair(string pair) => UseTradingMacro2(pair, 0, tm => tm.PairHedge).SingleOrDefault();
+    public string ReadHedgedPair(string pair) => UseTraderMacro(pair, tm => tm.PairHedge).SingleOrDefault();
 
     public void SetCanTrade(string pair, bool canTrade, bool isBuy) {
       GetTradingMacro(pair).ForEach(tm => {
@@ -1509,7 +1509,7 @@ namespace HedgeHog.Alice.Client {
       return UseTradingMacro2(pair, 0, func).First();
     }
     void UseTradingMacro(string pair, Action<TradingMacro> action) {
-      UseTradingMacro(pair, 0, action);
+      UseTraderMacro(pair, action);
     }
     void UseTraderMacro(string pair, Action<TradingMacro> action) {
       UseTradingMacro(pair, tm => tm.IsTrader, action);

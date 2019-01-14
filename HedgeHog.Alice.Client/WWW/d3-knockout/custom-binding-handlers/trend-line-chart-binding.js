@@ -124,11 +124,12 @@
         addRect("dayTailRect", tickAreaBgColor);
       }
       // coms
+      addRect(greenStrip, "#E6FAE6", 0.6);
       addRect(cyanStrip, "lightcyan", 1);
       addRect(redStrip, "#FAE6E6", 1);
       addRect(blueStrip, "lavender", 1);
-      addRect(greenStrip, "#E6FAE6", 0.6);
-      [0, 1, 2, 3, 4, 5, 6].forEach(function (i) {
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(function (i) {
+        addRect(afterTradeHoursRect + i, "beige", 0.3);
         addRect(beforeTradeHoursRect + i, "lightcyan", 1);
       });
       if (hasTps) {
@@ -697,7 +698,7 @@
             .attr("transform", function (d) {
               return "translate(" + (x(corridorStartTime) + d) + ",7) rotate(-90)";
             })
-            ;
+          ;
         }
       } else
         svg.selectAll("path.nextWave").style("display", "none");
@@ -723,7 +724,7 @@
           .data(chkBoxData)
           .attr('x', function (d) { return d.x; })
           .attr('y', function (d) { return isNaN(d.y) ? 0 : d.y; })
-          ;
+        ;
         svg.selectAll("*.tradeLineUI input")
           .data(chkBoxData)
           .style("display", function (d) { return d.canTrade ? "" : "none"; })
@@ -797,7 +798,7 @@
             .style("fill", function (ct) { return ct.fill; })
             .style("stroke", function (ct) { return ct.stroke; })
             .style("stroke-width", function (ct) { return ct.strokeWidth; })
-            ;
+          ;
           var openAltitude = altitudeByArea(openSize);
           closedTradesDelta
             .style("stroke", function (ct) {
@@ -845,8 +846,8 @@
       wlDelta.exit().remove();
       //#endregion
 
-      d3.select(element).select("svg")
-        .style('background-color', isTradingActive ? "whitesmoke" : "peachpuff");
+      //d3.select(element).select("svg")
+      //  .style('background-color', isTradingActive ? "whitesmoke" : "peachpuff");
 
       // #region Locals
       function setHLine(level, levelName, levelColour, width, dasharray, yTrans) {
@@ -860,9 +861,9 @@
             .attr("y1", (yTrans || y)(level)) // y position of the first end of the line
             .attr("x2", x(data[data.length - 1].d) + xAxisOffset) // x position of the second end of the line
             .attr("y2", (yTrans || y)(level))// y position of the second end of the line
-            ;
+          ;
 
-        //.duration(animationDuration);    
+          //.duration(animationDuration);    
         else
           return line
             .style("stroke-width", 0);

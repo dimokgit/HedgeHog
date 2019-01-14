@@ -733,8 +733,8 @@
   </div>
   <!--#endregion-->
   <!--#region Charts-->
-  <div data-bind="lineChart: chartData,lineChartPrice: price,chartNum:0,elementer:chartElement"></div>
-  <div data-bind="lineChart: chartData2,lineChartPrice: price,chartNum:1"></div>
+  <div data-bind="lineChart: chartData,lineChartPrice: price,chartNum:0,elementer:chartElement0,style:{backgroundColor: isTradingActive()? 'whitesmoke':'antiquewhite'}"></div>
+  <div data-bind="lineChart: chartData2,lineChartPrice: price,chartNum:1,elementer:chartElement1,style:{backgroundColor: isTradingActive()? 'whitesmoke':'antiquewhite'}"></div>
   <!--#endregion-->
   <!--#region Dialogs-->
   <!--#region Settings dialog-->

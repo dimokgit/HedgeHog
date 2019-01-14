@@ -328,7 +328,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate PFRHOk {
       get {
         TradingMacroTrader(tm => Log = new Exception(new { PFRHOk = new { tm.PercFromRatesHigh } } + ""));
-        return () => TradingMacroM1(tm=>TradeDirectionByBool(tm.RatioFromRatesHigh * 100 > PercFromRatesHigh)).SingleOrDefault();
+        return () => TradingMacroM1(tm => TradeDirectionByBool(tm.RatioFromRatesHigh * 100 > PercFromRatesHigh)).SingleOrDefault();
       }
     }
     private double _distVolt;
@@ -1445,11 +1445,14 @@ namespace HedgeHog.Alice.Store {
       => RatesForHV(ra).HistoricalVolatility()).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault());
 
     public double[] HistoricalVolatilityByPoints() => UseRates(ra => InPips(RatesHVBPt(ra)));
-    private Func<IList<Rate>, double> RatesHVBPt => new Func<IList<Rate>, double>(ra
-      => RatesForHV(ra).HistoricalVolatilityByPoint()).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault());
+    private Func<IList<Rate>, double> _RatesHVBPt;
+    private Func<IList<Rate>, double> RatesHVBPt => _RatesHVBPt ?? (_RatesHVBPt = new Func<IList<Rate>, double>(ra
+       => RatesForHV(ra).HistoricalVolatilityByPoint()).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault()));
     public double[] HistoricalVolatilityByPips() => UseRates(ra => InPips(RatesHVBP(ra)));
-    private Func<IList<Rate>, double> RatesHVBP => new Func<IList<Rate>, double>(ra
-      => RatesForHV(ra).HistoricalVolatility((d1, d2) => d1 - d2)).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault());
+
+    private Func<IList<Rate>, double> _RatesHVBP;
+    private Func<IList<Rate>, double> RatesHVBP => _RatesHVBP ?? (_RatesHVBP= new Func<IList<Rate>, double>(ra
+      => RatesForHV(ra).HistoricalVolatility(t => t.prev.Abs(t.next))).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault()));
 
     private static IList<double> RatesForHV(IList<Rate> ra) => ra.Select(_priceAvg).Cma(2.2);
     #endregion

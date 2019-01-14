@@ -48,7 +48,7 @@ namespace HedgeHog.Alice.Client {
       if(exit || tm.RatesArray.Count == 0 || tm.IsTrader && tm.BuyLevel == null)
         return new[] { new { rates = new int[0] } };
 
-      var tmTrader = GetTradingMacros(tm.Pair).Where(t => t.IsTrader).DefaultIfEmpty(tm).Single();
+      var tmTrader = tm.TradingMacroTrader().Single();
       var tpsHigh = tm.GetVoltageHigh().SingleOrDefault();
       var tpsLow = tm.GetVoltageAverage().SingleOrDefault();
       var tps2High = tm.GetVoltage2High().Where(v => !v.IsNaN()).ToArray();
@@ -209,7 +209,7 @@ namespace HedgeHog.Alice.Client {
         trendLines2,
         trendLines1,
         trendLines3,
-        isTradingActive = tm.IsTradingActive,
+        isTradingActive = tmTrader.IsTradingActive,
         tradeLevels = tradeLevels,
         trades,
         askBid,

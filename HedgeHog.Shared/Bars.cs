@@ -526,7 +526,7 @@ namespace HedgeHog.Bars {
 
     #region Operators
     public static bool operator <=(BarBase b1, BarBase b2) {
-      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate < b2.StartDate || (b1.StartDate == b2.StartDate && b1.Row <= b2.Row);
+      return b1 is null || (object)b2 == null ? false : b1.StartDate < b2.StartDate || (b1.StartDate == b2.StartDate && b1.Row <= b2.Row);
     }
     public static bool operator >(BarBase b1, BarBase b2) {
       return (object)b1 == null || (object)b2 == null ? false : b1.StartDate > b2.StartDate || (b1.StartDate == b2.StartDate && b1.Row > b2.Row);

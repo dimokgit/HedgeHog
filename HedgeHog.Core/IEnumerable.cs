@@ -218,7 +218,7 @@ namespace HedgeHog {
       return a;
     }
     public static IList<T> GetRange<T>(this List<T> source, DateTime start, DateTime end, Func<T, DateTime> toDate) {
-      Func<DateTime, int[]> index = date => source.FuzzyIndex(date, (d, r1, r2) => d.Between(toDate(r1), toDate(r2)));
+      int[] index(DateTime date) => source.FuzzyIndex(date, (d, r1, r2) => d.Between(toDate(r1), toDate(r2)));
       var i1 = index(start.Max(toDate(source[0])));
       var i2 = index(end.Min(toDate(source.Last())));
       return (from s in i1
