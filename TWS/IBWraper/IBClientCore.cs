@@ -284,6 +284,7 @@ namespace IBApp {
           error => Trace($"{nameof(ReqContractDetailsAsync)}:{contract}[{new { contract.Exchange, LastTradeDate = contract.LastTradeDateOrContractMonth, contract.Strike }}]-{error}"),
           () => TraceIf(DataManager.DoShowRequestErrorDone || _verbose, $"{nameof(ReqContractDetailsAsync)} {reqId} Error done")
           )
+          .Distinct(t => t.ContractDetails.Contract.ConId)
           .ToArray()
           .Do(a => a.ForEach(t => t.ContractDetails.AddToCache()))
           .Do(_ => Trace($"{nameof(ReqContractDetailsAsync)}:{key} found:{_.Length} contracts"))
@@ -370,34 +371,39 @@ namespace IBApp {
     static ConcurrentDictionary<(string symbol, DateTime expDate, double strike), IObservable<Contract[]>> OptionChainOldCache = new ConcurrentDictionary<(string symbol, DateTime expDate, double strike), IObservable<Contract[]>>();
     public IObservable<Contract[]> ReqOptionChainOldCache(string symbol, DateTime expDate, double strike = 0, bool waitForAllStrikes = true) {
       var key = (symbol, expDate, strike);
-      //Trace($"{nameof(ReqOptionChainOldCache)}:{new { key }}");
       lock(OptionChainOldCache) {
         if(OptionChainOldCache.TryGetValue(key, out var o)) return o;
         var newCache = ReqOptionChainOldAsync(symbol, expDate, strike, waitForAllStrikes).ToArray().Replay().RefCount();
-        return OptionChainOldCache.TryAdd(key, newCache) ? newCache : OptionChainOldCache[key];
+        Trace($"{nameof(ReqOptionChainOldCache)}:{new { key }}");
+        return newCache
+          .Do(nc => {
+            if(nc.Any()) OptionChainOldCache.TryAdd(key, newCache);
+          });
       }
     }
-    public IObservable<Contract> ReqOptionChainOldAsync(string sympol, DateTime expirationDate, double strike, bool waitForAllStrikes) {
+    public IObservable<Contract> ReqOptionChainOldAsync(string symbol, DateTime expirationDate, double strike, bool waitForAllStrikes) {
       Passager.ThrowIf(() => expirationDate.IsMin() && strike == 0, new { expirationDate, strike } + "");
       var fopDate = expirationDate;
-      Trace(new { fopDate = fopDate.ToShortDateString(), sympol, strike });
+      Trace(new { fopDate = fopDate.ToShortDateString(), symbol, strike });
+      var isVIX = true;
       Contract MakeFutureContract(ContractDetails cd, string twsDate) => new Contract { Symbol = cd.MarketName, SecType = "FOP", Exchange = cd.Contract.Exchange, Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
-      Contract MakeIndexContract(string s, string twsDate, string exchange) => new Contract { Symbol = s, SecType = "OPT", Exchange = exchange, Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
-      Contract MakeStockContract(string twsDate) => new Contract { Symbol = sympol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
+      Contract MakeIndexContract(string s, string twsDate) => new Contract { Symbol = s, SecType = "OPT", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
+      Contract MakeStockContract(string twsDate) => new Contract { Symbol = symbol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
       Contract MakeContract(ContractDetails cd, string twsDate) =>
-        cd.MarketName == "VX" || cd.Contract.IsIndex() ? MakeIndexContract(cd.MarketName, twsDate, cd.Contract.Exchange)
-        :cd.Contract.IsFuture ? MakeFutureContract(cd, twsDate)
+        (isVIX = cd.UnderSymbol == "VIX") || cd.Contract.IsIndex ? MakeIndexContract(cd.UnderSymbol, twsDate)
+        : cd.Contract.IsFuture ? MakeFutureContract(cd, twsDate)
         : MakeStockContract(twsDate);
 
       return (from cds in ReqCDs(fopDate).Take(fopDate.IsMin() ? int.MaxValue : 1)
               from cd in cds
+              from vix in (isVIX ? ReqContractDetailsCached("VIX") : new ContractDetails[0].ToObservable()).ToArray()
               select cd.AddToCache().Contract);
 
       IObservable<ContractDetails[]> ReqCDs(DateTime fd) =>
-        (from stkExp in waitForAllStrikes ? ReqStrikesAndExpirations(sympol).Select(t => t.expirations) : Observable.Return(new DateTime[0])
-         from under in ReqContractDetailsCached(sympol)
-         let twss = !fd.IsMin() ? stkExp.DefaultIfEmpty(fd).Where(ex => ex >= fd.Date).OrderBy(ex => ex).Take(1).Select(ex => ex.ToTWSDateString()).ToArray() : new[] { "" }
-         from tws in twss
+        (from stkExp in waitForAllStrikes ? ReqStrikesAndExpirations(symbol).Select(t => t.expirations) : Observable.Return(new DateTime[0])
+         from under in ReqContractDetailsCached(symbol)
+         from exp in stkExp.DefaultIfEmpty(fd).Where(ex => ex >= fd.Date).OrderBy(ex => ex).Take(1)
+         let tws = !fd.IsMin() ? exp.ToTWSDateString() : ""
          let c = MakeContract(under, tws)
          from cd in ReqContractDetailsAsync(c)
          select cd)
@@ -409,8 +415,12 @@ namespace IBApp {
     public IObservable<Contract> ReqCurrentOptionsAsync
       (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount) {
       var expStartDate = ServerTime.Date.AddBusinessDays(expirationDaysSkip);
-      return ReqOptionChainOldCache(symbol, expStartDate)
-          .Select(a => a.OrderBy(c => c.Strike.Abs(price)).ThenBy(c => c.Right).Select((o, i) => (i, o))
+      return (
+        //from exps in ReqStrikesAndExpirations(symbol)
+        //from exp in exps.expirations.OrderBy(d => d).Where(d => d >= expStartDate).Take(1)
+        from och in ReqOptionChainOldCache(symbol, expStartDate)
+        select och
+        ).Select(a => a.OrderBy(c => c.Strike.Abs(price)).ThenBy(c => c.Right).Select((o, i) => (i, o))
           .ToArray())
           .SelectMany(a => a.OrderBy(t => t.i).ThenBy(t => t.o.Strike).Select(t => t.o))
           .Take(strikesCount * expirationsCount);

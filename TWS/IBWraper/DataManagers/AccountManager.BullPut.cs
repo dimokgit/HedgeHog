@@ -87,7 +87,7 @@ namespace IBApp {
 
     IObservable<(Contract currentContract, Contract rollContract, ComboTrade currentTrade)> CreateRoll(string currentSymbol, string rollSymbol) =>
       (from cd in IbClient.ReqContractDetailsCached(currentSymbol)
-       let cc = cd.Contract
+       let cc = cd.Contract.ThrowIf(contract => !contract.IsOption)
        from rcd in IbClient.ReqContractDetailsCached(rollSymbol)
        from uc in cc.UnderContract
        from ct in ComboTrades(5)

@@ -864,14 +864,14 @@
       this.freezeCombos = ko.observable(false);
       this.expDaysSkip = ko.observable();
       this.distanceFromHigh = ko.observable();
-      this.comboQuantity = ko.observable().extend({ persist: "comboQuantity" });
+      this.comboQuantity = ko.observable().extend({ persist: "comboQuantity" + pair });
       this.comboCurrentStrikeLevel = ko.observable("");
       this.toggleComboCurrentStrikeLevel = function () {
         self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? Math.round(self.priceAvg()) : "");
       }
-      this.comboGap = ko.observable(1).extend({ persist: "comboGap" });
+      this.comboGap = ko.observable(1).extend({ persist: "comboGap" + pair });
       this.comboGap.subscribe(refreshCombos);
-      this.numOfCombos = ko.observable(0).extend({ persist: "numOfCombos" });
+      this.numOfCombos = ko.observable(0).extend({ persist: "numOfCombos" + pair });
       this.numOfCombos.subscribe(refreshCombos);
       function refreshCombos(v) {
         readCombos(true);
@@ -920,7 +920,7 @@
 
       this.stockOptionsInfo = ko.mapping.fromJS(ko.observableArray());
       this.hedgeOptions = ko.mapping.fromJS(ko.observableArray());
-      this.showOptionType = ko.observable("P").extend({ persist: "showOptionType" });
+      this.showOptionType = ko.observable("P").extend({ persist: "showOptionType" + pair });
       this.showOptionType.subscribe(function () { this.showButterflies() }.bind(this));
       this.orders = ko.mapping.fromJS(ko.observableArray());
       this.bullPuts = ko.mapping.fromJS(ko.observableArray());
@@ -1005,7 +1005,7 @@
       this.chartElement = ko.pureComputed(function () {
         return [self.chartElement0(), self.chartElement1()].find(e=>$(e).is(":visible"));
         //$(this).next().toggle().is(":visible");
-      },this);
+      }, this);
       var stopCombos = true;
       this.showButterflies = function () {
         showCombos = true;
@@ -1344,7 +1344,7 @@
         chartData.isHedged = response.ish;
         chartData.hph = response.hph;
         chartData.vfs = !!response.vfs;
-        resetRefreshChartInterval(chartData, lineChartData, lastRefreshDate, askRatesDatesReset,1);
+        resetRefreshChartInterval(chartData, lineChartData, lastRefreshDate, askRatesDatesReset, 1);
         chartData.vfss = chartData.vfs & response.vfss;
         chartData.tps2High = response.tps2High;
         chartData.tps2Low = response.tps2Low;
@@ -1416,7 +1416,7 @@
         chartData2.vfs = !!response.vfs;
         chartData2.isHedged = response.ish;
         chartData2.hph = response.hph;
-        resetRefreshChartInterval(chartData2, lineChartData2, lastRefreshDate2, askRatesDatesReset2,60*3);
+        resetRefreshChartInterval(chartData2, lineChartData2, lastRefreshDate2, askRatesDatesReset2, 60 * 3);
         chartData2.vfss = chartData2.vfs && response.vfss;
         chartData2.tps2High = response.tps2High;
         chartData2.tps2Low = response.tps2Low;
@@ -1429,9 +1429,9 @@
         updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
         dataViewModel.price(response.askBid);
       }
-      function resetRefreshChartInterval(chartData, chartRates, lastRefreshDate, askRatesDatesReset,minutes) {
+      function resetRefreshChartInterval(chartData, chartRates, lastRefreshDate, askRatesDatesReset, minutes) {
         if ((chartData.vfs || chartData.hph) && chartRates().length > 2) {
-          var ratio = 300*60;
+          var ratio = 300 * 60;
           var lastDate = Enumerable.from(chartRates()).last().d;
           var diffMax = (lastDate - chartRates()[0].d) / ratio;
           if ((lastDate - lastRefreshDate()) / 1000 / 60 > minutes) {
@@ -1676,7 +1676,7 @@
       //#region replayDialog
       var replayDialog = this.replayDialog = ko.observable();
       var isReplayOn = this.isReplayOn = ko.observable(false);
-      var replayDateStart = this.replayDateStart = ko.observable().extend({ persist: "replayDateStart" });
+      var replayDateStart = this.replayDateStart = ko.observable().extend({ persist: "replayDateStart" + pair });
       var readReplayProcID = 0;
       function clearReadReplayArguments() {
         clearInterval(readReplayProcID);

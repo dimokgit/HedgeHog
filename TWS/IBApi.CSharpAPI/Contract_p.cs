@@ -8,8 +8,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 namespace IBApi {
-  public static class Mixin {
-  }
   public partial class Contract {
     private string HashKey => Instrument +
       (IsCombo ? ":" + ComboLegs.OrderBy(l => l.Ratio).Select(l => $"{l.ConId}-{l.Ratio}").Flatter(":") : "");
@@ -46,6 +44,7 @@ namespace IBApi {
       return this;
     }
     public IEnumerable<Contract> UnderContract => (from cd in FromDetailsCache()
+                                                   where !cd.UnderSymbol.IsNullOrWhiteSpace()
                                                    from cdu in ContractDetails.FromCache(cd.UnderSymbol)
                                                    select cdu.Contract);
     public IEnumerable<ContractDetails> FromDetailsCache() => ContractDetails.FromCache(this);
@@ -73,6 +72,7 @@ namespace IBApi {
     public bool IsFutureOption => SecType == "FOP";
     public bool HasFutureOption => IsFutureOption || Legs().Any(l => l.c.IsFutureOption);
     public bool IsFuture => SecType == "FUT" || secType == "CONTFUT";
+    public bool IsIndex => SecType == "IND";
     public bool IsButterFly => ComboLegs?.Any() == true && String.Join("", comboLegs.Select(l => l.Ratio)) == "121";
     public double ComboStrike() => Strike > 0 ? Strike : LegsEx().Sum(c => c.contract.strike * c.leg.Ratio) / LegsEx().Sum(c => c.leg.Ratio);
     public int ReqId { get; set; }
@@ -104,8 +104,4 @@ namespace IBApi {
        select (c, l)
        ).Memoize();
   }
-  public static class ContractMixins {
-    public static bool IsIndex(this Contract c) => c.SecType == "IND";
-  }
-
 }

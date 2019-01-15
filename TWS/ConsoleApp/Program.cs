@@ -69,11 +69,40 @@ namespace ConsoleApp {
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         {
+          (from options in am.CurrentOptions("VXG9", 0, 2, 3, c => true)
+           select options
+           )
+           .Subscribe(options => {
+             HandleMessage(options.Select(o => new { o.instrument }).OrderBy(_ => _.instrument).ToMarkdownTable());
+             HandleMessage("One more time");
+             am.CurrentOptions("VXG9", 0, 2, 3, c => true).Subscribe(_ => HandleMessage(_.Select(o => new { o.instrument }).OrderBy(__ => __.instrument).ToMarkdownTable()));
+           });
+        }
+        return;
+        {
+          ibClient.ReqOptionChainOldAsync("VXG9", DateTime.MinValue, 19, true)
+            .Take(1)
+            .Subscribe(c => HandleMessage(c.ToJson(true)));
+          ibClient.ReqOptionChainOldAsync("ESH9", DateTime.MinValue, 2600, true)
+            .Take(1)
+            .Subscribe(c => HandleMessage(c.ToJson(true)));
+          ibClient.ReqOptionChainOldAsync("VIX", DateTime.MinValue, 19, true)
+            .Take(1)
+            .Subscribe(c => HandleMessage(c.ToJson(true)));
+        }
+        {
+          var ochc0 = new Contract { Symbol = "ES", SecType = "FOP", Strike = 2590, Currency = "USD" };
+          var ochc = new Contract { Symbol = "VIX", SecType = "OPT", Strike = 19, Currency = "USD" };
+          ibClient.ReqContractDetailsAsync(ochc)
+            .Take(1)
+            .Subscribe(c => HandleMessage(c.ToJson(true)));
+        }
+        {
           void TestCurrentRollOvers(int num, Action after = null) {
             HandleMessage($"TestCurrentRollOvers:  start {num}");
             am.CurrentRollOvers("E3CF9 C2595", 2, 3)
             .Subscribe(_ => {
-              HandleMessage(_.Select(c=>new { c = c.ToString() }).ToMarkdownTable());
+              HandleMessage(_.Select(c => new { c = c.ToString() }).ToMarkdownTable());
               HandleMessage($"TestCurrentRollOvers:  done {num}");
               after?.Invoke();
             });
@@ -81,7 +110,6 @@ namespace ConsoleApp {
           TestCurrentRollOvers(1, () => TestCurrentRollOvers(2, () => TestCurrentRollOvers(3, () => TestCurrentRollOvers(4))));
           TestCurrentRollOvers(5);
         }
-        return;
         {
           var symbol = "VXF9";
           ibClient.ReqContractDetailsCached(symbol)
@@ -152,24 +180,10 @@ namespace ConsoleApp {
         //.Subscribe(cd => {
         //  am.OpenTrade(cd.Contract,"", -1, 0, 0, false, DateTime.MinValue,new AccountManager.PriceConditionParam(cd.Contract,3000,true,false));
         //});
-        ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXF9", SecType = "FUT", Currency = "USD" })
-        //ibClient.ReqContractDetailsAsync(new Contract { LocalSymbol = "VXQ8", SecType = "FUT", Currency = "USD" })
-        .ToArray()
-        .Select(cds => cds.Select(cd => cd.Contract)
-        .OrderBy(c => c.LastTradeDateOrContractMonth)
-        .Where(c => c.Expiration > DateTime.Now && Regex.IsMatch(c.TradingClass, "^[A-Z]{2,}$"))
-        .Take(100)
-        )
-        .Subscribe(c => Console.WriteLine(c.ToJson(true)));
-        return;
-        {// VIX
+        {
+          LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
+          HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         }
-        LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
-        HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
-        (from options in am.CurrentOptions("VXX", 0, 2, 3, c => true)
-         select options)
-        .Subscribe(options => options.ForEach(o => Console.WriteLine(o)));
-        return;
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         Task.Delay(2000).ContinueWith(_ => {

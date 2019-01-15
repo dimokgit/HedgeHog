@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HedgeHog;
 
 namespace IBApi {
   partial class ContractDetails {
@@ -13,6 +15,8 @@ namespace IBApi {
     public IEnumerable<ContractDetails> FromCache() => FromCache(contract);
     public static IEnumerable<ContractDetails> FromCache(Contract contract) => FromCache(contract.Key);
     public static IEnumerable<ContractDetails> FromCache(string instrument) {
+      if(instrument.IsNullOrWhiteSpace())
+        throw new Exception(new { instrument } + "");
       if(ContractDetailsCache.TryGetValue(instrument, out var contract))
         yield return contract;
     }
