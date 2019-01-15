@@ -90,7 +90,7 @@ namespace IBApp {
     public void SetSymbolSubscription(string pair) {
       if(pair.IsFuture()) {
         var contract = new Contract { LocalSymbol = pair, SecType = "FUT", Currency = "USD" };
-        ReqContractDetailsAsync(contract)
+        ReqContractDetailsCached(contract)
           .Take(1)
           .OnEmpty(() => throw new Exception(new { contract, not = "found" } + ""))
           .Subscribe(cd => SetContractSubscription(cd.Contract));
@@ -250,6 +250,8 @@ namespace IBApp {
 
     public IObservable<ContractDetails> ReqContractDetailsCached(string symbol) => ReqContractDetailsCached(symbol.ContractFactory());
     public IObservable<ContractDetails> ReqContractDetailsCached(Contract contract) {
+      if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
+        Debugger.Break();
       return contract.FromDetailsCache()
         .ToArray()
         .ToObservable()
@@ -265,7 +267,9 @@ namespace IBApp {
 
     static ConcurrentDictionary<string, IObservable<ContractDetails>> _reqContractDetails = new ConcurrentDictionary<string, IObservable<ContractDetails>>();
     public IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
-      var key = $"{contract.Symbol}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Strike}";
+      if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
+        Debugger.Break();
+      var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol)}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Strike}";
       lock(_reqContractDetails) {
         if(_reqContractDetails.TryGetValue(key, out var o)) return o;
         var reqId = NextReqId();
@@ -377,12 +381,12 @@ namespace IBApp {
       Passager.ThrowIf(() => expirationDate.IsMin() && strike == 0, new { expirationDate, strike } + "");
       var fopDate = expirationDate;
       Trace(new { fopDate = fopDate.ToShortDateString(), sympol, strike });
-      Contract MakeFutureContract(string twsDate) => new Contract { Symbol = sympol.Substring(0, 2), SecType = "FOP", Exchange = "GLOBEX", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
-      Contract MakeIndexContract(string twsDate) => new Contract { Symbol = sympol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
+      Contract MakeFutureContract(ContractDetails cd, string twsDate) => new Contract { Symbol = cd.MarketName, SecType = "FOP", Exchange = cd.Contract.Exchange, Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
+      Contract MakeIndexContract(string s, string twsDate, string exchange) => new Contract { Symbol = s, SecType = "OPT", Exchange = exchange, Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
       Contract MakeStockContract(string twsDate) => new Contract { Symbol = sympol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
-      Contract MakeContract(string twsDate) =>
-        sympol.IsFuture() ? MakeFutureContract(twsDate)
-        : sympol.IsIndex() ? MakeIndexContract(twsDate)
+      Contract MakeContract(ContractDetails cd, string twsDate) =>
+        cd.MarketName == "VX" || cd.Contract.IsIndex() ? MakeIndexContract(cd.MarketName, twsDate, cd.Contract.Exchange)
+        :cd.Contract.IsFuture ? MakeFutureContract(cd, twsDate)
         : MakeStockContract(twsDate);
 
       return (from cds in ReqCDs(fopDate).Take(fopDate.IsMin() ? int.MaxValue : 1)
@@ -391,9 +395,10 @@ namespace IBApp {
 
       IObservable<ContractDetails[]> ReqCDs(DateTime fd) =>
         (from stkExp in waitForAllStrikes ? ReqStrikesAndExpirations(sympol).Select(t => t.expirations) : Observable.Return(new DateTime[0])
+         from under in ReqContractDetailsCached(sympol)
          let twss = !fd.IsMin() ? stkExp.DefaultIfEmpty(fd).Where(ex => ex >= fd.Date).OrderBy(ex => ex).Take(1).Select(ex => ex.ToTWSDateString()).ToArray() : new[] { "" }
          from tws in twss
-         let c = MakeContract(tws)
+         let c = MakeContract(under, tws)
          from cd in ReqContractDetailsAsync(c)
          select cd)
          .ToArray()

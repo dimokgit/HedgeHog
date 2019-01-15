@@ -19,7 +19,7 @@ using IBSampleApp.messages;
 using ReactiveUI;
 using static HedgeHog.Shared.TradesManagerStatic;
 namespace IBApp {
-  public class IBWraper :HedgeHog.Shared.ITradesManager {
+  public class IBWraper :ITradesManager {
 
     public static (int c, IList<T> a) RunUntilCount<T>(int count, int countMax, Func<IList<T>> func) {
       IList<T> options = default;
@@ -130,7 +130,7 @@ namespace IBApp {
       , Action<RateLoadingCallbackArgs<TBar>> callBack = null
       ) where TBar : Rate, new() {
 
-      var contract = Contract.FromCache(pair).Count(1, new { pair }).Single();
+      var contract = Contract.FromCache(pair).Count(1, $"{nameof(GetBarsBase)}: {new { pair }}").Single();
       if(contract.IsFuture)
         contract = new Contract { SecType = "CONTFUT", Exchange = contract.Exchange,TradingClass=contract.TradingClass, Symbol = contract.FromDetailsCache().Single().MarketName };
       var isDone = false;
@@ -626,6 +626,7 @@ namespace IBApp {
     public PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment) {
       throw new NotImplementedException();
     }
+
     #endregion
   }
 }

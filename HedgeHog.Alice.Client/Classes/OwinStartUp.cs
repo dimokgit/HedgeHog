@@ -1541,7 +1541,8 @@ namespace HedgeHog.Alice.Client {
       }
     }
     T[] UseTraderMacro<T>(string pair, Func<TradingMacro, T> func) {
-      return UseTradingMacro2(pair, tm => tm.IsTrader, func);
+      return UseTradingMacro2(pair, tm => tm.IsTrader, func)
+        .Count(1, i => throw new Exception($"{i} Traders found"), i => throw new Exception($"Too many {i} Traders found"),new { pair }).ToArray();
     }
     T[] UseTradingMacro2<T>(string pair, Func<TradingMacro, bool> where, Func<TradingMacro, T> func) {
       try {

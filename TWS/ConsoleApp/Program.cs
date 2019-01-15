@@ -64,15 +64,28 @@ namespace ConsoleApp {
       var contract = spy;
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7497;
+      const int twsPort = 7496;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         {
+          void TestCurrentRollOvers(int num, Action after = null) {
+            HandleMessage($"TestCurrentRollOvers:  start {num}");
+            am.CurrentRollOvers("E3CF9 C2595", 2, 3)
+            .Subscribe(_ => {
+              HandleMessage(_.Select(c=>new { c = c.ToString() }).ToMarkdownTable());
+              HandleMessage($"TestCurrentRollOvers:  done {num}");
+              after?.Invoke();
+            });
+          }
+          TestCurrentRollOvers(1, () => TestCurrentRollOvers(2, () => TestCurrentRollOvers(3, () => TestCurrentRollOvers(4))));
+          TestCurrentRollOvers(5);
+        }
+        return;
+        {
           var symbol = "VXF9";
           ibClient.ReqContractDetailsCached(symbol)
           .Subscribe(cd => PriceHistory.AddTicks(fw, 1, symbol, DateTime.Now.AddMonths(-10), o => HandleMessage(o + "")));
-          return;
         }
         {
           TestCurrentOptions(0);
@@ -121,19 +134,6 @@ namespace ConsoleApp {
             .ToArray()
             .Subscribe(ros => am.OpenRollTrade("EW1F9 P2480", "E1AF9 P2455"));
           });
-        }
-        {
-          void TestCurrentRollOvers(int num, Action after = null) {
-            HandleMessage($"TestCurrentRollOvers:  start {num}");
-            am.CurrentRollOvers("ESH9", 1, 8)
-            .Subscribe(_ => {
-              _.ForEach(__ => HandleMessage(__));
-              HandleMessage($"TestCurrentRollOvers:  done {num}");
-              after?.Invoke();
-            });
-          }
-          TestCurrentRollOvers(1, () => TestCurrentRollOvers(2, () => TestCurrentRollOvers(3, () => TestCurrentRollOvers(4))));
-          TestCurrentRollOvers(5);
         }
         {
           void TestAllStrikesAndExpirations(int num, Action afrer = null) {

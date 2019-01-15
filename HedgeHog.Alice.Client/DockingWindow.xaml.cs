@@ -201,6 +201,12 @@ namespace HedgeHog.Alice.Client {
         while (ie.InnerException != null)
           ie = ie.InnerException;
         ExceptionDispatchInfo.Capture(ie).Throw();
+      }catch(ReflectionTypeLoadException exc) {
+        exc.LoaderExceptions.ForEach(LogMessage.Send);
+        exc.LoaderExceptions.ForEach(ex => ExceptionDispatchInfo.Capture(ex).Throw());
+      } catch(Exception exc) {
+        LogMessage.Send(exc);
+        AsyncMessageBox.BeginMessageBoxAsync(exc + "");
       }
       StyleManager.ApplicationTheme = new VistaTheme();
       InitializeComponent();

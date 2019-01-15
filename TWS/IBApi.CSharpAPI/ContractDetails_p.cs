@@ -22,5 +22,7 @@ namespace IBApi {
     }
     public override string ToString() => 
       base.ToString();
+    public bool IsFuture => UnderSecType == "FUT";
+    public bool IsIndex => UnderSecType == "IND";
   }
 }
