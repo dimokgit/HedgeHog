@@ -72,7 +72,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.Corr:
           return ShowVoltsByCorrelation;
         case HedgeHog.Alice.VoltageFunction.Straddle:
-          return () => ShowVoltsByStraddle(sh => sh.bid, voltIndex);
+          return () => ShowVoltsByStraddle(sh => sh.delta, voltIndex);
         case HedgeHog.Alice.VoltageFunction.PutStrdl:
           return () => ShowVoltsByStraddleSpread();
         case HedgeHog.Alice.VoltageFunction.StraddleA:

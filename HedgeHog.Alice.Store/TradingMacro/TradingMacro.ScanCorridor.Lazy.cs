@@ -192,6 +192,7 @@ namespace HedgeHog.Alice.Store {
       zip.ForEach(t => SetVoltage(t.r, t.sh.bid));
     }
     void SyncStraddleHistoryT1(TradingMacro tm) {
+      if(!IsActive) return;
       var zip = (from shs in UseStraddleHistory(straddleHistory =>
          (from sh in straddleHistory
           orderby sh.time

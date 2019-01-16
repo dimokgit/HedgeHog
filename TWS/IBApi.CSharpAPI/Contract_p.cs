@@ -80,7 +80,8 @@ namespace IBApi {
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
     public string ShortString => Right + Strike;
-    public string ShortWithDate => LastTradeDateOrContractMonth?.Substring(4) + " " + ShortString;
+    public string DateWithShort => IsOption ? LastTradeDateOrContractMonth?.Substring(4) + " " + ShortString : LocalSymbol.IfEmpty(Symbol);
+    public string ShortWithDate => IsOption ? ShortString + " " + LastTradeDateOrContractMonth?.Substring(4) : LocalSymbol.IfEmpty(Symbol);
     public override string ToString() =>
       ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
     internal string ComboLegsToString() =>

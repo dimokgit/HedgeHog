@@ -67,7 +67,7 @@ namespace IBApp {
           p.bid,
           p.ask,
           p.time,//.ToString("HH:mm:ss"),
-          delta: combo.options.Sum(o => o.ExtrinsicValue(p.bid, underPrice)),
+          delta: combo.options.Sum(o => o.ExtrinsicValue(p.bid.Avg(p.ask), underPrice)),
           strikeAvg,
           underPrice,
           breakEven: (up: strikeAvg + underPrice, dn: strikeAvg - underPrice),
@@ -278,7 +278,7 @@ namespace IBApp {
       where yes
       let symbol = contractFilter.LocalSymbol
       let IsCall = contractFilter.IsCall
-      let Expiration = contractFilter.Expiration
+      let Expiration = contractFilter.IsOption ? contractFilter.Expiration : IbClient.ServerTime
       from roll in CurrentRollOverImpl2(trade, IsCall, Expiration, strikesCount, weeks)
       select roll;
 

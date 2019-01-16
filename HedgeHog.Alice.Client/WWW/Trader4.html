@@ -58,7 +58,7 @@
   <script src="Scripts/traverse.js"></script>
   <script src="Scripts/knockout.expander.js"></script>
   <!--<script src="Scripts/jquery.signalR-2.2.0.min.js"></script>-->
-  <script src="Scripts/jquery.signalR.js"></script>
+  <script src="Scripts/jquery.signalR-2.4.0.js"></script>
   <script src="signalr/hubs"></script>
   <!--<script src="Scripts/bootstrap-notify.min.js"></script>-->
   <!--<script src="Scripts/pnotify.custom.min.js"></script>-->
@@ -1241,7 +1241,7 @@
       <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
       <tbody data-bind="foreach:liveCombos">
         <tr>
-          <td data-bind="text:combo" style="text-align:left;color:white"></td>
+          <td data-bind="text:l" style="text-align:left;color:white"></td>
           <td data-bind="text:d3.format('+.1f')(delta()),style:{color:color()}" style="text-align:right"></td>
           <td><input data-bind="value:exitDelta" size="1" style="display:none" /></td>
           <td data-bind="text:d3.format('.2f')(openPrice())"></td>

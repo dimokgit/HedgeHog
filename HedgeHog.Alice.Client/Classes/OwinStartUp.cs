@@ -673,7 +673,7 @@ namespace HedgeHog.Alice.Client {
                   var underPL = (t.strikeAvg - underPosition.price) * quantity * underContract.ComboMultiplier + maxPL;
                   return new {
                     i = t.option.Instrument,
-                    l = t.option.ShortWithDate,
+                    l = t.option.DateWithShort,
                     t.bid,
                     t.ask,
                     avg = t.ask.Avg(t.bid),
@@ -703,43 +703,47 @@ namespace HedgeHog.Alice.Client {
                 base.Clients.Caller.stockOptionsInfo(t.exp);
               }));
             };
-            Action currentBullPut = () =>
-              underContracts
-                .ForEach(symbol
-                => am.CurrentBullPuts(CacheKey(symbol), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3, gap)
-                .Select(ts => ts
-                  .Select(t => new {
-                    i = t.instrument,
-                    t.bid,
-                    t.ask,
-                    avg = t.ask.Avg(t.bid),
-                    time = t.time.ToString("HH:mm:ss"),
-                    t.delta,
-                    strike = t.strikeAvg,
-                    perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
-                    strikeDelta = t.strikeAvg - t.underPrice,
-                    be = new { t.breakEven.up, t.breakEven.dn },
-                    isActive = false,
-                    maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100
-                    / DaysTillExpiration(t.combo.contract.Expiration),
-                    maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier
-                  })
-                .OrderByDescending(t => t.delta)
-                //.ThenBy(t => t.i)
-                )
-               .Subscribe(b => base.Clients.Caller.options(b)));
 
+            #region currentBullPut
+            Action currentBullPut = () =>
+          underContracts
+            .ForEach(symbol
+            => am.CurrentBullPuts(CacheKey(symbol), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, 3, gap)
+            .Select(ts => ts
+              .Select(t => new {
+                i = t.instrument,
+                t.bid,
+                t.ask,
+                avg = t.ask.Avg(t.bid),
+                time = t.time.ToString("HH:mm:ss"),
+                t.delta,
+                strike = t.strikeAvg,
+                perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+                strikeDelta = t.strikeAvg - t.underPrice,
+                be = new { t.breakEven.up, t.breakEven.dn },
+                isActive = false,
+                maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100
+                / DaysTillExpiration(t.combo.contract.Expiration),
+                maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier
+              })
+            .OrderByDescending(t => t.delta)
+            //.ThenBy(t => t.i)
+            )
+           .Subscribe(b => base.Clients.Caller.options(b)));
+            #endregion
+
+            #region openOrders
             Action openOrders = () =>
-            am.UseOrderContracts((ibc, orderContracts) =>
-            (from oc in orderContracts.ToObservable()
-             where oc.isSubmitted
-             from p in ibc.ReqPriceSafe(oc.contract, 1, false).DefaultIfEmpty()
-             select new {
-               i = oc.contract.ShortWithDate
-             , id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, lp = oc.order.LmtPrice
-             , p = oc.order.Action == "BUY" ? p.ask : p.bid
-             }).ToArray()
-            ).ForEach(s => s.Subscribe(b => base.Clients.Caller.openOrders(b)));
+              am.UseOrderContracts((ibc, orderContracts) =>
+              (from oc in orderContracts.ToObservable()
+               where oc.isSubmitted
+               from p in ibc.ReqPriceSafe(oc.contract, 1, false).DefaultIfEmpty()
+               select new {
+                 i = oc.contract.DateWithShort
+               , id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, lp = oc.order.LmtPrice
+               , p = oc.order.Action == "BUY" ? p.ask : p.bid
+               }).ToArray()
+              ).ForEach(s => s.Subscribe(b => base.Clients.Caller.openOrders(b)));
 
             if(!pair.IsNullOrWhiteSpace())
               OnCurrentCombo((new { DateTime.Now.Ticks } + "", () => {
@@ -752,6 +756,8 @@ namespace HedgeHog.Alice.Client {
                 //currentBullPut();
               }
               ));
+            #endregion
+
             //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
             void ComboTrades() =>
             am.ComboTrades(1)
@@ -760,15 +766,17 @@ namespace HedgeHog.Alice.Client {
                 try {
                   var combos = cts
                   .Where(ct => ct.position != 0)
-                  .OrderBy(ct => ct.contract.Legs().Count())
-                  .ThenBy(ct => ct.contract.IsOption)
-                  .ThenByDescending(ct => ct.contract.LastTradeDateOrContractMonth)
+                  .OrderBy(ct => ct.contract.FromDetailsCache().Select(cd => cd.UnderSymbol.IfEmpty(ct.contract.LocalSymbol)).FirstOrDefault())
+                  .ThenBy(ct => ct.contract.Legs().Count())
+                  .ThenBy(ct => ct.contract.LastTradeDateOrContractMonth)
+                  //.ThenBy(ct => ct.contract.IsOption)
                   .ToArray(x => {
                     var hasStrike = x.contract.IsOption || x.contract.IsCombo;
                     var delta = hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs();
                     return new {
-                      combo = x.contract.Key
-                        , netPL = x.pl
+                      combo = x.contract.Instrument
+                      , l = x.contract.ShortWithDate
+                      , netPL = x.pl
                         , x.position
                         , x.closePrice
                         , x.price.bid, x.price.ask
@@ -996,7 +1004,7 @@ namespace HedgeHog.Alice.Client {
         isReplayOn = tm.IsInPlayback,
         remoteControl.Value.ReplayArguments.LastWwwError
       });
-      remoteControl.WithNotNull(r=>r.Value.ReplayArguments.LastWwwError = "");
+      remoteControl.WithNotNull(r => r.Value.ReplayArguments.LastWwwError = "");
       return ra.Single();
     }
     public object StartReplay(string pair, string startWhen) {
@@ -1542,7 +1550,7 @@ namespace HedgeHog.Alice.Client {
     }
     T[] UseTraderMacro<T>(string pair, Func<TradingMacro, T> func) {
       return UseTradingMacro2(pair, tm => tm.IsTrader, func)
-        .Count(1, i => throw new Exception($"{i} Traders found"), i => throw new Exception($"Too many {i} Traders found"),new { pair }).ToArray();
+        .Count(1, i => throw new Exception($"{i} Traders found"), i => throw new Exception($"Too many {i} Traders found"), new { pair }).ToArray();
     }
     T[] UseTradingMacro2<T>(string pair, Func<TradingMacro, bool> where, Func<TradingMacro, T> func) {
       try {

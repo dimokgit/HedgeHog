@@ -266,6 +266,11 @@ namespace IBApp {
       }
       PriceChangedEvent?.Invoke(t.price);
     }
+    public Contract[] ActiveRequestCleaner() {
+      var contracts = activeRequests.Select(kv => kv.Value.contract).ToArray();
+      activeRequests.ForEach(CancelPriceRequest);
+      return contracts;
+    }
     void ActiveRequestCleaner(Price price) {
       activeRequests.Where(kv => kv.Value.price == price).ToList().ForEach(CancelPriceRequest);
     }

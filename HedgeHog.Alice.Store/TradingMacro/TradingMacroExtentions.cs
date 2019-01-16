@@ -1168,9 +1168,9 @@ namespace HedgeHog.Alice.Store {
               GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == Pair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
               GlobalStorage.UseForexMongo(c => StraddleHistory2.AddRange(c.StraddleHistories2.Where(t => t.pair == straddlePair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
               SyncStraddleHistoryT1(this);
-              Log = new Exception($"{nameof(SyncStraddleHistoryT1)} - done");
+              Log = new Exception($"{nameof(SyncStraddleHistoryT1)}[{this}] - done");
               SyncStraddleHistoryM1(tmM1);
-              Log = new Exception($"{nameof(SyncStraddleHistoryM1)} - done");
+              Log = new Exception($"{nameof(SyncStraddleHistoryM1)}[{this}] - done");
               CollectStraddleHistory();
             });
           });

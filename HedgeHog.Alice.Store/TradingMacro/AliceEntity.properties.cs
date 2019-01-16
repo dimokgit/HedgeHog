@@ -228,7 +228,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public bool _UseTestFile = true;
+    public bool _UseTestFile = false;
     [Category(categoryTestControl)]
     [Dnr]
     public bool UseTestFile {

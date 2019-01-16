@@ -374,7 +374,7 @@ namespace IBApp {
       lock(OptionChainOldCache) {
         if(OptionChainOldCache.TryGetValue(key, out var o)) return o;
         var newCache = ReqOptionChainOldAsync(symbol, expDate, strike, waitForAllStrikes).ToArray().Replay().RefCount();
-        Trace($"{nameof(ReqOptionChainOldCache)}:{new { key }}");
+        //Trace($"{nameof(ReqOptionChainOldCache)}:{new { key }}");
         return newCache
           .Do(nc => {
             if(nc.Any()) OptionChainOldCache.TryAdd(key, newCache);
@@ -773,8 +773,15 @@ namespace IBApp {
         RaiseLoginError(exc);
       if(exc != null)
         Trace(exc);
-      else
-        Trace(new { IBCC = new { id, error = errorCode, message } });
+      else {
+        Trace(new { IBCC = new { id, errorCode, message } });
+        if(errorCode == 1102) {
+          Trace("Cleaning price requests");
+          var contracts = _marketDataManager.ActiveRequestCleaner();
+          Trace("Re-submitting price requests");
+          contracts.ForEach(c => SetContractSubscription(c));
+        }
+      }
     }
 
     #region TradeClosedEvent

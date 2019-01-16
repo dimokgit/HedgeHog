@@ -188,6 +188,7 @@ namespace HedgeHog.Alice.Store {
           return;
         TrendPlumInt(_trendPlum = value);
         TrendLines3 = _trenLinesEmptyRates;
+        TLPlum.ClearRates();
         OnPropertyChanged(nameof(TrendPlum));
       }
     }
@@ -204,6 +205,7 @@ namespace HedgeHog.Alice.Store {
           return;
         TrendLimeInt(_trendLime = value);
         TrendLines0 = _trenLinesEmptyRates;
+        TLLime.ClearRates();
         OnPropertyChanged(nameof(TrendLime));
       }
     }
@@ -220,6 +222,7 @@ namespace HedgeHog.Alice.Store {
           return;
         TrendGreenInt(_trendGreen = value);
         TrendLines1 = _trenLinesEmptyRates;
+        TLGreen.ClearRates();
         OnPropertyChanged(nameof(TrendGreen));
       }
     }
@@ -236,6 +239,7 @@ namespace HedgeHog.Alice.Store {
           return;
         TrendRedInt(_trendRed = value);
         TrendLines = _trenLinesEmptyRates;
+        TLRed.ClearRates();
         OnPropertyChanged(nameof(TrendRed));
       }
     }
@@ -252,6 +256,7 @@ namespace HedgeHog.Alice.Store {
           return;
         TrendBlueInt(_trendBlue = value);
         TrendLines2 = _trenLinesEmptyRates;
+        TLBlue.ClearRates();
         OnPropertyChanged(nameof(TrendBlue));
       }
     }
