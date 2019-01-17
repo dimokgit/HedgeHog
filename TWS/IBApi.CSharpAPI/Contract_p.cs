@@ -22,16 +22,15 @@ namespace IBApi {
     public double ExtrinsicValue(double optionPrice, double undePrice) =>
       !IsOption
       ? 0
-      : IsCall
-      ? optionPrice - (undePrice - Strike).Max(0)
-      : IsPut
-      ? optionPrice - (Strike - undePrice).Max(0)
-      : 0;
+      : LegsOrMe().Sum(o => o.ExtrinsicValueImpl(optionPrice, undePrice));
+    private double ExtrinsicValueImpl(double optionPrice, double undePrice) => IsCall
+          ? optionPrice - (undePrice - Strike).Max(0)
+          : IsPut
+          ? optionPrice - (Strike - undePrice).Max(0)
+          : 0;
+
     DateTime? _lastTradeDateOrContractMonth;
-    public DateTime Expiration =>
-      (_lastTradeDateOrContractMonth ??
-      (_lastTradeDateOrContractMonth = LastTradeDateOrContractMonth.FromTWSDateString(DateTime.Now.Date))
-      ).Value;
+    public DateTime Expiration => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max().FromTWSDateString(DateTime.Now.Date);
 
     public string Key => Instrument;
     public string Instrument => ComboLegsToString().IfEmpty((LocalSymbol.IfEmpty(Symbol)?.Replace(".", "") + "").ToUpper());
@@ -68,13 +67,13 @@ namespace IBApi {
     public bool IsCombo => ComboLegs?.Any() == true;
     public bool IsCall => IsOption && Right == "C";
     public bool IsPut => IsOption && Right == "P";
-    public bool IsOption => SecType == "OPT" || SecType == "FOP";
+    public bool IsOption => LegsOrMe().Any(o => o.SecType == "OPT" || o.SecType == "FOP");
     public bool IsFutureOption => SecType == "FOP";
     public bool HasFutureOption => IsFutureOption || Legs().Any(l => l.c.IsFutureOption);
     public bool IsFuture => SecType == "FUT" || secType == "CONTFUT";
     public bool IsIndex => SecType == "IND";
     public bool IsButterFly => ComboLegs?.Any() == true && String.Join("", comboLegs.Select(l => l.Ratio)) == "121";
-    public double ComboStrike() => Strike > 0 ? Strike : LegsEx().Sum(c => c.contract.strike * c.leg.Ratio) / LegsEx().Sum(c => c.leg.Ratio);
+    public double ComboStrike() => Strike > 0 ? Strike : LegsEx().With(cls => cls.Sum(c => c.contract.strike * c.leg.Ratio) / cls.Sum(c => c.leg.Ratio));
     public int ReqId { get; set; }
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
@@ -90,19 +89,30 @@ namespace IBApi {
       .With(legs => (legs, r: legs.Select(l => l.r).DefaultIfEmpty().Max())
       .With(t =>
       t.legs
-      .Select(l => l.c.Instrument + (t.r > 1 ? ":" + l.r : ""))
+      .Select(l => l.c.ShortWithDate + (t.r > 1 ? ":" + l.r : ""))
       .OrderBy(s => s)
       .ToArray()
       .MashDiffs()));
-    public IEnumerable<(Contract c, int r)> Legs() =>
-      (from l in ComboLegs ?? new List<ComboLeg>()
-       join c in Contracts.Select(cd => cd.Value) on l.ConId equals c.ConId
-       select (c, l.Ratio)
-       ).Memoize();
-    public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx() =>
-      (from l in ComboLegs ?? new List<ComboLeg>()
-       join c in Contracts.Select(cd => cd.Value) on l.ConId equals c.ConId
-       select (c, l)
-       ).Memoize();
+    public IEnumerable<T> LegsOrMe<T>(Func<Contract, T> map) => LegsOrMe().Select(map);
+    public IEnumerable<Contract> LegsOrMe() => Legs().Select(cl => cl.c).DefaultIfEmpty(this);
+    public IEnumerable<T> Legs<T>(Func<(Contract c, int r), T> map) => Legs().Select(map);
+    public IEnumerable<(Contract c, int r)> Legs() {
+      if(ComboLegs == null) yield break;
+      var x = (from l in ComboLegs
+               join c in Contracts on l.ConId equals c.Value.ConId
+               select (c.Value, l.Ratio)
+       );
+      foreach(var t in x)
+        yield return t;
+    }
+    public IEnumerable<T> LegsEx<T>(Func<(Contract c, ComboLeg leg), T> map) => LegsEx().Select(map);
+    public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx() {
+      if(ComboLegs == null) yield break;
+      var x = from l in ComboLegs
+              join c in Contracts on l.ConId equals c.Value.ConId
+              select (c.Value, l);
+      foreach(var t in x)
+        yield return t;
+    }
   }
 }
