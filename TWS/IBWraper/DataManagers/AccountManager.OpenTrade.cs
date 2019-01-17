@@ -38,13 +38,17 @@ namespace IBApp {
       return OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, minTickMultiplier, Caller);
     }
 
+
+    public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate,DateTime googAfterDate) =>
+      OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, googAfterDate);
+
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
       OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, minTickMultiplier, Caller);
     public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "")
-    => OpenTrade(contract, type, quantity, price, profit, useTakeProfit, goodTillDate, (OrderCondition)null, minTickMultiplier, Caller);
+    => OpenTrade(contract, type, quantity, price, profit, useTakeProfit, goodTillDate, DateTime.MinValue, (OrderCondition)null, minTickMultiplier, Caller);
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, OrderCondition condition, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
-      OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, condition, minTickMultiplier, Caller);
-    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, OrderCondition condition = null, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+      OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, DateTime.MinValue, condition, minTickMultiplier, Caller);
+    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, DateTime goodAfterDate, OrderCondition condition = null, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
       var timeoutInMilliseconds = 5000;
       if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
         var message = new { contract, quantity, Method = nameof(OpenTrade), Caller, timeoutInMilliseconds } + "";
@@ -64,7 +68,7 @@ namespace IBApp {
       }
       var orderType = price == 0 ? "MKT" : type.IfEmpty("LMT");
       bool isPreRTH = true;// orderType == "LMT";
-      var order = OrderFactory(contract, quantity, price, goodTillDate, minTickMultiplier, orderType, isPreRTH);
+      var order = OrderFactory(contract, quantity, price, goodTillDate, goodAfterDate, minTickMultiplier, orderType, isPreRTH);
       if(condition != null) order.Conditions.Add(condition);
       //if(!contract.IsCombo && !contract.IsFutureOption)
       //  FillAdaptiveParams(order, "Normal");
@@ -94,7 +98,7 @@ namespace IBApp {
         Monitor.Exit(_OpenTradeSync);
       }
     }
-    private IBApi.Order OrderFactory(Contract contract, int quantity, double price, DateTime goodTillDate, int minTickMultiplier, string orderType, bool isPreRTH) {
+    private IBApi.Order OrderFactory(Contract contract, int quantity, double price, DateTime goodTillDate, DateTime goodAfterDate, int minTickMultiplier, string orderType, bool isPreRTH) {
       var order = new IBApi.Order() {
         Account = _accountId,
         OrderId = NetOrderId(),
@@ -110,6 +114,12 @@ namespace IBApp {
         order.GoodTillDate = goodTillDate.ToTWSString();
       } else
         order.Tif = GTC;
+      if(!goodAfterDate.IsMin())
+        order.GoodAfterTime = goodAfterDate.ToTWSString();
+      if(contract.Symbol.Contains(",")) {
+        order.SmartComboRoutingParams = new List<TagValue>();
+        order.SmartComboRoutingParams.Add(new TagValue("NonGuaranteed", "1"));
+      }
       return order;
     }
 

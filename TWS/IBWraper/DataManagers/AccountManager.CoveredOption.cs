@@ -29,19 +29,22 @@ namespace IBApp {
        ).Subscribe(t => OpenCoveredOption(t.i, "", quantity, price, t.o, DateTime.MaxValue, minTickMultiplier, Caller));
     }
     public void OpenCoveredOption(Contract contract, string type, int quantity, double price, Contract contractOCO, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+      bool FindOrer(OrdeContractHolder oc, Contract c) => !oc.isDone && oc.contract.Key == c.Key && oc.order.TotalPosition().Sign() == quantity.Sign();
       UseOrderContracts(orderContracts => {
-        var aos = orderContracts
-          .Where(oc => !oc.isDone && oc.contract.Key == contract.Key && oc.order.TotalPosition().Sign() == quantity.Sign())
-          .ToArray();
+        var aos = orderContracts.Where(oc => FindOrer(oc, contract))
+        .Select(ao=>new OrdeContractHolder(ao.order,contract)).ToArray();
+        var ocos = (from ao in aos
+                    join oc in orderContracts on ao.order.OrderId equals oc.order.ParentId
+                    select new OrdeContractHolder(oc.order,contractOCO)).ToArray();
         if(aos.Any()) {
-          aos.ForEach(ao => {
-            Trace($"OpenTrade: {contract} already has active order {ao.order.OrderId} with status: {ao.status}.\nUpdating {new { price }}");
-            UpdateOrder(ao.order.OrderId, OrderPrice(price, contract, minTickMultiplier));
+          aos.Concat(ocos).ForEach(ao => {
+            Trace($"OpenTrade: {ao.contract} already has active order {ao.order.OrderId} with status: {ao.status}.\nUpdating {new { price, ao.contract }}");
+            UpdateOrder(ao.order.OrderId, OrderPrice(price, ao.contract, minTickMultiplier));
           });
         } else {
           var orderType = price == 0 ? "MKT" : type.IfEmpty("LMT");
           bool isPreRTH = orderType == "LMT";
-          var order = OrderFactory(contract, quantity, price, goodTillDate, minTickMultiplier, orderType, isPreRTH);
+          var order = OrderFactory(contract, quantity, price, goodTillDate, DateTime.MinValue, minTickMultiplier, orderType, isPreRTH);
           var tpOrder = MakeOCOOrder(order);
           new[] { (order, contract, price), (tpOrder, contractOCO, 0) }
             .ForEach(o => {

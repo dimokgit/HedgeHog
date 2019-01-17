@@ -20,6 +20,19 @@ namespace IBApp {
       //! [price_condition]
       return priceCondition;
     }
+    public static TimeCondition TimeCondition(this DateTime datetime, bool isMore = true, bool isConjunction = false) {
+      //! [time_condition]
+      TimeCondition timeCondition = (TimeCondition)OrderCondition.Create(OrderConditionType.Time);
+      //Before or after...
+      timeCondition.IsMore = isMore;
+      //this time..
+      timeCondition.Time = datetime.ToTWSString();
+      //AND | OR next condition (will be ignored if no more conditions are added)     
+      timeCondition.IsConjunctionConnection = isConjunction;
+      //! [time_condition]
+      return timeCondition;
+    }
+
   }
   //private void OnUpdateError(int reqId, int code, string error, Exception exc) {
   //  UseOrderContracts(orderContracts => {
