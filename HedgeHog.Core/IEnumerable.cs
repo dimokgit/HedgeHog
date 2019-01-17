@@ -299,6 +299,8 @@ namespace HedgeHog {
       if(isEmpty)
         emptyAction();
     }
+    public static IEnumerable<T> EmptyIfNull<T>(this IEnumerable<T> source) => source == null ? new T[0] : source;
+
     public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable, Func<IEnumerable<T>> emptySelector) {
       var isEmpty = true;
       foreach(var e in enumerable) {
@@ -416,6 +418,7 @@ namespace HedgeHog {
     public static V With<T, U, V>(this T v, Func<T, U> m, Func<T, U, V> r) { return r(v, m(v)); }
     public static void With<T>(this T v, Action<T> m) { m(v); }
     public static void WithNotNull<T>(this T v, Action<T> m) { if(v != null) m(v); }
+    public static T SE<T>(this T v, Action<T> io) { io(v); return v; }
     public static T SideEffect<T>(this T v, Action<T> io) { io(v); return v; }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<T> value) { return source.Concat(value.Yield()); }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<IEnumerable<T>> value) {

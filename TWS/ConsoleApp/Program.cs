@@ -61,13 +61,46 @@ namespace ConsoleApp {
       var svxy = ContractSamples.ContractFactory("SVXY");
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
-      var contract = spy;
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7496;
+      const int twsPort = 7497;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        {
+          Task.Delay(3000).ContinueWith(_ => {
+            (from trade in am.Positions.Select(p => p.contract).ToObservable()
+             from rolls in am.CurrentRollOver(trade.LocalSymbol, true, 4, 2).OrderByDescending(r => r.dpw)
+             select rolls
+            )
+            .ToArray()
+            .Do(rolls => HandleMessage("Rolls:\n" + rolls.Select(roll => new { roll.roll, roll.days, roll.bid }).ToMarkdownTable()))
+            .SelectMany(a => a.OrderBy(o => o.roll.Expiration).Take(1).ToArray())
+            .Take(1)
+            .Subscribe(r => {
+              HandleMessage("Trade this:\n" + new { r.roll, r.days, r.bid }.Yield().ToMarkdownTable());
+              //am.OpenTrade(roll.trade.contract, -roll.trade.position, 0, 0, false, DateTime.MaxValue);
+              //am.OpenTrade(roll.roll, roll.trade.position, 0, 0, false, DateTime.MaxValue);
+              //am.OpenRollTrade("EW1F9 P2480", "E1AF9 P2455");
+            });
+          });
+        }
+        return;
+
+        {
+          void TestCurrentRollOvers(int num, Action after = null) {
+            HandleMessage($"TestCurrentRollOvers:  start {num}");
+            am.CurrentRollOvers("E3CF9 C2595", false, 2, 3)
+            .Subscribe(_ => {
+              HandleMessage(_.Select(c => new { c = c.ToString() }).ToMarkdownTable());
+              HandleMessage($"TestCurrentRollOvers:  done {num}");
+              after?.Invoke();
+            });
+          }
+          TestCurrentRollOvers(1, () => TestCurrentRollOvers(2, () => TestCurrentRollOvers(3, () => TestCurrentRollOvers(4))));
+          TestCurrentRollOvers(5);
+        }
+
         {
           (from options in am.CurrentOptions("VXG9", 0, 2, 3, c => true)
            select options
@@ -96,19 +129,6 @@ namespace ConsoleApp {
           ibClient.ReqContractDetailsAsync(ochc)
             .Take(1)
             .Subscribe(c => HandleMessage(c.ToJson(true)));
-        }
-        {
-          void TestCurrentRollOvers(int num, Action after = null) {
-            HandleMessage($"TestCurrentRollOvers:  start {num}");
-            am.CurrentRollOvers("E3CF9 C2595", 2, 3)
-            .Subscribe(_ => {
-              HandleMessage(_.Select(c => new { c = c.ToString() }).ToMarkdownTable());
-              HandleMessage($"TestCurrentRollOvers:  done {num}");
-              after?.Invoke();
-            });
-          }
-          TestCurrentRollOvers(1, () => TestCurrentRollOvers(2, () => TestCurrentRollOvers(3, () => TestCurrentRollOvers(4))));
-          TestCurrentRollOvers(5);
         }
         {
           var symbol = "VXF9";
@@ -145,7 +165,7 @@ namespace ConsoleApp {
           Task.Delay(5000).ContinueWith(_ => rollSymbols.ForEach(rs => ReadRolls(rs, false, DateTime.Now.Date)));
           void ReadRolls(string instrument, bool isCall, DateTime exp) {
             HandleMessage("ReadRolls: start " + instrument);
-            (from roll in exp.IsMin() ? am.CurrentRollOver(instrument, 2, 10) : am.CurrentRollOver(instrument, isCall, exp, 2, 10)
+            (from roll in exp.IsMin() ? am.CurrentRollOver(instrument, false, 2, 10) : am.CurrentRollOver(instrument, isCall, exp, 2, 10)
              select new { roll.roll, days = roll.days.ToString("00"), bid = roll.bid.ToString("0.00"), perc = roll.perc.ToString("0.0"), dpw = roll.dpw.ToInt(), roll.ppw, roll.amount, roll.delta }
              )
              .ToArray()
@@ -156,13 +176,6 @@ namespace ConsoleApp {
           }
         }
         return;
-        {
-          Task.Delay(3000).ContinueWith(_ => {
-            am.CurrentRollOvers("EW1F9 P2480", 4, 2)
-            .ToArray()
-            .Subscribe(ros => am.OpenRollTrade("EW1F9 P2480", "E1AF9 P2455"));
-          });
-        }
         {
           void TestAllStrikesAndExpirations(int num, Action afrer = null) {
             HandleMessage($"TestAllStrikesAndExpirations: Start {num}");
@@ -183,6 +196,40 @@ namespace ConsoleApp {
         {
           LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
           HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
+        }
+        {
+          Contract ESVXXContract(string symbol, int conId1, int conId2, int ratio1, int ratio2) {
+            Contract contract = new Contract();
+            contract.Symbol = symbol;
+            contract.SecType = "BAG";
+            contract.Currency = "USD";
+            contract.Exchange = "SMART";
+
+            ComboLeg leg1 = new ComboLeg();
+            leg1.ConId = conId1;
+            leg1.Ratio = ratio1;
+            leg1.Action = "BUY";
+            leg1.Exchange = "SMART";
+
+            ComboLeg leg2 = new ComboLeg();
+            leg2.ConId = conId2;
+            leg2.Ratio = ratio2;
+            leg2.Action = "BUY";
+            leg2.Exchange = "SMART";
+
+            contract.ComboLegs = new List<ComboLeg>();
+            contract.ComboLegs.Add(leg1);
+            contract.ComboLegs.Add(leg2);
+
+            return contract;
+          }
+          (from esConId in ibClient.ReqContractDetailsCached("SPY").Select(cd => cd.Contract.ConId)
+           from vxConId in ibClient.ReqContractDetailsCached("VXX").Select(cd => cd.Contract.ConId)
+           select (esConId, vxConId)
+           ).Subscribe(t => {
+             am.OpenTrade(ESVXXContract("SPY,VXX", t.esConId, t.vxConId, 1, 3), 1, 0, 0, false, DateTime.MaxValue, DateTime.Now.AddMonths(1).TimeCondition());
+             am.OpenTrade(ESVXXContract("SPY,VXX", t.esConId, t.vxConId, 1, 2), 1, 0, 0, false, DateTime.MaxValue, DateTime.Now.AddMonths(1).TimeCondition());
+           });
         }
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
@@ -235,7 +282,7 @@ namespace ConsoleApp {
             ibClient.ReqContractDetailsAsync(comboPrice.combo.contract)
             .Subscribe(cd => {
             });
-            comboPrice.combo.contract.Legs().Buffer(2).ForEach(b => Passager.ThrowIf(() => b[0].c.Strike - b[1].c.Strike != 5));
+            comboPrice.combo.contract.Legs().Buffer(2).ForEach(b => Passager.ThrowIf(() => b[0].c.ComboStrike() - b[1].c.ComboStrike() != 5));
             HandleMessage2(new { comboPrice.combo.contract });
             ibClient.ReqPriceSafe(comboPrice.combo.contract, 4, true)
             .ToEnumerable()

@@ -14,6 +14,11 @@ using System.Collections.Concurrent;
 
 namespace HedgeHog {
   public static class ObservableExtensions {
+    public static IObservable<T> OrderBy<T, TKey>(this IObservable<T> source, Func<T, TKey> sort) =>
+      source.ToArray().SelectMany(a => a.OrderBy(sort));
+    public static IObservable<T> OrderByDescending<T, TKey>(this IObservable<T> source, Func<T, TKey> sort) =>
+      source.ToArray().SelectMany(a => a.OrderByDescending(sort));
+
     public static IObservable<T> OnEmpty<T>(this IObservable<T> source, Action onEmpty) {
       var isEmpty = true;
       return source.Do(_ => isEmpty = false).Finally(() => { if(isEmpty) onEmpty(); });

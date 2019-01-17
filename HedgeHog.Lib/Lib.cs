@@ -733,6 +733,9 @@ namespace HedgeHog {
     public static double IfNaN(this double d, Lazy<double> defaultValue) {
       return double.IsNaN(d) ? defaultValue.Value : d;
     }
+    public static double IfZero(this int d, double defaultValue) {
+      return d == 0 ? defaultValue : d;
+    }
     public static double Max3(double n1, double n2, double n3) {
       return Math.Max(Math.Max(n1, n2), n3);
     }

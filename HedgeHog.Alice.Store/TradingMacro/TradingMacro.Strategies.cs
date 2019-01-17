@@ -46,10 +46,10 @@ namespace HedgeHog.Alice.Store {
     private void StrategyShortPut() => UseAccountManager(am => {
       var puts = OpenPuts().ToList();
       var distanceOk = (from curPut in CurrentPut
-                        from openPut in puts.OrderBy(p => p.contract.Strike).Take(1).ToList()
+                        from openPut in puts.OrderBy(p => p.contract.ComboStrike()).Take(1).ToList()
                         let strikeAvg = curPut.strikeAvg
                         let openPutPrice = openPut.price.Abs()
-                        let openPutStrike = openPut.contract.Strike
+                        let openPutStrike = openPut.contract.ComboStrike()
                         where curPut.option.LastTradeDateOrContractMonth == openPut.contract.LastTradeDateOrContractMonth
                         && strikeAvg + openPutPrice > openPutStrike
                         select true

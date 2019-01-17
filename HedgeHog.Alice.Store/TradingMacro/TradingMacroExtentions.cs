@@ -1145,7 +1145,8 @@ namespace HedgeHog.Alice.Store {
               //let cs = straddles.Where(s => s.strikeAvg > priceBid).OrderBy(s => s.strikeAvg).Skip(1).Take(1).ToList()
             let cs = straddles.OrderByDescending(s => s.delta).Take(1).ToList()
             where cs.Any()
-            select cs)
+            select cs
+            )
             .Subscribe(x => CurrentStraddle = x, exc => { Log = exc; Debugger.Break(); }, () => { Log = new Exception("_currentStraddleDisposable done"); Debugger.Break(); });
 
 
@@ -1198,6 +1199,7 @@ namespace HedgeHog.Alice.Store {
         select calls.Concat(puts).Where(p => p.deltaBid > 0).ToArray()
       )
       .Where(a => a.Length == 4)
+      .Scan((p, n) => p.EmptyIfNull().Concat(n).TakeLast(8).ToArray())
       //.Select(a => a.Average(p => p.deltaBid))
       .Subscribe(straddle => {
         UseStraddleHistory(straddleHistory, shs => {
@@ -1206,10 +1208,10 @@ namespace HedgeHog.Alice.Store {
           .ToList()
           .ForEach(sh => shs.Add(
             (
-            bid: sh.bid.Cma(shcp, straddle.Average(p => p.deltaBid)),
-            ask: straddle.Where(s => s.option.IsCall).Average(p => p.deltaBid),
+            bid: sh.bid.Cma(shcp, GetStraddlePrice(straddle)),
+            ask: GetStraddlePrice(straddle.Where(s => s.option.IsCall)),
             time: ServerTime,
-            delta: straddle.Where(s => s.option.IsPut).Average(p => p.deltaBid)
+            delta: GetStraddlePrice(straddle.Where(s => s.option.IsPut))
             )
             .SideEffect(t => GlobalStorage.UseForexMongo(c => straddleHistoryDbSet(c).Add(new StraddleHistory(
               straddleStartId + _id(),
@@ -1243,7 +1245,11 @@ namespace HedgeHog.Alice.Store {
         }, () => {
           Log = new Exception("_priceChangeDisposable done");
         });
+      double GetStraddlePrice(IEnumerable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract option, double deltaBid, double deltaAsk)> straddle)
+        => straddle.Select(p => p.deltaBid).OrderByDescending(d => d).Take(4).Average();
     }
+
+
     private long BullCallHistory(IBWraper ibWraper, int shcp, long straddleStartId, long _id, int straddleCount, DateTime saveTime, Action ResetSaveTime) {
       _priceChangeDisposable = (
         from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))

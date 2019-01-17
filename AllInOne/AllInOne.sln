@@ -188,6 +188,26 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Mamheim.WebSite", "http://l
 		SlnRelativePath = "..\Mamheim.WebSite\"
 		DefaultWebSiteLanguage = "Visual C#"
 	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/Mamheim.WebSite"
+		Debug.AspNetCompiler.PhysicalPath = "..\Mamheim.WebSite\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\Mamheim.WebSite\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/Mamheim.WebSite"
+		Release.AspNetCompiler.PhysicalPath = "..\Mamheim.WebSite\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\Mamheim.WebSite\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "..\Mamheim.WebSite\"
+		DefaultWebSiteLanguage = "Visual C#"
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MP3", "..\MP3\MP3\MP3.csproj", "{2D73991B-184D-4C8A-9C88-91299AAD6CED}"
 EndProject
@@ -236,6 +256,25 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.CloudTests", "..\HedgeHog.CloudTests\HedgeHog.CloudTests.csproj", "{1C81E4C4-6206-419D-9641-A3F2644E683C}"
 EndProject
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "WWW", "http://localhost:36054", "{D0CF8E5D-408A-464B-8B44-EBAD53CE83F6}"
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/localhost_36054"
+		Debug.AspNetCompiler.PhysicalPath = "..\HedgeHog.Alice.Client\WWW\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_36054\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/localhost_36054"
+		Release.AspNetCompiler.PhysicalPath = "..\HedgeHog.Alice.Client\WWW\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_36054\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "..\HedgeHog.Alice.Client\WWW\"
+	EndProjectSection
 	ProjectSection(WebsiteProperties) = preProject
 		UseIISExpress = "true"
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
@@ -2219,7 +2258,6 @@ Global
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Debug SubArray|x86.ActiveCfg = Debug|Any CPU
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Debug SubArray|x86.Build.0 = Debug|Any CPU
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Debug|Win32.ActiveCfg = Debug|Any CPU
@@ -2239,7 +2277,6 @@ Global
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Release SubArray|x86.ActiveCfg = Debug|Any CPU
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Release SubArray|x86.Build.0 = Debug|Any CPU
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Release|Any CPU.Build.0 = Debug|Any CPU
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Release|Mixed Platforms.ActiveCfg = Debug|Any CPU
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Release|Mixed Platforms.Build.0 = Debug|Any CPU
 		{32CFDF13-5B07-4773-90F8-4D50699D7877}.Release|Win32.ActiveCfg = Debug|Any CPU
