@@ -586,7 +586,7 @@ namespace HedgeHog.Alice.Client {
           if(am != null) {
             Action rollOvers = () => {
               var show = !rollCombo.IsNullOrWhiteSpace() && optionTypeMap == "R";
-              am.CurrentRollOver(rollCombo, show ? numOfCombos : 0, expDaysSkip.Max(2))
+              am.CurrentRollOver(rollCombo, false, show ? numOfCombos : 0, expDaysSkip.Max(2))
               .ToArray()
                //.Where(a => a.Length > 0)
                .Subscribe(_ => {
@@ -733,17 +733,26 @@ namespace HedgeHog.Alice.Client {
             #endregion
 
             #region openOrders
+            var orderMap = MonoidsCore.ToFunc((AccountManager.OrdeContractHolder oc, double ask, double bid) => new {
+              i = oc.contract.DateWithShort
+               , id = oc.order.OrderId
+               , f = oc.status.filled
+               , r = oc.status.remaining
+               , lp = oc.order.LmtPrice
+               , p = oc.order.Action == "BUY" ? ask : bid
+               , a = oc.order.Action.Substring(0, 1)
+            });
             Action openOrders = () =>
               am.UseOrderContracts((ibc, orderContracts) =>
               (from oc in orderContracts.ToObservable()
-               where oc.isSubmitted
+               where oc.isSubmitted || oc.isPreSubmitted
                from p in ibc.ReqPriceSafe(oc.contract, 1, false).DefaultIfEmpty()
-               select new {
-                 i = oc.contract.DateWithShort
-               , id = oc.order.OrderId, f = oc.status.filled, r = oc.status.remaining, lp = oc.order.LmtPrice
-               , p = oc.order.Action == "BUY" ? p.ask : p.bid
-               }).ToArray()
-              ).ForEach(s => s.Subscribe(b => base.Clients.Caller.openOrders(b)));
+               select (oc, x: orderMap(oc, p.ask, p.bid))
+               ).ToArray()
+              )
+              .Concat()
+              .Select(a => a.OrderBy(x => x.oc.order.ParentId.IfZero(x.oc.order.OrderId)).ThenBy(x => x.oc.order.ParentId).ToArray())
+              .Subscribe(b => base.Clients.Caller.openOrders(b.Select(x => x.x)));
 
             if(!pair.IsNullOrWhiteSpace())
               OnCurrentCombo((new { DateTime.Now.Ticks } + "", () => {
@@ -904,8 +913,8 @@ namespace HedgeHog.Alice.Client {
     }
     public object[] ReadContractsCache() {
       return Contract.Cache()
-        .OrderBy(x => x.LastTradeDateOrContractMonth)
-        .ThenBy(x => x.Strike)
+        .OrderBy(x => x.Expiration)
+        .ThenBy(x => x.ComboStrike())
         .ThenBy(x => x.IsPut)
         .Select(c => new { c.Instrument, c.ConId })
         .ToArray();

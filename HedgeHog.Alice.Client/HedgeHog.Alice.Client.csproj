@@ -142,7 +142,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>..\..\..\..\..\..\Data\Forex\Builds\Release\</OutputPath>
-    <Optimize>true</Optimize>
+    <Optimize>false</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -150,6 +150,7 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>false</Prefer32Bit>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Prod|x64'">
     <OutputPath>bin\x64\Prod\</OutputPath>
@@ -1225,6 +1226,7 @@
     <None Include="WWW\Publish - RM20.cmd" />
     <None Include="WWW\Publish - RM3.cmd" />
     <None Include="WWW\Publish - RM30.cmd" />
+    <None Include="WWW\Publish - Release.cmd" />
     <None Include="WWW\Publish - RM4.cmd" />
     <None Include="WWW\Publish.cmd" />
     <None Include="WWW\Scripts\jquery-2.1.3.min.map" />

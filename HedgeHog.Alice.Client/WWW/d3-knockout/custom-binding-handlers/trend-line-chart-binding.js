@@ -105,6 +105,16 @@
           .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
       // #endregion
 
+      // coms
+      addRect(greenStrip, "#E6FAE6", 0.6);
+      addRect(cyanStrip, "lightcyan", 1);
+      addRect(redStrip, "#FAE6E6", 1);
+      addRect(blueStrip, "lavender", 1);
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(function (i) {
+        addRect(afterTradeHoursRect + i, "beige", 0.3);
+        addRect(beforeTradeHoursRect + i, "lightcyan", 1);
+      });
+
       // #region axis'
       svg.append("g")
         .attr("class", "x axis")
@@ -123,15 +133,6 @@
         addRect("tickArea", tickAreaBgColor);
         addRect("dayTailRect", tickAreaBgColor);
       }
-      // coms
-      addRect(greenStrip, "#E6FAE6", 0.6);
-      addRect(cyanStrip, "lightcyan", 1);
-      addRect(redStrip, "#FAE6E6", 1);
-      addRect(blueStrip, "lavender", 1);
-      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(function (i) {
-        addRect(afterTradeHoursRect + i, "beige", 0.3);
-        addRect(beforeTradeHoursRect + i, "lightcyan", 1);
-      });
       if (hasTps) {
         svg.append("g")
           .attr("class", "y2 axis");
@@ -656,7 +657,7 @@
         }
         bth.forEach(function (x, i) {
           if (x.dates[0])
-            setRectArea(x.dates[0], x.upDown[1], x.dates[1], x.upDown[0], beforeTradeHoursRect + i, "black");
+            setRectArea(x.dates[0], x.upDown[1], x.dates[1], x.upDown[0], beforeTradeHoursRect + i, "lightgrey");
         });
         afh.forEach(function (x, i) {
           if (x.dates[0])

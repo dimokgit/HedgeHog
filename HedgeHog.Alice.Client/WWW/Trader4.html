@@ -1383,6 +1383,7 @@
           <td data-bind="text:p"></td>
           <td data-bind="text:lp"></td>
           <td data-bind="text:f()+'<'+r()"></td>
+          <td data-bind="text:a,style:{backgroundColor: a()=='B'?'cornflowerblue':'red'}"></td>
           <td>
             <button data-bind="click:$parent.cancelOrder.bind(null,$data)" title="Cancel Order">X</button>
           </td>
