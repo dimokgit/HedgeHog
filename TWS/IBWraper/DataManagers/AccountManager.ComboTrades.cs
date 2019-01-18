@@ -113,7 +113,7 @@ namespace IBApp {
         .ToArray()
         .SelectMany(cmbs => cmbs
           .OrderBy(c => c.contract.Legs().Count())
-          .ThenBy(c => c.contract.IsOption)
+          .ThenBy(c => c.contract.HasOptions)
           .ThenByDescending(c => c.strikeAvg - c.underPrice)
           .ThenByDescending(c => c.contract.Instrument)
          );

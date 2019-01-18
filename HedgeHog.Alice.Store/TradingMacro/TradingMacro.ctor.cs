@@ -75,6 +75,10 @@ namespace HedgeHog.Alice.Store {
         tm => tm.PairHedge
         )
         .Subscribe(_ => TradingMacrosByPair(tm => tm != this).ForEach(tm => tm.PairHedge = _));
+      this.WhenAnyValue(tm => tm.VoltageFunction)
+        .Subscribe(_ => UseRates(ra => ra.ForEach(r => SetVoltage(r, double.NaN))));
+      this.WhenAnyValue(tm => tm.VoltageFunction2)
+        .Subscribe(_ => UseRates(ra => ra.ForEach(r => SetVoltage2(r, double.NaN))));
 
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy != Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)

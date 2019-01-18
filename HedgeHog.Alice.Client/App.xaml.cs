@@ -25,14 +25,16 @@ using Microsoft.Owin.StaticFiles;
 using ReactiveUI;
 using HedgeHog.Shared.Messages;
 using static HedgeHog.Core.JsonExtensions;
+using System.Diagnostics;
+using System.Windows.Threading;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
   /// Interaction logic for App.xaml
   /// </summary>
-  public partial class App : Application {
+  public partial class App :Application {
     public static bool IsInDesignMode { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
-    static public  CompositionContainer container;
+    static public CompositionContainer container;
     static public List<Window> ChildWindows = new List<Window>();
     static public List<string> WwwMessageWarning = new List<string>();
     App() {
@@ -43,7 +45,18 @@ namespace HedgeHog.Alice.Client {
       AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
       TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
-      GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {
+      var me = Process.GetCurrentProcess();
+      Process[] Runs() => Process.GetProcessesByName(me.ProcessName).Where(p => p.MainModule.FileName == me.MainModule.FileName).ToArray();
+      Observable.Interval(TimeSpan.FromSeconds(1)).ObserveOnDispatcher()
+      .SkipWhile(_ => Runs().Length > 1)
+      .Timeout(DateTimeOffset.Now.AddSeconds(30))
+      .Catch<long, Exception>(exc => {
+        AsyncMessageBox.BeginMessageBoxAsync($"{me.MainModule.FileName} is already running.");
+        return Observable.Return(-1L);
+      })
+      .Take(1)
+      .Where(l => l >= 0)
+      .Subscribe(_ => {
         try {
           var trader = container.GetExportedValue<TraderModel>();
           if(trader.IpPort > 0) {
@@ -77,7 +90,7 @@ namespace HedgeHog.Alice.Client {
         } catch(Exception exc) {
           AsyncMessageBox.BeginMessageBoxAsync(exc + "");
         }
-      }), System.Windows.Threading.DispatcherPriority.Background);
+      });
     }
 
     void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e) {
@@ -183,7 +196,7 @@ namespace HedgeHog.Alice.Client {
       base.OnExit(e);
     }
     #region SignalRSubject Subject
-    public static Action ResetSignalR = ()=> { };
+    public static Action ResetSignalR = () => { };
     public static int SignalRInterval = 1;
     static object _SignalRSubjectSubjectLocker = new object();
     static IDisposable _SignalRSubjectSubject;

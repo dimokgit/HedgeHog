@@ -1107,81 +1107,84 @@ namespace HedgeHog.Alice.Store {
       Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategy;
       IsTradingActive = IsInVirtualTrading;
 
-      var ibWraper = TradesManager as IBWraper;
-      if(ibWraper == null)
-        Log = new Exception(new { ibWraper } + "");
-      else {
-        _priceChangeObservable = Observable.FromEventPattern<PriceChangedEventArgs>(
-        h => TradesManager.PriceChanged += h,
-        h => TradesManager.PriceChanged -= h
-        )
-        .Where(_ => ibWraper?.AccountManager != null)
-        .Where(price => price.EventArgs.Price.Pair == Pair)
-        .Publish().RefCount();
+      if(!IsInVirtualTrading) {
+        var ibWraper = TradesManager as IBWraper;
+        if(ibWraper == null)
+          Log = new Exception(new { ibWraper } + " must not be null");
+        else {
+          _priceChangeObservable = Observable.FromEventPattern<PriceChangedEventArgs>(
+          h => TradesManager.PriceChanged += h,
+          h => TradesManager.PriceChanged -= h
+          )
+          .Where(_ => ibWraper?.AccountManager != null)
+          .Where(price => price.EventArgs.Price.Pair == Pair)
+          .Sample(TimeSpan.FromSeconds(0.5))
+          .Publish().RefCount();
 
-        if(IsTrader) {
-          SyncStraddleHistoryObservable?.Dispose();
-          _currentOptionDisposable?.Dispose();
-          _currentOptionDisposable = (
-            from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
-            let priceBid = price.EventArgs.Price.Bid
-            from options in ibWraper.AccountManager.CurrentOptions(Pair, priceBid, ExpDayToSkip(), 3, c => true)
-            where options.Any()
-            select (priceBid, options)
-            //select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(2).ToList()
-            )
-            .Subscribe(x => {
-              CurrentPut = x.options.Where(p => p.option.IsPut && p.strikeAvg <= x.priceBid).OrderByDescending(t => t.strikeAvg).Take(1).ToList();
-              CurrentCall = x.options.Where(p => p.option.IsCall && p.strikeAvg >= x.priceBid).OrderBy(t => t.strikeAvg).Take(1).ToList();
+          if(IsTrader) {
+            SyncStraddleHistoryObservable?.Dispose();
+            _currentOptionDisposable?.Dispose();
+            _currentOptionDisposable = (
+              from price in _priceChangeObservable
+              let priceBid = price.EventArgs.Price.Bid
+              from options in ibWraper.AccountManager.CurrentOptions(Pair, priceBid, ExpDayToSkip(), 3, c => true)
+              where options.Any()
+              select (priceBid, options)
+              //select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(2).ToList()
+              )
+              .Subscribe(x => {
+                CurrentPut = x.options.Where(p => p.option.IsPut && p.strikeAvg <= x.priceBid).OrderByDescending(t => t.strikeAvg).Take(1).ToList();
+                CurrentCall = x.options.Where(p => p.option.IsCall && p.strikeAvg >= x.priceBid).OrderBy(t => t.strikeAvg).Take(1).ToList();
               //var currPuts = x.options.OrderBy(o=>o.b)
               CurrentOptions = x.options.ToList();
-            }, exc => { Log = exc; Debugger.Break(); }, () => { Log = new Exception("_currentOptionDisposable done"); Debugger.Break(); });
+              }, exc => { Log = exc; Debugger.Break(); }, () => { Log = new Exception("_currentOptionDisposable done"); Debugger.Break(); });
 
-          _currentStraddleDisposable?.Dispose();
-          _currentStraddleDisposable = (
-            from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
-            let priceBid = price.EventArgs.Price.Bid
-            from straddles in ibWraper.AccountManager.CurrentStraddles(Pair, ExpDayToSkip(), 5, 0)
-              //let cs = straddles.Where(s => s.strikeAvg > priceBid).OrderBy(s => s.strikeAvg).Skip(1).Take(1).ToList()
+            _currentStraddleDisposable?.Dispose();
+            _currentStraddleDisposable = (
+              from price in _priceChangeObservable
+              let priceBid = price.EventArgs.Price.Bid
+              from straddles in ibWraper.AccountManager.CurrentStraddles(Pair, ExpDayToSkip(), 5, 0)
+                //let cs = straddles.Where(s => s.strikeAvg > priceBid).OrderBy(s => s.strikeAvg).Skip(1).Take(1).ToList()
             let cs = straddles.OrderByDescending(s => s.delta).Take(1).ToList()
-            where cs.Any()
-            select cs
-            )
-            .Subscribe(x => CurrentStraddle = x, exc => { Log = exc; Debugger.Break(); }, () => { Log = new Exception("_currentStraddleDisposable done"); Debugger.Break(); });
+              where cs.Any()
+              select cs
+              )
+              .Subscribe(x => CurrentStraddle = x, exc => { Log = exc; Debugger.Break(); }, () => { Log = new Exception("_currentStraddleDisposable done"); Debugger.Break(); });
 
 
-          _priceChangeDisposable?.Dispose();
-          StraddleHistory.Clear();
-          int shcp = 5;
-          var straddleStartId = DateTime.Now.Ticks;
-          long _id = 0;
-          string straddlePair = "VXX";
-          //var straddleTime = DateTime.Now.AddSeconds(-BarsCountMax).SetKind();
-          TradingMacroM1(tmM1 => {
-            tmM1.WhenAny(tm => tm.RatesDuration, irs => irs.Value)
-            .Where(irs => irs > 0)
-            .Take(1)
-            .ObserveOn(NewThreadScheduler.Default)
-            .Subscribe(x => {
-              var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime().AddDays(-5);
-              GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories.Where(t => t.time < startDate)), true);
-              GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories2.Where(t => t.time < startDate)), true);
-              GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == Pair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
-              GlobalStorage.UseForexMongo(c => StraddleHistory2.AddRange(c.StraddleHistories2.Where(t => t.pair == straddlePair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
-              SyncStraddleHistoryT1(this);
-              Log = new Exception($"{nameof(SyncStraddleHistoryT1)}[{this}] - done");
-              SyncStraddleHistoryM1(tmM1);
-              Log = new Exception($"{nameof(SyncStraddleHistoryM1)}[{this}] - done");
-              CollectStraddleHistory();
+            _priceChangeDisposable?.Dispose();
+            StraddleHistory.Clear();
+            int shcp = 5;
+            var straddleStartId = DateTime.Now.Ticks;
+            long _id = 0;
+            string straddlePair = "VXX";
+            //var straddleTime = DateTime.Now.AddSeconds(-BarsCountMax).SetKind();
+            TradingMacroM1(tmM1 => {
+              tmM1.WhenAny(tm => tm.RatesDuration, irs => irs.Value)
+              .Where(irs => irs > 0)
+              .Take(1)
+              .ObserveOn(NewThreadScheduler.Default)
+              .Subscribe(x => {
+                var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime().AddDays(-5);
+                GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories.Where(t => t.time < startDate)), true);
+                GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories2.Where(t => t.time < startDate)), true);
+                GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == Pair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
+                GlobalStorage.UseForexMongo(c => StraddleHistory2.AddRange(c.StraddleHistories2.Where(t => t.pair == straddlePair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
+                SyncStraddleHistoryT1(this);
+                Log = new Exception($"{nameof(SyncStraddleHistoryT1)}[{this}] - done");
+                SyncStraddleHistoryM1(tmM1);
+                Log = new Exception($"{nameof(SyncStraddleHistoryM1)}[{this}] - done");
+                CollectStraddleHistory();
+              });
             });
-          });
 
-          void CollectStraddleHistory() {
-            DateTime saveTime = DateTime.MinValue;
-            DateTime ResetSaveTime() => DateTime.Now.AddMinutes(1);
-            saveTime = ResetSaveTime();
-            TimeValueHistory(Pair, tm => tm.StraddleHistory, c => c.StraddleHistories, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
-            //TimeValueHistory(straddlePair, tm => tm.StraddleHistory2, c => c.StraddleHistories2, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
+            void CollectStraddleHistory() {
+              DateTime saveTime = DateTime.MinValue;
+              DateTime ResetSaveTime() => DateTime.Now.AddMinutes(1);
+              saveTime = ResetSaveTime();
+              TimeValueHistory(Pair, tm => tm.StraddleHistory, c => c.StraddleHistories, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
+              //TimeValueHistory(straddlePair, tm => tm.StraddleHistory2, c => c.StraddleHistories2, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
+            }
           }
         }
       }
@@ -1192,7 +1195,7 @@ namespace HedgeHog.Alice.Store {
       //var nextFriday = TradesManagerStatic.ExpirationDaysSkip(0);
       int nextFriday() => (DateTime.Today.GetNextWeekday(DayOfWeek.Friday) - DateTime.Today).TotalDays.ToInt();
       _priceChangeDisposable = (
-        from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
+        from price in _priceChangeObservable
         from x in ibWraper.AccountManager.CurrentOptions(pair, double.NaN, TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, c => true)
         let calls = x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(2)
         let puts = x.Where(t => t.option.IsPut).OrderByDescending(t => t.deltaBid).Take(2)
@@ -1246,13 +1249,13 @@ namespace HedgeHog.Alice.Store {
           Log = new Exception("_priceChangeDisposable done");
         });
       double GetStraddlePrice(IEnumerable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract option, double deltaBid, double deltaAsk)> straddle)
-        => straddle.Select(p => p.deltaBid).OrderByDescending(d => d).Take(4).Average();
+        => straddle.Select(p => p.deltaBid.Avg(p.deltaAsk)).OrderByDescending(d => d).Take(4).Average();
     }
 
 
     private long BullCallHistory(IBWraper ibWraper, int shcp, long straddleStartId, long _id, int straddleCount, DateTime saveTime, Action ResetSaveTime) {
       _priceChangeDisposable = (
-        from price in _priceChangeObservable.Sample(TimeSpan.FromSeconds(0.5))
+        from price in _priceChangeObservable
         from x in ibWraper.AccountManager.CurrentOptions(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, c => c.IsCall)
         from callBody in x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(1)
         from callWing in x.Where(t => t.option.IsCall && t.strikeAvg <= callBody.strikeAvg - 25).OrderByDescending(t => t.strikeAvg).Take(1)

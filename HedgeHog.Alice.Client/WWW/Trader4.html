@@ -483,6 +483,12 @@
                 <button data-bind="click:showContractCache" title="Show Contract Cache">
                   <i class="glyphicon glyphicon-retweet"></i>
                 </button>
+                <button data-bind="click:showActiveRequests" title="Show Active Requests">
+                  <i class="fa fa-flash"></i>
+                </button>
+                <button data-bind="click:cleanActiveRequests" title="Clean Active Requests">
+                  <i class="fa fa-flash" style="color:red"></i>
+                </button>
 
               </li>
             </ul>
@@ -897,6 +903,19 @@
     </table>
   </div>
   <!--#endregion-->
+  <!--#region Active Requests-->
+  <div data-bind="elementer:activeRequestsDialog" style="display:none">
+    <table border="1" class="wwwInfo">
+      <tbody data-bind="foreach:activeRequests">
+        <tr>
+          <td data-bind="text:Instrument"></td>
+          <td data-bind="text:Bid"></td>
+          <td data-bind="text:Key"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!--#endregion-->
   <!--#region replayDialog-->
   <div data-bind="elementer:replayDialog,css:{no:!isReplayOn()}" class="replay" style="display:none;min-height:20px">
     <div>
@@ -1247,7 +1266,7 @@
           <td data-bind="text:d3.format('.2f')(openPrice())"></td>
           <td data-bind="text:d3.format('.2f')(closePrice())"></td>
           <!--<td data-bind1="text:d3.format('.2f')(bid())"></td>
-        <td data-bind1="text:d3.format('.2f')(ask())"></td>-->
+          <td data-bind1="text:d3.format('.2f')(ask())"></td>-->
           <td data-bind="text:position"></td>
           <td data-bind="text:d3.format('$.0f')(netPL()),css:{profit:netPL()>0,loss:netPL()<0}"></td>
           <td><!--<input data-bind-removed="value:exit" size="3" />--></td>
@@ -1379,11 +1398,12 @@
     <table border="1">
       <tbody data-bind="foreach:openOrders">
         <tr>
-          <td data-bind="text:i"></td>
+          <td data-bind="text:i" style="white-space:pre"></td>
           <td data-bind="text:p"></td>
           <td data-bind="text:lp"></td>
           <td data-bind="text:f()+'<'+r()"></td>
-          <td data-bind="text:a,style:{backgroundColor: a()=='B'?'cornflowerblue':'red'}"></td>
+          <td data-bind="text:a,style:{backgroundColor: a()=='B'?'deepskyblue':'red'}"></td>
+          <td data-bind="text:s"></td>
           <td>
             <button data-bind="click:$parent.cancelOrder.bind(null,$data)" title="Cancel Order">X</button>
           </td>
@@ -1425,8 +1445,8 @@
         </td>
         <td>></td>
         <!--<td>Up</td>
-      <td>Dn</td>
-      <td>Avg</td>-->
+        <td>Dn</td>
+        <td>Avg</td>-->
         <td>PL%</td>
         <td>Perc</td>
         <td>Delta</td>
@@ -1441,8 +1461,8 @@
         <td data-bind="text:l,css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
         <td data-bind="text:d3.format('+.1f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
         <!--<td data-bind1="text:d3.format('.1f')(be.up())"></td>
-      <td data-bind1="text:d3.format('.1f')(be.dn())"></td>
-      <td data-bind1="text:d3.format('.2f')(avg())"></td>-->
+        <td data-bind1="text:d3.format('.1f')(be.dn())"></td>
+        <td data-bind1="text:d3.format('.2f')(avg())"></td>-->
         <td data-bind="text:d3.format('.2f')(maxPlPerc())"></td>
         <td data-bind="text:d3.format('.2f')(perc())"></td>
         <td data-bind="text:d3.format('.2f')(delta())"></td>

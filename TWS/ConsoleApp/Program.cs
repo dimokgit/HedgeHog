@@ -67,6 +67,7 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        return;
         {
           Task.Delay(3000).ContinueWith(_ => {
             (from trade in am.Positions.Select(p => p.contract).ToObservable()
@@ -85,8 +86,6 @@ namespace ConsoleApp {
             });
           });
         }
-        return;
-
         {
           void TestCurrentRollOvers(int num, Action after = null) {
             HandleMessage($"TestCurrentRollOvers:  start {num}");
@@ -461,7 +460,7 @@ namespace ConsoleApp {
         #endregion
       });
 
-      if(ibClient.LogOn("127.0.0.1", twsPort + "", 10 + "", false)) {
+      if(ibClient.LogOn("127.0.0.1", twsPort + "", 0 + "", false)) {
         //ibClient.SetOfferSubscription(contract);
         //else {
         //  var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp => sp.LoadRates).ToArray());

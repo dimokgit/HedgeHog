@@ -17,12 +17,21 @@ namespace IBApp {
     private readonly int _baseReqId;
     public static bool UseVerbose = false;
     public static bool DoShowRequestErrorDone = true;
+    public static IBClientCore IBClientMaster;
+    private IBClientCore _ibClient;
 
     protected Action<object> Trace { get; }
     protected Action<bool, object> TraceIf => (b, o) => { if(b) Trace(o); };
     protected Action<object> Verbose => o => { if(UseVerbose) Trace(o); };
-    protected Action<object> Verbose0 => o => {};
-    protected IBClientCore IbClient { get; private set; }
+    protected Action<object> Verbose0 => o => { };
+    protected IBClientCore IbClient {
+      get => _ibClient;
+      private set {
+        if(IBClientMaster==null)
+          IBClientMaster=value;
+        _ibClient = value;
+      }
+    }
     #endregion
 
 

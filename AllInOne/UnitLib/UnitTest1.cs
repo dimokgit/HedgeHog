@@ -10,6 +10,12 @@ namespace UnitLib {
   [TestClass]
   public class UnitTest1 {
     [TestMethod]
+    public void IsProcessRunning() {
+      var t = Process.GetProcessesByName("HedgeHog.Alice.Client.exe").ToArray();
+      Assert.IsTrue(t.Length>0);
+    }
+
+    [TestMethod]
     public void ValueTuple() {
       var t = (a: 0, b: new Nullable<int>());
       Update(t);

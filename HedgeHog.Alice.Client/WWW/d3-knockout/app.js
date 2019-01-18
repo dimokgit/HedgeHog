@@ -833,9 +833,7 @@
       // #endregion
       // #region Contract Cache
       var contractCacheElement;
-      this.contractCacheDialog = function (element) {
-        contractCacheElement = element;
-      }
+      this.contractCacheDialog = (element) => contractCacheElement = element;
       this.contractCache = ko.observableArray();
       this.showContractCache = function () {
         serverCall("readContractsCache", [], function (cc) {
@@ -843,6 +841,24 @@
         });
         $(contractCacheElement).dialog({
           title: "Contract Cache", width: "auto", //dialogClass: "dialog-compact",
+          dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
+          close: function () { $(this).dialog("destroy"); }
+        });
+        //$(wwwSettingsGridElement).jqPropertyGrid(properties);
+      };
+      // #endregion
+      // #region Contract Cache
+      var activeRequestsElement;
+      this.activeRequestsDialog = (element) => activeRequestsElement = element;
+      this.activeRequests = ko.observableArray();
+      this.activeRequestsCount = ko.pureComputed(() => self.activeRequests().length);
+      this.cleanActiveRequests = () => serverCall("cleanActiveRequests", []);
+      this.showActiveRequests = function () {
+        serverCall("readActiveRequests", [], function (cc) {
+          self.activeRequests(cc);
+        });
+        $(activeRequestsElement).dialog({
+          title: "Active Requests", width: "auto", //dialogClass: "dialog-compact",
           dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
           close: function () { $(this).dialog("destroy"); }
         });
@@ -934,9 +950,10 @@
         });
       }, this);
       this.currentCombos = ko.pureComputed(function () {
-        return this.butterflies()
+        var cc= this.butterflies()
           .concat(this.bullPuts())
           .concat(this.options());
+        return cc;
       }, this);
       this.liveStraddles = ko.mapping.fromJS(ko.observableArray());//;
       this.liveCombos = ko.pureComputed(function () {
@@ -995,7 +1012,7 @@
       }.bind(this);
       this.closeCombo = function (key) {
         this.canTrade(false);
-        serverCall("closeCombo", [ko.utils.unwrapObservable(key)], null, null, function () { this.canTrade(false); }.bind(this));
+        serverCall("closeCombo", [ko.utils.unwrapObservable(key),self.comboCurrentStrikeLevel()], null, null, function () { this.canTrade(false); }.bind(this));
       }.bind(this);
       this.cancelAllOrders = function (key) {
         serverCall("cancelAllOrders", []);

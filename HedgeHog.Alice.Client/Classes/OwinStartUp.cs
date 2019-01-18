@@ -71,7 +71,7 @@ namespace HedgeHog.Alice.Client {
 
         NewThreadScheduler.Default.Schedule(TimeSpan.FromSeconds(1), () => {
           priceChanged = trader.PriceChanged
-          .Where(p => !Contract.FromCache(p.EventArgs.Price.Pair).Any(c => c.IsOption || c.IsCombo))
+          .Where(p => !Contract.FromCache(p.EventArgs.Price.Pair).Any(c => c.HasOptions))
             .Select(x => x.EventArgs.Price.Pair.Replace("/", "").ToLower())
             //.Where(pair => Pairs.Contains(pair))
             .Subscribe(pair => {
@@ -593,7 +593,7 @@ namespace HedgeHog.Alice.Client {
                  base.Clients.Caller.rollOvers(_.OrderByDescending(t => t.dpw).Select(t =>
                  new {
                    i = t.roll.Instrument, o = t.roll.ShortString, t.days, bid = t.bid.AutoRound2(3), perc = t.perc.ToString("0.0"), dpw = t.dpw.ToInt()
-                 , exp = t.roll.LastTradeDateOrContractMonth.Substring(4), d = t.delta.Round(1)
+                 , exp = t.roll.LastTradeDateOrContractMonth2.Substring(4), d = t.delta.Round(1)
                  }).ToArray());
                });
             };
@@ -606,6 +606,7 @@ namespace HedgeHog.Alice.Client {
                       var d = DaysTillExpiration(t.combo.contract.Expiration);
                       return new {
                         i = t.instrument,
+                        l = t.combo.contract.DateWithShort,
                         d = (t.combo.contract.IsFutureOption ? d.Round(1) + " " : ""),
                         t.bid,
                         t.ask,
@@ -664,7 +665,7 @@ namespace HedgeHog.Alice.Client {
               am.CurrentOptions(CacheKey(underContract), sl, expirationDaysSkip, noc, c => map.Contains(c.Right))
               .Select(ts => {
                 var underPosition = am.Positions.Where(p => p.contract.Instrument == underContract.Instrument).ToList().FirstOrDefault();
-                var exp = ts.Select(t => new { dte = DateTime.Now.Date.GetWorkingDays(t.option.Expiration), exp = t.option.LastTradeDateOrContractMonth }).Take(1).ToArray();
+                var exp = ts.Select(t => new { dte = DateTime.Now.Date.GetWorkingDays(t.option.Expiration), exp = t.option.LastTradeDateOrContractMonth2 }).Take(1).ToArray();
                 var options = ts
                 .Select(t => {
                   var maxPL = t.deltaBid * quantity * t.option.ComboMultiplier;
@@ -734,18 +735,19 @@ namespace HedgeHog.Alice.Client {
 
             #region openOrders
             var orderMap = MonoidsCore.ToFunc((AccountManager.OrdeContractHolder oc, double ask, double bid) => new {
-              i = oc.contract.DateWithShort
+              i = new[] { oc.contract.DateWithShort }.Concat(oc.order.Conditions.Select(c => (c + "").Replace("default Price of ",""))).Flatter("\n")
                , id = oc.order.OrderId
                , f = oc.status.filled
                , r = oc.status.remaining
                , lp = oc.order.LmtPrice
                , p = oc.order.Action == "BUY" ? ask : bid
                , a = oc.order.Action.Substring(0, 1)
+               , s = oc.status.status
             });
             Action openOrders = () =>
               am.UseOrderContracts((ibc, orderContracts) =>
               (from oc in orderContracts.ToObservable()
-               where oc.isSubmitted || oc.isPreSubmitted
+                 //where oc.isSubmitted || oc.isPreSubmitted
                from p in ibc.ReqPriceSafe(oc.contract, 1, false).DefaultIfEmpty()
                select (oc, x: orderMap(oc, p.ask, p.bid))
                ).ToArray()
@@ -777,10 +779,10 @@ namespace HedgeHog.Alice.Client {
                   .Where(ct => ct.position != 0)
                   .OrderBy(ct => ct.contract.FromDetailsCache().Select(cd => cd.UnderSymbol.IfEmpty(ct.contract.LocalSymbol)).FirstOrDefault())
                   .ThenBy(ct => ct.contract.Legs().Count())
-                  .ThenBy(ct => ct.contract.LastTradeDateOrContractMonth)
+                  .ThenBy(ct => ct.contract.LastTradeDateOrContractMonth2)
                   //.ThenBy(ct => ct.contract.IsOption)
                   .ToArray(x => {
-                    var hasStrike = x.contract.IsOption || x.contract.IsCombo;
+                    var hasStrike = x.contract.HasOptions;
                     var delta = hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs();
                     return new {
                       combo = x.contract.Instrument
@@ -885,12 +887,14 @@ namespace HedgeHog.Alice.Client {
       GetAccountManager().OpenCoveredOption(pair, option, quantity, price);
     }
     [BasicAuthenticationFilter]
-    public void CloseCombo(string instrument) {
+    public void CloseCombo(string instrument, double? conditionPrice) {
       var am = GetAccountManager();
       if(am != null) {
-        am.ComboTrades(1)
-        .Where(ct => ct.contract.Key == instrument)
-        .Select(s => (s.contract, s.position, s.orderId, s.closePrice))
+        (from ct in am.ComboTrades(1)
+         from under in ct.contract.UnderContract
+         where ct.contract.Key == instrument
+         select (ct.contract, ct.position, ct.orderId, ct.closePrice, under)
+         )
         .Subscribe(c => {
           if(c.orderId != 0) {
             am.UseOrderContracts(orderContracts => orderContracts[c.orderId])
@@ -900,8 +904,8 @@ namespace HedgeHog.Alice.Client {
               am.PlaceOrder(och.order, och.contract);
             });
           } else {
-            am.CancelAllOrders("CloseCombo");
-            am.OpenTrade(c.contract, -c.position, c.closePrice, 0.0, false, DateTime.MaxValue);
+            //am.CancelAllOrders("CloseCombo");
+            am.OpenTrade(c.contract, -c.position, conditionPrice.HasValue ? 0 : c.closePrice, 0.0, false, DateTime.MaxValue, c.under.PriceFactory(conditionPrice.Value, false, false));
           }
         });
       }
@@ -919,6 +923,14 @@ namespace HedgeHog.Alice.Client {
         .Select(c => new { c.Instrument, c.ConId })
         .ToArray();
     }
+    public object[] ReadActiveRequests() {
+      return MarketDataManager.ActiveRequests
+        .OrderBy(x => x.Value.contract.Instrument)
+        .ThenBy(x => x.Key)
+        .Select(x => new { x.Value.contract.Instrument, x.Key, x.Value.price.Bid })
+        .ToArray();
+    }
+    public void CleanActiveRequests() => MarketDataManager.ActiveRequestCleaner();
     #endregion
 
     #region TradeConditions
@@ -1422,7 +1434,7 @@ namespace HedgeHog.Alice.Client {
           list2.Add(row("profitByHedgeRatioDiff", trader.Value.ProfitByHedgeRatioDiff));
         }
         tm.CurrentPut?.ForEach(p =>
-        list2.Add(row("Curr Put", $"{p.option.Key}{(p.option.IsFutureOption ? ":" + p.option.LastTradeDateOrContractMonth : "")}")));
+        list2.Add(row("Curr Put", $"{p.option.Key}{(p.option.IsFutureOption ? ":" + p.option.LastTradeDateOrContractMonth2 : "")}")));
         tm.CurrentStraddle?.ForEach(p => list2.Add(row("Curr Strdl", $"{p.combo.contract}")));
         return list2;
       }).Concat();

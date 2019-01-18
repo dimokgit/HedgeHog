@@ -269,7 +269,7 @@ namespace IBApp {
     public IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
         Debugger.Break();
-      var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol)}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Strike}";
+      var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol)}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
       lock(_reqContractDetails) {
         if(_reqContractDetails.TryGetValue(key, out var o)) return o;
         var reqId = NextReqId();
@@ -505,7 +505,7 @@ namespace IBApp {
       .Where(t => t.Any())
       .SelectMany(p => p)
       .Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60))
-      .Do(p => Trace($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
+      .Do(p => Verbose($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
       //.Select(p => (p.Bid, p.Ask, p.Time))
       //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
       .Take(1)
@@ -777,9 +777,8 @@ namespace IBApp {
         Trace(new { IBCC = new { id, errorCode, message } });
         if(errorCode == 1102) {
           Trace("Cleaning price requests");
-          var contracts = _marketDataManager.ActiveRequestCleaner();
-          Trace("Re-submitting price requests");
-          contracts.ForEach(c => SetContractSubscription(c));
+          MarketDataManager.ActiveRequestCleaner();
+          Trace("Re-submitted price requests");
         }
       }
     }

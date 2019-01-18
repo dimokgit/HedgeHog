@@ -86,6 +86,7 @@ namespace IBApp {
       RequestAccountSummary();
       SubscribeAccountUpdates();
       RequestPositions();
+      IbClient.ClientSocket.reqOpenOrders();
       IbClient.ClientSocket.reqAllOpenOrders();
       IbClient.ClientSocket.reqAutoOpenOrders(true);
 
@@ -168,9 +169,9 @@ namespace IBApp {
         }).SideEffect(s => _strams.Add(s));
       OpenOrderObservable
         .Where(x => x.Order.Account == _accountId)
-        .Do(x => Verbose0($"* OpenOrder: {new { x.Order.OrderId, x.OrderState.Status, x.Contract.LocalSymbol } }"))
+        .Do(x => Verbose($"* OpenOrder: {new { x.Order.OrderId, x.Order.PermId, x.OrderState.Status, x.Contract.LocalSymbol } }"))
         //.Do(UpdateOrder)
-        .Distinct(a => new { a.OrderId, a.Order.LmtPrice })
+        .Distinct(a => new { a.Order.PermId })
         .Subscribe(a => OnOrderImpl(a.OrderId, a.Contract, a.Order, a.OrderState))
         .SideEffect(s => _strams.Add(s));
       osObs

@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace IBApp {
   public static class OrderConditionParam {
-    public static OrderCondition PriceFactory(Contract contract, double conditionPrice, bool isMore, bool isConjunction) {
+    public static OrderCondition PriceFactory(this Contract contract, double conditionPrice, bool isMore, bool isConjunction) {
       //! [price_condition]
       //Conditions have to be created via the OrderCondition.Create 
       PriceCondition priceCondition = (PriceCondition)OrderCondition.Create(OrderConditionType.Price);

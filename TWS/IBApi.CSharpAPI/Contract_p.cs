@@ -20,7 +20,7 @@ namespace IBApi {
       ? (Strike - undePrice).Max(0)
       : 0;
     public double ExtrinsicValue(double optionPrice, double undePrice) =>
-      !IsOption
+      !HasOptions
       ? 0
       : LegsOrMe().Sum(o => o.ExtrinsicValueImpl(optionPrice, undePrice));
     private double ExtrinsicValueImpl(double optionPrice, double undePrice) => IsCall
@@ -31,6 +31,7 @@ namespace IBApi {
 
     DateTime? _lastTradeDateOrContractMonth;
     public DateTime Expiration => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max().FromTWSDateString(DateTime.Now.Date);
+    public string LastTradeDateOrContractMonth2 => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max();
 
     public string Key => Instrument;
     public string Instrument => ComboLegsToString().IfEmpty((LocalSymbol.IfEmpty(Symbol)?.Replace(".", "") + "").ToUpper());
@@ -42,7 +43,8 @@ namespace IBApi {
         _contracts.AddOrUpdate(Key, this, (k, c) => this);
       return this;
     }
-    public IEnumerable<Contract> UnderContract => (from cd in FromDetailsCache()
+    public IEnumerable<Contract> UnderContract => LegsOrMe(c => c.UnderContractImpl).Concat().Distinct().Count(1,i=> { },i=>throw new Exception($"Too many UnderContracts in {this}"));
+    public IEnumerable<Contract> UnderContractImpl => (from cd in FromDetailsCache()
                                                    where !cd.UnderSymbol.IsNullOrWhiteSpace()
                                                    from cdu in ContractDetails.FromCache(cd.UnderSymbol)
                                                    select cdu.Contract);
@@ -67,30 +69,33 @@ namespace IBApi {
     public bool IsCombo => ComboLegs?.Any() == true;
     public bool IsCall => IsOption && Right == "C";
     public bool IsPut => IsOption && Right == "P";
-    public bool IsOption => LegsOrMe().Any(o => o.SecType == "OPT" || o.SecType == "FOP");
+    public bool IsOption => SecType == "OPT" || SecType == "FOP";
     public bool IsFutureOption => SecType == "FOP";
     public bool HasFutureOption => IsFutureOption || Legs().Any(l => l.c.IsFutureOption);
     public bool IsFuture => SecType == "FUT" || secType == "CONTFUT";
     public bool IsIndex => SecType == "IND";
     public bool IsButterFly => ComboLegs?.Any() == true && String.Join("", comboLegs.Select(l => l.Ratio)) == "121";
     public double ComboStrike() => Strike > 0 ? Strike : LegsEx().With(cls => cls.Sum(c => c.contract.strike * c.leg.Ratio) / cls.Sum(c => c.leg.Ratio));
+    public bool HasOptions => LegsOrMe(l => l.IsOption).Max();
     public int ReqId { get; set; }
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
-    public string ShortString => Right + Strike;
-    public string DateWithShort => IsOption ? LastTradeDateOrContractMonth?.Substring(4) + " " + ShortString : LocalSymbol.IfEmpty(Symbol);
-    public string ShortWithDate => IsOption ? ShortString + " " + LastTradeDateOrContractMonth?.Substring(4) : LocalSymbol.IfEmpty(Symbol);
+    public string ShortString => ComboLegsToString(c => c.Symbol + " " + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
+    public string DateWithShort => ComboLegsToString(c => c.LastTradeDateOrContractMonth.Substring(4) + " " + c.ShortString, LocalSymbol.IfEmpty(Symbol));
+    public string ShortWithDate => ComboLegsToString(c => c.ShortString + " " + c.LastTradeDateOrContractMonth.Substring(4), LocalSymbol.IfEmpty(Symbol));
     public override string ToString() =>
       ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
-    internal string ComboLegsToString() =>
+    internal string ComboLegsToString() => ComboLegsToString(c => c.LocalSymbol, LocalSymbol.IfEmpty(Symbol));
+    internal string ComboLegsToString(Func<Contract, string> label, string defaultFotNotOption) =>
       Legs()
       .ToArray()
       .With(legs => (legs, r: legs.Select(l => l.r).DefaultIfEmpty().Max())
       .With(t =>
       t.legs
-      .Select(l => l.c.ShortWithDate + (t.r > 1 ? ":" + l.r : ""))
+      .Select(l => label(l.c) + (t.r > 1 ? ":" + l.r : ""))
       .OrderBy(s => s)
+      .RunIfEmpty(() => IsOption ? label(this) : defaultFotNotOption)
       .ToArray()
       .MashDiffs()));
     public IEnumerable<T> LegsOrMe<T>(Func<Contract, T> map) => LegsOrMe().Select(map);

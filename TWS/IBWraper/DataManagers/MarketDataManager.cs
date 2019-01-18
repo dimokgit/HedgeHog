@@ -19,7 +19,8 @@ namespace IBApp {
   public class MarketDataManager :DataManager {
     const int TICK_ID_BASE = 10000000;
     static private readonly MemoryCache _currentPrices = MemoryCache.Default;
-    private ConcurrentDictionary<int, (Contract contract, Price price)> activeRequests = new ConcurrentDictionary<int, (Contract contract, Price price)>();
+    private static ConcurrentDictionary<int, (Contract contract, Price price)> activeRequests = new ConcurrentDictionary<int, (Contract contract, Price price)>();
+    public static IReadOnlyDictionary<int, (Contract contract, Price price)> ActiveRequests => activeRequests;
     public Action<Contract, string, Action<Contract>> AddRequest;// = (a1, a2, a3) => {    };
     public IObservable<(Contract c, string gl, Action<Contract>)> AddRequestObs { get; }
     public MarketDataManager(IBClientCore client) : base(client, TICK_ID_BASE) {
@@ -254,7 +255,7 @@ namespace IBApp {
     protected void RaisePriceChanged((Contract contract, Price price) t) {
       if(!_currentPrices.Contains(t.price.Pair)) {
         {
-          var cip = t.contract.IsOption? new CacheItemPolicy() {
+          var cip = t.contract.HasOptions? new CacheItemPolicy() {
             RemovedCallback = ce => {
               ActiveRequestCleaner((Price)ce.CacheItem.Value);
             },
@@ -265,34 +266,24 @@ namespace IBApp {
         }
       }
       PriceChangedEvent?.Invoke(t.price);
-    }
-    public Contract[] ActiveRequestCleaner() {
-      var contracts = activeRequests.Select(kv => kv.Value.contract).ToArray();
-      activeRequests.ForEach(CancelPriceRequest);
-      return contracts;
-    }
-    void ActiveRequestCleaner(Price price) {
-      activeRequests.Where(kv => kv.Value.price == price).ToList().ForEach(CancelPriceRequest);
-    }
+      /// Locals
+      void ActiveRequestCleaner(Price price) {
+        activeRequests.Where(kv => kv.Value.price == price).ToList().ForEach(CancelPriceRequest);
+      }
 
-    private void CancelPriceRequest(KeyValuePair<int, (Contract contract, Price price)> ar) {
-      IbClient.CancelPrice(ar.Key);
-      if(activeRequests.TryRemove(ar.Key, out var t)) {
-        Trace($"{nameof(activeRequests)} - removed {ar.Value.contract}");
+      void CancelPriceRequest(KeyValuePair<int, (Contract contract, Price price)> ar) {
+        // TODO: Make use of Observable
+        IBClientMaster.CancelPrice(ar.Key);
+        if(activeRequests.TryRemove(ar.Key, out var rem)) {
+          //Verbose($"{nameof(activeRequests)} - removed {ar.Value.contract}");
+        }
       }
     }
-
-    void ActiveRequestsCleaner(Contract c) {
-      activeRequests.Where(ar => ar.Value.contract == c).Skip(1).ToList()
-        .ForEach(ar => {
-          if(activeRequests.TryRemove(ar.Key, out var t)) {
-            CancelPriceRequest(ar);
-            Trace($"{nameof(ActiveRequestsCleaner)}: removed duplicated {new { ar.Value.contract, ar.Key }}");
-            ActiveRequestCleaner(ar.Value.price);
-          } else
-            Trace($"{nameof(ActiveRequestsCleaner)}: error removing duplicated {new { ar.Value.contract, ar.Key }}");
-
-        });
+    public static Contract[] ActiveRequestCleaner() {
+      var contracts = activeRequests.Select(kv => kv.Value.contract).ToArray();
+      _currentPrices.ToList().ForEach(cp=>_currentPrices.Remove(cp.Key));
+      contracts.ForEach(c => IBClientMaster.SetContractSubscription(c));
+      return contracts;
     }
     #endregion
 
