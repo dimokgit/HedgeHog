@@ -1,32 +1,28 @@
 ﻿using HedgeHog.Alice.Store;
+using HedgeHog.Bars;
+using HedgeHog.DateTimeZone;
 using HedgeHog.Shared;
+using IBApi;
+using IBApp;
 using Microsoft.AspNet.SignalR;
-using Microsoft.Owin;
+using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.FileSystems;
+using Microsoft.Owin.Security;
 using Microsoft.Owin.StaticFiles;
 using Owin;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Dynamic;
-using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Net;
-using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Reflection;
+using System.Threading.Tasks;
 using Westwind.Web.WebApi;
-using HedgeHog.Bars;
-using Microsoft.Owin.Security;
-using Microsoft.AspNet.SignalR.Hubs;
 using static HedgeHog.Core.JsonExtensions;
 using TM_HEDGE = System.Collections.Generic.IEnumerable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP
   , (double All, double Up, double Down) TradeRatio
@@ -36,10 +32,6 @@ using TM_HEDGE = System.Collections.Generic.IEnumerable<(HedgeHog.Alice.Store.Tr
   , (int All, int Up, int Down) Lot
   , (double All, double Up, double Down) Pip
   , bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
-using IBApp;
-using System.Diagnostics;
-using IBApi;
-using HedgeHog.DateTimeZone;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
@@ -70,6 +62,12 @@ namespace HedgeHog.Alice.Client {
         var trader = App.container.GetExportedValue<TraderModel>();
 
         NewThreadScheduler.Default.Schedule(TimeSpan.FromSeconds(1), () => {
+          trader.TradesManager.OrderAddedObservable
+          .Select(a=>a.Order)
+          .Merge(trader.TradesManager.OrderRemovedObservable)
+          .Subscribe(o => {
+            myHub().Clients.All.priceChanged("");
+          });
           priceChanged = trader.PriceChanged
           .Where(p => !Contract.FromCache(p.EventArgs.Price.Pair).Any(c => c.HasOptions))
             .Select(x => x.EventArgs.Price.Pair.Replace("/", "").ToLower())
@@ -863,18 +861,25 @@ namespace HedgeHog.Alice.Client {
     static bool _isTest = true;
     [BasicAuthenticationFilter]
     public void OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice) {
+      var profit = UseTraderMacro(pair, tm => tm.Trends.Where(tl => !tl.IsEmpty).Select(tl=>tl.StDev).DefaultIfEmpty().Average() * 4).Single();
+      if(profit == 0) throw new Exception("No trend line found for profit calculation");
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       var isSell = quantity < 0;
+      var isBuy = quantity > 0;
       var hasCondition = conditionPrice.HasValue;
       var dateAfter = _isTest ? DateTime.Now.AddDays(1) : DateTime.MinValue;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract)) {
+        var isMore = contract.IsCall && isBuy || contract.IsPut && isSell;
+        var upProfit = profit * (isMore ? 1 : -1);
         if(true)
           (from price in DataManager.IBClientMaster.ReqPriceSafe(contract, 10, true)
            from under in Contract.FromCache(pair)
-           select (price: isSell ? price.bid : price.ask, under)
+           from up in DataManager.IBClientMaster.ReqPriceSafe(under, 10, true).Select(p => p.ask.Avg(p.bid))
+           let cond = under.PriceFactory(up + upProfit, isMore, false)
+           select (price: isSell ? price.bid : price.ask, under, cond)
            ).Subscribe(t =>
-            am.OpenTrade(contract, "", quantity, hasCondition ? 0 : t.price, hasCondition ? 0 : 0.5, !hasCondition, DateTime.MaxValue, dateAfter
-            , hasCondition ? OrderConditionParam.PriceFactory(t.under, conditionPrice.Value, isSell && contract.IsCall, false) : null));
+            am.OpenTrade(contract, "", quantity, hasCondition ? 0 : t.price, 0, true, DateTime.MaxValue, dateAfter
+            , hasCondition ? OrderConditionParam.PriceFactory(t.under, conditionPrice.Value, isSell && contract.IsCall, false) : null, t.cond));
         else
           UseTraderMacro(pair, tm =>
            tm.HistoricalVolatilityByPips().ForEach(hv
@@ -1577,9 +1582,20 @@ namespace HedgeHog.Alice.Client {
       }
     }
     T[] UseTraderMacro<T>(string pair, Func<TradingMacro, T> func) {
-      return UseTradingMacro2(pair, tm => tm.IsTrader, func)
-        .Count(1, i => throw new Exception($"{i} Traders found"), i => throw new Exception($"Too many {i} Traders found"), new { pair }).ToArray();
+      return UseTradingMacro2(pair, tm => tm.IsTrader)
+        .Count(1, i => throw new Exception($"{i} Traders found"), i => throw new Exception($"Too many {i} Traders found"), new { pair })
+        .Select(func)
+        .ToArray();
     }
+    TradingMacro[] UseTradingMacro2(string pair, Func<TradingMacro, bool> where) {
+      try {
+        return GetTradingMacros(pair).Where(where).ToArray();
+      } catch(Exception exc) {
+        LogMessage.Send(exc);
+        return new TradingMacro[0];
+      }
+    }
+
     T[] UseTradingMacro2<T>(string pair, Func<TradingMacro, bool> where, Func<TradingMacro, T> func) {
       try {
         return GetTradingMacros(pair).Where(where).Select(func).ToArray();

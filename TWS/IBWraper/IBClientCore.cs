@@ -549,20 +549,6 @@ namespace IBApp {
       return x;
     }
 
-    private (int reqId, double bid, double ask, int field) OnTickPrice(int requestId, int field, double price, int canAutoExecute) {
-      //Trace($"IBClientCore.OnTickPrice:{new { requestId, price, field }}");
-      switch(field) {
-        case 1:  // Bid
-          return (requestId, price.Max(0), double.NaN, field);
-        case 2:  //ASK
-          return (requestId, double.NaN, price.Max(0), field);
-        case 4:
-        case 37:
-          return (requestId, price, price, field);
-      }
-      return (0, 0, 0, 0);
-    }
-
 
 
     public IObservable<double> ReqPriceMarket(string symbol)

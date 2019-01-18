@@ -50,7 +50,7 @@ namespace HedgeHog.Alice.Store {
       };
       }
     }
-    TL[] Trends => new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
+    public TL[] Trends => new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
     (string TL, Action<IList<Rate>> Set)[] Trends2 => new(string, Action<IList<Rate>>)[] {
       ( TrendLime, tl => TLLime2(tl)),
       (TrendGreen, tl => TLGreen2(tl)),

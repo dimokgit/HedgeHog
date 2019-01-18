@@ -851,6 +851,7 @@ namespace IBApp {
     //public static void Verbous<T>(this T v)=>_ve
     public static bool IsPreSubmited(this IBApi.OrderState order) => order.Status == "PreSubmitted";
 
+    public static bool IsSell(this IBApi.Order o) => o.Action == "SELL";
     public static bool IsBuy(this IBApi.Order o) => o.Action == "BUY";
     public static double TotalPosition(this IBApi.Order o) => o.IsBuy() ? o.TotalQuantity : -o.TotalQuantity;
 

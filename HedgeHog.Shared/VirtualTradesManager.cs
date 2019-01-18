@@ -455,6 +455,8 @@ namespace HedgeHog.Shared {
 
     public IConnectableObservable<PriceChangedEventArgs> PriceChangedObservable => throw new NotImplementedException();
 
+    public IObservable<Order> OrderRemovedObservable => throw new NotImplementedException();
+
     #endregion
 
     #region ITradesManager Members

@@ -427,16 +427,23 @@ namespace HedgeHog {
       foreach(var v in value())
         yield return v;
     }
-    public static T Try<T>(Func<T> func, Func<Exception, T> error) {
+    public static T Try<T>(this Func<T> func, Func<Exception, T> error) {
       try {
         return func();
       } catch(Exception exc) {
         return error(exc);
       }
     }
-    public static void Try(Action func, Action<Exception> error) {
+    public static void Try(this Action func, Action<Exception> error) {
       try {
         func();
+      } catch(Exception exc) {
+        error(exc);
+      }
+    }
+    public static void Try<T>(this Action<T> func, T parameter, Action<Exception> error) {
+      try {
+        func(parameter);
       } catch(Exception exc) {
         error(exc);
       }

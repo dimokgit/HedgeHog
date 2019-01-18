@@ -51,6 +51,10 @@ namespace IBApp {
         OrderAddedObservable.Connect();
       }
       {
+        OrderRemovedObservable = Observable.FromEvent<OrderRemovedEventHandler, HedgeHog.Shared.Order>(
+          next => (o) => next.Try(o, e => Trace($"{nameof(OrderRemoved)}: {e.Message}")), h => OrderRemoved += h, h => OrderRemoved -= h);
+      }
+      {
         var hot = _priceChangedSubject.Publish();
         hot.Connect();
         PriceChangedObservable = hot.Replay();
@@ -132,7 +136,7 @@ namespace IBApp {
 
       var contract = Contract.FromCache(pair).Count(1, $"{nameof(GetBarsBase)}: {new { pair }}").Single();
       if(contract.IsFuture)
-        contract = new Contract { SecType = "CONTFUT", Exchange = contract.Exchange,TradingClass=contract.TradingClass, Symbol = contract.FromDetailsCache().Single().MarketName };
+        contract = new Contract { SecType = "CONTFUT", Exchange = contract.Exchange, TradingClass = contract.TradingClass, Symbol = contract.FromDetailsCache().Single().MarketName };
       var isDone = false;
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);
@@ -297,6 +301,7 @@ namespace IBApp {
     }
     #endregion
     #region OrderRemovedEvent
+    public IObservable<HedgeHog.Shared.Order> OrderRemovedObservable { get; private set; }
     public event OrderRemovedEventHandler OrderRemovedEvent;
     public event OrderRemovedEventHandler OrderRemoved {
       add {
@@ -569,7 +574,7 @@ namespace IBApp {
       ? ($"{os.contract}:{os.status.status}:[{os.order.OrderId}]", os.status.filled, os.status.remaining, os.isDone)
       : ($"{os.status.status}:[{os.order.OrderId}]", os.status.filled, os.status.remaining, os.isDone))
       .ToArray()).Concat().ToList()
-      ?? new(string status, double filled, double remaining, bool isDone)[0].ToList();
+      ?? new (string status, double filled, double remaining, bool isDone)[0].ToList();
 
     public double GetNetOrderRate(string pair, bool isStop, bool getFromInternal = false) {
       throw new NotImplementedException();

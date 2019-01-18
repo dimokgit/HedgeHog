@@ -47,10 +47,10 @@ namespace IBApp {
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
       OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, minTickMultiplier, Caller);
     public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "")
-    => OpenTrade(contract, type, quantity, price, profit, useTakeProfit, goodTillDate, DateTime.MinValue, (OrderCondition)null, minTickMultiplier, Caller);
+    => OpenTrade(contract, type, quantity, price, profit, useTakeProfit, goodTillDate, DateTime.MinValue, null, null, minTickMultiplier, Caller);
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, OrderCondition condition, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
-      OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, DateTime.MinValue, condition, minTickMultiplier, Caller);
-    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, DateTime goodAfterDate, OrderCondition condition = null, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+      OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, DateTime.MinValue, condition, null, minTickMultiplier, Caller);
+    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, DateTime goodAfterDate, OrderCondition condition = null, OrderCondition takeProfitCondition = null, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
       var timeoutInMilliseconds = 5000;
       if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
         var message = new { contract, quantity, Method = nameof(OpenTrade), Caller, timeoutInMilliseconds } + "";
@@ -74,7 +74,7 @@ namespace IBApp {
       if(condition != null) order.Conditions.Add(condition);
       //if(!contract.IsCombo && !contract.IsFutureOption)
       //  FillAdaptiveParams(order, "Normal");
-      var tpOrder = (useTakeProfit ? MakeTakeProfitOrder(order, contract, profit, minTickMultiplier) : new (IBApi.Order order, double price)[0].ToObservable()).Select(x => new { x.order, x.price, useTakeProfit = false });
+      var tpOrder = (useTakeProfit ? MakeTakeProfitOrder2(order, contract, takeProfitCondition, profit, minTickMultiplier) : new (IBApi.Order order, double price)[0].ToObservable()).Select(x => new { x.order, x.price, useTakeProfit = false });
       new[] { new { order, price, useTakeProfit } }.ToObservable().Merge(tpOrder)
         .ToArray()
         .SelectMany(x => x)
@@ -125,7 +125,7 @@ namespace IBApp {
       return order;
     }
 
-    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder(IBApi.Order parent, Contract contract, Contract under, double profit, int minTickMultilier) {
+    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder(IBApi.Order parent, Contract contract, double profit, int minTickMultilier) {
       bool isPreRTH = false;
       return new[] { parent }
       .Where(o => o.OrderType == "LMT")
@@ -137,7 +137,7 @@ namespace IBApp {
         parent.Transmit = false;
         var takeProfit = (profit >= 1 ? profit : lmtPrice * profit) * (parent.IsBuy() ? 1 : -1);
         var price = lmtPrice + takeProfit;
-        var ret= (order:new IBApi.Order() {
+        var ret = (order: new IBApi.Order() {
           Account = _accountId,
           ParentId = parent.OrderId,
           LmtPrice = OrderPrice(price, contract, minTickMultilier),
@@ -157,6 +157,39 @@ namespace IBApp {
       .OnEmpty(() => Trace($"No take profit order for {parent}"))
         ;
     }
+    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract, OrderCondition takeProfitCondition, double profit, int minTickMultilier) {
+      bool isPreRTH = false;
+      var isMarket = takeProfitCondition != null;
+      return new[] { parent }
+      .Where(o => o.OrderType == "LMT")
+      .Select(o => o.LmtPrice)
+      .ToObservable()
+      .Concat(Observable.Defer(() => IbClient.ReqPriceSafe(contract, 1, true).Select(p => parent.IsBuy() ? p.ask : p.bid)))
+      //.OnEmpty(() => Trace($"No take profit order for {parent}"))
+      .Select(lmtPrice => {
+        parent.Transmit = false;
+        var takeProfit = (profit >= 1 ? profit : lmtPrice * profit) * (parent.IsBuy() ? 1 : -1);
+        var price = lmtPrice + takeProfit;
+        var order = new IBApi.Order() {
+          Account = _accountId,
+          ParentId = parent.OrderId,
+          LmtPrice = isMarket ? 0 : OrderPrice(price, contract, minTickMultilier),
+          OrderId = NetOrderId(),
+          Action = parent.Action == "BUY" ? "SELL" : "BUY",
+          OrderType = isMarket ? "MKT" : "LMT",
+          TotalQuantity = parent.TotalQuantity,
+          Tif = GTC,
+          OutsideRth = isPreRTH,
+          OverridePercentageConstraints = true,
+          Transmit = true
+        };
+        order.Conditions.Add(takeProfitCondition);
+        return (order,price);
+      })
+      .Take(1)
+      .OnEmpty(() => Trace($"No take profit order for {parent}"))
+        ;
+    }
 
     public void OpenRollTrade(string currentSymbol, string rollSymbol) {
       (from cc in IbClient.ReqContractDetailsCached(currentSymbol).Select(cd => cd.Contract)
@@ -169,7 +202,7 @@ namespace IBApp {
           var tradeDate = IbClient.ServerTime.Date.AddHours(15).AddMinutes(45);
           if(t.cc.IsOption)
             CreateRoll(currentSymbol, rollSymbol)
-              .Subscribe(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false, DateTime.MaxValue,tradeDate.TimeCondition()));
+              .Subscribe(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false, DateTime.MaxValue, tradeDate.TimeCondition()));
           else
             OpenTrade(t.rc, -t.ct.position.Abs(), 0, 0, false, DateTime.MaxValue, tradeDate);
         });
