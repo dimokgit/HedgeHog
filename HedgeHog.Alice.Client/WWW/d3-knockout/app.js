@@ -1003,8 +1003,10 @@
       }.bind(this);
       this.openCovered = function (data) {
         var option = ko.unwrap(data.i);
+        var coverPrice = this.comboCurrentStrikeLevel();
+        if (!coverPrice) return showError("comboCurrentStrikeLevel is empty");
         this.canTrade(false);
-        serverCall("openCovered", [pair, option, this.comboQuantity(), this.comboCurrentStrikeLevel()]
+        serverCall("openCovered", [pair, option, this.comboQuantity(), ]
           , null
           , null
           , function () { this.canTrade(true); }.bind(this)

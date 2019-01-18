@@ -1471,8 +1471,9 @@
         <td data-bind="text:d3.format('$.0f')(maxPL())"></td>
         <td data-bind="text:d3.format('$.0f')(underPL())"></td>
         <td>
-          <button data-bind="click:$parent.openButterfly.bind($root,false,$data,true),enabled:$root.canTrade">Sell</button>
-          <button data-bind="click:$parent.openCovered,enabled:$root.canTrade">SELL</button>
+          <button data-bind="click:$parent.openButterfly.bind($root,false,$data,true),enabled:$root.canTrade" title="Sell with condition">Sell</button>
+          <button data-bind="click:$parent.openButterfly.bind($root,true,$data,true),enabled:$root.canTrade" title="Buy with condition">Buy</button>
+          <button data-bind="click:$parent.openCovered,enabled:$root.canTrade" title="Open Covered">OC</button>
         </td>
       </tr>
       <!-- /ko -->

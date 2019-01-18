@@ -98,8 +98,8 @@ namespace IBApp {
       var c = new Contract() {
         Symbol = under.Symbol,
         SecType = "BAG",
-        Exchange = under.Exchange,
-        Currency = under.Currency
+        Exchange = current.Exchange,
+        Currency = current.Currency
       };
       var call = new ComboLeg() {
         ConId = current.ConId,

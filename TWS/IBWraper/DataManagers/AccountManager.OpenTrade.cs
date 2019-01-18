@@ -39,7 +39,9 @@ namespace IBApp {
     }
 
 
-    public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate,DateTime googAfterDate) =>
+    public PendingOrder OpenTrade(Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false) =>
+      OpenTrade(contract, "", quantity, price, profit, useTakeProfit, DateTime.MaxValue);
+    public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, DateTime googAfterDate) =>
       OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, googAfterDate);
 
     public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
@@ -123,7 +125,7 @@ namespace IBApp {
       return order;
     }
 
-    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder(IBApi.Order parent, Contract contract, double profit, int minTickMultilier) {
+    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder(IBApi.Order parent, Contract contract, Contract under, double profit, int minTickMultilier) {
       bool isPreRTH = false;
       return new[] { parent }
       .Where(o => o.OrderType == "LMT")
@@ -135,7 +137,7 @@ namespace IBApp {
         parent.Transmit = false;
         var takeProfit = (profit >= 1 ? profit : lmtPrice * profit) * (parent.IsBuy() ? 1 : -1);
         var price = lmtPrice + takeProfit;
-        return (new IBApi.Order() {
+        var ret= (order:new IBApi.Order() {
           Account = _accountId,
           ParentId = parent.OrderId,
           LmtPrice = OrderPrice(price, contract, minTickMultilier),
@@ -148,6 +150,8 @@ namespace IBApp {
           OverridePercentageConstraints = true,
           Transmit = true
         }, price);
+        Contract.FromCache("ESH9").ForEach(u => ret.order.Conditions.Add(u.PriceFactory(2600, false, false)));
+        return ret;
       })
       .Take(1)
       .OnEmpty(() => Trace($"No take profit order for {parent}"))
@@ -155,11 +159,20 @@ namespace IBApp {
     }
 
     public void OpenRollTrade(string currentSymbol, string rollSymbol) {
-      CreateRoll(currentSymbol, rollSymbol)
-        .Subscribe(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false, DateTime.MaxValue
-        , null
-        //OrderConditionParam.PriceFactory(rc.currentContract.UnderContract.Single(), 100000, true, false)
-        ));
+      (from cc in IbClient.ReqContractDetailsCached(currentSymbol).Select(cd => cd.Contract)
+       from rc in IbClient.ReqContractDetailsCached(rollSymbol).Select(cd => cd.Contract)
+       from ct in ComboTrades(5)
+       where ct.contract.ConId == cc.ConId
+       select (cc, rc, ct)
+       )
+        .Subscribe(t => {
+          var tradeDate = IbClient.ServerTime.Date.AddHours(15).AddMinutes(45);
+          if(t.cc.IsOption)
+            CreateRoll(currentSymbol, rollSymbol)
+              .Subscribe(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false, DateTime.MaxValue,tradeDate.TimeCondition()));
+          else
+            OpenTrade(t.rc, -t.ct.position.Abs(), 0, 0, false, DateTime.MaxValue, tradeDate);
+        });
     }
     //private void OnUpdateError(int reqId, int code, string error, Exception exc) {
     //  UseOrderContracts(orderContracts => {

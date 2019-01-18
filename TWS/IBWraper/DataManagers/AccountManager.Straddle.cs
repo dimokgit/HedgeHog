@@ -91,10 +91,10 @@ namespace IBApp {
       .SelectMany(reqOptions => {
         var strikes = reqOptions.OrderBy(o => o.Strike.Abs(price)).Take(count * 2 + gap * 2).OrderBy(c => c.Strike).ToArray();
         var calls = strikes.Where(c => c.Right == "C").ToArray();
-        var puts = strikes.Where(c => c.Right == "P").ToArray() ;
+        var puts = strikes.Where(c => c.Right == "P").ToArray();
         var cps = from c in calls
-                   join p in puts on new { c.Strike, c.Expiration } equals new { p.Strike, p.Expiration }
-                   select new { c, p };
+                  join p in puts on new { c.Strike, c.Expiration } equals new { p.Strike, p.Expiration }
+                  select new { c, p };
         calls = cps.Select(cp => cp.c).ToArray();
         puts = cps.Select(cp => cp.p).ToArray();
         return calls.Skip(gap).Zip(puts, (call, put) => new[] { call, put })
@@ -239,7 +239,7 @@ namespace IBApp {
 
     static string _spy(string text) => $"{DateTime.Now:mm:ss.f}: {text} -- ";
     static string VXXFix(string symbol) => symbol == "VXX" ? "VXXB" : symbol;
-    public IObservable<Contract[]> CurrentRollOvers(string symbol, bool useStraddle, int strikes, int weeks) =>
+    public IObservable<Contract[]> CurrentRollOvers(string symbol, bool? isCall, int strikes, int weeks) =>
       (from cd in IbClient.ReqContractDetailsCached(symbol)
        where strikes > 0 && weeks > 0
        let contract = cd.Contract
@@ -260,7 +260,7 @@ namespace IBApp {
        from exp in exps
        from cds in IbClient.ReqOptionChainOldCache(underSymbol, exp, strike)//.Spy(_spy("ReqOptionChainOldCache 2"))
        from cdRoll in cds
-       where !contract.IsOption || useStraddle || contract.IsCall == cdRoll.IsCall
+       where !isCall.HasValue || isCall == cdRoll.IsCall
        group cdRoll by (cdRoll.Strike, cdRoll.LastTradeDateOrContractMonth) into g
        from sr in g.ToArray()
        select sr.Length == 1 ? sr.Single() : MakeStraddle(sr)
@@ -284,26 +284,26 @@ namespace IBApp {
       from yes in Observable.Return(trade.contract == contractFilter && strikesCount > 0 && weeks > 0)
       where yes
       let symbol = contractFilter.LocalSymbol
-      let IsCall = useStraddle ? (bool?)null : contractFilter.IsCall
+      let IsCall = useStraddle ? (bool?)null : contractFilter.IsOption ? contractFilter.IsCall : trade.position > 0
       let Expiration = contractFilter.IsOption ? contractFilter.Expiration : IbClient.ServerTime
       from roll in CurrentRollOverImpl2(trade, IsCall, Expiration, strikesCount, weeks)
       select roll;
 
-    public CURRENT_ROLLOVERS CurrentRollOverImpl2(ComboTrade trade, bool? IsCall, DateTime Expiration, int strikesCount, int weeks) =>
+    public CURRENT_ROLLOVERS CurrentRollOverImpl2(ComboTrade trade, bool? isCall, DateTime Expiration, int strikesCount, int weeks) =>
       from yes in Observable.Return(strikesCount > 0 && weeks > 0)
       where yes
       let symbol = trade.contract.LocalSymbol
-      from rolls in CurrentRollOvers(symbol, !trade.contract.IsOption || !IsCall.HasValue, strikesCount, weeks)
+      from rolls in CurrentRollOvers(symbol, isCall, strikesCount, weeks)
       from roll in rolls
-      let strikeSign = (trade.contract.IsCall ? -1 : trade.contract.IsPut ? 1 : 0) * trade.position.Sign()
+      let strikeSign = trade.contract.IsOption ? (trade.contract.IsCall ? -1 : trade.contract.IsPut ? 1 : 0) * trade.position.Sign() : 0
       let strikeDelta = (roll.ComboStrike() - trade.underPrice) * strikeSign
       from up in UnderPrice(trade.contract, 3)
       from rp in IbClient.ReqPriceSafe(roll, 3, false)
       let bid = roll.ExtrinsicValue(rp.bid, up.bid)
-      where !trade.contract.IsOption || bid > strikeDelta.Max(-trade.change)
+      where trade.contract.IsOption && bid > strikeDelta.Max(-trade.change) || bid > -trade.change
       let days = (roll.Expiration - Expiration).TotalDays.Floor()
       let workDays = Expiration.GetWorkingDays(roll.Expiration)
-      let amount = bid * trade.position.Abs() * (trade.contract.IsOption ? roll.ComboMultiplier : 1)
+      let amount = bid * trade.position.Abs() * roll.ComboMultiplier
       let w = 5.0 / workDays
       let perc = bid / up.bid
       select (trade, roll, days, bid, ppw: (bid * w).AutoRound2(2), amount, amount * w, (perc * 100).AutoRound2(3), delta: rp.delta.Round(1));

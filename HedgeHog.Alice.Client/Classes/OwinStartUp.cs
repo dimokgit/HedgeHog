@@ -735,7 +735,7 @@ namespace HedgeHog.Alice.Client {
 
             #region openOrders
             var orderMap = MonoidsCore.ToFunc((AccountManager.OrdeContractHolder oc, double ask, double bid) => new {
-              i = new[] { oc.contract.DateWithShort }.Concat(oc.order.Conditions.Select(c => (c + "").Replace("default Price of ",""))).Flatter("\n")
+              i = new[] { oc.contract.DateWithShort }.Concat(oc.order.Conditions.Select(c => (c + "").Replace("default Price of ", ""))).Flatter("\n")
                , id = oc.order.OrderId
                , f = oc.status.filled
                , r = oc.status.remaining
@@ -860,14 +860,21 @@ namespace HedgeHog.Alice.Client {
           }
         });
     }
+    static bool _isTest = true;
     [BasicAuthenticationFilter]
     public void OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice) {
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
+      var isSell = quantity < 0;
+      var hasCondition = conditionPrice.HasValue;
+      var dateAfter = _isTest ? DateTime.Now.AddDays(1) : DateTime.MinValue;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract)) {
-        if(!useMarketPrice && conditionPrice.HasValue)
-          Contract.FromCache(pair).ForEach(under =>
-            am.OpenTrade(contract, quantity, 0, 0, false, DateTime.MaxValue
-            , OrderConditionParam.PriceFactory(under, conditionPrice.Value, contract.IsCall, false)));
+        if(true)
+          (from price in DataManager.IBClientMaster.ReqPriceSafe(contract, 10, true)
+           from under in Contract.FromCache(pair)
+           select (price: isSell ? price.bid : price.ask, under)
+           ).Subscribe(t =>
+            am.OpenTrade(contract, "", quantity, hasCondition ? 0 : t.price, hasCondition ? 0 : 0.5, !hasCondition, DateTime.MaxValue, dateAfter
+            , hasCondition ? OrderConditionParam.PriceFactory(t.under, conditionPrice.Value, isSell && contract.IsCall, false) : null));
         else
           UseTraderMacro(pair, tm =>
            tm.HistoricalVolatilityByPips().ForEach(hv
