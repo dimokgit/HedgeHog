@@ -14,6 +14,10 @@ using System.Collections.Concurrent;
 
 namespace HedgeHog {
   public static class ObservableExtensions {
+    public static IObservable<T> ToObservable<T>(this Action<T> action) => Observable.FromEvent<Action<T>, T>(h => action += h, h => action -= h);
+    public static IObservable<U> ToObservable<T, U>(this Action<T> action, Func<T, U> map)
+      => Observable.FromEvent<Action<T>, U>(next => t => map(t), h => action += h, h => action -= h);
+
     public static IObservable<T> OrderBy<T, TKey>(this IObservable<T> source, Func<T, TKey> sort) =>
       source.ToArray().SelectMany(a => a.OrderBy(sort));
     public static IObservable<T> OrderByDescending<T, TKey>(this IObservable<T> source, Func<T, TKey> sort) =>

@@ -323,7 +323,7 @@ namespace HedgeHog.Alice.Store {
           .Where(tl => tl.TL.IsNullOrEmpty())
           .Select(t => t.Set)
           .Take(1)
-          .Zip(ii, (tl, i) => (tl, trend: CalcTrendLines(RatesArray.GetRange(i, RatesArray.Count - i), _ => _)))
+          .Zip(ii, (tl, i) => (tl, trend: i.Div(RatesArray.Count) > .80 ? _trenLinesEmptyRates.Value : CalcTrendLines(RatesArray.GetRange(i, RatesArray.Count - i), _ => _)))
           .ForEach(t => t.tl(t.trend));
       }
       return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();

@@ -625,7 +625,9 @@ namespace IBApp {
     }
 
     public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
-      return AccountManager.OpenTrade(pair, lots * (buy ? 1 : -1), (buy ? price?.Ask : price?.Bid).GetValueOrDefault(), takeProfit, false, DateTime.MaxValue);
+      if(!IBApi.Contract.Contracts.TryGetValue(pair, out var contract))
+        throw new Exception($"Pair:{pair} is not fround in Contracts");
+      return AccountManager.OpenTrade(contract, lots * (buy ? 1 : -1), (buy ? price?.Ask : price?.Bid).GetValueOrDefault(), takeProfit);
     }
 
     public PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment) {

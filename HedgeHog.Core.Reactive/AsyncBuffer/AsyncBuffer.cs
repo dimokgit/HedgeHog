@@ -12,16 +12,12 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
 namespace HedgeHog {
-  public class ActionAsyncBuffer :AsyncBuffer<ActionAsyncBuffer, Unit> {
-    private readonly Action a;
-    public ActionAsyncBuffer(Action a) : base() {
-      this.a = a;
-    }
+  public class ActionAsyncBuffer :AsyncBuffer<ActionAsyncBuffer, Action> {
     public ActionAsyncBuffer() : base() { }
-    protected override Action PushImpl(Unit context) => a;
+    protected override Action PushImpl(Action a) => a;
   }
 
-  public abstract class AsyncBuffer<TDerived, TContext> : IDisposable
+  public abstract class AsyncBuffer<TDerived, TContext> :IDisposable
     where TDerived : AsyncBuffer<TDerived, TContext>, new() {
 
     public static TDerived Create() { return new TDerived(); }
@@ -44,7 +40,7 @@ namespace HedgeHog {
       if(sample != TimeSpan.Zero)
         b = b.Sample(sample);
       _bufferDisposable = b
-        .SubscribeOn(NewThreadScheduler.Default)
+        .SubscribeOn(ObservableExtensions.BGTreadSchedulerFactory(System.Threading.ThreadPriority.BelowNormal))
         .Subscribe(a => {
           try {
             a();

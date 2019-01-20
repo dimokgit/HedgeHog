@@ -23,6 +23,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Performance11.psess = Performance11.psess
 		Performance12.psess = Performance12.psess
 		Performance13.psess = Performance13.psess
+		Performance14.psess = Performance14.psess
+		Performance15.psess = Performance15.psess
 		Performance2.psess = Performance2.psess
 		Performance3.psess = Performance3.psess
 		Performance4.psess = Performance4.psess
@@ -128,6 +130,66 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Manheim.Web", "..\Manheim.Web\Manheim.Web.csproj", "{5F4F24D9-AFF7-43CB-982F-3543A2A52CD9}"
 EndProject
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Mamheim.WebSite", "http://localhost:57982", "{F3F6E2FB-B6BB-44DF-AD35-38F2014E235A}"
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/Mamheim.WebSite"
+		Debug.AspNetCompiler.PhysicalPath = "..\Mamheim.WebSite\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\Mamheim.WebSite\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/Mamheim.WebSite"
+		Release.AspNetCompiler.PhysicalPath = "..\Mamheim.WebSite\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\Mamheim.WebSite\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "..\Mamheim.WebSite\"
+		DefaultWebSiteLanguage = "Visual C#"
+	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/Mamheim.WebSite"
+		Debug.AspNetCompiler.PhysicalPath = "..\Mamheim.WebSite\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\Mamheim.WebSite\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/Mamheim.WebSite"
+		Release.AspNetCompiler.PhysicalPath = "..\Mamheim.WebSite\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\Mamheim.WebSite\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "..\Mamheim.WebSite\"
+		DefaultWebSiteLanguage = "Visual C#"
+	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/Mamheim.WebSite"
+		Debug.AspNetCompiler.PhysicalPath = "..\Mamheim.WebSite\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\Mamheim.WebSite\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/Mamheim.WebSite"
+		Release.AspNetCompiler.PhysicalPath = "..\Mamheim.WebSite\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\Mamheim.WebSite\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "..\Mamheim.WebSite\"
+		DefaultWebSiteLanguage = "Visual C#"
+	EndProjectSection
 	ProjectSection(WebsiteProperties) = preProject
 		UseIISExpress = "true"
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
@@ -332,6 +394,63 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "WWW", "http://localhost:360
 		Release.AspNetCompiler.Debug = "False"
 		SlnRelativePath = "..\HedgeHog.Alice.Client\WWW\"
 	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/localhost_36054"
+		Debug.AspNetCompiler.PhysicalPath = "..\HedgeHog.Alice.Client\WWW\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_36054\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/localhost_36054"
+		Release.AspNetCompiler.PhysicalPath = "..\HedgeHog.Alice.Client\WWW\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_36054\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "..\HedgeHog.Alice.Client\WWW\"
+	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/localhost_36054"
+		Debug.AspNetCompiler.PhysicalPath = "..\HedgeHog.Alice.Client\WWW\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_36054\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/localhost_36054"
+		Release.AspNetCompiler.PhysicalPath = "..\HedgeHog.Alice.Client\WWW\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_36054\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "..\HedgeHog.Alice.Client\WWW\"
+	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/localhost_36054"
+		Debug.AspNetCompiler.PhysicalPath = "..\HedgeHog.Alice.Client\WWW\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_36054\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/localhost_36054"
+		Release.AspNetCompiler.PhysicalPath = "..\HedgeHog.Alice.Client\WWW\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_36054\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "..\HedgeHog.Alice.Client\WWW\"
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.CoreTests", "..\HedgeHog.CoreTests\HedgeHog.CoreTests.csproj", "{BCA76A7A-18D9-4776-BC77-C2015807F3A0}"
 EndProject
@@ -367,6 +486,9 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "WWW", "..\HedgeHog.Alice.Cl
 	EndProjectSection
 EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug SubArray|Any CPU = Debug SubArray|Any CPU
 		Debug SubArray|Mixed Platforms = Debug SubArray|Mixed Platforms
@@ -2350,6 +2472,12 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6F23D5F8-C1F8-4560-9E6F-D80A12A48837}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true

@@ -67,6 +67,16 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        {
+          //ibClient.ReqContractDetailsCached("ESH9")
+          //.Subscribe(cd => am.OpenTrade("ESH9", 1, 1, 0, false, DateTime.MaxValue));
+          //return;
+          (from cs in ibClient.ReqOptionChainOldCache("ESH9", DateTime.Now.Date.AddDays(1), 2675)
+           from c in cs
+           where c.IsCall
+           select c
+           ).Subscribe(c => am.OpenTradeWithConditions(c.LocalSymbol, 1, 5, 2640, false));
+        }
         return;
         {
           Task.Delay(3000).ContinueWith(_ => {
@@ -188,10 +198,6 @@ namespace ConsoleApp {
           TestAllStrikesAndExpirations(1);
           TestAllStrikesAndExpirations(2, () => TestAllStrikesAndExpirations(3));
         }
-        //ibClient.ReqOptionChainCache("ESH9")
-        //.Subscribe(cd => {
-        //  am.OpenTrade(cd.Contract,"", -1, 0, 0, false, DateTime.MinValue,new AccountManager.PriceConditionParam(cd.Contract,3000,true,false));
-        //});
         {
           LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
           HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
@@ -226,8 +232,8 @@ namespace ConsoleApp {
            from vxConId in ibClient.ReqContractDetailsCached("VXX").Select(cd => cd.Contract.ConId)
            select (esConId, vxConId)
            ).Subscribe(t => {
-             am.OpenTrade(ESVXXContract("SPY,VXX", t.esConId, t.vxConId, 1, 3), 1, 0, 0, false, DateTime.MaxValue, DateTime.Now.AddMonths(1).TimeCondition());
-             am.OpenTrade(ESVXXContract("SPY,VXX", t.esConId, t.vxConId, 1, 2), 1, 0, 0, false, DateTime.MaxValue, DateTime.Now.AddMonths(1).TimeCondition());
+             am.OpenTrade(ESVXXContract("SPY,VXX", t.esConId, t.vxConId, 1, 3), 1, 0, 0, false, default,default, DateTime.Now.AddMonths(1).TimeCondition());
+             am.OpenTrade(ESVXXContract("SPY,VXX", t.esConId, t.vxConId, 1, 2), 1, 0, 0, false, default,default, DateTime.Now.AddMonths(1).TimeCondition());
            });
         }
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();

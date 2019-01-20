@@ -11,11 +11,15 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using HedgeHog;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
+    Action<SuppRes> _rateChanged;
     public TradingMacro() {
       GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
+      BuyLevelObservable = Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _rateChanged += h, h => _rateChanged -= h);
+      BuyLevelDispose = BuyLevelObservable.Subscribe(_ => new Exception(new { BuyLevelObservable =new { _.Rate } }+""),()=> { });
       this.ObservableForProperty(tm => tm.Pair, false, false)
         .Where(_ => !IsInVirtualTrading)
         .Select(oc => oc.GetValue())

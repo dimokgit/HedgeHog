@@ -1,12 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   public partial class SuppRes {
-    public class EntryOrderIdEventArgs : EventArgs {
+    public class RateChangedEventArgs :EventArgs {
+      public RateChangedEventArgs(SuppRes suppRes) {
+        SuppRes = suppRes;
+      }
+      public SuppRes SuppRes { get; }
+    }
+    public class EntryOrderIdEventArgs :EventArgs {
       public string NewId { get; set; }
       public string OldId { get; set; }
       public EntryOrderIdEventArgs(string newId, string oldId) {
@@ -30,13 +37,21 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+
+    public SuppRes() {
+      BSObservable = Observable.FromEventPattern(h => RateChanged += h, h => RateChanged -= h)
+        .Select(e => e.Sender as SuppRes)
+        .Publish()
+        .RefCount();
+    }
+
     #region IsGhost
     IDisposable _isGhostDisposable;
     public bool IsGhost {
       get {
         if(_isGhostDisposable == null) {
           _isGhostDisposable = this.SubscribeToPropertiesChanged(sr => OnPropertyChanged("IsGhost")
-          ,ReactiveUI.RxApp.MainThreadScheduler
+          , ReactiveUI.RxApp.MainThreadScheduler
             , x => x.InManual
             , x => x.IsExitOnly
             , x => x.CanTrade
@@ -231,7 +246,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region TradesCountChanging Event
-    public class TradesCountChangingEventArgs : EventArgs {
+    public class TradesCountChangingEventArgs :EventArgs {
       public double NewValue { get; set; }
       public double OldValue { get; set; }
     }
@@ -332,22 +347,19 @@ namespace HedgeHog.Alice.Store {
     public class RateChangingEventArgs {
       public double Prev { get; set; }
       public double Next { get; set; }
-      public RateChangingEventArgs(double prev,double next) {
+      public RateChangingEventArgs(double prev, double next) {
         Prev = prev;
         Next = next;
       }
     }
 
     event EventHandler<RateChangingEventArgs> RateChangingEvent;
-    public event EventHandler<RateChangingEventArgs>  RateChanging
-    {
-      add
-      {
-        if (RateChangingEvent == null || !RateChangingEvent.GetInvocationList().Contains(value))
+    public event EventHandler<RateChangingEventArgs> RateChanging {
+      add {
+        if(RateChangingEvent == null || !RateChangingEvent.GetInvocationList().Contains(value))
           RateChangingEvent += value;
       }
-      remove
-      {
+      remove {
         RateChangingEvent -= value;
       }
     }
@@ -421,7 +433,7 @@ namespace HedgeHog.Alice.Store {
       if(CrossedEvent != null)
         CrossedEvent.GetInvocationList().ToList().ForEach(h => CrossedEvent -= h as EventHandler<CrossedEvetArgs>);
     }
-    public class CrossedEvetArgs : EventArgs {
+    public class CrossedEvetArgs :EventArgs {
       public double Direction { get; set; }
       public CrossedEvetArgs(double direction) {
         this.Direction = direction;
@@ -462,6 +474,7 @@ namespace HedgeHog.Alice.Store {
 
     public DateTime? TradeDate { get; set; }
     public TradingMacro TradingMacro { get; internal set; }
+    public IObservable<SuppRes> BSObservable { get; }
   }
   public static class SuppResMixins {
     public static bool HasCanTradeCorridorChanged(this IList<SuppRes> buySellLevels) {

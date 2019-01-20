@@ -508,7 +508,7 @@ namespace HedgeHog.Alice.Store {
           if(_MaxHedgeProfitSubject == null) {
             _MaxHedgeProfitSubject = new Subject<(DateTime d, Action a)>();
             _MaxHedgeProfitSubject
-              .DistinctUntilChanged(d => d.d.Round(MathCore.RoundTo.Minute))
+              .DistinctUntilChanged(d => d.d.Round(MathCore.RoundTo.Hour))
               .Subscribe(s => s.a(), exc => { });
           }
         return _MaxHedgeProfitSubject;
@@ -808,6 +808,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region SetCentersOfMass Subject
+    ActionAsyncBuffer _SetCentersOfMassAsyncBuffer;
+    ActionAsyncBuffer SetCentersOfMassAsyncBuffer => _SetCentersOfMassAsyncBuffer ?? (_SetCentersOfMassAsyncBuffer = new ActionAsyncBuffer());
     object _SetCentersOfMassSubjectLocker = new object();
     ISubject<Action> _SetCentersOfMassSubject;
     ISubject<Action> SetCentersOfMassSubject {

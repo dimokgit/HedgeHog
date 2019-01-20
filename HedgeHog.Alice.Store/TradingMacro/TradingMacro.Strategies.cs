@@ -106,7 +106,9 @@ namespace HedgeHog.Alice.Store {
             var pos = TradingRatio.ToInt();
             Log = new Exception($"{nameof(StrategyLong)}:{nameof(am.OpenTrade)}:{new { Pair }}");
             var p = CurrentPrice.Bid;
-            am.OpenTrade(Pair, pos, p, CalculateTakeProfit(), true, ServerTime.AddMinutes(10));
+            if(!IBApi.Contract.Contracts.TryGetValue(Pair, out var contract))
+              throw new Exception($"Pair:{Pair} is not fround in Contracts");
+            am.OpenTrade(contract, pos, p, CalculateTakeProfit(), true, ServerTime.AddMinutes(10));
           });
       }
     });

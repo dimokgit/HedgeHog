@@ -641,7 +641,9 @@ namespace IBApp {
     private int NetOrderId() => IbClient.ValidOrderId();
     public PendingOrder OpenTradeWhatIf(string pair, bool buy) {
       var anount = GetTrades().Where(t => t.Pair == pair).Select(t => t.GrossPL).DefaultIfEmpty(Account.Equity).Sum() / 2;
-      return OpenTrade(ContractSamples.ContractFactory(pair), pair.IsFuture() ? 1 : 100, 0.0, 0.0, false, DateTime.MaxValue);
+      if(!IBApi.Contract.Contracts.TryGetValue(pair, out var contract))
+        throw new Exception($"Pair:{pair} is not fround in Contracts");
+      return OpenTrade(contract, contract.IsFuture ? 1 : 100);
     }
     public PendingOrder OpenTrade_remove(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
       return OpenTrade_remove(pair, buy, lots, takeProfit, stopLoss, remark, price, false);
@@ -752,11 +754,12 @@ namespace IBApp {
     }
 
 
-    public int PlaceOrder(IBApi.Order order, Contract contract) {
+    public IObservable<OpenOrderMessage> PlaceOrder(IBApi.Order order, Contract contract) {
       if(order.OrderId == 0)
         order.OrderId = NextReqId();
+      var obs = OpenOrderObservable.Where(m => m.OrderId == order.OrderId);
       IbClient.ClientSocket.placeOrder(order.OrderId, contract, order);
-      return order.OrderId;
+      return obs;
     }
     public PendingOrder OpenSpreadTrade((string pair, bool buy, int lots)[] legs, double takeProfit, double stopLoss, string remark, bool whatIf) {
       UseOrderContracts(orderContracts => {

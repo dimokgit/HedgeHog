@@ -62,12 +62,13 @@ namespace HedgeHog.Alice.Client {
         var trader = App.container.GetExportedValue<TraderModel>();
 
         NewThreadScheduler.Default.Schedule(TimeSpan.FromSeconds(1), () => {
-          trader.TradesManager.OrderAddedObservable
-          .Select(a=>a.Order)
-          .Merge(trader.TradesManager.OrderRemovedObservable)
-          .Subscribe(o => {
-            myHub().Clients.All.priceChanged("");
-          });
+          if(!trader.IsInVirtualTrading)
+            trader.TradesManager.OrderAddedObservable
+            .Select(a => a.Order)
+            .Merge(trader.TradesManager.OrderRemovedObservable)
+            .Subscribe(o => {
+              myHub().Clients.All.priceChanged("");
+            });
           priceChanged = trader.PriceChanged
           .Where(p => !Contract.FromCache(p.EventArgs.Price.Pair).Any(c => c.HasOptions))
             .Select(x => x.EventArgs.Price.Pair.Replace("/", "").ToLower())
@@ -861,7 +862,7 @@ namespace HedgeHog.Alice.Client {
     static bool _isTest = true;
     [BasicAuthenticationFilter]
     public void OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice) {
-      var profit = UseTraderMacro(pair, tm => tm.Trends.Where(tl => !tl.IsEmpty).Select(tl=>tl.StDev).DefaultIfEmpty().Average() * 4).Single();
+      var profit = UseTraderMacro(pair, tm => tm.Trends.Where(tl => !tl.IsEmpty).Select(tl => tl.StDev).DefaultIfEmpty(5).Average() * 4).Single();
       if(profit == 0) throw new Exception("No trend line found for profit calculation");
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       var isSell = quantity < 0;
@@ -875,11 +876,11 @@ namespace HedgeHog.Alice.Client {
           (from price in DataManager.IBClientMaster.ReqPriceSafe(contract, 10, true)
            from under in Contract.FromCache(pair)
            from up in DataManager.IBClientMaster.ReqPriceSafe(under, 10, true).Select(p => p.ask.Avg(p.bid))
-           let cond = under.PriceFactory(up + upProfit, isMore, false)
+           let cond = under.PriceCondition(up + upProfit, isMore, false)
            select (price: isSell ? price.bid : price.ask, under, cond)
            ).Subscribe(t =>
-            am.OpenTrade(contract, "", quantity, hasCondition ? 0 : t.price, 0, true, DateTime.MaxValue, dateAfter
-            , hasCondition ? OrderConditionParam.PriceFactory(t.under, conditionPrice.Value, isSell && contract.IsCall, false) : null, t.cond));
+            am.OpenTrade(contract, quantity, hasCondition ? 0 : t.price, 0, true, DateTime.MaxValue, dateAfter
+, hasCondition ? OrderConditionParam.PriceCondition(t.under, conditionPrice.Value, isSell && contract.IsCall, false) : null, t.cond, ""));
         else
           UseTraderMacro(pair, tm =>
            tm.HistoricalVolatilityByPips().ForEach(hv
@@ -917,7 +918,7 @@ namespace HedgeHog.Alice.Client {
             });
           } else {
             //am.CancelAllOrders("CloseCombo");
-            am.OpenTrade(c.contract, -c.position, conditionPrice.HasValue ? 0 : c.closePrice, 0.0, false, DateTime.MaxValue, c.under.PriceFactory(conditionPrice.Value, false, false));
+            am.OpenTrade(c.contract, -c.position, conditionPrice.HasValue ? 0 : c.closePrice, 0.0, false, default, default, c.under.PriceCondition(conditionPrice.Value, false, false));
           }
         });
       }

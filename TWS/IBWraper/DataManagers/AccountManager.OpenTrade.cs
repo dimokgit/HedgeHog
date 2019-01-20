@@ -4,6 +4,7 @@ using IBApi;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -25,34 +26,36 @@ namespace IBApp {
       baseOrder.AlgoParams.Add(new TagValue("adaptivePriority", priority));
     }
 
-    public void OpenLimitOrder(Contract contract, int quantity, double profit, bool useMarketPrice, bool useTakeProfit, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+    public void OpenLimitOrder(Contract contract, int quantity, double profit, bool useMarketPrice, bool useTakeProfit) {
       double ask((double ask, double bid, DateTime time, double) p) => useMarketPrice ? p.ask : p.bid;
       double bid(double a, double b) => useMarketPrice ? b : a;
       IbClient.ReqPriceSafe(contract, 1, true).Select(p => quantity > 0 ? ask(p) : bid(p.ask, p.bid))
-       .Subscribe(price => OpenTrade(contract, "", quantity, price, profit, useTakeProfit, DateTime.MaxValue, minTickMultiplier, Caller));
+       .Subscribe(price => OpenTrade(contract, quantity, price, profit, useTakeProfit));
     }
 
-    public PendingOrder OpenTrade(string pair, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
-      if(!IBApi.Contract.Contracts.TryGetValue(pair, out var contract))
-        throw new Exception($"Pair:{pair} is not fround in Contracts");
-      return OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, minTickMultiplier, Caller);
+    public void OpenTradeWithConditions(string symbol, int quantity, double profit, double? conditionPrice, bool _isTest) {
+      var isSell = quantity < 0;
+      var isBuy = quantity > 0;
+      var hasCondition = conditionPrice.HasValue;
+      var needLimitPrice = !hasCondition;
+      var dateAfter = _isTest ? DateTime.Now.Date.AddDays(3) : DateTime.MinValue;
+      (from c in IbClient.ReqContractDetailsCached(symbol).Select(cd => cd.Contract)
+       from uc in c.UnderContract
+       let isMore = c.IsCall && isBuy || c.IsPut && isSell
+       let upProfit = profit * (isMore ? 1 : -1)
+       from p in needLimitPrice ? IbClient.ReqPriceSafe(c, 1, true) : IbClient.ReqPriceEmpty()
+       from up in IbClient.ReqPriceSafe(uc, 1, true).Select(p => p.ask.Avg(p.bid))
+       let cond = uc.PriceCondition(up + upProfit, isMore, false)
+       select (c, price: isSell ? p.bid : p.ask, uc, cond)
+       )
+       .Subscribe(t => OpenTrade(t.c, quantity, hasCondition ? 0 : t.price, 0, true, DateTime.MaxValue, dateAfter
+, hasCondition ? OrderConditionParam.PriceCondition(t.uc, conditionPrice.Value, isSell && t.c.IsCall, false) : null, t.cond, ""));
     }
 
-
-    public PendingOrder OpenTrade(Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false) =>
-      OpenTrade(contract, "", quantity, price, profit, useTakeProfit, DateTime.MaxValue);
-    public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, DateTime googAfterDate) =>
-      OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, googAfterDate);
-
-    public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
-      OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, minTickMultiplier, Caller);
-    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "")
-    => OpenTrade(contract, type, quantity, price, profit, useTakeProfit, goodTillDate, DateTime.MinValue, null, null, minTickMultiplier, Caller);
-    public PendingOrder OpenTrade(Contract contract, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, OrderCondition condition, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") =>
-      OpenTrade(contract, "", quantity, price, profit, useTakeProfit, goodTillDate, DateTime.MinValue, condition, null, minTickMultiplier, Caller);
-    public PendingOrder OpenTrade(Contract contract, string type, int quantity, double price, double profit, bool useTakeProfit, DateTime goodTillDate, DateTime goodAfterDate, OrderCondition condition = null, OrderCondition takeProfitCondition = null, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+    private readonly SemaphoreSlim _mutex = new SemaphoreSlim(1);
+    public PendingOrder OpenTrade(Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false, DateTime goodTillDate = default, DateTime goodAfterDate = default, OrderCondition condition = null, OrderCondition takeProfitCondition = null, string type = "", int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
       var timeoutInMilliseconds = 5000;
-      if(!Monitor.TryEnter(_OpenTradeSync, timeoutInMilliseconds)) {
+      if(!_mutex.Wait(timeoutInMilliseconds)) {
         var message = new { contract, quantity, Method = nameof(OpenTrade), Caller, timeoutInMilliseconds } + "";
         Trace(new TimeoutException(message));
         return null;
@@ -92,12 +95,12 @@ namespace IBApp {
           OrderContractsInternal.Add(new OrdeContractHolder(o.order, contract));
           _verbous(new { plaseOrder = new { o, contract } });
           IbClient.ClientSocket.placeOrder(o.order.OrderId, contract, o.order);
-        }, exc => ExitMomitor(), ExitMomitor);
+        }, exc => ExitMomitor(), () => ExitMomitor());
       return null;
       /// Locals
       void ExitMomitor() {
         Trace($"{nameof(OpenTrade)}: exiting {nameof(_OpenTradeSync)} monitor");
-        Monitor.Exit(_OpenTradeSync);
+        _mutex.Release();
       }
     }
     private IBApi.Order OrderFactory(Contract contract, int quantity, double price, DateTime goodTillDate, DateTime goodAfterDate, int minTickMultiplier, string orderType, bool isPreRTH) {
@@ -111,12 +114,12 @@ namespace IBApp {
         OutsideRth = isPreRTH,
         OverridePercentageConstraints = true
       };
-      if(!goodTillDate.IsMax()) {
+      if(goodTillDate != default && !goodTillDate.IsMax()) {
         order.Tif = GTD;
         order.GoodTillDate = goodTillDate.ToTWSString();
       } else
         order.Tif = GTC;
-      if(!goodAfterDate.IsMin())
+      if(goodAfterDate != default)
         order.GoodAfterTime = goodAfterDate.ToTWSString();
       if(contract.Symbol.Contains(",")) {
         order.SmartComboRoutingParams = new List<TagValue>();
@@ -150,7 +153,7 @@ namespace IBApp {
           OverridePercentageConstraints = true,
           Transmit = true
         }, price);
-        Contract.FromCache("ESH9").ForEach(u => ret.order.Conditions.Add(u.PriceFactory(2600, false, false)));
+        Contract.FromCache("ESH9").ForEach(u => ret.order.Conditions.Add(u.PriceCondition(2600, false, false)));
         return ret;
       })
       .Take(1)
@@ -164,7 +167,10 @@ namespace IBApp {
       .Where(o => o.OrderType == "LMT")
       .Select(o => o.LmtPrice)
       .ToObservable()
-      .Concat(Observable.Defer(() => IbClient.ReqPriceSafe(contract, 1, true).Select(p => parent.IsBuy() ? p.ask : p.bid)))
+      .Concat(Observable.Defer(()
+      => IbClient.ReqPriceSafe(contract, 1, true).Select(p => parent.IsBuy() ? p.ask : p.bid).SubscribeOn(Scheduler.CurrentThread)
+      ).SubscribeOn(Scheduler.CurrentThread)
+      ).SubscribeOn(Scheduler.CurrentThread)
       //.OnEmpty(() => Trace($"No take profit order for {parent}"))
       .Select(lmtPrice => {
         parent.Transmit = false;
@@ -184,7 +190,7 @@ namespace IBApp {
           Transmit = true
         };
         order.Conditions.Add(takeProfitCondition);
-        return (order,price);
+        return (order, price);
       })
       .Take(1)
       .OnEmpty(() => Trace($"No take profit order for {parent}"))
@@ -202,7 +208,7 @@ namespace IBApp {
           var tradeDate = IbClient.ServerTime.Date.AddHours(15).AddMinutes(45);
           if(t.cc.IsOption)
             CreateRoll(currentSymbol, rollSymbol)
-              .Subscribe(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false, DateTime.MaxValue, tradeDate.TimeCondition()));
+              .Subscribe(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false, default, default, tradeDate.TimeCondition()));
           else
             OpenTrade(t.rc, -t.ct.position.Abs(), 0, 0, false, DateTime.MaxValue, tradeDate);
         });

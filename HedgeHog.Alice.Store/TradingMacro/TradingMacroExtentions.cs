@@ -257,6 +257,8 @@ namespace HedgeHog.Alice.Store {
     static NewsCasterModel _newsCaster { get { return NewsCasterModel.Default; } }
 
     Func<IList<Rate>, List<RateGroup>> GroupRates { get; }
+    public IObservable<SuppRes> BuyLevelObservable { get; }
+    public IDisposable BuyLevelDispose { get; }
 
     #endregion
 
@@ -1135,8 +1137,8 @@ namespace HedgeHog.Alice.Store {
               .Subscribe(x => {
                 CurrentPut = x.options.Where(p => p.option.IsPut && p.strikeAvg <= x.priceBid).OrderByDescending(t => t.strikeAvg).Take(1).ToList();
                 CurrentCall = x.options.Where(p => p.option.IsCall && p.strikeAvg >= x.priceBid).OrderBy(t => t.strikeAvg).Take(1).ToList();
-              //var currPuts = x.options.OrderBy(o=>o.b)
-              CurrentOptions = x.options.ToList();
+                //var currPuts = x.options.OrderBy(o=>o.b)
+                CurrentOptions = x.options.ToList();
               }, exc => { Log = exc; Debugger.Break(); }, () => { Log = new Exception("_currentOptionDisposable done"); Debugger.Break(); });
 
             _currentStraddleDisposable?.Dispose();
@@ -1145,7 +1147,7 @@ namespace HedgeHog.Alice.Store {
               let priceBid = price.EventArgs.Price.Bid
               from straddles in ibWraper.AccountManager.CurrentStraddles(Pair, ExpDayToSkip(), 5, 0)
                 //let cs = straddles.Where(s => s.strikeAvg > priceBid).OrderBy(s => s.strikeAvg).Skip(1).Take(1).ToList()
-            let cs = straddles.OrderByDescending(s => s.delta).Take(1).ToList()
+              let cs = straddles.OrderByDescending(s => s.delta).Take(1).ToList()
               where cs.Any()
               select cs
               )
@@ -2093,6 +2095,13 @@ namespace HedgeHog.Alice.Store {
         SuppRes_AssociationChanged(SuppRes, new CollectionChangeEventArgs(CollectionChangeAction.Add, sr));
         //GlobalStorage.UseAliceContext(c => c.SuppRes.AddObject(sr));
         //GlobalStorage.UseAliceContext(c => c.SaveChanges());
+        sr.BSObservable
+          .Select(_ => (r: _.Rate, sr: _))
+          .Scan((p, n) => p.r.Abs(n.r) < 1 ? p : n)
+          .DistinctUntilChanged(_ => _.r)
+          .Select(_ => _.sr)
+          .Subscribe(_ => _rateChanged(_));
+
         return sr;
       } catch(Exception exc) {
         Log = exc;
@@ -3455,9 +3464,9 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
 
     ActionAsyncBuffer _setHVsAsyncBuffer;
-    ActionAsyncBuffer SetHVsAsyncBuffer => _setHVsAsyncBuffer ?? (_setHVsAsyncBuffer = new ActionAsyncBuffer(() => SetHVsImpl()));
+    ActionAsyncBuffer SetHVsAsyncBuffer => _setHVsAsyncBuffer ?? (_setHVsAsyncBuffer = new ActionAsyncBuffer());
 
-    void SetHVs() => SetHVsAsyncBuffer.Push(Unit.Default);
+    void SetHVs() => SetHVsAsyncBuffer.Push(SetHVsImpl);
     void SetHVsImpl() {
       //Log = new Exception($"ShowVoltsByHV: {this} start");
       (from ts in UseRatesInternal(ri => ri.Select((r, i) => (r, i)).Skip(BarsCount).Where(ra => GetHV(ra.r).IsNaN())).ToArray()

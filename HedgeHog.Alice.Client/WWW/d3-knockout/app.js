@@ -789,7 +789,7 @@
       this.doShowChartBid = ko.observable("p");
 
       // #region refreshChartsInterval
-      this.refreshChartsInterval = ko.observable(1000 * 10);
+      this.refreshChartsInterval = ko.observable(1000 * 10).extend({ persist: "refreshChartsInterval" + pair });
       this.refreshChartsInterval.subscribe(function () {
         if (resetPlotterHandler()) {
           clearInterval(resetPlotterHandler());
@@ -818,6 +818,7 @@
         return [
           { n: "doShowChartBid", v: self.doShowChartBid, t: gettype(self.doShowChartBid()) },
           { n: "refreshChartsInterval", v: self.refreshChartsInterval, t: gettype(self.refreshChartsInterval()) },
+          { n: "refreshChartsInterval", v: self.refreshCharts2Interval, t: gettype(self.refreshCharts2Interval()) },
           //{ n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
           //{ n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
         ];
@@ -950,7 +951,7 @@
         });
       }, this);
       this.currentCombos = ko.pureComputed(function () {
-        var cc= this.butterflies()
+        var cc = this.butterflies()
           .concat(this.bullPuts())
           .concat(this.options());
         return cc;
@@ -1014,7 +1015,7 @@
       }.bind(this);
       this.closeCombo = function (key) {
         this.canTrade(false);
-        serverCall("closeCombo", [ko.utils.unwrapObservable(key),self.comboCurrentStrikeLevel()], null, null, function () { this.canTrade(false); }.bind(this));
+        serverCall("closeCombo", [ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel()], null, null, function () { this.canTrade(false); }.bind(this));
       }.bind(this);
       this.cancelAllOrders = function (key) {
         serverCall("cancelAllOrders", []);
@@ -1363,7 +1364,7 @@
         chartData.isHedged = response.ish;
         chartData.hph = response.hph;
         chartData.vfs = !!response.vfs;
-        resetRefreshChartInterval(chartData, lineChartData, lastRefreshDate, askRatesDatesReset, 1);
+        resetRefreshChartInterval(chartData, lineChartData, lastRefreshDate, askRatesDatesReset, self.refreshChartsInterval());
         chartData.vfss = chartData.vfs & response.vfss;
         chartData.tps2High = response.tps2High;
         chartData.tps2Low = response.tps2Low;
@@ -1435,7 +1436,7 @@
         chartData2.vfs = !!response.vfs;
         chartData2.isHedged = response.ish;
         chartData2.hph = response.hph;
-        resetRefreshChartInterval(chartData2, lineChartData2, lastRefreshDate2, askRatesDatesReset2, 60 * 3);
+        resetRefreshChartInterval(chartData2, lineChartData2, lastRefreshDate2, askRatesDatesReset2, self.refreshCharts2Interval());
         chartData2.vfss = chartData2.vfs && response.vfss;
         chartData2.tps2High = response.tps2High;
         chartData2.tps2Low = response.tps2Low;
