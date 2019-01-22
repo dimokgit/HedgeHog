@@ -358,9 +358,10 @@
       table.orders tbody tr td {
         padding: 0px 2px;
       }
-  button{
-    line-height:80%;
-  }
+
+    button {
+      line-height: 80%;
+    }
   </style>
   <script>
     $(function () {
@@ -1388,12 +1389,16 @@
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
         <select data-bind="options:liveCombos,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>
-      <div data-bind="foreach:combosMin" style="display:inline-table">
-        <label>Avg:</label><b data-bind="text:d3.format('.3f')(avg)"></b>
-        <label>Spread:</label><b data-bind="text:d3.format('.3f')(spread)"></b>
-        <br />
-        <label>Bid:</label><b data-bind="text:d3.format('.3f')(bid)"></b>
-        <label>Ask:</label><b data-bind="text:d3.format('.3f')(ask)"></b>
+      <div data-bind="visible:strategyCall().length" title="Strategy options">
+        <table border="1">
+          <tr>
+            <!-- ko foreach:strategyCall -->
+            <td><button data-bind="click:$root.openStrategyOption,text:cp()=='C'?'Call':'Put'"></button></td>
+            <td data-bind="text:d3.format('.0f')(l())"></td>
+            <td data-bind="text:o"></td>
+            <!-- /ko -->
+          </tr>
+        </table>
       </div>
     </div>
     <table border="1">
@@ -1470,8 +1475,8 @@
         <!--<td data-bind="text:d3.format('.2f')(bid())"></td>-->
         <td data-bind="text:d3.format('.2f')(ask())"></td>
         <td data-bind="text:d3.format('$.0f')(maxPL())"></td>
-        <td data-bind="text:d3.format('.0f')(Math.abs(greekDelta()))+'/'+d3.format('.1f')($root.currentProfit()*Math.abs(greekDelta())/ask())"></td>
-<!--        <td data-bind="text:d3.format('$.0f')(underPL())"></td>-->
+        <td data-bind="text:d3.format('.1f')(Math.abs(greekDelta()))+'/'+d3.format('.1f')($root.currentProfit()*Math.abs(greekDelta())/ask())"></td>
+        <!--        <td data-bind="text:d3.format('$.0f')(underPL())"></td>-->
         <td>
           <button data-bind="click:$parent.openButterfly.bind($root,false,$data,true),enabled:$root.canTrade,visible:!$root.hasStrategy()" title="Sell with condition">Sell</button>
           <button data-bind="click:$parent.openButterfly.bind($root,true,$data,true),enabled:$root.canTrade" title="Buy with condition">Buy</button>

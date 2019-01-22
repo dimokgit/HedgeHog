@@ -20,7 +20,7 @@ namespace IBApp {
       var o = (tc as OperatorCondition).ToString();
       yield return (o, tc.Time);
     }
-    public static OrderCondition PriceCondition(this Contract contract, double conditionPrice, bool isMore, bool isConjunction) {
+    public static OrderCondition PriceCondition(this Contract contract, double conditionPrice, bool isMore, bool isConjunction = false) {
       //! [price_condition]
       //Conditions have to be created via the OrderCondition.Create 
       PriceCondition priceCondition = (PriceCondition)OrderCondition.Create(OrderConditionType.Price);

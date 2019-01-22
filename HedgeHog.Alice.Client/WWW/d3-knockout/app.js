@@ -341,6 +341,9 @@
     serverCall("readStraddles", args
       , function (xx) {
         xx.forEach(function (x) {
+
+          dataViewModel.callByBS();
+
           if (!dataViewModel.comboQuantity())
             dataViewModel.comboQuantity(x.TradingRatio);
           if (!dataViewModel.expDaysSkip())
@@ -443,6 +446,24 @@
       }
       this.manualToggle = function () {
         serverCall("manualToggle", [pair]);
+      }
+      this.strategyCall = ko.mapping.fromJS(ko.observableArray())
+      this.callByBS = function () {
+        var args = [pair];
+        args.noNote = true;
+        serverCall("callByBS", args, calls=> {
+          var map = {
+            key: function (item) {
+              return ko.utils.unwrapObservable(item.i);
+            }
+          };
+          ko.mapping.fromJS(calls, null, self.strategyCall);
+        });
+      }
+      this.openStrategyOption = function (data) {
+        var l = ko.unwrap(data.l);
+        var o=ko.unwrap(data.o);
+        serverCall("openStrategyOption", [o, self.comboQuantity(), l, self.currentProfit()]);
       }
       // #endregion
 
@@ -995,7 +1016,7 @@
       this.openButterfly = function (isBuy, key, useMarketPrice) {
         this.canTrade(false);
         var combo = ko.unwrap(ko.unwrap(key).i);
-        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(),this.currentProfit()]
+        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(), this.currentProfit()]
           , null
           , null
           , function () { this.canTrade(true); }.bind(this)

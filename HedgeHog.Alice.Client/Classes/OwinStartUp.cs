@@ -865,43 +865,77 @@ namespace HedgeHog.Alice.Client {
           }
         });
     }
-    static bool _isTest = true;
+    static bool _isTest = false;
     [BasicAuthenticationFilter]
     public void OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice, double? profitInPoints) {
+      var tm = UseTraderMacro(pair).Single();
       var profit = profitInPoints.HasValue
         ? profitInPoints.Value
-        : UseTraderMacro(pair, tm => tm.Trends.Where(tl => !tl.IsEmpty).Select(tl => tl.StDev).DefaultIfEmpty(5).Average() * 4).Single();
+        : tm.Trends.Where(tl => !tl.IsEmpty).Select(tl => tl.StDev).DefaultIfEmpty(5).Average() * 4;
       if(profit == 0) throw new Exception("No trend line found for profit calculation");
-      var hasStrategy = UseTraderMacro(pair, tm => tm.Strategy.HasFlag(Strategies.Universal)).Any(b => b);
-      var bs = hasStrategy ? UseTraderMacro(pair, tm => new { b = tm.BuyLevel.Rate, s = tm.SellLevel.Rate }).SingleOrDefault() : new { b = double.NaN, s = double.NaN };
+      var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
+      if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
+        OpenCondOrder(am, tm, contract, null, quantity, conditionPrice, profit);
+      else
+        throw new Exception(new { instrument, not = "found" } + "");
+    }
+    static void OpenCondOrder(AccountManager am, TradingMacro tm, Contract option, bool? isCall, int quantity, double? conditionPrice, double profit) {
+      if(option != null && isCall != null || option == null && isCall == null)
+        throw new Exception(new { OpenCondOrder = new { option, isCall } } + "");
+      var hasStrategy = tm.Strategy.HasFlag(Strategies.Universal);
+      var bs = hasStrategy ? new { b = tm.BuyLevel.Rate, s = tm.SellLevel.Rate } : new { b = double.NaN, s = double.NaN };
       if(hasStrategy && (bs.s.IsNaN() || bs.b.IsNaN()))
         throw new Exception("Buy/Sell levels are not set by strategy");
-      var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       var isSell = quantity < 0;
       var isBuy = quantity > 0;
       var hasCondition = conditionPrice.HasValue;
       var dateAfter = _isTest ? DateTime.Now.AddDays(1) : DateTime.MinValue;
-      if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract)) {
-        var isMore = contract.IsCall && isBuy || contract.IsPut && isSell;
-        var upProfit = profit * (isMore ? 1 : -1);
-        if(true)
-          (from price in DataManager.IBClientMaster.ReqPriceSafe(contract, 10, true)
-           from under in Contract.FromCache(pair)
-           from up in DataManager.IBClientMaster.ReqPriceSafe(under, 10, true).Select(p => p.ask.Avg(p.bid))
-           let condPrice = conditionPrice.GetValueOrDefault(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
-           let condTakeProfit = under.PriceCondition((condPrice.IfNaNOrZero(up) + upProfit).Round(2), isMore, false)
-           select new { price = condPrice == 0 ? isSell ? price.bid : price.ask : 0, under, condTakeProfit, condPrice, isMore }
-           ).Subscribe(t =>
-            am.OpenTrade(contract, quantity, t.price, 0, true, DateTime.MaxValue, dateAfter
-            , t.price != 0 ? null : OrderConditionParam.PriceCondition(t.under, t.condPrice.Round(2), !t.isMore, false)
-            , t.condTakeProfit, ""));
-        else
-          UseTraderMacro(pair, tm =>
-           tm.HistoricalVolatilityByPips().ForEach(hv
-           => am.OpenLimitOrder(contract, quantity, hv, useMarketPrice, false)));
-      } else
-        throw new Exception(new { instrument, not = "found" } + "");
+
+      var contracts = new[] { option }.ToObservable();
+      (from contract in contracts
+       let isMore = contract.IsCall && isBuy || contract.IsPut && isSell
+       let upProfit = profit * (isMore ? 1 : -1)
+       from price in DataManager.IBClientMaster.ReqPriceSafe(contract, 10, true)
+       from under in contract.UnderContract
+       from up in DataManager.IBClientMaster.ReqPriceSafe(under, 10, true).Select(p => p.ask.Avg(p.bid))
+       let condPrice = conditionPrice.GetValueOrDefault(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
+       let condTakeProfit = under.PriceCondition((condPrice.IfNaNOrZero(up) + upProfit).Round(2), isMore, false)
+       select new { price = condPrice == 0 ? isSell ? price.bid : price.ask : 0, under, condTakeProfit, condPrice, isMore, contract }
+       ).Subscribe(t =>
+        am.OpenTrade(t.contract, quantity, t.price, 0, true, DateTime.MaxValue, dateAfter
+        , t.price != 0 ? null : OrderConditionParam.PriceCondition(t.under, t.condPrice.Round(2), !t.isMore, false)
+        , t.condTakeProfit));
     }
+    public void OpenStrategyOption(string option, int quantity, double level, double profit) {
+      (from contract in DataManager.IBClientMaster.ReqContractDetailsCached(option).Select(cd => cd.Contract)
+       from under in contract.UnderContract
+       let openCond = under.PriceCondition(level.Round(2), contract.IsPut)
+       let tpCond = under.PriceCondition((level + profit * (contract.IsCall ? 1 : -1)).Round(2), contract.IsCall)
+       let dateAfter = _isTest ? DateTime.Now.AddHours(10) : DateTime.MinValue
+       select new { contract, quantity, openCond, tpCond, dateAfter }
+       ).Subscribe(t =>
+        GetAccountManager().OpenTrade(t.contract, quantity, 0, 0, true, default, t.dateAfter, t.openCond, t.tpCond)
+       );
+    }
+    public async Task<object[]> CallByBS(string pair) {
+      var tm = UseTraderMacro(pair).Single();
+      var hasStrategy = tm.Strategy.HasFlag(Strategies.Universal);
+      var def = new string[0];
+      if(!hasStrategy) return def;
+      var bs = new { b = tm.BuyLevel.Rate, s = tm.SellLevel.Rate };
+      var levelCall = bs.b;
+      var levelPut = bs.s;
+      if(levelCall.IsNaNOrZero()) return def;
+      var am = GetAccountManager();
+      var calls = from os in am.CurrentOptions(tm.Pair, levelCall, 0, 5, c => c.IsCall && c.Strike > levelCall)
+                  from o in os.OrderBy(_ => _.strikeAvg).Take(3).TakeLast(1)
+                  select new { l = levelCall, o = o.option.LocalSymbol, cp = o.option.Right };
+      var puts = from os in am.CurrentOptions(tm.Pair, levelPut, 0, 5, c => c.IsPut && c.Strike < levelPut)
+                 from o in os.OrderByDescending(_ => _.strikeAvg).Take(3).TakeLast(1)
+                 select new { l = levelPut, o = o.option.LocalSymbol, cp = o.option.Right };
+      return await calls.Merge(puts).ToArray();
+    }
+
     [BasicAuthenticationFilter]
     public void OpenCoveredOption(string pair, int quantity, double? price) {
       Contract.Contracts.TryGetValue(pair, out var contract);
@@ -1596,6 +1630,7 @@ namespace HedgeHog.Alice.Client {
         return default;
       }
     }
+    TradingMacro[] UseTraderMacro(string pair) => UseTraderMacro(pair, tm => tm);
     T[] UseTraderMacro<T>(string pair, Func<TradingMacro, T> func) {
       return UseTradingMacro2(pair, tm => tm.IsTrader)
         .Count(1, i => throw new Exception($"{i} Traders found"), i => throw new Exception($"Too many {i} Traders found"), new { pair })
