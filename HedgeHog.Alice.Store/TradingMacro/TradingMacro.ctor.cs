@@ -15,11 +15,17 @@ using HedgeHog;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
-    Action<SuppRes> _rateChanged;
+    Action<SuppRes> _readeLevelChanged;
+    Action<(SuppRes level, SuppRes.CrossedEvetArgs crossed)> _tradeLevelCrossed;
     public TradingMacro() {
       GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
-      BuyLevelObservable = Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _rateChanged += h, h => _rateChanged -= h);
-      BuyLevelDispose = BuyLevelObservable.Subscribe(_ => new Exception(new { BuyLevelObservable =new { _.Rate } }+""),()=> { });
+
+      Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _readeLevelChanged += h, h => _readeLevelChanged -= h)
+      .Subscribe(_ => new Exception(new { BuyLevelObservable =new { _.Rate } }+""),()=> { });
+
+      Observable.FromEvent<(SuppRes level, SuppRes.CrossedEvetArgs crossed)>(h => _tradeLevelCrossed += h, h => _tradeLevelCrossed -= h)
+        .Subscribe(tl => new Exception(new { TradeLevelCrossed = new { tl.level.IsBuy, tl.crossed.Direction } } + ""), () => { });
+
       this.ObservableForProperty(tm => tm.Pair, false, false)
         .Where(_ => !IsInVirtualTrading)
         .Select(oc => oc.GetValue())

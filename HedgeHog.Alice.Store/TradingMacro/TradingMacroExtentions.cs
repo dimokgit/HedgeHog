@@ -257,9 +257,6 @@ namespace HedgeHog.Alice.Store {
     static NewsCasterModel _newsCaster { get { return NewsCasterModel.Default; } }
 
     Func<IList<Rate>, List<RateGroup>> GroupRates { get; }
-    public IObservable<SuppRes> BuyLevelObservable { get; }
-    public IDisposable BuyLevelDispose { get; }
-
     #endregion
 
     #region SuppRes Event Handlers
@@ -1983,8 +1980,8 @@ namespace HedgeHog.Alice.Store {
           RemoveSuppRes(SuppRes.Where(sr => sr.IsSupport == isSupport).Last());
           raiseChart = true;
         }
-        while(RatesArray.Any() && SuppRes.Count(sr => sr.IsSupport == isSupport) < SuppResLevelsCount) {
-          AddSuppRes(RatesArray.Average(r => r.PriceAvg), isSupport);
+        while(SuppRes.Count(sr => sr.IsSupport == isSupport) < SuppResLevelsCount) {
+          AddSuppRes(isSupport);
           raiseChart = true;
         }
       }
@@ -2085,22 +2082,28 @@ namespace HedgeHog.Alice.Store {
 
     #region Supports/Resistances
     #region Add
-    public SuppRes AddBuySellRate(double rate, bool isBuy) { return AddSuppRes(rate, !isBuy); }
-    public SuppRes AddSuppRes(double rate, bool isSupport) {
+    public SuppRes AddBuySellRate(bool isBuy) { return AddSuppRes(!isBuy); }
+    public SuppRes AddSuppRes(bool isSupport) {
       try {
         var srs = (isSupport ? Supports : Resistances);
         var index = srs.Select(a => a.Index).DefaultIfEmpty(0).Max() + 1;
-        var sr = new SuppRes { Rate = rate, IsSupport = isSupport, TradingMacroID = UID, UID = Guid.NewGuid(), TradingMacro = this, Index = index, TradesCount = srs.Select(a => a.TradesCount).DefaultIfEmpty().Max() };
+        var sr = new SuppRes { IsSupport = isSupport, TradingMacroID = UID, UID = Guid.NewGuid(), TradingMacro = this, Index = index, TradesCount = srs.Select(a => a.TradesCount).DefaultIfEmpty().Max() };
         SuppRes.Add(sr);
         SuppRes_AssociationChanged(SuppRes, new CollectionChangeEventArgs(CollectionChangeAction.Add, sr));
         //GlobalStorage.UseAliceContext(c => c.SuppRes.AddObject(sr));
         //GlobalStorage.UseAliceContext(c => c.SaveChanges());
+
         sr.BSObservable
           .Select(_ => (r: _.Rate, sr: _))
           .Scan((p, n) => p.r.Abs(n.r) < 1 ? p : n)
           .DistinctUntilChanged(_ => _.r)
           .Select(_ => _.sr)
-          .Subscribe(_ => _rateChanged(_));
+          .Subscribe(_ => _readeLevelChanged(_));
+
+        sr.CrossedObservable
+          .DistinctUntilChanged(_ => _.EventArgs.Direction)
+          .Subscribe(_ => _tradeLevelCrossed(_));
+
 
         return sr;
       } catch(Exception exc) {
@@ -2402,8 +2405,6 @@ namespace HedgeHog.Alice.Store {
 
             UseRates(rates => { SetMA(rates); return false; });
 
-            ScanOutsideEquinox();
-
             if(IsInVirtualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
             #endregion
@@ -2463,7 +2464,7 @@ namespace HedgeHog.Alice.Store {
                 CorridorAngle = TLRed.Angle;
                 TakeProfitPips = InPips(CalculateTakeProfit());
               } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
-            }, IsInVirtualTrading);
+            }, false);
             OnPropertyChanged(nameof(TradingDistanceInPips));
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
             OnPropertyChanged(() => SpreadForCorridorInPips);
@@ -3723,14 +3724,14 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
       get {
-        var tmt = TradingMacrosByPair(tm => !tm.IsAsleep && tm.IsTrender && !tm.TLRed.IsEmpty).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
+        var tmt = TradingMacrosByPair(tm => !tm.IsAsleep && tm.IsTrender).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
         if(!IsTrader)
           throw new Exception(new { TradeLevelFuncs = new { IsTrader } } + "");
-        Func<double> maxDefault = () => UseRates(rates => rates.Max(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
-        Func<double> minDefault = () => UseRates(rates => rates.Min(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
+        Func<double> maxDefault = () => 0;// UseRates(rates => rates.Max(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
+        Func<double> minDefault = () => 0;// UseRates(rates => rates.Min(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
         Func<Func<TradingMacro, double>, double> level = f => f(tmt.Where(tm => tm.IsTrader).DefaultIfEmpty(tmt.First()).First());
-        Func<Func<TradingMacro, double>, double> levelMax = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMax).Max().IfNaN(maxDefault);
-        Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(RatesMin).Min().IfNaN(minDefault);
+        Func<Func<TradingMacro, double>, double> levelMax = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(double.NaN).Max().IfNaN(maxDefault);
+        Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(double.NaN).Min().IfNaN(minDefault);
         Func<IEnumerable<double>, int, IEnumerable<double>> comm = (ps, sign) => ps.Select(p => p + 0 * InPoints(CommissionInPips()) * sign);
         //Func<Func<TL, IEnumerable<double>>, int, IEnumerable<double>> commTL = (ps, sign) => ps().Select(p => p + InPoints(CommissionInPips()) * sign);
         Func<TL, double> offsetByCR = tl => tl.PriceHeight.Select(ph => ph * (CorridorSDRatio - 1) / 2).SingleOrDefault();
@@ -3783,8 +3784,10 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           {TradeLevelBy.PriceMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceAvg2))},
           {TradeLevelBy.PriceMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceAvg3))},
 
-          {TradeLevelBy.TrendMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceMax.SingleOrDefault()+offsetByCR(tl)))},
-          {TradeLevelBy.TrendMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceMin.SingleOrDefault()-offsetByCR(tl)))},
+          //{TradeLevelBy.TrendMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceMax.SingleOrDefault()+offsetByCR(tl)))},
+          //{TradeLevelBy.TrendMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceMin.SingleOrDefault()-offsetByCR(tl)))},
+          {TradeLevelBy.TrendMax,()=> levelMax(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg2).TakeLast(1).DefaultIfEmpty(double.NaN).Single())},
+          {TradeLevelBy.TrendMin,()=> levelMin(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg3).TakeLast(1).DefaultIfEmpty(double.NaN).Single())},
 
           { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },
@@ -4034,7 +4037,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         _canTriggerTradeDirectionSubject.OnNext(() => Log = new Exception(new { OnScanCorridor = new { IsRatesLengthStable } } + ""));
         return;
       }
-      if(true || runSync)
+      if(runSync)
         ScanCorridor(rates, callback);
       else
         OnScanCorridor(() => ScanCorridor(rates, callback));

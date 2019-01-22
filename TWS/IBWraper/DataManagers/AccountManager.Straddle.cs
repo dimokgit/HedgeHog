@@ -214,7 +214,7 @@ namespace IBApp {
          breakEven: (up: option.Strike + pa, dn: option.Strike - pa),
          option,
          deltaBid: option.ExtrinsicValue(p.bid, price),
-         deltaAsk: option.ExtrinsicValue(p.ask, price)
+         deltaAsk: p.delta
        ))
       .ToArray()
       .Select(b => b

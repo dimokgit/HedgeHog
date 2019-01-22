@@ -14,7 +14,7 @@ namespace IBApi
      * @brief The order's description.
      * @sa Contract, OrderComboLeg, OrderState
      */
-    public class Order
+    public partial class Order
     {
         public static int CUSTOMER = 0;
         public static int FIRM = 1;

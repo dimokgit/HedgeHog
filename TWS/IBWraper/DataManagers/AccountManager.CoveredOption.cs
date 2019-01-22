@@ -12,23 +12,23 @@ using System.Threading.Tasks;
 
 namespace IBApp {
   public partial class AccountManager {
-    public void OpenCoveredOption(Contract contract, int quantity, double price, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+    public void OpenCoveredOption(Contract contract, int quantity, double price,  [CallerMemberName] string Caller = "") {
       double? callStrikeMax = price == 0 ? (double?)null : price;
       CurrentOptions(contract.Instrument, price, 0, 3, c => c.IsCall)
         .SelectMany(os => os.OrderBy(o => o.option.Strike))
         .Where(o => o.option.Strike <= callStrikeMax.GetValueOrDefault(o.underPrice))
         .Take(1)
         .Subscribe(call => {
-          OpenCoveredOption(contract, "", quantity, price, call.option, DateTime.MaxValue, minTickMultiplier, Caller);
+          OpenCoveredOption(contract, "", quantity, price, call.option, DateTime.MaxValue, Caller);
         });
     }
-    public void OpenCoveredOption(string instrument, string option, int quantity, double price, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+    public void OpenCoveredOption(string instrument, string option, int quantity, double price, [CallerMemberName] string Caller = "") {
       (from i in IbClient.ReqContractDetailsCached(instrument).Select(cd => cd.Contract)
        from o in IbClient.ReqContractDetailsCached(option).Select(cd => cd.Contract)
        select (i, o)
-       ).Subscribe(t => OpenCoveredOption(t.i, "", quantity, price, t.o, DateTime.MaxValue, minTickMultiplier, Caller));
+       ).Subscribe(t => OpenCoveredOption(t.i, "", quantity, price, t.o, DateTime.MaxValue, Caller));
     }
-    public void OpenCoveredOption(Contract contract, string type, int quantity, double price, Contract contractOCO, DateTime goodTillDate, int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+    public void OpenCoveredOption(Contract contract, string type, int quantity, double price, Contract contractOCO, DateTime goodTillDate, [CallerMemberName] string Caller = "") {
       bool FindOrer(OrdeContractHolder oc, Contract c) => !oc.isDone && oc.contract.Key == c.Key && oc.order.TotalPosition().Sign() == quantity.Sign();
       UseOrderContracts(orderContracts => {
         var aos = orderContracts.Where(oc => FindOrer(oc, contract))
@@ -39,16 +39,15 @@ namespace IBApp {
         if(aos.Any()) {
           aos.Concat(ocos).ForEach(ao => {
             Trace($"OpenTrade: {ao.contract} already has active order {ao.order.OrderId} with status: {ao.status}.\nUpdating {new { price, ao.contract }}");
-            UpdateOrder(ao.order.OrderId, OrderPrice(price, ao.contract, minTickMultiplier));
+            UpdateOrder(ao.order.OrderId, OrderPrice(price, ao.contract));
           });
         } else {
           var orderType = price == 0 ? "MKT" : type.IfEmpty("LMT");
           bool isPreRTH = orderType == "LMT";
-          var order = OrderFactory(contract, quantity, price, goodTillDate, DateTime.MinValue, minTickMultiplier, orderType, isPreRTH);
+          var order = OrderFactory(contract, quantity, price, goodTillDate, DateTime.MinValue, orderType, isPreRTH);
           var tpOrder = MakeOCOOrder(order);
           new[] { (order, contract, price), (tpOrder, contractOCO, 0) }
             .ForEach(o => {
-              Handle110(o.contract, minTickMultiplier, o.order, o.price);
               orderContracts.Add(new OrdeContractHolder(o.order, o.contract));
               _verbous(new { plaseOrder = o });
               IbClient.ClientSocket.placeOrder(o.order.OrderId, o.contract, o.order);
@@ -73,24 +72,13 @@ namespace IBApp {
       };
     }
 
-
-    private void Handle110(Contract contract, int minTickMultiplier, Order order, double price)
-      => IbClient.WatchReqError(() => order.OrderId, e => {
-        OpenTradeError(contract, order, e, new { minTickMultiplier });
-        if(e.errorCode == 110 && minTickMultiplier <= 5 && order.LmtPrice != 0) {
-          order.LmtPrice = OrderPrice(price, contract, ++minTickMultiplier);
-          order.OrderId = NetOrderId();
-          Trace(new { replaceOrder = new { order, contract, price } });
-          IbClient.ClientSocket.placeOrder(order.OrderId, contract, order);
-        }
-      }, () => Trace(new { order, Error = "done" }));
-
-    void OpenTradeError(Contract c, IBApi.Order o, (int id, int errorCode, string errorMsg, Exception exc) t, object context) {
+    bool OpenTradeError(Contract c, IBApi.Order o, (int id, int errorCode, string errorMsg, Exception exc) t, object context) {
       var trace = $"{nameof(OpenTrade)}:{c}:" + (context == null ? "" : context + ":");
       var isWarning = Regex.IsMatch(t.errorMsg, @"\sWarning:") || t.errorCode == 103;
       if(!isWarning) OnOpenError(t, trace);
       else
         Trace(trace + t + "\n" + o);
+      return !isWarning;
     }
   }
 }

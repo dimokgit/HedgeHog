@@ -879,6 +879,12 @@
           });
       }, this);
       this.freezeCombos = ko.observable(false);
+      this.freezeCombos.subscribe((f) => {
+        if (!f) {
+          showWarning("Reading Combos");
+          readCombos();
+        }
+      });
       this.expDaysSkip = ko.observable();
       this.distanceFromHigh = ko.observable();
       this.comboQuantity = ko.observable().extend({ persist: "comboQuantity" + pair });
@@ -886,6 +892,7 @@
       this.toggleComboCurrentStrikeLevel = function () {
         self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? Math.round(self.priceAvg()) : "");
       }
+      this.currentProfit = ko.observable().extend({ persist: "currentProfit" + pair });
       this.comboGap = ko.observable(1).extend({ persist: "comboGap" + pair });
       this.comboGap.subscribe(refreshCombos);
       this.numOfCombos = ko.observable(0).extend({ persist: "numOfCombos" + pair });
@@ -988,7 +995,7 @@
       this.openButterfly = function (isBuy, key, useMarketPrice) {
         this.canTrade(false);
         var combo = ko.unwrap(ko.unwrap(key).i);
-        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel()]
+        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(),this.currentProfit()]
           , null
           , null
           , function () { this.canTrade(true); }.bind(this)
@@ -1329,6 +1336,10 @@
       var resetPlotter2Handler = ko.observable();
       var lastRefreshDate = ko.observable(new Date(1900, 1));
       var lastRefreshDate2 = ko.observable(new Date(1900, 1));
+      lastRefreshDate2.subscribe(d=> {
+        if (d.getFullYear() < 2018)
+          debugger;
+      })
       function updateChart(response) {
         var d = new Date();
         updateChartIntervalAverages[0](cma(updateChartIntervalAverages[0](), 10, getSecondsBetween(new Date(), ratesInFlight)));
@@ -1510,6 +1521,7 @@
         if (s)
           serverCall("setStrategy", [pair, s]);
       });
+      this.hasStrategy = ko.pureComputed(() => !!self.strategyCurrent() && self.strategyCurrent() != "None");
       var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
       // #endregion
       // #region GetAccounting

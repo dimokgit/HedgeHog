@@ -68,6 +68,12 @@ namespace ConsoleApp {
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         {
+          ibClient.ReqContractDetailsCached("ESH9").Select(cd => cd.Contract)
+          .Subscribe(c => am.OpenTrade(c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2)));
+          //fw.OpenTrade("ESH9", true, 1, 5, 0, 2635, "OPT");
+        }
+        return;
+        {
           //ibClient.ReqContractDetailsCached("ESH9")
           //.Subscribe(cd => am.OpenTrade("ESH9", 1, 1, 0, false, DateTime.MaxValue));
           //return;
@@ -77,7 +83,6 @@ namespace ConsoleApp {
            select c
            ).Subscribe(c => am.OpenTradeWithConditions(c.LocalSymbol, 1, 5, 2640, false));
         }
-        return;
         {
           Task.Delay(3000).ContinueWith(_ => {
             (from trade in am.Positions.Select(p => p.contract).ToObservable()
@@ -466,7 +471,7 @@ namespace ConsoleApp {
         #endregion
       });
 
-      if(ibClient.LogOn("127.0.0.1", twsPort + "", 0 + "", false)) {
+      if(ibClient.LogOn("127.0.0.1", twsPort + "", 10 + "", false)) {
         //ibClient.SetOfferSubscription(contract);
         //else {
         //  var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp => sp.LoadRates).ToArray());

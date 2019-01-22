@@ -141,6 +141,7 @@
     <Compile Include="Mixins.cs" />
     <Compile Include="NewsProvider.cs" />
     <Compile Include="OperatorCondition.cs" />
+    <Compile Include="Order _p.cs" />
     <Compile Include="Order.cs" />
     <Compile Include="OrderComboLeg.cs" />
     <Compile Include="OrderCondition.cs" />

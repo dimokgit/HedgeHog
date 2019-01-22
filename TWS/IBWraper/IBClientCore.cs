@@ -299,7 +299,7 @@ namespace IBApp {
         return _reqContractDetails.TryAdd(key, cd) ? cd : _reqContractDetails[key];
       }
     }
-    IObservable<T> WireToError<T>
+    public IObservable<T> WireToError<T>
       (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<int, T> endFactory, Func<T, int> getReqId, Func<T, bool> isNotEnd, Action<(int id, int errorCode, string errorMsg, Exception exc)> onError, Action onEnd) {
       SetRequestHandled(reqId);
       return source
@@ -665,6 +665,16 @@ namespace IBApp {
       .Take(1)
       .Merge()
       .Subscribe(error, complete);
+    }
+    public IObservable<(int id, int errorCode, string errorMsg, Exception exc)> ReqError(Func<int> reqId, Action<(int id, int errorCode, string errorMsg, Exception exc)> error) {
+      SetRequestHandled(reqId());
+      return ErrorObservable
+      .Where(t => t.id == reqId())
+      .DistinctUntilChanged(e => (reqId(), e.errorCode))
+      .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
+      .Take(1)
+      .Merge()
+      .Do(error);
     }
     public void CancelPrice(int reqId) => ClientSocket.cancelMktData(reqId);
 

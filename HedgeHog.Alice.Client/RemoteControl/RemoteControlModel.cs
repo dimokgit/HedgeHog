@@ -215,7 +215,7 @@ namespace HedgeHog.Alice.Client {
     void charter_BuySellAdded(object sender, BuySellRateAddedEventArgs e) {
       var tm = GetTradingMacro((CharterControl)sender);
       try {
-        tm.AddBuySellRate(e.Rate, e.IsBuy);
+        tm.AddBuySellRate(e.IsBuy);
       } catch(Exception exc) {
         Log = exc;
       }

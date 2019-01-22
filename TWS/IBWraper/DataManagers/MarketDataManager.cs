@@ -262,7 +262,7 @@ namespace IBApp {
             SlidingExpiration = 60.FromSeconds()
           }:new CacheItemPolicy();
           if(!_currentPrices.Add(t.price.Pair, t.price, cip))
-              throw new Exception("RaisePriceChanged");
+              Trace($"RaisePriceChanged: {t.price.Pair} is already in {nameof(_currentPrices)}");
         }
       }
       PriceChangedEvent?.Invoke(t.price);

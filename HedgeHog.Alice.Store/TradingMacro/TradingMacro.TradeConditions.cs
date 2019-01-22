@@ -1451,8 +1451,8 @@ namespace HedgeHog.Alice.Store {
     public double[] HistoricalVolatilityByPips() => UseRates(ra => InPips(RatesHVBP(ra)));
 
     private Func<IList<Rate>, double> _RatesHVBP;
-    private Func<IList<Rate>, double> RatesHVBP => _RatesHVBP ?? (_RatesHVBP= new Func<IList<Rate>, double>(ra
-      => RatesForHV(ra).HistoricalVolatility(t => t.prev.Abs(t.next))).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault()));
+    private Func<IList<Rate>, double> RatesHVBP => _RatesHVBP ?? (_RatesHVBP = new Func<IList<Rate>, double>(ra
+       => RatesForHV(ra).HistoricalVolatility(t => t.prev.Abs(t.next))).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault()));
 
     private static IList<double> RatesForHV(IList<Rate> ra) => ra.Select(_priceAvg).Cma(2.2);
     #endregion
@@ -1680,41 +1680,6 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate LROk { get { return () => TradeDirectionsAnglewise(TLLime); } }
     #endregion
 
-    #region Trends Ratios
-    private IEnumerable<Tuple<int, SuppRes>> EquinoxValues(
-      Func<TradingMacro, IList<IEnumerable<TL>>> tlses,
-      Func<IEnumerable<WaveRange>> waveRangesFunc = null) {
-      return TradingMacroTrender(tm => EquinoxValuesImpl2(tlses(tm), waveRangesFunc)).SelectMany(x => x.Select(y => y.Item2));
-    }
-
-    private static IEnumerable<Tuple<IEnumerable<TL>, Tuple<int, SuppRes>>> EquinoxValuesImpl2(
-      IList<IEnumerable<TL>> tlses,
-      Func<IEnumerable<WaveRange>> waveRangesFunc = null) {
-      Func<Func<TL, double>, SuppRes, Tuple<Func<TL, double>, SuppRes>> paFunc = (pa, sr) => Tuple.Create(pa, sr);
-      var paTuples = new[] { paFunc(tl => tl.PriceAvg2, new Store.SuppRes { IsSupport = true }), paFunc(tl => tl.PriceAvg3, new Store.SuppRes { IsSupport = false }) };
-      Func<IEnumerable<TL>, IEnumerable<Tuple<int, SuppRes>>> exec = (tls) => Equinox(tls, paTuples, waveRangesFunc == null ? new WaveRange[0] : waveRangesFunc());
-
-      var xx = (from tls in tlses
-                let ts = exec(tls)
-                let t = ts.MaxByOrEmpty(y => y.Item1).Take(1).ToArray()
-                where t.Any()
-                select new { tls, t = t.Single() });
-      var xxx = xx
-      .OrderBy(x => x.t.Item1)
-      .Select(x => Tuple.Create(x.tls, x.t));
-      return xxx;
-    }
-
-    #endregion
-    private static IEnumerable<Tuple<int, SuppRes>> Equinox(
-      IEnumerable<TL> trendLines,
-      IEnumerable<Tuple<Func<TL, double>, SuppRes>> paFuncs,
-      IEnumerable<WaveRange> waveRanges) {
-      var heights = trendLines.Select(tl => tl.PriceAvg2 - tl.PriceAvg3).MaxByOrEmpty();
-      return EdgesDiff2(trendLines, paFuncs, waveRanges)
-        .OrderBy(pa => pa.Item1)
-        .SelectMany(x => heights.Select(height => Tuple.Create((x.Item1 / height).ToPercent(), x.Item2)));
-    }
     private static IEnumerable<Tuple<double, SuppRes>> EdgesDiff2(
       IEnumerable<TL> trendLines,
       IEnumerable<Tuple<Func<TL, double>, SuppRes>> paFuncs,
@@ -1946,57 +1911,12 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #region Outsiders
-    [TradeConditionAsleep]
-    public TradeConditionDelegateHide AslpM1Ok {
-      get {
-        Func<TradingMacro, double, bool> isIn = (tm, v) =>
-          EquinoxBasedMinMax(OutsiderTLs(tm)).Any(t => {
-            var max = t.Item2;
-            var min = t.Item1;
-            var h = (max - min) / 4;
-            return v.Between(min + h, max - h);
-          });
-
-        return () => TradingMacroM1(tm => !isIn(tm, CurrentPrice.Average)).Select(TradeDirectionByBool).SingleOrDefault();
-      }
-    }
-    //[TradeConditionAsleep]
-    public TradeConditionDelegate OutsideAnyOk {
-      get { return () => IsCurrentPriceOutsideCorridor(tm => tm.BarPeriod > BarsPeriodType.t1, tm => OutsiderTLs(tm)); }
-    }
-    public TradeConditionDelegateHide OutEqnxOk {
-      get {
-        var tpl = TradingMacroM1(tm => EquinoxBasedMinMax(OutsiderTLs(tm)));
-        return () => tpl.SelectMany(t => t)
-        .Select(t =>
-          !CurrentPrice.Average.Between(t.Item1, t.Item2) && t.Item3 < 5)
-          .Where(b => b)
-          .Select(TradeDirectionByBool)
-          .FirstOrDefault();
-      }
-    }
 
     static IList<IEnumerable<TL>> OutsiderTLs(TradingMacro tm) {
       return tm.OutsidersInt.ToArray(i => i.SelectMany(i2 => tm.TrendLinesTrendsAll.Skip(i2).Take(1)));
     }
 
     #region Helpers
-    private void ScanOutsideEquinox() {
-      EquinoxBasedMinMax(OutsiderTLs(this))
-        .ForEach(t => {
-          //_outsideMin = t.Item1;
-          //_outsideMax = t.Item2;
-        });
-    }
-
-    private static IEnumerable<Tuple<double, double, int>> EquinoxBasedMinMax(IList<IEnumerable<TL>> tlss) {
-      var tpl = EquinoxBasedTLs(tlss).ToArray();
-      var tls = tpl.SelectMany(tl => tl.Item1).ToArray();
-      var min = tls.Select(x => x.PriceAvg3).MinByOrEmpty().Take(1);
-      var max = tls.Select(x => x.PriceAvg2).MaxByOrEmpty().Take(1);
-      var perc = tpl.Select(t => t.Item2).Take(1);
-      return min.Zip(max, (mn, mx) => new { mn, mx }).Zip(perc, (mm, i) => Tuple.Create(mm.mn, mm.mx, i));
-    }
 
     private static IEnumerable<TL> EquinoxEdge(IList<IEnumerable<TL>> tlss) {
       return EquinoxEdges(tlss).Take(1).SelectMany(tls => tls);
@@ -2013,12 +1933,6 @@ namespace HedgeHog.Alice.Store {
       //.SelectMany(tls => tls);
     }
 
-    private static IEnumerableCore.Singleable<Tuple<IEnumerable<TL>, int>> EquinoxBasedTLs(IList<IEnumerable<TL>> tlss) {
-      return EquinoxValuesImpl2(tlss)
-        .Take(1)
-        .Select(eqnx => Tuple.Create(eqnx.Item1, eqnx.Item2.Item1))
-        .AsSingleable();
-    }
 
     TradeDirections IsCurrentPriceOutsideCorridor(
         Func<TradingMacro, bool> tmPredicate,
@@ -2278,17 +2192,8 @@ namespace HedgeHog.Alice.Store {
           var canTradeBuy = canBuy || (canBuyOrSell && TradeCountMax > 0);
           var canTradeSell = canSell || (canBuyOrSell && TradeCountMax > 0);
 
-          Action<SuppRes, bool> updateCanTrade = (sr, ct) => {
-            if(sr.CanTrade != ct) {
-              if(sr.CanTradeEx = ct) {
-                var tradesCount = sr.IsSell && eval.HasDown() || sr.IsBuy && eval.HasUp() ? 0 : 1;
-                sr.TradesCount = tradesCount + TradeCountStart;
-              }
-            }
-          };
-
-          updateCanTrade(BuyLevel, canTradeBuy);
-          updateCanTrade(SellLevel, canTradeSell);
+          updateCanTrade(BuyLevel, canTradeBuy, eval);
+          updateCanTrade(SellLevel, canTradeSell, eval);
           var isPriceIn = new[] { CurrentEnterPrice(false), this.CurrentEnterPrice(true) }.All(cp => cp.Between(SellLevel.Rate, BuyLevel.Rate));
 
           if(BuyLevel.CanTrade && SellLevel.CanTrade && canTradeBuy != canTradeSell) {
@@ -2299,6 +2204,14 @@ namespace HedgeHog.Alice.Store {
           if(eval.HasAny())
             BuySellLevels.ForEach(sr => sr.DateCanTrade = ServerTime);
         });
+        void updateCanTrade(SuppRes sr, bool ct, TradeDirections eval) {
+          if(sr.CanTrade != ct) {
+            if(sr.CanTradeEx = ct) {
+              var tradesCount = sr.IsSell && eval.HasDown() || sr.IsBuy && eval.HasUp() ? 0 : 1;
+              sr.TradesCount = tradesCount + TradeCountStart;
+            }
+          }
+        }
       }
       bool TdCloseTrade(TradeDirections td, Trade trade) => td.HasDown() && trade.IsBuy || td.HasUp() && !trade.IsBuy;
       (from td in TradeConditionsShouldClose()

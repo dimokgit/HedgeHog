@@ -1,7 +1,9 @@
-﻿using System;
+﻿using HedgeHog.Shared;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -41,6 +43,10 @@ namespace HedgeHog.Alice.Store {
     public SuppRes() {
       BSObservable = Observable.FromEventPattern(h => RateChanged += h, h => RateChanged -= h)
         .Select(e => e.Sender as SuppRes)
+        .Publish()
+        .RefCount();
+      _crossSubject = new Subject<(SuppRes Sender, CrossedEvetArgs EventArgs)>();
+      CrossedObservable = _crossSubject
         .Publish()
         .RefCount();
     }
@@ -439,7 +445,7 @@ namespace HedgeHog.Alice.Store {
         this.Direction = direction;
       }
     }
-    event EventHandler<CrossedEvetArgs> CrossedEvent;
+    EventHandler<CrossedEvetArgs> CrossedEvent;
     public event EventHandler<CrossedEvetArgs> Crossed {
       add {
         if(CrossedEvent == null || !CrossedEvent.GetInvocationList().Contains(value))
@@ -454,15 +460,17 @@ namespace HedgeHog.Alice.Store {
       }
     }
     protected void RaiseCrossed(double pricePosition) {
+      var e = new CrossedEvetArgs(pricePosition);
       if(CrossedEvent != null)
-        CrossedEvent(this, new CrossedEvetArgs(pricePosition));
+        CrossedEvent(this, e);
+      _crossSubject.OnNext((this, e));
     }
     #endregion
 
     double _pricePrev = double.NaN;
     public void SetPrice(double price) {
       if(double.IsNaN(price))
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(new Exception(new { type = GetType().Name, PricePosition = "is NaN." } + ""));
+        LogMessage.Send(new Exception(new { type = GetType().Name, PricePosition = "is NaN." } + ""));
       else {
         if(Rate.Between(price, _pricePrev)) {
           _pricePosition = _pricePrev - Rate;
@@ -475,6 +483,8 @@ namespace HedgeHog.Alice.Store {
     public DateTime? TradeDate { get; set; }
     public TradingMacro TradingMacro { get; internal set; }
     public IObservable<SuppRes> BSObservable { get; }
+    Subject<(SuppRes Sender, CrossedEvetArgs EventArgs)> _crossSubject { get; }
+    public IObservable<(SuppRes Sender, CrossedEvetArgs EventArgs)> CrossedObservable { get; }
   }
   public static class SuppResMixins {
     public static bool HasCanTradeCorridorChanged(this IList<SuppRes> buySellLevels) {

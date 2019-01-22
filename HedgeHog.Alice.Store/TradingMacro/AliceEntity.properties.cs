@@ -1486,17 +1486,6 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [DisplayName("Turn Off Function")]
-    [Category(categoryTrading)]
-    public TurnOffFunctions TurnOffFunction {
-      get { return (TurnOffFunctions)CorridorIterationsIn; }
-      set {
-        if(CorridorIterationsIn == (int)value)
-          return;
-        CorridorIterationsIn = (int)value;
-        OnPropertyChanged("TurnOffFunction");
-      }
-    }
     double _waveStDevRatioSqrt = double.NaN;
     partial void OnSpreadShortToLongTresholdChanged() {
       _waveStDevRatioSqrt = Math.Sqrt(WaveStDevRatio);
@@ -1680,20 +1669,6 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    #region ExitFunction
-    [DisplayName("ExitFunction")]
-    [Category(categoryTrading)]
-    public ExitFunctions ExitFunction {
-      get { return (ExitFunctions)VolumeTresholdIterations; }
-      set {
-        if(VolumeTresholdIterations != (int)value) {
-          VolumeTresholdIterations = (int)value;
-          OnPropertyChanged("ExitFunction");
-        }
-      }
-    }
-
-    #endregion
 
     private double _TradeDistanceInPips;
     double TradeDistanceInPips {

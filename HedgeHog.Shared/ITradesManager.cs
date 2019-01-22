@@ -89,6 +89,7 @@ namespace HedgeHog.Shared {
 
 
     PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price);
+    PendingOrder OpenTrade(string pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment);
 
     void CloseAllTrades();
     void CloseTrade(Trade trade);
@@ -161,7 +162,6 @@ namespace HedgeHog.Shared {
 
     void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map);
 
-    PendingOrder OpenTrade(string pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment);
     void FetchMMRs();
   }
   public class ErrorEventArgs :EventArgs {

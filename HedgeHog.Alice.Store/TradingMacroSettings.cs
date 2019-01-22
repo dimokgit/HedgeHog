@@ -1,10 +1,12 @@
-﻿using System;
+﻿using MongoDB.Bson.Serialization.Attributes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
+  [BsonIgnoreExtraElements]
   public class TradingMacroSettings {
     [System.ComponentModel.DataAnnotations.Key]
     public global::MongoDB.Bson.ObjectId _id { get; set; }
@@ -144,7 +146,6 @@ namespace HedgeHog.Alice.Store {
     public double CurrentLoss_ { get; set; }
     public bool DoNews { get; set; }
     public int EllasticRange { get; set; }
-    public string ExitFunction { get; set; }
     public bool IsTrader { get; set; }
     public double LastTradeLoss { get; set; }
     public bool StreatchTakeProfit { get; set; }
@@ -243,7 +244,6 @@ namespace HedgeHog.Alice.Store {
     public int TradingGroup { get; set; }
     public string TradingMacroName { get; set; }
     public double TradingRatio { get; set; }
-    public int VolumeTresholdIterations { get; set; }
     public string TradeConditionEval { get; set; }
     public int OptionsDaysGap { get; set; }
   }

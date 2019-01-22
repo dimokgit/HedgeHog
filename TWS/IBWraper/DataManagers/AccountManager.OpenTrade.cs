@@ -19,7 +19,6 @@ namespace IBApp {
       IbClient.ClientSocket.reqGlobalCancel();
       UseOrderContracts(ocs => ocs.RemoveAll(oc => oc.isNew));
     }
-    static object _OpenTradeSync = new object();
     public static void FillAdaptiveParams(IBApi.Order baseOrder, string priority) {
       baseOrder.AlgoStrategy = "Adaptive";
       baseOrder.AlgoParams = new List<TagValue>();
@@ -44,72 +43,84 @@ namespace IBApp {
        let isMore = c.IsCall && isBuy || c.IsPut && isSell
        let upProfit = profit * (isMore ? 1 : -1)
        from p in needLimitPrice ? IbClient.ReqPriceSafe(c, 1, true) : IbClient.ReqPriceEmpty()
-       from up in IbClient.ReqPriceSafe(uc, 1, true).Select(p => p.ask.Avg(p.bid))
-       let cond = uc.PriceCondition(up + upProfit, isMore, false)
-       select (c, price: isSell ? p.bid : p.ask, uc, cond)
+       from up in conditionPrice.HasValue ? new[] { conditionPrice.Value }.ToObservable() : IbClient.ReqPriceSafe(uc, 1, true).Select(p => p.ask.Avg(p.bid))
+       let condProfit = uc.PriceCondition(up + upProfit, isMore, false)
+       select new { c, price = isSell ? p.bid : p.ask, uc, condProfit }
        )
        .Subscribe(t => OpenTrade(t.c, quantity, hasCondition ? 0 : t.price, 0, true, DateTime.MaxValue, dateAfter
-, hasCondition ? OrderConditionParam.PriceCondition(t.uc, conditionPrice.Value, isSell && t.c.IsCall, false) : null, t.cond, ""));
+       , hasCondition ? t.uc.PriceCondition(conditionPrice.Value, isSell && t.c.IsCall, false) : null, t.condProfit, ""));
     }
 
-    private readonly SemaphoreSlim _mutex = new SemaphoreSlim(1);
-    public PendingOrder OpenTrade(Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false, DateTime goodTillDate = default, DateTime goodAfterDate = default, OrderCondition condition = null, OrderCondition takeProfitCondition = null, string type = "", int minTickMultiplier = 1, [CallerMemberName] string Caller = "") {
+    private readonly SemaphoreSlim _mutexOpenTrade = new SemaphoreSlim(1);
+    public PendingOrder OpenTrade(Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false, DateTime goodTillDate = default, DateTime goodAfterDate = default, OrderCondition condition = null, OrderCondition takeProfitCondition = null, string type = "", [CallerMemberName] string Caller = "") {
       var timeoutInMilliseconds = 5000;
-      if(!_mutex.Wait(timeoutInMilliseconds)) {
+      var inMutex = false;
+      if(!_mutexOpenTrade.Wait(timeoutInMilliseconds)) {
         var message = new { contract, quantity, Method = nameof(OpenTrade), Caller, timeoutInMilliseconds } + "";
         Trace(new TimeoutException(message));
         return null;
       }
+      inMutex = true;
       var aos = OrderContractsInternal
         .Where(oc => !oc.isDone && oc.contract.Key == contract.Key && oc.order.TotalPosition().Sign() == quantity.Sign())
         .ToArray();
       if(aos.Any()) {
         aos.ForEach(ao => {
-          Trace($"OpenTrade: {contract} already has active order {ao.order.OrderId} with status: {ao.status}.\nUpdating {new { price }}");
-          UpdateOrder(ao.order.OrderId, OrderPrice(price, contract, minTickMultiplier));
+          Trace($"OpenTrade: Cancelling existing {new { ao.order }} for {new { contract }} with {new { ao.status }}.");
+          CancelOrder(ao.order.OrderId);
         });
-        ExitMomitor();
-        return null;
       }
       var orderType = price == 0 ? "MKT" : type.IfEmpty("LMT");
       bool isPreRTH = true;// orderType == "LMT";
-      var order = OrderFactory(contract, quantity, price, goodTillDate, goodAfterDate, minTickMultiplier, orderType, isPreRTH);
+      var minTickMultiplier = contract.MinTick();
+      var order = OrderFactory(contract, quantity, price, goodTillDate, goodAfterDate, orderType, isPreRTH);
       if(condition != null) order.Conditions.Add(condition);
       //if(!contract.IsCombo && !contract.IsFutureOption)
       //  FillAdaptiveParams(order, "Normal");
-      var tpOrder = (useTakeProfit ? MakeTakeProfitOrder2(order, contract, takeProfitCondition, profit, minTickMultiplier) : new (IBApi.Order order, double price)[0].ToObservable()).Select(x => new { x.order, x.price, useTakeProfit = false });
-      new[] { new { order, price, useTakeProfit } }.ToObservable().Merge(tpOrder)
+      var tpOrder = (useTakeProfit ? MakeTakeProfitOrder2(order, contract, takeProfitCondition, profit) : new (IBApi.Order order, double price)[0].ToObservable()).Select(x => new { x.order, x.price, useTakeProfit = false });
+      var orders = new[] { new { order, price, useTakeProfit } }.ToObservable().Merge(tpOrder).ToArray();
+      var obs = orders
+      .SelectMany(x => x)
+      .SelectMany(o => {
+        var reqId = o.order.OrderId;
+        var eo = IbClient.ReqError(() => reqId
+        , e => {
+          if(!OpenTradeError(contract, o.order, e, new { }))
+            OrderContractsInternal.RemoveAll(x => x.order.OrderId == e.id);
+        });
+        //, () => { Trace(new { o.order, Error = "done" }); });
+        OrderContractsInternal.Add(new OrdeContractHolder(o.order, contract));
+        _verbous(new { plaseOrder = new { o, contract } });
+        var po = PlaceOrder(o.order, contract)
+        .Take(1)
+        .Select(y => (id: y.OrderId, errorCode: 0, errorMsg: "", exc: (Exception)null));
+        return eo.Merge(po)
+        .Take(1);
+      });
+      obs
+        .Take(useTakeProfit ? 2 : 1)
         .ToArray()
-        .SelectMany(x => x)
-        .Subscribe(o => {
-          var reqId = o.order.OrderId;
-          IbClient.WatchReqError(() => reqId, e => {
-            OpenTradeError(contract, o.order, e, new { minTickMultiplier });
-            if(e.errorCode == 110 && minTickMultiplier <= 5 && o.order.LmtPrice != 0) {
-              o.order.LmtPrice = OrderPrice(o.price, contract, ++minTickMultiplier);
-              reqId = o.order.OrderId = NetOrderId();
-              Trace(new { replaceOrder = new { o, contract } });
-              IbClient.ClientSocket.placeOrder(o.order.OrderId, contract, o.order);
-            }
-          }, () => Trace(new { o.order, Error = "done" }));
-          OrderContractsInternal.Add(new OrdeContractHolder(o.order, contract));
-          _verbous(new { plaseOrder = new { o, contract } });
-          IbClient.ClientSocket.placeOrder(o.order.OrderId, contract, o.order);
-        }, exc => ExitMomitor(), () => ExitMomitor());
+        //.Aggregate(new[] { (id: 0, errorCode: 0, errorMsg: "", exc: (Exception)null) }.Take(0), (a, b) => a.Concat(new[] { b }))
+        .Subscribe(a => ExitMomitor($"{nameof(OpenTrade)} is done for:\n"
+        + a.Select(_ => $"{new { _.id, _.errorCode, _.errorMsg }}")
+        .Concat(new[] { nameof(OrderContractsInternal) + ":" })
+        .Concat(OrderContractsInternal.Select(oc => oc + "")).Flatter("\n")));
       return null;
       /// Locals
-      void ExitMomitor() {
-        Trace($"{nameof(OpenTrade)}: exiting {nameof(_OpenTradeSync)} monitor");
-        _mutex.Release();
+      void ExitMomitor<T>(T context) {
+        if(inMutex) {
+          Trace($"{nameof(_mutexOpenTrade)}:{nameof(OpenTrade)}: exiting  monitor. {context}");
+          _mutexOpenTrade.Release();
+        }
       }
     }
-    private IBApi.Order OrderFactory(Contract contract, int quantity, double price, DateTime goodTillDate, DateTime goodAfterDate, int minTickMultiplier, string orderType, bool isPreRTH) {
+    private IBApi.Order OrderFactory(Contract contract, int quantity, double price, DateTime goodTillDate, DateTime goodAfterDate, string orderType, bool isPreRTH) {
       var order = new IBApi.Order() {
         Account = _accountId,
         OrderId = NetOrderId(),
         Action = quantity > 0 ? "BUY" : "SELL",
         OrderType = orderType,
-        LmtPrice = OrderPrice(price, contract, minTickMultiplier),
+        LmtPrice = OrderPrice(price, contract),
         TotalQuantity = quantity.Abs(),
         OutsideRth = isPreRTH,
         OverridePercentageConstraints = true
@@ -128,7 +139,7 @@ namespace IBApp {
       return order;
     }
 
-    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder(IBApi.Order parent, Contract contract, double profit, int minTickMultilier) {
+    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder(IBApi.Order parent, Contract contract, double profit) {
       bool isPreRTH = false;
       return new[] { parent }
       .Where(o => o.OrderType == "LMT")
@@ -143,7 +154,7 @@ namespace IBApp {
         var ret = (order: new IBApi.Order() {
           Account = _accountId,
           ParentId = parent.OrderId,
-          LmtPrice = OrderPrice(price, contract, minTickMultilier),
+          LmtPrice = OrderPrice(price, contract),
           OrderId = NetOrderId(),
           Action = parent.Action == "BUY" ? "SELL" : "BUY",
           OrderType = "LMT",
@@ -160,11 +171,12 @@ namespace IBApp {
       .OnEmpty(() => Trace($"No take profit order for {parent}"))
         ;
     }
-    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract, OrderCondition takeProfitCondition, double profit, int minTickMultilier) {
+    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract, OrderCondition takeProfitCondition, double profit) {
+      var takeProfitPrice = (takeProfitCondition as PriceCondition)?.Price;
       bool isPreRTH = false;
-      var isMarket = takeProfitCondition != null;
+      var isMarket = takeProfitPrice.HasValue;
       return new[] { parent }
-      .Where(o => o.OrderType == "LMT")
+      .Where(o => takeProfitPrice.HasValue || o.OrderType == "LMT")
       .Select(o => o.LmtPrice)
       .ToObservable()
       .Concat(Observable.Defer(()
@@ -179,7 +191,7 @@ namespace IBApp {
         var order = new IBApi.Order() {
           Account = _accountId,
           ParentId = parent.OrderId,
-          LmtPrice = isMarket ? 0 : OrderPrice(price, contract, minTickMultilier),
+          LmtPrice = isMarket ? 0 : OrderPrice(price, contract),
           OrderId = NetOrderId(),
           Action = parent.Action == "BUY" ? "SELL" : "BUY",
           OrderType = isMarket ? "MKT" : "LMT",

@@ -575,7 +575,10 @@ namespace HedgeHog.Alice.Client {
 
     static double DaysTillExpiration2(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
     static double DaysTillExpiration(DateTime expiration) => (expiration - DateTime.Now.Date).TotalDays + 1;
-    public object[] ReadStraddles(string pair, int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip, string optionTypeMap, DateTime hedgeDate, string rollCombo) =>
+    public object[] ReadStraddles(string pair
+      , int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip
+      , string optionTypeMap, DateTime hedgeDate, string rollCombo
+      ) =>
       UseTraderMacro(pair, tm => {
         if(!tm.IsInVirtualTrading) {
           int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(expDaysSkip);
@@ -619,7 +622,8 @@ namespace HedgeHog.Alice.Client {
                         isActive = false,
                         maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100 / d,
                         maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier,
-                        underPL = 0
+                        underPL = 0,
+                        greekDelta = t.deltaAsk
                       };
                     });
                     cs = strikeLevel.HasValue && true
@@ -688,7 +692,8 @@ namespace HedgeHog.Alice.Client {
                     maxPlPerc = t.deltaBid * quantity * t.option.ComboMultiplier / am.Account.Equity * 100 / exp[0].dte,
                     maxPL,
                     underPL,
-                    _sd
+                    _sd,
+                    greekDelta = t.deltaAsk
                   };
                 })
                 .OrderBy(t => t.strike.Abs(sl))
@@ -734,14 +739,15 @@ namespace HedgeHog.Alice.Client {
 
             #region openOrders
             var orderMap = MonoidsCore.ToFunc((AccountManager.OrdeContractHolder oc, double ask, double bid) => new {
-              i = new[] { oc.contract.DateWithShort }.Concat(oc.order.Conditions.Select(c => (c + "").Replace("default Price of ", ""))).Flatter("\n")
+              i = new[] { oc.contract.DateWithShort }.Concat(oc.order.Conditions.SelectMany(c => c.ParsePriceCondition().Select(pc => pc + ""))).Flatter("::")
                , id = oc.order.OrderId
                , f = oc.status.filled
                , r = oc.status.remaining
-               , lp = oc.order.LmtPrice
+               , lp = oc.order.IsLimit ? oc.order.LmtPrice : 0
                , p = oc.order.Action == "BUY" ? ask : bid
                , a = oc.order.Action.Substring(0, 1)
-               , s = oc.status.status
+               , s = oc.status.status.AllCaps()
+               , c = oc.order.ParentId != 0
             });
             Action openOrders = () =>
               am.UseOrderContracts((ibc, orderContracts) =>
@@ -829,7 +835,7 @@ namespace HedgeHog.Alice.Client {
     }
     [BasicAuthenticationFilter]
     public void CancelOrder(int orderId) {
-      GetAccountManager().UpdateOrder(orderId, 0);
+      GetAccountManager().CancelOrder(orderId);
     }
     [BasicAuthenticationFilter]
     public void UpdateCloseOrder(string instrument, int orderId, double? limit, double? profit) {
@@ -861,9 +867,15 @@ namespace HedgeHog.Alice.Client {
     }
     static bool _isTest = true;
     [BasicAuthenticationFilter]
-    public void OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice) {
-      var profit = UseTraderMacro(pair, tm => tm.Trends.Where(tl => !tl.IsEmpty).Select(tl => tl.StDev).DefaultIfEmpty(5).Average() * 4).Single();
+    public void OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice, double? profitInPoints) {
+      var profit = profitInPoints.HasValue
+        ? profitInPoints.Value
+        : UseTraderMacro(pair, tm => tm.Trends.Where(tl => !tl.IsEmpty).Select(tl => tl.StDev).DefaultIfEmpty(5).Average() * 4).Single();
       if(profit == 0) throw new Exception("No trend line found for profit calculation");
+      var hasStrategy = UseTraderMacro(pair, tm => tm.Strategy.HasFlag(Strategies.Universal)).Any(b => b);
+      var bs = hasStrategy ? UseTraderMacro(pair, tm => new { b = tm.BuyLevel.Rate, s = tm.SellLevel.Rate }).SingleOrDefault() : new { b = double.NaN, s = double.NaN };
+      if(hasStrategy && (bs.s.IsNaN() || bs.b.IsNaN()))
+        throw new Exception("Buy/Sell levels are not set by strategy");
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       var isSell = quantity < 0;
       var isBuy = quantity > 0;
@@ -876,11 +888,13 @@ namespace HedgeHog.Alice.Client {
           (from price in DataManager.IBClientMaster.ReqPriceSafe(contract, 10, true)
            from under in Contract.FromCache(pair)
            from up in DataManager.IBClientMaster.ReqPriceSafe(under, 10, true).Select(p => p.ask.Avg(p.bid))
-           let cond = under.PriceCondition(up + upProfit, isMore, false)
-           select (price: isSell ? price.bid : price.ask, under, cond)
+           let condPrice = conditionPrice.GetValueOrDefault(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
+           let condTakeProfit = under.PriceCondition((condPrice.IfNaNOrZero(up) + upProfit).Round(2), isMore, false)
+           select new { price = condPrice == 0 ? isSell ? price.bid : price.ask : 0, under, condTakeProfit, condPrice, isMore }
            ).Subscribe(t =>
-            am.OpenTrade(contract, quantity, hasCondition ? 0 : t.price, 0, true, DateTime.MaxValue, dateAfter
-, hasCondition ? OrderConditionParam.PriceCondition(t.under, conditionPrice.Value, isSell && contract.IsCall, false) : null, t.cond, ""));
+            am.OpenTrade(contract, quantity, t.price, 0, true, DateTime.MaxValue, dateAfter
+            , t.price != 0 ? null : OrderConditionParam.PriceCondition(t.under, t.condPrice.Round(2), !t.isMore, false)
+            , t.condTakeProfit, ""));
         else
           UseTraderMacro(pair, tm =>
            tm.HistoricalVolatilityByPips().ForEach(hv

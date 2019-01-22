@@ -631,7 +631,18 @@ namespace IBApp {
     }
 
     public PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment) {
-      throw new NotImplementedException();
+      if(comment == "OPT") {
+        var x = (
+          from under in _ibClient.ReqContractDetailsCached(Pair).Select(cd => cd.Contract)
+          from up in _ibClient.ReqPriceSafe(under, 2, true).Select(_ => _.ask.Avg(_.bid))
+          from os in _ibClient.ReqCurrentOptionsAsync(Pair, up, new[] { isBuy }, 0, 1, 1).ToArray()
+          from o in os
+          select (o, under, lot: lot * (isBuy ? 1 : -1))
+          )
+          .Take(1)
+          .Subscribe(t => AccountManager.OpenTradeWithConditions(t.o.LocalSymbol, t.lot, takeProfit, rate, true));
+      }
+      return null;
     }
 
     #endregion

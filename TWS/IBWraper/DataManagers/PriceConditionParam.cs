@@ -1,13 +1,30 @@
 ﻿using IBApi;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace IBApp {
   public static class OrderConditionParam {
+    static string IsMore(this bool isMore) => isMore ? ">= " : "<= ";
+
+    public static IEnumerable<(string contract, string @operator, double price)> ParsePriceCondition(this OrderCondition oc) {
+      var pc = oc as PriceCondition;
+      if(pc == null) yield break;
+      var o = pc.IsMore.IsMore();
+      foreach(var c in Contract.FromCache(co => co.ConId == pc.ConId).Select(co => co.LocalSymbol).DefaultIfEmpty(pc.ContractResolver(pc.ConId, pc.Exchange)))
+        yield return (c, o, pc.Price);
+    }
+    public static IEnumerable<(string @operator, string time)> ParseTimeCondition(this OrderCondition oc) {
+      var tc = oc as TimeCondition;
+      if(tc == null) yield break;
+      var o = (tc as OperatorCondition).ToString();
+      yield return (o, tc.Time);
+    }
     public static OrderCondition PriceCondition(this Contract contract, double conditionPrice, bool isMore, bool isConjunction) {
       //! [price_condition]
       //Conditions have to be created via the OrderCondition.Create 
       PriceCondition priceCondition = (PriceCondition)OrderCondition.Create(OrderConditionType.Price);
+      priceCondition.ContractResolver = (conId, exc) => contract.LocalSymbol;
       //When this contract...
       priceCondition.ConId = contract.ConId;
       priceCondition.Exchange = contract.Exchange;

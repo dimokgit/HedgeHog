@@ -885,22 +885,22 @@
         strokeDash = strokeDash || 5;
         var strokeDashArray = strokeDash + "," + strokeDash;
         var dates = [data[0].d, data[data.length - 1].d];
-        if (dates) {
-          if (level) {
-            var line = svg.select("line.line" + levelName)
-              //.style("stroke", lineColour)  // colour the line
-              //.style("stroke-width", strokeWidth)  // colour the line
-              //.style("stroke-dasharray", strokeDashArray)  // colour the line
-              .attr("x1", x(dates[0]) - xAxisOffset) // x position of the first end of the line
-              .attr("y1", y(level)) // y position of the first end of the line
-              .attr("x2", x(dates[1]) + xAxisOffset) // x position of the second end of the line
-              .attr("y2", y(level));// y position of the second end of the line
-            if (strokeWidth !== undefined)
-              line.style("stroke-width", strokeWidth);
-
-          }
+        var line = svg.select("line.line" + levelName);
+        if (dates && level) {
+          line
+            .style("display", "")
+            //.style("stroke", lineColour)  // colour the line
+            //.style("stroke-width", strokeWidth)  // colour the line
+            //.style("stroke-dasharray", strokeDashArray)  // colour the line
+            .attr("x1", x(dates[0]) - xAxisOffset) // x position of the first end of the line
+            .attr("y1", y(level)) // y position of the first end of the line
+            .attr("x2", x(dates[1]) + xAxisOffset) // x position of the second end of the line
+            .attr("y2", y(level));// y position of the second end of the line
+          if (strokeWidth !== undefined)
+            line.style("stroke-width", strokeWidth);
           //.duration(animationDuration);    
-        }
+        } else
+          line.style("display", "none");
       }
       function setTrendLine(trendLines, lineNumber, lineColour) {
         var dates = (trendLines || {}).dates;

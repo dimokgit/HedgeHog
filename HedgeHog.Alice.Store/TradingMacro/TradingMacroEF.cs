@@ -110,7 +110,6 @@ namespace HedgeHog.Alice.Store {
       tradingMacro.FibMax = fibMax;
       tradingMacro.FibMin = fibMin;
       tradingMacro.CorridornessMin = corridornessMin;
-      tradingMacro.CorridorIterationsIn = corridorIterationsIn;
       tradingMacro.CorridorIterationsOut = corridorIterationsOut;
       tradingMacro.CorridorBarMinutes = corridorBarMinutes;
       tradingMacro.PairIndex = pairIndex;
@@ -161,7 +160,6 @@ namespace HedgeHog.Alice.Store {
       tradingMacro.CorridorLengthMinimum = corridorLengthMinimum;
       tradingMacro.CorridorCrossHighLowMethodInt = corridorCrossHighLowMethodInt;
       tradingMacro.PriceCmaLevels = priceCmaLevels;
-      tradingMacro.VolumeTresholdIterations = volumeTresholdIterations;
       tradingMacro.StDevTresholdIterations = stDevTresholdIterations;
       tradingMacro.StDevAverageLeewayRatio = stDevAverageLeewayRatio;
       tradingMacro.ExtreamCloseOffset = extreamCloseOffset;
@@ -1680,27 +1678,6 @@ namespace HedgeHog.Alice.Store {
     private global::System.Double _PriceCmaLevels;
     partial void OnPriceCmaLevelsChanging(global::System.Double value);
     partial void OnPriceCmaLevelsChanged();
-
-    /// <summary>
-    /// No Metadata Documentation available.
-    /// </summary>
-    [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
-    [DataMemberAttribute()]
-    public global::System.Int32 VolumeTresholdIterations {
-      get {
-        return _VolumeTresholdIterations;
-      }
-      set {
-        OnVolumeTresholdIterationsChanging(value);
-        ReportPropertyChanging("VolumeTresholdIterations");
-        _VolumeTresholdIterations = StructuralObject.SetValidValue(value, "VolumeTresholdIterations");
-        ReportPropertyChanged("VolumeTresholdIterations");
-        OnVolumeTresholdIterationsChanged();
-      }
-    }
-    private global::System.Int32 _VolumeTresholdIterations;
-    partial void OnVolumeTresholdIterationsChanging(global::System.Int32 value);
-    partial void OnVolumeTresholdIterationsChanged();
 
     /// <summary>
     /// No Metadata Documentation available.

@@ -54,17 +54,16 @@ namespace IBApi {
     public static IEnumerable<Contract> Cache() => Contracts.Values;
     public static IEnumerable<Contract> FromCache(string instrument) => Contracts.TryGetValue(instrument);
     public static IEnumerable<T> FromCache<T>(string instrument, Func<Contract, T> map) => Contracts.TryGetValue(instrument).Select(map);
+    public static IEnumerable<Contract> FromCache(Func<Contract, bool> filter) => Contracts.Where(kv => filter(kv.Value)).Select(kv => kv.Value);
 
     public double PipCost() => MinTick() * ComboMultiplier;
-    public double MinTick() {
-      return ContractDetails.FromCache(this)
-      .Select(cd => cd.MinTick)
-      .Where(mt => mt > 0)
-      .IfEmpty(() => Legs().SelectMany(c => ContractDetails.FromCache(c.c)).MaxByOrEmpty(cd => cd.MinTick).Select(cd => cd.MinTick).Take(1))
-      .Count(1, _ => Debugger.Break(), _ => Debugger.Break())
-      .DefaultIfEmpty(0.01)
-      .Single();
+
+    public static IEnumerable<double> MinTickImpl(Contract c) {
+      var x = c.FromDetailsCache();
+      var y = c.UnderContract.SelectMany(uc => uc.FromDetailsCache());
+      return x.Concat(y).Select(cd => cd.MinTick);
     }
+    public double MinTick() => LegsOrMe(MinTickImpl).Concat().Max();
     public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).First();
     public bool IsCombo => ComboLegs?.Any() == true;
     public bool IsCall => IsOption && Right == "C";
