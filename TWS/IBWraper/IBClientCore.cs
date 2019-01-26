@@ -37,7 +37,7 @@ using System.Reactive;
 using IBSampleApp.messages;
 
 namespace IBApp {
-  public class IBClientCore :IBClient, ICoreFX {
+  public partial class IBClientCore :IBClient, ICoreFX {
     #region Configer
     class Configer {
       static NameValueCollection section;
@@ -65,6 +65,7 @@ namespace IBApp {
     internal TimeSpan _serverTimeOffset;
     private string _managedAccount;
     public string ManagedAccount { get => _managedAccount; }
+
     private readonly Action<object> _trace;
     TradingServerSessionStatus _sessionStatus;
     readonly private MarketDataManager _marketDataManager;
@@ -109,7 +110,15 @@ namespace IBApp {
       var signal = new EReaderMonitorSignal();
       return new IBClientCore(signal, trace) { _signal = signal };
     }
+
+    static IBClientCore _IBClientCoreMaster;
+    public static IBClientCore IBClientCoreMaster { get => _IBClientCoreMaster; private set => _IBClientCoreMaster = value; }
+    static object _IBClientCoreMasterLocker = new object();
     public IBClientCore(EReaderSignal signal, Action<object> trace) : base(signal) {
+      lock(_IBClientCoreMasterLocker)
+        if(IBClientCoreMaster == null)
+          IBClientCoreMaster = this;
+        else throw new Exception($"{nameof(IBClientCoreMaster)} is not null");
       _trace = trace;
       NextValidId += OnNextValidId;
       Error += OnError;
@@ -274,15 +283,15 @@ namespace IBApp {
         if(_reqContractDetails.TryGetValue(key, out var o)) return o;
         var reqId = NextReqId();
         Trace($"{nameof(ReqContractDetailsAsync)}:{key} Start");
-        var cd = WireToError<ContractDetailsMessage>(
+        var cd = WireToError(
           reqId,
           ContractDetailsObservable,
           ContractDetailsEndObservable,
-          (int rid) => new ContractDetailsMessage(rid, (ContractDetails)null),
           t => t.RequestId,
-          t => t.ContractDetails != null,
-          error => Trace($"{nameof(ReqContractDetailsAsync)}:{contract}[{new { contract.Exchange, LastTradeDate = contract.LastTradeDateOrContractMonth, contract.Strike }}]-{error}"),
-          () => TraceIf(DataManager.DoShowRequestErrorDone || _verbose, $"{nameof(ReqContractDetailsAsync)} {reqId} Error done")
+          error => {
+            Trace($"{nameof(ReqContractDetailsAsync)}:{contract}[{new { contract.Exchange, LastTradeDate = contract.LastTradeDateOrContractMonth, contract.Strike }}]-{error}");
+            return true;
+          }
           )
           .Distinct(t => t.ContractDetails.Contract.ConId)
           .ToArray()
@@ -300,15 +309,23 @@ namespace IBApp {
       }
     }
     public IObservable<T> WireToError<T>
-      (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<int, T> endFactory, Func<T, int> getReqId, Func<T, bool> isNotEnd, Action<(int id, int errorCode, string errorMsg, Exception exc)> onError, Action onEnd) {
+      (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<T, int> getReqId, Func<(int id, int errorCode, string errorMsg, Exception exc), bool> isError) {
       SetRequestHandled(reqId);
       return source
         .TakeUntil(
           endSubject.Where(rid => rid == reqId)
-          .Merge(ErrorObservable.Where(e => e.id == reqId).Do(onError).Select(e => e.id))
+          .Merge(ErrorObservable.Where(e => e.id == reqId).Where(isError).Select(e => e.id))
           )
         .Where(t => getReqId(t) == reqId)
         ;
+    }
+    public IObservable<(T value, ErrorMessage error)> WireWithError<T>
+      (int reqId, IObservable<T> source, IObservable<int> endSubject, Func<T, int> getReqId, Func<(int id, int errorCode, string errorMsg, Exception exc), bool> isError) {
+      SetRequestHandled(reqId);
+      return source
+        .Where(t => getReqId(t) == reqId).Select(t => (value: t, error: default(ErrorMessage)))
+        .Merge(ErrorObservable.Where(e => e.id == reqId).Where(isError).Select(e => (value: default(T), error: (ErrorMessage)e)))
+        .TakeUntil(endSubject.Where(rid => rid == reqId));
     }
     (IObservable<T> source, IObserver<T> stopper) StoppableObservable<T>
       (IObservable<T> source, Func<T, bool> isNotEnd) {
@@ -384,7 +401,7 @@ namespace IBApp {
     public IObservable<Contract> ReqOptionChainOldAsync(string symbol, DateTime expirationDate, double strike, bool waitForAllStrikes) {
       Passager.ThrowIf(() => expirationDate.IsMin() && strike == 0, new { expirationDate, strike } + "");
       var fopDate = expirationDate;
-      Trace(new { fopDate = fopDate.ToShortDateString(), symbol, strike });
+      //Trace(new { fopDate = fopDate.ToShortDateString(), symbol, strike });
       var isVIX = true;
       Contract MakeFutureContract(ContractDetails cd, string twsDate) => new Contract { Symbol = cd.MarketName, SecType = "FOP", Exchange = cd.Contract.Exchange, Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
       Contract MakeIndexContract(string s, string twsDate) => new Contract { Symbol = s, SecType = "OPT", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };

@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace IBApp {
   public partial class AccountManager {
-    public void OpenCoveredOption(Contract contract, int quantity, double price,  [CallerMemberName] string Caller = "") {
+    public void OpenCoveredOption(Contract contract, int quantity, double price, [CallerMemberName] string Caller = "") {
       double? callStrikeMax = price == 0 ? (double?)null : price;
       CurrentOptions(contract.Instrument, price, 0, 3, c => c.IsCall)
         .SelectMany(os => os.OrderBy(o => o.option.Strike))
@@ -32,10 +32,10 @@ namespace IBApp {
       bool FindOrer(OrdeContractHolder oc, Contract c) => !oc.isDone && oc.contract.Key == c.Key && oc.order.TotalPosition().Sign() == quantity.Sign();
       UseOrderContracts(orderContracts => {
         var aos = orderContracts.Where(oc => FindOrer(oc, contract))
-        .Select(ao=>new OrdeContractHolder(ao.order,contract)).ToArray();
+        .Select(ao => new { ao.order, contract, ao.status.status }).ToArray();
         var ocos = (from ao in aos
                     join oc in orderContracts on ao.order.OrderId equals oc.order.ParentId
-                    select new OrdeContractHolder(oc.order,contractOCO)).ToArray();
+                    select new { oc.order, contract = contractOCO, oc.status.status }).ToArray();
         if(aos.Any()) {
           aos.Concat(ocos).ForEach(ao => {
             Trace($"OpenTrade: {ao.contract} already has active order {ao.order.OrderId} with status: {ao.status}.\nUpdating {new { price, ao.contract }}");
@@ -48,9 +48,8 @@ namespace IBApp {
           var tpOrder = MakeOCOOrder(order);
           new[] { (order, contract, price), (tpOrder, contractOCO, 0) }
             .ForEach(o => {
-              orderContracts.Add(new OrdeContractHolder(o.order, o.contract));
               _verbous(new { plaseOrder = o });
-              IbClient.ClientSocket.placeOrder(o.order.OrderId, o.contract, o.order);
+              PlaceOrder( o.order, o.contract).Subscribe();
             });
         }
       }, Caller);

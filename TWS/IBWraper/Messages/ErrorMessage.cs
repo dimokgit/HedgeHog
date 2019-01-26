@@ -7,13 +7,13 @@ using System.Text;
 
 namespace IBApp
 {
-    public class ErrorMessage : IBMessage 
+     class ErrorMessage_Old : IBMessage 
     {
         private string message;
         private int errorCode;
         private int requestId;
 
-        public ErrorMessage(int requestId, int errorCode, string message):base(MessageType.Error)
+        public ErrorMessage_Old(int requestId, int errorCode, string message):base(MessageType.Error)
         {
             Message = message;
             RequestId = requestId;

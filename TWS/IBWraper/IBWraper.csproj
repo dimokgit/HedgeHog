@@ -181,6 +181,7 @@
     <Compile Include="DataManagers\AccountManager.BullPut.cs" />
     <Compile Include="DataManagers\AccountManager.CoveredOption.cs" />
     <Compile Include="DataManagers\AccountManager.OpenTrade.cs" />
+    <Compile Include="DataManagers\AccountManager.OrdeContractHolder.cs" />
     <Compile Include="DataManagers\PriceConditionParam.cs" />
     <Compile Include="DataManagers\AccountManager.Straddle.cs" />
     <Compile Include="DataManagers\AccountManager.Summary.cs" />
@@ -188,6 +189,7 @@
     <Compile Include="DataManagers\AccountManager.cs" />
     <Compile Include="Contracts.cs" />
     <Compile Include="DataManagers\MarketDataManager.cs" />
+    <Compile Include="ErrorMessage.cs" />
     <Compile Include="IBClient_p.cs" />
     <Compile Include="Messages\AccountDownloadEndMessage.cs" />
     <Compile Include="Messages\AccountSummaryEndMessage.cs" />

@@ -344,8 +344,6 @@
 
           dataViewModel.callByBS();
 
-          if (!dataViewModel.comboQuantity())
-            dataViewModel.comboQuantity(x.TradingRatio);
           if (!dataViewModel.expDaysSkip())
             dataViewModel.expDaysSkip(x.OptionsDaysGap);
           if (dataViewModel.strategyCurrent() != x.Strategy)
@@ -1044,6 +1042,9 @@
       this.closeCombo = function (key) {
         this.canTrade(false);
         serverCall("closeCombo", [ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel()], null, null, function () { this.canTrade(false); }.bind(this));
+        function done(openOrderMessage){
+          self.canTrade(true);
+        }
       }.bind(this);
       this.cancelAllOrders = function (key) {
         serverCall("cancelAllOrders", []);

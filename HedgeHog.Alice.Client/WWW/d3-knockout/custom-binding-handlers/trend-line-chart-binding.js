@@ -519,12 +519,12 @@
         return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts2[0]), showNegativeVolts2[1] || 100000);
       }
       yDomain = !y2Scale || isHedged ? yDomain : d3.extent([yDomain[0], yDomain[1]
-        , sbchnum(tradeLevels && canBuy && y2Scale ? tradeLevels.buy : yDomain[1])
-        , sbchnum(tradeLevels && canSell && y2Scale ? tradeLevels.sell : yDomain[1])
+        , sbchnum(tradeLevels && canBuy && y2Scale && tradeLevels.buy ? tradeLevels.buy : yDomain[1])
+        , sbchnum(tradeLevels && canSell && y2Scale && tradeLevels.sell ? tradeLevels.sell : yDomain[1])
         , sbchnum(
-          mustShowClosedTrades && openBuy && tradeLevels && y2Scale
+          mustShowClosedTrades && openBuy && tradeLevels && y2Scale && tradeLevels.buyClose
             ? tradeLevels.buyClose
-            : mustShowClosedTrades && openSell && tradeLevels && y2Scale
+            : mustShowClosedTrades && openSell && tradeLevels && y2Scale && tradeLevels.sellClose
               ? tradeLevels.sellClose
               : yDomain[1])]);
       var xDomain = viewModel.chartArea[chartNum].xDomain = d3.extent(data, function (d) { return d.d; });

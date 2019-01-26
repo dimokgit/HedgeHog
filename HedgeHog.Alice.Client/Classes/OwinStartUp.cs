@@ -4,6 +4,7 @@ using HedgeHog.DateTimeZone;
 using HedgeHog.Shared;
 using IBApi;
 using IBApp;
+using IBSampleApp.messages;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.Owin.Cors;
@@ -748,16 +749,14 @@ namespace HedgeHog.Alice.Client {
                , a = oc.order.Action.Substring(0, 1)
                , s = oc.status.status.AllCaps()
                , c = oc.order.ParentId != 0
+               , e = oc.ShouldExecute
             });
             Action openOrders = () =>
-              am.UseOrderContracts((ibc, orderContracts) =>
-              (from oc in orderContracts.ToObservable()
-                 //where oc.isSubmitted || oc.isPreSubmitted
-               from p in ibc.ReqPriceSafe(oc.contract, 1, false).DefaultIfEmpty()
+              (from oc in am.OrderContractsInternal.ToArray().ToObservable()
+               where !oc.isFilled
+               from p in IBClientCore.IBClientCoreMaster.ReqPriceSafe(oc.contract, 1, false).DefaultIfEmpty()
                select (oc, x: orderMap(oc, p.ask, p.bid))
                ).ToArray()
-              )
-              .Concat()
               .Select(a => a.OrderBy(x => x.oc.order.ParentId.IfZero(x.oc.order.OrderId)).ThenBy(x => x.oc.order.ParentId).ToArray())
               .Subscribe(b => base.Clients.Caller.openOrders(b.Select(x => x.x)));
 
@@ -927,12 +926,13 @@ namespace HedgeHog.Alice.Client {
       var levelPut = bs.s;
       if(levelCall.IsNaNOrZero()) return def;
       var am = GetAccountManager();
-      var calls = from os in am.CurrentOptions(tm.Pair, levelCall, 0, 5, c => c.IsCall && c.Strike > levelCall)
+      var expSkip = tm.ServerTime.Hour > 16 ? 1 : 0;
+      var calls = from os in am.CurrentOptions(tm.Pair, levelCall, expSkip, 5, c => c.IsCall && c.Strike > levelCall)
                   from o in os.OrderBy(_ => _.strikeAvg).Take(3).TakeLast(1)
-                  select new { l = levelCall, o = o.option.LocalSymbol, cp = o.option.Right };
-      var puts = from os in am.CurrentOptions(tm.Pair, levelPut, 0, 5, c => c.IsPut && c.Strike < levelPut)
+                  select new { l = levelCall, o = o.option.LocalSymbol, cp = o.option.Right, lb = o.option.ShortWithDate };
+      var puts = from os in am.CurrentOptions(tm.Pair, levelPut, expSkip, 5, c => c.IsPut && c.Strike < levelPut)
                  from o in os.OrderByDescending(_ => _.strikeAvg).Take(3).TakeLast(1)
-                 select new { l = levelPut, o = o.option.LocalSymbol, cp = o.option.Right };
+                 select new { l = levelPut, o = o.option.LocalSymbol, cp = o.option.Right, lb = o.option.ShortWithDate };
       return await calls.Merge(puts).ToArray();
     }
 
@@ -948,29 +948,24 @@ namespace HedgeHog.Alice.Client {
       GetAccountManager().OpenCoveredOption(pair, option, quantity, price);
     }
     [BasicAuthenticationFilter]
-    public void CloseCombo(string instrument, double? conditionPrice) {
-      var am = GetAccountManager();
-      if(am != null) {
-        (from ct in am.ComboTrades(1)
-         from under in ct.contract.UnderContract
-         where ct.contract.Key == instrument
-         select (ct.contract, ct.position, ct.orderId, ct.closePrice, under)
-         )
-        .Subscribe(c => {
-          if(c.orderId != 0) {
-            am.UseOrderContracts(orderContracts => orderContracts[c.orderId])
-            .ForEach(och => {
-              och.order.OrderType = "LMT";
-              och.order.LmtPrice = c.closePrice;
-              am.PlaceOrder(och.order, och.contract);
-            });
-          } else {
-            //am.CancelAllOrders("CloseCombo");
-            am.OpenTrade(c.contract, -c.position, conditionPrice.HasValue ? 0 : c.closePrice, 0.0, false, default, default, c.under.PriceCondition(conditionPrice.Value, false, false));
-          }
-        });
-      }
-    }
+    public async Task<object[]> CloseCombo(string instrument, double? conditionPrice) => await
+      (from am in GetAccountManager().YieldNotNull().ToObservable()
+       from ct in am.ComboTrades(1)
+       where ct.orderId != 0
+       from ochs in am.UseOrderContracts(orderContracts => orderContracts.ByOrderId(ct.orderId))
+       from och in ochs
+       from under in ct.contract.UnderContract
+       where ct.contract.Key == instrument
+       select (ct.contract, ct.position, ct.orderId, ct.closePrice, under, och, am)
+       )
+      .SelectMany(c => {
+        c.och.order.OrderType = "LMT";
+        c.och.order.LmtPrice = c.closePrice;
+        return (from pos in c.am.PlaceOrder(c.och.order, c.och.contract)
+                from po in pos
+                select new { po.order, po.error }
+                ).ToArray();
+      });
     [BasicAuthenticationFilter]
     public void CancelAllOrders() {
       var am = GetAccountManager();

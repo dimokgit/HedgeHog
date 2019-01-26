@@ -57,7 +57,7 @@ namespace IBApp {
       if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
         Verbose($"AddRequest:{contract} already requested");
       else {
-        var reqId = NextReqId();
+        var reqId = IbClient.ValidOrderId();
         Verbose0($"AddRequest:{reqId}=>{contract}");
         IbClient.WatchReqError(reqId, t => Trace($"{nameof(AddRequestImpl)}:{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
         IbClient.OnReqMktData(() => IbClient.ClientSocket.reqMktData(reqId, contract.ContractFactory(), genericTickList, false, false, new List<TagValue>()));

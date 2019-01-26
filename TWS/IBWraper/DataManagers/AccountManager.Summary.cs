@@ -70,7 +70,7 @@ namespace IBApp {
     public void RequestAccountSummary() {
       if(!accountSummaryRequestActive) {
         accountSummaryRequestActive = true;
-        IbClient.ClientSocket.reqAccountSummary(NextReqId(), "All", ACCOUNT_SUMMARY_TAGS);
+        IbClient.ClientSocket.reqAccountSummary(NetOrderId(), "All", ACCOUNT_SUMMARY_TAGS);
       } else {
         IbClient.ClientSocket.cancelAccountSummary(CurrReqId());
       }

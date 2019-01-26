@@ -1,6 +1,7 @@
 ﻿using HedgeHog;
 using HedgeHog.Shared;
 using IBApi;
+using IBSampleApp.messages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,10 +53,10 @@ namespace IBApp {
     }
 
     private readonly SemaphoreSlim _mutexOpenTrade = new SemaphoreSlim(1);
-    public PendingOrder OpenTrade(Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false, DateTime goodTillDate = default, DateTime goodAfterDate = default, OrderCondition condition = null, OrderCondition takeProfitCondition = null, string type = "", [CallerMemberName] string Caller = "") {
+    public IObservable<(OpenOrderMessage order,ErrorMessage error)[]> OpenTrade(Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false, DateTime goodTillDate = default, DateTime goodAfterDate = default, OrderCondition condition = null, OrderCondition takeProfitCondition = null, string type = "", [CallerMemberName] string Caller = "") {
       var timeoutInMilliseconds = 5000;
       var inMutex = false;
-      if(!_mutexOpenTrade.Wait(timeoutInMilliseconds)) {
+      if(false && !_mutexOpenTrade.Wait(timeoutInMilliseconds)) {
         var message = new { contract, quantity, Method = nameof(OpenTrade), Caller, timeoutInMilliseconds } + "";
         Trace(new TimeoutException(message));
         return null;
@@ -77,24 +78,27 @@ namespace IBApp {
       if(condition != null) order.Conditions.Add(condition);
       //if(!contract.IsCombo && !contract.IsFutureOption)
       //  FillAdaptiveParams(order, "Normal");
-      var tpOrder = (useTakeProfit ? MakeTakeProfitOrder2(order, contract, takeProfitCondition, profit) : new (IBApi.Order order, double price)[0].ToObservable()).Select(x => new { x.order, x.price, useTakeProfit = false });
-      var orders = new[] { new { order, price, useTakeProfit } }.ToObservable().Merge(tpOrder).ToArray();
+      var tpOrder = (useTakeProfit
+        ? MakeTakeProfitOrder2(order, contract, takeProfitCondition, profit)
+        : new (IBApi.Order order, double price)[0].ToObservable()
+        ).Select(x => new { x.order, x.price });
+      var orders = new[] { new { order, price } }.ToObservable().Merge(tpOrder).ToArray();
+      var obss = (from os in orders
+                  from o in os
+                  from pos in PlaceOrder(o.order, contract).Take(1)
+                  from po in pos
+                  select po).ToArray();
+      return obss.Do(a=> a.Select(_ => $"{new { reqId = _.order?.Order?.OrderId ?? _.error.reqId, _.order,  _.error }}")
+        .Concat(new[] { nameof(OrderContractsInternal) + ":" })
+        .Concat(OrderContractsInternal.Select(oc => oc + "")).Flatter("\n"));
+      return null;
       var obs = orders
       .SelectMany(x => x)
       .SelectMany(o => {
-        var reqId = o.order.OrderId;
-        var eo = IbClient.ReqError(() => reqId
-        , e => {
-          if(!OpenTradeError(contract, o.order, e, new { }))
-            OrderContractsInternal.RemoveAll(x => x.order.OrderId == e.id);
-        });
-        //, () => { Trace(new { o.order, Error = "done" }); });
-        OrderContractsInternal.Add(new OrdeContractHolder(o.order, contract));
-        _verbous(new { plaseOrder = new { o, contract } });
         var po = PlaceOrder(o.order, contract)
-        .Take(1)
-        .Select(y => (id: y.OrderId, errorCode: 0, errorMsg: "", exc: (Exception)null));
-        return eo.Merge(po)
+        .SelectMany(_ => _)
+        .Select(y => (id: y.order?.OrderId, y.order?.Order, y.order?.Contract, errorCode: 0, errorMsg: ""));
+        return po
         .Take(1);
       });
       obs
@@ -108,6 +112,7 @@ namespace IBApp {
       return null;
       /// Locals
       void ExitMomitor<T>(T context) {
+        return;
         if(inMutex) {
           Trace($"{nameof(_mutexOpenTrade)}:{nameof(OpenTrade)}: exiting  monitor. {context}");
           _mutexOpenTrade.Release();

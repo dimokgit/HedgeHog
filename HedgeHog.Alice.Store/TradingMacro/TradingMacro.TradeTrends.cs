@@ -110,7 +110,7 @@ namespace HedgeHog.Alice.Store {
         return ints.Zip(Trends, isOk).Where(t => t.ok).Select(t => t.tl).ToArray();
       }
     }
-    IEnumerable<TL> TrendsByDate => Trends.Where(t => !t.IsEmpty).OrderBy(tl => tl.EndDate);
+    IEnumerable<TL> TrendsByDate => Trends.Where(t => !t.IsEmpty).OrderByDescending(tl => tl.EndDate).ThenBy(tl=>tl.StartDate);
     IList<TL> TrendLinesByDate => TrendLinesTrendsAll.OrderBy(tl => tl.EndDate).ToArray();
     public TL[] TrendLinesFlat { get { return TrendLinesTrendsAll.SkipLast(1).ToArray(); } }
     public IEnumerable<TL> TradeTrendLines =>

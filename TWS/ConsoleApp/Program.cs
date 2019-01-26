@@ -64,12 +64,20 @@ namespace ConsoleApp {
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7497;
+      const int clientId = 0;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         {
-          ibClient.ReqContractDetailsCached("ESH9").Select(cd => cd.Contract)
-          .Subscribe(c => am.OpenTrade(c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2)));
+          (from c in ibClient.ReqContractDetailsCached("ESH9").Select(cd => cd.Contract)
+           from pos in am.OpenTrade(c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2))
+           select pos
+           )
+          .Subscribe(c => HandleMessage("OpenTrade:\n"
+            + c.Select(_ => new { order = (AccountManager.OrdeContractHolder)_.order, _.error }).ToMarkdownTable() + "\n"
+            + "OrderContractsInternal:\n" + am.OrderContractsInternal.Flatter("\n")
+           )
+          );
           //fw.OpenTrade("ESH9", true, 1, 5, 0, 2635, "OPT");
         }
         return;
@@ -237,8 +245,8 @@ namespace ConsoleApp {
            from vxConId in ibClient.ReqContractDetailsCached("VXX").Select(cd => cd.Contract.ConId)
            select (esConId, vxConId)
            ).Subscribe(t => {
-             am.OpenTrade(ESVXXContract("SPY,VXX", t.esConId, t.vxConId, 1, 3), 1, 0, 0, false, default,default, DateTime.Now.AddMonths(1).TimeCondition());
-             am.OpenTrade(ESVXXContract("SPY,VXX", t.esConId, t.vxConId, 1, 2), 1, 0, 0, false, default,default, DateTime.Now.AddMonths(1).TimeCondition());
+             am.OpenTrade(ESVXXContract("SPY,VXX", t.esConId, t.vxConId, 1, 3), 1, 0, 0, false, default, default, DateTime.Now.AddMonths(1).TimeCondition());
+             am.OpenTrade(ESVXXContract("SPY,VXX", t.esConId, t.vxConId, 1, 2), 1, 0, 0, false, default, default, DateTime.Now.AddMonths(1).TimeCondition());
            });
         }
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
@@ -471,7 +479,7 @@ namespace ConsoleApp {
         #endregion
       });
 
-      if(ibClient.LogOn("127.0.0.1", twsPort + "", 10 + "", false)) {
+      if(ibClient.LogOn("127.0.0.1", twsPort + "", clientId + "", false)) {
         //ibClient.SetOfferSubscription(contract);
         //else {
         //  var sp500 = HedgeHog.Alice.Store.GlobalStorage.UseForexContext(c => c.SP500.Where(sp => sp.LoadRates).ToArray());
@@ -512,18 +520,6 @@ namespace ConsoleApp {
     }
 
     #region Handle(Error/Massage)
-    static void HandleError(Exception ex) {
-      HandleError(-1, -1, "", ex);
-    }
-
-    static void HandleError(int id, int errorCode, string str, Exception ex) {
-      if(ex != null)
-        Console.Error.WriteLine("Error: " + ex);
-      else if(id == 0 || errorCode == 0)
-        Console.Error.WriteLine("Error: " + str + "\n");
-      else
-        Console.Error.WriteLine(new ErrorMessage(id, errorCode, str));
-    }
 
     static readonly string _tracePrefix;// = "OnTickPrice";
     private static void HandleMessage2<T>(T message) => HandleMessage(message + "", false);

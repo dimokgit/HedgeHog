@@ -18,7 +18,7 @@ namespace IBApi {
     void RaiseConnectionOpened() => ConnectionOpend?.Invoke();
 
     public IBClient(EReaderSignal signal) {
-      clientSocket = new EClientSocket(this, signal);
+      ClientSocket = new EClientSocket(this, signal);
 
 
       //if(SynchronizationContext.Current == null)

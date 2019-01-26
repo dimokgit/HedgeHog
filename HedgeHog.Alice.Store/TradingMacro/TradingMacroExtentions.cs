@@ -3786,8 +3786,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
           //{TradeLevelBy.TrendMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceMax.SingleOrDefault()+offsetByCR(tl)))},
           //{TradeLevelBy.TrendMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceMin.SingleOrDefault()-offsetByCR(tl)))},
-          {TradeLevelBy.TrendMax,()=> levelMax(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg2).TakeLast(1).DefaultIfEmpty(double.NaN).Single())},
-          {TradeLevelBy.TrendMin,()=> levelMin(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg3).TakeLast(1).DefaultIfEmpty(double.NaN).Single())},
+          {TradeLevelBy.TrendMax,()=> levelMax(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg2).Take(1).DefaultIfEmpty(double.NaN).Single())},
+          {TradeLevelBy.TrendMin,()=> levelMin(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg3).Take(1).DefaultIfEmpty(double.NaN).Single())},
 
           { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },

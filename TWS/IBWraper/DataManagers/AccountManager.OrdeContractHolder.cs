@@ -1,0 +1,90 @@
+﻿using HedgeHog;
+using HedgeHog.Core;
+using HedgeHog.Shared;
+using IBApi;
+using IBSampleApp.messages;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reactive.Linq;
+namespace IBApp {
+  public partial class AccountManager {
+    public class OrdeContractHolder :IEquatable<OrdeContractHolder> {
+      public struct Status {
+        public readonly string status;
+        public readonly double filled;
+        public readonly double remaining;
+
+        public Status(string status, double filled, double remaining) {
+          this.status = status;
+          this.filled = filled;
+          this.remaining = remaining;
+        }
+        public override string ToString() => this.ToJson(false);
+      }
+      public readonly IBApi.Order order;
+      public readonly IBApi.Contract contract;
+      public Status status { get; set; }
+
+      private readonly IDisposable _shouldExecuteDisposable;
+
+      public bool isDone => (status.status, status.remaining).IsOrderDone();
+      public bool isNew => status.status == "new";
+      public bool isSubmitted => status.status == "Submitted";
+      public bool isFilled => status.status == "Filled";
+      public bool isPreSubmitted => status.status == "PreSubmitted";
+      public bool ShouldExecute { get; private set; }
+      public OrdeContractHolder() {
+        try {
+          var uo = (
+            from c in GetContract().ToObservable()
+            from uc in c.UnderContract
+            from cd in IBClientCore.IBClientCoreMaster.ReqContractDetailsAsync(uc)
+            select cd.Contract
+            );
+          _shouldExecuteDisposable = (
+            from p in IBClientCore.IBClientCoreMaster.PriceChangeObservable.Select(p => p.EventArgs.Price)
+            from uc in uo
+            where p.Pair == uc.LocalSymbol
+            select p
+            ).Subscribe(p => ShouldExecute = ShouldExecuteImpl(order.IsBuy() ? p.Ask : p.Bid), exc => { Debugger.Break(); }, () => Debugger.Break());
+        } catch(Exception exc) {
+          LogMessage.Send(exc);
+        }
+        IEnumerable<Contract> GetContract() {
+          if(contract != null)
+            yield return contract;
+        }
+        bool ShouldExecuteImpl(double underPrice) =>
+          (from pc in order.Conditions.OfType<PriceCondition>()
+           where underPrice > pc.Price && pc.IsMore || underPrice <= pc.Price && !pc.IsMore
+           select pc
+          ).Any();
+      }
+      private OrdeContractHolder(IBApi.Order order, IBApi.Contract contract) : this() {
+        this.order = order;
+        this.contract = contract;
+        status = new Status("new", 0, order.TotalQuantity);
+      }
+      public OrdeContractHolder(IBApi.Order order, IBApi.Contract contract, string status) : this() {
+        this.order = order;
+        this.contract = contract;
+        this.status = new Status(status, 0, order.TotalQuantity);
+      }
+      public OrdeContractHolder(IBApi.Order order, IBApi.Contract contract, string status, double filled, double remaining) : this() {
+        this.order = order;
+        this.contract = contract;
+        this.status = new Status(status, filled, remaining);
+      }
+      ~OrdeContractHolder() {
+        _shouldExecuteDisposable?.Dispose();
+      }
+
+      public static explicit operator OrdeContractHolder(OpenOrderMessage p) => new OrdeContractHolder(p.Order, p.Contract, p.OrderState.Status);
+      public bool Equals(OrdeContractHolder other) => order + "," + contract == other.order + "," + other.contract;
+      public override string ToString() => ToStringImpl();
+      string ToStringImpl() => $"{order} => {contract} => {status}";
+    }
+  }
+}

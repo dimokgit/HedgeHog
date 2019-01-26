@@ -85,7 +85,7 @@ namespace HedgeHog.Alice.Client {
         manualBuy = tmTrader.BuyLevel.InManual,
         buyCount = tmTrader.BuyLevel.TradesCount,
         sell = tmTrader.SellLevel.Rate.Round(digits),
-        sellClose = tmTrader.SellCloseLevel.Rate.Round(digits).With(d => d == 0 ? tmTrader.RatesArray[0].PriceAvg : d),
+        sellClose = tmTrader.SellCloseLevel.Rate.Round(digits),
         canSell = tmTrader.SellLevel.CanTrade,
         manualSell = tmTrader.SellLevel.InManual,
         sellCount = tmTrader.SellLevel.TradesCount,

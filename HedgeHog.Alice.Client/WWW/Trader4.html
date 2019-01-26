@@ -1395,7 +1395,7 @@
             <!-- ko foreach:strategyCall -->
             <td><button data-bind="click:$root.openStrategyOption,text:cp()=='C'?'Call':'Put'"></button></td>
             <td data-bind="text:d3.format('.0f')(l())"></td>
-            <td data-bind="text:o"></td>
+            <td data-bind="text:lb"></td>
             <!-- /ko -->
           </tr>
         </table>
@@ -1410,6 +1410,7 @@
           <td data-bind="text:f()+'<'+r()"></td>
           <td data-bind="text:a,style:{backgroundColor: a()=='B'?'deepskyblue':'red'}"></td>
           <td data-bind="text:s"></td>
+          <td data-bind="text:e"></td>
           <td>
             <button data-bind="click:$parent.cancelOrder.bind(null,$data)" title="Cancel Order">X</button>
           </td>
