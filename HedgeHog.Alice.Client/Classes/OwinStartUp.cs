@@ -754,7 +754,7 @@ namespace HedgeHog.Alice.Client {
             Action openOrders = () =>
               (from oc in am.OrderContractsInternal.Values.ToObservable()
                where !oc.isFilled
-               from p in IBClientCore.IBClientCoreMaster.ReqPriceSafe(oc.contract, 1, false).DefaultIfEmpty()
+               from p in IBClientCore.IBClientCoreMaster.ReqPriceSafe(oc.contract).DefaultIfEmpty()
                select (oc, x: orderMap(oc, p.ask, p.bid))
                ).ToArray()
               .Select(a => a.OrderBy(x => x.oc.order.ParentId.IfZero(x.oc.order.OrderId)).ThenBy(x => x.oc.order.ParentId).ToArray())
@@ -889,9 +889,9 @@ namespace HedgeHog.Alice.Client {
       (from contract in contracts
        let isMore = contract.IsCall && isBuy || contract.IsPut && isSell
        let upProfit = profit * (isMore ? 1 : -1)
-       from price in DataManager.IBClientMaster.ReqPriceSafe(contract, 10, true)
+       from price in DataManager.IBClientMaster.ReqPriceSafe(contract)
        from under in contract.UnderContract
-       from up in DataManager.IBClientMaster.ReqPriceSafe(under, 10, true).Select(p => p.ask.Avg(p.bid))
+       from up in DataManager.IBClientMaster.ReqPriceSafe(under).Select(p => p.ask.Avg(p.bid))
        let condPrice = conditionPrice.GetValueOrDefault(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
        let condTakeProfit = under.PriceCondition((condPrice.IfNaNOrZero(up) + upProfit).Round(2), isMore, false)
        select new { price = condPrice == 0 ? isSell ? price.bid : price.ask : 0, under, condTakeProfit, condPrice, isMore, contract }

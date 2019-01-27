@@ -18,9 +18,9 @@ namespace IBApp {
       CurrentStraddles(string symbol, double strikeLevel, int expirationDaysSkip, int count, int gap) {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
-        from price in IbClient.ReqPriceSafe(cd.Contract, 5, false).Select(p => p.ask.Avg(p.bid))
+        from price in IbClient.ReqPriceSafe(cd.Contract, 5).Select(p => p.ask.Avg(p.bid))
         from combo in MakeStraddles(symbol, strikeLevel.IfNaN(price), expirationDaysSkip, 1, count, gap)
-        from p in IbClient.ReqPriceSafe(combo.contract, 2, true).DefaultIfEmpty()
+        from p in IbClient.ReqPriceSafe(combo.contract).DefaultIfEmpty()
         select CurrentComboInfo(price, combo, p)).ToArray()
         .Select(b => b
          .OrderBy(t => t.ask.Avg(t.bid))
@@ -58,9 +58,9 @@ namespace IBApp {
       (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
-        from underPrice in IbClient.ReqPriceSafe(cd.Contract, 5, false).Select(p => p.bid)
+        from underPrice in IbClient.ReqPriceSafe(cd.Contract, 5).Select(p => p.bid)
         from combo in MakeStraddles(symbol, underPrice, expirationDaysSkip, 1, count, gap)
-        from p in IbClient.ReqPriceSafe(combo.contract, 2, true).DefaultIfEmpty()
+        from p in IbClient.ReqPriceSafe(combo.contract, 2).DefaultIfEmpty()
         let strikeAvg = combo.options.Average(o => o.Strike)
         select (
           instrument: combo.contract.Instrument,
@@ -198,10 +198,10 @@ namespace IBApp {
     public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count, Func<Contract, bool> filter) =>
       (from cd in IbClient.ReqContractDetailsCached(symbol)
        where count > 0
-       from price in IbClient.ReqPriceSafe(cd.Contract, 5, false).Select(p => p.ask.Avg(p.bid))
+       from price in IbClient.ReqPriceSafe(cd.Contract, 5).Select(p => p.ask.Avg(p.bid))
        from option in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count * 2)
        where filter(option)
-       from p in IbClient.ReqPriceSafe(option, 2, true).DefaultIfEmpty()
+       from p in IbClient.ReqPriceSafe(option).DefaultIfEmpty()
        let pa = p.ask.Avg(p.bid)
        select (
          instrument: option.Instrument,
@@ -251,7 +251,7 @@ namespace IBApp {
        from allStkExp in IbClient.ReqStrikesAndExpirations(underSymbol)//.Spy(_spy("AllStrikesAndExpirations"))
        let exps = allStkExp.expirations.Where(ex => ex > expiration && ex <= expiration.AddDays(weeks * 7)).OrderBy(ex => ex).ToArray()
        from under in IbClient.ReqContractDetailsCached(underSymbol)//.Spy(_spy("ReqContractDetailsCached"))
-       from price in IbClient.ReqPriceSafe(under.Contract, 2000, true)//.Spy(_spy("ReqPriceSafe"))
+       from price in IbClient.ReqPriceSafe(under.Contract)//.Spy(_spy("ReqPriceSafe"))
        let priceAvg = price.ask.Avg(price.bid)
        let strikes2 = allStkExp.strikes.OrderBy(strike => strike.Abs(priceAvg)).ToArray()
        from strikeFirst in strikes2.Take(1)
@@ -298,7 +298,7 @@ namespace IBApp {
       let strikeSign = trade.contract.IsOption ? (trade.contract.IsCall ? -1 : trade.contract.IsPut ? 1 : 0) * trade.position.Sign() : 0
       let strikeDelta = (roll.ComboStrike() - trade.underPrice) * strikeSign
       from up in UnderPrice(trade.contract, 3)
-      from rp in IbClient.ReqPriceSafe(roll, 3, false)
+      from rp in IbClient.ReqPriceSafe(roll)
       let bid = roll.ExtrinsicValue(rp.bid, up.bid)
       where trade.contract.IsOption && bid > strikeDelta.Max(-trade.change) || bid > -trade.change
       let days = (roll.Expiration - Expiration).TotalDays.Floor()
@@ -308,7 +308,7 @@ namespace IBApp {
       let perc = bid / up.bid
       select (trade, roll, days, bid, ppw: (bid * w).AutoRound2(2), amount, amount * w, (perc * 100).AutoRound2(3), delta: rp.delta.Round(1));
   }
-  public static class AccountManagerMixins {
+  static class CombosMixins {
     #region Parse Combos
     public static IList<(Contract contract, int position, double open)> ParseCombos
       (this ICollection<(Contract c, int p, double o)> positions, ICollection<AccountManager.OrderContractHolder> openOrders) {
@@ -396,6 +396,5 @@ namespace IBApp {
       .Where(p => p.p.Sign() == leg.p.Sign())
       .Select(m => (m, leg));
     #endregion
-
   }
 }

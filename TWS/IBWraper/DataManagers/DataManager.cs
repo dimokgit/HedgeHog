@@ -20,6 +20,7 @@ namespace IBApp {
     public static IBClientCore IBClientMaster;
     private IBClientCore _ibClient;
 
+    public void TraceError<T>(T v) => Trace("{*} " + v);
     protected Action<object> Trace { get; }
     protected Action<bool, object> TraceIf => (b, o) => { if(b) Trace(o); };
     protected Action<object> Verbose => o => { if(UseVerbose) Trace(o); };

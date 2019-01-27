@@ -49,7 +49,7 @@ namespace IBApp {
           new[] { (order, contract, price), (tpOrder, contractOCO, 0) }
             .ForEach(o => {
               _verbous(new { plaseOrder = o });
-              PlaceOrder( o.order, o.contract).Subscribe();
+              PlaceOrder(o.order, o.contract).Subscribe();
             });
         }
       }, Caller);
@@ -73,10 +73,9 @@ namespace IBApp {
 
     bool OpenTradeError(Contract c, IBApi.Order o, (int id, int errorCode, string errorMsg, Exception exc) t, object context) {
       var trace = $"{nameof(OpenTradeError)}:{c}:" + (context == null ? "" : context + ":");
-      var isWarning = Regex.IsMatch(t.errorMsg, @"\sWarning:") || t.errorCode == 103;
+      var isWarning = t.errorCode == 103 || t.errorCode == 2109;
       if(!isWarning) OnOpenError(t, trace);
-      else
-        Trace(trace + t + "\n" + o);
+      //else Trace(trace + t + "\n" + o);
       return !isWarning;
     }
   }

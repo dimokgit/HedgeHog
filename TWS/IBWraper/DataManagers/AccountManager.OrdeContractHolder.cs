@@ -21,7 +21,7 @@ namespace IBApp {
           this.filled = filled;
           this.remaining = remaining;
         }
-        public override string ToString() => this.ToJson(false);
+        public override string ToString() => $"{status}:{filled}<{remaining}";
       }
       public readonly IBApi.Order order;
       public readonly IBApi.Contract contract;
@@ -85,6 +85,7 @@ namespace IBApp {
       //public static explicit operator OrderContractHolder(OpenOrderMessage p) => new OrderContractHolder(p.Order, p.Contract, p.OrderState.Status);
       public bool Equals(OrderContractHolder other) => order + "," + contract == other.order + "," + other.contract;
       public override string ToString() => ToStringImpl();
+      string Key => $"{order.Key}::{contract.Key}";
       string ToStringImpl() => $"{order}::{contract}::{status.status}:{status.filled.ToInt()}<{status.remaining.ToInt()}:id={order.OrderId}";
     }
   }

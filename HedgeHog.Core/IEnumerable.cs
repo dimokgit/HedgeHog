@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MarkdownLog;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -411,6 +412,9 @@ namespace HedgeHog {
       }
     }
 
+    public static string ToTextOrTable<T>(this IEnumerable<T> source, string caption = "") => source.ToTextOrTable(caption, i => i.ToMarkdownTable() + "");
+    public static string ToTextOrTable<T>(this IEnumerable<T> source, string caption, Func<IEnumerable<T>, string> mapPlural)
+      => source.ToList().With(l => l.Count > 1 ? (caption.IsNullOrEmpty() ? "" : caption + Environment.NewLine) + mapPlural(l) : caption + " " + l.Flatter(""));
     public static U With<T, U>(this T v, Predicate<T> @if, Func<T, U> then, Func<T, U> @else) {
       return @if(v) ? then(v) : @else(v);
     }
@@ -420,6 +424,11 @@ namespace HedgeHog {
     public static void WithNotNull<T>(this T v, Action<T> m) { if(v != null) m(v); }
     public static T SE<T>(this T v, Action<T> io) { io(v); return v; }
     public static T SideEffect<T>(this T v, Action<T> io) { io(v); return v; }
+    public static void IfFalse(this bool v, Action action) => (!v).IfTrue(action);
+    public static void IfTrue(this bool v, Action action) {
+      if(v)
+        action();
+    }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<T> value) { return source.Concat(value.Yield()); }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<IEnumerable<T>> value) {
       foreach(var v in source)
@@ -469,7 +478,6 @@ namespace HedgeHog {
     public static IEnumerable<bool> YieldTrue(this bool v) {
       if(v)
         yield return v;
-      yield break;
     }
     public static IEnumerable<U> YieldIf<T, U>(this T v, Func<T, bool> condition, Func<T, U> map) {
       if(condition(v))

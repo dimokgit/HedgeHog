@@ -69,19 +69,18 @@ namespace ConsoleApp {
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         {
-          am.OrderStatusObservable.Subscribe(_ => HandleMessage("OrderContractsInternal2:\n" + am.OrderContractsInternal.Flatter("\n")));
+          am.OrderStatusObservable.Throttle(1.FromSeconds()).Subscribe(_ => HandleMessage("OrderContractsInternal2:\n" + am.OrderContractsInternal.ToMarkdownTable()));
+          //am.CancelOrder(50002201).Subscribe(m => HandleMessage("CancelOrder(50002201)" + m));
+          //return;
+          var ot = MonoidsCore.ToFunc((Contract c) => am.OpenTrade(c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2)));
           (from c in ibClient.ReqContractDetailsCached("ESH9").Select(cd => cd.Contract)
-           from posd in new[] { am.OpenTrade(c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2)), am.OpenTrade(c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2)) }
+           from posd in new[] { ot(c), ot(c) }
            from pos in posd
            select (pos, c)
            )
-           .Do(_ => am.OpenTrade(_.c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2)).Subscribe(__ => HandleMessage("Done")))
+           .Do(_ => ot(_.c).Subscribe())
            .Select(t => t.pos)
-          .Subscribe(c => HandleMessage("OpenTrade:\n"
-            + c.Select(_ => new { _.holder, _.error }).ToMarkdownTable() + "\n"
-            + "OrderContractsInternal3:\n" + am.OrderContractsInternal.Flatter("\n")
-           )
-          );
+          .Subscribe();
           //fw.OpenTrade("ESH9", true, 1, 5, 0, 2635, "OPT");
         }
         return;
@@ -165,7 +164,7 @@ namespace ConsoleApp {
           TestCurrentOptions(0);
           void TestCurrentOptions(int expirationDaysToSkip, bool doMore = true) {
             (from under in ibClient.ReqContractDetailsCached("ESH9")
-             from price in ibClient.ReqPriceSafe(under.Contract, 2000, true)
+             from price in ibClient.ReqPriceSafe(under.Contract)
              from options in am.CurrentOptions(under.Contract.LocalSymbol, price.ask.Avg(price.bid), expirationDaysToSkip, 10, o => o.IsCall)
              from option in options
              select new { price.bid, option.option }
@@ -183,7 +182,7 @@ namespace ConsoleApp {
         }
         {
           (from i in Observable.Interval(5.FromSeconds())
-           from p in ibClient.ReqPriceSafe("ESH9".ContractFactory(), 1, false)
+           from p in ibClient.ReqPriceSafe("ESH9".ContractFactory())
            select p
            ).Take(10)
            .Subscribe(p => HandleMessage(p));
@@ -306,7 +305,7 @@ namespace ConsoleApp {
             });
             comboPrice.combo.contract.Legs().Buffer(2).ForEach(b => Passager.ThrowIf(() => b[0].c.ComboStrike() - b[1].c.ComboStrike() != 5));
             HandleMessage2(new { comboPrice.combo.contract });
-            ibClient.ReqPriceSafe(comboPrice.combo.contract, 4, true)
+            ibClient.ReqPriceSafe(comboPrice.combo.contract)
             .ToEnumerable()
             .ForEach(price => {
               HandleMessage($"Observed {comboPrice.combo.contract} price:{price}");
@@ -324,7 +323,7 @@ namespace ConsoleApp {
           AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass) => pos.contract.TradingClass == tradingClass)
           .ForEach(comboPrice => {
             HandleMessage2(new { comboPrice.contract });
-            ibClient.ReqPriceSafe(comboPrice.contract.contract, 4, true)
+            ibClient.ReqPriceSafe(comboPrice.contract.contract)
             .ToEnumerable()
             .ForEach(price => {
               HandleMessage($"Observed {comboPrice.contract} price:{price}");
@@ -426,7 +425,7 @@ namespace ConsoleApp {
              )
              .ToObservable()
              //.Do(_ => Thread.Sleep(200))
-             .SelectMany(option => ibClient.ReqPriceSafe(option, 1, false).Select(p => (option, p)))
+             .SelectMany(option => ibClient.ReqPriceSafe(option).Select(p => (option, p)))
              .Subscribe(price => HandleMessage2($"Observed:{price}"));
           }
           IList<(Contract contract, Contract[] options)> ProcessSymbol(string symbol) {
@@ -462,7 +461,7 @@ namespace ConsoleApp {
           var straddlesCount = 5;
           var expirationCount = 1;
           int expirationDaysSkip = 0;
-          var price = ibClient.ReqContractDetailsCached(symbol).SelectMany(cd => ibClient.ReqPriceSafe(cd.Contract, 1, true).Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}")));
+          var price = ibClient.ReqContractDetailsCached(symbol).SelectMany(cd => ibClient.ReqPriceSafe(cd.Contract).Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}")));
           var contracts = (from p in price
                            from str in fw.AccountManager.MakeStraddles(symbol, p, expirationDaysSkip, expirationCount, straddlesCount, gap)
                            select str)

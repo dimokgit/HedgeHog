@@ -635,7 +635,7 @@ namespace IBApp {
       if(comment == "OPT") {
         var x = (
           from under in _ibClient.ReqContractDetailsCached(Pair).Select(cd => cd.Contract)
-          from up in _ibClient.ReqPriceSafe(under, 2, true).Select(_ => _.ask.Avg(_.bid))
+          from up in _ibClient.ReqPriceSafe(under).Select(_ => _.ask.Avg(_.bid))
           from os in _ibClient.ReqCurrentOptionsAsync(Pair, up, new[] { isBuy }, 0, 1, 1).ToArray()
           from o in os
           select (o, under, lot: lot * (isBuy ? 1 : -1))

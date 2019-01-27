@@ -143,6 +143,7 @@
     <Compile Include="OperatorCondition.cs" />
     <Compile Include="Order _p.cs" />
     <Compile Include="Order.cs" />
+    <Compile Include="Order.Mixins.cs" />
     <Compile Include="OrderComboLeg.cs" />
     <Compile Include="OrderCondition.cs" />
     <Compile Include="OrderState.cs" />

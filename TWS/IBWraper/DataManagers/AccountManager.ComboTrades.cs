@@ -80,7 +80,7 @@ namespace IBApp {
       var combos = (
         from c in ComboTradesImpl().ToObservable()
         from underPrice in UnderPrice(c.contract, priceTimeoutInSeconds).DefaultIfEmpty()
-        from price in IbClient.ReqPriceSafe(c.contract, priceTimeoutInSeconds, true).DefaultIfEmpty().Take(1)
+        from price in c.contract.ReqPriceSafe(priceTimeoutInSeconds).DefaultIfEmpty().Take(1)
         let multiplier = c.contract.ComboMultiplier
         let closePrice = (c.position > 0 ? price.bid : price.ask)
         let close = (closePrice * c.position * multiplier).Round(4)
@@ -119,13 +119,13 @@ namespace IBApp {
          );
     }
 
-    IObservable<(double bid, double ask,double average)> UnderPrice(Contract contract,double priceTimeoutInSeconds) {
+    IObservable<(double bid, double ask, double average)> UnderPrice(Contract contract, double priceTimeoutInSeconds) {
       var cds = contract.FromDetailsCache().Concat(contract.Legs().SelectMany(l => l.c.FromDetailsCache()))
-        .Select(c=>c.Contract.IsOption?c.UnderSymbol:c.Contract.LocalSymbol).Take(1);
+        .Select(c => c.Contract.IsOption ? c.UnderSymbol : c.Contract.LocalSymbol).Take(1);
       return (
         from underSymbol in cds.ToObservable()
         from u in IbClient.ReqContractDetailsCached(underSymbol)
-        from underPrice in IbClient.ReqPriceSafe(u.Contract, priceTimeoutInSeconds, false)
+        from underPrice in u.Contract.ReqPriceSafe(priceTimeoutInSeconds)
         select (underPrice.bid, underPrice.ask, underPrice.ask.Avg(underPrice.bid))
         ).Take(1);
     }

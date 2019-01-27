@@ -14,9 +14,9 @@ namespace IBApp {
   CurrentBullPuts(string symbol, double strikeLevel, int expirationDaysSkip, int count, int gap) {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
-        from price in IbClient.ReqPriceSafe(cd.Contract, 5, false).Select(p => p.ask.Avg(p.bid))
+        from price in IbClient.ReqPriceSafe(cd.Contract).Select(p => p.ask.Avg(p.bid))
         from combo in MakeBullPuts(symbol, strikeLevel.IfNaN(price), expirationDaysSkip, 1, count, gap)
-        from p in IbClient.ReqPriceSafe(combo.contract, 2, true).DefaultIfEmpty()
+        from p in IbClient.ReqPriceSafe(combo.contract).DefaultIfEmpty()
         let strikeAvg = combo.options.Average(o => o.Strike)
         select (
           instrument: combo.contract.Instrument,

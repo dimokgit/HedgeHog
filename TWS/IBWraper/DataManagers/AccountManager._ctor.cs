@@ -74,7 +74,7 @@ namespace IBApp {
         h => IbClient.OpenOrder += h,
         h => IbClient.OpenOrder -= h
         )
-        .ObserveOn(elFactory)
+        .ObserveOn(IBClientCore.esError)
         .Publish().RefCount();
       OrderStatusObservable = Observable.FromEvent<OrderStatusHandler, OrderStatusMessage>(
         onNext
@@ -82,7 +82,7 @@ namespace IBApp {
         h => IbClient.OrderStatus += h,
         h => IbClient.OrderStatus -= h
         )
-        .ObserveOn(elFactory)
+        .ObserveOn(IBClientCore.esError)
         .Distinct(t => new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld })
         .Publish().RefCount();
 
@@ -140,7 +140,7 @@ namespace IBApp {
           IbClient.ClientSocket.reqAllOpenOrders();
         }
         )
-        .Where(o => (o.Status, o.Remaining).IsOrderDone())
+        .Where(m => m.IsOrderDone())
         .SelectMany(o => UseOrderContracts(ocs => ocs.ByOrderId(o.OrderId)).Concat())
         .Subscribe(o => RaiseOrderRemoved(o))
         .SideEffect(s => _strams.Add(s));
@@ -238,7 +238,7 @@ namespace IBApp {
     //public ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)> OrderStatuses { get; } = new ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)>();
 
     private void RaiseOrderRemoved(OrderContractHolder cd) {
-      Trace($"{nameof(RaiseOrderRemoved)}: {cd}");
+      var trace = ($"{nameof(RaiseOrderRemoved)}: {cd}");
       if(OrderContractsInternal.TryRemove(cd.order.OrderId, out var _)) {
         var o = cd.order;
         var c = cd.contract;
