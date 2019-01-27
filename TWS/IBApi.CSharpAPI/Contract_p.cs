@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 namespace IBApi {
-  public partial class Contract {
+  public partial class Contract :IEquatable<Contract> {
     private string HashKey => Instrument +
       (IsCombo ? ":" + ComboLegs.OrderBy(l => l.Ratio).Select(l => $"{l.ConId}-{l.Ratio}").Flatter(":") : "");
     public double IntrinsicValue(double undePrice) =>
@@ -43,11 +43,11 @@ namespace IBApi {
         _contracts.AddOrUpdate(Key, this, (k, c) => this);
       return this;
     }
-    public IEnumerable<Contract> UnderContract => LegsOrMe(c => c.UnderContractImpl).Concat().Distinct().Count(1,i=> { },i=>throw new Exception($"Too many UnderContracts in {this}"));
+    public IEnumerable<Contract> UnderContract => LegsOrMe(c => c.UnderContractImpl).Concat().Distinct().Count(1, i => { }, i => throw new Exception($"Too many UnderContracts in {this}"));
     public IEnumerable<Contract> UnderContractImpl => (from cd in FromDetailsCache()
-                                                   where !cd.UnderSymbol.IsNullOrWhiteSpace()
-                                                   from cdu in ContractDetails.FromCache(cd.UnderSymbol)
-                                                   select cdu.Contract);
+                                                       where !cd.UnderSymbol.IsNullOrWhiteSpace()
+                                                       from cdu in ContractDetails.FromCache(cd.UnderSymbol)
+                                                       select cdu.Contract);
     public IEnumerable<ContractDetails> FromDetailsCache() => ContractDetails.FromCache(this);
     public IEnumerable<Contract> FromCache() => FromCache(Key);
     public IEnumerable<T> FromCache<T>(Func<Contract, T> map) => FromCache(Key, map);
@@ -82,11 +82,11 @@ namespace IBApi {
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
     public string ShortString => ComboLegsToString(c => c.Symbol + " " + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
     public string DateWithShort => ComboLegsToString(c => c.LastTradeDateOrContractMonth.Substring(4) + " " + c.ShortString, LocalSymbol.IfEmpty(Symbol));
-    public string ShortWithDate => ComboLegsToString(c => c.ShortString + " " + c.LastTradeDateOrContractMonth.Substring(4), LocalSymbol.IfEmpty(Symbol));
+    public string ShortWithDate => ComboLegsToString(c => c.Symbol + " " + c.LastTradeDateOrContractMonth.Substring(4) + " " + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
     public override string ToString() =>
-      ComboLegsToString().IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
+      ComboLegsToString(c => c.UnderContract.Select(u => c.ShortWithDate).DefaultIfEmpty(LocalSymbol).Single(), LocalSymbol.IfEmpty(Symbol)).IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
     internal string ComboLegsToString() => ComboLegsToString(c => c.LocalSymbol, LocalSymbol.IfEmpty(Symbol));
-    internal string ComboLegsToString(Func<Contract, string> label, string defaultFotNotOption) =>
+    internal string ComboLegsToString<T>(Func<Contract, T> label, T defaultFotNotOption) =>
       Legs()
       .ToArray()
       .With(legs => (legs, r: legs.Select(l => l.r).DefaultIfEmpty().Max())
@@ -94,7 +94,7 @@ namespace IBApi {
       t.legs
       .Select(l => label(l.c) + (t.r > 1 ? ":" + l.r : ""))
       .OrderBy(s => s)
-      .RunIfEmpty(() => IsOption ? label(this) : defaultFotNotOption)
+      .RunIfEmpty(() => IsOption ? label(this) + "" : defaultFotNotOption + "")
       .ToArray()
       .MashDiffs()));
     public IEnumerable<T> LegsOrMe<T>(Func<Contract, T> map) => LegsOrMe().Select(map);
@@ -118,5 +118,17 @@ namespace IBApi {
       foreach(var t in x)
         yield return t;
     }
+    string _key() => ComboLegsToString(c => c.ConId, ConId);
+    public static bool operator !=(Contract a, Contract b) => !(a == b);
+    public static bool operator ==(Contract a, Contract b) => a is null && b is null
+      ? true
+      : a is null || b is null 
+      ? false
+      : a.Equals(b);
+    public bool Equals(Contract other) => other is null && this is null
+      ? true
+      : other is null || this is null
+      ? false
+      : _key().Equals(other._key());
   }
 }

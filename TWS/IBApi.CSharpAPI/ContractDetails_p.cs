@@ -14,10 +14,10 @@ namespace IBApi {
     public ContractDetails AddToCache() { ContractDetailsCache.TryAdd(contract.AddToCache().Key, this); return this; }
     public IEnumerable<ContractDetails> FromCache() => FromCache(contract);
     public static IEnumerable<ContractDetails> FromCache(Contract contract) => FromCache(contract.Key);
-    public static IEnumerable<ContractDetails> FromCache(string instrument) {
-      if(instrument.IsNullOrWhiteSpace())
-        throw new Exception(new { instrument } + "");
-      if(ContractDetailsCache.TryGetValue(instrument, out var contract))
+    public static IEnumerable<ContractDetails> FromCache(string key) {
+      if(key.IsNullOrWhiteSpace())
+        throw new Exception(new { key = "is empty" } + "");
+      if(ContractDetailsCache.TryGetValue(key, out var contract))
         yield return contract;
     }
     public static IEnumerable<T> FromCache<T>(string instrument, Func<ContractDetails, T> map) {

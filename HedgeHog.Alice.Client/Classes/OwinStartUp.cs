@@ -739,8 +739,8 @@ namespace HedgeHog.Alice.Client {
             #endregion
 
             #region openOrders
-            var orderMap = MonoidsCore.ToFunc((AccountManager.OrdeContractHolder oc, double ask, double bid) => new {
-              i = new[] { oc.contract.DateWithShort }.Concat(oc.order.Conditions.SelectMany(c => c.ParsePriceCondition().Select(pc => pc + ""))).Flatter("::")
+            var orderMap = MonoidsCore.ToFunc((AccountManager.OrderContractHolder oc, double ask, double bid) => new {
+              i = new[] { oc.contract.DateWithShort }.Concat(oc.order.Conditions.ToTexts()).Flatter("::")
                , id = oc.order.OrderId
                , f = oc.status.filled
                , r = oc.status.remaining
@@ -752,7 +752,7 @@ namespace HedgeHog.Alice.Client {
                , e = oc.ShouldExecute
             });
             Action openOrders = () =>
-              (from oc in am.OrderContractsInternal.ToArray().ToObservable()
+              (from oc in am.OrderContractsInternal.Values.ToObservable()
                where !oc.isFilled
                from p in IBClientCore.IBClientCoreMaster.ReqPriceSafe(oc.contract, 1, false).DefaultIfEmpty()
                select (oc, x: orderMap(oc, p.ask, p.bid))
@@ -818,11 +818,6 @@ namespace HedgeHog.Alice.Client {
               }, exc => {
                 Log = exc;
               });
-            if(false)
-              base.Clients.Caller.orders(am.OrderContractsInternal
-                .Select(oc =>
-                new { order = oc.contract.Key + ":" + oc.order.Action, oc.status.status, filled = $"{oc.status.filled}<<{oc.status.remaining}" }
-                ).OrderBy(oc => oc.order));
           }
         }
         var distFromHigh = tm.TradingMacroM1(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
@@ -955,15 +950,15 @@ namespace HedgeHog.Alice.Client {
        from ochs in am.UseOrderContracts(orderContracts => orderContracts.ByOrderId(ct.orderId))
        from och in ochs
        from under in ct.contract.UnderContract
-       where ct.contract.Key == instrument
+       where ct.contract.Instrument == instrument
        select (ct.contract, ct.position, ct.orderId, ct.closePrice, under, och, am)
        )
       .SelectMany(c => {
         c.och.order.OrderType = "LMT";
         c.och.order.LmtPrice = c.closePrice;
-        return (from pos in c.am.PlaceOrder(c.och.order, c.och.contract)
-                from po in pos
-                select new { po.order, po.error }
+        // TODO Update UI to set catTrade to true
+        return (from po in c.am.PlaceOrder(c.och.order, c.och.contract)
+                select new { order = po.value.Flatter(";"), po.error }
                 ).ToArray();
       });
     [BasicAuthenticationFilter]
@@ -1490,7 +1485,7 @@ namespace HedgeHog.Alice.Client {
           list2.Add(row("profitByHedgeRatioDiff", trader.Value.ProfitByHedgeRatioDiff));
         }
         tm.CurrentPut?.ForEach(p =>
-        list2.Add(row("Curr Put", $"{p.option.Key}{(p.option.IsFutureOption ? ":" + p.option.LastTradeDateOrContractMonth2 : "")}")));
+        list2.Add(row("Curr Put", p.option.ShortWithDate)));
         tm.CurrentStraddle?.ForEach(p => list2.Add(row("Curr Strdl", $"{p.combo.contract}")));
         return list2;
       }).Concat();

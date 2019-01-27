@@ -10,7 +10,7 @@ using System.Linq;
 using System.Reactive.Linq;
 namespace IBApp {
   public partial class AccountManager {
-    public class OrdeContractHolder :IEquatable<OrdeContractHolder> {
+    public class OrderContractHolder :IEquatable<OrderContractHolder> {
       public struct Status {
         public readonly string status;
         public readonly double filled;
@@ -35,7 +35,7 @@ namespace IBApp {
       public bool isFilled => status.status == "Filled";
       public bool isPreSubmitted => status.status == "PreSubmitted";
       public bool ShouldExecute { get; private set; }
-      public OrdeContractHolder() {
+      public OrderContractHolder() {
         try {
           var uo = (
             from c in GetContract().ToObservable()
@@ -62,29 +62,30 @@ namespace IBApp {
            select pc
           ).Any();
       }
-      private OrdeContractHolder(IBApi.Order order, IBApi.Contract contract) : this() {
+      private OrderContractHolder(IBApi.Order order, IBApi.Contract contract) : this() {
         this.order = order;
         this.contract = contract;
         status = new Status("new", 0, order.TotalQuantity);
       }
-      public OrdeContractHolder(IBApi.Order order, IBApi.Contract contract, string status) : this() {
+      public OrderContractHolder(IBApi.Order order, IBApi.Contract contract, string status) : this() {
         this.order = order;
         this.contract = contract;
         this.status = new Status(status, 0, order.TotalQuantity);
       }
-      public OrdeContractHolder(IBApi.Order order, IBApi.Contract contract, string status, double filled, double remaining) : this() {
+      public OrderContractHolder(IBApi.Order order, IBApi.Contract contract, string status, double filled, double remaining) : this() {
         this.order = order;
         this.contract = contract;
         this.status = new Status(status, filled, remaining);
       }
-      ~OrdeContractHolder() {
+      ~OrderContractHolder() {
         _shouldExecuteDisposable?.Dispose();
       }
 
-      public static explicit operator OrdeContractHolder(OpenOrderMessage p) => new OrdeContractHolder(p.Order, p.Contract, p.OrderState.Status);
-      public bool Equals(OrdeContractHolder other) => order + "," + contract == other.order + "," + other.contract;
+      public static implicit operator OrderContractHolder(OpenOrderMessage p) => new OrderContractHolder(p.Order, p.Contract, p.OrderState.Status);
+      //public static explicit operator OrderContractHolder(OpenOrderMessage p) => new OrderContractHolder(p.Order, p.Contract, p.OrderState.Status);
+      public bool Equals(OrderContractHolder other) => order + "," + contract == other.order + "," + other.contract;
       public override string ToString() => ToStringImpl();
-      string ToStringImpl() => $"{order} => {contract} => {status}";
+      string ToStringImpl() => $"{order}::{contract}::{status.status}:{status.filled.ToInt()}<{status.remaining.ToInt()}:id={order.OrderId}";
     }
   }
 }

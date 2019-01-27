@@ -311,7 +311,7 @@ namespace IBApp {
   public static class AccountManagerMixins {
     #region Parse Combos
     public static IList<(Contract contract, int position, double open)> ParseCombos
-      (this ICollection<(Contract c, int p, double o)> positions, ICollection<AccountManager.OrdeContractHolder> openOrders) {
+      (this ICollection<(Contract c, int p, double o)> positions, ICollection<AccountManager.OrderContractHolder> openOrders) {
       var cartasian = (from combo in positions.CartesianProductSelf()
                        select combo.MashDiffs(c => c.c.Instrument)).ToArray();
       var matches = (from oc in openOrders
@@ -330,7 +330,7 @@ namespace IBApp {
                             join leg in legs2 on pos.c.Key equals leg.p.c.c.Key
                             let pos2 = (pos.c, leg.p.p, pos.o, leg.OrderId)
                             group pos2 by pos2.OrderId into gpos
-                            from op in gpos.Select(gp => (gp.c, gp.p, gp.o)).ToArray().ParseCombos(new AccountManager.OrdeContractHolder[0])
+                            from op in gpos.Select(gp => (gp.c, gp.p, gp.o)).ToArray().ParseCombos(new AccountManager.OrderContractHolder[0])
                             select op
                             ).ToArray();
       positions = (from pos in positions

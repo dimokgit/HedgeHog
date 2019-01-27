@@ -2,18 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using HedgeHog;
 namespace IBApp {
   public static class OrderConditionParam {
-    static string IsMore(this bool isMore) => isMore ? ">= " : "<= ";
 
-    public static IEnumerable<(string contract, string @operator, double price)> ParsePriceCondition(this OrderCondition oc) {
-      var pc = oc as PriceCondition;
-      if(pc == null) yield break;
-      var o = pc.IsMore.IsMore();
-      foreach(var c in Contract.FromCache(co => co.ConId == pc.ConId).Select(co => co.LocalSymbol).DefaultIfEmpty(pc.ContractResolver(pc.ConId, pc.Exchange)))
-        yield return (c, o, pc.Price);
-    }
     public static IEnumerable<(string @operator, string time)> ParseTimeCondition(this OrderCondition oc) {
       var tc = oc as TimeCondition;
       if(tc == null) yield break;

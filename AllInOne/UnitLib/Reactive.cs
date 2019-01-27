@@ -18,29 +18,38 @@ using HedgeHog;
 namespace UnitLib {
   [TestClass]
   public class ReactiveExtensions {
+    object _hm = new object();
+    bool HallMonitor(int count ) {
+      if(!Monitor.TryEnter(_hm, 1000)) return false;
+      if(count == 0) return HallMonitor(1);
+      Monitor.Exit(_hm);
+      return true;
+    }
     [TestMethod]
-    public void ReactiveCatch() {
+    public void MonitorEnter() {
+      var b = HallMonitor(0);
+      Assert.IsTrue(b);
+    }
+    [TestMethod]
+    public async Task ReactiveCatch() {
       var source = new[] { new { i = 1 }, new { i = 0 } }.ToObservable();
-      var a = source
+      var a =await source
         .Do(x => { var j = 1 / x.i; })
         .CatchAndStop(() => new TimeoutException())
         .CatchAndStop()
-        .ToEnumerable()
-        .ToArray();
-      Assert.AreEqual(new { i = 1 }, a[0]);
+        .LastAsync();
+      Assert.AreEqual(a.i,  1);
     }
     [TestMethod]
-    public void Throttle() {
+    public async Task Throttle() {
       var c = 0;
-      var res = Observable.Interval(TimeSpan.FromMilliseconds(110))
+      var res = await Observable.Interval(TimeSpan.FromMilliseconds(110))
         .Select(_ => DateTime.Now)
         .ObserveOn(ThreadPoolScheduler.Instance)
         .Do(t => c++)
         .Sample(TimeSpan.FromSeconds(1))
-        .Take(1)
-        .ToEnumerable()
-        .ToArray();
-      Assert.AreEqual(7, c);
+        .FirstAsync();
+      Assert.AreEqual(8, c);
     }
   }
 }

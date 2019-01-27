@@ -29,12 +29,12 @@ namespace IBApp {
        ).Subscribe(t => OpenCoveredOption(t.i, "", quantity, price, t.o, DateTime.MaxValue, Caller));
     }
     public void OpenCoveredOption(Contract contract, string type, int quantity, double price, Contract contractOCO, DateTime goodTillDate, [CallerMemberName] string Caller = "") {
-      bool FindOrer(OrdeContractHolder oc, Contract c) => !oc.isDone && oc.contract.Key == c.Key && oc.order.TotalPosition().Sign() == quantity.Sign();
+      bool FindOrer(OrderContractHolder oc, Contract c) => !oc.isDone && oc.contract == c && oc.order.TotalPosition().Sign() == quantity.Sign();
       UseOrderContracts(orderContracts => {
-        var aos = orderContracts.Where(oc => FindOrer(oc, contract))
+        var aos = orderContracts.Values.Where(oc => FindOrer(oc, contract))
         .Select(ao => new { ao.order, contract, ao.status.status }).ToArray();
         var ocos = (from ao in aos
-                    join oc in orderContracts on ao.order.OrderId equals oc.order.ParentId
+                    join oc in orderContracts.Values on ao.order.OrderId equals oc.order.ParentId
                     select new { oc.order, contract = contractOCO, oc.status.status }).ToArray();
         if(aos.Any()) {
           aos.Concat(ocos).ForEach(ao => {
@@ -72,7 +72,7 @@ namespace IBApp {
     }
 
     bool OpenTradeError(Contract c, IBApi.Order o, (int id, int errorCode, string errorMsg, Exception exc) t, object context) {
-      var trace = $"{nameof(OpenTrade)}:{c}:" + (context == null ? "" : context + ":");
+      var trace = $"{nameof(OpenTradeError)}:{c}:" + (context == null ? "" : context + ":");
       var isWarning = Regex.IsMatch(t.errorMsg, @"\sWarning:") || t.errorCode == 103;
       if(!isWarning) OnOpenError(t, trace);
       else

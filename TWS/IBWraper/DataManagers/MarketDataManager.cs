@@ -55,7 +55,7 @@ namespace IBApp {
     }
     void AddRequestImpl(Contract contract, string genericTickList) {
       if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
-        Verbose($"AddRequest:{contract} already requested");
+        Verbose0($"AddRequest:{contract} already requested");
       else {
         var reqId = IbClient.ValidOrderId();
         Verbose0($"AddRequest:{reqId}=>{contract}");

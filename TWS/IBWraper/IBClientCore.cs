@@ -239,8 +239,9 @@ namespace IBApp {
     #endregion
 
     #region Error
-    static IScheduler esError = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Error", Priority = ThreadPriority.Lowest });
-    IObservable<(int id, int errorCode, string errorMsg, Exception exc)> ErrorFactory() => Observable.FromEvent<ErrorHandler, (int id, int errorCode, string errorMsg, Exception exc)>(
+    public static IScheduler esError = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Error", Priority = ThreadPriority.Highest });
+    IObservable<(int id, int errorCode, string errorMsg, Exception exc)> ErrorFactory() 
+      => Observable.FromEvent<ErrorHandler, (int id, int errorCode, string errorMsg, Exception exc)>(
       onNext => (int id, int errorCode, string errorMsg, Exception exc) => onNext((id, errorCode, errorMsg, exc)),
       h => Error += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(Error)}"))*/,
       h => Error -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(Error)}"))*/
@@ -282,7 +283,7 @@ namespace IBApp {
       lock(_reqContractDetails) {
         if(_reqContractDetails.TryGetValue(key, out var o)) return o;
         var reqId = NextReqId();
-        Trace($"{nameof(ReqContractDetailsAsync)}:{key} Start");
+        Verbose($"{nameof(ReqContractDetailsAsync)}:{key} Start");
         var cd = WireToError(
           reqId,
           ContractDetailsObservable,
@@ -296,7 +297,7 @@ namespace IBApp {
           .Distinct(t => t.ContractDetails.Contract.ConId)
           .ToArray()
           .Do(a => a.ForEach(t => t.ContractDetails.AddToCache()))
-          .Do(_ => Trace($"{nameof(ReqContractDetailsAsync)}:{key} found:{_.Length} contracts"))
+          .Do(_ => Verbose($"{nameof(ReqContractDetailsAsync)}:{key} found:{_.Length} contracts"))
           .SelectMany(a => a.Select(t => t.ContractDetails))
           .Replay().RefCount()
         //.Select(t => t.cd.SideEffect(d => Verbose($"Adding {d.Contract} to cache")).AddToCache())
@@ -326,6 +327,17 @@ namespace IBApp {
         .Where(t => getReqId(t) == reqId).Select(t => (value: t, error: default(ErrorMessage)))
         .Merge(ErrorObservable.Where(e => e.id == reqId).Where(isError).Select(e => (value: default(T), error: (ErrorMessage)e)))
         .TakeUntil(endSubject.Where(rid => rid == reqId));
+    }
+    public IObservable<ErrorMessage<U>> WireToErrorMessage<T, U>
+      (int reqId, IObservable<T> source, Func<T, int> getReqId, Func<T, U> map,Func<U> @default, Func<(int id, int errorCode, string errorMsg, Exception exc), bool> isError) {
+      SetRequestHandled(reqId);
+      return source
+        .Where(t => getReqId(t) == reqId)
+        .Select(map)
+        .Select(t => ErrorMessage.Empty(t))
+        //.Delay(1.FromSeconds())
+        .Merge(ErrorObservable.Where(e => e.id == reqId).Where(isError).Select(e => ErrorMessage.Create(@default(), e)))
+        ;
     }
     (IObservable<T> source, IObserver<T> stopper) StoppableObservable<T>
       (IObservable<T> source, Func<T, bool> isNotEnd) {

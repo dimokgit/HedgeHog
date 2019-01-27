@@ -69,13 +69,17 @@ namespace ConsoleApp {
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         {
+          am.OrderStatusObservable.Subscribe(_ => HandleMessage("OrderContractsInternal2:\n" + am.OrderContractsInternal.Flatter("\n")));
           (from c in ibClient.ReqContractDetailsCached("ESH9").Select(cd => cd.Contract)
-           from pos in am.OpenTrade(c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2))
-           select pos
+           from posd in new[] { am.OpenTrade(c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2)), am.OpenTrade(c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2)) }
+           from pos in posd
+           select (pos, c)
            )
+           .Do(_ => am.OpenTrade(_.c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2)).Subscribe(__ => HandleMessage("Done")))
+           .Select(t => t.pos)
           .Subscribe(c => HandleMessage("OpenTrade:\n"
-            + c.Select(_ => new { order = (AccountManager.OrdeContractHolder)_.order, _.error }).ToMarkdownTable() + "\n"
-            + "OrderContractsInternal:\n" + am.OrderContractsInternal.Flatter("\n")
+            + c.Select(_ => new { _.holder, _.error }).ToMarkdownTable() + "\n"
+            + "OrderContractsInternal3:\n" + am.OrderContractsInternal.Flatter("\n")
            )
           );
           //fw.OpenTrade("ESH9", true, 1, 5, 0, 2635, "OPT");
@@ -439,7 +443,7 @@ namespace ConsoleApp {
             .ToArray()
             .Do(straddles => straddles.Count(4, new { }))
             .Concat()
-            .Do(c => Passager.ThrowIf(() => !c.combo.contract.Key.Contains("[C-P]")))
+            .Do(c => Passager.ThrowIf(() => !c.combo.contract.Instrument.Contains("[C-P]")))
             .Do(straddle => {
               HandleMessage2(new { straddle = straddle.combo.contract });
               //ibClient.SetOfferSubscription(straddle.combo.contract);
@@ -465,7 +469,7 @@ namespace ConsoleApp {
           .ToEnumerable()
           .ToArray()
           .Count(straddlesCount * expirationCount, i => { Debugger.Break(); }, i => { Debugger.Break(); }, new { straddlesCount, expirationCount })
-          .Do(c => Passager.ThrowIf(() => !c.contract.Key.Contains("[C-P]")))
+          .Do(c => Passager.ThrowIf(() => !c.contract.Instrument.Contains("[C-P]")))
           .ToArray();
           //Passager.ThrowIf(() => !IBClientCore.OptionChainCache.Count(1, new { }).Do(HandleMessage).Any(x => x.Value.tradingClass == "SPXW"));
           return contracts;
