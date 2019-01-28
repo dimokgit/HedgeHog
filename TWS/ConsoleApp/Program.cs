@@ -68,8 +68,19 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        am.OrderStatusObservable.Throttle(1.FromSeconds()).Subscribe(_ => HandleMessage("OrderContractsInternal2:\n" + am.OrderContractsInternal.ToMarkdownTable()));
         {
-          am.OrderStatusObservable.Throttle(1.FromSeconds()).Subscribe(_ => HandleMessage("OrderContractsInternal2:\n" + am.OrderContractsInternal.ToMarkdownTable()));
+          //ibClient.ReqContractDetailsCached("ESH9")
+          //.Subscribe(cd => am.OpenTrade("ESH9", 1, 1, 0, false, DateTime.MaxValue));
+          //return;
+          (from cs in ibClient.ReqOptionChainOldCache("ESH9", DateTime.Now.Date.AddDays(1), 2675)
+           from c in cs
+           where c.IsCall
+           select c
+           ).Subscribe(c => am.OpenTradeWithConditions(c.LocalSymbol, 1, 5, 2640, false));
+        }
+        return;
+        {
           //am.CancelOrder(50002201).Subscribe(m => HandleMessage("CancelOrder(50002201)" + m));
           //return;
           var ot = MonoidsCore.ToFunc((Contract c) => am.OpenTrade(c, 1, 2610, 0, false, default, DateTime.Now.AddDays(2)));
@@ -82,17 +93,6 @@ namespace ConsoleApp {
            .Select(t => t.pos)
           .Subscribe();
           //fw.OpenTrade("ESH9", true, 1, 5, 0, 2635, "OPT");
-        }
-        return;
-        {
-          //ibClient.ReqContractDetailsCached("ESH9")
-          //.Subscribe(cd => am.OpenTrade("ESH9", 1, 1, 0, false, DateTime.MaxValue));
-          //return;
-          (from cs in ibClient.ReqOptionChainOldCache("ESH9", DateTime.Now.Date.AddDays(1), 2675)
-           from c in cs
-           where c.IsCall
-           select c
-           ).Subscribe(c => am.OpenTradeWithConditions(c.LocalSymbol, 1, 5, 2640, false));
         }
         {
           Task.Delay(3000).ContinueWith(_ => {

@@ -39,7 +39,7 @@ namespace IBApp {
         .Count(1, new { OpenOrUpdateOrder = new { instrument, unexpected = "count in cache" } })
         .ForEach(c => {
           var lmtPrice = OrderPrice(priceFromProfit(pa, position, c.ComboMultiplier, openAmount), c);
-          OpenTrade(c, -position, lmtPrice, 0.0, false, DateTime.MaxValue);
+          OpenTrade(c, -position, lmtPrice, 0.0, false, DateTime.MaxValue).Subscribe();
         });
       });
     }
@@ -56,7 +56,7 @@ namespace IBApp {
             throw new Exception($"{nameof(OpenOrUpdateLimitOrder)}:{new { orderId, och.contract.Instrument, dontMatch = contract.Instrument }}");
           UpdateOrder(orderId, OrderPrice(lmpPrice, och.contract));
         })
-        .RunIfEmpty(() => OpenTrade(contract, -position, lmpPrice, 0.0, false, DateTime.MaxValue)
+        .RunIfEmpty(() => OpenTrade(contract, -position, lmpPrice, 0.0, false, DateTime.MaxValue).Subscribe()
       ));
     }
     public void UpdateOrder(int orderId, double lmpPrice, int minTickMultiplier = 1) {
@@ -176,7 +176,7 @@ namespace IBApp {
       double ask((double ask, double bid, DateTime time, double) p) => useMarketPrice ? p.ask : p.bid;
       double bid(double a, double b) => useMarketPrice ? b : a;
       IbClient.ReqPriceSafe(contract).Select(p => quantity > 0 ? ask(p) : bid(p.ask, p.bid))
-       .Subscribe(price => OpenTrade(contract, quantity, price, profit, useTakeProfit));
+       .Subscribe(price => OpenTrade(contract, quantity, price, profit, useTakeProfit).Subscribe());
     }
 
     public void OpenTradeWithConditions(string symbol, int quantity, double profit, double? conditionPrice, bool _isTest) {
@@ -317,9 +317,9 @@ namespace IBApp {
           var tradeDate = IbClient.ServerTime.Date.AddHours(15).AddMinutes(45);
           if(t.cc.IsOption)
             CreateRoll(currentSymbol, rollSymbol)
-              .Subscribe(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false, default, default, tradeDate.TimeCondition()));
+              .Subscribe(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false, default, default, tradeDate.TimeCondition()).Subscribe());
           else
-            OpenTrade(t.rc, -t.ct.position.Abs(), 0, 0, false, DateTime.MaxValue, tradeDate);
+            OpenTrade(t.rc, -t.ct.position.Abs(), 0, 0, false, DateTime.MaxValue, tradeDate).Subscribe();
         });
     }
     //private void OnUpdateError(int reqId, int code, string error, Exception exc) {

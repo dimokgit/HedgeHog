@@ -62,6 +62,7 @@ namespace HedgeHog.Shared {
     int GetDigits(string pair);
     //double GetPipCost(string pair);
     int GetBaseUnitSize(string pair);
+    double GetMinTick(string pair);
     #endregion
 
     #region Offers

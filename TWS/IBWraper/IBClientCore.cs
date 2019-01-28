@@ -75,7 +75,7 @@ namespace IBApp {
 
     #region Properties
     public void TraceMe<T>(T v) => _trace(v);
-    public void TraceError<T>(T v) => _trace("{*} "+v);
+    public void TraceError<T>(T v) => _trace("{*} " + v);
     public Action<object> Trace => _trace;
     public Action<bool, object> TraceIf => (b, o) => { if(b) _trace(o); };
     public Action<object> TraceTemp => o => { };
@@ -341,7 +341,7 @@ namespace IBApp {
         ;
     }
     public IObservable<ErrorMessages<U>> WireToErrorMessage<T, U>
-      (int reqId, IObservable<T> source, Func<T, int> getReqId, Func<T,IEnumerable<U>> map, Func<IEnumerable<U>> @default, Func<(int id, int errorCode, string errorMsg, Exception exc), bool> isError) {
+      (int reqId, IObservable<T> source, Func<T, int> getReqId, Func<T, IEnumerable<U>> map, Func<IEnumerable<U>> @default, Func<(int id, int errorCode, string errorMsg, Exception exc), bool> isError) {
       SetRequestHandled(reqId);
       return source
         .Where(t => getReqId(t) == reqId)
@@ -454,14 +454,18 @@ namespace IBApp {
          });
     }
     public IObservable<Contract> ReqCurrentOptionsAsync
-      (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount) {
+      (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount, Func<Contract, bool> filter) {
       var expStartDate = ServerTime.Date.AddBusinessDays(expirationDaysSkip);
       return (
         //from exps in ReqStrikesAndExpirations(symbol)
         //from exp in exps.expirations.OrderBy(d => d).Where(d => d >= expStartDate).Take(1)
-        from och in ReqOptionChainOldCache(symbol, expStartDate)
-        select och
-        ).Select(a => a.OrderBy(c => c.Strike.Abs(price)).ThenBy(c => c.Right).Select((o, i) => (i, o))
+        from ochs in ReqOptionChainOldCache(symbol, expStartDate)
+        select (from c in ochs
+                join cp in isCalls on c.IsCall equals cp
+                where filter(c)
+                select c)
+        )
+        .Select(a => a.OrderBy(c => c.Strike.Abs(price)).ThenBy(c => c.Right).Select((o, i) => (i, o))
           .ToArray())
           .SelectMany(a => a.OrderBy(t => t.i).ThenBy(t => t.o.Strike).Select(t => t.o))
           .Take(strikesCount * expirationsCount);

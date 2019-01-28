@@ -73,7 +73,6 @@ namespace HedgeHog.Alice.Client {
           priceChanged = trader.PriceChanged
           .Where(p => !Contract.FromCache(p.EventArgs.Price.Pair).Any(c => c.HasOptions))
             .Select(x => x.EventArgs.Price.Pair.Replace("/", "").ToLower())
-            //.Where(pair => Pairs.Contains(pair))
             .Subscribe(pair => {
               try {
                 myHub().Clients.All.priceChanged(pair);
@@ -264,7 +263,7 @@ namespace HedgeHog.Alice.Client {
       _CurrentCombos
         .ObserveOn(TaskPoolScheduler.Default)
         .Distinct(s => s.key)
-        .Sample(TimeSpan.FromSeconds(1))
+        .Sample(TimeSpan.FromSeconds(2))
         .Subscribe(s => s.action(), exc => { });
     }
     static public void OnCurrentCombo((string key, Action action) p) {
@@ -664,7 +663,7 @@ namespace HedgeHog.Alice.Client {
               .Subscribe(x => base.Clients.Caller.hedgeOptions(x));
 
             Action<string> currentOptions = (map) => {
-              var noc = new[] { "C", "P" }.Contains(map) ? (numOfCombos * 1.5).Ceiling() : 0;
+              var noc = new[] { "C", "P" }.Contains(map) ? numOfCombos : 0;
               underContracts.ForEach(underContract =>
               am.CurrentOptions(CacheKey(underContract), sl, expirationDaysSkip, noc, c => map.Contains(c.Right))
               .Select(ts => {
@@ -898,20 +897,49 @@ namespace HedgeHog.Alice.Client {
        ).Subscribe(t =>
         am.OpenTrade(t.contract, quantity, t.price, 0, true, DateTime.MaxValue, dateAfter
         , t.price != 0 ? null : OrderConditionParam.PriceCondition(t.under, t.condPrice.Round(2), !t.isMore, false)
-        , t.condTakeProfit));
+        , t.condTakeProfit).Subscribe());
     }
-    public void OpenStrategyOption(string option, int quantity, double level, double profit) {
-      (from contract in DataManager.IBClientMaster.ReqContractDetailsCached(option).Select(cd => cd.Contract)
-       from under in contract.UnderContract
-       let openCond = under.PriceCondition(level.Round(2), contract.IsPut)
-       let tpCond = under.PriceCondition((level + profit * (contract.IsCall ? 1 : -1)).Round(2), contract.IsCall)
-       let dateAfter = _isTest ? DateTime.Now.AddHours(10) : DateTime.MinValue
-       select new { contract, quantity, openCond, tpCond, dateAfter }
-       ).Subscribe(t =>
-        GetAccountManager().OpenTrade(t.contract, quantity, 0, 0, true, default, t.dateAfter, t.openCond, t.tpCond)
-       );
-    }
+    public async Task<object[]> OpenStrategyOption(string option, int quantity, double level, double profit) =>
+      await (from contract in DataManager.IBClientMaster.ReqContractDetailsCached(option).Select(cd => cd.Contract)
+             from under in contract.UnderContract
+             let openCond = under.PriceCondition(level.Round(2), contract.IsPut)
+             let tpCond = under.PriceCondition((level + profit * (contract.IsCall ? 1 : -1)).Round(2), contract.IsCall)
+             let dateAfter = _isTest ? DateTime.Now.AddHours(10) : DateTime.MinValue
+             //select new { contract, quantity, openCond, tpCond, dateAfter }
+             from ots in GetAccountManager().OpenTrade(contract, quantity, 0, 0, true, default, dateAfter, openCond, tpCond)
+             from ot in ots
+             select new { order = ot.holder + "", error = ot.error + "" }
+       ).ToArray();
+
     public async Task<object[]> CallByBS(string pair) {
+      var tm = UseTraderMacro(pair).Single();
+      var hasStrategy = tm.Strategy.HasFlag(Strategies.Universal);
+      var def = new string[0];
+      if(!hasStrategy) return def;
+      var bs = new { b = tm.BuyLevel.Rate, s = tm.SellLevel.Rate };
+      var levelCall = bs.b;
+      var levelPut = bs.s;
+      if(levelCall.IsNaNOrZero()) return def;
+      var am = GetAccountManager();
+      var expSkip = tm.ServerTime.Hour > 16 ? 1 : 0;
+      var calls = from os in CallsPuts()
+                  from cp in os
+                  group cp by cp.IsCall into g
+                  from o in g.OrderBy(OrderBy).Take(3).TakeLast(1)
+                  select new { l = Level(o), o = o.LocalSymbol, cp = o.Right, lb = o.ShortWithDate };
+      return await calls.ToArray();
+
+      double Level(Contract c) => c.IsCall ? levelCall : levelPut;
+      IObservable<Contract[]> CallsPuts() => Calls().Merge(Puts()).ToArray();
+      IObservable<Contract> Calls() =>
+        am.CurrentOptions(tm.Pair, levelCall, expSkip, 4, c => c.IsCall && c.Strike > levelCall).SelectMany(a => a.Select(t => t.option));
+      IObservable<Contract> Puts() =>
+        am.CurrentOptions(tm.Pair, levelPut, expSkip, 4, c => c.IsPut && c.Strike < levelPut).SelectMany(a => a.Select(t => t.option));
+      double OrderBy(Contract c) => c.IsCall ? c.Strike : 1 / c.Strike;
+      bool Filter(Contract c, double level) => c.IsCall && c.Strike < level || c.IsPut && c.Strike > level;
+    }
+
+    public async Task<object[]> CallByBS_Old(string pair) {
       var tm = UseTraderMacro(pair).Single();
       var hasStrategy = tm.Strategy.HasFlag(Strategies.Universal);
       var def = new string[0];
@@ -930,6 +958,7 @@ namespace HedgeHog.Alice.Client {
                  select new { l = levelPut, o = o.option.LocalSymbol, cp = o.option.Right, lb = o.option.ShortWithDate };
       return await calls.Merge(puts).ToArray();
     }
+
 
     [BasicAuthenticationFilter]
     public void OpenCoveredOption(string pair, int quantity, double? price) {
@@ -1478,7 +1507,7 @@ namespace HedgeHog.Alice.Client {
           tm.MaxHedgeProfit?.ForEach(mhps => list2.Add(row("Hedge Profit", "$" + string.Join("/", mhps.Select(mhp => mhp.profit.AutoRound2(1))) + "/" +
             (CompInt(mhps.DefaultIfEmpty().Average(x => x.profit)) * 100).AutoRound2(3, "%")
             )));
-        if(trader.Value.GrossToExitCalc() != 0) {
+        if(false && trader.Value.GrossToExitCalc() != 0) {
           var ca = CompInt(trader.Value.GrossToExitCalc().Abs());
           list2.Add(row("GrossToExit", $"${trader.Value.GrossToExitCalc().AutoRound2(1)}:{((ca) * 100).AutoRound2(3, "%")}"));
           list2.Add(row("grossToExitRaw", trader.Value.GrossToExit));
@@ -1487,6 +1516,7 @@ namespace HedgeHog.Alice.Client {
         tm.CurrentPut?.ForEach(p =>
         list2.Add(row("Curr Put", p.option.ShortWithDate)));
         tm.CurrentStraddle?.ForEach(p => list2.Add(row("Curr Strdl", $"{p.combo.contract}")));
+        tm.StrategyBS.Values.ForEach(b => list2.Add(row("Stgy Buy", b.contract.ShortWithDate + "<" + b.level)));
         return list2;
       }).Concat();
       return list.Concat(more).ToArray();

@@ -42,7 +42,7 @@ namespace IBApp {
 
     public IObservable<(Contract contract, Contract[] options)> MakeBullPuts
     (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count, int gap) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, (count + gap + 1) * 2)
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, (count + gap + 1) * 2, c => true)
       .Where(c => c.IsPut)
       //.Take(count*2)
       .ToArray()

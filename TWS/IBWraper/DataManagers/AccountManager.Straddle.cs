@@ -85,7 +85,7 @@ namespace IBApp {
     }
     public IObservable<(Contract contract, Contract[] options)> MakeStraddles
       (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count, int gap) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count * 2 + gap * 3)
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count * 2 + gap * 3, c => true)
       //.Take(count*2)
       .ToArray()
       .SelectMany(reqOptions => {
@@ -142,7 +142,7 @@ namespace IBApp {
 
     #region Make Butterfly
     public IObservable<(Contract contract, Contract[] options)> MakeButterflies(string symbol, double price) =>
-   IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true }, 1, 1, 4)
+   IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true }, 1, 1, 4, c => true)
     .ToArray()
     //.Select(a => a.OrderBy(c => c.Strike).ToArray())
     .SelectMany(reqOptions =>
@@ -199,7 +199,7 @@ namespace IBApp {
       (from cd in IbClient.ReqContractDetailsCached(symbol)
        where count > 0
        from price in IbClient.ReqPriceSafe(cd.Contract, 5).Select(p => p.ask.Avg(p.bid))
-       from option in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count * 2)
+       from option in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count * 2, filter)
        where filter(option)
        from p in IbClient.ReqPriceSafe(option).DefaultIfEmpty()
        let pa = p.ask.Avg(p.bid)
@@ -227,12 +227,12 @@ namespace IBApp {
       .ToArray());
 
     public IObservable<Contract> MakeOptions
-      (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count * 2)
+      (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count, Func<Contract, bool> filter) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count, filter)
       //.Take(count*2)
       .ToArray()
       .SelectMany(reqOptions => {
-        return reqOptions.OrderBy(o => o.Strike.Abs(price)).Take(count * 2).ToArray();
+        return reqOptions.OrderBy(o => o.Strike.Abs(price)).Take(count).ToArray();
       })
       .Take(count);
     #endregion

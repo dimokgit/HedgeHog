@@ -1107,7 +1107,6 @@ namespace HedgeHog.Alice.Store {
       IsTradingActive = IsInVirtualTrading;
 
       if(!IsInVirtualTrading) {
-        var ibWraper = TradesManager as IBWraper;
         if(ibWraper == null)
           Log = new Exception(new { ibWraper } + " must not be null");
         else {
@@ -2098,7 +2097,7 @@ namespace HedgeHog.Alice.Store {
           .Scan((p, n) => p.r.Abs(n.r) < 1 ? p : n)
           .DistinctUntilChanged(_ => _.r)
           .Select(_ => _.sr)
-          .Subscribe(_ => _readeLevelChanged(_));
+          .Subscribe(_ => _tradeLevelChanged(_));
 
         sr.CrossedObservable
           .DistinctUntilChanged(_ => _.EventArgs.Direction)
@@ -4103,6 +4102,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     #region LotSize
     int _BaseUnitSize = 0;
     double _mmr = 0;
+    public double MinTick { get { return TradesManager.GetMinTick(Pair); } }
     public int BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = TradesManager.GetBaseUnitSize(Pair); } }
     Account _account = null;
     Account Account { get { return _account ?? (_account = TradesManager?.GetAccount()); } }

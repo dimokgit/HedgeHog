@@ -70,16 +70,22 @@ namespace HedgeHog.Tests {
 
       var sw = Stopwatch.StartNew();
       var minMax = source.MinMaxByRegression();
-      Debug.WriteLine(new { sw.ElapsedMilliseconds,minMax });
+      Debug.WriteLine(new { sw.ElapsedMilliseconds, minMax });
       sw.Restart();
       var minMax2 = source.MinMaxByRegressoin2();
-      Debug.WriteLine(new { sw.ElapsedMilliseconds,minMax2 });
-      Assert.AreEqual((minMax[0],minMax[1]), (minMax2[0], minMax2[1]));
+      Debug.WriteLine(new { sw.ElapsedMilliseconds, minMax2 });
+      Assert.AreEqual((minMax[0], minMax[1]), (minMax2[0], minMax2[1]));
       sw.Restart();
       var height = source.Height();
       var heightR = source.HeightByRegression();
       Debug.WriteLine(new { sw.ElapsedMilliseconds, heightR });
-      Assert.AreEqual(minMax2[1]-minMax2[0], heightR);
+      Assert.AreEqual(minMax2[1] - minMax2[0], heightR);
+    }
+
+    [TestMethod()]
+    public void RoundBySample() {
+      Assert.AreEqual(100.25, 100.28.RoundBySample(.25));
+      Assert.AreEqual(100.50,100.38.RoundBySample(.25));
     }
   }
 }

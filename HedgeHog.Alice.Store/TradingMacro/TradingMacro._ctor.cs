@@ -12,16 +12,27 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using HedgeHog;
+using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
-    Action<SuppRes> _readeLevelChanged;
+    Action<SuppRes> _tradeLevelChanged;
     Action<(SuppRes level, SuppRes.CrossedEvetArgs crossed)> _tradeLevelCrossed;
+    IBApp.IBWraper ibWraper => TradesManager as IBApp.IBWraper;
+    public ConcurrentDictionary<bool, (IBApi.Contract contract, double level)> StrategyBS = new ConcurrentDictionary<bool, (IBApi.Contract contract, double level)>();
     public TradingMacro() {
       GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
 
-      Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _readeLevelChanged += h, h => _readeLevelChanged -= h)
-      .Subscribe(_ => new Exception(new { BuyLevelObservable =new { _.Rate } }+""),()=> { });
+      var tls = Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _tradeLevelChanged += h, h => _tradeLevelChanged -= h)
+        .DistinctUntilChanged(tl => tl.Rate.RoundBySample(MinTick))
+        .Publish().RefCount();
+      (from tl in tls
+       from options in ibWraper.AccountManager.CurrentOptions(Pair, tl.Rate, ExpDayToSkip(), 3, c => c.IsCall == tl.IsBuy).Select(o => o.Select(_ => _.option).TakeLast(1).ToArray())
+       select (tl, options)
+      ).Subscribe(t => 
+        t.options.Any()
+        .IfTrue(() => 
+          (t.options.Single(), t.tl.Rate.Round(2)).With(value => StrategyBS.AddOrUpdate(t.tl.IsBuy, value, (k, v) => value))));
 
       Observable.FromEvent<(SuppRes level, SuppRes.CrossedEvetArgs crossed)>(h => _tradeLevelCrossed += h, h => _tradeLevelCrossed -= h)
         .Subscribe(tl => new Exception(new { TradeLevelCrossed = new { tl.level.IsBuy, tl.crossed.Direction } } + ""), () => { });
