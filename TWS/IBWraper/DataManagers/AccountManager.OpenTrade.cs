@@ -200,7 +200,6 @@ namespace IBApp {
        .Subscribe();
     }
 
-    private readonly SemaphoreSlim _mutexOpenTrade = new SemaphoreSlim(1);
     public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenTrade(Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false, DateTime goodTillDate = default, DateTime goodAfterDate = default, OrderCondition condition = null, OrderCondition takeProfitCondition = null, string type = "", [CallerMemberName] string Caller = "") {
       if(useTakeProfit && profit == 0 && takeProfitCondition == null)
         return Default(new Exception($"No profit or profit condition: {new { useTakeProfit, profit, takeProfitCondition }}"));

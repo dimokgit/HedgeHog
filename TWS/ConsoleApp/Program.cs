@@ -255,14 +255,14 @@ namespace ConsoleApp {
         var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
         Task.Delay(2000).ContinueWith(_ => {
-          ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 1, 10)
+          ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 1, 10, c => true)
           .ToArray()
           .ToEnumerable()
           .ForEach(cds => {
             cds.Take(50).ForEach(cd => HandleMessage2(cd));
             HandleMessage("ReqCurrentOptionsAsync =============================");
           });
-          ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 1, 10)
+          ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 1, 10, c => true)
           .ToArray()
           .ToEnumerable()
           .ForEach(cds => {

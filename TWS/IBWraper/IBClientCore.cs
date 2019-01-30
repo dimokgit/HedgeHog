@@ -140,17 +140,9 @@ namespace IBApp {
         h => PriceChanged += h,
         h => PriceChanged -= h
         )
-        .ObserveOn(TaskPoolScheduler.Default)
+        .ObserveOn(esReqPriceSubscribe)
         .Publish()
         .RefCount();
-
-      void Try(Action a, string source) {
-        try {
-          a();
-        } catch(Exception exc) {
-          Trace(new Exception(source, exc));
-        }
-      }
     }
 
     #endregion
@@ -163,6 +155,8 @@ namespace IBApp {
         h => ContractDetails += h,
         h => ContractDetails -= h
         )
+      .ObserveOn(esReqContract)
+      .Publish().RefCount()
       //.Spy("ContractDetails")
       ;
     IObservable<ContractDetailsMessage> _ContractDetailsObservable;
@@ -210,17 +204,15 @@ namespace IBApp {
 
     #region TickPrice
     static IScheduler esReqPriceSubscribe = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice", Priority = ThreadPriority.Lowest });
-    static IScheduler esReqPriceObserve = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice2", Priority = ThreadPriority.Lowest });
     IObservable<TickPriceMessage> TickPriceFactoryFromEvent()
       => Observable.FromEvent<TickPriceHandler, TickPriceMessage>(
         onNext => (TickPriceMessage m) => onNext(m),
         h => TickPrice += h.SideEffect(_ => Trace($"Subscribed to {nameof(TickPrice)}")),
         h => TickPrice -= h.SideEffect(_ => Trace($"UnSubscribed to {nameof(TickPrice)}"))
         )
-      .SubscribeOn(esReqPriceSubscribe)
+      .ObserveOn(esReqPriceSubscribe)
       .Publish()
       .RefCount()
-      .ObserveOn(esReqPriceObserve)
       ;
     IObservable<TickPriceMessage> _TickPriceObservable;
     internal IObservable<TickPriceMessage> TickPriceObservable =>
@@ -658,18 +650,6 @@ namespace IBApp {
         .ToArray()
         .SelectMany(prices => prices.Take(1).Select(price => (combo, prices.Sum(p => p.bid), prices.Sum(p => p.ask), ServerTime)));
       return x;
-    }
-
-    public IObservable<(Contract contract, double bid, double ask)> ReqOptionPrice(Contract contract) {
-      var reqId = NextReqId();
-      var cd = OptionPriceObservable
-        .Where(t => t.RequestId == reqId)
-        .Do(t => Trace($"{nameof(ReqOptionPrice)}:t"))
-        .Scan((contract, bid: 0.0, ask: 0.0), (p, n) => (contract, n.Field == 1 ? n.OptPrice : p.bid, n.Field == 2 ? n.OptPrice : p.ask))
-        //.Do( x => Trace(new { ReqPrice = new { contract, started = x } }))
-        ;
-      OnReqMktData(() => ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, false, null));
-      return cd;
     }
 
     public IObservable<double> ReqPriceMarket(Contract contract) {

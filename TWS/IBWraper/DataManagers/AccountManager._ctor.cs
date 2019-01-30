@@ -17,6 +17,8 @@ using System.Collections.Concurrent;
 namespace IBApp {
   public partial class AccountManager {
     List<IDisposable> _strams = new List<IDisposable>();
+    public readonly EventLoopScheduler MainScheduler;
+
     public POSITION_OBSERVABLE PositionsObservable { get; private set; }
     public IObservable<OpenOrderMessage> OpenOrderObservable { get; private set; }
     public IObservable<OrderStatusMessage> OrderStatusObservable { get; private set; }
@@ -57,14 +59,14 @@ namespace IBApp {
           Trace(new Exception(source, exc));
         }
       }
-      IScheduler elFactory = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(AccountManager) });
+      MainScheduler = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(AccountManager) });
 
       PositionsObservable = Observable.FromEvent<PositionHandler, PositionMessage>(
         onNext => (PositionMessage m) => Try(() => onNext(m), nameof(IbClient.Position)),
         h => IbClient.Position += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
         h => IbClient.Position -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
         )
-        .ObserveOn(elFactory)
+        .ObserveOn(MainScheduler)
         .Publish().RefCount()
         //.Spy("**** AccountManager.PositionsObservable ****")
         ;
@@ -91,7 +93,7 @@ namespace IBApp {
         h => IbClient.UpdatePortfolio += h,
         h => IbClient.UpdatePortfolio -= h
         )
-        .ObserveOn(elFactory)
+        .ObserveOn(MainScheduler)
         .Publish().RefCount();
 
 
@@ -166,7 +168,7 @@ namespace IBApp {
       select oc.Value
       )
       .Distinct(oc => oc.order.PermId)
-      .ObserveOn(elFactory);
+      .ObserveOn(MainScheduler);
       // Execute parent
       (from oc in shouldExecute
          //where oc.order.ParentId == 0
@@ -186,7 +188,7 @@ namespace IBApp {
         select child
       )
       .Distinct(x => x.order.PermId)
-      .ObserveOn(elFactory);
+      .ObserveOn(MainScheduler);
       (from cancel in shouldCancel
        from oc in CancelOrder(cancel.order.OrderId)
        select oc

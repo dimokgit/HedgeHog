@@ -460,7 +460,7 @@
       }
       this.openStrategyOption = function (data) {
         var l = ko.unwrap(data.l);
-        var o=ko.unwrap(data.o);
+        var o = ko.unwrap(data.o);
         serverCall("openStrategyOption", [o, self.comboQuantity(), l, self.currentProfit()]);
       }
       // #endregion
@@ -992,6 +992,9 @@
             return v;
           });
       }, this);
+      this.rollOversList = ko.pureComputed(function () {
+        return self.liveCombos().filter(lc=>!lc.ic());
+      });
       this.combosMin = ko.pureComputed(function () {
         return [];
         return this.butterflies()
@@ -1042,7 +1045,7 @@
       this.closeCombo = function (key) {
         this.canTrade(false);
         serverCall("closeCombo", [ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel()], null, null, function () { this.canTrade(false); }.bind(this));
-        function done(openOrderMessage){
+        function done(openOrderMessage) {
           self.canTrade(true);
         }
       }.bind(this);

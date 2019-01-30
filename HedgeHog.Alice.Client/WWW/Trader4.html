@@ -1359,7 +1359,7 @@
         <!-- /ko -->
         <select data-bind="options:strategyType,optionsText:'text',optionsValue:'text',value:strategyCurrent,optionsCaption:'...'"></select>
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
-        <select data-bind="options:liveCombos,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
+        <select data-bind="options:rollOversList,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>
       <div data-bind="visible:strategyCall().length" title="Strategy options">
         <table border="1">

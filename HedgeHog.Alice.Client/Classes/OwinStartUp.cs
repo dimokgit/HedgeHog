@@ -794,7 +794,7 @@ namespace HedgeHog.Alice.Client {
                       combo = x.contract.Instrument
                       , l = x.contract.ShortWithDate
                       , netPL = x.pl
-                        , x.position
+                      , x.position
                         , x.closePrice
                         , x.price.bid, x.price.ask
                         , x.close
@@ -809,7 +809,8 @@ namespace HedgeHog.Alice.Client {
                         ? "#ffd3d9"
                         : delta < 0 && (x.contract.IsCall || !hasStrike)
                         ? "#ffd3d9"
-                        : "chartreuse"
+                        : "chartreuse",
+                      ic = x.contract.IsCombo
                     };
                   });
 

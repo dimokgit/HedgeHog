@@ -10,13 +10,13 @@ namespace IBApp {
   public partial class AccountManager {
     public Action[] UseOrderContractsDeferred(Action<ConcurrentDictionary<int,OrderContractHolder>> func, int timeoutInMilliseconds = 10000, [CallerMemberName] string Caller = "") {
       var message = $"{nameof(UseOrderContracts)}:{new { Caller, timeoutInMilliseconds }}";
-      if(!_mutexOpenTrade.Wait(timeoutInMilliseconds)) {
-        Trace(message + " could't enter Monitor");
-        return new Action[0];
-      }
+      //if(!_mutexOpenTrade.Wait(timeoutInMilliseconds)) {
+      //  Trace(message + " could't enter Monitor");
+      //  return new Action[0];
+      //}
       Stopwatch sw = Stopwatch.StartNew();
       Action ret = () => {
-        _mutexOpenTrade.Release();
+        //_mutexOpenTrade.Release();
         if(sw.ElapsedMilliseconds > timeoutInMilliseconds)
           Trace(message + $" Spent {sw.ElapsedMilliseconds} ms");
       };
@@ -32,10 +32,10 @@ namespace IBApp {
 
     public IList<T> UseOrderContracts<T>(Func<ConcurrentDictionary<int, OrderContractHolder>, T> func, int timeoutInMilliseconds = 10000, [CallerMemberName] string Caller = "") {
       var message = $"{nameof(UseOrderContracts)}:{new { Caller, timeoutInMilliseconds }}";
-      if(!_mutexOpenTrade.Wait(timeoutInMilliseconds)) {
-        Trace(message + " could't enter Monitor");
-        return new T[0];
-      }
+      //if(!_mutexOpenTrade.Wait(timeoutInMilliseconds)) {
+      //  Trace(message + " could't enter Monitor");
+      //  return new T[0];
+      //}
       Stopwatch sw = Stopwatch.StartNew();
       T ret;
       try {
@@ -44,7 +44,7 @@ namespace IBApp {
         Trace(exc);
         return new T[0];
       } finally {
-        _mutexOpenTrade.Release();
+        //_mutexOpenTrade.Release();
         if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
           Trace(message + $" Spent {sw.ElapsedMilliseconds} ms");
         }
@@ -64,10 +64,10 @@ namespace IBApp {
     }
     public IList<T> UseOrderContracts<T>(Func<IBClientCore, ConcurrentDictionary<int, OrderContractHolder>, T> func, int timeoutInMilliseconds = 10000, [CallerMemberName] string Caller = "") {
       var message = $"{nameof(UseOrderContracts)}:{new { Caller, timeoutInMilliseconds }}";
-      if(false && !_mutexOpenTrade.Wait(timeoutInMilliseconds)) {
-        Trace(message + " could't enter Monitor");
-        return new T[0];
-      }
+      //if(false && !_mutexOpenTrade.Wait(timeoutInMilliseconds)) {
+      //  Trace(message + " could't enter Monitor");
+      //  return new T[0];
+      //}
       Stopwatch sw = Stopwatch.StartNew();
       T ret;
       try {
@@ -76,7 +76,7 @@ namespace IBApp {
         Trace(exc);
         return new T[0];
       } finally {
-        _mutexOpenTrade.Release();
+        //_mutexOpenTrade.Release();
         if(sw.ElapsedMilliseconds > timeoutInMilliseconds) {
           Trace(message + $" Spent {sw.ElapsedMilliseconds} ms");
         }
