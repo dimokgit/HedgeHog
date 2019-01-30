@@ -701,7 +701,8 @@ namespace HedgeHog.Alice.Client {
 
                 var puts = options.Where(t => t.cp == "P" && t._sd < 5);
                 var calls = options.Where(t => t.cp == "C" && t._sd > -5);
-                return (exp, b: calls.OrderByDescending(x => x.strike).Concat(puts.OrderByDescending(x => x.strike)).ToArray());
+                return (exp, b: options);
+                //return (exp, b: calls.OrderByDescending(x => x.strike).Concat(puts.OrderByDescending(x => x.strike)).ToArray());
               })
               .Subscribe(t => {
                 base.Clients.Caller.bullPuts(t.b);
@@ -739,7 +740,9 @@ namespace HedgeHog.Alice.Client {
 
             #region openOrders
             var orderMap = MonoidsCore.ToFunc((AccountManager.OrderContractHolder oc, double ask, double bid) => new {
-              i = new[] { oc.contract.DateWithShort }.Concat(oc.order.Conditions.ToTexts()).Flatter("::")
+              i = new[] { oc.contract.DateWithShort }
+              .Where(_ => am.ParentHolder(oc).Select(p => p.isDone).DefaultIfEmpty(true).Single())
+              .Concat(oc.order.Conditions.ToTexts()).Flatter("::")
                , id = oc.order.OrderId
                , f = oc.status.filled
                , r = oc.status.remaining
@@ -786,7 +789,7 @@ namespace HedgeHog.Alice.Client {
                   //.ThenBy(ct => ct.contract.IsOption)
                   .ToArray(x => {
                     var hasStrike = x.contract.HasOptions;
-                    var delta = hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs();
+                    var delta = (hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs()) * (-x.position.Sign());
                     return new {
                       combo = x.contract.Instrument
                       , l = x.contract.ShortWithDate
@@ -802,9 +805,9 @@ namespace HedgeHog.Alice.Client {
                         , pmc = x.pmc.ToInt()
                         , mcu = x.mcUnder.ToInt()
                         , color = !hasStrike ? "white"
-                        : delta > 0 && x.contract.IsPut
+                        : delta > 0 && (x.contract.IsPut || !hasStrike)
                         ? "#ffd3d9"
-                        : delta < 0 && x.contract.IsCall
+                        : delta < 0 && (x.contract.IsCall || !hasStrike)
                         ? "#ffd3d9"
                         : "chartreuse"
                     };

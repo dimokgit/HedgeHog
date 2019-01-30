@@ -154,6 +154,10 @@ namespace IBApp {
     #endregion
 
     #region OpenOrder
+
+    public IEnumerable<OrderContractHolder> ParentHolder(OrderContractHolder h) => OrderContractsInternal.ByOrderId(h.order.ParentId);
+    public IEnumerable<OrderContractHolder> ChildHolder(OrderContractHolder h) => OrderContractsInternal.Values.ByParentId(h.order.OrderId);
+
     #region OrderAddedEvent
     event EventHandler<OrderEventArgs> OrderAddedEvent;
     public event EventHandler<OrderEventArgs> OrderAdded {

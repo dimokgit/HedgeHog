@@ -557,7 +557,7 @@ namespace HedgeHog.Alice.Store {
       var cm = Trades.Any() && CorridorCalcMethod != CorridorCalculationMethod.MinMax ? CorridorCalculationMethod.Height : CorridorCalcMethod;
       var ds = doubles.Select(r => r.avg);
 
-      switch(cm) {
+      switch(CorridorCalcMethod) {
         case CorridorCalculationMethod.PowerMeanPower:
 
           return ds.ToArray().StDevByRegressoin(coeffs).RootMeanPower(ds.StandardDeviation(), 100);
@@ -568,7 +568,7 @@ namespace HedgeHog.Alice.Store {
           var mm = ds.ToArray().MinMaxByRegressoin2(coeffs).Select(d => d.Abs()).Max();
           return mm / 2;
         case CorridorCalculationMethod.MinMaxMM:
-          var mm2 = doubles.MinMaxByRegressoin2(t => t.bid, t => t.ask, coeffs).Select(d => d.Abs()).Max();
+          var mm2 = doubles.MinMaxByRegressoin2(t => t.bid, t => t.ask, coeffs).Select(d => d.Abs()).Min();
           return mm2 / 2;
         case CorridorCalculationMethod.RootMeanSquare:
           return ds.ToArray().StDevByRegressoin(coeffs).SquareMeanRoot(ds.StandardDeviation());

@@ -1308,7 +1308,7 @@
           <option value="6">15</option>
           <option value="6">20</option>
         </select>
-        <label>Qty:</label><input data-bind="value:comboQuantity" size="1" />
+        <label>Qty:</label><input data-bind="value:comboQuantity" style="width:2em" />
         <label>Gap:</label><select data-bind="value:comboGap" size="1">
           <option value="0">0</option>
           <option value="1">1</option>
@@ -1341,17 +1341,6 @@
           <option value="7">7</option>
           <option value="8">8</option>
           <option value="9">9</option>
-          <option value="10">10</option>
-          <option value="11">11</option>
-          <option value="12">12</option>
-          <option value="13">13</option>
-          <option value="14">14</option>
-          <option value="15">15</option>
-          <option value="16">16</option>
-          <option value="17">17</option>
-          <option value="18">18</option>
-          <option value="19">19</option>
-          <option value="20">20</option>
         </select>
         <label><input type="radio" value="S" data-bind="checked: showOptionType" />S</label>
         <label><input type="radio" value="C" data-bind="checked: showOptionType" />C</label>
@@ -1386,7 +1375,7 @@
     </div>
     <table border="1">
       <tbody data-bind="foreach:openOrders">
-        <tr data-bind="style:{backgroundColor:c()?'gainsboro':''}">
+        <tr data-bind="style:{backgroundColor:c()?'gainsboro':''}" style="text-align:right">
           <td data-bind="text:i" style="white-space:pre"></td>
           <td data-bind="text:a,style:{backgroundColor: a()=='B'?'deepskyblue':'red'}"></td>
           <td data-bind="text:p"></td>

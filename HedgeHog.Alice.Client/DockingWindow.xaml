@@ -626,8 +626,8 @@
 					<telerik:RadPane Header="Log" Title="Log" CanUserClose="False" telerik:RadDocking.SerializationTag="Log" Name="Log">
 						<telerik:RadPane.ContentTemplate>
 							<DataTemplate>
-								<ScrollViewer Name="LogContainer" DataContext="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Converter={StaticResource TemplatedParentDataContextConverter}}" VerticalScrollBarVisibility="Auto">
-									<Label Content="{Binding LogText}" BorderBrush="Red" BorderThickness="1" VerticalAlignment="Bottom"></Label>
+								<ScrollViewer Name="LogContainer" DataContext="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Converter={StaticResource TemplatedParentDataContextConverter}}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                  <Label Content="{Binding LogText}" FontFamily="Courier New" BorderBrush="Red" BorderThickness="1" VerticalAlignment="Bottom"></Label>
 								</ScrollViewer>
 							</DataTemplate>
 						</telerik:RadPane.ContentTemplate>

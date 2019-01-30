@@ -311,14 +311,17 @@ namespace HedgeHog.Alice.Store {
       {
         var endDates = Trends.Where(tl => tl.Color != null && tl.Color != TradeLevelsPreset.Blue + "" && !tl.IsEmpty)
           .OrderByDescending(tl => tl.EndDate)
-          .Take(1)
+          .Take(2)
           .DefaultIfEmpty(TLBlue)
           .Select(a => a.EndDate);
         var ii = (from ed in endDates
                   from i1 in UseRates(ra => ra.FuzzyIndex(ed, (d, p, n) => d.Between(p.StartDate, n.StartDate)))
                   from i in i1
+                  where i.Div(RatesArray.Count) < .80
                   select i
-                  ).ToArray();
+                  )
+                  .DefaultIfEmpty(RatesArray.Count)
+                  .ToArray();
         Trends2
           .Where(tl => tl.TL.IsNullOrEmpty())
           .Select(t => t.Set)

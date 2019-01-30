@@ -660,7 +660,7 @@
       this.tradeConditions = ko.observableArray([]);
       var closedTrades = ko.observableArray();
       this.closedTrades = ko.observableArray();
-      var mustShowClosedTrades2 = ko.observable(true);
+      var mustShowClosedTrades2 = ko.observable(false);
       this.mustShowClosedTrades = ko.pureComputed(function () { return mustShowClosedTrades2() });
       this.showClosedTrades2Text = ko.pureComputed(function () { return mustShowClosedTrades2() ? "ON" : "OFF"; });
       this.toggleClosedTrades2 = function () {

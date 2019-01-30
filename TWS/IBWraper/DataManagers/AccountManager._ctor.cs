@@ -154,33 +154,43 @@ namespace IBApp {
         .Subscribe(x => _verbous("* " + new { Portfolio = x }), () => _verbous($"portfolioStream is done."))
         .SideEffect(s => _strams.Add(s));
 
-      DateTime thStart() => ibClient.ServerTime.Date.AddHours(9).AddMinutes(15);
+      DateTime thStart() => ibClient.ServerTime.Date.AddHours(9).AddMinutes(29);
       DateTime thEnd() => ibClient.ServerTime.Date.AddHours(16);
       var shouldExecute = (
       from pair in IbClient.PriceChangeObservable.Select(_ => _.EventArgs.Price.Pair)
       where !ibClient.ServerTime.Between(thStart(), thEnd())
-      from oc in OrderContractsInternal.ByLocalSymbool(pair)
-      where oc.ShouldExecute
-      from paren in OrderContractsInternal.ByOrderId(oc.order.ParentId).DefaultIfEmpty()
-      where (paren == null || paren.isFilled)
-      select oc
+      from oc in OrderContractsInternal
+      where oc.Value.ShouldExecute
+      from paren in OrderContractsInternal.ByOrderId(oc.Value.order.ParentId).DefaultIfEmpty()
+      where (paren == null || paren.isDone)
+      select oc.Value
       )
-      .Sample(1.FromSeconds())
       .Distinct(oc => oc.order.PermId)
-      .ObserveOn(elFactory)
-      .Subscribe(oc => {
-        Trace($"WillExecute: {oc}");
-        var child = OrderContractsInternal.Values.Where(ch => ch.order.ParentId == oc.order.OrderId).ToArray();
-        CancelOrder(oc.order.OrderId);
-        oc.order.Conditions.Clear();
-        oc.order.OrderId = NetOrderId();
-        (from po in PlaceOrder(oc.order, oc.contract)
-         where !po.error.HasError
-         from h in po.value
-         from ch in child
-         select ch.SE(_ => { _.order.ParentId = h.order.OrderId; _.order.OrderId = 0; })
-         ).Subscribe(ch => PlaceOrder(ch.order, ch.contract));
-      });
+      .ObserveOn(elFactory);
+      // Execute parent
+      (from oc in shouldExecute
+         //where oc.order.ParentId == 0
+       from child in ChildHolder(oc).DefaultIfEmpty()
+       let c = oc.contract.SideEffect(() => Trace($"Will Execute: {oc}{(child == null ? "" : " with " + child)}"))
+       let tpCond = child?.order.Conditions.FirstOrDefault()
+       let q = (oc.order.IsBuy ? 1 : -1) * oc.order.TotalQuantity.ToInt()
+       from ot in OpenTrade(oc.contract, q, 0, 0, tpCond != null, default, default, null, tpCond)
+       select ot
+      ).Subscribe();
+
+      var shouldCancel = (
+        from pair in IbClient.PriceChangeObservable.Select(_ => _.EventArgs.Price.Pair)
+        from child in OrderContractsInternal.ByLocalSymbool(pair)
+        let any = Positions.Any(p => p.contract == child.contract)
+        where !any
+        select child
+      )
+      .Distinct(x => x.order.PermId)
+      .ObserveOn(elFactory);
+      (from cancel in shouldCancel
+       from oc in CancelOrder(cancel.order.OrderId)
+       select oc
+       ).Subscribe(h => Trace("Orphan Cancelled:" + h));
       #endregion
 
       IbClient.ClientSocket.reqAllOpenOrders();

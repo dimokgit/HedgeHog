@@ -86,7 +86,7 @@ namespace IBApp {
       public bool Equals(OrderContractHolder other) => order + "," + contract == other.order + "," + other.contract;
       public override string ToString() => ToStringImpl();
       string Key => $"{order.Key}::{contract.Key}";
-      string ToStringImpl() => $"{order}::{contract}::{status.status}:{status.filled.ToInt()}<{status.remaining.ToInt()}:id={order.OrderId}";
+      string ToStringImpl() => $"{order.ActionText}::{contract}::{order.TypeText}::{status.status}:{status.filled.ToInt()}<{status.remaining.ToInt()}:id={order.OrderId}";
     }
   }
 }

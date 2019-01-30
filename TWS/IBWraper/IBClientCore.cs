@@ -75,13 +75,14 @@ namespace IBApp {
 
     #region Properties
     public void TraceMe<T>(T v) => _trace(v);
-    public void TraceError<T>(T v) => _trace("{*} " + v);
+    public void TraceError<T>(T v) => _traceErrorSubject.OnNext(v);
     public Action<object> Trace => _trace;
     public Action<bool, object> TraceIf => (b, o) => { if(b) _trace(o); };
     public Action<object> TraceTemp => o => { };
     private bool _verbose = false;
     public void Verbose(object o) { if(_verbose) _trace(o); }
     public IObservable<EventPattern<PriceChangedEventArgs>> PriceChangeObservable { get => _priceChangeObservable; private set => _priceChangeObservable = value; }
+    Subject<object> _traceErrorSubject = new Subject<object>();
     #endregion
 
     #region ICoreEX Implementation
@@ -121,6 +122,7 @@ namespace IBApp {
           IBClientCoreMaster = this;
         else throw new Exception($"{nameof(IBClientCoreMaster)} is not null");
       _trace = trace;
+      _traceErrorSubject.Throttle(1.FromSeconds()).Subscribe(v => _trace("{*} " + v));
       NextValidId += OnNextValidId;
       Error += OnError;
       ConnectionClosed += OnConnectionClosed;
@@ -534,7 +536,7 @@ namespace IBApp {
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe(Contract contract, double timeoutInSeconds, bool useErrorHandler, double defaultPrice) =>
       ReqPriceSafe(contract, timeoutInSeconds).DefaultIfEmpty((defaultPrice, defaultPrice, DateTime.MinValue, 0));
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceEmpty() => Observable.Return((0.0, 0.0, DateTime.MinValue, 0.0));
-    public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe(Contract contract, double timeoutInSeconds = 2, [CallerMemberName] string Caller = "") {
+    public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe(Contract contract, double timeoutInSeconds = 5, [CallerMemberName] string Caller = "") {
       var c = TryGetPrice(contract).Where(p => p.Ask > 0 && p.Bid > 0).ToArray();
       if(c.Any()) return c
       //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
@@ -555,7 +557,7 @@ namespace IBApp {
       //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
       .Take(1)
       .ToArray()
-      .Do(a => a.IsEmpty().IfTrue(() => TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds}}")))
+      .Do(a => a.IsEmpty().IfTrue(() => TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}")))
       .SelectMany(_ => _)
       ;
     }
