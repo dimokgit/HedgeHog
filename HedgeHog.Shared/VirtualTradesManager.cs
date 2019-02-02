@@ -593,7 +593,7 @@ namespace HedgeHog.Shared {
     public void FetchMMRs() => throw new NotImplementedException();
     (string status, double filled, double remaining, bool isDone)[] _orderStatuses = new (string status, double filled, double remaining, bool isDone)[0];
     public IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair) => _orderStatuses;
-    public double GetMinTick(string pair) => throw new NotImplementedException();
+    public double GetMinTick(string pair) => 0.01;
   }
 
 }

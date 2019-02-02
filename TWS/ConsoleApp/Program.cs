@@ -68,12 +68,12 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        return;
         {
-          var symbol = "ESH9";
+          var symbol = "VXG9";
           ibClient.ReqContractDetailsCached(symbol)
           .Subscribe(cd => PriceHistory.AddTicks(fw, 1, symbol, DateTime.Now.AddMonths(-2), o => HandleMessage(o + "")));
         }
-        return;
         am.OrderStatusObservable.Throttle(1.FromSeconds()).Subscribe(_ => HandleMessage("OrderContractsInternal2:\n" + am.OrderContractsInternal.ToMarkdownTable()));
         {
           //ibClient.ReqContractDetailsCached("ESH9")

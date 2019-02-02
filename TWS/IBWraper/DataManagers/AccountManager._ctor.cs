@@ -105,13 +105,11 @@ namespace IBApp {
 
       #endregion
       #region Subscibtions
-      IScheduler esPositions = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Positions" });
-      IScheduler esPositions2 = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Positions2" });
-      DataManager.DoShowRequestErrorDone = false;
+      DoShowRequestErrorDone = false;
       PositionsObservable
-        .Do(x => Verbose($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
-        .Where(x => x.Account == _accountId && !NoPositionsPlease)
+        .Where(x => x.Position != 0 && x.Account == _accountId && !NoPositionsPlease)
         .DistinctUntilChanged(t => new { t.Contract, t.Position })
+        .Do(x => TraceError($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
         .SelectMany(p =>
           from cds in IbClient.ReqContractDetailsAsync(p.Contract).ToArray()
           from cd in cds.Count(1, i => TraceError($"Position contract {p.Contract} has no details"), i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))

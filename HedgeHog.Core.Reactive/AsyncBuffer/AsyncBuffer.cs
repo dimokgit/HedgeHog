@@ -7,6 +7,7 @@ using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -27,9 +28,11 @@ namespace HedgeHog {
     IDisposable _bufferDisposable;
     ISubject<Action> _StartProcessSubject = new Subject<Action>();
     IDisposable _StartProcessDisposable;
-    public AsyncBuffer() : this(1) { }
-    public AsyncBuffer(int boundedCapacity) : this(boundedCapacity, TimeSpan.Zero) { }
-    public AsyncBuffer(int boundedCapacity, TimeSpan sample) {
+    public AsyncBuffer([CallerMemberName] string Caller = null) : this(1, Caller) { }
+    public AsyncBuffer(bool useEventLoop, [CallerMemberName] string Caller = null) : this(1, TimeSpan.Zero, useEventLoop, Caller) { }
+    public AsyncBuffer(int boundedCapacity, [CallerMemberName] string Caller = null) : this(boundedCapacity, TimeSpan.Zero, false, Caller) { }
+    public AsyncBuffer(TimeSpan sample, [CallerMemberName] string Caller = null) : this(1, sample, false, Caller) { }
+    public AsyncBuffer(int boundedCapacity, TimeSpan sample, bool useEventLoop, [CallerMemberName] string Caller = null) {
       var buffer = new BroadcastBlock<Action>(n => n, new DataflowBlockOptions() { BoundedCapacity = boundedCapacity });
 
       _StartProcessDisposable = _StartProcessSubject
@@ -40,7 +43,9 @@ namespace HedgeHog {
       if(sample != TimeSpan.Zero)
         b = b.Sample(sample);
       _bufferDisposable = b
-        .SubscribeOn(ObservableExtensions.BGTreadSchedulerFactory(System.Threading.ThreadPriority.BelowNormal))
+        .SubscribeOn(useEventLoop
+          ? ObservableExtensions.BGTreadSchedulerFactory(System.Threading.ThreadPriority.BelowNormal, Caller)
+          : (IScheduler)TaskPoolScheduler.Default)
         .Subscribe(a => {
           try {
             a();

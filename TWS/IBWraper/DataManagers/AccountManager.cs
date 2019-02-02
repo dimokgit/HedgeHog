@@ -241,11 +241,9 @@ namespace IBApp {
     private static Func<Trade, bool> IsEqual2(Trade trade) => ot => ot.Key().Equals(trade.Key2());
 
     private void TraceTrades(string label, IEnumerable<Trade> trades)
-      => Trace(label
-        + (trades.Count() > 1 ? "\n" : "")
-        + string.Join("\n", trades.OrderBy(t => t.Pair).Select(ot => new { ot.Pair, ot.Position, ot.Open, ot.Time, ot.Commission })));
-    public override string ToString() => new { IbClient, CurrentAccount = _accountId } + "";
+      => Trace(trades.OrderBy(t => t.Pair).Select(ot => new { ot.Pair, ot.Position, ot.Open, ot.Time, ot.Commission }).ToTextOrTable(label));
 
+    public override string ToString() => new { IbClient, CurrentAccount = _accountId } + "";
     #endregion
   }
 }

@@ -1086,7 +1086,7 @@ namespace HedgeHog.Alice.Store {
         //.DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
         ;
       if(!IsInVirtualTrading)
-        PriceChangedSubscribsion = a.ObserveLatestOn(new EventLoopScheduler())
+        PriceChangedSubscribsion = a.ObserveLatestOn(ObservableExtensions.BGTreadSchedulerFactory(ThreadPriority.AboveNormal))
           .Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
       else
         PriceChangedSubscribsion = a.Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
@@ -2092,17 +2092,18 @@ namespace HedgeHog.Alice.Store {
         //GlobalStorage.UseAliceContext(c => c.SuppRes.AddObject(sr));
         //GlobalStorage.UseAliceContext(c => c.SaveChanges());
 
-        sr.BSObservable
-          .Select(_ => (r: _.Rate, sr: _))
-          .Scan((p, n) => p.r.Abs(n.r) < 1 ? p : n)
-          .DistinctUntilChanged(_ => _.r)
-          .Select(_ => _.sr)
-          .Subscribe(_ => _tradeLevelChanged(_));
+        if(!IsInVirtualTrading) {
+          sr.BSObservable
+            .Select(_ => (r: _.Rate, sr: _))
+            .Scan((p, n) => p.r.Abs(n.r) < 1 ? p : n)
+            .DistinctUntilChanged(_ => _.r)
+            .Select(_ => _.sr)
+            .Subscribe(_ => _tradeLevelChanged(_));
 
-        sr.CrossedObservable
-          .DistinctUntilChanged(_ => _.EventArgs.Direction)
-          .Subscribe(_ => _tradeLevelCrossed(_));
-
+          sr.CrossedObservable
+            .DistinctUntilChanged(_ => _.EventArgs.Direction)
+            .Subscribe(_ => _tradeLevelCrossed(_));
+        }
 
         return sr;
       } catch(Exception exc) {
@@ -4570,7 +4571,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       }
     }
     class LoadRateAsyncBuffer :AsyncBuffer<LoadRateAsyncBuffer, Action> {
-      public LoadRateAsyncBuffer() : base(1, TimeSpan.FromSeconds(11)) {
+      public LoadRateAsyncBuffer() : base(TimeSpan.FromSeconds(11)) {
 
       }
       protected override Action PushImpl(Action context) {

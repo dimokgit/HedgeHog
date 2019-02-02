@@ -159,20 +159,20 @@ namespace HedgeHog {
       return subject.SubscribeToLatestOnBGThread(onNext, onError, () => { }, priority);
     }
 
-    public static EventLoopScheduler BGTreadSchedulerFactory(ThreadPriority priority = ThreadPriority.Normal) {
-      return new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true, Priority = priority }; });
+    public static EventLoopScheduler BGTreadSchedulerFactory(ThreadPriority priority = ThreadPriority.Normal, [CallerMemberName] string Caller = null) {
+      return new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true, Priority = priority, Name = Caller }; });
     }
     public static IDisposable SubscribeToLatestOnBGThread<TSource>(this IObservable<TSource> subject
-      , Action<TSource> onNext, EventLoopScheduler scheduler = null, Action<Exception> onError = null, Action onCompleted = null) {
+      , Action<TSource> onNext, EventLoopScheduler scheduler = null, Action<Exception> onError = null, Action onCompleted = null, [CallerMemberName] string Caller = null) {
       return subject.Latest()
-        .ToObservable(scheduler ?? BGTreadSchedulerFactory())
+        .ToObservable(scheduler ?? BGTreadSchedulerFactory(Caller: Caller))
         .Subscribe(onNext, onError ?? (exc => { }), onCompleted ?? (() => { }));
     }
 
     public static IDisposable SubscribeToLatestOnBGThread<TSource>(this IObservable<TSource> subject
-      , Action<TSource> onNext, Action<Exception> onError, Action onCompleted, ThreadPriority priority = ThreadPriority.Normal) {
+      , Action<TSource> onNext, Action<Exception> onError, Action onCompleted, ThreadPriority priority = ThreadPriority.Normal, [CallerMemberName] string Caller = null) {
       return subject.Latest()
-        .ToObservable(BGTreadSchedulerFactory(priority))
+        .ToObservable(BGTreadSchedulerFactory(priority, Caller))
         .Subscribe(onNext, onError, onCompleted);
     }
 

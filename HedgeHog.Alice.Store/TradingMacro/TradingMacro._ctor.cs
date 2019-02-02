@@ -26,6 +26,7 @@ namespace HedgeHog.Alice.Store {
       GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
 
       var tls = Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _tradeLevelChanged += h, h => _tradeLevelChanged -= h)
+        .Where(_ => !IsInVirtualTrading)
         .DistinctUntilChanged(tl => tl.Rate.RoundBySample(MinTick))
         .Select(tl => new[] { (tl.Rate, TradingRatio, tl.IsBuy) }.Where(_ => tl.IsBuy && BuyLevel.CanTrade || tl.IsSell && SellLevel.CanTrade))
         .Publish().RefCount();
