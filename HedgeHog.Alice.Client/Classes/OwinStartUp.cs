@@ -701,7 +701,7 @@ namespace HedgeHog.Alice.Client {
 
                 var puts = options.Where(t => t.cp == "P" && t._sd < 5);
                 var calls = options.Where(t => t.cp == "C" && t._sd > -5);
-                return (exp, b: options);
+                return (exp, b: options.OrderByDescending(x => x.strike));
                 //return (exp, b: calls.OrderByDescending(x => x.strike).Concat(puts.OrderByDescending(x => x.strike)).ToArray());
               })
               .Subscribe(t => {
@@ -936,10 +936,10 @@ namespace HedgeHog.Alice.Client {
       double Level(Contract c) => c.IsCall ? levelCall : levelPut;
       IObservable<Contract[]> CallsPuts() => Calls().Merge(Puts()).ToArray();
       IObservable<Contract> Calls() =>
-        am.CurrentOptions(tm.Pair, levelCall, expSkip, 4, c => c.IsCall && c.Strike > levelCall).SelectMany(a => a.Select(t => t.option));
+        am.CurrentOptions(tm.Pair, levelCall, expSkip, 4, c => c.IsCall && c.Strike < levelCall).SelectMany(a => a.Select(t => t.option));
       IObservable<Contract> Puts() =>
-        am.CurrentOptions(tm.Pair, levelPut, expSkip, 4, c => c.IsPut && c.Strike < levelPut).SelectMany(a => a.Select(t => t.option));
-      double OrderBy(Contract c) => c.IsCall ? c.Strike : 1 / c.Strike;
+        am.CurrentOptions(tm.Pair, levelPut, expSkip, 4, c => c.IsPut && c.Strike > levelPut).SelectMany(a => a.Select(t => t.option));
+      double OrderBy(Contract c) => c.IsCall ? 1 / c.Strike : c.Strike;
       bool Filter(Contract c, double level) => c.IsCall && c.Strike < level || c.IsPut && c.Strike > level;
     }
 

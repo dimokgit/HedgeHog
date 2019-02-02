@@ -199,7 +199,7 @@ namespace IBApp {
       (from cd in IbClient.ReqContractDetailsCached(symbol)
        where count > 0
        from price in IbClient.ReqPriceSafe(cd.Contract, 5).Select(p => p.ask.Avg(p.bid))
-       from option in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count * 2, filter)
+       from option in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count, filter)
        where filter(option)
        from p in IbClient.ReqPriceSafe(option).DefaultIfEmpty()
        let pa = p.ask.Avg(p.bid)

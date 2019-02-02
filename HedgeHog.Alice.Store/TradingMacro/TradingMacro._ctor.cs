@@ -20,19 +20,17 @@ namespace HedgeHog.Alice.Store {
     Action<(SuppRes level, SuppRes.CrossedEvetArgs crossed)> _tradeLevelCrossed;
     IBApp.IBWraper ibWraper => TradesManager as IBApp.IBWraper;
     public ConcurrentDictionary<bool, (IBApi.Contract contract, double level)> StrategyBS = new ConcurrentDictionary<bool, (IBApi.Contract contract, double level)>();
+    private void OnOrderEntryLevel(IEnumerable<(double Rate, double TradingRatio, bool IsBuy)> tls)
+      => ibWraper.AccountManager.OrderEnrtyLevel.OnNext(tls.Select(tl => (Pair, tl.Rate, tl.IsBuy, tl.TradingRatio.ToInt())).ToArray());
     public TradingMacro() {
       GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
 
       var tls = Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _tradeLevelChanged += h, h => _tradeLevelChanged -= h)
         .DistinctUntilChanged(tl => tl.Rate.RoundBySample(MinTick))
+        .Select(tl => new[] { (tl.Rate, TradingRatio, tl.IsBuy) }.Where(_ => tl.IsBuy && BuyLevel.CanTrade || tl.IsSell && SellLevel.CanTrade))
         .Publish().RefCount();
-      (from tl in tls
-       from options in ibWraper.AccountManager.CurrentOptions(Pair, tl.Rate, ExpDayToSkip(), 3, c => c.IsCall == tl.IsBuy).Select(o => o.Select(_ => _.option).TakeLast(1).ToArray())
-       select (tl, options)
-      ).Subscribe(t => 
-        t.options.Any()
-        .IfTrue(() => 
-          (t.options.Single(), t.tl.Rate.Round(2)).With(value => StrategyBS.AddOrUpdate(t.tl.IsBuy, value, (k, v) => value))));
+      tls.Subscribe(tl =>
+       OnOrderEntryLevel(tl));
 
       Observable.FromEvent<(SuppRes level, SuppRes.CrossedEvetArgs crossed)>(h => _tradeLevelCrossed += h, h => _tradeLevelCrossed -= h)
         .Subscribe(tl => new Exception(new { TradeLevelCrossed = new { tl.level.IsBuy, tl.crossed.Direction } } + ""), () => { });
@@ -57,7 +55,6 @@ namespace HedgeHog.Alice.Store {
           }
           _pendingEntryOrders = null;
           OnPropertyChanged(nameof(CompositeName));
-          SubscribeToEntryOrderRelatedEvents();
           TradingMacrosByPair(oc.prev).Where(tm => tm.BarPeriod > BarsPeriodType.t1)
           .ForEach(tm => tm.Pair = oc.curr);
         });
@@ -175,6 +172,8 @@ namespace HedgeHog.Alice.Store {
       });
       //MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveActiveSettings());
     }
+
+
     ~TradingMacro() {
       if(string.IsNullOrWhiteSpace(Pair))
         return;

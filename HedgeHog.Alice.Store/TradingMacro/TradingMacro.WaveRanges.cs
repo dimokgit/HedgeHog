@@ -69,7 +69,6 @@ namespace HedgeHog.Alice.Store {
           Func<Func<WaveRange, double>, double, double> pwmp = (w, power) => wrs.Select(w).DefaultIfEmpty().RootMeanPower(power);
 
 
-          var hasCalm3 = TradeConditionsHave(Calm3Ok);
           var TrendHeightPerc = 2.0;
           var ws = new WaveRange(1) {
             Distance = pwmp(w => w.Distance, 1 / TrendHeightPerc),
@@ -77,7 +76,7 @@ namespace HedgeHog.Alice.Store {
             DistanceByRegression = avg2(wrs, w => w.DistanceByRegression, w => w.Distance),
             WorkByHeight = rsd(w => w.WorkByHeight),
             WorkByTime = rsd(w => w.WorkByTime),
-            Angle = hasCalm3 ? pwmp(w => w.Angle.Abs(), 1 / TrendHeightPerc) : wrs.Select(w => w.Angle.Abs()).RelativeStandardDeviation().ToPercent(),
+            Angle = wrs.Select(w => w.Angle.Abs()).RelativeStandardDeviation().ToPercent(),
             TotalMinutes = pwmp(w => w.TotalMinutes, 1 / TrendHeightPerc),
             HSDRatio = wrs.Select(w => w.StDev).RelativeStandardDeviation().ToPercent(),//avg2(wrs, w => w.HSDRatio, w => 1 / w.Distance),
             Height = rsd(w => w.Height),

@@ -342,8 +342,11 @@
       , function (xx) {
         xx.forEach(function (x) {
 
-          dataViewModel.callByBS();
+          if (false)
+            dataViewModel.callByBS();
 
+          if (!dataViewModel.comboQuantity())
+            dataViewModel.comboQuantity(x.TradingRatio);
           if (!dataViewModel.expDaysSkip())
             dataViewModel.expDaysSkip(x.OptionsDaysGap);
           if (dataViewModel.strategyCurrent() != x.Strategy)

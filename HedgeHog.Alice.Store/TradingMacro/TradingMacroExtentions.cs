@@ -1200,7 +1200,7 @@ namespace HedgeHog.Alice.Store {
         select calls.Concat(puts).Where(p => p.deltaBid > 0).ToArray()
       )
       .Where(a => a.Length == 4)
-      .Scan((p, n) => p.EmptyIfNull().Concat(n).TakeLast(8).ToArray())
+      .Scan((p, n) => p.EmptyIfNull().Concat(n).TakeLast(4 * 5).ToArray())
       //.Select(a => a.Average(p => p.deltaBid))
       .Subscribe(straddle => {
         UseStraddleHistory(straddleHistory, shs => {
@@ -3785,8 +3785,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
           //{TradeLevelBy.TrendMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceMax.SingleOrDefault()+offsetByCR(tl)))},
           //{TradeLevelBy.TrendMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceMin.SingleOrDefault()-offsetByCR(tl)))},
-          {TradeLevelBy.TrendMax,()=> levelMax(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg2).Take(1).DefaultIfEmpty(double.NaN).Single())},
-          {TradeLevelBy.TrendMin,()=> levelMin(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg3).Take(1).DefaultIfEmpty(double.NaN).Single())},
+          {TradeLevelBy.TrendMax,()=> levelMax(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg2).Take(2).DefaultIfEmpty(double.NaN).Max())},
+          {TradeLevelBy.TrendMin,()=> levelMin(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg3).Take(2).DefaultIfEmpty(double.NaN).Min())},
 
           { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },

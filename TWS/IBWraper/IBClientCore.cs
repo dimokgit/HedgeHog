@@ -203,7 +203,7 @@ namespace IBApp {
     #endregion
 
     #region TickPrice
-    static IScheduler esReqPriceSubscribe = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice", Priority = ThreadPriority.Lowest });
+    static IScheduler esReqPriceSubscribe = ThreadPoolScheduler.Instance;// new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice", Priority = ThreadPriority.Lowest });
     IObservable<TickPriceMessage> TickPriceFactoryFromEvent()
       => Observable.FromEvent<TickPriceHandler, TickPriceMessage>(
         onNext => (TickPriceMessage m) => onNext(m),
@@ -392,9 +392,9 @@ namespace IBApp {
                         from strike in CurrentIncrement(price.ask.Avg(price.bid))
                         let symbol = under.Contract.LocalSymbol
                         from byStrike in ReqOptionChainOldCache(under.Contract.LocalSymbol, DateTime.MinValue
-                        , strike.SideEffect(_ => Trace(new { ReqStrikesAndExpirations = $"{underSymbol}:{strike} Start" })), false)
+                        , strike.SideEffect(_ => Verbose(new { ReqStrikesAndExpirations = $"{underSymbol}:{strike} Start" })), false)
                         let exps = byStrike
-                        .SideEffect(_ => Trace(new { ReqStrikesAndExpirations = $"{underSymbol}:{strike} End" }))
+                        .SideEffect(_ => Verbose(new { ReqStrikesAndExpirations = $"{underSymbol}:{strike} End" }))
                         .Select(o => o.Expiration).Distinct().OrderBy(ex => ex).ToArray()
                         from exp in exps.Take(1)
                         from byExp in ReqOptionChainOldCache(under.Contract.LocalSymbol, exp, 0, false)
@@ -543,7 +543,7 @@ namespace IBApp {
       .Select(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToArray())
       .Where(t => t.Any())
       .SelectMany(p => p)
-      .Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60))
+      .Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
       .Do(p => Verbose($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
       //.Select(p => (p.Bid, p.Ask, p.Time))
       //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))

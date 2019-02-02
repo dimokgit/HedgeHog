@@ -10,19 +10,24 @@ using System.Threading;
 using OpenOrderHandler = System.Action<IBSampleApp.messages.OpenOrderMessage>;
 using OrderStatusHandler = System.Action<IBSampleApp.messages.OrderStatusMessage>;
 using PortfolioHandler = System.Action<IBApp.UpdatePortfolioMessage>;
-using POSITION_OBSERVABLE = System.IObservable<IBApp.PositionMessage>;
 using PositionHandler = System.Action<IBApp.PositionMessage>;
 using System.Collections.Concurrent;
+using System.Reactive.Subjects;
+using IBApi;
 
 namespace IBApp {
   public partial class AccountManager {
+    #region Fields
     List<IDisposable> _strams = new List<IDisposable>();
+    #endregion
+    #region Properties
     public readonly EventLoopScheduler MainScheduler;
-
-    public POSITION_OBSERVABLE PositionsObservable { get; private set; }
+    public System.IObservable<IBApp.PositionMessage> PositionsObservable { get; private set; }
     public IObservable<OpenOrderMessage> OpenOrderObservable { get; private set; }
     public IObservable<OrderStatusMessage> OrderStatusObservable { get; private set; }
     public ConcurrentDictionary<int, OrderContractHolder> OrderContractsInternal { get; } = new ConcurrentDictionary<int, OrderContractHolder>();
+    public readonly Subject<(string instrument, double level, bool isBuy, int quantity)[]> OrderEnrtyLevel = new Subject<(string instrument, double level, bool isBuy, int quantity)[]>();
+    #endregion
     public AccountManager(IBClientCore ibClient, string accountId, Func<string, Trade> createTrade, Func<Trade, double> commissionByTrade) : base(ibClient, ACCOUNT_ID_BASE) {
       CommissionByTrade = commissionByTrade;
       CreateTrade = createTrade;
@@ -56,17 +61,18 @@ namespace IBApp {
         try {
           a();
         } catch(Exception exc) {
-          Trace(new Exception(source, exc));
+          TraceError(new Exception(source, exc));
         }
       }
       MainScheduler = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(AccountManager) });
+      var positionsScheduler = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Positions", Priority = ThreadPriority.AboveNormal });
 
       PositionsObservable = Observable.FromEvent<PositionHandler, PositionMessage>(
         onNext => (PositionMessage m) => Try(() => onNext(m), nameof(IbClient.Position)),
         h => IbClient.Position += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
         h => IbClient.Position -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
         )
-        .ObserveOn(MainScheduler)
+        .ObserveOn(positionsScheduler)
         .Publish().RefCount()
         //.Spy("**** AccountManager.PositionsObservable ****")
         ;
@@ -103,24 +109,16 @@ namespace IBApp {
       IScheduler esPositions2 = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Positions2" });
       DataManager.DoShowRequestErrorDone = false;
       PositionsObservable
+        .Do(x => Verbose($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
         .Where(x => x.Account == _accountId && !NoPositionsPlease)
-        .Do(x => _verbous("* " + new { Position = new { x.Contract.LocalSymbol, x.Position, x.AverageCost, x.Account } }))
-        //.SubscribeOn(esPositions2)
-        //.Spy("**** AccountManager.OnPosition ****")
-        //.Where(x => x.pos != 0)
-        //.Distinct(x => new { x.contract.LocalSymbol, x.pos, x.avgCost, x.account })
+        .DistinctUntilChanged(t => new { t.Contract, t.Position })
         .SelectMany(p =>
-          from cd in IbClient.ReqContractDetailsCached(p.Contract)
+          from cds in IbClient.ReqContractDetailsAsync(p.Contract).ToArray()
+          from cd in cds.Count(1, i => TraceError($"Position contract {p.Contract} has no details"), i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
           select (p.Account, contract: cd.Contract, p.Position, p.AverageCost)
         )
         .Subscribe(a => OnPosition(a.contract, a.Position, a.AverageCost), () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
-      PositionsObservable
-        .Take(0)
-        .Throttle(TimeSpan.FromSeconds(2))
-        .Subscribe(_ => {
-          ResetPortfolioExitOrder();
-        }).SideEffect(s => _strams.Add(s));
       OpenOrderObservable
         .Where(x => x.Order.Account == _accountId)
         .Do(x => Verbose0($"* OpenOrder: {new { x.Order.OrderId, x.Order.Transmit, conditions = x.Order.Conditions.Flatter(";") } }"))
@@ -156,11 +154,13 @@ namespace IBApp {
         .Subscribe(x => _verbous("* " + new { Portfolio = x }), () => _verbous($"portfolioStream is done."))
         .SideEffect(s => _strams.Add(s));
 
+      WireOrderEntryLevels();
+
       DateTime thStart() => ibClient.ServerTime.Date.AddHours(9).AddMinutes(29);
       DateTime thEnd() => ibClient.ServerTime.Date.AddHours(16);
       var shouldExecute = (
       from pair in IbClient.PriceChangeObservable.Select(_ => _.EventArgs.Price.Pair)
-      where !ibClient.ServerTime.Between(thStart(), thEnd())
+      where false && !ibClient.ServerTime.Between(thStart(), thEnd())
       from oc in OrderContractsInternal
       where oc.Value.ShouldExecute
       from paren in OrderContractsInternal.ByOrderId(oc.Value.order.ParentId).DefaultIfEmpty()
@@ -187,6 +187,7 @@ namespace IBApp {
         where !any
         select child
       )
+      .Take(0)
       .Distinct(x => x.order.PermId)
       .ObserveOn(MainScheduler);
       (from cancel in shouldCancel
@@ -228,22 +229,22 @@ namespace IBApp {
             }
         }
       }
-      void ResetPortfolioExitOrder() {
-        Trace($"{nameof(ResetPortfolioExitOrder)}: skipped");
-        return;
-        var combosAll = ComboTradesAllImpl().ToArray();
-        Trace(new { combosAll = combosAll.Flatter("") });
-        combosAll
-        .Do(comboAll => Trace(new { comboAll }))
-        .Where(ca => ca.orderId == 0)
-        .ForEach(ca => {
-          CancelAllOrders("Updating combo exit");
-          OpenOrUpdateLimitOrderByProfit2(ca.contract.Instrument, ca.position, 0, ca.open, 0.25);
-        });
-      }
-
       #endregion
 
+    }
+
+    public IObservable<(double level, Contract option)[]> OptionsByBS(string pair, double level, bool isCall) {
+      var expSkip = IbClient.ServerTime.Hour > 16 ? 1 : 0;
+      var options = from os in (isCall ? Calls() : Puts()).ToArray()
+                    from option in os.OrderBy(OrderBy).Take(3).TakeLast(1)
+                    select (level, option);
+      return options.ToArray();
+
+      IObservable<Contract> Calls() =>
+        CurrentOptions(pair, level, expSkip, 4, c => c.IsCall && c.Strike < level).SelectMany(a => a.Select(t => t.option));
+      IObservable<Contract> Puts() =>
+        CurrentOptions(pair, level, expSkip, 4, c => c.IsPut && c.Strike > level).SelectMany(a => a.Select(t => t.option));
+      double OrderBy(Contract c) => c.IsCall ? 1 / c.Strike : c.Strike;
     }
 
 

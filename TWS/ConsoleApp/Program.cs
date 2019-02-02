@@ -68,6 +68,12 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        {
+          var symbol = "ESH9";
+          ibClient.ReqContractDetailsCached(symbol)
+          .Subscribe(cd => PriceHistory.AddTicks(fw, 1, symbol, DateTime.Now.AddMonths(-2), o => HandleMessage(o + "")));
+        }
+        return;
         am.OrderStatusObservable.Throttle(1.FromSeconds()).Subscribe(_ => HandleMessage("OrderContractsInternal2:\n" + am.OrderContractsInternal.ToMarkdownTable()));
         {
           //ibClient.ReqContractDetailsCached("ESH9")
@@ -79,7 +85,6 @@ namespace ConsoleApp {
            select c
            ).Subscribe(c => am.OpenTradeWithConditions(c.LocalSymbol, 1, 5, 2640, false));
         }
-        return;
         {
           //am.CancelOrder(50002201).Subscribe(m => HandleMessage("CancelOrder(50002201)" + m));
           //return;
@@ -154,11 +159,6 @@ namespace ConsoleApp {
           ibClient.ReqContractDetailsAsync(ochc)
             .Take(1)
             .Subscribe(c => HandleMessage(c.ToJson(true)));
-        }
-        {
-          var symbol = "VXF9";
-          ibClient.ReqContractDetailsCached(symbol)
-          .Subscribe(cd => PriceHistory.AddTicks(fw, 1, symbol, DateTime.Now.AddMonths(-10), o => HandleMessage(o + "")));
         }
         {
           TestCurrentOptions(0);

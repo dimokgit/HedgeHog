@@ -314,11 +314,12 @@ namespace HedgeHog.Alice.Store {
           .Take(2)
           .DefaultIfEmpty(TLBlue)
           .Select(a => a.EndDate);
+        const double trendToRatesRation = .80;
         var ii = (from ed in endDates
                   from i1 in UseRates(ra => ra.FuzzyIndex(ed, (d, p, n) => d.Between(p.StartDate, n.StartDate)))
                   from i in i1
-                  where i.Div(RatesArray.Count) < .80
-                  select i
+                  where i.Div(RatesArray.Count) < trendToRatesRation
+                                   select i
                   )
                   .DefaultIfEmpty(RatesArray.Count)
                   .ToArray();
@@ -326,7 +327,7 @@ namespace HedgeHog.Alice.Store {
           .Where(tl => tl.TL.IsNullOrEmpty())
           .Select(t => t.Set)
           .Take(1)
-          .Zip(ii, (tl, i) => (tl, trend: i.Div(RatesArray.Count) > .80 ? _trenLinesEmptyRates.Value : CalcTrendLines(RatesArray.GetRange(i, RatesArray.Count - i), _ => _)))
+          .Zip(ii, (tl, i) => (tl, trend: i.Div(RatesArray.Count) > trendToRatesRation ? _trenLinesEmptyRates.Value : CalcTrendLines(RatesArray.GetRange(i, RatesArray.Count - i), _ => _)))
           .ForEach(t => t.tl(t.trend));
       }
       return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();
