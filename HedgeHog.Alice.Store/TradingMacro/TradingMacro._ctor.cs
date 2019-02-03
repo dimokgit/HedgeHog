@@ -25,7 +25,16 @@ namespace HedgeHog.Alice.Store {
     public TradingMacro() {
       GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
 
-      var tls = Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _tradeLevelChanged += h, h => _tradeLevelChanged -= h)
+      var tls = (from sr in Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _tradeLevelChanged += h, h => _tradeLevelChanged -= h)
+                 where !sr.IsSupport
+                 group sr by sr.IsBuy into g
+                 from kv in g.Scan((p, n) => {
+                   if(p.Rate.Ratio(n.Rate) > 1.001)
+                     return p;
+                   return n;
+                 })
+
+                 select kv)
         .Where(_ => !IsInVirtualTrading)
         .DistinctUntilChanged(tl => tl.Rate.RoundBySample(MinTick))
         .Select(tl => new[] { (tl.Rate, TradingRatio, tl.IsBuy) }.Where(_ => tl.IsBuy && BuyLevel.CanTrade || tl.IsSell && SellLevel.CanTrade))

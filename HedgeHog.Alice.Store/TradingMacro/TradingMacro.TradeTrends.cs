@@ -52,7 +52,7 @@ namespace HedgeHog.Alice.Store {
     }
     public TL[] Trends => new[] { TLLime, TLGreen, TLPlum, TLRed, TLBlue };
     (string TL, Action<IList<Rate>> Set)[] Trends2 => new (string, Action<IList<Rate>>)[] {
-      ( TrendLime, tl => TLLime2(tl)),
+      ( TrendLime, tl => TLLime2(tl.SideEffect(_=>_.ForEach(t=>t.Trends.Color=TradeLevelsPreset.Lime+"" )))),
       (TrendGreen, tl => TLGreen2(tl)),
       (TrendPlum, tl => TLPlum2(tl)),
       (TrendRed, tl => TLRed2(tl)),
@@ -110,7 +110,7 @@ namespace HedgeHog.Alice.Store {
         return ints.Zip(Trends, isOk).Where(t => t.ok).Select(t => t.tl).ToArray();
       }
     }
-    IEnumerable<TL> TrendsByDate => Trends.Where(t => !t.IsEmpty).OrderByDescending(tl => tl.EndDate).ThenBy(tl=>tl.StartDate);
+    IEnumerable<TL> TrendsByDate => Trends.SkipLast(1).Where(t => !t.IsEmpty).OrderByDescending(tl => tl.EndDate).ThenBy(tl => tl.StartDate);
     IList<TL> TrendLinesByDate => TrendLinesTrendsAll.OrderBy(tl => tl.EndDate).ToArray();
     public TL[] TrendLinesFlat { get { return TrendLinesTrendsAll.SkipLast(1).ToArray(); } }
     public IEnumerable<TL> TradeTrendLines =>

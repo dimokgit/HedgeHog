@@ -82,10 +82,10 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
-    private CorridorStatistics ScanCorridorBy12345(List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+    private CorridorStatistics ScanCorridorBy12345(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       return ScanCorridorBy12345(true, ratesForCorridor, priceHigh, priceLow);
     }
-    private CorridorStatistics ScanCorridorByAll5(List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+    private CorridorStatistics ScanCorridorByAll5(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       return ScanCorridorBy12345(null, ratesForCorridor, priceHigh, priceLow);
     }
 
@@ -145,21 +145,22 @@ namespace HedgeHog.Alice.Store {
       return grouped;
     }
 
-    private CorridorStatistics ScanCorridorBy12345(bool? skipAll, List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+    private CorridorStatistics ScanCorridorBy12345(bool? skipAll, IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesArray = ratesForCorridor.Where(r => !r.PriceCMALast.IsNaN()).ToList();
       var ratesForCorr = _ratesArrayCoeffs.Take(1)
         .Select(_ => {
-          var redRates = RatesArray.GetRange(RatesArray.Count - 2, 2);
+          var redRates = ratesArray.GetRange(ratesArray.Count - 2, 2);
           redRates.Reverse();
           WaveShort.Rates = redRates;
           return new { redRates, trend = new { StDev = 0, Coeffs = new[] { 0.0, 0.0 } } };
         })
       .ToArray();
-      if(RatesArray.Count < 60)
+      if(ratesArray.Count < 60)
         return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();
 
       bool mustResetAllTrendLevels = true || _mustResetAllTrendLevels;
       _mustResetAllTrendLevels = false;
-      List<RateGroup> grouped = GroupRates(ratesForCorridor);
+      var grouped = GroupRates(ratesArray);
       var distanceTotal = grouped.Sum(rg => rg.Distance);
 
       #region Funcs
@@ -257,7 +258,7 @@ namespace HedgeHog.Alice.Store {
           setter();
         }
       };
-      Func<TL, int[]> tlStartIndex0 = tl => ratesForCorridor.FuzzyIndex(tl.StartDate, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate));
+      Func<TL, int[]> tlStartIndex0 = tl => ratesArray.FuzzyIndex(tl.StartDate, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate));
       var tlStartIndex = tlStartIndex0.Memoize(tl => tl.StartDate);
       Func<TLS, int[]> skipByTL = tls => IsTrendsEmpty(tls)
       .With(tl => tl.IsEmpty ? new int[0] : tlStartIndex(tl))
@@ -296,7 +297,7 @@ namespace HedgeHog.Alice.Store {
         from tlr in doTL(TrendRedInt(), tl => setTLs(TrendLines, tl, () => TrendLines = tl), TrendLines, TradeLevelsPreset.Red)
         from tlp in doTL(TrendPlumInt(), tl => setTLs(TrendLines3, tl, () => TrendLines3 = tl), TrendLines3, TradeLevelsPreset.Plum)
         from tlg in doTL(TrendGreenInt(), tl => setTLs(TrendLines1, tl, () => TrendLines1 = tl), TrendLines1, TradeLevelsPreset.Green)
-        from tll in doTL(TrendLimeInt(), tl => setTLs(TrendLines0, tl, () => TrendLines0 = tl), TrendLines0, TradeLevelsPreset.Lime)
+          //from tll in doTL(TrendLimeInt(), tl => setTLs(TrendLines0, tl, () => TrendLines0 = tl), TrendLines0, TradeLevelsPreset.Lime)
         select true
        ).Count();
 
@@ -314,20 +315,28 @@ namespace HedgeHog.Alice.Store {
           .Take(2)
           .DefaultIfEmpty(TLBlue)
           .Select(a => a.EndDate);
-        const double trendToRatesRation = .80;
+        double trendToRatesRatio = 1 - TrendRanges.Select(i => i[0].Abs()).Where(i => i.Between(1, 98)).Min() / 100.0;
+        var distances = grouped.RunningSum(rg => rg.Distance).Select(t => t.Map((rg, Distance) => new { rg.Index,rg.Count, Distance }));
+        var minDistance = distanceTotal * trendToRatesRatio;
+        var indexMin = distances.SkipWhile(g => g.Distance < minDistance).Take(1).Select(g => g.Index + g.Count).First();
         var ii = (from ed in endDates
-                  from i1 in UseRates(ra => ra.FuzzyIndex(ed, (d, p, n) => d.Between(p.StartDate, n.StartDate)))
-                  from i in i1
-                  where i.Div(RatesArray.Count) < trendToRatesRation
-                                   select i
+                  from i in ratesArray.FuzzyIndex(ed, (d, p, n) => d.Between(p.StartDate, n.StartDate))
+                  let ok = i.Div(ratesArray.Count) < trendToRatesRatio
+                  select (i, ok)
                   )
-                  .DefaultIfEmpty(RatesArray.Count)
+                  .OrderByDescending(t => t.ok)
+                  .ThenByDescending(t => t.i)
+                  .Select(t => t.i)
+                  .Take(1)
+                  .Concat(indexMin.Yield())
+                  .OrderBy(i => i)
+                  .Take(1)
                   .ToArray();
         Trends2
           .Where(tl => tl.TL.IsNullOrEmpty())
           .Select(t => t.Set)
           .Take(1)
-          .Zip(ii, (tl, i) => (tl, trend: i.Div(RatesArray.Count) > trendToRatesRation ? _trenLinesEmptyRates.Value : CalcTrendLines(RatesArray.GetRange(i, RatesArray.Count - i), _ => _)))
+          .Zip(ii, (tl, i) => (tl, trend: CalcTrendLines(ratesArray.GetRange(i, ratesArray.Count - i), _ => _)))
           .ForEach(t => t.tl(t.trend));
       }
       return ratesForCorr.Select(x => new CorridorStatistics(this, x.redRates, x.trend.StDev, x.trend.Coeffs)).FirstOrDefault();

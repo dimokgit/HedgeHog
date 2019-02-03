@@ -2092,18 +2092,26 @@ namespace HedgeHog.Alice.Store {
         //GlobalStorage.UseAliceContext(c => c.SuppRes.AddObject(sr));
         //GlobalStorage.UseAliceContext(c => c.SaveChanges());
 
-        if(!IsInVirtualTrading) {
-          sr.BSObservable
-            .Select(_ => (r: _.Rate, sr: _))
-            .Scan((p, n) => p.r.Abs(n.r) < 1 ? p : n)
-            .DistinctUntilChanged(_ => _.r)
-            .Select(_ => _.sr)
-            .Subscribe(_ => _tradeLevelChanged(_));
+        sr.BSObservable
+          .Select(_ => (r: _.Rate, sr: _))
+          .Scan((p, n) => p.r.Abs(n.r) < 1 ? p : n)
+          .DistinctUntilChanged(_ => _.r)
+          .Select(_ => _.sr)
+          .Subscribe(_ => {
+            if(_tradeLevelChanged == null)
+              Log = new Exception(new { _tradeLevelChanged = "null" } + "");
+            else
+              _tradeLevelChanged(_);
+          });
 
-          sr.CrossedObservable
-            .DistinctUntilChanged(_ => _.EventArgs.Direction)
-            .Subscribe(_ => _tradeLevelCrossed(_));
-        }
+        sr.CrossedObservable
+          .DistinctUntilChanged(_ => _.EventArgs.Direction)
+          .Subscribe(_ => {
+            if(_tradeLevelCrossed == null)
+              Log = new Exception(new { _tradeLevelCrossed = "null" } + "");
+            else
+              _tradeLevelCrossed(_);
+          });
 
         return sr;
       } catch(Exception exc) {
@@ -3359,7 +3367,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
     public double CmaPeriodByRatesCount() { return CmaPeriodByRatesCount(RatesArray.Count); }
     public double CmaPeriodByRatesCount(int count) {
-      return PriceCmaLevels >= 1
+      return PriceCmaLevels == 0 || PriceCmaLevels >= 1
         ? PriceCmaLevels
         : Math.Pow(count, PriceCmaLevels).ToInt();
     }
@@ -3727,17 +3735,16 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         var tmt = TradingMacrosByPair(tm => !tm.IsAsleep && tm.IsTrender).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
         if(!IsTrader)
           throw new Exception(new { TradeLevelFuncs = new { IsTrader } } + "");
-        Func<double> maxDefault = () => 0;// UseRates(rates => rates.Max(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
-        Func<double> minDefault = () => 0;// UseRates(rates => rates.Min(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
-        Func<Func<TradingMacro, double>, double> level = f => f(tmt.Where(tm => tm.IsTrader).DefaultIfEmpty(tmt.First()).First());
-        Func<Func<TradingMacro, double>, double> levelMax = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(double.NaN).Max().IfNaN(maxDefault);
-        Func<Func<TradingMacro, double>, double> levelMin = f => tmt.Select(tm => f(tm)).DefaultIfEmpty(double.NaN).Min().IfNaN(minDefault);
-        Func<IEnumerable<double>, int, IEnumerable<double>> comm = (ps, sign) => ps.Select(p => p + 0 * InPoints(CommissionInPips()) * sign);
-        //Func<Func<TL, IEnumerable<double>>, int, IEnumerable<double>> commTL = (ps, sign) => ps().Select(p => p + InPoints(CommissionInPips()) * sign);
-        Func<TL, double> offsetByCR = tl => tl.PriceHeight.Select(ph => ph * (CorridorSDRatio - 1) / 2).SingleOrDefault();
-        Func<TL, Func<TL, IEnumerable<double>>, int, double> comm2 = (tl, price, sigh) => comm(price(tl).Select(p => p + offsetByCR(tl) * sigh), sigh).DefaultIfEmpty(double.NaN).Single();
-        Func<TL, double> comm2Max = tl => comm2(tl, tl2 => tl2.PriceMax, 1);
-        Func<TL, double> comm2Min = tl => comm2(tl, tl2 => tl2.PriceMin, -1);
+        double maxDefault() => double.NaN;// UseRates(rates => rates.Max(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
+        double minDefault() => double.NaN;// UseRates(rates => rates.Min(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
+        double level(Func<TradingMacro, double> f) => f(tmt.Where(tm => tm.IsTrader).DefaultIfEmpty(tmt.First()).First());
+        double levelMax(Func<TradingMacro, double> f) => tmt.Select(tm => f(tm)).DefaultIfEmpty(double.NaN).Max().IfNaN(maxDefault);
+        double levelMin(Func<TradingMacro, double> f) => tmt.Select(tm => f(tm)).DefaultIfEmpty(double.NaN).Min().IfNaN(minDefault);
+        IEnumerable<double> comm(IEnumerable<double> ps, int sign) => ps.Select(p => p + 0 * InPoints(CommissionInPips()) * sign);
+        double offsetByCR(TL tl) => tl.PriceHeight.Select(ph => ph * (CorridorSDRatio - 1) / 2).SingleOrDefault();
+        double comm2(TL tl, Func<TL, IEnumerable<double>> price, int sigh) => comm(price(tl).Select(p => p + offsetByCR(tl) * sigh), sigh).DefaultIfEmpty(double.NaN).Single();
+        double comm2Max(TL tl) => comm2(tl, tl2 => tl2.PriceMax, 1);
+        double comm2Min(TL tl) => comm2(tl, tl2 => tl2.PriceMin, -1);
         if(_TradeLevelFuncs == null)
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
           {
@@ -3786,8 +3793,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
           //{TradeLevelBy.TrendMax,()=> levelMax(TradeTrendsPriceMax(tl=>tl.PriceMax.SingleOrDefault()+offsetByCR(tl)))},
           //{TradeLevelBy.TrendMin,()=> levelMin(TradeTrendsPriceMin(tl=>tl.PriceMin.SingleOrDefault()-offsetByCR(tl)))},
-          {TradeLevelBy.TrendMax,()=> levelMax(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg2).Take(2).DefaultIfEmpty(double.NaN).Max())},
-          {TradeLevelBy.TrendMin,()=> levelMin(tm=>tm.TrendsByDate.Select(tl=>tl.PriceAvg3).Take(2).DefaultIfEmpty(double.NaN).Min())},
+          {TradeLevelBy.TrendMax,()=> levelMax(tm=>tm.TrendsByDate.Take(2).Concat(Trends.TakeLast(1).Where(tl => !tl.IsEmpty)).Select(tl=>tl.PriceAvg2).DefaultIfEmpty(double.NaN).Max())},
+          {TradeLevelBy.TrendMin,()=> levelMin(tm=>tm.TrendsByDate.Take(2).Concat(Trends.TakeLast(1).Where(tl => !tl.IsEmpty)).Select(tl=>tl.PriceAvg3).DefaultIfEmpty(double.NaN).Min())},
 
           { TradeLevelBy.GreenStripH,()=> CenterOfMassBuy.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMax]) },
           {TradeLevelBy.GreenStripL,()=> CenterOfMassSell.IfNaN(TradeLevelFuncs[TradeLevelBy.PriceMin]) },

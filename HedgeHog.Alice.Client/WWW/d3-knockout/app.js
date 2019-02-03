@@ -1489,6 +1489,7 @@
         dataViewModel.price(response.askBid);
       }
       function resetRefreshChartInterval(chartData, chartRates, lastRefreshDate, askRatesDatesReset, minutes) {
+        return;
         if ((chartData.vfs || chartData.hph) && chartRates().length > 2) {
           var ratio = 300 * 60;
           var lastDate = Enumerable.from(chartRates()).last().d;

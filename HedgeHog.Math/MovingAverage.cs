@@ -68,6 +68,7 @@ namespace HedgeHog {
       return cmas;
     }
     public static IList<double> Cma<T>(this IEnumerable<T> rates, Func<T, double> value, double period) {
+      if(period == 0) return rates.Select(value).ToList();
       var x = rates.Scan(double.NaN, (ma, r) => ma.Cma(period, value(r))).ToList();
       x.Reverse();
       var y = x.Scan(double.NaN, (ma, d) => ma.Cma(period, d)).ToList();

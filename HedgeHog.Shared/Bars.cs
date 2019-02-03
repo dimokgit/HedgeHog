@@ -611,6 +611,7 @@ namespace HedgeHog.Bars {
         PPMB = new double[0];
       }
       public double[] PPMB = new double[0];
+      private double _priceAvg2 = double.NaN;
       #endregion
       public static readonly TrendLevels Empty;
       public static readonly Rate EmptyRate;
@@ -631,7 +632,7 @@ namespace HedgeHog.Bars {
 
       public double PriceAvg1 { get; set; } = double.NaN;
 
-      public double PriceAvg2 { get; set; } = double.NaN;
+      public double PriceAvg2 { get => _priceAvg2; set => _priceAvg2 = value; }
       public double PriceAvg02 { get; set; } = double.NaN;
       public double PriceAvg21 { get; set; } = double.NaN;
       public double PriceAvg22 { get; set; } = double.NaN;
