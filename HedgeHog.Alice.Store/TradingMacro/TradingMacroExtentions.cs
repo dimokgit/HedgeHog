@@ -1119,7 +1119,7 @@ namespace HedgeHog.Alice.Store {
           .Sample(TimeSpan.FromSeconds(0.5))
           .Publish().RefCount();
 
-          if(IsTrader) {
+          if(!IsInVirtualTrading && IsTrader) {
             SyncStraddleHistoryObservable?.Dispose();
             _currentOptionDisposable?.Dispose();
             _currentOptionDisposable = (
@@ -1274,17 +1274,17 @@ namespace HedgeHog.Alice.Store {
             time: straddle.callBody.time.Max(straddle.callWing.time),
             delta: 0
             )
-            .SideEffect(t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory(
-              straddleStartId + Interlocked.Increment(ref _id),
-              Pair,
-              t.bid,
-              t.ask,
-              t.delta,
-              t.time
-            ))
-            , saveTime < DateTime.Now
-            , ResetSaveTime
-            ))
+            .SideEffect(() => !IsInVirtualTrading, t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory(
+                straddleStartId + Interlocked.Increment(ref _id),
+                Pair,
+                t.bid,
+                t.ask,
+                t.delta,
+                t.time
+              ))
+              , saveTime < DateTime.Now
+              , ResetSaveTime
+              ))
           ));
         });
       }

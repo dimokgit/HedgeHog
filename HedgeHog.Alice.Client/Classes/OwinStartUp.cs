@@ -1019,18 +1019,19 @@ namespace HedgeHog.Alice.Client {
 
     #region TradeConditions
     public string[] ReadTradingConditions(string pair) {
-      return UseTradingMacro2(pair, 0, tm => tm.TradeConditionsAllInfo((tc, p, name) => name)).Concat().ToArray();
+      return UseTraderMacro(pair, tm => tm.TradeConditionsAllInfo((tc, p, name) => name)).Concat().ToArray();
     }
 
     public string[] GetTradingConditions(string pair) {
-      return UseTradingMacro2(pair, 0, tm => tm.TradeConditionsInfo((tc, p, name) => name)).Concat().ToArray();
+      return UseTraderMacro(pair, tm => tm.TradeConditionsInfo((tc, p, name) => name)).Concat().ToArray();
     }
     [BasicAuthenticationFilter]
     public void SetTradingConditions(string pair, string[] names) {
-      UseTradingMacro(pair, tm => { tm.TradeConditionsSet(names); });
+      UseTraderMacro(pair, tm => { tm.TradeConditionsSet(names); });
     }
     public Dictionary<string, Dictionary<string, bool>> GetTradingConditionsInfo(string pair) {
-      return UseTradingMacro(pair, tm => GetTradeConditionsInfo(tm));
+      var d = UseTraderMacro(pair, tm => GetTradeConditionsInfo(tm));
+      return d.DefaultIfEmpty(new Dictionary<string, Dictionary<string, bool>>()).Single();
     }
 
     private static Dictionary<string, Dictionary<string, bool>> GetTradeConditionsInfo(TradingMacro tm) {
@@ -1061,23 +1062,21 @@ namespace HedgeHog.Alice.Client {
     #region Strategies
     [BasicAuthenticationFilter]
     public void ClearStrategy(string pair) {
-      UseTradingMacro(pair, tm => tm.CleanStrategyParameters());
+      UseTraderMacro(pair, tm => tm.CleanStrategyParameters());
     }
     public async Task<object[]> ReadStrategies(string pair) {
-      return await UseTradingMacro(pair
+      return (await (UseTraderMacro(pair
         , async tm => (await RemoteControlModel.ReadStrategies(tm, (nick, name, content, uri, diff)
           => new { nick, name, uri, diff, isActive = diff.IsEmpty() })).ToArray()
-        );
+        )).WhenAllSequiential()).First();
     }
     [BasicAuthenticationFilter]
-    public void SaveStrategy(string pair, string nick) {
+    public Task SaveStrategy(string pair, string nick) {
       if(string.IsNullOrWhiteSpace(nick))
         throw new ArgumentException("Is empty", "nick");
-      UseTradingMacro(pair, 0, tm => RemoteControlModel.SaveStrategy(tm, nick));
+      return UseTraderMacro(pair, tm => RemoteControlModel.SaveStrategy(tm, nick)).WhenAllSequiential();
     }
-    public async Task RemoveStrategy(string name, bool permanent) {
-      await RemoteControlModel.RemoveStrategy(name, permanent);
-    }
+    public Task RemoveStrategy(string name, bool permanent) => RemoteControlModel.RemoveStrategy(name, permanent);
     [BasicAuthenticationFilter]
     public async Task UpdateStrategy(string pair, string name) {
       await UseTradingMacro2(pair, 0, async tm => {
@@ -1580,11 +1579,14 @@ namespace HedgeHog.Alice.Client {
       GetTradingMacro(pair)
         .ForEach(action);
     }
-    private IEnumerable<TradingMacro> GetTradingMacro(string pair, int chartNum = 0) {
+    private IEnumerable<TradingMacro> GetTradingMacro(string pair, int chartNum) {
       return GetTradingMacros(pair)
         .Skip(chartNum)
         .Take(1);
       ;
+    }
+    private IList<TradingMacro> GetTradingMacro(string pair) {
+      return UseTraderMacro(pair);
     }
 
     private IEnumerable<TradingMacro> GetTradingMacros(string pair) {
@@ -1620,7 +1622,7 @@ namespace HedgeHog.Alice.Client {
       UseTradingMacro2(pair, 0, func);
     }
     T UseTradingMacro<T>(string pair, Func<TradingMacro, T> func) {
-      return UseTradingMacro2(pair, 0, func).First();
+      return UseTraderMacro(pair, func).First();
     }
     void UseTradingMacro(string pair, Action<TradingMacro> action) {
       UseTraderMacro(pair, action);

@@ -190,9 +190,9 @@ namespace HedgeHog.Alice.Client {
         });
       var tmg = TradesManager;
       var trades0 = tmg.GetTrades();
-      Func<bool, Trade[]> getTrades = isBuy => trades0.Where(t => t.IsBuy == isBuy).ToArray();
+      Trade[] getTrades(bool isBuy) => trades0.Where(t => t.IsBuy == isBuy).ToArray();
       var trades = new ExpandoObject();
-      var tradeFoo = MonoidsCore.ToFunc(false, isBuy => new { o = getTrades(isBuy).NetOpen(), t = getTrades(isBuy).Max(t => t.Time) });
+      var tradeFoo = MonoidsCore.ToFunc((bool isBuy) => new { o = getTrades(isBuy).NetOpen(), t = getTrades(isBuy).Max(t => t.Time) });
       getTrades(true).Take(1).ForEach(_ => trades.Add(new { buy = tradeFoo(true) }));
       getTrades(false).Take(1).ForEach(_ => trades.Add(new { sell = tradeFoo(false) }));
       if(!tmg.TryGetPrice(pair, out var price)) return new object[0];

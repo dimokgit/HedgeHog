@@ -72,6 +72,7 @@ namespace HedgeHog.Shared {
     [DataMember]
     public double LimitAmount { get; set; }
 
+    [BsonIgnore]
     public UnKnownBase UnKnown { get; set; }
 
     public TU InitUnKnown<TU>() where TU : UnKnownBase, new() {

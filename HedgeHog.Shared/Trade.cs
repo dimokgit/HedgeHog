@@ -118,7 +118,7 @@ namespace HedgeHog.Shared {
       var gross = Buy ? close - Open : Open - close;
       PL = gross / PipSize;
       var offset = Pair == "USDOLLAR" ? 1 : 10.0;
-      return TradesManagerStatic.PipsAndLotToMoney(Pair, PL, Lots, close, PipSize);
+      return TradesManagerStatic.PipsAndLotToMoney(Pair, PL, Lots, close, PipSize); TradesManager.GetContractSize(Pair);
 
     }
     [DataMember]
@@ -302,7 +302,11 @@ namespace HedgeHog.Shared {
 
     public double InPips(double value) { return value * PipValue; }
 
-    public Trade Clone() { return this.MemberwiseClone() as Trade; }
+    public Trade Clone() {
+      var t= this.MemberwiseClone() as Trade;
+      t.TradesManager = TradesManager;
+      return t;
+    }
 
     public override string ToString() { return ToString(SaveOptions.DisableFormatting); }
     public string ToString(SaveOptions saveOptions) {

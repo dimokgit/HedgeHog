@@ -438,7 +438,7 @@
         serverCall("setCorridorStartDateToNextWave", [pair, chartNumber, index === 1]);
       }
       function setTradeCount(tc) {
-        chat.server.setTradeCount(pair, tc);
+        serverCall("setTradeCount", [pair, tc]);
       }
       this.setTradeRate = function setTradeLeve(isBuy, rate) {
         var args = [pair, isBuy, rate];
@@ -663,7 +663,7 @@
       this.tradeConditions = ko.observableArray([]);
       var closedTrades = ko.observableArray();
       this.closedTrades = ko.observableArray();
-      var mustShowClosedTrades2 = ko.observable(false);
+      var mustShowClosedTrades2 = this.mustShowClosedTrades2 = ko.observable(false);
       this.mustShowClosedTrades = ko.pureComputed(function () { return mustShowClosedTrades2() });
       this.showClosedTrades2Text = ko.pureComputed(function () { return mustShowClosedTrades2() ? "ON" : "OFF"; });
       this.toggleClosedTrades2 = function () {
@@ -887,6 +887,18 @@
         });
         //$(wwwSettingsGridElement).jqPropertyGrid(properties);
       };
+      // #endregion
+      // #region CLosed Trades Dialog
+      var closedTradesElement;
+      this.closedTradesDialog = (element) => closedTradesElement = element;
+      this.showClosedTrades = function () {
+        $(closedTradesElement).dialog({
+          title: "Closed Trades", width: "auto", //dialogClass: "dialog-compact",
+          dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
+          close: function () { $(this).dialog("destroy"); }
+        });
+      };
+
       // #endregion
       // #region Butterflies
       this.activeCombos = ko.pureComputed(function () {
@@ -1743,10 +1755,12 @@
         clearInterval(readReplayProcID);
         readReplayProcID = 0;
       }
-      function readReplayArguments() {
+      function readReplayArguments(resetDates) {
         serverCall("readReplayArguments", withNoNote(pair), function (ra) {
-          lastRefreshDate(new Date(1900, 0));
-          lastRefreshDate2(new Date(1900, 0));
+          if (resetDates) {
+            lastRefreshDate(new Date(1900, 0));
+            lastRefreshDate2(new Date(1900, 0));
+          }
           if (ra.DateStart)
             replayDateStart(d3.timeFormat("%m/%d/%y %H:%M")(new Date(ra.DateStart)));
           isReplayOn(ra.isReplayOn);
@@ -1768,7 +1782,7 @@
           },
           dialogClass: "dialog-compact"
         });
-        readReplayArguments();
+        readReplayArguments(true);
       }
       this.startReplay = function () {
         serverCall("startReplay", [pair, replayDateStart()], function (replayArguments) {
@@ -1778,7 +1792,7 @@
         readReplayProcID = setInterval(readReplayArguments, 3 * 1000);
       }
       this.stopReplay = function () {
-        serverCall("stopReplay", [pair, replayDateStart()], readReplayArguments);
+        serverCall("stopReplay", [pair, replayDateStart()], readReplayArguments.bind(null,true));
       }
       // #endregion
 
@@ -2090,6 +2104,7 @@
         var defTOC = dataViewModel.readTradeOpenActions();
         serverCall("isInVirtual", [], function (response) {
           dataViewModel.isVirtual(response);
+          dataViewModel.mustShowClosedTrades2(response);
         })
         //#region Read Enums
         serverCall("readEnum", ["RatesLengthFunction"], function (enums) {

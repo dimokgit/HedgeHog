@@ -92,7 +92,7 @@ namespace HedgeHog.Alice.Store {
     public TL TLLime { get { return IsTrendsEmpty(TrendLines0); } }
     public TL TLRed { get { return IsTrendsEmpty(TrendLines); } }
     public TL TLPlum { get { return IsTrendsEmpty(TrendLines3); } }
-    public IEnumerable<Tuple<TL, bool, int>> TrendLinesMinMax {
+    public IEnumerable<(TL tl, bool isMin, int perc)> TrendLinesMinMax {
       get {
         var ints = new Func<string>[] { () => TrendLime, () => TrendGreen, () => TrendPlum, () => TrendRed, () => TrendBlue }
           .Select(a => !string.IsNullOrWhiteSpace(a()));
@@ -100,7 +100,7 @@ namespace HedgeHog.Alice.Store {
         var minMaxs = TrendRanges.Select(i => minMax(i[0])).ToArray();
         var isOk = MonoidsCore.ToFunc((bool ok, TL tl) => new { ok, tl });
         var isMin = MonoidsCore.ToFunc(isOk(false, null), minMax(0), (x, mm) => new { x.ok, x.tl, mm.isMin, mm.perc });
-        return ints.Zip(Trends, isOk).Zip(minMaxs, isMin).Where(t => t.ok).Select(t => Tuple.Create(t.tl, t.isMin, t.perc));
+        return ints.Zip(Trends, isOk).Zip(minMaxs, isMin).Where(t => t.ok).Select(t => (t.tl, t.isMin, t.perc));
       }
     }
     public TL[] TrendLinesTrendsAll {

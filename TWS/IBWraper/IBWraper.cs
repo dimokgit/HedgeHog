@@ -647,8 +647,10 @@ namespace IBApp {
     }
 
     public double GetMinTick(string pair) => GetMinTickImpl(pair);
+    public int GetContractSize(string pair) => GetContractSizeImpl(pair);
 
     static Func<string, double> GetMinTickImpl = new Func<string, double>((string pair) => Contract.FromCache(pair).Select(c => c.MinTick()).Single()).Memoize();
+    static Func<string, int> GetContractSizeImpl = new Func<string, int>((string pair) => Contract.FromCache(pair).Select(c => c.ComboMultiplier).Single()).Memoize();
 
     #endregion
   }

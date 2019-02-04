@@ -79,6 +79,7 @@ namespace HedgeHog.Shared {
       return _pipSizeDictionary[pair];
     }
     public int GetDigits(string pair) { return GetOffer(pair).Digits; }
+    public int GetContractSize(string pair) => GetOffer(pair).ContractSize;
 
     //IDictionary<string, double> _pipCostDictionary = new Dictionary<string, double>();
     //public double GetPipCost(string pair) {
@@ -301,7 +302,7 @@ namespace HedgeHog.Shared {
       tradesClosed.Clear();
     }
     public IList<Trade> GetClosedTrades(string Pair) {
-      return tradesClosed.Where(t => t.Pair.ToLower() == Pair.ToLower()).ToArray();
+      return tradesClosed.Where(t => Pair.IsNullOrEmpty() || t.Pair.ToLower() == Pair.ToLower()).ToArray();
     }
     public void SetClosedTrades(IEnumerable<Trade> trades) {
       trades.OrderBy(trade => trade.Time).ToList().ForEach(trade => tradesClosed.Add(trade));

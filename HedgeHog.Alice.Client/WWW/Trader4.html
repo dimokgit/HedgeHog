@@ -490,6 +490,9 @@
                 <button data-bind="click:cleanActiveRequests" title="Clean Active Requests">
                   <i class="fa fa-flash" style="color:red"></i>
                 </button>
+                <button data-bind="click:showClosedTrades" title="Show Active Requests">
+                  <i class="fa fa-flash"></i>
+                </button>
 
               </li>
             </ul>
@@ -912,6 +915,20 @@
           <td data-bind="text:Instrument"></td>
           <td data-bind="text:Bid"></td>
           <td data-bind="text:Key"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!--#endregion-->
+  <!--#region Closed Trades-->
+  <div data-bind="elementer:closedTradesDialog" style="display:none">
+    <table border="1" class="wwwInfo">
+      <tbody data-bind="foreach:closedTrades">
+        <tr>
+          <td data-bind="text:d3.timeFormat('%b-%d %H:%M')(Time2)"></td>
+          <td data-bind="text:Open"></td>
+          <td data-bind="text:Close"></td>
+          <td data-bind="text:GrossPL"></td>
         </tr>
       </tbody>
     </table>

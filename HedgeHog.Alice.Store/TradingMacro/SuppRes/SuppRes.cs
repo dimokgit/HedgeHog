@@ -480,6 +480,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public override string ToString() => new { IsBuy, Rate, IsExitOnly } + "";
+
     public DateTime? TradeDate { get; set; }
     public TradingMacro TradingMacro { get; internal set; }
     public IObservable<SuppRes> BSObservable { get; }

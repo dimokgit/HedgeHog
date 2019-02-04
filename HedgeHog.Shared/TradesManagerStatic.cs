@@ -19,14 +19,15 @@ namespace HedgeHog.Shared {
     public static IMapper TradeMapper(Func<IMappingExpression<Trade, Trade>, IMappingExpression<Trade, Trade>> opt)
       => new MapperConfiguration(cfg => opt(cfg.CreateMap<Trade, Trade>())).CreateMapper();
 
-    public readonly static Offer OfferDefault = new Offer { Pair = "DEFAULT", Digits = 3, PointSize = 0.01, MMRLong = 0.250, MMRShort = 0.3, ContractSize = 1 };
+    public readonly static Offer OfferDefault = new Offer { Pair = "DEFAULT", Digits = 2, PointSize = 1, MMRLong = 0.250, MMRShort = 0.3, ContractSize = 1 };
     public static Offer[] dbOffers = new[] {
             new Offer { Pair = "USDJPY", Digits = 3, PointSize = 0.01, MMRLong=1, ContractSize = 1000 },
             new Offer { Pair = "EURUSD", Digits = 5, PointSize = 0.0001, MMRLong=1, ContractSize = 1000 },
             new Offer { Pair = "XAUUSD", Digits = 2, PointSize = 0.01, MMRLong=0.513, ContractSize = 1 },
             new Offer { Pair = "SPY", Digits = 3, PointSize = 0.01, MMRLong = 0.250, MMRShort= 0.3, ContractSize = 1 },
             new Offer { Pair = "TVIX", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 },
-            new Offer { Pair = "UVXY", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 }
+            new Offer { Pair = "UVXY", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 },
+            new Offer { Pair = "ESH9", Digits = 2, PointSize = 1, MMRLong = 1/4, MMRShort= 1/3, ContractSize = 50 }
           };
     static Func<string, Offer> GetOfferImpl = symbol
         => dbOffers

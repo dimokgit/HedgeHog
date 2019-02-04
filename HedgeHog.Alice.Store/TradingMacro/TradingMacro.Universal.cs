@@ -301,7 +301,7 @@ namespace HedgeHog.Alice.Store {
                     TradeConditionsCanSetCorridor()
                     .Where(td => td.HasAny())
                     .ForEach(_ => SetTradeLevelsToLevelBy(GetTradeLevel)());
-                  if(false && IsTrader)
+                  if(IsInVirtualTrading && IsTrader)
                     adjustExitLevels2();
 
                 };

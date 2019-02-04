@@ -70,14 +70,6 @@ namespace HedgeHog.Alice.Client {
 
     Queue<string> closeQueue = new Queue<string>();
     Queue<OpenRequest> openQueue = new Queue<OpenRequest>();
-    public void AddOpenTradeRequest(string pair, bool buy, int lots, string serverTradeID,Trade pendingTrade ) {
-      var or = new OpenRequest(pair, buy, lots, serverTradeID,pendingTrade);
-      if (openQueue.Contains(or)) return;
-      if (fw.GetTrades("").Any(t => t.MasterTradeId() == serverTradeID)) return;
-      openQueue.Enqueue(or);
-      if (!openQueueScheduler.IsRunning)
-        openQueueScheduler.Command = () => RunOpenQueue();
-    }
 
     void RunOpenQueue() {
       while (openQueue.Count > 0) {
@@ -93,7 +85,6 @@ namespace HedgeHog.Alice.Client {
           fw.CreateEntryOrder(pair, buy, lots, 0, 0, 0);
           if (string.IsNullOrWhiteSpace(orderId))
             GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(new Action(() => {
-              pendingTrade.GetUnKnown().ErrorMessage = "Waiting";
               RaiseTradeRequestManagerEvent(
                 new Exception("Waiting for previous pending order " + fw.GetOrders("").Select(o => o.OrderID).DefaultIfEmpty("XXXXX")));
               Thread.Sleep(10);
@@ -102,14 +93,12 @@ namespace HedgeHog.Alice.Client {
         }
         while (!fw.GetTrades("").Any(t => t.OpenOrderID == orderId))
           GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(new Action(() => {
-            pendingTrade.GetUnKnown().ErrorMessage = "Waiting";
             RaiseTradeRequestManagerEvent(new Exception("Waiting for order " + orderId));
             Thread.Sleep(10);
           }));
         tradeId = fw.GetTrades("").First(t => t.OpenOrderID == orderId).Id;
         RaiseTradeRequestManagerEvent(new Exception("Opened trade " + tradeId));
       } catch (Exception exc) {
-        pendingTrade.GetUnKnown().ErrorMessage = exc.Message;
         RaiseTradeRequestManagerEvent(exc); 
       }
     }

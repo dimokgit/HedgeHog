@@ -17,6 +17,7 @@ namespace IBApp {
       //Conditions have to be created via the OrderCondition.Create 
       PriceCondition priceCondition = (PriceCondition)OrderCondition.Create(OrderConditionType.Price);
       priceCondition.ContractResolver = (conId, exc) => contract.LocalSymbol;
+      priceCondition.TriggerMethod = IBApi.TriggerMethod.DoubleBidAsk;
       //When this contract...
       priceCondition.ConId = contract.ConId;
       priceCondition.Exchange = contract.Exchange;

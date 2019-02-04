@@ -63,6 +63,7 @@ namespace HedgeHog.Shared {
     //double GetPipCost(string pair);
     int GetBaseUnitSize(string pair);
     double GetMinTick(string pair);
+    int GetContractSize(string pair);
     #endregion
 
     #region Offers
