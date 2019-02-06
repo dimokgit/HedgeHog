@@ -71,13 +71,12 @@ namespace ConsoleApp {
         am.PositionsEndObservable.Subscribe(positions =>HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
         {
           Task.Delay(3000).ContinueWith(_ => {
-            (from trade in am.Positions.Select(p => p.contract).ToObservable()
-             from rolls in am.CurrentRollOver(trade.LocalSymbol, true, 4, 2).OrderByDescending(r => r.dpw)
-             select rolls
+            (from trade in am.Positions.Select(p => p.contract).Take(1).ToObservable()
+             from rolls in am.CurrentRollOver(trade.LocalSymbol, true, 4, 2).OrderByDescending(r => r.dpw).ToArray()
+             select new { rolls, trade.LocalSymbol }
             )
-            .ToArray()
-            .Do(rolls => HandleMessage("Rolls:\n" + rolls.Select(roll => new { roll.roll, roll.days, roll.bid }).ToMarkdownTable()))
-            .SelectMany(a => a.OrderBy(o => o.roll.Expiration).Take(1).ToArray())
+            .Do(rolls => HandleMessage($"Rolls for {rolls.LocalSymbol}:\n" + rolls.rolls.Select(roll => new { roll.roll, roll.days, roll.bid }).ToMarkdownTable()))
+            .SelectMany(a => a.rolls.OrderBy(o => o.roll.Expiration).Take(1).ToArray())
             .Take(1)
             .Subscribe(r => {
               HandleMessage("Trade this:\n" + new { r.roll, r.days, r.bid }.Yield().ToMarkdownTable());

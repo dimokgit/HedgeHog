@@ -106,7 +106,7 @@ namespace IBApp {
       var priceMessage = new TickPriceMessage(requestId, field, price, attrib);
       var price2 = ar.price;
       //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
-      if(priceMessage.Price == 0)
+      if(priceMessage.Price <= 0)
         return;
       const int LOW_52 = 19;
       const int HIGH_52 = 20;
@@ -136,9 +136,8 @@ namespace IBApp {
             break;
           }
         case 4: {
-            if(priceMessage.Price > 0)
-              if(price2.Ask <= 0)
-                price2.Ask = priceMessage.Price;
+            if(price2.Ask <= 0)
+              price2.Ask = priceMessage.Price;
             if(price2.Bid <= 0)
               price2.Bid = priceMessage.Price;
             price2.Time2 = IbClient.ServerTime;
@@ -148,7 +147,7 @@ namespace IBApp {
         case 0:
         case 3:
         case 5:
-          RaisePriceChanged(ar);
+          //RaisePriceChanged(ar);
           break;
         case 37:
           if(price2.Bid <= 0 && price2.Ask <= 0) {
@@ -268,10 +267,10 @@ namespace IBApp {
             RemovedCallback = ce => {
               ActiveRequestCleaner((Price)ce.CacheItem.Value);
             },
-            SlidingExpiration = 60.FromSeconds()
+            SlidingExpiration = 600.FromSeconds()
           } : new CacheItemPolicy();
           if(!_currentPrices.Add(t.price.Pair, t.price, cip))
-            Trace($"RaisePriceChanged: {t.price.Pair} is already in {nameof(_currentPrices)}");
+            TraceError($"RaisePriceChanged: {t.price.Pair} is already in {nameof(_currentPrices)}");
         }
       }
       PriceChangedEvent?.Invoke(t.price);

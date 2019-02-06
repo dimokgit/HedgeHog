@@ -155,12 +155,12 @@ namespace IBApp {
     IObservable<ContractDetailsMessage> ContractDetailsFactory()
       => Observable.FromEvent<ContDetHandler, ContractDetailsMessage>(
         onNext => (ContractDetailsMessage m) => onNext(m),
-        h => ContractDetails += h.SideEffect(_ => TraceError("ContractDetails += h")),
-        h => ContractDetails -= h.SideEffect(_ => TraceError("ContractDetails -= h"))
+        h => ContractDetails += h,//.SideEffect(_ => TraceError("ContractDetails += h")),
+        h => ContractDetails -= h//.SideEffect(_ => TraceError("ContractDetails -= h"))
         )
       .ObserveOn(esReqContract)
       .Publish().RefCount();
-      //.Spy("ContractDetails")
+    //.Spy("ContractDetails")
     IObservable<ContractDetailsMessage> _ContractDetailsObservable;
     IObservable<ContractDetailsMessage> ContractDetailsObservable =>
       (_ContractDetailsObservable ?? (_ContractDetailsObservable = ContractDetailsFactory()));
@@ -540,20 +540,17 @@ namespace IBApp {
         return ReqPriceComboSafe(contract, timeoutInSeconds);
 
       SetContractSubscription(contract);
-      return TickPriceObservable
+      return TickPriceObservable.Select(t => (long)t.RequestId).Merge(Observable.Interval(0.1.FromSeconds()))
+      .SelectMany(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).Where(p => p.Bid > 0 && p.Ask > 0))
+      .Take(1)
       .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
-      .Select(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToArray())
-      .Where(t => t.Any())
+      .ToArray()
+      .Do(a => a.IsEmpty().IfTrue(() => TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}")))
       .SelectMany(p => p)
-      .Where(p => p.Bid > 0 && p.Ask > 0)
       //.Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
       .Do(p => Verbose($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
       //.Select(p => (p.Bid, p.Ask, p.Time))
       //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
-      .Take(1)
-      .ToArray()
-      .Do(a => a.IsEmpty().IfTrue(() => TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}")))
-      .SelectMany(_ => _)
       ;
     }
 
@@ -737,7 +734,7 @@ namespace IBApp {
     #endregion
 
     public IEnumerable<Price> TryGetPrice(Contract contract, [CallerMemberName] string Caller = "") {
-      if(_marketDataManager.TryGetPrice(contract, out var price,$"{nameof(TryGetPrice)} <= {Caller}"))
+      if(_marketDataManager.TryGetPrice(contract, out var price, $"{nameof(TryGetPrice)} <= {Caller}"))
         yield return price;
     }
     public IEnumerable<Price> TryGetPrice(string pair, [CallerMemberName] string Caller = "") {
@@ -745,7 +742,7 @@ namespace IBApp {
         yield return price;
     }
     public bool TryGetPrice(string symbol, out Price price, [CallerMemberName] string Caller = "") =>
-      _marketDataManager.TryGetPrice(symbol.ContractFactory(), out price, $"{nameof(TryGetPrice)} <= {Caller}"); 
+      _marketDataManager.TryGetPrice(symbol.ContractFactory(), out price, $"{nameof(TryGetPrice)} <= {Caller}");
     public Price GetPrice(string symbol) { return _marketDataManager.GetPrice(symbol); }
     #region Price Changed
     private void OnPriceChanged(Price price) {

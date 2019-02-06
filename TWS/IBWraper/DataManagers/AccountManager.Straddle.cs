@@ -238,20 +238,19 @@ namespace IBApp {
     #endregion
 
     static string _spy(string text) => $"{DateTime.Now:mm:ss.f}: {text} -- ";
-    static string VXXFix(string symbol) => symbol == "VXX" ? "VXXB" : symbol;
     public IObservable<Contract[]> CurrentRollOvers(string symbol, bool? isCall, int strikes, int weeks) =>
       (from cd in IbClient.ReqContractDetailsCached(symbol)
        where strikes > 0 && weeks > 0
        let contract = cd.Contract
        from underContract in cd.Contract.IsOption
-         ? IbClient.ReqContractDetailsCached(VXXFix(cd.UnderSymbol)).Select(ucd => ucd.Contract)
+         ? IbClient.ReqContractDetailsCached(cd.UnderSymbol).Select(ucd => ucd.Contract)
          : Observable.Return(cd.Contract)
        let underSymbol = underContract.LocalSymbol
+       from under in IbClient.ReqContractDetailsCached(underSymbol)//.Spy(_spy("ReqContractDetailsCached"))
+       from price in IbClient.ReqPriceSafe(under.Contract)//.Spy(_spy("ReqPriceSafe"))
        let expiration = contract.IsOption ? contract.Expiration : DateTime.Now.Date.AddDays(0)
        from allStkExp in IbClient.ReqStrikesAndExpirations(underSymbol)//.Spy(_spy("AllStrikesAndExpirations"))
        let exps = allStkExp.expirations.Where(ex => ex > expiration && ex <= expiration.AddDays(weeks * 7)).OrderBy(ex => ex).ToArray()
-       from under in IbClient.ReqContractDetailsCached(underSymbol)//.Spy(_spy("ReqContractDetailsCached"))
-       from price in IbClient.ReqPriceSafe(under.Contract)//.Spy(_spy("ReqPriceSafe"))
        let priceAvg = price.ask.Avg(price.bid)
        let strikes2 = allStkExp.strikes.OrderBy(strike => strike.Abs(priceAvg)).ToArray()
        from strikeFirst in strikes2.Take(1)
@@ -285,24 +284,24 @@ namespace IBApp {
       where yes
       let symbol = contractFilter.LocalSymbol
       let IsCall = useStraddle ? (bool?)null : contractFilter.IsOption ? contractFilter.IsCall : trade.position > 0
-      let Expiration = contractFilter.IsOption ? contractFilter.Expiration : IbClient.ServerTime
+      let Expiration = contractFilter.IsOption ? contractFilter.Expiration : IbClient.ServerTime.Date
       from roll in CurrentRollOverImpl2(trade, IsCall, Expiration, strikesCount, weeks)
       select roll;
 
-    public CURRENT_ROLLOVERS CurrentRollOverImpl2(ComboTrade trade, bool? isCall, DateTime Expiration, int strikesCount, int weeks) =>
+    public CURRENT_ROLLOVERS CurrentRollOverImpl2(ComboTrade trade, bool? isCall, DateTime expiration, int strikesCount, int weeks) =>
       from yes in Observable.Return(strikesCount > 0 && weeks > 0)
       where yes
+      from up in UnderPrice(trade.contract, 3)
       let symbol = trade.contract.LocalSymbol
       from rolls in CurrentRollOvers(symbol, isCall, strikesCount, weeks)
-      from roll in rolls
+      from roll in rolls//.SideEffect(_ => TraceDebug(rolls.Select(r => new { roll = r.Instrument }).ToTextOrTable("Rolls:")))
       let strikeSign = trade.contract.IsOption ? (trade.contract.IsCall ? -1 : trade.contract.IsPut ? 1 : 0) * trade.position.Sign() : 0
       let strikeDelta = (roll.ComboStrike() - trade.underPrice) * strikeSign
-      from up in UnderPrice(trade.contract, 3)
       from rp in IbClient.ReqPriceSafe(roll)
       let bid = roll.ExtrinsicValue(rp.bid, up.bid)
       where trade.contract.IsOption && bid > strikeDelta.Max(-trade.change) || bid > -trade.change
-      let days = (roll.Expiration - Expiration).TotalDays.Floor()
-      let workDays = Expiration.GetWorkingDays(roll.Expiration)
+      let days = (roll.Expiration - expiration).TotalDays.Floor()//.SideEffect(_ => TraceDebug(new { roll, roll.Expiration, expiration, days = _ }))
+      let workDays = expiration.GetWorkingDays(roll.Expiration)
       let amount = bid * trade.position.Abs() * roll.ComboMultiplier
       let w = 5.0 / workDays
       let perc = bid / up.bid
