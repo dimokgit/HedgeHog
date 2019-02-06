@@ -321,6 +321,10 @@ namespace HedgeHog {
       dt = dt.Round();
       return dt.AddMinutes(dt.Minute / period * period - dt.Minute);
     }
+    public static DateTime RoundBySeconds(this DateTime dt, int seconds) {
+      var ret = dt.Round(RoundTo.MinuteFloor);
+      return ret.AddSeconds(dt.Second / seconds * seconds);
+    }
     public static DateTime GetNextWeekday(DayOfWeek day) => DateTime.Today.GetNextWeekday(day);
     public static DateTime GetNextWeekday(this DateTime start, DayOfWeek day) {
       // The (... + 7) % 7 ensures we end up with a value in the range [0, 6]

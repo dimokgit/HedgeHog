@@ -16,5 +16,10 @@ namespace HedgeHog.Tests {
       Console.WriteLine(f());
       Func<T> ToFunc<T>(Func<T> anon) => anon;
     }
+
+    [TestMethod()]
+    public void RoundBySeconds() {
+      Console.WriteLine(DateTime.Now.RoundBySeconds(7));
+    }
   }
 }

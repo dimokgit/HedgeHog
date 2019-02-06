@@ -68,6 +68,26 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        am.PositionsEndObservable.Subscribe(positions =>HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
+        {
+          Task.Delay(3000).ContinueWith(_ => {
+            (from trade in am.Positions.Select(p => p.contract).ToObservable()
+             from rolls in am.CurrentRollOver(trade.LocalSymbol, true, 4, 2).OrderByDescending(r => r.dpw)
+             select rolls
+            )
+            .ToArray()
+            .Do(rolls => HandleMessage("Rolls:\n" + rolls.Select(roll => new { roll.roll, roll.days, roll.bid }).ToMarkdownTable()))
+            .SelectMany(a => a.OrderBy(o => o.roll.Expiration).Take(1).ToArray())
+            .Take(1)
+            .Subscribe(r => {
+              HandleMessage("Trade this:\n" + new { r.roll, r.days, r.bid }.Yield().ToMarkdownTable());
+              //am.OpenTrade(roll.trade.contract, -roll.trade.position, 0, 0, false, DateTime.MaxValue);
+              //am.OpenTrade(roll.roll, roll.trade.position, 0, 0, false, DateTime.MaxValue);
+              //am.OpenRollTrade("EW1F9 P2480", "E1AF9 P2455");
+            });
+          });
+        }
+
         return;
         {
           var symbol = "VXG9";
@@ -98,24 +118,6 @@ namespace ConsoleApp {
            .Select(t => t.pos)
           .Subscribe();
           //fw.OpenTrade("ESH9", true, 1, 5, 0, 2635, "OPT");
-        }
-        {
-          Task.Delay(3000).ContinueWith(_ => {
-            (from trade in am.Positions.Select(p => p.contract).ToObservable()
-             from rolls in am.CurrentRollOver(trade.LocalSymbol, true, 4, 2).OrderByDescending(r => r.dpw)
-             select rolls
-            )
-            .ToArray()
-            .Do(rolls => HandleMessage("Rolls:\n" + rolls.Select(roll => new { roll.roll, roll.days, roll.bid }).ToMarkdownTable()))
-            .SelectMany(a => a.OrderBy(o => o.roll.Expiration).Take(1).ToArray())
-            .Take(1)
-            .Subscribe(r => {
-              HandleMessage("Trade this:\n" + new { r.roll, r.days, r.bid }.Yield().ToMarkdownTable());
-              //am.OpenTrade(roll.trade.contract, -roll.trade.position, 0, 0, false, DateTime.MaxValue);
-              //am.OpenTrade(roll.roll, roll.trade.position, 0, 0, false, DateTime.MaxValue);
-              //am.OpenRollTrade("EW1F9 P2480", "E1AF9 P2455");
-            });
-          });
         }
         {
           void TestCurrentRollOvers(int num, Action after = null) {

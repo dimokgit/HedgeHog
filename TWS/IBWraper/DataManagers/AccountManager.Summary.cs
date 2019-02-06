@@ -70,24 +70,24 @@ namespace IBApp {
     public void RequestAccountSummary() {
       if(!accountSummaryRequestActive) {
         accountSummaryRequestActive = true;
-        IbClient.ClientSocket.reqAccountSummary(NetOrderId(), "All", ACCOUNT_SUMMARY_TAGS);
+        IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAccountSummary(NetOrderId(), "All", ACCOUNT_SUMMARY_TAGS));
       } else {
-        IbClient.ClientSocket.cancelAccountSummary(CurrReqId());
+        IbClient.OnReqMktData(() => IbClient.ClientSocket.cancelAccountSummary(CurrReqId()));
       }
     }
 
     public void SubscribeAccountUpdates() {
       if(!accountUpdateRequestActive) {
         accountUpdateRequestActive = true;
-        IbClient.ClientSocket.reqAccountUpdates(true, _accountId);
+        IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAccountUpdates(true, _accountId));
       } else {
-        IbClient.ClientSocket.reqAccountUpdates(false, _accountId);
+        IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAccountUpdates(false, _accountId));
         accountUpdateRequestActive = false;
       }
     }
 
     public void RequestPositions() {
-      IbClient.ClientSocket.reqPositions();
+      IbClient.OnReqMktData(() => IbClient.ClientSocket.reqPositions());
     }
     #endregion
   }

@@ -39,7 +39,7 @@ namespace IBApp {
             .SideEffect(Lots => _verbous(new { ChangePosition = new { ot.Pair, ot.IsBuy, Lots } })))
             )
           .DefaultIfEmpty(() => contract.SideEffect(c
-          => OpenTrades.Add(TradeFromPosition(Subscribe(c), position, averageCost)
+          => OpenTrades.Add(TradeFromPosition(c, position, averageCost)
           .SideEffect(t => _verbous(new { OpenPosition = new { t.Pair, t.IsBuy, t.Lots } })))))
           .ToList()
           .ForEach(a => a());
@@ -51,8 +51,6 @@ namespace IBApp {
       //if(IbClient.ClientId == 0 && !_positions.Values.Any(p => p.position != 0))
       //  CancelAllOrders("Canceling stale orders");
     }
-
-    private Contract Subscribe(Contract c) => IbClient.SetContractSubscription(c);
 
     Trade TradeFromPosition(Contract contract, double position, double avgCost) {
       var st = IbClient.ServerTime;

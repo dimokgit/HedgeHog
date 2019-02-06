@@ -110,6 +110,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public TradeConditionDelegate LhPOk => () => TradeDirectionByBool(TLLime.StDev > TLPlum.StDev);
+
     public TradeConditionDelegate Volt2eOk {
       get {
         return () => {

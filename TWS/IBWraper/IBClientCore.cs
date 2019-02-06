@@ -86,7 +86,10 @@ namespace IBApp {
     #endregion
 
     #region ICoreEX Implementation
-    public Contract SetContractSubscription(Contract contract) => contract.SideEffect(c => SetContractSubscription(c, _ => { }));
+    public Contract SetContractSubscription(Contract contract, [CallerMemberName] string Caller = "") => contract.SideEffect(c => {
+      //TraceError($"{nameof(SetContractSubscription)} <= {Caller}");
+      SetContractSubscription(c, _ => { });
+    });
     void SetContractSubscription(Contract contract, Action<Contract> callback) {
       _marketDataManager.AddRequest(contract, GENERIC_TICK_LIST, callback);
     }
@@ -122,7 +125,7 @@ namespace IBApp {
           IBClientCoreMaster = this;
         else throw new Exception($"{nameof(IBClientCoreMaster)} is not null");
       _trace = trace;
-      _traceErrorSubject.Throttle(1.FromSeconds()).Subscribe(v => _trace("{*} " + v));
+      _traceErrorSubject./*Throttle(1.FromSeconds()).*/Subscribe(v => _trace("{*} " + v));
       NextValidId += OnNextValidId;
       Error += OnError;
       ConnectionClosed += OnConnectionClosed;
@@ -154,22 +157,22 @@ namespace IBApp {
         onNext => (ContractDetailsMessage m) => onNext(m),
         h => ContractDetails += h.SideEffect(_ => TraceError("ContractDetails += h")),
         h => ContractDetails -= h.SideEffect(_ => TraceError("ContractDetails -= h"))
-        );
-      //.ObserveOn(esReqContract)
-      //.Publish().RefCount()
+        )
+      .ObserveOn(esReqContract)
+      .Publish().RefCount();
       //.Spy("ContractDetails")
     IObservable<ContractDetailsMessage> _ContractDetailsObservable;
     IObservable<ContractDetailsMessage> ContractDetailsObservable =>
       (_ContractDetailsObservable ?? (_ContractDetailsObservable = ContractDetailsFactory()));
 
-    static IScheduler esReqContract = TaskPoolScheduler.Default;// new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
+    static IScheduler esReqContract = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
     IObservable<int> ContractDetailsEndFactory() => Observable.FromEvent<Action<int>, int>(
         onNext => (int a) => onNext(a),
         h => ContractDetailsEnd += h,
         h => ContractDetailsEnd -= h
-        );
-      //.ObserveOn(esReqContract)
-      //.Publish().RefCount();
+        )
+      .ObserveOn(esReqContract)
+      .Publish().RefCount();
     IObservable<int> _ContractDetailsEndObservable;
     IObservable<int> ContractDetailsEndObservable =>
       (_ContractDetailsEndObservable ?? (_ContractDetailsEndObservable = ContractDetailsEndFactory()));
@@ -202,7 +205,7 @@ namespace IBApp {
     #endregion
 
     #region TickPrice
-    static IScheduler esReqPriceSubscribe = ThreadPoolScheduler.Instance;// new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice", Priority = ThreadPriority.Lowest });
+    static IScheduler esReqPriceSubscribe = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice", Priority = ThreadPriority.AboveNormal });
     IObservable<TickPriceMessage> TickPriceFactoryFromEvent()
       => Observable.FromEvent<TickPriceHandler, TickPriceMessage>(
         onNext => (TickPriceMessage m) => onNext(m),
@@ -542,7 +545,8 @@ namespace IBApp {
       .Select(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToArray())
       .Where(t => t.Any())
       .SelectMany(p => p)
-      .Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
+      .Where(p => p.Bid > 0 && p.Ask > 0)
+      //.Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
       .Do(p => Verbose($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
       //.Select(p => (p.Bid, p.Ask, p.Time))
       //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
@@ -732,15 +736,16 @@ namespace IBApp {
     }
     #endregion
 
-    public IEnumerable<Price> TryGetPrice(Contract contract) {
-      if(_marketDataManager.TryGetPrice(contract, out var price))
+    public IEnumerable<Price> TryGetPrice(Contract contract, [CallerMemberName] string Caller = "") {
+      if(_marketDataManager.TryGetPrice(contract, out var price,$"{nameof(TryGetPrice)} <= {Caller}"))
         yield return price;
     }
-    public IEnumerable<Price> TryGetPrice(string pair) {
-      if(TryGetPrice(pair, out var price))
+    public IEnumerable<Price> TryGetPrice(string pair, [CallerMemberName] string Caller = "") {
+      if(TryGetPrice(pair, out var price, $"{nameof(TryGetPrice)} <= {Caller}"))
         yield return price;
     }
-    public bool TryGetPrice(string symbol, out Price price) { return _marketDataManager.TryGetPrice(symbol.ContractFactory(), out price); }
+    public bool TryGetPrice(string symbol, out Price price, [CallerMemberName] string Caller = "") =>
+      _marketDataManager.TryGetPrice(symbol.ContractFactory(), out price, $"{nameof(TryGetPrice)} <= {Caller}"); 
     public Price GetPrice(string symbol) { return _marketDataManager.GetPrice(symbol); }
     #region Price Changed
     private void OnPriceChanged(Price price) {

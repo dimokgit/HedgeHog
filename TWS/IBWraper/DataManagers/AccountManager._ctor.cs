@@ -11,9 +11,11 @@ using OpenOrderHandler = System.Action<IBSampleApp.messages.OpenOrderMessage>;
 using OrderStatusHandler = System.Action<IBSampleApp.messages.OrderStatusMessage>;
 using PortfolioHandler = System.Action<IBApp.UpdatePortfolioMessage>;
 using PositionHandler = System.Action<IBApp.PositionMessage>;
+using PositionEndHandler = System.Action;
 using System.Collections.Concurrent;
 using System.Reactive.Subjects;
 using IBApi;
+using System.Reactive;
 
 namespace IBApp {
   public partial class AccountManager {
@@ -23,10 +25,10 @@ namespace IBApp {
     #region Properties
     public readonly EventLoopScheduler MainScheduler;
     public System.IObservable<IBApp.PositionMessage> PositionsObservable { get; private set; }
+    public IObservable<Unit> PositionsEndObservable { get; }
     public IObservable<OpenOrderMessage> OpenOrderObservable { get; private set; }
     public IObservable<OrderStatusMessage> OrderStatusObservable { get; private set; }
     public ConcurrentDictionary<int, OrderContractHolder> OrderContractsInternal { get; } = new ConcurrentDictionary<int, OrderContractHolder>();
-    public readonly Subject<(string instrument, double level, bool isBuy, int quantity)[]> OrderEnrtyLevel = new Subject<(string instrument, double level, bool isBuy, int quantity)[]>();
     #endregion
     public AccountManager(IBClientCore ibClient, string accountId, Func<string, Trade> createTrade, Func<Trade, double> commissionByTrade) : base(ibClient, ACCOUNT_ID_BASE) {
       CommissionByTrade = commissionByTrade;
@@ -37,14 +39,14 @@ namespace IBApp {
       RequestAccountSummary();
       SubscribeAccountUpdates();
       RequestPositions();
-      IbClient.ClientSocket.reqOpenOrders();
-      IbClient.ClientSocket.reqAllOpenOrders();
-      IbClient.ClientSocket.reqAutoOpenOrders(true);
+      //IbClient.ClientSocket.reqOpenOrders();
+      IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAllOpenOrders());
+      IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAutoOpenOrders(true));
 
-      IbClient.AccountSummary += OnAccountSummary;
-      IbClient.AccountSummaryEnd += OnAccountSummaryEnd;
-      IbClient.UpdateAccountValue += OnUpdateAccountValue;
-      IbClient.UpdatePortfolio += OnUpdatePortfolio;
+      IbClient.OnReqMktData(() => IbClient.AccountSummary += OnAccountSummary);
+      IbClient.OnReqMktData(() => IbClient.AccountSummaryEnd += OnAccountSummaryEnd);
+      IbClient.OnReqMktData(() => IbClient.UpdateAccountValue += OnUpdateAccountValue);
+      IbClient.OnReqMktData(() => IbClient.UpdatePortfolio += OnUpdatePortfolio);
 
       OpenTrades.ItemsAdded.Delay(TimeSpan.FromSeconds(5)).Subscribe(RaiseTradeAdded).SideEffect(s => _strams.Add(s));
       OpenTrades.ItemChanged
@@ -72,10 +74,15 @@ namespace IBApp {
         h => IbClient.Position += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
         h => IbClient.Position -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
         )
-        .ObserveOn(positionsScheduler)
-        .Publish().RefCount()
         //.Spy("**** AccountManager.PositionsObservable ****")
         ;
+        PositionsEndObservable = Observable.FromEvent(
+        h => IbClient.PositionEnd += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
+        h => IbClient.PositionEnd -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
+        )
+        //.Spy("**** AccountManager.PositionsObservable ****")
+        ;
+
       OpenOrderObservable = Observable.FromEvent<OpenOrderHandler, OpenOrderMessage>(
         onNext => (OpenOrderMessage m) =>
         Try(() => onNext(m), nameof(IbClient.OpenOrder)),
@@ -108,11 +115,14 @@ namespace IBApp {
       DoShowRequestErrorDone = false;
       PositionsObservable
         .Where(x => x.Position != 0 && x.Account == _accountId && !NoPositionsPlease)
-        .DistinctUntilChanged(t => new { t.Contract, t.Position })
+        //.DistinctUntilChanged(t => new { t.Contract, t.Position })
         .Do(x => TraceError($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
         .SelectMany(p =>
-          from cds in IbClient.ReqContractDetailsAsync(p.Contract).ToArray()
-          from cd in cds.Count(1, i => TraceError($"Position contract {p.Contract} has no details"), i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
+          from cds in IbClient.ReqContractDetailsAsync(p.Contract).ObserveOn(Scheduler.CurrentThread).ToArray()
+          from cd in cds.Count(1, i => {
+            TraceError($"Position contract {p.Contract} has no details");
+            //RequestPositions();
+          }, i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
           select (p.Account, contract: cd.Contract, p.Position, p.AverageCost)
         )
         .Subscribe(a => OnPosition(a.contract, a.Position, a.AverageCost), () => { Trace("posObs done"); })
@@ -229,20 +239,6 @@ namespace IBApp {
       }
       #endregion
 
-    }
-
-    public IObservable<(double level, Contract option)[]> OptionsByBS(string pair, double level, bool isCall) {
-      var expSkip = IbClient.ServerTime.Hour > 16 ? 1 : 0;
-      var options = from os in (isCall ? Calls() : Puts()).ToArray()
-                    from option in os.OrderBy(OrderBy).Take(3).TakeLast(1)
-                    select (level, option);
-      return options.ToArray();
-
-      IObservable<Contract> Calls() =>
-        CurrentOptions(pair, level, expSkip, 4, c => c.IsCall && c.Strike < level).SelectMany(a => a.Select(t => t.option));
-      IObservable<Contract> Puts() =>
-        CurrentOptions(pair, level, expSkip, 4, c => c.IsPut && c.Strike > level).SelectMany(a => a.Select(t => t.option));
-      double OrderBy(Contract c) => c.IsCall ? 1 / c.Strike : c.Strike;
     }
 
 

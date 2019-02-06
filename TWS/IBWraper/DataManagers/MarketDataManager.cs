@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Runtime.Caching;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using HedgeHog;
@@ -22,21 +23,21 @@ namespace IBApp {
     private static ConcurrentDictionary<int, (Contract contract, Price price)> activeRequests = new ConcurrentDictionary<int, (Contract contract, Price price)>();
     public static IReadOnlyDictionary<int, (Contract contract, Price price)> ActiveRequests => activeRequests;
     public Action<Contract, string, Action<Contract>> AddRequest;// = (a1, a2, a3) => {    };
-    public IObservable<(Contract c, string gl, Action<Contract>)> AddRequestObs { get; }
+    public IObservable<(Contract c, string gl, Action<Contract> cb)> AddRequestObs { get; }
     public MarketDataManager(IBClientCore client) : base(client, TICK_ID_BASE) {
       IbClient.TickPriceObservable.Subscribe(t => OnTickPrice(t.RequestId, t.Field, t.Price, t.attribs));
       IbClient.OptionPriceObservable.Subscribe(t => OnOptionPrice(t));
       IbClient.TickString += OnTickString; ;
       IbClient.TickGeneric += OnTickGeneric;
       //IbClient.TickOptionCommunication += TickOptionCommunication; ;
-      AddRequestObs = Observable.FromEvent<Action<Contract, string, Action<Contract>>, (Contract c, string gl, Action<Contract>)>(
+      AddRequestObs = Observable.FromEvent<Action<Contract, string, Action<Contract>>, (Contract c, string gl, Action<Contract> cb)>(
         next => (c, gl, a) => next((c, gl, a)), h => AddRequest += h, h => AddRequest -= h);
       AddRequestObs
         //.Delay(TimeSpan.FromMilliseconds(1000))
-        .ObserveOn(TaskPoolScheduler.Default)
-        .SubscribeOn(TaskPoolScheduler.Default)
+        .ObserveOn(ThreadPoolScheduler.Instance)
+        //.SubscribeOn(TaskPoolScheduler.Default)
         //.Distinct(t => t.Item1.Instrument)
-        .Subscribe(t => AddRequestSync(t.Item1, t.Item3, t.Item2));
+        .Subscribe(t => AddRequestSync(t.c, t.cb, t.gl));
     }
 
     private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, new TickAttrib());
@@ -53,26 +54,31 @@ namespace IBApp {
       }
       callback(contract);
     }
+    object _addRequestImplLock = new object();
     void AddRequestImpl(Contract contract, string genericTickList) {
-      if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
-        Verbose0($"AddRequest:{contract} already requested");
-      else {
-        var reqId = IbClient.ValidOrderId();
-        Verbose0($"AddRequest:{reqId}=>{contract}");
-        IbClient.WatchReqError(reqId, t => Trace($"{nameof(AddRequestImpl)}:{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
-        IbClient.OnReqMktData(() => IbClient.ClientSocket.reqMktData(reqId, contract.ContractFactory(), genericTickList, false, false, new List<TagValue>()));
-        if(reqId == 0)
-          Debugger.Break();
-        activeRequests.TryAdd(reqId, (contract, new Price(contract.Instrument)));
-        contract.ReqId = reqId;
+      lock(_addRequestImplLock) {
+        if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
+          Verbose0($"AddRequest:{contract} already requested");
+        else {
+          var reqId = IbClient.ValidOrderId();
+          Verbose0($"AddRequest:{reqId}=>{contract}");
+          IbClient.WatchReqError(reqId, t => Trace($"{nameof(AddRequestImpl)}:{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
+          IbClient.OnReqMktData(() => {
+            IbClient.ClientSocket.reqMktData(reqId, contract.ContractFactory(), genericTickList, false, false, new List<TagValue>());
+            activeRequests.TryAdd(reqId, (contract, new Price(contract.Instrument)));
+            contract.ReqId = reqId;
+          });
+          if(reqId == 0)
+            Debugger.Break();
+        }
       }
     }
 
-    public bool TryGetPrice(Contract contract, out Price price) {
+    public bool TryGetPrice(Contract contract, out Price price, [CallerMemberName] string Caller = "") {
       price = null;
       var symbol = contract.Instrument;
       if(!_currentPrices.Contains(symbol)) {
-        IbClient.SetContractSubscription(contract);
+        IbClient.SetContractSubscription(contract, $"{nameof(TryGetPrice)} <= {Caller}");
         return false;
       }
       price = (Price)_currentPrices[symbol];
@@ -167,7 +173,10 @@ namespace IBApp {
     private void OnOptionPrice(TickOptionMessage t) {
       if(!activeRequests.ContainsKey(t.RequestId)) return;
       var priceMessage = new TickPriceMessage(t.RequestId, t.Field, t.OptPrice, null);
-      var ar = activeRequests[t.RequestId];
+      if(!activeRequests.TryGetValue(t.RequestId, out var ar)) {
+        TraceError($"{nameof(OnOptionPrice)}: {new { t.RequestId }} not found in {nameof(activeRequests)}");
+        return;
+      };
       var price2 = ar.price;
       //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
       if(priceMessage.Price == 0)
@@ -255,14 +264,14 @@ namespace IBApp {
     protected void RaisePriceChanged((Contract contract, Price price) t) {
       if(!_currentPrices.Contains(t.price.Pair)) {
         {
-          var cip = t.contract.HasOptions? new CacheItemPolicy() {
+          var cip = t.contract.HasOptions ? new CacheItemPolicy() {
             RemovedCallback = ce => {
               ActiveRequestCleaner((Price)ce.CacheItem.Value);
             },
             SlidingExpiration = 60.FromSeconds()
-          }:new CacheItemPolicy();
+          } : new CacheItemPolicy();
           if(!_currentPrices.Add(t.price.Pair, t.price, cip))
-              Trace($"RaisePriceChanged: {t.price.Pair} is already in {nameof(_currentPrices)}");
+            Trace($"RaisePriceChanged: {t.price.Pair} is already in {nameof(_currentPrices)}");
         }
       }
       PriceChangedEvent?.Invoke(t.price);
@@ -281,7 +290,7 @@ namespace IBApp {
     }
     public static Contract[] ActiveRequestCleaner() {
       var contracts = activeRequests.Select(kv => kv.Value.contract).ToArray();
-      _currentPrices.ToList().ForEach(cp=>_currentPrices.Remove(cp.Key));
+      _currentPrices.ToList().ForEach(cp => _currentPrices.Remove(cp.Key));
       contracts.ForEach(c => IBClientMaster.SetContractSubscription(c));
       return contracts;
     }

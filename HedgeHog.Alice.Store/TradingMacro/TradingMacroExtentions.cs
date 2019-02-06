@@ -2093,10 +2093,6 @@ namespace HedgeHog.Alice.Store {
         //GlobalStorage.UseAliceContext(c => c.SaveChanges());
 
         sr.BSObservable
-          .Select(_ => (r: _.Rate, sr: _))
-          .Scan((p, n) => p.r.Abs(n.r) < 1 ? p : n)
-          .DistinctUntilChanged(_ => _.r)
-          .Select(_ => _.sr)
           .Subscribe(_ => {
             if(_tradeLevelChanged == null)
               Log = new Exception(new { _tradeLevelChanged = "null" } + "");

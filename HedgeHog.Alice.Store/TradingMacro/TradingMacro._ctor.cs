@@ -20,24 +20,18 @@ namespace HedgeHog.Alice.Store {
     Action<(SuppRes level, SuppRes.CrossedEvetArgs crossed)> _tradeLevelCrossed;
     IBApp.IBWraper ibWraper => TradesManager as IBApp.IBWraper;
     public ConcurrentDictionary<bool, (IBApi.Contract contract, double level)> StrategyBS = new ConcurrentDictionary<bool, (IBApi.Contract contract, double level)>();
-    private void OnOrderEntryLevel(IEnumerable<(double Rate, double TradingRatio, bool IsBuy)> tls)
-      => ibWraper.AccountManager.OrderEnrtyLevel.OnNext(tls.Select(tl => (Pair, tl.Rate, tl.IsBuy, tl.TradingRatio.ToInt())).ToArray());
+    private void OnOrderEntryLevel(IEnumerable<(double Rate, double TradingRatio, bool IsCall)> tls)
+      => ibWraper.AccountManager.OrderEnrtyLevel.OnNext(tls.Select(tl
+        => (Pair, tl.Rate, tl.IsCall, tl.TradingRatio.ToInt(), TLLime.PriceAvg2.Abs(TLLime.PriceAvg3))).ToArray());
     public TradingMacro() {
       GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
 
       var tls = (from sr in Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _tradeLevelChanged += h, h => _tradeLevelChanged -= h)
-                 where !sr.IsSupport
+                 where IsTradingActive && !IsInVirtualTrading && !sr.IsExitOnly
                  group sr by sr.IsBuy into g
-                 from kv in g.Scan((p, n) => {
-                   if(p.Rate.Ratio(n.Rate) > 1.001)
-                     return p;
-                   return n;
-                 })
-
+                 from kv in g.Scan((p, n) => p.Rate.Ratio(n.Rate) > 1.001 ? p : n).DistinctUntilChanged(tl => (tl.Rate.RoundBySample(MinTick),tl.PricePosition))
                  select kv)
-        .Where(_ => !IsInVirtualTrading)
-        .DistinctUntilChanged(tl => tl.Rate.RoundBySample(MinTick))
-        .Select(tl => new[] { (tl.Rate, TradingRatio, tl.IsBuy) }.Where(_ => tl.IsBuy && BuyLevel.CanTrade || tl.IsSell && SellLevel.CanTrade))
+        .Select(tl => new[] { (tl.Rate, TradingRatio, !tl.IsBuy) }.Where(_ => tl.IsBuy && BuyLevel.CanTrade || tl.IsSell && SellLevel.CanTrade))
         .Publish().RefCount();
       tls.Subscribe(tl =>
        OnOrderEntryLevel(tl));

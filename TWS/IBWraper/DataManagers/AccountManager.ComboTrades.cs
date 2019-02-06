@@ -91,7 +91,7 @@ namespace IBApp {
         let pl = close - c.open
         let change = pl / c.position.Abs() / multiplier
         select new ComboTrade(
-         IbClient.SetContractSubscription(c.contract)
+         c.contract
         , c.position
         , c.open
         , close
@@ -133,7 +133,7 @@ namespace IBApp {
       var positions = Positions.Where(p => p.position != 0).ToArray();
       var orders = OrderContractsInternal.Values.Where(oc => !oc.isDone).ToArray();
       var combos = (
-        from c in positions/*.ParseCombos(orders)*/.Do(c => IbClient.SetContractSubscription(c.contract))
+        from c in positions/*.ParseCombos(orders)*//*.Do(c => IbClient.SetContractSubscription(c.contract))*/
         let order = orders.Where(oc => oc.isSubmitted && oc.contract == c.contract).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
         select (c.contract, c.position, c.open, c.open / c.position.Abs() / c.contract.ComboMultiplier, order.LmtPrice, order.OrderId)
         );
