@@ -125,7 +125,7 @@ namespace IBApp {
           IBClientCoreMaster = this;
         else throw new Exception($"{nameof(IBClientCoreMaster)} is not null");
       _trace = trace;
-      _traceErrorSubject./*Throttle(1.FromSeconds()).*/Subscribe(v => _trace("{*} " + v));
+      _traceErrorSubject.ObserveOn(ThreadPoolScheduler.Instance)./*Throttle(1.FromSeconds()).*/Subscribe(v => _trace("{*} " + v));
       NextValidId += OnNextValidId;
       Error += OnError;
       ConnectionClosed += OnConnectionClosed;

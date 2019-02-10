@@ -1011,7 +1011,7 @@ namespace HedgeHog.Alice.Client {
       return MarketDataManager.ActiveRequests
         .OrderBy(x => x.Value.contract.Instrument)
         .ThenBy(x => x.Key)
-        .Select(x => new { x.Value.contract.Instrument, x.Key, x.Value.price.Bid })
+        .Select(x => new { x.Value.contract.ShortWithDate, x.Key, x.Value.price.Bid })
         .ToArray();
     }
     public void CleanActiveRequests() => MarketDataManager.ActiveRequestCleaner();
@@ -1354,7 +1354,7 @@ namespace HedgeHog.Alice.Client {
     #endregion
     static string MakePair(string pair) { return TradesManagerStatic.IsCurrenncy(pair) ? pair.Substring(0, 3) + "/" + pair.Substring(3, 3) : pair; }
     bool IsEOW(DateTime date) => date.DayOfWeek == DayOfWeek.Friday && date.InNewYork().TimeOfDay > new TimeSpan(16, 0, 0);
-    public Trade[] ReadClosedTrades(string pair) {
+    public Trade[] ReadClosedTrades(string pair, bool showAll = false) {
       try {
         var tms = GetTradingMacros(pair).Where(tm => tm.BarPeriod > BarsPeriodType.t1).Take(1).ToArray();
         var rc = remoteControl.Value;
@@ -1362,7 +1362,7 @@ namespace HedgeHog.Alice.Client {
         var tradesNew = (
           from tm in tms
           from trade in trades
-          from dateMin in tm.RatesArray.Take(1).Select(r => r.StartDate)
+          from dateMin in showAll ? DateTime.MinValue.Yield() : tm.RatesArray.Take(1).Select(r => r.StartDate)
           where trade.Time >= dateMin
           orderby trade.Time descending
           let rateOpen = tm.RatesArray.FuzzyFinder(trade.Time, (t, r1, r2) => t.Between(r1.StartDate, r2.StartDate)).Take(1)

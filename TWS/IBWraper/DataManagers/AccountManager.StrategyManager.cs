@@ -8,13 +8,14 @@ using System.Reactive.Subjects;
 namespace IBApp {
   public partial class AccountManager {
     const string STRATEGY_PREFIX = "TM:";
-    public readonly Subject<(string instrument, double level, bool isCall, int quantity, double profit)[]> OrderEnrtyLevel = new Subject<(string instrument, double level, bool isCall, int quantity,double profit)[]>();
+    public readonly Subject<(string instrument, double level, bool isCall, int quantity, double profit)[]> OrderEnrtyLevel = new Subject<(string instrument, double level, bool isCall, int quantity, double profit)[]>();
     bool strategyTest = false;
     void WireOrderEntryLevels() {
       var reqs = (from oels in OrderEnrtyLevel
                   from oel in oels
-                  from options in OptionsToSell(oel.instrument, oel.level, isCall: oel.isCall)
-                  select new { options, oel.quantity, oel.isCall,oel.profit }
+                  let isCall = oel.quantity.Sign() > 0 ? oel.isCall : !oel.isCall
+                  from options in OptionsToSell(oel.instrument, oel.level, isCall)
+                  select new { options, oel.quantity, oel.isCall, oel.profit }
                  );
       var b = reqs.Where(r => r.isCall);//.DistinctUntilChanged(_ => DateTime.Now.RoundBySeconds(strategyTest ? 10 : 1));
       var s = reqs.Where(r => !r.isCall);//.DistinctUntilChanged(_ => DateTime.Now.RoundBySeconds(strategyTest ? 10 : 1));

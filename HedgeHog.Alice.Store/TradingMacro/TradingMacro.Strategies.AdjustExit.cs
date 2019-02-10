@@ -142,12 +142,12 @@ namespace HedgeHog.Alice.Store {
                 buyCloseLevel.Rate = priceAvgMax;
             } else if(Trades.HaveBuy()) {
               var signB = (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign();
-              buyCloseLevel.RateEx = new[]{
+              buyCloseLevel.RateEx = closeLevelLime(true).IfNaN( new[]{
                 getTradeCloseLevel(true)
                 .Min(levelByNetOpenAndTakeProfit(true))
                 .Min(levelByDefault(true))
                 , priceAvgMax
-              }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First() - ellasic
+              }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First()) - ellasic
               ;
               if(signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
                 buyCloseLevel.ResetPricePosition();
@@ -161,12 +161,12 @@ namespace HedgeHog.Alice.Store {
                 sellCloseLevel.Rate = priceAvgMin;
             } else if(Trades.HaveSell()) {
               var sign = (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign();
-              sellCloseLevel.RateEx = new[] {
+              sellCloseLevel.RateEx = closeLevelLime(false).IfNaN( new[] {
                 getTradeCloseLevel(false)
                 .Max(levelByNetOpenAndTakeProfit(false))
                 .Max(levelByDefault(false))
                 , priceAvgMin
-              }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First() + ellasic
+              }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First()) + ellasic
               ;
               if(sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())
                 sellCloseLevel.ResetPricePosition();
@@ -176,6 +176,17 @@ namespace HedgeHog.Alice.Store {
         }
       };
       return adjustExitLevels;
+    }
+    double closeLevelLime(bool isBuy) {
+      if(TakeProfitFunction != TradingMacroTakeProfitFunction.Lime) return double.NaN;
+      var h = (1 - TakeProfitXRatio) * TLLime.PriceAvg2.Abs(TLLime.PriceAvg3);
+      if(isBuy) {
+        var l = TLLime.PriceAvg2 - h;
+        return l;
+      } else {
+        var l = TLLime.PriceAvg3 + h;
+        return l;
+      }
     }
     bool _limitProfitByRatesHeight;
     [WwwSetting(wwwSettingsTradingProfit)]

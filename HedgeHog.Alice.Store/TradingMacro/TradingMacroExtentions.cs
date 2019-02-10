@@ -2468,7 +2468,7 @@ namespace HedgeHog.Alice.Store {
                 CorridorAngle = TLRed.Angle;
                 TakeProfitPips = InPips(CalculateTakeProfit());
               } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
-            }, false);
+            }, IsInVirtualTrading);
             OnPropertyChanged(nameof(TradingDistanceInPips));
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
             OnPropertyChanged(() => SpreadForCorridorInPips);

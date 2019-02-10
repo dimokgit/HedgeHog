@@ -912,7 +912,7 @@
     <table border="1" class="wwwInfo">
       <tbody data-bind="foreach:activeRequests">
         <tr>
-          <td data-bind="text:Instrument"></td>
+          <td data-bind="text:ShortWithDate"></td>
           <td data-bind="text:Bid"></td>
           <td data-bind="text:Key"></td>
         </tr>
@@ -923,7 +923,7 @@
   <!--#region Closed Trades-->
   <div data-bind="elementer:closedTradesDialog" style="display:none">
     <table border="1" class="wwwInfo">
-      <tbody data-bind="foreach:closedTrades">
+      <tbody data-bind="foreach:closedTradesAll">
         <tr>
           <td data-bind="text:d3.timeFormat('%b-%d %H:%M')(Time2)"></td>
           <td data-bind="text:Open"></td>

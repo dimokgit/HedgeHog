@@ -675,24 +675,28 @@
         readClosedTrades();
       };
       this.readClosedTrades = readClosedTrades;
-      function readClosedTrades() {
-        serverCall("readClosedTrades", [pair], function (trades) {
-          self.closedTrades(prepDates(trades));
-          closedTrades = self.closedTrades().map(function (t) {
-            return {
-              dates: [t.Time, t.TimeClose],
-              timeOpen: t.Time,
-              timeClose: t.TimeClose,
-              isBuy: t.IsBuy,
-              open: t.Open,
-              close: t.Close,
-              grossPL: t.GrossPL,
-              kind: t.KindString,
-              isClosed: t.KindString === "Closed"
-            };
-          });
-          resetPlotter();
-          resetPlotter2();
+      function readClosedTrades(showAll,map) {
+        serverCall("readClosedTrades", [pair, !!showAll], function (trades) {
+          var ct = prepDates(trades);          
+          if (map) map(ct);
+          else {
+            self.closedTrades(ct);
+            closedTrades = self.closedTrades().map(function (t) {
+              return {
+                dates: [t.Time, t.TimeClose],
+                timeOpen: t.Time,
+                timeClose: t.TimeClose,
+                isBuy: t.IsBuy,
+                open: t.Open,
+                close: t.Close,
+                grossPL: t.GrossPL,
+                kind: t.KindString,
+                isClosed: t.KindString === "Closed"
+              };
+            });
+            resetPlotter();
+            resetPlotter2();
+          }
         });
       }
       // #endregion
@@ -890,8 +894,10 @@
       // #endregion
       // #region CLosed Trades Dialog
       var closedTradesElement;
+      this.closedTradesAll = ko.observableArray();
       this.closedTradesDialog = (element) => closedTradesElement = element;
       this.showClosedTrades = function () {
+        readClosedTrades(true,self.closedTradesAll);
         $(closedTradesElement).dialog({
           title: "Closed Trades", width: "auto", //dialogClass: "dialog-compact",
           dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
@@ -1792,7 +1798,7 @@
         readReplayProcID = setInterval(readReplayArguments, 3 * 1000);
       }
       this.stopReplay = function () {
-        serverCall("stopReplay", [pair, replayDateStart()], readReplayArguments.bind(null,true));
+        serverCall("stopReplay", [pair, replayDateStart()], readReplayArguments.bind(null, true));
       }
       // #endregion
 
