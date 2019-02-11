@@ -273,6 +273,7 @@ namespace IBApp {
     }
 
     static ConcurrentDictionary<string, IObservable<ContractDetails>> _reqContractDetails = new ConcurrentDictionary<string, IObservable<ContractDetails>>();
+    public static ConcurrentDictionary<string, IObservable<ContractDetails>> ReqContractDetails => _reqContractDetails;
     public IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
         Debugger.Break();
@@ -293,7 +294,11 @@ namespace IBApp {
           )
           .Distinct(t => t.ContractDetails.Contract.ConId)
           .ToArray()
-          .Do(a => a.ForEach(t => t.ContractDetails.AddToCache()))
+          .Do(a => a.ForEach(t => {
+            t.ContractDetails.AddToCache();
+            if(t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty())
+              ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Subscribe();
+          }))
           .Do(_ => Verbose($"{nameof(ReqContractDetailsAsync)}:{key} found:{_.Length} contracts"))
           .SelectMany(a => a.Select(t => t.ContractDetails))
           .Replay().RefCount()
@@ -608,7 +613,7 @@ namespace IBApp {
             _ReqMktDataSubject = new Subject<Action>();
             _ReqMktDataSubject
               .ObserveOn(TaskPoolScheduler.Default)
-              .RateLimit(40)
+              .RateLimit(30)
               //.Do(_ => Thread.Sleep(100))
               .Subscribe(s => s(), exc => { });
           }

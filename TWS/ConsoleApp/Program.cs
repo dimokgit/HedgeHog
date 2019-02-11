@@ -68,11 +68,11 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        am.PositionsEndObservable.Subscribe(positions =>HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
+        am.PositionsEndObservable.Subscribe(positions => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
         {
           Task.Delay(3000).ContinueWith(_ => {
             (from trade in am.Positions.Select(p => p.contract).Take(1).ToObservable()
-             from rolls in am.CurrentRollOver(trade.LocalSymbol, true, 4, 2).OrderByDescending(r => r.dpw).ToArray()
+             from rolls in am.CurrentRollOver(trade.LocalSymbol, false, 4, 2).OrderByDescending(r => r.dpw).ToArray()
              select new { rolls, trade.LocalSymbol }
             )
             .Do(rolls => HandleMessage($"Rolls for {rolls.LocalSymbol}:\n" + rolls.rolls.Select(roll => new { roll.roll, roll.days, roll.bid }).ToMarkdownTable()))
@@ -80,6 +80,13 @@ namespace ConsoleApp {
             .Take(1)
             .Subscribe(r => {
               HandleMessage("Trade this:\n" + new { r.roll, r.days, r.bid }.Yield().ToMarkdownTable());
+              (from kv in IBClientCore.ReqContractDetails.ToObservable()
+               from cd in kv.Value
+               select new { kv.Key, cd.Contract,cd.Contract.Instrument,cd.Contract.LastTradeDateOrContractMonth }).ToArray()
+               .Subscribe(a => {
+                 var o = a.OrderBy(x => x.Key).ThenBy(x => x.Contract.Instrument).ToArray();
+                 HandleMessage(o.ToTextOrTable("ReqContractDetails:"));
+               });
               //am.OpenTrade(roll.trade.contract, -roll.trade.position, 0, 0, false, DateTime.MaxValue);
               //am.OpenTrade(roll.roll, roll.trade.position, 0, 0, false, DateTime.MaxValue);
               //am.OpenRollTrade("EW1F9 P2480", "E1AF9 P2455");
