@@ -132,6 +132,8 @@ namespace HedgeHog.Alice.Store {
         });
       }
     }
+    private Action<double> SetVolts(int voltIndex) => v => SetVolts(v, voltIndex);
+    
     private void SetVolts(double volt, int voltIndex) {
       if(!IsRatesLengthStable)
         return;
@@ -207,10 +209,6 @@ namespace HedgeHog.Alice.Store {
     }
     private void SetVoltsByPpm() {
       SetVots(WaveRangeAvg.PipsPerMinute, 2);
-    }
-    private CorridorStatistics ShowVoltsByBPA1() {
-      SetVots(_wwwBpa1, 2);
-      return null;
     }
   }
 }

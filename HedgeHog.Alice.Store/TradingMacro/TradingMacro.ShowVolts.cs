@@ -67,8 +67,6 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByMPH;
         case HedgeHog.Alice.VoltageFunction.PpmM1:
           return () => { SetVoltsByPpm(); return null; };
-        case HedgeHog.Alice.VoltageFunction.BPA1:
-          return ShowVoltsByBPA1;
         case HedgeHog.Alice.VoltageFunction.Corr:
           return ShowVoltsByCorrelation;
         case HedgeHog.Alice.VoltageFunction.Straddle:
@@ -83,12 +81,10 @@ namespace HedgeHog.Alice.Store {
           return ShowVoltsByGrossVirtual;
         case HedgeHog.Alice.VoltageFunction.RatioDiff:
           return () => ShowVoltsByRatioDiff(voltIndex);
+        case HedgeHog.Alice.VoltageFunction.StDevDiff:
+          return () => ShowVoltsByStDevDiff(voltIndex);
         case HedgeHog.Alice.VoltageFunction.M1WR:
           return () => ShowVoltsByM1WavesRatio(voltIndex);
-        case HedgeHog.Alice.VoltageFunction.VoltDrv:
-          if(voltIndex == 0)
-            throw new Exception($"{VoltageFunction.VoltDrv} can only be used as second voltage.");
-          return ShowVoltsByVoltsDerivative;
         case HedgeHog.Alice.VoltageFunction.HV:
           return () => ShowVoltsByHV(voltIndex);
         case HedgeHog.Alice.VoltageFunction.HVR:
@@ -433,9 +429,24 @@ namespace HedgeHog.Alice.Store {
           UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b => b.Count == c).ForEach(b => {
             var std = b.StandardDeviation(_priceAvg);
             var stdr = b.Select(_priceAvg).ToArray().StDevByRegressoin();
-            SetVoltByIndex(voltIndex)(b.Last(), Math.Log(std / stdr));
+            SetVoltByIndex(voltIndex)(b.Last(), CalcVolt(std, stdr));
           }));
-        SetVolts(Math.Log(StDevByPriceAvg / StDevByHeight), voltIndex);
+        SetVolts(CalcVolt(StDevByPriceAvg, StDevByHeight), voltIndex);
+        double CalcVolt(double stdp, double stdh) => Math.Log(stdp / stdh).ToPercent();
+      }
+      return null;
+    }
+    CorridorStatistics ShowVoltsByStdHeightOverPrice(int voltIndex) {
+      if(UseCalc()) {
+        var c = RatesArray.Count - 1;
+        if(GetVoltByIndex(voltIndex)(RatesInternal[c]).IsNaN())
+          UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b => b.Count == c).ForEach(b => {
+            var stdr = b.Select(_priceAvg).ToArray().StDevByRegressoin();
+            var std = b.StandardDeviation(_priceAvg);
+            SetVoltByIndex(voltIndex)(b.Last(), CalcVolt(std, stdr));
+          }));
+        SetVolts(CalcVolt(StDevByHeight, StDevByPriceAvg), voltIndex);
+        double CalcVolt(double std, double stdr) => (stdr / std - 1).ToPercent();
       }
       return null;
     }
@@ -451,31 +462,6 @@ namespace HedgeHog.Alice.Store {
       }
       return null;
     }
-    CorridorStatistics ShowVoltsByVoltsDerivative() {
-      if(UseCalc()) {
-        var voltses = (from volts in UseRates(ra => ra.Select(r => (r, v: GetVoltage(r))).Where(t => t.v.IsNotNaN()).ToArray())
-                       let height = volts.MinMax(v => v.v).Aggregate((min, max) => min.Abs(max))
-                       from t in volts.Cma(t => t.v, RatesHeightMin, RatesHeightMin.ToInt() * 2, (v, cma) => (v.r, v: ((v.v - cma) / height * 100)))
-                       select t
-        ).Select(t => {
-          SetVoltage2(t.r, t.v);
-          return BarPeriod == BarsPeriodType.t1 || IsTradingHour(t.r.StartDate) ? t.v : double.NaN;
-        })
-        .Where(Lib.IsNotNaN)
-        .ToArray();
-        {
-          var min = voltses.AverageByIterations(-VoltAverageIterations2).DefaultIfEmpty(double.NaN).Average();
-          var max = voltses.AverageByIterations(VoltAverageIterations2).DefaultIfEmpty(double.NaN).Average();
-          //min = new[] { min, max }.OrderBy(m => m.Abs()).Last();
-          //GetVoltage2High = () => new[] { min.Abs() };
-          //GetVoltage2Low = () => new[] { -min.Abs() };
-          GetVoltage2High = () => new[] { max };
-          GetVoltage2Low = () => new[] { min };
-        }
-      }
-      return null;
-    }
-
     IEnumerable<(TradingMacro tm, TradingMacro tmh)> GetHedgedTradingMacros(string pair) {
       return from tm2 in TradingMacroHedged()
              select (this, tm2);
@@ -528,6 +514,15 @@ namespace HedgeHog.Alice.Store {
     double GetVoltCmaPeriodByIndex(int voltIndex) => voltIndex == 0 ? VoltCmaPeriod : RatesHeightMin;
     int GetVoltCmaPassesByIndex(int voltIndex) => voltIndex == 0 ? VoltCmaPasses : RatesHeightMin.ToInt();
 
+    CorridorStatistics ShowVoltsByStDevDiff(int voltIndex) {
+      var v = TLLimeHeightRatioByAvg();
+      if(!v.IsNaN()) SetVolts(voltIndex)(v.ToPercent());
+      return null;
+      IEnumerable<T> TrendsNotEmpty<T>(Func<TL, T> map, params TL[] trends) => trends.Where(tl => !tl.IsEmpty).Select(map);
+      IEnumerable<double> Trends() => TrendsNotEmpty(tl => tl.StDev, TLBlue, TLPlum, TLRed, TLGreen).DefaultIfEmpty(double.NaN);
+      double TLLimeHeightRatioByAvg() => TLLime.StDev / Trends().Average() - 1;
+      double TLLimeHeightRatioByMax() => TLLime.StDev / Trends().Max() - 1;
+    }
     CorridorStatistics ShowVoltsByRatioDiff(int voltIndex) {
       if(UseCalc()) {
         //var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray()).Concat().ToArray();

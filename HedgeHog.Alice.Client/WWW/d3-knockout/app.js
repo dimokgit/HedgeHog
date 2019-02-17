@@ -675,9 +675,9 @@
         readClosedTrades();
       };
       this.readClosedTrades = readClosedTrades;
-      function readClosedTrades(showAll,map) {
+      function readClosedTrades(showAll, map) {
         serverCall("readClosedTrades", [pair, !!showAll], function (trades) {
-          var ct = prepDates(trades);          
+          var ct = prepDates(trades);
           if (map) map(ct);
           else {
             self.closedTrades(ct);
@@ -897,7 +897,7 @@
       this.closedTradesAll = ko.observableArray();
       this.closedTradesDialog = (element) => closedTradesElement = element;
       this.showClosedTrades = function () {
-        readClosedTrades(true,self.closedTradesAll);
+        readClosedTrades(true, self.closedTradesAll);
         $(closedTradesElement).dialog({
           title: "Closed Trades", width: "auto", //dialogClass: "dialog-compact",
           dragStop: function (event, ui) { $(this).dialog({ width: "auto", height: "auto" }); },
@@ -989,7 +989,31 @@
       this.orders = ko.mapping.fromJS(ko.observableArray());
       this.bullPuts = ko.mapping.fromJS(ko.observableArray());
       this.options = ko.mapping.fromJS(ko.observableArray());
+
       this.openOrders = ko.mapping.fromJS(ko.observableArray());
+      this.selectedOrder = ko.observable();
+      this.currentPriceCondition = ko.observable();
+      this.currentPriceCondition.subscribe((order) => {
+        var d = ko.mapping.toJS(order);
+        showInfo(JSON.stringify(d));
+        var so = ko.mapping.toJS(self.selectedOrder) || {};
+        showInfo(JSON.stringify(so));
+        serverCall("updateOrderPriceCondition", [so.id, d], m=> {
+          showInfoPerm(JSON.stringify(m));
+        });
+      });
+      this.toggleActiveOrder = function (order) {
+        var o = ko.mapping.toJS(order);
+        var so = ko.mapping.toJS(self.selectedOrder) || {};
+        if (o.id === so.id) {
+          self.selectedOrder(null);
+          showInfo("Order unselected");
+        }
+        else {
+          self.selectedOrder(order);
+          showInfo(JSON.stringify(o));
+        }
+      }
       this.butterflies = ko.mapping.fromJS(ko.observableArray());
       this.rollOvers = ko.mapping.fromJS(ko.observableArray());
       this.rollOversSorted = ko.pureComputed(function () {
@@ -1507,7 +1531,6 @@
         dataViewModel.price(response.askBid);
       }
       function resetRefreshChartInterval(chartData, chartRates, lastRefreshDate, askRatesDatesReset, minutes) {
-        return;
         if ((chartData.vfs || chartData.hph) && chartRates().length > 2) {
           var ratio = 300 * 60;
           var lastDate = Enumerable.from(chartRates()).last().d;

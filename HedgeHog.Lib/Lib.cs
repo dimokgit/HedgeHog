@@ -617,7 +617,7 @@ namespace HedgeHog {
 
     }
 
-    public class CmaWalker : Models.ModelBase {
+    public class CmaWalker :Models.ModelBase {
       public double Current { get; set; }
       public double Difference { get { return Prev - Last; } }
       public double Last { get { return CmaArray.Last().GetValueOrDefault(); } }
@@ -748,37 +748,6 @@ namespace HedgeHog {
     public static decimal Min3(decimal n1, decimal n2, decimal n3) {
       return Math.Min(Math.Min(n1, n2), n3);
     }
-
-    public static double Round(this double v) { return Math.Round(v, 0); }
-    public static double Round(this double v, int decimals) { return Math.Round(v, decimals); }
-    public static double? Round(this double? v, int decimals) { return v.HasValue ? v.Value.Round(decimals) : (double?)null; }
-    public static double AutoRound(this double d, int digits) {
-      var whole = d.Abs().Floor();
-      var part = d.Abs() - whole;
-      var ret = (double)(whole + Math.Round((decimal)part, Math.Log10(part).Abs().Ceiling() + digits));
-      return ret;
-    }
-    public static string AutoRound2(this double d, string prefix, int digits, string suffix = "") {
-      return prefix + d.AutoRound2(digits, suffix);
-    }
-    public static string AutoRound2(this double d, int digits, string suffix) {
-      return d.AutoRound2(digits) + suffix;
-    }
-    public static double AutoRound2(this double d, int digits) {
-      var digitsReal = Math.Log10(d.Abs()).Floor() + 1;
-      return d.Round((digits - digitsReal).Max(0));
-    }
-    public static double? RoundBySample(this double v, double sample) {
-      return Math.Round(v / sample, 0) * sample;
-    }
-    public static double? RoundBySqrt(this double v, int decimals) {
-      return Math.Round(Math.Sqrt(v), decimals);
-    }
-
-    public static double Error(this double experimantal, double original) {
-      return ((experimantal - original).Abs() / original).Abs();
-    }
-
 
     static double GetTextBoxTextDouble(TextBox TextBox) { return double.Parse("0" + GetTextBoxText(TextBox)); }
     public static int GetTextBoxTextInt(TextBox TextBox) {

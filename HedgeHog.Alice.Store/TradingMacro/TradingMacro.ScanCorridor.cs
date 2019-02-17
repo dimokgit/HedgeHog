@@ -312,25 +312,20 @@ namespace HedgeHog.Alice.Store {
       {
         var endDates = Trends.Where(tl => tl.Color != null && tl.Color != TradeLevelsPreset.Blue + "" && !tl.IsEmpty)
           .OrderByDescending(tl => tl.EndDate)
-          .Take(2)
           .DefaultIfEmpty(TLBlue)
-          .Select(a => a.EndDate);
-        double trendToRatesRatio = 1 - TrendRanges.Select(i => i[0].Abs()).Where(i => i.Between(1, 98)).Min() / 100.0;
-        var distances = grouped.RunningSum(rg => rg.Distance).Select(t => t.Map((rg, Distance) => new { rg.Index,rg.Count, Distance }));
-        var minDistance = distanceTotal * trendToRatesRatio;
-        var indexMin = distances.SkipWhile(g => g.Distance < minDistance).Take(1).Select(g => g.Index + g.Count).First();
+          .Select(a => a.EndDate)
+          .ToList();
+        double trendToRatesRatio = TrendRanges.Select(i => i[0].Abs()).Where(i => i.Between(1, 98)).Min() / 100.0;
+        var distances = grouped.RunningSum(rg => rg.Distance).Select(t => t.Map((rg, Distance) => new { rg.Range.First().Item1.StartDate, Index = rg.Range.First().Item2, Distance }));
+        var maxDistance = distanceTotal * (1 - trendToRatesRatio);
+        var dateMax = distances.SkipWhile(g => g.Distance <= maxDistance).First();
         var ii = (from ed in endDates
+                  where ed < dateMax.StartDate
                   from i in ratesArray.FuzzyIndex(ed, (d, p, n) => d.Between(p.StartDate, n.StartDate))
-                  let ok = i.Div(ratesArray.Count) < trendToRatesRatio
-                  select (i, ok)
+                  select i
                   )
-                  .OrderByDescending(t => t.ok)
-                  .ThenByDescending(t => t.i)
-                  .Select(t => t.i)
                   .Take(1)
-                  .Concat(indexMin.Yield())
-                  .OrderBy(i => i)
-                  .Take(1)
+                  .DefaultIfEmpty(dateMax.Index)
                   .ToArray();
         Trends2
           .Where(tl => tl.TL.IsNullOrEmpty())

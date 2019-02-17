@@ -110,12 +110,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public TradeConditionDelegate LhPOk => () =>
-    (TLLime.StDev > TLPlum.StDev.Max(TLRed.StDev) ? TradeDirections.Both : TradeDirections.None)
-    & (TLLime.PriceAvg3 < TLBlue.PriceAvg3 ? TradeDirections.Up
-    : TLLime.PriceAvg2 > TLBlue.PriceAvg2 ? TradeDirections.Down
-    : TradeDirections.None);
-
     public TradeConditionDelegate Volt2eOk {
       get {
         return () => {
@@ -1201,7 +1195,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public double StdOverCurrPriceRatio() => StdOverCurrPriceRatio(StDevByHeight, CurrentPriceAvg());
-    double StdOverCurrPriceRatio(double stDevByHeight, double price) => InPips(stDevByHeight) / price * 100;
+    double StdOverCurrPriceRatio(double stDevByHeight, double price) => Math.Log10(stDevByHeight / price) + Math.Ceiling(Math.Log10(price));
     public IEnumerable<double> HistoricalVolatilityUp() => HistoricalVolatility();
     //UseRates(ra => InPips(RatesForHV(ra).HistoricalVolatility(t => t.prev < t.next)));
     public IEnumerable<double> HistoricalVolatilityDown() => HistoricalVolatility();
@@ -1304,29 +1298,6 @@ namespace HedgeHog.Alice.Store {
           return isUp ? max().Any(m => avg1 > m) : min().Any(m => avg1 < m);
         };
         return () => TradeDirectionByBool(isOk());
-      }
-    }
-    public TradeConditionDelegate BPA12Ok {
-      get {
-        //Log = new Exception(new { BPA12Ok = new { TipRatio, InPercent = true, Treshold = false } } + "");
-        var scanAnon = new { r1 = (Rate)null, r2 = (Rate)null };
-        Func<Rate, int> sign = rate => rate.PriceAvg.Sign(rate.PriceCMALast);
-        var rateDist = MonoidsCore.ToFunc(scanAnon, x => sign(x.r1) == sign(x.r2));
-
-        Func<IList<Rate>> rates = () => UseRates(ra => {
-          var count = ra.BackwardsIterator()
-          .SkipWhile(r => r.PriceCMALast.IsNaN())
-          .Pairwise((r1, r2) => new { r1, r2 })
-          .TakeWhile(rateDist)
-          .Count();
-          return ra.GetRange(0, ra.Count - count);
-        }, i => i);
-        Func<double> isOk = () => {
-          var isUp = TLBlue.Slope > 0;
-          var avg1 = TLBlue.PriceAvg1;
-          return _wwwBpa1 = ((isUp ? avg1 - _RatesMax : _RatesMin - avg1) / (_RatesMax - _RatesMin)).ToPercent();
-        };
-        return () => TradeDirectionByBool(isOk() > TipRatio);
       }
     }
 

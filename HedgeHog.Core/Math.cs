@@ -157,6 +157,38 @@ namespace HedgeHog {
     public static double Percentage<T>(this int v, double other) {
       return other.Percentage(v);
     }
+    public static double Round(this double v) { return Math.Round(v, 0); }
+    public static double Round(this double v, int decimals) { return Math.Round(v, decimals); }
+    public static double? Round(this double? v, int decimals) { return v.HasValue ? v.Value.Round(decimals) : (double?)null; }
+    public static double AutoRound(this double d, int digits) {
+      var whole = d.Abs().Floor();
+      var part = d.Abs() - whole;
+      var ret = (double)(whole + Math.Round((decimal)part, Math.Log10(part).Abs().Ceiling() + digits));
+      return ret;
+    }
+    public static string AutoRound2(this double d, string prefix, int digits, string suffix = "") {
+      return prefix + d.AutoRound2(digits, suffix);
+    }
+    public static string AutoRound2(this double d, int digits, string suffix) {
+      return d.AutoRound2(digits) + suffix;
+    }
+    public static double AutoRound2(this double d, int digits) {
+      var digitsReal = Math.Log10(d.Abs()).Floor() + 1;
+      return d.Round((digits - digitsReal).Max(0));
+    }
+    public static double? RoundBySample(this double v, double sample) {
+      return Math.Round(v / sample, 0) * sample;
+    }
+    public static double? RoundBySqrt(this double v, int decimals) {
+      return Math.Round(Math.Sqrt(v), decimals);
+    }
+    public static int RoundByMult(this double v, double mult) {
+      return (v * mult).ToInt();
+    }
+
+    public static double Error(this double experimantal, double original) {
+      return ((experimantal - original).Abs() / original).Abs();
+    }
     /// <summary>
     /// (one - other) / Math.Max(one, other);
     /// </summary>

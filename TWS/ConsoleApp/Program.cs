@@ -64,15 +64,36 @@ namespace ConsoleApp {
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7497;
-      const int clientId = 0;
+      const int clientId = 1;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        {
+          (from options in am.CurrentOptions("ESH9", 0, 1, 3, c => true)
+           select options
+           )
+           .Subscribe(options => {
+             HandleMessage(options.Select(o => new { o.option }).OrderBy(_ => _.option.Strike).ToTextOrTable("CurrentOptions:"));
+             //HandleMessage("One more time");
+             //am.CurrentOptions("VXG9", 0, 2, 3, c => true).Subscribe(_ => HandleMessage(_.Select(o => new { o.instrument }).OrderBy(__ => __.instrument).ToMarkdownTable()));
+           });
+        }
+        return;
+        {
+          am.OpenOrderObservable.Take(1).Delay(1.FromSeconds()).Subscribe(_ => {
+            var order = am.OrderContractsInternal.Values.First();
+            order.order.Conditions.Cast<PriceCondition>().ForEach(pc => pc.Price += 5);
+            am.CancelOrder(order.order.OrderId).Subscribe(m => HandleMessage(m));
+            //am.PlaceOrder(order.order, order.contract).Subscribe(po => HandleMessage(po));
+            //HandleMessage(orders.Select(oc => new { oc.order, oc.contract }).ToTextOrTable("Ordes:"));
+          });
+        }
+
         am.PositionsEndObservable.Subscribe(positions => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
         {
           Task.Delay(3000).ContinueWith(_ => {
             (from trade in am.Positions.Select(p => p.contract).Take(1).ToObservable()
-             from rolls in am.CurrentRollOver(trade.LocalSymbol, false, 4, 2).OrderByDescending(r => r.dpw).ToArray()
+             from rolls in am.CurrentRollOver(trade.LocalSymbol, false, 2, 2).OrderByDescending(r => r.dpw).ToArray()
              select new { rolls, trade.LocalSymbol }
             )
             .Do(rolls => HandleMessage($"Rolls for {rolls.LocalSymbol}:\n" + rolls.rolls.Select(roll => new { roll.roll, roll.days, roll.bid }).ToMarkdownTable()))
@@ -82,7 +103,9 @@ namespace ConsoleApp {
               HandleMessage("Trade this:\n" + new { r.roll, r.days, r.bid }.Yield().ToMarkdownTable());
               (from kv in IBClientCore.ReqContractDetails.ToObservable()
                from cd in kv.Value
-               select new { kv.Key, cd.Contract,cd.Contract.Instrument,cd.Contract.LastTradeDateOrContractMonth }).ToArray()
+               select new { kv.Key, cd.Contract,cd.Contract.Instrument,cd.Contract.LastTradeDateOrContractMonth })
+               .Take(0)
+               .ToArray()
                .Subscribe(a => {
                  var o = a.OrderBy(x => x.Key).ThenBy(x => x.Contract.Instrument).ToArray();
                  HandleMessage(o.ToTextOrTable("ReqContractDetails:"));
@@ -94,7 +117,6 @@ namespace ConsoleApp {
           });
         }
 
-        return;
         {
           var symbol = "VXG9";
           ibClient.ReqContractDetailsCached(symbol)
@@ -139,16 +161,6 @@ namespace ConsoleApp {
           TestCurrentRollOvers(5);
         }
 
-        {
-          (from options in am.CurrentOptions("VXG9", 0, 2, 3, c => true)
-           select options
-           )
-           .Subscribe(options => {
-             HandleMessage(options.Select(o => new { o.instrument }).OrderBy(_ => _.instrument).ToMarkdownTable());
-             HandleMessage("One more time");
-             am.CurrentOptions("VXG9", 0, 2, 3, c => true).Subscribe(_ => HandleMessage(_.Select(o => new { o.instrument }).OrderBy(__ => __.instrument).ToMarkdownTable()));
-           });
-        }
         return;
         {
           ibClient.ReqOptionChainOldAsync("VXG9", DateTime.MinValue, 19, true)

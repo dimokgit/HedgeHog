@@ -594,7 +594,7 @@ namespace HedgeHog.Alice.Client {
                .Subscribe(_ => {
                  base.Clients.Caller.rollOvers(_.OrderByDescending(t => t.dpw).Select(t =>
                  new {
-                   i = t.roll.Instrument, o = t.roll.ShortString, t.days, bid = t.bid.AutoRound2(3), perc = t.perc.ToString("0.0"), dpw = t.dpw.ToInt()
+                   i = t.roll.Instrument, o = t.roll.DateWithShort, t.days, bid = t.bid.AutoRound2(3), perc = t.perc.ToString("0.0"), dpw = t.dpw.ToInt()
                  , exp = t.roll.LastTradeDateOrContractMonth2.Substring(4), d = t.delta.Round(1)
                  }).ToArray());
                });
@@ -742,7 +742,7 @@ namespace HedgeHog.Alice.Client {
             var orderMap = MonoidsCore.ToFunc((AccountManager.OrderContractHolder oc, double ask, double bid) => new {
               i = new[] { oc.contract.DateWithShort }
               .Where(_ => am.ParentHolder(oc).Select(p => p.isDone).DefaultIfEmpty(true).Single())
-              .Concat(oc.order.Conditions.ToTexts()).Flatter("::")
+              .Concat(oc.order.Conditions.ToTexts(showPrice: false)).Flatter("::")
                , id = oc.order.OrderId
                , f = oc.status.filled
                , r = oc.status.remaining
@@ -752,6 +752,7 @@ namespace HedgeHog.Alice.Client {
                , s = oc.status.status.AllCaps()
                , c = oc.order.ParentId != 0
                , e = oc.ShouldExecute
+               , pc = oc.order.Conditions.SelectMany(c => c.ParsePriceCondition()).Select(c => c.price).ToArray()
             });
             Action openOrders = () =>
               (from oc in am.OrderContractsInternal.Values.ToObservable()
@@ -833,6 +834,18 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public void CancelOrder(int orderId) {
       GetAccountManager().CancelOrder(orderId);
+    }
+    [BasicAuthenticationFilter]
+    public async Task<object[]> UpdateOrderPriceCondition(int orderId, double price) {
+      var am = GetAccountManager();
+      var order = am.OrderContractsInternal.Values.First();
+      order.order.Conditions.Cast<PriceCondition>().ForEach(pc => pc.Price = price);
+      var ret = (from co in am.CancelOrder(order.order.OrderId)
+                 from po in am.PlaceOrder(order.order.SideEffect(_ => _.OrderId = 0), order.contract)
+                 from h in po.value
+                 select new { po.error, prder = h.order + "" }).ToArray();
+
+      return await ret;
     }
     [BasicAuthenticationFilter]
     public void UpdateCloseOrder(string instrument, int orderId, double? limit, double? profit) {
@@ -1369,7 +1382,7 @@ namespace HedgeHog.Alice.Client {
           .IfEmpty(() => IsEOW(trade.Time) ? tm.RatesArray.TakeLast(1) : new Rate[0]).ToArray()
           let rateClose = tm.RatesArray.FuzzyFinder(trade.TimeClose, (t, r1, r2) => t.Between(r1.StartDate, r2.StartDate)).Take(1)
           .IfEmpty(() => IsEOW(trade.Time) ? tm.RatesArray.TakeLast(1) : new Rate[0]).ToArray().ToArray()
-          where rateOpen.Any() && (trade.Kind != PositionBase.PositionKind.Closed || rateClose.Any())
+          where showAll || (rateOpen.Any() && (trade.Kind != PositionBase.PositionKind.Closed || rateClose.Any()))
           select (trade, rateOpen, rateClose)
          ).Select(t => {
            var trade = t.trade.Clone();

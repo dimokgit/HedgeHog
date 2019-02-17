@@ -15,6 +15,8 @@ namespace HedgeHog {
 
     public static R Map<T1, T2, R>(this Tuple<T1, T2> self, Func<T1, T2, R> map) =>
         map(self.Item1, self.Item2);
+    public static R Map<T1, T2, R>(this (T1, T2) self, Func<T1, T2, R> map) =>
+        map(self.Item1, self.Item2);
     public static R Map<T1, T2, T3, R>(this Tuple<T1, T2, T3> self, Func<T1, T2, T3, R> map) =>
         map(self.Item1, self.Item2, self.Item3);
     public static R Map<T1, T2, T3, T4, R>(this Tuple<T1, T2, T3, T4> self, Func<T1, T2, T3, T4, R> map) =>

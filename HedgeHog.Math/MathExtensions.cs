@@ -61,12 +61,12 @@ namespace HedgeHog {
           return Tuple.Create(x.t, t.Item2 + x.prev.Abs(x.next));
         });
     }
-    public static IEnumerable<Tuple<T, double>> RunningSum<T>(this IEnumerable<T> source, Func<T, double> map) {
+    public static IEnumerable<(T value, double sum)> RunningSum<T>(this IEnumerable<T> source, Func<T, double> map) {
       return source
         .Scan(new { t = default(T), next = 0.0 }, (prev, next) => new { t = next, next = map(next) })
         .Skip(1)
-        .Scan(Tuple.Create(default(T), 0.0), (t, x) => {
-          return Tuple.Create(x.t, t.Item2 + x.next);
+        .Scan((default(T), 0.0), (t, x) => {
+          return (x.t, t.Item2 + x.next);
         });
     }
     public static IEnumerable<double[]> PrevNext(this IList<double> bars) {
@@ -1210,7 +1210,7 @@ namespace HedgeHog {
       return !(bsRates.Min() > bsRatesCT.Max() || bsRates.Max() < bsRatesCT.Min());
     }
 
-    public static double HistoricalVolatilityByPoint(this IDouble source) => source.HistoricalVolatility() * source.Average();
+    public static double HistoricalVolatilityByPoint(this IDouble source) => source.HistoricalVolatility() * source.DefaultIfEmpty().Average();
     public static double HistoricalVolatility(this IDouble source) => source.HistoricalVolatility(out var avg);
 
     public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), double> calc) => source.HistoricalVolatility(calc, out var avg);

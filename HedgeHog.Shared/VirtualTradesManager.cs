@@ -244,8 +244,12 @@ namespace HedgeHog.Shared {
       tradesClosed.Add(trade);
       TradeRemoved(this, new TradeEventArgs(trade));
       OnTradeClosed(trade);
-      tradesOpened.Remove(trade);
-      RaiseOrderRemoved(new Order() { Pair = trade.Pair });
+      try {
+        tradesOpened.Remove(trade);
+        RaiseOrderRemoved(new Order() { Pair = trade.Pair });
+      }catch(Exception exc) {
+        LogMessage.Send(exc);
+      }
     }
     public bool CloseTrade(Trade trade, int lot, Price price) {
       if(trade.Lots <= lot)
