@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using HedgeHog.Shared;
+using HedgeHog;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
@@ -48,7 +49,7 @@ namespace HedgeHog.Bars {
     }
   }
   [DataContract]
-  public abstract class BarBase : BarBaseDate, IEquatable<BarBase>, IComparable<BarBase>, ICloneable {
+  public abstract class BarBase :BarBaseDate, IEquatable<BarBase>, IComparable<BarBase>, ICloneable {
     [DataMember]
     public bool IsHistory;
     [DataMember]
@@ -356,7 +357,7 @@ namespace HedgeHog.Bars {
     public double? Mass { get; set; }
 
     [DataContract]
-    public class PhClass : ICloneable {
+    public class PhClass :ICloneable {
       [DataMember]
       public double? Height { get; set; }
       [DataMember]
@@ -603,7 +604,7 @@ namespace HedgeHog.Bars {
     t1 = 0, m1 = 1, m2 = 2, m3 = 3, m5 = 5, m10 = 10, m15 = 15, m30 = 30, H1 = 60, H2 = H1 * 2, H3 = H1 * 3, H4 = H1 * 4, H6 = H1 * 6, H8 = H1 * 8, H12 = H6 * 2, D1 = 24 * H1, W1 = 7 * D1, s1 = -60, none = int.MaxValue
   }
   [DataContract]
-  public class Rate : BarBase {
+  public class Rate :BarBase {
     public static readonly Rate Empty = new Rate();
     public class TrendLevels {
       #region Voltages
@@ -627,6 +628,8 @@ namespace HedgeHog.Bars {
 
       public double Slope { get; set; }
       public double StDev { get; set; }
+      public Lazy<double> StDevByPrice { get; }
+      public double StDevRatio => StDevByPrice.Value / StDev - 1;
       public int Count { get; set; }
       public double Angle { get; set; }
 
@@ -670,6 +673,7 @@ namespace HedgeHog.Bars {
 
       public DateTime StartDate { get; private set; }
       public DateTime EndDate { get; private set; }
+
       public TimeSpan TimeSpan { get { return EndDate - StartDate; } }
 
       public IList<Rate> Rates { get; private set; }
@@ -683,6 +687,7 @@ namespace HedgeHog.Bars {
         this.StDev = stDev;
         this.StartDate = startDate;
         this.EndDate = endDate;
+        StDevByPrice = Lazy.Create(() => Rates.StandardDeviation(r => r.PriceAvg));
       }
     }
     public Rate() { }
@@ -767,7 +772,7 @@ namespace HedgeHog.Bars {
 
     #endregion
   }
-  public class Tick : Rate {
+  public class Tick :Rate {
     public Tick() { }
     public Tick(bool isHistory) : base(isHistory) { }
     public Tick(DateTime Time, double Ask, double Bid, int Row, bool isHistory)
@@ -795,7 +800,7 @@ namespace HedgeHog.Bars {
     #endregion
   }
 
-  public class PriceBar : BarBaseDate {
+  public class PriceBar :BarBaseDate {
     // Properties
     [DisplayName("")]
     public double AskHigh { get; set; }

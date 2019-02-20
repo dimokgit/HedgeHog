@@ -20,7 +20,7 @@ namespace HedgeHog.Alice.Store {
     public double CorridorDistanceRatio { get; set; }
     public double CorridorSDRatio { get; set; }
     public double EquinoxPerc { get; set; }
-    public bool IsContinuousTrading { get; set; }
+    public bool IsContiniousTrading { get; set; }
     
     public double PercFromRatesHigh { get; set; }
     public double RatesDistanceMin { get; set; }

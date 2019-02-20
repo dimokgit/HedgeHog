@@ -141,8 +141,8 @@ namespace IBApp {
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);
       startDate = fxDate(startDate);
-      var timeUnit = period == 0 ? TimeUnit.S : TimeUnit.D;
-      var barSize = period == 0 ? BarSize._1_secs : BarSize._1_min;
+      var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D : TimeUnit.W;
+      var barSize = period == 0 ? BarSize._1_secs : period == 1 ? BarSize._1_min : BarSize._3_mins;
       var duration = (endDate - startDate).Duration();
       var lastTime = DateTime.Now;
       new HistoryLoader<TBar>(

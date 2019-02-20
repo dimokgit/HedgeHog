@@ -311,18 +311,18 @@ namespace HedgeHog.Alice.Store {
       GetShowVoltageFunction(VoltageFunction2, 1)();
       {
         var endDates = Trends.Where(tl => tl.Color != null && tl.Color != TradeLevelsPreset.Blue + "" && !tl.IsEmpty)
-          .OrderByDescending(tl => tl.EndDate)
+          .OrderBy(tl => tl.EndDate)
           .DefaultIfEmpty(TLBlue)
-          .Select(a => a.EndDate)
+          .Select(a => new { a.EndDate, a.Count })
           .ToList();
         double trendToRatesRatio = TrendRanges.Select(i => i[0].Abs()).Where(i => i.Between(1, 98)).Min() / 100.0;
         var distances = grouped.RunningSum(rg => rg.Distance).Select(t => t.Map((rg, Distance) => new { rg.Range.First().Item1.StartDate, Index = rg.Range.First().Item2, Distance }));
         var maxDistance = distanceTotal * (1 - trendToRatesRatio);
         var dateMax = distances.SkipWhile(g => g.Distance <= maxDistance).First();
         var ii = (from ed in endDates
-                  where ed < dateMax.StartDate
-                  from i in ratesArray.FuzzyIndex(ed, (d, p, n) => d.Between(p.StartDate, n.StartDate))
-                  select i
+                  where ed.EndDate < dateMax.StartDate
+                  from i in ratesArray.FuzzyIndex(ed.EndDate, (d, p, n) => d.Between(p.StartDate, n.StartDate))
+                  select (i - ed.Count * .2).ToInt()
                   )
                   .Take(1)
                   .DefaultIfEmpty(dateMax.Index)

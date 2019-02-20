@@ -431,9 +431,6 @@
       function toggleIsActive() {
         serverCall("toggleIsActive", [pair]);
       }
-      function toggleStartDate(chartNum) {
-        serverCall("toggleStartDate", [pair, chartNum]);
-      }
       function setCorridorStartDate(chartNumber, index) {
         serverCall("setCorridorStartDateToNextWave", [pair, chartNumber, index === 1]);
       }
@@ -641,18 +638,9 @@
       // #endregion
       // #region TradeDirectionTriggers
       // #endregion
-      function setRsdMin(chartNum, rsd) {
-        serverCall("setRsdTreshold", [pair, chartNum, rsd]);
-      }
-
       // #region Public
 
       // #region Server enums
-      this.toggleStartDate = toggleStartDate.bind(null, 0);
-      this.rsdMin = ko.observable();
-      this.rsdMin.subscribe(function (rsd) { setRsdMin(0, rsd); });
-      this.rsdMin2 = ko.observable();
-      this.rsdMin2.subscribe(function (rsd) { setRsdMin(1, rsd); });
       this.refreshCharts = function () {
         this.clearChartData();
         this.clearChartData2();
@@ -1407,8 +1395,8 @@
       var lastRefreshDate = ko.observable(new Date(1900, 1));
       var lastRefreshDate2 = ko.observable(new Date(1900, 1));
       lastRefreshDate2.subscribe(d=> {
-        if (d.getFullYear() < 2018)
-          debugger;
+        //if (d.getFullYear() < 2018)
+          //debugger;
       })
       function updateChart(response) {
         var d = new Date();
@@ -1867,7 +1855,6 @@
           setTradeLevelActive: setTradeLevelActive,
           setCorridorStartDate: setCorridorStartDate,
           togglePause: togglePause,
-          toggleStartDate: toggleStartDate,
           moveCorridorWavesCount: moveCorridorWavesCount,
 
           shouldUpdateData: shouldUpdateData,
@@ -2333,12 +2320,6 @@
 
     delete response.tps;
     delete response.wp;
-
-    dataViewModel.rsdMin(response.rsdMin);
-    delete response.rsdMin;
-
-    dataViewModel.rsdMin2(response.rsdMin2);
-    delete response.rsdMin2;
 
     dataViewModel.profit(response.prf);
     delete response.prf;

@@ -1159,7 +1159,7 @@ namespace HedgeHog.Alice.Client {
     }
     public void CloseTrades(string pair) {
       try {
-        GetTradingMacro(pair, 0)
+        UseTraderMacro(pair)
           .AsParallel()
           .ForAll(tm => tm.CloseTrades("SignalR: CloseTrades"));
       } catch(Exception exc) {
@@ -1172,7 +1172,7 @@ namespace HedgeHog.Alice.Client {
         trader.Value.GrossToExitSoftReset();
         var tms = GetHedgedTradingMacros(pair).SelectMany(x => new[] { x.tm1, x.tm2 })
         .Distinct(tm => tm.Pair)
-        .DefaultIfEmpty(GetTradingMacro(pair, 0).Single())
+        .DefaultIfEmpty(UseTraderMacro(pair).Single())
         .ToArray();
         tms.AsParallel().ForAll(tm => tm.CloseTrades($"SignalR: {nameof(CloseTradesAll)}"));
       } catch(Exception exc) {
@@ -1197,10 +1197,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
     [BasicAuthenticationFilter]
-    public void ToggleStartDate(string pair, int chartNumber) {
-      UseTradingMacro(pair, chartNumber, tm => tm.ToggleCorridorStartDate());
-    }
-    [BasicAuthenticationFilter]
     public void SetStrategy(string pair, string strategy) {
       UseTradingMacro(pair, tm => tm.Strategy = EnumUtils.Parse<Strategies>(strategy));
     }
@@ -1218,18 +1214,14 @@ namespace HedgeHog.Alice.Client {
     }
     [BasicAuthenticationFilter]
     public void Buy(string pair) {
-      UseTradingMacro(pair, tm => tm.OpenTrade(true, tm.Trades.IsBuy(false).Lots() + tm.LotSizeByLossBuy, "web: buy with reverse"));
+      UseTraderMacro(pair, tm => tm.OpenTrade(true, tm.Trades.IsBuy(false).Lots() + tm.LotSizeByLossBuy, "web: buy with reverse"));
     }
     [BasicAuthenticationFilter]
     public void Sell(string pair) {
-      UseTradingMacro(pair, tm => tm.OpenTrade(false, tm.Trades.IsBuy(true).Lots() + tm.LotSizeByLossSell, "web: sell with reverse"));
-    }
-    [BasicAuthenticationFilter]
-    public void SetRsdTreshold(string pair, int chartNum, int pips) {
-      UseTradingMacro(pair, chartNum, tm => tm.RatesStDevMinInPips = pips);
+      UseTraderMacro(pair, tm => tm.OpenTrade(false, tm.Trades.IsBuy(true).Lots() + tm.LotSizeByLossSell, "web: sell with reverse"));
     }
     public object[] AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair, BarsPeriodType chartNum) {
-      var a = UseTradingMacro(pair, tm => tm.BarPeriod == chartNum
+      var a = UseTradingMacro2(pair, (int)chartNum
         , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
       return a.SelectMany(x => x).ToArray();
 
@@ -1241,19 +1233,6 @@ namespace HedgeHog.Alice.Client {
 
     static int _sendChartBufferCounter = 0;
     static SendChartBuffer _sendChartBuffer = SendChartBuffer.Create();
-    public void AskRates_(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
-      UseTradingMacro2(pair, 0, tm => {
-        if(tm.IsActive)
-          _sendChartBuffer.Push(() => {
-            if(_sendChartBufferCounter > 1) {
-              throw new Exception(new { _sendChartBufferCounter } + "");
-            }
-            _sendChartBufferCounter++;
-            Clients.Caller.sendChart(pair, 0, remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
-            _sendChartBufferCounter--;
-          });
-      });
-    }
 
     [BasicAuthenticationFilter]
     public void SetPresetTradeLevels(string pair, TradeLevelsPreset presetLevels, object isBuy) {
@@ -1594,7 +1573,7 @@ namespace HedgeHog.Alice.Client {
     }
     private IEnumerable<TradingMacro> GetTradingMacro(string pair, int chartNum) {
       return GetTradingMacros(pair)
-        .Skip(chartNum)
+        .Skip(chartNum.Min(1))
         .Take(1);
       ;
     }
@@ -1620,9 +1599,6 @@ namespace HedgeHog.Alice.Client {
         ?? new TradingMacro[0];
     }
 
-    IEnumerable<TradingMacro> UseTradingMacro(Func<TradingMacro, bool> predicate, string pair) {
-      return UseTradingMacro(predicate, pair, 0);
-    }
     IEnumerable<TradingMacro> UseTradingMacro(Func<TradingMacro, bool> predicate, string pair, int chartNum) {
       try {
         return GetTradingMacro(pair, chartNum).Where(predicate).Take(1);
@@ -1630,9 +1606,6 @@ namespace HedgeHog.Alice.Client {
         LogMessage.Send(exc);
         return new TradingMacro[0];
       }
-    }
-    void UseTradingMacro<T>(string pair, Action<TradingMacro> func) {
-      UseTradingMacro2(pair, 0, func);
     }
     T UseTradingMacro<T>(string pair, Func<TradingMacro, T> func) {
       return UseTraderMacro(pair, func).First();
@@ -1652,22 +1625,6 @@ namespace HedgeHog.Alice.Client {
       return GetTradingMacros(pair)
         .Where(where)
         .Select(func);
-    }
-    void UseTradingMacro(string pair, int chartNum, Action<TradingMacro> action) {
-      try {
-        GetTradingMacro(pair, chartNum).ForEach(action);
-      } catch(Exception exc) {
-        LogMessage.Send(exc);
-      }
-    }
-    T UseTradingMacroOld<T>(string pair, int chartNum, Func<TradingMacro, T> func) {
-      try {
-        return GetTradingMacro(pair, chartNum).Select(func)
-          .IfEmpty(() => { throw new Exception(new { TradingMacroNotFound = new { pair, chartNum } } + ""); }).First();
-      } catch(Exception exc) {
-        LogMessage.Send(exc);
-        return default;
-      }
     }
     TradingMacro[] UseTraderMacro(string pair) => UseTraderMacro(pair, tm => tm);
     T[] UseTraderMacro<T>(string pair, Func<TradingMacro, T> func) {
@@ -1695,19 +1652,11 @@ namespace HedgeHog.Alice.Client {
     }
     IEnumerable<T> UseTradingMacro2<T>(string pair, int chartNum, Func<TradingMacro, T> func) {
       try {
-        return GetTradingMacros(pair).Skip(chartNum).Take(1).Select(func);
+        return GetTradingMacro(pair,chartNum).Select(func);
       } catch(Exception exc) {
         LogMessage.Send(exc);
         return new T[0];
       }
     }
-    void UseTradingMacro2(string pair, int chartNum, Action<TradingMacro> func) {
-      try {
-        GetTradingMacro(pair, chartNum).ForEach(func);
-      } catch(Exception exc) {
-        LogMessage.Send(exc);
-      }
-    }
-
   }
 }

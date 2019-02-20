@@ -535,7 +535,7 @@
       var yDomain2 = d3.extent(data, function (d) { return tipValue(d.v); });
       y2.domain([Math.min(y2ScaleShift[0] || yDomain2[0], yDomain2[0]), Math.max(y2ScaleShift[1] || yDomain2[1], yDomain2[1])]);
       var yDomain3 = d3.extent(data, function (d) { return tipValue2(d.v2); });
-      y3.domain([tps2Low.concat(yDomain3).slice(0, 1)[0] || 0, Math.max(tps2High[0] || 0, yDomain3[1])]);
+      y3.domain([Math.min(tps2Low[0]||Number.MAX_VALUE,yDomain3[0]), Math.max(tps2High[0] || 0, yDomain3[1])]);
       if (isNaN(y3(0)))
         debugger;
       // #endregion
@@ -786,9 +786,8 @@
             .where("ct => ct != null && ct.x > ct.dateMin")
             .toArray();
           var closedTradesDelta = getClosedTradesDelta(cts);
-          closedTradesDelta
-            .exit()
-            .remove();
+          closedTradesDelta.exit().remove();
+          var openAltitude = altitudeByArea(openSize);
           closedTradesDelta
             .enter()
             .append("path")
@@ -799,14 +798,20 @@
             .style("fill", function (ct) { return ct.fill; })
             .style("stroke", function (ct) { return ct.stroke; })
             .style("stroke-width", function (ct) { return ct.strokeWidth; })
+            .attr("transform", function (d) {
+              var t = "translate(" + x(d.x) + "," + (y(d.y) + d.offsetSign * (openAltitude / 2 + d.strokeWidth)) + ") rotate(" + d.rotate + ")";
+              //console.log(t);
+              return t;
+            })
           ;
-          var openAltitude = altitudeByArea(openSize);
           closedTradesDelta
             .style("stroke", function (ct) {
               return ct.stroke;
             })
             .attr("transform", function (d) {
-              return "translate(" + x(d.x) + "," + (y(d.y) + d.offsetSign * (openAltitude / 2 + d.strokeWidth)) + ") rotate(" + d.rotate + ")";
+              var t = "translate(" + x(d.x) + "," + (y(d.y) + d.offsetSign * (openAltitude / 2 + d.strokeWidth)) + ") rotate(" + d.rotate + ")";
+              //console.log(t);
+              return t;
             });
 
         })()

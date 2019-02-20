@@ -186,6 +186,9 @@ namespace IBApp {
       [BarSize._1_min] = new Dictionary<TimeUnit, int[]> {
         [TimeUnit.S] = new[] { 60, 28800 },
         [TimeUnit.D] = new[] { 1, 1 }
+      },
+      [BarSize._3_mins] = new Dictionary<TimeUnit, int[]> {
+        [TimeUnit.W] = new[] { 1, 1 }
       }
     };
     private readonly int _periodsBack;
@@ -194,7 +197,7 @@ namespace IBApp {
       return BarSizeRanges[barSize][timeUnit];
     }
     public static string Duration(BarSize barSize, TimeUnit timeUnit, TimeSpan timeSpan) {
-      var interval = (timeUnit == TimeUnit.S ? timeSpan.TotalSeconds : timeSpan.TotalMinutes);
+      var interval = (timeUnit == TimeUnit.S ? timeSpan.TotalSeconds : timeUnit == TimeUnit.D ? timeSpan.TotalMinutes : timeSpan.TotalDays * 7);
       var range = BarSizeRange(barSize, timeUnit);
       var duration = Math.Min(Math.Max(interval, range[0]), range[1]).Ceiling();
       return duration + " " + timeUnit;

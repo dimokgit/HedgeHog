@@ -1000,14 +1000,14 @@ namespace HedgeHog.Alice.Store {
     }
 
     bool _IsContinuousTrading;
-    [WwwSetting(Group = wwwSettingsTradingConditions, Hide = true)]
+    [WwwSetting(Group = wwwSettingsTradingConditions)]
     [Category(categoryActive)]
     [Description("buySellLevels.CanTrade can be set even when Trades.Count > 0")]
-    public bool IsContinuousTrading {
+    public bool IsContiniousTrading {
       get { return _IsContinuousTrading; }
       set {
         _IsContinuousTrading = value;
-        OnPropertyChanged(nameof(IsContinuousTrading));
+        OnPropertyChanged(nameof(IsContiniousTrading));
       }
     }
 

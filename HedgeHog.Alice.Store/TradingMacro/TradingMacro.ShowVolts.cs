@@ -93,7 +93,9 @@ namespace HedgeHog.Alice.Store {
           return () => ShowVoltsByStdRatio(voltIndex);
         case VoltageFunction.StdOverPrice:
           return () => ShowVoltsByStdOverPrice(voltIndex);
-          //StdOverCurrPriceRatio
+        //StdOverCurrPriceRatio
+        case HedgeHog.Alice.VoltageFunction.StdRatioLime:
+          return () => ShowVoltsByStdRatioLime(voltIndex);
       }
       throw new NotSupportedException(VoltageFunction + " not supported.");
     }
@@ -429,24 +431,17 @@ namespace HedgeHog.Alice.Store {
           UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b => b.Count == c).ForEach(b => {
             var std = b.StandardDeviation(_priceAvg);
             var stdr = b.Select(_priceAvg).ToArray().StDevByRegressoin();
-            SetVoltByIndex(voltIndex)(b.Last(), CalcVolt(std, stdr));
+            SetVoltByIndex(voltIndex)(b.Last(), std / stdr - 1);
           }));
-        SetVolts(CalcVolt(StDevByPriceAvg, StDevByHeight), voltIndex);
-        double CalcVolt(double stdp, double stdh) => Math.Log(stdp / stdh).ToPercent();
+        SetVolts(StDevByPriceAvg / StDevByHeight - 1, voltIndex);
       }
       return null;
     }
-    CorridorStatistics ShowVoltsByStdHeightOverPrice(int voltIndex) {
-      if(UseCalc()) {
-        var c = RatesArray.Count - 1;
-        if(GetVoltByIndex(voltIndex)(RatesInternal[c]).IsNaN())
-          UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b => b.Count == c).ForEach(b => {
-            var stdr = b.Select(_priceAvg).ToArray().StDevByRegressoin();
-            var std = b.StandardDeviation(_priceAvg);
-            SetVoltByIndex(voltIndex)(b.Last(), CalcVolt(std, stdr));
-          }));
-        SetVolts(CalcVolt(StDevByHeight, StDevByPriceAvg), voltIndex);
-        double CalcVolt(double std, double stdr) => (stdr / std - 1).ToPercent();
+    CorridorStatistics ShowVoltsByStdRatioLime(int voltIndex) {
+      if(UseCalc() && !TLLime.IsEmpty) {
+        var a = TLPlum.PriceHeight.Select(h=>TLLime.StDev / h);
+        var b = TLLime.StDev / TLBlue.StDev;
+        SetVolts(a.Concat(b.Yield()).Max() , voltIndex);
       }
       return null;
     }
@@ -455,7 +450,7 @@ namespace HedgeHog.Alice.Store {
         var c = RatesArray.Count - 1;
         if(GetVoltByIndex(voltIndex)(RatesInternal[c]).IsNaN())
           UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b => b.Count == c).ForEach(b => {
-            var stdr = b.Select(_priceAvg).ToArray().StDevByRegressoin();
+            var stdr = b.Select(_priceAvg).StandardDeviation();//.ToArray();//.StDevByRegressoin();
             SetVoltByIndex(voltIndex)(b.Last(), StdOverCurrPriceRatio(stdr, b.Last().PriceAvg));
           }));
         SetVolts(StdOverCurrPriceRatio(), voltIndex);

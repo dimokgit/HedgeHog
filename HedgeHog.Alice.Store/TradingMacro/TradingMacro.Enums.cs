@@ -45,6 +45,7 @@ namespace HedgeHog.Alice {
     HVR,
     StdRatio,
     StdOverPrice,
+    StdRatioLime,
     M1WR
   }
 }

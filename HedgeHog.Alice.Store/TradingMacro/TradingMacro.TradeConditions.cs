@@ -110,6 +110,11 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public TradeConditionDelegate RPOk => () => TLPlum.EndDate > TLRed.EndDate ? TradeDirections.Both : TradeDirections.None;
+    //& (TLLime.PriceAvg3 < TLBlue.PriceAvg3 ? TradeDirections.Up
+    //: TLLime.PriceAvg2 > TLBlue.PriceAvg2 ? TradeDirections.Down
+    //: TradeDirections.None);
+
     public TradeConditionDelegate Volt2eOk {
       get {
         return () => {
@@ -1194,8 +1199,8 @@ namespace HedgeHog.Alice.Store {
       double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints();
     }
 
-    public double StdOverCurrPriceRatio() => StdOverCurrPriceRatio(StDevByHeight, CurrentPriceAvg());
-    double StdOverCurrPriceRatio(double stDevByHeight, double price) => Math.Log10(stDevByHeight / price) + Math.Ceiling(Math.Log10(price));
+    public double StdOverCurrPriceRatio() => StdOverCurrPriceRatio(StDevByPriceAvg, CurrentPriceAvg());
+    double StdOverCurrPriceRatio(double stDevByHeight, double price) => InPips(stDevByHeight) / price * 100;
     public IEnumerable<double> HistoricalVolatilityUp() => HistoricalVolatility();
     //UseRates(ra => InPips(RatesForHV(ra).HistoricalVolatility(t => t.prev < t.next)));
     public IEnumerable<double> HistoricalVolatilityDown() => HistoricalVolatility();
@@ -1828,7 +1833,7 @@ namespace HedgeHog.Alice.Store {
         });
         return;
       }
-      if(CanTriggerTradeDirection() && (IsContinuousTrading || !HaveTrades()) /*&& !HasTradeDirectionTriggers*/) {
+      if(CanTriggerTradeDirection() && (IsContiniousTrading || !HaveTrades()) /*&& !HasTradeDirectionTriggers*/) {
         TradeConditionsEval().ForEach(eval => {
           var hasBuy = TradeDirection.HasUp() && eval.HasUp();
           var hasSell = TradeDirection.HasDown() && eval.HasDown();

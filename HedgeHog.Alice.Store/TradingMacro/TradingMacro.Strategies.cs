@@ -156,8 +156,10 @@ namespace HedgeHog.Alice.Store {
     private bool IsEndOfWeek() {
       var isEow = ServerTime.DayOfWeek == DayOfWeek.Friday && ServerTime.ToUniversalTime().Hour > 20
         || IsBeginningOfWeek();
-      if(isEow)
-        Log = new Exception(new { isEow } + "");
+      if(isEow) {
+        Log = new Exception(new { isEow, Is = "Turned off" } + "");
+        return false;
+      }
       return isEow;
     }
     private bool IsBeginningOfWeek() { return ServerTime.DayOfWeek == DayOfWeek.Sunday; }

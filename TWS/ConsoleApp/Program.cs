@@ -69,6 +69,22 @@ namespace ConsoleApp {
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         {
+          var symbol = "ESH9";
+          ibClient.ReqContractDetailsCached(symbol)
+          .Subscribe(cd => PriceHistory.AddTicks(fw, 3, symbol, DateTime.Now.AddMonths(-(12*2+3)), o => HandleMessage(o + "")));
+        }
+        return;
+        {
+          var c = new Contract() {
+            Symbol = "ES",
+            SecType = "CONTFUT",
+            Exchange = "GLOBEX"
+          };
+          LoadHistory(ibClient, new[] { c });
+          //PriceHistory.AddTicks(fw, 1, "ES", DateTime.Now.AddMonths(-14), o => HandleMessage(o + ""));
+          HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
+        }
+        {
           (from options in am.CurrentOptions("ESH9", 0, 1, 3, c => true)
            select options
            )
@@ -78,7 +94,6 @@ namespace ConsoleApp {
              //am.CurrentOptions("VXG9", 0, 2, 3, c => true).Subscribe(_ => HandleMessage(_.Select(o => new { o.instrument }).OrderBy(__ => __.instrument).ToMarkdownTable()));
            });
         }
-        return;
         {
           am.OpenOrderObservable.Take(1).Delay(1.FromSeconds()).Subscribe(_ => {
             var order = am.OrderContractsInternal.Values.First();
@@ -115,12 +130,6 @@ namespace ConsoleApp {
               //am.OpenRollTrade("EW1F9 P2480", "E1AF9 P2455");
             });
           });
-        }
-
-        {
-          var symbol = "VXG9";
-          ibClient.ReqContractDetailsCached(symbol)
-          .Subscribe(cd => PriceHistory.AddTicks(fw, 1, symbol, DateTime.Now.AddMonths(-2), o => HandleMessage(o + "")));
         }
         am.OrderStatusObservable.Throttle(1.FromSeconds()).Subscribe(_ => HandleMessage("OrderContractsInternal2:\n" + am.OrderContractsInternal.ToMarkdownTable()));
         {
@@ -233,10 +242,6 @@ namespace ConsoleApp {
           }
           TestAllStrikesAndExpirations(1);
           TestAllStrikesAndExpirations(2, () => TestAllStrikesAndExpirations(3));
-        }
-        {
-          LoadHistory(ibClient, new[] { "VXQ8".ContractFactory() });
-          HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         }
         {
           Contract ESVXXContract(string symbol, int conId1, int conId2, int ratio1, int ratio2) {
@@ -526,13 +531,16 @@ namespace ConsoleApp {
       if(options.Any()) {
         var c = options[0].ContractFactory();
         HandleMessage($"Loading History for {c}");
-        new HistoryLoader<Rate>(ibClient, c, 1800 * 1, dateEnd, TimeSpan.FromDays(1), TimeUnit.S, BarSize._1_secs,
+        new HistoryLoader<Rate>(ibClient, c, 0, dateEnd, TimeSpan.FromDays(5), TimeUnit.W, BarSize._3_mins,
            map,
            list => {
              HandleMessage($"{c} {new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate, Thread = Thread.CurrentThread.ManagedThreadId } }}");
              Debug.WriteLine(list.Csv());
            },
-           dates => HandleMessage($"{c} {new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter, Thread = Thread.CurrentThread.ManagedThreadId }}"),
+           dates => {
+             HandleMessage($"{c} {new { dateStart = dates.FirstOrDefault(), dateEnd = dates.LastOrDefault(), reqCount = ++counter, Thread = Thread.CurrentThread.ManagedThreadId }}");
+             HandleMessage(dates.Select(r => new { r.StartDate, r.PriceAvg }).ToTextOrTable("Rates:"));
+           },
            exc => { });
       } else
         HandleMessage(new { options = options.ToJson() });
