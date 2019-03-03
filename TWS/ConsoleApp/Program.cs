@@ -63,15 +63,15 @@ namespace ConsoleApp {
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7497;
+      const int twsPort = 7496;
       const int clientId = 1;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         {
-          var symbol = "ESH9";
+          var symbol = "VXG9";
           ibClient.ReqContractDetailsCached(symbol)
-          .Subscribe(cd => PriceHistory.AddTicks(fw, 3, symbol, DateTime.Now.AddMonths(-(12*2+3)), o => HandleMessage(o + "")));
+          .Subscribe(cd => PriceHistory.AddTicks(fw, 1, symbol, DateTime.Now.AddMonths(-(12*2+3)), o => HandleMessage(o + "")));
         }
         return;
         {

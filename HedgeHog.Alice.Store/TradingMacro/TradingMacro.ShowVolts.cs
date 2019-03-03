@@ -83,8 +83,6 @@ namespace HedgeHog.Alice.Store {
           return () => ShowVoltsByRatioDiff(voltIndex);
         case HedgeHog.Alice.VoltageFunction.StDevDiff:
           return () => ShowVoltsByStDevDiff(voltIndex);
-        case HedgeHog.Alice.VoltageFunction.M1WR:
-          return () => ShowVoltsByM1WavesRatio(voltIndex);
         case HedgeHog.Alice.VoltageFunction.HV:
           return () => ShowVoltsByHV(voltIndex);
         case HedgeHog.Alice.VoltageFunction.HVR:
@@ -96,6 +94,8 @@ namespace HedgeHog.Alice.Store {
         //StdOverCurrPriceRatio
         case HedgeHog.Alice.VoltageFunction.StdRatioLime:
           return () => ShowVoltsByStdRatioLime(voltIndex);
+        case HedgeHog.Alice.VoltageFunction.Slope:
+          return ShowVoltsBySlope;
       }
       throw new NotSupportedException(VoltageFunction + " not supported.");
     }
@@ -424,6 +424,13 @@ namespace HedgeHog.Alice.Store {
       }
       return null;
     }
+    CorridorStatistics ShowVoltsBySlope() {
+      if(UseCalc()) {
+        var v = GetLastVolts(GetVoltage2).ToArray().With(vs => vs.Length > 0 ? vs.LinearSlope():double.NaN);
+        SetVolts(-v*10000, 0);
+      }
+      return null;
+    }
     CorridorStatistics ShowVoltsByStdRatio(int voltIndex) {
       if(UseCalc()) {
         var c = RatesArray.Count - 1;
@@ -571,19 +578,6 @@ namespace HedgeHog.Alice.Store {
         return min + (max - min) * pos;
       }
     }
-    CorridorStatistics ShowVoltsByM1WavesRatio(int voltIndex) {
-      M1WaveRatio().ForEach(v => SetVolts(v.Min(2), voltIndex));
-      return null;
-    }
-    IEnumerable<double> M1WaveRatio() =>
-      (from tm in TradingMacroM1()
-       from w in tm.WaveRanges.Take(2)
-       where w.Distance > tm.WaveRangeAvg.Distance
-       select w
-       )
-      .DistinctLastUntilChanged(w => w.Slope.Sign())
-      .Take(2)
-      .Pairwise((w1, w2) => w1.Distance.Ratio(w2.Distance) - 1);
 
     IEnumerable<(Rate[] r, double[] h)> ShowVoltsByRatioDiff_New() => ShowVoltsByRatioDiff_New(t => { });
     IEnumerable<(Rate[] r, double[] h)> ShowVoltsByRatioDiff_New(Action<(Rate rate, double ratio)> action) =>

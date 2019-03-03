@@ -810,7 +810,7 @@
           resetPlotterHandler(0);
         }
       })
-      this.refreshCharts2Interval = ko.observable(1000 * 10);
+      this.refreshCharts2Interval = ko.observable(1000 * 10).extend({ persist: "refreshChartsInterval" + pair });
       this.refreshCharts2Interval.subscribe(function () {
         if (resetPlotter2Handler()) {
           clearInterval(resetPlotter2Handler());
@@ -1806,6 +1806,8 @@
           if (replayArguments.LastWwwError)
             showErrorPerm(replayArguments.LastWwwError, keyNote("startReplay"));
         });
+        lastRefreshDate(new Date(1900, 0));
+        lastRefreshDate2(new Date(1900, 0));
         readReplayProcID = setInterval(readReplayArguments, 3 * 1000);
       }
       this.stopReplay = function () {

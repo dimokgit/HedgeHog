@@ -1050,9 +1050,11 @@ namespace HedgeHog.Alice.Store {
           VoltRange1.IsNaN()
           ? TradeDirectionByTreshold(volt, VoltRange0)
           : VoltRange0 < VoltRange1
-          ? TradeDirectionByBool(volt.Between(VoltRange0, VoltRange1))
-          : TradeDirectionByBool(!volt.Between(VoltRange1, VoltRange0))
+          ? A(volt)
+          : B(volt)
         );
+      TradeDirections A(double volt) => volt < VoltRange0 ? TradeDirections.Up : volt > VoltRange1 ? TradeDirections.Down : TradeDirections.None;
+      TradeDirections B(double volt) => volt < VoltRange1 ? TradeDirections.Down : volt > VoltRange0 ? TradeDirections.Up : TradeDirections.None;
     }
     public TradeConditionDelegate VltRng2Ok {
       get {
@@ -1667,12 +1669,6 @@ namespace HedgeHog.Alice.Store {
 
     #region Cross Handlers
 
-    [TradeConditionTurnOff]
-    public TradeConditionDelegate WCOk {
-      get {
-        return () => TradeDirectionByBool(M1WaveRatio().Any());
-      }
-    }
     [TradeConditionTurnOff]
     public TradeConditionDelegateHide TipRatioOk {
       get {

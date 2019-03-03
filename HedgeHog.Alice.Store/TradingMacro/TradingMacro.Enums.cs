@@ -46,7 +46,8 @@ namespace HedgeHog.Alice {
     StdRatio,
     StdOverPrice,
     StdRatioLime,
-    M1WR
+    Slope
+    
   }
 }
 namespace HedgeHog.Alice.Store {
