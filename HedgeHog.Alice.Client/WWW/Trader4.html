@@ -1394,10 +1394,10 @@
             <!-- ko foreach:pc().filter(function(p){return $data.id()!=ko.unwrap(($root.selectedOrder()||{}).id)}) -->
             <span data-bind="text:$data"></span>
             <!-- /ko -->
-            <!-- ko foreach:pc().filter(function(p){return $data.id()==ko.unwrap(($root.selectedOrder()||{}).id)}) -->
+            <!-- ko foreach:Enumerable.from(pc().filter(function(p){return $data.id()==ko.unwrap(($root.selectedOrder()||{}).id)})).defaultIfEmpty("0000").toArray() -->
             <input data-bind="value:$root.currentPriceCondition" style="width:3em" />
             <!-- /ko -->
-          <td data-bind="text:a,style:{backgroundColor: a()=='B'?'deepskyblue':'red'}"></td>
+<td data-bind="text:a,style:{backgroundColor: a()=='B'?'deepskyblue':'red'}"></td>
           <td data-bind="text:p"></td>
           <td data-bind="text:lp"></td>
           <td data-bind="text:f()+'<'+r()"></td>

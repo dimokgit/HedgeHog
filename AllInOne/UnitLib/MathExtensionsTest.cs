@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Reflection;
 using HedgeHog.Core;
 using static HedgeHog.MathCore;
+using static HedgeHog.LinearRegression;
 
 namespace HedgeHog.Tests {
   [TestClass()]

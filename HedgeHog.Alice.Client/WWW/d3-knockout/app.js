@@ -1050,8 +1050,8 @@
       this.openButterfly = function (isBuy, key, useMarketPrice) {
         this.canTrade(false);
         var combo = ko.unwrap(ko.unwrap(key).i);
-        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(), this.currentProfit()]
-          , null
+        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(), this.currentProfit(), self.rollCombo()]
+          , r=> (r || []).forEach(e=> showErrorPerm("openButterfly:\n" + e))
           , null
           , function () { this.canTrade(true); }.bind(this)
         );
@@ -1077,8 +1077,9 @@
       }.bind(this);
       this.closeCombo = function (key) {
         this.canTrade(false);
-        serverCall("closeCombo", [ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel()], null, null, function () { this.canTrade(false); }.bind(this));
+        serverCall("closeCombo", [ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel()], done, null, function () { this.canTrade(false); }.bind(this));
         function done(openOrderMessage) {
+          (openOrderMessage || []).forEach(e=>showErrorPerm("closeCombo:\n" + e));
           self.canTrade(true);
         }
       }.bind(this);
@@ -1396,7 +1397,7 @@
       var lastRefreshDate2 = ko.observable(new Date(1900, 1));
       lastRefreshDate2.subscribe(d=> {
         //if (d.getFullYear() < 2018)
-          //debugger;
+        //debugger;
       })
       function updateChart(response) {
         var d = new Date();
@@ -1479,12 +1480,14 @@
         var com3 = prepDates($.extend(true, {}, self.com3));
         var com4 = prepDates($.extend(true, {}, self.com4));
         var bth = (self.bth || []).map(function (o) { return prepDates($.extend(true, {}, o)); });
+        var bcl = (self.bcl || []).map(function (o) { return prepDates($.extend(true, {}, o)); });
         var afh = (self.afh || []).map(function (o) { return prepDates($.extend(true, {}, o)); });
         var moreDates = []
           .concat(response.waveLines.map(mapDates))
           .concat(closedTradesLocal.map(mapDates))
           .concat(trends.map(mapDates))
           .concat(bth.map(mapDates))
+          .concat(bcl.map(mapDates))
           .concat(afh.map(mapDates))
           .concat([com, com2, com3, com4].map(mapDates));
         var ratesAll = continuoseDates("minute", lineChartData2(), moreDates);
@@ -1499,6 +1502,7 @@
         chartData2.com3 = com3;
         chartData2.com4 = com4;
         chartData2.bth = bth;
+        chartData2.bcl = bcl;
         chartData2.afh = afh;
         chartData2.tickDate = lineChartData()[0].d;
         chartData2.tickDateEnd = Enumerable.from(lineChartData()).last().d;
@@ -1514,6 +1518,7 @@
           w.bold = i == sumStartIndexById();
           w.color = w.isOk ? "limegreen" : "";
         });
+        chartData2.breakEven = ko.unwrap(self.liveStraddles().map(x=>ko.unwrap(x.breakEven))).flat();
         self.chartData2(chartData2);
         updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
         dataViewModel.price(response.askBid);
@@ -2349,6 +2354,8 @@
 
     dataViewModel.bth = response.bth;
     delete response.bth;
+    dataViewModel.bcl = response.bcl;
+    delete response.bcl;
 
     dataViewModel.afh = response.afh;
     delete response.afh;

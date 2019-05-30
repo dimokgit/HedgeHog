@@ -185,6 +185,12 @@ namespace HedgeHog {
     public static int RoundByMult(this double v, double mult) {
       return (v * mult).ToInt();
     }
+    /// <summary>
+    /// Use it to make a really small number (0.0000XY) to look like X,Y
+    /// </summary>
+    /// <param name="d"></param>
+    /// <returns></returns>
+    public static double ToWhole(this double d,int powerMax) => Math.Pow(10, Math.Ceiling(-Math.Log10(d)).Min(powerMax)) * d;
 
     public static double Error(this double experimantal, double original) {
       return ((experimantal - original).Abs() / original).Abs();

@@ -26,9 +26,16 @@ namespace IBApp {
       (from i in IbClient.ReqContractDetailsCached(instrument).Select(cd => cd.Contract)
        from o in IbClient.ReqContractDetailsCached(option).Select(cd => cd.Contract)
        select (i, o)
-       ).Subscribe(t => OpenCoveredOption(t.i, "", quantity, price, t.o, DateTime.MaxValue, Caller));
+       ).Subscribe(t => OpenCoveredOption(t.i, "", quantity, price, t.o, DateTime.MaxValue, null, Caller));
     }
     public void OpenCoveredOption(Contract contract, string type, int quantity, double price, Contract contractOCO, DateTime goodTillDate, [CallerMemberName] string Caller = "") {
+      OpenCoveredOption(contract, type, quantity, price, contractOCO, quantity, goodTillDate, DateTime.MinValue, null, Caller);
+    }
+    public void OpenCoveredOption(Contract contract, string type, int quantity, double price, Contract contractOCO, DateTime goodTillDate, OrderCondition condition = null, [CallerMemberName] string Caller = "") {
+      OpenCoveredOption(contract, type, quantity, price, contractOCO, quantity, goodTillDate, DateTime.MinValue, condition, Caller);
+    }
+    public void OpenCoveredOption(Contract contract, string type, int quantity, double price, Contract contractOCO, int quantityOCO, DateTime goodTillDate
+      , DateTime goodAfterDate, OrderCondition condition = null, [CallerMemberName] string Caller = "") {
       bool FindOrer(OrderContractHolder oc, Contract c) => !oc.isDone && oc.contract == c && oc.order.TotalPosition().Sign() == quantity.Sign();
       UseOrderContracts(orderContracts => {
         var aos = orderContracts.Values.Where(oc => FindOrer(oc, contract))
@@ -44,8 +51,9 @@ namespace IBApp {
         } else {
           var orderType = price == 0 ? "MKT" : type.IfEmpty("LMT");
           bool isPreRTH = orderType == "LMT";
-          var order = OrderFactory(contract, quantity, price, goodTillDate, DateTime.MinValue, orderType, isPreRTH);
-          var tpOrder = MakeOCOOrder(order);
+          var order = OrderFactory(contract, quantity, price, goodTillDate, goodAfterDate, orderType, isPreRTH);
+          order.Conditions.AddRange(condition.YieldNotNull());
+          var tpOrder = MakeOCOOrder(order, quantityOCO);
           new[] { (order, contract, price), (tpOrder, contractOCO, 0) }
             .ForEach(o => {
               _verbous(new { plaseOrder = o });
@@ -55,7 +63,7 @@ namespace IBApp {
       }, Caller);
     }
 
-    Order MakeOCOOrder(IBApi.Order parent) {
+    Order MakeOCOOrder(IBApi.Order parent, int quantity = 0) {
       parent.Transmit = false;
       return new IBApi.Order() {
         Account = parent.Account,
@@ -63,7 +71,7 @@ namespace IBApp {
         OrderId = NetOrderId(),
         Action = parent.Action == "BUY" ? "SELL" : "BUY",
         OrderType = "MKT",
-        TotalQuantity = parent.TotalQuantity,
+        TotalQuantity = quantity == 0 ? parent.TotalQuantity : quantity,
         Tif = parent.Tif,
         OutsideRth = parent.OutsideRth,
         OverridePercentageConstraints = true,

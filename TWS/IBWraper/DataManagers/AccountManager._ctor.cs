@@ -39,7 +39,7 @@ namespace IBApp {
       RequestAccountSummary();
       SubscribeAccountUpdates();
       RequestPositions();
-      //IbClient.ClientSocket.reqOpenOrders();
+      IbClient.OnReqMktData(() => IbClient.ClientSocket.reqOpenOrders());
       IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAllOpenOrders());
       IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAutoOpenOrders(true));
 

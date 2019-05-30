@@ -74,6 +74,7 @@
   var redStrip = "redStrip";
   var cyanStrip = "cyanStrip";
   var beforeTradeHoursRect = "beforeTradeHoursRect";
+  var beforeCloseHoursRect = "beforeCloseHoursRect";
   var afterTradeHoursRect = "afterTradeHoursRect";
   var doCorridorStartDate = false;
   var showLineLog = false;
@@ -113,6 +114,7 @@
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(function (i) {
         addRect(afterTradeHoursRect + i, "beige", 0.3);
         addRect(beforeTradeHoursRect + i, "lightcyan", 1);
+        addRect(beforeCloseHoursRect + i, "lightcyan", 1);
       });
 
       // #region axis'
@@ -297,6 +299,9 @@
       addLine("ask", "steelblue", 1, "2,2");
       addLine("bid", "steelblue", 1, "2,2");
       addLine("trade");
+      var breakEven = "breakEven";
+      addLine(breakEven + "0");
+      addLine(breakEven + "1");
       // #endregion
 
       // #region Set trade levels controls
@@ -439,6 +444,7 @@
       var com3 = chartData.com3;
       var com4 = chartData.com4;
       var bth = chartData.bth || [];
+      var bcl = chartData.bcl || [];
       var afh = chartData.afh || [];
       var showNegativeVolts = viewModel.showNegativeVoltsParsed();
       var showNegativeVolts2 = viewModel.showNegativeVolts2Parsed();
@@ -446,10 +452,12 @@
       var y2Scale = !chartData.vfs;
       var y2ScaleShift = chartData.vfss || [0, 0];
       var isHedged = chartData.isHedged;
+      var breakEven = chartData.breakEven || [];
       // #endregion
 
       // #region adjust svg and axis'
       $(element).show();
+
       var chartArea = calcChartArea(element, y2Scale);
       viewModel.chartArea[chartNum].cha = chartArea;
       var
@@ -508,7 +516,7 @@
       var svg = svg0.select("g");
 
       // #region Set chart range
-      var yDomain = d3.extent(data.map(function (d) { return d.c; }));
+      var yDomain = d3.extent(data.map(function (d) { return d.c; }).concat(chartNum === 1 ? breakEven : []));
       function sbchnum(value) {
         return chartNum ? value : yDomain[1];
       }
@@ -535,7 +543,7 @@
       var yDomain2 = d3.extent(data, function (d) { return tipValue(d.v); });
       y2.domain([Math.min(y2ScaleShift[0] || yDomain2[0], yDomain2[0]), Math.max(y2ScaleShift[1] || yDomain2[1], yDomain2[1])]);
       var yDomain3 = d3.extent(data, function (d) { return tipValue2(d.v2); });
-      y3.domain([Math.min(tps2Low[0]||Number.MAX_VALUE,yDomain3[0]), Math.max(tps2High[0] || 0, yDomain3[1])]);
+      y3.domain([Math.min(tps2Low[0] || Number.MAX_VALUE, yDomain3[0]), Math.max(tps2High[0] || 0, yDomain3[1])]);
       if (isNaN(y3(0)))
         debugger;
       // #endregion
@@ -659,6 +667,10 @@
           if (x.dates[0])
             setRectArea(x.dates[0], x.upDown[1], x.dates[1], x.upDown[0], beforeTradeHoursRect + i, "lightgrey");
         });
+        bcl.forEach(function (x, i) {
+          if (x.dates[0])
+            setRectArea(x.dates[0], x.upDown[1], x.dates[1], x.upDown[0], beforeCloseHoursRect + i, "lightgrey");
+        });
         afh.forEach(function (x, i) {
           if (x.dates[0])
             setRectArea(x.dates[0], yDomain[1], x.dates[1], yDomain[0], afterTradeHoursRect + i, "black", "beige");
@@ -686,6 +698,8 @@
         // #endregion
       }
       // #endregion
+
+      breakEven.concat([NaN, NaN]).forEach((be, i) =>setHLine(be, "breakEven" + i, "black", 1, "2,2,5,2"));
 
       // #region Corridor start date line
       if (doCorridorStartDate) {

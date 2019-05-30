@@ -325,21 +325,21 @@ namespace IBApp {
         ;
     }
 
-    public void OpenRollTrade(string currentSymbol, string rollSymbol) {
-      (from cc in IbClient.ReqContractDetailsCached(currentSymbol).Select(cd => cd.Contract)
-       from rc in IbClient.ReqContractDetailsCached(rollSymbol).Select(cd => cd.Contract)
-       from ct in ComboTrades(5)
-       where ct.contract.ConId == cc.ConId
-       select (cc, rc, ct)
+    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenRollTrade(string currentSymbol, string rollSymbol) {
+      return (from cc in IbClient.ReqContractDetailsCached(currentSymbol).Select(cd => cd.Contract)
+              from rc in IbClient.ReqContractDetailsCached(rollSymbol).Select(cd => cd.Contract)
+              from ct in ComboTrades(5)
+              where ct.contract.ConId == cc.ConId
+              select (cc, rc, ct)
        )
-        .Subscribe(t => {
-          var tradeDate = IbClient.ServerTime.Date.AddHours(15).AddMinutes(45);
-          if(t.cc.IsOption)
-            CreateRoll(currentSymbol, rollSymbol)
-              .Subscribe(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false, default, default, tradeDate.TimeCondition()).Subscribe());
-          else
-            OpenTrade(t.rc, -t.ct.position.Abs(), 0, 0, false, DateTime.MaxValue, tradeDate).Subscribe();
-        });
+       .SelectMany(t => {
+         var tradeDateCondition = IbClient.ServerTime.Date.AddHours(15).AddMinutes(45).TimeCondition();
+         if(t.cc.IsOption)
+           return CreateRoll(currentSymbol, rollSymbol)
+             .SelectMany(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false));
+         else
+           return OpenTrade(t.rc, -t.ct.position.Abs(), 0, 0, false, DateTime.MaxValue);
+       });
     }
     //private void OnUpdateError(int reqId, int code, string error, Exception exc) {
     //  UseOrderContracts(orderContracts => {

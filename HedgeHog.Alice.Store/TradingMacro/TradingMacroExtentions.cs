@@ -1086,7 +1086,7 @@ namespace HedgeHog.Alice.Store {
         //.DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
         ;
       if(!IsInVirtualTrading)
-        PriceChangedSubscribsion = a.ObserveLatestOn(ObservableExtensions.BGTreadSchedulerFactory(ThreadPriority.AboveNormal))
+        PriceChangedSubscribsion = a.ObserveLatestOn(ObservableExtensions.BGTreadSchedulerFactory(ThreadPriority.Normal, nameof(PriceChangedSubscribsion)))
           .Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
       else
         PriceChangedSubscribsion = a.Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
@@ -1157,31 +1157,37 @@ namespace HedgeHog.Alice.Store {
             long _id = 0;
             string straddlePair = "VXX";
             //var straddleTime = DateTime.Now.AddSeconds(-BarsCountMax).SetKind();
-            TradingMacroM1(tmM1 => {
-              tmM1.WhenAny(tm => tm.RatesDuration, irs => irs.Value)
-              .Where(irs => irs > 0)
-              .Take(1)
-              .ObserveOn(NewThreadScheduler.Default)
-              .Subscribe(x => {
-                var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime().AddDays(-5);
-                GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories.Where(t => t.time < startDate)), true);
-                GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories2.Where(t => t.time < startDate)), true);
-                GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == Pair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
-                GlobalStorage.UseForexMongo(c => StraddleHistory2.AddRange(c.StraddleHistories2.Where(t => t.pair == straddlePair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
-                SyncStraddleHistoryT1(this);
-                Log = new Exception($"{nameof(SyncStraddleHistoryT1)}[{this}] - done");
-                SyncStraddleHistoryM1(tmM1);
-                Log = new Exception($"{nameof(SyncStraddleHistoryM1)}[{this}] - done");
-                CollectStraddleHistory();
+            if(VoltageFunction == VoltageFunction.Straddle || VoltageFunction2 == VoltageFunction.Straddle) {
+              TradingMacroM1(tmM1 => {
+                tmM1.WhenAny(tm => tm.RatesDuration, irs => irs.Value)
+                .Where(irs => irs > 0)
+                .Take(1)
+                .ObserveOn(NewThreadScheduler.Default)
+                .Subscribe(x => {
+                  var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime().AddDays(-5);
+                  GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories.Where(t => t.time < startDate)), true);
+                  GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories2.Where(t => t.time < startDate)), true);
+                  GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == Pair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
+                  GlobalStorage.UseForexMongo(c => StraddleHistory2.AddRange(c.StraddleHistories2.Where(t => t.pair == straddlePair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
+                  if(VoltageFunction == VoltageFunction.Straddle) {
+                    SyncStraddleHistoryT1(this);
+                    Log = new Exception($"{nameof(SyncStraddleHistoryT1)}[{this}] - done");
+                  }
+                  if(VoltageFunction2 == VoltageFunction.Straddle) {
+                    SyncStraddleHistoryM1(tmM1);
+                    Log = new Exception($"{nameof(SyncStraddleHistoryM1)}[{this}] - done");
+                  }
+                  CollectStraddleHistory();
+                });
               });
-            });
 
-            void CollectStraddleHistory() {
-              DateTime saveTime = DateTime.MinValue;
-              DateTime ResetSaveTime() => DateTime.Now.AddMinutes(1);
-              saveTime = ResetSaveTime();
-              TimeValueHistory(Pair, tm => tm.StraddleHistory, c => c.StraddleHistories, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
-              //TimeValueHistory(straddlePair, tm => tm.StraddleHistory2, c => c.StraddleHistories2, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
+              void CollectStraddleHistory() {
+                DateTime saveTime = DateTime.MinValue;
+                DateTime ResetSaveTime() => DateTime.Now.AddMinutes(1);
+                saveTime = ResetSaveTime();
+                TimeValueHistory(Pair, tm => tm.StraddleHistory, c => c.StraddleHistories, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
+                //TimeValueHistory(straddlePair, tm => tm.StraddleHistory2, c => c.StraddleHistories2, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
+              }
             }
           }
         }
@@ -3753,7 +3759,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
             { TradeLevelBy.PriceCma,()=>level(tm=>tm.UseRates(GetLastRateCma).SelectMany(cma=>cma).DefaultIfEmpty(double.NaN).Single()) },
 
-          {TradeLevelBy.PriceAvg1,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg1)},
+          {TradeLevelBy.PriceAvg1,()=>level(tm=>tm.Trends.OrderBy(tl=>tl.Count).TakeLast(1).Select(tl=>tl.PriceAvg1).DefaultIfEmpty(double.NaN).Single())},
 
           {TradeLevelBy.BlueAvg1,()=>level(tm=>tm.TLBlue.PriceAvg1)},
           {TradeLevelBy.GreenAvg1,()=>level(tm=>tm.TLGreen.PriceAvg1)},
@@ -4329,13 +4335,15 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       }
     }
     object _innerRateLocker = new object();
+    string _useRatesInternalCaller = "";
     public IEnumerable<T> UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000, [CallerMemberName] string Caller = "") {
       if(!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds)) {
-        var message = new { Pair, PairIndex, Method = nameof(UseRatesInternal), Caller, timeoutInMilliseconds } + "";
+        var message = new { Pair, PairIndex, Method = nameof(UseRatesInternal), Caller, Spent = new { timeoutInMilliseconds, waitingFor = _useRatesInternalCaller } } + "";
         Log = new TimeoutException(message);
         yield break;
       }
-      Stopwatch sw = Stopwatch.StartNew();
+      var sw = Stopwatch.StartNew();
+      _useRatesInternalCaller = Caller;
       T ret;
       try {
         ret = func(_Rates);

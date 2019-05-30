@@ -140,6 +140,14 @@ namespace HedgeHog {
         .Concat(repeat(bins.Count - harmonic - 1))
         .ToArray();
     }
+    public static alglib.complex[] FftHarmonics(this IList<alglib.complex> bins, int harmonicStart, int harmonicCount) {
+      IEnumerable<alglib.complex> repeat(int count) { return Enumerable.Repeat(new alglib.complex(0), count); }
+      return bins.Take(1)
+        .Concat(repeat(harmonicStart - 1))
+        .Concat(bins.Skip(harmonicStart + 1).Take(harmonicCount))
+        .Concat(repeat(bins.Count - harmonicStart - harmonicCount - 1))
+        .ToArray();
+    }
 
     public static IList<alglib.complex> FftHarmonic(this IList<alglib.complex> bins, int harmonic, int range) {
       var c = new alglib.complex(0);
@@ -1037,8 +1045,7 @@ namespace HedgeHog {
     }
 
     public static IEnumerable<double> AverageByStDev(this IEnumerable<double> values) {
-      var avg = 0.0;
-      var stDev = values.StandardDeviation(out avg);
+      var stDev = values.StandardDeviation(out var avg);
 
       if(stDev.IsNaN())
         return values.DefaultIfEmpty(double.NaN);
@@ -1210,6 +1217,7 @@ namespace HedgeHog {
       return !(bsRates.Min() > bsRatesCT.Max() || bsRates.Max() < bsRatesCT.Min());
     }
 
+    public static double HistoricalVolatility<T>(this IEnumerable<T> source, Func<T, double> map) => source.Select(map).ToArray().HistoricalVolatilityByPoint();
     public static double HistoricalVolatilityByPoint(this IDouble source) => source.HistoricalVolatility() * source.DefaultIfEmpty().Average();
     public static double HistoricalVolatility(this IDouble source) => source.HistoricalVolatility(out var avg);
 
@@ -1227,9 +1235,11 @@ namespace HedgeHog {
       Func<(double prev, double next), double> calc = null,
       Func<(double prev, double next), bool> condition = null) {
       var s = source.Pairwise((prev, next) => (prev, next));
-      if(condition != null) s = s.Where(condition);
-      var a = s.Select(calc ?? Log).ToArray();
-      var hv = a/*.AverageByStDevHigh(-1, 0.5)*/.StandardDeviation(out avg);
+      if(condition != null) s = s.Where(condition).Where(t => t.prev != t.next);
+      var a0 = s.GroupByAdjacent(p => (p.prev - p.next).Sign());
+      IDouble a = a0.Select(gp => gp.Select(calc ?? Log).Average()).ToList();
+      a = a.AverageByStDev().ToArray();
+      var hv = a.StandardDeviation(out avg);
       return hv;
       double Log((double prev, double next) t) => Math.Log(t.prev / t.next).Abs();
     }

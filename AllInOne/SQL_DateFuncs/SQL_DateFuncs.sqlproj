@@ -73,10 +73,12 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.XML" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Function1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Linear.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Test Scripts\Test.sql">
@@ -92,6 +94,9 @@
   <ItemGroup>
     <Folder Include="Properties\" />
     <Folder Include="Test Scripts\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SQL_DateFuncs.publish.xml" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -352,6 +352,7 @@ namespace HedgeHog.Alice.Client {
           com3 = new { b = t.tmTrader.CenterOfMassBuy3.Round(digits), s = t.tmTrader.CenterOfMassSell3.Round(digits), dates = t.tmTrader.CenterOfMass3Dates ?? new DateTime[0] },
           com4 = new { b = t.tmTrader.CenterOfMassBuy4.Round(digits), s = t.tmTrader.CenterOfMassSell4.Round(digits), dates = t.tmTrader.CenterOfMass4Dates ?? new DateTime[0] },
           bth = t.tmTrader.BeforeHours.Select(tr => new { tr.upDown, tr.dates }).ToArray(),
+          bcl = t.tmTrader.AfterHours.Select(tr => new { tr.upDown, tr.dates }).ToArray(),
           //afh2 = new[] { new { dates = t.tmTrader.ServerTime.Date.AddDays(-1).AddHours(16).With(d => new[] { d, d.AddHours(4) }) } },
           afh = GetBackDates(t.tmTrader.ServerTime.Date, 9)
             .Select(date => new { dates = date.AddHours(16).With(d => new[] { d, d.AddHours(4) }) })
@@ -617,7 +618,7 @@ namespace HedgeHog.Alice.Client {
                         delta = t.deltaBid,
                         strike = t.strikeAvg,
                         perc = (t.bid / t.underPrice * 100),
-                        strikeDelta = t.strikeAvg - t.underPrice,
+                        strikeDelta = t.strikeAvg - strikeLevel.GetValueOrDefault(t.underPrice),
                         be = new { t.breakEven.up, t.breakEven.dn },
                         isActive = false,
                         maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100 / d,
@@ -665,7 +666,7 @@ namespace HedgeHog.Alice.Client {
             Action<string> currentOptions = (map) => {
               var noc = new[] { "C", "P" }.Contains(map) ? numOfCombos : 0;
               underContracts.ForEach(underContract =>
-              am.CurrentOptions(CacheKey(underContract), sl, expirationDaysSkip, noc, c => map.Contains(c.Right))
+              am.CurrentOptions(CacheKey(underContract), sl, expirationDaysSkip, noc * 2, c => map.Contains(c.Right))
               .Select(ts => {
                 var underPosition = am.Positions.Where(p => p.contract.Instrument == underContract.Instrument).ToList().FirstOrDefault();
                 var exp = ts.Select(t => new { dte = DateTime.Now.Date.GetWorkingDays(t.option.Expiration), exp = t.option.LastTradeDateOrContractMonth2 }).Take(1).ToArray();
@@ -701,8 +702,8 @@ namespace HedgeHog.Alice.Client {
 
                 var puts = options.Where(t => t.cp == "P" && t._sd < 5);
                 var calls = options.Where(t => t.cp == "C" && t._sd > -5);
-                return (exp, b: options.OrderByDescending(x => x.strike));
-                //return (exp, b: calls.OrderByDescending(x => x.strike).Concat(puts.OrderByDescending(x => x.strike)).ToArray());
+                //return (exp, b: options.OrderByDescending(x => x.strike));
+                return (exp, b: calls.OrderByDescending(x => x.strike).Concat(puts.OrderByDescending(x => x.strike)).ToArray());
               })
               .Subscribe(t => {
                 base.Clients.Caller.bullPuts(t.b);
@@ -791,6 +792,7 @@ namespace HedgeHog.Alice.Client {
                   .ToArray(x => {
                     var hasStrike = x.contract.HasOptions;
                     var delta = (hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs()) * (-x.position.Sign());
+                    var breakEven = x.contract.Legs().Select(l => l.c.Strike - (l.c.IsCall ? 1 : -1) * x.openPrice).ToArray();
                     return new {
                       combo = x.contract.Instrument
                       , l = x.contract.ShortWithDate
@@ -811,7 +813,8 @@ namespace HedgeHog.Alice.Client {
                         : delta < 0 && (x.contract.IsCall || !hasStrike)
                         ? "#ffd3d9"
                         : "chartreuse",
-                      ic = x.contract.IsCombo
+                      ic = x.contract.IsCombo,
+                      breakEven
                     };
                   });
 
@@ -828,8 +831,12 @@ namespace HedgeHog.Alice.Client {
         return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh };
       });
     [BasicAuthenticationFilter]
-    public void RollTrade(string currentSymbol, string rollSymbol) {
-      GetAccountManager().OpenRollTrade(currentSymbol, rollSymbol);
+    public async Task<string[]> RollTrade(string currentSymbol, string rollSymbol) {
+      var res = await GetAccountManager().OpenRollTrade(currentSymbol, rollSymbol).SelectMany(t => t).ToArray();
+      return res.Where(t => t.error.HasError)
+        .Do(e => LogMessage.Send(e.error.exc))
+        .Select(e => e.error.exc.Message)
+        .ToArray();
     }
     [BasicAuthenticationFilter]
     public void CancelOrder(int orderId) {
@@ -877,7 +884,11 @@ namespace HedgeHog.Alice.Client {
     }
     static bool _isTest = false;
     [BasicAuthenticationFilter]
-    public void OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice, double? profitInPoints) {
+    public async Task<string[]> OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice, double? profitInPoints, string rollTrade = null) {
+      if(!rollTrade.IsNullOrWhiteSpace()) {
+        return await RollTrade(rollTrade, instrument);
+      }
+
       var tm = UseTraderMacro(pair).Single();
       var profit = profitInPoints.HasValue
         ? profitInPoints.Value
@@ -885,11 +896,11 @@ namespace HedgeHog.Alice.Client {
       if(profit == 0) throw new Exception("No trend line found for profit calculation");
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
-        OpenCondOrder(am, tm, contract, null, quantity, conditionPrice, profit);
+        return await OpenCondOrder(am, tm, contract, null, quantity, conditionPrice, profit);
       else
-        throw new Exception(new { instrument, not = "found" } + "");
+        return new[] { new { instrument, not = "found" } + "" };
     }
-    static void OpenCondOrder(AccountManager am, TradingMacro tm, Contract option, bool? isCall, int quantity, double? conditionPrice, double profit) {
+    static async Task<string[]> OpenCondOrder(AccountManager am, TradingMacro tm, Contract option, bool? isCall, int quantity, double? conditionPrice, double profit) {
       if(option != null && isCall != null || option == null && isCall == null)
         throw new Exception(new { OpenCondOrder = new { option, isCall } } + "");
       var hasStrategy = tm.Strategy.HasFlag(Strategies.Universal);
@@ -902,19 +913,23 @@ namespace HedgeHog.Alice.Client {
       var dateAfter = _isTest ? DateTime.Now.AddDays(1) : DateTime.MinValue;
 
       var contracts = new[] { option }.ToObservable();
-      (from contract in contracts
-       let isMore = contract.IsCall && isBuy || contract.IsPut && isSell
-       let upProfit = profit * (isMore ? 1 : -1)
-       from price in DataManager.IBClientMaster.ReqPriceSafe(contract)
-       from under in contract.UnderContract
-       from up in DataManager.IBClientMaster.ReqPriceSafe(under).Select(p => p.ask.Avg(p.bid))
-       let condPrice = conditionPrice.GetValueOrDefault(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
-       let condTakeProfit = under.PriceCondition((condPrice.IfNaNOrZero(up) + upProfit).Round(2), isMore, false)
-       select new { price = condPrice == 0 ? isSell ? price.bid : price.ask : 0, under, condTakeProfit, condPrice, isMore, contract }
-       ).Subscribe(t =>
-        am.OpenTrade(t.contract, quantity, t.price, 0, true, DateTime.MaxValue, dateAfter
-        , t.price != 0 ? null : OrderConditionParam.PriceCondition(t.under, t.condPrice.Round(2), !t.isMore, false)
-        , t.condTakeProfit).Subscribe());
+      var res = await (from contract in contracts
+                       from price in DataManager.IBClientMaster.ReqPriceSafe(contract)
+                       from under in contract.UnderContract
+                       from up in DataManager.IBClientMaster.ReqPriceSafe(under).Select(p => p.ask.Avg(p.bid))
+                       let condPrice = conditionPrice.GetValueOrDefault(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
+                       let isMore = contract.IsCallPut ? condPrice > up : contract.IsCall && isBuy || contract.IsPut && isSell
+                       let upProfit = profit * (isMore ? 1 : -1)
+                       let condTakeProfit = option.IsCallPut ? null : under.PriceCondition((condPrice.IfNaNOrZero(up) + upProfit).Round(2), isMore, false)
+                       let t = new { price = condPrice == 0 ? isSell ? price.bid : price.ask : 0, under, condTakeProfit, condPrice, isMore, contract }
+                       from ots in am.OpenTrade(t.contract, quantity, t.price, 0, false, DateTime.MaxValue, dateAfter
+                        , t.price != 0 ? null : OrderConditionParam.PriceCondition(t.under, t.condPrice.Round(2), !t.isMore, false)
+                        , t.condTakeProfit)
+                       from ot in ots
+                       where ot.error.HasError
+                       select ot.error.exc.Message
+        ).ToArray();
+      return res;
     }
     public async Task<object[]> OpenStrategyOption(string option, int quantity, double level, double profit) =>
       await (from contract in DataManager.IBClientMaster.ReqContractDetailsCached(option).Select(cd => cd.Contract)
@@ -989,8 +1004,9 @@ namespace HedgeHog.Alice.Client {
       GetAccountManager().OpenCoveredOption(pair, option, quantity, price);
     }
     [BasicAuthenticationFilter]
-    public async Task<object[]> CloseCombo(string instrument, double? conditionPrice) => await
-      (from am in GetAccountManager().YieldNotNull().ToObservable()
+    public async Task<object[]> CloseCombo_New(string instrument, double? conditionPrice) {
+      var obs =
+      (from am in Observable.Return(GetAccountManager())
        from ct in am.ComboTrades(1)
        where ct.orderId != 0
        from ochs in am.UseOrderContracts(orderContracts => orderContracts.ByOrderId(ct.orderId))
@@ -998,15 +1014,47 @@ namespace HedgeHog.Alice.Client {
        from under in ct.contract.UnderContract
        where ct.contract.Instrument == instrument
        select (ct.contract, ct.position, ct.orderId, ct.closePrice, under, och, am)
-       )
-      .SelectMany(c => {
+       );
+      var res = await obs.SelectMany(c => {
         c.och.order.OrderType = "LMT";
         c.och.order.LmtPrice = c.closePrice;
         // TODO Update UI to set catTrade to true
-        return (from po in c.am.PlaceOrder(c.och.order, c.och.contract)
+        return (from po in c.am.PlaceOrder(c.och.order, c.contract)
                 select new { order = po.value.Flatter(";"), po.error }
-                ).ToArray();
-      });
+                );
+      }).ToArray();
+      return res;
+    }
+    [BasicAuthenticationFilter]
+    public async Task<string[]> CloseCombo(string instrument, double? conditionPrice) {
+      var res = await
+      (from am in Observable.Return(GetAccountManager())
+       from ct in am.ComboTrades(1)
+       from under in ct.contract.UnderContract
+       where ct.contract.Instrument == instrument
+       select (ct.contract, ct.position, ct.orderId, ct.closePrice, under, am)
+       )
+      .SelectMany(c => {
+        if(c.orderId != 0) {
+          return c.am.UseOrderContracts(orderContracts => orderContracts[c.orderId]).ToObservable()
+          .SelectMany(och => {
+            och.order.OrderType = "LMT";
+            och.order.LmtPrice = c.closePrice;
+            return c.am.PlaceOrder(och.order, och.contract).Cast<ErrorMessage>();
+          });
+        } else {
+          //am.CancelAllOrders("CloseCombo");
+          return from tt in c.am.OpenTrade(c.contract, -c.position
+          , conditionPrice.HasValue ? 0 : c.closePrice
+          , 0.0, false, default, default
+          , conditionPrice.HasValue ? c.under.PriceCondition(conditionPrice.Value, false, false) : default)
+                 from t in tt
+                 select t.error;
+        }
+      }).ToArray();
+      res.ForEach(e => Log = e.exc);
+      return res.Select(e => e.exc.Message).ToArray();
+    }
     [BasicAuthenticationFilter]
     public void CancelAllOrders() {
       var am = GetAccountManager();
@@ -1652,7 +1700,7 @@ namespace HedgeHog.Alice.Client {
     }
     IEnumerable<T> UseTradingMacro2<T>(string pair, int chartNum, Func<TradingMacro, T> func) {
       try {
-        return GetTradingMacro(pair,chartNum).Select(func);
+        return GetTradingMacro(pair, chartNum).Select(func);
       } catch(Exception exc) {
         LogMessage.Send(exc);
         return new T[0];

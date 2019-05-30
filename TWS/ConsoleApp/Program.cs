@@ -63,17 +63,43 @@ namespace ConsoleApp {
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7496;
+      const int twsPort = 7497;
       const int clientId = 1;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         {
-          var symbol = "VXG9";
+          (from p in am.PositionsObservable
+           from cd in ibClient.ReqContractDetailsAsync(p.Contract)
+           select cd.Contract
+           )
+           .Take(2).ToArray().Subscribe(contracts => {
+             HandleMessage(contracts.ToTextOrTable("Positions"));
+             var contract1 = contracts.Where(c => c.IsOption).Single();
+             var contract2 = contracts.Where(c => !c.IsOption).Single();
+             am.OpenCoveredOption(contract1, "MKT", 14, 0, contract2, 7, DateTime.MaxValue, DateTime.Now.AddDays(1), OrderConditionParam.PriceCondition(contract2, 2860, false));
+           });
+          return;
+        }
+        am.OpenOrderObservable.Subscribe(o => HandleMessage(new { order = o.Contract }));
+        {
+          var symbol = "RTYM9";//"ESH9";//  "VXG9";// ;
           ibClient.ReqContractDetailsCached(symbol)
-          .Subscribe(cd => PriceHistory.AddTicks(fw, 1, symbol, DateTime.Now.AddMonths(-(12*2+3)), o => HandleMessage(o + "")));
+          .Subscribe(cd => PriceHistory.AddTicks(fw, 3, symbol, DateTime.Now.AddMonths(-(12 * 0 + 4)), o => HandleMessage(o + "")));
         }
         return;
+        {
+          (
+          from cd in ibClient.ReqContractDetailsCached(new Contract {
+            LocalSymbol = "EWH9 P2735",
+            SecType = "FOP"
+            //Strike = 2735, LastTradeDateOrContractMonth = "20190313", Right ="P",Symbol="ES",SecType="FOP"
+          })
+          from p in ibClient.ReqPriceSafe(cd.Contract.SideEffect(c => HandleMessage(new { c })))
+          select p
+          ).Subscribe(p => HandleMessage(new { p }));
+
+        }
         {
           var c = new Contract() {
             Symbol = "ES",
@@ -118,7 +144,7 @@ namespace ConsoleApp {
               HandleMessage("Trade this:\n" + new { r.roll, r.days, r.bid }.Yield().ToMarkdownTable());
               (from kv in IBClientCore.ReqContractDetails.ToObservable()
                from cd in kv.Value
-               select new { kv.Key, cd.Contract,cd.Contract.Instrument,cd.Contract.LastTradeDateOrContractMonth })
+               select new { kv.Key, cd.Contract, cd.Contract.Instrument, cd.Contract.LastTradeDateOrContractMonth })
                .Take(0)
                .ToArray()
                .Subscribe(a => {

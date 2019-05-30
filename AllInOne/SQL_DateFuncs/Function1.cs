@@ -27,5 +27,26 @@ public partial class UserDefinedFunctions {
     value1 = new SqlString(split.Length > 0 ? split[0] : "");
     value2 = new SqlString(split.Length > 1 ? split[1] : "");
   }
+
+  static SqlDouble GetSlope(double[] yArray) {
+    if(yArray == null)
+      throw new ArgumentNullException("yArray", "Is null");
+    if(yArray.Length == 0)
+      return SqlDouble.Null;
+    if(yArray.Length == 1) {
+      return 0;
+    }
+    double n = yArray.Length;
+    double sumxy = 0, sumx = 0, sumy = 0;
+    double sumx2 = 0;
+    for(int i = 0; i < n; i++) {
+      sumxy += i * yArray[i];
+      sumx += i;
+      sumy += yArray[i];
+      sumx2 += (long)i * i;
+    }
+    return ((sumxy - sumx * ( sumy / n)) / (sumx2 - sumx * sumx / n));
+  }
+
 };
 

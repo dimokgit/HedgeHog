@@ -416,18 +416,29 @@ namespace HedgeHog.Alice.Store {
       double[] GetHVs2(List<Rate> ra) => ra.Select(GetHV).ToArray();
     }
 
-
+    object _voltLocker = new object();
     CorridorStatistics ShowVoltsByHV(int voltIndex) {
-      if(UseCalc()) {
-        UseRates(ra => ra.Where(r => GetVoltByIndex(voltIndex)(r).IsNaN()).ForEach(r => SetVoltByIndex(voltIndex)(r, CalcVolt(GetHV(r)))));
-        double CalcVolt(double v) => v * 1000;
+      lock(_voltLocker) {
+        if(UseCalc()) {
+          var c = RatesArray.Count - 1;
+          if(GetVoltByIndex(voltIndex)(RatesInternal[c]).IsNaN())
+            UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b => b.Count == c).ForEach(b => {
+              //var prices = b.Select(_priceAvg).ToList();
+              SetMA(b);
+              var hv = b.HistoricalVolatility(r=>r.PriceCMALast);
+              //var stdr = prices.StandardDeviation();//.ToArray();//.StDevByRegressoin();
+              SetVoltByIndex(voltIndex)(b.Last(), hv * 10000);
+            }));
+          var hvps = UseRates(ra => ra.HistoricalVolatility(r => r.PriceCMALast));
+          hvps.ForEach(hvp => SetVolts(hvp * 10000, voltIndex));
+        }
+        return null;
       }
-      return null;
     }
     CorridorStatistics ShowVoltsBySlope() {
       if(UseCalc()) {
-        var v = GetLastVolts(GetVoltage2).ToArray().With(vs => vs.Length > 0 ? vs.LinearSlope():double.NaN);
-        SetVolts(-v*10000, 0);
+        var v = GetLastVolts(GetVoltage2).ToArray().With(vs => vs.Length > 0 ? vs.LinearSlope() : double.NaN);
+        SetVolts(-v * 10000, 0);
       }
       return null;
     }
@@ -446,9 +457,9 @@ namespace HedgeHog.Alice.Store {
     }
     CorridorStatistics ShowVoltsByStdRatioLime(int voltIndex) {
       if(UseCalc() && !TLLime.IsEmpty) {
-        var a = TLPlum.PriceHeight.Select(h=>TLLime.StDev / h);
+        var a = TLPlum.PriceHeight.Select(h => TLLime.StDev / h);
         var b = TLLime.StDev / TLBlue.StDev;
-        SetVolts(a.Concat(b.Yield()).Max() , voltIndex);
+        SetVolts(a.Concat(b.Yield()).Max(), voltIndex);
       }
       return null;
     }
@@ -894,6 +905,7 @@ namespace HedgeHog.Alice.Store {
     public double CoMEndHour { get; set; } = 9.5;
 
     public (double[] upDown, DateTime[] dates)[] BeforeHours = new (double[], DateTime[])[0];
+    public (double[] upDown, DateTime[] dates)[] AfterHours = new (double[], DateTime[])[0];
     private void SetBeforeHours() {
       var startHour = CoMStartHour;
       var endHour = CoMEndHour;
@@ -905,6 +917,17 @@ namespace HedgeHog.Alice.Store {
         return t.dates;
       })).Any()) { };
       BeforeHours = afterHours.ToArray();
+      SetAfterHours(15, 17, ah => AfterHours = ah);
+    }
+    private void SetAfterHours(double startHour, double endHour, Action<(double[] upDown, DateTime[] dates)[]> set ) {
+      if(!TryServerTime(out var serverTime)) return;
+      var timeRange = new[] { serverTime.Date.AddHours(startHour), serverTime.Date.AddHours(endHour) };
+      var afterHours = new List<(double[] upDown, DateTime[] dates)>();
+      while((timeRange = SetCenterOfMassByM1Hours(timeRange, t => {
+        afterHours.Add(t);
+        return t.dates;
+      })).Any()) { };
+      set(afterHours.ToArray());
     }
     private void SetCentersOfMass() {
       var startHour = CoMStartHour;
@@ -962,7 +985,7 @@ namespace HedgeHog.Alice.Store {
        ri.BackwardsIterator()
        .SkipWhile(r => r.StartDate > shs[1])
        .TakeWhile(r => r.StartDate > shs[0])
-       .MinMax(r => r.BidLow, r => r.AskHigh)
+       .MinMax(r => r.PriceAvg, r => r.PriceAvg)
        )
        where mm.All(Lib.IsNotNaN)
        select addDay(setCenterOfMass((mm, shs)), -1)

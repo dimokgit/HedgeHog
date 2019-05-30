@@ -267,7 +267,8 @@ namespace IBApp {
           var cip = t.contract.HasOptions ? new CacheItemPolicy() {
             RemovedCallback = ce => {
               ActiveRequestCleaner((Price)ce.CacheItem.Value);
-            }//,            SlidingExpiration = 600.FromSeconds()
+            },
+            SlidingExpiration = 600.FromSeconds()
           } : new CacheItemPolicy();
           if(!_currentPrices.Add(t.price.Pair, t.price, cip))
             TraceError($"RaisePriceChanged: {t.price.Pair} is already in {nameof(_currentPrices)}");
@@ -276,15 +277,14 @@ namespace IBApp {
       }
       PriceChangedEvent?.Invoke(t.price);
       /// Locals
-      void ActiveRequestCleaner(Price price) {
-        activeRequests.Where(kv => kv.Value.price == price).ToList().ForEach(CancelPriceRequest);
-      }
-
+    }
+    public void ActiveRequestCleaner(Price price = null, Contract contract = null) {
+      activeRequests.Where(kv => price != null ? kv.Value.price == price : kv.Value.contract == contract).ToList().ForEach(CancelPriceRequest);
       void CancelPriceRequest(KeyValuePair<int, (Contract contract, Price price)> ar) {
         // TODO: Make use of Observable
         IBClientMaster.CancelPrice(ar.Key);
         if(activeRequests.TryRemove(ar.Key, out var rem)) {
-          //Verbose($"{nameof(activeRequests)} - removed {ar.Value.contract}");
+          TraceDebug($"{nameof(activeRequests)} - removed {ar.Value.contract}");
         }
       }
     }

@@ -550,7 +550,11 @@ namespace IBApp {
       .Take(1)
       .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
       .ToArray()
-      .Do(a => a.IsEmpty().IfTrue(() => TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}")))
+      .Do(a => a.IsEmpty().IfTrue(() => {
+        TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}");
+        ActiveRequestCleaner(contract);
+        TraceError($"{nameof(ReqPriceSafe)}: ActiveRequestCleaner({contract})");
+      }))
       .SelectMany(p => p)
       //.Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
       .Do(p => Verbose($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
@@ -738,6 +742,9 @@ namespace IBApp {
     }
     #endregion
 
+    public void ActiveRequestCleaner(Contract contract) {
+      _marketDataManager.ActiveRequestCleaner(contract: contract);
+    }
     public IEnumerable<Price> TryGetPrice(Contract contract, [CallerMemberName] string Caller = "") {
       if(_marketDataManager.TryGetPrice(contract, out var price, $"{nameof(TryGetPrice)} <= {Caller}"))
         yield return price;

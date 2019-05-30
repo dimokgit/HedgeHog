@@ -12,6 +12,12 @@ namespace HedgeHog.Tests {
   [TestClass()]
   public class MathExtensionsTests {
     [TestMethod()]
+    public void LinearSlope() {
+      double[] d = new[] { 1.0, 1.5, 2, 2.5, 3, 3.5, 4 };
+      var slope = LinearRegression.LinearSlope(d);
+      Assert.AreEqual(0.5, slope);
+    }
+    [TestMethod()]
     public void LinearTest() {
       var xs = Enumerable.Range(0, 3).Select(i => (double)i).ToArray();
       alglib.lrreport lr1;

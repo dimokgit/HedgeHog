@@ -1050,6 +1050,15 @@ namespace HedgeHog.Alice.Store {
           VoltRange1.IsNaN()
           ? TradeDirectionByTreshold(volt, VoltRange0)
           : VoltRange0 < VoltRange1
+          ? TradeDirectionByBool(volt.Between(VoltRange0, VoltRange1))
+          : TradeDirectionByBool(!volt.Between(VoltRange1, VoltRange0))
+        );
+    }
+    IEnumerable<TradeDirections> VltRngDirectionalImpl() {
+      return GetLastVolt(volt =>
+          VoltRange1.IsNaN()
+          ? TradeDirectionByTreshold(volt, VoltRange0)
+          : VoltRange0 < VoltRange1
           ? A(volt)
           : B(volt)
         );
@@ -1074,7 +1083,6 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(VoltOkBySlope(s => s < 0));
       }
     }
-
     private bool VoltOkBySlope(Func<double, bool> slopeCondition) {
       return VoltOkBySlope(GetVoltage, slopeCondition);
     }

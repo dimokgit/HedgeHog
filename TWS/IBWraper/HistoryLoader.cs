@@ -108,7 +108,11 @@ namespace IBApp {
         return;
       const string NO_DATA = "HMDS query returned no data";
       if(code == 162 && error.Contains(NO_DATA)) {
-        _endDate = _endDate.AddMinutes(-BarSizeRange(_barSize, _timeUnit).Last());
+        _endDate = _endDate.isWeekend() 
+          ? _endDate.AddDays(-2) 
+          : _timeUnit != TimeUnit.S 
+          ? _endDate.AddDays(-1) 
+          : _endDate.AddMinutes(-BarSizeRange(_barSize, _timeUnit).Last());
         _error(new SoftException(new { _endDate } + ""));
         RequestNextDataChunk();
       } else if(code == 162 && error.Contains("pacing violation")) {

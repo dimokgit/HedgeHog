@@ -310,7 +310,7 @@ namespace HedgeHog.Alice.Store {
       GetShowVoltageFunction()();
       GetShowVoltageFunction(VoltageFunction2, 1)();
       {
-        var endDates = Trends.Where(tl => tl.Color != null && tl.Color != TradeLevelsPreset.Blue + "" && !tl.IsEmpty)
+        var endDates = Trends.Skip(1).Where(tl => tl.Color != null && tl.Color != TradeLevelsPreset.Blue + "" && !tl.IsEmpty)
           .OrderBy(tl => tl.EndDate)
           //.DefaultIfEmpty(TLBlue)
           .Select(a => new { a.EndDate, a.Count })

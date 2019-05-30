@@ -74,6 +74,7 @@ namespace IBApi {
     public bool IsFuture => SecType == "FUT" || secType == "CONTFUT";
     public bool IsIndex => SecType == "IND";
     public bool IsButterFly => ComboLegs?.Any() == true && String.Join("", comboLegs.Select(l => l.Ratio)) == "121";
+    public bool IsCallPut => Legs().ToList().With(legs => legs.Any(l => l.c.IsCall) && legs.Any(l => l.c.IsPut));
     public double ComboStrike() => Strike > 0 ? Strike : LegsEx().With(cls => cls.Sum(c => c.contract.strike * c.leg.Ratio) / cls.Sum(c => c.leg.Ratio));
     public bool HasOptions => LegsOrMe(l => l.IsOption).Max();
     public int ReqId { get; set; }
