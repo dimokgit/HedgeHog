@@ -585,7 +585,7 @@ namespace HedgeHog.Bars {
 
     public override object Clone() {
       var bb = base.Clone() as BarBase;
-      bb.Ph = this.Ph.Clone() as PhClass;
+      //bb.Ph = this.Ph.Clone() as PhClass;
       return bb;
     }
 

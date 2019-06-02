@@ -268,7 +268,7 @@ namespace IBApp {
             RemovedCallback = ce => {
               ActiveRequestCleaner((Price)ce.CacheItem.Value);
             },
-            SlidingExpiration = 600.FromSeconds()
+            SlidingExpiration = 6.FromSeconds()
           } : new CacheItemPolicy();
           if(!_currentPrices.Add(t.price.Pair, t.price, cip))
             TraceError($"RaisePriceChanged: {t.price.Pair} is already in {nameof(_currentPrices)}");
@@ -281,7 +281,7 @@ namespace IBApp {
     public void ActiveRequestCleaner(Price price = null, Contract contract = null) {
       activeRequests.Where(kv => price != null ? kv.Value.price == price : kv.Value.contract == contract).ToList().ForEach(CancelPriceRequest);
       void CancelPriceRequest(KeyValuePair<int, (Contract contract, Price price)> ar) {
-        // TODO: Make use of Observable
+        _currentPrices.Where(cp => cp.Key == ar.Value.price.Pair).ToList().ForEach(cp => _currentPrices.Remove(cp.Key));
         IBClientMaster.CancelPrice(ar.Key);
         if(activeRequests.TryRemove(ar.Key, out var rem)) {
           TraceDebug($"{nameof(activeRequests)} - removed {ar.Value.contract}");

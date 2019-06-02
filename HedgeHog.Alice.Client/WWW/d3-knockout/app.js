@@ -84,7 +84,7 @@
     var defaulted = ko.pureComputed({
       read: function () {
         var val = target();
-        return val == null ? defValue : val;
+        return val === null ? defValue : val;
       },
       write: function (newValue) {
         target(newValue);
@@ -100,6 +100,7 @@
       try {
         target(JSON.parse(localStorage.getItem(key)));
       } catch (e) {
+        alert(JSON.stringify(e));
       }
     }
     // Subscribe to new values and add them to localStorage
@@ -195,7 +196,6 @@
   var openInFlightNote = _.throttle(showError, 2 * 1000);
   var openInFlightNotePerm = _.throttle(showWarning, 2 * 1000);
   function isInFlight(date, index) {
-    return false;
     var secsInFlight = getSecondsBetween(new Date(), date);
     if (secsInFlight > 3)
       openInFlightNotePerm("In flight(" + index + ") > " + secsInFlight, keyNote("InFlightDelay"));
@@ -278,7 +278,7 @@
       hide: false,
       icon: 'fa fa-spinner fa-spin',
     }, settings);
-    var note = (settings.type == NOTE_ERROR ? showErrorPerm : showInfoPerm)(message, settings);
+    var note = (settings.type === NOTE_ERROR ? showErrorPerm : showInfoPerm)(message, settings);
     pendingMessages[key].push(note);
     return note;
   }
@@ -310,7 +310,7 @@
         }).done(function () {
           var isCustom = typeof done === 'string';
           var msg = isCustom ? "\n" + done : "";
-          if (serverMethodsRefresh.some(function (s) { return toLowerCase(s) == toLowerCase(name); }))
+          if (serverMethodsRefresh.some(function (s) { return toLowerCase(s) === toLowerCase(name); }))
             resetPlotter();
           note.update({
             type: "warning",
@@ -349,7 +349,7 @@
             dataViewModel.comboQuantity(x.TradingRatio);
           if (!dataViewModel.expDaysSkip())
             dataViewModel.expDaysSkip(x.OptionsDaysGap);
-          if (dataViewModel.strategyCurrent() != x.Strategy)
+          if (dataViewModel.strategyCurrent() !== x.Strategy)
             dataViewModel.strategyCurrent(x.Strategy);
           dataViewModel.distanceFromHigh(x.DistanceFromHigh);
         });
@@ -378,7 +378,7 @@
       this.pairs = ko.observableArray();
       this.pairCurrent = ko.observable(pair);
       this.pairCurrent.subscribe(function (pc) {
-        if (pc.toUpperCase() == pair) return;
+        if (pc.toUpperCase() === pair) return;
         var newUrl = location.href.replace(location.search, "") + "?pair=" + pc;
         location = newUrl;
       });
@@ -441,15 +441,15 @@
         var args = [pair, isBuy, rate];
         args.noNote = true;
         serverCall("setTradeRate", args);
-      }
+      };
       this.manualToggle = function () {
         serverCall("manualToggle", [pair]);
-      }
-      this.strategyCall = ko.mapping.fromJS(ko.observableArray())
+      };
+      this.strategyCall = ko.mapping.fromJS(ko.observableArray());
       this.callByBS = function () {
         var args = [pair];
         args.noNote = true;
-        serverCall("callByBS", args, calls=> {
+        serverCall("callByBS", args, calls => {
           var map = {
             key: function (item) {
               return ko.utils.unwrapObservable(item.i);
@@ -457,12 +457,12 @@
           };
           ko.mapping.fromJS(calls, null, self.strategyCall);
         });
-      }
+      };
       this.openStrategyOption = function (data) {
         var l = ko.unwrap(data.l);
         var o = ko.unwrap(data.o);
         serverCall("openStrategyOption", [o, self.comboQuantity(), l, self.currentProfit()]);
-      }
+      };
       // #endregion
 
       // #region Buy/Sell
@@ -544,9 +544,6 @@
         });
       }
       // #region TradeSettings
-      /**
-       * @param {Object} ts
-       */
       function saveTradeSetting(chartNum, name, value, done) {
         var ts = {};
         ts[name] = value;
@@ -810,7 +807,7 @@
           resetPlotterHandler(0);
         }
       })
-      this.refreshCharts2Interval = ko.observable(1000 * 10).extend({ persist: "refreshChartsInterval" + pair });
+      this.refreshCharts2Interval = ko.observable(1000 * 10).extend({ persist: "refreshCharts2Interval" + pair });
       this.refreshCharts2Interval.subscribe(function () {
         if (resetPlotter2Handler()) {
           clearInterval(resetPlotter2Handler());
@@ -931,7 +928,7 @@
       }
       this.histVolM1 = ko.observable(0);
       this.histVolM1.subscribe(function (hv) {
-        if (this.numOfCombos() != 0) return;
+        if (this.numOfCombos() !== 0) return;
         var i = 5;
         var nc = Math.ceil(hv / i) + 2;
         this.numOfCombos(nc);
@@ -1028,13 +1025,6 @@
       this.rollOversList = ko.pureComputed(function () {
         return self.liveCombos().filter(lc=>!lc.ic());
       });
-      this.combosMin = ko.pureComputed(function () {
-        return [];
-        return this.butterflies()
-          .sort(function (v1, v2) { return v1.avg() - v2.avg(); })
-          .map(function (v) { return { bid: v.bid(), ask: v.ask(), spread: v.ask() - v.bid(), avg: v.avg() }; })
-          .slice(0, 1);
-      }, this);
       this.combosStats = ko.pureComputed(function () {
         var combos = this.butterflies();
         var top2 = combos
@@ -1424,7 +1414,7 @@
           openTrades(response.trades);
         }
         //lineChartData.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
-        response.waveLines.forEach(function (w, i) { w.bold = i == sumStartIndexById(); });
+        response.waveLines.forEach(function (w, i) { w.bold = i === sumStartIndexById(); });
         if (response.isTrader)
           self.isTradingActive(response.isTradingActive);
         var chartData = chartDataFactory(lineChartData, getTrends(response), response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross(), response.tpsHigh, response.tpsLow, response.canBuy, response.canSell, response.waveLines);
@@ -1515,7 +1505,7 @@
         chartData2.tps2Low = response.tps2Low;
         chartData2.tpsCurr2 = response.tpsCurr2;
         response.waveLines.forEach(function (w, i) {
-          w.bold = i == sumStartIndexById();
+          w.bold = i === sumStartIndexById();
           w.color = w.isOk ? "limegreen" : "";
         });
         chartData2.breakEven = ko.unwrap(self.liveStraddles().map(x=>ko.unwrap(x.breakEven))).flat();
@@ -2319,7 +2309,7 @@
     window.removeEventListener("error", globalError);
     return false;
   }
-  window.addEventListener("error", globalError);
+  //window.addEventListener("error", globalError);
   // #endregion
 
   function addMessage(response) {
