@@ -684,6 +684,7 @@ namespace HedgeHog {
     public static TimeSpan FromSeconds(this double i) { return TimeSpan.FromSeconds(i); }
     public static TimeSpan FromMinutes(this int i) { return TimeSpan.FromMinutes(i); }
     public static TimeSpan FromMinutes(this double i) { return TimeSpan.FromMinutes(i); }
+    public static TimeSpan FromHours(this double i) { return TimeSpan.FromHours(i); }
 
     public static IEnumerable<T> OfType<T>(this IEnumerable e, T type) {
       return e.OfType<T>();

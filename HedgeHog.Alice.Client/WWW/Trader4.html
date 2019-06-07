@@ -194,12 +194,17 @@
 
     #settingsGrid .pgTable .pgCell {
       white-space: nowrap;
+      padding: 0;
     }
 
     #settingsGrid .pgTable .pgRow {
       display: none;
     }
 
+    #settingsGrid .ui-spinner-input{
+      margin:0;
+      padding:0;
+    }
     .dialog-compact {
       font-size: 1em;
     }
@@ -347,7 +352,7 @@
     }
 
     table tbody tr td.comboNameActive {
-      color: black;
+      color: lightslategray;
       background-color: white
     }
 
@@ -1093,6 +1098,7 @@
         <div class="modal-body">
           <a href="https://dimok.loggly.com/search" target="_blank">Event Log</a>
           <a href="https://mlab.com/databases/forex" target="_blank">MLab</a>
+          <a href="http://www.cboe.com/framed/IVolframed.aspx?content=https%3a%2f%2fcboe.ivolatility.com%2fcalc%2findex.j%3fcontract%3d1B3F17DF-5C19-42A0-BA2F-5C1FA9EC7649&sectionName=SEC_TRADING_TOOLS&title=CBOE%20-%20IVolatility%20Services" target="_blank">CBOE</a>
         </div>
       </div>
     </div>
@@ -1256,8 +1262,8 @@
     <table border="1" cellspacing="0" class="wwwInfo liveCombos">
       <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
       <tbody data-bind="foreach:liveCombos">
-        <tr>
-          <td data-bind="text:l" style="text-align:left;color:white"></td>
+        <tr data-bind="event:{click:$root.toggleSelectedTrade}">
+          <td data-bind="text:l,css:{comboNameActive:$root.testActiveTrade($data)}" class="comboName" style="text-align:left"></td>
           <td data-bind="text:d3.format('+.1f')(delta()),style:{color:color()}" style="text-align:right"></td>
           <td><input data-bind="value:exitDelta" size="1" style="display:none" /></td>
           <td data-bind="text:d3.format('.2f')(openPrice())"></td>
@@ -1397,7 +1403,7 @@
             <!-- ko foreach:Enumerable.from(pc().filter(function(p){return $data.id()==ko.unwrap(($root.selectedOrder()||{}).id)})).defaultIfEmpty("0000").toArray() -->
             <input data-bind="value:$root.currentPriceCondition" style="width:3em" />
             <!-- /ko -->
-<td data-bind="text:a,style:{backgroundColor: a()=='B'?'deepskyblue':'red'}"></td>
+          <td data-bind="text:a,style:{backgroundColor: a()=='B'?'deepskyblue':'red'}"></td>
           <td data-bind="text:p"></td>
           <td data-bind="text:lp"></td>
           <td data-bind="text:f()+'<'+r()"></td>
@@ -1456,8 +1462,8 @@
         <td style="text-align:center">Trade</td>
       </tr>
       <!-- ko foreach:currentCombos -->
-      <tr data-bind="event:{click1:function(){isActive(!isActive())}}">
-        <td data-bind="text:l,css1:{comboName:!isActive(),comboNameActive:isActive()}" class="comboName"></td>
+      <tr data-bind="event:{click:$root.toggleSelectedCombos}">
+        <td data-bind="text:l,css:{comboNameActive:$root.testActiveCombo($data)}" class="comboName"></td>
         <td data-bind="text:d3.format('+.1f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
         <!--<td data-bind1="text:d3.format('.1f')(be.up())"></td>
         <td data-bind1="text:d3.format('.1f')(be.dn())"></td>

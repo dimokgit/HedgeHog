@@ -196,6 +196,7 @@
   var openInFlightNote = _.throttle(showError, 2 * 1000);
   var openInFlightNotePerm = _.throttle(showWarning, 2 * 1000);
   function isInFlight(date, index) {
+    if (date === null) return false;
     var secsInFlight = getSecondsBetween(new Date(), date);
     if (secsInFlight > 3)
       openInFlightNotePerm("In flight(" + index + ") > " + secsInFlight, keyNote("InFlightDelay"));
@@ -230,7 +231,7 @@
       .fail(function (e) {
         showErrorPerm(e, keyNote("askRates"));
       }).always(function () {
-        ratesInFlight = dateMin;
+        ratesInFlight = null;
       });
     askRateFirstDate = null;
   }
@@ -247,7 +248,7 @@
       }).fail(function (e) {
         showErrorPerm(e, keyNote("askRates2"));
       }).always(function () {
-        ratesInFlight2 = dateMin;
+        ratesInFlight2 = null;
       });
     askRateFirstDate2 = null;
   }
@@ -320,7 +321,7 @@
             delay: isCustom ? 5000 : 1000
           });
         })
-      ;
+        ;
       if ($.isFunction(done)) r.done(function (data) {
         done(data, note);
       });
@@ -335,14 +336,15 @@
     if (!force && readingCombos || dataViewModel.freezeCombos() || !showCombos) return;
     var expDaysSkip = dataViewModel.expDaysSkip() || 0;
     var hedgeDate = dataViewModel.hedgeVirtualDate();
-    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, dataViewModel.rollCombo()];
+    var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
+    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, dataViewModel.rollCombo(), selectedCombos];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
       , function (xx) {
         xx.forEach(function (x) {
 
-          if (false)
+          if (!x)
             dataViewModel.callByBS();
 
           if (!dataViewModel.comboQuantity())
@@ -983,7 +985,7 @@
         showInfo(JSON.stringify(d));
         var so = ko.mapping.toJS(self.selectedOrder) || {};
         showInfo(JSON.stringify(so));
-        serverCall("updateOrderPriceCondition", [so.id, d], m=> {
+        serverCall("updateOrderPriceCondition", [so.id, d], m => {
           showInfoPerm(JSON.stringify(m));
         });
       });
@@ -1000,12 +1002,47 @@
         }
       }
       this.butterflies = ko.mapping.fromJS(ko.observableArray());
+      this.tradesBreakEvens = ko.mapping.fromJS(ko.observableArray());
       this.rollOvers = ko.mapping.fromJS(ko.observableArray());
+
       this.rollOversSorted = ko.pureComputed(function () {
         return this.rollOvers().sort(function (l, r) {
           return ko.unwrap(l.ppd) > ko.unwrap(r.ppd) ? -1 : 1;
         });
       }, this);
+      function compareCombos(c1, c2) {
+        return ko.unwrap(c1.i) === ko.unwrap(c2.i);
+      }
+
+      this.selectedCombos = ko.observableArray();
+      this.selectedCombos.subscribe(() => readCombos(true));
+      this.toggleSelectedTrade = function (combo) { toggleSelected(combo, this.selectedCombos, this.liveCombos().concat(this.currentCombos())); }.bind(this);
+      this.toggleSelectedCombos = function (combo) { toggleSelected(combo, this.selectedCombos, this.liveCombos().concat(this.currentCombos())); }.bind(this);
+      function toggleSelected(combo, array, source) {
+        var isSelected = isSelectedCombo(combo, array);
+        if (isSelected)
+          array.remove(c => compareCombos(c, combo));
+        else
+          array.push(combo);
+        ko.unwrap(array).forEach(function (combo) {
+          if (!ko.unwrap(source).find(c => compareCombos(c, combo))) {
+            array.remove(c => compareCombos(c, combo));
+            console.log("Combo removed:\n" + JSON.stringify(ko.toJS(combo)));
+          }
+        });
+        console.log("SelectedCombos:\n" + JSON.stringify(ko.toJS(array)));
+      }
+      function isSelectedCombo(combo, array) {
+        return ko.unwrap(array).find(c => compareCombos(c, combo));
+      }
+
+      this.testActiveCombo = function (data) {
+        return ko.pureComputed(() => isSelectedCombo(data, this.selectedCombos));
+      }.bind(this);
+      this.testActiveTrade = function (data) {
+        return ko.pureComputed(() => isSelectedCombo(data, this.selectedCombos));
+      }.bind(this);
+
       this.currentCombos = ko.pureComputed(function () {
         var cc = this.butterflies()
           .concat(this.bullPuts())
@@ -1023,7 +1060,7 @@
           });
       }, this);
       this.rollOversList = ko.pureComputed(function () {
-        return self.liveCombos().filter(lc=>!lc.ic());
+        return self.liveCombos().filter(lc => !lc.ic());
       });
       this.combosStats = ko.pureComputed(function () {
         var combos = this.butterflies();
@@ -1041,7 +1078,7 @@
         this.canTrade(false);
         var combo = ko.unwrap(ko.unwrap(key).i);
         serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(), this.currentProfit(), self.rollCombo()]
-          , r=> (r || []).forEach(e=> showErrorPerm("openButterfly:\n" + e))
+          , r => (r || []).forEach(e => showErrorPerm("openButterfly:\n" + e))
           , null
           , function () { this.canTrade(true); }.bind(this)
         );
@@ -1059,7 +1096,7 @@
         var coverPrice = this.comboCurrentStrikeLevel();
         if (!coverPrice) return showError("comboCurrentStrikeLevel is empty");
         this.canTrade(false);
-        serverCall("openCovered", [pair, option, this.comboQuantity(), ]
+        serverCall("openCovered", [pair, option, this.comboQuantity(),]
           , null
           , null
           , function () { this.canTrade(true); }.bind(this)
@@ -1069,7 +1106,7 @@
         this.canTrade(false);
         serverCall("closeCombo", [ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel()], done, null, function () { this.canTrade(false); }.bind(this));
         function done(openOrderMessage) {
-          (openOrderMessage || []).forEach(e=>showErrorPerm("closeCombo:\n" + e));
+          (openOrderMessage || []).forEach(e => showErrorPerm("closeCombo:\n" + e));
           self.canTrade(true);
         }
       }.bind(this);
@@ -1079,7 +1116,7 @@
       this.chartElement0 = ko.observable();
       this.chartElement1 = ko.observable();
       this.chartElement = ko.pureComputed(function () {
-        return [self.chartElement0(), self.chartElement1()].find(e=>$(e).is(":visible"));
+        return [self.chartElement0(), self.chartElement1()].find(e => $(e).is(":visible"));
         //$(this).next().toggle().is(":visible");
       }, this);
       var stopCombos = true;
@@ -1385,7 +1422,7 @@
       var resetPlotter2Handler = ko.observable();
       var lastRefreshDate = ko.observable(new Date(1900, 1));
       var lastRefreshDate2 = ko.observable(new Date(1900, 1));
-      lastRefreshDate2.subscribe(d=> {
+      lastRefreshDate2.subscribe(d => {
         //if (d.getFullYear() < 2018)
         //debugger;
       })
@@ -1508,7 +1545,11 @@
           w.bold = i === sumStartIndexById();
           w.color = w.isOk ? "limegreen" : "";
         });
-        chartData2.breakEven = ko.unwrap(self.liveStraddles().map(x=>ko.unwrap(x.breakEven))).flat();
+        //var beLive = ko.unwrap(self.liveStraddles().map(x => ko.unwrap(x.breakEven))).flat().slice(0, 2);
+        //var beStraddle = ko.unwrap(self.butterflies()).sort((a, b) => Math.abs(ko.unwrap(a.strikeDelta)) - Math.abs(ko.unwrap(b.strikeDelta)))
+        //  .map(x => ko.unwrap(x.breakEven)).flat().slice(0, 2);
+        chartData2.breakEven = self.tradesBreakEvens();// beStraddle.concat(beLive);
+        console.log("BreakEven" + JSON.stringify(chartData2.breakEven));
         self.chartData2(chartData2);
         updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
         dataViewModel.price(response.askBid);
@@ -1574,7 +1615,7 @@
         if (s)
           serverCall("setStrategy", [pair, s]);
       });
-      this.hasStrategy = ko.pureComputed(() => !!self.strategyCurrent() && self.strategyCurrent() != "None");
+      this.hasStrategy = ko.pureComputed(() => !!self.strategyCurrent() && self.strategyCurrent() !== "None");
       var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
       // #endregion
       // #region GetAccounting
@@ -1601,7 +1642,7 @@
         var args = [pair];
         args.noNote = true;
         function getByKey(a, key) {
-          var i = a.findIndex(function (x) { return x.n == key; });
+          var i = a.findIndex(function (x) { return x.n === key; });
           return i < 0 ? null : (a.splice(i, 1)[0] || {}).v;
         }
         serverCall("getAccounting", args,
@@ -1682,7 +1723,7 @@
         table.on("click", "tbody tr", function (a, b) {
           var koData = ko.dataFor(this);
           var uid = waveRangeValue(waveRangesUidProp, koData);
-          sumStartIndex(uid == sumStartIndex() ? 0 : uid);
+          sumStartIndex(uid === sumStartIndex() ? 0 : uid);
         });
       };
       var waveRanges = ko.observableArray();
@@ -1928,7 +1969,7 @@
     });
     $.connection.hub.start(function () {
       closeReconnectNote();
-      if ($.connection.hub.transport.name != "webSockets")
+      if ($.connection.hub.transport.name !== "webSockets")
         showErrorPerm("transport.name:" + $.connection.hub.transport.name);
       console.log("Connected, transport = " + $.connection.hub.transport.name);
     });
@@ -1989,6 +2030,9 @@
       showWarningPerm(message);
     };
     // #region Stock Options
+    chat.client.tradesBreakEvens = function (options) {
+      ko.mapping.fromJS(options, {}, dataViewModel.tradesBreakEvens);
+    };
     chat.client.rollOvers = function (options) {
       var map = {
         key: function (item) {
@@ -1998,7 +2042,7 @@
       ko.mapping.fromJS(options, map, dataViewModel.rollOvers);
     };
     chat.client.bullPuts = function (options) {
-      var isNew = dataViewModel.bullPuts().length == 0;
+      var isNew = dataViewModel.bullPuts().length === 0;
       if (!isNew)
         options.forEach(function (v) {
           delete v.isActive;
@@ -2011,7 +2055,7 @@
       ko.mapping.fromJS(options, map, dataViewModel.bullPuts);
     };
     chat.client.options = function (options) {
-      var isNew = dataViewModel.options().length == 0;
+      var isNew = dataViewModel.options().length === 0;
       if (!isNew)
         options.forEach(function (v) {
           delete v.isActive;
@@ -2033,7 +2077,7 @@
       ko.mapping.fromJS(orders, map, dataViewModel.openOrders);
     };
     chat.client.butterflies = function (butterflies) {
-      var isNew = dataViewModel.butterflies().length == 0;
+      var isNew = dataViewModel.butterflies().length === 0;
       if (!isNew)
         butterflies.forEach(function (v) {
           delete v.isActive;
@@ -2046,7 +2090,7 @@
       ko.mapping.fromJS(butterflies, map, dataViewModel.butterflies);
     };
     chat.client.liveCombos = function (combos) {
-      var isNew = dataViewModel.liveStraddles().length != combos.length;
+      var isNew = dataViewModel.liveStraddles().length !== combos.length;
       var ignore = isNew ? [] : ["exit"];
       if (!isNew)
         combos.forEach(function (v) {
@@ -2415,7 +2459,7 @@
     var vars = query.split('&');
     for (var i = 0; i < vars.length; i++) {
       var pair = vars[i].split('=');
-      if (decodeURIComponent(pair[0]).toLowerCase() == variable.toLowerCase()) {
+      if (decodeURIComponent(pair[0]).toLowerCase() === variable.toLowerCase()) {
         return decodeURIComponent(pair[1]);
       }
     }

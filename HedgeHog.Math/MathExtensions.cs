@@ -1220,6 +1220,7 @@ namespace HedgeHog {
     public static double HistoricalVolatility<T>(this IEnumerable<T> source, Func<T, double> map) => source.Select(map).ToArray().HistoricalVolatilityByPoint();
     public static double HistoricalVolatilityByPoint(this IDouble source) => source.HistoricalVolatility() * source.DefaultIfEmpty().Average();
     public static double HistoricalVolatility(this IDouble source) => source.HistoricalVolatility(out var avg);
+    public static double HistoricalVolatility(this IDouble source, int days) => source.HistoricalVolatility(out var avg) * Math.Sqrt(days);
 
     public static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), double> calc) => source.HistoricalVolatility(calc, out var avg);
 
@@ -1229,7 +1230,7 @@ namespace HedgeHog {
     private static double HistoricalVolatility(this IDouble source, Func<(double prev, double next), bool> condition)
       => source.HistoricalVolatility(out var avg, null, condition);
 
-    public static double HistoricalVolatility(
+    public static double HistoricalVolatility_Smart(
       this IDouble source,
       out double avg,
       Func<(double prev, double next), double> calc = null,
@@ -1241,7 +1242,17 @@ namespace HedgeHog {
       a = a.AverageByStDev().ToArray();
       var hv = a.StandardDeviation(out avg);
       return hv;
-      double Log((double prev, double next) t) => Math.Log(t.prev / t.next).Abs();
+      double Log((double prev, double next) t) => Math.Log(t.prev / t.next);
+    }
+    public static double HistoricalVolatility(      this IDouble source,      out double avg,
+      Func<(double prev, double next), double> calc = null,
+      Func<(double prev, double next), bool> condition = null) {
+      var s = source.Pairwise((prev, next) => (prev, next));
+      if(condition != null) s = s.Where(condition).Where(t => t.prev != t.next);
+      var a = s.Select(calc ?? Log).ToArray();
+      var sd = a.StandardDeviation(out avg);
+      return sd;
+      double Log((double prev, double next) t) => Math.Log(t.prev / t.next);
     }
 
     #region Helpers

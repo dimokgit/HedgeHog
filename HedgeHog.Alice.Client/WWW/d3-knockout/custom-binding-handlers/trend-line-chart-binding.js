@@ -601,7 +601,7 @@
               return y2(tipValue(d.v));
             });
           var isHotTps = _.last(data).v > tpsHigh || _.last(data).v < tpsLow;
-          var colorTps = !y2Scale ? "Wisteria" : isHotTps ? "darkred" : "navy";
+          var colorTps = !y2Scale ? "Wisteria" : isHotTps ? "darksalmon" : "navy";
           var opacityTps = !y2Scale ? tpsOpacity : isHotTps ? tpsOpacity * 2 : tpsOpacity;
           svg.select("path.line.dataTps")
             .datum(data)

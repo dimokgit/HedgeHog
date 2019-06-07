@@ -70,7 +70,6 @@ namespace HedgeHog.Shared {
       get { return barMinutes; }
       set { barMinutes = value; }
     }
-    public Func<Dictionary<string, ReactiveList<Rate>>> RatesByPair;
 
     Dictionary<string, double> _pipSizeDictionary = new Dictionary<string, double>();
     public double GetPipSize(string pair) {

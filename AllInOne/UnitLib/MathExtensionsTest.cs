@@ -29,7 +29,29 @@ namespace HedgeHog.Tests {
       }
       Console.WriteLine(new { Amount });
     }
-
+    [TestMethod]
+    public void StDev() {
+      var a = new[]{ -0.00213689867397825,
+        0.00118154978526681,
+        -0.00688782857231444,
+        -0.00679585864418092,
+        0.00184067034393126,
+        -0.00787758079660816,
+        0.00107056839558538,
+        -0.00454202143450101,
+        -0.00783311154489462,
+        -0.0015416807370234,
+        8.80320437207391E-05,
+        -8.80320437207588E-05,
+        -0.0112263606145178,
+        0.00613371636545561,
+        0.0102998401640537,
+        -0.000751863107885203,
+        0.00212436459622469 };
+      var sd = a.StDev();
+      var sd2 = a.StandardDeviation();
+      Assert.AreEqual(sd2,sd);
+    }
     [TestMethod]
     public void AverageByStDevTest() {
       //var source = Enumerable.Range(0, 100).Select(i => (double)i);
@@ -157,10 +179,10 @@ namespace UnitLib {
     ///</summary>
     [TestMethod()]
     public void ValueByPisitionTest() {
-      double sampleCurrent = 601; 
-      double sampleLow = 10; 
+      double sampleCurrent = 601;
+      double sampleLow = 10;
       double sampleHigh = 1000;
-      double realLow = 120; 
+      double realLow = 120;
       double realHigh = 840;
       int expected = 550;
       double actual;

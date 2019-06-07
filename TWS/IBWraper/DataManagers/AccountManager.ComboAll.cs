@@ -35,7 +35,8 @@ namespace IBApp {
       return underCombos;
     }
     static ComboLeg ComboLeg((Contract c, int p) combo) =>
-      new ComboLeg { ConId = combo.c.ConId, Ratio = combo.p.Abs(), Action = combo.p.Sign() > 0 ? "BUY" : "SELL", Exchange = combo.c.Exchange };
+      new ComboLeg { ConId = combo.c.ConId, Ratio = combo.p.Abs(), Action = "BUY", Exchange = combo.c.Exchange };
+    //new ComboLeg { ConId = combo.c.ConId, Ratio = combo.p.Abs(), Action = combo.p.Sign() > 0 ? "BUY" : "SELL", Exchange = combo.c.Exchange };
     static IList<ComboLeg> CombosLegs(IEnumerable<(Contract c, int p)> combos) =>
         (from combo in combos
          from leg in (combo.c.ComboLegs ?? new List<ComboLeg> { ComboLeg(combo) })

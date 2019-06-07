@@ -176,9 +176,11 @@ namespace HedgeHog {
       var digitsReal = Math.Log10(d.Abs()).Floor() + 1;
       return d.Round((digits - digitsReal).Max(0));
     }
-    public static double? RoundBySample(this double v, double sample) {
+    public static double RoundBySample(this double v, double sample) {
       return Math.Round(v / sample, 0) * sample;
     }
+    public static double RoundBySampleUp(this double v, double sample) => Math.Ceiling(v / sample) * sample;
+    public static double RoundBySampleDown(this double v, double sample) => Math.Floor(v / sample) * sample;
     public static double? RoundBySqrt(this double v, int decimals) {
       return Math.Round(Math.Sqrt(v), decimals);
     }

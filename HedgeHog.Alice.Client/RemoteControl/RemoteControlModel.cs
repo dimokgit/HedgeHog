@@ -885,7 +885,6 @@ namespace HedgeHog.Alice.Client {
           if(IsInVirtualTrading) {
             var vt = (VirtualTradesManager)TradesManager;
             vt.SetServerTime(DateTime.MinValue);
-            vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri, 2000).Single());
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
           TradesManager.TradeAdded += fw_TradeAdded;

@@ -13,6 +13,8 @@ namespace HedgeHog.Alice.Client {
   partial class RemoteControlModel {
 
     public object[] ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
+      var cp = tm.CurrentPrice?.Average;
+      var histVol = tm.StraddleRange(0).With(hv => new { hv.up, hv.down });
       var digits = tm.Digits();
       if(dateEnd > tm.LoadRatesStartDate2)
         dateEnd = tm.LoadRatesStartDate2;
@@ -228,7 +230,8 @@ namespace HedgeHog.Alice.Client {
         ish,
         hph,
         vfs = tm.IsVoltFullScale ? 1 : 0,
-        vfss = ish || tm.IsVoltFullScale ? tm.VoltsFullScaleMinMax : new[] { 0.0, 0.0 }
+        vfss = ish || tm.IsVoltFullScale ? tm.VoltsFullScaleMinMax : new[] { 0.0, 0.0 },
+        histVol
       });
       return ret;
     }

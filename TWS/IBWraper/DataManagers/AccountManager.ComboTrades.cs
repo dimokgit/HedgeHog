@@ -74,6 +74,35 @@ namespace IBApp {
     public int orderId { get; }
   }
   public partial class AccountManager {
+    #region BreakEvens  
+    public static (double level, bool isCall)[] BreakEvens((double strike, double debit, bool isCall)[] positions) =>
+      (from p in positions
+       group p by p.isCall into g
+       let debit = positions.Sum(t => t.debit)
+       select (BreakEven(g.Select(t => t.strike), debit, g.Key), g.Key)).ToArray();
+    public static double BreakEven(IEnumerable<double> strikes, double debit, bool isCall) =>
+      isCall ? BreakEvenCall(strikes, debit) : BreakEvenPut(strikes, debit);
+    public static double BreakEvenCall(IEnumerable<double> strikes, double debit) {
+      var strikeStart = strikes.Min();
+      var strikes2 = strikes.Where(s => s < strikeStart + debit).ToArray();
+      return (strikes2.Sum() + debit) / strikes2.Length;
+    }
+    public static double BreakEvenPut(IEnumerable<double> strikes, double debit) {
+      var strikeStart = strikes.Max();
+      var strikes2 = strikes.Where(s => s > strikeStart - debit).ToArray();
+      return (strikes2.Sum() - debit) / strikes2.Length;
+    }
+    #endregion
+
+    public IObservable<(double level, bool isCall)[]> TradesBreakEvens() {
+      var bes = (from cts in ComboTrades(1).ToArray()
+                 from ct in cts
+                 where ct.contract.IsOption
+                 select (strike: ct.strikeAvg, debit: ct.openPrice.Abs(), ct.contract.IsCall)
+                 ).ToArray();
+      return (from pos in bes select BreakEvens(pos));
+
+    }
     public static double priceFromProfit(double profit, double position, int multiplier, double open)
       => (profit + open) / position / multiplier;
     public COMBO_TRADES ComboTrades(double priceTimeoutInSeconds) {
@@ -150,10 +179,12 @@ namespace IBApp {
 
     private COMBO_TRADES_IMPL ComboTradesAllImpl2((Contract contract, int position, double open, double price, double pipCost)[] positions) =>
       (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
+       let sell = positions.All(p => p.position < 0)
+       let posSign = sell ? -1 : 1
        let order = OrderContractsInternal.Values.Where(oc => !oc.isDone && oc.contract == ca.contract.contract).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
        let open = ca.positions.Sum(p => p.open)
        let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
-       select (ca.contract.contract, position: ca.contract.positions, open, openPrice, order.LmtPrice, order.OrderId));
+       select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, order.LmtPrice, order.OrderId));
     //public COMBO_TRADES_IMPL ComboTradesUnder() {
     //  var positions = Positions.Where(p => p.position != 0).ToArray();
     //  //var expDate = positions.Select(p => p.contract.Expiration).DefaultIfEmpty().Min();

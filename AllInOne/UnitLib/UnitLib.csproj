@@ -336,6 +336,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BarBaseTest.cs" />
+    <Compile Include="BlackScholesTests.cs" />
+    <Compile Include="DataManagers\AccountManagerTests.cs" />
     <Compile Include="Enum.cs" />
     <Compile Include="ExtensionsTest.cs" />
     <Compile Include="GlobalStorageTests.cs" />
@@ -424,6 +426,10 @@
     <ProjectReference Include="..\..\Persistancy\Persistance.csproj">
       <Project>{BB1DA090-B58A-456B-8B72-54375260486B}</Project>
       <Name>Persistance</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\TWS\IBWraper\IBWraper.csproj">
+      <Project>{364BF321-6C2A-41A6-8CE5-05D8441FEB9A}</Project>
+      <Name>IBWraper</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

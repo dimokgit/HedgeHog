@@ -1195,7 +1195,7 @@ namespace HedgeHog.Alice.Store {
         //.Add((object)(new { MacdDist = tm.MacdDistances(RatesArray).TakeLast(1).Select(d => d.AutoRound2(3)).SingleOrDefault() }))
         //.Add((object)(new { HistVol = $"{HV(this)}" }))
         //.Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
-        .Add(HVP(this).Select(hvp => (object)new { HistVol = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVP).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
+        .Add(HVP(this).Select(hvp => (object)new { HistVol = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVA).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         .Add(HVPt(this).Select(hvp => (object)new { HistVolPt = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVPt).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         ;
       }
@@ -1205,6 +1205,7 @@ namespace HedgeHog.Alice.Store {
       .SingleOrDefault();
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
+      double[] HVA(TradingMacro tm) => new[] { tm.HistoricalVolatilityAnnualized() };
       double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
       double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints();
     }

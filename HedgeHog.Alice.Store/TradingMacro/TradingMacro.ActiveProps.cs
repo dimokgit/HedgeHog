@@ -51,7 +51,7 @@ namespace HedgeHog.Alice.Store {
     }
     #region RatesLengthMinutesMin
     TimeSpan RatesTimeSpanMinimum => TimeSpan.Parse(RatesMinutesMin);
-    private string _RatesMinutesMin="2:00:00";
+    private string _RatesMinutesMin = "2:00:00";
     [Category(categoryActive)]
     [WwwSetting(wwwSettingsTradingCorridor)]
     public string RatesMinutesMin {
@@ -74,7 +74,7 @@ namespace HedgeHog.Alice.Store {
     public double RsdTreshold {
       get { return _Rsd; }
       set {
-        if (_Rsd != value) {
+        if(_Rsd != value) {
           _Rsd = value;
           OnPropertyChanged("Rsd");
         }
@@ -90,7 +90,7 @@ namespace HedgeHog.Alice.Store {
     public int TradeCountStart {
       get { return _TradeCountStart; }
       set {
-        if (_TradeCountStart != value) {
+        if(_TradeCountStart != value) {
           _TradeCountStart = value;
           OnPropertyChanged("TradeCountStart");
         }
@@ -103,7 +103,7 @@ namespace HedgeHog.Alice.Store {
     public int PriceFftLevelsFast {
       get { return _PriceFftLevelsFast; }
       set {
-        if (_PriceFftLevelsFast != value) {
+        if(_PriceFftLevelsFast != value) {
           _PriceFftLevelsFast = value;
           OnPropertyChanged("PriceFftLevelsFast");
         }
@@ -117,7 +117,7 @@ namespace HedgeHog.Alice.Store {
     public int PriceFftLevelsSlow {
       get { return _PriceFftLevelsSlow; }
       set {
-        if (_PriceFftLevelsSlow != value) {
+        if(_PriceFftLevelsSlow != value) {
           _PriceFftLevelsSlow = value;
           OnPropertyChanged("PriceFftLevelsSlow");
         }
@@ -131,7 +131,7 @@ namespace HedgeHog.Alice.Store {
     public int VoltsHighIterations {
       get { return _VoltsHighIterations; }
       set {
-        if (_VoltsHighIterations != value) {
+        if(_VoltsHighIterations != value) {
           _VoltsHighIterations = value;
           OnPropertyChanged("VoltsHighIterations");
         }
@@ -144,7 +144,7 @@ namespace HedgeHog.Alice.Store {
     public int VoltsFrameLength {
       get { return _VoltsFrameLength; }
       set {
-        if (_VoltsFrameLength != value) {
+        if(_VoltsFrameLength != value) {
           _VoltsFrameLength = value;
           OnPropertyChanged("VoltsFrameLength");
         }
@@ -158,7 +158,7 @@ namespace HedgeHog.Alice.Store {
     public bool CloseTradesBeforeNews {
       get { return _CloseTradesBeforeNews; }
       set {
-        if (_CloseTradesBeforeNews != value) {
+        if(_CloseTradesBeforeNews != value) {
           _CloseTradesBeforeNews = value;
           OnPropertyChanged("CloseTradesBeforeNews");
         }
@@ -173,11 +173,24 @@ namespace HedgeHog.Alice.Store {
     public TradeDirections TradeDirection {
       get { return _TradeDirection; }
       set {
-        if (_TradeDirection != value) {
+        if(_TradeDirection != value) {
           _TradeDirection = value;
-          if (BuyLevel != null && !value.HasUp() && BuyLevel.CanTrade)BuyLevel.CanTrade = false;
-          if (SellLevel != null && !value.HasDown() && SellLevel.CanTrade) SellLevel.CanTrade = false;
+          if(BuyLevel != null && !value.HasUp() && BuyLevel.CanTrade) BuyLevel.CanTrade = false;
+          if(SellLevel != null && !value.HasDown() && SellLevel.CanTrade) SellLevel.CanTrade = false;
           OnPropertyChanged("TradeDirection");
+        }
+      }
+    }
+    double _straddleGap = 0;
+    [WwwSetting(Group = wwwSettingsTradingConditions)]
+    [Category(categoryActive)]
+    [DisplayName("Straddle Gap")]
+    public double StraddleGap {
+      get { return _straddleGap; }
+      set {
+        if(_straddleGap != value) {
+          _straddleGap = value;
+          OnPropertyChanged(nameof(StraddleGap));
         }
       }
     }

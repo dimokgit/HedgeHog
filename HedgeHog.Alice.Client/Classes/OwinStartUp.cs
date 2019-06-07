@@ -578,7 +578,7 @@ namespace HedgeHog.Alice.Client {
     static double DaysTillExpiration(DateTime expiration) => (expiration - DateTime.Now.Date).TotalDays + 1;
     public object[] ReadStraddles(string pair
       , int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip
-      , string optionTypeMap, DateTime hedgeDate, string rollCombo
+      , string optionTypeMap, DateTime hedgeDate, string rollCombo, string[] selectedCombos
       ) =>
       UseTraderMacro(pair, tm => {
         if(!tm.IsInVirtualTrading) {
@@ -607,6 +607,7 @@ namespace HedgeHog.Alice.Client {
                   .Select(ts => {
                     var cs = ts.Select(t => {
                       var d = DaysTillExpiration(t.combo.contract.Expiration);
+                      var breakEven = t.combo.contract.BreakEven(t.bid).ToArray();
                       return new {
                         i = t.instrument,
                         l = t.combo.contract.DateWithShort,
@@ -624,7 +625,8 @@ namespace HedgeHog.Alice.Client {
                         maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100 / d,
                         maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier,
                         underPL = 0,
-                        greekDelta = t.deltaAsk
+                        greekDelta = t.deltaAsk,
+                        breakEven
                       };
                     });
                     cs = strikeLevel.HasValue && true
@@ -772,6 +774,10 @@ namespace HedgeHog.Alice.Client {
                 openOrders();
                 rollOvers();
                 ComboTrades();
+                if(selectedCombos.Any())
+                  SelectedCombos();
+                else
+                  TradesBreakEvens();
                 //currentBullPut();
               }
               ));
@@ -792,9 +798,11 @@ namespace HedgeHog.Alice.Client {
                   .ToArray(x => {
                     var hasStrike = x.contract.HasOptions;
                     var delta = (hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs()) * (-x.position.Sign());
-                    var breakEven = x.contract.Legs().Select(l => l.c.Strike - (l.c.IsCall ? 1 : -1) * x.openPrice).ToArray();
+                    var contract = x.contract;
+                    var breakEven = contract.BreakEven(-x.openPrice).ToArray();
                     return new {
                       combo = x.contract.Instrument
+                      , i = x.contract.Instrument
                       , l = x.contract.ShortWithDate
                       , netPL = x.pl
                       , x.position
@@ -825,6 +833,29 @@ namespace HedgeHog.Alice.Client {
               }, exc => {
                 Log = exc;
               });
+
+            void TradesBreakEvens() =>
+              am.TradesBreakEvens()
+              .Subscribe(bes => base.Clients.Caller.tradesBreakEvens(bes.Select(be => be.level)));
+
+            void SelectedCombos() {
+              var ctsObs = (from ct in am.ComboTrades(1)
+                            where ct.contract.IsOption && selectedCombos.Contains(ct.contract.Instrument)
+                            select ct//(ct.contract.Strike,ct.openPrice,ct.contract.IsCall)
+                         ).ToArray();
+              var cmbs = (from cts in ctsObs
+                          from sc in selectedCombos
+                          where cts.Count(ct => ct.contract.Instrument == sc) == 0
+                          from c in Contract.FromCache(sc).SelectMany(l => l.LegsOrMe())
+                          from price in DataManager.IBClientMaster.ReqPriceSafe(c)
+                          select (c.Strike, debit: price.bid, c.IsCall)
+                          );
+              var pos = ctsObs.SelectMany(cts => cts.Select(ct => (ct.contract.Strike, debit: ct.openPrice.Abs(), ct.contract.IsCall))).Merge(cmbs)
+              .ToArray()
+              .Select(AccountManager.BreakEvens);
+              pos.Subscribe(bes => base.Clients.Caller.tradesBreakEvens(bes.Select(be => be.level)));
+              //AccountManager.BreakEvens()
+            }
           }
         }
         var distFromHigh = tm.TradingMacroM1(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
@@ -1031,8 +1062,9 @@ namespace HedgeHog.Alice.Client {
       (from am in Observable.Return(GetAccountManager())
        from ct in am.ComboTrades(1)
        from under in ct.contract.UnderContract
+       from underPrice in DataManager.IBClientMaster.ReqPriceSafe(under)
        where ct.contract.Instrument == instrument
-       select (ct.contract, ct.position, ct.orderId, ct.closePrice, under, am)
+       select (ct.contract, ct.position, ct.orderId, ct.closePrice, under, underPrice, am)
        )
       .SelectMany(c => {
         if(c.orderId != 0) {
@@ -1044,10 +1076,16 @@ namespace HedgeHog.Alice.Client {
           });
         } else {
           //am.CancelAllOrders("CloseCombo");
+          bool? isMore = !c.contract.IsCallPut ? null
+          : conditionPrice.HasValue
+          ? c.underPrice.bid > conditionPrice
+          ? false
+          : true
+          : (bool?)null;
           return from tt in c.am.OpenTrade(c.contract, -c.position
-          , conditionPrice.HasValue ? 0 : c.closePrice
+          , isMore.HasValue ? 0 : c.closePrice
           , 0.0, false, default, default
-          , conditionPrice.HasValue ? c.under.PriceCondition(conditionPrice.Value, false, false) : default)
+          , isMore.HasValue ? c.under.PriceCondition(conditionPrice.Value, isMore.Value, false) : default)
                  from t in tt
                  select t.error;
         }

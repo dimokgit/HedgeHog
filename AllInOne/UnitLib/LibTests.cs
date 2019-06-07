@@ -118,7 +118,9 @@ namespace HedgeHog.Tests {
     public void RoundBySample() {
       var d = 1.1435765205628123;
       //Assert.AreEqual(1.14, d.RoundBySample(0.5));
-      Assert.AreEqual(2.5, (d*2).RoundBySample(0.5));
+      Assert.AreEqual(2.5, (d * 2).RoundBySample(0.5));
+      Assert.AreEqual(2555, 2553.0.RoundBySampleUp(5));
+      Assert.AreEqual(2550, 2553.0.RoundBySampleDown(5));
     }
 
     [TestMethod()]

@@ -268,7 +268,7 @@ namespace IBApp {
             RemovedCallback = ce => {
               ActiveRequestCleaner((Price)ce.CacheItem.Value);
             },
-            SlidingExpiration = 6.FromSeconds()
+            SlidingExpiration = 60.FromSeconds()
           } : new CacheItemPolicy();
           if(!_currentPrices.Add(t.price.Pair, t.price, cip))
             TraceError($"RaisePriceChanged: {t.price.Pair} is already in {nameof(_currentPrices)}");

@@ -78,34 +78,38 @@ namespace IBApi {
     public double ComboStrike() => Strike > 0 ? Strike : LegsEx().With(cls => cls.Sum(c => c.contract.strike * c.leg.Ratio) / cls.Sum(c => c.leg.Ratio));
     public bool HasOptions => LegsOrMe(l => l.IsOption).Max();
     public int ReqId { get; set; }
+    public IEnumerable<double> BreakEven(double openPrice) => Legs().Select(l => l.c.Strike + (l.c.IsCall ? 1 : -1) * openPrice);
+
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
-    public string ShortString => ComboLegsToString(c => c.Symbol + " " + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
-    public string DateWithShort => ComboLegsToString(c => c.LastTradeDateOrContractMonth.Substring(4) + " " + c.ShortString, LocalSymbol.IfEmpty(Symbol));
-    public string ShortWithDate => ComboLegsToString(c => c.Symbol + " " + c.LastTradeDateOrContractMonth.Substring(4) + " " + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
+    public string ShortString => ComboLegsToString((c, r, a) => c.Symbol + " " + LegLabel(r, a) + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
+    public string DateWithShort => ComboLegsToString((c, r, a) 
+      => c.LastTradeDateOrContractMonth.Substring(4) + " " + c.Symbol + " " + LegLabel(r, a) + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
+    public string ShortWithDate => ComboLegsToString((c, r, a) => c.Symbol + " " + c.LastTradeDateOrContractMonth.Substring(4) + " " + LegLabel(r, a) + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
     public override string ToString() =>
-      ComboLegsToString(c => c.UnderContract.Select(u => c.ShortWithDate).DefaultIfEmpty(LocalSymbol).Single(), LocalSymbol.IfEmpty(Symbol)).IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
-    internal string ComboLegsToString() => ComboLegsToString(c => c.LocalSymbol, LocalSymbol.IfEmpty(Symbol));
-    internal string ComboLegsToString<T>(Func<Contract, T> label, T defaultFotNotOption) =>
+      ComboLegsToString((c, r, a) => LegLabel(r, a) + c.UnderContract.Select(u => c.ShortWithDate).DefaultIfEmpty(LocalSymbol).Single(), LocalSymbol.IfEmpty(Symbol)).IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
+    internal string ComboLegsToString() => ComboLegsToString((c, r, a) => LegLabel(r, a) + c.LocalSymbol, LocalSymbol.IfEmpty(Symbol));
+    internal string ComboLegsToString(Func<Contract, int, string, string> label, string defaultFotNotOption) =>
       Legs()
       .ToArray()
       .With(legs => (legs, r: legs.Select(l => l.r).DefaultIfEmpty().Max())
       .With(t =>
       t.legs
-      .Select(l => label(l.c) + (t.r > 1 ? ":" + l.r : ""))
+      .Select(l => label(l.c, t.r, l.a))
       .OrderBy(s => s)
-      .RunIfEmpty(() => IsOption ? label(this) + "" : defaultFotNotOption + "")
+      .RunIfEmpty(() => IsOption ? label(this, 0, "") + "" : defaultFotNotOption + "")
       .ToArray()
       .MashDiffs()));
+    static string LegLabel(int ratio, string action) => ratio == 0 ? "" : (action == "BUY" ? "+" : "-") + (ratio > 1 ? ratio + ":" : "");
     public IEnumerable<T> LegsOrMe<T>(Func<Contract, T> map) => LegsOrMe().Select(map);
     public IEnumerable<Contract> LegsOrMe() => Legs().Select(cl => cl.c).DefaultIfEmpty(this);
-    public IEnumerable<T> Legs<T>(Func<(Contract c, int r), T> map) => Legs().Select(map);
-    public IEnumerable<(Contract c, int r)> Legs() {
+    public IEnumerable<T> Legs<T>(Func<(Contract c, int r, string a), T> map) => Legs().Select(map);
+    public IEnumerable<(Contract c, int r, string a)> Legs() {
       if(ComboLegs == null) yield break;
       var x = (from l in ComboLegs
                join c in Contracts on l.ConId equals c.Value.ConId
-               select (c.Value, l.Ratio)
+               select (c.Value, l.Ratio, l.Action)
        );
       foreach(var t in x)
         yield return t;
@@ -119,11 +123,11 @@ namespace IBApi {
       foreach(var t in x)
         yield return t;
     }
-    string _key() => ComboLegsToString(c => c.ConId, ConId);
+    string _key() => ComboLegsToString((c, r, a) => LegLabel(r, a) + c.ConId, ConId + "");
     public static bool operator !=(Contract a, Contract b) => !(a == b);
     public static bool operator ==(Contract a, Contract b) => a is null && b is null
       ? true
-      : a is null || b is null 
+      : a is null || b is null
       ? false
       : a.Equals(b);
     public bool Equals(Contract other) => other is null && this is null

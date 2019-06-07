@@ -39,8 +39,6 @@ namespace HedgeHog.Shared {
     [DataMember]
     public String OfferID { get; set; }
     [DataMember]
-    public String Pair { get; set; }
-    [DataMember]
     public String TradeID { get; set; }
     [DataMember]
     [UpdateOnUpdate]

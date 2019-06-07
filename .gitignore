@@ -42,3 +42,5 @@ bower_components/
 AllInOne/.vs/AllInOne/v15/sqlite3/storage.ide
 /HedgeHog.Alice.Client/WWW/node_modules
 /HedgeHog.Alice.Client/WWW/Content/themes/base
+**/*.dbmdl
+**/*.jfm
