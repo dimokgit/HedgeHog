@@ -275,6 +275,8 @@ namespace IBApp {
     static ConcurrentDictionary<string, IObservable<ContractDetails>> _reqContractDetails = new ConcurrentDictionary<string, IObservable<ContractDetails>>();
     public static ConcurrentDictionary<string, IObservable<ContractDetails>> ReqContractDetails => _reqContractDetails;
     public IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
+      //if(contract.Instrument.IsNullOrWhiteSpace())
+      //  throw new Exception("Contract's Symbol property is empty");
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
         Debugger.Break();
       var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol)}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";

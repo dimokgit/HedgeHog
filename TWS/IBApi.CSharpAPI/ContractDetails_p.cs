@@ -16,7 +16,7 @@ namespace IBApi {
     public static IEnumerable<ContractDetails> FromCache(Contract contract) => FromCache(contract.Key);
     public static IEnumerable<ContractDetails> FromCache(string key) {
       if(key.IsNullOrWhiteSpace())
-        throw new Exception(new { key = "is empty" } + "");
+        throw new Exception("ContractDetailsKey is empty");
       if(ContractDetailsCache.TryGetValue(key, out var contract))
         yield return contract;
     }

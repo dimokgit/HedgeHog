@@ -270,7 +270,8 @@ namespace IBApp {
         LmtPrice = OrderPrice(price, contract),
         TotalQuantity = quantity.Abs(),
         OutsideRth = isPreRTH,
-        OverridePercentageConstraints = true
+        OverridePercentageConstraints = true,
+        Transmit = true
       };
       if(goodTillDate != default && !goodTillDate.IsMax()) {
         order.Tif = GTD;

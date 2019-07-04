@@ -1196,6 +1196,7 @@ namespace HedgeHog.Alice.Store {
         //.Add((object)(new { HistVol = $"{HV(this)}" }))
         //.Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
         .Add(HVP(this).Select(hvp => (object)new { HistVol = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVA).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
+        .Add(new { StrdlHV= new[] { _currentCallByHV, _currentPutByHV }.Select(c=>c.Round(2)).Flatter("/") })
         .Add(HVPt(this).Select(hvp => (object)new { HistVolPt = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVPt).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         ;
       }
@@ -1205,10 +1206,10 @@ namespace HedgeHog.Alice.Store {
       .SingleOrDefault();
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
-      double[] HVA(TradingMacro tm) => new[] { tm.HistoricalVolatilityAnnualized() };
-      double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
       double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints();
     }
+    double[] HVA(TradingMacro tm) => new[] { tm.HistoricalVolatilityAnnualized() };
+    double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
 
     public double StdOverCurrPriceRatio() => StdOverCurrPriceRatio(StDevByPriceAvg, CurrentPriceAvg());
     double StdOverCurrPriceRatio(double stDevByHeight, double price) => InPips(stDevByHeight) / price * 100;

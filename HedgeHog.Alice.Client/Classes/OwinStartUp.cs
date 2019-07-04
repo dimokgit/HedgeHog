@@ -848,7 +848,9 @@ namespace HedgeHog.Alice.Client {
                           where cts.Count(ct => ct.contract.Instrument == sc) == 0
                           from c in Contract.FromCache(sc).SelectMany(l => l.LegsOrMe())
                           from price in DataManager.IBClientMaster.ReqPriceSafe(c)
-                          select (c.Strike, debit: price.bid, c.IsCall)
+                          from trades in am.ComboTrades(1).Where(ct => ct.contract == c).ToArray()
+                          let debit = trades.Select(t => t.openPrice.Abs()).DefaultIfEmpty(price.bid).Single()
+                          select (c.Strike, debit, c.IsCall)
                           );
               var pos = ctsObs.SelectMany(cts => cts.Select(ct => (ct.contract.Strike, debit: ct.openPrice.Abs(), ct.contract.IsCall))).Merge(cmbs)
               .ToArray()
@@ -1058,7 +1060,7 @@ namespace HedgeHog.Alice.Client {
     }
     [BasicAuthenticationFilter]
     public async Task<string[]> CloseCombo(string instrument, double? conditionPrice) {
-      var res = await
+      var res = (await
       (from am in Observable.Return(GetAccountManager())
        from ct in am.ComboTrades(1)
        from under in ct.contract.UnderContract
@@ -1083,13 +1085,13 @@ namespace HedgeHog.Alice.Client {
           : true
           : (bool?)null;
           return from tt in c.am.OpenTrade(c.contract, -c.position
-          , isMore.HasValue ? 0 : c.closePrice
+          , isMore.HasValue || c.contract.IsCallPut? 0 : c.closePrice
           , 0.0, false, default, default
           , isMore.HasValue ? c.under.PriceCondition(conditionPrice.Value, isMore.Value, false) : default)
                  from t in tt
                  select t.error;
         }
-      }).ToArray();
+      }).ToArray()).Where(t => t.exc != null).ToArray();
       res.ForEach(e => Log = e.exc);
       return res.Select(e => e.exc.Message).ToArray();
     }

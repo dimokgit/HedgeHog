@@ -14,7 +14,7 @@ using HedgeHog.DateTimeZone;
 
 namespace HedgeHog.Shared {
   public static class TradesManagerStatic {
-    public static int ExpirationDaysSkip(int start) => !DateTime.Now.InNewYork().isWeekend() && DateTime.Now.InNewYork().TimeOfDay > new TimeSpan(16, 0, 0) ? start + 1 : start;
+    public static int ExpirationDaysSkip(int start) => !DateTime.Now.InNewYork().isWeekend() && DateTime.Now.InNewYork().TimeOfDay > new TimeSpan(18, 0, 0) ? start + 1 : start;
     public static IMapper TradeMapper() => TradeMapper(opt => opt);//.ForMember(t => t.TradesManager, o => o.Ignore()));
     public static IMapper TradeMapper(Func<IMappingExpression<Trade, Trade>, IMappingExpression<Trade, Trade>> opt)
       => new MapperConfiguration(cfg => opt(cfg.CreateMap<Trade, Trade>())).CreateMapper();
@@ -27,11 +27,11 @@ namespace HedgeHog.Shared {
             new Offer { Pair = "SPY", Digits = 3, PointSize = 0.01, MMRLong = 0.250, MMRShort= 0.3, ContractSize = 1 },
             new Offer { Pair = "TVIX", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 },
             new Offer { Pair = "UVXY", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 },
-            new Offer { Pair = "ESH9", Digits = 2, PointSize = 1, MMRLong = 1/4, MMRShort= 1/3, ContractSize = 50 }
+            new Offer { Pair = "ES", Digits = 2, PointSize = 1, MMRLong = 1/4, MMRShort= 1/3, ContractSize = 50 }
           };
     static Func<string, Offer> GetOfferImpl = symbol
         => dbOffers
-      .Where(o => o.Pair.ToUpper() == symbol.WrapPair())
+      .Where(o => o.Pair.ToUpper() == symbol.FutureCode().WrapPair())
       .Take(1)
       .DefaultIfEmpty(OfferDefault)
       .Single();
@@ -67,7 +67,9 @@ namespace HedgeHog.Shared {
     }
 
     public static bool IsCurrenncy(this string s) => _currencies.Any(c => s.ToUpper().StartsWith(c)) && _currencies.Any(c => s.ToUpper().EndsWith(c));
-    public static bool IsFuture(this string s) => Regex.IsMatch(s, @"^\w{2,3}[HMQUZ]\d{1,2}|VX[A-Z]\d$", RegexOptions.IgnoreCase);
+    private static Regex FutureMatch = new Regex( @"^(?<code>\w{2,3})[HMQUZ]\d{1,2}|VX[A-Z]\d$", RegexOptions.IgnoreCase);
+    public static bool IsFuture(this string s) => FutureMatch.IsMatch(s);
+    public static string FutureCode(this string s) => IsFuture(s) ? FutureMatch.Match(s).Groups["code"].Value : s;
     public static bool IsCommodity(this string s) => _commodities.Contains(s.ToUpper());
     public static bool IsUSStock(this string s) => !s.IsCurrenncy() && !s.IsFuture() && !s.IsCommodity();
     public static bool IsOptionFull(this string s) => Regex.IsMatch(s, @"^[a-z ]{6}[0-9]{6}[CP][0-9]{8}$", RegexOptions.IgnoreCase);

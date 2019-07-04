@@ -1541,6 +1541,7 @@
         chartData2.tps2High = response.tps2High;
         chartData2.tps2Low = response.tps2Low;
         chartData2.tpsCurr2 = response.tpsCurr2;
+        chartData2.histVol = response.histVol;
         response.waveLines.forEach(function (w, i) {
           w.bold = i === sumStartIndexById();
           w.color = w.isOk ? "limegreen" : "";

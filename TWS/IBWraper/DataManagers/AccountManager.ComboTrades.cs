@@ -96,8 +96,9 @@ namespace IBApp {
 
     public IObservable<(double level, bool isCall)[]> TradesBreakEvens() {
       var bes = (from cts in ComboTrades(1).ToArray()
+                 from date in cts.Select(ct=>ct.contract.Expiration).MaxByOrEmpty().Take(1)
                  from ct in cts
-                 where ct.contract.IsOption
+                 where ct.contract.IsOption && ct.contract.Expiration == date
                  select (strike: ct.strikeAvg, debit: ct.openPrice.Abs(), ct.contract.IsCall)
                  ).ToArray();
       return (from pos in bes select BreakEvens(pos));

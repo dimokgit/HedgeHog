@@ -62,6 +62,33 @@ namespace IBApp {
       return (contract, positions);
     }
 
+    public static Contract MakeHedgeCombo(Contract c1,Contract c2, int ratio2) {
+      Contract contract = new Contract();
+      contract.Symbol = c1.Symbol;
+      contract.SecType = "BAG";
+      contract.Currency = "USD";
+      contract.Exchange = "SMART";
+
+      ComboLeg leg1 = new ComboLeg();
+      leg1.ConId = c1.ConId;
+      leg1.Ratio = 1;
+      leg1.Action = "BUY";
+      leg1.Exchange = "SMART";
+
+      ComboLeg leg2 = new ComboLeg();
+      leg2.ConId = c2.ConId;
+      leg2.Ratio = ratio2;
+      leg2.Action = "SELL";
+      leg2.Exchange = "SMART";
+
+      contract.ComboLegs = new List<ComboLeg>();
+      contract.ComboLegs.Add(leg1);
+      contract.ComboLegs.Add(leg2);
+
+      //EXEND
+      return contract;
+    }
+
     static IEnumerable<Contract> SortCombos(IEnumerable<Contract> options) =>
       (from c in options
        group c by c.Right into gc

@@ -1046,7 +1046,7 @@ namespace HedgeHog.Alice.Store {
     public ITradesManager TradesManager { get { return _TradesManager(); } }
     public bool HasTicks => (TradesManager?.HasTicks).GetValueOrDefault();
     IDisposable _priceChangeDisposable;
-    public int ExpDayToSkip() => OpenPuts().Select(p => (p.contract.Expiration - ServerTime.Date).Days).OrderBy(d => d).Take(1).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
+    public int ExpDayToSkip() => OpenPuts().Take(0).Select(p => (p.contract.Expiration - ServerTime.Date).Days).OrderBy(d => d).Take(1).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
       _tradingMacros = tradingMacros;
       if(TradingMacroTrader(Pair).Count() > 1) {
@@ -1156,6 +1156,7 @@ namespace HedgeHog.Alice.Store {
             var straddleStartId = DateTime.Now.Ticks;
             long _id = 0;
             string straddlePair = "VXX";
+            var pairCode = Pair.FutureCode();
             //var straddleTime = DateTime.Now.AddSeconds(-BarsCountMax).SetKind();
             if(VoltageFunction == VoltageFunction.Straddle || VoltageFunction2 == VoltageFunction.Straddle) {
               TradingMacroM1(tmM1 => {
@@ -1167,8 +1168,7 @@ namespace HedgeHog.Alice.Store {
                   var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime().AddDays(-5);
                   GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories.Where(t => t.time < startDate)), true);
                   GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories2.Where(t => t.time < startDate)), true);
-                  GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == Pair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
-                  GlobalStorage.UseForexMongo(c => StraddleHistory2.AddRange(c.StraddleHistories2.Where(t => t.pair == straddlePair).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
+                  GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == pairCode).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
                   if(VoltageFunction == VoltageFunction.Straddle) {
                     SyncStraddleHistoryT1(this);
                     Log = new Exception($"{nameof(SyncStraddleHistoryT1)}[{this}] - done");
@@ -1185,7 +1185,7 @@ namespace HedgeHog.Alice.Store {
                 DateTime saveTime = DateTime.MinValue;
                 DateTime ResetSaveTime() => DateTime.Now.AddMinutes(1);
                 saveTime = ResetSaveTime();
-                TimeValueHistory(Pair, tm => tm.StraddleHistory, c => c.StraddleHistories, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
+                TimeValueHistory(pairCode, tm => tm.StraddleHistory, c => c.StraddleHistories, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
                 //TimeValueHistory(straddlePair, tm => tm.StraddleHistory2, c => c.StraddleHistories2, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
               }
             }
@@ -1303,7 +1303,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     COMBO_HISTORY StraddleHistory = new COMBO_HISTORY();
-    COMBO_HISTORY StraddleHistory2 = new COMBO_HISTORY();
     COMBO_HISTORY VerticalPutHistory = new COMBO_HISTORY();
     private void HansleTick(PriceChangedEventArgs pce) {
       try {

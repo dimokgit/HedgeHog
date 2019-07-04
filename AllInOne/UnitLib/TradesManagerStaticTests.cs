@@ -68,7 +68,14 @@ namespace HedgeHog.Shared.Tests {
     [TestMethod()]
     public void PipByPairTest() {
       TradesManagerStatic.AccountCurrency = "USD";
-      Assert.AreEqual(0.088733900342957, TradesManagerStatic.PipsAndLotToMoney("USD.JPY", 1,1000, 112.6965, 0.01).Round(15));
+      Assert.AreEqual(0.088733900342957, TradesManagerStatic.PipsAndLotToMoney("USD.JPY", 1, 1000, 112.6965, 0.01).Round(15));
+    }
+
+    [TestMethod()]
+    public void IsFuture() {
+      var f = "RTYH9";
+      Assert.IsTrue(TradesManagerStatic.IsFuture(f));
+      Assert.AreEqual("RTY",TradesManagerStatic.FutureCode(f));
     }
   }
 }

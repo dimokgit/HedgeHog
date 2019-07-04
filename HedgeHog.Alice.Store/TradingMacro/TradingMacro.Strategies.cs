@@ -23,7 +23,7 @@ using System.Threading;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
 
-    public (double up, double down) StraddleRange(int gap) {
+    public (double up, double down) StraddleRange(double gap) {
       double volatility = HistoricalVolatilityAnnualized();
       double spot = BeforeHours.SkipWhile(h => h.dates.Last().TimeOfDay < 9.5.FromHours()).Take(1).Select(h => h.upDown.Average()).SingleOrDefault();// UseRates(ra => ra.BackwardsIterator().SkipWhile(r => r.StartDate.Hour != 8).Take(1)).Concat().ToArray();
       if(volatility == 0 || spot == 0) {
@@ -33,23 +33,24 @@ namespace HedgeHog.Alice.Store {
       double intRate = 2.0 / 100;// (Math.Pow(2 / 100 + 1, 1) - 1);
       int daysToExp = 1;
       double strikeStep = 5;
-      double strikeUp = gap == 0 ? spot.RoundBySample(strikeStep) : spot.RoundBySampleUp(strikeStep);
-      double strikeDown = gap == 0 ? spot.RoundBySample(strikeStep) : spot.RoundBySampleDown(strikeStep);
+      double strikeShift = gap * strikeStep / 2;
+      double strikeUp = gap == 0 ? spot.RoundBySample(strikeStep) : (spot + strikeShift).RoundBySample(strikeStep);
+      double strikeDown = gap == 0 ? spot.RoundBySample(strikeStep) : (spot - strikeShift).RoundBySample(strikeStep);
       double dividents = 2.0029 / 100;
       var c = BlackScholes.CallPrice(spot, strikeUp, intRate, dividents, daysToExp, volatility);
       var p = BlackScholes.PutPrice(spot, strikeDown, intRate, dividents, daysToExp, volatility);
+      _currentCallByHV = c;
+      _currentPutByHV = p;
       return (strikeUp + c + p, strikeDown - c - p);
     }
 
     private double HistoricalVolatilityAnnualized() {
       var ano = Math.Sqrt(365);
       //var days0 = UseRatesInternal(ri => ri.GroupBy(r => r.StartDate.Date).ToArray());
-      var days0 = UseRatesInternal(ri => ri.Where(r => r.StartDate.Hour == 16).GroupBy(r => r.StartDate.Date)
-        .Select(g => g.FirstOrDefault().PriceAvg).ToArray())
-        .FirstOrDefault();
-      var hv = days0.HistoricalVolatility();
-      var volatility = hv * ano;
-      return volatility;
+      var hv = UseRatesInternal(ri => ri.Where(r => r.StartDate.Hour == 16).GroupBy(r => r.StartDate.Date)
+       .Select(g => g.FirstOrDefault().PriceAvg).ToArray())
+        .Select(days0 => days0.HistoricalVolatility() * ano);
+      return hv.SingleOrDefault();
     }
 
     Action StrategyAction {
@@ -676,5 +677,9 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => CorridorSDRatio);
       }
     }
+
+    private double _currentCallByHV;
+
+    private double _currentPutByHV;
   }
 }

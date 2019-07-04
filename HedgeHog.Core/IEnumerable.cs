@@ -73,6 +73,9 @@ namespace HedgeHog {
     public static IList<double> MaxByOrEmpty(this IEnumerable<double> source) {
       return source.MaxByOrEmpty(d => d);
     }
+    public static IList<TSource> MaxByOrEmpty<TSource>(this IEnumerable<TSource> source) {
+      return source.MaxByOrEmpty(d => d);
+    }
     public static IList<TSource> MaxByOrEmpty<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) {
       if(source == null) {
         throw new ArgumentNullException("source");

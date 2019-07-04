@@ -88,7 +88,7 @@ namespace HedgeHog.Shared {
     //  return _pipCostDictionary[pair];
     //}
 
-    public int GetBaseUnitSize(string pair) { return baseUnits.TryGetValue(pair, out var bu) ? bu : 1; }
+    public int GetBaseUnitSize(string pair) { return baseUnits.TryGetValue(pair.FutureCode(), out var bu) ? bu : 1; }
 
     public Func<Trade, double> CommissionByTrade { get; set; }
 
@@ -190,8 +190,8 @@ namespace HedgeHog.Shared {
         trade.Buy = isBuy;
         trade.IsBuy = isBuy;
         trade.Lots = lot;
-        trade.Open = isBuy ? price.Ask : price.Bid;
-        trade.Close = isBuy ? price.Bid : price.Ask;
+        trade.Open = (isBuy ? price.Ask : price.Bid) * trade.BaseUnitSize;
+        trade.Close = (isBuy ? price.Bid : price.Ask) * trade.BaseUnitSize;
         trade.Time2 = price.Time2;
         trade.Time2Close = price.Time2;
         trade.IsVirtual = true;
@@ -246,7 +246,7 @@ namespace HedgeHog.Shared {
       try {
         tradesOpened.Remove(trade);
         RaiseOrderRemoved(new Order() { Pair = trade.Pair });
-      }catch(Exception exc) {
+      } catch(Exception exc) {
         LogMessage.Send(exc);
       }
     }
@@ -321,9 +321,10 @@ namespace HedgeHog.Shared {
     public Offer[] GetOffers() { return offersCollection.ToArray(); }
     Dictionary<string, Offer> _offersDictionary = new Dictionary<string, Offer>();
     public Offer GetOffer(string pair) {
-      if(!_offersDictionary.ContainsKey(pair))
-        _offersDictionary.Add(pair, offersCollection.Where(o => o.Pair == pair).DefaultIfEmpty(TradesManagerStatic.OfferDefault).Single());
-      return _offersDictionary[pair];
+      var key = pair.FutureCode();
+      if(!_offersDictionary.ContainsKey(key))
+        _offersDictionary.Add(key, offersCollection.Where(o => o.Pair == key).DefaultIfEmpty(TradesManagerStatic.OfferDefault).Single());
+      return _offersDictionary[key];
     }
 
 #pragma warning disable 0067

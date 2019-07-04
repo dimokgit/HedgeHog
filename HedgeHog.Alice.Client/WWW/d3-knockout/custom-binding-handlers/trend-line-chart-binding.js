@@ -453,6 +453,7 @@
       var y2ScaleShift = chartData.vfss || [0, 0];
       var isHedged = chartData.isHedged;
       var breakEven = chartData.breakEven || [];
+      var histVol = chartData.histVol || { up: 0, down: 0 };
       // #endregion
 
       // #region adjust svg and axis'
@@ -579,7 +580,7 @@
           .attr("d", line);
 
         // #region  lineBid
-        var bidColor = doShowChartBid == "p" ? "Wisteria" : openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue";
+        var bidColor = doShowChartBid === "p" ? "Wisteria" : openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue";
         svg.select("path.line.dataBid")
           .style("display", lineBid ? "" : "none")
           //.style("stroke", bidColor)
@@ -652,7 +653,9 @@
           setRectArea(tailEnd, yDomain[1], tailStart, yDomain[0], "dayTailRect");
         }
         try {
-          if (com && com.dates)
+          if (histVol && histVol.up)
+            setHorizontalStrip(histVol.up, histVol.down, greenStrip);
+          else if (com && com.dates)
             setHorizontalStrip(com.b, com.s, greenStrip);
           if (com2 && com2.dates[0])
             setRectArea(com2.dates[0], com2.b, com2.dates[1], com2.s, blueStrip, "black");
@@ -872,7 +875,7 @@
       // #region Locals
       function setHLine(level, levelName, levelColour, width, dasharray, yTrans) {
         var line = svg.select("line.line" + levelName);
-        if (level != null && !isNaN(level))
+        if (level !== null && !isNaN(level))
           return line
             .style("stroke", levelColour)  // colour the line
             .style("stroke-width", width)  // colour the line

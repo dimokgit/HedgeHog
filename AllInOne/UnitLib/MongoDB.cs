@@ -8,6 +8,7 @@ using MongoDB.Driver;
 using AutoMapper;
 using HedgeHog.Alice.Store;
 using MongoDB.Bson;
+using HedgeHog;
 
 namespace UnitLib {
   [TestClass()]
@@ -43,6 +44,15 @@ namespace UnitLib {
     //
     #endregion
 
+
+      [TestMethod]
+      public void MongoUpdate() {
+      GlobalStorage.UseForexMongo(c => {
+        foreach(var a in c.StraddleHistories)
+          a.pair = HedgeHog.Shared.TradesManagerStatic.FutureCode(a.pair);
+      }, true);
+      return;
+    }
 
     [TestMethod()]
     public void MongoTest() {

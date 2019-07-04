@@ -16,6 +16,7 @@ using System.Collections.Concurrent;
 using System.Reactive.Subjects;
 using IBApi;
 using System.Reactive;
+using HedgeHog.Core;
 
 namespace IBApp {
   public partial class AccountManager {
@@ -132,10 +133,12 @@ namespace IBApp {
         .Do(x => Verbose0($"* OpenOrder: {new { x.Order.OrderId, x.Order.Transmit, conditions = x.Order.Conditions.Flatter(";") } }"))
         //.Do(UpdateOrder)
         .Distinct(x => $"{x.Order.PermId}{x.Order.LmtPrice}{x.Order.Conditions.Flatter("; ")}")
+        .Do(x => TraceDebug($"OpenOrderJson: {x.Order.ToJson()}"))
         .Subscribe(a => OnOrderImpl(a))
         .SideEffect(s => _strams.Add(s));
       OrderStatusObservable
-        .Do(t => Verbose0("* OrderStatus " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
+        //.Do(t => TraceDebug("OrderStatus: " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
+        .Do(t => TraceDebug("OrderStatus: " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
         .Where(t => OrderContractsInternal.ByOrderId(t.OrderId).Any(oc => oc.order.Account == _accountId))
         .Do(t => Verbose("* OrderStatus " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
         //.Do(x => UseOrderContracts(oc => _verbous("* " + new { OrderStatus = x, Account = oc.ByOrderId(x.orderId, och => och.order.Account).SingleOrDefault() })))

@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Data.Entity.Core.Objects.DataClasses;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -182,6 +184,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     double _straddleGap = 0;
+    [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
+    [DataMemberAttribute()]
     [WwwSetting(Group = wwwSettingsTradingConditions)]
     [Category(categoryActive)]
     [DisplayName("Straddle Gap")]

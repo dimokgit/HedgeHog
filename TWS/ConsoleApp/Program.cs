@@ -63,11 +63,17 @@ namespace ConsoleApp {
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7496;
+      const int twsPort = 7497;
       const int clientId = 1;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        {
+          var symbol = "NQU9";// "VXG9";//"ESH9";//"RTYM9";
+          ibClient.ReqContractDetailsCached(symbol)
+          .Subscribe(cd => PriceHistory.AddTicks(fw, 3, symbol, DateTime.Now.AddMonths(-(12 * 2 + 4)), o => HandleMessage(o + " : Tread "+Thread.CurrentThread.Name)));
+        }
+        return;
         {
           Observable.Interval(1.FromSeconds())
            .TakeWhile(_=>am.Positions.Count<3).ToArray()
@@ -94,12 +100,6 @@ namespace ConsoleApp {
           return;
         }
         am.OpenOrderObservable.Subscribe(o => HandleMessage(new { order = o.Contract }));
-        {
-          var symbol = "RTYM9";//"ESH9";//  "VXG9";// ;
-          ibClient.ReqContractDetailsCached(symbol)
-          .Subscribe(cd => PriceHistory.AddTicks(fw, 3, symbol, DateTime.Now.AddMonths(-(12 * 0 + 4)), o => HandleMessage(o + "")));
-        }
-        return;
         {
           (
           from cd in ibClient.ReqContractDetailsCached(new Contract {

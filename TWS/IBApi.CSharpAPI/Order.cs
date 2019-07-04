@@ -1292,7 +1292,9 @@ namespace IBApi
             if (p_other == null)
                 return false;
 
-            Order l_theOther = (Order)p_other;
+            Order l_theOther = p_other as Order;
+
+      if(l_theOther == null) return false;
 
             if (PermId == l_theOther.PermId)
             {
