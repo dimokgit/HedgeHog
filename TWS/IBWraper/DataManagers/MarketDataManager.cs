@@ -47,7 +47,7 @@ namespace IBApp {
       if(contract.IsCombo) {
         AddRequestImpl(contract.AddToCache(), genericTickList);
       } else {
-        IbClient.ReqContractDetailsCached(contract.Instrument)
+        IbClient.ReqContractDetailsCached(contract)
           .Take(1)
           .Subscribe(cd => {
             AddRequestImpl(cd.Contract, genericTickList);

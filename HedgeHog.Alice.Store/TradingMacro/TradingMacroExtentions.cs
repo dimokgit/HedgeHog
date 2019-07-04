@@ -1194,13 +1194,13 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private void TimeValueHistory(string pair, Func<TradingMacro, COMBO_HISTORY> straddleHistory, Func<GlobalStorage.ForexDbContext, Microsoft.EntityFrameworkCore.DbSet<StraddleHistory>> straddleHistoryDbSet, IBWraper ibWraper, int shcp, long straddleStartId, Func<long> _id, int straddleCount, Func<DateTime> resetSaveTime) {
+    private void TimeValueHistory(string pairCode, Func<TradingMacro, COMBO_HISTORY> straddleHistory, Func<GlobalStorage.ForexDbContext, Microsoft.EntityFrameworkCore.DbSet<StraddleHistory>> straddleHistoryDbSet, IBWraper ibWraper, int shcp, long straddleStartId, Func<long> _id, int straddleCount, Func<DateTime> resetSaveTime) {
       DateTime saveTime = resetSaveTime();
       //var nextFriday = TradesManagerStatic.ExpirationDaysSkip(0);
       int nextFriday() => (DateTime.Today.GetNextWeekday(DayOfWeek.Friday) - DateTime.Today).TotalDays.ToInt();
       _priceChangeDisposable = (
         from price in _priceChangeObservable
-        from x in ibWraper.AccountManager.CurrentOptions(pair, double.NaN, TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, c => true)
+        from x in ibWraper.AccountManager.CurrentOptions(Pair, double.NaN, TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, c => true)
         let calls = x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(2)
         let puts = x.Where(t => t.option.IsPut).OrderByDescending(t => t.deltaBid).Take(2)
         select calls.Concat(puts).Where(p => p.deltaBid > 0).ToArray()
@@ -1222,7 +1222,7 @@ namespace HedgeHog.Alice.Store {
             )
             .SideEffect(t => GlobalStorage.UseForexMongo(c => straddleHistoryDbSet(c).Add(new StraddleHistory(
               straddleStartId + _id(),
-              pair,
+              pairCode,
               t.bid,
               t.ask,
               t.delta,
