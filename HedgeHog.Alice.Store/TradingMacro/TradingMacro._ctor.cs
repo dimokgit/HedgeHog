@@ -29,7 +29,7 @@ namespace HedgeHog.Alice.Store {
       var tls = (from sr in Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _tradeLevelChanged += h, h => _tradeLevelChanged -= h)
                  where IsTradingActive && !IsInVirtualTrading && !sr.IsExitOnly
                  group sr by sr.IsBuy into g
-                 from kv in g.Scan((p, n) => p.Rate.Ratio(n.Rate) > 1.001 ? p : n).DistinctUntilChanged(tl => (tl.Rate.RoundBySample(MinTick),tl.PricePosition))
+                 from kv in g.Scan((p, n) => p.Rate.Ratio(n.Rate) > 1.001 ? p : n).DistinctUntilChanged(tl => (tl.Rate.RoundBySample(MinTick), tl.PricePosition))
                  select kv)
         .Select(tl => new[] { (tl.Rate, TradingRatio, !tl.IsBuy) }.Where(_ => tl.IsBuy && BuyLevel.CanTrade || tl.IsSell && SellLevel.CanTrade))
         .Publish().RefCount();
@@ -92,7 +92,9 @@ namespace HedgeHog.Alice.Store {
         tm => tm.PairHedge,
         tm => tm.RatesLengthBy,
         tm => tm.HedgeCorrelation,
-        (v1, rls, v3, ph, rlb, hc) => true).Subscribe(_ => SyncHedgedPair());
+        tm => tm.CmaPasses,
+        tm => tm.PriceCmaLevels,
+        (v1, rls, v3, ph, rlb, hc, cp, pcl) => true).Subscribe(_ => SyncHedgedPair());
       this.WhenAnyValue(
         tm => tm.PairHedge
         )

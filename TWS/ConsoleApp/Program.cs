@@ -55,7 +55,6 @@ namespace ConsoleApp {
       var fw = new IBWraper(coreFx, _ => 0);
       var usdJpi2 = ContractSamples.FxContract("usd/jpy");
       var gold = ContractSamples.Commodity("XAUUSD");
-      var es = ContractSamples.ContractFactory("ESM7");
       var vx = ContractSamples.ContractFactory("VXH8");
       var spy = ContractSamples.ContractFactory("SPY");
       var svxy = ContractSamples.ContractFactory("SVXY");
@@ -68,21 +67,60 @@ namespace ConsoleApp {
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        //am.OrderContractsInternal.Subscribe(o => { });
+        //return;
         {
-          var symbol = "NQU9";// "VXG9";//"ESH9";//"RTYM9";
-          ibClient.ReqContractDetailsCached(symbol)
-          .Subscribe(cd => PriceHistory.AddTicks(fw, 3, symbol, DateTime.Now.AddMonths(-(12 * 2 + 4)), o => HandleMessage(o + " : Tread "+Thread.CurrentThread.Name)));
+          new Contract();
+          var h1 = "ESU9";
+          var h2 = "NQU9";
+          //am.CurrentOptions(h1, double.NaN, 0, 10,c=>true)
+          //.Subscribe(os => HandleMessage(os.Select(o => new { o.option }).ToArray().ToTextOrTable("Options:")));
+
+          am.CurrentHedges(h1, h2)
+          .Subscribe(hh => {
+            HandleMessage(hh.Select(h => new { h.contract, h.quantity, h.context }).ToTextOrTable("Hedge"));
+            am.CurrentHedges(h1, h2)
+            .Subscribe(hh2 => {
+              HandleMessage(hh2.Select(h => new { h.contract, h.quantity, h.context }).ToTextOrTable("Hedge 2"));
+              var combo = AccountManager.MakeHedgeCombo(10, hh2[0].contract, hh2[1].contract, hh2[0].quantity, hh2[1].quantity).With(c => new { combo = c, context = hh2.ToArray(t => t.context).MashDiffs() });
+              HandleMessage($"Hedge Combo: {combo.ToString()}");
+              ibClient.ReqPriceSafe(combo.combo.contract)
+              .Select(p => new { p.bid, p.ask })
+              .Subscribe(comboPrice => HandleMessage(new { comboPrice }));
+              var pos = 1;
+              if(pos > 10)
+                am.OpenTrade(combo.combo.contract, combo.combo.quantity * pos)
+                .Subscribe(orderHolder => {
+                  HandleMessage(orderHolder.ToTextOrTable());
+                });
+            });
+
+          });
+          return;
         }
-        return;
+        {
+          var symbol = "ESH9";//"NQU9";// "VXG9";//"RTYM9";
+          ibClient.ReqContractDetailsCached(symbol)
+          .Subscribe(cd => PriceHistory.AddTicks(fw, 3, symbol, DateTime.Now.AddMonths(-(12 * 0 + 4)), o => HandleMessage(o + " : Tread " + Thread.CurrentThread.Name)));
+          return;
+        }
+        {
+          (from cs in ibClient.ReqOptionChainOldCache("ESU9", default, 3000)
+           from c in cs
+           where c.IsCall
+           select c
+           ).Subscribe(c => am.OpenTradeWithConditions(c.LocalSymbol, 1, 5, 2640, false));
+          return;
+        }
         {
           Observable.Interval(1.FromSeconds())
-           .TakeWhile(_=>am.Positions.Count<3).ToArray()
+           .TakeWhile(_ => am.Positions.Count < 3).ToArray()
            .SelectMany(contracts => {
              return am.TradesBreakEvens();
              //HandleMessage(contracts.ToTextOrTable("Positions"));
              //return true;
-           }).Subscribe(bes=> {
-             HandleMessage(bes.Select(be=>new {be.level,be.isCall }).ToTextOrTable("Trades Break Evens"));
+           }).Subscribe(bes => {
+             HandleMessage(bes.Select(be => new { be.level, be.isCall }).ToTextOrTable("Trades Break Evens"));
            });
           return;
         }
@@ -99,7 +137,6 @@ namespace ConsoleApp {
            });
           return;
         }
-        am.OpenOrderObservable.Subscribe(o => HandleMessage(new { order = o.Contract }));
         {
           (
           from cd in ibClient.ReqContractDetailsCached(new Contract {
@@ -170,16 +207,6 @@ namespace ConsoleApp {
           });
         }
         am.OrderStatusObservable.Throttle(1.FromSeconds()).Subscribe(_ => HandleMessage("OrderContractsInternal2:\n" + am.OrderContractsInternal.ToMarkdownTable()));
-        {
-          //ibClient.ReqContractDetailsCached("ESH9")
-          //.Subscribe(cd => am.OpenTrade("ESH9", 1, 1, 0, false, DateTime.MaxValue));
-          //return;
-          (from cs in ibClient.ReqOptionChainOldCache("ESH9", DateTime.Now.Date.AddDays(1), 2675)
-           from c in cs
-           where c.IsCall
-           select c
-           ).Subscribe(c => am.OpenTradeWithConditions(c.LocalSymbol, 1, 5, 2640, false));
-        }
         {
           //am.CancelOrder(50002201).Subscribe(m => HandleMessage("CancelOrder(50002201)" + m));
           //return;

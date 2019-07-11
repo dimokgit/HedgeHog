@@ -2432,7 +2432,6 @@ namespace HedgeHog.Alice.Store {
                   Log = new Exception(new { RatesArraySafe = new { RatesInternal = new { RatesInternal.Count }, BarsCount, Error = "Too low" } } + "");
                   return;
                 }
-                SetHVs();
                 SpreadForCorridor = UseRates(rates => rates.Spread()).FirstOrDefault();
                 RatesHeightCma = Lazy.Create(() => UseRates(rates => rates.ToArray(r => r.PriceCMALast).Height(out _ratesHeightCmaMin, out _ratesHeightCmaMax)).FirstOrDefault());
                 OnRatesArrayChaged();
@@ -3475,21 +3474,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
 
     ActionAsyncBuffer _setHVsAsyncBuffer;
     ActionAsyncBuffer SetHVsAsyncBuffer => _setHVsAsyncBuffer ?? (_setHVsAsyncBuffer = new ActionAsyncBuffer());
-
-    void SetHVs() => SetHVsAsyncBuffer.Push(SetHVsImpl);
-    void SetHVsImpl() {
-      //Log = new Exception($"ShowVoltsByHV: {this} start");
-      (from ts in UseRatesInternal(ri => ri.Select((r, i) => (r, i)).Skip(BarsCount).Where(ra => GetHV(ra.r).IsNaN())).ToArray()
-       from t in ts
-       from ra in UseRatesInternal(ri => ri.CopyToArray(t.i.Min(BarsCountMax) - 1380, 1380))
-       where ra.Any()
-       from hv in HistoricalVolatility(ra)
-       select (t.r, hv)
-       ).AsParallel().ForAll(t => {
-         SetHV(t.r, t.hv);
-       });
-      //Log = new Exception($"ShowVoltsByHV: {this} done");
-    }
 
     public void ScanCorridor(List<Rate> ratesForCorridor, Action callback = null) {
       try {

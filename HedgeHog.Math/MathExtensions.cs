@@ -1244,7 +1244,8 @@ namespace HedgeHog {
       return hv;
       double Log((double prev, double next) t) => Math.Log(t.prev / t.next);
     }
-    public static double HistoricalVolatility(      this IDouble source,      out double avg,
+
+    public static double HistoricalVolatility(this IDouble source, out double avg,
       Func<(double prev, double next), double> calc = null,
       Func<(double prev, double next), bool> condition = null) {
       var s = source.Pairwise((prev, next) => (prev, next));

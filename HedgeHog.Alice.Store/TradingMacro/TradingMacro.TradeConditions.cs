@@ -1195,17 +1195,21 @@ namespace HedgeHog.Alice.Store {
         //.Add((object)(new { MacdDist = tm.MacdDistances(RatesArray).TakeLast(1).Select(d => d.AutoRound2(3)).SingleOrDefault() }))
         //.Add((object)(new { HistVol = $"{HV(this)}" }))
         //.Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
-        .Add(HVP(this).Select(hvp => (object)new { HistVol = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVA).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
-        .Add(new { StrdlHV= new[] { _currentCallByHV, _currentPutByHV }.Select(c=>c.Round(2)).Flatter("/") })
-        .Add(HVPt(this).Select(hvp => (object)new { HistVolPt = $"{hvp.AutoRound2(3)}/{TradingMacroM1(HVPt).Concat().SingleOrDefault().AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
+        .Add(HV(this).Concat(TradingMacroHedged(HV).Concat()).Select(d => d * 1000000).Pairwise((hv, hvm)
+          => (object)new { HistVolHg = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
+        .Add(HVA(this).Concat(TradingMacroHedged(HVA).Concat()).Select(d => d).Pairwise((hv, hvm)
+          => (object)new { HistVolAn = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
+        .Add(new { StrdlHV = new[] { _currentCallByHV, _currentPutByHV }.Select(c => c.Round(2)).Flatter("/") })
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
       //.Merge(new { BPA1Tip__ = _wwwBpa1 }, () =>TradeConditionsHave(BPA12Ok))
       )
       .SingleOrDefault();
+      var h = TradingMacroHedged(HVP);
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
+      IEnumerable<double> HV(TradingMacro tm) => tm.HistoricalVolatility();
       double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints();
     }
     double[] HVA(TradingMacro tm) => new[] { tm.HistoricalVolatilityAnnualized() };
@@ -1231,8 +1235,7 @@ namespace HedgeHog.Alice.Store {
     private Func<IList<Rate>, double> _RatesHVBP;
     private Func<IList<Rate>, double> RatesHVBP => _RatesHVBP ?? (_RatesHVBP = new Func<IList<Rate>, double>(ra
        => RatesForHV(ra).HistoricalVolatility(t => t.prev.Abs(t.next))).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault()));
-
-    private static IList<double> RatesForHV(IList<Rate> ra) => ra.Select(_priceAvg).Cma(2.2);
+    private static IList<double> RatesForHV(IList<Rate> ra) => ra.Where(r => r.StartDate.Hour.Between(9, 16)).Select(r=>r.PriceCMALast).ToArray();
     #endregion
 
     #region Angles

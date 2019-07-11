@@ -1380,6 +1380,7 @@
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
         <select data-bind="options:rollOversList,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>
+      <div data-bind="text:hedgeComboText"></div>
       <div data-bind="visible:strategyCall().length" title="Strategy options">
         <table border="1">
           <tr>

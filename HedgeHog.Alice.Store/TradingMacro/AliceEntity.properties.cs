@@ -1982,6 +1982,8 @@ namespace HedgeHog.Alice.Store {
         tm.RatesMinutesMin = RatesMinutesMin;
         tm.RatesLengthBy = RatesLengthBy;
         tm.HedgeCorrelation = HedgeCorrelation;
+        tm.CmaPasses = CmaPasses;
+        tm.PriceCmaLevels = PriceCmaLevels;
       });
     }
     private string _pairHedge = "";

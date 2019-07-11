@@ -280,9 +280,11 @@ namespace IBApp {
         order.Tif = GTC;
       if(goodAfterDate != default)
         order.GoodAfterTime = goodAfterDate.ToTWSString();
-      if(contract.Symbol.Contains(",")) {
+      var isFutureCombo = contract.ComboLegs?.SelectMany(l => Contract.FromCache(c => c.ConId == l.ConId)).Any(c=>c.IsFuture);
+      if(isFutureCombo == true) {
         order.SmartComboRoutingParams = new List<TagValue>();
         order.SmartComboRoutingParams.Add(new TagValue("NonGuaranteed", "1"));
+        order.Transmit = false;
       }
       return order;
     }

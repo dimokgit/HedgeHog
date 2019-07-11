@@ -452,6 +452,15 @@ namespace HedgeHog.Alice.Client {
 
     }
 
+    public async Task<object> ReadHedgingContract(string pair, int quantity) {
+      var hedgePair = ReadHedgedPair(pair);
+      var am = GetAccountManager();
+      return await (from hh2 in am.CurrentHedges(pair, hedgePair)
+                    let combo = AccountManager.MakeHedgeCombo(quantity, hh2[0].contract, hh2[1].contract, hh2[0].quantity, hh2[1].quantity)
+                    select new { combo.contract, combo.quantity }
+                    );
+
+    }
     public object ReadHedgingRatios(string pair) {
       try {
         //var xx = new[] { true, false }.SelectMany(isBuy => CalcHedgedPositions(pair, isBuy));
@@ -572,7 +581,20 @@ namespace HedgeHog.Alice.Client {
                 ).ToArray();
     }
     [BasicAuthenticationFilter]
-    public void OpenHedge(string pair, bool isBuy) => UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
+    public async Task<string[]>  OpenHedge(string pair, int quantity, bool isBuy) {
+      var hedgePar = ReadHedgedPair(pair);
+      var am = GetAccountManager();
+      var x = await (from hh in am.CurrentHedges(pair, hedgePar)
+               let h = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].quantity, hh[1].quantity)
+               from ots in am.OpenTrade(h.contract, h.quantity * (isBuy?1:-1))
+               from ot in ots
+               where ot.error.HasError
+               select ot.error.ToString()).ToArray();
+
+      return x;
+
+      UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
+    }
 
     static double DaysTillExpiration2(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
     static double DaysTillExpiration(DateTime expiration) => (expiration - DateTime.Now.Date).TotalDays + 1;
@@ -778,6 +800,7 @@ namespace HedgeHog.Alice.Client {
                   SelectedCombos();
                 else
                   TradesBreakEvens();
+                CurrentHedges();
                 //currentBullPut();
               }
               ));
@@ -857,6 +880,14 @@ namespace HedgeHog.Alice.Client {
               .Select(AccountManager.BreakEvens);
               pos.Subscribe(bes => base.Clients.Caller.tradesBreakEvens(bes.Select(be => be.level)));
               //AccountManager.BreakEvens()
+            }
+            void CurrentHedges() {
+              var hedgePar = ReadHedgedPair(pair);
+              am.CurrentHedges(pair, hedgePar)
+              .Subscribe(hh => {
+                var h = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].quantity, hh[1].quantity).With(c => new { combo = c, context = hh.ToArray(t => t.context).MashDiffs() });
+                base.Clients.Caller.hedgeCombo(new { h.combo.contract, h.combo.quantity, h.context });
+              });
             }
           }
         }
@@ -1085,7 +1116,7 @@ namespace HedgeHog.Alice.Client {
           : true
           : (bool?)null;
           return from tt in c.am.OpenTrade(c.contract, -c.position
-          , isMore.HasValue || c.contract.IsCallPut? 0 : c.closePrice
+          , isMore.HasValue || c.contract.IsCallPut ? 0 : c.closePrice
           , 0.0, false, default, default
           , isMore.HasValue ? c.under.PriceCondition(conditionPrice.Value, isMore.Value, false) : default)
                  from t in tt

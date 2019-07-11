@@ -928,13 +928,6 @@
         readCombos(true);
         dataViewModel.butterflies([]);
       }
-      this.histVolM1 = ko.observable(0);
-      this.histVolM1.subscribe(function (hv) {
-        if (this.numOfCombos() !== 0) return;
-        var i = 5;
-        var nc = Math.ceil(hv / i) + 2;
-        this.numOfCombos(nc);
-      }, this);
       this.rollTrade = function (data) {
         var i = ko.unwrap(data.i);
         if (!i) showWarning("Select trade to roll");
@@ -1003,6 +996,11 @@
       }
       this.butterflies = ko.mapping.fromJS(ko.observableArray());
       this.tradesBreakEvens = ko.mapping.fromJS(ko.observableArray());
+      this.hedgeCombo = ko.observable();
+      this.hedgeComboText = ko.pureComputed(function () {
+        var hc = this.hedgeCombo();
+        return hc ? hc.contract.ShortString + "/" + hc.quantity + "{" + hc.context + "}" : "No hedge";
+      },this);
       this.rollOvers = ko.mapping.fromJS(ko.observableArray());
 
       this.rollOversSorted = ko.pureComputed(function () {
@@ -1248,10 +1246,13 @@
         var foo = getWwwInfo;
         serverCall("getWwwInfo", args,
           function (info) {
-            self.histVolM1(Math.ceil(parseInt((info.HistVol || {}).split('/')[1]) || 0));
-            wwwInfoRaw(info);
-            if (!stopWwwInfo)
-              setTimeout(foo, 1000);
+            if (!info) {
+              showErrorPerm("WwwInfo is undefined.");
+            } else{
+              wwwInfoRaw(info);
+              if (!stopWwwInfo)
+                setTimeout(foo, 1000);
+            }
           },
           function (error) {
             showWarning("getWwwInfo: " + error);
@@ -2029,6 +2030,9 @@
     };
     chat.client.warning = function (message) {
       showWarningPerm(message);
+    };
+    chat.client.hedgeCombo = function (hedgeCombo) {
+      dataViewModel.hedgeCombo(hedgeCombo);
     };
     // #region Stock Options
     chat.client.tradesBreakEvens = function (options) {

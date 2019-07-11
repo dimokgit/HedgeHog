@@ -23,9 +23,10 @@
   function svgFrom(element) {
     return d3.select(element).select("svg g");
   }
+  var heightOffset = 0.98;
   function calcChartArea(element, y2Scale) {
     var elementWidth = parseInt(d3.select(element).style("width"), 10),
-      elementHeight = calcElementHeight(elementWidth),// parseInt(d3.select(element).style("height"), 10),
+      elementHeight = Math.round(calcElementHeight(elementWidth) * heightOffset),// parseInt(d3.select(element).style("height"), 10),
       width = elementWidth - margin.left - margin.right,
       height = elementHeight - margin.top - margin.bottom,
       x = d3.scaleTime().range([xAxisOffset, width - xAxisOffset]),
@@ -637,7 +638,7 @@
             //setHLine(Math.abs(minMax[0]), "tpsMax2", "darkred", 1, "", y3);
             setHLine(tps2Low.concat(NaN).splice(0, 1)[0], "tpsMin2", "darkred", 1, "", y3);
             setHLine(tps2High.concat(NaN).splice(0, 1)[0], "tpsMax2", "darkred", 1, "", y3);
-            setHLine(tpsCurr2, "tpsCurr2", "cyan", 1, "", y3);
+            setHLine(tpsCurr2, "tpsCurr2", color, 2, "", y3);
           } else {
             y3Axis.style("display", "none");
             setHLine(NaN, "tpsCurr2", colorTps, 1, "", y3);
@@ -702,7 +703,7 @@
       }
       // #endregion
 
-      breakEven.concat([NaN, NaN]).forEach((be, i) =>setHLine(be, "breakEven" + i, "black", 1, "2,2,5,2"));
+      breakEven.concat([NaN, NaN]).forEach((be, i) => setHLine(be, "breakEven" + i, "black", 1, "2,2,5,2"));
 
       // #region Corridor start date line
       if (doCorridorStartDate) {
@@ -716,7 +717,7 @@
             .attr("transform", function (d) {
               return "translate(" + (x(corridorStartTime) + d) + ",7) rotate(-90)";
             })
-          ;
+            ;
         }
       } else
         svg.selectAll("path.nextWave").style("display", "none");
@@ -742,7 +743,7 @@
           .data(chkBoxData)
           .attr('x', function (d) { return d.x; })
           .attr('y', function (d) { return isNaN(d.y) ? 0 : d.y; })
-        ;
+          ;
         svg.selectAll("*.tradeLineUI input")
           .data(chkBoxData)
           .style("display", function (d) { return d.canTrade ? "" : "none"; })
@@ -820,7 +821,7 @@
               //console.log(t);
               return t;
             })
-          ;
+            ;
           closedTradesDelta
             .style("stroke", function (ct) {
               return ct.stroke;
@@ -884,9 +885,9 @@
             .attr("y1", (yTrans || y)(level)) // y position of the first end of the line
             .attr("x2", x(data[data.length - 1].d) + xAxisOffset) // x position of the second end of the line
             .attr("y2", (yTrans || y)(level))// y position of the second end of the line
-          ;
+            ;
 
-          //.duration(animationDuration);    
+        //.duration(animationDuration);    
         else
           return line
             .style("stroke-width", 0);

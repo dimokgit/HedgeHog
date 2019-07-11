@@ -1296,6 +1296,7 @@
     <None Include="WWW\node_modules\ws\README.md" />
     <None Include="WWW\packages.config" />
     <None Include="WWW\Publish - 04.cmd" />
+    <None Include="WWW\Publish - Release 2.cmd" />
     <None Include="WWW\Publish - RM.cmd" />
     <None Include="WWW\Publish - RM20.cmd" />
     <None Include="WWW\Publish - RM3.cmd" />

@@ -46,7 +46,9 @@ namespace UnitLib {
 
 
       [TestMethod]
+      [TestCategory("Manuals")]
       public void MongoUpdate() {
+      Assert.Inconclusive("Manual");
       GlobalStorage.UseForexMongo(c => {
         foreach(var a in c.StraddleHistories)
           a.pair = HedgeHog.Shared.TradesManagerStatic.FutureCode(a.pair);

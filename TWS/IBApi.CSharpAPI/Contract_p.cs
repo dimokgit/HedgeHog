@@ -84,11 +84,14 @@ namespace IBApi {
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
     public string ShortString => ComboLegsToString((c, r, a) => c.Symbol + " " + LegLabel(r, a) + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
-    public string DateWithShort => ComboLegsToString((c, r, a) 
+    public string DateWithShort => ComboLegsToString((c, r, a)
       => c.LastTradeDateOrContractMonth.Substring(4) + " " + c.Symbol + " " + LegLabel(r, a) + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
     public string ShortWithDate => ComboLegsToString((c, r, a) => c.Symbol + " " + c.LastTradeDateOrContractMonth.Substring(4) + " " + LegLabel(r, a) + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
     public override string ToString() =>
-      ComboLegsToString((c, r, a) => LegLabel(r, a) + c.UnderContract.Select(u => c.ShortWithDate).DefaultIfEmpty(LocalSymbol).Single(), LocalSymbol.IfEmpty(Symbol)).IfEmpty($"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
+      ComboLegsToString(LegToString, LocalSymbol.IfEmpty(Symbol))
+      .IfEmpty(() => $"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
+
+
     internal string ComboLegsToString() => ComboLegsToString((c, r, a) => LegLabel(r, a) + c.LocalSymbol, LocalSymbol.IfEmpty(Symbol));
     internal string ComboLegsToString(Func<Contract, int, string, string> label, string defaultFotNotOption) =>
       Legs()
@@ -96,12 +99,15 @@ namespace IBApi {
       .With(legs => (legs, r: legs.Select(l => l.r).DefaultIfEmpty().Max())
       .With(t =>
       t.legs
-      .Select(l => label(l.c, t.r, l.a))
+      .Select(l => label(l.c, l.r, l.a))
       .OrderBy(s => s)
       .RunIfEmpty(() => IsOption ? label(this, 0, "") + "" : defaultFotNotOption + "")
       .ToArray()
       .MashDiffs()));
+
+    static string LegToString(Contract c, int r, string a) => LegLabel(r, a) + (c.IsOption ? c.UnderContract.Select(u => c.ShortWithDate).SingleOrDefault() : c.Instrument);
     static string LegLabel(int ratio, string action) => ratio == 0 ? "" : (action == "BUY" ? "+" : "-") + (ratio > 1 ? ratio + ":" : "");
+
     public IEnumerable<T> LegsOrMe<T>(Func<Contract, T> map) => LegsOrMe().Select(map);
     public IEnumerable<Contract> LegsOrMe() => Legs().Select(cl => cl.c).DefaultIfEmpty(this);
     public IEnumerable<T> Legs<T>(Func<(Contract c, int r, string a), T> map) => Legs().Select(map);

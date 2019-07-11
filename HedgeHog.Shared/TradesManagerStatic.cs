@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using HedgeHog;
 using AutoMapper;
 using HedgeHog.DateTimeZone;
+using HedgeHog.Core;
 
 namespace HedgeHog.Shared {
   public static class TradesManagerStatic {
@@ -66,8 +67,59 @@ namespace HedgeHog.Shared {
       return Regex.Replace(pair, @"(\w3)(\w3)", "$1/$2");
     }
 
+    public static ((TContract contract, int quantity)[] contracts, int quantity) HedgeQuanitiesByValue<TContract>(int multiplier
+      , params (TContract contract, double price, double weight, double multiplier,string context)[] hedges) {
+      if(hedges == null)
+        throw new ArgumentNullException(nameof(hedges));
+      if(hedges.Length > 2)
+        return Aggregated();
+      var res = TradesManagerStatic.HedgeRatioByValue(hedges);
+      var res2 = res.Select(t => new { t.contract, ratio = (t.ratio * multiplier).ToInt() }).ToArray();
+      var gcd = res2.Select(t => t.ratio).ToArray().GCD();
+      return (res2.Select(t => (t.contract, quamtity: t.ratio / gcd)).ToArray(), gcd);
+      //// Locals
+      ((TContract contract, int quantity)[], int) Aggregated() {
+        var aa = (from h in hedges
+                  group h by h.contract into g
+                  select (g.Key, g.Average(t => t.price), g.Sum(t => t.weight), g.Select(t => t.multiplier).First(),g.Select(t=>t.context).ToArray().MashDiffs())
+                 ).ToArray();
+        if(aa.Length != 2) throw new Exception("Too many contracts\n" + new { hedges }.ToJson());
+        return HedgeQuanitiesByValue(multiplier, aa);
+      }
+    }
+
+    public static IList<(TContract contract, double ratio)> HedgeRatioNyWeight<TContract>(
+      params (TContract contract, double price, double weight, int multiplier)[] hedges) {
+      var qs = hedges.Zip(hedges.Reverse(), (h1, h2) => new { h1.contract, w = (h1.price * h1.multiplier * h2.weight).AutoRound2(3) }).OrderByDescending(x => x.w).ToArray();
+      var r = qs[0].w / qs[1].w;
+      return new[] { (qs[0].contract, r), (qs[1].contract, 1.0) };
+    }
+    public static (TContract contract, double ratio,string context)[] HedgeRatioByValue<TContract>(
+      params (TContract contract, double price, double timeValue, double multiplier,string context)[] hedges) {
+      var r1 = Aggregated().Pairwise((h1, h2)
+        => (h1.multiplier * h1.multiplier / h2.multiplier / h2.multiplier) * h1.price * h1.timeValue / h2.price / h2.timeValue).Single();
+      return new[] { (hedges[0].contract, 1,hedges[0].context), (hedges[1].contract, r1.Round(6), hedges[1].context) };
+      //// Locals
+      (TContract contract, double price, double timeValue, double multiplier,string context)[] Aggregated() {
+        if(hedges.Length == 2) return hedges;
+        var aa = (from h in hedges
+                  group h by h.contract into g
+                  select (g.Key, g.Average(t => t.price), g.Sum(t => t.timeValue), g.Select(t => t.multiplier).First(),g.Select(t=>t.context).ToArray().MashDiffs())
+                 ).ToArray();
+        if(aa.Length != 2) throw new Exception("Too many contracts\n" + new { hedges }.ToJson());
+        return hedges = aa;
+      }
+
+    }
+    public static IList<(TContract contract, double ratio)> HedgeRatioByValue_Old<TContract>(params (TContract contract, double price, double timeValue, int multiplier)[] hedges) {
+      var tvrs = hedges.Select(h => h.timeValue / h.price).Reverse().ToArray();
+      var qs = hedges.Zip(tvrs, (h, tvr) => new { h.contract, w = (h.price * h.multiplier * tvr).AutoRound2(3) }).OrderByDescending(x => x.w).ToArray();
+      var r = qs[0].w / qs[1].w;
+      return new[] { (qs[0].contract, r), (qs[1].contract, 1.0) };
+    }
+
     public static bool IsCurrenncy(this string s) => _currencies.Any(c => s.ToUpper().StartsWith(c)) && _currencies.Any(c => s.ToUpper().EndsWith(c));
-    private static Regex FutureMatch = new Regex( @"^(?<code>\w{2,3})[HMQUZ]\d{1,2}|VX[A-Z]\d$", RegexOptions.IgnoreCase);
+    private static Regex FutureMatch = new Regex(@"^(?<code>\w{2,3})[HMQUZ]\d{1,2}|VX[A-Z]\d$", RegexOptions.IgnoreCase);
     public static bool IsFuture(this string s) => FutureMatch.IsMatch(s);
     public static string FutureCode(this string s) => IsFuture(s) ? FutureMatch.Match(s).Groups["code"].Value : s;
     public static bool IsCommodity(this string s) => _commodities.Contains(s.ToUpper());
