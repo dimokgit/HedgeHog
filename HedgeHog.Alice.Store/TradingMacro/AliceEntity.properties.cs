@@ -1972,9 +1972,11 @@ namespace HedgeHog.Alice.Store {
 
     public string PairPlain { get { return TradesManagerStatic.WrapPair(Pair); } }
 
-    public bool IsPairHedged => !PairHedge.IsNullOrWhiteSpace() && (TradeConditionsHedge().Any() || TradingMacroTrader(tm => tm.TradeConditionsHedge()).Concat().Any());
+    public bool IsPairHedged => !PairHedge.IsNullOrWhiteSpace() && (true || TradeConditionsHedge().Any() || TradingMacroTrader(tm => tm.TradeConditionsHedge()).Concat().Any());
     public bool IsHedgedTrading => !PairHedge.IsNullOrWhiteSpace() && HedgedTrading;
-    public bool isHedgeChild => TradingMacrosByPairHedge(Pair).Any();
+    public IEnumerable<TradingMacro> HedgeParent => TradingMacrosByPairHedge(Pair).Take(1);
+    public bool IsHedgeChild => HedgeParent.Any();
+    public IEnumerable<TradingMacro> HedgeOther => TradingMacroHedged().Concat(HedgeParent);
     void SyncHedgedPair() {
       TradingMacroHedged().ForEach(tm => {
         tm.BarsCount = BarsCount;

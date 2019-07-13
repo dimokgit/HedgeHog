@@ -63,12 +63,13 @@ namespace ConsoleApp {
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7497;
-      const int clientId = 1;
+      const int clientId = 10;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         //am.OrderContractsInternal.Subscribe(o => { });
         //return;
+
         {
           new Contract();
           var h1 = "ESU9";
@@ -78,17 +79,17 @@ namespace ConsoleApp {
 
           am.CurrentHedges(h1, h2)
           .Subscribe(hh => {
-            HandleMessage(hh.Select(h => new { h.contract, h.quantity, h.context }).ToTextOrTable("Hedge"));
+            HandleMessage(hh.Select(h => new { h.contract, h.quantity, amount = h.price * h.quantity, h.context }).ToTextOrTable("Hedge"));
             am.CurrentHedges(h1, h2)
             .Subscribe(hh2 => {
-              HandleMessage(hh2.Select(h => new { h.contract, h.quantity, h.context }).ToTextOrTable("Hedge 2"));
+              HandleMessage(hh2.Select(h => new { h.contract, h.quantity, amount = h.price * h.quantity, h.context }).ToTextOrTable("Hedge 2"));
               var combo = AccountManager.MakeHedgeCombo(10, hh2[0].contract, hh2[1].contract, hh2[0].quantity, hh2[1].quantity).With(c => new { combo = c, context = hh2.ToArray(t => t.context).MashDiffs() });
               HandleMessage($"Hedge Combo: {combo.ToString()}");
               ibClient.ReqPriceSafe(combo.combo.contract)
               .Select(p => new { p.bid, p.ask })
               .Subscribe(comboPrice => HandleMessage(new { comboPrice }));
               var pos = 1;
-              if(pos > 10)
+              if(pos == -1)
                 am.OpenTrade(combo.combo.contract, combo.combo.quantity * pos)
                 .Subscribe(orderHolder => {
                   HandleMessage(orderHolder.ToTextOrTable());
@@ -96,6 +97,18 @@ namespace ConsoleApp {
             });
 
           });
+          return;
+        }
+        {
+          (from p in am.PositionsObservable
+           from cd in ibClient.ReqContractDetailsAsync(p.Contract)
+           select new { cd.Contract, p.Position }
+             )
+             .Take(2).ToArray().Subscribe(hh => {
+               HandleMessage(hh.Select(x => new { x.Contract.Instrument, x.Position }).ToTextOrTable("Positions"));
+               var combo = AccountManager.MakeHedgeCombo(1, hh[0].Contract, hh[1].Contract, hh[0].Position, -hh[1].Position);
+               HandleMessage("HedgeCombo:" + new { combo.contract, combo.quantity });
+             });
           return;
         }
         {

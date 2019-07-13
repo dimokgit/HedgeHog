@@ -10,7 +10,8 @@ using System.Threading.Tasks;
 using static HedgeHog.MathCore;
 namespace IBApp {
   public partial class AccountManager {
-    public static (TPositions[] positions, (Contract contract, int positions) contract)[] MakeComboAll<TPositions>(IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, string, bool> filterByTradingClass) =>
+    public static (TPositions[] positions, (Contract contract, int positions) contract)[] MakeComboAll<TPositions>
+      (IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, string, bool> filterByTradingClass) =>
       combosAll
       .Where(c => c.c.HasOptions)
       .GroupBy(combo => (combo.c.Symbol, combo.c.TradingClass, combo.c.Exchange, combo.c.Currency, combo.c.Expiration))

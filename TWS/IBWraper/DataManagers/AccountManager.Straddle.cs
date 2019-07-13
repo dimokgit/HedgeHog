@@ -194,22 +194,23 @@ namespace IBApp {
     #endregion
 
     #region Options
-    public IObservable<(Contract contract, double quantity,string context)[]> CurrentHedges(string h1, string h2) =>
+    public IObservable<(Contract contract, double quantity, double price, string context)[]> CurrentHedges(string h1, string h2) =>
       (from es in CurrentTimeValue(h1)
        from nq in CurrentTimeValue(h2)
-       let options= es.Concat(nq).ToArray()
-       let hh = options.SelectMany(c => c.option.UnderContract.Select(u => (u, c.underPrice, c.delta, (double)u.ComboMultiplier,c.option+""))).ToArray()
-       select TradesManagerStatic.HedgeRatioByValue(hh));
+       let options = es.Concat(nq).ToArray()
+       let hh = options.Select(c => (c.contract, c.underPrice, c.delta, (double)c.contract.ComboMultiplier, c.option + "")).ToArray()
+       select es.Any() && nq.Any()? TradesManagerStatic.HedgeRatioByValue(hh): new (Contract contract, double quantity, double price, string context)[0]);
 
-    Dictionary<string, double> strikeInterval = new Dictionary<string, double> { { "ES", 5.0 },{ "NQ", 10.0 } };
-    public IObservable<(Contract option, double underPrice, double bid, double ask, double delta)[]> CurrentTimeValue(string symbol) {
+    Dictionary<string, double> strikeInterval = new Dictionary<string, double> { { "ES", 5.0 }, { "NQ", 10.0 } };
+    public IObservable<(Contract option, Contract contract, double underPrice, double bid, double ask, double delta)[]> CurrentTimeValue(string symbol) {
       return (
         from u in IbClient.ReqContractDetailsCached(symbol)
         from up in IbClient.ReqPriceSafe(u.Contract)
-        from cs in CurrentOptions(symbol, double.NaN, MathCore.GetWorkingDays(DateTime.Now, MathCore.GetNextWeekday(DayOfWeek.Friday)), 6, c =>  c.Expiration.DayOfWeek == DayOfWeek.Friday)
-              from call in cs.Where(c => c.option.IsCall).OrderByDescending(c => c.delta).Take(1)
-              from put in cs.Where(c => c.option.IsPut).OrderByDescending(c => c.delta).Take(1)
-              select new[] { call, put }.Select(o => (o.option, o.underPrice, o.bid, o.ask, o.delta)).ToArray());
+        let startDate= DateTime.Now.AddDays(1)
+        from cs in CurrentOptions(symbol, double.NaN, MathCore.GetWorkingDays(startDate, startDate.GetNextWeekday(DayOfWeek.Friday)), 6, c => c.Expiration.DayOfWeek == DayOfWeek.Friday)
+        let calls = cs.Where(c => c.option.IsCall).OrderByDescending(c => c.delta).Take(2)
+        let puts = cs.Where(c => c.option.IsPut).OrderByDescending(c => c.delta).Take(2)
+        select calls.Concat(puts).Select(o => (o.option, u.Contract, o.underPrice, o.bid, o.ask, o.delta)).ToArray());
     }
     //public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count) =>
     public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count, Func<Contract, bool> filter) =>

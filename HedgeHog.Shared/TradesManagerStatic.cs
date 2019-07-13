@@ -68,7 +68,7 @@ namespace HedgeHog.Shared {
     }
 
     public static ((TContract contract, int quantity)[] contracts, int quantity) HedgeQuanitiesByValue<TContract>(int multiplier
-      , params (TContract contract, double price, double weight, double multiplier,string context)[] hedges) {
+      , params (TContract contract, double price, double weight, double multiplier, string context)[] hedges) {
       if(hedges == null)
         throw new ArgumentNullException(nameof(hedges));
       if(hedges.Length > 2)
@@ -81,7 +81,7 @@ namespace HedgeHog.Shared {
       ((TContract contract, int quantity)[], int) Aggregated() {
         var aa = (from h in hedges
                   group h by h.contract into g
-                  select (g.Key, g.Average(t => t.price), g.Sum(t => t.weight), g.Select(t => t.multiplier).First(),g.Select(t=>t.context).ToArray().MashDiffs())
+                  select (g.Key, g.Average(t => t.price), g.Sum(t => t.weight), g.Select(t => t.multiplier).First(), g.Select(t => t.context).ToArray().MashDiffs())
                  ).ToArray();
         if(aa.Length != 2) throw new Exception("Too many contracts\n" + new { hedges }.ToJson());
         return HedgeQuanitiesByValue(multiplier, aa);
@@ -94,19 +94,19 @@ namespace HedgeHog.Shared {
       var r = qs[0].w / qs[1].w;
       return new[] { (qs[0].contract, r), (qs[1].contract, 1.0) };
     }
-    public static (TContract contract, double ratio,string context)[] HedgeRatioByValue<TContract>(
-      params (TContract contract, double price, double timeValue, double multiplier,string context)[] hedges) {
+    public static (TContract contract, double ratio, double price, string context)[] HedgeRatioByValue<TContract>(
+      params (TContract contract, double price, double timeValue, double multiplier, string context)[] hedges) {
       var r1 = Aggregated().Pairwise((h1, h2)
         => (h1.multiplier * h1.multiplier / h2.multiplier / h2.multiplier) * h1.price * h1.timeValue / h2.price / h2.timeValue).Single();
-      return new[] { (hedges[0].contract, 1,hedges[0].context), (hedges[1].contract, r1.Round(6), hedges[1].context) };
+      return new[] { (hedges[0].contract, 1, hedges[0].price, hedges[0].context), (hedges[1].contract, r1.Round(6), hedges[1].price, hedges[1].context) };
       //// Locals
-      (TContract contract, double price, double timeValue, double multiplier,string context)[] Aggregated() {
+      (TContract contract, double price, double timeValue, double multiplier, string context)[] Aggregated() {
         if(hedges.Length == 2) return hedges;
         var aa = (from h in hedges
                   group h by h.contract into g
-                  select (g.Key, g.Average(t => t.price), g.Sum(t => t.timeValue), g.Select(t => t.multiplier).First(),g.Select(t=>t.context).ToArray().MashDiffs())
+                  select (g.Key, g.Average(t => t.price), g.Sum(t => t.timeValue), g.Select(t => t.multiplier).First(), g.Select(t => t.context).ToArray().MashDiffs())
                  ).ToArray();
-        if(aa.Length != 2) throw new Exception("Too many contracts\n" + new { hedges }.ToJson());
+        if(aa.Length != 2) throw new Exception("Too many contracts\n" + new { hedges = hedges.Select(h => h.contract).ToJson() }.ToJson());
         return hedges = aa;
       }
 

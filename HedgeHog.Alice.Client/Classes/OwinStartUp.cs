@@ -264,7 +264,13 @@ namespace HedgeHog.Alice.Client {
         .ObserveOn(TaskPoolScheduler.Default)
         .Distinct(s => s.key)
         .Sample(TimeSpan.FromSeconds(2))
-        .Subscribe(s => s.action(), exc => { });
+        .Subscribe(s => {
+          try {
+            s.action();
+          } catch(Exception exc) {
+            LogMessage.Send(exc);
+          }
+        }, exc => { });
     }
     static public void OnCurrentCombo((string key, Action action) p) {
       _CurrentCombos.OnNext(p);
@@ -452,15 +458,6 @@ namespace HedgeHog.Alice.Client {
 
     }
 
-    public async Task<object> ReadHedgingContract(string pair, int quantity) {
-      var hedgePair = ReadHedgedPair(pair);
-      var am = GetAccountManager();
-      return await (from hh2 in am.CurrentHedges(pair, hedgePair)
-                    let combo = AccountManager.MakeHedgeCombo(quantity, hh2[0].contract, hh2[1].contract, hh2[0].quantity, hh2[1].quantity)
-                    select new { combo.contract, combo.quantity }
-                    );
-
-    }
     public object ReadHedgingRatios(string pair) {
       try {
         //var xx = new[] { true, false }.SelectMany(isBuy => CalcHedgedPositions(pair, isBuy));
@@ -581,15 +578,15 @@ namespace HedgeHog.Alice.Client {
                 ).ToArray();
     }
     [BasicAuthenticationFilter]
-    public async Task<string[]>  OpenHedge(string pair, int quantity, bool isBuy) {
-      var hedgePar = ReadHedgedPair(pair);
+    public async Task<string[]> OpenHedge(string pair, int quantity, bool isBuy) {
+      var hedgePar = ReadHedgedOther(pair);
       var am = GetAccountManager();
       var x = await (from hh in am.CurrentHedges(pair, hedgePar)
-               let h = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].quantity, hh[1].quantity)
-               from ots in am.OpenTrade(h.contract, h.quantity * (isBuy?1:-1))
-               from ot in ots
-               where ot.error.HasError
-               select ot.error.ToString()).ToArray();
+                     let h = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].quantity, hh[1].quantity)
+                     from ots in am.OpenTrade(h.contract, h.quantity * (isBuy ? 1 : -1))
+                     from ot in ots
+                     where ot.error.HasError
+                     select ot.error.ToString()).ToArray();
 
       return x;
 
@@ -882,8 +879,9 @@ namespace HedgeHog.Alice.Client {
               //AccountManager.BreakEvens()
             }
             void CurrentHedges() {
-              var hedgePar = ReadHedgedPair(pair);
+              var hedgePar = ReadHedgedOther(pair);
               am.CurrentHedges(pair, hedgePar)
+              .Where(hh => hh.Any())
               .Subscribe(hh => {
                 var h = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].quantity, hh[1].quantity).With(c => new { combo = c, context = hh.ToArray(t => t.context).MashDiffs() });
                 base.Clients.Caller.hedgeCombo(new { h.combo.contract, h.combo.quantity, h.context });
@@ -1669,7 +1667,7 @@ namespace HedgeHog.Alice.Client {
     public void SetHedgedPair(string pair, string pairHedge) => UseTraderMacro(pair, tm => {
       if(pair != pairHedge) tm.PairHedge = pairHedge;
     });
-    public string ReadHedgedPair(string pair) => UseTraderMacro(pair, tm => tm.PairHedge).SingleOrDefault();
+    public string ReadHedgedOther(string pair) => UseTraderMacro(pair, tm => tm.HedgeOther.Select(tmh => tmh.Pair)).Concat().SingleOrDefault();
 
     public void SetCanTrade(string pair, bool canTrade, bool isBuy) {
       GetTradingMacro(pair).ForEach(tm => {

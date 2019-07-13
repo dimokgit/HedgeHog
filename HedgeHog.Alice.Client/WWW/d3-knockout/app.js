@@ -2202,7 +2202,7 @@
         serverCall("readEnum", ["Strategies"], function (enums) {
           dataViewModel.strategyType(mapEnumsForSettings(enums));
         });
-        serverCall("readHedgedPair", [pair], function (hp) {
+        serverCall("readHedgedOther", [pair], function (hp) {
           dataViewModel.pairHedgedCurrent(hp);
           dataViewModel.pairHedgedCurrent.subscribe(function (ph) {
             serverCall("setHedgedPair", [pair, ph]);
