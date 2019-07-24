@@ -80,13 +80,13 @@ namespace HedgeHog.Shared.Tests {
 
     [TestMethod()]
     public void HedgeRatioByValue() {
-      var res = TradesManagerStatic.HedgeRatioByValue(("C1", 2992.25, 12.75, 50), ("C2", 7854.25, 49.75, 20));
+      var res = TradesManagerStatic.HedgeRatioByValue(" ",("C1", 2992.25, 12.75, 50,""), ("C2", 7854.25, 49.75, 20,""));
       Assert.AreEqual(("C1", 1), res[0]);
       Assert.AreEqual(("C2", 0.610225), res[1]);
     }
     [TestMethod()]
     public void HedgeRatio() {
-      var res = TradesManagerStatic.HedgeQuanitiesByValue(10, ("C1", 2992.25, 12.75, 50), ("C2", 7854.25, 49.75, 20));
+      var res = TradesManagerStatic.HedgeQuanitiesByValue( 10, " ", ("C1", 2992.25, 12.75, 50,""), ("C2", 7854.25, 49.75, 20,""));
       Assert.AreEqual(2, res.quantity);
       Assert.AreEqual(("C1", 5), res.contracts[0]);
       Assert.AreEqual(("C2", 3), res.contracts[1]);
@@ -94,7 +94,7 @@ namespace HedgeHog.Shared.Tests {
 
     [TestMethod()]
     public void HedgeRatios() {
-      var res = TradesManagerStatic.HedgeQuanitiesByValue(10, ("C1", 2992.25, 12, 50), ("C1", 2992.25, 0.75, 50), ("C2", 7854.25, 49.75, 20));
+      var res = TradesManagerStatic.HedgeQuanitiesByValue(10, " ", ("C1", 2992.25, 12, 50,""), ("C1", 2992.25, 0.75, 50,""), ("C2", 7854.25, 49.75, 20,""));
       Assert.AreEqual(("C1", 8), res.contracts[0]);
       Assert.AreEqual(("C2", 5), res.contracts[1]);
     }

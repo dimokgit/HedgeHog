@@ -417,7 +417,7 @@ namespace HedgeHog {
 
     public static string ToTextOrTable<T>(this IEnumerable<T> source, string caption = "") => source.ToTextOrTable(caption, i => i.ToMarkdownTable() + "");
     public static string ToTextOrTable<T>(this IEnumerable<T> source, string caption, Func<IEnumerable<T>, string> mapPlural)
-      => source.ToList().With(l => l.Count > 1 ? (caption.IsNullOrEmpty() ? "" : caption + Environment.NewLine) + mapPlural(l) : caption + " " + l.Flatter(""));
+      => source.ToList().With(l => l.Count > 0 ? (caption.IsNullOrEmpty() ? "" : caption + Environment.NewLine) + mapPlural(l) : caption + " " + l.Flatter(""));
     public static U With<T, U>(this T v, Predicate<T> @if, Func<T, U> then, Func<T, U> @else) {
       return @if(v) ? then(v) : @else(v);
     }

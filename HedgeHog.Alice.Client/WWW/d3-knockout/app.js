@@ -915,6 +915,7 @@
       this.expDaysSkip = ko.observable();
       this.distanceFromHigh = ko.observable();
       this.comboQuantity = ko.observable().extend({ persist: "comboQuantity" + pair });
+      this.comboQuantity.subscribe(refreshCombos);
       this.comboCurrentStrikeLevel = ko.observable("");
       this.toggleComboCurrentStrikeLevel = function () {
         self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? Math.round(self.priceAvg()) : "");
@@ -999,8 +1000,8 @@
       this.hedgeCombo = ko.observable();
       this.hedgeComboText = ko.pureComputed(function () {
         var hc = this.hedgeCombo();
-        return hc ? hc.contract.ShortString + "/" + hc.quantity + "{" + hc.context + "}" : "No hedge";
-      },this);
+        return hc ? hc.price + hc.contract.ShortString + "/" + hc.ratio + "/" + hc.quantity + "{" + hc.context + "}" : "No hedge";
+      }, this);
       this.rollOvers = ko.mapping.fromJS(ko.observableArray());
 
       this.rollOversSorted = ko.pureComputed(function () {
@@ -1187,13 +1188,12 @@
           }.bind(this));
       }
       this.openHedgeTrade = function (hp) {
-        serverCall("openHedge", [pair, hp.IsBuy]);
+        serverCall("openHedge", [pair, self.comboQuantity(), hp.IsBuy]
+          , function (d) {
+            showInfoPerm("Open Hedges\n" + JSON.stringify(d));
+          });
         self.startAccounting();
-      }
-      this.openHedgeTrade = function (hp) {
-        serverCall("openHedge", [pair, hp.IsBuy]);
-        self.startAccounting();
-      }
+      };
       this.hedgeVirtualDate = ko.observable(d3.timeFormat("%m/%d/%Y ")(new Date()));
       this.openHedgeVirtual = function (buy) {
         serverCall("openHedgeVirtual", [pair, buy, this.hedgeVirtualDate()]);
@@ -1248,7 +1248,7 @@
           function (info) {
             if (!info) {
               showErrorPerm("WwwInfo is undefined.");
-            } else{
+            } else {
               wwwInfoRaw(info);
               if (!stopWwwInfo)
                 setTimeout(foo, 1000);
@@ -1551,7 +1551,7 @@
         //var beStraddle = ko.unwrap(self.butterflies()).sort((a, b) => Math.abs(ko.unwrap(a.strikeDelta)) - Math.abs(ko.unwrap(b.strikeDelta)))
         //  .map(x => ko.unwrap(x.breakEven)).flat().slice(0, 2);
         chartData2.breakEven = self.tradesBreakEvens();// beStraddle.concat(beLive);
-        console.log("BreakEven" + JSON.stringify(chartData2.breakEven));
+        //console.log("BreakEven" + JSON.stringify(chartData2.breakEven));
         self.chartData2(chartData2);
         updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
         dataViewModel.price(response.askBid);

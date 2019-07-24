@@ -7,6 +7,20 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace IBApp {
+  public class Position {
+    public Position(IBApi.Contract contract, double pos, double avgCost) {
+      Contract = contract;
+      Pos = pos.ToInt();
+      Open = avgCost * pos;
+      PipCost = contract.ComboMultiplier * pos.Abs();
+    }
+
+    public Contract Contract { get; }
+    public double Pos { get; }
+    public double Open { get; }
+    public double PipCost { get; }
+    public double AvgCost { get; }
+  }
   public partial class AccountManager {
     public static bool NoPositionsPlease = false;
 

@@ -107,15 +107,20 @@ namespace IBApp {
         if(order.OrderId == 0)
           order.OrderId = NetOrderId();
         var oso = OrderStatusObservable;
-        var wte = IbClient.WireToErrorMessage(order.OrderId, oso, m => m.OrderId
-        , m => OrderContractsInternal.ByOrderId(m.OrderId)
+        if(!order.Transmit)
+          oso = oso.TakeUntil(Observable.Timer(TimeSpan.FromSeconds(1))).DefaultIfEmpty();
+        int GetOtderId(OrderStatusMessage m) => m == null ? order.OrderId : m.OrderId;
+        var wte = IbClient.WireToErrorMessage(order.OrderId, oso, GetOtderId
+        , m => OrderContractsInternal.ByOrderId(GetOtderId(m))
         , Default
         , e => OpenTradeError(contract, order, e, new { }));
         IbClient.OnReqMktData(() => IbClient.ClientSocket.placeOrder(order.OrderId, contract, order));
-        return wte.FirstAsync().Do(_ => {
-          TraceError($"locker [{order.OrderId}] <= {_placedOrders[key]} for {key}");
-          _placedOrders.TryRemove(key, out var _);
-        });
+        return wte.FirstAsync()
+          .Do(_ => {
+            TraceError($"locker [{order.OrderId}] <= {_placedOrders[key]} for {key}");
+            _placedOrders.TryRemove(key, out var _);
+          })
+          .Select(och => och.value.IsEmpty() ? ErrorMessage.Empty(new[] { new OrderContractHolder(order, contract, "PreTransmitted") }.AsEnumerable()) : och);
       }
       IEnumerable<OrderContractHolder> Default() { yield return new OrderContractHolder(order, contract, default); }
     }
@@ -204,6 +209,14 @@ namespace IBApp {
       (Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false
       , DateTime goodTillDate = default, DateTime goodAfterDate = default
       , OrderCondition condition = null, OrderCondition takeProfitCondition = null
+      , [CallerMemberName] string Caller = "") => OpenTrade(null, contract, quantity, price, profit, useTakeProfit, goodTillDate, goodAfterDate, condition, takeProfitCondition, "");
+
+    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenTrade
+      (
+        Action<IBApi.Order> orderExt
+      , Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false
+      , DateTime goodTillDate = default, DateTime goodAfterDate = default
+      , OrderCondition condition = null, OrderCondition takeProfitCondition = null
       , string orderRef = ""
       , [CallerMemberName] string Caller = "") {
       string type = "";
@@ -234,6 +247,7 @@ namespace IBApp {
           var orderType = price == 0 ? "MKT" : type.IfEmpty("LMT");
           bool isPreRTH = true;// orderType == "LMT";
           var order = OrderFactory(contract, quantity, price, goodTillDate, goodAfterDate, orderType, isPreRTH);
+          orderExt?.Invoke(order);
           order.OrderRef = orderRef;
           order.Conditions.AddRange(condition.YieldNotNull());
           order.ConditionsIgnoreRth = true;
@@ -280,11 +294,11 @@ namespace IBApp {
         order.Tif = GTC;
       if(goodAfterDate != default)
         order.GoodAfterTime = goodAfterDate.ToTWSString();
-      var isFutureCombo = contract.ComboLegs?.SelectMany(l => Contract.FromCache(c => c.ConId == l.ConId)).Any(c=>c.IsFuture);
+      var isFutureCombo = contract.ComboLegs?.SelectMany(l => Contract.FromCache(c => c.ConId == l.ConId)).Any(c => c.IsFuture);
       if(isFutureCombo == true) {
         order.SmartComboRoutingParams = new List<TagValue>();
         order.SmartComboRoutingParams.Add(new TagValue("NonGuaranteed", "1"));
-        order.Transmit = false;
+        //order.Transmit = false;
       }
       return order;
     }

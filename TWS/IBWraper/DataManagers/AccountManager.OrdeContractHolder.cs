@@ -39,6 +39,7 @@ namespace IBApp {
         try {
           var uo = (
             from c in GetContract().ToObservable()
+            where c.SecType != "BAG"
             from uc in c.UnderContract
             from cd in IBClientCore.IBClientCoreMaster.ReqContractDetailsAsync(uc)
             select cd.Contract

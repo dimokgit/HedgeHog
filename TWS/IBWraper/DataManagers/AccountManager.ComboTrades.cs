@@ -186,7 +186,29 @@ namespace IBApp {
        let open = ca.positions.Sum(p => p.open)
        let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
        select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, order.LmtPrice, order.OrderId));
-    //public COMBO_TRADES_IMPL ComboTradesUnder() {
+
+    private COMBO_TRADES_IMPL ComboTradesHedge((Contract contract, int position, double open, double price, double pipCost)[] positions) =>
+      (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
+       let sell = positions.All(p => p.position < 0)
+       let posSign = sell ? -1 : 1
+       let open = ca.positions.Sum(p => p.open)
+       let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
+       select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, 0.0, 0));
+
+    public static (TPositions[] positions, (Contract contract, int positions) contract)[] MakeComboHedgeFromPositions<TPositions>
+      (IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, Contract, bool> filter) =>
+      combosAll
+      .GroupBy(combo => new { combo.c.IsFuture, combo.c })
+      .Where(g => g.Key.IsFuture && g.Count() > 1)
+      .Select(combos =>
+        (
+        positions.Where(p => filter(p, combos.Key.c)).ToArray(),
+        MakeHedgeCombo(1,combos.First().c, combos.Last().c, combos.First().p.Abs(), combos.Last().p.Abs())
+        )
+      )
+      .ToArray();
+
+//public COMBO_TRADES_IMPL ComboTradesUnder() {
     //  var positions = Positions.Where(p => p.position != 0).ToArray();
     //  //var expDate = positions.Select(p => p.contract.Expiration).DefaultIfEmpty().Min();
     //  //var positionsByExpiration = positions.Where(p => p.contract.Expiration == expDate).ToArray();

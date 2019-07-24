@@ -70,35 +70,8 @@ namespace ConsoleApp {
         //am.OrderContractsInternal.Subscribe(o => { });
         //return;
 
-        {
-          new Contract();
-          var h1 = "ESU9";
-          var h2 = "NQU9";
-          //am.CurrentOptions(h1, double.NaN, 0, 10,c=>true)
-          //.Subscribe(os => HandleMessage(os.Select(o => new { o.option }).ToArray().ToTextOrTable("Options:")));
-
-          am.CurrentHedges(h1, h2)
-          .Subscribe(hh => {
-            HandleMessage(hh.Select(h => new { h.contract, h.quantity, amount = h.price * h.quantity, h.context }).ToTextOrTable("Hedge"));
-            am.CurrentHedges(h1, h2)
-            .Subscribe(hh2 => {
-              HandleMessage(hh2.Select(h => new { h.contract, h.quantity, amount = h.price * h.quantity, h.context }).ToTextOrTable("Hedge 2"));
-              var combo = AccountManager.MakeHedgeCombo(10, hh2[0].contract, hh2[1].contract, hh2[0].quantity, hh2[1].quantity).With(c => new { combo = c, context = hh2.ToArray(t => t.context).MashDiffs() });
-              HandleMessage($"Hedge Combo: {combo.ToString()}");
-              ibClient.ReqPriceSafe(combo.combo.contract)
-              .Select(p => new { p.bid, p.ask })
-              .Subscribe(comboPrice => HandleMessage(new { comboPrice }));
-              var pos = 1;
-              if(pos == -1)
-                am.OpenTrade(combo.combo.contract, combo.combo.quantity * pos)
-                .Subscribe(orderHolder => {
-                  HandleMessage(orderHolder.ToTextOrTable());
-                });
-            });
-
-          });
-          return;
-        }
+        Tests.HedgeCombo(ibClient, am); return;
+        Tests.CurrentOptionsTest(am, "esu9"); return;
         {
           (from p in am.PositionsObservable
            from cd in ibClient.ReqContractDetailsAsync(p.Contract)
@@ -631,9 +604,10 @@ namespace ConsoleApp {
     #region Handle(Error/Massage)
 
     static readonly string _tracePrefix;// = "OnTickPrice";
-    private static void HandleMessage2<T>(T message) => HandleMessage(message + "", false);
-    private static void HandleMessage<T>(T message, bool showTime = true) => HandleMessage(message + "", showTime);
-    private static void HandleMessage(string message, bool showTime = true) {
+    public static void HandleMessage2<T>(T message) => HandleMessage(message + "", false);
+    public static void HandleMessage<T>(T message) => HandleMessage(message, true);
+    public static void HandleMessage<T>(T message, bool showTime = true) => HandleMessage(message + "", showTime);
+    public static void HandleMessage(string message, bool showTime = true) {
       if(_tracePrefix.IsNullOrEmpty() || message.StartsWith(_tracePrefix))
         if(showTime)
           Console.WriteLine($"{DateTime.Now:mm:ss.f}: {message}");

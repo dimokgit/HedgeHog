@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace IBApi {
   public partial class Contract :IEquatable<Contract> {
@@ -43,7 +44,8 @@ namespace IBApi {
         _contracts.AddOrUpdate(Key, this, (k, c) => this);
       return this;
     }
-    public IEnumerable<Contract> UnderContract => LegsOrMe(c => c.UnderContractImpl).Concat().Distinct().Count(1, i => { }, i => throw new Exception($"Too many UnderContracts in {this}"));
+    [Newtonsoft.Json.JsonIgnore]
+    public IEnumerable<Contract> UnderContract => !IsOption ? new[] { this } : LegsOrMe(c => c.UnderContractImpl).Concat().Distinct().Count(1, i => { }, i => throw new Exception($"Too many UnderContracts in {this}"));
     public IEnumerable<Contract> UnderContractImpl => (from cd in FromDetailsCache()
                                                        where !cd.UnderSymbol.IsNullOrWhiteSpace()
                                                        from cdu in ContractDetails.FromCache(cd.UnderSymbol)
@@ -65,6 +67,7 @@ namespace IBApi {
     }
     public double MinTick() => LegsOrMe(MinTickImpl).Concat().Max();
     public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).First();
+    public bool IsFuturesCombo => LegsEx()?.Any(l => l.contract.IsFuture) == true;
     public bool IsCombo => ComboLegs?.Any() == true;
     public bool IsCall => IsOption && Right == "C";
     public bool IsPut => IsOption && Right == "P";
@@ -83,10 +86,12 @@ namespace IBApi {
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
-    public string ShortString => ComboLegsToString((c, r, a) => c.Symbol + " " + LegLabel(r, a) + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
+    public string ShortString => ComboLegsToString((c, r, a) => c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r,c), LocalSymbol.IfEmpty(Symbol));
     public string DateWithShort => ComboLegsToString((c, r, a)
-      => c.LastTradeDateOrContractMonth.Substring(4) + " " + c.Symbol + " " + LegLabel(r, a) + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
-    public string ShortWithDate => ComboLegsToString((c, r, a) => c.Symbol + " " + c.LastTradeDateOrContractMonth.Substring(4) + " " + LegLabel(r, a) + c.Right + c.Strike, LocalSymbol.IfEmpty(Symbol));
+      => c.LastTradeDateOrContractMonth.Substring(4) + " " + c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r,c), LocalSymbol.IfEmpty(Symbol));
+    public string ShortWithDate => ComboLegsToString((c, r, a) => c.Symbol + " " + c.LastTradeDateOrContractMonth.Substring(4) + " " + LegLabel(r, a) + RightStrikeLabel(r,c), LocalSymbol.IfEmpty(Symbol));
+    public string ShortWithDate2 => ComboLegsToString((c, r, a) 
+      => c.Symbol + "" + _right.Match(c.LastTradeDateOrContractMonth.Substring(4)) + "" + LegLabel(r, a) + RightStrikeLabel2(r,c), LocalSymbol.IfEmpty(Symbol));
     public override string ToString() =>
       ComboLegsToString(LegToString, LocalSymbol.IfEmpty(Symbol))
       .IfEmpty(() => $"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
@@ -106,8 +111,10 @@ namespace IBApi {
       .MashDiffs()));
 
     static string LegToString(Contract c, int r, string a) => LegLabel(r, a) + (c.IsOption ? c.UnderContract.Select(u => c.ShortWithDate).SingleOrDefault() : c.Instrument);
-    static string LegLabel(int ratio, string action) => ratio == 0 ? "" : (action == "BUY" ? "+" : "-") + (ratio > 1 ? ratio + ":" : "");
-
+    static string LegLabel(int ratio, string action) => ratio == 0 ? "" : (action == "BUY" ? "+" : "-") + (ratio > 1 ? ratio + "" : "");
+    static string RightStrikeLabel(int ratio, Contract c) => c.Right.IsNullOrEmpty() ? "" : (ratio.Abs() > 1 ? ":" : "") + c.Right + c.Strike;
+    static Regex _right = new Regex(".{2}$");
+    static string RightStrikeLabel2(int ratio, Contract c) => c.Right.IsNullOrEmpty() ? "" : (ratio.Abs() > 1 ? ":" : "") + c.Right + _right.Match(c.Strike+"");
     public IEnumerable<T> LegsOrMe<T>(Func<Contract, T> map) => LegsOrMe().Select(map);
     public IEnumerable<Contract> LegsOrMe() => Legs().Select(cl => cl.c).DefaultIfEmpty(this);
     public IEnumerable<T> Legs<T>(Func<(Contract c, int r, string a), T> map) => Legs().Select(map);

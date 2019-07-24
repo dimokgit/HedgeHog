@@ -91,6 +91,9 @@ namespace IBApp {
       SetContractSubscription(c, _ => { });
     });
     void SetContractSubscription(Contract contract, Action<Contract> callback) {
+      var fc = contract.IsFuturesCombo;
+      if(fc) System.Diagnostics.Debugger.Break();
+
       _marketDataManager.AddRequest(contract, GENERIC_TICK_LIST, callback);
     }
     public void SetSymbolSubscription(string pair) {
@@ -538,13 +541,13 @@ namespace IBApp {
       ReqPriceSafe(contract, timeoutInSeconds).DefaultIfEmpty((defaultPrice, defaultPrice, DateTime.MinValue, 0));
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceEmpty() => Observable.Return((0.0, 0.0, DateTime.MinValue, 0.0));
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe(Contract contract, double timeoutInSeconds = 5, [CallerMemberName] string Caller = "") {
+      if(contract.IsCombo)
+        return ReqPriceComboSafe(contract, timeoutInSeconds);
+
       var c = TryGetPrice(contract).Where(p => p.Ask > 0 && p.Bid > 0).ToArray();
       if(c.Any()) return c
       //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
       .Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToObservable();
-
-      if(contract.IsCombo)
-        return ReqPriceComboSafe(contract, timeoutInSeconds);
 
       SetContractSubscription(contract);
       return TickPriceObservable.Select(t => (long)t.RequestId).Merge(Observable.Interval(0.1.FromSeconds()))
