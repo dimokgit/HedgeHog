@@ -63,35 +63,6 @@ namespace IBApp {
       return (contract, positions);
     }
 
-    public static (Contract contract, int quantity) MakeHedgeCombo(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) {
-      int r1 = (ratio1 * quantity).ToInt();
-      int r2 = (ratio2 * quantity).ToInt();
-      var gcd = new[] { r1, r2 }.GCD();
-      Contract contract = new Contract();
-      contract.Symbol = c1.Symbol;
-      contract.SecType = "BAG";
-      contract.Currency = "USD";
-      contract.Exchange = "SMART";
-
-      ComboLeg leg1 = new ComboLeg();
-      leg1.ConId = c1.ConId;
-      leg1.Ratio = r1 / gcd;
-      leg1.Action = "BUY";
-      leg1.Exchange = c1.Exchange;
-
-      ComboLeg leg2 = new ComboLeg();
-      leg2.ConId = c2.ConId;
-      leg2.Ratio = r2 / gcd;
-      leg2.Action = "SELL";
-      leg2.Exchange = c2.Exchange;
-
-      contract.ComboLegs = new List<ComboLeg>();
-      contract.ComboLegs.Add(leg1);
-      contract.ComboLegs.Add(leg2);
-
-      //EXEND
-      return (contract, gcd);
-    }
 
     static IEnumerable<Contract> SortCombos(IEnumerable<Contract> options) =>
       (from c in options

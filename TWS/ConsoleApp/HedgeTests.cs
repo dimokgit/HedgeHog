@@ -26,6 +26,8 @@ namespace ConsoleApp {
           var a = new[] { new { combo.combo.contract.ShortString, combo.combo.contract.DateWithShort, combo.combo.contract.ShortWithDate, combo.combo.contract, combo.context } };
           Program.HandleMessage($"{a.ToTextOrTable("Hedge Combo:")}");
           (from p in ibClient.ReqPriceSafe(combo.combo.contract) select new { combo.combo.contract, p.bid, p.ask }).Subscribe(Program.HandleMessage);
+          AccountManager.MakeComboHedgeFromPositions(am.Positions).ToArray().Subscribe(posHedges
+          => Program.HandleMessage(posHedges.Select(ph => new { ph.contract, ph.pl }).ToTextOrTable("Position Hadge:")));
           var pos = -1;
           if(pos == 1) {
             //am.OpenTrade(combo.combo.contract, combo.combo.quantity * pos)

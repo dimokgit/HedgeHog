@@ -184,6 +184,7 @@
     <Compile Include="DataManagers\AccountManager.ComboTrades.cs" />
     <Compile Include="DataManagers\AccountManager.BullPut.cs" />
     <Compile Include="DataManagers\AccountManager.CoveredOption.cs" />
+    <Compile Include="DataManagers\AccountManager.Hedge.cs" />
     <Compile Include="DataManagers\AccountManager.Mixins.cs" />
     <Compile Include="DataManagers\AccountManager.Positions.cs" />
     <Compile Include="DataManagers\AccountManager.StrategyManager.cs" />

@@ -195,18 +195,6 @@ namespace IBApp {
        let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
        select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, 0.0, 0));
 
-    public static (TPositions[] positions, (Contract contract, int positions) contract)[] MakeComboHedgeFromPositions<TPositions>
-      (IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, Contract, bool> filter) =>
-      combosAll
-      .GroupBy(combo => new { combo.c.IsFuture, combo.c })
-      .Where(g => g.Key.IsFuture && g.Count() > 1)
-      .Select(combos =>
-        (
-        positions.Where(p => filter(p, combos.Key.c)).ToArray(),
-        MakeHedgeCombo(1,combos.First().c, combos.Last().c, combos.First().p.Abs(), combos.Last().p.Abs())
-        )
-      )
-      .ToArray();
 
 //public COMBO_TRADES_IMPL ComboTradesUnder() {
     //  var positions = Positions.Where(p => p.position != 0).ToArray();
