@@ -25,7 +25,7 @@ namespace ConsoleApp {
           var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, hh2[0].contract, hh2[1].contract, hh2[0].ratio, hh2[1].ratio).With(c => new { combo = c, context = hh2.ToArray(t => t.context).MashDiffs() });
           var a = new[] { new { combo.combo.contract.ShortString, combo.combo.contract.DateWithShort, combo.combo.contract.ShortWithDate, combo.combo.contract, combo.context } };
           Program.HandleMessage($"{a.ToTextOrTable("Hedge Combo:")}");
-          ibClient.ReqPriceSafe(combo.combo.contract).Select(p => new { p.bid, p.ask }).Subscribe(Program.HandleMessage);
+          (from p in ibClient.ReqPriceSafe(combo.combo.contract) select new { combo.combo.contract, p.bid, p.ask }).Subscribe(Program.HandleMessage);
           var pos = -1;
           if(pos == 1) {
             //am.OpenTrade(combo.combo.contract, combo.combo.quantity * pos)

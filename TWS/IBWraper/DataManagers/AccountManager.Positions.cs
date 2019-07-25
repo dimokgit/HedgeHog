@@ -8,35 +8,39 @@ using System.Linq;
 
 namespace IBApp {
   public class Position {
-    public Position(IBApi.Contract contract, double pos, double avgCost) {
-      Contract = contract;
-      Pos = pos.ToInt();
-      Open = avgCost * pos;
-      PipCost = contract.ComboMultiplier * pos.Abs();
+    public Position(PositionMessage p) {
+      this.contract = p.Contract;
+      position = p.Position.ToInt();
+      Quantity = position.Abs();
+      averageCost = p.AverageCost;
+      open = p.AverageCost * position;
+      pipCost = contract.ComboMultiplier * position.Abs();
+      price = averageCost / contract.ComboMultiplier;
     }
 
-    public Contract Contract { get; }
-    public double Pos { get; }
-    public double Open { get; }
-    public double PipCost { get; }
+    public Contract contract { get; }
+    public int position { get; }
+    public int Quantity { get; }
+    public double averageCost { get; }
+    public double open { get; }
+    public double pipCost { get; }
+    public double price { get; }
     public double AvgCost { get; }
   }
   public partial class AccountManager {
     public static bool NoPositionsPlease = false;
 
-    public (Contract contract, int position, double open, double price, double pipCost)
-      ContractPosition((IBApi.Contract contract, double pos, double avgCost) p) =>
-       (p.contract, position: p.pos.ToInt(), open: p.avgCost * p.pos, p.avgCost / p.contract.ComboMultiplier, pipCost: 0.01 * p.contract.ComboMultiplier * p.pos.Abs());
+    public Position ContractPosition(PositionMessage p) => new Position(p);
 
-    ConcurrentDictionary<string, (Contract contract, int position, double open, double price, double pipCost)> _positions = new ConcurrentDictionary<string, (Contract contract, int position, double open, double price, double pipCost)>();
-    public ICollection<(Contract contract, int position, double open, double price, double pipCost)> Positions => _positions.Values;
+    ConcurrentDictionary<string, Position> _positions = new ConcurrentDictionary<string, Position>();
+    public ICollection<Position> Positions => _positions.Values;
     //public Subject<ICollection<(Contract contract, int position, double open)>> ContracPositionsSubject = new Subject<ICollection<(Contract contract, int position, double open)>>();
 
-    void OnPosition(Contract contract, double position, double averageCost) {
-      var posMsg = new PositionMessage("", contract, position, averageCost);
-      if(position == 0) {
+    void OnPosition(PositionMessage p) {
+      var posMsg = new PositionMessage("", p.Contract, p.Position, p.AverageCost);
+      if(p.Position == 0) {
         OpenTrades
-         .Where(t => t.Pair == contract.LocalSymbol)
+         .Where(t => t.Pair == p.Contract.LocalSymbol)
          .ToList()
          .ForEach(ot => OpenTrades.Remove(ot)
          .SideEffect(_ => _verbous(new { RemovedPosition = new { ot.Pair, ot.IsBuy, ot.Lots } })));
@@ -52,15 +56,15 @@ namespace IBApp {
             => new Action(() => ot.Lots = posMsg.Quantity
             .SideEffect(Lots => _verbous(new { ChangePosition = new { ot.Pair, ot.IsBuy, Lots } })))
             )
-          .DefaultIfEmpty(() => contract.SideEffect(c
-          => OpenTrades.Add(TradeFromPosition(c, position, averageCost)
+          .DefaultIfEmpty(() => p.Contract.SideEffect(c
+          => OpenTrades.Add(TradeFromPosition(c, p.Position, p.AverageCost)
           .SideEffect(t => _verbous(new { OpenPosition = new { t.Pair, t.IsBuy, t.Lots } })))))
           .ToList()
           .ForEach(a => a());
       }
 
       TraceTrades("OnPositions: ", OpenTrades);
-      var cp = ContractPosition((contract, position, averageCost));
+      var cp = ContractPosition(p);
       _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
       //if(IbClient.ClientId == 0 && !_positions.Values.Any(p => p.position != 0))
       //  CancelAllOrders("Canceling stale orders");

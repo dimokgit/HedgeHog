@@ -124,9 +124,9 @@ namespace IBApp {
             TraceError($"Position contract {p.Contract} has no details");
             //RequestPositions();
           }, i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
-          select (p.Account, contract: cd.Contract, p.Position, p.AverageCost)
+          select p
         )
-        .Subscribe(a => OnPosition(a.contract, a.Position, a.AverageCost), () => { Trace("posObs done"); })
+        .Subscribe(OnPosition, () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
       OpenOrderObservable
         .Where(x => x.Order.Account == _accountId)

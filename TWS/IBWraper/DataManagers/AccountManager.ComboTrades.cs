@@ -178,7 +178,7 @@ namespace IBApp {
       return positionsByExpiration.Select(g => ComboTradesAllImpl2(g.ToArray())).Concat();
     }
 
-    private COMBO_TRADES_IMPL ComboTradesAllImpl2((Contract contract, int position, double open, double price, double pipCost)[] positions) =>
+    private COMBO_TRADES_IMPL ComboTradesAllImpl2(Position[] positions) =>
       (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
        let sell = positions.All(p => p.position < 0)
        let posSign = sell ? -1 : 1

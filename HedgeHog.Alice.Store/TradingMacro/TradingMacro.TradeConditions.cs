@@ -1882,7 +1882,7 @@ namespace HedgeHog.Alice.Store {
       .ForEach(trade => CloseTrades(nameof(TradeConditionsShouldClose)));
     }
 
-    private IEnumerable<(IBApi.Contract contract, int position, double open, double price, double pipCost)> OpenPuts()
+    private IEnumerable<Position> OpenPuts()
       => UseAccountManager(am =>
       from c in IBApi.Contract.FromCache(Pair)
       join p in am.Positions.Where(p => p.position != 0 && p.contract.IsPut) on c.Symbol equals p.contract.Symbol
