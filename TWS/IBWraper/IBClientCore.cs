@@ -300,6 +300,7 @@ namespace IBApp {
           .Distinct(t => t.ContractDetails.Contract.ConId)
           .ToArray()
           .Do(a => a.ForEach(t => {
+            if(t.ContractDetails.Contract.Exchange == "QBALGO") t.ContractDetails.Contract.Exchange = "GLOBEX";
             t.ContractDetails.AddToCache();
             if(t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty())
               ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Subscribe();

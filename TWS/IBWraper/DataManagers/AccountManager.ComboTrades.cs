@@ -13,6 +13,14 @@ namespace IBApp {
   public class ComboTrade {
     public bool IsVirtual { get; private set; }
     public double Change => closePrice * position.Sign() - openPrice;
+    //new HedgeCombo(hc.contract, pl, openPrice, closePrice, hc.quantity * g.First().position.position.Sign())
+    public ComboTrade(Contract contract, double pl, double openPrice, double closePrice, int position) {
+      this.contract = contract;
+      this.pl = pl;
+      this.openPrice = openPrice;
+      this.closePrice = closePrice;
+      this.position = position;
+    }
     public ComboTrade(Contract contract) {
       this.contract = contract;
       position = 1;
@@ -96,7 +104,7 @@ namespace IBApp {
 
     public IObservable<(double level, bool isCall)[]> TradesBreakEvens() {
       var bes = (from cts in ComboTrades(1).ToArray()
-                 from date in cts.Select(ct=>ct.contract.Expiration).MaxByOrEmpty().Take(1)
+                 from date in cts.Select(ct => ct.contract.Expiration).MaxByOrEmpty().Take(1)
                  from ct in cts
                  where ct.contract.IsOption && ct.contract.Expiration == date
                  select (strike: ct.strikeAvg, debit: ct.openPrice.Abs(), ct.contract.IsCall)
@@ -139,7 +147,8 @@ namespace IBApp {
         , c.orderId
         )
         );
-      return combos
+      return
+        MakeComboHedgeFromPositions(Positions).Concat(combos)
         .ToArray()
         .SelectMany(cmbs => cmbs
           .OrderBy(c => c.contract.Legs().Count())
@@ -196,7 +205,7 @@ namespace IBApp {
        select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, 0.0, 0));
 
 
-//public COMBO_TRADES_IMPL ComboTradesUnder() {
+    //public COMBO_TRADES_IMPL ComboTradesUnder() {
     //  var positions = Positions.Where(p => p.position != 0).ToArray();
     //  //var expDate = positions.Select(p => p.contract.Expiration).DefaultIfEmpty().Min();
     //  //var positionsByExpiration = positions.Where(p => p.contract.Expiration == expDate).ToArray();

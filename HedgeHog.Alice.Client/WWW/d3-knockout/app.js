@@ -1053,8 +1053,6 @@
         return self.liveStraddles()
           .filter(function (v) { return v && v.combo; })
           .map(function (v) {
-            if (!v.exitDelta)
-              v.exitDelta = ko.observable();
             return v;
           });
       }, this);

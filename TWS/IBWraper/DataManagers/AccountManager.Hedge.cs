@@ -11,12 +11,14 @@ using static IBApp.AccountManager;
 
 namespace IBApp {
   partial class AccountManager {
-    public static IObservable<(Contract contract, double pl)> MakeComboHedgeFromPositions(IEnumerable<Position> positions) {
-      var a = (from g in HedgedPositions(positions).Where(p => p.contract.IsFuture).ToArray()
+    public static IObservable<ComboTrade> MakeComboHedgeFromPositions(IEnumerable<Position> positions) {
+      var a = (from g in HedgedPositions(positions).Where(p => p.position.contract.IsFuture).ToArray()
                where g.Length == 2
                let pl = g.Sum(p => p.pl)
-               from hc in g.Pairwise((o, t) => MakeHedgeCombo(1, o.contract, t.contract, o.position.Abs(), t.position.Abs()))
-               select (hc.contract,pl)
+               let openPrice = g.Sum(p => p.position.price * p.position.position)
+               let closePrice = g.Sum(p => p.closePrice * p.position.position)
+               from hc in g.Pairwise((o, t) => MakeHedgeCombo(1, o.position.contract, t.position.contract, o.position.position.Abs(), t.position.position.Abs()))
+               select new ComboTrade(hc.contract, pl, openPrice, closePrice, hc.quantity * g.First().position.position.Sign())
                );
       return a;
       // where g.Key.IsFuture
@@ -25,12 +27,13 @@ namespace IBApp {
       //   )
       //).ToArray();
     }
-    public static IObservable<(Contract contract, double open, double close, double pl, int position)> HedgedPositions(IEnumerable<Position> positions) =>
+    public static IObservable<(Position position, double close, double pl, double closePrice)> HedgedPositions(IEnumerable<Position> positions) =>
       (from p in positions.ToObservable()
        where p.contract.IsFuture
        from price in IBClientMaster.ReqPriceSafe(p.contract)
-       let close = (p.position > 0 ? price.ask : price.bid) * p.contract.ComboMultiplier * p.position
-       select (p.contract, p.open, close, close - p.open, p.position)
+       let closePrice = (p.position > 0 ? price.ask : price.bid)
+       let close = closePrice * p.contract.ComboMultiplier * p.position
+       select (p, close, close - p.open, closePrice)
       );
 
     public static (Contract contract, int quantity) MakeHedgeCombo(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) {

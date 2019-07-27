@@ -1265,7 +1265,6 @@
         <tr data-bind="event:{click:$root.toggleSelectedTrade}">
           <td data-bind="text:l,css:{comboNameActive:$root.testActiveTrade($data)}" class="comboName" style="text-align:left"></td>
           <td data-bind="text:d3.format('+.1f')(delta()),style:{color:color()}" style="text-align:right"></td>
-          <td><input data-bind="value:exitDelta" size="1" style="display:none" /></td>
           <td data-bind="text:d3.format('.2f')(openPrice())"></td>
           <td data-bind="text:d3.format('.2f')(closePrice())"></td>
           <!--<td data-bind1="text:d3.format('.2f')(bid())"></td>
