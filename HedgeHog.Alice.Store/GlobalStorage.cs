@@ -202,7 +202,7 @@ namespace HedgeHog.Alice.Store {
     public static void SaveTradingMacros(IEnumerable<TradingMacro> tms, string tradingMacroName) =>
       UseForexMongo(c =>
         tms.ForEach(o => {
-          var tm = c.TradingMacroSettings.Find(o._id);
+          var tm = c.TradingMacroSettings.Where(a=>a._id == o._id).SingleOrDefault();
           if(tm == null || tm.TradingMacroName != tradingMacroName.IfEmpty(tm.TradingMacroName)) {
             c.TradingMacroSettings.Add(tradingMacroMapper2.Map<TradingMacroSettings>(o).SideEffect(ts => {
               ts._id = ObjectId.GenerateNewId();
