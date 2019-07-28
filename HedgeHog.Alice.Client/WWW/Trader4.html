@@ -41,12 +41,13 @@
   <link href="Styles/font-wesome/font-awesome.css" rel="stylesheet" />
   <!--#endregion-->
   <!--#region scripts-->
-  <script src="bower_components/jquery/dist/jquery.min.js"></script>
-  <script src="bower_components/jquery-ui/jquery-ui.min.js"></script>
+  <script src="node_modules/jquery/dist/jquery.min.js"></script>
+  <script src="https://code.jquery.com/jquery-migrate-3.0.0.min.js"></script>
+  <script src="node_modules/jqueryui/jquery-ui.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   <script src="scripts/bootstrap-toggle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.2/knockout-min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.0/knockout-min.js"></script>
+  <script src="node_modules/knockout.mapping/knockout.mapping.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout-es5/0.4.6/knockout-es5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
   <script src="bower_components/d3/d3.min.js"></script>
@@ -58,7 +59,7 @@
   <script src="Scripts/traverse.js"></script>
   <script src="Scripts/knockout.expander.js"></script>
   <!--<script src="Scripts/jquery.signalR-2.2.0.min.js"></script>-->
-  <script src="Scripts/jquery.signalR-2.4.0.js"></script>
+  <script src="Scripts/jquery.signalR-2.4.1.js"></script>
   <script src="signalr/hubs"></script>
   <!--<script src="Scripts/bootstrap-notify.min.js"></script>-->
   <!--<script src="Scripts/pnotify.custom.min.js"></script>-->
@@ -201,10 +202,11 @@
       display: none;
     }
 
-    #settingsGrid .ui-spinner-input{
-      margin:0;
-      padding:0;
+    #settingsGrid .ui-spinner-input {
+      margin: 0;
+      padding: 0;
     }
+
     .dialog-compact {
       font-size: 1em;
     }
