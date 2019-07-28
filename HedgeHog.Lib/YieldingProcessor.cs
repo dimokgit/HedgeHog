@@ -32,10 +32,14 @@ namespace HedgeHog {
     }
     static DataFlowProcessors() {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.Initialize();
-      ReactiveUI.RxApp.MainThreadScheduler.Schedule(() => {
-        _DispatcherTaskScheduler = TaskScheduler.FromCurrentSynchronizationContext();
-        _UIDispatcherScheduler = DispatcherScheduler.Current;
-      });
+      try {
+        ReactiveUI.RxApp.MainThreadScheduler.Schedule(() => {
+          _DispatcherTaskScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+          _UIDispatcherScheduler = DispatcherScheduler.Current;
+        });
+      }catch(Exception exc) {
+        throw exc;
+      }
     }
     public static void Initialize() {
     }
