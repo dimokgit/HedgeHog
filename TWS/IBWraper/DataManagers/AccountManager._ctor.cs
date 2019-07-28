@@ -133,7 +133,7 @@ namespace IBApp {
         .Do(x => Verbose0($"* OpenOrder: {new { x.Order.OrderId, x.Order.Transmit, conditions = x.Order.Conditions.Flatter(";") } }"))
         //.Do(UpdateOrder)
         .Distinct(x => $"{x.Order.PermId}{x.Order.LmtPrice}{x.Order.Conditions.Flatter("; ")}")
-        .Do(x => TraceDebug($"OpenOrderJson: {x.Order.ToJson()}"))
+        .Do(x => TraceDebug($"OpenOrder: {x.Order}"))
         .Subscribe(a => OnOrderImpl(a))
         .SideEffect(s => _strams.Add(s));
       OrderStatusObservable

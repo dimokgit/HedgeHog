@@ -246,6 +246,7 @@
     <Compile Include="Messages\MktDepthExchangesMessage.cs" />
     <Compile Include="Messages\NewsArticleMessage.cs" />
     <Compile Include="Messages\NewsProvidersMessage.cs" />
+    <Compile Include="Messages\OpenOrderMessage_p.cs" />
     <Compile Include="Messages\OpenOrderMessage.cs" />
     <Compile Include="Messages\OrderMessage.cs" />
     <Compile Include="Messages\OrderStatusMessage.cs" />

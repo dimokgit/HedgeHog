@@ -23,25 +23,28 @@ namespace ConsoleApp {
        select new { cd.Contract, p }
        ).Subscribe(Program.HandleMessage);
 
+      am.PositionsObservable.Take(2).ToArray().Subscribe(ops => {
+        Program.HandleMessage("Closing combo trade:");
+        am.ComboTrades(5).ToArray().Subscribe(posHedges => {
+          Program.HandleMessage(posHedges.Select(h => new { h.contract.ShortString, h.open, h.close, h.pl, h.closePrice }).ToTextOrTable("Positions:"));
+          var ct = posHedges.Single(p => p.contract.IsFuturesCombo);
+          am.OpenTrade(o => o.Transmit = false, ct.contract, -ct.position)
+          .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
+          return;
+          var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, Contract.FromCache(h1).Single(), Contract.FromCache(h2).Single(), 1, 0.6).With(c => new { c.contract, c.quantity });
+          var j2 = combo.contract.ToJson(true);
+          var pos = -1;
+          if(pos == -1)
+            am.OpenTrade(o => o.Transmit = false, combo.contract, combo.quantity * pos)
+            .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
+        });
+
+      });
       am.CurrentHedges(h1, h2)
         .ToArray()
       .Subscribe(hh0 => {
         if(hh0.Length == 0) {
           Program.HandleMessage("**** No hedges ****");
-          am.ComboTrades(5).ToArray().Subscribe(posHedges => {
-            Program.HandleMessage(posHedges.Select(h => new { h.contract.ShortString, h.open, h.close, h.pl, h.closePrice }).ToTextOrTable("Position Hadge:"));
-            var ct = posHedges.Single(p => p.contract.IsFuturesCombo);
-            var j1 = ct.contract.ToJson(true);
-            am.OpenTrade(o => o.Transmit = false, ct.contract, -ct.position)
-            .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
-            return;
-            var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, Contract.FromCache(h1).Single(), Contract.FromCache(h2).Single(), 1, 0.6).With(c => new { c.contract, c.quantity });
-            var j2 = combo.contract.ToJson(true);
-            var pos = -1;
-            if(pos == -1)
-              am.OpenTrade(o => o.Transmit = false, combo.contract, combo.quantity * pos)
-              .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
-          });
           return;
         }
         var hh = hh0[0];

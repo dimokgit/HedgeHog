@@ -219,6 +219,7 @@ namespace IBApp {
       , OrderCondition condition = null, OrderCondition takeProfitCondition = null
       , string orderRef = ""
       , [CallerMemberName] string Caller = "") {
+      contract.Check();
       string type = "";
       Trace($"{nameof(OpenTrade)}: {new { contract, quantity, orderRef }} <= {Caller}");
       if(useTakeProfit && profit == 0 && takeProfitCondition == null)

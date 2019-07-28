@@ -146,6 +146,7 @@
     <Compile Include="Order.Mixins.cs" />
     <Compile Include="OrderComboLeg.cs" />
     <Compile Include="OrderCondition.cs" />
+    <Compile Include="OrderState_p.cs" />
     <Compile Include="OrderState.cs" />
     <Compile Include="OutgoingMessages.cs" />
     <Compile Include="PercentChangeCondition.cs" />

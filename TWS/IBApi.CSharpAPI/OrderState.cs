@@ -14,7 +14,7 @@ namespace IBApi
      * @brief Provides an active order's current state
      * @sa Order
      */
-    public class OrderState
+    public partial class OrderState
     {
         private string status;
         private string initMarginBefore;

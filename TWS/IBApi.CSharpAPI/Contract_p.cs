@@ -86,12 +86,12 @@ namespace IBApi {
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
-    public string ShortString => ComboLegsToString((c, r, a) => c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r,c), LocalSymbol.IfEmpty(Symbol));
+    public string ShortString => ComboLegsToString((c, r, a) => c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), LocalSymbol.IfEmpty(Symbol));
     public string DateWithShort => ComboLegsToString((c, r, a)
-      => c.LastTradeDateOrContractMonth.Substring(4) + " " + c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r,c), LocalSymbol.IfEmpty(Symbol));
-    public string ShortWithDate => ComboLegsToString((c, r, a) => c.Symbol + " " + c.LastTradeDateOrContractMonth.Substring(4) + " " + LegLabel(r, a) + RightStrikeLabel(r,c), LocalSymbol.IfEmpty(Symbol));
-    public string ShortWithDate2 => ComboLegsToString((c, r, a) 
-      => c.Symbol + "" + _right.Match(c.LastTradeDateOrContractMonth.Substring(4)) + "" + LegLabel(r, a) + RightStrikeLabel2(r,c), LocalSymbol.IfEmpty(Symbol));
+      => c.LastTradeDateOrContractMonth.Substring(4) + " " + c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), LocalSymbol.IfEmpty(Symbol));
+    public string ShortWithDate => ComboLegsToString((c, r, a) => c.Symbol + " " + c.LastTradeDateOrContractMonth.Substring(4) + " " + LegLabel(r, a) + RightStrikeLabel(r, c), LocalSymbol.IfEmpty(Symbol));
+    public string ShortWithDate2 => ComboLegsToString((c, r, a)
+      => c.Symbol + "" + _right.Match(c.LastTradeDateOrContractMonth.Substring(4)) + "" + LegLabel(r, a) + RightStrikeLabel2(r, c), LocalSymbol.IfEmpty(Symbol));
     public string FullString => $"{LocalSymbol.IfEmpty(Symbol)}:{Exchange}";
     public override string ToString() =>
       ComboLegsToString(LegToString, LocalSymbol.IfEmpty(Symbol))
@@ -115,7 +115,7 @@ namespace IBApi {
     static string LegLabel(int ratio, string action) => ratio == 0 ? "" : (action == "BUY" ? "+" : "-") + (ratio > 1 ? ratio + "" : "");
     static string RightStrikeLabel(int ratio, Contract c) => c.Right.IsNullOrEmpty() ? "" : (ratio.Abs() > 1 ? ":" : "") + c.Right + c.Strike;
     static Regex _right = new Regex(".{2}$");
-    static string RightStrikeLabel2(int ratio, Contract c) => c.Right.IsNullOrEmpty() ? "" : (ratio.Abs() > 1 ? ":" : "") + c.Right + _right.Match(c.Strike+"");
+    static string RightStrikeLabel2(int ratio, Contract c) => c.Right.IsNullOrEmpty() ? "" : (ratio.Abs() > 1 ? ":" : "") + c.Right + _right.Match(c.Strike + "");
     public IEnumerable<T> LegsOrMe<T>(Func<Contract, T> map) => LegsOrMe().Select(map);
     public IEnumerable<Contract> LegsOrMe() => Legs().Select(cl => cl.c).DefaultIfEmpty(this);
     public IEnumerable<T> Legs<T>(Func<(Contract c, int r, string a), T> map) => Legs().Select(map);
@@ -138,6 +138,9 @@ namespace IBApi {
         yield return t;
     }
     string _key() => ComboLegsToString((c, r, a) => LegLabel(r, a) + c.ConId, ConId + "");
+    public IEnumerable<(string Context, bool Ok)> Ok => LegsOrMe(c => ($"Contract: {c}.Exchange={c.Exchange}", !c.Exchange.IsNullOrEmpty()));
+    public void Check() => Ok.Where(t => !t.Ok).ForEach(ok => throw new Exception(ok.Context));
+
     public static bool operator !=(Contract a, Contract b) => !(a == b);
     public static bool operator ==(Contract a, Contract b) => a is null && b is null
       ? true
