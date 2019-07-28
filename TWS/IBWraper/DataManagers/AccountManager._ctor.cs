@@ -77,12 +77,12 @@ namespace IBApp {
         )
         //.Spy("**** AccountManager.PositionsObservable ****")
         ;
-        PositionsEndObservable = Observable.FromEvent(
-        h => IbClient.PositionEnd += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
-        h => IbClient.PositionEnd -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
-        )
-        //.Spy("**** AccountManager.PositionsObservable ****")
-        ;
+      PositionsEndObservable = Observable.FromEvent(
+      h => IbClient.PositionEnd += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
+      h => IbClient.PositionEnd -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
+      )
+      //.Spy("**** AccountManager.PositionsObservable ****")
+      ;
 
       OpenOrderObservable = Observable.FromEvent<OpenOrderHandler, OpenOrderMessage>(
         onNext => (OpenOrderMessage m) =>
@@ -119,12 +119,12 @@ namespace IBApp {
         //.DistinctUntilChanged(t => new { t.Contract, t.Position })
         .Do(x => TraceError($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
         .SelectMany(p =>
-          from cds in IbClient.ReqContractDetailsAsync(p.Contract).ObserveOn(Scheduler.CurrentThread).ToArray()
+          from cds in IbClient.ReqContractDetailsAsync(p.Contract).SubscribeOn(Scheduler.CurrentThread).ToArray()
           from cd in cds.Count(1, i => {
-            TraceError($"Position contract {p.Contract} has no details");
+            TraceError($"Position contract {p.Contract.FullString} has no details");
             //RequestPositions();
           }, i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
-          select p
+          select p.SideEffect(_ => p.Contract.Exchange = cd.Contract.Exchange)
         )
         .Subscribe(OnPosition, () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));

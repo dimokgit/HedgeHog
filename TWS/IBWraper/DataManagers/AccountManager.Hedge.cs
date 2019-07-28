@@ -31,7 +31,7 @@ namespace IBApp {
       (from p in positions.ToObservable()
        where p.contract.IsFuture
        from price in IBClientMaster.ReqPriceSafe(p.contract)
-       let closePrice = (p.position > 0 ? price.ask : price.bid)
+       let closePrice = p.position > 0 ? price.bid : price.ask
        let close = closePrice * p.contract.ComboMultiplier * p.position
        select (p, close, close - p.open, closePrice)
       );

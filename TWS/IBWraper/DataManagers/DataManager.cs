@@ -8,6 +8,7 @@ using IBSampleApp.util;
 using static HedgeHog.Core.JsonExtensions;
 using HedgeHog.Shared;
 using System.Threading;
+using System.Diagnostics;
 
 namespace IBApp {
   public abstract class DataManager {
@@ -20,8 +21,9 @@ namespace IBApp {
     public static IBClientCore IBClientMaster;
     private IBClientCore _ibClient;
 
-    public void TraceError<T>(T v) => Trace("{*} " + v);
-    public void TraceDebug<T>(T v) => Trace("{?} " + v);
+    public string ShowThread() => $"~{Thread.CurrentThread.ManagedThreadId}:{Thread.CurrentThread.Name}";
+    public void TraceError<T>(T v) => Trace("{!} " + v + ShowThread());
+    public void TraceDebug<T>(T v) { if(Debugger.IsAttached) Trace("{?} " + v); }
     protected Action<object> Trace { get; }
     protected Action<bool, object> TraceIf => (b, o) => { if(b) Trace(o); };
     protected Action<object> Verbose => o => { if(UseVerbose) Trace(o); };

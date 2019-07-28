@@ -1144,7 +1144,7 @@ namespace HedgeHog.Alice.Client {
           : true
           : (bool?)null;
           return from tt in c.am.OpenTrade(c.contract, -c.position
-          , isMore.HasValue || c.contract.IsCallPut ? 0 : c.closePrice
+          , isMore.HasValue || c.contract.IsCallPut || c.contract.IsFuturesCombo ? 0 : c.closePrice
           , 0.0, false, default, default
           , isMore.HasValue ? c.under.PriceCondition(conditionPrice.Value, isMore.Value, false) : default)
                  from t in tt

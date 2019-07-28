@@ -50,13 +50,98 @@ namespace HedgeHog.Tests {
     }
 
     [TestMethod()]
+    [TestCategory("Busness Days")]
     public void AddBusinessDays() {
-      var start = DateTime.Now.Date.AddDays(4);
-      Assert.AreEqual(start.AddDays(2), start.AddBusinessDays(0));
-      Assert.AreEqual(start.AddDays(3), start.AddBusinessDays(1));
-      start = DateTime.Now.Date;
-      Assert.AreEqual(start.AddDays(2), start.AddBusinessDays(2));
-      Assert.AreEqual(start.AddDays(7), start.AddBusinessDays(5));
+      var start = DateTime.Now.Date.GetNextWeekday(DayOfWeek.Saturday);
+      Console.WriteLine(new { start = new { start, start.DayOfWeek } });
+      Assert.AreEqual(start.GetNextWeekday(DayOfWeek.Monday), start.AddBusinessDays(0));
+      Assert.AreEqual(0, start.AddBusinessDays(0).GetWorkingDays(start.GetNextWeekday(DayOfWeek.Monday)));
+      Assert.AreEqual(start.GetNextWeekday(DayOfWeek.Tuesday), start.AddBusinessDays(1));
+
+      Assert.AreEqual(start.GetNextWeekday(DayOfWeek.Friday), start.AddBusinessDays(4));
+      Assert.AreEqual(4,start.GetBusinessDays(start.AddBusinessDays(4)));
+
+      start = DateTime.Now.Date.GetNextWeekday(DayOfWeek.Monday);
+      Console.WriteLine(new { start = new { start, start.DayOfWeek } });
+      Assert.AreEqual(start.GetNextWeekday(DayOfWeek.Monday), start.AddBusinessDays(0));
+      Assert.AreEqual(start.GetNextWeekday(DayOfWeek.Friday), start.AddBusinessDays(4));
+      Assert.AreEqual(start.AddDays(1).GetNextWeekday(DayOfWeek.Monday), start.AddBusinessDays(5));
+
+      start = DateTime.Now.Date.GetNextWeekday(DayOfWeek.Friday);
+      Console.WriteLine(new { start = new { start, start.DayOfWeek } });
+      Assert.AreEqual(start.GetNextWeekday(DayOfWeek.Monday), start.AddBusinessDays(1));
+
+      var nextFriday = MathCore.GetBusinessDays(DateTime.Now, DateTime.Now.AddDays(1).GetNextWeekday(DayOfWeek.Friday));
+      Assert.AreEqual(4, nextFriday);
+    }
+    [TestMethod]
+    [TestCategory("Busness Days")]
+    public void GetBusinessDays() {
+      var start = DateTime.Parse("1/2/2000").GetNextWeekday(DayOfWeek.Monday);
+      var end = start.GetNextWeekday(DayOfWeek.Friday);
+      var bd = GetWeekdaysDiff(start, start);
+      var bd2 = start.GetWorkingDays(start);
+      Console.WriteLine(new { bd, bd2 });
+      Assert.AreEqual(bd2, bd);
+
+      bd = GetWeekdaysDiff(start, end);
+       bd2 = start.GetWorkingDays(end);
+      Console.WriteLine(new { bd, bd2 });
+      Assert.AreEqual(bd2, bd);
+    }
+    [TestMethod]
+    [TestCategory("Busness Days")]
+    public void AddWeekdays() {
+      var start = DateTime.Parse("1/2/2000").GetNextWeekday(DayOfWeek.Saturday);
+      Console.WriteLine(new { start = new { start, start.DayOfWeek } });
+      var end = start.GetNextWeekday(DayOfWeek.Friday);
+      var bd = start.AddBusinessDays(5);
+      var bd2 = AddWeekdays(start,5);
+      Console.WriteLine(new { bd=new {bd, bd.DayOfWeek }, bd2=new {bd2, bd2.DayOfWeek } });
+      Assert.AreEqual(bd2, bd);
+
+      start = DateTime.Parse("1/2/2000").GetNextWeekday(DayOfWeek.Monday);
+      bd = start.AddBusinessDays(5);
+      bd2 = AddWeekdays(start, 5);
+      Console.WriteLine(new { bd = new { bd, bd.DayOfWeek }, bd2 = new { bd2, bd2.DayOfWeek } });
+      Assert.AreEqual(bd2, bd);
+    }
+    static readonly int[,] _diffOffset =
+{
+  // Su M  Tu W  Th F  Sa
+    {0, 1, 2, 3, 4, 5, 5}, // Su
+    {4, 0, 1, 2, 3, 4, 4}, // M 
+    {3, 4, 0, 1, 2, 3, 3}, // Tu
+    {2, 3, 4, 0, 1, 2, 2}, // W 
+    {1, 2, 3, 4, 0, 1, 1}, // Th
+    {0, 1, 2, 3, 4, 0, 0}, // F 
+    {0, 1, 2, 3, 4, 5, 0}, // Sa
+};
+
+    public static int GetWeekdaysDiff(DateTime dtStart, DateTime dtEnd) {
+      int daysDiff = (int)(dtEnd - dtStart).TotalDays;
+      return daysDiff >= 0
+          ? 5 * (daysDiff / 7) + _diffOffset[(int)dtStart.DayOfWeek, (int)dtEnd.DayOfWeek]
+          : 5 * (daysDiff / 7) - _diffOffset[6 - (int)dtStart.DayOfWeek, 6 - (int)dtEnd.DayOfWeek];
+    }
+    private static readonly int[,] _addOffset =
+    {
+  // 0  1  2  3  4
+    {0, 1, 2, 3, 4}, // Su  0
+    {0, 1, 2, 3, 4}, // M   1
+    {0, 1, 2, 3, 6}, // Tu  2
+    {0, 1, 4, 5, 6}, // W   3
+    {0, 1, 4, 5, 6}, // Th  4
+    {0, 3, 4, 5, 6}, // F   5
+    {0, 2, 3, 4, 5}, // Sa  6
+};
+
+    public static DateTime AddWeekdays(DateTime date, int weekdays) {
+      int extraDays = weekdays % 5;
+      int addDays = weekdays >= 0
+          ? (weekdays / 5) * 7 + _addOffset[(int)date.DayOfWeek, extraDays]
+          : (weekdays / 5) * 7 - _addOffset[6 - (int)date.DayOfWeek, -extraDays];
+      return date.AddDays(addDays);
     }
   }
 }

@@ -161,20 +161,20 @@ namespace IBApp {
         h => ContractDetails += h,//.SideEffect(_ => TraceError("ContractDetails += h")),
         h => ContractDetails -= h//.SideEffect(_ => TraceError("ContractDetails -= h"))
         )
-      .ObserveOn(esReqContract)
+      //.ObserveOn(esReqContract)
       .Publish().RefCount();
     //.Spy("ContractDetails")
     IObservable<ContractDetailsMessage> _ContractDetailsObservable;
     IObservable<ContractDetailsMessage> ContractDetailsObservable =>
       (_ContractDetailsObservable ?? (_ContractDetailsObservable = ContractDetailsFactory()));
 
-    static IScheduler esReqContract = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
+    //static IScheduler esReqContract = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
     IObservable<int> ContractDetailsEndFactory() => Observable.FromEvent<Action<int>, int>(
         onNext => (int a) => onNext(a),
         h => ContractDetailsEnd += h,
         h => ContractDetailsEnd -= h
         )
-      .ObserveOn(esReqContract)
+      //.ObserveOn(esReqContract)
       .Publish().RefCount();
     IObservable<int> _ContractDetailsEndObservable;
     IObservable<int> ContractDetailsEndObservable =>

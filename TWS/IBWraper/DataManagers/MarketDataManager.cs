@@ -105,6 +105,7 @@ namespace IBApp {
       if(!activeRequests.ContainsKey(requestId)) return;
       var ar = activeRequests[requestId];
       var priceMessage = new TickPriceMessage(requestId, field, price, attrib);
+      if(false)TraceDebug(new { Price=ar.price,field,price }.ToTextOrTable($"{nameof(RaisePriceChanged)}:{ ShowThread()}"));
       var price2 = ar.price;
       //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
       if(priceMessage.Price <= 0)
@@ -261,7 +262,7 @@ namespace IBApp {
         PriceChangedEvent -= value;
       }
     }
-    protected void RaisePriceChanged((Contract contract, Price price) t) {
+    protected void RaisePriceChanged((Contract contract, Price price) t, [CallerMemberName] string caller = "") {
       if(!_currentPrices.Contains(t.price.Pair)) {
         {
           var cip = t.contract.HasOptions ? new CacheItemPolicy() {

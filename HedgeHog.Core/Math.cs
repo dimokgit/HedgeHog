@@ -374,8 +374,21 @@ namespace HedgeHog {
     public static bool isWeekend(this DateTime from) {
       return from.DayOfWeek == DayOfWeek.Saturday || from.DayOfWeek == DayOfWeek.Sunday;
     }
-    public static int GetWorkingDays(this DateTime from, int days) => from.GetWorkingDays(from.AddDays(days));
-    public static int GetWorkingDays(this DateTime from, DateTime to) {
+    public static double GetBusinessDays(this DateTime from, int days) => from.GetBusinessDays(from.AddDays(days));
+    public static double GetBusinessDays(this DateTime startD, DateTime endD) {
+      double calcBusinessDays =
+          0 + ((endD - startD).TotalDays * 5 -
+          (startD.DayOfWeek - endD.DayOfWeek) * 2) / 7;
+
+      if(endD.DayOfWeek == DayOfWeek.Saturday) calcBusinessDays--;
+      if(startD.DayOfWeek == DayOfWeek.Sunday) calcBusinessDays--;
+
+      return calcBusinessDays;
+    }
+    public static int GetWorkingDays(this DateTime from, int days) => from.GetBusinessDays(from.AddDays(days)).ToInt();
+    public static int GetWorkingDays(this DateTime from, DateTime to) => from.GetBusinessDays(to).ToInt();
+    public static int GetWorkingDays_Old(this DateTime from, int days) => from.GetWorkingDays_Old(from.AddDays(days));
+    public static int GetWorkingDays_Old(this DateTime from, DateTime to) {
       var dayDifference = (int)to.Subtract(from).TotalDays;
       if(dayDifference < 0) throw new ArgumentException(new { dayDifference, @is = "negative" } + "");
       if(dayDifference == 0) return 0;
@@ -408,6 +421,11 @@ namespace HedgeHog {
       while(current.DayOfWeek == DayOfWeek.Saturday || current.DayOfWeek == DayOfWeek.Sunday) {
         current = current.AddDays(sign);
       }
+
+      while(current.DayOfWeek == DayOfWeek.Saturday ||    current.DayOfWeek == DayOfWeek.Sunday) {
+        current = current.AddDays(sign);
+      }
+
       for(var i = 0; i < unsignedDays; i++) {
         do {
           current = current.AddDays(sign);

@@ -203,13 +203,12 @@ namespace IBApp {
          let hh = options.Select(c => (c.contract, c.underPrice, c.delta, (double)c.contract.ComboMultiplier, context(c.option))).ToArray()
          select es.Any() && nq.Any() ? TradesManagerStatic.HedgeRatioByValue(mashDivider, hh) : new (Contract contract, double quantity, double price, string context)[0]);
 
-    Dictionary<string, double> strikeInterval = new Dictionary<string, double> { { "ES", 5.0 }, { "NQ", 10.0 } };
     public IObservable<(Contract option, Contract contract, double underPrice, double bid, double ask, double delta)[]> CurrentTimeValue(string symbol) {
       return (
         from u in IbClient.ReqContractDetailsCached(symbol)
         from up in IbClient.ReqPriceSafe(u.Contract)
-        let startDate = DateTime.Now.AddDays(1)
-        from cs in CurrentOptions(symbol, double.NaN, MathCore.GetWorkingDays(startDate, startDate.GetNextWeekday(DayOfWeek.Friday)), 6, c => c.Expiration.DayOfWeek == DayOfWeek.Friday)
+        let nextFriday = MathCore.GetWorkingDays(DateTime.Now, DateTime.Now.AddDays(1).GetNextWeekday(DayOfWeek.Friday))
+        from cs in CurrentOptions(symbol, double.NaN, nextFriday, 6, c => c.Expiration.DayOfWeek == DayOfWeek.Friday)
         let calls = cs.Where(c => c.option.IsCall).OrderByDescending(c => c.delta).Take(2)
         let puts = cs.Where(c => c.option.IsPut).OrderByDescending(c => c.delta).Take(2)
         select calls.Concat(puts).Select(o => (o.option, u.Contract, o.underPrice, o.bid, o.ask, o.delta)).ToArray());

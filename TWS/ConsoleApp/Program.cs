@@ -70,7 +70,9 @@ namespace ConsoleApp {
         //am.OrderContractsInternal.Subscribe(o => { });
         //return;
 
-        Tests.HedgeCombo(ibClient, am); return;
+        Tests.HedgeCombo(am); ;
+        return;
+        Tests.CurrentOptionsTest(am, "ESU9");
         Tests.CurrentOptionsTest(am, "esu9"); return;
         {
           (from p in am.PositionsObservable

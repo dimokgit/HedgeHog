@@ -92,6 +92,7 @@ namespace IBApi {
     public string ShortWithDate => ComboLegsToString((c, r, a) => c.Symbol + " " + c.LastTradeDateOrContractMonth.Substring(4) + " " + LegLabel(r, a) + RightStrikeLabel(r,c), LocalSymbol.IfEmpty(Symbol));
     public string ShortWithDate2 => ComboLegsToString((c, r, a) 
       => c.Symbol + "" + _right.Match(c.LastTradeDateOrContractMonth.Substring(4)) + "" + LegLabel(r, a) + RightStrikeLabel2(r,c), LocalSymbol.IfEmpty(Symbol));
+    public string FullString => $"{LocalSymbol.IfEmpty(Symbol)}:{Exchange}";
     public override string ToString() =>
       ComboLegsToString(LegToString, LocalSymbol.IfEmpty(Symbol))
       .IfEmpty(() => $"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
