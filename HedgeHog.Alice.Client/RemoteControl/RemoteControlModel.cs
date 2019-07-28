@@ -1260,7 +1260,7 @@ namespace HedgeHog.Alice.Client {
     private void SaveTrade(Trade trade) {
       try {
         var tm = GetTradingMacros(trade.Pair).First();
-        var ts = trade.InitUnKnown<TradeUnKNown>().InitTradeStatistics(tm.GetTradeStatistics(trade));
+        var ts = tm.GetTradeStatistics(trade);
         ts.SessionId = TradingMacro.SessionId;
         ts.SessionInfo = tm.SessionInfo;
         MasterModel.AddCosedTrade(trade);

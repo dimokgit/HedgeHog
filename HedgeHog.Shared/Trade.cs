@@ -88,10 +88,10 @@ namespace HedgeHog.Shared {
     [DataMember]
     [DisplayName("")]
     public bool IsBuy { get; set; }
-    [DataMember]
-    [DisplayName("")]
-    [DisplayFormat(DataFormatString = "{0}")]
-    public TradeRemark Remark { get; set; }
+    //[DataMember]
+    //[DisplayName("")]
+    //[DisplayFormat(DataFormatString = "{0}")]
+    //public TradeRemark Remark { get; set; }
     double _Open;
     [DataMember]
     [DisplayName("")]
@@ -191,7 +191,6 @@ namespace HedgeHog.Shared {
       }
     }
     DateTime _TimeClose;
-    [DataMember]
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
     [DisplayName("Time Close")]
     [BsonIgnore]
@@ -242,6 +241,7 @@ namespace HedgeHog.Shared {
       TradesManager = null;
     }
 
+    [BsonIgnore]
     protected ITradesManager TradesManager {
       get { return _tradesManager; }
       set {
@@ -281,6 +281,7 @@ namespace HedgeHog.Shared {
     Func<Trade, double> _commissionByTrade;
     private int _lots;
 
+    [BsonIgnore]
     public Func<Trade, double> CommissionByTrade {
       get { return _commissionByTrade; }
       set { _commissionByTrade = value; }
@@ -320,9 +321,6 @@ namespace HedgeHog.Shared {
       foreach(var property in GetType().GetProperties()) {
         var element = x.Element(property.Name);
         if(element != null && property.CanWrite && property.PropertyType != typeof(UnKnownBase))
-          if(property.PropertyType == typeof(TradeRemark))
-            this.Remark = new TradeRemark(element.Value);
-          else
             this.SetProperty(property.Name, element.Value);
       }
       return this;
@@ -330,7 +328,7 @@ namespace HedgeHog.Shared {
   }
   [Serializable]
   [DataContract]
-  public class TradeRemark {
+  public class TradeRemark_Old {
     [DataMember]
     public string Remark { get; set; }
     [DataMember]
@@ -358,12 +356,12 @@ namespace HedgeHog.Shared {
       get { return _angle; }
       set { _angle = value; }
     }
-    public TradeRemark(int tradeWaveInMinutes, double tradeWaveHeight, double angle) {
+    public TradeRemark_Old(int tradeWaveInMinutes, double tradeWaveHeight, double angle) {
       TradeWaveInMinutes = tradeWaveInMinutes;
       TradeWaveHeight = Math.Round(tradeWaveHeight, 1);
       Angle = Math.Round(angle, 2);
     }
-    public TradeRemark(string remark) {
+    public TradeRemark_Old(string remark) {
       this.Remark = remark;
       var info = remark.Split(new[] { PIPE }, StringSplitOptions.RemoveEmptyEntries);
       if(info.Length > 0)

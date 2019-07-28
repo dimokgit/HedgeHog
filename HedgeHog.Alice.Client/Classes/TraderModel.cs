@@ -1567,10 +1567,6 @@ namespace HedgeHog.Alice.Client {
           var trd = tradesCollection.SingleOrDefault(t => t.Id == trade.Id);
           if(trd != null) {
             var t = trade;
-            trd.Update(t,
-              o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnLimit = trd.Limit == 0 ? 0 : account.Balance + trd.LimitAmount; },
-              o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnStop = account.Balance + trd.StopAmount; }
-              );
           }
         }
         RaisePropertyChanged(() => ServerTradesList);
@@ -1592,13 +1588,6 @@ namespace HedgeHog.Alice.Client {
             if(odr == null)
               break;
             var stopBalance = account.Balance + account.Trades.Where(t => t.Pair == odr.Pair && t.IsBuy != odr.IsBuy).Sum(t => t.StopAmount);
-            odr.Update(order,
-              o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnLimit = odr.Limit == 0 ? 0 : stopBalance + odr.LimitAmount; },
-              o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnStop = stopBalance + odr.StopAmount; },
-              o => { odr.InitUnKnown<OrderUnKnown>().NoLossLimit = Static.GetEntryOrderLimit(TradesManager, account.Trades, odr.Lot, false, AccountModel.CurrentLoss).Round(1); },
-              o => { odr.InitUnKnown<OrderUnKnown>().PercentOnStop = odr.StopAmount / stopBalance; },
-              o => { odr.InitUnKnown<OrderUnKnown>().PercentOnLimit = odr.LimitAmount / stopBalance; }
-              );
           }
         } catch(Exception exc) {
           Log = exc;
@@ -1718,7 +1707,7 @@ namespace HedgeHog.Alice.Client {
             return;
           tradeIdLast = trade.Id;
           if(false && IsInVirtualTrading) {
-            TradeStatistics tradeStats = trade.InitUnKnown<TradeUnKNown>().TradeStats ?? new TradeStatistics();
+            TradeStatistics tradeStats = new TradeStatistics();
             //if (GlobalStorage.Context.TradeHistories.Count(t => t.Id == trade.Id) > 0) return;
             ////var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id + "", trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID + "", trade.OpenOrderReqID + "", trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, DateTime.Now, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack);
             var ct = new t_Trade { Id = trade.Id, Buy = trade.Buy, PL = trade.PL, GrossPL = trade.GrossPL, Lot = trade.Lots, Pair = trade.Pair, TimeOpen = trade.Time, TimeClose = trade.TimeClose, AccountId = TradingMaster.AccountId + "", Commission = trade.Commission * 2, IsVirtual = trade.IsVirtual, CorridorMinutesBack = tradeStats.CorridorStDev, CorridorHeightInPips = tradeStats.CorridorStDevCma, SessionId = tradeStats.SessionId, PriceOpen = trade.Open, PriceClose = trade.Close };

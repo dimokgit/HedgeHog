@@ -72,13 +72,6 @@ namespace HedgeHog.Shared {
     [DataMember]
     public double LimitAmount { get; set; }
 
-    [BsonIgnore]
-    public UnKnownBase UnKnown { get; set; }
-
-    public TU InitUnKnown<TU>() where TU : UnKnownBase, new() {
-      if(UnKnown == null) UnKnown = new TU();
-      return UnKnown as TU;
-    }
 
     public void Update(PositionBase trade, params Action<object>[] setUnKnown) {
       var props = new List<string>();
@@ -90,9 +83,6 @@ namespace HedgeHog.Shared {
         if(names != null) props.AddRange(names);
       }
       OnPropertyChanged(props.ToArray());
-      foreach(var su in setUnKnown)
-        su(UnKnown);
-      if(setUnKnown.Length > 0) OnPropertyChanged("UnKnown");
       //this.Close = trade.Close;
       //this.GrossPL = trade.GrossPL;
       //this.Limit = trade.Limit;

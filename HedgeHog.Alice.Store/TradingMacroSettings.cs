@@ -156,7 +156,7 @@ namespace HedgeHog.Alice.Store {
     public int DistanceDaysBack { get; set; }
     public bool DoLogSaveRates { get; set; }
     public bool DoStreatchRates_ { get; set; }
-    public object ForceOpenTrade { get; set; }
+    public bool? ForceOpenTrade { get; set; }
     public bool IsGannAnglesManual_ { get; set; }
     public bool IsSuppResManual_ { get; set; }
     public int LoadRatesSecondsWarning_ { get; set; }
@@ -221,8 +221,8 @@ namespace HedgeHog.Alice.Store {
     public double RangeRatioForTradeLimit { get; set; }
     public double RangeRatioForTradeStop { get; set; }
     public double ResetOnBalance { get; set; }
-    public object ResistanceDate { get; set; }
-    public object ResistancePriceStore { get; set; }
+    public DateTime? ResistanceDate { get; set; }
+    public double? ResistancePriceStore { get; set; }
     public bool ReverseOnProfit { get; set; }
     public bool ReversePower { get; set; }
     public double SpreadShortToLongTreshold { get; set; }
@@ -231,8 +231,8 @@ namespace HedgeHog.Alice.Store {
     public int StDevTresholdIterations { get; set; }
     public bool StreachTradingDistance { get; set; }
     public bool StrictTradeClose { get; set; }
-    public object SupportDate { get; set; }
-    public object SupportPriceStore { get; set; }
+    public DateTime? SupportDate { get; set; }
+    public double? SupportPriceStore { get; set; }
     public int SuppResLevelsCount { get; set; }
     public int TakeProfitFunctionInt { get; set; }
     public bool TradeAndAngleSynced { get; set; }

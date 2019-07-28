@@ -170,8 +170,16 @@ namespace HedgeHog.Alice.Store {
     #region TraderSettings
     static IMapper traderMapper = new MapperConfiguration(cfg => cfg.CreateMap<TraderModelPersist, TraderModelBase>()).CreateMapper();
     static IMapper traderMapper2 = new MapperConfiguration(cfg => cfg.CreateMap<TraderModelBase, TraderModelPersist>()).CreateMapper();
-    public static void LoadTradeSettings(TraderModelBase trader) => UseForexMongo(c
-      => c.TraderSettings.Find(TraderModelPersist.CurrentDirectory()).YieldNotNull().ForEach(o => traderMapper.Map(o, trader)));
+    public static void LoadTradeSettings(TraderModelBase trader) => UseForexMongo(c => {
+      var a = c.TraderSettings.Find(TraderModelPersist.CurrentDirectory()).YieldNotNull();
+      a.ForEach(o => {
+        try {
+          traderMapper.Map(o, trader);
+        }catch(Exception exc) {
+          throw exc;
+        }
+      });
+    });
     public static void SaveTraderSettings(TraderModelBase trader) => UseForexMongo(c => {
       var ts = c.TraderSettings.Find(trader._key);
       if(ts == null)
