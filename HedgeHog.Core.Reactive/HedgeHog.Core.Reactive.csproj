@@ -150,9 +150,6 @@
     <Reference Include="System.Reactive.Linq, Version=3.0.3000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\System.Reactive.Linq.4.1.2\lib\net46\System.Reactive.Linq.dll</HintPath>
     </Reference>
-    <Reference Include="System.Reactive.PlatformServices, Version=3.0.3000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
-      <HintPath>..\AllInOne\packages\System.Reactive.PlatformServices.4.1.2\lib\net46\System.Reactive.PlatformServices.dll</HintPath>
-    </Reference>
     <Reference Include="System.Reactive.Windows.Threading, Version=3.0.3000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\System.Reactive.Windows.Threading.4.1.2\lib\net46\System.Reactive.Windows.Threading.dll</HintPath>
     </Reference>
