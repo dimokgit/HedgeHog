@@ -75,6 +75,25 @@ namespace IBApp {
         h => IbClient.Position += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
         h => IbClient.Position -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
         )
+        .Where(x => /*x.Position != 0 &&*/ x.Account == _accountId && !NoPositionsPlease)
+        //.DistinctUntilChanged(t => new { t.Contract, t.Position })
+        .Do(x => TraceError($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
+        .SelectMany(p =>
+          from cds in IbClient.ReqContractDetailsAsync(p.Contract).SubscribeOn(Scheduler.CurrentThread).ToArray()
+          from cd in cds.Count(1, i => {
+            TraceError($"Position contract {p.Contract.FullString} has no details");
+            //RequestPositions();
+          }, i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
+          select p.SideEffect(_ => {
+            p.Contract.Exchange = cd.Contract.Exchange;
+            if(p.Position == 0) _positions.TryRemove(p.Contract.Key, out var r);
+            else {
+              var cp = ContractPosition(p);
+              _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
+            }
+          })
+        )
+
         //.Spy("**** AccountManager.PositionsObservable ****")
         ;
       PositionsEndObservable = Observable.FromEvent(
@@ -115,17 +134,6 @@ namespace IBApp {
       #region Subscibtions
       DoShowRequestErrorDone = false;
       PositionsObservable
-        .Where(x => x.Position != 0 && x.Account == _accountId && !NoPositionsPlease)
-        //.DistinctUntilChanged(t => new { t.Contract, t.Position })
-        .Do(x => TraceError($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
-        .SelectMany(p =>
-          from cds in IbClient.ReqContractDetailsAsync(p.Contract).SubscribeOn(Scheduler.CurrentThread).ToArray()
-          from cd in cds.Count(1, i => {
-            TraceError($"Position contract {p.Contract.FullString} has no details");
-            //RequestPositions();
-          }, i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
-          select p.SideEffect(_ => p.Contract.Exchange = cd.Contract.Exchange)
-        )
         .Subscribe(OnPosition, () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
       OpenOrderObservable

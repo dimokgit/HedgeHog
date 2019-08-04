@@ -952,6 +952,7 @@ namespace IBApp {
           Connect(iPort, hosts.FirstOrDefault(), iClientId);
         }
         if(IsLoggedIn) {
+          _IBClientCoreMaster.ClientSocket.reqManagedAccts();
           RaiseLoggedIn();
           return IsLoggedIn;
         } else

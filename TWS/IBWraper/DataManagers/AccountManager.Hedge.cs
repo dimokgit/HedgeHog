@@ -7,7 +7,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
-using static IBApp.AccountManager;
 
 namespace IBApp {
   partial class AccountManager {
@@ -41,7 +40,7 @@ namespace IBApp {
       int r2 = (ratio2 * quantity).ToInt();
       var gcd = new[] { r1, r2 }.GCD();
       Contract contract = new Contract();
-      contract.Symbol = c1.Symbol;
+      contract.Symbol = c1.Symbol.ThrowIf(contractSymbol => contractSymbol.IsNullOrWhiteSpace());
       contract.SecType = "BAG";
       contract.Currency = "USD";
       contract.Exchange = "SMART";

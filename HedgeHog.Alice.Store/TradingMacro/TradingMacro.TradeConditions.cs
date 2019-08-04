@@ -1200,6 +1200,7 @@ namespace HedgeHog.Alice.Store {
         .Add(HVA(this).Concat(TradingMacroHedged(HVA).Concat()).Select(d => d).Pairwise((hv, hvm)
           => (object)new { HistVolAn = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         .Add(new { StrdlHV = new[] { _currentCallByHV, _currentPutByHV }.Select(c => c.Round(2)).Flatter("/") })
+        .Add(new { HVPtP = HVPt(this).Concat(HVP(this)).Select(c => c.AutoRound(3)).Flatter("/") })
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
@@ -1212,6 +1213,25 @@ namespace HedgeHog.Alice.Store {
       IEnumerable<double> HV(TradingMacro tm) => tm.HistoricalVolatility();
       double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints();
     }
+    public (IBApi.Contract contract, double ratio, double price, string context)[] CurrentHedgesByHV() {
+      var hp = TradingMacroHedged(tm => tm.HistoricalVolatilityByPoints().Select(hv => (pair: tm.Pair, hv,cp: tm.CurrentPriceAvg(),m: (double)tm.BaseUnitSize))).Concat().ToArray();
+      var hh = (from h in HistoricalVolatilityByPoints().Select(hv => (pair: Pair, hv,cp: CurrentPriceAvg(), m: (double)BaseUnitSize)).Concat(hp)
+                where hp.Any()
+                 select (h.pair.ContractFactory(), h.cp, h.hv, h.m, h.pair + ":" + h.hv.Round(2))
+                 ).ToArray();
+      return TradesManagerStatic.HedgeRatioByValue(":", hh); 
+    }
+    /*
+    public IObservable<(Contract contract, double ratio, double price, string context)[]> CurrentHedgesByHV((string pair, double hv)[] hedges) {
+      var o = (from h in hedges.ToObservable()
+               from cd in IbClient.ReqContractDetailsCached(h.pair)
+               from p in IbClient.ReqPriceSafe(cd.Contract)
+               let hh=(cd.Contract,p.ask.Avg(p.bid),h.hv,(double)cd.Contract.ComboMultiplier, h.pair+":"+h.hv.Round(2))
+               select hh).ToArray();
+      var o2 = (from hh in o select TradesManagerStatic.HedgeRatioByValue(":", hh));
+      return o2;
+    }
+     */
     double[] HVA(TradingMacro tm) => new[] { tm.HistoricalVolatilityAnnualized() };
     double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
 
@@ -1235,7 +1255,7 @@ namespace HedgeHog.Alice.Store {
     private Func<IList<Rate>, double> _RatesHVBP;
     private Func<IList<Rate>, double> RatesHVBP => _RatesHVBP ?? (_RatesHVBP = new Func<IList<Rate>, double>(ra
        => RatesForHV(ra).HistoricalVolatility(t => t.prev.Abs(t.next))).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault()));
-    private static IList<double> RatesForHV(IList<Rate> ra) => ra.Where(r => r.StartDate.Hour.Between(9, 16)).Select(r=>r.PriceCMALast).ToArray();
+    private static IList<double> RatesForHV(IList<Rate> ra) => ra.Where(r => r.StartDate.Hour.Between(9, 16)).ToArray(_priceAvg);
     #endregion
 
     #region Angles

@@ -1080,6 +1080,14 @@
           , function () { this.canTrade(true); }.bind(this)
         );
       }.bind(this);
+      this.openHedged = function (isBuy) {
+        this.canTrade(false);
+        serverCall("openHedged", [pair, this.comboQuantity(), isBuy]
+          , r => (r || []).forEach(e => showErrorPerm("openHedged:\n" + JSON.stringify(e)))
+          , null
+          , function () { this.canTrade(true); }.bind(this)
+        );
+      }.bind(this);
       this.openPairWithQuantity = function () {
         this.canTrade(false);
         serverCall("openCoveredOption", [pair, this.comboQuantity(), this.comboCurrentStrikeLevel()]

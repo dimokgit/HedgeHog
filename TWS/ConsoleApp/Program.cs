@@ -62,7 +62,7 @@ namespace ConsoleApp {
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7497;
+      const int twsPort = 7496;
       const int clientId = 10;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       ibClient.ManagedAccountsObservable.Subscribe(s => {
@@ -70,6 +70,12 @@ namespace ConsoleApp {
         //am.OrderContractsInternal.Subscribe(o => { });
         //return;
 
+        {
+          var symbol = "ESH9";//"NQU9";// "VXG9";//"RTYM9";
+          ibClient.ReqContractDetailsCached(symbol)
+          .Subscribe(cd => PriceHistory.AddTicks(fw, 3, symbol, DateTime.Now.AddMonths(-(12 * 0 + 4)), o => HandleMessage(o + " : Tread " + Thread.CurrentThread.Name)));
+          return;
+        }
         Tests.HedgeCombo(am); ;
         return;
         Tests.CurrentOptionsTest(am, "ESU9");
@@ -84,12 +90,6 @@ namespace ConsoleApp {
                var combo = AccountManager.MakeHedgeCombo(1, hh[0].Contract, hh[1].Contract, hh[0].Position, -hh[1].Position);
                HandleMessage("HedgeCombo:" + new { combo.contract, combo.quantity });
              });
-          return;
-        }
-        {
-          var symbol = "ESH9";//"NQU9";// "VXG9";//"RTYM9";
-          ibClient.ReqContractDetailsCached(symbol)
-          .Subscribe(cd => PriceHistory.AddTicks(fw, 3, symbol, DateTime.Now.AddMonths(-(12 * 0 + 4)), o => HandleMessage(o + " : Tread " + Thread.CurrentThread.Name)));
           return;
         }
         {

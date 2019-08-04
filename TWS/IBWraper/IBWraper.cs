@@ -72,28 +72,31 @@ namespace IBApp {
     public Trade CreateTrade(string symbol)
       => Trade.Create(this, symbol, GetPointSize(symbol), GetBaseUnitSize(symbol), null);
 
+    object _accountManagerLocket = new object();
     private void OnManagedAccounts(ManagedAccountsMessage m) {
-      if(_accountManager != null) {
-        Trace(new { _accountManager, isNot = (string)null });
-        _accountManager.Dispose();
-        //return;
-      }
-      var ma = m.ManagedAccounts.Where(a => _ibClient.ManagedAccount.IsNullOrWhiteSpace() || a == _ibClient.ManagedAccount).FirstOrDefault();
-      if(ma == null)
-        throw new Exception(new { _ibClient.ManagedAccount, error = "Not Found" } + "");
-      _accountManager = new AccountManager(_ibClient, ma, CreateTrade, CommissionByTrade);
-      _accountManager.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
-      _accountManager.TradeChanged += (s, e) => RaiseTradeChanged(e.Trade);
-      _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
+      lock(_accountManagerLocket) {
+        if(_accountManager != null) {
+          Trace(new { _accountManager, isNotNull = true });
+          //_accountManager.Dispose();
+          return;
+        }
+        var ma = m.ManagedAccounts.Where(a => _ibClient.ManagedAccount.IsNullOrWhiteSpace() || a == _ibClient.ManagedAccount).FirstOrDefault();
+        if(ma == null)
+          throw new Exception(new { _ibClient.ManagedAccount, error = "Not Found" } + "");
+        _accountManager = new AccountManager(_ibClient, ma, CreateTrade, CommissionByTrade);
+        _accountManager.TradeAdded += (s, e) => RaiseTradeAdded(e.Trade);
+        _accountManager.TradeChanged += (s, e) => RaiseTradeChanged(e.Trade);
+        _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
 
-      _accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
-      //_accountManager.TradeClosed += _accountManager_TradeClosed; ;
-      // TODO: RaiseTradeClosed needs testing
-      Observable.FromEventPattern<TradeEventArgs>(h => _accountManager.TradeClosed += h, h => h -= _accountManager_TradeClosed)
-        .SubscribeOn(TaskPoolScheduler.Default)
-        .Subscribe(eh => RaiseTradeClosed(eh.EventArgs.Trade));
-      _accountManager.OrderAdded += RaiseOrderAdded;
-      _accountManager.OrderRemoved += RaiseOrderRemoved;
+        _accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
+        //_accountManager.TradeClosed += _accountManager_TradeClosed; ;
+        // TODO: RaiseTradeClosed needs testing
+        Observable.FromEventPattern<TradeEventArgs>(h => _accountManager.TradeClosed += h, h => h -= _accountManager_TradeClosed)
+          .SubscribeOn(TaskPoolScheduler.Default)
+          .Subscribe(eh => RaiseTradeClosed(eh.EventArgs.Trade));
+        _accountManager.OrderAdded += RaiseOrderAdded;
+        _accountManager.OrderRemoved += RaiseOrderRemoved;
+      }
     }
 
     private void _accountManager_TradeClosed(object sender, TradeEventArgs e) => RaiseTradeClosed(e.Trade);

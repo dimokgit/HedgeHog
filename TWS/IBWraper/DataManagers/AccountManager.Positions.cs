@@ -64,8 +64,6 @@ namespace IBApp {
       }
 
       TraceTrades("OnPositions: ", OpenTrades);
-      var cp = ContractPosition(p);
-      _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
       //if(IbClient.ClientId == 0 && !_positions.Values.Any(p => p.position != 0))
       //  CancelAllOrders("Canceling stale orders");
     }

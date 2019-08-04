@@ -715,14 +715,12 @@ namespace HedgeHog.Alice.Client {
               underContracts.ForEach(underContract =>
               am.CurrentOptions(CacheKey(underContract), sl, expirationDaysSkip, noc * 2, c => map.Contains(c.Right))
               .Select(ts => {
-                var underPosition = am.Positions.Where(p => p.contract.Instrument == underContract.Instrument).ToList().FirstOrDefault();
                 var exp = ts.Select(t => new { dte = DateTime.Now.Date.GetWorkingDays(t.option.Expiration), exp = t.option.LastTradeDateOrContractMonth2 }).Take(1).ToArray();
                 var options = ts
                 .Select(t => {
                   var maxPL = t.deltaBid * quantity * t.option.ComboMultiplier;
                   var strikeDelta = t.strikeAvg - t.underPrice;
                   var _sd = t.strikeAvg - sl.IfNaNOrZero(t.underPrice);
-                  var underPL = (t.strikeAvg - underPosition.price) * quantity * underContract.ComboMultiplier + maxPL;
                   return new {
                     i = t.option.Instrument,
                     l = t.option.DateWithShort,
@@ -739,7 +737,6 @@ namespace HedgeHog.Alice.Client {
                     cp = t.option.Right,
                     maxPlPerc = t.deltaBid * quantity * t.option.ComboMultiplier / am.Account.Equity * 100 / exp[0].dte,
                     maxPL,
-                    underPL,
                     _sd,
                     greekDelta = t.deltaAsk
                   };
@@ -912,16 +909,40 @@ namespace HedgeHog.Alice.Client {
                let c = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio)
                let h = new { combo = c, ratio = hh.Select(t => t.ratio).Min().AutoRound2(3), context = hh.ToArray(t => t.context).MashDiffs() }
                from price in DataManager.IBClientMaster.ReqPriceSafe(h.combo.contract)
-               select new { h.combo.contract, h.combo.quantity, h.ratio, h.context,price = price.ask.Avg(price.bid).ToInt() }
-               ).Subscribe(h=>
-                base.Clients.Caller.hedgeCombo(new { h.contract, h.ratio, h.quantity, h.context,h.price }));
-              
+               select new { h.combo.contract, h.combo.quantity, h.ratio, h.context, price = price.ask.Avg(price.bid).ToInt() }
+               ).Subscribe(h =>
+                base.Clients.Caller.hedgeCombo(new { h.contract, h.ratio, h.quantity, h.context, h.price }));
             }
           }
-        }
+        } else CurrentHedgesTM();
         var distFromHigh = tm.TradingMacroM1(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
         return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh };
+        ////
+        void CurrentHedgesTM() {
+          var hedgePar = ReadHedgedOther(pair);
+          if(hedgePar.IsNullOrEmpty()) return;
+          var hh = tm.CurrentHedgesByHV();
+          var c = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio);
+          var h = new { ratio = hh.Select(t => t.ratio).Min().AutoRound2(3), context = hh.ToArray(t => t.context).MashDiffs() };
+          var contract = new { ShortString = c.contract.ComboLegs.Select(l => l.ToLable()).Flatter(":") };
+          var o = new { contract, c.quantity, h.ratio, h.context, price = 0 };
+          base.Clients.Caller.hedgeCombo(new { contract, h.ratio, c.quantity, h.context, price = 0 });
+        }
       });
+    [BasicAuthenticationFilter]
+    public async Task<object[]> OpenHedged(string pair, int quantity, bool isBuy) {
+      var hedgePar = ReadHedgedOther(pair);
+      if(hedgePar.IsNullOrEmpty()) return new string[0];
+      var am = GetAccountManager();
+      return await (from hh in am.CurrentHedges(pair, hedgePar, "", c => c.ShortWithDate2)
+                    where quantity != 0 && hh.Any()
+                    let c = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio)
+                    from ots in am.OpenTrade(c.contract, c.quantity * (isBuy ? 1 : -1))
+                    from ot in ots
+                    select new { ot.holder, ot.error }
+       ).ToArray();
+
+    }
     [BasicAuthenticationFilter]
     public async Task<string[]> RollTrade(string currentSymbol, string rollSymbol) {
       var res = await GetAccountManager().OpenRollTrade(currentSymbol, rollSymbol).SelectMany(t => t).ToArray();
@@ -1143,7 +1164,7 @@ namespace HedgeHog.Alice.Client {
           ? false
           : true
           : (bool?)null;
-          return from tt in c.am.OpenTrade(c.contract, -c.position
+          return from tt in c.am.OpenTrade(order => order.Transmit = !c.contract.IsFuturesCombo, c.contract, -c.position
           , isMore.HasValue || c.contract.IsCallPut || c.contract.IsFuturesCombo ? 0 : c.closePrice
           , 0.0, false, default, default
           , isMore.HasValue ? c.under.PriceCondition(conditionPrice.Value, isMore.Value, false) : default)

@@ -1080,7 +1080,7 @@ namespace HedgeHog.Alice.Client {
       if(IsInVirtualTrading)
         new Action(() => Login(account, accountSubId, password, isDemo)).ScheduleOnUI();
       else
-        Login(account, accountSubId, password, isDemo);
+        Task.Run(() => Login(account, accountSubId, password, isDemo));
     }
 
     #endregion
@@ -1316,7 +1316,7 @@ namespace HedgeHog.Alice.Client {
             if(account == null) {
               Thread.Sleep(1000);
               account = TradesManager.GetAccount();
-              TradesManager.SetClosedTrades(GlobalStorage.UseForexMongo(c => c.Trades.Where(t => t.Kind == PositionBase.PositionKind.Closed).ToArray()));
+              //TradesManager.SetClosedTrades(GlobalStorage.UseForexMongo(c => c.Trades.Where(t => t.Kind == PositionBase.PositionKind.Closed).ToArray()));
             }
             if(account != null)
               GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {

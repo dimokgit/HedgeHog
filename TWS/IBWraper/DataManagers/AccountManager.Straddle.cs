@@ -194,6 +194,15 @@ namespace IBApp {
     #endregion
 
     #region Options
+    public IObservable<(Contract contract, double ratio, double price, string context)[]> CurrentHedgesByHV((string pair, double hv)[] hedges) {
+      var o = (from h in hedges.ToObservable()
+               from cd in IbClient.ReqContractDetailsCached(h.pair)
+               from p in IbClient.ReqPriceSafe(cd.Contract)
+               let hh=(cd.Contract,p.ask.Avg(p.bid),h.hv,(double)cd.Contract.ComboMultiplier, h.pair+":"+h.hv.Round(2))
+               select hh).ToArray();
+      var o2 = (from hh in o select TradesManagerStatic.HedgeRatioByValue(":", hh));
+      return o2;
+    }
     public IObservable<(Contract contract, double ratio, double price, string context)[]> CurrentHedges(string h1, string h2) => CurrentHedges(h1, h2, " ", c => c.ShortWithDate);
     public IObservable<(Contract contract, double ratio, double price, string context)[]> CurrentHedges(string h1, string h2, string mashDivider, Func<Contract, string> context) =>
         (from es in CurrentTimeValue(h1)
