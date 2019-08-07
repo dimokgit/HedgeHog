@@ -797,8 +797,8 @@
       this.wwwSettingsGrid = function (element) {
         wwwSettingsGridElement = element;
       }
-      this.showNegativeVolts = ko.observable(-10000);
-      this.showNegativeVolts2 = ko.observable(-10000);
+      this.showNegativeVolts = ko.observable(-10000).extend({ persist: "showNegativeVolts" + pair });
+      this.showNegativeVolts2 = ko.observable(-10000).extend({ persist: "showNegativeVolts2" + pair });
       this.doShowChartBid = ko.observable("p");
 
       // #region refreshChartsInterval
@@ -832,8 +832,8 @@
           { n: "doShowChartBid", v: self.doShowChartBid, t: gettype(self.doShowChartBid()) },
           { n: "refreshChartsInterval", v: self.refreshChartsInterval, t: gettype(self.refreshChartsInterval()) },
           { n: "refreshChartsInterval", v: self.refreshCharts2Interval, t: gettype(self.refreshCharts2Interval()) },
-          //{ n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
-          //{ n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
+          { n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
+          { n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
         ];
       });
       this.showWwwSettings = function () {
@@ -997,10 +997,10 @@
       }
       this.butterflies = ko.mapping.fromJS(ko.observableArray());
       this.tradesBreakEvens = ko.mapping.fromJS(ko.observableArray());
-      this.hedgeCombo = ko.observable();
+      this.hedgeCombo = ko.observableArray();
       this.hedgeComboText = ko.pureComputed(function () {
-        var hc = this.hedgeCombo();
-        return hc ? hc.price + hc.contract.ShortString + "/" + hc.ratio + "/" + hc.quantity + "{" + hc.context + "}" : "No hedge";
+        var hcs = this.hedgeCombo();
+        return hcs.filter(hc=>hc).map(hc => hc.price + hc.contract + "/" + hc.ratio + "/" + hc.quantity + "{" + hc.context + "}");// : "No hedge";
       }, this);
       this.rollOvers = ko.mapping.fromJS(ko.observableArray());
 

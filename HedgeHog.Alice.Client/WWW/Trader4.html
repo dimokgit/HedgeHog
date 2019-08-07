@@ -1329,10 +1329,12 @@
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
         <select data-bind="options:rollOversList,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>
-      <div>
-        <span data-bind="text:hedgeComboText"></span>
-        <button data-bind="click:openHedged.bind(null,true)">BY</button>
-        <button data-bind="click:openHedged.bind(null,false)">SL</button>
+      <div data-bind="foreach:hedgeComboText">
+        <div>
+        <span data-bind="text:$data"></span>
+        <button data-bind="click:$root.openHedged.bind(null,true)">BY</button>
+        <button data-bind="click:$root.openHedged.bind(null,false)">SL</button>
+        </div>
       </div>
       <div data-bind="visible:strategyCall().length" title="Strategy options">
         <table border="1">
