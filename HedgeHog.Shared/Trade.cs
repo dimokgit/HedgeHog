@@ -291,7 +291,7 @@ namespace HedgeHog.Shared {
     public double CalcNetPL2(double close) => CalcGrossPL(close) - (CommissionByTrade == null ? Commission : CommissionByTrade(this) * 2);
 
     public double NetPLInPips { get { return InPips(NetPL); } }
-    public double OpenInPips { get { return InPips(this.Open); } }
+    public double OpenPrice => Open / BaseUnitSize;
     public double CloseInPips { get { return InPips(this.Close); } }
 
     public bool IsParsed { get; set; }

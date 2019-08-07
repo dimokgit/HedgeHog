@@ -97,6 +97,11 @@ namespace HedgeHog.Shared {
     }
     public static (TContract contract, double ratio, double price, string context)[] HedgeRatioByValue<TContract>(string mashDivider,
       params (TContract contract, double price, double timeValue, double multiplier, string context)[] hedges) {
+      hedges.Take(0).ForEach(h => {
+        if(double.IsInfinity(h.timeValue) || h.timeValue == 0)
+          throw new Exception($"{nameof(HedgeRatioByValue)}: {new { h.timeValue }}");
+      });
+
       var r = Aggregated().Pairwise((h1, h2)
         => (h1.multiplier * h1.multiplier / h2.multiplier / h2.multiplier) * h1.price * h1.timeValue / h2.price / h2.timeValue).Single().Round(6);
       var r0 = r > 1 ? 1 / r : 1;
