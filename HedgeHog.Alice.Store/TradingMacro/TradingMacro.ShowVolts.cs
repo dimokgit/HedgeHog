@@ -78,7 +78,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.Gross:
           return ShowVoltsByGross;
         case HedgeHog.Alice.VoltageFunction.GrossV:
-          return ShowVoltsByGrossVirtual;
+          return () => ShowVoltsByGrossVirtual(voltIndex);
         case HedgeHog.Alice.VoltageFunction.RatioDiff:
           return () => ShowVoltsByRatioDiff(voltIndex);
         case HedgeHog.Alice.VoltageFunction.StDevDiff:
@@ -425,7 +425,7 @@ namespace HedgeHog.Alice.Store {
             UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b => b.Count == c).ForEach(b => {
               //var prices = b.Select(_priceAvg).ToList();
               SetMA(b);
-              var hv = b.HistoricalVolatility(r=>r.PriceCMALast);
+              var hv = b.HistoricalVolatility(r => r.PriceCMALast);
               //var stdr = prices.StandardDeviation();//.ToArray();//.StDevByRegressoin();
               SetVoltByIndex(voltIndex)(b.Last(), hv * 10000);
             }));
@@ -481,7 +481,7 @@ namespace HedgeHog.Alice.Store {
     }
     public static List<IList<Trade>> HedgeTradesVirtual { get; set; } = new List<IList<Trade>>();
 
-    CorridorStatistics ShowVoltsByGrossVirtual() {
+    CorridorStatistics ShowVoltsByGrossVirtual(int voltIndex) {
       var hedgedTrades = HedgeTradesVirtual
         .Where(ht => ht.Select(t => t.Pair).With(pairs => pairs.Contains(Pair) && TradingMacroHedged().Any(tm => pairs.Contains(tm.Pair))))
         .Concat()
@@ -490,11 +490,15 @@ namespace HedgeHog.Alice.Store {
         .SelectMany(b => new[] { (tm: this, t: b[0]) }.Concat(TradingMacroHedged(tm => (tm, t: b[1]))))
         .ToArray();
       var tuples = (from ht in hedgedTrades
-                    from x in ht.tm.UseRates(ra => ra.Select(r => (d: r.StartDate, t: (r, n: ht.t.CalcNetPL2(ht.t.Close = ht.t.IsBuy ? r.BidLow : r.AskHigh)))))
+                    from x in ht.tm.UseRates(ra => ra.Select(r
+                    => (d: r.StartDate
+                    , t: (r, n: ht.t.CalcNetPL2((ht.t.Close = ht.t.IsBuy ? r.BidLow : r.AskHigh) * ht.tm.BaseUnitSize)))))
                     select x.ToArray()
       ).ToArray();
       tuples.Buffer(2)
-      .ForEach(b => b[0].Zip(b[1], (t1, t2) => SetVoltage2(t1.t.r, t1.t.n + t2.t.n)));
+      .SelectMany(b => b[0].Zip(b[1], (t1, t2) => { return (t1.t.n + t2.t.n).SideEffect(n => SetVoltByIndex(voltIndex)(t1.t.r, n)); }))
+      .TakeLast(1)
+      .ForEach(SetVolts(voltIndex));
 
       return null;
     }
@@ -919,7 +923,7 @@ namespace HedgeHog.Alice.Store {
       BeforeHours = afterHours.ToArray();
       SetAfterHours(15, 17, ah => AfterHours = ah);
     }
-    private void SetAfterHours(double startHour, double endHour, Action<(double[] upDown, DateTime[] dates)[]> set ) {
+    private void SetAfterHours(double startHour, double endHour, Action<(double[] upDown, DateTime[] dates)[]> set) {
       if(!TryServerTime(out var serverTime)) return;
       var timeRange = new[] { serverTime.Date.AddHours(startHour), serverTime.Date.AddHours(endHour) };
       var afterHours = new List<(double[] upDown, DateTime[] dates)>();

@@ -100,9 +100,21 @@ namespace HedgeHog.Alice.Store {
         )
         .Subscribe(_ => TradingMacrosByPair(tm => tm != this).ForEach(tm => tm.PairHedge = _));
       this.WhenAnyValue(tm => tm.VoltageFunction)
-        .Subscribe(_ => UseRates(ra => ra.ForEach(r => SetVoltage(r, double.NaN))));
+        .Subscribe(_ => {
+          UseRates(ra => ra.ForEach(r => SetVoltage(r, double.NaN)));
+          if(_ == VoltageFunction.Straddle) {
+            SyncStraddleHistoryT1(this);
+            Log = new Exception($"{nameof(SyncStraddleHistoryT1)}[{this}] - done");
+          }
+        });
       this.WhenAnyValue(tm => tm.VoltageFunction2)
-        .Subscribe(_ => UseRates(ra => ra.ForEach(r => SetVoltage2(r, double.NaN))));
+        .Subscribe(_ => {
+          UseRates(ra => ra.ForEach(r => SetVoltage2(r, double.NaN)));
+          if(_ == VoltageFunction.Straddle) {
+            TradingMacroM1(SyncStraddleHistoryM1);
+            Log = new Exception($"{nameof(SyncStraddleHistoryM1)}[{this}] - done");
+          }
+        });
 
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy != Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)
