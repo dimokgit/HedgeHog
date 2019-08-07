@@ -163,7 +163,9 @@ namespace HedgeHog {
     public static double AutoRound(this double d, int digits) {
       var whole = d.Abs().Floor();
       var part = d.Abs() - whole;
-      var ret = (double)(whole + Math.Round((decimal)part, Math.Log10(part).Abs().Ceiling() + digits));
+      var decimals = Math.Log10(part).Abs().Ceiling() + digits;
+      if(!decimals.Between(0, 28)) return d;
+      var ret = (double)(whole + Math.Round((decimal)part, decimals));
       return ret;
     }
     public static string AutoRound2(this double d, string prefix, int digits, string suffix = "") {

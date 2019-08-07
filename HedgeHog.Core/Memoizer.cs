@@ -41,13 +41,20 @@ namespace HedgeHog {
         return r;
       };
     }
-    public static Func<A, R> Create<A, R, K>(Func<A, R> f, Func<A, K> key) {
-      return f.Memoize(key);
-    }
-    public static Func<A, R> CreateLast<A, R, K>(Func<A, R> f, Func<A, K> key) {
-      return f.MemoizeLast(key);
-    }
+
+    public static Func<A, R> Create<A, R, K>(Func<A, R> f, Func<A, K> key) => f.Memoize(key);
+
+    public static Func<A, R> CreateLast<A, R, K>(Func<A, R> f, Func<A, K> key) => f.MemoizeLast(key);
+    public static Func<A, B, R> CreateLast<A, B, R, K>(Func<A, B, R> f, Func<(A, B), K> key) => f.MemoizeLast(key);
+    public static Func<A, B, C, R> CreateLast<A, B, C, R, K>(Func<A, B, C, R> f, Func<(A, B, C), K> key) => f.MemoizeLast(key);
+
+    public static Func<A, B, C, R> MemoizeLast<A, B, C, R, K>(this Func<A, B, C, R> f, Func<(A, B, C), K> key) => f.Tuplify().MemoizeLast(key).Detuplify();
+    public static Func<A, B, R> MemoizeLast<A, B, R, K>(this Func<A, B, R> f, Func<(A, B), K> key) => f.Tuplify().MemoizeLast(key).Detuplify();
     public static Func<A, R> MemoizeLast<A, R, K>(this Func<A, R> f, Func<A, K> key) => f.MemoizeLast(key, r => true);
+
+    public static Func<A, B, R> MemoizeLast<A, B, R, K>(this Func<A, B, R> f, Func<(A, B), K> key, Predicate<R> result) => f.Tuplify().MemoizeLast(key, result).Detuplify();
+    public static Func<A, B, C, R> MemoizeLast<A, B, C, R, K>(this Func<A, B, C, R> f, Func<(A a, B b, C c), K> key, Predicate<R> result) => f.Tuplify().MemoizeLast(key, result).Detuplify();
+
     public static Func<A, R> MemoizeLast<A, R, K>(this Func<A, R> f, Func<A, K> key, Predicate<R> result) {
       var cache = new Tuple<K, R>[0];
       return a => {
