@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Text.RegularExpressions;
 
 namespace IBApp {
   partial class AccountManager {
@@ -40,7 +41,7 @@ namespace IBApp {
       int r2 = (ratio2 * quantity).ToInt();
       var gcd = new[] { r1, r2 }.GCD();
       Contract contract = new Contract();
-      contract.Symbol = c1.Symbol.ThrowIf(contractSymbol => contractSymbol.IsNullOrWhiteSpace());
+      contract.Symbol = c1.Symbol.IfEmpty(Regex.Match(c1.LocalSymbol, "(.+).{2}$").Groups[1] + "").ThrowIf(contractSymbol => contractSymbol.IsNullOrWhiteSpace());
       contract.SecType = "BAG";
       contract.Currency = "USD";
       contract.Exchange = "SMART";
