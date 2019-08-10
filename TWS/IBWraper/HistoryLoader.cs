@@ -134,20 +134,23 @@ namespace IBApp {
       return exc ?? new Exception(new { HistoryLoader = new { reqId, contract, code, error } } + "");
     }
 
+    object _listLocker = new object();
     private void IbClient_HistoricalDataEnd(HistoricalDataEndMessage m) {
       if(m.RequestId != _reqId)
         return;
       _delay = TimeSpan.Zero;
-      _list.InsertRange(0, _list2.Distinct().SkipWhile(b => _periodsBack == 0 && b.StartDate < _dateStart));
-      if((_periodsBack == 0 && _endDate <= _dateStart) || (_periodsBack > 0 && _list.Count >= _periodsBack)) {
-        CleanUp();
-        _dataEnd(_list);
-        _done(_list);
-      } else {
-        _dataEnd(_list);
-        var me = this;
-        _list2.Clear();
-        RequestNextDataChunk();
+      lock(_listLocker) {
+        _list.InsertRange(0, _list2.Distinct().SkipWhile(b => _periodsBack == 0 && b.StartDate < _dateStart));
+        if((_periodsBack == 0 && _endDate <= _dateStart) || (_periodsBack > 0 && _list.Count >= _periodsBack)) {
+          CleanUp();
+          _dataEnd(_list);
+          _done(_list);
+        } else {
+          _dataEnd(_list);
+          var me = this;
+          _list2.Clear();
+          RequestNextDataChunk();
+        }
       }
     }
     private void IbClient_HistoricalData(HistoricalDataMessage m) {
@@ -155,7 +158,8 @@ namespace IBApp {
         var date2 = m.Date.FromTWSString();
         if(date2 < _endDate)
           _endDate = _contract.Symbol == "VIX" && date2.TimeOfDay == new TimeSpan(3, 15, 0) ? date2.Round(MathCore.RoundTo.Hour) : date2;
-        _list2.Add(_map(date2, m.Open, m.High, m.Low, m.Close, m.Volume, m.Count));
+        lock(_listLocker) 
+          _list2.Add(_map(date2, m.Open, m.High, m.Low, m.Close, m.Volume, m.Count));
       }
     }
     #endregion

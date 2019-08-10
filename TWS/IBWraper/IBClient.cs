@@ -9,13 +9,49 @@ using System.Threading;
 using System.Threading.Tasks;
 using IBApp;
 using IBSampleApp.messages;
+using SynchContextSample;
 
 namespace IBApi {
   public partial class IBClient :EWrapper {
     public int ClientId { get; set; }
+    public class CustomSynchronizationContext :SynchronizationContext {
+      public override void Post(SendOrPostCallback action, object state) {
+        SendOrPostCallback actionWrap = (object state2) => {
+          SynchronizationContext.SetSynchronizationContext(new CustomSynchronizationContext());
+          action.Invoke(state2);
+        };
+        var callback = new WaitCallback(actionWrap.Invoke);
+        ThreadPool.QueueUserWorkItem(callback, state);
+      }
+      public override SynchronizationContext CreateCopy() {
+        return new CustomSynchronizationContext();
+      }
+      public override void Send(SendOrPostCallback d, object state) {
+        base.Send(d, state);
+      }
+      public override void OperationStarted() {
+        base.OperationStarted();
+      }
+      public override void OperationCompleted() {
+        base.OperationCompleted();
+      }
+    }
 
     internal class SynchronizationContextDummy {
-      public void Post(Action<object> a, object c) => a(null);
+      private SynchronizationContext _sc;
+
+      public SynchronizationContextDummy() {
+        var context = new CustomSynchronizationContext();
+        SynchronizationContext.SetSynchronizationContext(context);
+        _sc = SynchronizationContext.Current;
+      }
+
+      public void Post(Action<object> a, object c) {
+        //_sc.Post(t => a(t), c);
+        //if(SynchronizationContext.Current != null) SynchronizationContext.Current.Post((t)=>a(t), c);
+        //else a(null);
+        a(null);
+      }
     }
     SynchronizationContextDummy sc;
 

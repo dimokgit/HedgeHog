@@ -75,7 +75,7 @@ namespace IBApp {
 
     #region Properties
     public void TraceMe<T>(T v) => _trace(v);
-    public void TraceError<T>(T v) => _traceErrorSubject.OnNext(v);
+    public void TraceError<T>(T v) => _traceErrorSubject.OnNext(v + "~" + Thread.CurrentThread.ManagedThreadId);
     public Action<object> Trace => _trace;
     public Action<bool, object> TraceIf => (b, o) => { if(b) _trace(o); };
     public Action<object> TraceTemp => o => { };
@@ -92,7 +92,7 @@ namespace IBApp {
     });
     void SetContractSubscription(Contract contract, Action<Contract> callback) {
       var fc = contract.IsFuturesCombo;
-      if(fc) System.Diagnostics.Debugger.Break();
+      //if(fc) System.Diagnostics.Debugger.Break();
 
       _marketDataManager.AddRequest(contract, GENERIC_TICK_LIST, callback);
     }
@@ -128,7 +128,7 @@ namespace IBApp {
           IBClientCoreMaster = this;
         else throw new Exception($"{nameof(IBClientCoreMaster)} is not null");
       _trace = trace;
-      _traceErrorSubject.ObserveOn(ThreadPoolScheduler.Instance)./*Throttle(1.FromSeconds()).*/Subscribe(v => _trace("{*} " + v));
+      _traceErrorSubject./*ObserveOn(ThreadPoolScheduler.Instance)./*Throttle(1.FromSeconds()).*/Subscribe(v => _trace("{!} " + v));
       NextValidId += OnNextValidId;
       Error += OnError;
       ConnectionClosed += OnConnectionClosed;
@@ -170,7 +170,14 @@ namespace IBApp {
 
     //static IScheduler esReqContract = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
     IObservable<int> ContractDetailsEndFactory() => Observable.FromEvent<Action<int>, int>(
-        onNext => (int a) => onNext(a),
+        onNext => (int a) => {
+          try {
+            onNext(a);
+          }catch(Exception exc) {
+            Debugger.Break();
+            TraceError(exc);
+          }
+        },
         h => ContractDetailsEnd += h,
         h => ContractDetailsEnd -= h
         )
@@ -541,32 +548,35 @@ namespace IBApp {
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe(Contract contract, double timeoutInSeconds, bool useErrorHandler, double defaultPrice) =>
       ReqPriceSafe(contract, timeoutInSeconds).DefaultIfEmpty((defaultPrice, defaultPrice, DateTime.MinValue, 0));
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceEmpty() => Observable.Return((0.0, 0.0, DateTime.MinValue, 0.0));
+    static object _ReqPriceSafeLocker = new object();
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe(Contract contract, double timeoutInSeconds = 5, [CallerMemberName] string Caller = "") {
-      if(contract.IsCombo)
-        return ReqPriceComboSafe(contract, timeoutInSeconds);
+      lock(_ReqPriceSafeLocker) {
+        if(!contract.IsFuturesCombo && contract.IsCombo)
+          return ReqPriceComboSafe(contract, timeoutInSeconds);
 
-      var c = TryGetPrice(contract).Where(p => p.Ask > 0 && p.Bid > 0).ToArray();
-      if(c.Any()) return c
-      //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
-      .Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToObservable();
+        var c = TryGetPrice(contract).Where(p => p.Ask > 0 && p.Bid > 0).ToArray();
+        if(c.Any()) return c
+        //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
+        .Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToObservable();
 
-      SetContractSubscription(contract);
-      return TickPriceObservable.Select(t => (long)t.RequestId).Merge(Observable.Interval(0.1.FromSeconds()))
-      .SelectMany(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).Where(p => p.Bid > 0 && p.Ask > 0))
-      .Take(1)
-      .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
-      .ToArray()
-      .Do(a => a.IsEmpty().IfTrue(() => {
-        TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}");
-        ActiveRequestCleaner(contract);
-        TraceError($"{nameof(ReqPriceSafe)}: ActiveRequestCleaner({contract})");
-      }))
-      .SelectMany(p => p)
-      //.Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
-      .Do(p => Verbose($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
-      //.Select(p => (p.Bid, p.Ask, p.Time))
-      //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
-      ;
+        SetContractSubscription(contract);
+        return TickPriceObservable.Select(t => (long)t.RequestId).Merge(Observable.Interval(0.1.FromSeconds(), ThreadPoolScheduler.Instance))
+        .SelectMany(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).Where(p => p.Bid > 0 && p.Ask > 0))
+        .Take(1)
+        .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds), ThreadPoolScheduler.Instance))
+        .ToArray()
+        .Do(a => a.IsEmpty().IfTrue(() => {
+          TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}");
+          ActiveRequestCleaner(contract);
+          TraceError($"{nameof(ReqPriceSafe)}: ActiveRequestCleaner({contract})");
+        }))
+        .SelectMany(p => p)
+        //.Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
+        .Do(p => Verbose($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
+        //.Select(p => (p.Bid, p.Ask, p.Time))
+        //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
+        ;
+      }
     }
 
     public IObservable<(double bid, double ask, DateTime time)> ReqPriceComboSafe_New(Contract combo, double timeoutInSeconds) {
@@ -952,7 +962,7 @@ namespace IBApp {
           Connect(iPort, hosts.FirstOrDefault(), iClientId);
         }
         if(IsLoggedIn) {
-          _IBClientCoreMaster.ClientSocket.reqManagedAccts();
+          //_IBClientCoreMaster.ClientSocket.reqManagedAccts();
           RaiseLoggedIn();
           return IsLoggedIn;
         } else

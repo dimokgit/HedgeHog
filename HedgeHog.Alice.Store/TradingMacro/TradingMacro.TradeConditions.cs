@@ -1211,13 +1211,13 @@ namespace HedgeHog.Alice.Store {
       // RhSDAvg__ = _macd2Rsd.Round(1) })
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
       IEnumerable<double> HV(TradingMacro tm) => tm.HistoricalVolatility();
-      double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints();
+      double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints(true);
     }
-    public (IBApi.Contract contract, double ratio, double price, string context)[] CurrentHedgesByHV(int count) => CurrentHedgesByHV(count, DateTime.MaxValue);
-    public (IBApi.Contract contract, double ratio, double price, string context)[] CurrentHedgesByHV() => CurrentHedgesByHV(int.MaxValue, DateTime.MaxValue);
-    public (IBApi.Contract contract, double ratio, double price, string context)[] CurrentHedgesByHV(int count, DateTime end) {
-      var hp = TradingMacroHedged(tm => tm.HistoricalVolatilityByPips(count, end).Select(hv => (pair: tm.Pair, hv, cp: tm.CurrentPriceAvg(), m: (double)tm.BaseUnitSize))).Concat().ToArray();
-      var hh = (from h in HistoricalVolatilityByPips(count, end).Select(hv => (pair: Pair, hv, cp: CurrentPriceAvg(), m: (double)BaseUnitSize)).Concat(hp)
+    public (IBApi.Contract contract, double ratio, double price, string context)[] CurrentHedgesByHV(int count) => CurrentHedgesByHV(count, DateTime.MaxValue, false);
+    public (IBApi.Contract contract, double ratio, double price, string context)[] CurrentHedgesByHV() => CurrentHedgesByHV(int.MaxValue, DateTime.MaxValue, false);
+    public (IBApi.Contract contract, double ratio, double price, string context)[] CurrentHedgesByHV(int count, DateTime end, bool isDaily) {
+      var hp = TradingMacroHedged(tm => tm.HistoricalVolatilityByPoints(count, end, isDaily).Select(hv => (pair: tm.Pair, hv, cp: tm.CurrentPriceAvg(), m: (double)tm.BaseUnitSize))).Concat().ToArray();
+      var hh = (from h in HistoricalVolatilityByPoints(count, end, isDaily).Select(hv => (pair: Pair, hv, cp: CurrentPriceAvg(), m: (double)BaseUnitSize)).Concat(hp)
                 where hp.Any() && hp.All(x => !double.IsInfinity(x.hv))
                 select (h.pair.ContractFactory(), h.cp, h.hv, h.m, h.pair + ":" + h.hv.Round(2))
                  ).ToArray();
@@ -1250,26 +1250,33 @@ namespace HedgeHog.Alice.Store {
     private Func<IList<Rate>, double> HistoricalVolatilityImpl => _HistoricalVolatilityImpl ?? (_HistoricalVolatilityImpl = Memoizer.CreateLast<IList<Rate>, double, DateTime>(ra
          => RatesForHV((ra, BarPeriodInt > 0)).HistoricalVolatility(), ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault()));
 
-    public double[] HistoricalVolatilityByPoints() => UseRates(ra => InPips(RatesHVBPt(ra)));
-    private Func<IList<Rate>, double> _RatesHVBPt;
-    private Func<IList<Rate>, double> RatesHVBPt => _RatesHVBPt ?? (_RatesHVBPt = new Func<IList<Rate>, double>(ra
+    public double[] HistoricalVolatilityByPoints(bool isDaily) => HistoricalVolatilityByPoints(int.MaxValue, DateTime.MaxValue, isDaily);
+    public double[] HistoricalVolatilityByPoints(int count, DateTime end, bool isDaily)
+      => UseRates(ra => InPips(count == int.MaxValue && end.IsMax() ? HVByPoints(ra) : HVByPoints2((ra, count, end, isDaily))));
+    private Func<IList<Rate>, double> _HVByPoints;
+    private Func<IList<Rate>, double> HVByPoints => _HVByPoints ?? (_HVByPoints = new Func<IList<Rate>, double>(ra
        => RatesForHV((ra, BarPeriodInt > 0)).HistoricalVolatilityByPoint()).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault()));
-    public double[] HistoricalVolatilityByPips() => UseRates(ra => InPips(RatesHVBP((ra, BarPeriodInt > 0))));
-    public double[] HistoricalVolatilityByPips(int count, DateTime end)
-      => UseRates(ra => InPips(count == int.MaxValue && end.IsMax() ? RatesHVBP((ra, BarPeriodInt > 0)) : RatesHVBP2((ra, count.Div(BarPeriodInt.Max(1)).ToInt(), end))));
+    private Func<(IList<Rate> ra, int count, DateTime end, bool isDaily), double> _HVByPoints2;
+    private Func<(IList<Rate> ra, int count, DateTime end, bool isDaily), double> HVByPoints2 => _HVByPoints2 ?? (_HVByPoints2 = new Func<(IList<Rate> ra, int count, DateTime end, bool isDaily), double>(t
+        => RatesForHV2(t).HistoricalVolatilityByPoint()).MemoizeLast(t => (t.count, t.end, t.ra.Select(r => r.StartDate.Round(1)).FirstOrDefault())));
 
-    private Func<(IList<Rate> ra, bool isDaily), double> _RatesHVBP;
-    private Func<(IList<Rate> ra, bool isDaily), double> RatesHVBP => _RatesHVBP ?? (_RatesHVBP = new Func<(IList<Rate> ra, bool isDaily), double>(t
+    public double[] HistoricalVolatilityByPips() => UseRates(ra => InPips(HVByPips((ra, BarPeriodInt > 0))));
+    public double[] HistoricalVolatilityByPips(int count, DateTime end, bool isDaily)
+      => UseRates(ra => InPips(count == int.MaxValue && end.IsMax() ? HVByPips((ra, isDaily)) : HVByPips2((ra, count.Div(BarPeriodInt.Max(1)).ToInt(), end, isDaily))));
+
+    private Func<(IList<Rate> ra, bool isDaily), double> _HVByPips;
+    private Func<(IList<Rate> ra, bool isDaily), double> HVByPips => _HVByPips ?? (_HVByPips = new Func<(IList<Rate> ra, bool isDaily), double>(t
        => RatesForHV(t).HistoricalVolatility(p => p.prev.Abs(p.next))).MemoizeLast(t => t.ra.Select(r => r.StartDate.Round(1)).FirstOrDefault()));
-    private static IList<double> RatesForHV((IList<Rate> ra, bool isDaily) t) => (t.isDaily ? t.ra.Where(r => r.StartDate.Hour.Between(9, 16)) : t.ra).ToArray(_priceAvg);
 
-    private Func<(IList<Rate> ra, int count, DateTime end), double> _RatesHVBP2;
-    private Func<(IList<Rate> ra, int count, DateTime end), double> RatesHVBP2 => _RatesHVBP2
-      ?? (_RatesHVBP2 = new Func<(IList<Rate> ra, int count, DateTime end), double>(t
-       => RatesForHV2(t).HistoricalVolatility(p => p.prev.Abs(p.next)))
+    private Func<(IList<Rate> ra, int count, DateTime end, bool isDaily), double> _HVByPips2;
+    private Func<(IList<Rate> ra, int count, DateTime end, bool isDaily), double> HVByPips2 => _HVByPips2
+      ?? (_HVByPips2 = new Func<(IList<Rate> ra, int count, DateTime end, bool isDaily), double>(t
+        => RatesForHV2(t).HistoricalVolatility(p => p.prev.Abs(p.next)))
       .MemoizeLast(t => (t.count, t.end, t.ra.Select(r => r.StartDate.Round(1)).FirstOrDefault())));
-    private static IList<double> RatesForHV2((IList<Rate> ra, int count, DateTime end) t)
-      => t.ra.Reverse().SkipWhile(r => r.StartDate > t.end).Take(t.count).Where(r => r.StartDate.Hour.Between(9, 16)).ToArray(_priceAvg);
+
+    private static IList<double> RatesForHV((IList<Rate> ra, bool isDaily) t) => (t.isDaily ? t.ra.Where(r => r.StartDate.Hour.Between(9, 16)) : t.ra).ToArray(_priceAvg);
+    private static IList<double> RatesForHV2((IList<Rate> ra, int count, DateTime end, bool isDaily) t)
+      => t.ra.Reverse().SkipWhile(r => r.StartDate > t.end).Take(t.count).With(ra => (!t.isDaily ? ra : ra.Where(r => r.StartDate.Hour.Between(9, 16))).ToArray(_priceAvg));
     #endregion
 
     #region Angles

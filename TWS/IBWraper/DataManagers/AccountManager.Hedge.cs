@@ -14,11 +14,13 @@ namespace IBApp {
     public static IObservable<ComboTrade> MakeComboHedgeFromPositions(IEnumerable<Position> positions) {
       var a = (from g in HedgedPositions(positions).Where(p => p.position.contract.IsFuture).ToArray()
                where g.Length == 2
-               let pl = g.Sum(p => p.pl)
-               let openPrice = g.Sum(p => p.position.price * p.position.position)
-               let closePrice = g.Sum(p => p.closePrice * p.position.position)
                from hc in g.Pairwise((o, t) => MakeHedgeCombo(1, o.position.contract, t.position.contract, o.position.position.Abs(), t.position.position.Abs()))
-               select new ComboTrade(hc.contract, pl, openPrice, closePrice, hc.quantity * g.First().position.position.Sign())
+               let quantity = hc.quantity * g.First().position.position.Sign()
+               let pl = g.Sum(p => p.pl)
+               let mul = g.Min(p => p.position.contract.ComboMultiplier) * quantity
+               let openPrice = g.Sum(p => p.position.open) / mul
+               let closePrice = g.Sum(p => p.close) / mul
+               select new ComboTrade(hc.contract, pl, openPrice, closePrice, quantity)
                );
       return a;
       // where g.Key.IsFuture

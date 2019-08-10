@@ -1217,7 +1217,7 @@ namespace HedgeHog {
       return !(bsRates.Min() > bsRatesCT.Max() || bsRates.Max() < bsRatesCT.Min());
     }
 
-    public static double HistoricalVolatility<T>(this IEnumerable<T> source, Func<T, double> map) => source.Select(map).ToArray().HistoricalVolatilityByPoint();
+    public static double HistoricalVolatilityByPoint<T>(this IEnumerable<T> source, Func<T, double> map) => source.Select(map).ToArray().HistoricalVolatilityByPoint();
     public static double HistoricalVolatilityByPoint(this IDouble source) => source.HistoricalVolatility(out var avg) * source.DefaultIfEmpty().Average();
     public static double HistoricalVolatility(this IDouble source) => source.HistoricalVolatility(out var avg);
     public static double HistoricalVolatility(this IDouble source, int days) => source.HistoricalVolatility(out var avg) * Math.Sqrt(days);

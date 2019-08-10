@@ -425,11 +425,11 @@ namespace HedgeHog.Alice.Store {
             UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b => b.Count == c).ForEach(b => {
               //var prices = b.Select(_priceAvg).ToList();
               SetMA(b);
-              var hv = b.HistoricalVolatility(r => r.PriceCMALast);
+              var hv = b.HistoricalVolatilityByPoint(r => r.PriceCMALast);
               //var stdr = prices.StandardDeviation();//.ToArray();//.StDevByRegressoin();
               SetVoltByIndex(voltIndex)(b.Last(), hv * 10000);
             }));
-          var hvps = UseRates(ra => ra.HistoricalVolatility(r => r.PriceCMALast));
+          var hvps = UseRates(ra => ra.HistoricalVolatilityByPoint(r => r.PriceCMALast));
           hvps.ForEach(hvp => SetVolts(hvp * 10000, voltIndex));
         }
         return null;

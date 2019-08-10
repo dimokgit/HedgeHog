@@ -1918,16 +1918,16 @@ namespace HedgeHog.Alice.Store {
           CorridorStDev = TLBlue.Angle.Abs(),
           CorridorStDevCma = RatesTimeSpan().FirstOrDefault().TotalMinutes,
           Values = new Dictionary<string, object> {
-            { "Angle", TradingMacroTrender(tm=>tm.TLBlue.Angle.Abs()).SingleOrDefault() },
+            { "Angle", TradingMacroTrender(tm=>tm.TLBlue.Angle.Abs()).FirstOrDefault() },
             { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
-            { "PPM", InPips(TradingMacroTrender(tm=> PPMFromEnd(tm,-0.25)).Concat().SingleOrDefault()) },
-            { "Voltage", TradingMacroTrender(tm=> tm.GetLastVolt()).Concat().SingleOrDefault() },
-            { "Voltage2", TradingMacroTrender(tm=> tm.GetLastVolt(GetVoltage2)).Concat().SingleOrDefault() },
+            { "PPM", InPips(TradingMacroTrender(tm=> PPMFromEnd(tm,-0.25)).Concat().FirstOrDefault()) },
+            { "Voltage", TradingMacroTrender(tm=> tm.GetLastVolt()).Concat().FirstOrDefault() },
+            { "Voltage2", TradingMacroTrender(tm=> tm.GetLastVolt(GetVoltage2)).Concat().FirstOrDefault() },
             { "PpmM1", TradingMacroM1(tm=>tm.WaveRangeAvg.PipsPerMinute).FirstOrDefault() },
             { "M1Angle", TradingMacroM1(tm=>tm.WaveRangeAvg.Angle.Abs()).FirstOrDefault() },
             //{ "Equinox", _wwwInfoEquinox },
-            { "StDev", M1SD.SingleOrDefault() },
-            { "StDevAvg", M1SDA.SingleOrDefault() }
+            { "StDev", M1SD.FirstOrDefault() },
+            { "StDevAvg", M1SDA.FirstOrDefault() }
           }
         });
       var ts = TradeStatisticsDictionary[trade.Id];
@@ -4096,7 +4096,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     int _BaseUnitSize = 0;
     double _mmr = 0;
     public double MinTick { get { return TradesManager.GetMinTick(Pair); } }
-    public int BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = TradesManager.GetBaseUnitSize(Pair); } }
+    public int BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = (TradesManager?.GetBaseUnitSize(Pair)).GetValueOrDefault(); } }
     Account _account = null;
     Account Account { get { return _account ?? (_account = TradesManager?.GetAccount()); } }
     public void SetLotSize(Account account = null) {

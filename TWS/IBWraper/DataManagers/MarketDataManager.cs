@@ -56,21 +56,21 @@ namespace IBApp {
       callback(contract);
     }
     object _addRequestImplLock = new object();
-    void AddRequestImpl(Contract contract, string genericTickList) {
+    public void AddRequestImpl(Contract contract, string genericTickList) {
       lock(_addRequestImplLock) {
         if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
           Verbose0($"AddRequest:{contract} already requested");
         else {
-          var reqId = IbClient.ValidOrderId();
-          Verbose0($"AddRequest:{reqId}=>{contract}");
-          IbClient.WatchReqError(reqId, t => Trace($"{nameof(AddRequestImpl)}:{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
           IbClient.OnReqMktData(() => {
+            var reqId = IbClient.ValidOrderId();
+            Verbose0($"AddRequest:{reqId}=>{contract}");
+            IbClient.WatchReqError(reqId, t => Trace($"{nameof(AddRequestImpl)}:{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
             IbClient.ClientSocket.reqMktData(reqId, contract.ContractFactory(), genericTickList, false, false, new List<TagValue>());
             activeRequests.TryAdd(reqId, (contract, new Price(contract.Instrument)));
             contract.ReqId = reqId;
+            if(reqId == 0)
+              Debugger.Break();
           });
-          if(reqId == 0)
-            Debugger.Break();
         }
       }
     }

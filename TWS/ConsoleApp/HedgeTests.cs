@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ConsoleApp {
@@ -23,14 +24,14 @@ namespace ConsoleApp {
        select new { cd.Contract, p }
        ).Subscribe(Program.HandleMessage);
 
-      am.PositionsObservable.Take(2).ToArray().Subscribe(ops => {
-        Program.HandleMessage("Closing combo trade:");
+      am.PositionsObservable.Spy().DistinctUntilChanged(pm=>pm.ToString()).Take(2).ToArray().Subscribe(ops => {
+        Program.HandleMessage("Closing combo trade:~"+Thread.CurrentThread.ManagedThreadId+Thread.CurrentThread.Name);
         am.ComboTrades(5).ToArray().Subscribe(posHedges => {
           Program.HandleMessage(posHedges.Select(h => new { h.contract.ShortString, h.open, h.close, h.pl, h.closePrice }).ToTextOrTable("Positions:"));
+          return;
           var ct = posHedges.Single(p => p.contract.IsFuturesCombo);
           am.OpenTrade(o => o.Transmit = false, ct.contract, -ct.position)
           .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
-          return;
           var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, Contract.FromCache(h1).Single(), Contract.FromCache(h2).Single(), 1, 0.6).With(c => new { c.contract, c.quantity });
           var j2 = combo.contract.ToJson(true);
           var pos = -1;
@@ -40,6 +41,7 @@ namespace ConsoleApp {
         });
 
       });
+      return;
       am.CurrentHedges(h1, h2)
         .ToArray()
       .Subscribe(hh0 => {
@@ -60,7 +62,7 @@ namespace ConsoleApp {
             Program.HandleMessage($"{a.ToTextOrTable("Hedge Combo:")}");
             (from p in DataManager.IBClientMaster.ReqPriceSafe(combo.combo.contract) select new { combo.combo.contract, p.bid, p.ask }).Subscribe(Program.HandleMessage);
             var pos = -1;
-            if(pos == -1) {
+            if(pos == 11) {
               //am.OpenTrade(combo.combo.contract, combo.combo.quantity * pos)
               //.Subscribe(orderHolder => {
               //  HandleMessage(orderHolder.ToTextOrTable());
