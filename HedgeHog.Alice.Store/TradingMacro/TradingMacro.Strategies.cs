@@ -66,6 +66,8 @@ namespace HedgeHog.Alice.Store {
             return StrategyShortStraddle;
           case Strategies.Long:
             return StrategyLong;
+          case Strategies.Hedge:
+            return StrategyHedge;
           case Strategies.None:
             return () => { };
         }
@@ -141,6 +143,15 @@ namespace HedgeHog.Alice.Store {
             am.OpenTrade(contract, pos, p, CalculateTakeProfit(), true, ServerTime.AddMinutes(10));
           });
       }
+    });
+    private void StrategyHedge() => UseAccountManager(am => {
+      TradeConditionsEval()
+        .ForEach(eval => {
+          if(eval.HasAny())
+            OnSMS("Go hedge " + eval, true);
+          else
+            OnSMS("Go hog", false);
+        });
     });
     void RunStrategy() {
       StrategyAction();
@@ -441,24 +452,53 @@ namespace HedgeHog.Alice.Store {
 
     double GetTradeCloseLevel(bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy]().IfNaN(def); }
 
+    #region SMS Subject
+    object _SMSSubjectLocker = new object();
+    ISubject<(string message, bool @in)> _SMSSubject;
+    ISubject<(string message, bool @in)> SMSSubject {
+      get {
+        lock(_SMSSubjectLocker)
+          if(_SMSSubject == null) {
+            _SMSSubject = new Subject<(string message, bool @in)>();
+            _SMSSubject
+              .DistinctUntilChanged(s => s.message)
+              .Select(s => new { s.message, s.@in })
+              //.Do(s => Log = new Exception($"Asking SMS:{s}"))
+              .GroupBy(t => t.@in)
+              .Subscribe(g
+              => g
+              .DistinctUntilChanged(s => s + DateTime.Now.Round(5).ToString())
+              .Do(s => Log = new Exception($"Sending SMS:{s}"))
+              .Where(_ => SendSMS)
+              .Subscribe(s => { SendSms(s.message, "", false); }, exc => { })
+              );
+          }
+        return _SMSSubject;
+      }
+    }
+    void OnSMS(string message, bool @in) => SMSSubject.OnNext((message, @in));
+    #endregion
+
     void SendSms(string header, object message, bool sendScreenshot) {
       if(sendScreenshot)
         RaiseNeedChartSnaphot();
       SendSms(header, message, sendScreenshot ? _lastChartSnapshot : null);
     }
     void SendSms(string header, object message, byte[] attachment) {
-      if(!IsInVirtualTrading)
-        Observable.Timer(TimeSpan.FromSeconds(1))
-          .Do(_ => HedgeHog.Cloud.Emailer.Send(
-            "dimokdimon@gmail.com",
-            "dimokdimon@gmail.com",
-            //"13057880763@mymetropcs.com",
-            "1Aaaaaaa", Pair + "::" + header, message + "\nhttp://ruleover.com:" + IpPort + "/trader.html",
-            new[] { Tuple.Create(attachment, "File.png") }.Where(t => t.Item1 != null).ToArray())
-            )
-            .Catch<long, Exception>(_ => { Log = _; return Observable.Throw<long>(_); })
-            .Retry(2)
-            .Subscribe(_ => { }, exc => Log = exc);
+      //if(!IsInVirtualTrading)
+      Observable.Timer(TimeSpan.FromSeconds(1))
+        .Do(_ => HedgeHog.Cloud.Emailer.Send(
+          "dimokdimon@gmail.com",
+          //"dimokdimon@gmail.com",
+          "13057251125@mymetropcs.com,13057880763@mymetropcs.com",
+          "1Aaaaaaa",
+          header, message + "",
+          //Pair + "::" + header, message + "\nhttp://ruleover.com:" + IpPort + "/trader.html",
+          new[] { Tuple.Create(attachment, "File.png") }.Where(t => t.Item1 != null).ToArray())
+          )
+          .Catch<long, Exception>(_ => { Log = _; return Observable.Throw<long>(_); })
+          .Retry(2)
+          .Subscribe(_ => { }, exc => Log = exc);
     }
     public bool ToggleIsActive() {
       return IsTradingActive = !IsTradingActive;

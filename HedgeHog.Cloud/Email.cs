@@ -24,7 +24,7 @@ namespace HedgeHog.Cloud {
       if(string.IsNullOrWhiteSpace(password))
         throw new Exception("From email password is empty");
       var fromAddress = new MailAddress(from, from);
-      var toAddress = new MailAddress(to, to);
+      //var toAddress = new MailAddress(to, to);
       var smtp = new SmtpClient {
         Host = "smtp.gmail.com",
         Port = 587,
@@ -33,10 +33,12 @@ namespace HedgeHog.Cloud {
         DeliveryMethod = SmtpDeliveryMethod.Network,
         Credentials = new NetworkCredential(fromAddress.Address, password)
       };
-      using(var message = new MailMessage(fromAddress, toAddress) {
+      using(var message = new MailMessage() {
+        From = fromAddress,
         Subject = subject.Replace(Environment.NewLine, " "),
         Body = body,
       }) {
+        to.Split(';').ForEach(s => message.To.Add(s));
         attachments.ForEach(att =>
           message.Attachments.Add(new Attachment(new MemoryStream(att.Item1), att.Item2, MimeType.GetMimeType(att.Item1, att.Item2))));
         smtp.Send(message);

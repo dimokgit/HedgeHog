@@ -51,5 +51,34 @@ namespace UnitLib {
         .FirstAsync();
       Assert.AreEqual(8, c);
     }
+    static void Main(string[] args) {
+      var subject = new Subject<string>();
+
+      subject
+        .GroupBy(x => x)
+        .SelectMany(x => x.Scan(0, (count, _) => ++count).Zip(x, (count, chars) => new { Chars = chars, Count = count }))
+        .Subscribe(result => Console.WriteLine("You typed {0} {1} times", result.Chars, result.Count));
+
+      while(true) {
+        subject.OnNext(Console.ReadLine());
+      }
+    }
+    static void Main2(string[] args) {
+      var lineReader = new Subject<string>();
+
+      lineReader.GroupBy(line => line)
+          .Subscribe(lineGroup => {
+            lineGroup.Scan(0, (acc, _) => ++acc)
+              .Subscribe(count => {
+                    var line = lineGroup.Key;
+                    var timeSuffix = count == 1 ? "" : "s";
+                    Console.WriteLine("You typed {0} {1} time{2}.", line, count, timeSuffix);
+                  });
+          });
+
+      String readLine;
+      while((readLine = Console.ReadLine()) != null)
+        lineReader.OnNext(readLine);
+    }
   }
 }

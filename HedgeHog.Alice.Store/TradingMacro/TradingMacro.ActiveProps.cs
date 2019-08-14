@@ -198,5 +198,21 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    #region SendSMS
+    private bool _sendSMS = true;
+    [WwwSetting(Group = wwwSettingsTrading)]
+    [Category(categoryActiveYesNo)]
+    [DisplayName("Send SMS")]
+    public bool SendSMS {
+      get { return _sendSMS; }
+      set {
+        if(_sendSMS != value) {
+          _sendSMS = value;
+          OnPropertyChanged(nameof(SendSMS));
+        }
+      }
+    }
+
+    #endregion
   }
 }

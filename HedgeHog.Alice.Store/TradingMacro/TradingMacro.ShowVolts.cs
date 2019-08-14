@@ -85,6 +85,10 @@ namespace HedgeHog.Alice.Store {
           return () => ShowVoltsByStDevDiff(voltIndex);
         case HedgeHog.Alice.VoltageFunction.HV:
           return () => ShowVoltsByHV(voltIndex);
+        case HedgeHog.Alice.VoltageFunction.HedgeRatio:
+          return () => ShowVoltsByHedgeRatio(voltIndex);
+        case HedgeHog.Alice.VoltageFunction.HedgePrice:
+          return () => ShowVoltsByHedgePrice(voltIndex);
         case HedgeHog.Alice.VoltageFunction.HVR:
           return () => ShowVoltsByHVR(voltIndex);
         case HedgeHog.Alice.VoltageFunction.StdRatio:
@@ -435,6 +439,78 @@ namespace HedgeHog.Alice.Store {
         return null;
       }
     }
+    CorridorStatistics ShowVoltsByHedgeRatio(int voltIndex) {
+      lock(_voltLocker) {
+        if(UseCalc()) {
+          var c = RatesArray.Count;
+          if(GetVoltByIndex(voltIndex)(RatesInternal[c - 1]).IsNaN())
+            UseRatesInternal(ri => ri.Buffer(c, 1).TakeWhile(b => b.Count == c).ToArray()).Concat().ForEach(b => {
+              var hp = HedgedRates(b);
+              var hvs = hp.Select(h => HVByBarPeriod(b) / h.tm.HVByBarPeriod(h.ra));
+              //var stdr = prices.StandardDeviation();//.ToArray();//.StDevByRegressoin();
+              hvs.ForEach(hv => SetVoltByIndex(voltIndex)(b.Last(), MapHV(hv)));
+            });
+          var hvps = (from hv in HVByBarPeriod(this)
+                      from hvhs in TradingMacroHedged(HVByBarPeriod)
+                      from hvh in hvhs
+                      select hv / hvh);
+          hvps.ForEach(hvp => SetVolts(MapHV(hvp), voltIndex));
+        }
+        return null;
+      }
+      double MapHV(double hv) => hv * 100;
+      IEnumerable<(Rate[] ra, TradingMacro tm)> HedgedRates(IList<Rate> b) =>
+        (from tm in TradingMacroHedged()
+         from ra in tm.UseRatesInternal(ra => ra.SkipWhile(r => r.StartDate < b[0].StartDate).TakeWhile(r => r.StartDate <= b.Last().StartDate).ToArray())
+         select (ra, tm)
+         );
+    }
+    public void SetCurrentHedgePosition(IBApi.Contract contract, int quantity) {
+      CurrentHedgePosition1 = contract.ComboLegs[0].Ratio * quantity;
+      CurrentHedgePosition2 = contract.ComboLegs[1].Ratio * quantity;
+    }
+    public int CurrentHedgePosition1 = 10;
+    public int CurrentHedgePosition2 {
+      get => currentHedgePosition2; set {
+        if(currentHedgePosition2 == value) return;
+        currentHedgePosition2 = value;
+        _zeroHedgeDate = default;
+        OnPropertyChanged(nameof(CurrentHedgePosition2));
+        if(VoltageFunction == VoltageFunction.HedgePrice)
+          UseRates(ra => ra.ForEach(r => SetVoltage(r, double.NaN)));
+        if(VoltageFunction2 == VoltageFunction.HedgePrice)
+          UseRates(ra => ra.ForEach(r => SetVoltage2(r, double.NaN)));
+      }
+    }
+    private int currentHedgePosition2 = 10;
+    CorridorStatistics ShowVoltsByHedgePrice(int voltIndex) {
+      if(UseCalc()) {
+        if(GetVoltByIndex(voltIndex)(RatesArraySafe[0]).IsNaN())
+          UseRates(ra => {
+            TradingMacroHedged(tmh => {
+              tmh.UseRates(ram => {
+                ra.Zip(r => r.StartDate, ram, r => r.StartDate, (r1, r2) => (r1, r2))
+                .ForEach(t => {
+                  var p = (new[] { (t.r1.PriceAvg, BaseUnitSize, CurrentHedgePosition1), (t.r2.PriceAvg, tmh.BaseUnitSize, CurrentHedgePosition2) }).CalcHedgePrice();
+                  SetVoltByIndex(voltIndex)(t.r1, p);
+                });
+              });
+            });
+          });
+        TradingMacroHedged(tmh => {
+          var p = new[] { MakeParam(this, CurrentHedgePosition1), MakeParam(tmh, CurrentHedgePosition2) }.CalcHedgePrice();
+          SetVolts(p, voltIndex);
+        });
+      }
+      return null;
+      (double, int, int) MakeParam(TradingMacro tm, int pos) => (tm.RatesArraySafe.LastBC().PriceAvg, tm.BaseUnitSize, pos);
+    }
+
+    private static double[] HVByBarPeriod(TradingMacro tm) => tm.UseRates(ra => tm.HVByBarPeriod(ra));
+
+    public const int CURRENT_HEDGE_COUNT = 23 * 60 * 2;
+    private double HVByBarPeriod(IList<Rate> b) => BarPeriodInt > 0 ? HistoricalVolatilityByPoints(b, CURRENT_HEDGE_COUNT / BarPeriodInt, DateTime.MaxValue, false) : HVByPoints(b);
+
     CorridorStatistics ShowVoltsBySlope() {
       if(UseCalc()) {
         var v = GetLastVolts(GetVoltage2).ToArray().With(vs => vs.Length > 0 ? vs.LinearSlope() : double.NaN);
@@ -475,50 +551,6 @@ namespace HedgeHog.Alice.Store {
       }
       return null;
     }
-    IEnumerable<(TradingMacro tm, TradingMacro tmh)> GetHedgedTradingMacros(string pair) {
-      return from tm2 in TradingMacroHedged()
-             select (this, tm2);
-    }
-    public static List<IList<Trade>> HedgeTradesVirtual { get; set; } = new List<IList<Trade>>();
-
-    CorridorStatistics ShowVoltsByGrossVirtual(int voltIndex) {
-      var hedgedTrades = HedgeTradesVirtual
-        .Where(ht => ht.Select(t => t.Pair).With(pairs => pairs.Contains(Pair) && TradingMacroHedged().Any(tm => pairs.Contains(tm.Pair))))
-        .Concat()
-        .OrderByDescending(t => t.Pair == Pair)
-        .Buffer(2)
-        .SelectMany(b => new[] { (tm: this, t: b[0]) }.Concat(TradingMacroHedged(tm => (tm, t: b[1]))))
-        .ToArray();
-      var tuples = (from ht in hedgedTrades
-                    from x in ht.tm.UseRates(ra => ra.Select(r
-                    => (d: r.StartDate
-                    , t: (r, n: ht.t.CalcNetPL2((ht.t.Close = ht.t.IsBuy ? r.BidLow : r.AskHigh) * ht.tm.BaseUnitSize)))))
-                    select x.ToArray()
-      ).ToArray();
-      tuples.Buffer(2)
-      .SelectMany(b => b[0].Zip(b[1], (t1, t2) => { return (t1.t.n + t2.t.n).SideEffect(n => SetVoltByIndex(voltIndex)(t1.t.r, n)); }))
-      .TakeLast(1)
-      .ForEach(SetVolts(voltIndex));
-
-      return null;
-    }
-    #region MaxHedgeProfit Subject
-    object _maxHedgeProfitSubjectLocker = new object();
-    ISubject<(DateTime d, Action a)> _MaxHedgeProfitSubject;
-    ISubject<(DateTime d, Action a)> MaxHedgeProfitSubject {
-      get {
-        lock(_maxHedgeProfitSubjectLocker)
-          if(_MaxHedgeProfitSubject == null) {
-            _MaxHedgeProfitSubject = new Subject<(DateTime d, Action a)>();
-            _MaxHedgeProfitSubject
-              .DistinctUntilChanged(d => d.d.Round(MathCore.RoundTo.Hour))
-              .Subscribe(s => s.a(), exc => { });
-          }
-        return _MaxHedgeProfitSubject;
-      }
-    }
-    void OnMaxHedgeProfit(DateTime d, Action a) => MaxHedgeProfitSubject.OnNext((d, a));
-    #endregion
 
     int VoltAverageIterationsByIndex(int index) => index == 0 ? VoltAverageIterations : VoltAverageIterations2;
     IEnumerable<double> GetLastVoltByIndex(int voltIndex) => voltIndex == 0 ? GetLastVolt() : GetLastVolt2();

@@ -1614,9 +1614,9 @@
       var scanCorridorFunction = this.scanCorridorFunction = ko.observableArray();
       var ratesLengthFunction = this.ratesLengthFunction = ko.observableArray();
       var voltageFunction = this.voltageFunction = ko.observableArray();
-      var corridorCalculationMethod = this.corridorCalculationMethod = ko.observableArray()
-      var movingAverageType = this.movingAverageType = ko.observableArray()
-      var barsPeriodType = this.barsPeriodType = ko.observableArray()
+      var corridorCalculationMethod = this.corridorCalculationMethod = ko.observableArray();
+      var movingAverageType = this.movingAverageType = ko.observableArray();
+      var barsPeriodType = this.barsPeriodType = ko.observableArray();
       var strategyType = this.strategyType = ko.observableArray();
       var strategyCurrent = this.strategyCurrent = ko.observable();
       strategyCurrent.subscribe(function (s) {

@@ -1158,7 +1158,7 @@ namespace HedgeHog.Alice.Store {
             string straddlePair = "VXX";
             var pairCode = Pair.FutureCode();
             //var straddleTime = DateTime.Now.AddSeconds(-BarsCountMax).SetKind();
-            if(true || VoltageFunction == VoltageFunction.Straddle || VoltageFunction2 == VoltageFunction.Straddle) {
+            if(false || VoltageFunction == VoltageFunction.Straddle || VoltageFunction2 == VoltageFunction.Straddle) {
               TradingMacroM1(tmM1 => {
                 tmM1.WhenAny(tm => tm.RatesDuration, irs => irs.Value)
                 .Where(irs => irs > 0)

@@ -470,6 +470,7 @@
     <Compile Include="TradingMacro\TradingMacro.ActiveProps.cs" />
     <Compile Include="TradingMacro\TradingMacro.ActiveSettings.cs" />
     <Compile Include="TradingMacro\TradingMacro.Archive.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Hedge.cs" />
     <Compile Include="TradingMacro\TradingMacro._ctor.cs" />
     <Compile Include="TradingMacro\TradingMacro.Trading.cs" />
     <Compile Include="TradingMacro\TradingMacro.Enums.cs" />

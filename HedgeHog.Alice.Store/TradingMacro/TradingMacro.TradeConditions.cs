@@ -1213,27 +1213,6 @@ namespace HedgeHog.Alice.Store {
       IEnumerable<double> HV(TradingMacro tm) => tm.HistoricalVolatility();
       double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints(true);
     }
-    public (IBApi.Contract contract, double ratio, double price, string context)[] CurrentHedgesByHV(int count) => CurrentHedgesByHV(count, DateTime.MaxValue, false);
-    public (IBApi.Contract contract, double ratio, double price, string context)[] CurrentHedgesByHV() => CurrentHedgesByHV(int.MaxValue, DateTime.MaxValue, false);
-    public (IBApi.Contract contract, double ratio, double price, string context)[] CurrentHedgesByHV(int count, DateTime end, bool isDaily) {
-      var hp = TradingMacroHedged(tm => tm.HistoricalVolatilityByPoints(count, end, isDaily).Select(hv => (pair: tm.Pair, hv, cp: tm.CurrentPriceAvg(), m: (double)tm.BaseUnitSize))).Concat().ToArray();
-      var hh = (from h in HistoricalVolatilityByPoints(count, end, isDaily).Select(hv => (pair: Pair, hv, cp: CurrentPriceAvg(), m: (double)BaseUnitSize)).Concat(hp)
-                where hp.Any() && hp.All(x => !double.IsInfinity(x.hv))
-                select (h.pair.ContractFactory(), h.cp, h.hv, h.m, h.pair + ":" + h.hv.Round(2))
-                 ).ToArray();
-      return TradesManagerStatic.HedgeRatioByValue(":", hh);
-    }
-    /*
-    public IObservable<(Contract contract, double ratio, double price, string context)[]> CurrentHedgesByHV((string pair, double hv)[] hedges) {
-      var o = (from h in hedges.ToObservable()
-               from cd in IbClient.ReqContractDetailsCached(h.pair)
-               from p in IbClient.ReqPriceSafe(cd.Contract)
-               let hh=(cd.Contract,p.ask.Avg(p.bid),h.hv,(double)cd.Contract.ComboMultiplier, h.pair+":"+h.hv.Round(2))
-               select hh).ToArray();
-      var o2 = (from hh in o select TradesManagerStatic.HedgeRatioByValue(":", hh));
-      return o2;
-    }
-     */
     double[] HVA(TradingMacro tm) => new[] { tm.HistoricalVolatilityAnnualized() };
     double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
 
@@ -1253,6 +1232,9 @@ namespace HedgeHog.Alice.Store {
     public double[] HistoricalVolatilityByPoints(bool isDaily) => HistoricalVolatilityByPoints(int.MaxValue, DateTime.MaxValue, isDaily);
     public double[] HistoricalVolatilityByPoints(int count, DateTime end, bool isDaily)
       => UseRates(ra => InPips(count == int.MaxValue && end.IsMax() ? HVByPoints(ra) : HVByPoints2((ra, count, end, isDaily))));
+    public double HistoricalVolatilityByPoints(IList<Rate> ra, int count, bool isDaily) => HistoricalVolatilityByPoints(ra, count, DateTime.MinValue, isDaily);
+    public double HistoricalVolatilityByPoints(IList<Rate> ra, int count, DateTime end, bool isDaily)
+      => InPips(count == int.MaxValue && end.IsMax() ? HVByPoints(ra) : HVByPoints2((ra, count, end, isDaily)));
     private Func<IList<Rate>, double> _HVByPoints;
     private Func<IList<Rate>, double> HVByPoints => _HVByPoints ?? (_HVByPoints = new Func<IList<Rate>, double>(ra
        => RatesForHV((ra, BarPeriodInt > 0)).HistoricalVolatilityByPoint()).MemoizeLast(ra => ra.Select(r => r.StartDate.Round(1)).FirstOrDefault()));
@@ -1716,6 +1698,7 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<TradingMacro> TradingMacrosByPair(string pair) {
       return _tradingMacros.Where(tm => tm.Pair == pair).OrderBy(tm => PairIndex);
     }
+    public void TradingMacroHedged(Action<TradingMacro> map) => TradingMacroHedged().ForEach(map);
     public IEnumerable<T> TradingMacroHedged<T>(Func<TradingMacro, T> map) => TradingMacroHedged().Select(map);
     public IEnumerable<TradingMacro> TradingMacroHedged() => TradingMacrosByPair(PairHedge).Where(tm => tm.BarPeriod == BarPeriod);
     public IEnumerable<TradingMacro> TradingMacrosByPairHedge(string pair) => _tradingMacros.Where(tm => tm.PairHedge == pair).OrderBy(tm => PairIndex);
@@ -1902,8 +1885,11 @@ namespace HedgeHog.Alice.Store {
             SellLevel.CanTradeEx = hasSell && isPriceIn;
           }
 
-          if(eval.HasAny())
+          if(eval.HasAny()) {
             BuySellLevels.ForEach(sr => sr.DateCanTrade = ServerTime);
+            OnSMS("Go trade",true);
+          }else
+            OnSMS("Go sleep",false);
         });
         void updateCanTrade(SuppRes sr, bool ct, TradeDirections eval) {
           if(sr.CanTrade != ct) {

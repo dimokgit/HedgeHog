@@ -101,19 +101,27 @@ namespace HedgeHog.Alice.Store {
         .Subscribe(_ => TradingMacrosByPair(tm => tm != this).ForEach(tm => tm.PairHedge = _));
       this.WhenAnyValue(tm => tm.VoltageFunction)
         .Subscribe(_ => {
-          UseRates(ra => ra.ForEach(r => SetVoltage(r, double.NaN)));
+          ResetVoltage();
           if(_ == VoltageFunction.Straddle) {
             SyncStraddleHistoryT1(this);
             Log = new Exception($"{nameof(SyncStraddleHistoryT1)}[{this}] - done");
           }
         });
-      this.WhenAnyValue(tm => tm.VoltageFunction2)
+      (this).WhenAnyValue(tm => tm.VoltageFunction2)
         .Subscribe(_ => {
-          UseRates(ra => ra.ForEach(r => SetVoltage2(r, double.NaN)));
+          ResetVoltage2();
           if(_ == VoltageFunction.Straddle) {
             TradingMacroM1(SyncStraddleHistoryM1);
             Log = new Exception($"{nameof(SyncStraddleHistoryM1)}[{this}] - done");
           }
+        });
+      this.WhenAnyValue(tm => tm.CurrentHedgePosition1, tm => tm.CurrentHedgePosition2)
+        .Subscribe(_ => {
+          _zeroHedgeDate = default;
+          if(VoltageFunction == VoltageFunction.HedgePrice)
+            ResetVoltage();
+          if(VoltageFunction2 == VoltageFunction.HedgePrice)
+            ResetVoltage2();
         });
 
       _newsCaster.CountdownSubject
@@ -191,6 +199,14 @@ namespace HedgeHog.Alice.Store {
       //MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveActiveSettings());
     }
 
+    private void ResetVoltage() => UseRates(ra => {
+      ra.ForEach(r => SetVoltage(r, double.NaN));
+      GetVoltageHigh = GetVoltageAverage = GetVoltageLow = () => EMPTY_DOUBLE;
+    });
+    private void ResetVoltage2() => UseRates(ra => {
+      ra.ForEach(r => SetVoltage2(r, double.NaN));
+      GetVoltage2High = GetVoltage2Low = () => EMPTY_DOUBLE;
+    });
 
     ~TradingMacro() {
       if(string.IsNullOrWhiteSpace(Pair))

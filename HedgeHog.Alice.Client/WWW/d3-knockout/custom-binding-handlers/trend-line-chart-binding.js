@@ -1,6 +1,7 @@
 /// <reference path="../../bower_components/d3/d3.js" />
 /// <reference path="../../Scripts/linq.js" />
 /// <reference path="../../bower/bower_components/underscore/underscore.js" />
+
 // jscs:disable
 /*global ko, d3, Enumerable,_*/
 /*ignore jscs*/
@@ -523,7 +524,7 @@
         return chartNum ? value : yDomain[1];
       }
       function tipValue(v) {
-        return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts[0]), showNegativeVolts[1] || 100000);
+        return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts[0] || -Number.MAX_SAFE_INTEGER), showNegativeVolts[1] || Number.MAX_SAFE_INTEGER );
       }
       function tipValue2(v) {
         return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts2[0]), showNegativeVolts2[1] || 100000);

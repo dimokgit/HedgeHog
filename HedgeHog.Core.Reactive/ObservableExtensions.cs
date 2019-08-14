@@ -207,6 +207,13 @@ namespace HedgeHog {
         .Subscribe(a => buffer.SendAsync(a), onError);
       return buffer.AsObservable();
     }
+    public static IObservable<T> InitBufferedObservable<T>(this ISubject<T> subject, Func<T, T, T> scan, Action<Exception> onError) {
+      BroadcastBlock<T> buffer = new BroadcastBlock<T>(n => n);
+      subject.ObserveOn(TaskPoolScheduler.Default)
+        .Scan(default, scan)
+        .Subscribe(a => buffer.SendAsync(a), onError);
+      return buffer.AsObservable();
+    }
     public static IObservable<T> ObserveLatestOn<T>(
     this IObservable<T> source, IScheduler scheduler) {
       return Observable.Create<T>(observer => {

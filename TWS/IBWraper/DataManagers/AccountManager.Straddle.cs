@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CURRENT_OPTIONS = System.Collections.Generic.IList<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option, double deltaBid, double deltaAsk)>;
 using CURRENT_ROLLOVERS = System.IObservable<(IBApp.ComboTrade trade, IBApi.Contract roll, int days, double bid, double ppw, double amount, double dpw, double perc, double delta)>;
+using CURRENT_HEDGES = System.Collections.Generic.List<(IBApi.Contract contract, double ratio, double price, string context)>;
 namespace IBApp {
   public partial class AccountManager {
 
@@ -203,14 +204,14 @@ namespace IBApp {
       var o2 = (from hh in o select TradesManagerStatic.HedgeRatioByValue(":", hh));
       return o2;
     }
-    public IObservable<(Contract contract, double ratio, double price, string context)[]> CurrentHedges(string h1, string h2) => CurrentHedges(h1, h2, " ", c => c.ShortWithDate);
-    public IObservable<(Contract contract, double ratio, double price, string context)[]> CurrentHedges(string h1, string h2, string mashDivider, Func<Contract, string> context) =>
+    public IObservable<CURRENT_HEDGES> CurrentHedges(string h1, string h2) => CurrentHedges(h1, h2, " ", c => c.ShortWithDate);
+    public IObservable<CURRENT_HEDGES> CurrentHedges(string h1, string h2, string mashDivider, Func<Contract, string> context) =>
         (from es in CurrentTimeValue(h1)
          from nq in CurrentTimeValue(h2)
          let options = es.Concat(nq).Where(t => t.delta > 0).ToArray()
          where options.Length == es.Length + nq.Length
          let hh = options.Select(c => (c.contract, c.underPrice, c.delta, (double)c.contract.ComboMultiplier, context(c.option))).ToArray()
-         select es.Any() && nq.Any() ? TradesManagerStatic.HedgeRatioByValue(mashDivider, hh) : new (Contract contract, double quantity, double price, string context)[0]);
+         select es.Any() && nq.Any() ? TradesManagerStatic.HedgeRatioByValue(mashDivider, hh).ToList() : new CURRENT_HEDGES());
 
     public IObservable<(Contract option, Contract contract, double underPrice, double bid, double ask, double delta)[]> CurrentTimeValue(string symbol) {
       return (

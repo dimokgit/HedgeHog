@@ -1855,7 +1855,7 @@ namespace HedgeHog.Alice.Store {
         serverTime = TradesManager.ServerTime;
         return !serverTime.IsMin();
       }
-      serverTime = DateTime.MaxValue;
+      serverTime = DateTime.Now;
       return false;
     }
     public IEnumerable<DateTime> TryServerTime() {

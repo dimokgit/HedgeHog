@@ -43,6 +43,8 @@ namespace HedgeHog.Alice {
     StDevDiff,
     HV,
     HVR,
+    HedgeRatio,
+    HedgePrice,
     StdRatio,
     StdOverPrice,
     StdRatioLime,
@@ -224,7 +226,8 @@ namespace HedgeHog.Alice.Store {
     UniversalA = Universal + Auto,
     ShortPut = Universal * 2,
     ShortStraddle = ShortPut * 2,
-    Long = ShortStraddle * 2
+    Long = ShortStraddle * 2,
+    Hedge = Long * 2,
   }
   public enum MovingAverageValues {
     PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3

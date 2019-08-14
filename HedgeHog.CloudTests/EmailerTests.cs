@@ -11,9 +11,9 @@ namespace HedgeHog.Cloud.Tests {
   public class EmailerTests {
     [TestMethod()]
     public void SendTest() {
-      var path = @"C:\Users\dimon\OneDrive\Public\Forex\Patterns\Archer.png";
+      var path = @"C:\Users\dimok\OneDrive\Pictures\Screenshots\2018-10-27.png";
       Emailer.Send("dimokdimon@gmail.com", 
-        "13057880763@mymetropcs.com", 
+        "13057251125@mymetropcs.com,13057880763@mymetropcs.com", 
         "1Aaaaaaa", 
         "New Trade Alert", 
         "USD/JPY"
