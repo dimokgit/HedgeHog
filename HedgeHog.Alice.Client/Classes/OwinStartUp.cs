@@ -22,6 +22,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Westwind.Web.WebApi;
 using static HedgeHog.Core.JsonExtensions;
@@ -235,13 +236,6 @@ namespace HedgeHog.Alice.Client {
     Lazy<RemoteControlModel> remoteControl;
     Lazy<TraderModel> trader;
     static Exception Log { set { LogMessage.Send(value); } }
-    static ISubject<Action> _AskRatesSubject;
-    static ISubject<Action> AskRatesSubject { get { return _AskRatesSubject; } }
-    static ISubject<Action> _AskRates2Subject;
-    static ISubject<Action> AskRates2Subject { get { return _AskRates2Subject; } }
-    static ISubject<Action> _combosSubject;
-    static ISubject<Action> CombosSubject { get { return _combosSubject; } }
-    static IDisposable CombosSubscribtion;
     //http://forex.timezoneconverter.com/?timezone=GMT&refresh=5
     static Dictionary<string, DateTimeOffset> _marketHours = new Dictionary<string, DateTimeOffset> {
     { "Frankfurt", DateTimeOffset.Parse("6:00 +0:00") } ,
@@ -253,17 +247,15 @@ namespace HedgeHog.Alice.Client {
     static List<string> _marketHoursSet = new List<string>();
     static ISubject<(string key, Action action)> _CurrentCombos;
     static MyHub() {
-      _AskRatesSubject = new Subject<Action>();
-      _AskRatesSubject.InitBufferedObservable<Action>(exc => Log = exc);
-      _AskRatesSubject.Subscribe(a => a());
-      _AskRates2Subject = new Subject<Action>();
-      _AskRates2Subject.InitBufferedObservable<Action>(exc => Log = exc);
-      _AskRates2Subject.Subscribe(a => a());
+
+      var myHub = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "MyHub", Priority = ThreadPriority.Normal });
+
       _CurrentCombos = new Subject<(string key, Action action)>();
-      _CurrentCombos
-        .ObserveOn(TaskPoolScheduler.Default)
-        .Distinct(s => s.key)
-        .Sample(TimeSpan.FromSeconds(2))
+      _CurrentCombos.InitBufferedObservable(e=>Log=e)
+        .SubscribeOn(myHub)
+        .ObserveOn(myHub)
+         //.DistinctUntilChanged(s => s.key)
+        //.Sample(TimeSpan.FromSeconds(2))
         .Subscribe(s => {
           try {
             s.action();
@@ -801,7 +793,7 @@ namespace HedgeHog.Alice.Client {
               .Subscribe(b => base.Clients.Caller.openOrders(b.Select(x => x.x)));
 
             if(!pair.IsNullOrWhiteSpace())
-              OnCurrentCombo((new { DateTime.Now.Ticks } + "", () => {
+              OnCurrentCombo((new { DateTime.Now.Second } + "", () => {
                 if(optionTypeMap.Contains("S"))
                   straddles();
                 currentOptions(optionTypeMap);
@@ -907,6 +899,8 @@ namespace HedgeHog.Alice.Client {
                //.Concat(CurrentHedgesTM(false).SelectMany(_ => _))
                //.ToArray()
                .Take(1)
+               //.Merge(CurrentHedgesTM(false).SelectMany(c => c))
+               //.ToArray()
                .Subscribe(h => base.Clients.Caller.hedgeCombo(new[] { h }));
             }
           }

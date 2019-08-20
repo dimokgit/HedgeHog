@@ -252,8 +252,8 @@ namespace IBApp {
       onNext => (int id, int errorCode, string errorMsg, Exception exc) => onNext((id, errorCode, errorMsg, exc)),
       h => Error += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(Error)}"))*/,
       h => Error -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(Error)}"))*/
-      ).ObserveOn(esError)
-      //.Spy("Error")
+      )//.ObserveOn(esError)
+      .Spy("Error")
       .Publish()
       .RefCount();
     IObservable<(int id, int errorCode, string errorMsg, Exception exc)> _ErrorObservable;
@@ -559,8 +559,14 @@ namespace IBApp {
         //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
         .Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToObservable();
 
-        SetContractSubscription(contract);
-        return TickPriceObservable.Select(t => (long)t.RequestId).Merge(Observable.Interval(0.1.FromSeconds(), ThreadPoolScheduler.Instance))
+        Action<Contract> cb = _ => { };
+        var obs = Observable.FromEvent<Action<Contract>, Contract>(next => _ => next(_), h => cb += h, h => cb -= h);
+        
+
+        return TickPriceObservable
+          .SkipUntil(obs)
+          .Do(_=> SetContractSubscription(contract))
+          .Select(t => (long)t.RequestId).Merge(Observable.Interval(0.1.FromSeconds(), ThreadPoolScheduler.Instance))
         .SelectMany(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).Where(p => p.Bid > 0 && p.Ask > 0))
         .Take(1)
         .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds), ThreadPoolScheduler.Instance))
@@ -829,6 +835,8 @@ namespace IBApp {
       if(exc != null)
         Trace(exc);
       else {
+        //{"message":"{ IBCC = { id = -1, errorCode = 504, message = Not connected } }","timestamp":"2019-08-11T21:05:17.6737296-04:00"}
+        // TODO Send SMS
         Trace(new { IBCC = new { id, errorCode, message } });
         if(errorCode == 1102) {
           Trace("Cleaning price requests");

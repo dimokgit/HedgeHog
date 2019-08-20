@@ -45,22 +45,22 @@ namespace IBApp {
 
     void AddRequestSync(Contract contract, Action<Contract> callback, string genericTickList = "") {
       if(contract.IsCombo) {
-        AddRequestImpl(contract.AddToCache(), genericTickList);
+        AddRequestImpl(contract.AddToCache(), callback, genericTickList);
       } else {
         IbClient.ReqContractDetailsCached(contract)
           .Take(1)
           .Subscribe(cd => {
-            AddRequestImpl(cd.Contract, genericTickList);
+            AddRequestImpl(cd.Contract, callback, genericTickList);
           });
       }
-      callback(contract);
     }
     object _addRequestImplLock = new object();
-    public void AddRequestImpl(Contract contract, string genericTickList) {
+    public void AddRequestImpl(Contract contract, Action<Contract> callback, string genericTickList) {
       lock(_addRequestImplLock) {
-        if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument))
+        if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument)) {
           Verbose0($"AddRequest:{contract} already requested");
-        else {
+          callback(contract);
+        } else {
           IbClient.OnReqMktData(() => {
             var reqId = IbClient.ValidOrderId();
             Verbose0($"AddRequest:{reqId}=>{contract}");
@@ -70,6 +70,7 @@ namespace IBApp {
             contract.ReqId = reqId;
             if(reqId == 0)
               Debugger.Break();
+            callback(contract);
           });
         }
       }
@@ -105,7 +106,7 @@ namespace IBApp {
       if(!activeRequests.ContainsKey(requestId)) return;
       var ar = activeRequests[requestId];
       var priceMessage = new TickPriceMessage(requestId, field, price, attrib);
-      if(false)TraceDebug(new { Price=ar.price,field,price }.ToTextOrTable($"{nameof(RaisePriceChanged)}:{ ShowThread()}"));
+      if(false) TraceDebug(new[] { new { Price = ar.price, field, price } }.ToTextOrTable($"{nameof(RaisePriceChanged)}:{ ShowThread()}"));
       var price2 = ar.price;
       //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
       if(priceMessage.Price <= 0)
@@ -283,8 +284,8 @@ namespace IBApp {
       activeRequests.Where(kv => price != null ? kv.Value.price == price : kv.Value.contract == contract).ToList().ForEach(CancelPriceRequest);
       void CancelPriceRequest(KeyValuePair<int, (Contract contract, Price price)> ar) {
         _currentPrices.Where(cp => cp.Key == ar.Value.price.Pair).ToList().ForEach(cp => _currentPrices.Remove(cp.Key));
-        IBClientMaster.CancelPrice(ar.Key);
         if(activeRequests.TryRemove(ar.Key, out var rem)) {
+          IBClientMaster.CancelPrice(ar.Key);
           TraceDebug($"{nameof(activeRequests)} - removed {ar.Value.contract}");
         }
       }

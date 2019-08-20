@@ -41,7 +41,6 @@ namespace ConsoleApp {
         });
 
       });
-      return;
       am.CurrentHedges(h1, h2)
         .ToArray()
       .Subscribe(hh0 => {

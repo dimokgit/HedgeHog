@@ -10,6 +10,10 @@ using System.Threading.Tasks;
 using IBApp;
 using IBSampleApp.messages;
 using SynchContextSample;
+using System.Reactive.Concurrency;
+using System.Reactive.Subjects;
+using System.Reactive.Linq;
+using System.Diagnostics;
 
 namespace IBApi {
   public partial class IBClient :EWrapper {
@@ -39,8 +43,22 @@ namespace IBApi {
 
     internal class SynchronizationContextDummy {
       private SynchronizationContext _sc;
+      private Subject<Action> _CurrentCombos;
 
       public SynchronizationContextDummy() {
+        var myHub = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "MyHub", Priority = ThreadPriority.Normal });
+
+        _CurrentCombos = new Subject<Action>();
+        _CurrentCombos
+          .SubscribeOn(myHub)
+          .ObserveOn(myHub)
+          .Subscribe(a => {
+            try {
+              a();
+            } catch(Exception exc) {
+              Debugger.Break();
+            }
+          }, exc => { });
         var context = new CustomSynchronizationContext();
         SynchronizationContext.SetSynchronizationContext(context);
         _sc = SynchronizationContext.Current;
@@ -51,6 +69,7 @@ namespace IBApi {
         //if(SynchronizationContext.Current != null) SynchronizationContext.Current.Post((t)=>a(t), c);
         //else a(null);
         a(null);
+        //_CurrentCombos.OnNext(() => a(null));
       }
     }
     SynchronizationContextDummy sc;
