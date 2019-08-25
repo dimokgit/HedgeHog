@@ -16,31 +16,44 @@ namespace ConsoleApp {
       var h1 = "ESU9";
       var h2 = "NQU9";
       var maxLegQuantity = 10;
-      //am.CurrentOptions(h1, double.NaN, 0, 10,c=>true)
-      //.Subscribe(os => HandleMessage(os.Select(o => new { o.option }).ToArray().ToTextOrTable("Options:")));
-      (from s in new[] { h1, h2 }.ToObservable()
+      (from o in am.OpenOrderObservable
+       from p in o.Contract.ReqPriceSafe(10)
+       select new { o, p }
+       ).Subscribe(x => Program.HandleMessage(new { x.o.Contract, x.o.Order, x.o.OrderState, x.p }.ToTextTable("Open Trade")));
+      return;
+      am.CurrentOptions(h1, double.NaN, 0, 10, c => true)
+      .Subscribe(os => Program.HandleMessage(os.Select(o => new { o.option, o.bid, o.ask }).ToArray().ToTextOrTable("Options:")));
+
+      (from s in new[] { h1, h2 }.ToObservable().Take(0)
        from cd in DataManager.IBClientMaster.ReqContractDetailsCached(s)
        from p in DataManager.IBClientMaster.ReqPriceSafe(cd.Contract)
        select new { cd.Contract, p }
        ).Subscribe(Program.HandleMessage);
 
-      am.PositionsObservable.Spy().DistinctUntilChanged(pm=>pm.ToString()).Take(2).ToArray().Subscribe(ops => {
-        Program.HandleMessage("Closing combo trade:~"+Thread.CurrentThread.ManagedThreadId+Thread.CurrentThread.Name);
-        am.ComboTrades(5).ToArray().Subscribe(posHedges => {
+      am.PositionsObservable.SkipWhile(_ => am.Positions.Count < 2).Subscribe(ops => {
+        Program.HandleMessage("Closing combo trade:~" + Thread.CurrentThread.ManagedThreadId + Thread.CurrentThread.Name);
+        (from ct in am.ComboTrades(5)
+         from p in DataManager.IBClientMaster.ReqPriceSafe(ct.contract, 30)
+         select ct.SideEffect(_ => Program.HandleMessage($"Combo Trade Price: {p}"))
+         )
+        .ToArray().Subscribe(posHedges => {
           Program.HandleMessage(posHedges.Select(h => new { h.contract.ShortString, h.open, h.close, h.pl, h.closePrice }).ToTextOrTable("Positions:"));
-          return;
-          var ct = posHedges.Single(p => p.contract.IsFuturesCombo);
-          am.OpenTrade(o => o.Transmit = false, ct.contract, -ct.position)
-          .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
-          var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, Contract.FromCache(h1).Single(), Contract.FromCache(h2).Single(), 1, 0.6).With(c => new { c.contract, c.quantity });
-          var j2 = combo.contract.ToJson(true);
-          var pos = -1;
-          if(pos == -1)
-            am.OpenTrade(o => o.Transmit = false, combo.contract, combo.quantity * pos)
+          var ct = posHedges.SingleOrDefault(p => p.contract.IsFuturesCombo);
+          if(ct == null) Program.HandleMessage("No hedged positions found.");
+          else {
+            am.OpenTrade(o => o.Transmit = false, ct.contract, -ct.position)
             .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
+            var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, Contract.FromCache(h1).Single(), Contract.FromCache(h2).Single(), 1, 0.6).With(c => new { c.contract, c.quantity });
+            var j2 = combo.contract.ToJson(true);
+            var pos = -1;
+            if(pos == -11)
+              am.OpenTrade(o => o.Transmit = false, combo.contract, combo.quantity * pos)
+              .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
+          }
         });
 
       });
+      //return;
       am.CurrentHedges(h1, h2)
         .ToArray()
       .Subscribe(hh0 => {
@@ -57,8 +70,8 @@ namespace ConsoleApp {
           } else {
             Program.HandleMessage(hh2.Select(h => new { h.contract, h.ratio, amount = h.price * h.ratio, h.context }).ToTextOrTable("Hedge 2"));
             var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, hh2[0].contract, hh2[1].contract, hh2[0].ratio, hh2[1].ratio).With(c => new { combo = c, context = hh2.ToArray(t => t.context).MashDiffs() });
-            var a = new[] { new { combo.combo.contract.ShortString, combo.combo.contract.DateWithShort, combo.combo.contract.ShortWithDate, combo.combo.contract, combo.context } };
-            Program.HandleMessage($"{a.ToTextOrTable("Hedge Combo:")}");
+            var a = new { combo.combo.contract.ShortString, combo.combo.contract.DateWithShort, combo.combo.contract.ShortWithDate, combo.combo.contract, combo.context };
+            Program.HandleMessage($"{a.ToTextTable("Hedge Combo:")}");
             (from p in DataManager.IBClientMaster.ReqPriceSafe(combo.combo.contract) select new { combo.combo.contract, p.bid, p.ask }).Subscribe(Program.HandleMessage);
             var pos = -1;
             if(pos == 11) {

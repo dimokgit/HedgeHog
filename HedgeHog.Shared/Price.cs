@@ -21,13 +21,17 @@ namespace HedgeHog.Shared {
     public double Low52 { get; set; }
     public double High52 { get; set; }
     public bool IsShortable { get; set; } = true;
-    public double Bid { get; set; }
-    public double Ask { get; set; }
+    public bool IsSet { get; private set; }
+    public double Bid { get => bid; set  { bid = value; IsSet = true; } }
+    public double Ask { get => ask; set  {ask = value; IsSet = true; } }
     public double Average { get { return (Ask + Bid) / 2; } }
     public double GreekDelta { get; set; } = 1;
 
     public double Spread { get { return Ask - Bid; } }
     private DateTime _time2;
+    private double bid;
+    private double ask;
+
     public DateTime Time2 {
       get { return _time2; }
       set {

@@ -70,40 +70,24 @@ namespace HedgeHog {
       this IObservable<TSource> source, Func<TException> witness
       ) where TException : Exception
       => source.Catch((TException exc) => Observable.Empty<TSource>());
-    public static IObservable<T> Spy<T>(this IObservable<T> source, string opName = null) {
+    public static IObservable<T> Spy<T>(this IObservable<T> source, string opName = null, Action<object> trace = null) {
       opName = opName ?? typeof(T) + "";
-      Console.WriteLine("{0}: Observable obtained on Thread: {1}",
-                        opName,
-                        ThreadInfo());
+      trace = trace ?? Console.WriteLine;
+      trace("{0}: Observable obtained on Thread: {1}".Formatter(opName, ThreadInfo()));
 
       return Observable.Create<T>(obs => {
-        Console.WriteLine("{0}: Subscribed to on Thread: {1}",
-                          opName,
-                          ThreadInfo());
-
+        trace("{0}: Subscribed to on Thread: {1}".Formatter(opName, ThreadInfo()));
         try {
           var subscription = source
-              .Do(x => Console.WriteLine("{0}: OnNext({1}) on Thread: {2}",
-                                          opName,
-                                          x,
-                                          ThreadInfo()),
-                  ex => Console.WriteLine("{0}: OnError({1}) on Thread: {2}",
-                                           opName,
-                                           ex,
-                                           ThreadInfo()),
-                  () => Console.WriteLine("{0}: OnCompleted() on Thread: {1}",
-                                           opName,
-                                           ThreadInfo())
-              )
+              .Do(x => trace("{0}: OnNext({1}) on Thread: {2}".Formatter(opName, x, ThreadInfo()))
+              , ex => trace("{0}: OnError({1}) on Thread: {2}".Formatter(opName, ex, ThreadInfo()))
+              , () => trace("{0}: OnCompleted() on Thread: {1}".Formatter(opName, ThreadInfo())))
               .Subscribe(obs);
           return new CompositeDisposable(
               subscription,
-              Disposable.Create(() => Console.WriteLine(
-                    "{0}: Cleaned up on Thread: {1}",
-                    opName,
-                    ThreadInfo())));
+              Disposable.Create(() => trace("{0}: Cleaned up on Thread: {1}".Formatter(opName, ThreadInfo()))));
         } finally {
-          Console.WriteLine("{0}: Subscription completed.", opName);
+          trace("{0}: Subscription completed.".Formatter(opName));
         }
       });
       string ThreadInfo() => $"{Thread.CurrentThread.ManagedThreadId}:{Thread.CurrentThread.Name}";

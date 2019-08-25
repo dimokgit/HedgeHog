@@ -72,7 +72,7 @@ namespace IBApp {
         accountSummaryRequestActive = true;
         IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAccountSummary(NetOrderId(), "All", ACCOUNT_SUMMARY_TAGS));
       } else {
-        IbClient.OnReqMktData(() => IbClient.ClientSocket.cancelAccountSummary(CurrReqId()));
+        IbClient.OnReqMktData(() => IbClient.ClientSocket.cancelAccountSummary(IbClient.ValidOrderId()));
       }
     }
 

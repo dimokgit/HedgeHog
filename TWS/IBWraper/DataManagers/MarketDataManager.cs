@@ -12,27 +12,29 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using HedgeHog;
+using HedgeHog.Core;
 using HedgeHog.Shared;
 using IBApi;
 using IBSampleApp.util;
 
 namespace IBApp {
   public class MarketDataManager :DataManager {
-    const int TICK_ID_BASE = 10000000;
     static private readonly MemoryCache _currentPrices = MemoryCache.Default;
     public static IReadOnlyDictionary<string, Price> CurrentPrices => _currentPrices.ToDictionary(kv => kv.Key, kv => (Price)kv.Value);
     private static ConcurrentDictionary<int, (Contract contract, Price price)> activeRequests = new ConcurrentDictionary<int, (Contract contract, Price price)>();
     public static IReadOnlyDictionary<int, (Contract contract, Price price)> ActiveRequests => activeRequests;
-    public Action<Contract, string, Action<Contract>> AddRequest;// = (a1, a2, a3) => {    };
-    public IObservable<(Contract c, string gl, Action<Contract> cb)> AddRequestObs { get; }
-    public MarketDataManager(IBClientCore client) : base(client, TICK_ID_BASE) {
-      IbClient.TickPriceObservable.Subscribe(t => OnTickPrice(t.RequestId, t.Field, t.Price, t.attribs));
+    public void AddRequest(Contract c, string s, Action<int,Contract> cb) => AddRequestSync(c, cb, s);
+    public Action<Contract, string, Action<int,Contract>> AddRequestAsync;// = (a1, a2, a3) => {    };
+    public IObservable<(Contract c, string gl, Action<int,Contract> cb)> AddRequestObs { get; }
+    static IScheduler esReqPriceSubscribe = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPriceMD", Priority = ThreadPriority.Normal });
+    public MarketDataManager(IBClientCore client) : base(client) {
+      IbClient.TickPriceObservable.ObserveOn(esReqPriceSubscribe).Subscribe(t => OnTickPrice(t.RequestId, t.Field, t.Price, t.attribs));
       IbClient.OptionPriceObservable.Subscribe(t => OnOptionPrice(t));
       IbClient.TickString += OnTickString; ;
       IbClient.TickGeneric += OnTickGeneric;
       //IbClient.TickOptionCommunication += TickOptionCommunication; ;
-      AddRequestObs = Observable.FromEvent<Action<Contract, string, Action<Contract>>, (Contract c, string gl, Action<Contract> cb)>(
-        next => (c, gl, a) => next((c, gl, a)), h => AddRequest += h, h => AddRequest -= h);
+      AddRequestObs = Observable.FromEvent<Action<Contract, string, Action<int,Contract>>, (Contract c, string gl, Action<int,Contract> cb)>(
+        next => (c, gl, a) => next((c, gl, a)), h => AddRequestAsync += h, h => AddRequestAsync -= h);
       AddRequestObs
         //.Delay(TimeSpan.FromMilliseconds(1000))
         .ObserveOn(ThreadPoolScheduler.Instance)
@@ -43,8 +45,8 @@ namespace IBApp {
 
     private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, new TickAttrib());
 
-    void AddRequestSync(Contract contract, Action<Contract> callback, string genericTickList = "") {
-      if(contract.IsCombo) {
+    void AddRequestSync(Contract contract, Action<int,Contract> callback, string genericTickList = "") {
+      if(contract.IsCombo || contract.IsFuturesCombo) {
         AddRequestImpl(contract.AddToCache(), callback, genericTickList);
       } else {
         IbClient.ReqContractDetailsCached(contract)
@@ -54,23 +56,32 @@ namespace IBApp {
           });
       }
     }
-    object _addRequestImplLock = new object();
-    public void AddRequestImpl(Contract contract, Action<Contract> callback, string genericTickList) {
+    static object _addRequestImplLock = new object();
+    public void AddRequestImpl(Contract contract, Action<int,Contract> callback, string genericTickList) {
       lock(_addRequestImplLock) {
-        if(activeRequests.Any(ar => ar.Value.contract.Instrument == contract.Instrument)) {
+        var ar = activeRequests.Where(kv => kv.Value.contract.Instrument == contract.Instrument).ToArray();
+        if(ar.Any()) {
+          ar.ForEach(a => callback(a.Key, contract));
           Verbose0($"AddRequest:{contract} already requested");
-          callback(contract);
         } else {
+          var reqId = contract.ReqMktDataId = IbClient.ValidOrderId();
+          activeRequests.TryAdd(reqId, (contract, new Price(contract.Instrument)));
           IbClient.OnReqMktData(() => {
-            var reqId = IbClient.ValidOrderId();
             Verbose0($"AddRequest:{reqId}=>{contract}");
-            IbClient.WatchReqError(reqId, t => Trace($"{nameof(AddRequestImpl)}:{contract}: {t}"), () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
-            IbClient.ClientSocket.reqMktData(reqId, contract.ContractFactory(), genericTickList, false, false, new List<TagValue>());
-            activeRequests.TryAdd(reqId, (contract, new Price(contract.Instrument)));
-            contract.ReqId = reqId;
+            IbClient.WatchReqError(1.FromSeconds()
+              , reqId
+              , t => {
+                Trace($"{nameof(AddRequestImpl)}:{contract}: {t}");
+                activeRequests.TryRemove(t.id, out var c);
+              }
+              , () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
+            if(contract.IsFuturesCombo)
+              TraceDebug($"{nameof(AddRequestImpl)}:{new { FutureCombo = contract }} Start ReqMktData");
+            IbClient.ClientSocket.reqMktData(reqId, contract.IsFuturesCombo ? contract : contract.ContractFactory(), genericTickList, false, false, new List<TagValue>());
+            contract.ReqMktDataId = reqId;
             if(reqId == 0)
               Debugger.Break();
-            callback(contract);
+            callback(reqId, contract);
           });
         }
       }
@@ -103,36 +114,33 @@ namespace IBApp {
       }
     }
     private void OnTickPrice(int requestId, int field, double price, TickAttrib attrib) {
-      if(!activeRequests.ContainsKey(requestId)) return;
+      if(!activeRequests.ContainsKey(requestId))
+        return;
       var ar = activeRequests[requestId];
-      var priceMessage = new TickPriceMessage(requestId, field, price, attrib);
       if(false) TraceDebug(new[] { new { Price = ar.price, field, price } }.ToTextOrTable($"{nameof(RaisePriceChanged)}:{ ShowThread()}"));
+      if(ar.contract.IsFuturesCombo) {
+        TraceDebug0($"{nameof(OnTickPrice)}: {ar.contract}:{new { field, price }}");
+      }
       var price2 = ar.price;
       //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
-      if(priceMessage.Price <= 0)
-        return;
       const int LOW_52 = 19;
       const int HIGH_52 = 20;
-      switch(priceMessage.Field) {
+      switch(field) {
         case 1: { // Bid
-            if(price2.Bid == priceMessage.Price)
-              break;
-            if(price2.Ask <= 0)
-              price2.Ask = priceMessage.Price;
-            if(priceMessage.Price > 0) {
-              price2.Bid = priceMessage.Price;
+            if(!price2.IsSet || price > 0) {
+              price2.Bid = price;
+              if(price2.Ask <= 0)
+                price2.Ask = price;
               price2.Time2 = IbClient.ServerTime;
               RaisePriceChanged(ar);
             }
             break;
           }
         case 2: { //ASK
-            if(price2.Ask == priceMessage.Price)
-              break;
-            if(price2.Bid <= 0)
-              price2.Bid = priceMessage.Price;
-            if(priceMessage.Price > 0) {
-              price2.Ask = priceMessage.Price;
+            if(!price2.IsSet || price > 0) {
+              price2.Ask = price;
+              if(price2.Bid <= 0)
+                price2.Bid = price;
               price2.Time2 = IbClient.ServerTime;
               RaisePriceChanged(ar);
             }
@@ -140,9 +148,9 @@ namespace IBApp {
           }
         case 4: {
             if(price2.Ask <= 0)
-              price2.Ask = priceMessage.Price;
+              price2.Ask = price;
             if(price2.Bid <= 0)
-              price2.Bid = priceMessage.Price;
+              price2.Bid = price;
             price2.Time2 = IbClient.ServerTime;
             RaisePriceChanged(ar);
             break;
@@ -253,7 +261,7 @@ namespace IBApp {
 
 
     #region PriceChanged Event
-    event PriceChangedEventHandler PriceChangedEvent;
+    public event PriceChangedEventHandler PriceChangedEvent;
     public event PriceChangedEventHandler PriceChanged {
       add {
         if(PriceChangedEvent == null || !PriceChangedEvent.GetInvocationList().Contains(value))
@@ -263,7 +271,11 @@ namespace IBApp {
         PriceChangedEvent -= value;
       }
     }
+    static object _raisePriceChangedLocket = new object();
     protected void RaisePriceChanged((Contract contract, Price price) t, [CallerMemberName] string caller = "") {
+      if(t.contract.IsFuturesCombo) {
+        TraceDebug0($"{nameof(OnTickPrice)}: {t.contract}:{new { t.price.Ask, t.price.Bid }}");
+      }
       if(!_currentPrices.Contains(t.price.Pair)) {
         {
           var cip = t.contract.HasOptions ? new CacheItemPolicy() {

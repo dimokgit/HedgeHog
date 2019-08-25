@@ -250,12 +250,13 @@ namespace HedgeHog.Alice.Client {
 
       var myHub = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "MyHub", Priority = ThreadPriority.Normal });
 
-      _CurrentCombos = new Subject<(string key, Action action)>();
-      _CurrentCombos.InitBufferedObservable(e=>Log=e)
+      Action<Contract> cb = _ => { };
+      var obs = Observable.FromEvent<Action<Contract>, Contract>(next => _ => next(_), h => cb += h, h => cb -= h).Spy("SetContractSubscriptionObs").Subscribe();
+      Observable.FromEvent<Action<(string key, Action action)>, (string key,Action action)  >(next => _ => next(_), h => OnCurrentCombo += h, h => OnCurrentCombo -= h)
+        .DistinctUntilChanged(s => s.key)
+        //.Sample(TimeSpan.FromSeconds(2))
         .SubscribeOn(myHub)
         .ObserveOn(myHub)
-         //.DistinctUntilChanged(s => s.key)
-        //.Sample(TimeSpan.FromSeconds(2))
         .Subscribe(s => {
           try {
             s.action();
@@ -264,9 +265,7 @@ namespace HedgeHog.Alice.Client {
           }
         }, exc => { });
     }
-    static public void OnCurrentCombo((string key, Action action) p) {
-      _CurrentCombos.OnNext(p);
-    }
+    static Action<(string key, Action action)> OnCurrentCombo;
     private AccountManager GetAccountManager() => (trader?.Value?.TradesManager as IBWraper)?.AccountManager;
     public MyHub() {
       try {
@@ -892,7 +891,7 @@ namespace HedgeHog.Alice.Client {
                where quantity != 0 && hh.Any()
                let c = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio)
                let h = new { combo = c, ratio = hh.Select(t => t.ratio).Min().AutoRound2(3), context = hh.ToArray(t => t.context).MashDiffs() }
-               from price in DataManager.IBClientMaster.ReqPriceSafe(h.combo.contract)
+               from price in h.combo.contract.ReqPriceSafe()
                select new CurrentHedge(h.combo.contract.ShortString, h.combo.quantity, h.ratio, h.context, price.ask.Avg(price.bid).AutoRound2(2))
                .SideEffect(_ => tm.SetCurrentHedgePosition(c.contract, c.quantity))
                )

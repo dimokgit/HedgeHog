@@ -9,6 +9,7 @@ using IBApi;
 namespace IBSampleApp.messages {
   partial class OpenOrderMessage :OrderMessage {
 
+    public string Key => this + "";
     public override string ToString() => new { Contract, Order, OrderState } + "";
   }
 }

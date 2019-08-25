@@ -38,6 +38,7 @@ namespace ConsoleApp {
     private const int MINIMIZE = 6;
     private const int RESTORE = 9;
     static void Main(string[] args) {
+      #region Init
       ShowWindow(ThisConsole, MAXIMIZE);
       int _nextValidId = 0;
 
@@ -65,8 +66,11 @@ namespace ConsoleApp {
       const int twsPort = 7497;
       const int clientId = 10;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
+      #endregion
+
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+
         //am.OrderContractsInternal.Subscribe(o => { });
         //return;
 
@@ -370,6 +374,15 @@ namespace ConsoleApp {
         //Contract.Contracts.OrderBy(c => c + "").ForEach(cached => HandleMessage(new { cached }));
         //HandleMessage(nameof(ProcessSymbol) + " done =========================================================================");
 
+        ibClient.ReqContractDetailsCached(321454967)
+        .Subscribe(cd => {
+          HandleMessage(cd.Contract.ToJson(true));
+          ibClient.ReqContractDetailsCached(321454967)
+          .Subscribe(cd2 => {
+            HandleMessage(cd2.Contract.ToJson(true));
+          });
+        });
+
         #region Local Tests
         void TestMakeBullPut(string symbol, bool placeOrder) {
           HandleMessage2("MakeBullPut Start");
@@ -612,9 +625,10 @@ namespace ConsoleApp {
     public static void HandleMessage(string message, bool showTime = true) {
       if(_tracePrefix.IsNullOrEmpty() || message.StartsWith(_tracePrefix))
         if(showTime)
-          Console.WriteLine($"{DateTime.Now:mm:ss.fff}: {message}~{Thread.CurrentThread.ManagedThreadId}");
+          Console.WriteLine($"{DateTime.Now:mm:ss.fff}: {message}{t()}");
         else
           Console.WriteLine(message);
+      string t() => message.Contains("~") ? "" : (DataManager.ShowThread());
     }
     private static void HandleMessageFake(string message) { }
     private static void HandleMessage(HistoricalDataMessage historicalDataEndMessage) {

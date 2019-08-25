@@ -26,7 +26,7 @@ namespace IBApp {
     public static IEnumerable<OrderContractHolder> ByParentId(this IEnumerable<OrderContractHolder> source, int parentId)
       => source.Where(och => och.order.ParentId == parentId);
 
-    public static IEnumerable<OrderContractHolder> ByLocalSymbool(this ConcurrentDictionary<int, OrderContractHolder> source, string localSymbol)
+    public static IEnumerable<OrderContractHolder> ByLocalSymbol(this ConcurrentDictionary<int, OrderContractHolder> source, string localSymbol)
       => source.Where(och => och.Value.contract.LocalSymbol == localSymbol).Select(s => s.Value);
     public static IEnumerable<OrderContractHolder> ByLocalSymbool(this IEnumerable<OrderContractHolder> source, string localSymbol)
       => source.Where(och => och.contract.LocalSymbol == localSymbol);

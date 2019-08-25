@@ -77,7 +77,7 @@ namespace IBApp {
         if(order.OpenClose.IsNullOrWhiteSpace())
           order.OpenClose = "C";
         order.VolatilityType = 0;
-        IbClient.WatchReqError(orderId, e => {
+        IbClient.WatchReqError(1.FromSeconds(), orderId, e => {
           OnOpenError(e, $"{nameof(UpdateOrder)}:{och.contract}:{new { order.LmtPrice }}");
           if(e.errorCode == E110)
             UpdateOrder(orderId, lmpPrice, ++minTickMultiplier);

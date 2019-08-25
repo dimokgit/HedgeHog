@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 namespace IBApp {
   partial class AccountManager {
     public static IObservable<ComboTrade> MakeComboHedgeFromPositions(IEnumerable<Position> positions) {
-      var a = (from g in HedgedPositions(positions).Where(p => p.position.contract.IsFuture).ToArray()
+      var a = (from g in HedgedPositions(positions).OrderBy(p=>p.position.contract.Instrument).ToArray()
                where g.Length == 2
                from hc in g.Pairwise((o, t) => MakeHedgeCombo(1, o.position.contract, t.position.contract, o.position.position.Abs(), t.position.position.Abs()))
                let quantity = hc.quantity * g.First().position.position.Sign()

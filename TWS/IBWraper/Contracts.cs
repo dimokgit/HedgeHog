@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using IBApi;
 using HedgeHog.Shared;
+using HedgeHog.Core;
+using HedgeHog;
 
 namespace IBApp {
   /*
@@ -22,7 +24,11 @@ namespace IBApp {
    */
   public static class ContractSamples {
     public static Contract ContractFactory(this Contract contract) =>
-      contract.ComboLegs?.Any() == true
+      contract.IsFuturesCombo
+      ? contract.CloneJson().SideEffect(c =>{
+        c.TradingClass = null;
+      })
+      : contract.ComboLegs?.Any() == true
       ? contract
       : new Contract {
         LocalSymbol = contract.LocalSymbol,

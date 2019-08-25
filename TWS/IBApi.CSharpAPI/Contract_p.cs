@@ -1,4 +1,5 @@
 ﻿using HedgeHog;
+using HedgeHog.Core;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -35,11 +36,14 @@ namespace IBApi {
     public string LastTradeDateOrContractMonth2 => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max();
 
     public string Key => Instrument;
-    public string Instrument => ComboLegsToString().IfEmpty((LocalSymbol.IfEmpty(Symbol)?.Replace(".", "") + "").ToUpper());
+    public string Instrument => ComboLegsToString().IfEmpty((LocalSymbol.IfEmpty(Symbol, ConId + "")?.Replace(".", "") + "").ToUpper());
 
     static readonly ConcurrentDictionary<string, Contract> _contracts = new ConcurrentDictionary<string, Contract>(StringComparer.OrdinalIgnoreCase);
     public static IDictionary<string, Contract> Contracts => _contracts;
     public Contract AddToCache() {
+      if(IsFuturesCombo) {
+        Debug.WriteLine(this.ToJson(true));
+      }
       if(!_contracts.TryAdd(Key, this) && _contracts[Key].HashKey != HashKey)
         _contracts.AddOrUpdate(Key, this, (k, c) => this);
       return this;
@@ -67,8 +71,8 @@ namespace IBApi {
     }
     public double MinTick() => LegsOrMe(MinTickImpl).Concat().Max();
     public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).First();
-    public bool IsFuturesCombo => LegsEx()?.Any(l => l.contract.IsFuture) == true;
-    public bool IsCombo => ComboLegs?.Any() == true;
+    public bool IsFuturesCombo => LegsEx(l => l.c.IsFuture).Count() > 1;
+    public bool IsCombo => LegsEx(l => l.c.IsOption).Count() > 1;
     public bool IsCall => IsOption && Right == "C";
     public bool IsPut => IsOption && Right == "P";
     public bool IsOption => SecType == "OPT" || SecType == "FOP";
@@ -80,7 +84,7 @@ namespace IBApi {
     public bool IsCallPut => Legs().ToList().With(legs => legs.Any(l => l.c.IsCall) && legs.Any(l => l.c.IsPut));
     public double ComboStrike() => Strike > 0 ? Strike : LegsEx().With(cls => cls.Sum(c => c.contract.strike * c.leg.Ratio) / cls.Sum(c => c.leg.Ratio));
     public bool HasOptions => LegsOrMe(l => l.IsOption).Max();
-    public int ReqId { get; set; }
+    public int ReqMktDataId { get; set; }
     public IEnumerable<double> BreakEven(double openPrice) => Legs().Select(l => l.c.Strike + (l.c.IsCall ? 1 : -1) * openPrice);
 
 
@@ -129,6 +133,7 @@ namespace IBApi {
         yield return t;
     }
     public IEnumerable<T> LegsEx<T>(Func<(Contract c, ComboLeg leg), T> map) => LegsEx().Select(map);
+    public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx(Func<(Contract c, ComboLeg leg), bool> filter) => LegsEx().Where(filter);
     public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx() {
       if(ComboLegs == null) yield break;
       var x = from l in ComboLegs
@@ -153,7 +158,7 @@ namespace IBApi {
       ? false
       : _key().Equals(other._key());
   }
-  public static class ContractMixins{
+  public static class ContractMixins {
     public static string ToLable(this ComboLeg l) => l.Ratio == 0 ? "" : (l.Action == "BUY" ? "+" : "-") + (l.Ratio > 1 ? l.Ratio + "" : "");
   }
 }

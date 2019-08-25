@@ -1119,8 +1119,7 @@ namespace HedgeHog.Alice.Store {
           .Sample(TimeSpan.FromSeconds(0.5))
           .Publish().RefCount();
 
-          if(!IsInVirtualTrading && IsTrader) {
-            SyncStraddleHistoryObservable?.Dispose();
+          if(false && !IsInVirtualTrading && IsTrader) {
             _currentOptionDisposable?.Dispose();
             _currentOptionDisposable = (
               from price in _priceChangeObservable
@@ -5472,7 +5471,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     private double[] _ratesArrayCoeffs = new double[0];
 
     private IDisposable _orderAddedSubsciption;
-    private IDisposable SyncStraddleHistoryObservable;
 
     public double[] RatesArrayCoeffs { get => _ratesArrayCoeffs; set => _ratesArrayCoeffs = value; }
 

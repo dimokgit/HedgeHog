@@ -56,6 +56,7 @@ namespace IBApp {
     }
 
     private const string GENERIC_TICK_LIST = "233,221,236,165";
+    public const bool TRACE_REQPRICE = true;
     #endregion
 
     #region Fields
@@ -75,6 +76,9 @@ namespace IBApp {
 
     #region Properties
     public void TraceMe<T>(T v) => _trace(v);
+    public void TraceDebug<T>(T v) { if(Debugger.IsAttached) Trace("{?} " + v + DataManager.ShowThread()); }
+    public void TraceDebug0<T>(T v) { }
+    public string TraceDebugThrough<T>(T v) => Debugger.IsAttached ? "{?} " + v + DataManager.ShowThread() : "";
     public void TraceError<T>(T v) => _traceErrorSubject.OnNext(v + "~" + Thread.CurrentThread.ManagedThreadId);
     public Action<object> Trace => _trace;
     public Action<bool, object> TraceIf => (b, o) => { if(b) _trace(o); };
@@ -88,9 +92,9 @@ namespace IBApp {
     #region ICoreEX Implementation
     public Contract SetContractSubscription(Contract contract, [CallerMemberName] string Caller = "") => contract.SideEffect(c => {
       //TraceError($"{nameof(SetContractSubscription)} <= {Caller}");
-      SetContractSubscription(c, _ => { });
+      SetContractSubscription(c, (i, cont) => { });
     });
-    void SetContractSubscription(Contract contract, Action<Contract> callback) {
+    void SetContractSubscription(Contract contract, Action<int, Contract> callback) {
       var fc = contract.IsFuturesCombo;
       //if(fc) System.Diagnostics.Debugger.Break();
 
@@ -155,25 +159,32 @@ namespace IBApp {
 
     #region Req-* Observables
     #region ContractDetails
+    static IScheduler esReqContract = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
+    static IScheduler esReqContractEnd = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContractEnd" });
     IObservable<ContractDetailsMessage> ContractDetailsFactory()
       => Observable.FromEvent<ContDetHandler, ContractDetailsMessage>(
-        onNext => (ContractDetailsMessage m) => onNext(m),
+        onNext => (ContractDetailsMessage m) => {
+          //Trace($"{nameof(ContractDetailsFactory)}:{m.RequestId}:{m.ContractDetails.Contract}");
+          onNext(m);
+        },
         h => ContractDetails += h,//.SideEffect(_ => TraceError("ContractDetails += h")),
         h => ContractDetails -= h//.SideEffect(_ => TraceError("ContractDetails -= h"))
         )
-      //.ObserveOn(esReqContract)
-      .Publish().RefCount();
+      .ObserveOn(esReqContract)
+      .SubscribeOn(esReqContract)
+      //.Publish().RefCount()
+      ;
     //.Spy("ContractDetails")
     IObservable<ContractDetailsMessage> _ContractDetailsObservable;
     IObservable<ContractDetailsMessage> ContractDetailsObservable =>
       (_ContractDetailsObservable ?? (_ContractDetailsObservable = ContractDetailsFactory()));
 
-    //static IScheduler esReqContract = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqContract" });
     IObservable<int> ContractDetailsEndFactory() => Observable.FromEvent<Action<int>, int>(
         onNext => (int a) => {
           try {
+            //Trace($"{nameof(ContractDetailsEndFactory)}:{a}");
             onNext(a);
-          }catch(Exception exc) {
+          } catch(Exception exc) {
             Debugger.Break();
             TraceError(exc);
           }
@@ -181,8 +192,10 @@ namespace IBApp {
         h => ContractDetailsEnd += h,
         h => ContractDetailsEnd -= h
         )
-      //.ObserveOn(esReqContract)
-      .Publish().RefCount();
+      .ObserveOn(esReqContractEnd)
+      .SubscribeOn(esReqContractEnd)
+      //.Publish().RefCount()
+      ;
     IObservable<int> _ContractDetailsEndObservable;
     IObservable<int> ContractDetailsEndObservable =>
       (_ContractDetailsEndObservable ?? (_ContractDetailsEndObservable = ContractDetailsEndFactory()));
@@ -222,7 +235,7 @@ namespace IBApp {
         h => TickPrice += h.SideEffect(_ => Trace($"Subscribed to {nameof(TickPrice)}")),
         h => TickPrice -= h.SideEffect(_ => Trace($"UnSubscribed to {nameof(TickPrice)}"))
         )
-      .ObserveOn(esReqPriceSubscribe)
+      .SubscribeOn(esReqPriceSubscribe)
       .Publish()
       .RefCount()
       ;
@@ -252,8 +265,7 @@ namespace IBApp {
       onNext => (int id, int errorCode, string errorMsg, Exception exc) => onNext((id, errorCode, errorMsg, exc)),
       h => Error += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(Error)}"))*/,
       h => Error -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(Error)}"))*/
-      )//.ObserveOn(esError)
-      .Spy("Error")
+      ).SubscribeOn(esError)
       .Publish()
       .RefCount();
     IObservable<(int id, int errorCode, string errorMsg, Exception exc)> _ErrorObservable;
@@ -265,6 +277,7 @@ namespace IBApp {
     #region Req-* functions
     int NextReqId() => ValidOrderId();
 
+    public IObservable<ContractDetails> ReqContractDetailsCached(int conId) => ReqContractDetailsCached(new Contract { ConId = conId });
     public IObservable<ContractDetails> ReqContractDetailsCached(string symbol) => ReqContractDetailsCached(symbol.ContractFactory());
     public IObservable<ContractDetails> ReqContractDetailsCached(Contract contract) {
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
@@ -282,25 +295,27 @@ namespace IBApp {
         ;
     }
 
-    static ConcurrentDictionary<string, IObservable<ContractDetails>> _reqContractDetails = new ConcurrentDictionary<string, IObservable<ContractDetails>>();
-    public static ConcurrentDictionary<string, IObservable<ContractDetails>> ReqContractDetails => _reqContractDetails;
+    public static ConcurrentDictionary<string, IObservable<ContractDetails>> ReqContractDetails { get; } = new ConcurrentDictionary<string, IObservable<ContractDetails>>();
     public IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
       //if(contract.Instrument.IsNullOrWhiteSpace())
       //  throw new Exception("Contract's Symbol property is empty");
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
         Debugger.Break();
-      var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol)}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
-      lock(_reqContractDetails) {
-        if(_reqContractDetails.TryGetValue(key, out var o)) return o;
+      if(contract.IsFuturesCombo)
+        Debugger.Break();
+      //var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol, contract.ConId + "")}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
+      var key = $"{contract.Key}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
+      lock(ReqContractDetails) {
+        if(ReqContractDetails.TryGetValue(key, out var o)) return o;
         var reqId = NextReqId();
-        Verbose($"{nameof(ReqContractDetailsAsync)}:{key} Start");
+        TraceDebug0($"{nameof(ReqContractDetailsAsync)}:{key} Start");
         var cd = WireToError(
           reqId,
           ContractDetailsObservable,
           ContractDetailsEndObservable,
           t => t.RequestId,
           error => {
-            Trace($"{nameof(ReqContractDetailsAsync)}:{contract}[{new { contract.Exchange, LastTradeDate = contract.LastTradeDateOrContractMonth, contract.Strike }}]-{error}");
+            TraceError($"{nameof(ReqContractDetailsAsync)}:{contract}[{new { contract.Exchange, LastTradeDate = contract.LastTradeDateOrContractMonth, contract.Strike }}]-{error}");
             return true;
           }
           )
@@ -312,7 +327,7 @@ namespace IBApp {
             if(t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty())
               ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Subscribe();
           }))
-          .Do(_ => Verbose($"{nameof(ReqContractDetailsAsync)}:{key} found:{_.Length} contracts"))
+          .Do(_ => TraceDebug0($"{nameof(ReqContractDetailsAsync)}:{key} found:{_.Length} contracts"))
           .SelectMany(a => a.Select(t => t.ContractDetails))
           .Replay().RefCount()
         //.Select(t => t.cd.SideEffect(d => Verbose($"Adding {d.Contract} to cache")).AddToCache())
@@ -321,7 +336,7 @@ namespace IBApp {
         ;
         OnReqMktData(() => ClientSocket.reqContractDetails(reqId, contract));
         //Trace(new { ReqContractDetailsImpl = reqId, contract });
-        return _reqContractDetails.TryAdd(key, cd) ? cd : _reqContractDetails[key];
+        return ReqContractDetails.TryAdd(key, cd) ? cd : ReqContractDetails[key];
       }
     }
     public IObservable<T> WireToError<T>
@@ -549,7 +564,36 @@ namespace IBApp {
       ReqPriceSafe(contract, timeoutInSeconds).DefaultIfEmpty((defaultPrice, defaultPrice, DateTime.MinValue, 0));
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceEmpty() => Observable.Return((0.0, 0.0, DateTime.MinValue, 0.0));
     static object _ReqPriceSafeLocker = new object();
+
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe(Contract contract, double timeoutInSeconds = 5, [CallerMemberName] string Caller = "") {
+      lock(_ReqPriceSafeLocker) {
+        if(!contract.IsFuturesCombo && contract.IsCombo)
+          return ReqPriceComboSafe(contract, timeoutInSeconds);
+
+        var c = TryGetPrice(contract).Where(p => p.Ask > 0 && p.Bid > 0).ToArray();
+        if(c.Any()) return c
+        .Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToObservable();
+
+        var o = Observable.Interval(1.FromSeconds()).Spy($"{nameof(ReqPriceSafe)} Timer", TraceDebug)
+        .SelectMany(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)))
+        .Take(1)
+        .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
+        .ToArray()
+        .Do(a => a.IsEmpty().IfTrue(() => {
+          TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}{TraceDebugThrough(new { contract })}");
+          //ActiveRequestCleaner(contract);
+          //TraceError($"{nameof(ReqPriceSafe)}: ActiveRequestCleaner({contract})");
+        }))
+        .SelectMany(p => p)
+        //.Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
+        .Do(p => Verbose($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
+        //.Select(p => (p.Bid, p.Ask, p.Time))
+        //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
+        ;
+        return o;
+      }
+    }
+    public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe_Good(Contract contract, double timeoutInSeconds = 5, [CallerMemberName] string Caller = "") {
       lock(_ReqPriceSafeLocker) {
         if(!contract.IsFuturesCombo && contract.IsCombo)
           return ReqPriceComboSafe(contract, timeoutInSeconds);
@@ -559,13 +603,10 @@ namespace IBApp {
         //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
         .Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToObservable();
 
-        Action<Contract> cb = _ => { };
-        var obs = Observable.FromEvent<Action<Contract>, Contract>(next => _ => next(_), h => cb += h, h => cb -= h);
-        
-
-        return TickPriceObservable
-          .SkipUntil(obs)
-          .Do(_=> SetContractSubscription(contract))
+        var o =
+          TickPriceObservable
+          //.SkipUntil(obs)
+          //.Do(_ => SetContractSubscription(contract))
           .Select(t => (long)t.RequestId).Merge(Observable.Interval(0.1.FromSeconds(), ThreadPoolScheduler.Instance))
         .SelectMany(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).Where(p => p.Bid > 0 && p.Ask > 0))
         .Take(1)
@@ -573,8 +614,8 @@ namespace IBApp {
         .ToArray()
         .Do(a => a.IsEmpty().IfTrue(() => {
           TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}");
-          ActiveRequestCleaner(contract);
-          TraceError($"{nameof(ReqPriceSafe)}: ActiveRequestCleaner({contract})");
+          //ActiveRequestCleaner(contract);
+          //TraceError($"{nameof(ReqPriceSafe)}: ActiveRequestCleaner({contract})");
         }))
         .SelectMany(p => p)
         //.Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
@@ -582,6 +623,45 @@ namespace IBApp {
         //.Select(p => (p.Bid, p.Ask, p.Time))
         //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
         ;
+        return o;
+      }
+    }
+
+    public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe_Bad(Contract contract, double timeoutInSeconds = 5, [CallerMemberName] string Caller = "") {
+      lock(_ReqPriceSafeLocker) {
+        if(!contract.IsFuturesCombo && contract.IsCombo)
+          return ReqPriceComboSafe(contract, timeoutInSeconds);
+
+        var c = TryGetPrice(contract).Where(p => p.Ask > 0 && p.Bid > 0).ToArray();
+        if(c.Any()) return c
+        //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
+        .Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToObservable();
+
+        var pche = Observable.FromEvent<PriceChangedEventHandler, Price>(h => _marketDataManager.PriceChangedEvent += h, h => _marketDataManager.PriceChanged -= h);
+        Action<int, Contract> cb = null;
+        var obs = Observable.FromEvent<Action<int, Contract>, (int reqId, Contract contract)>(next => (i, cont) => next((i, cont)), h => cb += h, h => cb -= h)
+          .Spy("SetContractSubscriptionObs")
+          .Publish().RefCount()
+          ;//.Subscribe();
+        obs.Subscribe();
+        var o = pche.Take(1)
+          .Where(p => p.Pair == contract.Instrument)
+          .Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta))
+          .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds), ThreadPoolScheduler.Instance))
+          .ToArray()
+          .Do(a => a.IsEmpty().IfTrue(() => {
+            TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}");
+            //ActiveRequestCleaner(contract);
+            //TraceError($"{nameof(ReqPriceSafe)}: ActiveRequestCleaner({contract})");
+          }))
+          .SelectMany(p => p)
+          //.Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
+          .Do(p => Verbose($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
+        //.Select(p => (p.Bid, p.Ask, p.Time))
+        //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
+        ;
+        SetContractSubscription(contract, cb);
+        return o;
       }
     }
 
@@ -624,11 +704,6 @@ namespace IBApp {
 
 
 
-    public IObservable<double> ReqPriceMarket(string symbol)
-      => from cd in ReqContractDetailsCached(symbol.ContractFactory())
-         from p in ReqPriceMarket(cd.Contract)
-         select p;
-
     #region ReqMktData Subject
     object _ReqMktDataSubjectLocker = new object();
     ISubject<Action> _ReqMktDataSubject;
@@ -654,26 +729,6 @@ namespace IBApp {
     int[] _bidAsk = new int[] { 1, 2, 37 };
     //      .Concat(Observable.Defer(() => ReqContractDetailsCached(symbol.ContractFactory()).SelectMany(cd => ReqPrice(cd.Contract, 1, false)).Select(p => (p.bid, p.ask))).ToArray())
 
-    public PRICE_OBSERVABLE ReqPricesImpl(Contract contract, double timeoutInSeconds, bool useErrorHandler) {
-      Trace($"ReqPricesImpl:{contract}");
-      var reqId = NextReqId();
-      var cd = TickPriceObservable
-        .Where(t => t.RequestId == reqId)
-        //.Do(x => Trace(new { ReqPrice = new { contract, started = x } }))
-        .Where(t => _bidAsk.Contains(t.Field))
-        .Scan((contract, bid: 0.0, ask: 0.0, time: DateTime.MinValue)
-        , (p, n) => (contract
-        , n.Field == 1 || n.Field == 37 && p.bid < 0 ? n.Price : p.bid
-        , n.Field == 2 || n.Field == 37 && p.ask < 0 ? n.Price : p.ask
-        , ServerTime))
-        .Where(p => p.bid > 0 && p.ask > 0)
-        .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
-        ;
-      if(useErrorHandler)
-        WatchReqError("ReqPricesImpl", contract, reqId, () => TraceIf(DataManager.DoShowRequestErrorDone, $"ReqPricesImpl: {contract} => {reqId} Error done."));
-      OnReqMktData(() => ClientSocket.reqMktData(reqId, contract.ContractFactory(), "232", false, false, null));
-      return cd;
-    }
     public PRICE_OBSERVABLE ReqPriceCombo(Contract combo, IEnumerable<Contract> oprions, double timeoutInSeconds) {
       var x = oprions
         .ToObservable()
@@ -683,35 +738,13 @@ namespace IBApp {
       return x;
     }
 
-    public IObservable<double> ReqPriceMarket(Contract contract) {
-      var reqId = NextReqId();
-      var cd = TickPriceObservable
-        //.Do(x => Trace($"{nameof(ReqPriceMarket)}:{new { contract, started = x }}"))
-        .Where(t => t.RequestId == reqId && t.Field == 37)
-        .Take(1)
-        .Select(t => t.Price)
-        //.Do( x => Trace(new { ReqPrice = new { contract, started = x } }))
-        ;
-      WatchReqError(nameof(ReqPriceMarket), contract, reqId, () => { });// Trace($"{nameof(ReqPriceMarket)}: {contract} => {reqId} Error done."));
-      OnReqMktData(() => ClientSocket.reqMktData(reqId, contract.ContractFactory(), "221,232", false, false, null));
-      return cd;
-    }
 
-    private void WatchReqError<T>(T context, Contract contract, int reqId, Action complete) {
-      SetRequestHandled(reqId);
-      ErrorObservable
-      .Where(t => t.id == reqId)
-      .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
-      .Take(2)
-      .Merge()
-      .Subscribe(t => Trace($"{context}:{contract}:{t}"), complete);
-    }
-    public void WatchReqError(int reqId, Action<(int id, int errorCode, string errorMsg, Exception exc)> error, Action complete) {
+    public void WatchReqError(TimeSpan timeOut, int reqId, Action<(int id, int errorCode, string errorMsg, Exception exc)> error, Action complete) {
       SetRequestHandled(reqId);
       ErrorObservable
       .Where(t => t.id == reqId)
       .DistinctUntilChanged(e => e.errorCode)
-      .Window(TimeSpan.FromSeconds(5), TaskPoolScheduler.Default)
+      .Window(timeOut, TaskPoolScheduler.Default)
       .Take(1)
       .Merge()
       .Subscribe(error, complete);
@@ -877,16 +910,20 @@ namespace IBApp {
       if(host.IsNullOrWhiteSpace())
         host = "127.0.0.1";
       try {
-        ClientId = clientId;
+        base.ClientId = clientId;
 
         if(ClientSocket.IsConnected())
           throw new Exception(nameof(ClientSocket) + " is already connected");
-        ClientSocket.eConnect(host, port, ClientId);
+        ClientSocket.eConnect(host, port, base.ClientId);
         if(!ClientSocket.IsConnected()) return;
 
         var reader = new EReader(ClientSocket, _signal);
 
         reader.Start();
+
+        new Thread(() => { while(ClientSocket.IsConnected()) { _signal.waitForSignal(); reader.processMsgs(); } }) { IsBackground = true, Name = "MsgProc" }.Start();
+
+        return;
 
         Task.Factory.StartNew(() => {
           while(ClientSocket.IsConnected() /*&& !reader.MessageQueueThread.IsCompleted*/) {
@@ -923,6 +960,9 @@ namespace IBApp {
 
     #region Events
     private EventHandler<LoggedInEventArgs> LoggedInEvent;
+    private int iClientId;
+    public int ClientId { get => iClientId; set => iClientId = value; }
+
     public event EventHandler<LoggedInEventArgs> LoggedIn {
       add {
         if(LoggedInEvent == null || !LoggedInEvent.GetInvocationList().Contains(value))
@@ -964,7 +1004,6 @@ namespace IBApp {
           int iPort;
           if(!int.TryParse(port, out iPort))
             throw new ArgumentException("Value is not integer", nameof(port));
-          int iClientId;
           if(!int.TryParse(clientId, out iClientId))
             throw new ArgumentException("Value is not integer", nameof(port));
           Connect(iPort, hosts.FirstOrDefault(), iClientId);
@@ -988,7 +1027,7 @@ namespace IBApp {
     public bool ReLogin() {
       _signal.issueSignal();
       Disconnect();
-      Connect(_port, _host, ClientId);
+      Connect(_port, _host, base.ClientId);
       return true;
     }
     public bool IsLoggedIn => IsInVirtualTrading || ClientSocket.IsConnected();

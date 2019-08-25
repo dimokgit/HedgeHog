@@ -31,7 +31,7 @@ namespace IBApp {
     public IObservable<OrderStatusMessage> OrderStatusObservable { get; private set; }
     public ConcurrentDictionary<int, OrderContractHolder> OrderContractsInternal { get; } = new ConcurrentDictionary<int, OrderContractHolder>();
     #endregion
-    public AccountManager(IBClientCore ibClient, string accountId, Func<string, Trade> createTrade, Func<Trade, double> commissionByTrade) : base(ibClient, ACCOUNT_ID_BASE) {
+    public AccountManager(IBClientCore ibClient, string accountId, Func<string, Trade> createTrade, Func<Trade, double> commissionByTrade) : base(ibClient) {
       CommissionByTrade = commissionByTrade;
       CreateTrade = createTrade;
       Account = new Account();
@@ -42,7 +42,8 @@ namespace IBApp {
       RequestPositions();
       IbClient.OnReqMktData(() => IbClient.ClientSocket.reqOpenOrders());
       IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAllOpenOrders());
-      IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAutoOpenOrders(true));
+      if(ibClient.ClientId == 0)
+        IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAutoOpenOrders(true));
 
       IbClient.OnReqMktData(() => IbClient.AccountSummary += OnAccountSummary);
       IbClient.OnReqMktData(() => IbClient.AccountSummaryEnd += OnAccountSummaryEnd);
@@ -68,23 +69,24 @@ namespace IBApp {
         }
       }
       MainScheduler = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(AccountManager) });
-      var positionsScheduler = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Positions", Priority = ThreadPriority.AboveNormal });
+      var positionsScheduler = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "Positions", Priority = ThreadPriority.Normal });
 
       PositionsObservable = Observable.FromEvent<PositionHandler, PositionMessage>(
         onNext => (PositionMessage m) => Try(() => onNext(m), nameof(IbClient.Position)),
-        h => IbClient.Position += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
-        h => IbClient.Position -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
+        h => IbClient.Position += h.SideEffect(_ => Trace($"+= IbClient.Position")),
+        h => IbClient.Position -= h.SideEffect(_ => Trace($"-= IbClient.Position"))
         )
         .Where(x => /*x.Position != 0 &&*/ x.Account == _accountId && !NoPositionsPlease)
         //.DistinctUntilChanged(t => new { t.Contract, t.Position })
-        .Do(x => TraceError($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
+        .Do(x => Trace($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
         .SelectMany(p =>
-          from cds in IbClient.ReqContractDetailsAsync(p.Contract).SubscribeOn(Scheduler.CurrentThread).ToArray()
+          from cds in IbClient.ReqContractDetailsAsync(p.Contract).ToArray()
           from cd in cds.Count(1, i => {
             TraceError($"Position contract {p.Contract.FullString} has no details");
             //RequestPositions();
           }, i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
           select p.SideEffect(_ => {
+            TraceDebug(new { PositionContract = cd.Contract });
             p.Contract.Exchange = cd.Contract.Exchange;
             if(p.Position == 0) _positions.TryRemove(p.Contract.Key, out var r);
             else {
@@ -92,14 +94,13 @@ namespace IBApp {
               _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
             }
           })
-        )
-
+        ).Publish().RefCount()
         //.Spy("**** AccountManager.PositionsObservable ****")
         ;
       PositionsEndObservable = Observable.FromEvent(
       h => IbClient.PositionEnd += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
       h => IbClient.PositionEnd -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
-      )
+      ).Publish().RefCount()
       //.Spy("**** AccountManager.PositionsObservable ****")
       ;
 
@@ -109,16 +110,29 @@ namespace IBApp {
         h => IbClient.OpenOrder += h,
         h => IbClient.OpenOrder -= h
         )
-        .ObserveOn(IBClientCore.esError)
+        .SelectMany(m => {
+          var x = (from cl in m.Contract.ComboLegs.ToObservable()
+                   from con in ibClient.ReqContractDetailsCached(cl.ConId).Select(cd => cd.Contract)
+                   select con)
+                   .ToArray()
+                   .Where(_ => m.Contract.IsFuturesCombo)
+                   .Select(cons => m.SideEffect(_ => {
+                     //m.Contract.TradingClass = null;
+                     m.Contract.Symbol = cons[0].Symbol;
+                   })
+                   );
+          return x.DefaultIfEmpty(m);
+        })
+        .Distinct(x => OrderKey(x.Order))
         .Publish().RefCount();
+      string OrderKey(IBApi.Order o) => $"{o.PermId}{o.LmtPrice}{o.Conditions.Flatter("; ")}";
+
       OrderStatusObservable = Observable.FromEvent<OrderStatusHandler, OrderStatusMessage>(
         onNext
         => (OrderStatusMessage m) => Try(() => onNext(m), nameof(IbClient.OrderStatus)),
         h => IbClient.OrderStatus += h,
         h => IbClient.OrderStatus -= h
         )
-        .ObserveOn(IBClientCore.esError)
-        .Distinct(t => new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld })
         .Publish().RefCount();
 
       var portObs = Observable.FromEvent<PortfolioHandler, UpdatePortfolioMessage>(
@@ -134,35 +148,44 @@ namespace IBApp {
       #region Subscibtions
       DoShowRequestErrorDone = false;
       PositionsObservable
+        .SubscribeOn(positionsScheduler)
+        .ObserveOn(positionsScheduler)
         .Subscribe(OnPosition, () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
+
+      IScheduler esOpenOrder = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "OpenOrder", Priority = ThreadPriority.Normal });
       OpenOrderObservable
         .Where(x => x.Order.Account == _accountId)
-        .Do(x => Verbose0($"* OpenOrder: {new { x.Order.OrderId, x.Order.Transmit, conditions = x.Order.Conditions.Flatter(";") } }"))
+        .Do(x => TraceDebug($"OpenOrder: {new { x.Order.OrderId, x.Order.Transmit, conditions = x.Order.Conditions.Flatter(";") } }"))
         //.Do(UpdateOrder)
-        .Distinct(x => $"{x.Order.PermId}{x.Order.LmtPrice}{x.Order.Conditions.Flatter("; ")}")
-        .Do(x => TraceDebug($"OpenOrder: {x.Order}"))
+        .Do(x => TraceDebug($"OpenOrderKey: {OrderKey(x.Order)}"))
+        .Do(x => Trace($"OpenOrder: {x}"))
+        .SubscribeOn(esOpenOrder)
         .Subscribe(a => OnOrderImpl(a))
         .SideEffect(s => _strams.Add(s));
+
+      IScheduler esOrderStatus = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "OrderStatus", Priority = ThreadPriority.Normal });
       OrderStatusObservable
-        //.Do(t => TraceDebug("OrderStatus: " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
-        .Do(t => TraceDebug("OrderStatus: " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
-        .Where(t => OrderContractsInternal.ByOrderId(t.OrderId).Any(oc => oc.order.Account == _accountId))
-        .Do(t => Verbose("* OrderStatus " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
-        //.Do(x => UseOrderContracts(oc => _verbous("* " + new { OrderStatus = x, Account = oc.ByOrderId(x.orderId, och => och.order.Account).SingleOrDefault() })))
-        .Do(t => {
-          OrderContractsInternal.ByOrderId(t.OrderId).Where(oc => t.Status != "Inactive")
-            //.SelectMany(oc => new[] { oc }.Concat(ocs.ByOrderId(oc.order.ParentId).Where(och => och.isNew)))
-            .ForEach(oc => {
-              oc.status = new OrderContractHolder.Status(t.Status, t.Filled, t.Remaining);
-            });
-          IbClient.ClientSocket.reqAllOpenOrders();
-        }
-        )
-        .Where(m => m.IsOrderDone())
-        .SelectMany(o => UseOrderContracts(ocs => ocs.ByOrderId(o.OrderId)).Concat())
-        .Subscribe(o => RaiseOrderRemoved(o))
-        .SideEffect(s => _strams.Add(s));
+          .Do(t => TraceDebug("OrderStatus: " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
+          .Distinct(t => new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld })
+          .Do(t => TraceDebug0("OrderStatus: " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
+          .Where(t => OrderContractsInternal.ByOrderId(t.OrderId).Any(oc => oc.order.Account == _accountId))
+          .Do(t => Verbose("* OrderStatus " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
+          //.Do(x => UseOrderContracts(oc => _verbous("* " + new { OrderStatus = x, Account = oc.ByOrderId(x.orderId, och => och.order.Account).SingleOrDefault() })))
+          .Do(t => {
+            OrderContractsInternal.ByOrderId(t.OrderId).Where(oc => t.Status != "Inactive")
+              //.SelectMany(oc => new[] { oc }.Concat(ocs.ByOrderId(oc.order.ParentId).Where(och => och.isNew)))
+              .ForEach(oc => {
+                oc.status = new OrderContractHolder.Status(t.Status, t.Filled, t.Remaining);
+              });
+            IbClient.ClientSocket.reqAllOpenOrders();
+          }
+          )
+          .Where(m => m.IsOrderDone())
+          .SelectMany(o => UseOrderContracts(ocs => ocs.ByOrderId(o.OrderId)).Concat())
+          .SubscribeOn(esOpenOrder)
+          .Subscribe(o => RaiseOrderRemoved(o))
+          .SideEffect(s => _strams.Add(s));
 
       portObs
         .Where(x => x.AccountName == _accountId)
@@ -201,7 +224,7 @@ namespace IBApp {
 
       var shouldCancel = (
         from pair in IbClient.PriceChangeObservable.Select(_ => _.EventArgs.Price.Pair)
-        from child in OrderContractsInternal.ByLocalSymbool(pair)
+        from child in OrderContractsInternal.ByLocalSymbol(pair)
         let any = Positions.Any(p => p.contract == child.contract)
         where !any
         select child
@@ -224,7 +247,7 @@ namespace IBApp {
         if(!m.Order.WhatIf) {
           var raiseEvent = true;
           var h = OrderContractsInternal.AddOrUpdate(m.OrderId, m, (k, v) => { raiseEvent = false; return m; });
-          Trace($"{nameof(OnOrderImpl)}: {h}");
+          TraceDebug0($"{nameof(OnOrderImpl)}: {h}");
           if(raiseEvent)
             RaiseOrderAdded(new HedgeHog.Shared.Order {
               IsBuy = m.Order.Action == "BUY",

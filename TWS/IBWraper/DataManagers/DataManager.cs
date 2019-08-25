@@ -9,21 +9,21 @@ using static HedgeHog.Core.JsonExtensions;
 using HedgeHog.Shared;
 using System.Threading;
 using System.Diagnostics;
+using HedgeHog;
 
 namespace IBApp {
   public abstract class DataManager {
 
     #region Fields/Properties
-    private int currentTicker = 0;
-    private readonly int _baseReqId;
     public static bool UseVerbose = false;
     public static bool DoShowRequestErrorDone = true;
     public static IBClientCore IBClientMaster;
     private IBClientCore _ibClient;
 
-    public string ShowThread() => $"~{Thread.CurrentThread.ManagedThreadId}:{Thread.CurrentThread.Name}";
+    public static string ShowThread() => $"~{Thread.CurrentThread.ManagedThreadId}{Thread.CurrentThread.Name.With(tn => tn.IsNullOrEmpty() ? "" : (":" + tn))}";
     public void TraceError<T>(T v) => Trace("{!} " + v + ShowThread());
-    public void TraceDebug<T>(T v) { if(Debugger.IsAttached) Trace("{?} " + v); }
+    public void TraceDebug<T>(T v) { if(Debugger.IsAttached) Trace("{?} " + v+ShowThread()); }
+    public void TraceDebug0<T>(T v) { }
     protected Action<object> Trace { get; }
     protected Action<bool, object> TraceIf => (b, o) => { if(b) Trace(o); };
     protected Action<object> Verbose => o => { if(UseVerbose) Trace(o); };
@@ -40,15 +40,11 @@ namespace IBApp {
 
 
     #region Ctor
-    public DataManager(IBClientCore ibClient, int baseReqId) {
+    public DataManager(IBClientCore ibClient) {
       IbClient = ibClient;
-      _baseReqId = baseReqId;
       Trace = IbClient.Trace;
     }
     #endregion
-
-    //protected int NextReqId() => _baseReqId + Interlocked.Increment(ref currentTicker);
-    protected int CurrReqId() => _baseReqId + currentTicker;
 
     public override string ToString() => new { IbClient } + "";
   }

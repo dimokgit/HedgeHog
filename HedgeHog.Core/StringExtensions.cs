@@ -10,6 +10,7 @@ namespace HedgeHog {
     public static bool IsNullOrWhiteSpace(this string s) { return string.IsNullOrWhiteSpace(s); }
     public static bool IsNullOrEmpty(this string s) { return string.IsNullOrEmpty(s); }
     public static string IfEmpty(this string s, string ifEmpty) { return string.IsNullOrWhiteSpace(s) ? ifEmpty : s; }
+    public static string IfEmpty(this string s, params string[] ifEmpty) { return string.IsNullOrWhiteSpace(s) ? ifEmpty.Where(s2 => !s2.IsNullOrWhiteSpace()).FirstOrDefault() : s; }
     public static string IfEmpty(this string s, Func<string> ifEmpty) { return string.IsNullOrWhiteSpace(s) ? ifEmpty() : s; }
     public static string IfNotEmpty(this string s, string prefix) { return string.IsNullOrWhiteSpace(s) ? s : prefix + s; }
     public static string MashDiffs(this string s, params string[] ss) => new[] { s }.Concat(ss).ToArray().MashDiffs();
