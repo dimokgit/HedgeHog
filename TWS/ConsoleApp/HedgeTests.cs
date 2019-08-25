@@ -5,6 +5,7 @@ using IBApp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
@@ -16,13 +17,14 @@ namespace ConsoleApp {
       var h1 = "ESU9";
       var h2 = "NQU9";
       var maxLegQuantity = 10;
-      (from o in am.OpenOrderObservable
-       from p in o.Contract.ReqPriceSafe(10)
-       select new { o, p }
-       ).Subscribe(x => Program.HandleMessage(new { x.o.Contract, x.o.Order, x.o.OrderState, x.p }.ToTextTable("Open Trade")));
-      return;
       am.CurrentOptions(h1, double.NaN, 0, 10, c => true)
       .Subscribe(os => Program.HandleMessage(os.Select(o => new { o.option, o.bid, o.ask }).ToArray().ToTextOrTable("Options:")));
+
+
+      (from o in am.OpenOrderObservable
+       from p in o.Contract.ReqPriceSafe(5)
+       select new { o, p }
+       ).Subscribe(x => Program.HandleMessage(new { x.o.Contract, x.o.Order, x.o.OrderState, x.p }.ToTextTable("Open Trade")));
 
       (from s in new[] { h1, h2 }.ToObservable().Take(0)
        from cd in DataManager.IBClientMaster.ReqContractDetailsCached(s)
@@ -33,14 +35,16 @@ namespace ConsoleApp {
       am.PositionsObservable.SkipWhile(_ => am.Positions.Count < 2).Subscribe(ops => {
         Program.HandleMessage("Closing combo trade:~" + Thread.CurrentThread.ManagedThreadId + Thread.CurrentThread.Name);
         (from ct in am.ComboTrades(5)
-         from p in DataManager.IBClientMaster.ReqPriceSafe(ct.contract, 30)
-         select ct.SideEffect(_ => Program.HandleMessage($"Combo Trade Price: {p}"))
+         from p in DataManager.IBClientMaster.ReqPriceSafe(ct.contract, 3).Do(_ => { Thread.Sleep(10000); })
+         select new { ct, p }
          )
-        .ToArray().Subscribe(posHedges => {
-          Program.HandleMessage(posHedges.Select(h => new { h.contract.ShortString, h.open, h.close, h.pl, h.closePrice }).ToTextOrTable("Positions:"));
-          var ct = posHedges.SingleOrDefault(p => p.contract.IsFuturesCombo);
+        .ToArray()
+        .Subscribe(posHedges => {
+          Program.HandleMessage(posHedges.Select(h => new { h.ct.contract.ShortString, h.ct.open, h.ct.close, h.ct.pl, h.ct.closePrice, h.p }).ToTextOrTable("Positions:"));
+          var ct = posHedges.Select(p => p.ct).SingleOrDefault(p => p.contract.IsFuturesCombo);
           if(ct == null) Program.HandleMessage("No hedged positions found.");
           else {
+            return;
             am.OpenTrade(o => o.Transmit = false, ct.contract, -ct.position)
             .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
             var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, Contract.FromCache(h1).Single(), Contract.FromCache(h2).Single(), 1, 0.6).With(c => new { c.contract, c.quantity });

@@ -5,11 +5,11 @@ using System.Text;
 using HedgeHog.Bars;
 
 namespace HedgeHog.Shared {
-  public class PriceChangedEventArgs : EventArgs {
+  public class PriceChangedEventArgs :EventArgs {
     public Price Price { get; set; }
     public Account Account { get; set; }
     public IList<Trade> Trades { get; set; }
-    public PriceChangedEventArgs( Price price, Account account,IList<Trade> trades) {
+    public PriceChangedEventArgs(Price price, Account account, IList<Trade> trades) {
       Price = price;
       Account = account;
       Trades = trades;
@@ -21,9 +21,10 @@ namespace HedgeHog.Shared {
     public double Low52 { get; set; }
     public double High52 { get; set; }
     public bool IsShortable { get; set; } = true;
-    public bool IsSet { get; private set; }
-    public double Bid { get => bid; set  { bid = value; IsSet = true; } }
-    public double Ask { get => ask; set  {ask = value; IsSet = true; } }
+    public bool IsBidSet { get; set; }
+    public double Bid { get => bid; set { bid = value; IsBidSet = IsBidSet || (value != 0 && value != -1); } }
+    public bool IsAskSet { get; set; }
+    public double Ask { get => ask; set { ask = value; IsAskSet = IsAskSet || (value != 0 && value != -1); } }
     public double Average { get { return (Ask + Bid) / 2; } }
     public double GreekDelta { get; set; } = 1;
 
