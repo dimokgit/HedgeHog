@@ -69,9 +69,9 @@ namespace HedgeHog {
     #endregion
 
     #region Push Events
-    public static Subject<TContext> Pushed = new Subject<TContext>();
-    public static Subject<TContext> Completed = new Subject<TContext>();
-    public static Subject<Exception> Error = new Subject<Exception>();
+    public Subject<TContext> Pushed = new Subject<TContext>();
+    public Subject<TContext> Completed = new Subject<TContext>();
+    public Subject<Exception> Error = new Subject<Exception>();
     #endregion
 
     #region Dispose
