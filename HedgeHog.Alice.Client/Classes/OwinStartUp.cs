@@ -15,6 +15,7 @@ using Owin;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Net;
@@ -37,6 +38,7 @@ using TM_HEDGE = System.Collections.Generic.IEnumerable<(HedgeHog.Alice.Store.Tr
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
+    public static Func<IHubContext> MyHub = () => GlobalHost.ConnectionManager.GetHubContext<MyHub>();
     List<string> Pairs = new List<string>() { "usdjpy", "eurusd" };
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
@@ -55,7 +57,6 @@ namespace HedgeHog.Alice.Client {
       app.UseFileServer(fsOptions);
 
       // SignalR timer
-      Func<IHubContext> myHub = () => GlobalHost.ConnectionManager.GetHubContext<MyHub>();
       var remoteControl = App.container.GetExport<RemoteControlModel>();
       IDisposable priceChanged = null;
       IDisposable tradesChanged = null;
@@ -69,14 +70,14 @@ namespace HedgeHog.Alice.Client {
             .Select(a => a.Order)
             .Merge(trader.TradesManager.OrderRemovedObservable)
             .Subscribe(o => {
-              myHub().Clients.All.priceChanged("");
+              MyHub().Clients.All.priceChanged("");
             });
           priceChanged = trader.PriceChanged
           .Where(p => !Contract.FromCache(p.EventArgs.Price.Pair).Any(c => c.HasOptions))
             .Select(x => x.EventArgs.Price.Pair.Replace("/", "").ToLower())
             .Subscribe(pair => {
               try {
-                myHub().Clients.All.priceChanged(pair);
+                MyHub().Clients.All.priceChanged(pair);
               } catch(Exception exc) {
                 LogMessage.Send(exc);
               }
@@ -88,14 +89,14 @@ namespace HedgeHog.Alice.Client {
             .Delay(TimeSpan.FromSeconds(1))
             .Subscribe(pair => {
               try {
-                myHub().Clients.All.tradesChanged(pair);
+                MyHub().Clients.All.tradesChanged(pair);
               } catch(Exception exc) {
                 LogMessage.Send(exc);
               }
             });
           lasrWwwErrorChanged = remoteControl.Value.ReplayArguments.LastWwwErrorObservable
           .Where(le => !string.IsNullOrWhiteSpace(le))
-          .Subscribe(le => myHub().Clients.All.lastWwwErrorChanged(le));
+          .Subscribe(le => CallLastError(le, MyHub()));
         });
       }
       app.UseCors(CorsOptions.AllowAll);
@@ -208,6 +209,8 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
+    public static dynamic CallLastError(string le, IHubContext myHub) => myHub.Clients.All.lastWwwErrorChanged(le);
+
     private static string UserToString(Func<HttpListener> httpListener, System.Security.Claims.ClaimsPrincipal user) {
       return new { User = user.Identity.Name, user.Identity.AuthenticationType, httpListener().AuthenticationSchemes, IsTrader = user.IsInRole("Traders") }.ToJson();
     }
@@ -233,8 +236,8 @@ namespace HedgeHog.Alice.Client {
     }
 
     private const string ALL_COMBOS = "ALL COMBOS";
-    Lazy<RemoteControlModel> remoteControl;
-    Lazy<TraderModel> trader;
+    static Lazy<RemoteControlModel> remoteControl;
+    static Lazy<TraderModel> trader;
     static Exception Log { set { LogMessage.Send(value); } }
     //http://forex.timezoneconverter.com/?timezone=GMT&refresh=5
     static Dictionary<string, DateTimeOffset> _marketHours = new Dictionary<string, DateTimeOffset> {
@@ -245,36 +248,19 @@ namespace HedgeHog.Alice.Client {
     { "Tokyo", DateTimeOffset.Parse("23:00 +0:00") }
     };
     static List<string> _marketHoursSet = new List<string>();
-    static ISubject<(string key, Action action)> _CurrentCombos;
+    static ActionAsyncBuffer _currentCombo = ActionAsyncBuffer.Create();
     static MyHub() {
-
-      var myHub = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "MyHub", Priority = ThreadPriority.Normal });
-
-      Action<Contract> cb = _ => { };
-      var obs = Observable.FromEvent<Action<Contract>, Contract>(next => _ => next(_), h => cb += h, h => cb -= h).Spy("SetContractSubscriptionObs").Subscribe();
-      Observable.FromEvent<Action<(string key, Action action)>, (string key,Action action)  >(next => _ => next(_), h => OnCurrentCombo += h, h => OnCurrentCombo -= h)
-        .DistinctUntilChanged(s => s.key)
-        //.Sample(TimeSpan.FromSeconds(2))
-        .SubscribeOn(myHub)
-        .ObserveOn(myHub)
-        .Subscribe(s => {
-          try {
-            s.action();
-          } catch(Exception exc) {
-            LogMessage.Send(exc);
-          }
-        }, exc => { });
+      remoteControl = App.container.GetExport<RemoteControlModel>();
+      trader = App.container.GetExport<TraderModel>();
+      App.WwwMessageWarning.Do(wm => {
+        StartUp.MyHub().Clients.All.message(wm);
+      });
+      App.WwwMessageWarning.Clear();
+      _currentCombo.Error.Subscribe(exc => StartUp.MyHub().Clients.All.lastWwwErrorChanged(exc.Message));
     }
-    static Action<(string key, Action action)> OnCurrentCombo;
-    private AccountManager GetAccountManager() => (trader?.Value?.TradesManager as IBWraper)?.AccountManager;
+    static private AccountManager GetAccountManager() => (trader?.Value?.TradesManager as IBWraper)?.AccountManager;
     public MyHub() {
       try {
-        remoteControl = App.container.GetExport<RemoteControlModel>();
-        trader = App.container.GetExport<TraderModel>();
-        App.WwwMessageWarning.Do(wm => {
-          Clients.All.message(wm);
-        });
-        App.WwwMessageWarning.Clear();
       } catch(ObjectDisposedException) { }
     }
 
@@ -792,7 +778,7 @@ namespace HedgeHog.Alice.Client {
               .Subscribe(b => base.Clients.Caller.openOrders(b.Select(x => x.x)));
 
             if(!pair.IsNullOrWhiteSpace())
-              OnCurrentCombo((new { DateTime.Now.Second } + "", () => {
+              _currentCombo.Push(() => {
                 if(optionTypeMap.Contains("S"))
                   straddles();
                 currentOptions(optionTypeMap);
@@ -806,7 +792,7 @@ namespace HedgeHog.Alice.Client {
                 CurrentHedges();
                 //currentBullPut();
               }
-              ));
+              );
             #endregion
 
             //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
@@ -892,15 +878,18 @@ namespace HedgeHog.Alice.Client {
                let c = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio)
                let h = new { combo = c, ratio = hh.Select(t => t.ratio).Min().AutoRound2(3), context = hh.ToArray(t => t.context).MashDiffs() }
                from price in h.combo.contract.ReqPriceSafe()
+               from cts in am.ComboTrades(1).Where(ct => ct.contract.IsFuturesCombo).ToArray()
                select new CurrentHedge(h.combo.contract.ShortString, h.combo.quantity, h.ratio, h.context, price.ask.Avg(price.bid).AutoRound2(2))
-               .SideEffect(_ => tm.SetCurrentHedgePosition(c.contract, c.quantity))
+               .SideEffect(_ => cts.Select(ct => (ct.contract, quantity: ct.position))
+               .DefaultIfEmpty((c.contract, c.quantity))
+               .ForEach(t => tm.SetCurrentHedgePosition(t.contract, t.quantity)))
                )
-               //.Concat(CurrentHedgesTM(false).SelectMany(_ => _))
-               //.ToArray()
-               .Take(1)
+               .Merge(CurrentHedgesTM(false))
+               .ToArray()
+               .FirstAsync()
                //.Merge(CurrentHedgesTM(false).SelectMany(c => c))
                //.ToArray()
-               .Subscribe(h => base.Clients.Caller.hedgeCombo(new[] { h }));
+               .Subscribe(hh => base.Clients.Caller.hedgeCombo(hh.OrderBy(h => h.context)));
             }
           }
         } else CurrentHedgesTM(true).Subscribe(ch => base.Clients.Caller.hedgeCombo(ch));
@@ -908,7 +897,32 @@ namespace HedgeHog.Alice.Client {
         var distFromHigh = tm.TradingMacroM1(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
         return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh };
         ////
-        IObservable<CurrentHedge[]> CurrentHedgesTM(bool doSideEffect) {
+        IObservable<CurrentHedge> CurrentHedgesTM(bool doSideEffect) {
+          var hedgePar = ReadHedgedOther(pair);
+          if(hedgePar.IsNullOrEmpty()) return Observable.Empty<CurrentHedge>();
+          var tms = GetTradingMacros(pair).Concat(GetTradingMacros(hedgePar)).Where(t => t.IsActive).Select(_tm => new { _tm.BaseUnitSize }).ToArray();
+          var hh0 = tm.TradingMacroM1(tm1 => tm1.CurrentHedgesByHV()).Concat().ToArray();
+          if(hh0.IsEmpty()) return Observable.Empty<CurrentHedge>();
+          try {
+            var hh = hh0.Zip(tms, (h, t) => new { h.contract, h.ratio, h.price, h.context, t.BaseUnitSize }).ToArray();
+            //if(doSideEffect)              tm.SetCurrentHedgePosition(c.contract, c.quantity);
+            //var p = hh.Zip(c.contract.ComboLegs, (_h, l) => (_h.price, (double)_h.BaseUnitSize, l.Ratio)).ToArray().CalcHedgePrice();
+            return
+            (from c in AccountManager.MakeHedgeComboSafe(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio)
+             from p in c.contract.ReqPriceSafe().DefaultIfEmpty()
+             let rc = new { ratio = hh.Select(t => t.ratio).Min().AutoRound2(3), context = hh.ToArray(t => t.context).MashDiffs() }
+             let contract = c.contract.ShortString
+             select new CurrentHedge(contract, c.quantity, rc.ratio, rc.context, p.bid.Avg(p.ask).ToInt())
+             ).Catch((Exception exc) => {
+               Log = exc;
+               return Observable.Empty<CurrentHedge>();
+             });
+          } catch(Exception exc) {
+            Log = exc;
+            return Observable.Empty<CurrentHedge>();
+          }
+        }
+        IObservable<CurrentHedge[]> CurrentHedgesTM2(bool doSideEffect) {
           var hedgePar = ReadHedgedOther(pair);
           if(hedgePar.IsNullOrEmpty()) return new CurrentHedge[0][].ToObservable();
           var tms = GetTradingMacros(pair).Concat(GetTradingMacros(hedgePar)).Where(t => t.IsActive).Select(_tm => new { _tm.BaseUnitSize }).ToArray();

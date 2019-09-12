@@ -143,7 +143,7 @@ namespace IBApp {
         return;
       var ar = activeRequests[requestId];
       if(false) TraceDebug(new[] { new { Price = ar.price, field, price } }.ToTextOrTable($"{nameof(RaisePriceChanged)}:{ ShowThread()}"));
-      OnTickPriceTrace(new { requestId, field,price } + "", $"{nameof(OnTickPrice)}[{requestId}]: {ar.contract}:{new { field, price }}");
+      if(false) OnTickPriceTrace(new { requestId, field,price } + "", $"{nameof(OnTickPrice)}[{requestId}]: {ar.contract}:{new { field, price }}");
       var price2 = ar.price;
       //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
       const int LOW_52 = 19;

@@ -7,5 +7,8 @@ namespace IBApp {
     public static IObservable<(double bid, double ask, DateTime time, double delta)>
       ReqPriceSafe(this Contract contract, double timeoutInSeconds = 2, [CallerMemberName] string Caller = "")
     => IBClientCore.IBClientCoreMaster.ReqPriceSafe(contract, timeoutInSeconds, Caller);
+
+    public static IObservable<ContractDetails> ReqContractDetailsCached(this Contract c) =>
+      IBClientCore.IBClientCoreMaster.ReqContractDetailsCached(c);
   }
 }

@@ -42,35 +42,7 @@ namespace IBApi {
     }
 
     internal class SynchronizationContextDummy {
-      private SynchronizationContext _sc;
-      private Subject<Action> _CurrentCombos;
-
-      public SynchronizationContextDummy() {
-        var myHub = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "MyHub", Priority = ThreadPriority.Normal });
-
-        _CurrentCombos = new Subject<Action>();
-        _CurrentCombos
-          .SubscribeOn(myHub)
-          .ObserveOn(myHub)
-          .Subscribe(a => {
-            try {
-              a();
-            } catch(Exception exc) {
-              Debugger.Break();
-            }
-          }, exc => { });
-        var context = new CustomSynchronizationContext();
-        SynchronizationContext.SetSynchronizationContext(context);
-        _sc = SynchronizationContext.Current;
-      }
-
-      public void Post(Action<object> a, object c) {
-        //_sc.Post(t => a(t), c);
-        //if(SynchronizationContext.Current != null) SynchronizationContext.Current.Post((t)=>a(t), c);
-        //else a(null);
-        a(null);
-        //_CurrentCombos.OnNext(() => a(null));
-      }
+      public void Post(Action<object> a, object c) => a(c);
     }
     SynchronizationContextDummy sc;
 
