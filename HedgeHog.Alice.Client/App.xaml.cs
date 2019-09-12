@@ -37,9 +37,12 @@ namespace HedgeHog.Alice.Client {
     static public CompositionContainer container;
     static public List<Window> ChildWindows = new List<Window>();
     static public List<string> WwwMessageWarning = new List<string>();
-    App() {
+    static App(){
       MessageBus.Current.Listen<LogMessage>().Subscribe(lm => AsyncMessageBox.BeginMessageBoxAsync(lm.Exception + ""));
       ReactiveUI.MessageBus.Current.Listen<WwwWarningMessage>().Subscribe(wm => WwwMessageWarning.Add(wm.Message));
+    }
+
+    App() {
       DataFlowProcessors.Initialize();
       this.DispatcherUnhandledException += App_DispatcherUnhandledException;
       AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;

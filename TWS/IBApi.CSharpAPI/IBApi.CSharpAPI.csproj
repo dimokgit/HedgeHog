@@ -99,6 +99,7 @@
     <Compile Include="Bar.cs" />
     <Compile Include="BitMask.cs" />
     <Compile Include="ComboLeg.cs" />
+    <Compile Include="ComboLeg_p.cs" />
     <Compile Include="CommissionReport.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="ContractDescription.cs" />

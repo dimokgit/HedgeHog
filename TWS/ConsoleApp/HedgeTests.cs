@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 namespace ConsoleApp {
   static class Tests {
     public static void HedgeCombo(AccountManager am) {
+      return;
       var h1 = "ESU9";
       var h2 = "NQU9";
       var maxLegQuantity = 10;

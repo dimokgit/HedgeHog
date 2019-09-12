@@ -14,7 +14,7 @@ namespace IBApi
      * @brief Class representing a leg within combo orders.
      * @sa Order
      */
-    public class ComboLeg
+    public partial class ComboLeg
     {
         public static int SAME = 0;
         public static int 	OPEN = 1;
