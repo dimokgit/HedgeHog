@@ -106,7 +106,8 @@ namespace HedgeHog.Shared {
       });
 
       var r = Aggregated().Pairwise((h1, h2)
-        => (h1.multiplier * h1.multiplier / h2.multiplier / h2.multiplier) * h1.price * h1.timeValue / h2.price / h2.timeValue).Single().Round(6);
+        => (h1.multiplier * h1.multiplier / h2.multiplier / h2.multiplier) * h1.price * h1.timeValue / h2.price / h2.timeValue).SingleOrDefault().Round(6);
+      if(r == 0) return new (TContract contract, double ratio, double price, string context)[0];
       var r0 = r > 1 ? 1 / r : 1;
       var r1 = r < 1 ? r : 1;
       return new[] { (hedges[0].contract, r0, hedges[0].price, hedges[0].context), (hedges[1].contract, r1, hedges[1].price, hedges[1].context) };
