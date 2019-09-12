@@ -115,7 +115,7 @@ namespace HedgeHog.Alice.Store {
             Log = new Exception($"{nameof(SyncStraddleHistoryM1)}[{this}] - done");
           }
         });
-      this.WhenAnyValue(tm => tm.CurrentHedgePosition1, tm => tm.CurrentHedgePosition2)
+      this.WhenAnyValue(tm => tm.CurrentHedgePosition2)
         .Subscribe(_ => {
           _zeroHedgeDate = default;
           if(VoltageFunction == VoltageFunction.HedgePrice)
