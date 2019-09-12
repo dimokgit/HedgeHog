@@ -14,7 +14,12 @@ namespace HedgeHog {
 
     public static int GCD(this int[] numbers) => numbers.Aggregate(GCD);
 
-    static int GCD(int a, int b) =>
-      b == 0 || a == 0 ? a + b : GCD(b.Abs().Min(a.Abs()), a.Abs().Max(b.Abs()) % b.Abs().Min(a.Abs()));
+    static int GCD(int a, int b) {
+      try {
+        return b == 0 || a == 0 ? a + b : GCD(b.Abs().Min(a.Abs()), a.Abs().Max(b.Abs()) % b.Abs().Min(a.Abs()));
+      }catch(Exception exc) {
+        throw new Exception(new { a, b } + "", exc);
+      }
+    }
   }
 }
