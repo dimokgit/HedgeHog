@@ -53,9 +53,10 @@ namespace HedgeHog.Alice.Client {
       var tmTrader = tm.TradingMacroTrader().Single();
       var tpsHigh = tm.GetVoltageHigh().SingleOrDefault();
       var tpsLow = tm.GetVoltageAverage().SingleOrDefault();
+      var tpsCurr = tm.GetLastVolt().SingleOrDefault();
       var tps2High = tm.GetVoltage2High().Where(v => !v.IsNaN()).ToArray();
       var tps2Low = tm.GetVoltage2Low().Where(v => !v.IsNaN()).ToArray();
-      var tpsCurr2 = tm.UseRates(ra => ra.BackwardsIterator().Select(tm.GetVoltage2).SkipWhile(double.IsNaN).FirstOrDefault()).DefaultIfEmpty(0).Single();
+      var tpsCurr2 = tm.GetLastVolt2().SingleOrDefault();
 
 
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd/* && !tm.GetVoltage(r).IsNaNOrZero()*/).ToList()).FirstOrDefault();
@@ -221,6 +222,7 @@ namespace HedgeHog.Alice.Client {
         tps2Low,
         tps2High,
         tpsLow,
+        tpsCurr,
         tpsCurr2,
         isTrader = tm.IsTrader,
         canBuy = tmTrader.CanOpenTradeByDirection(true),

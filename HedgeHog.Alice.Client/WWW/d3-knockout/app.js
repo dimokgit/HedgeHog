@@ -1473,6 +1473,7 @@
         chartData.tps2High = response.tps2High;
         chartData.tps2Low = response.tps2Low;
         chartData.tpsCurr2 = response.tpsCurr2;
+        chartData.tpsCurr = response.tpsCurr;
         self.chartData(chartData);
         updateChartCmas[0](cma(updateChartCmas[0](), 10, getSecondsBetween(new Date(), d)));
         dataViewModel.price(response.askBid);
@@ -1548,6 +1549,7 @@
         chartData2.tps2High = response.tps2High;
         chartData2.tps2Low = response.tps2Low;
         chartData2.tpsCurr2 = response.tpsCurr2;
+        chartData2.tpsCurr = response.tpsCurr;
         chartData2.histVol = response.histVol;
         response.waveLines.forEach(function (w, i) {
           w.bold = i === sumStartIndexById();

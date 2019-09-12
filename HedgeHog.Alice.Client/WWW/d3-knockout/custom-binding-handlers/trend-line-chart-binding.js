@@ -142,6 +142,7 @@
           .attr("class", "y2 axis");
         addLine("tpsHigh", "silver").style("opacity", tpsOpacity);
         addLine("tpsLow", "silver").style("opacity", tpsOpacity);
+        addLine("tpsCurr", "silver").style("opacity", tpsOpacity);
         addLine("tpsCurr2", "silver").style("opacity", tpsOpacity);
         addLine("tpsMin2", "silver").style("opacity", tpsOpacity);
         addLine("tpsMax2", "silver").style("opacity", tpsOpacity);
@@ -437,6 +438,7 @@
       var tps2High = chartData.tps2High || [];
       var tps2Low = chartData.tps2Low || [];
       var tpsCurr2 = chartData.tpsCurr2 || NaN;
+      var tpsCurr = chartData.tpsCurr || NaN;
       var chartNum = chartData.chartNum;
       var hasTps = tpsChartNum.indexOf(chartNum) >= 0;
       var canBuy = chartData.canBuy;
@@ -611,6 +613,7 @@
             .attr("d", line2).style("stroke", colorTps).style("opacity", opacityTps);
           setHLine(tpsHigh, "tpsHigh", colorTps, 1, "", y2);
           setHLine(tpsLow, "tpsLow", colorTps, 1, "", y2);
+          setHLine(tpsCurr, "tpsCurr", colorTps, 1, "", y2);
 
           var hasTps2 = data.some(function (d) { return d.v2 !== 0; });
           if (hasTps2) {
