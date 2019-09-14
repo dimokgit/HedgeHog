@@ -1,4 +1,5 @@
 "use strict";
+
 /// <reference path="../Scripts/linq.js" />
 /// <reference path="../bower_components/d3/d3.js" />
 // jscs:disable
@@ -337,7 +338,8 @@
     var expDaysSkip = dataViewModel.expDaysSkip() || 0;
     var hedgeDate = dataViewModel.hedgeVirtualDate();
     var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
-    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, dataViewModel.rollCombo(), selectedCombos];
+    var context = { selectedHedge: ko.unwrap(dataViewModel.selectedHedgeCombo) || "" };
+    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, dataViewModel.rollCombo(), selectedCombos, context];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
@@ -997,11 +999,33 @@
       }
       this.butterflies = ko.mapping.fromJS(ko.observableArray());
       this.tradesBreakEvens = ko.mapping.fromJS(ko.observableArray());
-      this.hedgeCombo = ko.observableArray();
+
+      this.hedgeCombo = ko.mapping.fromJS(ko.observableArray());
+      this.hedgeCombo2 = ko.mapping.fromJS(ko.observableArray());
+      function mapHedgeCombos() {
+        var map = {
+          key: function (item) {
+            return ko.utils.unwrapObservable(item.id);
+          }
+        };
+        var hcs = ko.mapping.toJS(this.hedgeCombo);
+        function d(hc) { return { id: hc.id, data: hc.price + hc.contract + "/" + hc.ratio + "/" + hc.quantity + "{" + hc.context + "}" }; }
+        ko.mapping.fromJS(hcs.filter(hc => hc).map(d), map, this.hedgeCombo2);
+      }
       this.hedgeComboText = ko.pureComputed(function () {
-        var hcs = this.hedgeCombo();
-        return hcs.filter(hc=>hc).map(hc => hc.price + hc.contract + "/" + hc.ratio + "/" + hc.quantity + "{" + hc.context + "}");// : "No hedge";
+        mapHedgeCombos.bind(this)();
+        return this.hedgeCombo2();// : "No hedge";
       }, this);
+      this.selectedHedgeCombo = ko.observable();
+      this.selectedHedgeCombo.subscribe(this.refreshCharts.bind(this));
+      this.toggleSelectedHedgeCombo = function (hc) {
+        var nv = this.selectedHedgeCombo() === ko.unwrap(hc.id) ? "" : ko.unwrap(hc.id);
+        this.selectedHedgeCombo(nv);
+      }.bind(this);
+      this.testHedgeComboActive = function (data) {
+        return this.selectedHedgeCombo() === ko.unwrap(data.id);
+      }.bind(this);
+
       this.rollOvers = ko.mapping.fromJS(ko.observableArray());
 
       this.rollOversSorted = ko.pureComputed(function () {
@@ -2040,7 +2064,12 @@
       showWarningPerm(message);
     };
     chat.client.hedgeCombo = function (hedgeCombo) {
-      dataViewModel.hedgeCombo(hedgeCombo);
+      var map = {
+        key: function (item) {
+          return ko.utils.unwrapObservable(item.id);
+        }
+      };
+      ko.mapping.fromJS(hedgeCombo, map, dataViewModel.hedgeCombo);
     };
     // #region Stock Options
     chat.client.tradesBreakEvens = function (options) {

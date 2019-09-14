@@ -369,6 +369,9 @@
     button {
       line-height: 80%;
     }
+    div.hedgeComboActive{
+      font-weight: bold;
+    }
   </style>
   <script>
     $(function () {
@@ -1330,8 +1333,8 @@
         <select data-bind="options:rollOversList,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>
       <div data-bind="foreach:hedgeComboText">
-        <div>
-        <span data-bind="text:$data"></span>
+        <div data-bind="click: $parent.toggleSelectedHedgeCombo,css:{hedgeComboActive:$root.testHedgeComboActive($data)}">
+        <span data-bind="text:data"></span>
         <button data-bind="click:$root.openHedged.bind(null,true)">BY</button>
         <button data-bind="click:$root.openHedged.bind(null,false)">SL</button>
         </div>
