@@ -28,6 +28,7 @@ using AutoMapper;
 using MongoDB.Bson;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using System.Transactions;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage :Models.ModelBase {
@@ -175,7 +176,7 @@ namespace HedgeHog.Alice.Store {
       a.ForEach(o => {
         try {
           traderMapper.Map(o, trader);
-        }catch(Exception exc) {
+        } catch(Exception exc) {
           throw exc;
         }
       });
@@ -202,7 +203,7 @@ namespace HedgeHog.Alice.Store {
     public static void SaveTradingMacros(IEnumerable<TradingMacro> tms, string tradingMacroName) =>
       UseForexMongo(c =>
         tms.ForEach(o => {
-          var tm = c.TradingMacroSettings.Where(a=>a._id == o._id).SingleOrDefault();
+          var tm = c.TradingMacroSettings.Where(a => a._id == o._id).SingleOrDefault();
           if(tm == null || tm.TradingMacroName != tradingMacroName.IfEmpty(tm.TradingMacroName)) {
             c.TradingMacroSettings.Add(tradingMacroMapper2.Map<TradingMacroSettings>(o).SideEffect(ts => {
               ts._id = ObjectId.GenerateNewId();
@@ -223,9 +224,9 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region Forex Entitites
-    static ForexEntities ForexEntitiesFactory() {
+    static ForexEntities ForexEntitiesFactory(int timeoutInSeconds = 60) {
       var fe = new ForexEntities();
-      SetTimeout(fe, 60 * 1);
+      SetTimeout(fe, timeoutInSeconds);
       return fe;
     }
     public static void UseForexContext(Action<ForexEntities> action, Action<ForexEntities, Exception> error = null) {
@@ -252,6 +253,24 @@ namespace HedgeHog.Alice.Store {
         throw;
       }
     }
+    static object _useForexContextWithTran = new object();
+    public static T UseForexContext<T>(int timeoutInSeconds, IsolationLevel isolationLevel,Func<ForexEntities, T> action) {
+      lock(_useForexContextWithTran)
+        using(var transaction = new TransactionScope(TransactionScopeOption.RequiresNew, new TransactionOptions() { IsolationLevel = isolationLevel })) {
+          try {
+            using(var context = ForexEntitiesFactory()) {
+              SetTimeout(context, timeoutInSeconds);
+              return action(context);
+            }
+          } catch(Exception exc) {
+            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+            throw;
+          } finally {
+            transaction.Complete();
+          }
+        }
+    }
+
 
     public static bool IsLocalDB { get { return false; } }
     #region AliceMaterializer Subject

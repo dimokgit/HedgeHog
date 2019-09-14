@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks.Dataflow;
+using System.Transactions;
 
 namespace HedgeHog.Alice.Store {
   public static class PriceHistory {
@@ -28,21 +29,19 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         var offset = TimeSpan.FromMinutes(period);
-        using(var context = new ForexEntities()) {
-          if(dateStart > DateTime.MinValue) {
-            var dateMin = new DateTime(context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Min(b => (DateTimeOffset?)b.StartDate).GetValueOrDefault().DateTime.Ticks, DateTimeKind.Utc);
-            if(dateMin.IsMin())
-              dateMin = DateTime.Now;
-            var dateEnd = dateMin.Subtract(offset);
-            if(dateStart < dateMin)
-              fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
-          }
-          var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty().Max();
-          if(dateStart == DateTime.MinValue && q == DateTimeOffset.MinValue)
-            throw new Exception("dateStart must be provided there is no bars in database.");
-          var p = period == 0 ? 1 / 60.0 : period;
-          dateStart = q.LocalDateTime.Add(p.FromMinutes());
+        if(dateStart > DateTime.MinValue) {
+          var dateMin = GlobalStorage.UseForexContext(120, IsolationLevel.ReadUncommitted, context => new DateTime(context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Min(b => (DateTimeOffset?)b.StartDate).GetValueOrDefault().DateTime.Ticks, DateTimeKind.Utc));
+          if(dateMin.IsMin())
+            dateMin = DateTime.Now;
+          var dateEnd = dateMin.Subtract(offset);
+          if(dateStart < dateMin)
+            fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
         }
+        var q = GlobalStorage.UseForexContext(120, IsolationLevel.ReadUncommitted, context => context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty().Max());
+        if(dateStart == DateTime.MinValue && q == DateTimeOffset.MinValue)
+          throw new Exception("dateStart must be provided there is no bars in database.");
+        var p = period == 0 ? 1 / 60.0 : period;
+        dateStart = q.LocalDateTime.Add(p.FromMinutes());
         if(period == 0)
           dateStart = dateStart.Max(DateTime.Now.AddYears(-1));
         fw.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), null, showProgress);
@@ -56,18 +55,17 @@ namespace HedgeHog.Alice.Store {
         progressCallback(args.Message);
       else
         Debug.WriteLine("{0}", args.Message);
-      var context = new ForexEntities();
+      //var context = new ForexEntities();
       //context.Configuration.AutoDetectChangesEnabled = false;
-      context.Configuration.ValidateOnSaveEnabled = false;
-      Action a = () =>
+      Action<ForexEntities> a = context=>
         args.NewRates.Distinct(r => r.StartDate2).Do(t => {
           context.t_Bar.Add(FillBar(period, pair, context.t_Bar.Create(), t));
         }).TakeLast(1)
         .ForEach(_ => {
           try {
+            context.Configuration.ValidateOnSaveEnabled = false;
             context.SaveConcurrent();
-          } 
-          catch(System.Data.Entity.Infrastructure.DbUpdateException exc) when(exc.InnerException is System.Data.Entity.Core.UpdateException) {
+          } catch(System.Data.Entity.Infrastructure.DbUpdateException exc) when(exc.InnerException is System.Data.Entity.Core.UpdateException) {
             // get failed entries
             var entries = exc.Entries;
             foreach(var entry in entries) {
@@ -79,7 +77,7 @@ namespace HedgeHog.Alice.Store {
           context.Dispose();
           args.NewRates.Clear();
         });
-      a();
+      GlobalStorage.UseForexContext(a);
       //saveTickActionBlock.Post(a);
     }
     private static t_Bar FillBar(int period, string pair, t_Bar bar, Rate t) {
