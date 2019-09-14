@@ -1117,9 +1117,8 @@ namespace HedgeHog.Alice.Store {
                   )
                   .Concat();
     }
-    private IEnumerable<double> GetLastVolts() {
-      return GetLastVolts(GetVoltage);
-    }
+    private IEnumerable<double> GetVoltsMinMax() => GetLastVolts(GetVoltage).MinMax();
+    private IEnumerable<double> GetVolts2MinMax() => GetLastVolts(GetVoltage2).MinMax();
     private IEnumerable<double> GetLastVolts(Func<Rate, double> getVolt) {
       return (from vs in UseRates(rates
                   => rates.BackwardsIterator()
@@ -1201,6 +1200,7 @@ namespace HedgeHog.Alice.Store {
           => (object)new { HistVolAn = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         .Add(new { StrdlHV = new[] { _currentCallByHV, _currentPutByHV }.Select(c => c.Round(2)).Flatter("/") })
         .Add(new { HVPtP = HVPt(this).Concat(HVP(this)).Select(c => c.AutoRound(3)).Flatter("/") })
+        .Add(new { CHP2 = $"{CurrentHedgePosition2}:{VMM(this)}/{TradingMacroM1(tm1 => tm1.CurrentHedgePosition2 + ":" + VMM(tm1)).SingleOrDefault()}" })
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
@@ -1212,6 +1212,7 @@ namespace HedgeHog.Alice.Store {
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
       IEnumerable<double> HV(TradingMacro tm) => tm.HistoricalVolatility();
       double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints(true);
+      double VMM(TradingMacro tm) => tm.GetVoltsMinMax().Height(d => d).ToInt();
     }
     double[] HVA(TradingMacro tm) => new[] { tm.HistoricalVolatilityAnnualized() };
     double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
@@ -1887,9 +1888,9 @@ namespace HedgeHog.Alice.Store {
 
           if(eval.HasAny()) {
             BuySellLevels.ForEach(sr => sr.DateCanTrade = ServerTime);
-            OnSMS("Go trade",true);
-          }else
-            OnSMS("Go sleep",false);
+            OnSMS("Go trade", true);
+          } else
+            OnSMS("Go sleep", false);
         });
         void updateCanTrade(SuppRes sr, bool ct, TradeDirections eval) {
           if(sr.CanTrade != ct) {

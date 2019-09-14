@@ -461,6 +461,7 @@ namespace HedgeHog.Alice.Store {
           if(_SMSSubject == null) {
             _SMSSubject = new Subject<(string message, bool @in)>();
             _SMSSubject
+              .Where(_ => !IsInVirtualTrading)
               .DistinctUntilChanged(s => s.message)
               .Select(s => new { s.message, s.@in })
               //.Do(s => Log = new Exception($"Asking SMS:{s}"))

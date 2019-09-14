@@ -4528,7 +4528,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         if(groupToSeconds)
           Log = new Exception(new { GetDars = new { z.Message } } + "");
         if(DoLogSaveRates)
-          Log = new Exception(z.Message);
+          Log = new Exception(z.Message + "");
       }, true, map);
     }
 

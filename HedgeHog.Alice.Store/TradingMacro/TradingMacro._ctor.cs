@@ -115,12 +115,15 @@ namespace HedgeHog.Alice.Store {
             Log = new Exception($"{nameof(SyncStraddleHistoryM1)}[{this}] - done");
           }
         });
+      var hedgeVoltFuns = new[] { VoltageFunction.HedgePrice, VoltageFunction.GrossV, VoltageFunction.HedgeRatio };
       this.WhenAnyValue(tm => tm.CurrentHedgePosition2)
         .Subscribe(_ => {
           _zeroHedgeDate = default;
-          if(VoltageFunction == VoltageFunction.HedgePrice)
+          HedgeRatioByPrices = double.NaN;
+
+          if(hedgeVoltFuns.Contains(VoltageFunction))
             ResetVoltage();
-          if(VoltageFunction2 == VoltageFunction.HedgePrice)
+          if(hedgeVoltFuns.Contains(VoltageFunction2))
             ResetVoltage2();
         });
 
