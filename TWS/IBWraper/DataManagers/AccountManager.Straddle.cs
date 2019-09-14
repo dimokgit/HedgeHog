@@ -11,6 +11,9 @@ using System.Threading.Tasks;
 using CURRENT_OPTIONS = System.Collections.Generic.IList<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option, double deltaBid, double deltaAsk)>;
 using CURRENT_ROLLOVERS = System.IObservable<(IBApp.ComboTrade trade, IBApi.Contract roll, int days, double bid, double ppw, double amount, double dpw, double perc, double delta)>;
 using CURRENT_HEDGES = System.Collections.Generic.List<(IBApi.Contract contract, double ratio, double price, string context)>;
+using System.Reactive.Concurrency;
+using System.Threading;
+
 namespace IBApp {
   public partial class AccountManager {
 
@@ -199,7 +202,7 @@ namespace IBApp {
       var o = (from h in hedges.ToObservable()
                from cd in IbClient.ReqContractDetailsCached(h.pair)
                from p in IbClient.ReqPriceSafe(cd.Contract)
-               let hh=(cd.Contract,p.ask.Avg(p.bid),h.hv,(double)cd.Contract.ComboMultiplier, h.pair+":"+h.hv.Round(2))
+               let hh = (cd.Contract, p.ask.Avg(p.bid), h.hv, (double)cd.Contract.ComboMultiplier, h.pair + ":" + h.hv.Round(2))
                select hh).ToArray();
       var o2 = (from hh in o select TradesManagerStatic.HedgeRatioByValue(":", hh));
       return o2;
@@ -217,7 +220,7 @@ namespace IBApp {
       return (
         from u in IbClient.ReqContractDetailsCached(symbol)
         from up in IbClient.ReqPriceSafe(u.Contract)
-        let nextFriday = MathCore.GetWorkingDays(DateTime.Now, DateTime.Now.AddDays(1).GetNextWeekday(DayOfWeek.Friday))
+        let nextFriday = MathCore.GetWorkingDays(DateTime.Now, DateTime.Now.AddDays(8).GetNextWeekday(DayOfWeek.Friday))
         from cs in CurrentOptions(symbol, double.NaN, nextFriday, 6, c => c.Expiration.DayOfWeek == DayOfWeek.Friday)
         let calls = cs.Where(c => c.option.IsCall).OrderByDescending(c => c.delta).Take(2)
         let puts = cs.Where(c => c.option.IsPut).OrderByDescending(c => c.delta).Take(2)
@@ -230,7 +233,7 @@ namespace IBApp {
        from price in IbClient.ReqPriceSafe(cd.Contract, 5).Select(p => p.ask.Avg(p.bid))
        from option in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count, filter)
        where filter(option)
-       from p in IbClient.ReqPriceSafe(option).DefaultIfEmpty()
+       from p in IbClient.ReqPriceSafe(option, 1, "Current Option").DefaultIfEmpty()
        let pa = p.ask.Avg(p.bid)
        select (
          instrument: option.Instrument,

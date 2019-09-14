@@ -14,9 +14,9 @@ namespace HedgeHog.Shared {
   }
   public class RateLoadingCallbackArgs<TBar> where TBar : Rate {
     public bool IsProcessed { get; set; }
-    public string Message { get; set; }
+    public object Message { get; set; }
     public ICollection<TBar> NewRates { get; set; }
-    public RateLoadingCallbackArgs(string message, ICollection<TBar> newBars) {
+    public RateLoadingCallbackArgs(object message, ICollection<TBar> newBars) {
       this.Message = message;
       this.NewRates = newBars;
     }

@@ -137,6 +137,7 @@ namespace IBApp {
       , Action<RateLoadingCallbackArgs<TBar>> callBack = null
       ) where TBar : Rate, new() {
 
+      Thread.CurrentThread.Name.ThrowIf(threadName => threadName == "MsgProc");
       var contract = Contract.FromCache(pair).Count(1, $"{nameof(GetBarsBase)}: {new { pair }}").Single();
       if(contract.IsFuture)
         contract = new Contract { SecType = "CONTFUT", Exchange = contract.Exchange, TradingClass = contract.TradingClass, Symbol = contract.FromDetailsCache().Single().MarketName };
@@ -170,7 +171,7 @@ namespace IBApp {
                  contract.Symbol,
                  duration = HistoryLoader<Rate>.Duration(barSize, timeUnit, duration)
                }
-             } + "",
+             },
              list));
            lastTime = DateTime.Now;
          },
@@ -204,7 +205,7 @@ namespace IBApp {
     public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
       if(Contract.FromCache(pair).IsEmpty()) {
         Trace($"Contract.FromCache({pair}).IsEmpty()");
-        _ibClient.ReqContractDetailsCached(pair).Subscribe();
+        _ibClient.ReqContractDetailsCached(pair).Subscribe(_=> GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack));
       } else
         GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack);
     }

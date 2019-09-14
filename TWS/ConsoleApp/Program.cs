@@ -64,7 +64,7 @@ namespace ConsoleApp {
       AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7497;
-      const int clientId = 10;
+      const int clientId = 11;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       #endregion
 
@@ -72,7 +72,20 @@ namespace ConsoleApp {
         var am = fw.AccountManager;
 
         //am.OrderContractsInternal.Subscribe(o => { });
-        //return;
+        {
+          var c = new Contract() {
+            Symbol = "ES",
+            SecType = "CONTFUT",
+            Exchange = "GLOBEX"
+          };
+          //LoadHistory(ibClient, new[] { c });
+          var es = new[] { "NQU9", "ESH9" }[1];
+          es.ContractFactory().ReqContractDetailsCached()
+          .ObserveOn(TaskPoolScheduler.Default)
+          .Subscribe(_ => PriceHistory.AddTicks(fw, 0, es, DateTime.Now.AddDays(-16), o => HandleMessage(o + "")));
+          HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
+        }
+        return;
 
         Tests.HedgeCombo(am); ;
         return;
@@ -140,16 +153,6 @@ namespace ConsoleApp {
           select p
           ).Subscribe(p => HandleMessage(new { p }));
 
-        }
-        {
-          var c = new Contract() {
-            Symbol = "ES",
-            SecType = "CONTFUT",
-            Exchange = "GLOBEX"
-          };
-          LoadHistory(ibClient, new[] { c });
-          //PriceHistory.AddTicks(fw, 1, "ES", DateTime.Now.AddMonths(-14), o => HandleMessage(o + ""));
-          HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
         }
         {
           (from options in am.CurrentOptions("ESH9", 0, 1, 3, c => true)

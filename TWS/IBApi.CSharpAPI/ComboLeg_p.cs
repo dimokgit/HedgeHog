@@ -6,6 +6,6 @@ using System.Threading.Tasks;
 
 namespace IBApi {
   partial class ComboLeg {
-    public bool IsBuy => Action.ToUpper() == "SELL";
+    public bool IsBuy => Action.ToUpper() == "BUY";
   }
 }

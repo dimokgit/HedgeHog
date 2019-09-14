@@ -80,7 +80,7 @@ namespace IBApp {
         //.DistinctUntilChanged(t => new { t.Contract, t.Position })
         .Do(x => Trace($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
         .SelectMany(p =>
-          from cds in IbClient.ReqContractDetailsAsync(p.Contract).ToArray()
+          from cds in IbClient.ReqContractDetailsCached(p.Contract).ToArray()
           from cd in cds.Count(1, i => {
             TraceError($"Position contract {p.Contract.FullString} has no details");
             //RequestPositions();
@@ -94,13 +94,13 @@ namespace IBApp {
               _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
             }
           })
-        ).Publish().RefCount()
+        )
         //.Spy("**** AccountManager.PositionsObservable ****")
         ;
       PositionsEndObservable = Observable.FromEvent(
       h => IbClient.PositionEnd += h,//.SideEffect(_ => Trace($"+= IbClient.Position")),
       h => IbClient.PositionEnd -= h//.SideEffect(_ => Trace($"-= IbClient.Position"))
-      ).Publish().RefCount()
+      )
       //.Spy("**** AccountManager.PositionsObservable ****")
       ;
 
@@ -124,7 +124,7 @@ namespace IBApp {
           return x.DefaultIfEmpty(m);
         })
         .Distinct(x => OrderKey(x.Order))
-        .Publish().RefCount();
+        ;
       string OrderKey(IBApi.Order o) => $"{o.PermId}{o.LmtPrice}{o.Conditions.Flatter("; ")}";
 
       OrderStatusObservable = Observable.FromEvent<OrderStatusHandler, OrderStatusMessage>(
@@ -133,7 +133,7 @@ namespace IBApp {
         h => IbClient.OrderStatus += h,
         h => IbClient.OrderStatus -= h
         )
-        .Publish().RefCount();
+        ;
 
       var portObs = Observable.FromEvent<PortfolioHandler, UpdatePortfolioMessage>(
         onNext => (UpdatePortfolioMessage m) => Try(() => onNext(m), nameof(IbClient.UpdatePortfolio)),
@@ -141,15 +141,13 @@ namespace IBApp {
         h => IbClient.UpdatePortfolio -= h
         )
         .ObserveOn(MainScheduler)
-        .Publish().RefCount();
+        ;
 
 
       #endregion
       #region Subscibtions
       DoShowRequestErrorDone = false;
       PositionsObservable
-        .SubscribeOn(positionsScheduler)
-        .ObserveOn(positionsScheduler)
         .Subscribe(OnPosition, () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
 

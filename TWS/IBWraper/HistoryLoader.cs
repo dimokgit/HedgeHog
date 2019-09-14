@@ -10,6 +10,8 @@ using IBApi;
 using HedgeHog;
 using HedgeHog.Shared;
 using System.Reactive.Linq;
+using System.Reactive.Concurrency;
+using System.Threading;
 
 namespace IBApp {
   public enum TimeUnit { S, D, W, M, Y }
@@ -23,8 +25,10 @@ namespace IBApp {
   #region HistoryLoader
   public class HistoryLoader<T> where T : HedgeHog.Bars.BarBaseDate {
     private static int _currentTicker = 0;
+    private static EventLoopScheduler historyLoaderScheduler = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "HistoryLoader", Priority = ThreadPriority.Normal });
     #region Fields
     public const int HISTORICAL_ID_BASE = 30000000;
+    private const int IBERROR_NOT_CONNECTED = 504;
     private readonly List<T> _list;
     private readonly List<T> _list2;
     private readonly int _reqId;
@@ -41,6 +45,7 @@ namespace IBApp {
     private TimeSpan _delay;
     private readonly DataMapDelegate<T> _map;
     public bool Done { get; private set; }
+    List<IDisposable> _disposables = new List<IDisposable>();
     #endregion
 
     #region ctor
@@ -63,7 +68,7 @@ namespace IBApp {
           .Count(1, new { HistoryLoader = new { _contract } })
           .Single();
       _periodsBack = periodsBack;
-      _reqId = (++_currentTicker) + HISTORICAL_ID_BASE;
+      _reqId = IBClientCore.IBClientCoreMaster.ValidOrderId();
       _list = new List<T>();
       _list2 = new List<T>();
       if(endDate.Kind == DateTimeKind.Unspecified)
@@ -82,25 +87,33 @@ namespace IBApp {
       Done = false;
       Init();
       var me = this;
-      RequestHistoryDataChunk();
+      Task.Run(RequestHistoryDataChunk);
     }
 
     void Init() {
-      _ibClient.Error += HandlePacer;
-      _ibClient.HistoricalData += IbClient_HistoricalData;
-      _ibClient.HistoricalDataEnd += IbClient_HistoricalDataEnd;
+      IBClientCore.IBClientCoreMaster.ErrorObservable
+        .ObserveOn(historyLoaderScheduler)
+        .Subscribe(e => HandlePacer(e.id, e.errorCode, e.errorMsg, e.exc)).SideEffect(_disposables.Add);
+      Observable.FromEvent<HistoricalDataMessage>(h => _ibClient.HistoricalData += h, h => _ibClient.HistoricalData -= h, TaskPoolScheduler.Default)
+        .ObserveOn(historyLoaderScheduler)
+        .Subscribe(IbClient_HistoricalData).SideEffect(_disposables.Add);
+      Observable.FromEvent<HistoricalDataEndMessage>(h => _ibClient.HistoricalDataEnd += h, h => _ibClient.HistoricalDataEnd -= h, TaskPoolScheduler.Default)
+        .ObserveOn(historyLoaderScheduler)
+        .Subscribe(IbClient_HistoricalDataEnd).SideEffect(_disposables.Add);
     }
     void CleanUp() {
-      _ibClient.Error -= HandlePacer;
-      _ibClient.HistoricalData -= IbClient_HistoricalData;
-      _ibClient.HistoricalDataEnd -= IbClient_HistoricalDataEnd;
+      while(_disposables.Any()) {
+        _disposables[0].Dispose();
+        _disposables.RemoveAt(0);
+      }
       Done = true;
     }
     #endregion
 
     #region Event Handlers
     private void HandlePacer(int reqId, int code, string error, Exception exc) {
-      if(code == 504) {
+      IBClientCore.SetRequestHandled(reqId);
+      if(code == IBERROR_NOT_CONNECTED) {
         CleanUp();
         _error(MakeError(_contract, reqId, code, error, exc));
       }
@@ -108,15 +121,15 @@ namespace IBApp {
         return;
       const string NO_DATA = "HMDS query returned no data";
       if(code == 162 && error.Contains(NO_DATA)) {
-        _endDate = _endDate.isWeekend() 
-          ? _endDate.AddDays(-2) 
-          : _timeUnit != TimeUnit.S 
-          ? _endDate.AddDays(-1) 
+        _endDate = _endDate.isWeekend()
+          ? _endDate.AddDays(-2)
+          : _timeUnit != TimeUnit.S
+          ? _endDate.AddDays(-1)
           : _endDate.AddMinutes(-BarSizeRange(_barSize, _timeUnit).Last());
         _error(new SoftException(new { _endDate } + ""));
         RequestNextDataChunk();
       } else if(code == 162 && error.Contains("pacing violation")) {
-        _delay += TimeSpan.FromSeconds(2);
+        _delay = TimeSpan.FromSeconds(_delay.TotalSeconds + 1 / (_delay.TotalSeconds + 1));
         _error(new DelayException(_delay));
         RequestNextDataChunk();
       } else if(code == 162 && error.Contains(NO_DATA)) {
@@ -158,7 +171,7 @@ namespace IBApp {
         var date2 = m.Date.FromTWSString();
         if(date2 < _endDate)
           _endDate = _contract.Symbol == "VIX" && date2.TimeOfDay == new TimeSpan(3, 15, 0) ? date2.Round(MathCore.RoundTo.Hour) : date2;
-        lock(_listLocker) 
+        lock(_listLocker)
           _list2.Add(_map(date2, m.Open, m.High, m.Low, m.Close, m.Volume, m.Count));
       }
     }

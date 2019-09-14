@@ -9,6 +9,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
@@ -28,6 +29,8 @@ namespace HedgeHog {
     IDisposable _bufferDisposable;
     ISubject<Action> _StartProcessSubject = new Subject<Action>();
     IDisposable _StartProcessDisposable;
+    static int _threadId = 1;
+    int GetThreadIdNext() { Interlocked.Increment(ref _threadId); return _threadId; }
     public AsyncBuffer([CallerMemberName] string Caller = null) : this(1, Caller) { }
     public AsyncBuffer(bool useEventLoop, [CallerMemberName] string Caller = null) : this(1, TimeSpan.Zero, useEventLoop, Caller) { }
     public AsyncBuffer(int boundedCapacity, [CallerMemberName] string Caller = null) : this(boundedCapacity, TimeSpan.Zero, false, Caller) { }
@@ -44,7 +47,7 @@ namespace HedgeHog {
         b = b.Sample(sample);
       _bufferDisposable = b
         .SubscribeOn(useEventLoop
-          ? ObservableExtensions.BGTreadSchedulerFactory(System.Threading.ThreadPriority.BelowNormal, Caller)
+          ? ObservableExtensions.BGTreadSchedulerFactory(System.Threading.ThreadPriority.BelowNormal, Caller ?? GetType().Name + GetThreadIdNext())
           : (IScheduler)TaskPoolScheduler.Default)
         .Subscribe(a => {
           try {

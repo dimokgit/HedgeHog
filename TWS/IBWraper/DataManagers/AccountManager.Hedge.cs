@@ -5,6 +5,7 @@ using IBSampleApp.messages;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text.RegularExpressions;
@@ -38,9 +39,17 @@ namespace IBApp {
        select (p, close, close - p.open, closePrice)
       );
 
+    public static IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) =>
+      from cd1 in c1.ReqContractDetailsCached()
+      from cd2 in c2.ReqContractDetailsCached()
+      select MakeHedgeCombo(quantity, cd1.Contract, cd2.Contract, ratio1, ratio2);
+    
     public static (Contract contract, int quantity) MakeHedgeCombo(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) {
       int r1 = (ratio1 * quantity).ToInt();
       int r2 = (ratio2 * quantity).ToInt();
+      if(r1== int.MinValue || r2 == int.MinValue) {
+        Debugger.Break();
+      }
       var gcd = new[] { r1, r2 }.GCD();
       Contract contract = new Contract();
       contract.Symbol = c1.Symbol.IfEmpty(Regex.Match(c1.LocalSymbol, "(.+).{2}$").Groups[1] + "").ThrowIf(contractSymbol => contractSymbol.IsNullOrWhiteSpace());
