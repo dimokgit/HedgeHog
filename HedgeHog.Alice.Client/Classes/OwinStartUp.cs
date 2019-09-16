@@ -907,7 +907,7 @@ namespace HedgeHog.Alice.Client {
         bool CompHID(TradingMacro tml, string hid) => selectedHedge.Contains(hid);
         IObservable<CurrentHedge> GetCurrentHedgeTMs() => GetTradingMacros(pair,
           tml => CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByHV(), HID_BYHV + tml.PairIndex, CompHID(tml, HID_BYHV))
-          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(), HID_BYPOS + tml.PairIndex, CompHID(tml, HID_BYPOS)))
+          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(), HID_BYPOS + tml.PairIndex, selectedHedge.IsNullOrWhiteSpace() || CompHID(tml, HID_BYPOS)))
           ).Merge();
 
         var distFromHigh = tm.TradingMacroM1(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
@@ -1567,8 +1567,8 @@ namespace HedgeHog.Alice.Client {
           select (trade, rateOpen, rateClose)
          ).Select(t => {
            var trade = t.trade.Clone();
-           t.rateOpen.Select(r => r.PriceAvg).ForEach(p => trade.Open = p * trade.BaseUnitSize);
-           t.rateClose.Select(r => r.PriceAvg).ForEach(p => trade.Close = p * trade.BaseUnitSize);
+           t.rateOpen.Select(r => r.PriceAvg).ForEach(p => trade.Open = p/* * trade.BaseUnitSize*/);
+           t.rateClose.Select(r => r.PriceAvg).ForEach(p => trade.Close = p/* * trade.BaseUnitSize*/);
            return trade;
          }).ToArray();
         return tradesNew;

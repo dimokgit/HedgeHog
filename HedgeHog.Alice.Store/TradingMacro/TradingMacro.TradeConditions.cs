@@ -115,19 +115,21 @@ namespace HedgeHog.Alice.Store {
     //: TLLime.PriceAvg2 > TLBlue.PriceAvg2 ? TradeDirections.Down
     //: TradeDirections.None);
 
-    public TradeConditionDelegate Volt2eOk {
-      get {
-        return () => {
-          var tdRange = GetTDByEvenness(this).DefaultIfEmpty().ToArray();
-          return tdRange.Aggregate((a, td) => a & td);
-        };
-        IEnumerable<TradeDirections> GetTDByEvenness(TradingMacro tm) {
-          return from mm in tm.UseRates(ra => ra.MinMax(GetVoltage2))
-                 where mm[0].Abs().Percentage(mm[1]) < VoltAvgRange
-                 select TradeDirections.Both;
-        }
-      }
+    #region VltSlp
+    public TradeConditionDelegate VltSlpOk => () => VoltsSlopeRelative(this, 0);
+    public TradeConditionDelegate VltSlp2Ok => () => VoltsSlopeRelative(this, 1);
+    public TradeConditionDelegate VltSlp02Ok => () => VoltsSlopeRelative(this, 0) & VoltsSlopeRelative(this, 1);
+    public TradeConditionDelegate VltSlpM1Ok => () => TradingMacroM1(tm => VoltsSlopeRelative(tm, 0)).SingleOrDefault();
+    public TradeConditionDelegate VltSlp2M1Ok => () => TradingMacroM1(tm => VoltsSlopeRelative(tm, 1)).SingleOrDefault();
+    public TradeConditionDelegate VltSlp02M1Ok => () => TradingMacroM1(tm => VoltsSlopeRelative(tm, 0) & VoltsSlopeRelative(tm, 1)).SingleOrDefault();
+    TradeDirections TDByVoltSlope(double slope) => slope.IsNaNOrZero() ? TradeDirections.None : slope > 0 ? TradeDirections.Up : TradeDirections.Down;
+    TradeDirections VoltsSlopeRelative(TradingMacro tm, int index) {
+      var volts = tm.GetLastVolts(tm.GetVoltByIndex(index)).DefaultIfEmpty().ToArray();
+      var slope = -volts.LinearSlope(d => d, out var max, out var min);
+      return TDByVoltSlope(slope);
     }
+    #endregion
+
     //[TradeConditionShouldClose]
     [TradeConditionShouldClose]
     public TradeConditionDelegate Volt2Ok {
@@ -170,6 +172,13 @@ namespace HedgeHog.Alice.Store {
         return () => ok();
       }
     }
+    [TradeConditionShouldClose]
+    public TradeConditionDelegate VltOutIn2Ok {
+      get {
+        var ok = VltOutInImpl(this, 1, TradeDirections.Down, TradeDirections.Up);
+        return () => ok();
+      }
+    }
     public TradeConditionDelegate VltAboveInOk {
       get {
         var ok = VltOutInImpl(this, 0, TradeDirections.Both, TradeDirections.None);
@@ -178,20 +187,21 @@ namespace HedgeHog.Alice.Store {
     }
 
     private static TradeConditionDelegate VltOutInImpl(TradingMacro tm, int voltIndex, TradeDirections above, TradeDirections below) {
-      Subject<TradeDirections> VltOutInSubject = new Subject<TradeDirections>();
+      var VltOutInSubject = new Subject<TradeDirections>();
       var td = TradeDirections.None;
       var o = VltOutInSubject
         .Scan((p: td, n: td), (p, n) => ((p.n, n)))
         .Subscribe(x => XOR(x, i => td = i | td));
       return () => {
+        var tdImpl = VoltOutImpl(tm, voltIndex, above, below).SingleOrDefault();
         var hs = from max in tm.GetVoltHighByIndex(voltIndex)
                  from min in tm.GetVoltLowByIndex(voltIndex)
                  from v in tm.GetLastVoltByIndex(voltIndex)
                  let offset = (max - min) / 4
-                 where v.Between(max - offset, min + offset)
+                 where !tdImpl.IsDefault() || v.Between(max - offset, min + offset)
                  select v.SideEffect(_ => td = TradeDirections.None);
         hs.Any();
-        VltOutInSubject.OnNext(VoltOutImpl(tm, voltIndex, above, below).SingleOrDefault());
+        VltOutInSubject.OnNext(tdImpl);
         return td;
       };
     }
@@ -217,9 +227,12 @@ namespace HedgeHog.Alice.Store {
 
     private static IEnumerable<TradeDirections> VoltInImpl(TradingMacro tm, int voltIndex) =>
        from volt in tm.GetLastVoltByIndex(voltIndex)
+       where !volt.IsNaNOrZero()
        from vh in tm.GetVoltHighByIndex(voltIndex)
+       where !vh.IsNaNOrZero()
        from vl in tm.GetVoltLowByIndex(voltIndex)
-       select vh == vl ? TradeDirections.Both : volt.Between(vl, vh) ? TradeDirections.Both : TradeDirections.None;
+       where !vl.IsNaNOrZero()
+       select vh == vl ? TradeDirections.None : volt.Between(vl, vh) ? TradeDirections.Both : TradeDirections.None;
 
     public TradeConditionDelegate PriceTipOk {
       get {
@@ -1166,6 +1179,7 @@ namespace HedgeHog.Alice.Store {
     public object WwwInfo() {
       Func<Func<TradingMacro, TL>, IEnumerable<TL>> trenderLine = tl => TradingMacroTrender().Select(tl);
       return TradingMacroTrender(tm => {
+        var tm1s = TradingMacroM1();
         var tlText = ToFunc((TL tl) => new { l = "Ang" + tl.Color, t = $"{tl.Angle.Abs().Round()},{tl.TimeSpan.ToString("h\\:mm")}" });
         var angles = tm.TrendLinesTrendsAll.Select(tlText).ToArray();
         var showBBSD = (new[] { VoltageFunction, VoltageFunction2 }).Contains((VoltageFunction)VoltageFunction.BBSD) ||
@@ -1200,7 +1214,9 @@ namespace HedgeHog.Alice.Store {
           => (object)new { HistVolAn = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         .Add(new { StrdlHV = new[] { _currentCallByHV, _currentPutByHV }.Select(c => c.Round(2)).Flatter("/") })
         .Add(new { HVPtP = HVPt(this).Concat(HVP(this)).Select(c => c.AutoRound(3)).Flatter("/") })
-        .Add(new { CHP2 = $"{CurrentHedgePosition2}:{VMM(this)}/{TradingMacroM1(tm1 => tm1.CurrentHedgePosition2 + ":" + VMM(tm1)).SingleOrDefault()}" })
+        //.Add(new { CHP2 = $"{CurrentHedgePosition2}:{VMM(this)}/{TradingMacroM1(tm1 => tm1.CurrentHedgePosition2 + ":" + VMM(tm1)).SingleOrDefault()}" })
+        .Add(new { HgSlope = $"{VoltsReg(this, 1)}/{VoltsReg(this, 0)}" })
+        .Add(new { HgSlope2 = tm1s.Select(tm1 => $"{VoltsReg(tm1, 1)}/{VoltsReg(tm1, 0)}").SingleOrDefault() })
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
@@ -1213,6 +1229,11 @@ namespace HedgeHog.Alice.Store {
       IEnumerable<double> HV(TradingMacro tm) => tm.HistoricalVolatility();
       double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints(true);
       double VMM(TradingMacro tm) => tm.GetVoltsMinMax().Height(d => d).ToInt();
+      double VoltsReg(TradingMacro tm, int index) {
+        var volts = tm.GetLastVolts(tm.GetVoltByIndex(index)).DefaultIfEmpty().ToArray();
+        var slope = -volts.LinearSlope(d => d, out var max, out var min);
+        return (slope / (max - min)).Mult(1000).AutoRound2(3);
+      }
     }
     double[] HVA(TradingMacro tm) => new[] { tm.HistoricalVolatilityAnnualized() };
     double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
@@ -1525,54 +1546,8 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region TimeFrameOk
-    bool TestTimeFrame() {
-      return RatesTimeSpan()
-      .Where(ts => ts != TimeSpan.Zero)
-      .Select(ratesSpan => TimeFrameTresholdTimeSpan2 > TimeSpan.Zero
-        ? ratesSpan <= TimeFrameTresholdTimeSpan && ratesSpan >= TimeFrameTresholdTimeSpan2
-        : IsTresholdAbsOk(ratesSpan, TimeFrameTresholdTimeSpan)
-        )
-        .DefaultIfEmpty()
-        .Any(b => b);
-    }
-
     static readonly Calendar callendar = CultureInfo.GetCultureInfo("en-US").Calendar;
     static int GetWeekOfYear(DateTime dateTime) { return callendar.GetWeekOfYear(dateTime, CalendarWeekRule.FirstDay, DayOfWeek.Sunday); }
-    TimeSpan _RatesTimeSpanCache = TimeSpan.Zero;
-    DateTime[] _RateForTimeSpanCache = new DateTime[0];
-    private IEnumerable<TimeSpan> RatesTimeSpan() {
-      return UseRates(rates => rates.Count == 0
-        ? TimeSpan.Zero
-        : RatesTimeSpan(rates));// rates.Last().StartDate - rates[0].StartDate);
-    }
-
-    private TimeSpan RatesTimeSpan(IList<Rate> rates) {
-      var ratesLast = new[] { rates[0].StartDate, rates.Last().StartDate };
-      if((from rl in ratesLast join ch in _RateForTimeSpanCache on rl equals ch select rl).Count() == 2)
-        return _RatesTimeSpanCache;
-      _RateForTimeSpanCache = ratesLast;
-      var periodMin = BarPeriodInt.Max(1);
-      return _RatesTimeSpanCache = rates
-        .Pairwise((r1, r2) => r1.StartDate.Subtract(r2.StartDate).Duration())
-        .Where(ts => ts.TotalMinutes <= periodMin)
-        .Sum(ts => ts.TotalMinutes)
-        .FromMinutes();
-    }
-
-    //[TradeConditionAsleep]
-    [TradeConditionTurnOff]
-    public TradeConditionDelegate TimeFrameOk { get { return () => TradeDirectionByBool(TestTimeFrame()); } }
-    [TradeConditionTurnOff]
-    public TradeConditionDelegateHide TimeFrameM1Ok {
-      get {
-        return () => TradingMacroOther().Select(tm =>
-        tm.WaveRangeAvg.TotalMinutes < RatesDuration
-        ? TradeDirections.Both
-        : TradeDirections.None)
-        .SingleOrDefault();
-        ;
-      }
-    }
     #endregion
 
 

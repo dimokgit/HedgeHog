@@ -234,11 +234,13 @@ namespace HedgeHog.Alice.Store {
         try {
           action(context);
         } catch(Exception exc) {
+          exc.TryParseSqlException(out var sqlExc);
           if(error != null)
-            error(context, exc);
+            error(context, sqlExc ?? exc);
           else {
             GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
-            throw;
+            if(sqlExc == null) throw;
+            throw sqlExc;
           }
         }
     }
@@ -254,7 +256,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     static object _useForexContextWithTran = new object();
-    public static T UseForexContext<T>(int timeoutInSeconds, IsolationLevel isolationLevel,Func<ForexEntities, T> action) {
+    public static T UseForexContext<T>(int timeoutInSeconds, IsolationLevel isolationLevel, Func<ForexEntities, T> action) {
       lock(_useForexContextWithTran)
         using(var transaction = new TransactionScope(TransactionScopeOption.RequiresNew, new TransactionOptions() { IsolationLevel = isolationLevel })) {
           try {
@@ -476,5 +478,19 @@ namespace HedgeHog.Alice.Store {
       return bs;
     }
 
+  }
+
+  public static class GlobalStorageMixin {
+    public static bool TryParseSqlException(this Exception exc, out Exception sqlExc) {
+      var x = new[] { exc }.OfType<System.Data.Entity.Infrastructure.DbUpdateException>().SelectMany(sql => sql.Entries).Select(e => e.Entity).ToArray();
+      if(x.Any()) {
+        sqlExc = new Exception(new { Entities = x }.ToJson(), exc);
+        return true;
+      } else {
+        sqlExc = null;
+        return false;
+      }
+
+    }
   }
 }

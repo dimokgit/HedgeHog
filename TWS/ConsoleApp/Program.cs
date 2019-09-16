@@ -72,18 +72,35 @@ namespace ConsoleApp {
         var am = fw.AccountManager;
 
         //am.OrderContractsInternal.Subscribe(o => { });
-        {
+        {// Load bars
+          /** Load History
           var c = new Contract() {
             Symbol = "ES",
             SecType = "CONTFUT",
             Exchange = "GLOBEX"
           };
-          //LoadHistory(ibClient, new[] { c });
-          var es = new[] { "NQU9", "ESH9" }[1];
+          LoadHistory(ibClient, new[] { c });
+          */
+          var es = new[] { "NQU9", "ESH9" }[0];
+          Action<object> callback = o => HandleMessage(o + "");
+          var period = 3;
+          bool repare = false;
           es.ContractFactory().ReqContractDetailsCached()
           .ObserveOn(TaskPoolScheduler.Default)
-          .Subscribe(_ => PriceHistory.AddTicks(fw, 0, es, DateTime.Now.AddDays(-16), o => HandleMessage(o + "")));
+          .Subscribe(_ => {
+            if(repare) {
+              Action<RateLoadingCallbackArgs<Rate>> showProgress = (rlcArgs) => {
+                PriceHistory.SaveTickCallBack(period, es, callback, rlcArgs);
+                rlcArgs.IsProcessed = true;
+              };
+
+              fw.GetBarsBase(es, period, 0, DateTime.Parse("7/1/2019").SetKind(), DateTime.Parse("7/19/2019").SetKind(), new List<Rate>(), null, showProgress);
+              HandleMessage("***** Done GetBars *****");
+            } else
+              PriceHistory.AddTicks(fw, 0, es, DateTime.Now.AddMonths(-5), callback);
+          });
           HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
+
         }
         return;
 

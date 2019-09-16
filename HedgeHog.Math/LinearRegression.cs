@@ -24,6 +24,9 @@ namespace HedgeHog {
       double avgY;
       return GetSlope(data, out avgY);
     }
+    public static double LinearSlope(this IList<double> data, out double avgY) {
+      return GetSlope(data, out avgY);
+    }
     public static double LinearSlope<T>(this IList<T> data, Func<T, double> get,out double max,out double min) {
       double avgY;
       return GetSlope(data, get, out avgY, out max, out min);

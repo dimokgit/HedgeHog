@@ -1103,7 +1103,7 @@ namespace HedgeHog.Alice.Store {
       }
       TradesManager.OrderRemoved += TradesManager_OrderRemoved;
       RaisePositionsChanged();
-      Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategy;
+      //Strategy = IsInVirtualTrading ? Strategies.UniversalA : Strategy;
       IsTradingActive = IsInVirtualTrading;
 
       if(!IsInVirtualTrading) {
@@ -1464,6 +1464,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     EventWaitHandle _waitHandle = new AutoResetEvent(false);
+    private const string MINIMUM_BALANCE_ALERT = "Minimum Balance Alert: ";
+
     public void Replay(ReplayArguments<TradingMacro> args) {
       if(!args.DateStart.HasValue) {
         Log = new ApplicationException("Start Date error.");
@@ -1479,6 +1481,7 @@ namespace HedgeHog.Alice.Store {
         .First();
       if(args.Initiator != replayTrader)
         throw new Exception("Replay Initiator must be also Replay Trader");
+      Passager.ThrowIf(() => args.Initiator.Strategy == Strategies.None);
       if(tms().Count(tm => tm.IsTrender) == 0)
         throw new Exception("There is no trenders");
 
@@ -1491,19 +1494,16 @@ namespace HedgeHog.Alice.Store {
       Action<RepayForwardMessage> sfa = m => args.StepForward = true;
       var tc = new EventHandler<TradeEventArgs>((sender, e) => {
         GlobalStorage.UseForexContext(c => {
-          try {
-            var session = c.t_Session.Single(s => s.Uid == SessionId);
-            session.MaximumLot = HistoryMaximumLot;
-            session.MinimumGross = MinimumOriginalProfit;
-            session.Profitability = Profitability;
-            session.DateMin = e.Trade.TimeClose.IfMin(ServerTime);
-            if(session.DateMin == null)
-              session.DateMin = e.Trade.Time;
-            c.SaveChanges();
-          } catch(Exception exc) {
-            Log = exc;
-          }
-        });
+          var session = c.t_Session.Single(s => s.Uid == SessionId);
+          session.MaximumLot = HistoryMaximumLot;
+          session.MinimumGross = MinimumOriginalProfit.IfNaN(0);
+          session.Profitability = Profitability.IfNaN(0);
+          session.DateMin = e.Trade.TimeClose.IfMin(ServerTime);
+          if(session.DateMin == null)
+            session.DateMin = e.Trade.Time;
+          c.SaveChanges();
+
+        }, (c, exc) => Log = exc);
       });
 
       if(isInitiator)
@@ -1519,9 +1519,8 @@ namespace HedgeHog.Alice.Store {
           UnSubscribeToTradeClosedEVent(TradesManager);
         SetPlayBackInfo(true, args.DateStart.GetValueOrDefault(), args.DelayInSeconds.FromSeconds());
         var dateStartDownload = args.DateStart.Value.AddWorkingDays(-(BarsCountCount() / 1440.0).Ceiling());
-        var actionBlock = new ActionBlock<Action>(a => a());
         var dbBarPeriod = BarPeriodInt.Max(0);
-        Action<RateLoadingCallbackArgs<Rate>> cb = callBackArgs => PriceHistory.SaveTickCallBack(dbBarPeriod, Pair, o => Log = new Exception(o + ""), actionBlock, callBackArgs);
+        Action<RateLoadingCallbackArgs<Rate>> cb = callBackArgs => PriceHistory.SaveTickCallBack(dbBarPeriod, Pair, o => Log = new Exception(o + ""), callBackArgs);
         //var fw = TradesManager;
         //if(fw != null)
         //  PriceHistory.AddTicks(fw, dbBarPeriod, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-BarsCountCount() * 2)), o => Log = new Exception(o + ""));
@@ -1639,7 +1638,7 @@ namespace HedgeHog.Alice.Store {
         var minutesOffset = BarPeriodInt * 0;
         MaxHedgeProfit = new[] { new[] { (profit: 0.0, buy: false) }.Take(0).ToArray() }.Take(0);
 
-        while(!args.MustStop && indexCurrent < _replayRates.Count && Strategy != Strategies.None) {
+        while(!args.MustStop && indexCurrent < _replayRates.Count/* && Strategy != Strategies.None*/) {
           if(isReplaying && !isInitiator)
             if(!_waitHandle.WaitOne(1000)) {
               //Log = new Exception(new { PairIndex, WaitedFor = "1000 seconds. Recircles the loop now." } + "");
@@ -1793,9 +1792,9 @@ namespace HedgeHog.Alice.Store {
                       Log = new Exception("Equity Alert: " + TradesManager.GetAccount().Equity);
                       CloseTrades("Equity Alert: " + TradesManager.GetAccount().Equity);
                     }
-                    if(MinimumOriginalProfit < TestMinimumBalancePerc) {
-                      Log = new Exception("Minimum Balance Alert: " + MinimumOriginalProfit);
-                      CloseTrades("Minimum Balance Alert: " + MinimumOriginalProfit);
+                    if(false && TestMinimumBalancePerc != 0 && MinimumOriginalProfit < TestMinimumBalancePerc) {
+                      Log = new Exception(MINIMUM_BALANCE_ALERT + $"{MinimumOriginalProfit} @ {new { ServerTime }}");
+                      CloseTrades(MINIMUM_BALANCE_ALERT + MinimumOriginalProfit);
                       args.MustStop = true;
                     }
                   }
@@ -1915,10 +1914,10 @@ namespace HedgeHog.Alice.Store {
       if(!TradeStatisticsDictionary.ContainsKey(trade.Id))
         TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics() {
           CorridorStDev = TLBlue.Angle.Abs(),
-          CorridorStDevCma = RatesTimeSpan().FirstOrDefault().TotalMinutes,
+          CorridorStDevCma = 0.0,
           Values = new Dictionary<string, object> {
             { "Angle", TradingMacroTrender(tm=>tm.TLBlue.Angle.Abs()).FirstOrDefault() },
-            { "Minutes", RatesTimeSpan().FirstOrDefault().TotalMinutes },
+            { "Minutes", 0 },
             { "PPM", InPips(TradingMacroTrender(tm=> PPMFromEnd(tm,-0.25)).Concat().FirstOrDefault()) },
             { "Voltage", TradingMacroTrender(tm=> tm.GetLastVolt()).Concat().FirstOrDefault() },
             { "Voltage2", TradingMacroTrender(tm=> tm.GetLastVolt(GetVoltage2)).Concat().FirstOrDefault() },

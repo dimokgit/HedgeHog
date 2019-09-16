@@ -144,15 +144,25 @@ namespace HedgeHog.Alice.Store {
           });
       }
     });
-    private void StrategyHedge() => UseAccountManager(am => {
+    private void StrategyHedge() =>
       TradeConditionsEval()
+      .Where(_ => IsTradingActive)
         .ForEach(eval => {
-          if(eval.HasAny())
-            OnSMS("Go hedge " + eval, true);
-          else
+          var pos = GetCurrentHedgePositions();
+          if(eval.HasAny() && pos.p1 != 0 && pos.p2 != 0) {
+            var isBuy = eval.HasUp();
+            if(!HaveTrades(isBuy)) {
+              OpenReverse(this, isBuy, pos.p1);
+              TradingMacroHedged(tmh => OpenReverse(tmh, !isBuy, pos.p2.Abs()));
+              OnSMS("Go hedge " + eval, true);
+            }
+            void OpenReverse(TradingMacro tm, bool buy, int lot) {
+              tm.CloseTrades("Go Hedge Reverse");
+              tm.OpenTrade(buy, lot, "Go Hedge");
+            }
+          } else
             OnSMS("Go hog", false);
         });
-    });
     void RunStrategy() {
       StrategyAction();
     }

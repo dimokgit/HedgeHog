@@ -212,7 +212,7 @@ namespace HedgeHog.Alice.Store {
     void CalcHedgeRatioByPositions(int pos1) {
       if(pos1 == 0) pos1 = 100;
       var sw = Stopwatch.StartNew();
-      var hrs = Enumerable.Range(0, pos1 - 1).Select(p => pos1 - p).Select(pos2 => CalcHedgeRatioByPositions(pos1, pos2)).OrderBy(hr => hr.stDev).ToArray();
+      var hrs = Enumerable.Range(0, pos1 - 1).Select(p => pos1 - p).SelectMany(pos2 => new[] { CalcHedgeRatioByPositions(pos1, pos2), CalcHedgeRatioByPositions(pos2, pos1) }).OrderBy(hr => hr.stDev).ToArray();
       HedgeRatioByPrices = hrs.Take(1).Select(hr => hr.pos2.Div(hr.pos1)).Single();
       Debug.WriteLine($"{nameof(CalcHedgeRatioByPositions)}:{sw.Elapsed.TotalSeconds.AutoRound2(3)}sec");
     }
@@ -223,7 +223,7 @@ namespace HedgeHog.Alice.Store {
         from x1 in x2
         where x1.a1.IsNotNaN() && x1.a2.IsNotNaN()
         select x1.a1 - x1.a2
-        )).Concat().Concat()
+        )).Concat().Concat().Cma(2);
         ;
       var stDev = hedgePrices.Height(d => d);
       return (stDev, pos1, pos2);

@@ -21,23 +21,24 @@ namespace HedgeHog.Alice.Store {
     public static void AddTicks(ITradesManager fw, int period, string pair, DateTime dateStart, Action<object> progressCallback) {
       try {
         #region callback
-        ActionBlock<Action> saveTickActionBlock = new ActionBlock<Action>(a => a());
         Action<RateLoadingCallbackArgs<Rate>> showProgress = (args) => {
-          SaveTickCallBack(period, pair, progressCallback, saveTickActionBlock, args);
+          SaveTickCallBack(period, pair, progressCallback, args);
           args.IsProcessed = true;
         };
         #endregion
 
         var offset = TimeSpan.FromMinutes(period);
         if(dateStart > DateTime.MinValue) {
-          var dateMin = GlobalStorage.UseForexContext(120, IsolationLevel.ReadUncommitted, context => new DateTime(context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Min(b => (DateTimeOffset?)b.StartDate).GetValueOrDefault().DateTime.Ticks, DateTimeKind.Utc));
+          var dateMin = GlobalStorage.UseForexContext(120, IsolationLevel.ReadUncommitted, context 
+            => new DateTime(context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Min(b => (DateTimeOffset?)b.StartDate).GetValueOrDefault().DateTime.Ticks, DateTimeKind.Utc));
           if(dateMin.IsMin())
             dateMin = DateTime.Now;
           var dateEnd = dateMin.Subtract(offset);
           if(dateStart < dateMin)
             fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
         }
-        var q = GlobalStorage.UseForexContext(120, IsolationLevel.ReadUncommitted, context => context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty().Max());
+        var q = GlobalStorage.UseForexContext(120, IsolationLevel.ReadUncommitted, context 
+          => context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty().Max());
         if(dateStart == DateTime.MinValue && q == DateTimeOffset.MinValue)
           throw new Exception("dateStart must be provided there is no bars in database.");
         var p = period == 0 ? 1 / 60.0 : period;
@@ -50,7 +51,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public static void SaveTickCallBack(int period, string pair, Action<object> progressCallback, ActionBlock<Action> saveTickActionBlock, RateLoadingCallbackArgs<Rate> args) {
+    public static void SaveTickCallBack(int period, string pair, Action<object> progressCallback, RateLoadingCallbackArgs<Rate> args) {
       if(progressCallback != null)
         progressCallback(args.Message);
       else

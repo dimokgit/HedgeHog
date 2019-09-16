@@ -202,8 +202,7 @@ namespace HedgeHog.Alice.Client {
       ReplayArguments.GetOriginalBalance = new Func<double>(() => MasterModel.AccountModel.OriginalBalance);
       foreach(var tm in tms) {
         if(IsInVirtualTrading) {
-          if(tm.Strategy == Strategies.None)
-            tm.Strategy = Strategies.UniversalA;
+          //if(tm.Strategy == Strategies.None)            tm.Strategy = Strategies.UniversalA;
           TradesManager.ClosePair(tm.Pair);
           tm.ResetSessionId(ReplayArguments.SuperSessionId);
           if(testParameter != null && tm == tmOriginal)

@@ -111,7 +111,7 @@ namespace IBApp {
         h => IbClient.OpenOrder -= h
         )
         .SelectMany(m => {
-          var x = (from cl in m.Contract.ComboLegs.ToObservable()
+          var x = (from cl in m.Contract.ComboLegs?.ToObservable()
                    from con in ibClient.ReqContractDetailsCached(cl.ConId).Select(cd => cd.Contract)
                    select con)
                    .ToArray()

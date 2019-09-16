@@ -279,20 +279,6 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    [TradeDirectionTrigger]
-    public void OnManualMove() {
-      if(TradeConditionsHave(TimeFrameOk) && TimeFrameOk().HasAny()) {
-        var bs = new[] { BuyLevel, SellLevel };
-        if(bs.All(sr => sr.InManual)) {
-          var buyOffset = CurrentPrice.Ask - BuyLevel.Rate;
-          if(buyOffset > 0 && BuyLevel.TradesCount > 0)
-            bs.ForEach(sr => sr.Rate += buyOffset);
-          var sellOffset = CurrentPrice.Bid - SellLevel.Rate;
-          if(sellOffset < 0 && SellLevel.TradesCount > 0)
-            bs.ForEach(sr => sr.Rate += sellOffset);
-        }
-      }
-    }
     #endregion
 
     [TradeDirectionTrigger]

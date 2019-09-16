@@ -77,6 +77,11 @@ namespace HedgeHog {
     public static double Div(this double v, double other) {
       return v / other;
     }
+    public static double Mult(this double v, double other) => v * other;
+    public static double Mult(this double v, int other) => v * other;
+    public static int Mult(this int v, int other) => v * other;
+    public static double Mult(this int v, double other) => v * other;
+
 
     public static double Avg(this double v, double other) {
       return (v + other) / 2;
@@ -194,7 +199,7 @@ namespace HedgeHog {
     /// </summary>
     /// <param name="d"></param>
     /// <returns></returns>
-    public static double ToWhole(this double d,int powerMax) => Math.Pow(10, Math.Ceiling(-Math.Log10(d)).Min(powerMax)) * d;
+    public static double ToWhole(this double d, int powerMax) => Math.Pow(10, Math.Ceiling(-Math.Log10(d)).Min(powerMax)) * d;
 
     public static double Error(this double experimantal, double original) {
       return ((experimantal - original).Abs() / original).Abs();
@@ -424,7 +429,7 @@ namespace HedgeHog {
         current = current.AddDays(sign);
       }
 
-      while(current.DayOfWeek == DayOfWeek.Saturday ||    current.DayOfWeek == DayOfWeek.Sunday) {
+      while(current.DayOfWeek == DayOfWeek.Saturday || current.DayOfWeek == DayOfWeek.Sunday) {
         current = current.AddDays(sign);
       }
 
