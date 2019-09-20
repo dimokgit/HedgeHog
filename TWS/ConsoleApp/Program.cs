@@ -61,7 +61,6 @@ namespace ConsoleApp {
       var svxy = ContractSamples.ContractFactory("SVXY");
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
-      AccountManager.NoPositionsPlease = false;
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7497;
       const int clientId = 11;
@@ -70,8 +69,6 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-
-        //am.OrderContractsInternal.Subscribe(o => { });
         {// Load bars
           /** Load History
           var c = new Contract() {
@@ -81,29 +78,59 @@ namespace ConsoleApp {
           };
           LoadHistory(ibClient, new[] { c });
           */
-          var es = new[] { "NQU9", "ESH9" }[0];
-          Action<object> callback = o => HandleMessage(o + "");
-          var period = 3;
+          var es = new[] { "NQZ9", "ESZ9", "VXX","SPY" }[1];
+          var period = 0;
           bool repare = false;
+          Action<object> callback = o => HandleMessage(o + "");
           es.ContractFactory().ReqContractDetailsCached()
           .ObserveOn(TaskPoolScheduler.Default)
           .Subscribe(_ => {
             if(repare) {
               Action<RateLoadingCallbackArgs<Rate>> showProgress = (rlcArgs) => {
-                PriceHistory.SaveTickCallBack(period, es, callback, rlcArgs);
+                //PriceHistory.SaveTickCallBack(period, es, callback, rlcArgs);
                 rlcArgs.IsProcessed = true;
               };
-
-              fw.GetBarsBase(es, period, 0, DateTime.Parse("7/1/2019").SetKind(), DateTime.Parse("7/19/2019").SetKind(), new List<Rate>(), null, showProgress);
-              HandleMessage("***** Done GetBars *****");
+              var bars = new List<Rate>();
+              fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
+              //fw.GetBarsBase(es, period, 0, DateTime.Parse("7/1/2019").SetKind(), DateTime.Parse("7/19/2019").SetKind(), new List<Rate>(), null, showProgress);
+              HandleMessage($"***** Done GetBars *****\n{bars.Select(b => b + "").ToJson(true)}");
             } else
-              PriceHistory.AddTicks(fw, 0, es, DateTime.Now.AddMonths(-5), callback);
+              PriceHistory.AddTicks(fw, period, es, DateTime.Now.AddMonths(-1), callback);
           });
           HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
 
         }
         return;
 
+        {
+          "SPY".ContractFactory().ReqContractDetailsCached()
+          //.ObserveOn(TaskPoolScheduler.Default)
+          .Select(cd => cd.Contract)
+          .Subscribe(contract => HandleMessage($"***** {new { contract }} *****"));
+          return;
+        }
+
+        {
+          //(from o in am.OpenOrderObservable
+          // from combo in AccountManager.MakeHedgeComboSafe(10, "VXX".ContractFactory(), "UVXY".ContractFactory(), 10, 7)
+          // from Price in o.Contract.ReqPriceSafe()
+          // let s0 = combo.contract.DateWithShort
+          // let s1 = combo.contract.ShortString
+          // select new { o.Contract, Price, j1 = combo.contract.ToJson(true), j2 = o.Contract.ToJson(true) }
+          // ).Subscribe(x => HandleMessage($"Open Order Contract price:" + x));
+          //return;
+          (
+          //from combo in AccountManager.MakeHedgeComboSafe(1, "VXX".ContractFactory() ,"UVXY".ContractFactory(), 40, 23)
+          from combo in AccountManager.MakeHedgeComboSafe(1, "SPY".ContractFactory() ,"QQQ".ContractFactory(), 40, 23)
+           from p in combo.contract.ReqPriceSafe(5)
+           select new {combo.contract,combo.quantity,p}
+           )
+          .Subscribe(combo => HandleMessage("HedgeCombo:" + combo+"\n"+combo.contract.ToJson(true)));
+          return;
+        }
+
+
+        //am.OrderContractsInternal.Subscribe(o => { });
         Tests.HedgeCombo(am); ;
         return;
         {
@@ -166,7 +193,7 @@ namespace ConsoleApp {
             SecType = "FOP"
             //Strike = 2735, LastTradeDateOrContractMonth = "20190313", Right ="P",Symbol="ES",SecType="FOP"
           })
-          from p in ibClient.ReqPriceSafe(cd.Contract.SideEffect(c => HandleMessage(new { c })))
+          from p in cd.Contract.SideEffect(c => HandleMessage(new { c })).ReqPriceSafe()
           select p
           ).Subscribe(p => HandleMessage(new { p }));
 
@@ -270,7 +297,7 @@ namespace ConsoleApp {
           TestCurrentOptions(0);
           void TestCurrentOptions(int expirationDaysToSkip, bool doMore = true) {
             (from under in ibClient.ReqContractDetailsCached("ESH9")
-             from price in ibClient.ReqPriceSafe(under.Contract)
+             from price in under.Contract.ReqPriceSafe()
              from options in am.CurrentOptions(under.Contract.LocalSymbol, price.ask.Avg(price.bid), expirationDaysToSkip, 10, o => o.IsCall)
              from option in options
              select new { price.bid, option.option }
@@ -288,7 +315,7 @@ namespace ConsoleApp {
         }
         {
           (from i in Observable.Interval(5.FromSeconds())
-           from p in ibClient.ReqPriceSafe("ESH9".ContractFactory())
+           from p in "ESH9".ContractFactory().ReqPriceSafe()
            select p
            ).Take(10)
            .Subscribe(p => HandleMessage(p));
@@ -416,7 +443,7 @@ namespace ConsoleApp {
             });
             comboPrice.combo.contract.Legs().Buffer(2).ForEach(b => Passager.ThrowIf(() => b[0].c.ComboStrike() - b[1].c.ComboStrike() != 5));
             HandleMessage2(new { comboPrice.combo.contract });
-            ibClient.ReqPriceSafe(comboPrice.combo.contract)
+            comboPrice.combo.contract.ReqPriceSafe()
             .ToEnumerable()
             .ForEach(price => {
               HandleMessage($"Observed {comboPrice.combo.contract} price:{price}");
@@ -434,7 +461,7 @@ namespace ConsoleApp {
           AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass) => pos.contract.TradingClass == tradingClass)
           .ForEach(comboPrice => {
             HandleMessage2(new { comboPrice.contract });
-            ibClient.ReqPriceSafe(comboPrice.contract.contract)
+            comboPrice.contract.contract.ReqPriceSafe()
             .ToEnumerable()
             .ForEach(price => {
               HandleMessage($"Observed {comboPrice.contract} price:{price}");
@@ -536,7 +563,7 @@ namespace ConsoleApp {
              )
              .ToObservable()
              //.Do(_ => Thread.Sleep(200))
-             .SelectMany(option => ibClient.ReqPriceSafe(option).Select(p => (option, p)))
+             .SelectMany(option => option.ReqPriceSafe().Select(p => (option, p)))
              .Subscribe(price => HandleMessage2($"Observed:{price}"));
           }
           IList<(Contract contract, Contract[] options)> ProcessSymbol(string symbol) {
@@ -557,7 +584,7 @@ namespace ConsoleApp {
             .Do(straddle => {
               HandleMessage2(new { straddle = straddle.combo.contract });
               //ibClient.SetOfferSubscription(straddle.combo.contract);
-              ibClient.ReqPriceSafe(straddle.combo.contract, 2, false, double.NaN)
+              straddle.combo.contract.ReqPriceSafe(2, false, double.NaN)
                 .Take(1)
                 .Subscribe(price => {
                   Passager.ThrowIf(() => price.ask <= 0 || price.bid <= 0);
@@ -572,7 +599,7 @@ namespace ConsoleApp {
           var straddlesCount = 5;
           var expirationCount = 1;
           int expirationDaysSkip = 0;
-          var price = ibClient.ReqContractDetailsCached(symbol).SelectMany(cd => ibClient.ReqPriceSafe(cd.Contract).Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}")));
+          var price = ibClient.ReqContractDetailsCached(symbol).SelectMany(cd => cd.ReqPriceSafe().Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}")));
           var contracts = (from p in price
                            from str in fw.AccountManager.MakeStraddles(symbol, p, expirationDaysSkip, expirationCount, straddlesCount, gap)
                            select str)

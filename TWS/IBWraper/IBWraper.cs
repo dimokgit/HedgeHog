@@ -116,7 +116,7 @@ namespace IBApp {
     #region Methods
     //public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1 : 1;
     //public int GetBaseUnitSize(string pair) => IBApi.Contract.ContractDetails.TryGetValue(pair, out var m) ? int.Parse(m.Summary.Multiplier.IfEmpty("0")) : 0;
-    public int GetBaseUnitSize(string pair) => IBApi.Contract.FromCache(pair, m => int.Parse(m.Multiplier.IfEmpty("0"))).DefaultIfEmpty().Single();
+    public int GetBaseUnitSize(string pair) => IBApi.Contract.FromCache(pair, m => int.Parse(m.Multiplier.IfEmpty("1"))).DefaultIfEmpty().Single();
 
     public double Leverage(string pair, bool isBuy) => GetBaseUnitSize(pair) / GetMMR(pair, isBuy);
     public Trade TradeFactory(string pair) => Trade.Create(this, pair, GetPipSize(pair), GetBaseUnitSize(pair), CommissionByTrade);
@@ -139,7 +139,7 @@ namespace IBApp {
 
       Thread.CurrentThread.Name.ThrowIf(threadName => threadName == "MsgProc");
       var contract = Contract.FromCache(pair).Count(1, $"{nameof(GetBarsBase)}: {new { pair }}").Single();
-      if(contract.IsFuture)
+      if(false && contract.IsFuture)
         contract = new Contract { SecType = "CONTFUT", Exchange = contract.Exchange, TradingClass = contract.TradingClass, Symbol = contract.FromDetailsCache().Single().MarketName };
       var isDone = false;
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
@@ -643,7 +643,7 @@ namespace IBApp {
       if(comment == "OPT") {
         var x = (
           from under in _ibClient.ReqContractDetailsCached(Pair).Select(cd => cd.Contract)
-          from up in _ibClient.ReqPriceSafe(under).Select(_ => _.ask.Avg(_.bid))
+          from up in under.ReqPriceSafe().Select(_ => _.ask.Avg(_.bid))
           from os in _ibClient.ReqCurrentOptionsAsync(Pair, up, new[] { isBuy }, 0, 1, 1, c => true).ToArray()
           from o in os
           select (o, under, lot: lot * (isBuy ? 1 : -1))

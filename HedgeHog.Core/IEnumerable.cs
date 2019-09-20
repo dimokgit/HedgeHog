@@ -437,6 +437,7 @@ namespace HedgeHog {
       if(v)
         action();
     }
+    public static U IfTrue<T, U>(this T v, Func<T, bool> condition, Func<T, U> func, U defValue) => condition(v) ? func(v) : defValue;
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<T> value) { return source.Concat(value.Yield()); }
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, Func<IEnumerable<T>> value) {
       foreach(var v in source)

@@ -143,23 +143,32 @@ namespace HedgeHog.Alice.Store {
     static ForexDbContext ForexMongoFactory => _ForexMongoFactory ?? (_ForexMongoFactory = new ForexDbContext(mongoConnectionString));
     static object _forexDbContextLocker = new object();
     public static T UseForexMongo<T>(Func<ForexDbContext, T> func) { lock(_forexDbContextLocker) return func(ForexMongoFactory); }
-    public static void UseForexMongo(Action<ForexDbContext> action, bool save, Action onSave)
-      => UseForexMongo(action, save, onSave, null);
+    public static void UseForexMongo(Action<ForexDbContext> action, bool save, Action onSave) => UseForexMongo(action, save, onSave, null);
     public static void UseForexMongo(Action<ForexDbContext> action, bool save = false, Action onSave = null, Action<ForexDbContext, Exception> onError = null) {
       var c = ForexMongoFactory;
       lock(_forexDbContextLocker) {
         action(c);
-        if(save) {
-          try {
-            c.SaveChanges();
-          } catch(Exception exc) {
-            if(onError != null) onError(c, exc);
-            else GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
-          }
-          onSave?.Invoke();
-        }
+        Save(save, onSave, onError, c);
       }
     }
+
+    private static void Save<TDbContext>(bool save, Action onSave, Action<TDbContext, Exception> onError, TDbContext c) where TDbContext: DbContext {
+      if(save) {
+        try {
+          c.SaveChanges();
+        } catch(Exception exc) {
+          exc.TryParseSqlException(out var sqlExc);
+          if(onError != null) onError(c, sqlExc ?? exc);
+          else {
+            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(sqlExc ?? exc);
+            if(sqlExc != null) throw sqlExc;
+            throw;
+          }
+        }
+        onSave?.Invoke();
+      }
+    }
+
     public static void ForexMongoSave() => UseForexMongo(c => c.SaveChanges());
     #endregion
 
@@ -238,7 +247,7 @@ namespace HedgeHog.Alice.Store {
           if(error != null)
             error(context, sqlExc ?? exc);
           else {
-            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(sqlExc ?? exc);
             if(sqlExc == null) throw;
             throw sqlExc;
           }

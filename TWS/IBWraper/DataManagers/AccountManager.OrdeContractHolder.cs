@@ -34,6 +34,8 @@ namespace IBApp {
       public bool isSubmitted => status.status == "Submitted";
       public bool isFilled => status.status == "Filled";
       public bool isPreSubmitted => status.status == "PreSubmitted";
+      public bool isInactive => status.status == "Inactive";
+      public bool hasSubmitted => isSubmitted || isPreSubmitted;
       public bool ShouldExecute { get; private set; }
       public OrderContractHolder() {
         try {

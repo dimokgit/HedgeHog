@@ -799,8 +799,8 @@
       this.wwwSettingsGrid = function (element) {
         wwwSettingsGridElement = element;
       }
-      this.showNegativeVolts = ko.observable(-10000).extend({ persist: "showNegativeVolts" + pair });
-      this.showNegativeVolts2 = ko.observable(-10000).extend({ persist: "showNegativeVolts2" + pair });
+      this.showNegativeVolts = ko.observable(-100000000).extend({ persist: "showNegativeVolts" + pair });
+      this.showNegativeVolts2 = ko.observable(-10000000).extend({ persist: "showNegativeVolts2" + pair });
       this.doShowChartBid = ko.observable("p");
 
       // #region refreshChartsInterval
@@ -1000,6 +1000,8 @@
       this.butterflies = ko.mapping.fromJS(ko.observableArray());
       this.tradesBreakEvens = ko.mapping.fromJS(ko.observableArray());
 
+      this.hedgeREL = ko.observable(true);
+      this.hedgeTest = ko.observable(false);
       this.hedgeCombo = ko.mapping.fromJS(ko.observableArray());
       this.hedgeCombo2 = ko.mapping.fromJS(ko.observableArray());
       function mapHedgeCombos() {
@@ -1009,14 +1011,14 @@
           }
         };
         var hcs = ko.mapping.toJS(this.hedgeCombo);
-        function d(hc) { return { id: hc.id, data: hc.price + hc.contract + "/" + hc.ratio + "/" + hc.quantity + "{" + hc.context + "}" }; }
+        function d(hc) { return { id: hc.id, key: hc.key, quantity: hc.quantity, data: hc.price + hc.contract + "/" + hc.ratio + "/" + hc.quantity + "{" + hc.context + "}" }; }
         ko.mapping.fromJS(hcs.filter(hc => hc).map(d), map, this.hedgeCombo2);
       }
       this.hedgeComboText = ko.pureComputed(function () {
         mapHedgeCombos.bind(this)();
         return this.hedgeCombo2();// : "No hedge";
       }, this);
-      this.selectedHedgeCombo = ko.observable();
+      this.selectedHedgeCombo = ko.observable().extend({ persist: "selectedHedgeCombo" + pair });
       this.selectedHedgeCombo.subscribe(this.refreshCharts.bind(this));
       this.toggleSelectedHedgeCombo = function (hc) {
         var nv = this.selectedHedgeCombo() === ko.unwrap(hc.id) ? "" : ko.unwrap(hc.id);
@@ -1024,6 +1026,14 @@
       }.bind(this);
       this.testHedgeComboActive = function (data) {
         return this.selectedHedgeCombo() === ko.unwrap(data.id);
+      }.bind(this);
+      this.openHedged = function (key, quantity, isBuy) {
+        this.canTrade(false);
+        serverCall("openHedged", [pair, ko.unwrap(key), ko.unwrap(quantity), isBuy, ko.unwrap(this.hedgeREL), ko.unwrap(this.hedgeTest)]
+          , r => (r || []).forEach(e => showErrorPerm("openHedged:\n" + JSON.stringify(e)))
+          , null
+          , function () { this.canTrade(true); }.bind(this)
+        );
       }.bind(this);
 
       this.rollOvers = ko.mapping.fromJS(ko.observableArray());
@@ -1100,14 +1110,6 @@
         var combo = ko.unwrap(ko.unwrap(key).i);
         serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(), this.currentProfit(), self.rollCombo()]
           , r => (r || []).forEach(e => showErrorPerm("openButterfly:\n" + e))
-          , null
-          , function () { this.canTrade(true); }.bind(this)
-        );
-      }.bind(this);
-      this.openHedged = function (isBuy) {
-        this.canTrade(false);
-        serverCall("openHedged", [pair, this.comboQuantity(), isBuy]
-          , r => (r || []).forEach(e => showErrorPerm("openHedged:\n" + JSON.stringify(e)))
           , null
           , function () { this.canTrade(true); }.bind(this)
         );

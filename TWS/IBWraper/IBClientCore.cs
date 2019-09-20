@@ -55,7 +55,6 @@ namespace IBApp {
       }
     }
 
-    private const string GENERIC_TICK_LIST = "233,221,236,165";
     public const bool TRACE_REQPRICE = true;
     #endregion
 
@@ -70,6 +69,7 @@ namespace IBApp {
     private readonly Action<object> _trace;
     TradingServerSessionStatus _sessionStatus;
     readonly private MarketDataManager _marketDataManager;
+    public MarketDataManager MarketDataManager => _marketDataManager;
     private static int _validOrderId;
     private IObservable<EventPattern<PriceChangedEventArgs>> _priceChangeObservable;
     #endregion
@@ -83,32 +83,28 @@ namespace IBApp {
     public Action<object> Trace => _trace;
     public Action<bool, object> TraceIf => (b, o) => { if(b) _trace(o); };
     public Action<object> TraceTemp => o => { };
-    private bool _verbose = false;
-    public void Verbose(object o) { if(_verbose) _trace(o); }
     public IObservable<EventPattern<PriceChangedEventArgs>> PriceChangeObservable { get => _priceChangeObservable; private set => _priceChangeObservable = value; }
     Subject<object> _traceErrorSubject = new Subject<object>();
     #endregion
 
     #region ICoreEX Implementation
-    public Contract SetContractSubscription(Contract contract, [CallerMemberName] string Caller = "") => contract.SideEffect(c => {
-      //TraceError($"{nameof(SetContractSubscription)} <= {Caller}");
-      SetContractSubscription(c, (i, cont) => { });
-    });
-    void SetContractSubscription(Contract contract, Action<int, Contract> callback) {
-      var fc = contract.IsFuturesCombo;
-      //if(fc) System.Diagnostics.Debugger.Break();
-
-      _marketDataManager.AddRequest(contract, GENERIC_TICK_LIST, callback);
-    }
-    public void SetSymbolSubscription(string pair) {
-      if(pair.IsFuture()) {
-        var contract = new Contract { LocalSymbol = pair, SecType = "FUT", Currency = "USD" };
-        ReqContractDetailsCached(contract)
-          .Take(1)
-          .OnEmpty(() => throw new Exception(new { contract, not = "found" } + ""))
-          .Subscribe(cd => SetContractSubscription(cd.Contract));
-      } else
-        SetContractSubscription(ContractSamples.ContractFactory(pair));
+    public void SetSymbolSubscription(string pair, Action callback) {
+      var contract = pair.IsFuture()
+        ? new Contract { LocalSymbol = pair, SecType = "FUT", Currency = "USD" }
+        : ContractSamples.ContractFactory(pair);
+      ReqContractDetailsCached(contract)
+        .ObserveOn(TaskPoolScheduler.Default)
+        .Take(1)
+        .OnEmpty(() => throw new Exception(new { contract, not = "found" } + ""))
+        .Subscribe(cd => {
+          MarketDataManager.AddRequestSync(cd.Contract);
+          try {
+            callback?.Invoke();
+          } catch(Exception exc) {
+            Debugger.Break();
+            throw;
+          }
+        });
     }
     public bool IsInVirtualTrading { get; set; }
     public DateTime ServerTime => DateTime.Now + _serverTimeOffset;
@@ -284,19 +280,13 @@ namespace IBApp {
     public IObservable<ContractDetails> ReqContractDetailsCached(int conId) => ReqContractDetailsCached(new Contract { ConId = conId });
     public IObservable<ContractDetails> ReqContractDetailsCached(string symbol) => ReqContractDetailsCached(symbol.ContractFactory());
     public IObservable<ContractDetails> ReqContractDetailsCached(Contract contract) {
+      if(Thread.CurrentThread.Name == "MsgProg")
+        TraceDebug0("");
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
         Debugger.Break();
-      return contract.FromDetailsCache()
-        .ToArray()
-        .ToObservable()
-        //.Do(cd => Trace(new { contractCache = cd.Contract }))
-        //.ToArray()
-        .Concat(Observable.Defer(() => {
-          return ReqContractDetailsAsync(contract).Do(cd => Debug.WriteLine(new { contractAsync = cd.Contract }));
-        }))
-        .Take(1)
-        //.SelectMany(a => a)
-        ;
+      var c = contract.FromDetailsCache().ToArray();
+      if(c.Any()) return c.ToObservable();
+      return ReqContractDetailsAsync(contract);
     }
 
     public static ConcurrentDictionary<string, IObservable<ContractDetails>> ReqContractDetails { get; } = new ConcurrentDictionary<string, IObservable<ContractDetails>>();
@@ -305,12 +295,13 @@ namespace IBApp {
       //  throw new Exception("Contract's Symbol property is empty");
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
         Debugger.Break();
-      if(contract.IsFuturesCombo)
+      if(contract.IsBag)
         Debugger.Break();
       //var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol, contract.ConId + "")}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
       var key = $"{contract.Key}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
       lock(ReqContractDetails) {
         if(ReqContractDetails.TryGetValue(key, out var o)) return o;
+
         var reqId = NextReqId();
         TraceDebug0($"{nameof(ReqContractDetailsAsync)}:{key} Start");
         var cd = WireToError(
@@ -333,7 +324,7 @@ namespace IBApp {
           }))
           //.Do(_ => TraceDebug0($"{nameof(ReqContractDetailsAsync)}:{key} found:{_.Length} contracts"))
           .SelectMany(a => a.Select(t => t.ContractDetails))
-          //.ObserveOn(esReqContract)
+        //.ObserveOn(esReqContract)
         //.Select(t => t.cd.SideEffect(d => Verbose($"Adding {d.Contract} to cache")).AddToCache())
         //.ObserveOn(esReqCont)
         //.Do(t => Trace(new { ReqContractDetailsImpl = t.reqId, contract = t.contractDetails?.Contract, Thread.CurrentThread.ManagedThreadId }))
@@ -427,14 +418,12 @@ namespace IBApp {
         var increments = new[] { 50.0, 10, 5, 2.5, 1 };
         IEnumerable<double> CurrentIncrement(double price) => increments.OrderBy(i => (price * 0.002).Abs(i)).Take(1).Select(i => (price / i).ToInt() * i);
         var newCache = (from under in ReqContractDetailsCached(underSymbol)
-                        from price in ReqPriceSafe(under.Contract)
+                        from price in under.Contract.ReqPriceSafe()
                         from strike in CurrentIncrement(price.ask.Avg(price.bid))
                         let symbol = under.Contract.LocalSymbol
                         from byStrike in ReqOptionChainOldCache(under.Contract.LocalSymbol, DateTime.MinValue
-                        , strike.SideEffect(_ => Verbose(new { ReqStrikesAndExpirations = $"{underSymbol}:{strike} Start" })), false)
-                        let exps = byStrike
-                        .SideEffect(_ => Verbose(new { ReqStrikesAndExpirations = $"{underSymbol}:{strike} End" }))
-                        .Select(o => o.Expiration).Distinct().OrderBy(ex => ex).ToArray()
+                        , strike, false)
+                        let exps = byStrike.Select(o => o.Expiration).Distinct().OrderBy(ex => ex).ToArray()
                         from exp in exps.Take(1)
                         from byExp in ReqOptionChainOldCache(under.Contract.LocalSymbol, exp, 0, false)
                         let strikes = byExp.Select(o => o.Strike).Distinct().OrderBy(st => st).ToArray()
@@ -562,123 +551,6 @@ namespace IBApp {
       from och in ReqSecDefOptParamsAsync(cd.Contract.LocalSymbol, cd.Contract.IsFuture ? cd.Contract.Exchange : "", cd.Contract.SecType, cd.Contract.ConId)
       select (och.Exchange, och.TradingClass, och.Multiplier, expirations: och.Expirations.Select(e => e.FromTWSDateString(DateTime.MaxValue)).ToArray(), strikes: och.Strikes.ToArray(), symbol = cd.Contract.Symbol, currency: cd.Contract.Currency);
 
-    enum TickType { Bid = 1, Ask = 2, MarketPrice = 37 };
-
-    public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe(Contract contract, double timeoutInSeconds, bool useErrorHandler, double defaultPrice) =>
-      ReqPriceSafe(contract, timeoutInSeconds).DefaultIfEmpty((defaultPrice, defaultPrice, DateTime.MinValue, 0));
-    public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceEmpty() => Observable.Return((0.0, 0.0, DateTime.MinValue, 0.0));
-    static object _ReqPriceSafeLocker = new object();
-
-    static int _reqPriceCount = 0;
-    public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe(Contract contract, double timeoutInSeconds = 5, [CallerMemberName] string Caller = "") {
-      var title = nameof(ReqPriceSafe);
-      lock(_ReqPriceSafeLocker) {
-        if(!contract.IsFuturesCombo && contract.IsCombo)
-          return ReqPriceComboSafe(contract, timeoutInSeconds);
-
-        var c = TryGetPrice(contract).Where(p => p.Ask > 0 && p.Bid > 0).ToArray();
-        if(c.Any()) return c
-        .Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToObservable();
-
-        var o = Observable.Interval(1.FromSeconds())//.Spy($"{nameof(ReqPriceSafe)} Timer", TraceDebug)
-          .SelectMany(_ => {
-            if(false && _reqPriceCount++ == 0) {
-              TraceError($"{title}:{new { _reqPriceCount }} sleep");
-              Thread.Sleep(5000);
-            }
-            return TryGetPrice(contract).Where(p => p.IsAskSet && p.IsBidSet).Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta));
-          })
-          .Take(1)
-          .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds)))
-          .ToArray()
-          .Do(a => a.IsEmpty().IfTrue(() => {
-            TraceError($"{title}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}{TraceDebugThrough(new { contract })}");
-            //ActiveRequestCleaner(contract);
-            //TraceError($"{nameof(ReqPriceSafe)}: ActiveRequestCleaner({contract})");
-          }))
-          .SelectMany(p => p)
-          //.Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
-          .Do(p => Verbose($"{title}:{contract}:{p}  <= {Caller}"))
-        //.Select(p => (p.Bid, p.Ask, p.Time))
-        //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
-        ;
-        return o.ObserveOn(TaskPoolScheduler.Default);
-      }
-    }
-    public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceSafe_Good(Contract contract, double timeoutInSeconds = 5, [CallerMemberName] string Caller = "") {
-      lock(_ReqPriceSafeLocker) {
-        if(!contract.IsFuturesCombo && contract.IsCombo)
-          return ReqPriceComboSafe(contract, timeoutInSeconds);
-
-        var c = TryGetPrice(contract).Where(p => p.Ask > 0 && p.Bid > 0).ToArray();
-        if(c.Any()) return c
-        //.Do(p => Trace($"ReqPriceSafe.Cache:{contract}:{p}"))
-        .Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).ToObservable();
-
-        var o =
-          TickPriceObservable
-          //.SkipUntil(obs)
-          //.Do(_ => SetContractSubscription(contract))
-          .Select(t => (long)t.RequestId).Merge(Observable.Interval(0.1.FromSeconds(), ThreadPoolScheduler.Instance))
-        .SelectMany(_ => TryGetPrice(contract).Select(p => (p.Bid, p.Ask, p.Time, p.GreekDelta)).Where(p => p.Bid > 0 && p.Ask > 0))
-        .Take(1)
-        .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(timeoutInSeconds), ThreadPoolScheduler.Instance))
-        .ToArray()
-        .Do(a => a.IsEmpty().IfTrue(() => {
-          TraceError($"{nameof(ReqPriceSafe)}: {contract} - price timeout{{{timeoutInSeconds} seconds <= {Caller}}}");
-          //ActiveRequestCleaner(contract);
-          //TraceError($"{nameof(ReqPriceSafe)}: ActiveRequestCleaner({contract})");
-        }))
-        .SelectMany(p => p)
-        //.Where(p => p.Bid > 0 && p.Ask > 0 && p.Time > ServerTime.AddSeconds(-60 * 5))
-        .Do(p => Verbose($"{nameof(TickPriceObservable)}:{contract}:{p}  <= {Caller}"))
-        //.Select(p => (p.Bid, p.Ask, p.Time))
-        //.Concat(Observable.Defer(() => ReqPriceComboSafe(contract, timeoutInSeconds, useErrorHandler)))
-        ;
-        return o;
-      }
-    }
-
-
-    public IObservable<(double bid, double ask, DateTime time)> ReqPriceComboSafe_New(Contract combo, double timeoutInSeconds) {
-      double ask((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time, double delta) price) => (cl.leg.Action == "BUY" ? 1 : -1) * price.ask;
-      double bidCalc((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time, double delta) price) => (cl.leg.Action == "BUY" ? 1 : -1) * price.bid;
-      var x = combo.LegsEx()
-        .ToObservable()
-        .SelectMany(cl => ReqPriceSafe(cl.contract, timeoutInSeconds).Select(price => (cl, price)).Take(1))
-        .ToArray()
-        .Where(a => a.Any())
-        .Select(t => {
-          var bids = t.Select(t2 => bidCalc(t2.cl, t2.price) * t2.cl.leg.Ratio).ToArray();
-          var bid = bids.Sum();
-          return (
-           bid,
-           t.Sum(t2 => ask(t2.cl, t2.price) * t2.cl.leg.Ratio),
-           t.Min(t2 => t2.price.time)
-           );
-        });
-      return x;
-    }
-    public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceComboSafe(Contract combo, double timeoutInSeconds, [CallerMemberName] string Caller = "") {
-      //Trace($"{nameof(ReqPriceComboSafe)}:{combo} <= {Caller}");
-      double ask((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time, double) price) => cl.leg.Action == "BUY" ? price.ask : -price.bid;
-      double bid((Contract option, ComboLeg leg) cl, (double bid, double ask, DateTime time, double) price) => cl.leg.Action == "BUY" ? price.bid : -price.ask;
-      var x = combo.LegsEx()
-        .ToObservable()
-        .SelectMany(cl => ReqPriceSafe(cl.contract, timeoutInSeconds).Select(price => (cl, price)).Take(1))
-        .ToArray()
-        .Where(a => a.Any())
-        .Select(t => (
-        t.Sum(t2 => bid(t2.cl, t2.price) * t2.cl.leg.Ratio),
-        t.Sum(t2 => ask(t2.cl, t2.price) * t2.cl.leg.Ratio),
-        t.Max(t2 => t2.price.time),
-        t.Max(t2 => t2.price.delta)
-        ));
-      return x;
-    }
-
-
-
     #region ReqMktData Subject
     object _ReqMktDataSubjectLocker = new object();
     ISubject<Action> _ReqMktDataSubject;
@@ -707,7 +579,7 @@ namespace IBApp {
     public PRICE_OBSERVABLE ReqPriceCombo(Contract combo, IEnumerable<Contract> oprions, double timeoutInSeconds) {
       var x = oprions
         .ToObservable()
-        .SelectMany(contract => ReqPriceSafe(contract, timeoutInSeconds).Take(1))
+        .SelectMany(contract => contract.ReqPriceSafe(timeoutInSeconds).Take(1))
         .ToArray()
         .SelectMany(prices => prices.Take(1).Select(price => (combo, prices.Sum(p => p.bid), prices.Sum(p => p.ask), ServerTime)));
       return x;
@@ -754,7 +626,6 @@ namespace IBApp {
       lock(_validOrderIdLock) {
         _validOrderId = obj + 1;
       }
-      Verbose(new { _validOrderId });
     }
     /// <summary>
     /// https://docs.microsoft.com/en-us/dotnet/api/system.threading.interlocked.increment?f1url=https%3A%2F%2Fmsdn.microsoft.com%2Fquery%2Fdev15.query%3FappId%3DDev15IDEF1%26l%3DEN-US%26k%3Dk(System.Threading.Interlocked.Increment);k(SolutionItemsProject);k(TargetFrameworkMoniker-.NETFramework,Version%3Dv4.6.2);k(DevLang-csharp)%26rd%3Dtrue&view=netframework-4.7.1
@@ -776,15 +647,11 @@ namespace IBApp {
       _marketDataManager.ActiveRequestCleaner(contract: contract);
     }
     public IEnumerable<Price> TryGetPrice(Contract contract, [CallerMemberName] string Caller = "") {
-      if(_marketDataManager.TryGetPrice(contract, out var price, $"{nameof(TryGetPrice)} <= {Caller}"))
-        yield return price;
-    }
-    public IEnumerable<Price> TryGetPrice(string pair, [CallerMemberName] string Caller = "") {
-      if(TryGetPrice(pair, out var price, $"{nameof(TryGetPrice)} <= {Caller}"))
+      if(_marketDataManager.TryGetPrice(contract, out var price, Common.CallerChain(Caller)))
         yield return price;
     }
     public bool TryGetPrice(string symbol, out Price price, [CallerMemberName] string Caller = "") =>
-      _marketDataManager.TryGetPrice(symbol.ContractFactory(), out price, $"{nameof(TryGetPrice)} <= {Caller}");
+      _marketDataManager.TryGetPrice(symbol.ContractFactory(), out price, Common.CallerChain(Caller));
     public Price GetPrice(string symbol) { return _marketDataManager.GetPrice(symbol); }
     #region Price Changed
     private void OnPriceChanged(Price price) {
@@ -833,7 +700,9 @@ namespace IBApp {
     static bool IsWarning(int code) => Configer.WarningCodes.Contains(code);
     static System.Collections.Concurrent.ConcurrentBag<int> _handledReqErros = new System.Collections.Concurrent.ConcurrentBag<int>();
     public static int SetRequestHandled(int id) {
-      _handledReqErros.Add(id); return id;
+      if(!_handledReqErros.Contains(id))
+        _handledReqErros.Add(id);
+      return id;
     }
     private void OnError(int id, int errorCode, string message, Exception exc) {
       if(_handledReqErros.Contains(id)) return;

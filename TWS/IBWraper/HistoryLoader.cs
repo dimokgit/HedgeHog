@@ -20,15 +20,14 @@ namespace IBApp {
     _3_mins, _5_mins, _15_mins, _30_mins, _1_hour, _1_day
   }
   public class DelayException :SoftException {
-    public DelayException(TimeSpan delay) : base(new { delay } + "") { }
+    public DelayException(string instrument, TimeSpan delay) : base($"{instrument}{new { delay }}") { }
   }
   #region HistoryLoader
   public class HistoryLoader<T> where T : HedgeHog.Bars.BarBaseDate {
-    private static int _currentTicker = 0;
     private static EventLoopScheduler historyLoaderScheduler = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "HistoryLoader", Priority = ThreadPriority.Normal });
     #region Fields
-    public const int HISTORICAL_ID_BASE = 30000000;
     private const int IBERROR_NOT_CONNECTED = 504;
+    private const int SERVER_ERROR = 162;
     private readonly List<T> _list;
     private readonly List<T> _list2;
     private readonly int _reqId;
@@ -63,10 +62,7 @@ namespace IBApp {
       , Action<Exception> error) {
       _ibClient = ibClient;
       _contract = contract;
-      if(_contract.Exchange.IsNullOrEmpty())
-        _contract = ibClient.ReqContractDetailsCached(contract).ToEnumerable().ToArray().Select(cd => cd.Contract.ContractFactory())
-          .Count(1, new { HistoryLoader = new { _contract } })
-          .Single();
+      Passager.ThrowIf(() => _contract.Exchange.IsNullOrEmpty());
       _periodsBack = periodsBack;
       _reqId = IBClientCore.IBClientCoreMaster.ValidOrderId();
       _list = new List<T>();
@@ -74,7 +70,7 @@ namespace IBApp {
       if(endDate.Kind == DateTimeKind.Unspecified)
         throw new Exception(new { endDate = new { endDate.Kind } } + "");
       _dateStart = endDate.Subtract(duration);
-      _endDate = endDate.ToLocalTime();
+      _endDate = timeUnit == TimeUnit.W ? endDate.ToLocalTime().Date.GetNextWeekday(DayOfWeek.Sunday).AddHours(18) : endDate;
       _timeUnit = timeUnit;
       _barSize = barSize;
       var durationByPeriod = barSize.Span().Multiply(periodsBack);
@@ -94,6 +90,7 @@ namespace IBApp {
       IBClientCore.IBClientCoreMaster.ErrorObservable
         .ObserveOn(historyLoaderScheduler)
         .Subscribe(e => HandlePacer(e.id, e.errorCode, e.errorMsg, e.exc)).SideEffect(_disposables.Add);
+      IBClientCore.SetRequestHandled(_reqId);
       Observable.FromEvent<HistoricalDataMessage>(h => _ibClient.HistoricalData += h, h => _ibClient.HistoricalData -= h, TaskPoolScheduler.Default)
         .ObserveOn(historyLoaderScheduler)
         .Subscribe(IbClient_HistoricalData).SideEffect(_disposables.Add);
@@ -112,7 +109,7 @@ namespace IBApp {
 
     #region Event Handlers
     private void HandlePacer(int reqId, int code, string error, Exception exc) {
-      IBClientCore.SetRequestHandled(reqId);
+      if(reqId != _reqId) return;
       if(code == IBERROR_NOT_CONNECTED) {
         CleanUp();
         _error(MakeError(_contract, reqId, code, error, exc));
@@ -120,7 +117,7 @@ namespace IBApp {
       if(reqId != _reqId)
         return;
       const string NO_DATA = "HMDS query returned no data";
-      if(code == 162 && error.Contains(NO_DATA)) {
+      if(code == SERVER_ERROR && error.Contains(NO_DATA)) {
         _endDate = _endDate.isWeekend()
           ? _endDate.AddDays(-2)
           : _timeUnit != TimeUnit.S
@@ -128,11 +125,11 @@ namespace IBApp {
           : _endDate.AddMinutes(-BarSizeRange(_barSize, _timeUnit).Last());
         _error(new SoftException(new { _endDate } + ""));
         RequestNextDataChunk();
-      } else if(code == 162 && error.Contains("pacing violation")) {
-        _delay = TimeSpan.FromSeconds(_delay.TotalSeconds + 1 / (_delay.TotalSeconds + 1));
-        _error(new DelayException(_delay));
+      } else if(code == SERVER_ERROR && error.Contains("pacing violation")) {
+        _delay = TimeSpan.FromSeconds(_delay.TotalSeconds + 1).Min(10.FromSeconds());
+        _error(new DelayException($"HistoryLoader:{_contract.Instrument}:{_barSize}:{_reqId}", _delay));
         RequestNextDataChunk();
-      } else if(code == 162 && error.Contains(NO_DATA)) {
+      } else if(code == SERVER_ERROR && error.Contains(NO_DATA)) {
         CleanUp();
         _error(MakeError(_contract, reqId, code, error, exc));
       } else if(reqId < 0 && exc == null) {

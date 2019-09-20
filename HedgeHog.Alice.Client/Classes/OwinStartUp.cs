@@ -249,7 +249,7 @@ namespace HedgeHog.Alice.Client {
     { "Tokyo", DateTimeOffset.Parse("23:00 +0:00") }
     };
     static List<string> _marketHoursSet = new List<string>();
-    static ActionAsyncBuffer _currentCombo = ActionAsyncBuffer.Create();
+    static ActionAsyncBuffer _currentCombo = new ActionAsyncBuffer(1.FromSeconds());
     static MyHub() {
       remoteControl = App.container.GetExport<RemoteControlModel>();
       trader = App.container.GetExport<TraderModel>();
@@ -268,11 +268,9 @@ namespace HedgeHog.Alice.Client {
     static DateTime _newsReadLastDate = DateTime.MinValue;
     static List<DateTimeOffset> _newsDates = new List<DateTimeOffset>();
     public object[] AskChangedPrice(string pair) {
-      return (from tm0 in UseTradingMacro2(pair, 0, tm => tm)
-              from tm1 in UseTradingMacro2(pair, 1, tm => tm)
-              from tmTrader in tm0.TradingMacroTrader().Concat(tm1.TradingMacroTrader()).Take(1)
-              from tmTrender in tm0.TradingMacroTrender().Concat(tm1.TradingMacroTrender()).TakeLast(1)
-              select new { tm0, tm1, tmTrader, tmTrender }
+      return (from tmTrader in UseTraderMacro(pair)
+              from tmTrender in tmTrader.TradingMacroTrender().TakeLast(1)
+              select new { tmTrader, tmTrender }
       ).Select(t => {
         var isVertual = t.tmTrader.IsInVirtualTrading;
 
@@ -318,14 +316,12 @@ namespace HedgeHog.Alice.Client {
           otg = IntOrDouble(t.tmTrader.OpenTradesGross2InPips, 3),
           tps = t.tmTrader.TicksPerSecondAverage.Round(1),
           dur = timeFrame(t.tmTrader)
-            + (t.tm1 != null ? "," + timeFrame(t.tm1) : ""),// + "|" + TimeSpan.FromMinutes(tm1.RatesDuration).ToString(@"h\:mm"),
+            + t.tmTrader.TradingMacroOther().Select(tm1 => "/" + timeFrame(tm1)).Flatter(""),// + "|" + TimeSpan.FromMinutes(tm1.RatesDuration).ToString(@"h\:mm"),
           hgt = string.Join("/", new[] {
-          t.tmTrender.RatesHeightInPips.ToInt()+"",
-          t.tmTrader.BuySellHeightInPips.ToInt()+"",
-          t.tmTrender.TLBlue.Angle.Abs().Round(1)+"°"
-        }),
-          rsdMin = t.tmTrader.RatesStDevMinInPips,
-          rsdMin2 = t.tm1 == null ? 0 : t.tm1.RatesStDevMinInPips,
+            t.tmTrender.RatesHeightInPips.ToInt()+"",
+            t.tmTrader.BuySellHeightInPips.ToInt()+"",
+            t.tmTrender.TLBlue.Angle.Abs().Round(1)+"°"
+          }),
           S = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
           price = t.tmTrader.CurrentPrice.YieldNotNull().Select(cp => new { ask = cp.Ask, bid = cp.Bid }).DefaultIfEmpty(new object()).Single(),
           tci = GetTradeConditionsInfo(t.tmTrader),
@@ -578,15 +574,33 @@ namespace HedgeHog.Alice.Client {
       var x = await (from hh in am.CurrentHedges(pair, hedgePar)
                      let h = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio)
                      let bs = (isBuy ? 1 : -1)
-                     from ots in am.OpenTrade(h.contract, h.quantity * bs)
+                     from ots in am.OpenTrade(o => o.Transmit = !h.contract.IsFuturesCombo, h.contract, h.quantity * bs)
                      from ots2 in am.OpenTrade(o => o.Transmit = false, h.contract, h.quantity * -bs)
                      from ot in ots
-                       //where ot.error.HasError
-                     select new { ot.holder, ot.error } + "").ToArray();
+                     select new { order = ot.holder + "", ot.error } + "").ToArray();
 
       return x;
-
-      UseTraderMacro(pair, tm => tm.OpenHedgedTrades(isBuy, false, $"WWW {nameof(OpenHedge)}"));
+    }
+    bool IsTestTradeMode() => Debugger.IsAttached;
+    [BasicAuthenticationFilter]
+    public async Task<object[]> OpenHedged(string pair, string key, int quantity, bool isBuy, bool rel, bool test) {
+      var am = GetAccountManager();
+      var c = Contract.FromCache(key).SingleOrDefault();
+      if(c == null) throw new Exception($"{new { key }} not found");
+      return await (
+        from p in c.ReqPriceSafe(5)
+        let price = p.ask.Avg(p.bid)
+        let oe = new Action<IBApi.Order>(o => {
+          o.Transmit = !test;
+          if(rel) {
+            o.AuxPrice = IBApi.Order.OrderPrice(price, c);
+            o.OrderType = "REL + MKT";
+          }
+        })
+        from ots in am.OpenTrade(oe, c, quantity * (isBuy ? 1 : -1))
+        from ot in ots
+        select new { order = ot.holder + "", ot.error.errorMsg }
+       ).ToArray();
     }
 
     static double DaysTillExpiration2(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
@@ -767,18 +781,18 @@ namespace HedgeHog.Alice.Client {
                , id = oc.order.OrderId
                , f = oc.status.filled
                , r = oc.status.remaining
-               , lp = oc.order.IsLimit ? oc.order.LmtPrice : 0
+               , lp = oc.order.LmtPrice.IfNotSetOrZero(oc.order.AuxPrice).IfNotSetOrZero(0)
                , p = oc.order.Action == "BUY" ? ask : bid
                , a = oc.order.Action.Substring(0, 1)
                , s = oc.status.status.AllCaps()
                , c = oc.order.ParentId != 0
                , e = oc.ShouldExecute
                , pc = oc.order.Conditions.SelectMany(c => c.ParsePriceCondition()).Select(c => c.price).ToArray()
-            });
+            }); ;
             Action openOrders = () =>
               (from oc in am.OrderContractsInternal.Values.ToObservable()
                where !oc.isFilled
-               from p in IBClientCore.IBClientCoreMaster.ReqPriceSafe(oc.contract).DefaultIfEmpty()
+               from p in oc.contract.ReqPriceSafe().DefaultIfEmpty()
                select (oc, x: orderMap(oc, p.ask, p.bid))
                ).ToArray()
               .Select(a => a.OrderBy(x => x.oc.order.ParentId.IfZero(x.oc.order.OrderId)).ThenBy(x => x.oc.order.ParentId).ToArray())
@@ -810,7 +824,8 @@ namespace HedgeHog.Alice.Client {
                 try {
                   var combos = cts
                   .Where(ct => ct.position != 0)
-                  .OrderBy(ct => ct.contract.FromDetailsCache().Select(cd => cd.UnderSymbol.IfEmpty(ct.contract.LocalSymbol)).FirstOrDefault())
+                  .OrderByDescending(ct => ct.contract.IsBag)
+                  .ThenBy(ct => ct.contract.FromDetailsCache().Select(cd => cd.UnderSymbol.IfEmpty(ct.contract.Instrument)).FirstOrDefault())
                   .ThenBy(ct => ct.contract.Legs().Count())
                   .ThenBy(ct => ct.contract.LastTradeDateOrContractMonth2)
                   //.ThenBy(ct => ct.contract.IsOption)
@@ -866,7 +881,7 @@ namespace HedgeHog.Alice.Client {
                           from sc in selectedCombos
                           where cts.Count(ct => ct.contract.Instrument == sc) == 0
                           from c in Contract.FromCache(sc).SelectMany(l => l.LegsOrMe())
-                          from price in DataManager.IBClientMaster.ReqPriceSafe(c)
+                          from price in c.ReqPriceSafe()
                           from trades in am.ComboTrades(1).Where(ct => ct.contract == c).ToArray()
                           let debit = trades.Select(t => t.openPrice.Abs()).DefaultIfEmpty(price.bid).Single()
                           select (c.Strike, debit, c.IsCall)
@@ -886,8 +901,11 @@ namespace HedgeHog.Alice.Client {
                let h = new { combo = c, ratio = hh.Select(t => t.ratio).Min().AutoRound2(3), context = HID_BYTV/*hh.ToArray(t => t.context).MashDiffs()*/ }
                from price in h.combo.contract.ReqPriceSafe()
                from cts in am.ComboTrades(1).Where(ct => selectedHedge.IsNullOrWhiteSpace() && ct.contract.IsFuturesCombo).ToArray()
-               select new CurrentHedge(HID_BYTV, h.combo.contract.ShortString, h.combo.quantity, h.ratio, h.context, price.ask.Avg(price.bid).AutoRound2(2))
+               from order in am.OrderContractsInternal.Take(1).Select(oh => (oh.Value.contract, quantity: oh.Value.order.TotalQuantity.ToInt())).DefaultIfEmpty()
+               select new CurrentHedge(HID_BYTV, h.combo.contract.ShortString, h.combo.quantity, h.ratio, h.context, price.ask.Avg(price.bid).AutoRound2(2), c.contract.Key)
                .SideEffect(_ => cts.Select(ct => (ct.contract, quantity: ct.position))
+               .IfEmpty(() => order.YieldIf(o => o.contract != null))
+               .Take(1)
                .DefaultIfEmpty((c.contract, c.quantity))
                .Where(__ => selectedHedge.IsNullOrWhiteSpace() || selectedHedge == HID_BYTV)
                .ForEach(t => GetTradingMacros(pair, tml => tml.SetCurrentHedgePosition(t.contract, t.quantity.Abs()))))
@@ -907,7 +925,7 @@ namespace HedgeHog.Alice.Client {
         bool CompHID(TradingMacro tml, string hid) => selectedHedge.Contains(hid);
         IObservable<CurrentHedge> GetCurrentHedgeTMs() => GetTradingMacros(pair,
           tml => CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByHV(), HID_BYHV + tml.PairIndex, CompHID(tml, HID_BYHV))
-          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(), HID_BYPOS + tml.PairIndex, selectedHedge.IsNullOrWhiteSpace() || CompHID(tml, HID_BYPOS)))
+          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(), HID_BYPOS + tml.PairIndex, CompHID(tml, HID_BYPOS)))
           ).Merge();
 
         var distFromHigh = tm.TradingMacroM1(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
@@ -925,12 +943,14 @@ namespace HedgeHog.Alice.Client {
             //if(doSideEffect)              tm.SetCurrentHedgePosition(c.contract, c.quantity);
             var pc = MonoidsCore.ToFunc(() => Observable.Return(hh.Select(h => (h.price, (double)h.BaseUnitSize, (int)h.ratio)).ToArray().CalcHedgePrice().With(p => (bid: p, ask: p, time: tml.ServerTime, delta: 1.0))));
             return
-            (from c in IsInVirtual() ? MakeHedgeCombo() : MakeHedgeComboSafe()
+            (from q in Observable.Return(quantity)
+             where q != 0
+             from c in IsInVirtual() ? MakeHedgeCombo() : MakeHedgeComboSafe()
              from p in IsInVirtual() ? pc() : c.contract.ReqPriceSafe().DefaultIfEmpty()
              let rc = new { ratio = hh.Select(t => t.ratio).Min().AutoRound2(3), context = id/* hh.ToArray(t => t.context).MashDiffs()*/ }
              let contract = ShortString(c.contract)
              .SideEffect(_ => { if(doSideEffect) tml.SetCurrentHedgePosition(c.contract, c.quantity); })
-             select new CurrentHedge(id, contract, c.quantity, rc.ratio, rc.context, p.bid.Avg(p.ask).ToInt())
+             select new CurrentHedge(id, contract, c.quantity, rc.ratio, rc.context, p.bid.Avg(p.ask).ToInt(), c.contract.Key)
              ).Catch((Exception exc) => {
                Log = exc;
                return Observable.Empty<CurrentHedge>();
@@ -946,13 +966,14 @@ namespace HedgeHog.Alice.Client {
         }
       });
     public class CurrentHedge {
-      public CurrentHedge(string id, string contract, double ratio, double quantity, string context, double price) {
+      public CurrentHedge(string id, string contract, double quantity, double ratio, string context, double price, string key) {
         this.id = id;
         this.contract = contract;
         this.ratio = ratio;
         this.quantity = quantity;
         this.context = context;
         this.price = price;
+        this.key = key;
       }
 
       public string id { get; }
@@ -961,21 +982,7 @@ namespace HedgeHog.Alice.Client {
       public double quantity { get; }
       public string context { get; }
       public double price { get; }
-    }
-    [BasicAuthenticationFilter]
-    public async Task<object[]> OpenHedged(string pair, int quantity, bool isBuy) {
-      var hedgePar = ReadHedgedOther(pair);
-      if(hedgePar.IsNullOrEmpty()) return new string[0];
-      var am = GetAccountManager();
-      var hhs = (await ContractsForHedge(pair)).ToObservable().ToArray();
-      return await (from hh in hhs
-                    where quantity != 0 && hh.Any()
-                    let c = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio)
-                    from ots in am.OpenTrade(c.contract, c.quantity * (isBuy ? 1 : -1))
-                    from ot in ots
-                    select new { ot.holder, ot.error }
-       ).ToArray();
-
+      public string key { get; }
     }
     [BasicAuthenticationFilter]
     public async Task<string[]> RollTrade(string currentSymbol, string rollSymbol) {
@@ -1061,9 +1068,9 @@ namespace HedgeHog.Alice.Client {
 
       var contracts = new[] { option }.ToObservable();
       var res = await (from contract in contracts
-                       from price in DataManager.IBClientMaster.ReqPriceSafe(contract)
+                       from price in contract.ReqPriceSafe()
                        from under in contract.UnderContract
-                       from up in DataManager.IBClientMaster.ReqPriceSafe(under).Select(p => p.ask.Avg(p.bid))
+                       from up in under.ReqPriceSafe().Select(p => p.ask.Avg(p.bid))
                        let condPrice = conditionPrice.GetValueOrDefault(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
                        let isMore = contract.IsCallPut ? condPrice > up : contract.IsCall && isBuy || contract.IsPut && isSell
                        let upProfit = profit * (isMore ? 1 : -1)
@@ -1178,7 +1185,7 @@ namespace HedgeHog.Alice.Client {
       (from am in Observable.Return(GetAccountManager())
        from ct in am.ComboTrades(1)
        from under in ct.contract.UnderContract
-       from underPrice in DataManager.IBClientMaster.ReqPriceSafe(under)
+       from underPrice in under.ReqPriceSafe()
        where ct.contract.Instrument == instrument
        select (ct.contract, ct.position, ct.orderId, ct.closePrice, under, underPrice, am)
        )
@@ -1188,7 +1195,7 @@ namespace HedgeHog.Alice.Client {
           .SelectMany(och => {
             och.order.OrderType = "LMT";
             och.order.LmtPrice = c.closePrice;
-            return c.am.PlaceOrder(och.order, och.contract).Cast<ErrorMessage>();
+            return c.am.PlaceOrder(och.order, och.contract).Select(m => m.error);
           });
         } else {
           //am.CancelAllOrders("CloseCombo");
@@ -1198,7 +1205,7 @@ namespace HedgeHog.Alice.Client {
           ? false
           : true
           : (bool?)null;
-          return from tt in c.am.OpenTrade(order => order.Transmit = !c.contract.IsFuturesCombo, c.contract, -c.position
+          return from tt in c.am.OpenTrade(order => order.Transmit = !IsTestTradeMode() || !c.contract.IsBag, c.contract, -c.position
           , isMore.HasValue || c.contract.IsCallPut || c.contract.IsFuturesCombo ? 0 : c.closePrice
           , 0.0, false, default, default
           , isMore.HasValue ? c.under.PriceCondition(conditionPrice.Value, isMore.Value, false) : default)
@@ -1226,7 +1233,7 @@ namespace HedgeHog.Alice.Client {
       return MarketDataManager.ActiveRequests
         .OrderBy(x => x.Value.contract.Instrument)
         .ThenBy(x => x.Key)
-        .Select(x => new { x.Value.contract.ShortWithDate, x.Key, x.Value.price.Bid })
+        .Select(x => new { x.Value.contract.ShortWithDate, x.Key, x.Value.price.Bid, x.Value.price.Ask })
         .ToArray();
     }
     public void CleanActiveRequests() => MarketDataManager.ActiveRequestCleaner();
@@ -1434,7 +1441,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     static int _sendChartBufferCounter = 0;
-    static SendChartBuffer _sendChartBuffer = SendChartBuffer.Create();
+    static SendChartBuffer _sendChartBuffer = new SendChartBuffer();
 
     [BasicAuthenticationFilter]
     public void SetPresetTradeLevels(string pair, TradeLevelsPreset presetLevels, object isBuy) {
@@ -1793,15 +1800,12 @@ namespace HedgeHog.Alice.Client {
     private IEnumerable<TradingMacro> GetTradingMacros(string pair) {
       return GetTradingMacros()
         .Where(tm => tm.PairPlain == pair)
-        .OrderBy(tm => tm.TradingGroup)
-        .ThenBy(tm => tm.PairIndex)
-        .AsEnumerable()
         ?? new TradingMacro[0];
     }
     private IEnumerable<TradingMacro> GetTradingMacros() {
       return remoteControl?.Value?
         .TradingMacrosCopy
-        //.Where(tm => tm.IsActive)
+        .Where(tm => tm.IsActive)
         .OrderBy(tm => tm.TradingGroup)
         .ThenBy(tm => tm.PairIndex)
         .AsEnumerable()

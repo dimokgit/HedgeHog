@@ -76,7 +76,7 @@ namespace IBApp {
         h => IbClient.Position += h.SideEffect(_ => Trace($"+= IbClient.Position")),
         h => IbClient.Position -= h.SideEffect(_ => Trace($"-= IbClient.Position"))
         )
-        .Where(x => /*x.Position != 0 &&*/ x.Account == _accountId && !NoPositionsPlease)
+        .Where(x => /*x.Position != 0 &&*/ x.Account == _accountId)
         //.DistinctUntilChanged(t => new { t.Contract, t.Position })
         .Do(x => Trace($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
         .SelectMany(p =>
@@ -104,28 +104,31 @@ namespace IBApp {
       //.Spy("**** AccountManager.PositionsObservable ****")
       ;
 
+      IScheduler esOpenOrder = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "OpenOrder", Priority = ThreadPriority.Normal });
       OpenOrderObservable = Observable.FromEvent<OpenOrderHandler, OpenOrderMessage>(
         onNext => (OpenOrderMessage m) =>
         Try(() => onNext(m), nameof(IbClient.OpenOrder)),
         h => IbClient.OpenOrder += h,
         h => IbClient.OpenOrder -= h
         )
+        .ObserveOn(esOpenOrder)
+        .Distinct(x => OrderKey(x.Order))
         .SelectMany(m => {
-          var x = (from cl in m.Contract.ComboLegs?.ToObservable()
+          var x = (from cl in (m.Contract.ComboLegs ?? new List<ComboLeg>()).ToObservable()
                    from con in ibClient.ReqContractDetailsCached(cl.ConId).Select(cd => cd.Contract)
                    select con)
                    .ToArray()
-                   .Where(_ => m.Contract.IsFuturesCombo)
+                   .Where(_ => m.Contract.IsFuturesCombo || m.Contract.IsStocksCombo)
                    .Select(cons => m.SideEffect(_ => {
-                     //m.Contract.TradingClass = null;
-                     m.Contract.Symbol = cons[0].Symbol;
+                     var syms = cons.Select(c => c.Symbol).ToList();
+                     m.Contract.Symbol = m.Contract.IsStocksCombo ? syms.OrderBy(s => s).First() : syms[0];
                    })
                    );
-          return x.DefaultIfEmpty(m);
+          return x.ObserveOn(TaskPoolScheduler.Default).DefaultIfEmpty(m);
         })
-        .Distinct(x => OrderKey(x.Order))
+        .Do(x => TraceDebug($"OpenOrder:{new { key = OrderKey(x.Order) }}"))
         ;
-      string OrderKey(IBApi.Order o) => $"{o.PermId}{o.LmtPrice}{o.Conditions.Flatter("; ")}";
+      string OrderKey(IBApi.Order o) => new { o.PermId, o.LmtPrice, Conditions = o.Conditions.Flatter("; ") } + "";
 
       OrderStatusObservable = Observable.FromEvent<OrderStatusHandler, OrderStatusMessage>(
         onNext
@@ -151,14 +154,12 @@ namespace IBApp {
         .Subscribe(OnPosition, () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
 
-      IScheduler esOpenOrder = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "OpenOrder", Priority = ThreadPriority.Normal });
       OpenOrderObservable
         .Where(x => x.Order.Account == _accountId)
         .Do(x => TraceDebug($"OpenOrder: {new { x.Order.OrderId, x.Order.Transmit, conditions = x.Order.Conditions.Flatter(";") } }"))
         //.Do(UpdateOrder)
         .Do(x => TraceDebug($"OpenOrderKey: {OrderKey(x.Order)}"))
         .Do(x => Trace($"OpenOrder: {x}"))
-        .SubscribeOn(esOpenOrder)
         .Subscribe(a => OnOrderImpl(a))
         .SideEffect(s => _strams.Add(s));
 
@@ -181,7 +182,7 @@ namespace IBApp {
           )
           .Where(m => m.IsOrderDone())
           .SelectMany(o => UseOrderContracts(ocs => ocs.ByOrderId(o.OrderId)).Concat())
-          .SubscribeOn(esOpenOrder)
+          .ObserveOn(esOpenOrder)
           .Subscribe(o => RaiseOrderRemoved(o))
           .SideEffect(s => _strams.Add(s));
 

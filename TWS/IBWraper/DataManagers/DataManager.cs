@@ -21,8 +21,8 @@ namespace IBApp {
     private IBClientCore _ibClient;
 
     public static string ShowThread() => $"~{Thread.CurrentThread.ManagedThreadId}{Thread.CurrentThread.Name.With(tn => tn.IsNullOrEmpty() ? "" : (":" + tn))}";
-    public void TraceError<T>(T v) => Trace("{!} " + v + ShowThread());
-    public void TraceDebug<T>(T v) { if(Debugger.IsAttached) Trace("{?} " + v+ShowThread()); }
+    public void TraceError<T>(T v) => Trace("{!}" + v + ShowThread());
+    public void TraceDebug<T>(T v) { if(Debugger.IsAttached) Trace("{?}" + v+ShowThread()); }
     public void TraceDebug0<T>(T v) { }
     protected Action<object> Trace { get; }
     protected Action<bool, object> TraceIf => (b, o) => { if(b) Trace(o); };

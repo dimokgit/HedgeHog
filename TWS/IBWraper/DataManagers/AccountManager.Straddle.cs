@@ -13,6 +13,9 @@ using CURRENT_ROLLOVERS = System.IObservable<(IBApp.ComboTrade trade, IBApi.Cont
 using CURRENT_HEDGES = System.Collections.Generic.List<(IBApi.Contract contract, double ratio, double price, string context)>;
 using System.Reactive.Concurrency;
 using System.Threading;
+using System.Runtime.CompilerServices;
+using System.Reactive.Subjects;
+using System.Reactive;
 
 namespace IBApp {
   public partial class AccountManager {
@@ -22,9 +25,9 @@ namespace IBApp {
       CurrentStraddles(string symbol, double strikeLevel, int expirationDaysSkip, int count, int gap) {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
-        from price in IbClient.ReqPriceSafe(cd.Contract, 5).Select(p => p.ask.Avg(p.bid))
+        from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
         from combo in MakeStraddles(symbol, strikeLevel.IfNaN(price), expirationDaysSkip, 1, count, gap)
-        from p in IbClient.ReqPriceSafe(combo.contract).DefaultIfEmpty()
+        from p in combo.contract.ReqPriceSafe().DefaultIfEmpty()
         select CurrentComboInfo(price, combo, p)).ToArray()
         .Select(b => b
          .OrderBy(t => t.ask.Avg(t.bid))
@@ -62,9 +65,9 @@ namespace IBApp {
       (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
-        from underPrice in IbClient.ReqPriceSafe(cd.Contract, 5).Select(p => p.bid)
+        from underPrice in cd.Contract.ReqPriceSafe(5).Select(p => p.bid)
         from combo in MakeStraddles(symbol, underPrice, expirationDaysSkip, 1, count, gap)
-        from p in IbClient.ReqPriceSafe(combo.contract, 2).DefaultIfEmpty()
+        from p in combo.contract.ReqPriceSafe(2).DefaultIfEmpty()
         let strikeAvg = combo.options.Average(o => o.Strike)
         select (
           instrument: combo.contract.Instrument,
@@ -201,7 +204,7 @@ namespace IBApp {
     public IObservable<(Contract contract, double ratio, double price, string context)[]> CurrentHedgesByHV((string pair, double hv)[] hedges) {
       var o = (from h in hedges.ToObservable()
                from cd in IbClient.ReqContractDetailsCached(h.pair)
-               from p in IbClient.ReqPriceSafe(cd.Contract)
+               from p in cd.Contract.ReqPriceSafe()
                let hh = (cd.Contract, p.ask.Avg(p.bid), h.hv, (double)cd.Contract.ComboMultiplier, h.pair + ":" + h.hv.Round(2))
                select hh).ToArray();
       var o2 = (from hh in o select TradesManagerStatic.HedgeRatioByValue(":", hh));
@@ -219,7 +222,7 @@ namespace IBApp {
     public IObservable<(Contract option, Contract contract, double underPrice, double bid, double ask, double delta)[]> CurrentTimeValue(string symbol) {
       return (
         from u in IbClient.ReqContractDetailsCached(symbol)
-        from up in IbClient.ReqPriceSafe(u.Contract)
+        from up in u.Contract.ReqPriceSafe()
         let nextFriday = MathCore.GetWorkingDays(DateTime.Now, DateTime.Now.AddDays(8).GetNextWeekday(DayOfWeek.Friday))
         from cs in CurrentOptions(symbol, double.NaN, nextFriday, 6, c => c.Expiration.DayOfWeek == DayOfWeek.Friday)
         let calls = cs.Where(c => c.option.IsCall).OrderByDescending(c => c.delta).Take(2)
@@ -227,37 +230,50 @@ namespace IBApp {
         select calls.Concat(puts).Select(o => (o.option, u.Contract, o.underPrice, o.bid, o.ask, o.delta)).ToArray());
     }
     //public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count) =>
-    public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count, Func<Contract, bool> filter) =>
-      (from cd in IbClient.ReqContractDetailsCached(symbol)
-       where count > 0
-       from price in IbClient.ReqPriceSafe(cd.Contract, 5).Select(p => p.ask.Avg(p.bid))
-       from option in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count, filter)
-       where filter(option)
-       from p in IbClient.ReqPriceSafe(option, 1, "Current Option").DefaultIfEmpty()
-       let pa = p.ask.Avg(p.bid)
-       select (
-         instrument: option.Instrument,
-         p.bid,
-         p.ask,
-         p.time,//.ToString("HH:mm:ss"),
-         delta: option.ExtrinsicValue(pa, price),
-         option.Strike,
-         price,
-         breakEven: (up: option.Strike + pa, dn: option.Strike - pa),
-         option,
-         deltaBid: option.ExtrinsicValue(p.bid, price),
-         deltaAsk: p.delta
-       ))
-      .ToArray()
-      .Select(b => b
-      .OrderBy(t => t.ask.Avg(t.bid))
-      .Select((t, i) => (t, i))
-      .OrderBy(t => t.i > 3)
-      .ThenBy(t => t.t.ask.Avg(t.t.bid) / t.t.delta)
-      .ThenBy(t => t.t.option.Right)
-      .Select(t => t.t)
-      .ToArray());
-
+    static IScheduler esCurrOptions = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "CurrOptions" });
+    static IObservable<CURRENT_OPTIONS> _CurrentOptionsGate = Observable.Empty<CURRENT_OPTIONS>();
+    object _currOptLock = new object();
+    public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count, Func<Contract, bool> filter, [CallerMemberName] string Caller = "") {
+      lock(_currOptLock) {
+        TraceDebug0($"{nameof(CurrentOptions)} from {Caller}");
+        return (
+          //from w in _CurrentOptionsGate.DefaultIfEmpty().Take(1)
+          from cd in IbClient.ReqContractDetailsCached(symbol)
+          where count > 0
+          from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
+          from options in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count, filter).ToArray()
+          from option in options.ToObservable()//.RateLimit(10, TaskPoolScheduler.Default)
+          where filter(option)
+          from p in option.ReqPriceSafe( 10,Common.CallerChain("Current Option")).DefaultIfEmpty()
+          let pa = p.ask.Avg(p.bid)
+          select (
+            instrument: option.Instrument,
+            p.bid,
+            p.ask,
+            p.time,//.ToString("HH:mm:ss"),
+            delta: option.ExtrinsicValue(pa, price),
+            option.Strike,
+            price,
+            breakEven: (up: option.Strike + pa, dn: option.Strike - pa),
+            option,
+            deltaBid: option.ExtrinsicValue(p.bid, price),
+            deltaAsk: p.delta
+          ))
+        .ToArray()
+        .Select(b => b
+        .OrderBy(t => t.ask.Avg(t.bid))
+        .Select((t, i) => (t, i))
+        .OrderBy(t => t.i > 3)
+        .ThenBy(t => t.t.ask.Avg(t.t.bid) / t.t.delta)
+        .ThenBy(t => t.t.option.Right)
+        .Select(t => t.t)
+        .ToArray())
+        .Publish()
+        .RefCount()
+        //.SideEffect(_ => _CurrentOptionsGate = _)
+        ;
+      }
+    }
     public IObservable<Contract> MakeOptions
       (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count, Func<Contract, bool> filter) =>
       IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count, filter)
@@ -279,7 +295,7 @@ namespace IBApp {
          : Observable.Return(cd.Contract)
        let underSymbol = underContract.LocalSymbol
        from under in IbClient.ReqContractDetailsCached(underSymbol)//.Spy(_spy("ReqContractDetailsCached"))
-       from price in IbClient.ReqPriceSafe(under.Contract)//.Spy(_spy("ReqPriceSafe"))
+       from price in under.Contract.ReqPriceSafe()//.Spy(_spy("ReqPriceSafe"))
        let expiration = contract.IsOption ? contract.Expiration : DateTime.Now.Date.AddDays(0)
        from allStkExp in IbClient.ReqStrikesAndExpirations(underSymbol)//.Spy(_spy("AllStrikesAndExpirations"))
        let exps = allStkExp.expirations.Where(ex => ex > expiration && ex <= expiration.AddDays(weeks * 7)).OrderBy(ex => ex).ToArray()
@@ -329,7 +345,7 @@ namespace IBApp {
       from roll in rolls//.SideEffect(_ => TraceDebug(rolls.Select(r => new { roll = r.Instrument }).ToTextOrTable("Rolls:")))
       let strikeSign = trade.contract.IsOption ? (trade.contract.IsCall ? -1 : trade.contract.IsPut ? 1 : 0) * trade.position.Sign() : 0
       let strikeDelta = (roll.ComboStrike() - trade.underPrice) * strikeSign
-      from rp in IbClient.ReqPriceSafe(roll)
+      from rp in roll.ReqPriceSafe()
       let bid = roll.ExtrinsicValue(rp.bid, up.bid)
       where trade.contract.IsOption && bid > strikeDelta.Max(-trade.change) || bid > -trade.change
       let days = (roll.Expiration - expiration).TotalDays.Floor()//.SideEffect(_ => TraceDebug(new { roll, roll.Expiration, expiration, days = _ }))

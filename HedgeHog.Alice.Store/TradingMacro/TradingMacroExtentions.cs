@@ -68,7 +68,8 @@ namespace HedgeHog.Alice.Store {
     static TimeSpan THROTTLE_INTERVAL = TimeSpan.FromSeconds(1);
 
     public void OnLoadRates(Action a = null) {
-      (_loadRatesAsyncBuffer ?? (_loadRatesAsyncBuffer = new LoadRateAsyncBuffer())).Push(() => LoadRates(a));
+      (_loadRatesAsyncBuffer
+        ?? (_loadRatesAsyncBuffer = new LoadRateAsyncBuffer(TradingMacrosActive.Count(/*tm => tm.BarPeriod < BarsPeriodType.m1*/)))).Push(() => LoadRates(a));
       //broadcastLoadRates.Post(u => LoadRates(a));
     }
 
@@ -4261,12 +4262,15 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
     #endregion
 
-
+    class DebugLogException :Exception {
+      public DebugLogException(string message) : base(message) { }
+    }
     private void LogExc(Exception exc) => Log = exc;
     private Exception _Log;
     public Exception Log {
       get { return _Log; }
       set {
+        if(value is DebugLogException && !Debugger.IsAttached) return;
         if(_Log != value) {
           _Log = value;
           OnPropertyChanged("Log");
@@ -4500,7 +4504,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           InfoTooltip = "";
         }
     }
-    AddHistoryOrdersBuffer _addHistoryOrdersBuffer = AddHistoryOrdersBuffer.Create();
+    AddHistoryOrdersBuffer _addHistoryOrdersBuffer = new AddHistoryOrdersBuffer();
     class AddHistoryOrdersBuffer :AsyncBuffer<AddHistoryOrdersBuffer, Action> {
       protected override Action PushImpl(Action action) {
         return action;
@@ -4563,12 +4567,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       }
     }
     class LoadRateAsyncBuffer :AsyncBuffer<LoadRateAsyncBuffer, Action> {
-      public LoadRateAsyncBuffer() : base(TimeSpan.FromSeconds(11)) {
-
-      }
-      protected override Action PushImpl(Action context) {
-        return context;
-      }
+      public LoadRateAsyncBuffer(int tmCount) : base(1, 11.FromSeconds().Multiply(tmCount), true,(Func<string>)null) { }
+      protected override Action PushImpl(Action context) => context;
     }
     LoadRateAsyncBuffer _loadRatesAsyncBuffer;
     BroadcastBlock<Action<Unit>> _broadcastLoadRates;

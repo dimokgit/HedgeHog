@@ -369,7 +369,8 @@
     button {
       line-height: 80%;
     }
-    div.hedgeComboActive{
+
+    div.hedgeComboActive {
       font-weight: bold;
     }
   </style>
@@ -920,6 +921,7 @@
         <tr>
           <td data-bind="text:ShortWithDate"></td>
           <td data-bind="text:Bid"></td>
+          <td data-bind="text:Ask"></td>
           <td data-bind="text:Key"></td>
         </tr>
       </tbody>
@@ -1332,24 +1334,38 @@
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
         <select data-bind="options:rollOversList,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>
-      <div data-bind="foreach:hedgeComboText">
-        <div data-bind="click: $parent.toggleSelectedHedgeCombo,css:{hedgeComboActive:$root.testHedgeComboActive($data)}">
-        <span data-bind="text:data"></span>
-        <button data-bind="click:$root.openHedged.bind(null,true)">BY</button>
-        <button data-bind="click:$root.openHedged.bind(null,false)">SL</button>
-        </div>
-      </div>
-      <div data-bind="visible:strategyCall().length" title="Strategy options">
-        <table border="1">
-          <tr>
-            <!-- ko foreach:strategyCall -->
-            <td><button data-bind="click:$root.openStrategyOption,text:cp()=='C'?'Call':'Put'"></button></td>
-            <td data-bind="text:d3.format('.0f')(l())"></td>
-            <td data-bind="text:lb"></td>
-            <!-- /ko -->
-          </tr>
-        </table>
-      </div>
+    </div>
+    <table>
+      <tr>
+        <td>
+          <div data-bind="foreach:hedgeComboText">
+            <div data-bind="css:{hedgeComboActive:$root.testHedgeComboActive($data)}">
+              <span data-bind="text:data,click:$parent.toggleSelectedHedgeCombo"></span>
+              <button data-bind="click:$root.openHedged.bind(null,key,quantity,true)">BY</button>
+              <button data-bind="click:$root.openHedged.bind(null,key,quantity,false)">SL</button>
+            </div>
+          </div>
+        </td>
+        <td style="vertical-align: top; padding-left: 10px;">
+          <div>
+            <table>
+              <tr><td>REL</td><td><input type="checkbox" data-bind="checked: hedgeREL" /></td></tr>
+              <tr><td>Test</td><td><input type="checkbox" data-bind="checked: hedgeTest" /></td></tr>
+            </table>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <div data-bind="visible:strategyCall().length" title="Strategy options">
+      <table border="1">
+        <tr>
+          <!-- ko foreach:strategyCall -->
+          <td><button data-bind="click:$root.openStrategyOption,text:cp()=='C'?'Call':'Put'"></button></td>
+          <td data-bind="text:d3.format('.0f')(l())"></td>
+          <td data-bind="text:lb"></td>
+          <!-- /ko -->
+        </tr>
+      </table>
     </div>
     <table border="1">
       <tbody data-bind="foreach:openOrders">

@@ -12,15 +12,19 @@ namespace IBApi {
   partial class ContractDetails {
     static readonly ConcurrentDictionary<string, ContractDetails> ContractDetailsCache = new ConcurrentDictionary<string, ContractDetails>(StringComparer.OrdinalIgnoreCase);
     public static void ClearCache() { ContractDetailsCache.Clear(); }
+    static object _gate = new object();
     public ContractDetails AddToCache() {
-      if(Contract.IsFuturesCombo) {
-        Debugger.Break();
+      lock(_gate) {
+        //if(Contract.IsFuturesCombo) { Debugger.Break(); }
+        ContractDetailsCache.TryAdd(contract.AddToCache().Key, this);
+        return this;
       }
-      ContractDetailsCache.TryAdd(contract.AddToCache().Key, this);
-      return this;
     }
     public IEnumerable<ContractDetails> FromCache() => FromCache(contract);
-    public static IEnumerable<ContractDetails> FromCache(Contract contract) => FromCache(contract.Key);
+    public static IEnumerable<ContractDetails> FromCache(Contract contract)
+      => FromCache(contract.Key).Concat(FromCache(contract, (cache, c) => cache.ConId == c.ConId)).Take(1);
+    public static IEnumerable<ContractDetails> FromCache(Contract contract, Func<Contract, Contract, bool> where)
+      => ContractDetailsCache.Where(cd => where(cd.Value.contract, contract)).Select(cd => cd.Value);
     public static IEnumerable<ContractDetails> FromCache(string key) {
       if(key.IsNullOrWhiteSpace())
         throw new Exception("ContractDetailsKey is empty");
@@ -31,9 +35,7 @@ namespace IBApi {
       if(ContractDetailsCache.TryGetValue(instrument, out var contract))
         yield return map(contract);
     }
-    public override string ToString() => 
+    public override string ToString() =>
       base.ToString();
-    public bool IsFuture => UnderSecType == "FUT";
-    public bool IsIndex => UnderSecType == "IND";
   }
 }

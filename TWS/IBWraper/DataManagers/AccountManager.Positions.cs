@@ -28,8 +28,6 @@ namespace IBApp {
     public double AvgCost { get; }
   }
   public partial class AccountManager {
-    public static bool NoPositionsPlease = false;
-
     public Position ContractPosition(PositionMessage p) => new Position(p);
 
     ConcurrentDictionary<string, Position> _positions = new ConcurrentDictionary<string, Position>();

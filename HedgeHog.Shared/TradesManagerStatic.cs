@@ -108,9 +108,8 @@ namespace HedgeHog.Shared {
       var r = Aggregated().Pairwise((h1, h2)
         => (h1.multiplier * h1.multiplier / h2.multiplier / h2.multiplier) * h1.price * h1.timeValue / h2.price / h2.timeValue).SingleOrDefault().Round(6);
       if(r == 0) return new (TContract contract, double ratio, double price, string context)[0];
-      var r0 = r > 1 ? 1 / r : 1;
-      var r1 = r < 1 ? r : 1;
-      return new[] { (hedges[0].contract, r0, hedges[0].price, hedges[0].context), (hedges[1].contract, r1, hedges[1].price, hedges[1].context) };
+      var pos= r.PositionsFromRatio();
+      return new[] { (hedges[0].contract, pos.p1, hedges[0].price, hedges[0].context), (hedges[1].contract, pos.p2, hedges[1].price, hedges[1].context) };
       //// Locals
       (TContract contract, double price, double timeValue, double multiplier, string context)[] Aggregated() {
         if(hedges.Length == 2) return hedges;
@@ -124,6 +123,13 @@ namespace HedgeHog.Shared {
       }
 
     }
+
+    public static (double p1,double p2) PositionsFromRatio(this double r) {
+      var r0 = r > 1 ? 1 / r : 1;
+      var r1 = r < 1 ? r : 1;
+      return (r0, r1);
+    }
+
     public static IList<(TContract contract, double ratio)> HedgeRatioByValue_Old<TContract>(params (TContract contract, double price, double timeValue, int multiplier)[] hedges) {
       var tvrs = hedges.Select(h => h.timeValue / h.price).Reverse().ToArray();
       var qs = hedges.Zip(tvrs, (h, tvr) => new { h.contract, w = (h.price * h.multiplier * tvr).AutoRound2(3) }).OrderByDescending(x => x.w).ToArray();

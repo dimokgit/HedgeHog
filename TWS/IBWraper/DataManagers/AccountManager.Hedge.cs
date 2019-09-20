@@ -12,8 +12,8 @@ using System.Text.RegularExpressions;
 
 namespace IBApp {
   partial class AccountManager {
-    public static IObservable<ComboTrade> MakeComboHedgeFromPositions(IEnumerable<Position> positions) {
-      var a = (from g in HedgedPositions(positions).OrderBy(p=>p.position.contract.Instrument).ToArray()
+    public IObservable<ComboTrade> MakeComboHedgeFromPositions(IEnumerable<Position> positions) {
+      var a = (from g in HedgedPositions(positions).OrderBy(p => p.position.contract.Instrument).ToArray()
                where g.Length == 2
                from hc in g.Pairwise((o, t) => MakeHedgeCombo(1, o.position.contract, t.position.contract, o.position.position.Abs(), t.position.position.Abs()))
                let quantity = hc.quantity * g.First().position.position.Sign()
@@ -21,7 +21,12 @@ namespace IBApp {
                let mul = g.Min(p => p.position.contract.ComboMultiplier) * quantity
                let openPrice = g.Sum(p => p.position.open) / mul
                let closePrice = g.Sum(p => p.close) / mul
-               select new ComboTrade(hc.contract, pl, openPrice, closePrice, quantity)
+               let order = OrderContractsInternal.OpenByContract(hc.contract).ToList()
+               let orderId = order.Select(o => o.order.OrderId).SingleOrDefault()
+               let tp = order.Select(oc => oc.order.LmtAuxPrice).SingleOrDefault()
+               let profit = (tp - openPrice) * mul
+               let open = openPrice * mul
+               select new ComboTrade(hc.contract, pl, openPrice, closePrice, quantity, tp, profit, open, orderId)
                );
       return a;
       // where g.Key.IsFuture
@@ -33,7 +38,7 @@ namespace IBApp {
     public static IObservable<(Position position, double close, double pl, double closePrice)> HedgedPositions(IEnumerable<Position> positions) =>
       (from p in positions.ToObservable()
        where p.contract.IsFuture
-       from price in IBClientMaster.ReqPriceSafe(p.contract)
+       from price in p.contract.ReqPriceSafe()
        let closePrice = p.position > 0 ? price.bid : price.ask
        let close = closePrice * p.contract.ComboMultiplier * p.position
        select (p, close, close - p.open, closePrice)
@@ -43,19 +48,23 @@ namespace IBApp {
       from cd1 in c1.ReqContractDetailsCached()
       from cd2 in c2.ReqContractDetailsCached()
       select MakeHedgeCombo(quantity, cd1.Contract, cd2.Contract, ratio1, ratio2);
-    
+
     public static (Contract contract, int quantity) MakeHedgeCombo(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) {
       int r1 = (ratio1 * quantity).ToInt();
       int r2 = (ratio2 * quantity).ToInt();
-      if(r1== int.MinValue || r2 == int.MinValue) {
+      if(r1 == int.MinValue || r2 == int.MinValue) {
         Debugger.Break();
       }
       var gcd = new[] { r1, r2 }.GCD();
       Contract contract = new Contract();
-      contract.Symbol = c1.Symbol.IfEmpty(Regex.Match(c1.LocalSymbol, "(.+).{2}$").Groups[1] + "").ThrowIf(contractSymbol => contractSymbol.IsNullOrWhiteSpace());
+      var symbol = c1.IsFuture || c1.IsOption
+        ? c1.Symbol.IfEmpty(Regex.Match(c1.LocalSymbol, "(.+).{2}$").Groups[1] + "").ThrowIf(contractSymbol => contractSymbol.IsNullOrWhiteSpace())
+        : new[] { c1.Symbol, c2.Symbol }.OrderBy(s => s).Flatter(",");
+      contract.Symbol = symbol;
       contract.SecType = "BAG";
       contract.Currency = "USD";
       contract.Exchange = "SMART";
+      contract.TradingClass = "COMB";
 
       ComboLeg leg1 = new ComboLeg();
       leg1.ConId = c1.ConId;
@@ -73,8 +82,8 @@ namespace IBApp {
       contract.ComboLegs.Add(leg1);
       contract.ComboLegs.Add(leg2);
 
-      //EXEND
-      return (contract, gcd);
+      var cache = contract.FromCache().Single();
+      return (cache, gcd);
     }
   }
 

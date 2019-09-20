@@ -31,15 +31,19 @@ namespace IBApi {
           ? optionPrice - (Strike - undePrice).Max(0)
           : 0;
 
+    private const string BAG = "BAG";
     DateTime? _lastTradeDateOrContractMonth;
     public DateTime Expiration => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max().FromTWSDateString(DateTime.Now.Date);
     public string LastTradeDateOrContractMonth2 => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max();
 
     public string Key => Instrument;
-    public string Instrument => ComboLegsToString().IfEmpty((LocalSymbol.IfEmpty(Symbol, ConId + "")?.Replace(".", "") + "").ToUpper());
+    string SafeInstrument => LocalSymbol.IfEmpty(Symbol, ConId + "");
+    public string Instrument => ComboLegsToString().IfEmpty((SafeInstrument?.Replace(".", "") + "").ToUpper());
 
     static readonly ConcurrentDictionary<string, Contract> _contracts = new ConcurrentDictionary<string, Contract>(StringComparer.OrdinalIgnoreCase);
     public static IDictionary<string, Contract> Contracts => _contracts;
+    public static IEnumerable<(int[] conIds, Contract contract)> ContractConIds => _contracts.Select(c => (c.Value.ConIds.ToArray(), c.Value));
+    //public Contract FromCache() => _contracts.TryGetValue(Key, out var c).With(_ => c);
     public Contract AddToCache() {
       if(IsFuturesCombo) {
         Debug.WriteLine(this.ToJson(true));
@@ -55,7 +59,17 @@ namespace IBApi {
                                                        from cdu in ContractDetails.FromCache(cd.UnderSymbol)
                                                        select cdu.Contract);
     public IEnumerable<ContractDetails> FromDetailsCache() => ContractDetails.FromCache(this);
-    public IEnumerable<Contract> FromCache() => FromCache(Key);
+    static object _gate = new object();
+    public IEnumerable<Contract> FromCache() {
+      lock(_gate)
+        return FromCache(Key).IfEmpty(()
+          => IsBag
+          ? new[] { new ContractDetails() { Contract = this }.AddToCache().Contract }
+          : new Contract[0]
+          );
+    }
+
+    public bool IsBag => SecType == BAG;
     public IEnumerable<T> FromCache<T>(Func<Contract, T> map) => FromCache(Key, map);
     public static IEnumerable<Contract> Cache() => Contracts.Values;
     public static IEnumerable<Contract> FromCache(string instrument) => Contracts.TryGetValue(instrument);
@@ -70,8 +84,9 @@ namespace IBApi {
       return x.Concat(y).Select(cd => cd.MinTick);
     }
     public double MinTick() => LegsOrMe(MinTickImpl).Concat().Max();
-    public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).First();
+    public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).Min();
     public bool IsFuturesCombo => LegsEx(l => l.c.IsFuture).Count() > 1;
+    public bool IsStocksCombo => LegsEx(l => l.c.IsStock).Count() > 1;
     public bool IsCombo => LegsEx(l => l.c.IsOption).Count() > 1;
     public bool IsCall => IsOption && Right == "C";
     public bool IsPut => IsOption && Right == "P";
@@ -80,6 +95,7 @@ namespace IBApi {
     public bool HasFutureOption => IsFutureOption || Legs().Any(l => l.c.IsFutureOption);
     public bool IsFuture => SecType == "FUT" || secType == "CONTFUT";
     public bool IsIndex => SecType == "IND";
+    public bool IsStock => SecType == "STK";
     public bool IsButterFly => ComboLegs?.Any() == true && String.Join("", comboLegs.Select(l => l.Ratio)) == "121";
     public bool IsCallPut => Legs().ToList().With(legs => legs.Any(l => l.c.IsCall) && legs.Any(l => l.c.IsPut));
     public double ComboStrike() => Strike > 0 ? Strike : LegsEx().With(cls => cls.Sum(c => c.contract.strike * c.leg.Ratio) / cls.Sum(c => c.leg.Ratio));
@@ -90,59 +106,64 @@ namespace IBApi {
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
-    public string ShortString => ComboLegsToString((c, r, a) => c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), LocalSymbol.IfEmpty(Symbol));
+    public string ShortString => ComboLegsToString((c, r, a) => c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
     public string DateWithShort => ComboLegsToString((c, r, a)
-      => c.LastTradeDateOrContractMonth.Substring(4) + " " + c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), LocalSymbol.IfEmpty(Symbol));
-    public string ShortWithDate => ComboLegsToString((c, r, a) => c.Symbol + " " + c.LastTradeDateOrContractMonth.Substring(4) + " " + LegLabel(r, a) + RightStrikeLabel(r, c), LocalSymbol.IfEmpty(Symbol));
-    public string ShortWithDate2 => ComboLegsToString((c, r, a)
-      => c.Symbol + "" + _right.Match(c.LastTradeDateOrContractMonth.Substring(4)) + "" + LegLabel(r, a) + RightStrikeLabel2(r, c), LocalSymbol.IfEmpty(Symbol));
+      => ShowLastDate(c, s => s.Substring(4) + " ") + c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
+    public string ShortWithDate => ComboLegsToString((c, r, a)
+      => c.Symbol + " " + ShowLastDate(c, s => s.Substring(4) + " ") + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
+    public string ShortWithDate2 => ComboLegsToString((c, r, a) => c.Symbol + "" + ShowLastDate(c, s => _right.Match(s.Substring(4)) + "") + LegLabel(r, a) + RightStrikeLabel2(r, c), () => LocalSymbol.IfEmpty(Symbol));
     public string FullString => $"{LocalSymbol.IfEmpty(Symbol)}:{Exchange}";
     public override string ToString() =>
-      ComboLegsToString(LegToString, LocalSymbol.IfEmpty(Symbol))
-      .IfEmpty(() => $"{LocalSymbol ?? Symbol}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
+      ComboLegsToString(LegToString, () => LocalSymbol.IfEmpty(Symbol))
+      .IfEmpty(() => $"{LocalSymbol.IfEmpty(Symbol)}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
 
+    static string ShowLastDate(Contract c, Func<string, string> show) => c.LastTradeDateOrContractMonth.IfTrue(s => !s.IsNullOrEmpty(), s => show(s) + " ", "");
 
-    internal string ComboLegsToString() => ComboLegsToString((c, r, a) => LegLabel(r, a) + c.LocalSymbol, LocalSymbol.IfEmpty(Symbol));
-    internal string ComboLegsToString(Func<Contract, int, string, string> label, string defaultFotNotOption) =>
-      Legs()
-      .ToArray()
-      .With(legs => (legs, r: legs.Select(l => l.r).DefaultIfEmpty().Max())
-      .With(t =>
-      t.legs
+    internal string ComboLegsToString() => ComboLegsToString((c, r, a) => LegLabel(r, a) + c.LocalSymbol, () => LocalSymbol.IfEmpty(Symbol));
+    internal string ComboLegsToString(Func<Contract, int, string, string> label, Func<string> defaultFotNotOption/*,Func<(Contract c, int r, string a),string> orderBy = null*/) {
+      var legs = Legs();
+      //if(orderBy!=null)
+      return legs
+      //.OrderBy(l => l.c.Instrument)
       .Select(l => label(l.c, l.r, l.a))
-      .OrderBy(s => s)
-      .RunIfEmpty(() => IsOption ? label(this, 0, "") + "" : defaultFotNotOption + "")
+      .RunIfEmpty(() => IsOption ? label(this, 0, "") + "" : defaultFotNotOption() + "")
       .ToArray()
-      .MashDiffs()));
-
+      .MashDiffs();
+    }
     static string LegToString(Contract c, int r, string a) => LegLabel(r, a) + (c.IsOption ? c.UnderContract.Select(u => c.ShortWithDate).SingleOrDefault() : c.Instrument);
     public static string LegLabel(int ratio, string action) => ratio == 0 ? "" : (action == "BUY" ? "+" : "-") + (ratio > 1 ? ratio + "" : "");
     static string RightStrikeLabel(int ratio, Contract c) => c.Right.IsNullOrEmpty() ? "" : (ratio.Abs() > 1 ? ":" : "") + c.Right + c.Strike;
     static Regex _right = new Regex(".{2}$");
     static string RightStrikeLabel2(int ratio, Contract c) => c.Right.IsNullOrEmpty() ? "" : (ratio.Abs() > 1 ? ":" : "") + c.Right + _right.Match(c.Strike + "");
+
     public IEnumerable<T> LegsOrMe<T>(Func<Contract, T> map) => LegsOrMe().Select(map);
     public IEnumerable<Contract> LegsOrMe() => Legs().Select(cl => cl.c).DefaultIfEmpty(this);
-    public IEnumerable<T> Legs<T>(Func<(Contract c, int r, string a), T> map) => Legs().Select(map);
-    public IEnumerable<(Contract c, int r, string a)> Legs() {
+
+    public IEnumerable<(Contract c, int r, string a)> Legs() => Legs((c, l) => (c, l.Ratio, l.Action));
+
+    public IEnumerable<T> LegsEx<T>(Func<(Contract c, ComboLeg leg), T> map) => LegsEx().Select(map);
+    public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx(Func<(Contract c, ComboLeg leg), bool> filter) => LegsEx().Where(filter);
+    public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx() =>Legs((c,l)=>(c,l));
+
+    public IEnumerable<T> Legs<T>(Func<Contract,ComboLeg,T> map) {
       if(ComboLegs == null) yield break;
       var x = (from l in ComboLegs
                join c in Contracts on l.ConId equals c.Value.ConId
-               select (c.Value, l.Ratio, l.Action)
+               orderby l.Action ascending, l.Ratio descending, c.Value.ConId
+               select map(c.Value, l)
        );
       foreach(var t in x)
         yield return t;
     }
-    public IEnumerable<T> LegsEx<T>(Func<(Contract c, ComboLeg leg), T> map) => LegsEx().Select(map);
-    public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx(Func<(Contract c, ComboLeg leg), bool> filter) => LegsEx().Where(filter);
-    public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx() {
-      if(ComboLegs == null) yield break;
-      var x = from l in ComboLegs
-              join c in Contracts on l.ConId equals c.Value.ConId
-              select (c.Value, l);
-      foreach(var t in x)
-        yield return t;
+    public string _key() {
+      return ComboLegsToString((c, r, a) => $"{CCId(c.ConId)}{LegLabel(r, a)}", () => CCId(ConId) + "");
+      int CCId(int cid) {
+        if(cid == 0)
+          throw new Exception(new { Instrument, ConId = "Is Zero" } + "");
+        return cid;
+      }
     }
-    string _key() => ComboLegsToString((c, r, a) => LegLabel(r, a) + c.ConId, ConId + "");
+    public IEnumerable<int> ConIds => LegsOrMe(c => c.ConId).Where(cid => cid != 0);
     public IEnumerable<(string Context, bool Ok)> Ok => LegsOrMe(c => ($"Contract: {c}.Exchange={c.Exchange}", !c.Exchange.IsNullOrEmpty()));
     public void Check() => Ok.Where(t => !t.Ok).ForEach(ok => throw new Exception(ok.Context));
 

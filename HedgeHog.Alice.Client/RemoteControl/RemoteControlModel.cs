@@ -896,7 +896,8 @@ namespace HedgeHog.Alice.Client {
         foreach(var tm in TradingMacrosCopy) {
           InitTradingMacro(tm);
           if(tm.IsActive && !IsInVirtualTrading) {
-            (sender as ICoreFX).SetSymbolSubscription(tm.Pair);
+            var tm0 = tm;
+            (sender as ICoreFX).SetSymbolSubscription(tm.Pair, () => tm0.SetLotSize(TradesManager.GetAccount()));
             //tm.CurrentPrice = TradesManager.GetPrice(tm.Pair);
           }
           tm.CurrentLot = tm.Trades.Sum(t => t.Lots);
@@ -908,7 +909,6 @@ namespace HedgeHog.Alice.Client {
               //currTM.RunPriceChanged(new PriceChangedEventArgs(currTM.Pair, TradesManager.GetPrice(currTM.Pair), TradesManager.GetAccount(), TradesManager.GetTradesInternal(currTM.Pair)), null);
             });
           }
-          tm.SetLotSize(TradesManager.GetAccount());
         }
         runPriceQueue.ToObservable(Scheduler.Default).Subscribe(rp => rp());
         InitInstruments();
@@ -1165,7 +1165,10 @@ namespace HedgeHog.Alice.Client {
           } else {
             savedTrade.Where(st => st.Lots < trade.Lots).ForEach(st => st.Lots = trade.Lots);
           }
-        }, true, () => Log = new Exception($"Trade Updated:{new { e.Trade.Pair, e.Trade.Lots, e.Trade.Time, e.Trade.Open, e.Trade.TimeClose, e.Trade.Close, e.Trade.GrossPL }}"));
+        }
+        , true
+        , () => Log = new Exception($"Trade Updated:{new { e.Trade.Pair, e.Trade.Lots, e.Trade.Time, e.Trade.Open, e.Trade.TimeClose, e.Trade.Close, e.Trade.GrossPL }}")
+        , (c, exc) => Log = exc);
     }
 
     void fw_Error(object sender, HedgeHog.Shared.ErrorEventArgs e) {

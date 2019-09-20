@@ -26,7 +26,7 @@ namespace HedgeHog.Shared {
     bool LogOn(string user, string accountSubId, string password, bool isDemo);
     void Logout();
     bool ReLogin();
-    void SetSymbolSubscription(string pair);
+    void SetSymbolSubscription(string pair,Action callback);
 
     event EventHandler<LoggedInEventArgs> LoggedIn;
     event LoginErrorHandler LoginError;

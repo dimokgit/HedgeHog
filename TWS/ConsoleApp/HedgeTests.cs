@@ -29,14 +29,14 @@ namespace ConsoleApp {
 
       (from s in new[] { h1, h2 }.ToObservable().Take(0)
        from cd in DataManager.IBClientMaster.ReqContractDetailsCached(s)
-       from p in DataManager.IBClientMaster.ReqPriceSafe(cd.Contract)
+       from p in cd.Contract.ReqPriceSafe()
        select new { cd.Contract, p }
        ).Subscribe(Program.HandleMessage);
 
       am.PositionsObservable.SkipWhile(_ => am.Positions.Count < 2).Subscribe(ops => {
         Program.HandleMessage("Closing combo trade:~" + Thread.CurrentThread.ManagedThreadId + Thread.CurrentThread.Name);
         (from ct in am.ComboTrades(5)
-         from p in DataManager.IBClientMaster.ReqPriceSafe(ct.contract, 3).Do(_ => { Thread.Sleep(10000); })
+         from p in ct.contract.ReqPriceSafe(3).Do(_ => { Thread.Sleep(10000); })
          select new { ct, p }
          )
         .ToArray()
@@ -77,7 +77,7 @@ namespace ConsoleApp {
             var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, hh2[0].contract, hh2[1].contract, hh2[0].ratio, hh2[1].ratio).With(c => new { combo = c, context = hh2.ToArray(t => t.context).MashDiffs() });
             var a = new { combo.combo.contract.ShortString, combo.combo.contract.DateWithShort, combo.combo.contract.ShortWithDate, combo.combo.contract, combo.context };
             Program.HandleMessage($"{a.ToTextTable("Hedge Combo:")}");
-            (from p in DataManager.IBClientMaster.ReqPriceSafe(combo.combo.contract) select new { combo.combo.contract, p.bid, p.ask }).Subscribe(Program.HandleMessage);
+            (from p in combo.combo.contract.ReqPriceSafe() select new { combo.combo.contract, p.bid, p.ask }).Subscribe(Program.HandleMessage);
             var pos = -1;
             if(pos == 11) {
               //am.OpenTrade(combo.combo.contract, combo.combo.quantity * pos)

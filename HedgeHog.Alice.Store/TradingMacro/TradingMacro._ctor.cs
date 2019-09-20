@@ -54,8 +54,7 @@ namespace HedgeHog.Alice.Store {
           LoadActiveSettings();
           _Rates.Clear();
           if(!oc.prev.IsNullOrWhiteSpace() && TradesManager != null) {
-            TradesManager.CoreFX.SetSymbolSubscription(Pair);
-            OnLoadRates();
+            TradesManager.CoreFX.SetSymbolSubscription(Pair, () => OnLoadRates());
           }
           _pendingEntryOrders = null;
           OnPropertyChanged(nameof(CompositeName));
@@ -119,12 +118,12 @@ namespace HedgeHog.Alice.Store {
       this.WhenAnyValue(tm => tm.CurrentHedgePosition2)
         .Subscribe(_ => {
           _zeroHedgeDate = default;
-          HedgeRatioByPrices = double.NaN;
+          CalcHedgeRatioByPositions();
 
           if(hedgeVoltFuns.Contains(VoltageFunction))
-            ResetVoltage();
+            GetShowVoltageFunction()();
           if(hedgeVoltFuns.Contains(VoltageFunction2))
-            ResetVoltage2();
+            GetShowVoltageFunction(VoltageFunction2, 1)();
         });
 
       _newsCaster.CountdownSubject

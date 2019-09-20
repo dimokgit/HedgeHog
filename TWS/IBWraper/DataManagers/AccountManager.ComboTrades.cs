@@ -14,12 +14,19 @@ namespace IBApp {
     public bool IsVirtual { get; private set; }
     public double Change => closePrice * position.Sign() - openPrice;
     //new HedgeCombo(hc.contract, pl, openPrice, closePrice, hc.quantity * g.First().position.position.Sign())
-    public ComboTrade(Contract contract, double pl, double openPrice, double closePrice, int position) {
+    public ComboTrade() {
+
+    }
+    public ComboTrade(Contract contract, double pl, double openPrice, double closePrice, int position, double takeProfit, double profit,double open,int orderId) {
       this.contract = contract;
       this.pl = pl;
       this.openPrice = openPrice;
       this.closePrice = closePrice;
       this.position = position;
+      this.takeProfit = takeProfit;
+      this.profit = profit;
+      this.open = open;
+      this.orderId = orderId;
     }
     public ComboTrade(Contract contract) {
       this.contract = contract;
@@ -173,7 +180,7 @@ namespace IBApp {
       var orders = OrderContractsInternal.Values.Where(oc => !oc.isDone).ToArray();
       var combos = (
         from c in positions/*.ParseCombos(orders)*//*.Do(c => IbClient.SetContractSubscription(c.contract))*/
-        let order = orders.Where(oc => oc.isSubmitted && oc.contract == c.contract).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
+        let order = OrderContractsInternal.OpenByContract(c.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
         select (c.contract, c.position, c.open, c.open / c.position.Abs() / c.contract.ComboMultiplier, order.LmtPrice, order.OrderId)
         );
       var comboAll = ComboTradesAllImpl().ToArray();
@@ -191,7 +198,7 @@ namespace IBApp {
       (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
        let sell = positions.All(p => p.position < 0)
        let posSign = sell ? -1 : 1
-       let order = OrderContractsInternal.Values.Where(oc => !oc.isDone && oc.contract == ca.contract.contract).Select(oc => (oc.order.OrderId, oc.order.LmtPrice)).FirstOrDefault()
+       let order = OrderContractsInternal.OpenByContract(ca.contract.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
        let open = ca.positions.Sum(p => p.open)
        let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
        select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, order.LmtPrice, order.OrderId));

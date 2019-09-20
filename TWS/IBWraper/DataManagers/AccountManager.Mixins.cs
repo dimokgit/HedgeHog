@@ -31,6 +31,17 @@ namespace IBApp {
     public static IEnumerable<OrderContractHolder> ByLocalSymbool(this IEnumerable<OrderContractHolder> source, string localSymbol)
       => source.Where(och => och.contract.LocalSymbol == localSymbol);
 
+    #region ByContract
+    public static IEnumerable<OrderContractHolder> ByContract(this ConcurrentDictionary<int, OrderContractHolder> source, Contract contract) =>
+      source.Values.ByContract(contract);
+    public static IEnumerable<OrderContractHolder> OpenByContract(this ConcurrentDictionary<int, OrderContractHolder> source, Contract contract)
+      => source.ByContract(contract).Where(och => !och.isDone && och.hasSubmitted);
+    public static IEnumerable<OrderContractHolder> ByContract(this IEnumerable<OrderContractHolder> source, Contract contract)
+      => source.Where(och => och.contract == contract);
+    public static IEnumerable<OrderContractHolder> OpenByContract(this IEnumerable<OrderContractHolder> source, Contract contract)
+      => source.ByContract(contract).Where(och => !och.isDone && och.hasSubmitted);
+    #endregion
+
     public static bool IsOrderDone(this OrderStatusMessage m) => (m.Status, m.Remaining).IsOrderDone();
     public static bool IsOrderDone(this (string status, double remaining) order) =>
       EnumUtils.Contains<OrderCancelStatuses>(order.status) || EnumUtils.Contains<OrderDoneStatuses>(order.status) && order.remaining == 0;

@@ -148,7 +148,7 @@ namespace HedgeHog.Alice.Store {
       TradeConditionsEval()
       .Where(_ => IsTradingActive)
         .ForEach(eval => {
-          var pos = GetCurrentHedgePositions();
+          var pos = GetCurrentHedgePositions(true);
           if(eval.HasAny() && pos.p1 != 0 && pos.p2 != 0) {
             var isBuy = eval.HasUp();
             if(!HaveTrades(isBuy)) {
