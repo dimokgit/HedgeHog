@@ -44,29 +44,6 @@ namespace HedgeHog.Alice.Store {
         return hbss;
       }).Concat();
 
-    public void OpenHedgedTrades(bool isBuy, bool closeOnly, string reason) {
-      if(!IsInVirtualTrading && TradesManager.GetTrades().Any() && !closeOnly)
-        AdjustHedgedTrades(isBuy, reason);
-      else {
-        var hbs = HedgeBuySell(isBuy)
-        .OrderByDescending(tm => tm.Pair == Pair)
-        .ToArray();
-
-        if(hbs.Where(bs => !TradesManager.TryGetPrice(bs.Pair).Any(p => p.IsShortable))
-          .Do(bs => Log = new Exception(bs.Pair + " is not shortable")).Any())
-          return;
-
-        hbs.ForEach(t => {
-          var lotToClose = t.tm.Trades.IsBuy(!t.IsBuy).Sum(tr => tr.Lots);
-          var lotToOpen = !closeOnly ? t.Lot.HedgedLotAll(isBuy) : 0;
-          t.tm.OpenTrade(t.IsBuy, lotToOpen + lotToClose, reason + ": hedge open");
-        });
-        if(TradesManager.GetTrades().Count == 1) {
-          TradesManager.CloseAllTrades();
-        }
-      }
-    }
-
     public void AdjustHedgedTrades(bool isBuy, string reason) {
       var exc = new Exception($"{nameof(AdjustHedgedTrades)}: there is no hadged trades to adjust.");
       var hbs = HedgeBuySell(isBuy)

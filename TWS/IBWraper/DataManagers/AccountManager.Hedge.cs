@@ -44,10 +44,10 @@ namespace IBApp {
        select (p, close, close - p.open, closePrice)
       );
 
-    public static IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) =>
-      from cd1 in c1.ReqContractDetailsCached()
-      from cd2 in c2.ReqContractDetailsCached()
-      select MakeHedgeCombo(quantity, cd1.Contract, cd2.Contract, ratio1, ratio2);
+    public static IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe(int quantity, Contract c1, Contract c2, double ratio1, double ratio2, bool isInTest) =>
+      from cd1 in isInTest ? Observable.Return(c1.SetTestConId(isInTest)) : c1.ReqContractDetailsCached().Select(cd => cd.Contract)
+      from cd2 in isInTest ? Observable.Return(c2.SetTestConId(isInTest)) : c2.ReqContractDetailsCached().Select(cd => cd.Contract)
+      select MakeHedgeCombo(quantity, cd1, cd2, ratio1, ratio2).SideEffect(x => x.contract.SetTestConId(isInTest));
 
     public static (Contract contract, int quantity) MakeHedgeCombo(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) {
       int r1 = (ratio1 * quantity).ToInt();
@@ -82,7 +82,7 @@ namespace IBApp {
       contract.ComboLegs.Add(leg1);
       contract.ComboLegs.Add(leg2);
 
-      var cache = contract.FromCache().Single();
+      var cache = Contract.Contracts.Any() ? contract.FromCache().Single() : contract;
       return (cache, gcd);
     }
   }

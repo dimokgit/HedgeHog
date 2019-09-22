@@ -67,8 +67,8 @@ namespace HedgeHog.Shared {
       return Regex.Replace(pair, @"(\w3)(\w3)", "$1/$2");
     }
 
-    public static double CalcHedgePrice(this IList<(double price, int multiplier, int positions)> hedges) => CalcHedgePrice(hedges.Select(h => (h.price, (double)h.multiplier, h.positions)).ToArray());
-    public static double CalcHedgePrice(this IList<(double price, double multiplier, int positions)> hedges) => hedges.Sum(h => h.price * h.multiplier * h.positions) / hedges.Min(h => h.multiplier);
+    public static double CalcHedgePrice(this IList<(double price, int multiplier, double positions)> hedges) => CalcHedgePrice(hedges.Select(h => (h.price, (double)h.multiplier, h.positions)).ToArray());
+    public static double CalcHedgePrice(this IList<(double price, double multiplier, double positions)> hedges) => hedges.Sum(h => h.price * h.multiplier * h.positions) / hedges.Min(h => h.multiplier);
 
     public static ((TContract contract, int quantity)[] contracts, int quantity) HedgeQuanitiesByValue<TContract>(int multiplier
       , string mashDivider

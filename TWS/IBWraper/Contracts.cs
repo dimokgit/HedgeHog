@@ -23,9 +23,9 @@ namespace IBApp {
    * Any stock or option symbols displayed are for illustrative purposes only and are not intended to portray a recommendation.
    */
   public static class ContractSamples {
-    public static Contract ContractFactory(this Contract contract) =>
-      contract.IsFuturesCombo
-      ? contract.CloneJson().SideEffect(c =>{
+    public static Contract ContractFactory(this Contract contract, bool isInTest = false) =>
+      (contract.IsFuturesCombo
+      ? contract.CloneJson().SideEffect(c => {
         c.TradingClass = null;
       })
       : contract.ComboLegs?.Any() == true
@@ -37,11 +37,12 @@ namespace IBApp {
         SecType = contract.SecType,
         Currency = contract.Currency,
         ComboLegs = contract.ComboLegs
-      };
+      }).SetTestConId(isInTest);
 
-    public static Contract ContractFactory(this string pair) {
+    public static Contract ContractFactory(this string pair) => pair.ContractFactory(false);
+    public static Contract ContractFactory(this string pair, bool isInTest) {
       pair = pair.ToUpper();
-      return pair.IsCurrenncy()
+      return (pair.IsCurrenncy()
        ? FxContract(pair)
        : pair.IsIndex()
        ? Index(pair.Split(' ').First(), "")
@@ -51,7 +52,7 @@ namespace IBApp {
        ? Future(pair)
        : pair.IsCommodity()
        ? Commodity(pair)
-       : USStock(pair);
+       : USStock(pair)).SetTestConId(isInTest);
     }
     public static Contract FxContract(string pair) {
       return FxPair(pair);

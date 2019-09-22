@@ -78,11 +78,12 @@ namespace ConsoleApp {
           };
           LoadHistory(ibClient, new[] { c });
           */
-          var es = new[] { "NQZ9", "ESZ9", "VXX","SPY" }[1];
+          var es = new[] { "NQU9", "ESU9", "VXX", "SPY" }[1];
           var period = 0;
           bool repare = false;
           Action<object> callback = o => HandleMessage(o + "");
           es.ContractFactory().ReqContractDetailsCached()
+          .SubscribeOn(TaskPoolScheduler.Default)
           .ObserveOn(TaskPoolScheduler.Default)
           .Subscribe(_ => {
             if(repare) {
@@ -95,7 +96,7 @@ namespace ConsoleApp {
               //fw.GetBarsBase(es, period, 0, DateTime.Parse("7/1/2019").SetKind(), DateTime.Parse("7/19/2019").SetKind(), new List<Rate>(), null, showProgress);
               HandleMessage($"***** Done GetBars *****\n{bars.Select(b => b + "").ToJson(true)}");
             } else
-              PriceHistory.AddTicks(fw, period, es, DateTime.Now.AddMonths(-1), callback);
+              PriceHistory.AddTicks(fw, period, es, DateTime.Now.AddMonths(-2), callback);
           });
           HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
 
@@ -121,11 +122,11 @@ namespace ConsoleApp {
           //return;
           (
           //from combo in AccountManager.MakeHedgeComboSafe(1, "VXX".ContractFactory() ,"UVXY".ContractFactory(), 40, 23)
-          from combo in AccountManager.MakeHedgeComboSafe(1, "SPY".ContractFactory() ,"QQQ".ContractFactory(), 40, 23)
-           from p in combo.contract.ReqPriceSafe(5)
-           select new {combo.contract,combo.quantity,p}
+          from combo in AccountManager.MakeHedgeComboSafe(1, "SPY".ContractFactory(), "QQQ".ContractFactory(), 40, 23, false)
+          from p in combo.contract.ReqPriceSafe(5)
+          select new { combo.contract, combo.quantity, p }
            )
-          .Subscribe(combo => HandleMessage("HedgeCombo:" + combo+"\n"+combo.contract.ToJson(true)));
+          .Subscribe(combo => HandleMessage("HedgeCombo:" + combo + "\n" + combo.contract.ToJson(true)));
           return;
         }
 

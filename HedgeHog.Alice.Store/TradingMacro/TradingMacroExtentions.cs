@@ -1482,7 +1482,10 @@ namespace HedgeHog.Alice.Store {
         .First();
       if(args.Initiator != replayTrader)
         throw new Exception("Replay Initiator must be also Replay Trader");
-      Passager.ThrowIf(() => args.Initiator.Strategy == Strategies.None);
+      if(args.Initiator.Strategy == Strategies.None) {
+        args.Initiator.Strategy = Strategies.UniversalA;
+        Log = new ApplicationException($"Testing strategy set to {args.Initiator.Strategy}");
+      }
       if(tms().Count(tm => tm.IsTrender) == 0)
         throw new Exception("There is no trenders");
 

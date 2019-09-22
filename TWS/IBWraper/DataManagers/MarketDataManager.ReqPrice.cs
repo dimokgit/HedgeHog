@@ -103,7 +103,7 @@ namespace IBApp {
       var x0 = (from l in combo.LegsEx().ToObservable()
                 from p in l.contract.ReqPriceSafe(timeoutInSeconds)
                   //               from ab in new[] { (price.bid, multiplier: l.c.ComboMultiplier, positions: l.r), (price.ask, multiplier: l.c.ComboMultiplier, positions: l.r) }
-                select new { c = l.contract, p, r = l.leg.Ratio * (l.leg.IsBuy ? 1 : -1), l.leg.IsBuy }
+                select new { c = l.contract, p, r = (double)l.leg.Ratio * (l.leg.IsBuy ? 1 : -1), l.leg.IsBuy }
                )
                .ToArray()
                .Select(a => {

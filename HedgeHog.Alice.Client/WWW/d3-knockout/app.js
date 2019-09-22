@@ -349,7 +349,7 @@
           if (!x)
             dataViewModel.callByBS();
 
-          if (!dataViewModel.comboQuantity())
+          if (!dataViewModel.comboQuantityInEdit())
             dataViewModel.comboQuantity(x.TradingRatio);
           if (!dataViewModel.expDaysSkip())
             dataViewModel.expDaysSkip(x.OptionsDaysGap);
@@ -916,8 +916,12 @@
       });
       this.expDaysSkip = ko.observable();
       this.distanceFromHigh = ko.observable();
-      this.comboQuantity = ko.observable().extend({ persist: "comboQuantity" + pair });
+      this.comboQuantity = ko.observable();//.extend({ persist: "comboQuantity" + pair });
       this.comboQuantity.subscribe(refreshCombos);
+      this.comboQuantityInEdit = ko.observable();
+      this.comboQuantityInEdit.subscribe(function (isEdit) {
+        if (!isEdit) serverCall("updateTradingRatio",[pair, this.comboQuantity()]);
+      }.bind(this));
       this.comboCurrentStrikeLevel = ko.observable("");
       this.toggleComboCurrentStrikeLevel = function () {
         self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? Math.round(self.priceAvg()) : "");

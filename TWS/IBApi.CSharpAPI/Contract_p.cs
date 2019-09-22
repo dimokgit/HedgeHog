@@ -11,6 +11,17 @@ using System.Text.RegularExpressions;
 
 namespace IBApi {
   public partial class Contract :IEquatable<Contract> {
+
+    public Contract SetTestConId(bool isInTest) {
+      if(isInTest && ConId == 0) {
+        if(Symbol.IsNullOrEmpty()) Symbol = LocalSymbol;
+        if(LocalSymbol.IsNullOrEmpty()) LocalSymbol = Symbol;
+        if(LocalSymbol.IsNullOrEmpty() && Symbol.IsNullOrEmpty()) throw new Exception("LocalSymbol and Symbol both empty.");
+        ConId = LegsOrMe().Select(c => c.LocalSymbol).Flatter(",").GetHashCode();
+        AddToCache();
+      }
+      return this;
+    }
     private string HashKey => Instrument +
       (IsCombo ? ":" + ComboLegs.OrderBy(l => l.Ratio).Select(l => $"{l.ConId}-{l.Ratio}").Flatter(":") : "");
     public double IntrinsicValue(double undePrice) =>
@@ -143,9 +154,9 @@ namespace IBApi {
 
     public IEnumerable<T> LegsEx<T>(Func<(Contract c, ComboLeg leg), T> map) => LegsEx().Select(map);
     public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx(Func<(Contract c, ComboLeg leg), bool> filter) => LegsEx().Where(filter);
-    public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx() =>Legs((c,l)=>(c,l));
+    public IEnumerable<(Contract contract, ComboLeg leg)> LegsEx() => Legs((c, l) => (c, l));
 
-    public IEnumerable<T> Legs<T>(Func<Contract,ComboLeg,T> map) {
+    public IEnumerable<T> Legs<T>(Func<Contract, ComboLeg, T> map) {
       if(ComboLegs == null) yield break;
       var x = (from l in ComboLegs
                join c in Contracts on l.ConId equals c.Value.ConId

@@ -35,7 +35,8 @@ using TM_HEDGE = System.Collections.Generic.IEnumerable<(HedgeHog.Alice.Store.Tr
   , (int All, int Up, int Down) Lot
   , (double All, double Up, double Down) Pip
   , bool IsBuy, bool IsPrime, double HVPR, double HVPM1R)>;
-using CURRENT_HEDGES = System.Collections.Generic.List<(IBApi.Contract contract, double ratio, double price, string context)>;
+//using CURRENT_HEDGES = System.Collections.Generic.List<(IBApi.Contract contract, double ratio, double price, string context)>;
+using CURRENT_HEDGES = System.Collections.Generic.List<HedgeHog.Alice.Store.TradingMacro.HedgePosition<IBApi.Contract>>;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
@@ -267,6 +268,9 @@ namespace HedgeHog.Alice.Client {
 
     static DateTime _newsReadLastDate = DateTime.MinValue;
     static List<DateTimeOffset> _newsDates = new List<DateTimeOffset>();
+    public void UpdateTradingRatio(string pair, double value) {
+      UseTraderMacro(pair, tm => tm.TradingRatio = value);
+    }
     public object[] AskChangedPrice(string pair) {
       return (from tmTrader in UseTraderMacro(pair)
               from tmTrender in tmTrader.TradingMacroTrender().TakeLast(1)
@@ -529,10 +533,12 @@ namespace HedgeHog.Alice.Client {
        }).ToArray());
     }
 
-    private Task<IEnumerable<(Contract contract, double ratio, double price, string context)>> ContractsForHedge(string pair) => ContractsForHedge(pair, DateTime.MaxValue);
-    private async Task<IEnumerable<(Contract contract, double ratio, double price, string context)>> ContractsForHedge(string pair, DateTime time)
+    private Task<IEnumerable<TradingMacro.HedgePosition<Contract>>> ContractsForHedge(string pair) => ContractsForHedge(pair, DateTime.MaxValue);
+    private async Task<IEnumerable<TradingMacro.HedgePosition<Contract>>> ContractsForHedge(string pair, DateTime time)
       => (await UseTraderMacro(pair, async tm => {
-        return tm.IsInVirtualTrading ? tm.CurrentHedgesByHV(TradingMacro.CURRENT_HEDGE_COUNT, time, false) : await GetAccountManager().CurrentHedges(pair, tm.PairHedge);
+        return tm.IsInVirtualTrading
+        ? tm.CurrentHedgesByHV(TradingMacro.CURRENT_HEDGE_COUNT, time, false)
+        : await GetAccountManager().CurrentHedges(pair, tm.PairHedge).Select(t => t.Select(TradingMacro.HedgePosition.Create));
       }).WhenAllSequiential()).Concat();
 
     public object[] ReadHedgeVirtual(string pair) {
@@ -584,23 +590,30 @@ namespace HedgeHog.Alice.Client {
     bool IsTestTradeMode() => Debugger.IsAttached;
     [BasicAuthenticationFilter]
     public async Task<object[]> OpenHedged(string pair, string key, int quantity, bool isBuy, bool rel, bool test) {
-      var am = GetAccountManager();
+      var outMe = MonoidsCore.ToFunc((string order, string errorMsg) => new { order, errorMsg });
       var c = Contract.FromCache(key).SingleOrDefault();
-      if(c == null) throw new Exception($"{new { key }} not found");
-      return await (
-        from p in c.ReqPriceSafe(5)
-        let price = p.ask.Avg(p.bid)
-        let oe = new Action<IBApi.Order>(o => {
-          o.Transmit = !test;
-          if(rel) {
-            o.AuxPrice = IBApi.Order.OrderPrice(price, c);
-            o.OrderType = "REL + MKT";
-          }
-        })
-        from ots in am.OpenTrade(oe, c, quantity * (isBuy ? 1 : -1))
-        from ot in ots
-        select new { order = ot.holder + "", ot.error.errorMsg }
-       ).ToArray();
+      if(IsInVirtual()) {
+        var legs = c.Legs().ToList();
+        UseTraderMacro(pair, tm => tm.OpenHedgePosition(isBuy, legs[0].r, legs[1].r));
+        return new object[0];
+      } else {
+        var am = GetAccountManager();
+        if(c == null) throw new Exception($"{new { key }} not found");
+        return await (
+          from p in c.ReqPriceSafe(5)
+          let price = p.ask.Avg(p.bid)
+          let oe = new Action<IBApi.Order>(o => {
+            o.Transmit = !test;
+            if(rel) {
+              o.AuxPrice = IBApi.Order.OrderPrice(price, c);
+              o.OrderType = "REL + MKT";
+            }
+          })
+          from ots in am.OpenTrade(oe, c, quantity * (isBuy ? 1 : -1))
+          from ot in ots
+          select outMe(ot.holder + "", ot.error.errorMsg)
+         ).ToArray();
+      }
     }
 
     static double DaysTillExpiration2(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
@@ -941,14 +954,14 @@ namespace HedgeHog.Alice.Client {
           try {
             var hh = hh0.Zip(baseUnits, (h, BaseUnitSize) => new { h.contract, h.ratio, h.price, h.context, BaseUnitSize }).ToArray();
             //if(doSideEffect)              tm.SetCurrentHedgePosition(c.contract, c.quantity);
-            var pc = MonoidsCore.ToFunc(() => Observable.Return(hh.Select(h => (h.price, (double)h.BaseUnitSize, (int)h.ratio)).ToArray().CalcHedgePrice().With(p => (bid: p, ask: p, time: tml.ServerTime, delta: 1.0))));
+            var pc = MonoidsCore.ToFunc(() => Observable.Return(hh.Select(h => (h.price, h.BaseUnitSize, h.ratio)).ToArray().CalcHedgePrice().With(p => (bid: p, ask: p, time: tml.ServerTime, delta: 1.0))));
             return
             (from q in Observable.Return(quantity)
              where q != 0
-             from c in IsInVirtual() ? MakeHedgeCombo() : MakeHedgeComboSafe()
+             from c in MakeHedgeComboSafe()
              from p in IsInVirtual() ? pc() : c.contract.ReqPriceSafe().DefaultIfEmpty()
              let rc = new { ratio = hh.Select(t => t.ratio).Min().AutoRound2(3), context = id/* hh.ToArray(t => t.context).MashDiffs()*/ }
-             let contract = ShortString(c.contract)
+             let contract = c.contract.ShortString
              .SideEffect(_ => { if(doSideEffect) tml.SetCurrentHedgePosition(c.contract, c.quantity); })
              select new CurrentHedge(id, contract, c.quantity, rc.ratio, rc.context, p.bid.Avg(p.ask).ToInt(), c.contract.Key)
              ).Catch((Exception exc) => {
@@ -956,9 +969,7 @@ namespace HedgeHog.Alice.Client {
                return Observable.Empty<CurrentHedge>();
              });
             /// Locals
-            IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe() => AccountManager.MakeHedgeComboSafe(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio);
-            IObservable<(Contract contract, int quantity)> MakeHedgeCombo() => Observable.Return(AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio));
-            string ShortString(Contract c) => IsInVirtual() ? c.ComboLegs.Select(l => $"{l.Action}:{l.Ratio}").ToArray().MashDiffs() : c.ShortString;
+            IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe() => AccountManager.MakeHedgeComboSafe(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio, IsInVirtual());
           } catch(Exception exc) {
             Log = exc;
             return Observable.Empty<CurrentHedge>();

@@ -1815,25 +1815,6 @@ namespace HedgeHog.Alice.Store {
       if(!IsRatesLengthStableGlobal()) return;
       if(!IsTrader) return;
       //var isSpreadOk = false.ToFunc(0,i=> CurrentPrice.Spread < PriceSpreadAverage * i);
-      if(IsHedgedTrading && BarsCountCalc == RatesArray.Count) {
-        if(IsTradingActive)
-          TradeConditionsEval()
-            .Select(eval => new { eval, open = true })
-            .Concat(TradeConditionsShouldClose().Select(eval => new { eval, open = false }))
-            .Distinct(x => x.eval)
-            .Where(x => x.eval.HasAny())
-            .ForEach(e => {
-              var isBuy = e.eval.HasUp();
-              if(!HedgeBuySell(isBuy)
-                .Select(t => t.tm.HaveTrades(t.IsBuy))
-                .Any(b => b)) {
-                if(CanOpenTradeByDirection(isBuy))
-                  OpenHedgedTrades(isBuy, !e.open, "Trade Condition");
-                else TradesManager.CloseAllTrades();
-              }
-            });
-        return;
-      }
       if(IsAsleep) {
         BuySellLevels.ForEach(sr => {
           sr.CanTrade = false;
