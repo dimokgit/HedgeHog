@@ -12,12 +12,13 @@ using System.Text.RegularExpressions;
 namespace IBApi {
   public partial class Contract :IEquatable<Contract> {
 
-    public Contract SetTestConId(bool isInTest) {
+    public Contract SetTestConId(bool isInTest, int multiplier) {
       if(isInTest && ConId == 0) {
         if(Symbol.IsNullOrEmpty()) Symbol = LocalSymbol;
         if(LocalSymbol.IsNullOrEmpty()) LocalSymbol = Symbol;
         if(LocalSymbol.IsNullOrEmpty() && Symbol.IsNullOrEmpty()) throw new Exception("LocalSymbol and Symbol both empty.");
         ConId = LegsOrMe().Select(c => c.LocalSymbol).Flatter(",").GetHashCode();
+        if(multiplier > 0) Multiplier = multiplier + "";
         AddToCache();
       }
       return this;

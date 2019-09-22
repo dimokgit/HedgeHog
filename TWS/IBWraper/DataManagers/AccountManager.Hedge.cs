@@ -45,9 +45,9 @@ namespace IBApp {
       );
 
     public static IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe(int quantity, Contract c1, Contract c2, double ratio1, double ratio2, bool isInTest) =>
-      from cd1 in isInTest ? Observable.Return(c1.SetTestConId(isInTest)) : c1.ReqContractDetailsCached().Select(cd => cd.Contract)
-      from cd2 in isInTest ? Observable.Return(c2.SetTestConId(isInTest)) : c2.ReqContractDetailsCached().Select(cd => cd.Contract)
-      select MakeHedgeCombo(quantity, cd1, cd2, ratio1, ratio2).SideEffect(x => x.contract.SetTestConId(isInTest));
+      from cd1 in isInTest ? Observable.Return(c1.SetTestConId(isInTest, 0)) : c1.ReqContractDetailsCached().Select(cd => cd.Contract)
+      from cd2 in isInTest ? Observable.Return(c2.SetTestConId(isInTest, 0)) : c2.ReqContractDetailsCached().Select(cd => cd.Contract)
+      select MakeHedgeCombo(quantity, cd1, cd2, ratio1, ratio2).SideEffect(x => x.contract.SetTestConId(isInTest, 0));
 
     public static (Contract contract, int quantity) MakeHedgeCombo(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) {
       int r1 = (ratio1 * quantity).ToInt();

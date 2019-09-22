@@ -7,5 +7,6 @@ using System.Threading.Tasks;
 namespace IBApi {
   partial class ComboLeg {
     public bool IsBuy => Action.ToUpper() == "BUY";
+    public int Quantity => IsBuy ? Ratio : -Ratio;
   }
 }

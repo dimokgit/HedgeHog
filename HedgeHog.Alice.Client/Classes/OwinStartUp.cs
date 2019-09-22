@@ -951,10 +951,15 @@ namespace HedgeHog.Alice.Client {
           //var hh0 = tm.TradingMacroM1(getHedges).Concat().ToArray();
           var hh0 = getHedges(tml);
           if(hh0.IsEmpty()) return Observable.Empty<CurrentHedge>();
+          var combo = AccountManager.MakeHedgeCombo(quantity, hh0[0].contract, hh0[1].contract, hh0[0].ratio, hh0[1].ratio);
+          double CalcComboPrice() => (from hh in hh0
+                                      join l in combo.contract.LegsEx() on hh.contract.ConId equals l.contract.ConId
+                                      select (hh.price, hh.contract.ComboMultiplier, (double)l.leg.Quantity)
+                                      ).ToArray().CalcHedgePrice();
+          IObservable<(double bid, double ask, DateTime time, double delta)> pc()
+            => Observable.Return(CalcComboPrice().With(p => (bid: p, ask: p, time: tml.ServerTime, delta: 1.0)));
           try {
             var hh = hh0.Zip(baseUnits, (h, BaseUnitSize) => new { h.contract, h.ratio, h.price, h.context, BaseUnitSize }).ToArray();
-            //if(doSideEffect)              tm.SetCurrentHedgePosition(c.contract, c.quantity);
-            var pc = MonoidsCore.ToFunc(() => Observable.Return(hh.Select(h => (h.price, h.BaseUnitSize, h.ratio)).ToArray().CalcHedgePrice().With(p => (bid: p, ask: p, time: tml.ServerTime, delta: 1.0))));
             return
             (from q in Observable.Return(quantity)
              where q != 0

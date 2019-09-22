@@ -1215,8 +1215,9 @@ namespace HedgeHog.Alice.Store {
         .Add(new { StrdlHV = new[] { _currentCallByHV, _currentPutByHV }.Select(c => c.Round(2)).Flatter("/") })
         .Add(new { HVPtP = HVPt(this).Concat(HVP(this)).Select(c => c.AutoRound(3)).Flatter("/") })
         //.Add(new { CHP2 = $"{CurrentHedgePosition2}:{VMM(this)}/{TradingMacroM1(tm1 => tm1.CurrentHedgePosition2 + ":" + VMM(tm1)).SingleOrDefault()}" })
-        .Add(new { HgSlope = $"{VoltsReg(this, 1)}/{VoltsReg(this, 0)}" })
-        .Add(new { HgSlope2 = tm1s.Select(tm1 => $"{VoltsReg(tm1, 1)}/{VoltsReg(tm1, 0)}").SingleOrDefault() })
+        //.Add(new { HgSlope = $"{VoltsReg(this, 1)}/{VoltsReg(this, 0)}" })
+        //.Add(new { HgSlope2 = tm1s.Select(tm1 => $"{VoltsReg(tm1, 1)}/{VoltsReg(tm1, 0)}").SingleOrDefault() })
+        .Add(new { ExitGros = $"{ExitGrossByHedgePositions.SideEffect(_=>OnSetExitGrossByHedgePositions()):c0}" })
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))

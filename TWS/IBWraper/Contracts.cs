@@ -37,10 +37,10 @@ namespace IBApp {
         SecType = contract.SecType,
         Currency = contract.Currency,
         ComboLegs = contract.ComboLegs
-      }).SetTestConId(isInTest);
+      }).SetTestConId(isInTest, 0);
 
-    public static Contract ContractFactory(this string pair) => pair.ContractFactory(false);
-    public static Contract ContractFactory(this string pair, bool isInTest) {
+    public static Contract ContractFactory(this string pair) => pair.ContractFactory(false, 0);
+    public static Contract ContractFactory(this string pair, bool isInTest,int multiplier) {
       pair = pair.ToUpper();
       return (pair.IsCurrenncy()
        ? FxContract(pair)
@@ -52,7 +52,7 @@ namespace IBApp {
        ? Future(pair)
        : pair.IsCommodity()
        ? Commodity(pair)
-       : USStock(pair)).SetTestConId(isInTest);
+       : USStock(pair)).SetTestConId(isInTest, multiplier);
     }
     public static Contract FxContract(string pair) {
       return FxPair(pair);
