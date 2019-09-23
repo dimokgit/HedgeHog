@@ -512,15 +512,7 @@ namespace HedgeHog.Alice.Store {
         var voltRates = ShowVoltsByRatioDiff_New()
           .ToArray();
         VoltsFullScaleMinMax = voltRates.SelectMany(vr => GetFullScaleMinMax(vr.r, vr.h)).ToArray();
-        OnMaxHedgeProfit(ServerTime, () =>
-         MaxHedgeProfit = new[] {
-          CalcMaxHedgeProfit()
-          .Concat(MaxHedgeProfit)
-          .DefaultIfEmpty()
-          .Aggregate((p, n) => p.Zip(n, (p1, p2) => (p1.profit.Cma(10, p2.profit), p1.buy)).ToArray())
-         }.Where(x => x != null).ToArray()
-        );
-
+        OnSetExitGrossByHedgeGrossess();
         var voltMap = voltRates.SelectMany(vr => RatioMapDouble((vr.h, VoltsFullScaleMinMax)));
         var priceMap = voltRates.SelectMany(vr => RatioMap((vr.r, _priceAvg, null)));
 
@@ -549,9 +541,10 @@ namespace HedgeHog.Alice.Store {
         }
         min = new[] { min, max }.OrderBy(m => m.Abs()).Last();
 
-        SetVoltHighByIndex(voltIndex)(min.Abs());
-        SetVoltLowByIndex(voltIndex)(-min.Abs());
+        //SetVoltHighByIndex(voltIndex)(min.Abs());
+        //SetVoltLowByIndex(voltIndex)(-min.Abs());
         voltRates.Select(vr => vr.r).ForEach(ra => ra.Zip(voltMap, (r, h) => r.PriceHedge = PosByRatio(priceMin, priceMax, h.v)).Count());
+        SetVoltsHighLowsByRegression(voltIndex);
       }
       return null;
 
@@ -608,12 +601,6 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    IEnumerable<(double profit, bool buy)[]> CalcMaxHedgeProfit() {
-      if(UseCalc())
-        foreach(var hp in CalcMaxHedgeProfitMem(this))
-          yield return hp;
-    }
-
     static IEnumerable<(double pos, double std)> CalcVoltsFullScaleShiftByStDev(TradingMacro tmThis) {
       foreach(var mapH in tmThis.TradingMacroHedged(tm => tm.UseRates(ra => RatioMap((ra, r => 1 / _priceAvg(r), null))).Concat().ToArray(t => t.t.v))) {
         foreach(var map in tmThis.UseRates(ra => RatioMap((ra, _priceAvg, null)).ToArray(t => t.t.v))) {
@@ -665,33 +652,6 @@ namespace HedgeHog.Alice.Store {
       double voltMaxNew() => (linearVolt - v.min) / pricePos + v.min;
       double voltMinNew() => v.max - (v.max - linearVolt) / (1 - pricePos);
     }
-
-    static Func<TradingMacro, IEnumerable<(double profit, bool buy)[]>> CalcMaxHedgeProfitMem =
-      new Func<TradingMacro, IEnumerable<(double profit, bool buy)[]>>(CalcMaxHedgeProfitImpl);
-    //.MemoizeLast(tm => tm.RatesArray.BackwardsIterator(r => r.StartDate.Round(MathCore.RoundTo.Minute)).LastOrDefault());
-    private static IEnumerable<(double profit, bool buy)[]> CalcMaxHedgeProfitImpl(TradingMacro tm) {
-      Func<int, Func<Rate, double>> getOther = corr => corr == 1 ? new Func<Rate, double>(r => r.PriceAvg) : r => 1 / r.PriceAvg;
-      return from tm2 in tm.TradingMacroHedged()
-             from corrs in tm.TMCorrelation(tm2)
-             let getter = getOther(corrs)
-             from tmMap in tm.UseRates(ra => RatioMap((ra, _priceAvg, null))).ToArray()
-             from tmMap2 in tm2.UseRates(ra => RatioMap((ra, getter, tm.VoltsFullScaleMinMax))).ToArray()
-             let mm = tmMap2.Zip(tmMap, (r, t) => new { r = t.t.r, r2 = r.t.r, d = t.t.v - r.t.v }).MinMaxBy(t => t.d)
-             let htb = tm.HedgeBuySell(true).Select(t => new { lots = t.tm.GetLotsToTrade(t.TradeAmount.Up, 1, 1) }).ToArray()
-             let hts = tm.HedgeBuySell(false).Select(t => new { lots = t.tm.GetLotsToTrade(t.TradeAmount.Down, 1, 1) }).ToArray()
-             where mm.Any() && hts.Any() && htb.Any()
-             let t = new[] {
-             (profit:(htb[0].lots * mm[1].r.BidLow + (-corrs) * htb[1].lots * mm[1].r2.BidLow) -
-                    (htb[0].lots * mm[0].r.AskHigh + (-corrs) * htb[1].lots * mm[0].r2.AskHigh),
-                    buy:true),
-             (profit:(hts[0].lots * mm[1].r.BidLow + (-corrs) * hts[1].lots * mm[1].r2.BidLow) -
-                    (hts[0].lots * mm[0].r.AskHigh + (-corrs) * hts[1].lots * mm[0].r2.AskHigh),
-                    buy:false),
-             }
-             where t.All(p => p.profit > 0)
-             select t;
-    }
-
 
     public static double MaxLevelByMinMiddlePos(double min, double middle, double pos) => (middle - min) / pos + min;
     public static double MinLevelByMaxMiddlePos(double max, double middle, double pos) => max - (max - middle) / (1 - pos);
@@ -1037,6 +997,5 @@ namespace HedgeHog.Alice.Store {
 
     public bool IsVoltFullScale => false;
     public double[] VoltsFullScaleMinMax { get; private set; }
-    public IEnumerable<(double profit, bool buy)[]> MaxHedgeProfit { get; private set; } = new[] { new[] { (0.0, false) }.Take(0).ToArray() }.Take(0);
   }
 }
