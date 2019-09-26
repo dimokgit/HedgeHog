@@ -218,12 +218,12 @@ namespace IBApp {
          where options.Length == es.Length + nq.Length
          let hh = options.Select(c => (c.contract, c.underPrice, c.delta, (double)c.contract.ComboMultiplier, context(c.option))).ToArray()
          select es.Any() && nq.Any() ? TradesManagerStatic.HedgeRatioByValue(mashDivider, hh).ToList() : new CURRENT_HEDGES());
-
+    int tvDays = 14;
     public IObservable<(Contract option, Contract contract, double underPrice, double bid, double ask, double delta)[]> CurrentTimeValue(string symbol) {
       return (
         from u in IbClient.ReqContractDetailsCached(symbol)
         from up in u.Contract.ReqPriceSafe()
-        let nextFriday = MathCore.GetWorkingDays(DateTime.Now, DateTime.Now.AddDays(8).GetNextWeekday(DayOfWeek.Friday))
+        let nextFriday = MathCore.GetWorkingDays(DateTime.Now, DateTime.Now.AddDays(tvDays).GetNextWeekday(DayOfWeek.Friday))
         from cs in CurrentOptions(symbol, double.NaN, nextFriday, 6, c => c.Expiration.DayOfWeek == DayOfWeek.Friday)
         let calls = cs.Where(c => c.option.IsCall).OrderByDescending(c => c.delta).Take(2)
         let puts = cs.Where(c => c.option.IsPut).OrderByDescending(c => c.delta).Take(2)

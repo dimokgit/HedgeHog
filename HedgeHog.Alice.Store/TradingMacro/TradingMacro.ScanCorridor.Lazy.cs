@@ -133,8 +133,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     private Action<double> SetVolts(int voltIndex) => v => SetVolts(v, voltIndex);
-    
-    private void SetVolts(double volt, int voltIndex) {
+
+    private void SetVolts(double volt, int voltIndex, bool useRegression = false) {
       if(!IsRatesLengthStable)
         return;
       if(double.IsInfinity(volt) || double.IsNaN(volt))
@@ -142,7 +142,8 @@ namespace HedgeHog.Alice.Store {
       UseRates(rates => rates.BackwardsIterator().TakeWhile(r => GetVoltByIndex(voltIndex)(r).IsNaN())
         .ForEach(r => SetVoltByIndex(voltIndex)(r, volt)));
       //SetVoltage(RateLast, volt);
-      SetVoltsHighLows(voltIndex);
+      if(useRegression) SetVoltsHighLowsByRegression(voltIndex);
+      else SetVoltsHighLows(voltIndex);
     }
 
     private void SetVoltsHighLows(int voltIndex) => GeneralPurposeSubject.OnNext(() => {
@@ -154,6 +155,23 @@ namespace HedgeHog.Alice.Store {
           var voltageAvgLow = voltRates.AverageByIterations(-VoltAverageIterationsByIndex(voltIndex)).DefaultIfEmpty(double.NaN).Average();
           SetVoltLowByIndex(voltIndex)(voltageAvgLow);
           var voltageAvgHigh = voltRates.AverageByIterations(VoltAverageIterationsByIndex(voltIndex)).DefaultIfEmpty(double.NaN).Average();
+          SetVoltHighByIndex(voltIndex)(voltageAvgHigh);
+        }
+      } catch(Exception exc) { Log = exc; }
+    });
+    private void SetVoltsHighLowsByRegression(int voltIndex) => GeneralPurposeSubject.OnNext(() => {
+      try {
+        var voltRates = RatesArray.Select(GetVoltByIndex(voltIndex)).SkipWhile(v => v.IsNaN())
+          .Scan((p, n) => n.IsNaN() ? p : n)
+          .ToArray();
+        if(voltRates.Any()) {
+          var coeffs = voltRates.Linear();
+          var lastReg = coeffs.RegressionValue(voltRates.Length - 1);
+          var stDev = voltRates.StDevByRegressoin(coeffs);
+          var iterations = VoltAverageIterationsByIndex(voltIndex);
+          var voltageAvgLow = lastReg - stDev * iterations;
+          SetVoltLowByIndex(voltIndex)(voltageAvgLow);
+          var voltageAvgHigh = lastReg + stDev * iterations;
           SetVoltHighByIndex(voltIndex)(voltageAvgHigh);
         }
       } catch(Exception exc) { Log = exc; }

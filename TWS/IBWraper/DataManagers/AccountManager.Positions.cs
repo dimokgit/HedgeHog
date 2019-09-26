@@ -11,7 +11,6 @@ namespace IBApp {
     public Position(PositionMessage p) {
       this.contract = p.Contract;
       position = p.Position.ToInt();
-      Quantity = position.Abs();
       averageCost = p.AverageCost;
       open = p.AverageCost * position;
       pipCost = contract.ComboMultiplier * position.Abs();
@@ -20,12 +19,15 @@ namespace IBApp {
 
     public Contract contract { get; }
     public int position { get; }
-    public int Quantity { get; }
+    public int Quantity => position.Abs();
+    public bool IsBuy => position > 0;
     public double averageCost { get; }
     public double open { get; }
     public double pipCost { get; }
     public double price { get; }
     public double AvgCost { get; }
+
+    public override string ToString() => new { contract, position, averageCost, open, price, pipCost } + "";
   }
   public partial class AccountManager {
     public Position ContractPosition(PositionMessage p) => new Position(p);

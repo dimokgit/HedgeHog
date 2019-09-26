@@ -88,10 +88,10 @@ namespace IBApp {
         _accountManager.TradeChanged += (s, e) => RaiseTradeChanged(e.Trade);
         _accountManager.TradeRemoved += (s, e) => RaiseTradeRemoved(e.Trade);
 
-        _accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
+        //_accountManager.TradeClosed += (s, e) => RaiseTradeClosed(e.Trade);
         //_accountManager.TradeClosed += _accountManager_TradeClosed; ;
         // TODO: RaiseTradeClosed needs testing
-        Observable.FromEventPattern<TradeEventArgs>(h => _accountManager.TradeClosed += h, h => h -= _accountManager_TradeClosed)
+        Observable.FromEventPattern<TradeEventArgs>(h => _accountManager.TradeClosed += h, h => _accountManager.TradeClosed -= h)
           .SubscribeOn(TaskPoolScheduler.Default)
           .Subscribe(eh => RaiseTradeClosed(eh.EventArgs.Trade));
         _accountManager.OrderAdded += RaiseOrderAdded;
@@ -99,7 +99,6 @@ namespace IBApp {
       }
     }
 
-    private void _accountManager_TradeClosed(object sender, TradeEventArgs e) => RaiseTradeClosed(e.Trade);
 
     private void OnPriceChanged(object sender, PriceChangedEventArgs e) {
       var price = e.Price;
@@ -142,8 +141,11 @@ namespace IBApp {
       if(contract.IsFuture)
         contract = new Contract {
           SecType = "CONTFUT"
-          , Exchange = "GLOBEX"/*contract.Exchange*//*, TradingClass = contract.TradingClass*/
-          , Symbol = contract.FromDetailsCache().Single().MarketName };
+          ,
+          Exchange = "GLOBEX"/*contract.Exchange*//*, TradingClass = contract.TradingClass*/
+          ,
+          Symbol = contract.FromDetailsCache().Single().MarketName
+        };
       var isDone = false;
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);
@@ -208,7 +210,7 @@ namespace IBApp {
     public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
       if(Contract.FromCache(pair).IsEmpty()) {
         Trace($"Contract.FromCache({pair}).IsEmpty()");
-        _ibClient.ReqContractDetailsCached(pair).Subscribe(_=> GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack));
+        _ibClient.ReqContractDetailsCached(pair).Subscribe(_ => GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack));
       } else
         GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack);
     }

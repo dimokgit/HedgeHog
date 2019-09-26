@@ -177,7 +177,6 @@ namespace IBApp {
     }
     public IEnumerable<(Contract contract, int position, double open, double openPrice, double takeProfit, int orderId)> ComboTradesImpl() {
       var positions = Positions.Where(p => p.position != 0).ToArray();
-      var orders = OrderContractsInternal.Values.Where(oc => !oc.isDone).ToArray();
       var combos = (
         from c in positions/*.ParseCombos(orders)*//*.Do(c => IbClient.SetContractSubscription(c.contract))*/
         let order = OrderContractsInternal.OpenByContract(c.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()

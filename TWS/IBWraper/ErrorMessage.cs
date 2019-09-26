@@ -28,6 +28,31 @@ namespace IBApp {
     }
     public override string ToString() => new { values = value.Flatter(Environment.NewLine), error } + "";
   }
+  public class GenericException<TData> :Exception {
+    public GenericException(TData context) {
+      Context = context;
+    }
+
+    public TData Context { get; }
+  }
+  public class IBException :Exception {
+    public IBException(int reqId, int errorCode, string errorMsg, Exception exc) {
+      ReqId = reqId;
+      ErrorCode = errorCode;
+      ErrorMsg = errorMsg;
+      Exc = exc;
+    }
+    public IBException(ErrorMessage em) : this(em.reqId, em.errorCode, em.errorMsg, em.exc) { }
+    public int ReqId { get; }
+    public int ErrorCode { get; }
+    public string ErrorMsg { get; }
+    public Exception Exc { get; }
+
+    public override string ToString() =>
+      Exc == null
+      ? new { ReqId, ErrorCode, ErrorMsg } + ""
+      : new { ReqId, ErrorCode, ErrorMsg, Exc } + "";
+  }
   public class ErrorMessage<T> {
     public readonly T value;
     public readonly ErrorMessage error;
@@ -64,7 +89,7 @@ namespace IBApp {
       : new { reqId, errorCode, errorMsg, exc } + "";
   }
   public class PlaceOrderException :Exception {
-    public PlaceOrderException():base("Pending request") {
+    public PlaceOrderException() : base("Pending request") {
 
     }
   }

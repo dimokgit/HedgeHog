@@ -543,7 +543,10 @@ namespace HedgeHog.Alice.Store {
 
         //SetVoltHighByIndex(voltIndex)(min.Abs());
         //SetVoltLowByIndex(voltIndex)(-min.Abs());
-        voltRates.Select(vr => vr.r).ForEach(ra => ra.Zip(voltMap, (r, h) => r.PriceHedge = PosByRatio(priceMin, priceMax, h.v)).Count());
+        //voltRates.Select(vr => vr.r).ForEach(ra => ra.Zip(voltMap, (r, h) => r.PriceHedge = PosByRatio(priceMin, priceMax, h.v)).Count());
+        var volts2 = voltRates.Select(vr => vr.r).SelectMany(ra => ra.Zip(voltMap, (r, h) => new { r, v = PosByRatio(priceMin, priceMax, h.v) }));
+        var v3 = UseRates(ra => ra.Zip(r => r.StartDate, volts2, v => v.r.StartDate, (r, v) => new { r, v.v }).ToList()).Concat();
+        v3.ForEach(t => t.r.PriceHedge = t.v);
         SetVoltsHighLowsByRegression(voltIndex);
       }
       return null;
@@ -564,7 +567,7 @@ namespace HedgeHog.Alice.Store {
       from xs in UseRates(tm2, (ra, ra2) => ZipRateArrays((ra, ra2, corr)))
       select xs;
 
-    Func<(List<Rate> ra, List<Rate> ra2, int corr), IList<(Rate rate, double ratio)>> ZipRateArrays = ZipRateArraysImpl;//.MemoizeLast(t => t.ra.LastOrDefault().StartDate);
+    Func<(List<Rate> ra, List<Rate> ra2, int corr), IList<(Rate rate, double ratio)>> ZipRateArrays = ZipRateArraysImpl2;//.MemoizeLast(t => t.ra.LastOrDefault().StartDate);
     private static Func<(List<Rate> ra, List<Rate> ra2, int corr), IList<(Rate rate, double)>> ZipRateArraysImpl =
       t => t.ra.Zip(
         r => r.StartDate
@@ -572,6 +575,11 @@ namespace HedgeHog.Alice.Store {
         , r => r.Item1
         , (r, r2) => (r, r2.Item2)
         ).ToArray();
+    private static Func<(List<Rate> ra, List<Rate> ra2, int corr), IList<(Rate rate, double)>> ZipRateArraysImpl2 =
+      t => (from r in t.ra
+            join r2 in t.ra2 on r.StartDate equals r2.StartDate
+            select (r, t.corr == 1 ? r2.PriceAvg : 1 / r2.PriceAvg)
+          ).ToArray();
 
 
     static Func<(IList<Rate> source, Func<Rate, double> getter, double[] minMax), IEnumerable<(DateTime d, (double v, Rate r) t)>> RatioMapImpl => t => {

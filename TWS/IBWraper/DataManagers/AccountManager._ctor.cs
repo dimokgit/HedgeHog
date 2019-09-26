@@ -39,6 +39,14 @@ namespace IBApp {
 
       RequestAccountSummary();
       SubscribeAccountUpdates();
+
+      var _reqPositionsEnd = Observable.FromEvent(
+        h => IbClient.PositionEnd += h,
+        h => IbClient.PositionEnd -= h
+        )
+        .Subscribe(_ => {
+          TraceDebug(Positions.ToTextOrTable("PositionsEnd:"));
+        }).SideEffect(s => _strams.Add(s));
       RequestPositions();
       IbClient.OnReqMktData(() => IbClient.ClientSocket.reqOpenOrders());
       IbClient.OnReqMktData(() => IbClient.ClientSocket.reqAllOpenOrders());
@@ -73,8 +81,8 @@ namespace IBApp {
 
       PositionsObservable = Observable.FromEvent<PositionHandler, PositionMessage>(
         onNext => (PositionMessage m) => Try(() => onNext(m), nameof(IbClient.Position)),
-        h => IbClient.Position += h.SideEffect(_ => Trace($"+= IbClient.Position")),
-        h => IbClient.Position -= h.SideEffect(_ => Trace($"-= IbClient.Position"))
+        h => IbClient.Position += h,
+        h => IbClient.Position -= h
         )
         .Where(x => /*x.Position != 0 &&*/ x.Account == _accountId)
         //.DistinctUntilChanged(t => new { t.Contract, t.Position })
@@ -86,8 +94,8 @@ namespace IBApp {
             //RequestPositions();
           }, i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
           select p.SideEffect(_ => {
-            TraceDebug(new { PositionContract = cd.Contract });
             p.Contract.Exchange = cd.Contract.Exchange;
+            TraceDebug($"PositionContract: {cd.Contract}");
             if(p.Position == 0) _positions.TryRemove(p.Contract.Key, out var r);
             else {
               var cp = ContractPosition(p);
@@ -126,9 +134,8 @@ namespace IBApp {
                    );
           return x.ObserveOn(TaskPoolScheduler.Default).DefaultIfEmpty(m);
         })
-        .Do(x => TraceDebug($"OpenOrder:{new { key = OrderKey(x.Order) }}"))
         ;
-      string OrderKey(IBApi.Order o) => new { o.PermId, o.LmtPrice, Conditions = o.Conditions.Flatter("; ") } + "";
+      string OrderKey(IBApi.Order o) => new { o.PermId, o.LmtPrice, o.AuxPrice, Conditions = o.Conditions.Flatter("; ") } + "";
 
       OrderStatusObservable = Observable.FromEvent<OrderStatusHandler, OrderStatusMessage>(
         onNext
@@ -158,7 +165,6 @@ namespace IBApp {
         .Where(x => x.Order.Account == _accountId)
         .Do(x => TraceDebug($"OpenOrder: {new { x.Order.OrderId, x.Order.Transmit, conditions = x.Order.Conditions.Flatter(";") } }"))
         //.Do(UpdateOrder)
-        .Do(x => TraceDebug($"OpenOrderKey: {OrderKey(x.Order)}"))
         .Do(x => Trace($"OpenOrder: {x}"))
         .Subscribe(a => OnOrderImpl(a))
         .SideEffect(s => _strams.Add(s));
@@ -274,7 +280,6 @@ namespace IBApp {
 
     }
 
-
     //public ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)> OrderStatuses { get; } = new ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)>();
 
     private void RaiseOrderRemoved(OrderContractHolder cd) {
@@ -306,6 +311,7 @@ namespace IBApp {
       if(!disposedValue) {
         if(disposing) {
           _strams.ForEach(s => s.Dispose());
+          _strams.Clear();
         }
         disposedValue = true;
       }

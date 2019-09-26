@@ -57,9 +57,6 @@ namespace IBApi {
     public static IEnumerable<(int[] conIds, Contract contract)> ContractConIds => _contracts.Select(c => (c.Value.ConIds.ToArray(), c.Value));
     //public Contract FromCache() => _contracts.TryGetValue(Key, out var c).With(_ => c);
     public Contract AddToCache() {
-      if(IsFuturesCombo) {
-        Debug.WriteLine(this.ToJson(true));
-      }
       if(!_contracts.TryAdd(Key, this) && _contracts[Key].HashKey != HashKey)
         _contracts.AddOrUpdate(Key, this, (k, c) => this);
       return this;
@@ -148,6 +145,9 @@ namespace IBApi {
     static Regex _right = new Regex(".{2}$");
     static string RightStrikeLabel2(int ratio, Contract c) => c.Right.IsNullOrEmpty() ? "" : (ratio.Abs() > 1 ? ":" : "") + c.Right + _right.Match(c.Strike + "");
 
+    public IEnumerable<T> LegsForHedge<T>(string key, Func<(Contract c, ComboLeg leg), T> map)
+      => LegsEx().OrderByDescending(l => l.contract.Key == key).Select(map);
+    public IEnumerable<(Contract c, ComboLeg leg)> LegsForHedge(string key)=> LegsEx().OrderByDescending(l => l.contract.Key == key);
     public IEnumerable<T> LegsOrMe<T>(Func<Contract, T> map) => LegsOrMe().Select(map);
     public IEnumerable<Contract> LegsOrMe() => Legs().Select(cl => cl.c).DefaultIfEmpty(this);
 

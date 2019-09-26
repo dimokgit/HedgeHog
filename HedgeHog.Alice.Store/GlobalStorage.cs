@@ -139,20 +139,25 @@ namespace HedgeHog.Alice.Store {
 
     #region ForexDbContext factory
     static string mongoConnectionString = "mongodb://dimok:1Aaaaaaa@ds040017.mlab.com:40017/forex";
-    static ForexDbContext _ForexMongoFactory;
-    static ForexDbContext ForexMongoFactory => _ForexMongoFactory ?? (_ForexMongoFactory = new ForexDbContext(mongoConnectionString));
+    //static ForexDbContext _ForexMongoFactory;
+    static ForexDbContext ForexMongoFactory() => new ForexDbContext(mongoConnectionString);
     static object _forexDbContextLocker = new object();
-    public static T UseForexMongo<T>(Func<ForexDbContext, T> func) { lock(_forexDbContextLocker) return func(ForexMongoFactory); }
+    public static T UseForexMongo<T>(Func<ForexDbContext, T> func) {
+      lock(_forexDbContextLocker)
+        using(var c = ForexMongoFactory())
+          return func(c);
+    }
     public static void UseForexMongo(Action<ForexDbContext> action, bool save, Action onSave) => UseForexMongo(action, save, onSave, null);
     public static void UseForexMongo(Action<ForexDbContext> action, bool save = false, Action onSave = null, Action<ForexDbContext, Exception> onError = null) {
-      var c = ForexMongoFactory;
       lock(_forexDbContextLocker) {
-        action(c);
-        Save(save, onSave, onError, c);
+        using(var c = ForexMongoFactory()) {
+          action(c);
+          Save(save, onSave, onError, c);
+        }
       }
     }
 
-    private static void Save<TDbContext>(bool save, Action onSave, Action<TDbContext, Exception> onError, TDbContext c) where TDbContext: DbContext {
+    private static void Save<TDbContext>(bool save, Action onSave, Action<TDbContext, Exception> onError, TDbContext c) where TDbContext : DbContext {
       if(save) {
         try {
           c.SaveChanges();

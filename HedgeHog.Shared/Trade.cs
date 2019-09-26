@@ -111,7 +111,11 @@ namespace HedgeHog.Shared {
         _Close = value;
         if(BaseUnitSize == 0)
           return;
-        GrossPL = CalcGrossPL(Close);
+        if(TradesManager != null)
+          GrossPL = CalcGrossPL(Close);
+        else {
+          Debug.WriteLine("Closed Trade");
+        }
       }
     }
     public double CalcGrossPL(double close) {
@@ -206,6 +210,8 @@ namespace HedgeHog.Shared {
       set {
         if(_lots == value) return;
         _lots = value;
+        if(Lots == 0)
+          LogMessage.Send(new { Trade = new { Pair, Lots } } + "");
         OnPropertyChanged(nameof(Lots));
       }
     }
@@ -254,6 +260,7 @@ namespace HedgeHog.Shared {
         }
       }
     }
+    //var buffer = new BroadcastBlock<Action>(n => n, new DataflowBlockOptions() { BoundedCapacity = boundedCapacity });
 
     public void UpdateByPrice(object sender, PriceChangedEventArgs e) {
       UpdateByPrice(sender as ITradesManager, e.Price);
@@ -304,7 +311,7 @@ namespace HedgeHog.Shared {
     public double InPips(double value) { return value * PipValue; }
 
     public Trade Clone() {
-      var t= this.MemberwiseClone() as Trade;
+      var t = this.MemberwiseClone() as Trade;
       t.TradesManager = TradesManager;
       return t;
     }
@@ -321,7 +328,7 @@ namespace HedgeHog.Shared {
       foreach(var property in GetType().GetProperties()) {
         var element = x.Element(property.Name);
         if(element != null && property.CanWrite && property.PropertyType != typeof(UnKnownBase))
-            this.SetProperty(property.Name, element.Value);
+          this.SetProperty(property.Name, element.Value);
       }
       return this;
     }

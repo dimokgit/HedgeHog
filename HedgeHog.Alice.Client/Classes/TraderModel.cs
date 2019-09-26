@@ -1316,7 +1316,14 @@ namespace HedgeHog.Alice.Client {
             if(account == null) {
               Thread.Sleep(1000);
               account = TradesManager.GetAccount();
-              //TradesManager.SetClosedTrades(GlobalStorage.UseForexMongo(c => c.Trades.Where(t => t.Kind == PositionBase.PositionKind.Closed).ToArray()));
+              var start = DateTime.Now.AddDays(-14);
+              try {
+                var closedTrades = GlobalStorage.UseForexMongo(c
+                  => c.Trades.Where(t => t.Time > start && t.Kind == PositionBase.PositionKind.Closed).ToArray());
+                TradesManager.SetClosedTrades(closedTrades);
+              }catch(Exception exc) {
+                Log = exc;
+              }
             }
             if(account != null)
               GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {

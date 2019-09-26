@@ -834,4 +834,36 @@ namespace HedgeHog.Bars {
       return base.ToString() + " : " + Power;
     }
   }
+  public struct RateGroup {
+    public IList<(Rate rate, int index)> Range { get; }
+    public (Rate rate, int index)[] MinMax { get; }
+    public double Avg { get; }
+    public double Min { get; }
+    public double Max { get; }
+    public int Index { get; }
+    public DateTime StartDate { get; }
+    public double Distance { get; private set; }
+
+    public static double Miner((Rate rate, int index) r) => r.rate.BidLow;
+    public static double Maxer((Rate rate, int index) r) => r.rate.AskHigh;
+
+    public int Count { get; }
+
+    public RateGroup(IList<(Rate rate, int index)> range) {
+      try {
+        Range = range;
+        MinMax = range.MinMaxBy(r => r.rate.BidLow, r => r.rate.AskHigh);
+        Avg = range.Average(r => r.rate.PriceAvg);
+        Min = MinMax[0].rate.BidLow;
+        Max = MinMax[1].rate.AskHigh;
+        Index = range[0].index;
+        StartDate = range[0].rate.StartDate;
+        Distance = range.Distances(r => r.rate.PriceAvg).Last().Item2;
+        Count = range.Count;
+      } catch {
+        throw;
+      }
+    }
+    public static RateGroup Create(IList<(Rate rate, int index)> range) => new RateGroup(range);
+  }
 }

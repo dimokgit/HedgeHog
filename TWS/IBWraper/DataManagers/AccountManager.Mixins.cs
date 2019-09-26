@@ -35,7 +35,7 @@ namespace IBApp {
     public static IEnumerable<OrderContractHolder> ByContract(this ConcurrentDictionary<int, OrderContractHolder> source, Contract contract) =>
       source.Values.ByContract(contract);
     public static IEnumerable<OrderContractHolder> OpenByContract(this ConcurrentDictionary<int, OrderContractHolder> source, Contract contract)
-      => source.ByContract(contract).Where(och => !och.isDone && och.hasSubmitted);
+      => source.ByContract(contract).Where(och => !och.isDone && och.hasSubmitted).OrderBy(o => o.order.ParentId);
     public static IEnumerable<OrderContractHolder> ByContract(this IEnumerable<OrderContractHolder> source, Contract contract)
       => source.Where(och => och.contract == contract);
     public static IEnumerable<OrderContractHolder> OpenByContract(this IEnumerable<OrderContractHolder> source, Contract contract)

@@ -1004,18 +1004,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #region TradesManager 'n Stuff
-    private IDisposable _orderAddedSubscribsion;
-    private IDisposable _priceChangedSubscribsion;
-    public IDisposable PriceChangedSubscribsion {
-      get { return _priceChangedSubscribsion; }
-      set {
-        if(_priceChangedSubscribsion == value)
-          return;
-        if(_priceChangedSubscribsion != null)
-          _priceChangedSubscribsion.Dispose();
-        _priceChangedSubscribsion = value;
-      }
-    }
     EventHandler<TradeEventArgs> TradeCloseHandler {
       get {
         return TradesManager_TradeClosed;
@@ -1048,6 +1036,19 @@ namespace HedgeHog.Alice.Store {
     public bool HasTicks => (TradesManager?.HasTicks).GetValueOrDefault();
     IDisposable _priceChangeDisposable;
     public int ExpDayToSkip() => OpenPuts().Take(0).Select(p => (p.contract.Expiration - ServerTime.Date).Days).OrderBy(d => d).Take(1).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
+
+    List<IDisposable> _strams = new List<IDisposable>();
+    class PriceChangedAsyncBuffer :AsyncBuffer<PriceChangedAsyncBuffer, PriceChangedEventArgs> {
+      readonly TradingMacro tm;
+      public PriceChangedAsyncBuffer(TradingMacro tm) {
+        this.tm = tm;
+      }
+      protected override Action PushImpl(PriceChangedEventArgs context)
+        => () => tm.RunPriceChanged(context, null);
+    }
+    PriceChangedAsyncBuffer _priceChangedAsyncBuffer;
+    PriceChangedAsyncBuffer PriceChangedAsyncBufferInstance => _priceChangedAsyncBuffer
+      ?? (_priceChangedAsyncBuffer = new PriceChangedAsyncBuffer(this));
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
       _tradingMacros = tradingMacros;
       if(TradingMacroTrader(Pair).Count() > 1) {
@@ -1086,11 +1087,13 @@ namespace HedgeHog.Alice.Store {
         //.Sample((0.1).FromSeconds())
         //.DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
         ;
-      if(!IsInVirtualTrading)
-        PriceChangedSubscribsion = a.ObserveLatestOn(ObservableExtensions.BGTreadSchedulerFactory(ThreadPriority.Normal, nameof(PriceChangedSubscribsion)))
-          .Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
-      else
-        PriceChangedSubscribsion = a.Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
+      if(!IsInVirtualTrading) {
+        //PriceChangedSubscribsion = a.ObserveLatestOn(ObservableExtensions.BGTreadSchedulerFactory(ThreadPriority.Normal, nameof(PriceChangedSubscribsion) + ":" + this))
+        //  .Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
+        a.Subscribe(e => PriceChangedAsyncBufferInstance.Push(e.EventArgs)).SideEffect(_strams.Add);
+        PriceChangedAsyncBufferInstance.Error.Subscribe(exc => Log = exc).SideEffect(s => _strams.Add(s));
+      } else
+        a.Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated.")).SideEffect(_strams.Add);
 
       if(!IsInVirtualTrading && !IsInPlayback) {
         TradesManager.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
@@ -1371,9 +1374,6 @@ namespace HedgeHog.Alice.Store {
     bool IsMyTrade(Trade trade) { return trade.Pair == Pair && IsTrader; }
     bool IsMyOrder(Shared.Order order) { return order.Pair == Pair && IsTrader; }
     public void UnSubscribeToTradeClosedEVent(ITradesManager tradesManager) {
-      if(PriceChangedSubscribsion != null)
-        PriceChangedSubscribsion.Dispose();
-      PriceChangedSubscribsion = null;
       if(this.TradesManager != null) {
         this.TradesManager.TradeClosed -= TradeCloseHandler;
         this.TradesManager.TradeAdded -= TradeAddedHandler;
@@ -1382,6 +1382,12 @@ namespace HedgeHog.Alice.Store {
         tradesManager.TradeClosed -= TradeCloseHandler;
         tradesManager.TradeAdded -= TradeAddedHandler;
       }
+      if(PriceChangedAsyncBufferInstance != null)
+        PriceChangedAsyncBufferInstance.Dispose();
+
+      _strams.ForEach(s => s?.Dispose());
+      _strams.Clear();
+
     }
 
     private const string CT = "OT";
@@ -1640,7 +1646,7 @@ namespace HedgeHog.Alice.Store {
         bool noMoreDbRates = false;
         var isReplaying = false;
         var minutesOffset = BarPeriodInt * 0;
-        MaxHedgeProfit = new[] { new[] { (profit: 0.0, buy: false) }.Take(0).ToArray() }.Take(0);
+        ExitGrossByHedgePositions = double.NaN;
 
         while(!args.MustStop && indexCurrent < _replayRates.Count/* && Strategy != Strategies.None*/) {
           if(isReplaying && !isInitiator)
@@ -4570,7 +4576,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       }
     }
     class LoadRateAsyncBuffer :AsyncBuffer<LoadRateAsyncBuffer, Action> {
-      public LoadRateAsyncBuffer(int tmCount) : base(1, 11.FromSeconds().Multiply(tmCount), true,(Func<string>)null) { }
+      public LoadRateAsyncBuffer(int tmCount) : base(1, 11.FromSeconds().Multiply(tmCount), true, (Func<string>)null) { }
       protected override Action PushImpl(Action context) => context;
     }
     LoadRateAsyncBuffer _loadRatesAsyncBuffer;

@@ -213,7 +213,6 @@ namespace IBApp {
     #endregion
 
     #region TickPrice
-    static IScheduler esReqPriceSubscribe = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "ReqPrice", Priority = ThreadPriority.AboveNormal });
     IObservable<TickPriceMessage> TickPriceFactoryFromEvent()
       => Observable.FromEvent<TickPriceHandler, TickPriceMessage>(
         onNext => (TickPriceMessage m) => onNext(m),
@@ -247,15 +246,14 @@ namespace IBApp {
     #endregion
 
     #region OptionPrice
+    static IScheduler esOptionPriceSubscribe = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "OptionPrice" });
     OPTION_PRICE_OBSERVABLE OptionPriceFactoryFromEvent()
       => Observable.FromEvent<OptionPriceHandler, TickOptionMessage>(
         onNext => (TickOptionMessage m) => onNext(m),
         h => TickOptionCommunication += h/*.SideEffect(_ => Trace($"Subscribed to {nameof(TickPrice)}"))*/,
         h => TickOptionCommunication -= h/*.SideEffect(_ => Trace($"UnSubscribed to {nameof(TickPrice)}"))*/
         )
-      .ObserveOn(esReqPriceSubscribe)
-      .Publish()
-      .RefCount();
+      .ObserveOn(esOptionPriceSubscribe);
     OPTION_PRICE_OBSERVABLE _OptionPriceObservable;
     internal OPTION_PRICE_OBSERVABLE OptionPriceObservable => (_OptionPriceObservable ?? (_OptionPriceObservable = OptionPriceFactoryFromEvent()));
     #endregion
@@ -290,7 +288,7 @@ namespace IBApp {
     }
 
     public static ConcurrentDictionary<string, IObservable<ContractDetails>> ReqContractDetails { get; } = new ConcurrentDictionary<string, IObservable<ContractDetails>>();
-    public IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
+    private IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
       //if(contract.Instrument.IsNullOrWhiteSpace())
       //  throw new Exception("Contract's Symbol property is empty");
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
@@ -300,7 +298,7 @@ namespace IBApp {
       //var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol, contract.ConId + "")}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
       var key = $"{contract.Key}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
       lock(ReqContractDetails) {
-        if(ReqContractDetails.TryGetValue(key, out var o)) return o;
+        if(ReqContractDetails.TryGetValue(key, out var o)) return o.SelectMany(cd0 => cd0.FromCache());
 
         var reqId = NextReqId();
         TraceDebug0($"{nameof(ReqContractDetailsAsync)}:{key} Start");

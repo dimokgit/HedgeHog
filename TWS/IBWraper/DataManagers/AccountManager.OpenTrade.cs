@@ -24,14 +24,14 @@ namespace IBApp {
         throw new Exception($"Pair:{pair} is not fround in Contracts");
       return OpenTrade(contract, contract.IsFuture ? 1 : 100);
     }
-    public void OpenOrUpdateLimitOrderByProfit2(string instrument, int position, int orderId, double openAmount, double profitAmount) {
-      var pa = profitAmount >= 1 ? profitAmount : openAmount.Abs() * profitAmount;
-      var contract = Contract.FromCache(instrument).ToArray();
+    public void OpenOrUpdateLimitOrderByProfit2(string key, int position, int orderId, double openAmount, double profitAmount) {
+      var pa = profitAmount.Abs() >= 1 ? profitAmount : openAmount.Abs() * profitAmount;
+      var contract = Contract.FromCache(key).ToArray();
       OrderContractsInternal.ByOrderId(orderId)
       .Where(och => !och.isDone)
       .Do(och => {
         if(och.contract != contract.Single())
-          throw new Exception($"{nameof(OpenOrUpdateLimitOrderByProfit2)}:{new { orderId, och.contract.Instrument, dontMatch = instrument }}");
+          throw new Exception($"{nameof(OpenOrUpdateLimitOrderByProfit2)}:{new { orderId, och.contract.Instrument, dontMatch = key }}");
         var limit = OrderPrice(priceFromProfit(pa, position, och.contract.ComboMultiplier, openAmount), och.contract);
         UpdateOrder(orderId, limit);
       })
@@ -44,7 +44,7 @@ namespace IBApp {
       });
     }
     public void OpenOrUpdateLimitOrderByProfit3(Contract contract, int position, int orderId, double openPrice, double profitAmount) {
-      var limit = profitAmount >= 1 ? profitAmount / contract.PipCost() * position : openPrice * profitAmount;
+      var limit = profitAmount.Abs() >= 1 ? profitAmount / contract.PipCost() * position : openPrice * profitAmount;
       OpenOrUpdateLimitOrder(contract, position, orderId, openPrice + limit);
     }
     public void OpenOrUpdateLimitOrder(Contract contract, int position, int orderId, double lmpPrice) {
@@ -260,11 +260,7 @@ namespace IBApp {
           order.Conditions.AddRange(condition.YieldNotNull());
           order.ConditionsIgnoreRth = true;
           orderExt?.Invoke(order);
-          if(contract.IsBag || order.NeedTriggerPrice) {
-            order.SmartComboRoutingParams = new List<TagValue>();
-            order.SmartComboRoutingParams.Add(new TagValue("NonGuaranteed", "1"));
-            //order.Transmit = false;
-          }
+          CheckNonGiuaranteed(order, contract);
 
           if(order.NeedTriggerPrice && order.LmtPrice.IsSetOrZero() && order.AuxPrice.IsNotSetOrZero()) order.AuxPrice = order.LmtPrice;
           if(false && !contract.IsCombo && !contract.IsFutureOption) FillAdaptiveParams(order, "Normal");
@@ -284,6 +280,17 @@ namespace IBApp {
         }
       }
       IObservable<(OrderContractHolder holder, ErrorMessage error)[]> Default(Exception exc) => new[] { (default(OrderContractHolder), new ErrorMessage(0, 0, nameof(OpenTrade), exc)) }.ToObservable().ToArray();
+    }
+
+    private static IBApi.Order CheckNonGiuaranteed(IBApi.Order order, Contract contract) {
+      if(contract.IsBag || order.NeedTriggerPrice) {
+        order.SmartComboRoutingParams = new List<TagValue>();
+        order.SmartComboRoutingParams.Add(new TagValue("NonGuaranteed", "1"));
+        //order.Transmit = false;
+      }
+      if(order.NeedTriggerPrice && order.LmtPrice.IsSetOrZero())
+        order.AuxPrice = order.LmtPrice;
+      return order;
     }
 
     private void TraceOpenTradeResults((OrderContractHolder value, ErrorMessage error)[] a) => Trace(
@@ -334,18 +341,19 @@ namespace IBApp {
         var order = new IBApi.Order() {
           Account = _accountId,
           ParentId = parent.OrderId,
-          LmtPrice = isMarket ? 0 : OrderPrice(price, contract),
           OrderId = NetOrderId(),
           Action = parent.Action == "BUY" ? "SELL" : "BUY",
-          OrderType = isMarket ? "MKT" : "LMT",
+          OrderType = isMarket ? "MKT" : "LMT" + (contract.IsFuturesCombo ? " + MKT" : ""),
           TotalQuantity = parent.TotalQuantity,
           Tif = GTC,
           OutsideRth = isPreRTH,
           OverridePercentageConstraints = true,
           Transmit = true
         };
+        order.SetLimit(isMarket ? 0 : OrderPrice(price, contract));
         order.Conditions.AddRange(new[] { takeProfitCondition }.Where(c => c != null));
         order.ConditionsIgnoreRth = true;
+        CheckNonGiuaranteed(order, contract);
         return (order, price);
       })
       .Take(1)

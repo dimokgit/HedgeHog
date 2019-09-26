@@ -1206,7 +1206,7 @@
           <td data-bind="text:d3.timeFormat('%b-%d %H:%M')(Time)"></td>
           <td data-bind="text:d3.format('.2f')(Open)"></td>
           <td data-bind="text:d3.format('.2f')(Close)"></td>
-          <td data-bind="text:d3.format('.2f')(GrossPL)"></td>
+          <td data-bind="text:d3.format('$.0f')(GrossPL)"></td>
         </tr>
       </tbody>
     </table>
@@ -1230,11 +1230,11 @@
           <td><span data-bind1="text:pmc"></span>:<span data-bind1="text:mcu"></span></td>
           <td>
             <span data-bind="text:d3.format('.2f')(takeProfit()),event:{click:$parent.showNextInput}"></span>
-            <input data-bind="event:{change:$parent.newTakeProfit,blur:$parent.hideNextInput}" size="4" style="display:none;overflow:visible" />
+            <input data-bind="event:{change:$parent.newTakeProfit,blur:$parent.hideNextInput}" size="4" style="display:none;overflow:visible;width:100%" />
           </td>
           <td>
             <span data-bind="text:d3.format('$.0f')(profit()),event:{click:$parent.showNextInput}"></span>
-            <input data-bind="event:{change:$parent.newProfit,blur:$parent.hideNextInput}" size="3" style="display:none" />
+            <input data-bind="event:{change:$parent.newProfit,blur:$parent.hideNextInput}" size="3" style="display:none;width:100%"" />
           <td>
             <button data-bind="click:$parent.closeCombo.bind(null,combo)" title="Close Position">X</button>
           </td>
@@ -1387,6 +1387,16 @@
           <td>
             <button data-bind="click:$parent.cancelOrder.bind(null,$data)" title="Cancel Order">X</button>
           </td>
+        </tr>
+      </tbody>
+    </table>
+    <table class="wwwInfo" border="1">
+      <tbody data-bind="foreach:closedTrades">
+        <tr>
+          <td data-bind="text:Pair,style:{backgroundColor: IsBuy?'deepskyblue':'red'}"></td>
+          <td data-bind="text:Lots"></td>
+          <td data-bind="text:d3.timeFormat('%b-%d %H:%M')(Time2)"></td>
+          <td data-bind="text:d3.format('$.0f')(GrossPL),style:{backgroundColor: GrossPL>0?'chartreuse':'#ffd3d9'}"></td>
         </tr>
       </tbody>
     </table>

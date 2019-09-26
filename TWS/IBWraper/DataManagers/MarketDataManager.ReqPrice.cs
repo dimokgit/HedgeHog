@@ -100,19 +100,28 @@ namespace IBApp {
       return x;
     }
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceBag(Contract combo, double timeoutInSeconds, [CallerMemberName] string Caller = "") {
+      string title() => $"{nameof(ReqPriceBag)}: {new { combo, key = combo._key() }}";
       var x0 = (from l in combo.LegsEx().ToObservable()
-                from p in l.contract.ReqPriceSafe(timeoutInSeconds)
+                from p in l.contract.ReqPriceSafe(timeoutInSeconds).DefaultIfEmpty()
                   //               from ab in new[] { (price.bid, multiplier: l.c.ComboMultiplier, positions: l.r), (price.ask, multiplier: l.c.ComboMultiplier, positions: l.r) }
                 select new { c = l.contract, p, r = (double)l.leg.Ratio * (l.leg.IsBuy ? 1 : -1), l.leg.IsBuy }
                )
                .ToArray()
+               .Do(a => {
+                 if(a.Length != 2) {
+                   TraceError($"{title()} - yelded no leg prices");
+                 }
+               })
+               .Where(a => a.Length == 2)
                .Select(a => {
                  var bid = a.Select(x => (price: x.IsBuy ? x.p.bid : x.p.ask, multiplier: x.c.ComboMultiplier, positions: x.r)).ToArray().CalcHedgePrice();
                  var ask = a.Select(x => (price: x.IsBuy ? x.p.ask : x.p.bid, multiplier: x.c.ComboMultiplier, positions: x.r)).ToArray().CalcHedgePrice();
+                 if(bid == 0 || ask == 0)
+                   TraceError($"{title()}: {new { ask, bid }}");
                  return (bid, ask, a.Max(b => b.p.time), 1.0);
                })
                ;
-      return x0;
+      return x0.Where(p => p.ask != 0 && p.bid != 0);
     }
   }
 }

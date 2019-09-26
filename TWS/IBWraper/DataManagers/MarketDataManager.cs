@@ -31,12 +31,12 @@ namespace IBApp {
     public MarketDataManager(IBClientCore client) : base(client) {
       IbClient.TickPriceObservable.SubscribeOn(esTickPrice).ObserveOn(esTickPrice).Subscribe(t => OnTickPrice(t.RequestId, t.Field, t.Price, t.attribs));
       IbClient.TickStringObservable.SubscribeOn(esTickPrice).ObserveOn(esTickPrice).Subscribe(t => OnTickString(t.tickerId, t.tickType, t.value));
-      IbClient.TickGenericObservable.SubscribeOn(esTickPrice).ObserveOn(esTickPrice).Subscribe(t => OnTickGeneric(t.tickerId, t.field, t.value));
-      IbClient.OptionPriceObservable.Subscribe(t => OnOptionPrice(t));
+      IbClient.TickGenericObservable.SubscribeOn(esTickPrice).ObserveOn(esTickPrice).Subscribe(OnTickGeneric);
+      IbClient.OptionPriceObservable.Subscribe(OnOptionPrice);
       //IbClient.TickOptionCommunication += TickOptionCommunication; ;
     }
 
-    private void OnTickGeneric(int tickerId, int field, double value) => OnTickPrice(tickerId, field, value, new TickAttrib());
+    private void OnTickGeneric((int tickerId, int field, double value) t) => OnTickPrice(t.tickerId, t.field, t.value, new TickAttrib());
 
     public void AddRequestSync(Contract contract, Action<int, Contract> callback = null, string genericTickList = null, [CallerMemberName] string Caller = "") {
       var cache = contract.FromCache().SingleOrDefault();

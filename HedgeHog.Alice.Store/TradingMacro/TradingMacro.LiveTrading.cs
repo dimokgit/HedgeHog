@@ -20,6 +20,7 @@ namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     public bool HaveTrades() =>Trades.Any() || HasPendingOrders();
     public bool HaveTradesIncludingHedged() => TradingMacroHedged(tm => tm.HaveTrades()).Concat(new[] { HaveTrades() }).Any(b => b);
+    public IList<Trade> HedgedTrades() => TradingMacroHedged(tm => Trades.Concat(tm.Trades)).Concat().ToList().With(l => l.Count == 2 ? l : new List<Trade>());
     public bool HaveHedgedTrades() => TradingMacroHedged(tm => tm.HaveTrades()).Concat(new[] { HaveTrades() }).Count(ht => ht) == 2;
 
     public bool HaveTrades(bool isBuy) {

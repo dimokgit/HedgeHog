@@ -221,7 +221,7 @@
     if (!isConnected() || isInFlight(ratesInFlight, 0))
       return;
     ratesInFlight = new Date();
-    chat.server.askRates(1200, (askRateFirstDate || dataViewModel.firstDate()).toISOString(), (askRateFirstDate || dataViewModel.lastDate()).toISOString(), pair, 't1')
+    chat.server.askRates($(window).width(), (askRateFirstDate || dataViewModel.firstDate()).toISOString(), (askRateFirstDate || dataViewModel.lastDate()).toISOString(), pair, 't1')
       .done(function (response) {
         Enumerable.from(response)
           .forEach(function (r) {
@@ -349,7 +349,7 @@
           if (!x)
             dataViewModel.callByBS();
 
-          if (!dataViewModel.comboQuantityInEdit())
+          if (!dataViewModel.comboQuantity())
             dataViewModel.comboQuantity(x.TradingRatio);
           if (!dataViewModel.expDaysSkip())
             dataViewModel.expDaysSkip(x.OptionsDaysGap);
@@ -916,7 +916,7 @@
       });
       this.expDaysSkip = ko.observable();
       this.distanceFromHigh = ko.observable();
-      this.comboQuantity = ko.observable();//.extend({ persist: "comboQuantity" + pair });
+      this.comboQuantity = ko.observable(1).extend({ persist: "comboQuantity" + pair });
       this.comboQuantity.subscribe(refreshCombos);
       this.comboQuantityInEdit = ko.observable();
       this.comboQuantityInEdit.subscribe(function (isEdit) {
@@ -1472,17 +1472,20 @@
         rates.forEach(function (d) {
           d.d = new Date(d.d);
         });
-        var rates2 = response.rates2;
+        var rates2 = response.rates2 || [];
         rates2.forEach(function (d) {
           d.d = new Date(d.d);
         });
         var endDate = rates[0].d;
         var startDate = new Date(response.dateStart);
-        lineChartData.remove(function (d) {
-          return d.d >= endDate || d.d < startDate;
-        });
-        lineChartData.push.apply(lineChartData, rates);
-        lineChartData.unshift.apply(lineChartData, rates2);
+        if (rates2.length) {
+          lineChartData.remove(function (d) {
+            return d.d >= endDate || d.d < startDate;
+          });
+          lineChartData.push.apply(lineChartData, rates);
+          lineChartData.unshift.apply(lineChartData, rates2);
+        } else
+          lineChartData(rates);
         if (response.isTrader) {
           tradeLevels(response.tradeLevels);
           openTrades(response.trades);
@@ -1514,7 +1517,7 @@
 
         if (response.rates.length === 0) return;
         var rates = response.rates;
-        var rates2 = response.rates2;
+        var rates2 = response.rates2 || [];
         if (rates.length + rates2.length === 0) return;
 
         rates.forEach(function (d) {

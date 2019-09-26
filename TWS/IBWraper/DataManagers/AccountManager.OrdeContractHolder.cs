@@ -38,12 +38,13 @@ namespace IBApp {
       public bool hasSubmitted => isSubmitted || isPreSubmitted;
       public bool ShouldExecute { get; private set; }
       public OrderContractHolder() {
+        return;
         try {
           var uo = (
             from c in GetContract().ToObservable()
             where c.SecType != "BAG"
             from uc in c.UnderContract
-            from cd in IBClientCore.IBClientCoreMaster.ReqContractDetailsAsync(uc)
+            from cd in IBClientCore.IBClientCoreMaster.ReqContractDetailsCached(uc)
             select cd.Contract
             );
           _shouldExecuteDisposable = (

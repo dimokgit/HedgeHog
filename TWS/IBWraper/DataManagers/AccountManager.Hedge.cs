@@ -17,11 +17,12 @@ namespace IBApp {
                where g.Length == 2
                from hc in g.Pairwise((o, t) => MakeHedgeCombo(1, o.position.contract, t.position.contract, o.position.position.Abs(), t.position.position.Abs()))
                let quantity = hc.quantity * g.First().position.position.Sign()
+               let isBuy = quantity > 0
                let pl = g.Sum(p => p.pl)
                let mul = g.Min(p => p.position.contract.ComboMultiplier) * quantity
                let openPrice = g.Sum(p => p.position.open) / mul
                let closePrice = g.Sum(p => p.close) / mul
-               let order = OrderContractsInternal.OpenByContract(hc.contract).ToList()
+               let order = OrderContractsInternal.OpenByContract(hc.contract).Where(oc => oc.order.IsBuy != isBuy).Take(1).ToList()
                let orderId = order.Select(o => o.order.OrderId).SingleOrDefault()
                let tp = order.Select(oc => oc.order.LmtAuxPrice).SingleOrDefault()
                let profit = (tp - openPrice) * mul
@@ -50,6 +51,10 @@ namespace IBApp {
       select MakeHedgeCombo(quantity, cd1, cd2, ratio1, ratio2).SideEffect(x => x.contract.SetTestConId(isInTest, 0));
 
     public static (Contract contract, int quantity) MakeHedgeCombo(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) {
+      if(c1.ConId == 0)
+        throw new Exception($"ComboLeg contract1 has ConId = 0");
+      if(c2.ConId == 0)
+        throw new Exception($"ComboLeg contract2 has ConId = 0");
       int r1 = (ratio1 * quantity).ToInt();
       int r2 = (ratio2 * quantity).ToInt();
       if(r1 == int.MinValue || r2 == int.MinValue) {

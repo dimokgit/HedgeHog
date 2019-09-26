@@ -669,16 +669,12 @@ namespace HedgeHog.Alice.Client {
           _tradingStatistics.CurrentLossInPips = clp;
           _tradingStatistics.OriginalProfit = MasterModel.AccountModel.OriginalProfit;
           var net = MasterModel.TradesManager.GetTrades().Net2();
-          (
-            from tm in tms
-            where tm.HaveHedgedTrades()
-            from mps in tm.MaxHedgeProfit
-            from mp in mps
-            where mp.buy == tm.Trades.HaveBuy()
-            select new Action(() => MasterModel.GrossToExitCalc = () => mp.profit * MasterModel.ProfitByHedgeRatioDiff)
-            )
-            .DefaultIfEmpty(() => MasterModel.GrossToExitCalc = null)
-            .SingleOrElse(() => MasterModel.GrossToExitCalc = null)();
+          (from tm in tms
+           where IsInVirtualTrading && tm.HaveHedgedTrades()
+           select new Action(() => MasterModel.GrossToExitCalc = () => tm.ExitGrossByHedgePositions)
+            )// Should only be one Trader
+            .DefaultIfEmpty(() => MasterModel.GrossToExitCalc = () => double.NaN)
+            .SingleOrElse(() => MasterModel.GrossToExitCalc = () => double.NaN)();
           var grossToExit = MasterModel.GrossToExitCalc();
           if(grossToExit != 0
             && !tms.SelectMany(tm => tm.PendingEntryOrders).Any()
@@ -686,7 +682,7 @@ namespace HedgeHog.Alice.Client {
             && tms.SelectMany(tm => tm.HasTradeEval()).IsEmpty()
             ) {
             MasterModel.GrossToExitSoftReset();
-            tms.ForEach(tm => tm.CloseTrades(new { grossToExit = grossToExit.AutoRound2(1), net = net.AutoRound2(1) } + ""));
+            TradesManager.CloseAllTrades();
           }
         }
       } catch(Exception exc) {
@@ -889,7 +885,7 @@ namespace HedgeHog.Alice.Client {
           }
           TradesManager.TradeAdded += fw_TradeAdded;
           TradesManager.TradeChanged += fw_TradeChanged;
-          TradesManager.TradeRemoved += fw_TradeClosed;
+          TradesManager.TradeClosed += fw_TradeClosed;
           TradesManager.Error += fw_Error;
         }
         List<Action> runPriceQueue = new List<Action>();
@@ -928,6 +924,7 @@ namespace HedgeHog.Alice.Client {
       if(TradesManager != null) {
         TradesManager.TradeAdded -= fw_TradeAdded;
         TradesManager.TradeChanged -= fw_TradeChanged;
+        TradesManager.TradeClosed -= fw_TradeClosed;
         TradesManager.Error -= fw_Error;
 
         TradingMacrosCopy.ToList().ForEach(tm => new Action(() => InitTradingMacro(tm, true)).InvoceOnUI());
@@ -1123,6 +1120,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     public void fw_TradeAdded(object sender, TradeEventArgs e) {
+      Log = new Exception($"{nameof(fw_TradeAdded)}: {new { e.Trade.Pair, e.Trade.Id }}");
       if(e.IsHandled)
         return;
       e.IsHandled = true;
@@ -1147,33 +1145,82 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    private void AddTradeToDb(Trade trade) => GlobalStorage.UseForexMongo(c => {
-      var savedTrades = c.Trades.Where(st => st.Pair == trade.Pair && st.Kind != PositionBase.PositionKind.Closed).ToArray();
-      savedTrades.OrderBy(st => st.Time2).Take(1).ForEach(st => trade.Time2 = st.Time2);
-      c.Trades.RemoveRange(savedTrades);
-      c.SaveChanges();
-      c.Trades.Add(trade);
-    }, true, () => Log = new Exception($"Trade Saved:{new { trade.Pair, trade.Lots, trade.Time, trade.Open, trade.TimeClose, trade.Close, trade.GrossPL }}"));
-
+    private void AddTradeToDb(Trade trade) {
+      lock(_mongoTradesGate)
+        GlobalStorage.UseForexMongo(c => {
+          var savedTrades = c.Trades.Where(st => st.Pair == trade.Pair && st.Kind != PositionBase.PositionKind.Closed).OrderBy(st => st.Time2);//.ToArray();
+          c.Trades.RemoveRange(savedTrades.Skip(1));
+          savedTrades.Take(1)
+          .Do(st => {
+            trade.Time2 = st.Time2;
+            trade.GrossPL = 0;
+          })
+          .ForEmpty(() => c.Trades.Add(trade).Entity.GrossPL = 0);
+          //c.SaveChanges();
+        }
+      , true
+        , () => Log = new Exception($"Trade Saved:{new { trade.Pair, trade.Lots, trade.Time, trade.Open, trade.TimeClose, trade.Close, trade.GrossPL }}")
+        , (c, exc) => Log = exc);
+    }
+    object _mongoTradesGate = new object();
     private void fw_TradeChanged(object sender, TradeEventArgs e) {
       if(!IsInVirtualTrading)
-        GlobalStorage.UseForexMongo(c => {
-          var trade = e.Trade;
-          var savedTrade = c.Trades.Where(st => st.Pair == trade.Pair && st.Kind != PositionBase.PositionKind.Closed);
-          if(savedTrade.IsEmpty()) {
-            c.Trades.Add(trade);
-          } else {
-            savedTrade.Where(st => st.Lots < trade.Lots).ForEach(st => st.Lots = trade.Lots);
+        lock(_mongoTradesGate)
+          GlobalStorage.UseForexMongo(c => {
+            var trade = e.Trade;
+            var savedTrade = c.Trades.Where(st => st.Pair == trade.Pair && st.Kind != PositionBase.PositionKind.Closed);
+            if(savedTrade.IsEmpty()) {
+              Log = new Exception($"{nameof(fw_TradeChanged)}: there is no pending saved trades in database.");
+            } else {
+              savedTrade.Where(st => st.Lots < trade.Lots).ForEach(st => st.Lots = trade.Lots);
+            }
           }
-        }
-        , true
-        , () => Log = new Exception($"Trade Updated:{new { e.Trade.Pair, e.Trade.Lots, e.Trade.Time, e.Trade.Open, e.Trade.TimeClose, e.Trade.Close, e.Trade.GrossPL }}")
-        , (c, exc) => Log = exc);
+          , true
+          , () => Log = new Exception($"Trade Changed:{new { e.Trade.Pair, e.Trade.Lots, e.Trade.Time, e.Trade.Open, e.Trade.TimeClose, e.Trade.Close, e.Trade.GrossPL }}")
+          , (c, exc) => Log = exc);
     }
 
     void fw_Error(object sender, HedgeHog.Shared.ErrorEventArgs e) {
       Log = e.Error;
     }
+    void fw_TradeClosed(object sender, TradeEventArgs e) {
+      lock(_mongoTradesGate) {
+        if(e.IsHandled)
+          return;
+        e.IsHandled = true;
+        var trade = e.Trade;
+        try {
+          var pair = trade.Pair;
+          GetTradingMacros(pair).Take(1).ForEach(tm => {
+            tm.LastTrade = trade;
+            var totalGross = trade.NetPL2;
+            tm.LastTradeLoss = tm.TradesClosed.Where(t => t.OpenOrderID == trade.OpenOrderID).Net2().Min(0);
+            tm.RunningBalance += totalGross;
+            tm.CurrentLoss = tm.CurrentLoss + totalGross;
+            OnZeroPositiveLoss(tm);
+            SaveTradeAction.Post(trade);
+          });
+          if(!IsInVirtualTrading)
+            GlobalStorage.UseForexMongo(c => {
+              var savedTrade = c.Trades.Where(t => t.Pair == trade.Pair && t.Kind != PositionBase.PositionKind.Closed);
+              savedTrade
+              .Do(t => {
+                t.Kind = trade.Kind;
+                t.Time2Close = trade.TimeClose;
+                t.GrossPL += trade.GrossPL;
+              })
+              .ForEmpty(() => c.Trades.Add(trade));
+            }
+            , true
+            , () => Log = new Exception($"Trade Closed:{new { e.Trade.Pair, trade.Kind, e.Trade.Lots, e.Trade.Time, e.Trade.Open, e.Trade.TimeClose, e.Trade.Close, e.Trade.GrossPL }}")
+            , (c, exc) => Log = exc);
+        } catch(Exception exc) {
+          Log = exc;
+        }
+        //fw.FixOrderOpen(trade.Pair, !trade.IsBuy, lot, limit, stop, trade.GrossPL < 0 ? trade.Id : "");
+      }
+    }
+
 
     #region ZeroPositiveLoss Subject
     object _ZeroPositiveLossSubjectLocker = new object();
@@ -1230,43 +1277,14 @@ namespace HedgeHog.Alice.Client {
       tmsWithProfit.ForEach(tm => tm.CurrentLoss = 0);
       //GlobalStorage.UseAliceContextSaveChanges();
     }
-    void fw_TradeClosed(object sender, TradeEventArgs e) {
-      if(e.IsHandled)
-        return;
-      e.IsHandled = true;
-      var trade = e.Trade;
-      try {
-        var pair = trade.Pair;
-        GetTradingMacros(pair).Take(1).ForEach(tm => {
-          tm.LastTrade = trade;
-          var totalGross = trade.NetPL2;
-          tm.LastTradeLoss = tm.TradesClosed.Where(t => t.OpenOrderID == trade.OpenOrderID).Net2().Min(0);
-          tm.RunningBalance += totalGross;
-          tm.CurrentLoss = tm.CurrentLoss + totalGross;
-          OnZeroPositiveLoss(tm);
-          SaveTradeAction.Post(trade);
-        });
-        if(!IsInVirtualTrading)
-          GlobalStorage.UseForexMongo(c => {
-            var savedTrade = c.Trades.Where(t => t.Pair == trade.Pair).ToArray().Where(t => t.IsClosed() == false).ToArray();
-            c.Trades.RemoveRange(savedTrade);
-            c.SaveChanges();
-            trade.Time = savedTrade.Select(st => st.Time).DefaultIfEmpty(trade.Time).Min();
-            c.Trades.Add(trade);
-          }, true);
-      } catch(Exception exc) {
-        Log = exc;
-      }
-      //fw.FixOrderOpen(trade.Pair, !trade.IsBuy, lot, limit, stop, trade.GrossPL < 0 ? trade.Id : "");
-    }
-
     private void SaveTrade(Trade trade) {
       try {
-        var tm = GetTradingMacros(trade.Pair).First();
-        var ts = tm.GetTradeStatistics(trade);
-        ts.SessionId = TradingMacro.SessionId;
-        ts.SessionInfo = tm.SessionInfo;
-        MasterModel.AddCosedTrade(trade);
+        GetTradingMacros(trade.Pair).Take(1).ForEach(tm => {
+          var ts = tm.GetTradeStatistics(trade);
+          ts.SessionId = TradingMacro.SessionId;
+          ts.SessionInfo = tm.SessionInfo;
+          MasterModel.AddCosedTrade(trade);
+        });
       } catch(Exception exc) { Log = exc; }
     }
     ITargetBlock<Trade> _saveTradeAction;

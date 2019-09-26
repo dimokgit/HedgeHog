@@ -1212,12 +1212,12 @@ namespace HedgeHog.Alice.Store {
           => (object)new { HistVolHg = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         .Add(HVA(this).Concat(TradingMacroHedged(HVA).Concat()).Select(d => d).Pairwise((hv, hvm)
           => (object)new { HistVolAn = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
-        .Add(new { StrdlHV = new[] { _currentCallByHV, _currentPutByHV }.Select(c => c.Round(2)).Flatter("/") })
-        .Add(new { HVPtP = HVPt(this).Concat(HVP(this)).Select(c => c.AutoRound(3)).Flatter("/") })
-        //.Add(new { CHP2 = $"{CurrentHedgePosition2}:{VMM(this)}/{TradingMacroM1(tm1 => tm1.CurrentHedgePosition2 + ":" + VMM(tm1)).SingleOrDefault()}" })
+        //.Add(new { StrdlHV = new[] { _currentCallByHV, _currentPutByHV }.Select(c => c.Round(2)).Flatter("/") })
+        //.Add(new { HVPtP = HVPt(this).Concat(HVP(this)).Select(c => c.AutoRound(3)).Flatter("/") })
+        .Add(new { CHP2 = $"{CurrentHedgePosition2}{TradingMacroM1(tm1 => "/" + tm1.CurrentHedgePosition2).SingleOrDefault()}" })
         //.Add(new { HgSlope = $"{VoltsReg(this, 1)}/{VoltsReg(this, 0)}" })
         //.Add(new { HgSlope2 = tm1s.Select(tm1 => $"{VoltsReg(tm1, 1)}/{VoltsReg(tm1, 0)}").SingleOrDefault() })
-        .Add(new { ExitGros = $"{ExitGrossByHedgePositions.SideEffect(_=>OnSetExitGrossByHedgePositions()):c0}" })
+        .Add(new { ExitGrsPrc = $"{ExitGrossByHedgePositions.SideEffect(_ => OnSetExitGrossByHedgeGrossess()):c0}/{ExitPriceByHedgePrices:c0}" })
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
@@ -1229,7 +1229,6 @@ namespace HedgeHog.Alice.Store {
       // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
       IEnumerable<double> HV(TradingMacro tm) => tm.HistoricalVolatility();
       double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints(true);
-      double VMM(TradingMacro tm) => tm.GetVoltsMinMax().Height(d => d).ToInt();
       double VoltsReg(TradingMacro tm, int index) {
         var volts = tm.GetLastVolts(tm.GetVoltByIndex(index)).DefaultIfEmpty().ToArray();
         var slope = -volts.LinearSlope(d => d, out var max, out var min);

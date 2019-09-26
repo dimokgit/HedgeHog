@@ -293,9 +293,8 @@ namespace HedgeHog {
       if(isEmpty)
         emptyAction();
     }
-    public static IEnumerable<T> OnEmpty<T>(this IEnumerable<T> enumerable,
-            Action emptyAction) {
-
+    public static void ForEmpty<T>(this IEnumerable<T> enumerable, Action emptyAction) => enumerable.OnEmpty(emptyAction).Any();
+    public static IEnumerable<T> OnEmpty<T>(this IEnumerable<T> enumerable,Action emptyAction) {
       var isEmpty = true;
       foreach(var e in enumerable) {
         isEmpty = false;
