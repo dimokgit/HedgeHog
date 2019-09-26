@@ -28,9 +28,16 @@ namespace IBApp {
     public static IReadOnlyDictionary<int, (Contract contract, Price price)> ActiveRequests => activeRequests;
     public IObservable<(Contract c, string gl, Action<int, Contract> cb, string Caller)> AddRequestObs { get; }
     static IScheduler esTickPrice = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = nameof(esTickPrice), Priority = ThreadPriority.Normal });
+    class OnTickPriceAsyncBufferClass :ActionAsyncBuffer {
+      public OnTickPriceAsyncBufferClass(int boundCapacity, [CallerMemberName] string Caller = null) : base(boundCapacity, Caller) {
+      }
+    }
+    OnTickPriceAsyncBufferClass OnTickPriceAsyncBuffer = new OnTickPriceAsyncBufferClass(100);
     public MarketDataManager(IBClientCore client) : base(client) {
-      IbClient.TickPriceObservable.SubscribeOn(esTickPrice).ObserveOn(esTickPrice).Subscribe(t => OnTickPrice(t.RequestId, t.Field, t.Price, t.attribs));
-      IbClient.TickStringObservable.SubscribeOn(esTickPrice).ObserveOn(esTickPrice).Subscribe(t => OnTickString(t.tickerId, t.tickType, t.value));
+      IbClient.TickPriceObservable.SubscribeOn(esTickPrice).ObserveOn(esTickPrice)
+        .Subscribe(t => OnTickPrice(t.RequestId, t.Field, t.Price, t.attribs));
+      IbClient.TickStringObservable.SubscribeOn(esTickPrice).ObserveOn(esTickPrice)
+        .Subscribe(t => OnTickString(t.tickerId, t.tickType, t.value));
       IbClient.TickGenericObservable.SubscribeOn(esTickPrice).ObserveOn(esTickPrice).Subscribe(OnTickGeneric);
       IbClient.OptionPriceObservable.Subscribe(OnOptionPrice);
       //IbClient.TickOptionCommunication += TickOptionCommunication; ;

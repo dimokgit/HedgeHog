@@ -260,7 +260,6 @@ namespace HedgeHog.Shared {
         }
       }
     }
-    //var buffer = new BroadcastBlock<Action>(n => n, new DataflowBlockOptions() { BoundedCapacity = boundedCapacity });
 
     public void UpdateByPrice(object sender, PriceChangedEventArgs e) {
       UpdateByPrice(sender as ITradesManager, e.Price);

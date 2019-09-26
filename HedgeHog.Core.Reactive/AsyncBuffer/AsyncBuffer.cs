@@ -16,8 +16,9 @@ using System.Threading.Tasks.Dataflow;
 namespace HedgeHog {
   public class ActionAsyncBuffer :AsyncBuffer<ActionAsyncBuffer, Action> {
     public ActionAsyncBuffer([CallerMemberName] string Caller = null) : base(Caller) { }
+    public ActionAsyncBuffer(int boudCapacity, [CallerMemberName] string Caller = null) : base(boudCapacity, Caller) { }
     public ActionAsyncBuffer(TimeSpan sample, [CallerMemberName] string Caller = null) : base(sample, Caller) { }
-    public ActionAsyncBuffer(Func<string> distinctUntilChanged, [CallerMemberName] string Caller = null) : base(1,TimeSpan.Zero,false,distinctUntilChanged, Caller) { }
+    public ActionAsyncBuffer(Func<string> distinctUntilChanged, [CallerMemberName] string Caller = null) : base(1, TimeSpan.Zero, false, distinctUntilChanged, Caller) { }
     protected override Action PushImpl(Action a) => a;
   }
 

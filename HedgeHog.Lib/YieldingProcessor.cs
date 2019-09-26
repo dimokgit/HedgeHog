@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks.Dataflow;
 using System.Threading.Tasks;
 using HedgeHog.Shared.Messages;
 using HedgeHog.Shared;
 using System.Windows.Threading;
 using System.Reactive;
 using System.Reactive.Concurrency;
+using System.Threading.Tasks.Dataflow;
 
 namespace HedgeHog {
   public static class DataFlowProcessors {
