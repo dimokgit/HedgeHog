@@ -544,7 +544,11 @@ namespace HedgeHog.Alice.Store {
         //SetVoltHighByIndex(voltIndex)(min.Abs());
         //SetVoltLowByIndex(voltIndex)(-min.Abs());
         //voltRates.Select(vr => vr.r).ForEach(ra => ra.Zip(voltMap, (r, h) => r.PriceHedge = PosByRatio(priceMin, priceMax, h.v)).Count());
-        var volts2 = voltRates.Select(vr => vr.r).SelectMany(ra => ra.Zip(voltMap, (r, h) => new { r, v = PosByRatio(priceMin, priceMax, h.v) }));
+        var volts2 = voltRates
+          .Select(vr => vr.r)
+          .SelectMany(ra => ra.Zip(voltMap, (r, h) => new { r, v = PosByRatio(priceMin, priceMax, h.v) }))
+          .ToList()
+          .Cma(t => t.v, RatesHeightMin, (r, v) => (r.r, v));
         var v3 = UseRates(ra => ra.Zip(r => r.StartDate, volts2, v => v.r.StartDate, (r, v) => new { r, v.v }).ToList()).Concat();
         v3.ForEach(t => t.r.PriceHedge = t.v);
         SetVoltsHighLowsByRegression(voltIndex);

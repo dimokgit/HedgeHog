@@ -49,18 +49,18 @@ namespace HedgeHog {
         setMA(rates[i], cmas[i]);
     }
 
-    public static IList<double> Cma<T>(this IList<T> rates, Func<T, double> value, double period, int passes) {
+    public static IList<double> Cma<T>(this IEnumerable<T> rates, Func<T, double> value, double period, int passes) {
       var cmas = rates.Cma(value, period);
       for(var i = passes; i > 1; i--)
         cmas = cmas.Cma(period);
       return cmas;
     }
-    public static IList<double> Cma(this IList<double> rates, double period, int passes) {
-      var cmas = rates.Cma(period);
-      for(var i = passes; i > 1; i--)
-        cmas = cmas.Cma(period);
-      return cmas;
-    }
+    //public static IList<double> Cma(this IList<double> rates, double period, int passes) {
+    //  var cmas = rates.Cma(period);
+    //  for(var i = passes; i > 1; i--)
+    //    cmas = cmas.Cma(period);
+    //  return cmas;
+    //}
     public static IList<double> Cma(this IEnumerable<double> rates, double period, int passes) {
       var cmas = rates.Cma(period);
       for(var i = passes; i > 1; i--)
