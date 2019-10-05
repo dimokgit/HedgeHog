@@ -616,19 +616,21 @@ namespace HedgeHog.Alice.Client {
             select outMe(ot.holder + "", ot.error.errorMsg)
            ).ToArray();
         } finally {
-          var cts = await Observable.Interval(0.5.FromSeconds())
-            .SelectMany(_ => am.ComboTrades(1).Where(ct => ct.contract.IsBag && ct.position.Abs() == quantity).ToArray())
-            .Where(x => x.Any())
-            .TakeUntil(DateTimeOffset.Now.AddSeconds(60))
-            .Take(1);
-          cts?.ForEach(ct => {
-            if(ct == null) {
-              Debugger.Break();
-            }
-            var legs = ct.contract.LegsForHedge(pair).ToList();
-            var grossExit = UseTraderMacro(pair, tm => tm.GetExitPriceByHedgeGrosses(legs[0].leg.Quantity, legs[1].leg.Quantity)).Single();
-            am.OpenOrUpdateLimitOrderByProfit2(ct.contract.Key, ct.position, 0, ct.open, grossExit.Max(100));
-          });
+          if(false) {
+            var cts = await Observable.Interval(0.5.FromSeconds())
+              .SelectMany(_ => am.ComboTrades(1).Where(ct => ct.contract.IsBag && ct.position.Abs() == quantity).ToArray())
+              .Where(x => x.Any())
+              .TakeUntil(DateTimeOffset.Now.AddSeconds(60))
+              .Take(1);
+            cts?.ForEach(ct => {
+              if(ct == null) {
+                Debugger.Break();
+              }
+              var legs = ct.contract.LegsForHedge(pair).ToList();
+              var grossExit = UseTraderMacro(pair, tm => tm.GetExitPriceByHedgeGrosses(legs[0].leg.Quantity, legs[1].leg.Quantity)).Single();
+              am.OpenOrUpdateLimitOrderByProfit2(ct.contract.Key, ct.position, 0, ct.open, grossExit.Max(100));
+            });
+          }
           Clients.Caller.MustReadStraddles();
 
         }
@@ -1231,9 +1233,16 @@ namespace HedgeHog.Alice.Client {
        from under in ct.contract.UnderContract
        from underPrice in under.ReqPriceSafe()
        where ct.contract.Instrument == instrument
-       select (ct.contract, ct.position, ct.orderId, ct.closePrice, under, underPrice, am)
+       select new { ct.contract, ct.position, ct.orderId, ct.closePrice, under, underPrice, am }
        )
       .SelectMany(c => {
+        if(c.contract.IsBag)
+          return (from ctc in c.contract.LegsEx().ToObservable()
+                  from ots in c.am.OpenTrade(ctc.contract, ctc.leg.Quantity * -c.position)
+                  from ot in ots
+                  select ot.error
+       ).Catch<ErrorMessage, GenericException<ErrorMessage>>(exc => Observable.Return(exc.Context));
+
         if(c.orderId != 0) {
           var och = c.am.UseOrderContracts(orderContracts => orderContracts[c.orderId]).SingleOrDefault();
           if(och == null)
