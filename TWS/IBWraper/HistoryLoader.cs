@@ -70,7 +70,9 @@ namespace IBApp {
       if(endDate.Kind == DateTimeKind.Unspecified)
         throw new Exception(new { endDate = new { endDate.Kind } } + "");
       _dateStart = endDate.Subtract(duration);
-      _endDate = timeUnit == TimeUnit.W ? endDate.ToLocalTime().Date.GetNextWeekday(DayOfWeek.Sunday).AddHours(18) : endDate;
+      _endDate = timeUnit == TimeUnit.W
+        ? endDate.ToLocalTime().Date.GetNextWeekday(DayOfWeek.Sunday).AddHours(18)
+        : endDate;//.Date.GetNextWeekday(DayOfWeek.Saturday);
       _timeUnit = timeUnit;
       _barSize = barSize;
       var durationByPeriod = barSize.Span().Multiply(periodsBack);
@@ -118,11 +120,12 @@ namespace IBApp {
         return;
       const string NO_DATA = "HMDS query returned no data";
       if(code == SERVER_ERROR && error.Contains(NO_DATA)) {
-        _endDate = _endDate.isWeekend()
+        var newEndDate = _endDate.isWeekend()
           ? _endDate.AddDays(-2)
           : _timeUnit != TimeUnit.S
           ? _endDate.AddDays(-1)
-          : _endDate.AddMinutes(-BarSizeRange(_barSize, _timeUnit).Last());
+          : _endDate.AddSeconds(-BarSizeRange(_barSize, _timeUnit).Last());
+        _endDate = newEndDate;
         _error(new SoftException(new { _endDate } + ""));
         RequestNextDataChunk();
       } else if(code == SERVER_ERROR && error.Contains("pacing violation")) {

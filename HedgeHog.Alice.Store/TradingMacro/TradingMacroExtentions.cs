@@ -1489,7 +1489,7 @@ namespace HedgeHog.Alice.Store {
       if(args.Initiator != replayTrader)
         throw new Exception("Replay Initiator must be also Replay Trader");
       if(args.Initiator.Strategy == Strategies.None) {
-        args.Initiator.Strategy = Strategies.UniversalA;
+        args.Initiator.Strategy = IsPairHedged ? Strategies.Hedge : Strategies.UniversalA;
         Log = new ApplicationException($"Testing strategy set to {args.Initiator.Strategy}");
       }
       if(tms().Count(tm => tm.IsTrender) == 0)
@@ -1561,6 +1561,7 @@ namespace HedgeHog.Alice.Store {
         ResetBarsCountCalc();
         CorridorStats.Rates = null;
         UseRatesInternal(ri => ri.Clear());
+        TradeConditionsReset();
         RateLast = null;
         _waves = null;
         _sessionInfo = "";
@@ -1716,7 +1717,7 @@ namespace HedgeHog.Alice.Store {
                     if(Trades.Any())
                       BroadcastCloseAllTrades();
                     SuppRes.ForEach(sr => sr.CanTrade = false);
-                    CloseTrades("Blackout");
+                    CloseTrades(null, "Blackout");
                   }
                 }
                 #endregion
@@ -1742,7 +1743,7 @@ namespace HedgeHog.Alice.Store {
             }
             if(rate.StartDate > dateStop) {
               //if (CurrentGross > 0) {
-              CloseTrades("Replay break due dateStop.");
+              CloseTrades(null, "Replay break due dateStop.");
               break;
               //}
             }
@@ -1800,11 +1801,11 @@ namespace HedgeHog.Alice.Store {
                     var a = TradesManager.GetAccount();
                     if(a.PipsToMC < 0) {
                       Log = new Exception("Equity Alert: " + TradesManager.GetAccount().Equity);
-                      CloseTrades("Equity Alert: " + TradesManager.GetAccount().Equity);
+                      CloseTrades(null, "Equity Alert: " + TradesManager.GetAccount().Equity);
                     }
                     if(false && TestMinimumBalancePerc != 0 && MinimumOriginalProfit < TestMinimumBalancePerc) {
                       Log = new Exception(MINIMUM_BALANCE_ALERT + $"{MinimumOriginalProfit} @ {new { ServerTime }}");
-                      CloseTrades(MINIMUM_BALANCE_ALERT + MinimumOriginalProfit);
+                      CloseTrades(null, MINIMUM_BALANCE_ALERT + MinimumOriginalProfit);
                       args.MustStop = true;
                     }
                   }
@@ -4061,7 +4062,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       if(IsInVirtualTrading && account.IsMarginCall && IsPrimaryMacro) {
         IsTradingActive = false;
         SuppRes.ForEach(sr => sr.CanTrade = false);
-        CloseTrades("Margin Call.");
+        CloseTrades(null, "Margin Call.");
         BroadcastCloseAllTrades();
       }
       var timeSpanDict = new Dictionary<string, long>();

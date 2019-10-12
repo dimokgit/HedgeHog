@@ -203,7 +203,7 @@ namespace HedgeHog.Alice.Client {
       foreach(var tm in tms) {
         if(IsInVirtualTrading) {
           //if(tm.Strategy == Strategies.None)            tm.Strategy = Strategies.UniversalA;
-          TradesManager.ClosePair(tm.Pair);
+          TradesManager.ClosePair(tm.Pair, null);
           tm.ResetSessionId(ReplayArguments.SuperSessionId);
           if(testParameter != null && tm == tmOriginal)
             testParameter.ForEach(tp => {

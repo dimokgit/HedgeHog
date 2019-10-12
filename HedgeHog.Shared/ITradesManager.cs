@@ -26,7 +26,7 @@ namespace HedgeHog.Shared {
     bool LogOn(string user, string accountSubId, string password, bool isDemo);
     void Logout();
     bool ReLogin();
-    void SetSymbolSubscription(string pair,Action callback);
+    void SetSymbolSubscription(string pair, Action callback);
 
     event EventHandler<LoggedInEventArgs> LoggedIn;
     event LoginErrorHandler LoginError;
@@ -96,9 +96,9 @@ namespace HedgeHog.Shared {
     void CloseAllTrades();
     void CloseTrade(Trade trade);
     bool CloseTrade(Trade trade, int lot, Price price);
-    bool ClosePair(string pair, bool isBuy, int lot);
-    bool ClosePair(string pair, bool isBuy);
-    bool ClosePair(string pair);
+    bool ClosePair(string pair, bool isBuy, int lot,Price price);
+    bool ClosePair(string pair, bool isBuy, Price price);
+    bool ClosePair(string pair, Price price);
 
     void CloseTradeAsync(Trade trade);
     void CloseTradesAsync(Trade[] trades);

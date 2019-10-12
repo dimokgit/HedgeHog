@@ -1709,7 +1709,7 @@ namespace HedgeHog.Alice.Store {
       //}
     }
     bool HasTradeConditions { get { return TradeConditions.Any(); } }
-    void TradeConditionsReset() {
+    void TradeConditionsClear() {
       _mmaLastIsUp = null;
       TradeConditions.Clear();
     }
@@ -1748,8 +1748,13 @@ namespace HedgeHog.Alice.Store {
       throw new NotImplementedException();
     }
 
+    public void TradeConditionsReset() {
+      var names = TradeConditionsInfo((d, p, t, s) => s).ToList();
+      TradeConditionsClear();
+      TradeConditionsSet(names);
+    }
     public IList<Tuple<TradeConditionDelegate, PropertyInfo>> TradeConditionsSet(IList<string> names) {
-      TradeConditionsReset();
+      TradeConditionsClear();
       GetTradeConditions().Where(tc => names.Contains(ParseTradeConditionNameFromMethod(tc.Item1.Method)))
         .ForEach(tc => _TradeConditions.Add(tc));
       return TradeConditions;
@@ -1863,7 +1868,7 @@ namespace HedgeHog.Alice.Store {
        where TdCloseTrade(td, trade)
        select trade
       )
-      .ForEach(trade => CloseTrades(nameof(TradeConditionsShouldClose)));
+      .ForEach(trade => CloseTrades(null, nameof(TradeConditionsShouldClose)));
     }
 
     private IEnumerable<Position> OpenPuts()

@@ -462,25 +462,25 @@ namespace IBApp {
       throw new NotImplementedException();
     }
 
-    public bool ClosePair(string pair) {
+    public bool ClosePair(string pair, Price price) {
       var lotBuy = GetTradesInternal(pair).IsBuy(true).Lots();
       if(lotBuy > 0)
-        ClosePair(pair, true, lotBuy);
+        ClosePair(pair, true, lotBuy, price);
       var lotSell = GetTradesInternal(pair).IsBuy(false).Lots();
       if(lotSell > 0)
-        ClosePair(pair, false, lotSell);
+        ClosePair(pair, false, lotSell, price);
       return lotBuy > 0 || lotSell > 0;
     }
 
-    public bool ClosePair(string pair, bool isBuy) {
+    public bool ClosePair(string pair, bool isBuy, Price price) {
       throw new NotImplementedException();
     }
 
-    public bool ClosePair(string pair, bool buy, int lot) {
+    public bool ClosePair(string pair, bool buy, int lot, Price price) {
       try {
         var lotToDelete = Math.Min(lot, GetTradesInternal(pair).IsBuy(buy).Lots());
         if(lotToDelete > 0) {
-          OpenTrade(pair, !buy, lotToDelete, 0, 0, "", GetPrice(pair));
+          OpenTrade(pair, !buy, lotToDelete, 0, 0, "", price/* ?? GetPrice(pair)*/);
         } else {
           RaiseError(new Exception("Pair [" + pair + "] does not have positions to close."));
           return false;

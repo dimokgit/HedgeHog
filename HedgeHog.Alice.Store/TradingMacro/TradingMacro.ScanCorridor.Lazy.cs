@@ -159,7 +159,14 @@ namespace HedgeHog.Alice.Store {
         }
       } catch(Exception exc) { Log = exc; }
     });
-    private void SetVoltsHighLowsByRegression(int voltIndex) => GeneralPurposeSubject.OnNext(() => {
+
+    ActionAsyncBuffer SetVoltsHighLowsByRegressionAsyncBuffer = new ActionAsyncBuffer(2, "SetVoltsHighLowsByRegression");
+    private void SetVoltsHighLowsByRegression(int voltIndex) {
+      Action a = () => SetVoltsHighLowsByRegressionImpl(voltIndex);
+      if(IsInVirtualTrading) a();
+      else SetVoltsHighLowsByRegressionAsyncBuffer.Push(a);
+    }
+    private void SetVoltsHighLowsByRegressionImpl(int voltIndex) {
       try {
         var voltRates = RatesArray.Select(GetVoltByIndex(voltIndex)).SkipWhile(v => v.IsNaN())
           .Scan((p, n) => n.IsNaN() ? p : n)
@@ -175,7 +182,7 @@ namespace HedgeHog.Alice.Store {
           SetVoltHighByIndex(voltIndex)(voltageAvgHigh);
         }
       } catch(Exception exc) { Log = exc; }
-    });
+    }
     private void SetVoltsM1() { SetVoltsM1(GetVoltage, tm => tm.GetVoltage, tm => tm.SetVoltage); }
     private void SetVoltsM1_2() { SetVoltsM1(GetVoltage2, tm => tm.GetVoltage2, tm => tm.SetVoltage2); }
     private void SetVoltsM1(

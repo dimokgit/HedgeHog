@@ -522,18 +522,19 @@ namespace HedgeHog.Alice.Store {
             var v = b.t.v - a.v;
             return (b.t.r, v);
           }).ToArray();
-        var volts = new double[rateVolts.Length];
+        var volts = new double[0 * rateVolts.Length];
         var voltCounter = 0;
-        var cmaPeriod = RatesHeightMin.ToInt();
         //rateVolts = rateVolts.Cma(t => t.v, cmaPeriod, (t, cma) => (t.r, cma)).ToArray();
         rateVolts.Cma(t => t.v, GetVoltCmaPeriodByIndex(voltIndex), GetVoltCmaPassesByIndex(voltIndex), (t, cma) => {
           var v = /*t.v - */cma;
-          min = v.Min(min);
-          max = v.Max(max);
           priceMin = t.r.PriceAvg.Min(priceMin);
           priceMax = t.r.PriceAvg.Max(priceMax);
           SetVoltByIndex(voltIndex)(t.r, v);
-          volts[voltCounter++] = v;
+          if(volts.Any()) {
+            min = v.Min(min);
+            max = v.Max(max);
+            volts[voltCounter++] = v;
+          }
         });
         if(volts.Any()) { // store this logic for other times
           min = volts.AverageByIterations(-VoltAverageIterationsByIndex(voltIndex)).DefaultIfEmpty(double.NaN).Average();
@@ -547,8 +548,9 @@ namespace HedgeHog.Alice.Store {
         var volts2 = voltRates
           .Select(vr => vr.r)
           .SelectMany(ra => ra.Zip(voltMap, (r, h) => new { r, v = PosByRatio(priceMin, priceMax, h.v) }))
-          .ToList()
-          .Cma(t => t.v, RatesHeightMin, (r, v) => (r.r, v));
+          //.ToList()
+          //.Cma(t => t.v, RatesHeightMin, (r, v) => (r.r, v))
+          ;
         var v3 = UseRates(ra => ra.Zip(r => r.StartDate, volts2, v => v.r.StartDate, (r, v) => new { r, v.v }).ToList()).Concat();
         v3.ForEach(t => t.r.PriceHedge = t.v);
         SetVoltsHighLowsByRegression(voltIndex);

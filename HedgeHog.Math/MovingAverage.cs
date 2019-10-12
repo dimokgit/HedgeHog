@@ -36,9 +36,11 @@ namespace HedgeHog {
       return maList.ToList();
     }
 
-    public static IList<U> Cma<T, U>(this IList<T> rates, Func<T, double> value, double period, Func<T, double, U> map)
+    //public static IList<U> Cma<T, U>(this IEnumerable<T> rates, Func<T, double> value, double period,double cmaPasses, Func<T, double, U> map)
+    //  => rates.Cma(value, period, cmaPasses, map);
+    public static IList<U> Cma<T, U>(this IEnumerable<T> rates, Func<T, double> value, double period, Func<T, double, U> map)
       => rates.Cma(value, period, 1, map);
-    public static IList<U> Cma<T, U>(this IList<T> rates, Func<T, double> value, double period, int passes, Func<T, double, U> map)
+    public static IList<U> Cma<T, U>(this IEnumerable<T> rates, Func<T, double> value, double period, int passes, Func<T, double, U> map)
       => rates.Zip(rates.Cma(value, period, passes), map).ToArray();
     public static void Cma<T>(this IList<T> rates, Func<T, double> value, double period, Action<T, double> setMA) {
       rates.Cma(value, period, 1, setMA);

@@ -60,28 +60,28 @@ namespace HedgeHog.Alice.Store {
        select (tm, pos)
       )
       .IfEmpty(() => throw exc)
-      .ForEach(t => t.tm.OpenTrade(t.pos > 0, t.pos.Abs().ToInt(), reason + ":" + nameof(AdjustHedgedTrades)));
+      .ForEach(t => t.tm.OpenTrade(t.pos > 0, t.pos.Abs().ToInt(), null, reason + ":" + nameof(AdjustHedgedTrades)));
 
       Exception ExcNoTrader(string pair) => new Exception(new { pair, error = "No trader found'" } + "");
     }
 
     object _tradeLock = new object();
-    public void OpenTrade(bool isBuy, int lot, string reason) {
+    public void OpenTrade(bool isBuy, int lot, Price price, string reason) {
       lock(_tradeLock) {
         var key = lot - Trades.Lots(t => t.IsBuy != isBuy) > 0 ? OT : CT;
         CheckPendingAction(key, (pa) => {
           if(lot > 0) {
             pa();
             LogTradingAction(string.Format("{0}[{1}]: {2} {3} from {4} by [{5}]", Pair, BarPeriod, isBuy ? "Buying" : "Selling", lot, new StackFrame(3).GetMethod().Name, reason));
-            TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", CurrentPrice);
+            TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", price);
           }
         });
       }
     }
 
-    public void CloseTrades(string reason) { CloseTrades(Trades.Lots(), reason); }
+    public void CloseTrades(Price price, string reason) { CloseTrades(Trades.Lots(), price, reason); }
     //[MethodImpl(MethodImplOptions.Synchronized)]
-    private void CloseTrades(int lot, string reason) {
+    private void CloseTrades(int lot, Price price, string reason) {
       lock(_tradeLock) {
         if(!IsTrader || !Trades.Any() || HasPendingKey(CT))
           return;
@@ -89,7 +89,7 @@ namespace HedgeHog.Alice.Store {
           CheckPendingAction(CT, pa => {
             LogTradingAction(string.Format("{0}[{1}]: Closing {2} from {3} in {4} from {5}]", Pair, BarPeriod, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name, reason));
             pa();
-            if(!TradesManager.ClosePair(Pair, Trades[0].IsBuy, lot))
+            if(!TradesManager.ClosePair(Pair, Trades[0].IsBuy, lot, price))
               ReleasePendingAction(CT);
           });
       }

@@ -218,14 +218,14 @@ namespace HedgeHog.Shared {
       foreach(var trade in trades)
         CloseTrade(trade);
     }
-    public bool ClosePair(string pair) {
+    public bool ClosePair(string pair, Price price) {
       CloseTrades(tradesOpened.Where(t => t.Pair == pair).ToArray());
       return true;
     }
-    public bool ClosePair(string pair, bool isBuy, int lot) {
+    public bool ClosePair(string pair, bool isBuy, int lot, Price price) {
       try {
         foreach(var trade in tradesOpened.Where(t => t.Pair == pair).ToArray()) {
-          CloseTrade(trade, Math.Min(trade.Lots, lot), null);
+          CloseTrade(trade, Math.Min(trade.Lots, lot), price);
           lot -= trade.Lots;
           if(lot <= 0)
             break;
@@ -235,7 +235,7 @@ namespace HedgeHog.Shared {
         throw;
       }
     }
-    public bool ClosePair(string pair, bool isBuy) {
+    public bool ClosePair(string pair, bool isBuy, Price price) {
       CloseTrades(tradesOpened.Where(t => t.Pair == pair && t.Buy == isBuy).ToArray());
       return true;
     }
@@ -410,7 +410,7 @@ namespace HedgeHog.Shared {
       if(!isHedged) {
         var closeLots = GetTrades(pair).Where(t => t.Buy != buy).Sum(t => t.Lots);
         if(closeLots > 0) {
-          ClosePair(pair, !buy);
+          ClosePair(pair, !buy, price);
           lots -= closeLots;
         }
       }

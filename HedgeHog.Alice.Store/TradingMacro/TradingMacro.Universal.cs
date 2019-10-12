@@ -143,7 +143,7 @@ namespace HedgeHog.Alice.Store {
             //  if (real.IsBuy && real.Rate < ghost.Rate || real.IsSell && real.Rate > ghost.Rate)
             //    real.Rate = ghost.Rate;
             //}
-            OpenTrade(isBuy, lot, "enterCrossHandler:" + new { isBuy, suppRes.IsExitOnly });
+            OpenTrade(isBuy, lot, CurrentPrice, "enterCrossHandler:" + new { isBuy, suppRes.IsExitOnly });
             return canTrade;
           } else
             return false;
@@ -159,7 +159,7 @@ namespace HedgeHog.Alice.Store {
             )
             CloseTrading(new { exitCrossHandler = "", CurrentGrossInPipTotal, _tradingStatistics.GrossToExitInPips } + "");
           else
-            CloseTrades(lot, "exitCrossHandler:" + new { sr.IsBuy, sr.IsExitOnly, CloseAtZero });
+            CloseTrades(lot, null, "exitCrossHandler:" + new { sr.IsBuy, sr.IsExitOnly, CloseAtZero });
         };
         #endregion
         #endregion

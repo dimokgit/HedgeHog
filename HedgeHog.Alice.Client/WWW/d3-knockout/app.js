@@ -666,13 +666,14 @@
       this.readClosedTrades = readClosedTrades;
       function readClosedTrades(showAll, map) {
         serverCall("readClosedTrades", [pair, !!showAll], function (trades) {
+          function checkValue(v) { if (v) return v; alert("No value"); }
           var ct = prepDates(trades);
           if (map) map(ct);
           else {
             self.closedTrades(ct);
             closedTrades = self.closedTrades().map(function (t) {
               return {
-                dates: [t.Time, t.TimeClose],
+                dates: [t.Time, checkValue(t.Time2Close)],
                 timeOpen: t.Time,
                 timeClose: t.TimeClose,
                 isBuy: t.IsBuy,
@@ -920,7 +921,7 @@
       this.comboQuantity.subscribe(refreshCombos);
       this.comboQuantityInEdit = ko.observable();
       this.comboQuantityInEdit.subscribe(function (isEdit) {
-        if (!isEdit) serverCall("updateTradingRatio",[pair, this.comboQuantity()]);
+        if (!isEdit) serverCall("updateTradingRatio", [pair, this.comboQuantity()]);
       }.bind(this));
       this.comboCurrentStrikeLevel = ko.observable("");
       this.toggleComboCurrentStrikeLevel = function () {
@@ -949,7 +950,7 @@
         if (!isNaN(profitAmount)) {
           var instrument = a.combo();
           var orderId = a.orderId();
-          serverCall("updateCloseOrder", [instrument, orderId, null, profitAmount]);
+          serverCall("updateCloseOrder", [pair, instrument, orderId, null, profitAmount]);
         }
       }
       this.showNextInput = function (a, b, c) {

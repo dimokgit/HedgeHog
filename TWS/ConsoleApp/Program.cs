@@ -78,7 +78,7 @@ namespace ConsoleApp {
           };
           LoadHistory(ibClient, new[] { c });
           */
-          var es = new[] { "NQU9", "ESU9", "VXX", "SPY" }[1];
+          var es = new[] { "NQZ9", "ESU9", "VXX", "SPY" }[0];
           var period = 0;
           bool repare = false;
           Action<object> callback = o => HandleMessage(o + "");
@@ -87,16 +87,16 @@ namespace ConsoleApp {
           .ObserveOn(TaskPoolScheduler.Default)
           .Subscribe(_ => {
             if(repare) {
+              var bars = new List<Rate>();
               Action<RateLoadingCallbackArgs<Rate>> showProgress = (rlcArgs) => {
-                //PriceHistory.SaveTickCallBack(period, es, callback, rlcArgs);
+                PriceHistory.SaveTickCallBack(period, es, callback, rlcArgs);
                 rlcArgs.IsProcessed = true;
               };
-              var bars = new List<Rate>();
-              fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
-              //fw.GetBarsBase(es, period, 0, DateTime.Parse("7/1/2019").SetKind(), DateTime.Parse("7/19/2019").SetKind(), new List<Rate>(), null, showProgress);
+              //fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
+              fw.GetBarsBase(es, period, 0, DateTime.Parse("7/1/2019").SetKind(), DateTime.Parse("9/13/2019 23:59").SetKind(), new List<Rate>(), null, showProgress);
               HandleMessage($"***** Done GetBars *****\n{bars.Select(b => b + "").ToJson(true)}");
             } else
-              PriceHistory.AddTicks(fw, period, es, DateTime.Now.AddMonths(-2), callback);
+              PriceHistory.AddTicks(fw, period, es, DateTime.Now.AddMonths(-1), callback);
           });
           HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
 
@@ -144,7 +144,7 @@ namespace ConsoleApp {
         Tests.CurrentOptionsTest(am, "esu9"); return;
         {
           (from p in am.PositionsObservable
-           from cd in ibClient.ReqContractDetailsAsync(p.Contract)
+           from cd in ibClient.ReqContractDetailsCached(p.Contract)
            select new { cd.Contract, p.Position }
              )
              .Take(2).ToArray().Subscribe(hh => {
@@ -176,7 +176,7 @@ namespace ConsoleApp {
         }
         {
           (from p in am.PositionsObservable
-           from cd in ibClient.ReqContractDetailsAsync(p.Contract)
+           from cd in ibClient.ReqContractDetailsCached(p.Contract)
            select cd.Contract
            )
            .Take(2).ToArray().Subscribe(contracts => {
@@ -290,7 +290,7 @@ namespace ConsoleApp {
         {
           var ochc0 = new Contract { Symbol = "ES", SecType = "FOP", Strike = 2590, Currency = "USD" };
           var ochc = new Contract { Symbol = "VIX", SecType = "OPT", Strike = 19, Currency = "USD" };
-          ibClient.ReqContractDetailsAsync(ochc)
+          ibClient.ReqContractDetailsCached(ochc)
             .Take(1)
             .Subscribe(c => HandleMessage(c.ToJson(true)));
         }
@@ -405,7 +405,7 @@ namespace ConsoleApp {
         TestCurrentStraddles(1, 1);
         TestCurrentStraddles(1, 1); return;
         TestCombosTrades(10).Subscribe(); return;
-        var cdsVXX = ibClient.ReqContractDetailsAsync("VXX   180329C00051500".ContractFactory()).ToEnumerable().Count(0, new { }).ToArray();
+        var cdsVXX = ibClient.ReqContractDetailsCached("VXX   180329C00051500".ContractFactory()).ToEnumerable().Count(0, new { }).ToArray();
         var symbols = new[] { "SPX", "VXX", "SPY" };
         var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1000)).Subscribe();
         Stopwatch sw = Stopwatch.StartNew();
@@ -439,7 +439,7 @@ namespace ConsoleApp {
           .Concat()
           .Count(5, $"{nameof(TestMakeBullPut)}")
           .ForEach(comboPrice => {
-            ibClient.ReqContractDetailsAsync(comboPrice.combo.contract)
+            ibClient.ReqContractDetailsCached(comboPrice.combo.contract)
             .Subscribe(cd => {
             });
             comboPrice.combo.contract.Legs().Buffer(2).ForEach(b => Passager.ThrowIf(() => b[0].c.ComboStrike() - b[1].c.ComboStrike() != 5));
@@ -615,7 +615,7 @@ namespace ConsoleApp {
         void StressTest() =>
           symbols.Take(10).Buffer(10).Repeat(10000).ToObservable()
           .Do(_ => { Thread.Sleep(100); })
-          .SelectMany(b => b.Select(sym => ibClient.ReqContractDetailsAsync(sym.ContractFactory())))
+          .SelectMany(b => b.Select(sym => ibClient.ReqContractDetailsCached(sym.ContractFactory())))
           .Merge()
           .Subscribe();
         #endregion

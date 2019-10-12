@@ -383,7 +383,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     void CloseAllTrades(object sender, EventArgs e) {
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new CloseAllTradesMessage<TradingMacro>(null, tm => tm.CloseTrades(GetType().Name + "::CloseAllTrades")));
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new CloseAllTradesMessage<TradingMacro>(null, tm => tm.CloseTrades(null, GetType().Name + "::CloseAllTrades")));
     }
     public TradingAccountModel[] ServerAccountRow { get { return new[] { AccountModel }; } }
     public override double CurrentLoss { set { AccountModel.CurrentLoss = value; } }
@@ -1064,7 +1064,7 @@ namespace HedgeHog.Alice.Client {
           Log = new Exception("Closing all trades.");
           var trades = TradesManager.GetTradesInternal("");
           foreach(var pair in trades.Select(t => t.Pair).Distinct())
-            TradesManager.ClosePair(pair);
+            TradesManager.ClosePair(pair, null);
           Log = new Exception("Trades closed:" + string.Join(",", trades.Select(t => t.Id)));
         } catch(Exception exc) {
           Log = exc;
@@ -1321,7 +1321,7 @@ namespace HedgeHog.Alice.Client {
                 var closedTrades = GlobalStorage.UseForexMongo(c
                   => c.Trades.Where(t => t.Time > start && t.Kind == PositionBase.PositionKind.Closed).ToArray());
                 TradesManager.SetClosedTrades(closedTrades);
-              }catch(Exception exc) {
+              } catch(Exception exc) {
                 Log = exc;
               }
             }

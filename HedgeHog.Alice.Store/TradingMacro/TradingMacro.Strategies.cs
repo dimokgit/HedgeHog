@@ -144,18 +144,27 @@ namespace HedgeHog.Alice.Store {
           });
       }
     });
-    private void StrategyHedge() =>
-      TradeConditionsEval()
-      .Where(_ => IsTradingActive)
-        .ForEach(eval => {
-          var pos = GetCurrentHedgePositions(true);
-          if(eval.HasAny() && pos.p1 != 0 && pos.p2 != 0) {
-            var isBuy = eval.HasUp();
-            OnSMS("Go hedge " + eval, true);
-            OpenHedgePosition(isBuy, pos.p1, pos.p2);
-          } else
-            OnSMS("Go hog", false);
-        });
+    private void StrategyHedge() {
+      var gross = TradesManager.GetTrades().Gross();
+      if(gross > ExitGrossByHedgePositions) {
+        var reason = new { gross, ExitGrossByHedgePositions } + "";
+        CloseTrades(null, reason);
+        TradingMacroHedged(tm => tm.CloseTrades(null, reason));
+        ExitGrossByHedgePositionsReset();
+      } else
+        TradeConditionsEval()
+        .Where(_ => IsTradingActive)
+          .ForEach(eval => {
+            var pos = GetCurrentHedgePositions(true);
+            if(eval.HasAny() && pos.p1 != 0 && pos.p2 != 0) {
+              var isBuy = eval.HasUp();
+              OnSMS("Go hedge " + eval, true);
+              TradeConditionsReset();
+              OpenHedgePosition(isBuy, pos.p1, pos.p2);
+            } else
+              OnSMS("Go hog", false);
+          });
+    }
 
     public void OpenHedgePosition(bool isBuy, int pos1, int pos2) {
       if(!HaveTrades(isBuy)) {
@@ -163,8 +172,8 @@ namespace HedgeHog.Alice.Store {
         TradingMacroHedged(tmh => OpenReverse(tmh, !isBuy, pos2.Abs()));
       }
       void OpenReverse(TradingMacro tm, bool buy, int lot) {
-        tm.CloseTrades("Go Hedge Reverse");
-        tm.OpenTrade(buy, lot, "Go Hedge");
+        tm.CloseTrades(null, "Go Hedge Reverse");
+        tm.OpenTrade(buy, lot, null, "Go Hedge");
       }
     }
 
@@ -706,7 +715,7 @@ namespace HedgeHog.Alice.Store {
     private void CloseTrading(string reason) {
       Log = new Exception("Closing Trading:" + reason);
       TradingStatistics.TradingMacros.ForEach(tm => {
-        tm.CloseTrades(reason);
+        tm.CloseTrades(null, reason);
         tm.SuppRes.ForEach(sr1 => sr1.CanTrade = false);
       });
     }

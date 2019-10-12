@@ -452,7 +452,7 @@ namespace HedgeHog.Alice.Client {
     void ClosePair(object tradingMacro) {
       try {
         var tm = tradingMacro as TradingMacro;
-        TradesManager.ClosePair(tm.Pair);
+        TradesManager.ClosePair(tm.Pair, null);
       } catch(Exception exc) {
         MessageBox.Show(exc + "");
       }
@@ -676,7 +676,7 @@ namespace HedgeHog.Alice.Client {
             .DefaultIfEmpty(() => MasterModel.GrossToExitCalc = () => double.NaN)
             .SingleOrElse(() => MasterModel.GrossToExitCalc = () => double.NaN)();
           var grossToExit = MasterModel.GrossToExitCalc();
-          if(grossToExit != 0
+          if(false && grossToExit != 0
             && !tms.SelectMany(tm => tm.PendingEntryOrders).Any()
             && net > grossToExit
             && tms.SelectMany(tm => tm.HasTradeEval()).IsEmpty()
