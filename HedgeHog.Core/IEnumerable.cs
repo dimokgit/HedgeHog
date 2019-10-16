@@ -198,6 +198,23 @@ namespace HedgeHog {
       }
       return b ? new[] { min, max } : new double[0];
     }
+    public static int[] MinMax(this IEnumerable<int> source) {
+      var min = 0;
+      var max = 0;
+      var b = false;
+      foreach(var t in source) {
+        if(!b) {
+          min = max = t;
+          b = true;
+        } else {
+          if(min > t)
+            min = t;
+          if(max < t)
+            max = t;
+        }
+      }
+      return b ? new[] { min, max } : new int[0];
+    }
 
 
     /// <summary>

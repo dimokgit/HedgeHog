@@ -20,7 +20,7 @@ using DynamicExpresso;
 using IBApp;
 using System.Threading;
 using ReactiveUI.Legacy;
-
+using MoreLinq;
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
 
@@ -160,6 +160,92 @@ namespace HedgeHog.Alice.Store {
        from vl in tm.GetVoltage2Low()
        select volt > vh ? above : volt < vl ? below : TradeDirections.None
       ).Scan((a, td) => a & td).LastOrDefault();
+
+    public TradeConditionDelegate VltSpd2Ok => () => {
+      var t = GetVoltCmaWaveAvg();
+      var ok = !t.last.IsZeroOrNaN() && t.last.Abs() >= t.avg && t.lastCount >= t.avgCount;
+      return !ok
+      ? TradeDirections.None
+      : t.last.Sign() > 0
+      ? TradeDirections.Down
+      : TradeDirections.Up;
+    };
+    public TradeConditionDelegate VltCma2Ok => () => VoltCmaImpl(this, 1, TradeDirections.Up, TradeDirections.Down);
+    public TradeConditionDelegate VltCma2ROk => () => VoltCmaImpl(this, 1, TradeDirections.Up, TradeDirections.Down);
+    private static TradeDirections VoltCmaImpl(TradingMacro tm, int voltIndex, TradeDirections above, TradeDirections below) =>
+      (from volt in tm.GetLastVoltByIndex(voltIndex)
+       from cma in tm.GetLastVoltVoltByIndex(voltIndex)
+       select volt > cma ? above : volt < cma ? below : TradeDirections.None
+      ).SingleOrDefault();
+
+
+    (double avg, int avgCount, double last, int lastCount) GetVoltCmaWaveAvg()
+      => UseRates(ra => ra.Select(r => GetVoltCmaWaveAvgMem(r.StartDate)).FirstOrDefault()).SingleOrDefault();
+    Func<DateTime, (double avg, int avgCount, double last, int lastCount)> _GetVoltCmaWaveAvgMem;
+    Func<DateTime, (double avg, int avgCount, double last, int lastCount)> GetVoltCmaWaveAvgMem =>
+      _GetVoltCmaWaveAvgMem ?? (_GetVoltCmaWaveAvgMem
+      = new Func<DateTime, (double avg, int avgCount, double last, int lastCount)>(d => GetVoltCmaWaveAvgImpl()).MemoizeLast(d => d)
+      );
+    (double avg, int avgCount, double last, int lastCount) GetVoltCmaWaveAvgImpl() {
+      var voltIndex = 1;
+      var dist = UseRates(ra => ra.Select((rate, i) => new { rate, v2 = GetVoltage21(rate), i, diff = GetVoltage2(rate) - GetVoltage21(rate) })
+                     .Where(t => !t.diff.IsNaN())
+                     .DistinctUntilChanged(t => t.diff.Sign())
+                     .ToList()).SingleOrDefault();
+      if(dist?.Any() == false) return default;
+      var bb = dist.Buffer(2, 1).Where(b => b.Count == 2);
+      var hh = bb.Select(b => new { distance = b[1].v2 - b[0].v2, count = b[1].i - b[0].i });
+      var dist1 = hh.GroupAdjacent(d => d.distance.Sign());
+      var dist2 = dist1.Select(dd => (distance: dd.Sum(d => d.distance), count: dd.Sum(d => d.count))).ToList();
+      var avg = dist2.AverageByIterations(SpeedA, (d1, d2) => d1 > d2, GetVoltCmaWaveIterationsByIndex(voltIndex)).Average(SpeedA);
+      var avgCount = dist2.AverageByIterations(SpeedA, (d1, d2) => d1 > d2, GetVoltCmaWaveIterationsByIndex(voltIndex).Max(1) - 1).Average(d => d.count).ToInt();
+      var last = dist2.Last();
+      return (avg, avgCount, Speed(last), last.count);
+      double Speed((double distsnce, int count) v) => v.distsnce / v.count;
+      double SpeedA((double distsnce, int count) v) => Speed(v).Abs();
+    }
+    (double avg, int avgCount, double last, int lastCount) GetVoltCmaWaveAvgImpl(int voltIndex) {
+      var getVolt01 = GetVoltVoltByIndex(voltIndex);
+      var getVolt = GetVoltByIndex(voltIndex);
+      var dist = UseRates(ra => ra.Select((rate, i)
+        => new { rate, v2 = getVolt01(rate), i, diff = getVolt(rate) - getVolt01(rate) })
+                     .Where(t => !t.diff.IsNaN())
+                     .DistinctUntilChanged(t => t.diff.Sign())
+                     .ToList()).SingleOrDefault();
+      if(dist?.Any() == false) return default;
+      var bb = dist.Buffer(2, 1).Where(b => b.Count == 2);
+      var hh = bb.Select(b => new { distance = b[1].v2 - b[0].v2, count = b[1].i - b[0].i });
+      var dist1 = hh.GroupAdjacent(d => d.distance.Sign());
+      var dist2 = dist1.Select(dd => (distance: dd.Sum(d => d.distance), count: dd.Sum(d => d.count))).ToList();
+      var avg = dist2.AverageByIterations(SpeedA, (d1, d2) => d1 > d2, GetVoltCmaWaveIterationsByIndex(voltIndex)).Average(SpeedA);
+      var avgCount = dist2.AverageByIterations(SpeedA, (d1, d2) => d1 > d2, GetVoltCmaWaveIterationsByIndex(voltIndex).Max(1) - 1).Average(d => d.count).ToInt();
+      var last = dist2.Last();
+      return (avg, avgCount, Speed(last), last.count);
+      double Speed((double distsnce, int count) v) => v.distsnce / v.count;
+      double SpeedA((double distsnce, int count) v) => Speed(v).Abs();
+    }
+    (double avg, double last, TradeDirections td) GetVoltCmaCrossAvg() {
+      var dists = (from dist in UseRates(ra => ra.Select(r => new { r, v = GetVoltage2(r), v2 = GetVoltage21(r) })
+                   .Where(t => !t.v.IsNaN() && !t.v2.IsNaN())
+                   .DistinctUntilChanged(t => t.v.Sign(t.v2))
+                   .ToArray())
+                   from vl in GetLastVolt2()
+                   from vl01 in GetLastVoltVolt2()
+                   let aa = dist.Buffer(2, 1)
+                   .Where(b => b.Count == 2)
+                   .Select(b => new { h = b.Height(t => t.v), s = b[0].v.Sign(b[1].v) })
+                   .ToList()
+                   from last in aa.TakeLast(2).Take(1)
+                   select (aa.AverageByIterations(x => x.h, (v1, v2) => v1 > v2, 4).Average(x => x.h), last.h
+                   , last.s > 0 && vl < vl01
+                   ? TradeDirections.Down
+                   : last.s < 0 && vl > vl01
+                   ? TradeDirections.Up
+                   : TradeDirections.None)
+      )
+            ;
+      return dists.SingleOrDefault();
+    }
 
     [TradeConditionHedge]
     public TradeConditionDelegate HOk => () => TradeDirections.Both;
@@ -1120,7 +1206,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     public IEnumerable<double> GetLastVolt() => GetLastVolt(GetVoltage);
+    public IEnumerable<double> GetLastVoltVolt() => GetLastVolt(GetVoltage01);
     public IEnumerable<double> GetLastVolt2() => GetLastVolt(GetVoltage2);
+    public IEnumerable<double> GetLastVoltVolt2() => GetLastVolt(GetVoltage21);
     public IEnumerable<double> GetLastVolt(Func<Rate, double> getVolt) {
       return UseRates(rates
                   => rates.BackwardsIterator()
@@ -1208,8 +1296,8 @@ namespace HedgeHog.Alice.Store {
         //.Add((object)(new { MacdDist = tm.MacdDistances(RatesArray).TakeLast(1).Select(d => d.AutoRound2(3)).SingleOrDefault() }))
         //.Add((object)(new { HistVol = $"{HV(this)}" }))
         //.Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
-        .Add(HV(this).Concat(TradingMacroHedged(HV).Concat()).Select(d => d * 1000000).Pairwise((hv, hvm)
-          => (object)new { HistVolHg = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
+        //.Add(HV(this).Concat(TradingMacroHedged(HV).Concat()).Select(d => d * 1000000).Pairwise((hv, hvm)
+        //  => (object)new { HistVolHg = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         .Add(HVA(this).Concat(TradingMacroHedged(HVA).Concat()).Select(d => d).Pairwise((hv, hvm)
           => (object)new { HistVolAn = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         //.Add(new { StrdlHV = new[] { _currentCallByHV, _currentPutByHV }.Select(c => c.Round(2)).Flatter("/") })
@@ -1218,6 +1306,7 @@ namespace HedgeHog.Alice.Store {
         //.Add(new { HgSlope = $"{VoltsReg(this, 1)}/{VoltsReg(this, 0)}" })
         //.Add(new { HgSlope2 = tm1s.Select(tm1 => $"{VoltsReg(tm1, 1)}/{VoltsReg(tm1, 0)}").SingleOrDefault() })
         .Add(new { ExitGrsPrc = $"{ExitGrossByHedgePositions.SideEffect(_ => OnSetExitGrossByHedgeGrossess()):c0}/{ExitPriceByHedgePrices:c0}" })
+        .Add(new { VltCma = $"{VltCma2Ok()}/{GetVoltCmaWaveAvg().With(t => (t.avg.Mult(100).AutoRound2(2), t.avgCount, t.last.Mult(100).AutoRound2(2), t.lastCount))}" })
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
@@ -1810,7 +1899,7 @@ namespace HedgeHog.Alice.Store {
       return TradeConditionsInfo((Func<Attribute, bool>)null, map);
     }
     public IEnumerable<T> TradeConditionsInfo<A, T>(Func<A, bool> attrPredicate, Func<TradeConditionDelegate, PropertyInfo, TradeConditionAttribute.Types, string, T> map) where A : Attribute {
-      return from tc in TradeConditionsInfo((d, p, s) => new { d, p, s })
+      return from tc in TradeConditionsInfo((d, p, s) => new { d, p, s }).ToList()
              where attrPredicate == null || tc.p.GetCustomAttributes().OfType<A>().Count(attrPredicate) > 0
              from tca in tc.p.GetCustomAttributes<TradeConditionAttribute>().DefaultIfEmpty(new TradeConditionAttribute(TradeConditionAttribute.Types.And))
              select map(tc.d, tc.p, tca.Type, tc.s);

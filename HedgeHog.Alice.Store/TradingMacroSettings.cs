@@ -49,7 +49,11 @@ namespace HedgeHog.Alice.Store {
     public string VoltRange { get; set; }
     public string VoltRange_2 { get; set; }
     public double VoltCmaPeriod { get; set; }
+    public double VoltCmaPeriod2 { get; set; }
     public int VoltCmaPasses { get; set; }
+    public int VoltCmaPasses2 { get; set; }
+    public int VoltCmaWaveIterations { get; set; }
+    public int VoltCmaWaveIterations2 { get; set; }
     public double WaveStDevPower { get; set; }
     public double WaveStDevPowerS { get; set; }
     public string BarPeriod { get; set; }

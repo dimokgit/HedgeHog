@@ -142,7 +142,7 @@ namespace HedgeHog.Alice.Store {
       UseRates(rates => rates.BackwardsIterator().TakeWhile(r => GetVoltByIndex(voltIndex)(r).IsNaN())
         .ForEach(r => SetVoltByIndex(voltIndex)(r, volt)));
       //SetVoltage(RateLast, volt);
-      if(useRegression) SetVoltsHighLowsByRegression(voltIndex);
+      if(useRegression) OnSetVoltsHighLowsByRegression(voltIndex);
       else SetVoltsHighLows(voltIndex);
     }
 
@@ -161,7 +161,7 @@ namespace HedgeHog.Alice.Store {
     });
 
     ActionAsyncBuffer SetVoltsHighLowsByRegressionAsyncBuffer = new ActionAsyncBuffer(2, "SetVoltsHighLowsByRegression");
-    private void SetVoltsHighLowsByRegression(int voltIndex) {
+    private void OnSetVoltsHighLowsByRegression(int voltIndex) {
       Action a = () => SetVoltsHighLowsByRegressionImpl(voltIndex);
       if(IsInVirtualTrading) a();
       else SetVoltsHighLowsByRegressionAsyncBuffer.Push(a);

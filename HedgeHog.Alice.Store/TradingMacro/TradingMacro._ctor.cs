@@ -117,7 +117,6 @@ namespace HedgeHog.Alice.Store {
       var hedgeVoltFuns = new[] { VoltageFunction.HedgePrice, VoltageFunction.GrossV, VoltageFunction.HedgeRatio };
       this.WhenAnyValue(tm => tm.CurrentHedgePosition2)
         .Subscribe(_ => {
-          _zeroHedgeDate = default;
           CalcHedgeRatioByPositions();
 
           if(hedgeVoltFuns.Contains(VoltageFunction))

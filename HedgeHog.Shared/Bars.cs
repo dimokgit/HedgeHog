@@ -721,17 +721,13 @@ namespace HedgeHog.Bars {
       this.StartDate2 = StartDate;
     }
     public TrendLevels Trends { get; set; }
-    double _distanceHistory = double.NaN;
-    public double DistanceHistory {
-      get { return _distanceHistory; }
-      set { _distanceHistory = value; }
-    }
 
-    double _Distance1 = double.NaN;
-    public double Distance1 {
-      get { return _Distance1; }
-      set { _Distance1 = value; }
-    }
+    #region    
+    public double Voltage { get; set; } = double.NaN;
+    public double Voltage01 { get; set; } = double.NaN;
+    public double Voltage2 { get; set; } = double.NaN;
+    public double Voltage21 { get; set; } = double.NaN;
+    #endregion
     public double CrossesDensity { get; set; } = double.NaN;
 
     #region TpsAverage

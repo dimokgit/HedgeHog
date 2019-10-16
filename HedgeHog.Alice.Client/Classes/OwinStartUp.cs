@@ -648,6 +648,13 @@ namespace HedgeHog.Alice.Client {
 
     static double DaysTillExpiration2(DateTime expiration) => (expiration.InNewYork().AddHours(16) - DateTime.Now.InNewYork()).TotalDays.Max(1);
     static double DaysTillExpiration(DateTime expiration) => (expiration - DateTime.Now.Date).TotalDays + 1;
+    public void SetHedgeCalcType(string pair, string hedgeCalcTypeContext) {
+      var hct = Enum.GetValues(typeof(TradingMacro.HedgeCalcTypes)).Cast<TradingMacro.HedgeCalcTypes>()
+        .Where(e => hedgeCalcTypeContext.Contains(e + ""))
+        .Count(1, new { hedgeCalcTypeContext })
+        .Single();
+      UseTraderMacro(pair, tm => tm.HedgeCalcType = hct);
+    }
     public object[] ReadStraddles(string pair
       , int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip
       , string optionTypeMap, DateTime hedgeDate, string rollCombo, string[] selectedCombos
@@ -658,7 +665,7 @@ namespace HedgeHog.Alice.Client {
         const string HID_BYHV = "ByHV";
         const string HID_BYPOS = "ByPos";
         var contextDict = (IDictionary<string, object>)context;
-        var selectedHedge = (string)(contextDict["selectedHedge"] ?? "");
+        var selectedHedge = tm.HedgeCalcType;// (string)(contextDict["selectedHedge"] ?? "");
         if(!tm.IsInVirtualTrading) {
           int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(expDaysSkip);
           var am = GetAccountManager();
@@ -946,14 +953,14 @@ namespace HedgeHog.Alice.Client {
                let c = AccountManager.MakeHedgeCombo(quantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio)
                let h = new { combo = c, ratio = hh.Select(t => t.ratio).Min().AutoRound2(3), context = HID_BYTV/*hh.ToArray(t => t.context).MashDiffs()*/ }
                from price in h.combo.contract.ReqPriceSafe()
-               from cts in am.ComboTrades(1).Where(ct => selectedHedge.IsNullOrWhiteSpace() && ct.contract.IsFuturesCombo).ToArray()
+               from cts in am.ComboTrades(1).Where(ct => selectedHedge == TradingMacro.HedgeCalcTypes.ByTV && ct.contract.IsFuturesCombo).ToArray()
                from order in am.OrderContractsInternal.Take(1).Select(oh => (oh.Value.contract, quantity: oh.Value.order.TotalQuantity.ToInt(), context: "Open Order")).DefaultIfEmpty()
                select new CurrentHedge(HID_BYTV, h.combo.contract.ShortString, h.combo.quantity, h.ratio, h.context, price.ask.Avg(price.bid).AutoRound2(2), c.contract.Key)
                .SideEffect(_ => cts.Select(ct => (ct.contract, quantity: ct.position, context: "Open Trade"))
                .IfEmpty(() => order.YieldIf(o => o.contract != null))
                .Take(1)
                .DefaultIfEmpty((c.contract, c.quantity, context: HID_BYHV))
-               .Where(__ => selectedHedge.IsNullOrWhiteSpace() || selectedHedge == HID_BYTV)
+               .Where(__ => selectedHedge == TradingMacro.HedgeCalcTypes.ByTV)
                .ForEach(t => GetTradingMacros(pair, tml => tml.SetCurrentHedgePosition(t.contract, t.quantity.Abs(), t.context))))
                )
                .Merge(GetCurrentHedgeTMs())
@@ -968,14 +975,15 @@ namespace HedgeHog.Alice.Client {
           .ToArray()
           .Subscribe(ch => base.Clients.Caller.hedgeCombo(ch.OrderBy(h => h.id)));
 
-        bool CompHID(TradingMacro tml, string hid) => selectedHedge.Contains(hid);
+        bool CompHID(TradingMacro tml, string hid) => false;// selectedHedge.Contains(hid);
         IObservable<CurrentHedge> GetCurrentHedgeTMs() => GetTradingMacros(pair,
-          tml => CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByHV(), HID_BYHV + tml.PairIndex, CompHID(tml, HID_BYHV))
-          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(), HID_BYPOS + tml.PairIndex, CompHID(tml, HID_BYPOS)))
+          tml => CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByHV(), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByHV), CompHID(tml, HID_BYHV))
+          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByPos), CompHID(tml, HID_BYPOS)))
           ).Merge();
 
         var distFromHigh = tm.TradingMacroM1().DefaultIfEmpty(tm).Select(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
-        return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh };
+        return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh, HedgeCalcType = HedgeCalcTypeContext(tm, tm.HedgeCalcType) };
+        string HedgeCalcTypeContext(TradingMacro tml, TradingMacro.HedgeCalcTypes hct) => hct.ToString() + tml.PairIndex;
         ////
         IObservable<CurrentHedge> CurrentHedgesTM1(TradingMacro tml, Func<TradingMacro, CURRENT_HEDGES> getHedges, string id, bool doSideEffect) {
           var hedgePar = ReadHedgedOther(pair);
@@ -1338,15 +1346,17 @@ namespace HedgeHog.Alice.Client {
       return d.DefaultIfEmpty(new Dictionary<string, Dictionary<string, bool>>()).Single();
     }
 
+    static object _getTradeConditionsInfoGate = new object();
     private static Dictionary<string, Dictionary<string, bool>> GetTradeConditionsInfo(TradingMacro tm) {
-      return tm.UseRates(ra => ra.IsEmpty() || !tm.IsRatesLengthStable)
-        .DefaultIfEmpty(true)
-        .SingleOrDefault()
-        ? new Dictionary<string, Dictionary<string, bool>>()
-        : tm.TradeConditionsInfo((d, p, t, c) => new { c, t, d = d() })
-        .GroupBy(x => x.t)
-        .Select(g => new { g.Key, d = g.ToDictionary(x => x.c, x => x.d.HasAny()) })
-        .ToDictionary(x => x.Key + "", x => x.d);
+      lock(_getTradeConditionsInfoGate) {
+        var tt = tm.UseRates(ra => ra.IsEmpty() || !tm.IsRatesLengthStable).DefaultIfEmpty(true).SingleOrDefault();
+        if(tt) return new Dictionary<string, Dictionary<string, bool>>();
+        var eval = tm.TradeConditionsInfo((d, p, t, c) => new { c, t, d = d() }).ToList();
+        return eval
+          .GroupBy(x => x.t)
+          .Select(g => new { g.Key, d = g.ToDictionary(x => x.c, x => x.d.HasAny()) })
+          .ToDictionary(x => x.Key + "", x => x.d);
+      }
     }
     #endregion
 

@@ -816,7 +816,7 @@ namespace HedgeHog {
     public static double AverageHeight(this IEnumerable<double> values) {
       return values.Skip(1).Select((d, i) => Math.Abs(d - values.ElementAt(i))).Average();
     }
-    public static double Height(this IList<double> values) {
+    public static double Height(this IEnumerable<double> values) {
       return values.Max() - values.Min();
     }
 

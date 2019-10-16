@@ -35,26 +35,6 @@ namespace HedgeHog.Alice.Store {
     private const string MULTI_VALUE_SEPARATOR = ";";
     private const double TLsOverlap = 0.9;
 
-    static double[] EMPTY_DOUBLE = new double[0];
-    public IEnumerable<T> VoltageHigh<T>(Func<double, T> func) => GetVoltageHigh().Select(func);
-    public Func<IList<double>> GetVoltageHigh = () => EMPTY_DOUBLE;
-    public IEnumerable<T> VoltageAverage<T>(Func<double, T> func) => GetVoltageAverage().Select(func);
-    public Func<IList<double>> GetVoltageAverage = () => EMPTY_DOUBLE;
-    public Func<IList<double>> GetVoltageLow = () => EMPTY_DOUBLE;
-    public Func<IList<double>> GetVoltage2High = () => EMPTY_DOUBLE;
-    public Func<IList<double>> GetVoltage2Low = () => EMPTY_DOUBLE;
-
-    public Func<Rate, double> GetVoltage = r => r.DistanceHistory;
-    public Func<Rate, double[]> GetVoltages = r => r.VoltageLocal0;
-    double VoltageCurrent { get { return GetVoltage(RateLast); } }
-    public Action<Rate, double> SetVoltage = (r, v) => r.DistanceHistory = v;
-    public Action<Rate, string, double> SetVoltageKey = (r, k, v) => r.DistanceHistory = v;
-    public Func<Rate, double> GetVoltage2 = r => r.Distance1;
-    public Action<Rate, double> SetVoltage2 = (r, v) => r.Distance1 = v;
-    public Action<Rate, double> SetHV = (r, v) => r.CrossesDensity = v;
-    public Func<Rate, double> GetHV = (r) => r.CrossesDensity;
-
-
     #region _corridors
     DateTime _corridorStartDate1 = DateTime.MinValue;
     public int CorridorLengthLime { get; private set; }

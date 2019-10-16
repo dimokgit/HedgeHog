@@ -154,8 +154,14 @@
 
       if (hasTps) {
         svg.append("path").attr("class", "line dataTps").style("stroke", "black").style("opacity", tpsOpacity);
+        svg.append("path").attr("class", "line dataTps01").style("stroke", "black").style("opacity", tpsOpacity);
         svg.append("path")
           .attr("class", "line dataTps2")
+          .style("stroke", "black")
+          .style("opacity", tpsOpacity)
+          .attr("transform", "translate(0,0)");
+        svg.append("path")
+          .attr("class", "line dataTps21")
           .style("stroke", "black")
           .style("opacity", tpsOpacity)
           .attr("transform", "translate(0,0)");
@@ -605,12 +611,20 @@
             .y(function (d) {
               return y2(tipValue(d.v));
             });
+          var line21 = d3.line()
+            .x(function (d) { return x(d.d); })
+            .y(function (d) {
+              return y2(tipValue(d.v01));
+            });
           var isHotTps = _.last(data).v > tpsHigh || _.last(data).v < tpsLow;
           var colorTps = !y2Scale ? "Wisteria" : isHotTps ? "darksalmon" : "navy";
           var opacityTps = !y2Scale ? tpsOpacity : isHotTps ? tpsOpacity * 2 : tpsOpacity;
           svg.select("path.line.dataTps")
             .datum(data)
             .attr("d", line2).style("stroke", colorTps).style("opacity", opacityTps);
+          svg.select("path.line.dataTps01")
+            .datum(data)
+            .attr("d", line21).style("stroke", colorTps).style("opacity", opacityTps);
           setHLine(tpsHigh, "tpsHigh", colorTps, 1, "", y2);
           setHLine(tpsLow, "tpsLow", colorTps, 1, "", y2);
           setHLine(tpsCurr, "tpsCurr", colorTps, 1, "", y2);
@@ -622,8 +636,12 @@
               .x(function (d) { return x(d.d); })
               .y(function (d) {
                 var y = isNaN(d.v2) ? 0 : tipValue2(d.v2);
-                //yMin = Math.min(yMin, y);
-                //yMax = Math.max(yMax, y);
+                return y3(y);
+              });
+            var line31 = d3.line()
+              .x(function (d) { return x(d.d); })
+              .y(function (d) {
+                var y = isNaN(d.v21) ? 0 : tipValue2(d.v21);
                 return y3(y);
               });
 
@@ -636,6 +654,15 @@
               y3Axis.style("display", "");
             } catch (e) {
               console.log = "Showing path.line.dataTps2:" + e;
+            }
+            try {
+              svg.select("path.line.dataTps21")
+                .datum(data)
+                .attr("d", line31)
+                .style("stroke", "brown").style("opacity", 0.7);
+              y3Axis.style("display", "");
+            } catch (e) {
+              console.log = "Showing path.line.dataTps21:" + e;
             }
             //var minMax = [yMin, yMax].sort(function (a, b) { return Math.abs(a) - Math.abs(b); });
             //setHLine(minMax[0], "tpsMin2", "darkred", 1, "", y3);

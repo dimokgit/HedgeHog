@@ -1891,7 +1891,7 @@ namespace HedgeHog.Alice.Store {
         BidHigh = gt.Max(t => t.BidHigh),
         BidLow = gt.Min(t => t.BidLow),
         PriceCMALast = gt.Average(r => r.PriceCMALast),
-        DistanceHistory = double.NaN
+        Voltage = double.NaN
       };
       return rate;
     }
@@ -2481,7 +2481,7 @@ namespace HedgeHog.Alice.Store {
                 CorridorAngle = TLRed.Angle;
                 TakeProfitPips = InPips(CalculateTakeProfit());
               } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
-            }, IsInVirtualTrading);
+            }, IsHedgedTrading || IsInVirtualTrading);
             OnPropertyChanged(nameof(TradingDistanceInPips));
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
             OnPropertyChanged(() => SpreadForCorridorInPips);

@@ -110,6 +110,21 @@
     });
     return target;
   };
+  ko.observable.fn.withPausing = function () {
+    this.notifySubscribers = function () {
+      if (!this.pauseNotifications) {
+        ko.subscribable.fn.notifySubscribers.apply(this, arguments);
+      }
+    };
+
+    this.sneakyUpdate = function (newValue) {
+      this.pauseNotifications = true;
+      this(newValue);
+      this.pauseNotifications = false;
+    };
+
+    return this;
+  };
   //#endregion
   // #region Globals
   if (!Array.prototype.find) {
@@ -356,6 +371,7 @@
           if (dataViewModel.strategyCurrent() !== x.Strategy)
             dataViewModel.strategyCurrent(x.Strategy);
           dataViewModel.distanceFromHigh(x.DistanceFromHigh);
+          dataViewModel.selectedHedgeCombo(x.HedgeCalcType);
         });
       }
       , null
@@ -1016,15 +1032,17 @@
           }
         };
         var hcs = ko.mapping.toJS(this.hedgeCombo);
-        function d(hc) { return { id: hc.id, key: hc.key, quantity: hc.quantity, data: hc.price + hc.contract + "/" + hc.ratio + "/" + hc.quantity + "{" + hc.context + "}" }; }
+        function d(hc) { return { id: hc.id, key: hc.key, quantity: hc.quantity, data: hc.price + hc.contract + ":" + hc.quantity + "/" + hc.ratio + "{" + hc.context + "}" }; }
         ko.mapping.fromJS(hcs.filter(hc => hc).map(d), map, this.hedgeCombo2);
       }
       this.hedgeComboText = ko.pureComputed(function () {
         mapHedgeCombos.bind(this)();
         return this.hedgeCombo2();// : "No hedge";
       }, this);
-      this.selectedHedgeCombo = ko.observable().extend({ persist: "selectedHedgeCombo" + pair });
-      this.selectedHedgeCombo.subscribe(this.refreshCharts.bind(this));
+      this.selectedHedgeCombo = ko.observable().withPausing().extend({ persist: "selectedHedgeCombo" + pair });
+      this.selectedHedgeCombo.subscribe(function (v, e) {
+        serverCall("setHedgeCalcType", [pair, ko.unwrap(v)]);
+      });
       this.toggleSelectedHedgeCombo = function (hc) {
         var nv = this.selectedHedgeCombo() === ko.unwrap(hc.id) ? "" : ko.unwrap(hc.id);
         this.selectedHedgeCombo(nv);

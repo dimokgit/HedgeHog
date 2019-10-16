@@ -455,6 +455,7 @@
     </Compile>
     <Compile Include="Hedging.cs" />
     <Compile Include="Models\TradingAccount.cs" />
+    <Compile Include="MoreLinq\MoreEnumerable.GroupAdjacent.cs" />
     <Compile Include="TraderModel.Persist.cs" />
     <Compile Include="Trades.cs" />
     <Compile Include="TradingAccountModel.cs" />

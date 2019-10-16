@@ -969,7 +969,8 @@ namespace HedgeHog.Alice.Store {
     public const string wwwSettingsCorridorEquinox = "hide 2.4 Equinox";
     public const string wwwSettingsAO = "hide 2.5 AO Periods";
     public const string wwwSettingsCorridorFuncs = "3 Corridor Func";
-    public const string wwwSettingsVoltage = "4 Voltage";
+    public const string wwwSettingsVoltage = "4.1 Voltage";
+    public const string wwwSettingsVoltage2 = "4.2 Voltage";
     public const string wwwSettingsBars = "5 Bars";
 
     #region CloseAfterTradingHours
@@ -1278,7 +1279,7 @@ namespace HedgeHog.Alice.Store {
     public double VoltRange_20 { get; set; }
     public double VoltRange_21 { get; set; }
     string _VoltRange_2 = "[0]";
-    [WwwSetting(Group = wwwSettingsVoltage)]
+    [WwwSetting(Group = wwwSettingsVoltage2)]
     [Category(categoryActive)]
     [Description("Range or single value: 15-30 or 60 or -60")]
     public string VoltRange_2 {
@@ -1327,7 +1328,7 @@ namespace HedgeHog.Alice.Store {
 
     private int _VoltAverageIterations2 = 2;
     [Description("Volt Avg Iter")]
-    [WwwSetting(Group = wwwSettingsVoltage)]
+    [WwwSetting(Group = wwwSettingsVoltage2)]
     [Category(categoryActive)]
     public int VoltAverageIterations2 {
       get { return _VoltAverageIterations2; }
@@ -1354,6 +1355,18 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    private double _VoltCmaPeriod2;
+    [WwwSetting(wwwSettingsVoltage2)]
+    [Category(categoryActive)]
+    public double VoltCmaPeriod2 {
+      get { return _VoltCmaPeriod2; }
+      set {
+        if(_VoltCmaPeriod2 != value) {
+          _VoltCmaPeriod2 = value;
+          OnPropertyChanged("VoltCmaPeriod2");
+        }
+      }
+    }
     #endregion
     #region VoltCmaPasses
     private int _VoltCmaPasses;
@@ -1368,6 +1381,43 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    private int _VoltCmaPasses2;
+    [WwwSetting(wwwSettingsVoltage2)]
+    [Category(categoryActive)]
+    public int VoltCmaPasses2 {
+      get { return _VoltCmaPasses2; }
+      set {
+        if(_VoltCmaPasses2 != value) {
+          _VoltCmaPasses2 = value;
+          OnPropertyChanged("VoltCmaPasses2");
+        }
+      }
+    }
+    private int _VoltCmaWaveIterations;
+    [WwwSetting(wwwSettingsVoltage)]
+    [Category(categoryActive)]
+    public int VoltCmaWaveIterations {
+      get { return _VoltCmaWaveIterations; }
+      set {
+        if(_VoltCmaWaveIterations != value) {
+          _VoltCmaWaveIterations = value;
+          OnPropertyChanged("VoltCmaWaveIterations");
+        }
+      }
+    }
+    private int _VoltCmaWaveIterations2;
+    [WwwSetting(wwwSettingsVoltage2)]
+    [Category(categoryActive)]
+    public int VoltCmaWaveIterations2 {
+      get { return _VoltCmaWaveIterations2; }
+      set {
+        if(_VoltCmaWaveIterations2 != value) {
+          _VoltCmaWaveIterations2 = value;
+          OnPropertyChanged("VoltCmaWaveIterations2");
+        }
+      }
+    }
+
 
     #endregion
     double _waveStDevPower = 10;
@@ -1973,7 +2023,7 @@ namespace HedgeHog.Alice.Store {
     public string PairPlain { get { return TradesManagerStatic.WrapPair(Pair); } }
 
     public bool IsPairHedged => !PairHedge.IsNullOrWhiteSpace() && (true || TradeConditionsHedge().Any() || TradingMacroTrader(tm => tm.TradeConditionsHedge()).Concat().Any());
-    public bool IsHedgedTrading => !PairHedge.IsNullOrWhiteSpace() && HedgedTrading;
+    public bool IsHedgedTrading => !PairHedge.IsNullOrWhiteSpace() && (Strategy == Strategies.Hedge || HedgedTrading);
     public IEnumerable<TradingMacro> HedgeParent => TradingMacrosByPairHedge(Pair).Take(1);
     public bool IsHedgeChild => HedgeParent.Any();
     public IEnumerable<TradingMacro> HedgeOther => TradingMacroHedged().Concat(HedgeParent);

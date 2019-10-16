@@ -31,7 +31,9 @@ namespace HedgeHog.Alice.Client {
       var doShowVolt = tm.VoltageFunction != VoltageFunction.None;
       var doShowVolt2 = tm.VoltageFunction2 != VoltageFunction.None || tm.VoltageFunction == VoltageFunction.PPMH;
       var lastVolt = tm.GetLastVolt().DefaultIfEmpty().Memoize();
+      var lastVolt01 = tm.GetLastVolt(tm.GetVoltage01).DefaultIfEmpty().Memoize();
       var lastVolt2 = tm.GetLastVolt(tm.GetVoltage2).DefaultIfEmpty().Memoize();
+      var lastVolt21 = tm.GetLastVolt(tm.GetVoltage21).DefaultIfEmpty().Memoize();
       var lastCma = tm.UseRates(TradingMacro.GetLastRateCma).SelectMany(cma => cma).FirstOrDefault();
       var tsMin = TimeSpan.FromMinutes(tm.BarPeriodInt);
       var priceHedge = MonoidsCore.ToFunc((Rate r) => r.PriceHedge).MemoizePrev(d => d.IsZeroOrNaN());
@@ -41,7 +43,9 @@ namespace HedgeHog.Alice.Client {
         d = tm.BarPeriod == BarsPeriodType.t1 ? rate.StartDate2 : rate.StartDate2.Round().With(d => d == rate.StartDate2 ? d : d + tsMin),
         c = rateHL(rate),
         v = doShowVolt ? tm.GetVoltage(rate).IfNaNOrZero(lastVolt) : 0,
+        v01 = doShowVolt ? tm.GetVoltage01(rate).IfNaNOrZero(lastVolt01) : 0,
         v2 = doShowVolt2 ? tm.GetVoltage2(rate).IfNaNOrZero(lastVolt2) : 0,
+        v21 = doShowVolt2 ? tm.GetVoltage21(rate).IfNaNOrZero(lastVolt21) : 0,
         m = rate.PriceCMALast.IfNaNOrZero(lastCma).Round(digits),
         a = rate.AskHigh.Round(digits),
         b = rate.BidLow.Round(digits),
@@ -53,8 +57,10 @@ namespace HedgeHog.Alice.Client {
         d = rates.Min(r => r.StartDate2).With(sd =>
         tm.BarPeriod == BarsPeriodType.t1 ? sd : sd.Round().With(d => d == sd ? d : d + tsMin)),
         c = rateHLs(rates),
-        v = doShowVolt ? rates.Average(r=> tm.GetVoltage(r).IfNaNOrZero(lastVolt)) : 0,
+        v = doShowVolt ? rates.Average(r => tm.GetVoltage(r).IfNaNOrZero(lastVolt)) : 0,
+        v01 = doShowVolt ? rates.Average(r=> tm.GetVoltage01(r).IfNaNOrZero(lastVolt01)) : 0,
         v2 = doShowVolt2 ? rates.Average(r => tm.GetVoltage2(r).IfNaNOrZero(lastVolt2)) : 0,
+        v21 = doShowVolt2 ? rates.Average(r => tm.GetVoltage21(r).IfNaNOrZero(lastVolt21)) : 0,
         m = rates.Average(r => r.PriceCMALast.IfNaNOrZero(lastCma)).Round(digits),
         a = rates.Max(r => r.AskHigh).Round(digits),
         b = rates.Min(r => r.BidLow).Round(digits),

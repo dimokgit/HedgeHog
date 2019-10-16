@@ -147,13 +147,14 @@ namespace HedgeHog.Alice.Store {
     private void StrategyHedge() {
       var gross = TradesManager.GetTrades().Gross();
       if(gross > ExitGrossByHedgePositions) {
+        IsTradingActive = false;
         var reason = new { gross, ExitGrossByHedgePositions } + "";
         CloseTrades(null, reason);
         TradingMacroHedged(tm => tm.CloseTrades(null, reason));
         ExitGrossByHedgePositionsReset();
       } else
         TradeConditionsEval()
-        .Where(_ => IsTradingActive)
+          .Where(_ => IsTradingActive)
           .ForEach(eval => {
             var pos = GetCurrentHedgePositions(true);
             if(eval.HasAny() && pos.p1 != 0 && pos.p2 != 0) {
