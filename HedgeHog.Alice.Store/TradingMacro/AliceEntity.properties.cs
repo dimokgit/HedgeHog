@@ -1420,33 +1420,6 @@ namespace HedgeHog.Alice.Store {
 
 
     #endregion
-    double _waveStDevPower = 10;
-    [Description("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]
-    [WwwSetting(Group = wwwSettingsTradingParams)]
-    [Category(categoryActive)]
-    public double WaveStDevPower {
-      get { return _waveStDevPower; }
-      set {
-        if(_waveStDevPower == value)
-          return;
-        _waveStDevPower = value;
-        OnPropertyChanged(() => WaveStDevPower);
-      }
-    }
-    double _waveStDevPowerS = 0.5;
-    [Description("wrs.Select(w => w.StDev).PowerMeanPowerByPosition(X)")]
-    [WwwSetting(Group = wwwSettingsTradingParams)]
-    [Category(categoryActive)]
-    public double WaveStDevPowerS {
-      get { return _waveStDevPowerS; }
-      set {
-        if(_waveStDevPowerS == value)
-          return;
-        _waveStDevPowerS = value;
-        OnPropertyChanged(() => WaveStDevPowerS);
-      }
-    }
-
     double _trendEquinoxPerc;
     [WwwSetting(wwwSettingsCorridorEquinox)]
     [Category(categoryActive)]

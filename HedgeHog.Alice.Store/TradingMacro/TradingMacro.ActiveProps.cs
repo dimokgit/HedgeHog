@@ -11,6 +11,44 @@ using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
+    #region TradingRatio
+    private global::System.Double _TradingRatio;
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [DataMemberAttribute()]
+    [WwwSetting(wwwSettingsTradingParams)]
+    public global::System.Double TradingRatio {
+      get {
+        return _TradingRatio;
+      }
+      set {
+        if(_TradingRatio == value) return;
+        _TradingRatio = value;
+        OnPropertyChanged("TradingRatio");
+      }
+    }
+    //private string _TradingRatioEx;
+    //public string TradingRatioEx {
+    //  get { return _TradingRatioEx ?? ""; }
+    //  set {
+    //    if(_TradingRatioEx != value) {
+    //      if(value.IsNullOrWhiteSpace()) {
+    //        var split = TradingRatioEx.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).Select(double.Parse).ToArray();
+    //        TradingRatio = split.Take(1).SingleOrDefault();
+    //      } else {
+    //        var split = value.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).Select(double.Parse).ToArray();
+    //        TradingRatio = split.Take(1).SingleOrDefault();
+    //        TradingRatioHedge = split.Skip(1).Take(1).SingleOrDefault();
+    //      }
+    //      _TradingRatioEx = value.IsNullOrWhiteSpace() ? null : value;
+    //      OnPropertyChanged("TradingRatioEx");
+    //    }
+    //  }
+    //}
+    [WwwSetting(wwwSettingsTradingParams)]
+    public double TradingRatioHedge { get; set; }
+    #endregion
     TimeSpan _timeFrameTresholdTimeSpan;
     public TimeSpan TimeFrameTresholdTimeSpan {
       get {

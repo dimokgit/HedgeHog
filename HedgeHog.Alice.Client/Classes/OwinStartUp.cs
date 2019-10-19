@@ -977,15 +977,16 @@ namespace HedgeHog.Alice.Client {
 
         bool CompHID(TradingMacro tml, string hid) => false;// selectedHedge.Contains(hid);
         IObservable<CurrentHedge> GetCurrentHedgeTMs() => GetTradingMacros(pair,
-          tml => CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByHV(), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByHV), CompHID(tml, HID_BYHV))
-          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByPos), CompHID(tml, HID_BYPOS)))
+          tml => CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByHV(), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByHV))
+          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByPos)))
+          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByTradingRatio(), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByTR)))
           ).Merge();
 
         var distFromHigh = tm.TradingMacroM1().DefaultIfEmpty(tm).Select(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
         return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh, HedgeCalcType = HedgeCalcTypeContext(tm, tm.HedgeCalcType) };
         string HedgeCalcTypeContext(TradingMacro tml, TradingMacro.HedgeCalcTypes hct) => hct.ToString() + tml.PairIndex;
         ////
-        IObservable<CurrentHedge> CurrentHedgesTM1(TradingMacro tml, Func<TradingMacro, CURRENT_HEDGES> getHedges, string id, bool doSideEffect) {
+        IObservable<CurrentHedge> CurrentHedgesTM1(TradingMacro tml, Func<TradingMacro, CURRENT_HEDGES> getHedges, string id) {
           var hedgePar = ReadHedgedOther(pair);
           if(hedgePar.IsNullOrEmpty()) return Observable.Empty<CurrentHedge>();
           var baseUnits = GetTradingMacros(pair).Concat(GetTradingMacros(hedgePar)).Where(t => t.IsActive).Select(_tm => _tm.BaseUnitSize).ToArray();
@@ -1016,8 +1017,7 @@ namespace HedgeHog.Alice.Client {
              from c in MakeHedgeComboSafe()
              from p in IsInVirtual() ? CalcComboPrice() : c.contract.ReqPriceSafe().DefaultIfEmpty()
              let rc = new { ratio = hh.Select(t => t.ratio).Min().AutoRound2(3), context = id/* hh.ToArray(t => t.context).MashDiffs()*/ }
-             let contract = c.contract.ShortString
-             .SideEffect(_ => { if(doSideEffect) tml.SetCurrentHedgePosition(c.contract, c.quantity, id); })
+             let contract = c.contract.ShortString             
              select new CurrentHedge(id, contract, c.quantity, rc.ratio, rc.context, p.bid.Avg(p.ask).ToInt(), c.contract.Key)
              ).Catch((Exception exc) => {
                Log = exc;

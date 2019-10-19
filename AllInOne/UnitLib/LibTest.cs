@@ -11,12 +11,12 @@ using System.Threading;
 using HedgeHog.Bars;
 using HedgeHog.DateTimeZone;
 using System.Reflection;
-using System.Threading.Tasks.Dataflow;
 using System.Reactive.Linq;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.IO;
 using System.Reactive.Subjects;
+using System.Threading.Tasks.Dataflow;
 
 namespace HedgeHog.Tests {
   [TestClass()]

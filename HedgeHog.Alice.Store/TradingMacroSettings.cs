@@ -54,15 +54,12 @@ namespace HedgeHog.Alice.Store {
     public int VoltCmaPasses2 { get; set; }
     public int VoltCmaWaveIterations { get; set; }
     public int VoltCmaWaveIterations2 { get; set; }
-    public double WaveStDevPower { get; set; }
-    public double WaveStDevPowerS { get; set; }
     public string BarPeriod { get; set; }
     public string BarPeriodCalc { get; set; }
     public string CorridorByStDevRatioFunc { get; set; }
     public string CorridorByStDevRatioFunc2 { get; set; }
     public string CorridorCalcMethod { get; set; }
     public string CorridorHighLowMethod { get; set; }
-    public string EquinoxCorridors { get; set; }
     public string LevelBuyBy { get; set; }
     public string LevelBuyCloseBy { get; set; }
     public string LevelSellBy { get; set; }

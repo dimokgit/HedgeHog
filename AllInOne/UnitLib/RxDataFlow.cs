@@ -6,9 +6,9 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using HedgeHog;
 using System.Diagnostics;
 using System.Threading;
-using System.Threading.Tasks.Dataflow;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
+using System.Threading.Tasks.Dataflow;
 
 namespace UnitLib {
   [TestClass]

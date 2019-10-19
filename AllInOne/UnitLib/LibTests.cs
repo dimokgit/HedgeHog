@@ -258,6 +258,8 @@ result:[[1,2,3],[1,2,4],[1,3,4],[2,3,4]]
  };
       var wa = source.AverageByPosition();
       Assert.AreEqual(4.840501349, wa.Round(9));
+      var source2 = Enumerable.Range(1, 100).Select(i => (double)i).Reverse().ToArray();
+      Assert.AreNotEqual(source2.RootMeanPowerByPosition(0.5), source2.ToArray().AverageByPosition());
     }
   }
 }

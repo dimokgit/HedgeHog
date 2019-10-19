@@ -197,11 +197,13 @@ namespace HedgeHog.Alice.Store {
       var hh = bb.Select(b => new { distance = b[1].v2 - b[0].v2, count = b[1].i - b[0].i });
       var dist1 = hh.GroupAdjacent(d => d.distance.Sign());
       var dist2 = dist1.Select(dd => (distance: dd.Sum(d => d.distance), count: dd.Sum(d => d.count))).ToList();
-      var avg = dist2.AverageByIterations(SpeedA, (d1, d2) => d1 > d2, GetVoltCmaWaveIterationsByIndex(voltIndex)).Average(SpeedA);
-      var avgCount = dist2.AverageByIterations(SpeedA, (d1, d2) => d1 > d2, GetVoltCmaWaveIterationsByIndex(voltIndex).Max(1) - 1).Average(d => d.count).ToInt();
+      var perc = (dist2.Count * GetVoltCmaWaveIterationsByIndex(voltIndex) / 100.0).ToInt();
+      var samples = dist2.OrderByDescending(d => d.distance.Abs() * d.count).Take(perc * 2).ToList();
+      var avg = samples.Take(perc).Average(SpeedA);
+      var avgCount = samples.Average(d => d.count).ToInt();
       var last = dist2.Last();
       return (avg, avgCount, Speed(last), last.count);
-      double Speed((double distsnce, int count) v) => v.distsnce / v.count;
+      double Speed((double distsnce, int count) v) => v.distsnce * v.count;
       double SpeedA((double distsnce, int count) v) => Speed(v).Abs();
     }
     (double avg, int avgCount, double last, int lastCount) GetVoltCmaWaveAvgImpl(int voltIndex) {
@@ -2104,28 +2106,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(nameof(RiskRewardThresh));
       }
     }
-
-    string _equinoxCorridors = "0,1,2,3";
-    [Category(categoryActiveFuncs)]
-    //[WwwSetting(wwwSettingsCorridorEquinox)]
-    [Description("0,1,2;1,3")]
-    public string EquinoxCorridors {
-      get {
-        return _equinoxCorridors;
-      }
-
-      set {
-        if(_equinoxCorridors == value)
-          return;
-
-        _equinoxCorridors = value;
-
-        OnPropertyChanged(() => EquinoxCorridors);
-      }
-    }
-
-    private int _wwwBpa1;
-
 
     public IList<IList<int>> OutsidersInt {
       get { return SplitterInts(Outsiders); }

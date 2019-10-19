@@ -629,6 +629,9 @@ namespace HedgeHog.Alice.Store {
           case HedgeCalcTypes.ByPos:
             hh = CurrentHedgesByPositions();
             break;
+          case HedgeCalcTypes.ByTR:
+            hh = CurrentHedgesByTradingRatio();
+            break;
           case HedgeCalcTypes.ByTV:
             hh = new List<HedgePosition<Contract>>();
             break;

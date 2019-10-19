@@ -232,7 +232,7 @@ namespace HedgeHog.Alice.Store {
        select (rate: r1, v: r1.PriceAvg * BaseUnitSize * position1 + r2.PriceAvg * tmh.BaseUnitSize * position2))))
       ).Concat().Concat().Concat()
       .Cma(r => r.v, cmaPeriod, cmaPasses, (r, v) => (r.rate, v));
-    public enum HedgeCalcTypes { ByTV, ByHV, ByPos };
+    public enum HedgeCalcTypes { ByTV, ByHV, ByPos,ByTR };
     public HedgeCalcTypes HedgeCalcType { get; set; } = HedgeCalcTypes.ByHV;
     public List<HedgePosition<IBApi.Contract>> CurrentHedgesByHV(int count) => CurrentHedgesByHV(count, DateTime.MaxValue, BarPeriodInt > 0);
     public List<HedgePosition<IBApi.Contract>> CurrentHedgesByHV() => CurrentHedgesByHV(int.MaxValue);
@@ -251,13 +251,25 @@ namespace HedgeHog.Alice.Store {
       return TradesManagerStatic.HedgeRatioByValue(":", hh).Select(HedgePosition.Create).ToList();//.SideEffect(_ => OnCurrentHedgesByHV(_));
     }
     public List<HedgePosition<IBApi.Contract>> CurrentHedgesByPositions() {
-      OnCalcHedgeRatioByPositions();
-      var r = HedgeRatioByPrices.PositionsFromRatio();
-      var h1 = (Pair.ContractFactory(IsInVirtualTrading, BaseUnitSize), r.p1, CurrentPriceAvg(), Pair);
       if(HedgeRatioByPrices.IsNaNOrZero()) return new List<HedgePosition<IBApi.Contract>>();
-      var h2 = TradingMacroHedged(tm => (tm.Pair.ContractFactory(IsInVirtualTrading, tm.BaseUnitSize), r.p2, tm.CurrentPriceAvg(), tm.Pair));
-      var hh = new[] { h1 }.Concat(h2).ToList();
-      return hh.Select(HedgePosition.Create).ToList();
+      var r = HedgeRatioByPrices.PositionsFromRatio();
+      return HedgePositionsByPositions(r.p1, r.p2);
+    }
+    public List<HedgePosition<IBApi.Contract>> CurrentHedgesByTradingRatio() {
+      if(TradingRatioHedge.IsNaNOrZero()) return new List<HedgePosition<IBApi.Contract>>();
+      var r = TradingRatioHedge.Div(TradingRatio).PositionsFromRatio();
+      return HedgePositionsByPositions(r.p1,r.p2);
+    }
+
+    private CURRENT_HEDGES HedgePositionsByPositions(double p1, double p2) {
+      try {
+        var h1 = (Pair.ContractFactory(IsInVirtualTrading, BaseUnitSize), p1, CurrentPriceAvg(), Pair);
+        var h2 = TradingMacroHedged(tm => (tm.Pair.ContractFactory(IsInVirtualTrading, tm.BaseUnitSize), p2, tm.CurrentPriceAvg(), tm.Pair));
+        var hh = new[] { h1 }.Concat(h2).ToList();
+        return hh.Select(HedgePosition.Create).ToList();
+      } finally {
+        OnCalcHedgeRatioByPositions();
+      }
     }
 
 

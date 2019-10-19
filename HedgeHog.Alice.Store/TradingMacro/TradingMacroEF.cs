@@ -197,28 +197,6 @@ namespace HedgeHog.Alice.Store {
     /// <summary>
     /// No Metadata Documentation available.
     /// </summary>
-    [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
-    [DataMemberAttribute()]
-    [WwwSetting(wwwSettingsTradingParams)]
-    public global::System.Double TradingRatio {
-      get {
-        return _TradingRatio;
-      }
-      set {
-        OnTradingRatioChanging(value);
-        ReportPropertyChanging("TradingRatio");
-        _TradingRatio = StructuralObject.SetValidValue(value, "TradingRatio");
-        ReportPropertyChanged("TradingRatio");
-        OnTradingRatioChanged();
-      }
-    }
-    private global::System.Double _TradingRatio;
-    partial void OnTradingRatioChanging(global::System.Double value);
-    partial void OnTradingRatioChanged();
-
-    /// <summary>
-    /// No Metadata Documentation available.
-    /// </summary>
     [EdmScalarPropertyAttribute(EntityKeyProperty = true, IsNullable = false)]
     [DataMemberAttribute()]
     public global::System.Guid UID {

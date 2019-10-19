@@ -78,7 +78,7 @@ namespace ConsoleApp {
           };
           LoadHistory(ibClient, new[] { c });
           */
-          var es = new[] { "NQZ9", "ESU9","RTYZ9", "VXX", "SPY" }[2];
+          var es = new[] { "NQZ9", "ESU9","RTYZ9", "VXX", "SPY" }[1];
           var period = 0;
           bool repare = false;
           Action<object> callback = o => HandleMessage(o + "");
