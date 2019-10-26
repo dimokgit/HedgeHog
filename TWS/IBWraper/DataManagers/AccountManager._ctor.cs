@@ -120,7 +120,8 @@ namespace IBApp {
         h => IbClient.OpenOrder -= h
         )
         .ObserveOn(esOpenOrder)
-        .Distinct(x => OrderKey(x.Order))
+        .Do(x => TraceDebug($"{new { OrderKey = OrderKey(x.Order) }}: {x.Order}: {x.Contract}"))
+        .Distinct(x => x.Order.PermId)
         .SelectMany(m => {
           var x = (from cl in (m.Contract.ComboLegs ?? new List<ComboLeg>()).ToObservable()
                    from con in ibClient.ReqContractDetailsCached(cl.ConId).Select(cd => cd.Contract)
@@ -135,7 +136,7 @@ namespace IBApp {
           return x.ObserveOn(TaskPoolScheduler.Default).DefaultIfEmpty(m);
         })
         ;
-      string OrderKey(IBApi.Order o) => new { o.PermId, o.LmtPrice, o.AuxPrice, Conditions = o.Conditions.Flatter("; ") } + "";
+      string OrderKey(IBApi.Order o) => new { o.PermId, o.LmtPrice, o.AuxPrice, Conditions = o.Conditions.Flatter("; "), o.Account } + "";
 
       OrderStatusObservable = Observable.FromEvent<OrderStatusHandler, OrderStatusMessage>(
         onNext
@@ -161,24 +162,20 @@ namespace IBApp {
         .Subscribe(OnPosition, () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
 
-      OpenOrderObservable
+      OpenOrderObservable // we only get it once per order
         .Where(x => x.Order.Account == _accountId)
-        .Do(x => TraceDebug($"OpenOrder: {new { x.Order.OrderId, x.Order.Transmit, conditions = x.Order.Conditions.Flatter(";") } }"))
-        //.Do(UpdateOrder)
-        .Do(x => Trace($"OpenOrder: {x}"))
+        .Do(x => Verbose($"OpenOrder: {x}"))
+        .Where(t => !t.OrderState.IsCancelled)
         .Subscribe(a => OnOrderImpl(a))
         .SideEffect(s => _strams.Add(s));
 
-      IScheduler esOrderStatus = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "OrderStatus", Priority = ThreadPriority.Normal });
       OrderStatusObservable
-          .Do(t => TraceDebug("OrderStatus: " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
+          .Do(t => Verbose($"OrderStatus[{t.OrderId}]:{t.Status}" + new { t.Filled, t.Remaining, t.WhyHeld, isDone = t.IsOrderDone() }))
           .Distinct(t => new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld })
-          .Do(t => TraceDebug0("OrderStatus: " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
           .Where(t => OrderContractsInternal.ByOrderId(t.OrderId).Any(oc => oc.order.Account == _accountId))
-          .Do(t => Verbose("* OrderStatus " + new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld, isDone = (t.Status, t.Remaining).IsOrderDone() }))
           //.Do(x => UseOrderContracts(oc => _verbous("* " + new { OrderStatus = x, Account = oc.ByOrderId(x.orderId, och => och.order.Account).SingleOrDefault() })))
           .Do(t => {
-            OrderContractsInternal.ByOrderId(t.OrderId).Where(oc => t.Status != "Inactive")
+            OrderContractsInternal.ByOrderId(t.OrderId)//.Where(oc => t.Status != "Inactive")
               //.SelectMany(oc => new[] { oc }.Concat(ocs.ByOrderId(oc.order.ParentId).Where(och => och.isNew)))
               .ForEach(oc => {
                 oc.status = new OrderContractHolder.Status(t.Status, t.Filled, t.Remaining);

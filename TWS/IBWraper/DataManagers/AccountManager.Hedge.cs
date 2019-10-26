@@ -50,12 +50,6 @@ namespace IBApp {
       from cd2 in isInTest ? Observable.Return(c2.SetTestConId(isInTest, 0)) : c2.ReqContractDetailsCached().Select(cd => cd.Contract)
       select MakeHedgeCombo(quantity, cd1, cd2, ratio1, ratio2).SideEffect(x => x.contract.SetTestConId(isInTest, 0));
 
-    public static (int r1, int r2, int quantity) CalcComboRatios(int quantity, double ratio1, double ratio2) {
-      int r1 = (ratio1 * quantity).ToInt();
-      int r2 = (ratio2 * quantity).ToInt();
-      var gcd = new[] { r1, r2 }.GCD();
-      return (r1 / gcd, r2 / gcd, gcd);
-    }
     public static (Contract contract, int quantity) MakeHedgeCombo(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) {
       if(c1.ConId == 0)
         throw new Exception($"ComboLeg contract1 has ConId = 0");

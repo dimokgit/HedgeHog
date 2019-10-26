@@ -15,6 +15,13 @@ using HedgeHog.Core;
 
 namespace HedgeHog.Shared {
   public static class TradesManagerStatic {
+    // TODO - this CalcComboRatios should be used everywhere
+    public static (int r1, int r2, int quantity) CalcComboRatios(int quantity, double ratio1, double ratio2) {
+      int r1 = (ratio1 * quantity).ToInt();
+      int r2 = (ratio2 * quantity).ToInt();
+      var gcd = new[] { r1, r2 }.GCD();
+      return (r1 / gcd, r2 / gcd, gcd);
+    }
     public static int ExpirationDaysSkip(int start) => !DateTime.Now.InNewYork().isWeekend() && DateTime.Now.InNewYork().TimeOfDay > new TimeSpan(18, 0, 0) ? start + 1 : start;
     public static IMapper TradeMapper() => TradeMapper(opt => opt);//.ForMember(t => t.TradesManager, o => o.Ignore()));
     public static IMapper TradeMapper(Func<IMappingExpression<Trade, Trade>, IMappingExpression<Trade, Trade>> opt)

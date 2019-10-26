@@ -15,24 +15,28 @@ namespace IBApp {
   public abstract class DataManager {
 
     #region Fields/Properties
-    public static bool UseVerbose = false;
+    public static bool UseVerbose = true;
     public static bool DoShowRequestErrorDone = true;
     public static IBClientCore IBClientMaster;
     private IBClientCore _ibClient;
 
     public static string ShowThread() => $"~{Thread.CurrentThread.ManagedThreadId}{Thread.CurrentThread.Name.With(tn => tn.IsNullOrEmpty() ? "" : (":" + tn))}";
-    public void TraceError<T>(T v) => Trace("{!}" + v + ShowThread());
-    public void TraceDebug<T>(T v) { if(Debugger.IsAttached) Trace("{?}" + v+ShowThread()); }
+    public void TraceError<T>(T v) => TraceWithThread("{!}", v);
+    public void TraceDebug<T>(T v) { if(Debugger.IsAttached) TraceWithThread("{?}", v); }
+
+    public void TraceWithThread<T>(string prefix, T v) => Trace(prefix + v + ShowThread());
+
     public void TraceDebug0<T>(T v) { }
     protected Action<object> Trace { get; }
     protected Action<bool, object> TraceIf => (b, o) => { if(b) Trace(o); };
-    protected Action<object> Verbose => o => { if(UseVerbose) Trace(o); };
+    protected Action<object> Verbose => o => { if(UseVerbose || Debugger.IsAttached) TraceWithThread("{*}", o); };
     protected Action<object> Verbose0 => o => { };
+    // TODO - IBClientMaster must not be assigned more than once
     protected IBClientCore IbClient {
       get => _ibClient;
       private set {
-        if(IBClientMaster==null)
-          IBClientMaster=value;
+        if(IBClientMaster == null)
+          IBClientMaster = value;
         _ibClient = value;
       }
     }

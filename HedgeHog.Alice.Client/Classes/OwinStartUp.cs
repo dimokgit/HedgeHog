@@ -91,7 +91,7 @@ namespace HedgeHog.Alice.Client {
             .Delay(TimeSpan.FromSeconds(1))
             .Subscribe(pair => {
               try {
-                MyHub().Clients.All.tradesChanged(pair);
+                MyHub().Clients.All.tradesChanged();
               } catch(Exception exc) {
                 LogMessage.Send(exc);
               }
@@ -1779,13 +1779,11 @@ namespace HedgeHog.Alice.Client {
           list2.Add(row($"{pair} Gross", $"{trades.Gross().AutoRound2("$", 2)}@{tm.ServerTime.TimeOfDay.ToString(@"hh\:mm\:ss")}"));
         }
         list2.Add(row("Trades Gross", $"{rc.TradesManager.GetTrades().Gross().AutoRound2("$", 2)}@{tm.ServerTime.TimeOfDay.ToString(@"hh\:mm\:ss")}"));
-        if(tm.LastTradeLoss < -1000000)
-          list2.Add(row("Last Loss", tm.LastTradeLoss.AutoRound2("$", 2)));
-        if(!ht) {
+        if(false && !ht) {
           list2.Add(row("PipAmountBuy", tm.PipAmountBuy.AutoRound2("$", 2) + "/" + (tm.PipAmountBuyPercent * 100).AutoRound2(2, "%")));
           list2.Add(row("PipAmountSell", tm.PipAmountSell.AutoRound2("$", 2) + "/" + (tm.PipAmountSellPercent * 100).AutoRound2(2, "%")));
         }
-        if(!tm.HaveHedgedTrades()) {
+        if(!tm.IsHedgedTrading) {
           list2.Add(row("PipsToMC", (!ht ? 0 : am.PipsToMC).ToString("n0")));
           var lsb = (tm.IsCurrency ? (tm.LotSizeByLossBuy / 1000.0).Floor() + "K/" : tm.LotSizeByLossBuy + "/");
           var lss = (tm.IsCurrency ? (tm.LotSizeByLossSell / 1000.0).Floor() + "K/" : tm.LotSizeByLossSell + "/");
@@ -1800,7 +1798,7 @@ namespace HedgeHog.Alice.Client {
           var s = string.Join("<br/>", oss.Select(os => $"{os.status}:{os.filled}<{os.remaining}"));
           list2.Add(row("Orders", s));
         }
-        if(tm.HaveHedgedTrades())
+        if(tm.IsHedgedTrading)
           list2.Add(row("Hedge Profit", $"{tm.ExitGrossByHedgePositions:c0}"));
         if(false && trader.Value.GrossToExitCalc() != 0) {
           var ca = CompInt(trader.Value.GrossToExitCalc().Abs());

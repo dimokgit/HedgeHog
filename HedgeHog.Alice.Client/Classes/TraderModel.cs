@@ -1311,31 +1311,36 @@ namespace HedgeHog.Alice.Client {
           }
           RaisePropertyChanged(() => IsLoggedIn);
           Log = new Exception("Account " + TradingAccount + " logged in.");
-          try {
-            var account = TradesManager.GetAccount();
-            if(account == null) {
-              Thread.Sleep(1000);
-              account = TradesManager.GetAccount();
-              var start = DateTime.Now.AddDays(-14);
-              try {
-                var closedTrades = GlobalStorage.UseForexMongo(c
-                  => c.Trades.Where(t => t.Time > start && t.Kind == PositionBase.PositionKind.Closed).ToArray());
-                TradesManager.SetClosedTrades(closedTrades);
-              } catch(Exception exc) {
-                Log = exc;
-              }
-            }
-            if(account != null)
-              GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {
+          Action init = () => {
+            try {
+              var account = TradesManager.GetAccount();
+              // TODO - get rid of while loop
+              while(account == null) {
+                Thread.Sleep(1000);
+                account = TradesManager.GetAccount();
+                if(account == null) continue;
+                var start = DateTime.Now.AddDays(-14);
                 try {
-                  UpdateTradingAccount(account);
-                  OnInvokeSyncronize(account);
-                } catch(Exception exc) { Log = exc; }
-              }));
-          } catch(Exception exc) {
-            Log = exc;
-            MessageBox.Show(exc.ToString(), "GetAccount", MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.None, MessageBoxOptions.ServiceNotification);
-          }
+                  var closedTrades = GlobalStorage.UseForexMongo(c
+                    => c.Trades.Where(t => t.Time > start && t.Kind == PositionBase.PositionKind.Closed).ToArray());
+                  TradesManager.SetClosedTrades(closedTrades);
+                } catch(Exception exc) {
+                  Log = exc;
+                }
+              }
+              if(account != null)
+                GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {
+                  try {
+                    UpdateTradingAccount(account);
+                    OnInvokeSyncronize(account);
+                  } catch(Exception exc) { Log = exc; }
+                }));
+            } catch(Exception exc) {
+              Log = exc;
+              MessageBox.Show(exc.ToString(), "GetAccount", MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.None, MessageBoxOptions.ServiceNotification);
+            }
+          };
+          ((IBWraper)TradesManager)._ibClient.ManagedAccountsObservable.Subscribe(_ => init());
           IsAccountManagerExpanded = false;
         };
         CoreFX.LoginError += exc => {

@@ -33,6 +33,7 @@ namespace IBApi {
         h => ManagedAccounts += h,
         h => ManagedAccounts -= h
         )
+        .SubscribeOn(TaskPoolScheduler.Default)
         .ObserveOn(new EventLoopScheduler(ts => new Thread(ts)))
         .Catch<ManagedAccountsMessage, Exception>(exc => {
           Error(-1, 0, nameof(ManagedAccounts), exc);

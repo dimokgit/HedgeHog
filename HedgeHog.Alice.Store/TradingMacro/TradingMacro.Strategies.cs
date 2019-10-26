@@ -147,10 +147,11 @@ namespace HedgeHog.Alice.Store {
     private void StrategyHedge() {
       var gross = TradesManager.GetTrades().Gross();
       if(gross > ExitGrossByHedgePositions) {
+        var exitByGrossMsg = $"Gross {gross:c0} > {ExitGrossByHedgePositions:c0}";
+        OnSMS(SmsKey.GrossExit, exitByGrossMsg);
         IsTradingActive = false;
-        var reason = new { gross, ExitGrossByHedgePositions } + "";
-        CloseTrades(null, reason);
-        TradingMacroHedged(tm => tm.CloseTrades(null, reason));
+        CloseTrades(null, exitByGrossMsg);
+        TradingMacroHedged(tm => tm.CloseTrades(null, exitByGrossMsg));
         ExitGrossByHedgePositionsReset();
       } else
         TradeConditionsEval()
@@ -159,22 +160,37 @@ namespace HedgeHog.Alice.Store {
             var pos = GetCurrentHedgePositions(true);
             if(eval.HasAny() && pos.p1 != 0 && pos.p2 != 0) {
               var isBuy = eval.HasUp();
-              OnSMS("Go hedge " + eval, true);
+              OnSMS(SmsKey.Hedge, "Go hedge " + eval);
               TradeConditionsReset();
               OpenHedgePosition(isBuy, pos.p1, pos.p2);
             } else
-              OnSMS("Go hog", false);
+              OnSMS(SmsKey.Hedge, "Go hog");
           });
     }
 
     public void OpenHedgePosition(bool isBuy, int pos1, int pos2) {
       if(!HaveTrades(isBuy)) {
+        OnSMS(SmsKey.GrossExit, $"Hedge {(isBuy ? "buy" : "sell")} {pos1}/{pos2}. Gross condition > {ExitGrossByHedgePositions:c0}");
         OpenReverse(this, isBuy, pos1);
         TradingMacroHedged(tmh => OpenReverse(tmh, !isBuy, pos2.Abs()));
       }
       void OpenReverse(TradingMacro tm, bool buy, int lot) {
         tm.CloseTrades(null, "Go Hedge Reverse");
+        //UseAccountManager(am => am.OpenTrade(_currentHedgeContract, CurrentHedgeQuantity * (isBuy ? 1 : -1)));
         tm.OpenTrade(buy, lot, null, "Go Hedge");
+      }
+    }
+    public void OpenTradeHedge(bool isBuy, int lot, Price price, string reason) {
+      var me = Common.Caller();
+      lock(_tradeLock) {
+        var key = lot - Trades.Lots(t => t.IsBuy != isBuy) > 0 ? OT : CT;
+        CheckPendingAction(key, (pa) => {
+          if(lot > 0) {
+            pa();
+            LogTradingAction($"{this}: {(isBuy ? "Buying" : "Selling")} {lot} by {me} {new { reason }}");
+            TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", price);
+          }
+        });
       }
     }
 
@@ -478,31 +494,31 @@ namespace HedgeHog.Alice.Store {
     double GetTradeCloseLevel(bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy]().IfNaN(def); }
 
     #region SMS Subject
+    enum SmsKey { Trading, GrossExit, Hedge }
     object _SMSSubjectLocker = new object();
-    ISubject<(string message, bool @in)> _SMSSubject;
-    ISubject<(string message, bool @in)> SMSSubject {
+    ISubject<(SmsKey key, string message, string duc)> _SMSSubject;
+    ISubject<(SmsKey key, string message, string duc)> SMSSubject {
       get {
         lock(_SMSSubjectLocker)
           if(_SMSSubject == null) {
-            _SMSSubject = new Subject<(string message, bool @in)>();
+            _SMSSubject = new Subject<(SmsKey key, string message, string duc)>();
             _SMSSubject
-              .Where(_ => !IsInVirtualTrading)
-              .DistinctUntilChanged(s => s.message)
-              .Select(s => new { s.message, s.@in })
-              //.Do(s => Log = new Exception($"Asking SMS:{s}"))
-              .GroupBy(t => t.@in)
-              .Subscribe(g
-              => g
-              .DistinctUntilChanged(s => s + DateTime.Now.Round(5).ToString())
-              .Do(s => Log = new Exception($"Sending SMS:{s}"))
+              .ObserveOn(TaskPoolScheduler.Default)
               .Where(_ => SendSMS)
-              .Subscribe(s => { SendSms(s.message, "", false); }, exc => { })
+              //.Do(s => Log = new Exception($"Asking SMS:{s}"))
+              .GroupBy(t => t.key)
+              .Subscribe(g => g
+              .DistinctUntilChanged(s => s.message + s.duc)
+              .Do(s => Log = new Exception($"SMS:{s}"))
+              .Subscribe(s => SendSms(s.key + "", s.message, false), exc => { })
               );
           }
         return _SMSSubject;
+        DateTime TimeKey() => ServerTime.Round(5);
       }
     }
-    void OnSMS(string message, bool @in) => SMSSubject.OnNext((message, @in));
+    void OnSMS(SmsKey key, string message) => SMSSubject.OnNext((key, message, ""));
+    void OnSMS(SmsKey key, string message,string duc) => SMSSubject.OnNext((key, message,duc));
     #endregion
 
     void SendSms(string header, object message, bool sendScreenshot) {

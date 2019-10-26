@@ -67,12 +67,13 @@ namespace HedgeHog.Alice.Store {
 
     object _tradeLock = new object();
     public void OpenTrade(bool isBuy, int lot, Price price, string reason) {
+      var me = Common.Caller();
       lock(_tradeLock) {
         var key = lot - Trades.Lots(t => t.IsBuy != isBuy) > 0 ? OT : CT;
         CheckPendingAction(key, (pa) => {
           if(lot > 0) {
             pa();
-            LogTradingAction(string.Format("{0}[{1}]: {2} {3} from {4} by [{5}]", Pair, BarPeriod, isBuy ? "Buying" : "Selling", lot, new StackFrame(3).GetMethod().Name, reason));
+            LogTradingAction($"{this}: {(isBuy ? "Buying" : "Selling")} {lot} by {me} {new { reason }}");
             TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", price);
           }
         });
@@ -82,12 +83,13 @@ namespace HedgeHog.Alice.Store {
     public void CloseTrades(Price price, string reason) { CloseTrades(Trades.Lots(), price, reason); }
     //[MethodImpl(MethodImplOptions.Synchronized)]
     private void CloseTrades(int lot, Price price, string reason) {
+      var me = Common.Caller();
       lock(_tradeLock) {
         if(!IsTrader || !Trades.Any() || HasPendingKey(CT))
           return;
         if(lot > 0)
           CheckPendingAction(CT, pa => {
-            LogTradingAction(string.Format("{0}[{1}]: Closing {2} from {3} in {4} from {5}]", Pair, BarPeriod, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name, reason));
+            LogTradingAction($"{this}: Closing {lot} out of {Trades.Lots()} by {me} {new { reason }}]");
             pa();
             if(!TradesManager.ClosePair(Pair, Trades[0].IsBuy, lot, price))
               ReleasePendingAction(CT);

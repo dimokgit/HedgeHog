@@ -444,6 +444,7 @@ namespace HedgeHog.Alice.Store {
     bool _logTrades = true;
     [DisplayName("Log Trades")]
     [Category(categoryTrading)]
+    [WwwSetting(wwwSettingsTrading)]
     [Dnr]
     public bool LogTrades {
       get { return _logTrades; }

@@ -11,5 +11,7 @@ namespace IBSampleApp.messages {
 
     public string Key => this + "";
     public override string ToString() => new { Contract, Order, OrderState } + "";
+    public bool IsCancelled => OrderState.IsCancelled;
+
   }
 }

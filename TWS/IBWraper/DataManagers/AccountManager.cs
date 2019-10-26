@@ -12,8 +12,6 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 namespace IBApp {
   public partial class AccountManager :DataManager, IDisposable {
-    public enum OrderCancelStatuses { Cancelled, PendingCancel };
-    public enum OrderDoneStatuses { Filled };
     public enum OrderHeldReason { locate };
 
     #region Constants

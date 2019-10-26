@@ -27,6 +27,7 @@ namespace HedgeHog {
       using(var wc = new WebClient())
         return wc.DownloadString(url);
     }
+    public static string Caller( [CallerMemberName] string Caller = "") => Caller;
     public static string CallerChain(string caller, [CallerMemberName] string Caller = "") => $"{Caller}<={caller}";
   }
 }

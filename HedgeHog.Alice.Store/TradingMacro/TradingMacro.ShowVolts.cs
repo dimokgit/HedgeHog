@@ -641,6 +641,7 @@ namespace HedgeHog.Alice.Store {
           combo = IBApp.AccountManager.MakeHedgeComboSafe(TradingRatio.ToInt(), hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio, IsInVirtualTrading);
           combo.Subscribe(c => SetCurrentHedgePosition(c.contract, c.quantity, HedgeCalcType));
         }
+        OnCalcHedgeRatioByPositions();
       }
     }
     IEnumerable<(Rate[] r, double[] h)> ShowVoltsByRatioDiff_New(Func<Rate, double> map) =>

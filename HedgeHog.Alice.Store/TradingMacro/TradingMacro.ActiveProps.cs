@@ -242,7 +242,7 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActiveYesNo)]
     [DisplayName("Send SMS")]
     public bool SendSMS {
-      get { return _sendSMS; }
+      get { return HedgeParent.Select(tm => tm.SendSMS).DefaultIfEmpty(_sendSMS).SingleOrDefault(); }
       set {
         if(_sendSMS != value) {
           _sendSMS = value;

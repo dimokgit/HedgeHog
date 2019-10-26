@@ -199,7 +199,7 @@ namespace HedgeHog.Alice.Store {
       var dist2 = dist1.Select(dd => (distance: dd.Sum(d => d.distance), count: dd.Sum(d => d.count))).ToList();
       var perc = (dist2.Count * GetVoltCmaWaveIterationsByIndex(voltIndex) / 100.0).ToInt();
       var samples = dist2.OrderByDescending(d => d.distance.Abs() * d.count).Take(perc * 2).ToList();
-      var avg = samples.Take(perc).Average(SpeedA);
+      var avg = samples.DefaultIfEmpty().Take(perc).Average(SpeedA);
       var avgCount = samples.Average(d => d.count).ToInt();
       var last = dist2.Last();
       return (avg, avgCount, Speed(last), last.count);
@@ -1940,9 +1940,7 @@ namespace HedgeHog.Alice.Store {
 
           if(eval.HasAny()) {
             BuySellLevels.ForEach(sr => sr.DateCanTrade = ServerTime);
-            OnSMS("Go trade", true);
-          } else
-            OnSMS("Go sleep", false);
+          }
         });
         void updateCanTrade(SuppRes sr, bool ct, TradeDirections eval) {
           if(sr.CanTrade != ct) {

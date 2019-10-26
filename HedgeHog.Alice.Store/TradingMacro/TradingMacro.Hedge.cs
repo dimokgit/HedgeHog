@@ -75,8 +75,10 @@ namespace HedgeHog.Alice.Store {
     }
 
     object _currentHedgePositionsLock = new object();
+    IBApi.Contract _currentHedgeContract = null;
     public void SetCurrentHedgePosition<T>(IBApi.Contract contract, int quantity, T context) {
       lock(_currentHedgePositionsLock) {
+        _currentHedgeContract = contract;
         var legs = contract.LegsForHedge(Pair).ToList();
         if(legs.Count != 2) {
           Log = new Exception($"{nameof(SetCurrentHedgePosition)}: {new { legsCount = legs.Count }}");
@@ -157,7 +159,8 @@ namespace HedgeHog.Alice.Store {
           var sv2 = SetVoltVoltByIndex(voltIndex);
           UseRates(ra => ra.Zip(r => r.StartDate, volts, v => v.StartDate, (r, v) => (r, v.v, v.v2))
           .Do(t => { if(start.IsNaN()) start = t.v; })
-          .ForEach(t => {
+          .AsParallel()
+          .ForAll(t => {
             sv(t.r, t.v - start);
             sv2(t.r, t.v2 - start);
           }));
@@ -202,11 +205,15 @@ namespace HedgeHog.Alice.Store {
       ?? (_setHedgeGrossesAsyncBuffer = new GetHedgePricesAsyncBuffer(() => ServerTime.Minute + ""));
     void OnSetExitGrossByHedgeGrossess() => SetHedgeGrossesAsyncBuffer.Push(SetExitPriceByHedgeGrosses);
     private void SetExitPriceByHedgeGrosses() {
-      var hedgedPositions = HedgedTrades().Select(t => t.IsBuy ? t.Lots : -t.Lots).Buffer(2)
-      .Select(b => (p1: b[0], p2: b[1], 0)).ToArray().With(a => a.Any() ? a.Single() : GetCurrentHedgePositions(true));
-      ExitGrossByHedgePositionsCalc = GetExitPriceByHedgeGrosses(hedgedPositions.p1, hedgedPositions.p2);
-      var isBuy = hedgedPositions.p1.Sign();
-      ExitPriceByHedgePrices = CalcHedgeExitPrice(hedgedPositions.p1, hedgedPositions.p2, isBuy);
+      //var hedgedPositions = HedgedTrades().Select(t => t.IsBuy ? t.Lots : -t.Lots).Buffer(2)
+      //.Select(b => (p1: b[0], p2: b[1], 0)).ToArray().With(a => a.Any() ? a.Single() : GetCurrentHedgePositions(true));
+      var hh = CurrentHedgesByPositions().Select(h => h.ratio).Buffer(2)
+        .Select(b => TradesManagerStatic.CalcComboRatios(TradingRatio.ToInt(), b[0], -b[1] * HedgeCorrelation.Sign())).ToList();
+      hh.ForEach(h => {
+        ExitGrossByHedgePositionsCalc = GetExitPriceByHedgeGrosses(h.r1 * h.quantity, h.r2 * h.quantity);
+        var isBuy = h.r1.Sign();
+        ExitPriceByHedgePrices = CalcHedgeExitPrice(h.r1, h.r2, isBuy);
+      });
     }
     public double CalcHedgeExitPrice(int p1, int p2, int isBuy) {
       var prices = CalcHedgePrices(p1, p2).Select(t => t.price).ToList();
@@ -218,11 +225,12 @@ namespace HedgeHog.Alice.Store {
     //  CalcHedgePrices()
     //}
     public double GetExitPriceByHedgeGrosses(int position1, int position2) {
-      var prices = GetHedgeGrosses(position1, position2, 2, 2).Select(t => t.v).ToList().With(l => l.GetRange(l.Count / 3));
-      var bySDReg = prices.StDevByRegressoin() * 1.5;
+      var prices0 = GetHedgeGrosses(position1, position2, 2, 2).Select(t => t.v).ToList();
+      var bufferCount = prices0.Count / 3;
+      var bufferSkip = (prices0.Count * 0.05).ToInt();
+      var prices1 = prices0.Buffer(bufferCount.Max(1), bufferSkip.Max(1)).Where(b => b.Count == bufferCount);
+      var bySDReg = prices1.AsParallel().Select(prices => prices.StDevByRegressoin() * 1.5).DefaultIfEmpty(double.NaN).Max();
       return bySDReg.Round();
-      var byHeight = prices.Height() / 3.0;
-      var byStDev = prices.StDev();
     }
 
     private IEnumerable<(Rate rate, double v)> GetHedgeGrosses(int position1, int position2, double cmaPeriod, int cmaPasses)
@@ -232,7 +240,7 @@ namespace HedgeHog.Alice.Store {
        select (rate: r1, v: r1.PriceAvg * BaseUnitSize * position1 + r2.PriceAvg * tmh.BaseUnitSize * position2))))
       ).Concat().Concat().Concat()
       .Cma(r => r.v, cmaPeriod, cmaPasses, (r, v) => (r.rate, v));
-    public enum HedgeCalcTypes { ByTV, ByHV, ByPos,ByTR };
+    public enum HedgeCalcTypes { ByTV, ByHV, ByPos, ByTR };
     public HedgeCalcTypes HedgeCalcType { get; set; } = HedgeCalcTypes.ByHV;
     public List<HedgePosition<IBApi.Contract>> CurrentHedgesByHV(int count) => CurrentHedgesByHV(count, DateTime.MaxValue, BarPeriodInt > 0);
     public List<HedgePosition<IBApi.Contract>> CurrentHedgesByHV() => CurrentHedgesByHV(int.MaxValue);
@@ -258,18 +266,14 @@ namespace HedgeHog.Alice.Store {
     public List<HedgePosition<IBApi.Contract>> CurrentHedgesByTradingRatio() {
       if(TradingRatioHedge.IsNaNOrZero()) return new List<HedgePosition<IBApi.Contract>>();
       var r = TradingRatioHedge.Div(TradingRatio).PositionsFromRatio();
-      return HedgePositionsByPositions(r.p1,r.p2);
+      return HedgePositionsByPositions(r.p1, r.p2);
     }
 
     private CURRENT_HEDGES HedgePositionsByPositions(double p1, double p2) {
-      try {
-        var h1 = (Pair.ContractFactory(IsInVirtualTrading, BaseUnitSize), p1, CurrentPriceAvg(), Pair);
-        var h2 = TradingMacroHedged(tm => (tm.Pair.ContractFactory(IsInVirtualTrading, tm.BaseUnitSize), p2, tm.CurrentPriceAvg(), tm.Pair));
-        var hh = new[] { h1 }.Concat(h2).ToList();
-        return hh.Select(HedgePosition.Create).ToList();
-      } finally {
-        OnCalcHedgeRatioByPositions();
-      }
+      var h1 = (Pair.ContractFactory(IsInVirtualTrading, BaseUnitSize), p1, CurrentPriceAvg(), Pair);
+      var h2 = TradingMacroHedged(tm => (tm.Pair.ContractFactory(IsInVirtualTrading, tm.BaseUnitSize), p2, tm.CurrentPriceAvg(), tm.Pair));
+      var hh = new[] { h1 }.Concat(h2).ToList();
+      return hh.Select(HedgePosition.Create).ToList();
     }
 
 
@@ -280,15 +284,19 @@ namespace HedgeHog.Alice.Store {
       var pos1 = 100;// GetCurrentHedgePositions(true).max;
       if(pos1 == 0) pos1 = 100;
       var sw = Stopwatch.StartNew();
-      var hrs = Enumerable.Range(_hedgePositionMinMax[0], (_hedgePositionMinMax[1] - _hedgePositionMinMax[0])*2 )
+      var hrs = Enumerable.Range(_hedgePositionMinMax[0], (_hedgePositionMinMax[1] - _hedgePositionMinMax[0]) * 2)
         //.Select(p => pos1 - p)
-        .SelectMany(pos2 => new[] { CalcHedgeRatioByPositionsCorrelation(pos1, pos2), CalcHedgeRatioByPositionsCorrelation(pos2, pos1) })
+        .Select(pos2 => new { pos1, pos2 })
+        .AsParallel()
+        .Select(p => CalcHedgeRatioByPositionsCorrelation(p.pos1, p.pos2))
+        .ToArray()
         .OrderByDescending(hr => hr.corr)
         .ToArray();
       if(!hrs.Any(t => !t.corr.IsNaN())) return;
       _hedgePositionMinMax = hrs.Take((pos1 * 0.05).ToInt()).Select(t => t.pos1.Min(t.pos2)).MinMax();
       hrs.Take(1).Where(hr => !hr.corr.IsNaNOrZero()).Select(hr => hr.pos2.Div(hr.pos1)).DefaultIfEmpty(double.NaN).ForEach(hr => HedgeRatioByPrices = hr);
-      Debug.WriteLine($"{nameof(CalcHedgeRatioByPositions)}:{sw.Elapsed.TotalSeconds.AutoRound2(3)}sec");
+      sw.Stop();
+      Debug.Print($"{nameof(CalcHedgeRatioByPositions)}:{sw.Elapsed.TotalSeconds.AutoRound2(3)}sec");
     }
     (double stDev, int pos1, int pos2) CalcHedgeRatioByPositionsStDev(int pos1, int pos2) {
       var hedgePrices = UseRates(ra => TradingMacroHedged(tmh =>

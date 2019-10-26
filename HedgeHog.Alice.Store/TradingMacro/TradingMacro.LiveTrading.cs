@@ -18,7 +18,7 @@ using ReactiveUI.Legacy;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
-    public bool HaveTrades() =>Trades.Any() || HasPendingOrders();
+    public bool HaveTrades() => Trades.Any() || HasPendingOrders();
     public bool HaveTradesIncludingHedged() => TradingMacroHedged(tm => tm.HaveTrades()).Concat(new[] { HaveTrades() }).Any(b => b);
     public IList<Trade> HedgedTrades() => TradingMacroHedged(tm => Trades.Concat(tm.Trades)).Concat().ToList().With(l => l.Count == 2 ? l : new List<Trade>());
     public bool HaveHedgedTrades() => TradingMacroHedged(tm => tm.HaveTrades()).Concat(new[] { HaveTrades() }).Count(ht => ht) == 2;
@@ -26,9 +26,17 @@ namespace HedgeHog.Alice.Store {
     public bool HaveTrades(bool isBuy) {
       return Trades.IsBuy(isBuy).Any() || HasPendingOrders();
     }
-    void LogTradingAction(object message) {
-      if(IsInVirtualTrading || LogTrades)
-        Log = new Exception(message + "");
+    void LogTradingAction(object message, [CallerMemberName] string Caller = "") {
+      if(IsInVirtualTrading || LogTrades) {
+        Log = new Exception(message + "" + new { Caller });
+      }
+    }
+    void LogTradingActionStatus(string key, string status, [CallerMemberName] string Caller = "") => LogTradingActionStatus(key, status,false, Caller);
+    void LogTradingActionStatus(string key, string status, bool sendSms, [CallerMemberName] string Caller = "") {
+      var message = PendingOrderMessage(key, status);
+      LogTradingAction(message, Caller);
+      if(sendSms)
+        OnSMS(SmsKey.Trading, message + "", ServerTime + "");
     }
 
     #region Pending Action
@@ -36,7 +44,6 @@ namespace HedgeHog.Alice.Store {
     public MemoryCache PendingEntryOrders {
       get {
         lock(_pendingEntryOrdersLocker) {
-
           if(_pendingEntryOrders == null)
             _pendingEntryOrders = new MemoryCache(Pair);
           return _pendingEntryOrders;
@@ -44,16 +51,20 @@ namespace HedgeHog.Alice.Store {
       }
     }
     //[MethodImpl(MethodImplOptions.Synchronized)]
-    private void ReleasePendingAction(string key) {
+    private void ReleasePendingAction(string key, [CallerMemberName] string Caller = "") {
       lock(_pendingEntryOrdersLocker) {
-        LogPendingActions();
+        LogExistingPendingActions(Common.CallerChain(Caller));
         //if(_pendingEntryOrders.Contains(key)) {
-        foreach(var k in PendingEntryOrders.Where(c => c.Key == key)) {
-          PendingEntryOrders.Remove(k.Key);
-          LogTradingAction(new { Pending = Pair, key, status = "Released." });
-        }
+        PendingEntryOrders.Where(po => po.Key == key).ToList()
+          .ForEach((po, i) => {
+            PendingEntryOrders.Remove(po.Key);
+            LogTradingActionStatus(key, $"Released:{i}", true);
+          });
+        //else
+        //  LogTradingActionStatus(key, "Unknown");
       }
     }
+    string PendingOrderMessage(string key, string status) => new { Pending = $"{this}", key, status } + "";
     /*
 */
     //[MethodImpl(MethodImplOptions.Synchronized)]
@@ -73,15 +84,13 @@ namespace HedgeHog.Alice.Store {
     private void AddPendingAction(string key, object value, CacheItemPolicy cip) {
       lock(_pendingEntryOrdersLocker) {
         if(PendingEntryOrders.Contains(key))
-          throw new Exception(new { PendingEntryOrders = new { key, message = "Already exists" } } + "");
+          throw new Exception(PendingOrderMessage(key, "Already exists"));
         PendingEntryOrders.Add(key, DateTimeOffset.Now, cip);
-        LogTradingAction(new { PendingEntryOrders = new { Pair, key, status = "Added." } });
+        LogTradingActionStatus(key, "Added");
       }
     }
 
-    private void LogPendingActions() {
-      LogTradingAction(new { PendingEntryOrders = string.Join("\n", PendingEntryOrders.Select(po => new { Pair, po.Key, status = "Existing" })) });
-    }
+    private void LogExistingPendingActions([CallerMemberName] string Caller = "") => PendingEntryOrders.ForEach(po => LogTradingActionStatus(po.Key, "Existing"));
 
     static object _pendingEntryOrdersLocker = new object();
     private bool HasPendingOrders() {
@@ -100,7 +109,6 @@ namespace HedgeHog.Alice.Store {
         if(action != null) {
           try {
             Action a = () => {
-              var exp = IsInVirtualTrading || true ? ObjectCache.InfiniteAbsoluteExpiration : DateTimeOffset.Now.AddMinutes(1);
               AddPendingAction(key);
             };
             action(a);
@@ -109,7 +117,7 @@ namespace HedgeHog.Alice.Store {
           }
         }
       } else {
-        LogPendingActions();
+        LogExistingPendingActions();
       }
     }
     #endregion

@@ -69,6 +69,7 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        return;
         {// Load bars
           /** Load History
           var c = new Contract() {
