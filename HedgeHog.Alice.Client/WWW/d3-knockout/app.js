@@ -1032,7 +1032,12 @@
           }
         };
         var hcs = ko.mapping.toJS(this.hedgeCombo);
-        function d(hc) { return { id: hc.id, key: hc.key, quantity: hc.quantity, data: hc.price + hc.contract + ":" + hc.quantity + "/" + hc.ratio + "{" + hc.context + "}" }; }
+        function d(hc) {
+          return {
+            id: hc.id, key: hc.key, quantity: hc.quantity, showSell: hc.price !== 0
+            , data: (hc.price ? hc.price : "") + hc.contract + ":" + hc.quantity + "/" + hc.ratio + "{" + hc.context + "}"
+          };
+        }
         ko.mapping.fromJS(hcs.filter(hc => hc).map(d), map, this.hedgeCombo2);
       }
       this.hedgeComboText = ko.pureComputed(function () {
@@ -1678,6 +1683,7 @@
           serverCall("setStrategy", [pair, s]);
       });
       this.hasStrategy = ko.pureComputed(() => !!self.strategyCurrent() && self.strategyCurrent() !== "None");
+      this.doShowHedgeUI = ko.pureComputed(() => self.strategyCurrent() === "Hedge");
       var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
       // #endregion
       // #region GetAccounting

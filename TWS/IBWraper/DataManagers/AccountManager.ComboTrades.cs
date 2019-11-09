@@ -109,11 +109,11 @@ namespace IBApp {
     }
     #endregion
 
-    public IObservable<(double level, bool isCall)[]> TradesBreakEvens() {
+    public IObservable<(double level, bool isCall)[]> TradesBreakEvens(string instrument) {
       var bes = (from cts in ComboTrades(1).ToArray()
                  from date in cts.Select(ct => ct.contract.Expiration).MaxByOrEmpty().Take(1)
                  from ct in cts
-                 where ct.contract.IsOption && ct.contract.Expiration == date
+                 where ct.contract.IsOption && ct.contract.Expiration == date && (instrument.IsNullOrEmpty() || ct.contract.UnderContract.Any(u=>u.Instrument.ToLower() == instrument.ToLower()))
                  select (strike: ct.strikeAvg, debit: ct.openPrice.Abs(), ct.contract.IsCall)
                  ).ToArray();
       return (from pos in bes select BreakEvens(pos));

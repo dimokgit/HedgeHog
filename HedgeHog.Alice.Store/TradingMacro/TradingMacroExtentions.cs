@@ -3366,6 +3366,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       switch(movingAverageType) {
         case Store.MovingAverageType.FFT:
         case Store.MovingAverageType.FFT2:
+        case Store.MovingAverageType.Fit:
         case Store.MovingAverageType.Cma:
           return r => r.PriceCMALast;
         default:
@@ -3410,6 +3411,9 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         case Store.MovingAverageType.Cma:
           SetCma(rates);
           break;
+        case Store.MovingAverageType.Fit:
+          SetFit(rates);
+          break;
       }
     }
 
@@ -3446,6 +3450,14 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         for(var i = 0; i < rates.Count; i++)
           rates[i].PriceRsiP = cmas2[i];
       }
+    }
+    private void SetFit(IList<Rate> rates) {
+      if(rates.Count < PriceCmaLevels + 1) return;
+      var x = Enumerable.Range(0, rates.Count).Select(Convert.ToDouble).ToArray();
+      var y = rates.Select(_priceAvg).ToArray();
+      var cmas = MathNet.Numerics.Fit.PolynomialFunc(x, y, PriceCmaLevels.ToInt(), MathNet.Numerics.LinearRegression.DirectRegressionMethod.NormalEquations);
+      for(var i = 0; i < rates.Count; i++)
+        rates[i].PriceCMALast = cmas(i);
     }
     private IList<Tuple<Rate, double, double>> GetCmas_Old(IList<Rate> rates, double period, int cmaPasses) {
       // Set primary CMA

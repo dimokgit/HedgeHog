@@ -16,6 +16,8 @@ using System.Threading.Tasks.Dataflow;
 namespace HedgeHog {
   public class ActionAsyncBuffer :AsyncBuffer<ActionAsyncBuffer, Action> {
     public ActionAsyncBuffer([CallerMemberName] string Caller = null) : base(Caller) { }
+    public ActionAsyncBuffer(int boundCapacity,bool userEventLoop, ThreadPriority priority, [CallerMemberName] string Caller = null) 
+      : base(boundCapacity, TimeSpan.Zero, userEventLoop, priority, null, Caller) { }
     public ActionAsyncBuffer(int boudCapacity, [CallerMemberName] string Caller = null) : base(boudCapacity, Caller) { }
     public ActionAsyncBuffer(TimeSpan sample, [CallerMemberName] string Caller = null) : base(sample, Caller) { }
     public ActionAsyncBuffer(Func<string> distinctUntilChanged, [CallerMemberName] string Caller = null) : base(1, TimeSpan.Zero, false, distinctUntilChanged, Caller) { }
@@ -40,7 +42,9 @@ namespace HedgeHog {
     public AsyncBuffer(TimeSpan sample, [CallerMemberName] string Caller = null) : this(1, sample, false, Caller) { }
     public AsyncBuffer(int boundedCapacity, TimeSpan sample, bool useEventLoop, [CallerMemberName] string Caller = null)
       : this(boundedCapacity, sample, useEventLoop, null, Caller) { }
-    public AsyncBuffer(int boundedCapacity, TimeSpan sample, bool useEventLoop, Func<string> distinctUntilChanged = null, [CallerMemberName] string Caller = null) {
+    public AsyncBuffer(int boundedCapacity, TimeSpan sample, bool useEventLoop, Func<string> distinctUntilChanged = null, [CallerMemberName] string Caller = null)
+      : this(boundedCapacity, sample, useEventLoop, ThreadPriority.BelowNormal, distinctUntilChanged, Caller) { }
+    public AsyncBuffer(int boundedCapacity, TimeSpan sample, bool useEventLoop, ThreadPriority priority, Func<string> distinctUntilChanged = null, [CallerMemberName] string Caller = null) {
       var buffer = new BroadcastBlock<Action>(n => n, new DataflowBlockOptions() { BoundedCapacity = boundedCapacity });
 
       _StartProcessDisposable = _StartProcessSubject
@@ -54,7 +58,7 @@ namespace HedgeHog {
         b = b.DistinctUntilChanged(_ => distinctUntilChanged());
       _bufferDisposable = b
         .SubscribeOn(useEventLoop
-          ? ObservableExtensions.BGTreadSchedulerFactory(System.Threading.ThreadPriority.BelowNormal, Caller ?? GetType().Name + GetThreadIdNext())
+          ? ObservableExtensions.BGTreadSchedulerFactory(priority, Caller ?? GetType().Name + GetThreadIdNext())
           : (IScheduler)TaskPoolScheduler.Default)
         .Subscribe(a => {
           try {

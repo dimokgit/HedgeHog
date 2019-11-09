@@ -315,11 +315,15 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
+    public IEnumerable<int> TMCorrelation() =>
+      new[] { HedgeCorrelation }.Where(i => i != 0)
+      .IfEmpty(() => GetHedgeCorrelation(Pair, PairHedge))
+      .IfEmpty(() => TradingMacroHedged(tmOther => TMCorrelationImpl((this, tmOther))).Concat().Take(1));
+
     public IEnumerable<int> TMCorrelation(TradingMacro tmOther)
-      => new[] { HedgeCorrelation }.Where(i => i != 0)
-      .IfEmpty(() => GetHedgeCorrelation(Pair, tmOther.Pair))
-      .IfEmpty(() => TMCorrelationImpl((this, tmOther))).Take(1);
-    //.IfEmpty(() => Log = new Exception(new { pairThis = Pair, pairOther = tmOther.Pair, correlation = "is empty" } + ""));
+        => new[] { HedgeCorrelation }.Where(i => i != 0)
+        .IfEmpty(() => GetHedgeCorrelation(Pair, tmOther.Pair))
+        .IfEmpty(() => TMCorrelationImpl((this, tmOther))).Take(1);
     Func<(TradingMacro tmThis, TradingMacro tmOther), int[]> TMCorrelationImpl =
       new Func<(TradingMacro tmThis, TradingMacro tmOther), int[]>(t
          => {

@@ -110,7 +110,7 @@ namespace HedgeHog {
       var newsHistory = ForexStorage.UseForexContext(c =>
         c.Event__News.Where(dbEv => dbEv.Name == name && dbEv.Country == country &&
           dbEv.Time >= dateStart && dbEv.Time <= dateEnd)
-        .OrderByDescending(db => db.Time).ToArray()
+        .OrderByDescending(db => db.Time).ToArray(), (e, exc) => LogMessage.Send(exc)
       );
       NewsEventHistory.Clear();
       NewsEventHistory.AddRange(newsHistory);

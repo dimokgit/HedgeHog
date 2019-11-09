@@ -128,7 +128,6 @@ namespace HedgeHog.Alice.Store {
     public int PriceFftLevelsFast { get; set; }
     public int PriceFftLevelsSlow { get; set; }
     public bool ResetTradeStrip { get; set; }
-    public bool ShowParabola { get; set; }
     public int SuppResLevelsCount_ { get; set; }
     public bool SyncAll { get; set; }
     public int VoltsAvgIterations { get; set; }
@@ -216,6 +215,7 @@ namespace HedgeHog.Alice.Store {
     public int PairIndex { get; set; }
     public string PairHedge { get; set; }
     public int HedgeCorrelation { get; set; }
+    public int HedgeTimeValueDays { get; set; }
     public int PowerRowOffset { get; set; }
     public double PriceCmaLevels { get; set; }
     public double ProfitToLossExitRatio { get; set; }

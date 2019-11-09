@@ -9,6 +9,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
@@ -160,13 +161,14 @@ namespace HedgeHog.Alice.Store {
       } catch(Exception exc) { Log = exc; }
     });
 
-    ActionAsyncBuffer SetVoltsHighLowsByRegressionAsyncBuffer = new ActionAsyncBuffer(2, "SetVoltsHighLowsByRegression");
+    ActionAsyncBuffer SetVoltsHighLowsByRegressionAsyncBuffer = new ActionAsyncBuffer(2, true, ThreadPriority.AboveNormal, "SetVoltsHighLowsByRegression");
     private void OnSetVoltsHighLowsByRegression(int voltIndex) {
       Action a = () => SetVoltsHighLowsByRegressionImpl(voltIndex);
       if(IsInVirtualTrading) a();
       else SetVoltsHighLowsByRegressionAsyncBuffer.Push(a);
     }
     private void SetVoltsHighLowsByRegressionImpl(int voltIndex) {
+      var sw = Stopwatch.StartNew();
       try {
         var voltRates = RatesArray.Select(GetVoltByIndex(voltIndex)).SkipWhile(v => v.IsNaN())
           .Scan((p, n) => n.IsNaN() ? p : n)
@@ -182,6 +184,7 @@ namespace HedgeHog.Alice.Store {
           SetVoltHighByIndex(voltIndex)(voltageAvgHigh);
         }
       } catch(Exception exc) { Log = exc; }
+      Debug.WriteLine(new { SetVoltsHighLowsByRegressionImpl = new { voltIndex, sw.ElapsedMilliseconds } });
     }
     private void SetVoltsM1() { SetVoltsM1(GetVoltage, tm => tm.GetVoltage, tm => tm.SetVoltage); }
     private void SetVoltsM1_2() { SetVoltsM1(GetVoltage2, tm => tm.GetVoltage2, tm => tm.SetVoltage2); }

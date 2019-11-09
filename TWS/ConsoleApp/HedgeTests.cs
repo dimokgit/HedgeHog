@@ -14,10 +14,64 @@ using System.Threading.Tasks;
 namespace ConsoleApp {
   static class Tests {
     public static void HedgeCombo(AccountManager am) {
-      return;
-      var h1 = "ESU9";
-      var h2 = "NQU9";
-      var maxLegQuantity = 10;
+      var h1 = "ESZ9";
+      var h2 = "NQZ9";
+      var maxLegQuantity = 15;
+      {
+        var tvDays = 3;
+        var posCorr = true;
+        am.CurrentHedges(h1, h2, tvDays, posCorr)
+        .Subscribe(hh0 => {
+          if(hh0.Count == 0) {
+            Program.HandleMessage("**** No hedges ****");
+            return;
+          }
+          Program.HandleMessage(hh0.SelectMany(h => h.options.Select(option => new { h.contract, h.isBuy, option, h.ratio, amount = h.price * h.ratio, h.context })).ToTextOrTable("Hedge"));
+          am.CurrentHedges(h1, h2, "", c => c.ShortWithDate2, tvDays, posCorr)
+          .Subscribe(hh2 => {
+            if(hh2.IsEmpty()) {
+              Program.HandleMessage("**** CurrentHedges empty****");
+            } else {
+              Program.HandleMessage(hh2.SelectMany(h => h.options.Select(option => new { h.contract, h.isBuy, option, h.ratio, h.price, h.context })).ToTextOrTable("Hedge 2"));
+              { // Old style for futures
+                var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, hh2[0].contract, hh2[1].contract, hh2[0].ratio, hh2[1].ratio).With(c => new { combo = c, context = hh2.ToArray(t => t.context).MashDiffs() });
+                var a = new { combo.combo.contract.ShortString, combo.combo.contract.DateWithShort, combo.combo.contract.ShortWithDate, combo.combo.contract, combo.context };
+                Program.HandleMessage($"{a.ToTextTable("Hedge Combo:")}");
+                (from p in combo.combo.contract.ReqPriceSafe() select new { combo.combo.contract, p.bid, p.ask }).Subscribe(Program.HandleMessage);
+              }
+              { // New style for Options
+                var combos = hh2.CurrentOptionHedges(maxLegQuantity, Program.HandleMessage);
+                var a = combos.Select(c=> new { buy = c.buy.ShortSmart, sell = c.sell.ShortSmart, c.quantity  });
+
+                Program.HandleMessage($"{a.ToTextOrTable("Hedge Option Combos:")}");
+                (from combo in combos.ToObservable()
+                from p in combo.buy.ReqPriceSafe() select new {combo, p =new  { combo.buy.ShortSmart, p.bid, p.ask } }).Subscribe(p => {
+                  Program.HandleMessage(p.p);
+                  OpenTrade(p.combo, true);
+                  OpenTrade(p.combo, false);
+                });
+
+                void OpenTrade((Contract buy, Contract sell, int quantity) optionHedge, bool buy) {
+                  var pos = 1;
+                  if(pos == 1) {
+                    //am.OpenTrade(combo.combo.contract, combo.combo.quantity * pos)
+                    //.Subscribe(orderHolder => {
+                    //  HandleMessage(orderHolder.ToTextOrTable());
+                    //});
+                    am.OpenTrade(o => o.Transmit = false, buy ? optionHedge.buy : optionHedge.sell, optionHedge.quantity)
+                    .SelectMany(ohs => ohs.Select(oh => new { oh.holder, oh.error }))
+                    .ToArray()
+                    //.Do(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable("Hedge Order")); })
+                    .Subscribe();
+                  }
+                }
+              }
+            }
+          });
+
+        });
+        return;
+      }
       am.CurrentOptions(h1, double.NaN, 0, 10, c => true)
       .Subscribe(os => Program.HandleMessage(os.Select(o => new { o.option, o.bid, o.ask }).ToArray().ToTextOrTable("Options:")));
 
@@ -42,7 +96,7 @@ namespace ConsoleApp {
         .ToArray()
         .Subscribe(posHedges => {
           Program.HandleMessage(posHedges.Select(h => new { h.ct.contract.ShortString, h.ct.open, h.ct.close, h.ct.pl, h.ct.closePrice, h.p }).ToTextOrTable("Positions:"));
-          var ct = posHedges.Select(p => p.ct).SingleOrDefault(p => p.contract.IsFuturesCombo);
+          var ct = posHedges.Select(p => p.ct).SingleOrDefault(p => p.contract.IsStocksOrFuturesCombo);
           if(ct == null) Program.HandleMessage("No hedged positions found.");
           else {
             return;
@@ -59,39 +113,6 @@ namespace ConsoleApp {
 
       });
       //return;
-      am.CurrentHedges(h1, h2)
-        .ToArray()
-      .Subscribe(hh0 => {
-        if(hh0.Length == 0) {
-          Program.HandleMessage("**** No hedges ****");
-          return;
-        }
-        var hh = hh0[0];
-        Program.HandleMessage(hh.Select(h => new { h.contract, h.ratio, amount = h.price * h.ratio, h.context }).ToTextOrTable("Hedge"));
-        am.CurrentHedges(h1, h2, "", c => c.ShortWithDate2)
-        .Subscribe(hh2 => {
-          if(hh2.IsEmpty()) {
-            Program.HandleMessage("**** CurrentHedges empty****");
-          } else {
-            Program.HandleMessage(hh2.Select(h => new { h.contract, h.ratio, amount = h.price * h.ratio, h.context }).ToTextOrTable("Hedge 2"));
-            var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, hh2[0].contract, hh2[1].contract, hh2[0].ratio, hh2[1].ratio).With(c => new { combo = c, context = hh2.ToArray(t => t.context).MashDiffs() });
-            var a = new { combo.combo.contract.ShortString, combo.combo.contract.DateWithShort, combo.combo.contract.ShortWithDate, combo.combo.contract, combo.context };
-            Program.HandleMessage($"{a.ToTextTable("Hedge Combo:")}");
-            (from p in combo.combo.contract.ReqPriceSafe() select new { combo.combo.contract, p.bid, p.ask }).Subscribe(Program.HandleMessage);
-            var pos = -1;
-            if(pos == 11) {
-              //am.OpenTrade(combo.combo.contract, combo.combo.quantity * pos)
-              //.Subscribe(orderHolder => {
-              //  HandleMessage(orderHolder.ToTextOrTable());
-              //});
-              am.OpenTrade(o => o.Transmit = false, combo.combo.contract, combo.combo.quantity * -pos)
-              .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
-            }
-          }
-        });
-
-      });
-
     }
 
     public static void CurrentOptionsTest(AccountManager am, string symbol) {

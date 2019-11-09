@@ -1336,14 +1336,14 @@
         <select data-bind="options:rollOversList,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>
     </div>
-    <table>
+    <table data-bind="visible:doShowHedgeUI">
       <tr>
         <td>
           <div data-bind="foreach:hedgeComboText">
             <div data-bind="css:{hedgeComboActive:$root.testHedgeComboActive($data)}">
               <span data-bind="text:data,click:$parent.toggleSelectedHedgeCombo"></span>
               <button data-bind="click:$root.openHedged.bind(null,key,quantity,true)">BY</button>
-              <button data-bind="click:$root.openHedged.bind(null,key,quantity,false)">SL</button>
+              <button data-bind="click:$root.openHedged.bind(null,key,quantity,false),visible:showSell">SL</button>
             </div>
           </div>
         </td>

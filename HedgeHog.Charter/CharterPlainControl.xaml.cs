@@ -51,16 +51,6 @@ namespace HedgeHog {
     NewsEventComparisonDelegate _newsEventComparicon = delegate(Event__News left, Event__News rigt) {
       return left.Time.CompareTo(rigt.Time);
     };
-    private void ReadNewsEventsHistoryFromDB(string country,string name, DateTimeOffset dateStart, DateTimeOffset dateEnd) {
-      var newsHistory = ForexStorage.UseForexContext(c =>
-        c.Event__News.Where(dbEv => dbEv.Name == name && dbEv.Country == country &&
-          dbEv.Time >= dateStart && dbEv.Time <= dateEnd)
-        .OrderByDescending(db => db.Time).ToArray()
-      );
-      NewsEventHistory.Clear();
-      NewsEventHistory.AddRange(newsHistory);
-      NewsEventHistory.Sort(new Comparison<Event__News>(_newsEventComparicon));
-    }
     #endregion
 
     #region NewsHistoryCurrent

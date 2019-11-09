@@ -49,7 +49,7 @@ namespace IBApp {
       var cache = contract.FromCache().SingleOrDefault();
       if(cache == null)
         Debugger.Break();
-      if((true || cache.IsCombo || cache.IsFuturesCombo || cache.IsStocksCombo)) {
+      if((true || cache.IsCombo || cache.IsStocksOrFuturesCombo)) {
         AddRequestImpl(cache, callback, genericTickList, Common.CallerChain(Caller));
       } else {
         Task.Run(() =>
@@ -94,7 +94,7 @@ namespace IBApp {
               }
               , () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
 
-            IbClient.OnReqMktData(() => IbClient.ClientSocket.reqMktData(reqId, contract.IsFuturesCombo ? contract : contract.ContractFactory(), genericTickList, false, false, new List<TagValue>()));
+            IbClient.OnReqMktData(() => IbClient.ClientSocket.reqMktData(reqId, contract.IsStocksOrFuturesCombo ? contract : contract.ContractFactory(), genericTickList, false, false, new List<TagValue>()));
             contract.ReqMktDataId = reqId;
             if(reqId == 0)
               Debugger.Break();
@@ -314,7 +314,7 @@ namespace IBApp {
     }
     static object _raisePriceChangedLocket = new object();
     protected void RaisePriceChanged((Contract contract, Price price) t, [CallerMemberName] string caller = "") {
-      if(t.contract.IsFuturesCombo) {
+      if(t.contract.IsStocksOrFuturesCombo) {
         TraceDebug0($"{nameof(OnTickPrice)}: {t.contract}:{new { t.price.Ask, t.price.Bid }}");
       }
       if(!_currentPrices.Contains(t.price.Pair)) {

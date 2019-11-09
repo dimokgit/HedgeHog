@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 namespace IBApp {
   partial class AccountManager {
     public IObservable<ComboTrade> MakeComboHedgeFromPositions(IEnumerable<Position> positions) {
-      var a = (from g in HedgedPositions(positions).OrderBy(p => p.position.contract.Instrument).ToArray()
+      var a = (from g in HedgedPositions(positions)//.OrderBy(p => p.position.contract.Instrument)
                where g.Length == 2
                from hc in g.Pairwise((o, t) => MakeHedgeCombo(1, o.position.contract, t.position.contract, o.position.position.Abs(), t.position.position.Abs()))
                let quantity = hc.quantity * g.First().position.position.Sign()
@@ -36,15 +36,18 @@ namespace IBApp {
       //   )
       //).ToArray();
     }
-    public static IObservable<(Position position, double close, double pl, double closePrice)> HedgedPositions(IEnumerable<Position> positions) =>
-      (from p in positions.ToObservable()
-       where p.contract.IsFuture
+    public static IObservable<(Position position, double close, double pl, double closePrice)[]> HedgedPositions(IEnumerable<Position> positions) {
+      return (from p in positions.ToObservable()
+         //where p.contract.IsFuture || p.contract.IsStock || p.contract.IsOption
        from price in p.contract.ReqPriceSafe()
        let closePrice = p.position > 0 ? price.bid : price.ask
        let close = closePrice * p.contract.ComboMultiplier * p.position
-       select (p, close, close - p.open, closePrice)
+       let t = (p, close, close - p.open, closePrice)
+       group t by t.p.contract.SecType into g
+       from a in g.OrderBy(p => p.p.contract.Instrument).ToArray()
+       select a
       );
-
+    }
     public static IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe(int quantity, Contract c1, Contract c2, double ratio1, double ratio2, bool isInTest) =>
       from cd1 in isInTest ? Observable.Return(c1.SetTestConId(isInTest, 0)) : c1.ReqContractDetailsCached().Select(cd => cd.Contract)
       from cd2 in isInTest ? Observable.Return(c2.SetTestConId(isInTest, 0)) : c2.ReqContractDetailsCached().Select(cd => cd.Contract)
@@ -80,7 +83,8 @@ namespace IBApp {
       ComboLeg leg2 = new ComboLeg();
       leg2.ConId = c2.ConId;
       leg2.Ratio = r2 / gcd;
-      leg2.Action = "SELL";
+      string action = c1.IsCall == c2.IsCall ? "SELL" : "BUY";
+      leg2.Action = action;
       leg2.Exchange = c2.Exchange;
 
       contract.ComboLegs = new List<ComboLeg>();

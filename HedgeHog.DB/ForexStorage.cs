@@ -30,7 +30,6 @@ namespace HedgeHog.DB {
           if(error != null)
             error(context, exc);
           else {
-            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
             throw;
           }
         }
@@ -40,7 +39,6 @@ namespace HedgeHog.DB {
         context.SaveChanges();
       } catch(System.Data.Entity.Infrastructure.DbUpdateConcurrencyException) {
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
         throw;
       }
     }
@@ -59,7 +57,6 @@ namespace HedgeHog.DB {
           }
         }
       } catch(Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
         throw;
       }
     }

@@ -103,7 +103,7 @@ namespace IBApp {
         var locker = _placedOrders.GetOrAdd(key, false);
         if(locker) return Observable.Return(ErrorMessage.Create(Default(), new ErrorMessage(order.OrderId, 0, new { key } + "", new PlaceOrderException())));
         _placedOrders.TryUpdate(key, true, false);
-        TraceError($"locker [{order.OrderId}] => {_placedOrders[key]} for {key}");
+        Verbose($"locker [{order.OrderId}] => {_placedOrders[key]} for {key}");
         if(order.OrderId == 0)
           order.OrderId = NetOrderId();
         var oso = OrderStatusObservable;
@@ -117,7 +117,7 @@ namespace IBApp {
         IbClient.OnReqMktData(() => IbClient.ClientSocket.placeOrder(order.OrderId, contract, order));
         return wte.FirstAsync()
           .Do(_ => {
-            TraceError($"locker [{order.OrderId}] <= {_placedOrders[key]} for {key}");
+            Verbose($"locker [{order.OrderId}] <= {_placedOrders[key]} for {key}");
             _placedOrders.TryRemove(key, out var _);
           })
           .Select(och => och.value.IsEmpty() ? ErrorMessage.Empty(new[] { new OrderContractHolder(order, contract, "PreTransmitted") }.AsEnumerable()) : och);
@@ -227,7 +227,7 @@ namespace IBApp {
       , [CallerMemberName] string Caller = "") {
       contract.Check();
       string type = "";
-      Trace($"{nameof(OpenTrade)}: {new { contract, quantity, orderRef }} <= {Caller}");
+      Trace($"{nameof(OpenTrade)}[S]: {new { contract, quantity, orderRef }} <= {Caller}");
       if(useTakeProfit && profit == 0 && takeProfitCondition == null)
         return Default(new Exception($"No profit or profit condition: {new { useTakeProfit, profit, takeProfitCondition }}")).Do(TraceOpenTradeResults);
       var aos = OrderContractsInternal.Values
@@ -253,7 +253,7 @@ namespace IBApp {
         try {
           var orderType = price == 0
             ? /*(contract.IsFuturesCombo ? "REL + " : "") + */"MKT"
-            : type.IfEmpty(contract.IsFuturesCombo ? "LMT + MKT" : "LMT");
+            : type.IfEmpty(contract.IsStocksOrFuturesCombo ? "LMT + MKT" : "LMT");
           bool isPreRTH = true;// orderType == "LMT";
           var order = OrderFactory(contract, quantity, price, goodTillDate, goodAfterDate, orderType, isPreRTH);
           order.OrderRef = orderRef;
@@ -294,7 +294,7 @@ namespace IBApp {
     }
 
     private void TraceOpenTradeResults((OrderContractHolder value, ErrorMessage error)[] a) => Trace(
-                new[] { a.Select(_ => new { reqId = _.value?.order?.OrderId ?? _.error.reqId, order = _.value, _.error }).ToTextOrTable(nameof(OpenTrade) + ":") + "" }
+                new[] { a.Select(_ => new { reqId = _.value?.order?.OrderId ?? _.error.reqId, order = _.value, _.error }).ToTextOrTable(nameof(OpenTrade) + "[E]:") + "" }
                 .Concat(new[] { OrderContractsInternal.ToTextOrTable(nameof(OrderContractsInternal) + ":") + "" })
                 .Flatter("\n"));
 
@@ -343,7 +343,7 @@ namespace IBApp {
           ParentId = parent.OrderId,
           OrderId = NetOrderId(),
           Action = parent.Action == "BUY" ? "SELL" : "BUY",
-          OrderType = isMarket ? "MKT" : "LMT" + (contract.IsFuturesCombo ? " + MKT" : ""),
+          OrderType = isMarket ? "MKT" : "LMT" + (contract.IsStocksOrFuturesCombo ? " + MKT" : ""),
           TotalQuantity = parent.TotalQuantity,
           Tif = GTC,
           OutsideRth = isPreRTH,

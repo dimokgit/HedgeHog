@@ -15,7 +15,7 @@ namespace IBApp {
   public abstract class DataManager {
 
     #region Fields/Properties
-    public static bool UseVerbose = true;
+    public static bool UseVerbose = false;
     public static bool DoShowRequestErrorDone = true;
     public static IBClientCore IBClientMaster;
     private IBClientCore _ibClient;

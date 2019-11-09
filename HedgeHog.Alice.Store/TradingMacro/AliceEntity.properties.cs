@@ -973,6 +973,7 @@ namespace HedgeHog.Alice.Store {
     public const string wwwSettingsVoltage = "4.1 Voltage";
     public const string wwwSettingsVoltage2 = "4.2 Voltage";
     public const string wwwSettingsBars = "5 Bars";
+    public const string wwwSettingsHedge = "6 Hedge";
 
     #region CloseAfterTradingHours
     private bool _CloseAfterTradingHours;
@@ -1539,19 +1540,6 @@ namespace HedgeHog.Alice.Store {
       set { IsGannAnglesManual = value; }
     }
 
-    bool _ShowTrendLines = false;
-    [DisplayName("Show Trend Lines")]
-    [Category(categoryCorridor)]
-    public bool ShowParabola {
-      get { return _ShowTrendLines; }
-      set {
-        if(_ShowTrendLines == value)
-          return;
-        _ShowTrendLines = value;
-        OnPropertyChanged(() => ShowParabola);
-      }
-    }
-
 
     BarsPeriodType _barPeriodCalc = BarsPeriodType.none;
     [Category(categoryActiveFuncs)]
@@ -1644,7 +1632,7 @@ namespace HedgeHog.Alice.Store {
         if(CurrentLoss != value) {
           CurrentLoss = value;
           OnPropertyChanged(nameof(CurrentLoss_));
-          GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => OnPropertyChanged(nameof(CurrentGross)));
+          ReactiveUI.RxApp.MainThreadScheduler.Schedule(() => OnPropertyChanged(nameof(CurrentGross)));
         }
       }
     }
@@ -2010,6 +1998,7 @@ namespace HedgeHog.Alice.Store {
         tm.HedgeCorrelation = HedgeCorrelation;
         tm.CmaPasses = CmaPasses;
         tm.PriceCmaLevels = PriceCmaLevels;
+        tm.MovingAverageType = MovingAverageType;
       });
     }
     private string _pairHedge = "";
@@ -2031,7 +2020,8 @@ namespace HedgeHog.Alice.Store {
     static int[] GetHedgeCorrelation(string pair1, string pair2)
       => _hedgeCorrelations.Where(kv => kv.Key.Equals((pair1, pair2)) || kv.Key.Equals((pair2, pair1))).Select(kv => kv.Value).SingleOrDefault() ?? new int[0];
     private int _HedgeCorrelation;
-    [WwwSetting]
+    [Category(categoryTrading)]
+    [WwwSetting(wwwSettingsHedge)]
     public int HedgeCorrelation {
       get { return _HedgeCorrelation; }
       set {
@@ -2048,7 +2038,22 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    #region HedgeTimeValueDays
+    private int _HedgeTimeValueDays = 6;
+    [Category(categoryTrading)]
+    [WwwSetting(wwwSettingsHedge)]
+    [DisplayName("Hedge TV Days")]
+    public int HedgeTimeValueDays {
+      get { return _HedgeTimeValueDays; }
+      set {
+        if(_HedgeTimeValueDays != value) {
+          _HedgeTimeValueDays = value;
+          OnPropertyChanged("HedgeTimeValueDays");
+        }
+      }
+    }
 
+    #endregion
 
     bool _FitRatesToPlotter;
 

@@ -127,7 +127,7 @@ namespace IBApp {
                    from con in ibClient.ReqContractDetailsCached(cl.ConId).Select(cd => cd.Contract)
                    select con)
                    .ToArray()
-                   .Where(_ => m.Contract.IsFuturesCombo || m.Contract.IsStocksCombo)
+                   .Where(_ => m.Contract.IsFuturesCombo)
                    .Select(cons => m.SideEffect(_ => {
                      var syms = cons.Select(c => c.Symbol).ToList();
                      m.Contract.Symbol = m.Contract.IsStocksCombo ? syms.OrderBy(s => s).First() : syms[0];

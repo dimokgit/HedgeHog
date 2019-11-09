@@ -1283,6 +1283,7 @@ namespace HedgeHog.Alice.Client {
 
           TradeColsedSubscribtion = Observable.FromEventPattern<EventHandler<TradeEventArgs>, TradeEventArgs>(h => h, h => TradesManager.TradeClosed += h, h => TradesManager.TradeClosed -= h)
             .Subscribe(ie => ClosedTrades.Add(ie.EventArgs.Trade), exc => Log = exc);
+          // TODO -  Replace with ReactiveUI.RxApp.MainThreadScheduler.Schedule
           GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
             ClosedTrades.Clear();
             TradesManager.GetClosedTrades("")
@@ -1340,7 +1341,9 @@ namespace HedgeHog.Alice.Client {
               MessageBox.Show(exc.ToString(), "GetAccount", MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.None, MessageBoxOptions.ServiceNotification);
             }
           };
-          ((IBWraper)TradesManager)._ibClient.ManagedAccountsObservable.Subscribe(_ => init());
+          var ib = TradesManager as IBWraper;
+          if(ib != null) ib._ibClient.ManagedAccountsObservable.Subscribe(_ => init());
+          else init();
           IsAccountManagerExpanded = false;
         };
         CoreFX.LoginError += exc => {

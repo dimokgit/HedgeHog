@@ -96,7 +96,8 @@ namespace IBApi {
     public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).Min();
     public bool IsFuturesCombo => LegsEx(l => l.c.IsFuture).Count() > 1;
     public bool IsStocksCombo => LegsEx(l => l.c.IsStock).Count() > 1;
-    public bool IsCombo => LegsEx(l => l.c.IsOption).Count() > 1;
+    public bool IsStocksOrFuturesCombo => IsStocksCombo || IsFuturesCombo;
+        public bool IsCombo => LegsEx(l => l.c.IsOption).Count() > 1;
     public bool IsCall => IsOption && Right == "C";
     public bool IsPut => IsOption && Right == "P";
     public bool IsOption => SecType == "OPT" || SecType == "FOP";
@@ -115,6 +116,7 @@ namespace IBApi {
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
+    public string ShortSmart => (IsCombo && Legs((c, l) => c.LastTradeDateOrContractMonth).Distinct().Count() == 1) ? DateWithShort : ShortWithDate;
     public string ShortString => ComboLegsToString((c, r, a) => c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
     public string DateWithShort => ComboLegsToString((c, r, a)
       => ShowLastDate(c, s => s.Substring(4) + " ") + c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
@@ -126,7 +128,7 @@ namespace IBApi {
       ComboLegsToString(LegToString, () => LocalSymbol.IfEmpty(Symbol))
       .IfEmpty(() => $"{LocalSymbol.IfEmpty(Symbol)}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
 
-    static string ShowLastDate(Contract c, Func<string, string> show) => c.LastTradeDateOrContractMonth.IfTrue(s => !s.IsNullOrEmpty(), s => show(s) + " ", "");
+    static string ShowLastDate(Contract c, Func<string, string> show) => c.LastTradeDateOrContractMonth.IfTrue(s => !s.IsNullOrEmpty(), s => show(s), "");
 
     internal string ComboLegsToString() => ComboLegsToString((c, r, a) => LegLabel(r, a) + c.LocalSymbol, () => LocalSymbol.IfEmpty(Symbol));
     internal string ComboLegsToString(Func<Contract, int, string, string> label, Func<string> defaultFotNotOption/*,Func<(Contract c, int r, string a),string> orderBy = null*/) {

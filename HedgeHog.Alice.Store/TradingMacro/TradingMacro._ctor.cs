@@ -93,7 +93,8 @@ namespace HedgeHog.Alice.Store {
         tm => tm.HedgeCorrelation,
         tm => tm.CmaPasses,
         tm => tm.PriceCmaLevels,
-        (v1, rls, v3, ph, rlb, hc, cp, pcl) => true).Subscribe(_ => SyncHedgedPair());
+        tm => tm.MovingAverageType,
+        (v1, rls, v3, ph, rlb, hc, cp, pcl, mat) => true).Subscribe(_ => SyncHedgedPair());
       this.WhenAnyValue(
         tm => tm.PairHedge
         )

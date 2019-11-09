@@ -251,7 +251,7 @@ namespace HedgeHog.Alice.Store {
     AskBidByReg = 0, Average = 1, AskBidByMA = 2, Trima = 3, Volts, Volts2, Volts3
   }
   public enum MovingAverageType {
-    Cma = 0, FFT = 4, FFT2 = 5
+    Cma = 0, FFT = 4, FFT2 = 5, Fit = 6
   }
 
   public enum TradeLevelsPreset {

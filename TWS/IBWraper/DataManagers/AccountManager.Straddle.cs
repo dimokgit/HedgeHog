@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CURRENT_OPTIONS = System.Collections.Generic.IList<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option, double deltaBid, double deltaAsk)>;
 using CURRENT_ROLLOVERS = System.IObservable<(IBApp.ComboTrade trade, IBApi.Contract roll, int days, double bid, double ppw, double amount, double dpw, double perc, double delta)>;
-using CURRENT_HEDGES = System.Collections.Generic.List<(IBApi.Contract contract, double ratio, double price, string context)>;
+using CURRENT_HEDGES = System.Collections.Generic.List<(IBApi.Contract contract, IBApi.Contract[] options, double ratio, double price, string context, bool isBuy)>;
 using System.Reactive.Concurrency;
 using System.Threading;
 using System.Runtime.CompilerServices;
@@ -201,25 +201,16 @@ namespace IBApp {
     #endregion
 
     #region Options
-    public IObservable<(Contract contract, double ratio, double price, string context)[]> CurrentHedgesByHV((string pair, double hv)[] hedges) {
-      var o = (from h in hedges.ToObservable()
-               from cd in IbClient.ReqContractDetailsCached(h.pair)
-               from p in cd.Contract.ReqPriceSafe()
-               let hh = (cd.Contract, p.ask.Avg(p.bid), h.hv, (double)cd.Contract.ComboMultiplier, h.pair + ":" + h.hv.Round(2))
-               select hh).ToArray();
-      var o2 = (from hh in o select TradesManagerStatic.HedgeRatioByValue(":", hh));
-      return o2;
-    }
-    public IObservable<CURRENT_HEDGES> CurrentHedges(string h1, string h2) => CurrentHedges(h1, h2, " ", c => c.ShortWithDate);
-    public IObservable<CURRENT_HEDGES> CurrentHedges(string h1, string h2, string mashDivider, Func<Contract, string> context) =>
-        (from es in CurrentTimeValue(h1)
-         from nq in CurrentTimeValue(h2)
+
+    public IObservable<CURRENT_HEDGES> CurrentHedges(string h1, string h2, int tvDays, bool posCorr) => CurrentHedges(h1, h2, " ", c => c.ShortWithDate, tvDays, posCorr);
+    public IObservable<CURRENT_HEDGES> CurrentHedges(string h1, string h2, string mashDivider, Func<Contract, string> context, int tvDays, bool posCorr) =>
+        (from es in CurrentTimeValue(h1, tvDays)
+         from nq in CurrentTimeValue(h2, tvDays)
          let options = es.Concat(nq).Where(t => t.delta > 0).ToArray()
          where options.Length == es.Length + nq.Length
-         let hh = options.Select(c => (c.contract, c.underPrice, c.delta, (double)c.contract.ComboMultiplier, context(c.option))).ToArray()
-         select es.Any() && nq.Any() ? TradesManagerStatic.HedgeRatioByValue(mashDivider, hh).ToList() : new CURRENT_HEDGES());
-    int tvDays = 14;
-    public IObservable<(Contract option, Contract contract, double underPrice, double bid, double ask, double delta)[]> CurrentTimeValue(string symbol) {
+         let hh = options.Select(c => (c.contract, new[] { c.option }, c.underPrice, c.delta, (double)c.contract.ComboMultiplier, context(c.option))).ToArray()
+         select es.Any() && nq.Any() ? TradesManagerStatic.HedgeRatioByValue(mashDivider, posCorr, hh).ToList() : new CURRENT_HEDGES());
+    public IObservable<(Contract option, Contract contract, double underPrice, double bid, double ask, double delta)[]> CurrentTimeValue(string symbol, int tvDays) {
       return (
         from u in IbClient.ReqContractDetailsCached(symbol)
         from up in u.Contract.ReqPriceSafe()
@@ -244,7 +235,7 @@ namespace IBApp {
           from options in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count, filter).ToArray()
           from option in options.ToObservable()//.RateLimit(10, TaskPoolScheduler.Default)
           where filter(option)
-          from p in option.ReqPriceSafe( 10,Common.CallerChain("Current Option")).DefaultIfEmpty()
+          from p in option.ReqPriceSafe(10, Common.CallerChain("Current Option")).DefaultIfEmpty()
           let pa = p.ask.Avg(p.bid)
           select (
             instrument: option.Instrument,

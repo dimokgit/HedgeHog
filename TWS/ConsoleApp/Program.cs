@@ -69,7 +69,6 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        return;
         {// Load bars
           /** Load History
           var c = new Contract() {
@@ -79,7 +78,7 @@ namespace ConsoleApp {
           };
           LoadHistory(ibClient, new[] { c });
           */
-          var es = new[] { "NQZ9", "ESU9","RTYZ9", "VXX", "SPY" }[1];
+          var es = new[] { "NQZ9", "ESZ9","RTYZ9", "VXX", "SPY","QQQ" }[1];
           var period = 0;
           bool repare = false;
           Action<object> callback = o => HandleMessage(o + "");
@@ -102,6 +101,8 @@ namespace ConsoleApp {
           HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
 
         }
+        return;
+        Tests.HedgeCombo(am); ;
         return;
 
         {
@@ -133,8 +134,6 @@ namespace ConsoleApp {
 
 
         //am.OrderContractsInternal.Subscribe(o => { });
-        Tests.HedgeCombo(am); ;
-        return;
         {
           var symbol = "ESH9";//"NQU9";// "VXG9";//"RTYM9";
           ibClient.ReqContractDetailsCached(symbol)
@@ -167,7 +166,7 @@ namespace ConsoleApp {
           Observable.Interval(1.FromSeconds())
            .TakeWhile(_ => am.Positions.Count < 3).ToArray()
            .SelectMany(contracts => {
-             return am.TradesBreakEvens();
+             return am.TradesBreakEvens("");
              //HandleMessage(contracts.ToTextOrTable("Positions"));
              //return true;
            }).Subscribe(bes => {

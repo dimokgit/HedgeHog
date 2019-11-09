@@ -199,8 +199,8 @@ namespace HedgeHog.Alice.Store {
       var dist2 = dist1.Select(dd => (distance: dd.Sum(d => d.distance), count: dd.Sum(d => d.count))).ToList();
       var perc = (dist2.Count * GetVoltCmaWaveIterationsByIndex(voltIndex) / 100.0).ToInt();
       var samples = dist2.OrderByDescending(d => d.distance.Abs() * d.count).Take(perc * 2).ToList();
-      var avg = samples.DefaultIfEmpty().Take(perc).Average(SpeedA);
-      var avgCount = samples.Average(d => d.count).ToInt();
+      var avg = samples.Take(perc).DefaultIfEmpty().Average(SpeedA);
+      var avgCount = samples.DefaultIfEmpty().Average(d => d.count).ToInt();
       var last = dist2.Last();
       return (avg, avgCount, Speed(last), last.count);
       double Speed((double distsnce, int count) v) => v.distsnce * v.count;
@@ -1300,8 +1300,8 @@ namespace HedgeHog.Alice.Store {
         //.Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
         //.Add(HV(this).Concat(TradingMacroHedged(HV).Concat()).Select(d => d * 1000000).Pairwise((hv, hvm)
         //  => (object)new { HistVolHg = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
-        .Add(HVA(this).Concat(TradingMacroHedged(HVA).Concat()).Select(d => d).Pairwise((hv, hvm)
-          => (object)new { HistVolAn = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
+        //.Add(HVA(this).Concat(TradingMacroHedged(HVA).Concat()).Select(d => d).Pairwise((hv, hvm)
+        //  => (object)new { HistVolAn = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         //.Add(new { StrdlHV = new[] { _currentCallByHV, _currentPutByHV }.Select(c => c.Round(2)).Flatter("/") })
         //.Add(new { HVPtP = HVPt(this).Concat(HVP(this)).Select(c => c.AutoRound(3)).Flatter("/") })
         .Add(new { CHP2 = $"{CurrentHedgePosition2}{TradingMacroM1(tm1 => "/" + tm1.CurrentHedgePosition2).SingleOrDefault()}" })

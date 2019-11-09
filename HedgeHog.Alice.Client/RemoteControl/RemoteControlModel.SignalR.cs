@@ -14,15 +14,15 @@ namespace HedgeHog.Alice.Client {
 
     public object[] ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
       var cp = tm.CurrentPrice?.Average;
-      var histVol = tm.StraddleRange(tm.StraddleGap).With(hv => new { hv.up, hv.down });
-      var digits = tm.Digits();
+      var histVol = tm.BarPeriod > 0 ? tm.StraddleRange(tm.StraddleGap).With(hv => new { hv.up, hv.down }) : new { up = 0.0, down = 0.0 };
+      var digits = tm.Digits() + 2;
       if(dateEnd > tm.LoadRatesStartDate2)
         dateEnd = tm.LoadRatesStartDate2;
       else
         dateEnd = dateEnd.AddMinutes(-tm.BarPeriodInt.Min(2));
       string pair = tm.Pair;
       Func<Rate, double> rateHL = rate => (rate.PriceAvg >= rate.PriceCMALast ? rate.PriceHigh : rate.PriceLow).Round(digits);
-      Func<IList<Rate>, double> rateHLs = rates => (rates.Average(r => r.PriceAvg) >= 
+      Func<IList<Rate>, double> rateHLs = rates => (rates.Average(r => r.PriceAvg) >=
         rates.Average(r => r.PriceCMALast) ? rates.Max(r => r.PriceHigh) : rates.Min(r => r.PriceLow)).Round(digits);
       #region map
       var rth = new[] { new TimeSpan(9, 30, 0), new TimeSpan(16, 0, 0) };
@@ -37,7 +37,7 @@ namespace HedgeHog.Alice.Client {
       var lastCma = tm.UseRates(TradingMacro.GetLastRateCma).SelectMany(cma => cma).FirstOrDefault();
       var tsMin = TimeSpan.FromMinutes(tm.BarPeriodInt);
       var priceHedge = MonoidsCore.ToFunc((Rate r) => r.PriceHedge).MemoizePrev(d => d.IsZeroOrNaN());
-      var priceHedge2 = MonoidsCore.ToFunc((IList<Rate> rs) => rs.Average(r=>r.PriceHedge)).MemoizePrev(d => d.IsZeroOrNaN());
+      var priceHedge2 = MonoidsCore.ToFunc((IList<Rate> rs) => rs.Average(r => r.PriceHedge)).MemoizePrev(d => d.IsZeroOrNaN());
       var map = MonoidsCore.ToFunc((Rate)null, rate => new {
         //d = rate.StartDate2,
         d = tm.BarPeriod == BarsPeriodType.t1 ? rate.StartDate2 : rate.StartDate2.Round().With(d => d == rate.StartDate2 ? d : d + tsMin),
@@ -58,7 +58,7 @@ namespace HedgeHog.Alice.Client {
         tm.BarPeriod == BarsPeriodType.t1 ? sd : sd.Round().With(d => d == sd ? d : d + tsMin)),
         c = rateHLs(rates),
         v = doShowVolt ? rates.Average(r => tm.GetVoltage(r).IfNaNOrZero(lastVolt)) : 0,
-        v01 = doShowVolt ? rates.Average(r=> tm.GetVoltage01(r).IfNaNOrZero(lastVolt01)) : 0,
+        v01 = doShowVolt ? rates.Average(r => tm.GetVoltage01(r).IfNaNOrZero(lastVolt01)) : 0,
         v2 = doShowVolt2 ? rates.Average(r => tm.GetVoltage2(r).IfNaNOrZero(lastVolt2)) : 0,
         v21 = doShowVolt2 ? rates.Average(r => tm.GetVoltage21(r).IfNaNOrZero(lastVolt21)) : 0,
         m = rates.Average(r => r.PriceCMALast.IfNaNOrZero(lastCma)).Round(digits),
@@ -82,7 +82,7 @@ namespace HedgeHog.Alice.Client {
 
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd/* && !tm.GetVoltage(r).IsNaNOrZero()*/).ToList()).FirstOrDefault();
       var bufferSize = tm.RatesArray.Count.Div(chartWidth).Ceiling();
-      var ratesForChartGrouped = tm.UseRates(rates => rates.Buffer(bufferSize,bufferSize-1).ToList()).FirstOrDefault();
+      var ratesForChartGrouped = tm.UseRates(rates => rates.Buffer(bufferSize, bufferSize - 1).ToList()).FirstOrDefault();
       if(ratesForChart == null)
         return new object[0];
       var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart/* && !tm.GetVoltage(r).IsNaNOrZero()*/).ToList()).FirstOrDefault();
