@@ -41,7 +41,7 @@ namespace HedgeHog.Shared {
         => dbOffers
       .Where(o => o.Pair.ToUpper() == symbol.FutureCode().WrapPair())
       .Take(1)
-      .DefaultIfEmpty(OfferDefault)
+      //.DefaultIfEmpty(OfferDefault)
       .Single();
     public static Offer GetOffer(string pair) => GetOfferImpl(pair);
     public static double GetPointSize(string symbol) => GetOffer(symbol).PointSize;

@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HedgeHog.Alice.Client</RootNamespace>
     <AssemblyName>HedgeHog.Alice.Client</AssemblyName>
-    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -367,7 +367,7 @@
       <HintPath>..\DigitalIdeaSolutions.Collections.dll</HintPath>
     </Reference>
     <Reference Include="DnsClient, Version=1.2.0.0, Culture=neutral, PublicKeyToken=4574bb5573c51424, processorArchitecture=MSIL">
-      <HintPath>..\AllInOne\packages\DnsClient.1.2.0\lib\net45\DnsClient.dll</HintPath>
+      <HintPath>..\AllInOne\packages\DnsClient.1.2.0\lib\net471\DnsClient.dll</HintPath>
     </Reference>
     <Reference Include="DynamicData, Version=6.12.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\DynamicData.6.12.9\lib\net461\DynamicData.dll</HintPath>
@@ -393,11 +393,11 @@
     <Reference Include="HtmlAgilityPack, Version=1.11.12.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\HtmlAgilityPack.1.11.12\lib\Net45\HtmlAgilityPack.dll</HintPath>
     </Reference>
-    <Reference Include="Loggly, Version=4.6.1.68, Culture=neutral, PublicKeyToken=aea0e3c965ace843, processorArchitecture=MSIL">
-      <HintPath>..\AllInOne\packages\loggly-csharp.4.6.1.68\lib\net45\Loggly.dll</HintPath>
+    <Reference Include="Loggly, Version=4.6.1.73, Culture=neutral, PublicKeyToken=aea0e3c965ace843, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\loggly-csharp.4.6.1.73\lib\net45\Loggly.dll</HintPath>
     </Reference>
-    <Reference Include="Loggly.Config, Version=4.6.1.68, Culture=neutral, PublicKeyToken=aea0e3c965ace843, processorArchitecture=MSIL">
-      <HintPath>..\AllInOne\packages\loggly-csharp-config.4.6.1.68\lib\net45\Loggly.Config.dll</HintPath>
+    <Reference Include="Loggly.Config, Version=4.6.1.73, Culture=neutral, PublicKeyToken=aea0e3c965ace843, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\loggly-csharp-config.4.6.1.73\lib\net45\Loggly.Config.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Core, Version=2.4.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\Microsoft.AspNet.SignalR.Core.2.4.1\lib\net45\Microsoft.AspNet.SignalR.Core.dll</HintPath>
@@ -1611,6 +1611,9 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Settings.xml">
+      <SubType>Designer</SubType>
+    </Resource>
     <Resource Include="Blueshift.EntityFrameworkCore.MongoDB\Properties\Blueshift.EntityFrameworkCore.MongoDB.rd.xml" />
     <Resource Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\netstandard2.0\Blueshift.EntityFrameworkCore.MongoDB.xml" />
     <Resource Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Blueshift.EntityFrameworkCore.MongoDB.xml" />
@@ -1750,9 +1753,6 @@
     <Content Include="Scripts\jquery-3.3.1.min.js" />
     <Content Include="Scripts\jquery-3.3.1.slim.js" />
     <Content Include="Scripts\jquery-3.3.1.slim.min.js" />
-    <Resource Include="Settings.xml">
-      <SubType>Designer</SubType>
-    </Resource>
     <Content Include="Scripts\jquery.signalR-2.4.1.js" />
     <Content Include="Scripts\jquery.signalR-2.4.1.min.js" />
     <Content Include="Settings\EURUSD%281%29_Last.txt" />
@@ -4838,6 +4838,7 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
+    <Error Condition="!Exists('..\AllInOne\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\AllInOne\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets'))" />
     <Error Condition="!Exists('..\AllInOne\packages\NETStandard.Library.2.0.3\build\netstandard2.0\NETStandard.Library.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\AllInOne\packages\NETStandard.Library.2.0.3\build\netstandard2.0\NETStandard.Library.targets'))" />
   </Target>
   <PropertyGroup>
@@ -4856,6 +4857,7 @@ xcopy "$(ProjectDir)WWW\Scripts" "$(OutDir)WWW\scripts" /s /y /i /D
 xcopy "$(ProjectDir)WWW\HedgeHog.ico" "$(OutDir)WWW\HedgeHog.ico" /s /y /i /D
 </PreBuildEvent>
   </PropertyGroup>
+  <Import Project="..\AllInOne\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets" Condition="Exists('..\AllInOne\packages\Microsoft.DotNet.Analyzers.Compatibility.0.2.12-alpha\build\Microsoft.DotNet.Analyzers.Compatibility.targets')" />
   <Import Project="..\AllInOne\packages\NETStandard.Library.2.0.3\build\netstandard2.0\NETStandard.Library.targets" Condition="Exists('..\AllInOne\packages\NETStandard.Library.2.0.3\build\netstandard2.0\NETStandard.Library.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

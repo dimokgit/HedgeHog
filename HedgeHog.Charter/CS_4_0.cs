@@ -1854,9 +1854,6 @@ namespace HedgeHog.Metadata
                 /// <summary>Refers to field <see cref="HedgeHog.CharterPlainControl._newsEventComparicon"/></summary>
         public const string _newsEventComparicon = "_newsEventComparicon";
 
-        /// <summary>Refers to method <see cref="HedgeHog.CharterPlainControl.ReadNewsEventsHistoryFromDB"/></summary>
-        public const string ReadNewsEventsHistoryFromDB = "ReadNewsEventsHistoryFromDB";
-
         /// <summary>Refers to field <see cref="HedgeHog.CharterPlainControl._NewsHistoryCurrent"/></summary>
         public const string _NewsHistoryCurrent = "_NewsHistoryCurrent";
 

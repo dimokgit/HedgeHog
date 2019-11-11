@@ -48,9 +48,6 @@ namespace HedgeHog.Shared {
 
     [DataMember]
     [UpdateOnUpdate]
-    /// <summary>
-    /// 2,4
-    /// </summary>
     public double PointSize { get; set; }
     public string PointSizeFormat { get { return "n" + PointSize; } }
 

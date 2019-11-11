@@ -4047,7 +4047,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
     void OnScanCorridor(List<Rate> rates, Action callback, bool runSync) {
       if(!IsRatesLengthStable) {
-        _canTriggerTradeDirectionSubject.OnNext(() => Log = new Exception(new { OnScanCorridor = new { IsRatesLengthStable } } + ""));
+        _canTriggerTradeDirectionSubject.OnNext(() => Log = new Exception(new { OnScanCorridor = new { Pair = this, IsRatesLengthStable } } + ""));
         return;
       }
       if(runSync)

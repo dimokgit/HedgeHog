@@ -553,7 +553,6 @@ namespace HedgeHog.Alice.Store {
       IEnumerable<T> TrendsNotEmpty<T>(Func<TL, T> map, params TL[] trends) => trends.Where(tl => !tl.IsEmpty).Select(map);
       IEnumerable<double> Trends() => TrendsNotEmpty(tl => tl.StDev, TLBlue, TLPlum, TLRed, TLGreen).DefaultIfEmpty(double.NaN);
       double TLLimeHeightRatioByAvg() => TLLime.StDev / Trends().Average() - 1;
-      double TLLimeHeightRatioByMax() => TLLime.StDev / Trends().Max() - 1;
     }
     CorridorStatistics ShowVoltsByRatioDiff(int voltIndex) {
       double GetPrice(Rate r) => r.PriceAvg;
@@ -624,9 +623,12 @@ namespace HedgeHog.Alice.Store {
       else
         SetCurrentHedgePositionAsyncBuffer.Push(a);
       void a() {
+        var tm = TradingMacroTrader().Single();
+        var hct = tm.HedgeCalcType;
+        var tr = tm.TradingRatio;
         IObservable<(Contract contract, int quantity)> combo;
         List<HedgePosition<Contract>> hh;
-        switch(HedgeCalcType) {
+        switch(hct) {
           case HedgeCalcTypes.ByHV:
             hh = CurrentHedgesByHV();
             break;
@@ -642,8 +644,8 @@ namespace HedgeHog.Alice.Store {
           default: throw new Exception();
         }
         if(hh.Any()) {
-          combo = IBApp.AccountManager.MakeHedgeComboSafe(TradingRatio.ToInt(), hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio, IsInVirtualTrading);
-          combo.Subscribe(c => SetCurrentHedgePosition(c.contract, c.quantity, HedgeCalcType));
+          combo = IBApp.AccountManager.MakeHedgeComboSafe(tr.ToInt(), hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio, IsInVirtualTrading);
+          combo.Subscribe(c => SetCurrentHedgePosition(c.contract, c.quantity, hct));
         }
         OnCalcHedgeRatioByPositions();
       }

@@ -151,7 +151,6 @@ namespace HedgeHog {
 
     public static IList<alglib.complex> FftHarmonic(this IList<alglib.complex> bins, int harmonic, int range) {
       var c = new alglib.complex(0);
-      IEnumerable<alglib.complex> repeat(int count) { return Enumerable.Repeat(c, count); }
       return bins.Select((b, i) => {
         if(i == 0)
           return b;

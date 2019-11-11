@@ -34,16 +34,16 @@ namespace HedgeHog.Alice.Client {
     [DllImport("user32.dll")]
     static extern IntPtr GetForegroundWindow();
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
 
     /// <summary>
     /// Find window by Caption only. Note you must pass IntPtr.Zero as the first parameter.
     /// </summary>
-    [DllImport("user32.dll", EntryPoint = "FindWindow", SetLastError = true)]
+    [DllImport("user32.dll", EntryPoint = "FindWindow", SetLastError = true, CharSet = CharSet.Unicode)]
     static extern IntPtr FindWindowByCaption(IntPtr ZeroOnly, string lpWindowName);
 
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
@@ -238,7 +238,7 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     [DllImport("user32.dll")]
-    public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, uint dwExtraInfo);
+    static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, uint dwExtraInfo);
 
     IDisposable _noTelerikDisposable;
     void NoTelerik() {

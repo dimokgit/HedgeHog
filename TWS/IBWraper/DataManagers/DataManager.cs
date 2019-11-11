@@ -15,6 +15,7 @@ namespace IBApp {
   public abstract class DataManager {
 
     #region Fields/Properties
+    //https://stackoverflow.com/questions/11873656/how-to-make-application-properties-settings-public-and-stay-that-way
     public static bool UseVerbose = false;
     public static bool DoShowRequestErrorDone = true;
     public static IBClientCore IBClientMaster;

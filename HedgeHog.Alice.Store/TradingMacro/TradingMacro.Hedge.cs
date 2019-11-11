@@ -287,7 +287,7 @@ namespace HedgeHog.Alice.Store {
 
     #region CalcHedgeRatioByPositions
     private double HedgeRatioByPrices { get; set; } = double.NaN;
-    private int[] _hedgePositionMinMax = new int[] { 0, 100 };
+    private int[] _hedgePositionMinMax = new int[] { 0, 1000 };
     void CalcHedgeRatioByPositions() {
       var pos1 = 100;// GetCurrentHedgePositions(true).max;
       if(pos1 == 0) pos1 = 100;

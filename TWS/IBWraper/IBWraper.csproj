@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IBWraper</RootNamespace>
     <AssemblyName>IBWraper</AssemblyName>
-    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -73,7 +73,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DnsClient, Version=1.2.0.0, Culture=neutral, PublicKeyToken=4574bb5573c51424, processorArchitecture=MSIL">
-      <HintPath>..\..\AllInOne\packages\DnsClient.1.2.0\lib\net45\DnsClient.dll</HintPath>
+      <HintPath>..\..\AllInOne\packages\DnsClient.1.2.0\lib\net471\DnsClient.dll</HintPath>
     </Reference>
     <Reference Include="DynamicData, Version=6.12.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\AllInOne\packages\DynamicData.6.12.9\lib\net461\DynamicData.dll</HintPath>

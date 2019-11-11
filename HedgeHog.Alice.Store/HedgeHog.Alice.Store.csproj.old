@@ -1,0 +1,767 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{C8766AE8-E649-4D05-A206-7D2FAB63F14A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>HedgeHog.Alice.Store</RootNamespace>
+    <AssemblyName>HedgeHog.Alice.Store</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\AllInOne\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Debug\HedgeHog.Alice.Store.XML</DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
+    <NoWarn>1591;0618</NoWarn>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>
+    </DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Prod|AnyCPU'">
+    <OutputPath>bin\Prod\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'TM 2|AnyCPU'">
+    <OutputPath>bin\TM 2\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RM 2|AnyCPU'">
+    <OutputPath>bin\RM 2\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Test|AnyCPU'">
+    <OutputPath>bin\Test\</OutputPath>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>bin\Debug\HedgeHog.Alice.Store.XML</DocumentationFile>
+    <NoWarn>1591;0618</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <Optimize>false</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <DefineConstants>
+    </DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Prod|x64'">
+    <OutputPath>bin\x64\Prod\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'TM 2|x64'">
+    <OutputPath>bin\x64\TM 2\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RM 2|x64'">
+    <OutputPath>bin\x64\RM 2\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Test|x64'">
+    <OutputPath>bin\x64\Test\</OutputPath>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="AutoMapper, Version=8.1.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\AutoMapper.8.1.1\lib\net461\AutoMapper.dll</HintPath>
+    </Reference>
+    <Reference Include="CommonServiceLocator, Version=2.0.4.0, Culture=neutral, PublicKeyToken=489b6accfaf20ef0, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\CommonServiceLocator.2.0.4\lib\net47\CommonServiceLocator.dll</HintPath>
+    </Reference>
+    <Reference Include="DnsClient, Version=1.2.0.0, Culture=neutral, PublicKeyToken=4574bb5573c51424, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\DnsClient.1.2.0\lib\net45\DnsClient.dll</HintPath>
+    </Reference>
+    <Reference Include="DynamicData, Version=6.12.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\DynamicData.6.12.9\lib\net461\DynamicData.dll</HintPath>
+    </Reference>
+    <Reference Include="DynamicExpresso.Core, Version=2.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\DynamicExpresso.Core.2.3.1\lib\net461\DynamicExpresso.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework.MappingAPI, Version=6.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\EntityFramework.MappingAPI.6.2.0\lib\net45\EntityFramework.MappingAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    </Reference>
+    <Reference Include="GalaSoft.MvvmLight, Version=5.4.1.0, Culture=neutral, PublicKeyToken=e7570ab207bcb616, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\MvvmLightLibs.5.4.1.1\lib\net45\GalaSoft.MvvmLight.dll</HintPath>
+    </Reference>
+    <Reference Include="GalaSoft.MvvmLight.Extras, Version=5.4.1.0, Culture=neutral, PublicKeyToken=669f0b5e8f868abf, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\MvvmLightLibs.5.4.1.1\lib\net45\GalaSoft.MvvmLight.Extras.dll</HintPath>
+    </Reference>
+    <Reference Include="GalaSoft.MvvmLight.Platform, Version=5.4.1.0, Culture=neutral, PublicKeyToken=5f873c45e98af8a1, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\MvvmLightLibs.5.4.1.1\lib\net45\GalaSoft.MvvmLight.Platform.dll</HintPath>
+    </Reference>
+    <Reference Include="Loggly, Version=4.6.1.68, Culture=neutral, PublicKeyToken=aea0e3c965ace843, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\loggly-csharp.4.6.1.68\lib\net45\Loggly.dll</HintPath>
+    </Reference>
+    <Reference Include="Loggly.Config, Version=4.6.1.68, Culture=neutral, PublicKeyToken=aea0e3c965ace843, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\loggly-csharp-config.4.6.1.68\lib\net45\Loggly.Config.dll</HintPath>
+    </Reference>
+    <Reference Include="MathNet.Numerics, Version=4.8.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\MathNet.Numerics.4.8.1\lib\net461\MathNet.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Authentication, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Authentication.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Authentication.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Authentication.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Authentication.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Authentication.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Authentication.Cookies, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Authentication.Cookies.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Authentication.Cookies.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Authentication.Core, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Authentication.Core.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Authentication.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Cryptography.Internal, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Cryptography.Internal.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Cryptography.Internal.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Cryptography.KeyDerivation, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Cryptography.KeyDerivation.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Cryptography.KeyDerivation.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.DataProtection, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.DataProtection.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.DataProtection.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.DataProtection.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.DataProtection.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.DataProtection.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Hosting.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Hosting.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Hosting.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Hosting.Server.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Hosting.Server.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Hosting.Server.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Http, Version=2.2.2.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Http.2.2.2\lib\netstandard2.0\Microsoft.AspNetCore.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Http.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Http.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Http.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Http.Extensions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Http.Extensions.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Http.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Http.Features, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Http.Features.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Http.Features.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Identity, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.Identity.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Identity.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.WebUtilities, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.AspNetCore.WebUtilities.2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.WebUtilities.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore, Version=2.2.6.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.EntityFrameworkCore.2.2.6\lib\netstandard2.0\Microsoft.EntityFrameworkCore.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.Abstractions, Version=2.2.6.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.EntityFrameworkCore.Abstractions.2.2.6\lib\netstandard2.0\Microsoft.EntityFrameworkCore.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Caching.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.Caching.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Caching.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Caching.Memory, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.Caching.Memory.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Caching.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Configuration, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.Configuration.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Configuration.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Configuration.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.Configuration.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Configuration.Binder, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.Configuration.Binder.2.2.4\lib\netstandard2.0\Microsoft.Extensions.Configuration.Binder.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.DependencyInjection.2.2.0\lib\net461\Microsoft.Extensions.DependencyInjection.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.DependencyInjection.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.FileProviders.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.Extensions.FileProviders.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Hosting.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.Hosting.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Hosting.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Identity.Core, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.Identity.Core.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Identity.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.Logging.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.Logging.Abstractions.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.ObjectPool, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.ObjectPool.2.2.0\lib\netstandard2.0\Microsoft.Extensions.ObjectPool.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Options, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.Options.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Options.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Primitives, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.Primitives.2.2.0\lib\netstandard2.0\Microsoft.Extensions.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.WebEncoders, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Extensions.WebEncoders.2.2.0\lib\netstandard2.0\Microsoft.Extensions.WebEncoders.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Net.Http.Headers, Version=2.2.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Net.Http.Headers.2.2.0\lib\netstandard2.0\Microsoft.Net.Http.Headers.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Vbe.Interop, Version=14.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\..\..\..\WINDOWS\assembly\GAC\Microsoft.Vbe.Interop\12.0.0.0__71e9bce111e9429c\Microsoft.Vbe.Interop.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Win32.Registry, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Microsoft.Win32.Registry.4.5.0\lib\net461\Microsoft.Win32.Registry.dll</HintPath>
+    </Reference>
+    <Reference Include="Mongo.EF, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Mongo.EF.0.2.1-preview6\lib\net47\Mongo.EF.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Bson, Version=2.8.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\MongoDB.Bson.2.8.1\lib\net452\MongoDB.Bson.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Driver, Version=2.8.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\MongoDB.Driver.2.8.1\lib\net452\MongoDB.Driver.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Driver.Core, Version=2.8.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\MongoDB.Driver.Core.2.8.1\lib\net452\MongoDB.Driver.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoExtensions, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\MongoExtensions.1.2.0\lib\net47\MongoExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Octokit, Version=0.32.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Octokit.0.32.0\lib\net45\Octokit.dll</HintPath>
+    </Reference>
+    <Reference Include="Passager, Version=0.2.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Passager.0.2.2\lib\net452\Passager.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="ReactiveUI, Version=9.19.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\ReactiveUI.9.19.5\lib\net461\ReactiveUI.dll</HintPath>
+    </Reference>
+    <Reference Include="Remotion.Linq, Version=2.2.0.0, Culture=neutral, PublicKeyToken=fee00910d6e5f53b, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Remotion.Linq.2.2.0\lib\net45\Remotion.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="Splat, Version=8.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Splat.8.1.1\lib\net461\Splat.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Buffers.4.5.0\lib\netstandard2.0\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections.Immutable, Version=1.2.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Collections.Immutable.1.5.0\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.Annotations, Version=4.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.ComponentModel.Annotations.4.5.0\lib\net461\System.ComponentModel.Annotations.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.OracleClient" />
+    <Reference Include="System.Diagnostics.DiagnosticSource, Version=4.0.3.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Diagnostics.DiagnosticSource.4.5.1\lib\net46\System.Diagnostics.DiagnosticSource.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Drawing.Primitives, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Drawing.Primitives.4.3.0\lib\net45\System.Drawing.Primitives.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Interactive, Version=3.2.0.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Interactive.3.2.0\lib\net45\System.Interactive.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Interactive.Async, Version=3.2.0.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Interactive.Async.3.2.0\lib\net46\System.Interactive.Async.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Linq, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Linq.4.3.0\lib\net463\System.Linq.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Linq.Expressions, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Linq.Expressions.4.3.0\lib\net463\System.Linq.Expressions.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Memory.4.5.3\lib\netstandard2.0\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive, Version=4.1.0.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Reactive.4.1.5\lib\net46\System.Reactive.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reflection, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Reflection.4.3.0\lib\net462\System.Reflection.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Runtime, Version=4.1.1.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Runtime.4.3.1\lib\net462\System.Runtime.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Runtime.Caching" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Runtime.CompilerServices.Unsafe.4.5.2\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Extensions, Version=4.1.1.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Runtime.Extensions.4.3.1\lib\net462\System.Runtime.Extensions.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Runtime.InteropServices.RuntimeInformation.4.3.0\lib\net45\System.Runtime.InteropServices.RuntimeInformation.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Security.AccessControl, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Security.AccessControl.4.5.0\lib\net461\System.Security.AccessControl.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Security.Cryptography.Xml, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Security.Cryptography.Xml.4.5.0\lib\net461\System.Security.Cryptography.Xml.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Security.Permissions, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Security.Permissions.4.5.0\lib\net461\System.Security.Permissions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Security.Principal.Windows, Version=4.1.1.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Security.Principal.Windows.4.5.1\lib\net461\System.Security.Principal.Windows.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Text.Encodings.Web, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Text.Encodings.Web.4.5.0\lib\netstandard2.0\System.Text.Encodings.Web.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Dataflow, Version=4.6.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Threading.Tasks.Dataflow.4.10.0\lib\netstandard2.0\System.Threading.Tasks.Dataflow.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.Threading.Tasks.Extensions.4.5.3\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web" />
+    <Reference Include="System.Windows" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
+    <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\MvvmLightLibs.5.4.1.1\lib\net45\System.Windows.Interactivity.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AbsentTrade.cs" />
+    <Compile Include="Blueshift.EntityFrameworkCore.MongoDB\Properties\DocumentDbStrings.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>DocumentDbStrings.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Hedging.cs" />
+    <Compile Include="Models\TradingAccount.cs" />
+    <Compile Include="MoreLinq\MoreEnumerable.GroupAdjacent.cs" />
+    <Compile Include="TraderModel.Persist.cs" />
+    <Compile Include="Trades.cs" />
+    <Compile Include="TradingAccountModel.cs" />
+    <Compile Include="TradingMacroSettings.cs" />
+    <Compile Include="TradingMacro\AliceEntity.properties.cs" />
+    <Compile Include="TradingMacro\AliceEntityExtender_MC.cs" />
+    <Compile Include="TradingMacro\Exceptions.cs" />
+    <Compile Include="TradingMacro\ScanCorridor\ScanCorridorByFftMA.cs" />
+    <Compile Include="TradingMacro\SuppRes\SuppRes.cs" />
+    <Compile Include="TradingMacro\SuppRes\SuppResEF.cs" />
+    <Compile Include="TradingMacro\SuppRes\SuppResExtentions.cs" />
+    <Compile Include="TradingMacro\TradeConditionType.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ActiveProps.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ActiveSettings.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Archive.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Hedge.cs" />
+    <Compile Include="TradingMacro\TradingMacro._ctor.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Trading.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Enums.cs" />
+    <Compile Include="TradingMacro\TradingMacro.LiveTrading.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ScanCorridor.FFT.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Lib.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ScanRatesLength.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Shorthands.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ShowVolts.cs" />
+    <Compile Include="TradingMacro\TradingMacro.SnapshotArguments.cs" />
+    <Compile Include="TradingMacro\TradingMacro.TradeConditionAttributes.cs" />
+    <Compile Include="TradingMacro\TradingMacro.TradeConditions.cs" />
+    <Compile Include="TradingMacro\TradingMacro.TradeDirectionTriggers.cs" />
+    <Compile Include="TradingMacro\TradingMacro.TradeOpenActions.cs" />
+    <Compile Include="TradingMacro\TradingMacro.WaveRanges.cs" />
+    <Compile Include="TradingMacro\TradingMacroEF.cs" />
+    <Compile Include="TradingMacro\TradingMacroExtentions.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Strategies.cs" />
+    <Compile Include="TradingMacro\TradingStatistics.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Universal.cs" />
+    <Compile Include="WaveRange.cs" />
+    <Compile Include="CorridorStatistics\CorridorStaticBaseExtentions.cs" />
+    <Compile Include="CorridorStatistics\CorridorStatistics.cs" />
+    <Compile Include="Events.cs" />
+    <Compile Include="GannAnglesEdit.xaml.cs">
+      <DependentUpon>GannAnglesEdit.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="GlobalStorage.cs" />
+    <Compile Include="TraderModelBase.cs" />
+    <Compile Include="PriceHistory.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RemoteControlModelBase.cs" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Properties\DataSources\HedgeHog.Bars.Rate.datasource" />
+    <Compile Include="TradingMacro\TradingMacro.ScanCorridor.cs" />
+    <None Include="TradingMacro\TradingMacro.AdjustLevelsByHour.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Chunks.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Lazy.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Strategies.AdjustExit.cs" />
+    <Compile Include="TradingMacro\TradingMacro.TradeTrends.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EnumerableHH\HedgeHog.EnumerableHH.csproj">
+      <Project>{8b110eee-4d1a-4b1a-b7d9-b5880af2b737}</Project>
+      <Name>HedgeHog.EnumerableHH</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\FrequencyTable_VS2005_Project\VTClasses\VTClasses.csproj">
+      <Project>{7A8203A2-9BFC-4711-9836-9DFF55D9D1D0}</Project>
+      <Name>VTClasses</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Cloud\HedgeHog.Cloud.csproj">
+      <Project>{da5773fd-ef73-4eb6-8ab7-b086db49b968}</Project>
+      <Name>HedgeHog.Cloud</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Core.Reactive\HedgeHog.Core.Reactive.csproj">
+      <Project>{edc8fa19-6e01-4997-84ba-ee5881fb3a52}</Project>
+      <Name>HedgeHog.Core.Reactive</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Core\HedgeHog.Core.csproj">
+      <Project>{0ff063e1-e910-4d16-976b-15bc31d11159}</Project>
+      <Name>HedgeHog.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.DB\HedgeHog.DB.csproj">
+      <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>
+      <Name>HedgeHog.DB</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
+      <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
+      <Name>HedgeHog.Lib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
+      <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
+      <Name>HedgeHog.Math</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.NewsCaster.UI\HedgeHog.NewsCaster.UI.csproj">
+      <Project>{3271AED3-1A77-452E-A66F-27DE487E59BD}</Project>
+      <Name>HedgeHog.NewsCaster.UI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.NewsCaster\HedgeHog.NewsCaster.csproj">
+      <Project>{9F58E055-714C-46DC-A8D3-17C531452152}</Project>
+      <Name>HedgeHog.NewsCaster</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
+      <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
+      <Name>HedgeHog.Shared</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Lambda Dependencies\Dependency Monitor\Lambda Dependencies.csproj">
+      <Project>{c7d8d111-b848-4d00-92db-7ca49f1d8ec2}</Project>
+      <Name>Lambda Dependencies</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\NotifyCollectionChangedWrapper.csproj">
+      <Project>{2f657876-b4f3-4f84-93a7-598382008310}</Project>
+      <Name>NotifyCollectionChangedWrapper</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TWS\IBApi.CSharpAPI\IBApi.CSharpAPI.csproj">
+      <Project>{8EDE0744-96C2-40B0-A8DC-37DF79370203}</Project>
+      <Name>IBApi.CSharpAPI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TWS\IBWraper\IBWraper.csproj">
+      <Project>{364BF321-6C2A-41A6-8CE5-05D8441FEB9A}</Project>
+      <Name>IBWraper</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.Config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Properties\DataSources\AliceEntities.datasource" />
+    <None Include="Properties\DataSources\ForexEntities.datasource" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="GannAnglesEdit.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Service References\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Blueshift.EntityFrameworkCore.MongoDB.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Blueshift.EntityFrameworkCore.MongoDB.pdb" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Blueshift.EntityFrameworkCore.MongoDB.xml" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\DnsClient.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.EntityFrameworkCore.Abstractions.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.EntityFrameworkCore.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Extensions.Caching.Abstractions.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Extensions.Caching.Memory.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Extensions.Configuration.Abstractions.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Extensions.Configuration.Binder.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Extensions.Configuration.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Extensions.DependencyInjection.Abstractions.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Extensions.DependencyInjection.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Extensions.Logging.Abstractions.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Extensions.Logging.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Extensions.Options.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Extensions.Primitives.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Microsoft.Win32.Primitives.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\MongoDB.Bson.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\MongoDB.Driver.Core.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\MongoDB.Driver.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\netstandard.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\Remotion.Linq.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.AppContext.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Buffers.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Collections.Concurrent.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Collections.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Collections.Immutable.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Collections.NonGeneric.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Collections.Specialized.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.ComponentModel.Annotations.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.ComponentModel.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.ComponentModel.EventBasedAsync.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.ComponentModel.Primitives.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.ComponentModel.TypeConverter.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Console.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Data.Common.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Diagnostics.Contracts.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Diagnostics.Debug.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Diagnostics.DiagnosticSource.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Diagnostics.FileVersionInfo.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Diagnostics.Process.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Diagnostics.StackTrace.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Diagnostics.TextWriterTraceListener.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Diagnostics.Tools.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Diagnostics.TraceSource.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Diagnostics.Tracing.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Drawing.Primitives.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Dynamic.Runtime.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Globalization.Calendars.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Globalization.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Globalization.Extensions.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Interactive.Async.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.IO.Compression.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.IO.Compression.ZipFile.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.IO.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.IO.FileSystem.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.IO.FileSystem.DriveInfo.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.IO.FileSystem.Primitives.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.IO.FileSystem.Watcher.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.IO.IsolatedStorage.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.IO.MemoryMappedFiles.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.IO.Pipes.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.IO.UnmanagedMemoryStream.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Linq.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Linq.Expressions.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Linq.Parallel.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Linq.Queryable.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Memory.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Net.Http.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Net.NameResolution.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Net.NetworkInformation.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Net.Ping.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Net.Primitives.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Net.Requests.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Net.Security.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Net.Sockets.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Net.WebHeaderCollection.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Net.WebSockets.Client.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Net.WebSockets.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Numerics.Vectors.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.ObjectModel.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Reflection.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Reflection.Extensions.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Reflection.Primitives.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Resources.Reader.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Resources.ResourceManager.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Resources.Writer.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.CompilerServices.Unsafe.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.CompilerServices.VisualC.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.Extensions.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.Handles.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.InteropServices.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.InteropServices.RuntimeInformation.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.Numerics.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.Serialization.Formatters.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.Serialization.Json.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.Serialization.Primitives.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Runtime.Serialization.Xml.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Security.Claims.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Security.Cryptography.Algorithms.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Security.Cryptography.Csp.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Security.Cryptography.Encoding.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Security.Cryptography.Primitives.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Security.Cryptography.X509Certificates.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Security.Principal.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Security.SecureString.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Text.Encoding.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Text.Encoding.Extensions.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Text.RegularExpressions.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Threading.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Threading.Overlapped.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Threading.Tasks.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Threading.Tasks.Parallel.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Threading.Thread.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Threading.ThreadPool.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Threading.Timer.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.ValueTuple.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Xml.ReaderWriter.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Xml.XDocument.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Xml.XmlDocument.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Xml.XmlSerializer.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Xml.XPath.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\net461\System.Xml.XPath.XDocument.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\netstandard2.0\Blueshift.EntityFrameworkCore.MongoDB.dll" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\netstandard2.0\Blueshift.EntityFrameworkCore.MongoDB.pdb" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\bin\Debug\netstandard2.0\Blueshift.EntityFrameworkCore.MongoDB.xml" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\Blueshift.EntityFrameworkCore.MongoDB.csproj" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\Properties\Blueshift.EntityFrameworkCore.MongoDB.rd.xml" />
+    <Content Include="Blueshift.EntityFrameworkCore.MongoDB\Properties\DocumentDbStrings.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>DocumentDbStrings.cs</LastGenOutput>
+    </Content>
+    <Content Include="CopyTradingMacro.sql" />
+    <Content Include="FodyWeavers.xml" />
+    <Content Include="TradingMacro\StrategyEnterMiddleMan.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Model\" />
+    <Folder Include="ReactiveUI\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
+    <Error Condition="!Exists('..\AllInOne\packages\NETStandard.Library.2.0.3\build\netstandard2.0\NETStandard.Library.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\AllInOne\packages\NETStandard.Library.2.0.3\build\netstandard2.0\NETStandard.Library.targets'))" />
+  </Target>
+  <Import Project="..\AllInOne\packages\NETStandard.Library.2.0.3\build\netstandard2.0\NETStandard.Library.targets" Condition="Exists('..\AllInOne\packages\NETStandard.Library.2.0.3\build\netstandard2.0\NETStandard.Library.targets')" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
