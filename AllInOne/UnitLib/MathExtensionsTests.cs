@@ -91,7 +91,19 @@ namespace HedgeHog.Tests {
     [TestMethod()]
     public void RoundBySample() {
       Assert.AreEqual(100.25, 100.28.RoundBySample(.25));
-      Assert.AreEqual(100.50,100.38.RoundBySample(.25));
+      Assert.AreEqual(100.50, 100.38.RoundBySample(.25));
+    }
+
+    [TestMethod()]
+    public void Fft() {
+      var a = new double[100000];
+      var swf = Stopwatch.StartNew();
+      var f = a.Fft(1);
+      swf.Stop();
+      var swc = Stopwatch.StartNew();
+      var c = a.Cma(5, 5);
+      swc.Stop();
+      Assert.IsTrue(swf.Elapsed.TotalSeconds > swc.Elapsed.TotalSeconds);
     }
   }
 }

@@ -657,10 +657,11 @@ namespace HedgeHog.Alice.Store {
     IEnumerable<IList<(Rate rate, double ratio)>> ZipHedgedRates(Func<Rate, double> map) =>
       from tm2 in TradingMacroHedged()
       from corr in TMCorrelation(tm2)
-      from xs in UseRates(tm2, (ra, ra2) => ZipRateArrays((ra, ra2, corr), map))
+      let m = corr == 1 ? map : new Func<Rate, double>((r) => 1 / map(r))
+      from xs in UseRates(tm2, (ra, ra2) => ZipRateArrays((ra, ra2), map))
       select xs;
 
-    Func<(List<Rate> ra, List<Rate> ra2, int corr), Func<Rate, double>, IList<(Rate rate, double ratio)>> ZipRateArrays = ZipRateArraysImpl2;//.MemoizeLast(t => t.ra.LastOrDefault().StartDate);
+    Func<(List<Rate> ra, List<Rate> ra2), Func<Rate, double>, IList<(Rate rate, double ratio)>> ZipRateArrays = ZipRateArraysImpl2;//.MemoizeLast(t => t.ra.LastOrDefault().StartDate);
     private static Func<(List<Rate> ra, List<Rate> ra2, int corr), IList<(Rate rate, double)>> ZipRateArraysImpl =
       t => t.ra.Zip(
         r => r.StartDate
@@ -668,11 +669,11 @@ namespace HedgeHog.Alice.Store {
         , r => r.Item1
         , (r, r2) => (r, r2.Item2)
         ).ToArray();
-    private static Func<(List<Rate> ra, List<Rate> ra2, int corr), Func<Rate, double>, IList<(Rate rate, double)>> ZipRateArraysImpl2 =
+    private static Func<(List<Rate> ra, List<Rate> ra2), Func<Rate, double>, IList<(Rate rate, double)>> ZipRateArraysImpl2 =
       (t, m) => (from r in t.ra
                  join r2 in t.ra2 on r.StartDate equals r2.StartDate
-                 select (r, t.corr == 1 ? m(r2) : 1 / m(r2))
-               ).ToArray();
+                 select (r, m(r2))
+               ).AsParallel().AsOrdered().ToList();
 
 
     static Func<(IList<Rate> source, Func<Rate, double> getter, double[] minMax), IEnumerable<(DateTime d, (double v, Rate r) t)>> RatioMapImpl => t => {

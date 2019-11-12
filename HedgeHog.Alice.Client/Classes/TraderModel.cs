@@ -479,7 +479,8 @@ namespace HedgeHog.Alice.Client {
           if(_LogSubject == null) {
             _LogSubject = new Subject<Exception>();
             _LogSubject
-              .ObserveOn(ThreadPoolScheduler.Instance)
+              .SubscribeOn(TaskPoolScheduler.Default)
+              .ObserveOn(TaskPoolScheduler.Default)
               .SelectMany(exc => IEnumerableCore.WithError(LogToFile, exc).WithError(t => LogToCloud(t.param)).error)
               .Subscribe(exc => _logQueue.Enqueue(Environment.NewLine + exc)
             , exc => Log = exc);

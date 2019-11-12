@@ -954,9 +954,9 @@ namespace HedgeHog.Alice.Client {
                .DefaultIfEmpty((ch.contract, ch.quantity, context: TradingMacro.HedgeCalcTypes.ByHV + ""))
                .Where(__ => selectedHedge == TradingMacro.HedgeCalcTypes.ByTV)
                .ForEach(t => GetTradingMacros(pair, tml => tml.SetCurrentHedgePosition(t.contract, t.quantity.Abs(), t.context))))
-               let chb = new CurrentHedge("ByTVOB", ch.optionsBuy.ShortSmart, ch.quantity, ch.ratio, "ByTVOB", 0, ch.optionsBuy.Key)
-               let chs = new CurrentHedge("ByTVOS", ch.optionsSell.ShortSmart, ch.quantity, ch.ratio, "ByTVOS", 0, ch.optionsSell.Key)
-               from ch01 in new[] { ch0, chb, chs }
+               //let chb = new CurrentHedge("ByTVOB", ch.optionsBuy.ShortSmart, ch.quantity, ch.ratio, "ByTVOB", 0, ch.optionsBuy.Key)
+               //let chs = new CurrentHedge("ByTVOS", ch.optionsSell.ShortSmart, ch.quantity, ch.ratio, "ByTVOS", 0, ch.optionsSell.Key)
+               from ch01 in new[] { ch0/*, chb, chs*/ }
                select ch01
                )
                .Merge(GetCurrentHedgeTMs())

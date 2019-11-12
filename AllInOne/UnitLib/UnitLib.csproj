@@ -11,7 +11,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>UnitLib</RootNamespace>
     <AssemblyName>UnitLib</AssemblyName>
-    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SccProjectName>Svn</SccProjectName>
@@ -397,10 +397,6 @@
     <ProjectReference Include="..\..\HedgeHog.UI\HedgeHog.UI.csproj">
       <Project>{7D258DF9-4DD8-4BB0-82AA-42DCC61374FA}</Project>
       <Name>HedgeHog.UI</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Order2GoAddIn\Order2GoAddIn.csproj">
-      <Project>{4A4FDF3C-8827-4E71-A705-7AD964408BB2}</Project>
-      <Name>Order2GoAddIn</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Persistancy\Persistance.csproj">
       <Project>{BB1DA090-B58A-456B-8B72-54375260486B}</Project>

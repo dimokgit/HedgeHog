@@ -1990,16 +1990,18 @@ namespace HedgeHog.Alice.Store {
     public bool IsHedgeChild => HedgeParent.Any();
     public IEnumerable<TradingMacro> HedgeOther => TradingMacroHedged().Concat(HedgeParent);
     void SyncHedgedPair() {
-      TradingMacroHedged().ForEach(tm => {
-        tm.BarsCount = BarsCount;
-        tm.BarsCountMax = BarsCountMax;
-        tm.RatesMinutesMin = RatesMinutesMin;
-        tm.RatesLengthBy = RatesLengthBy;
-        tm.HedgeCorrelation = HedgeCorrelation;
-        tm.CmaPasses = CmaPasses;
-        tm.PriceCmaLevels = PriceCmaLevels;
-        tm.MovingAverageType = MovingAverageType;
-      });
+      TradingMacroHedged()
+        .ForEach(tm => {
+          tm.BarsCount = BarsCount;
+          tm.BarsCountMax = BarsCountMax;
+          tm.BarPeriod = BarPeriod;
+          tm.RatesMinutesMin = RatesMinutesMin;
+          tm.RatesLengthBy = RatesLengthBy;
+          tm.HedgeCorrelation = HedgeCorrelation;
+          tm.CmaPasses = CmaPasses;
+          tm.PriceCmaLevels = PriceCmaLevels;
+          tm.MovingAverageType = MovingAverageType;
+        });
     }
     private string _pairHedge = "";
     [WwwSetting]

@@ -1055,6 +1055,7 @@ namespace HedgeHog.Alice.Store {
         Log = new Exception("More then one Trader Macros is not allowed");
         if(_IsTrader) IsTrader = false;
       }
+      SyncHedgedPair();
       Action<Expression<Func<TradingMacro, bool>>> check = g => TradingMacrosByPair()
         .Scan(0, (t, tm) => t + (g.Compile()(tm) ? 1 : 0))
         .SkipWhile(c => c <= 1)

@@ -88,16 +88,23 @@ namespace HedgeHog.Alice.Store {
         tm => tm.RatesMinutesMin,
         tm => tm.BarsCount,
         tm => tm.BarsCountMax,
+        tm => tm.BarPeriod,
         tm => tm.PairHedge,
         tm => tm.RatesLengthBy,
         tm => tm.HedgeCorrelation,
         tm => tm.CmaPasses,
         tm => tm.PriceCmaLevels,
         tm => tm.MovingAverageType,
-        (v1, rls, v3, ph, rlb, hc, cp, pcl, mat) => true).Subscribe(_ => SyncHedgedPair());
+        (v1, rls, v3, bp, ph, rlb, hc, cp, pcl, mat) => true
+        )
+        .Where(_ => !Pair.IsNullOrEmpty())
+        .Throttle(1.FromSeconds())
+        .Subscribe(_ => SyncHedgedPair());
       this.WhenAnyValue(
         tm => tm.PairHedge
         )
+        .Where(_ => !Pair.IsNullOrEmpty())
+        .Throttle(1.FromSeconds())
         .Subscribe(_ => TradingMacrosByPair(tm => tm != this).ForEach(tm => tm.PairHedge = _));
       this.WhenAnyValue(tm => tm.VoltageFunction)
         .Subscribe(_ => {

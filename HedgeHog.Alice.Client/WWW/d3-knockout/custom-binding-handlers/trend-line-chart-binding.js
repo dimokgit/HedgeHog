@@ -31,10 +31,12 @@
       width = elementWidth - margin.left - margin.right,
       height = elementHeight - margin.top - margin.bottom,
       x = d3.scaleTime().range([xAxisOffset, width - xAxisOffset]),
-      y = d3.scaleLinear().range([height, 0]),
-      //y = d3.scaleLinear().range([height, height / 5]),
-      y2 = d3.scaleLinear().range([height, height * (y2Scale ? 4 : 0) / 5]);
-    //y2 = d3.scaleLinear().range([height, height * 4 / 5]);
+      //y = d3.scaleLinear().range([height, 0]),
+      y = d3.scaleLinear().range([height, y2Scale ? height / 5 : 0]),
+
+      //y2 = d3.scaleLinear().range([height, height * (y2Scale ? 4 : 0) / 5]);
+      y2 = d3.scaleLinear().range([height, height * 4 / 5]);
+
     y3 = d3.scaleLinear().range([height / 5, 0]);
     return { width: width, height: height, x: x, y: y, y2: y2, y3: y3 };
   }
@@ -460,6 +462,7 @@
       var showNegativeVolts2 = viewModel.showNegativeVolts2Parsed();
       var doShowChartBid = viewModel.doShowChartBid();
       var y2Scale = !chartData.vfs;
+      var yScale = parseInt(viewModel.y2Scale());
       var y2ScaleShift = chartData.vfss || [0, 0];
       var isHedged = chartData.isHedged;
       var breakEven = chartData.breakEven || [];
@@ -469,7 +472,7 @@
       // #region adjust svg and axis'
       $(element).show();
 
-      var chartArea = calcChartArea(element, y2Scale);
+      var chartArea = calcChartArea(element, yScale);
       viewModel.chartArea[chartNum].cha = chartArea;
       var
         width = chartArea.width,
@@ -532,7 +535,7 @@
         return chartNum ? value : yDomain[1];
       }
       function tipValue(v) {
-        return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts[0] || -Number.MAX_SAFE_INTEGER), showNegativeVolts[1] || Number.MAX_SAFE_INTEGER );
+        return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts[0] || -Number.MAX_SAFE_INTEGER), showNegativeVolts[1] || Number.MAX_SAFE_INTEGER);
       }
       function tipValue2(v) {
         return isNaN(v) ? 0 : Math.min(Math.max(v, showNegativeVolts2[0]), showNegativeVolts2[1] || 100000);

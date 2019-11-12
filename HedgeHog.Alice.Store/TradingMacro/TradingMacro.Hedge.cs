@@ -154,7 +154,7 @@ namespace HedgeHog.Alice.Store {
     CorridorStatistics ShowVoltsByGrossVirtual(int voltIndex) {
       var sw = Stopwatch.StartNew();
       try {
-        var chp = HedgedTrades().Select(ht => ht.Lots).Pairwise((p1, p2) => (p1, p2, 0)).DefaultIfEmpty(GetCurrentHedgePositions(true)).SingleOrDefault();
+        var chp = GetHedgedTradePositionsOrDefualt();
         if(!UseCalc() || chp.p1 == 0 || chp.p2 == 0) return null;
         if(HedgeTradesVirtual.IsEmpty()) {
           var period = GetVoltCmaPeriodByIndex(voltIndex);
@@ -193,12 +193,16 @@ namespace HedgeHog.Alice.Store {
         return null;
       } finally {
         sw.Stop();
-        var s = $"{MethodBase.GetCurrentMethod().Name}[{Pair}]:{new { sw.ElapsedMilliseconds }}";
-        if(sw.ElapsedMilliseconds > 100)
+        var s = $"{nameof(ShowVoltsByGrossVirtual)}[{this}]:{new { sw.ElapsedMilliseconds }}";
+        if(!IsInVirtualTrading && sw.ElapsedMilliseconds > 100)
           Log = new Exception(s);
-        //Debug.WriteLine(s);
+        Debug.WriteLine(s);
+        _ShowVoltsByGrossVirtual = _ShowVoltsByGrossVirtual.Cma(10, sw.ElapsedMilliseconds);
       }
     }
+    double _ShowVoltsByGrossVirtual = double.NaN;
+    private (int p1, int p2, int) GetHedgedTradePositionsOrDefualt() =>
+      HedgedTrades().Select(ht => (int)ht.Position).Pairwise((p1, p2) => (p1, p2, 0)).DefaultIfEmpty(GetCurrentHedgePositions(true)).SingleOrDefault();
 
     class GetHedgePricesAsyncBuffer :AsyncBuffer<GetHedgePricesAsyncBuffer, Action> {
       public GetHedgePricesAsyncBuffer(Func<string> distinct) : base(1, TimeSpan.Zero, false, distinct) { }
@@ -208,18 +212,15 @@ namespace HedgeHog.Alice.Store {
     }
     GetHedgePricesAsyncBuffer _setHedgeGrossesAsyncBuffer;
     GetHedgePricesAsyncBuffer SetHedgeGrossesAsyncBuffer => _setHedgeGrossesAsyncBuffer
-      ?? (_setHedgeGrossesAsyncBuffer = new GetHedgePricesAsyncBuffer(() => ServerTime.Minute + ""));
+      ?? (_setHedgeGrossesAsyncBuffer = new GetHedgePricesAsyncBuffer(() => ServerTime.Second / 5 + ""));
     void OnSetExitGrossByHedgeGrossess() => SetHedgeGrossesAsyncBuffer.Push(SetExitPriceByHedgeGrosses);
     private void SetExitPriceByHedgeGrosses() {
       //var hedgedPositions = HedgedTrades().Select(t => t.IsBuy ? t.Lots : -t.Lots).Buffer(2)
       //.Select(b => (p1: b[0], p2: b[1], 0)).ToArray().With(a => a.Any() ? a.Single() : GetCurrentHedgePositions(true));
-      var hh = CurrentHedgesByPositions().Select(h => h.ratio).Buffer(2)
-        .Select(b => TradesManagerStatic.CalcComboRatios(TradingRatio.ToInt(), b[0], -b[1] * HedgeCorrelation.Sign())).ToList();
-      hh.ForEach(h => {
-        ExitGrossByHedgePositionsCalc = GetExitPriceByHedgeGrosses(h.r1 * h.quantity, h.r2 * h.quantity);
-        var isBuy = h.r1.Sign();
-        ExitPriceByHedgePrices = CalcHedgeExitPrice(h.r1, h.r2, isBuy);
-      });
+      var hh = GetHedgedTradePositionsOrDefualt();
+      ExitGrossByHedgePositionsCalc = GetExitPriceByHedgeGrosses(hh.p1, hh.p2);
+      var isBuy = hh.p1.Sign();
+      ExitPriceByHedgePrices = CalcHedgeExitPrice(hh.p1, hh.p2, isBuy);
       /// Locals
       double CalcHedgeExitPrice(int p1, int p2, int isBuy) {
         var prices = CalcHedgePrices(p1, p2).Select(t => t.price).ToList();
@@ -231,20 +232,27 @@ namespace HedgeHog.Alice.Store {
     //double GetExitHedgePrice(int position1, int position 2) {
     //  CalcHedgePrices()
     //}
+
+    static int bufferCountRatio = 3;
     public double GetExitPriceByHedgeGrosses(int position1, int position2) {
-      var prices0 = GetHedgeGrosses(position1, position2, 2, 2).Select(t => t.v).ToList();
-      var bufferCount = prices0.Count / 3;
+      var prices0 = VoltageFunction == VoltageFunction.GrossV
+        ? UseRates(ra => ra.Select(GetVoltage).ToList()).Single()
+        : GetHedgeGrosses(position1, position2, 2, 2).Select(t => t.v).ToList();
+      //return prices0.StandardDeviation().Round();
+      var bufferCount = prices0.Count / bufferCountRatio;
       var bufferSkip = (prices0.Count * 0.05).ToInt();
       var prices1 = prices0.Buffer(bufferCount.Max(1), bufferSkip.Max(1)).Where(b => b.Count == bufferCount);
-      var bySDReg = prices1.AsParallel().Select(prices => prices.StDevByRegressoin() * 1.5).DefaultIfEmpty(double.NaN).Max();
+      var bySDReg = prices1.AsParallel().Select(prices => prices.StDevByRegressoin() * 2).DefaultIfEmpty(double.NaN).Average();
       return bySDReg.Round();
     }
 
     private IEnumerable<(Rate rate, double v)> GetHedgeGrosses(int position1, int position2, double cmaPeriod, int cmaPasses)
       => UseRates(ra => TradingMacroHedged(tmh => tmh.UseRates(rah =>
-      (from r1 in ra
+      (from bu in new[] { BaseUnitSize }
+       from buh in new[] { tmh.BaseUnitSize }
+       from r1 in ra
        join r2 in rah on r1.StartDate equals r2.StartDate
-       select (rate: r1, v: r1.PriceAvg * BaseUnitSize * position1 + r2.PriceAvg * tmh.BaseUnitSize * position2))))
+       select (rate: r1, v: r1.PriceAvg * bu * position1 + r2.PriceAvg * buh * position2))))
       ).Concat().Concat().Concat()
       .Cma(r => r.v, cmaPeriod, cmaPasses, (r, v) => (r.rate, v));
     public enum HedgeCalcTypes { ByTV, ByHV, ByPos, ByTR };
@@ -346,7 +354,7 @@ namespace HedgeHog.Alice.Store {
             DateTime lastScan = DateTime.MinValue;
             CurrentHedgesByHVObserver = _CurrentHedgesByHVSubject.InitBufferedObservable((a, b) => {
               try {
-                var az = a?.Zip(b, (p, n) => HedgePosition.Create((p.contract, p.ratio.Cma(10, n.ratio), n.price, n.context,n.isBuy)));
+                var az = a?.Zip(b, (p, n) => HedgePosition.Create((p.contract, p.ratio.Cma(10, n.ratio), n.price, n.context, n.isBuy)));
                 var x = a?.Any() == false || DateTime.Now > lastScan.AddMinutes(1) ? b : az?.ToList();
                 return x ?? new CURRENT_HEDGES();
               } catch(Exception exc) {

@@ -224,14 +224,14 @@ namespace HedgeHog {
     /// <param name="source"></param>
     /// <param name="count"></param>
     /// <returns></returns>
-    public static T[] GetRange<T>(this IList<T> source, int count) {
+    public static IList<T> GetRange<T>(this IList<T> source, int count) {
       var a = new T[count];
       var start = source.Count - count;
       if(start < 0) return new T[0];
       Array.Copy(source.ToArray(), start, a, 0, count);
       return a;
     }
-    public static T[] GetRangeRatio<T>(this IList<T> source, double size) {
+    public static IList<T> GetRangeRatio<T>(this IList<T> source, double size) {
       var count = (source.Count * size).ToInt();
       if(count < 0)
         return source.GetRange(-count);

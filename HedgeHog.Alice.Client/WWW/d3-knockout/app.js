@@ -819,6 +819,7 @@
       this.showNegativeVolts = ko.observable(-100000000).extend({ persist: "showNegativeVolts" + pair });
       this.showNegativeVolts2 = ko.observable(-10000000).extend({ persist: "showNegativeVolts2" + pair });
       this.doShowChartBid = ko.observable("p");
+      this.y2Scale = ko.observable(false).extend({ persist: "y2Scale" + pair });
 
       // #region refreshChartsInterval
       this.refreshChartsInterval = ko.observable(1000 * 10).extend({ persist: "refreshChartsInterval" + pair });
@@ -851,8 +852,9 @@
           { n: "doShowChartBid", v: self.doShowChartBid, t: gettype(self.doShowChartBid()) },
           { n: "refreshChartsInterval", v: self.refreshChartsInterval, t: gettype(self.refreshChartsInterval()) },
           { n: "refreshChartsInterval", v: self.refreshCharts2Interval, t: gettype(self.refreshCharts2Interval()) },
-          { n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
-          { n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
+          { n: "y2Scale", v: self.y2Scale, t: gettype(self.y2Scale()) },
+          //{ n: "showNegativeVolts", v: self.showNegativeVolts, t: gettype(self.showNegativeVolts()) },
+          //{ n: "showNegativeVolts2", v: self.showNegativeVolts2, t: gettype(self.showNegativeVolts2()) }
         ];
       });
       this.showWwwSettings = function () {
