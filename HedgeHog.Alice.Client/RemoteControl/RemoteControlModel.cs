@@ -640,7 +640,7 @@ namespace HedgeHog.Alice.Client {
 
     void UpdateTradingStatistics() {
       try {
-        _tradingStatistics.CurrentGross = MasterModel.TradesManager.GetTrades().Net2();
+        _tradingStatistics.CurrentGross = MasterModel.TradesManager.GetTrades().Net();
 
         if(GetTradingMacros().Any(tm => !tm.UseRates(rs => rs.Count > 0).SingleOrDefault()))
           return;
@@ -668,7 +668,7 @@ namespace HedgeHog.Alice.Client {
           var clp = tms.Sum(tm => tm.CurrentLossInPips);
           _tradingStatistics.CurrentLossInPips = clp;
           _tradingStatistics.OriginalProfit = MasterModel.AccountModel.OriginalProfit;
-          var net = MasterModel.TradesManager.GetTrades().Net2();
+          var net = MasterModel.TradesManager.GetTrades().Net();
           (from tm in tms
            where IsInVirtualTrading && tm.HaveHedgedTrades()
            select new Action(() => MasterModel.GrossToExitCalc = () => tm.ExitGrossByHedgePositions)
@@ -1193,8 +1193,8 @@ namespace HedgeHog.Alice.Client {
           var pair = trade.Pair;
           GetTradingMacros(pair).Take(1).ForEach(tm => {
             tm.LastTrade = trade;
-            var totalGross = trade.NetPL2;
-            tm.LastTradeLoss = tm.TradesClosed.Where(t => t.OpenOrderID == trade.OpenOrderID).Net2().Min(0);
+            var totalGross = trade.NetPL;
+            tm.LastTradeLoss = tm.TradesClosed.Where(t => t.OpenOrderID == trade.OpenOrderID).Net().Min(0);
             tm.RunningBalance += totalGross;
             tm.CurrentLoss = tm.CurrentLoss + totalGross;
             OnZeroPositiveLoss(tm);

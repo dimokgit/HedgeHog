@@ -552,10 +552,10 @@ namespace HedgeHog.Alice.Client {
       });
       var tmh = (from t in GetHedgedTradingMacros(pair)
                  join hts in TradingMacro.HedgeTradesVirtual on new { pair1 = t.tm1.Pair, pair2 = t.tm2.Pair } equals new { pair1 = hts[0].Pair, pair2 = hts[1].Pair }
-                 let netSum = hts.SelectMany(t => cp(t).Select(p2 => p2 * t.BaseUnitSize), (t, hp) => t.CalcNetPL2(hp)).Sum()
+                 let netSum = hts.SelectMany(t => cp(t).Select(p2 => p2 * t.BaseUnitSize), (t, hp) => t.CalcNetPL(hp)).Sum()
                  from ht in hts
                  from p in cp(ht).DefaultIfEmpty(double.NaN)
-                 select tradeInfo(ht, ht.CalcNetPL2(p * ht.BaseUnitSize), netSum)
+                 select tradeInfo(ht, ht.CalcNetPL(p * ht.BaseUnitSize), netSum)
                  ).ToArray();
       return tmh;
 

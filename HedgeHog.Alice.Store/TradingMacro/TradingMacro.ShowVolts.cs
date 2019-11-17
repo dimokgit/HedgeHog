@@ -361,7 +361,7 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     CorridorStatistics ShowVoltsByGross() {
-      ShowVolts(TradesManager.GetTrades().Net2(), 0, GetVoltage2, SetVoltage2);
+      ShowVolts(TradesManager.GetTrades().Net(), 0, GetVoltage2, SetVoltage2);
       return null;
     }
     CorridorStatistics ShowVoltsByStraddleSpread() {

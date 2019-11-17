@@ -36,9 +36,6 @@ namespace HedgeHog.Shared {
     public static double Net(this IEnumerable<Trade> trades) {
       return trades == null ? 0 : trades.Select(t => t.NetPL).DefaultIfEmpty(0).Sum(t => t);
     }
-    public static double Net2(this IEnumerable<Trade> trades) {
-      return trades == null ? 0 : trades.Select(t => t.NetPL2).DefaultIfEmpty(0).Sum(t => t);
-    }
     public static double Gross(this IEnumerable<Trade> trades) {
       return trades == null ? 0 : trades.Select(t => t.GrossPL).DefaultIfEmpty(0).Sum(t => t);
     }
@@ -293,8 +290,7 @@ namespace HedgeHog.Shared {
       set { _commissionByTrade = value; }
     }
     public double NetPL => GrossPL - (CommissionByTrade == null ? Commission : CommissionByTrade(this));
-    public double NetPL2 => GrossPL - (CommissionByTrade == null ? Commission : CommissionByTrade(this) * 2);
-    public double CalcNetPL2(double close) => CalcGrossPL(close) - (CommissionByTrade == null ? Commission : CommissionByTrade(this) * 2);
+    public double CalcNetPL(double close) => CalcGrossPL(close) - (CommissionByTrade == null ? Commission : CommissionByTrade(this));
 
     public double NetPLInPips { get { return InPips(NetPL); } }
     public double OpenPrice => Open / BaseUnitSize;

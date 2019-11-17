@@ -79,7 +79,8 @@ namespace IBApp {
       trade.Open = avgCost;
       trade.Lots = position.Abs().ToInt();
       trade.OpenOrderID = "";
-      trade.CommissionByTrade = CommissionByTrade;
+      var commission = contract.IsStock ? 0.016 : 0.85 * 5;
+      trade.CommissionByTrade = t => t.Lots * commission;
       return trade;
     }
   }

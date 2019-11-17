@@ -182,7 +182,7 @@ namespace HedgeHog.Alice.Store {
           var tuples = (from ht in hedgedTrades
                         from x in ht.tm.UseRates(ra => ra.Select(r
                         => (d: r.StartDate
-                        , t: (r, n: ht.t.CalcNetPL2((ht.t.Close = ht.t.IsBuy ? r.BidLow : r.AskHigh) * ht.tm.BaseUnitSize)))))
+                        , t: (r, n: ht.t.CalcNetPL((ht.t.Close = ht.t.IsBuy ? r.BidLow : r.AskHigh) * ht.tm.BaseUnitSize)))))
                         select x.ToArray()
           ).ToArray();
           tuples.Buffer(2)

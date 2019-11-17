@@ -892,8 +892,8 @@ namespace HedgeHog.Alice.Store {
     public double PipsPerMinuteCmaFirst { get { return InPips(PriceQueue.Speed(.5)); } }
     public double PipsPerMinuteCmaLast { get { return InPips(PriceQueue.Speed(1)); } }
 
-    public double OpenTradesGross => Trades.Net2();
-    public double OpenTradesGross2 => Trades.Net2();
+    public double OpenTradesGross => Trades.Net();
+    public double OpenTradesGross2 => Trades.Net();
 
     public double OpenTradesGross2InPips => TradesManager.MoneyAndLotToPips(OpenTradesGross2, Trades.Lots(), Pair);
 

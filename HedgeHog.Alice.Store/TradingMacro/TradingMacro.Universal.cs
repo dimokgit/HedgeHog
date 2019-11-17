@@ -278,7 +278,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         #region adjustEnterLevels
-        Func<Trade, bool> minPLOk = t => IsAutoStrategy && false ? CurrentGrossInPips == 0 : t.NetPL2 > 0;
+        Func<Trade, bool> minPLOk = t => IsAutoStrategy && false ? CurrentGrossInPips == 0 : t.NetPL > 0;
         Action adjustEnterLevels = () => {
           if(firstTime) {
             onOpenTradeLocal += t => { };
