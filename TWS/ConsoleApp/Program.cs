@@ -22,6 +22,7 @@ using System.Runtime.InteropServices;
 using System.Reactive;
 using MarkdownLog;
 using HedgeHog.Alice.Store;
+using HedgeHog.DateTimeZone;
 
 namespace ConsoleApp {
   class Program {
@@ -62,13 +63,27 @@ namespace ConsoleApp {
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7497;
-      const int clientId = 11;
+      const int twsPort = 7496;
+      const int clientId = 0;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       #endregion
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        var tzs = TimeZoneInfo.GetSystemTimeZones();
+        am.OpenOrderObservable.Subscribe(oom => HandleMessage(oom.ToTextTable("Open Order")));
+        {
+          (from c in "ESZ9".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
+           from ots in am.OpenTrade(o=> o.SetType(c,DateTime.Now, IBApi.Order.OrderTypes.Adaptive).Transmit=false, c, 1)
+           //from ots in am.OpenTrade(c, 1)
+           from ot in ots
+           select new { ot.holder, ot.error }
+           )
+           .ToArray()
+           .Subscribe(ot => HandleMessage(ot.ToTextOrTable("Open Trade")));
+          return;
+        }
+
         {// Load bars
           /** Load History
           var c = new Contract() {
@@ -209,16 +224,6 @@ namespace ConsoleApp {
              //am.CurrentOptions("VXG9", 0, 2, 3, c => true).Subscribe(_ => HandleMessage(_.Select(o => new { o.instrument }).OrderBy(__ => __.instrument).ToMarkdownTable()));
            });
         }
-        {
-          am.OpenOrderObservable.Take(1).Delay(1.FromSeconds()).Subscribe(_ => {
-            var order = am.OrderContractsInternal.Values.First();
-            order.order.Conditions.Cast<PriceCondition>().ForEach(pc => pc.Price += 5);
-            am.CancelOrder(order.order.OrderId).Subscribe(m => HandleMessage(m));
-            //am.PlaceOrder(order.order, order.contract).Subscribe(po => HandleMessage(po));
-            //HandleMessage(orders.Select(oc => new { oc.order, oc.contract }).ToTextOrTable("Ordes:"));
-          });
-        }
-
         am.PositionsEndObservable.Subscribe(positions => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
         {
           Task.Delay(3000).ContinueWith(_ => {
@@ -430,6 +435,16 @@ namespace ConsoleApp {
             HandleMessage(cd2.Contract.ToJson(true));
           });
         });
+        { // Change order condition
+          am.OpenOrderObservable.Subscribe(oom => {
+            var order = am.OrderContractsInternal.Values.First();
+            order.order.Conditions.Cast<PriceCondition>().ForEach(pc => pc.Price += 5);
+            am.CancelOrder(order.order.OrderId).Subscribe(m => HandleMessage(m));
+            //am.PlaceOrder(order.order, order.contract).Subscribe(po => HandleMessage(po));
+            //HandleMessage(orders.Select(oc => new { oc.order, oc.contract }).ToTextOrTable("Ordes:"));
+          });
+          return;
+        }
 
         #region Local Tests
         void TestMakeBullPut(string symbol, bool placeOrder) {

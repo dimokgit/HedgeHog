@@ -15,7 +15,7 @@ namespace IBApp {
   public static class AccountManagerMixins {
     public static (Contract contract, int quantity) MakeHedgeCombo(this IEnumerable<(Contract c, double ratio)> combo, int quantity) => combo.ToList().MakeHedgeCombo(quantity);
     public static (Contract contract, int quantity) MakeHedgeCombo(this IList<(Contract c, double ratio)> combo, int quantity) =>
-      combo.Count.SideEffect(c=> {
+      combo.Count.SideEffect(c => {
         if(c != 2)
           Debugger.Break();
       }) == 2
@@ -32,7 +32,7 @@ namespace IBApp {
       var comboBuy = hhBuy.MakeHedgeCombo(maxLegQuantity);
       var comboSell = hhSell.MakeHedgeCombo(maxLegQuantity);
       if(comboBuy.quantity != comboSell.quantity) throw new Exception($"Combo buy/sell quantities should be the same:{new { comboBuy, comboSell }}");
-      return new [] { (comboBuy.contract, comboSell.contract, comboBuy.quantity) };
+      return new[] { (comboBuy.contract, comboSell.contract, comboBuy.quantity) };
       /// Locals
       IEnumerable<Contract> getCP(Contract[] option) => (from o in option group o by o.IsCall into g select g.First());
     }

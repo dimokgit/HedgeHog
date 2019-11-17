@@ -40,7 +40,7 @@ namespace IBApp {
     public Account Account { get; private set; }
     public readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade> { ChangeTrackingEnabled = true };
     private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
-    public Func<Trade, double> CommissionByTrade = t => t.Lots * .008;
+    public Func<Trade, double> CommissionByTrade = t => t.Lots * .008 * 2;
     Func<string, Trade> CreateTrade { get; set; }
 
     IObservable<(Offer o, bool b)> _offerMMRs = TradesManagerStatic.dbOffers

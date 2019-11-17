@@ -254,7 +254,7 @@ namespace IBApp {
           var orderType = price == 0
             ? /*(contract.IsFuturesCombo ? "REL + " : "") + */"MKT"
             : type.IfEmpty(contract.IsStocksOrFuturesCombo ? "LMT + MKT" : "LMT");
-          bool isPreRTH = true;// orderType == "LMT";
+          bool isPreRTH = contract.IsPreRTH(IBClientMaster.ServerTime);
           var order = OrderFactory(contract, quantity, price, goodTillDate, goodAfterDate, orderType, isPreRTH);
           order.OrderRef = orderRef;
           order.Conditions.AddRange(condition.YieldNotNull());

@@ -41,6 +41,7 @@ namespace HedgeHog.Shared {
         => dbOffers
       .Where(o => o.Pair.ToUpper() == symbol.FutureCode().WrapPair())
       .Take(1)
+    .Count(1, c => throw new Exception($"{new { symbol }} is missing in dbOffers"), null)
       //.DefaultIfEmpty(OfferDefault)
       .Single();
     public static Offer GetOffer(string pair) => GetOfferImpl(pair);

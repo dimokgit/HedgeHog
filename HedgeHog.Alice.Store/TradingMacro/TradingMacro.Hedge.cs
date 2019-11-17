@@ -193,14 +193,15 @@ namespace HedgeHog.Alice.Store {
         return null;
       } finally {
         sw.Stop();
-        var s = $"{nameof(ShowVoltsByGrossVirtual)}[{this}]:{new { sw.ElapsedMilliseconds }}";
-        if(!IsInVirtualTrading && sw.ElapsedMilliseconds > 100)
+        //Debug.WriteLine(s);
+        _ShowVoltsByGrossVirtualElapsed = _ShowVoltsByGrossVirtualElapsed.Cma(10, sw.ElapsedMilliseconds);
+        if(!IsInVirtualTrading && _ShowVoltsByGrossVirtualElapsed > 100) {
+          var s = $"{nameof(ShowVoltsByGrossVirtual)}[{this}]:{new { _ShowVoltsByGrossVirtualElapsed }}";
           Log = new Exception(s);
-        Debug.WriteLine(s);
-        _ShowVoltsByGrossVirtual = _ShowVoltsByGrossVirtual.Cma(10, sw.ElapsedMilliseconds);
+        }
       }
     }
-    double _ShowVoltsByGrossVirtual = double.NaN;
+    double _ShowVoltsByGrossVirtualElapsed = double.NaN;
     private (int p1, int p2, int) GetHedgedTradePositionsOrDefualt() =>
       HedgedTrades().Select(ht => (int)ht.Position).Pairwise((p1, p2) => (p1, p2, 0)).DefaultIfEmpty(GetCurrentHedgePositions(true)).SingleOrDefault();
 

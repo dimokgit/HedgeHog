@@ -1,9 +1,11 @@
 ﻿using HedgeHog;
 using HedgeHog.Core;
+using HedgeHog.DateTimeZone;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -97,7 +99,7 @@ namespace IBApi {
     public bool IsFuturesCombo => LegsEx(l => l.c.IsFuture).Count() > 1;
     public bool IsStocksCombo => LegsEx(l => l.c.IsStock).Count() > 1;
     public bool IsStocksOrFuturesCombo => IsStocksCombo || IsFuturesCombo;
-        public bool IsCombo => LegsEx(l => l.c.IsOption).Count() > 1;
+    public bool IsCombo => LegsEx(l => l.c.IsOption).Count() > 1;
     public bool IsCall => IsOption && Right == "C";
     public bool IsPut => IsOption && Right == "P";
     public bool IsOption => SecType == "OPT" || SecType == "FOP";
@@ -113,6 +115,33 @@ namespace IBApi {
     public int ReqMktDataId { get; set; }
     public IEnumerable<double> BreakEven(double openPrice) => Legs().Select(l => l.c.Strike + (l.c.IsCall ? 1 : -1) * openPrice);
 
+    public static IList<DateTimeOffset> _LiquidHoursDefault = new List<DateTimeOffset> {
+
+    };
+    public IList<DateTimeOffset> _LiquidHours = null;
+    public IList<DateTimeOffset> LiquidHours => _LiquidHours ?? (_LiquidHours 
+      = FromDetailsCache().Select(LiquidHoursImpl).SingleOrDefault(lh => lh.Any()) ?? GetTodayLiquidRange());
+    static IList<DateTimeOffset> LiquidHoursImpl(ContractDetails cd) =>
+      (from ranges in cd.LiquidHours.Split(';')
+       let range = ranges.Split('-')
+       where range.Length == 2
+       from t in range
+       select DateTimeOffset.ParseExact(t, "yyyyMMdd:HHmm", null, DateTimeStyles.None).InTZ(TimeZoneFromContractDetails(cd)).InNewYork()
+       )
+      .Take(2)
+      .ToArray();
+    IList<DateTimeOffset> GetTodayLiquidRange() =>
+      (from t in new[] { "0930", "1600" }
+       select DateTimeOffset.ParseExact(t, "yyyyMMdd:HHmm", null, DateTimeStyles.None).InTZ(TimeZone).InNewYork()
+       ).ToArray();
+    public bool IsPreRTH(DateTime serverTime) => !serverTime.Between(LiquidHours);
+
+    #region TimeZone
+    TimeZoneInfo _timeZone = null;
+    TimeZoneInfo TimeZone => (_timeZone ?? (_timeZone = FromDetailsCache().Select(TimeZoneFromContractDetails).Single()));
+    static TimeZoneInfo TimeZoneFromContractDetails(ContractDetails cd) => TimeZoneInfo.FindSystemTimeZoneById(ParseTimeZone(cd));
+    static string ParseTimeZone(ContractDetails cd) => Regex.Match(cd.TimeZoneId, @".+\((.+)\)").Groups[1] + "";
+    #endregion
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
@@ -149,7 +178,7 @@ namespace IBApi {
 
     public IEnumerable<T> LegsForHedge<T>(string key, Func<(Contract c, ComboLeg leg), T> map)
       => LegsEx().OrderByDescending(l => l.contract.Key == key).Select(map);
-    public IEnumerable<(Contract c, ComboLeg leg)> LegsForHedge(string key)=> LegsEx().OrderByDescending(l => l.contract.Key == key);
+    public IEnumerable<(Contract c, ComboLeg leg)> LegsForHedge(string key) => LegsEx().OrderByDescending(l => l.contract.Key == key);
     public IEnumerable<T> LegsOrMe<T>(Func<Contract, T> map) => LegsOrMe().Select(map);
     public IEnumerable<Contract> LegsOrMe() => Legs().Select(cl => cl.c).DefaultIfEmpty(this);
 

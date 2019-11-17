@@ -11,6 +11,8 @@ namespace HedgeHog.DateTimeZone {
 
     public static DateTime InNewYork(this DateTime d) { return TimeZoneInfo.ConvertTime(d, Eastern); }
     public static DateTime InLondon(this DateTime d) { return TimeZoneInfo.ConvertTime(d, LondonZone); }
+    public static DateTimeOffset InNewYork(this DateTimeOffset d) { return TimeZoneInfo.ConvertTime(d, Eastern); }
     public static DateTimeOffset InLondon(this DateTimeOffset d) { return TimeZoneInfo.ConvertTime(d, LondonZone); }
+    public static DateTimeOffset InTZ(this DateTimeOffset d, TimeZoneInfo tz) { return TimeZoneInfo.ConvertTime(d, tz); }
   }
 }

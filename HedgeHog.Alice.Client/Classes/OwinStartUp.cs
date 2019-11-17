@@ -572,6 +572,7 @@ namespace HedgeHog.Alice.Client {
                 ).ToArray();
     }
     bool IsTestTradeMode() => Debugger.IsAttached;
+    static bool useComboOrder = true;
     [BasicAuthenticationFilter]
     public async Task<object[]> OpenHedged(string pair, string key, int quantity, bool isBuy, bool rel, bool test) {
       var outMe = MonoidsCore.ToFunc((string order, string errorMsg) => new { order, errorMsg });
@@ -583,10 +584,10 @@ namespace HedgeHog.Alice.Client {
       } else {
         var am = GetAccountManager();
         if(c == null) throw new Exception($"{new { key }} not found");
-        if(!rel && c.IsCombo) {
+        if(!rel || c.IsCombo) {
           var oe = new Action<IBApi.Order>(o => o.Transmit = !test);
-          var legs = await(from t in c.Legs().ToObservable()
-                           from ots in am.OpenTrade(oe, t.c, t.r * quantity)
+          var legs = await(from t in c.LegsEx().ToObservable()
+                           from ots in am.OpenTrade(oe, t.contract, t.leg.Quantity * quantity)
                            from ot in ots
                            select outMe(ot.holder + "", ot.error.errorMsg)
                            ).ToArray();

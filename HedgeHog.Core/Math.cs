@@ -230,9 +230,8 @@ namespace HedgeHog {
     public static bool Between(this double value, double d1, double d2) {
       return d1 < d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
     }
-    public static bool Between(this DateTime value, DateTime[] d) {
-      return value.Between(d[0], d[1]);
-    }
+    public static bool Between(this DateTime value, IList<DateTimeOffset> d) => value.Between(d[0].DateTime, d[1].DateTime);
+    public static bool Between(this DateTime value, IList<DateTime> d) => value.Between(d[0], d[1]);
     public static bool Between(this DateTime value, DateTime d1, DateTime d2) {
       return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
     }
