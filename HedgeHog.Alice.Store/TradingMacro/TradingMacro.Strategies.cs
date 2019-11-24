@@ -145,34 +145,35 @@ namespace HedgeHog.Alice.Store {
       }
     });
     private void StrategyHedge() {
-      var gross = TradesManager.GetTrades().Gross();
+      var gross = TradesManager.GetTrades().Net();
       if(gross > ExitGrossByHedgePositions) {
         var exitByGrossMsg = $"Gross {gross:c0} > {ExitGrossByHedgePositions:c0}";
         OnSMS(SmsKey.GrossExit, exitByGrossMsg);
         IsTradingActive = false;
         CloseTrades(null, exitByGrossMsg);
-        TradingMacroHedged(tm => tm.CloseTrades(null, exitByGrossMsg));
+        TradingMacroHedged(tm => tm.CloseTrades(null, exitByGrossMsg), -1);
         ExitGrossByHedgePositionsReset();
       } else
         TradeConditionsEval()
           .Where(_ => IsTradingActive)
           .ForEach(eval => {
+            int hedgeIndex = 0;
             var pos = GetCurrentHedgePositions(true);
             if(eval.HasAny() && pos.p1 != 0 && pos.p2 != 0) {
               var isBuy = eval.HasUp();
               OnSMS(SmsKey.Hedge, "Go hedge " + eval);
               TradeConditionsReset();
-              OpenHedgePosition(isBuy, pos.p1, pos.p2);
+              OpenHedgePosition(isBuy, pos.p1, pos.p2, hedgeIndex);
             } else
               OnSMS(SmsKey.Hedge, "Go hog");
           });
     }
 
-    public void OpenHedgePosition(bool isBuy, int pos1, int pos2) {
+    public void OpenHedgePosition(bool isBuy, int pos1, int pos2, int hedgeIndex) {
       if(!HaveTrades(isBuy)) {
         OnSMS(SmsKey.GrossExit, $"Hedge {(isBuy ? "buy" : "sell")} {pos1}/{pos2}. Gross condition > {ExitGrossByHedgePositions:c0}");
         OpenReverse(this, isBuy, pos1);
-        TradingMacroHedged(tmh => OpenReverse(tmh, !isBuy, pos2.Abs()));
+        TradingMacroHedged(tmh => OpenReverse(tmh, !isBuy, pos2.Abs()), hedgeIndex);
       }
       void OpenReverse(TradingMacro tm, bool buy, int lot) {
         tm.CloseTrades(null, "Go Hedge Reverse");
@@ -194,8 +195,11 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    object _runStrategyGate = new object();
     void RunStrategy() {
-      StrategyAction();
+      if(IsTrader)
+        lock(_runStrategyGate)
+          StrategyAction();
     }
 
 
@@ -518,7 +522,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     void OnSMS(SmsKey key, string message) => SMSSubject.OnNext((key, message, ""));
-    void OnSMS(SmsKey key, string message,string duc) => SMSSubject.OnNext((key, message,duc));
+    void OnSMS(SmsKey key, string message, string duc) => SMSSubject.OnNext((key, message, duc));
     #endregion
 
     void SendSms(string header, object message, bool sendScreenshot) {

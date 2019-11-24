@@ -8,16 +8,17 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using COMBO_TRADES_IMPL = System.Collections.Generic.IEnumerable<(IBApi.Contract contract, int position, double open, double openPrice, double takeProfit, int orderId)>;
-using COMBO_TRADES = System.IObservable<IBApp.ComboTrade>;
 namespace IBApp {
   public class ComboTrade {
     public bool IsVirtual { get; private set; }
     public double Change => closePrice * position.Sign() - openPrice;
+    public double Commission => contract.Legs((c, l) => (c, q: l.Ratio.Abs())).DefaultIfEmpty((c: contract, q: 1))
+      .Sum(t => AccountManager.CommissionPerContract(t.c) * t.q) * position.Abs();
     //new HedgeCombo(hc.contract, pl, openPrice, closePrice, hc.quantity * g.First().position.position.Sign())
     public ComboTrade() {
 
     }
-    public ComboTrade(Contract contract, double pl, double openPrice, double closePrice, int position, double takeProfit, double profit,double open,int orderId) {
+    public ComboTrade(Contract contract, double pl, double openPrice, double closePrice, int position, double takeProfit, double profit, double open, int orderId) {
       this.contract = contract;
       this.pl = pl;
       this.openPrice = openPrice;
@@ -113,7 +114,7 @@ namespace IBApp {
       var bes = (from cts in ComboTrades(1).ToArray()
                  from date in cts.Select(ct => ct.contract.Expiration).MaxByOrEmpty().Take(1)
                  from ct in cts
-                 where ct.contract.IsOption && ct.contract.Expiration == date && (instrument.IsNullOrEmpty() || ct.contract.UnderContract.Any(u=>u.Instrument.ToLower() == instrument.ToLower()))
+                 where ct.contract.IsOption && ct.contract.Expiration == date && (instrument.IsNullOrEmpty() || ct.contract.UnderContract.Any(u => u.Instrument.ToLower() == instrument.ToLower()))
                  select (strike: ct.strikeAvg, debit: ct.openPrice.Abs(), ct.contract.IsCall)
                  ).ToArray();
       return (from pos in bes select BreakEvens(pos));
@@ -121,7 +122,7 @@ namespace IBApp {
     }
     public static double priceFromProfit(double profit, double position, int multiplier, double open)
       => (profit + open) / position / multiplier;
-    public COMBO_TRADES ComboTrades(double priceTimeoutInSeconds) {
+    public IObservable<ComboTrade> ComboTrades(double priceTimeoutInSeconds) {
       var combos = (
         from c in ComboTradesImpl().ToObservable()
         from underPrice in UnderPrice(c.contract, priceTimeoutInSeconds).DefaultIfEmpty()

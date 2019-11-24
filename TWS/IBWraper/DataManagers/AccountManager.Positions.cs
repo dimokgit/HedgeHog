@@ -63,7 +63,7 @@ namespace IBApp {
           .ForEach(a => a());
       }
 
-      TraceTrades("OnPositions: ", OpenTrades);
+      //TraceTrades("OnPositions: ", OpenTrades);
       //if(IbClient.ClientId == 0 && !_positions.Values.Any(p => p.position != 0))
       //  CancelAllOrders("Canceling stale orders");
     }

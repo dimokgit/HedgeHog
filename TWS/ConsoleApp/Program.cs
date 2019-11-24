@@ -41,6 +41,7 @@ namespace ConsoleApp {
     static void Main(string[] args) {
       #region Init
       ShowWindow(ThisConsole, MAXIMIZE);
+      TradesManagerStatic.dbOffers = GlobalStorage.LoadOffers();
       int _nextValidId = 0;
 
       TradesManagerStatic.AccountCurrency = "USD";
@@ -64,18 +65,25 @@ namespace ConsoleApp {
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7496;
-      const int clientId = 0;
+      const int clientId = 1;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       #endregion
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        var tzs = TimeZoneInfo.GetSystemTimeZones();
+        am.PositionsObservable.Take(2).ToArray().Subscribe(_ =>
+        am.ComboTrades(1)
+        .Select(ct => new { ct.contract,ct.position, ct.pl, ct.Commission })
+        .ToArray()
+        .Subscribe(cts => HandleMessage(cts.ToTextOrTable("Combo Trades:"))));
+        //"QQQ".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract).Subscribe(c => HandleMessage($"Test Contract:{new { c.Instrument, c.Exchange }}"));
+        return;
+        var isTest = true;
         am.OpenOrderObservable.Subscribe(oom => HandleMessage(oom.ToTextTable("Open Order")));
         {
-          (from c in "ESZ9".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
-           from ots in am.OpenTrade(o=> o.SetType(c,DateTime.Now, IBApi.Order.OrderTypes.Adaptive).Transmit=false, c, 1)
-           //from ots in am.OpenTrade(c, 1)
+          (from c in "SPY".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
+           from ots in am.OpenTrade(o => o.SetType(c, DateTime.Now, IBApi.Order.OrderTypes.MIDPRICE).Transmit = !isTest, c, 1)
+             //from ots in am.OpenTrade(c, 1)
            from ot in ots
            select new { ot.holder, ot.error }
            )

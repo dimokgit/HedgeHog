@@ -41,6 +41,7 @@ namespace IBApp {
     public readonly ReactiveList<Trade> OpenTrades = new ReactiveList<Trade> { ChangeTrackingEnabled = true };
     private readonly ReactiveList<Trade> ClosedTrades = new ReactiveList<Trade>();
     public Func<Trade, double> CommissionByTrade = t => t.Lots * .008 * 2;
+    public static double CommissionPerContract(Contract contract) => contract.IsStock ? 0.016 : 0.85 * 5;
     Func<string, Trade> CreateTrade { get; set; }
 
     IObservable<(Offer o, bool b)> _offerMMRs = TradesManagerStatic.dbOffers

@@ -21,5 +21,13 @@ namespace HedgeHog {
             yield return exc2;
       }
     }
+    public static void Try<T>(this Action a, T context, Action<T, Exception> onError) {
+      try {
+        a();
+      } catch(Exception exc) {
+        onError(context, exc);
+      }
+    }
+
   }
 }

@@ -1315,9 +1315,6 @@ namespace HedgeHog.Alice.Store {
       //.Merge(new { BPA1Tip__ = _wwwBpa1 }, () =>TradeConditionsHave(BPA12Ok))
       )
       .SingleOrDefault();
-      var h = TradingMacroHedged(HVP);
-      // RhSDAvg__ = _macd2Rsd.Round(1) })
-      // CmaDist__ = InPips(CmaMACD.Distances().Last()).Round(3) })
       IEnumerable<double> HV(TradingMacro tm) => tm.HistoricalVolatility();
       double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints(true);
       double VoltsReg(TradingMacro tm, int index) {
@@ -1765,9 +1762,14 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<TradingMacro> TradingMacrosByPair(string pair) {
       return _tradingMacros.Where(tm => tm.Pair == pair).OrderBy(tm => PairIndex);
     }
-    public void TradingMacroHedged(Action<TradingMacro> map) => TradingMacroHedged().ForEach(map);
-    public IEnumerable<T> TradingMacroHedged<T>(Func<TradingMacro, T> map) => TradingMacroHedged().Select(map);
-    public IEnumerable<TradingMacro> TradingMacroHedged() => TradingMacrosByPair(PairHedge).Where(tm => tm.BarPeriod == BarPeriod);
+
+    public void TradingMacroHedged(Action<TradingMacro> map, int index) => TradingMacroHedged(index).ForEach(map);
+    public IEnumerable<T> TradingMacroHedged<T>(Func<TradingMacro, T> map, int index) => TradingMacroHedged(index).Select(map);
+    public IEnumerable<TradingMacro> TradingMacroHedged(int index)
+      => PairHedges.Skip(index <= 0 ? 0 : index)
+      .Take(index < 0 ? int.MaxValue : 1)
+      .SelectMany(TradingMacrosByPair).Where(tm => tm.BarPeriod == BarPeriod);
+
     public IEnumerable<TradingMacro> TradingMacrosByPairHedge(string pair) => _tradingMacros.Where(tm => tm.PairHedge == pair).OrderBy(tm => PairIndex);
     #endregion
 

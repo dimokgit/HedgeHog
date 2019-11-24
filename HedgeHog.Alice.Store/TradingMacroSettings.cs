@@ -214,6 +214,7 @@ namespace HedgeHog.Alice.Store {
     public string Pair { get; set; }
     public int PairIndex { get; set; }
     public string PairHedge { get; set; }
+    public string PairHedge2 { get; set; }
     public int HedgeCorrelation { get; set; }
     public int HedgeTimeValueDays { get; set; }
     public int PowerRowOffset { get; set; }

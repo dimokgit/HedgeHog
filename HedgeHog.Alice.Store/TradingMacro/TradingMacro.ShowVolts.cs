@@ -79,9 +79,11 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.Gross:
           return ShowVoltsByGross;
         case HedgeHog.Alice.VoltageFunction.GrossV:
-          return () => ShowVoltsByGrossVirtual(voltIndex);
+          return () => ShowVoltsByGrossVirtual(voltIndex, 0);
         case HedgeHog.Alice.VoltageFunction.RatioDiff:
-          return () => ShowVoltsByRatioDiff(voltIndex);
+          return () => ShowVoltsByRatioDiff(voltIndex, 0);
+        case HedgeHog.Alice.VoltageFunction.RatioDiff2:
+          return () => ShowVoltsByRatioDiff(voltIndex, 1);
         case HedgeHog.Alice.VoltageFunction.StDevDiff:
           return () => ShowVoltsByStDevDiff(voltIndex);
         case HedgeHog.Alice.VoltageFunction.HV:
@@ -89,7 +91,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.HedgeRatio:
           return () => ShowVoltsByHedgeRatio(voltIndex);
         case HedgeHog.Alice.VoltageFunction.HedgePrice:
-          return () => ShowVoltsByHedgePrice(voltIndex);
+          return () => ShowVoltsByHedgePrice(voltIndex,0);
         case HedgeHog.Alice.VoltageFunction.HVR:
           return () => ShowVoltsByHVR(voltIndex);
         case HedgeHog.Alice.VoltageFunction.StdRatio:
@@ -315,10 +317,10 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
-    public IEnumerable<int> TMCorrelation() =>
+    public IEnumerable<int> TMCorrelation(int hedgeIndex) =>
       new[] { HedgeCorrelation }.Where(i => i != 0)
       .IfEmpty(() => GetHedgeCorrelation(Pair, PairHedge))
-      .IfEmpty(() => TradingMacroHedged(tmOther => TMCorrelationImpl((this, tmOther))).Concat().Take(1));
+      .IfEmpty(() => TradingMacroHedged(tmOther => TMCorrelationImpl((this, tmOther)), hedgeIndex).Concat().Take(1));
 
     public IEnumerable<int> TMCorrelation(TradingMacro tmOther)
         => new[] { HedgeCorrelation }.Where(i => i != 0)
@@ -542,6 +544,9 @@ namespace HedgeHog.Alice.Store {
     IEnumerable<double> GetVoltHighByIndex(int voltIndex) => voltIndex == 0 ? GetVoltageHigh() : GetVoltage2High();
     IEnumerable<double> GetVoltLowByIndex(int voltIndex) => voltIndex == 0 ? GetVoltageAverage() : GetVoltage2Low();
 
+    Action<Rate, double> SetHedgePriceByIndex(int hedgeIndex) => hedgeIndex == 0 ? (r, h) => r.PriceHedge = h : new Action<Rate, double>((r, h) => r.PriceHedge2 = h);
+    Func<Rate, double> GetHedgePriceByIndex(int hedgeIndex) => hedgeIndex == 0 ? r => r.PriceHedge : new Func<Rate, double>(r => r.PriceHedge2);
+
     double GetVoltCmaPeriodByIndex(int voltIndex) => voltIndex == 0 ? VoltCmaPeriod : VoltCmaPeriod2;
     int GetVoltCmaPassesByIndex(int voltIndex) => voltIndex == 0 ? VoltCmaPasses : VoltCmaPasses2;
     int GetVoltCmaWaveIterationsByIndex(int voltIndex) => voltIndex == 0 ? VoltCmaWaveIterations : VoltCmaWaveIterations2;
@@ -554,11 +559,11 @@ namespace HedgeHog.Alice.Store {
       IEnumerable<double> Trends() => TrendsNotEmpty(tl => tl.StDev, TLBlue, TLPlum, TLRed, TLGreen).DefaultIfEmpty(double.NaN);
       double TLLimeHeightRatioByAvg() => TLLime.StDev / Trends().Average() - 1;
     }
-    CorridorStatistics ShowVoltsByRatioDiff(int voltIndex) {
+    CorridorStatistics ShowVoltsByRatioDiff(int voltIndex, int hedgeIndex) {
       double GetPrice(Rate r) => r.PriceAvg;
       if(UseCalc()) {
         //var voltRates = UseRates(ra => ra.Where(r => !GetVoltage(r).IsNaNOrZero()).ToArray()).Concat().ToArray();
-        var voltRates = ShowVoltsByRatioDiff_New(GetPrice)
+        var voltRates = ShowVoltsByRatioDiff_New(GetPrice, hedgeIndex)
           .ToArray();
         if(voltRates.IsEmpty()) return null;
         VoltsFullScaleMinMax = voltRates[0].With(vr => GetFullScaleMinMax(vr.r, vr.h, GetPrice)).ToArray();
@@ -604,8 +609,9 @@ namespace HedgeHog.Alice.Store {
           //.ToList()
           //.Cma(t => t.v, RatesHeightMin, (r, v) => (r.r, v))
           ;
+        var shp = SetHedgePriceByIndex(hedgeIndex);
         UseRates(ra => ra.Zip(r => r.StartDate, volts2, v => v.r.StartDate, (r, v) => new { r, v.v }).ToList())
-          .ForEach(v3 => v3.ForEach(t => t.r.PriceHedge = t.v));
+          .ForEach(v3 => v3.ForEach(t => shp(t.r, t.v)));
 
         OnSetVoltsHighLowsByRegression(voltIndex);
         OnSetCurrentHedgePosition();
@@ -619,6 +625,7 @@ namespace HedgeHog.Alice.Store {
 
     ActionAsyncBuffer SetCurrentHedgePositionAsyncBuffer = new ActionAsyncBuffer();
     void OnSetCurrentHedgePosition() {
+      int hedgeIndex = 0;
       if(IsInVirtualTrading) a();
       else
         SetCurrentHedgePositionAsyncBuffer.Push(a);
@@ -630,13 +637,13 @@ namespace HedgeHog.Alice.Store {
         List<HedgePosition<Contract>> hh;
         switch(hct) {
           case HedgeCalcTypes.ByHV:
-            hh = CurrentHedgesByHV();
+            hh = CurrentHedgesByHV(hedgeIndex);
             break;
           case HedgeCalcTypes.ByPos:
-            hh = CurrentHedgesByPositions();
+            hh = CurrentHedgesByPositions(hedgeIndex);
             break;
           case HedgeCalcTypes.ByTR:
-            hh = CurrentHedgesByTradingRatio();
+            hh = CurrentHedgesByTradingRatio(hedgeIndex);
             break;
           case HedgeCalcTypes.ByTV:
             hh = new List<HedgePosition<Contract>>();
@@ -650,12 +657,12 @@ namespace HedgeHog.Alice.Store {
         OnCalcHedgeRatioByPositions();
       }
     }
-    IEnumerable<(Rate[] r, double[] h)> ShowVoltsByRatioDiff_New(Func<Rate, double> map) =>
-      from xs in ZipHedgedRates(map)
+    IEnumerable<(Rate[] r, double[] h)> ShowVoltsByRatioDiff_New(Func<Rate, double> map, int hedgeIndex) =>
+      from xs in ZipHedgedRates(map, hedgeIndex)
       select (xs.Select(t => t.rate).ToArray(), xs.Select(t => t.ratio).ToArray());
 
-    IEnumerable<IList<(Rate rate, double ratio)>> ZipHedgedRates(Func<Rate, double> map) =>
-      from tm2 in TradingMacroHedged()
+    IEnumerable<IList<(Rate rate, double ratio)>> ZipHedgedRates(Func<Rate, double> map, int hedgeIndex) =>
+      from tm2 in TradingMacroHedged(hedgeIndex)
       from corr in TMCorrelation(tm2)
       let m = corr == 1 ? map : new Func<Rate, double>((r) => 1 / map(r))
       from xs in UseRates(tm2, (ra, ra2) => ZipRateArrays((ra, ra2), map))

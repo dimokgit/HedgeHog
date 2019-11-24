@@ -40,6 +40,7 @@ namespace HedgeHog.Alice {
     Gross,
     GrossV,
     RatioDiff,
+    RatioDiff2,
     StDevDiff,
     HV,
     HVR,

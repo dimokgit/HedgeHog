@@ -37,7 +37,9 @@ namespace HedgeHog.Alice.Client {
       var lastCma = tm.UseRates(TradingMacro.GetLastRateCma).SelectMany(cma => cma).FirstOrDefault();
       var tsMin = TimeSpan.FromMinutes(tm.BarPeriodInt);
       var priceHedge = MonoidsCore.ToFunc((Rate r) => r.PriceHedge).MemoizePrev(d => d.IsZeroOrNaN());
-      var priceHedge2 = MonoidsCore.ToFunc((IList<Rate> rs) => rs.Average(r => r.PriceHedge)).MemoizePrev(d => d.IsZeroOrNaN());
+      var priceHedge2 = MonoidsCore.ToFunc((Rate r) => r.PriceHedge2).MemoizePrev(d => d.IsZeroOrNaN());
+      var priceHedgeGroup = MonoidsCore.ToFunc((IList<Rate> rs) => rs.Average(r => r.PriceHedge)).MemoizePrev(d => d.IsZeroOrNaN());
+      var priceHedgeGroup2 = MonoidsCore.ToFunc((IList<Rate> rs) => rs.Average(r => r.PriceHedge2)).MemoizePrev(d => d.IsZeroOrNaN());
       var map = MonoidsCore.ToFunc((Rate)null, rate => new {
         //d = rate.StartDate2,
         d = tm.BarPeriod == BarsPeriodType.t1 ? rate.StartDate2 : rate.StartDate2.Round().With(d => d == rate.StartDate2 ? d : d + tsMin),
@@ -50,7 +52,8 @@ namespace HedgeHog.Alice.Client {
         a = rate.AskHigh.Round(digits),
         b = rate.BidLow.Round(digits),
         h = isRth(rate.StartDate.InNewYork()),
-        p = priceHedge(rate)
+        p = priceHedge(rate),
+        p2 = priceHedge2(rate)
       });
       var map2 = MonoidsCore.ToFunc((IList<Rate> rates) => new {
         //d = rate.StartDate2,
@@ -64,7 +67,8 @@ namespace HedgeHog.Alice.Client {
         m = rates.Average(r => r.PriceCMALast.IfNaNOrZero(lastCma)).Round(digits),
         a = rates.Max(r => r.AskHigh).Round(digits),
         b = rates.Min(r => r.BidLow).Round(digits),
-        p = priceHedge2(rates)
+        p = priceHedgeGroup(rates).Round(digits),
+        p2 = priceHedgeGroup2(rates).Round(digits),
       });
       #endregion
       var exit = false;// doShowVolt && lastVolt.IsEmpty() || doShowVolt2 && lastVolt2.IsEmpty();

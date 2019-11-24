@@ -1281,8 +1281,10 @@ namespace HedgeHog.Alice.Client {
       try {
         GetTradingMacros(trade.Pair).Take(1).ForEach(tm => {
           var ts = tm.GetTradeStatistics(trade);
-          ts.SessionId = TradingMacro.SessionId;
-          ts.SessionInfo = tm.SessionInfo;
+          if(ts != null) {
+            ts.SessionId = TradingMacro.SessionId;
+            ts.SessionInfo = tm.SessionInfo;
+          }
           MasterModel.AddCosedTrade(trade);
         });
       } catch(Exception exc) { Log = exc; }

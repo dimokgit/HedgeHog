@@ -1988,9 +1988,9 @@ namespace HedgeHog.Alice.Store {
     public bool IsHedgedTrading => !PairHedge.IsNullOrWhiteSpace() && (Strategy == Strategies.Hedge || HedgedTrading);
     public IEnumerable<TradingMacro> HedgeParent => TradingMacrosByPairHedge(Pair).Take(1);
     public bool IsHedgeChild => HedgeParent.Any();
-    public IEnumerable<TradingMacro> HedgeOther => TradingMacroHedged().Concat(HedgeParent);
+    public IEnumerable<TradingMacro> HedgeOther(int hedgeIndex) => TradingMacroHedged(hedgeIndex).Concat(HedgeParent);
     void SyncHedgedPair() {
-      TradingMacroHedged()
+      TradingMacroHedged(0).Concat(TradingMacroHedged(1))
         .ForEach(tm => {
           tm.BarsCount = BarsCount;
           tm.BarsCountMax = BarsCountMax;
@@ -2004,19 +2004,21 @@ namespace HedgeHog.Alice.Store {
         });
     }
     private string _pairHedge = "";
-    [WwwSetting]
+    [WwwSetting(wwwSettingsHedge)]
     [Category(categoryTrading)]
     public string PairHedge {
-      get => PairHedges.FirstOrDefault() ?? "";
+      get => _pairHedge;
       set {
         var v = value?.ToUpper();
         if(_pairHedge == v) return;
         _pairHedge = v;
-        PairHedges = _pairHedge.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
         OnPropertyChanged(nameof(PairHedge));
       }
     }
-    private string[] PairHedges = new string[0];
+    [WwwSetting(wwwSettingsHedge)]
+    [Category(categoryTrading)]
+    public string PairHedge2 { get; set; } = "";
+    public IEnumerable<string> PairHedges => new[] { PairHedge, PairHedge2 }.Where(h=>!h.IsNullOrWhiteSpace());
     #region HedgeCorrelation
     static ConcurrentDictionary<(string pair1, string pair2), int[]> _hedgeCorrelations = new ConcurrentDictionary<(string pair1, string pair2), int[]>();
     static int[] GetHedgeCorrelation(string pair1, string pair2)

@@ -1084,17 +1084,28 @@ namespace HedgeHog.Alice.Store {
       var digits = TradesManager.GetDigits(Pair);
       var a = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>
         , PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
-        .Where(pce => pce.EventArgs.Price.Pair == Pair)
+
         //.Sample((0.1).FromSeconds())
         //.DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
         ;
       if(!IsInVirtualTrading) {
         //PriceChangedSubscribsion = a.ObserveLatestOn(ObservableExtensions.BGTreadSchedulerFactory(ThreadPriority.Normal, nameof(PriceChangedSubscribsion) + ":" + this))
         //  .Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
-        a.Subscribe(e => PriceChangedAsyncBufferInstance.Push(e.EventArgs)).SideEffect(_strams.Add);
+        a // Run Price
+          .Where(pce => pce.EventArgs.Price.Pair == Pair)
+          .Subscribe(e => PriceChangedAsyncBufferInstance.Push(e.EventArgs)).SideEffect(_strams.Add);
         PriceChangedAsyncBufferInstance.Error.Subscribe(exc => Log = exc).SideEffect(s => _strams.Add(s));
+        a // Run Strategy
+          .Where(pce => IsTrader && Strategy == Strategies.Hedge && (pce.EventArgs.Price.Pair == Pair || pce.EventArgs.Price.Pair == PairHedge))
+          .Subscribe(e => {
+            // TODO - Hedge resubscribe when PairHedge changes
+            TradingMacroHedged(-1).Concat(new[] { this }).SelectMany(tm => tm.Trades).ForEach(t => t.UpdateByPrice(TradesManager));
+            RunStrategy();
+          }).SideEffect(_strams.Add);
       } else
-        a.Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated.")).SideEffect(_strams.Add);
+        a // Run Price
+          .Where(pce => pce.EventArgs.Price.Pair == Pair)
+          .Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated.")).SideEffect(_strams.Add);
 
       if(!IsInVirtualTrading && !IsInPlayback) {
         TradesManager.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
@@ -3167,11 +3178,11 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       if(IsTicks) {
         UseRatesInternal(ri => ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false)));
       } else {
-        var roundTo = BarPeriod == BarsPeriodType.t1 ? RoundTo.Second : RoundTo.Minute;
-        UseRatesInternal(ri => ri.BackwardsIterator().Select(r => r.StartDate.Round(roundTo)).Take(1))
+        DateTime RoundTime(DateTime d) => BarPeriod == BarsPeriodType.t1 ? d.Round(RoundTo.Second) : d.Round(BarPeriodInt);
+        UseRatesInternal(ri => ri.BackwardsIterator().Select(r => RoundTime(r.StartDate)).Take(1))
           .Concat()
           .ForEach(lastRateDate => {
-            var priceDate = price.Time.Round(roundTo);
+            var priceDate = RoundTime(price.Time);
             if(priceDate > lastRateDate) {
               UseRatesInternal(ri => ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false)));
               if(BarPeriod > 0)
@@ -3179,7 +3190,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
               else
                 _ratesArrayAsyncBuffer.Push(() => RatesArraySafe.Any());
             } else if(priceDate == lastRateDate)
-              UseRatesInternal(ri => ri.Last().AddTick(price.Time.Round(roundTo).ToUniversalTime(), price.Ask, price.Bid));
+              UseRatesInternal(ri => ri.Last().AddTick(priceDate.ToUniversalTime(), price.Ask, price.Bid));
             else if(false && IsTradingHour()) {
               Log = new Exception($"{nameof(AddCurrentTick)}: {new { priceDate, lastRateDate }}");
             }

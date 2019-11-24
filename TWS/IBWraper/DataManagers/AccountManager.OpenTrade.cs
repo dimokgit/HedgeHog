@@ -134,7 +134,11 @@ namespace IBApp {
         var wte = IbClient.WireToErrorMessage(orderId, oso, m => m.OrderId
         , m => OrderContractsInternal.ByOrderId(m.OrderId)
         , Default
-        , e => true.SE(_ => Trace($"CancelOrder Error: {e}")));
+        , e => {
+          if(e.errorCode == 10147)
+            OrderContractsInternal.ByOrderId(orderId).ForEach(RaiseOrderRemoved);
+          return true.SE(_ => Trace($"CancelOrder Error: {e}"));
+        });
         IbClient.OnReqMktData(() => IbClient.ClientSocket.cancelOrder(orderId));
         return wte.FirstAsync();
       }

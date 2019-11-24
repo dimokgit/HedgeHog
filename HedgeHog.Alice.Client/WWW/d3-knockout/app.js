@@ -364,7 +364,7 @@
           if (!x)
             dataViewModel.callByBS();
 
-          if (!dataViewModel.comboQuantity())
+          if (!dataViewModel.comboQuantityInEdit())
             dataViewModel.comboQuantity(x.TradingRatio);
           if (!dataViewModel.expDaysSkip())
             dataViewModel.expDaysSkip(x.OptionsDaysGap);
@@ -622,7 +622,7 @@
             CorridorCalcMethod: { name: "Corr Calc", type: "options", options: corridorCalculationMethod() },
             MovingAverageType: { type: "options", options: movingAverageType() },
             BarPeriod: { name: "Bars Period", type: "options", options: barsPeriodType() },
-            PairHedge: { type: "options", options: self.pairs() },
+            //PairHedge: { type: "options", options: self.pairs() },
             Strategy: { type: "options", options: strategyType() },
 
             //
@@ -935,7 +935,7 @@
       });
       this.expDaysSkip = ko.observable();
       this.distanceFromHigh = ko.observable();
-      this.comboQuantity = ko.observable(1).extend({ persist: "comboQuantity" + pair });
+      this.comboQuantity = ko.observable("");//.extend({ persist: "comboQuantity" + pair });
       this.comboQuantity.subscribe(refreshCombos);
       this.comboQuantityInEdit = ko.observable();
       this.comboQuantityInEdit.subscribe(function (isEdit) {
@@ -1214,6 +1214,7 @@
       this.hedgingRatiosDialog = ko.observable();
       var hedgingRatiosError = this.hedgingRatiosError = ko.observable(true);
       this.showHedgingRatios = function () {
+        if (this !== null) return alert("showHedgingRatios is depreciated.");
         stophedgingRatios = false;
         hedgingRatiosError(true);
         readHedgingRatios.bind(this)();

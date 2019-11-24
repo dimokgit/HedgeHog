@@ -19,9 +19,9 @@ using ReactiveUI.Legacy;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     public bool HaveTrades() => Trades.Any() || HasPendingOrders();
-    public bool HaveTradesIncludingHedged() => TradingMacroHedged(tm => tm.HaveTrades()).Concat(new[] { HaveTrades() }).Any(b => b);
-    public IList<Trade> HedgedTrades() => TradingMacroHedged(tm => Trades.Concat(tm.Trades)).Concat().ToList().With(l => l.Count == 2 ? l : new List<Trade>());
-    public bool HaveHedgedTrades() => TradingMacroHedged(tm => tm.HaveTrades()).Concat(new[] { HaveTrades() }).Count(ht => ht) == 2;
+    public bool HaveTradesIncludingHedged() => TradingMacroHedged(tm => tm.HaveTrades(), -1).Concat(new[] { HaveTrades() }).Any(b => b);
+    public IList<Trade> HedgedTrades() => TradingMacroHedged(tm => Trades.Concat(tm.Trades), -1).Concat().ToList().With(l => l.Count > 1 ? l : new List<Trade>());
+    public bool HaveHedgedTrades() => TradingMacroHedged(tm => tm.HaveTrades(), -1).Concat(new[] { HaveTrades() }).Count(ht => ht) == 2;
 
     public bool HaveTrades(bool isBuy) {
       return Trades.IsBuy(isBuy).Any() || HasPendingOrders();
@@ -31,7 +31,7 @@ namespace HedgeHog.Alice.Store {
         Log = new Exception(message + "" + new { Caller });
       }
     }
-    void LogTradingActionStatus(string key, string status, [CallerMemberName] string Caller = "") => LogTradingActionStatus(key, status,false, Caller);
+    void LogTradingActionStatus(string key, string status, [CallerMemberName] string Caller = "") => LogTradingActionStatus(key, status, false, Caller);
     void LogTradingActionStatus(string key, string status, bool sendSms, [CallerMemberName] string Caller = "") {
       var message = PendingOrderMessage(key, status);
       LogTradingAction(message, Caller);

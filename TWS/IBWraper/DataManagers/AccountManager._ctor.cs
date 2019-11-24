@@ -87,15 +87,21 @@ namespace IBApp {
         .Where(x => /*x.Position != 0 &&*/ x.Account == _accountId)
         //.DistinctUntilChanged(t => new { t.Contract, t.Position })
         .Do(x => Trace($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
+        .Do(x => {
+          if(x.Contract.LocalSymbol == "QQQ" && x.Contract.Exchange == "NASDAQ")
+            x.Contract.Exchange = "SMART";
+        })
         .SelectMany(p =>
           from cds in IbClient.ReqContractDetailsCached(p.Contract).ToArray()
           from cd in cds.Count(1, i => {
-            TraceError($"Position contract {p.Contract.FullString} has no details");
+            var m = $"Position contract {p.Contract.FullString} has no details";
+            TraceError(m);
+            throw new Exception(m);
             //RequestPositions();
           }, i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
           select p.SideEffect(_ => {
             p.Contract.Exchange = cd.Contract.Exchange;
-            TraceDebug($"PositionContract: {cd.Contract}");
+            TraceDebug($"PositionContract: {new { cd.Contract,cd.Contract.Exchange }}");
             if(p.Position == 0) _positions.TryRemove(p.Contract.Key, out var r);
             else {
               var cp = ContractPosition(p);
@@ -170,13 +176,13 @@ namespace IBApp {
         .SideEffect(s => _strams.Add(s));
 
       OrderStatusObservable
-          .Do(t => Verbose($"OrderStatus[{t.OrderId}]:{t.Status}" + new { t.Filled, t.Remaining, t.WhyHeld, isDone = t.IsOrderDone() }))
+          .Do(t => TraceDebug($"OrderStatus[{t.OrderId}]:{t.Status}" + new { t.Filled, t.Remaining, t.WhyHeld, isDone = t.IsOrderDone() }))
           .Distinct(t => new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld })
           .Where(t => OrderContractsInternal.ByOrderId(t.OrderId).Any(oc => oc.order.Account == _accountId))
           //.Do(x => UseOrderContracts(oc => _verbous("* " + new { OrderStatus = x, Account = oc.ByOrderId(x.orderId, och => och.order.Account).SingleOrDefault() })))
           .Do(t => {
             OrderContractsInternal.ByOrderId(t.OrderId)//.Where(oc => t.Status != "Inactive")
-              //.SelectMany(oc => new[] { oc }.Concat(ocs.ByOrderId(oc.order.ParentId).Where(och => och.isNew)))
+                                                       //.SelectMany(oc => new[] { oc }.Concat(ocs.ByOrderId(oc.order.ParentId).Where(och => och.isNew)))
               .ForEach(oc => {
                 oc.status = new OrderContractHolder.Status(t.Status, t.Filled, t.Remaining);
               });
@@ -251,12 +257,7 @@ namespace IBApp {
           var h = OrderContractsInternal.AddOrUpdate(m.OrderId, m, (k, v) => { raiseEvent = false; return m; });
           TraceDebug0($"{nameof(OnOrderImpl)}: {h}");
           if(raiseEvent)
-            RaiseOrderAdded(new HedgeHog.Shared.Order {
-              IsBuy = m.Order.Action == "BUY",
-              Lot = (int)m.Order.TotalQuantity,
-              Pair = m.Contract.Instrument,
-              IsEntryOrder = m.Order.IsEntryOrder()
-            });
+            RaiseOrderAdded(OrderFromOrderMessage(m));
         } else if(GetTrades().IsEmpty()) {
           // TODO: WhatIf leverage, MMR
           //RaiseOrderRemoved(o.OrderId);
@@ -272,10 +273,17 @@ namespace IBApp {
               Trace(new { offer = new { offer.Pair, offer.MMRShort } });
             }
         }
+        HedgeHog.Shared.Order OrderFromOrderMessage(OpenOrderMessage m) => new HedgeHog.Shared.Order {
+          IsBuy = m.Order.Action == "BUY",
+          Lot = (int)m.Order.TotalQuantity,
+          Pair = m.Contract.Instrument,
+          IsEntryOrder = m.Order.IsEntryOrder()
+        };
       }
       #endregion
 
     }
+
 
     //public ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)> OrderStatuses { get; } = new ConcurrentDictionary<string, (string status, double filled, double remaining, bool isDone)>();
 
