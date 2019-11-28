@@ -64,19 +64,18 @@ namespace ConsoleApp {
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7496;
-      const int clientId = 1;
+      const int twsPort = 7497;
+      const int clientId = 0;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       #endregion
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        am.PositionsObservable.Take(2).ToArray().Subscribe(_ =>
-        am.ComboTrades(1)
-        .Select(ct => new { ct.contract,ct.position, ct.pl, ct.Commission })
-        .ToArray()
-        .Subscribe(cts => HandleMessage(cts.ToTextOrTable("Combo Trades:"))));
-        //"QQQ".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract).Subscribe(c => HandleMessage($"Test Contract:{new { c.Instrument, c.Exchange }}"));
+        (from c in "spy".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
+         from ot  in am.OpenTrade(c,1)
+         select ot
+         )
+        .Subscribe(c => c.ToTextTable("Test Order:"));
         return;
         var isTest = true;
         am.OpenOrderObservable.Subscribe(oom => HandleMessage(oom.ToTextTable("Open Order")));
@@ -259,7 +258,7 @@ namespace ConsoleApp {
             });
           });
         }
-        am.OrderStatusObservable.Throttle(1.FromSeconds()).Subscribe(_ => HandleMessage("OrderContractsInternal2:\n" + am.OrderContractsInternal.ToMarkdownTable()));
+        am.OrderStatusObservable.Throttle(1.FromSeconds()).Subscribe(_ => HandleMessage("OrderContractsInternal2:\n" + am.OrderContractsInternal.Items.ToMarkdownTable()));
         {
           //am.CancelOrder(50002201).Subscribe(m => HandleMessage("CancelOrder(50002201)" + m));
           //return;
@@ -445,7 +444,7 @@ namespace ConsoleApp {
         });
         { // Change order condition
           am.OpenOrderObservable.Subscribe(oom => {
-            var order = am.OrderContractsInternal.Values.First();
+            var order = am.OrderContractsInternal.Items.First();
             order.order.Conditions.Cast<PriceCondition>().ForEach(pc => pc.Price += 5);
             am.CancelOrder(order.order.OrderId).Subscribe(m => HandleMessage(m));
             //am.PlaceOrder(order.order, order.contract).Subscribe(po => HandleMessage(po));

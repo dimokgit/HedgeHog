@@ -27,6 +27,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Westwind.Web.WebApi;
 using static HedgeHog.Core.JsonExtensions;
+using DynamicData;
 using TM_HEDGE = System.Collections.Generic.IEnumerable<(HedgeHog.Alice.Store.TradingMacro tm, string Pair, double HV, double HVP
   , (double All, double Up, double Down) TradeRatio
   , (double All, double Up, double Down) TradeRatioM1
@@ -653,7 +654,7 @@ namespace HedgeHog.Alice.Client {
                , pc = oc.order.Conditions.SelectMany(c => c.ParsePriceCondition()).Select(c => c.price).ToArray()
             }); ;
             Action openOrders = () =>
-              (from oc in am.OrderContractsInternal.Values.ToObservable()
+              (from oc in am.OrderContractsInternal.Items.ToObservable()
                where !oc.isFilled
                from p in oc.contract.ReqPriceSafe().DefaultIfEmpty()
                select (oc, x: orderMap(oc, p.ask, p.bid))
@@ -701,7 +702,7 @@ namespace HedgeHog.Alice.Client {
                     return new {
                       combo = x.contract.Instrument
                       , i = x.contract.Instrument
-                      , l = x.contract.ShortSmart
+                      , l = x.contract.ShortString
                       , netPL = x.pl - x.Commission
                       , x.position
                         , x.closePrice
@@ -766,7 +767,7 @@ namespace HedgeHog.Alice.Client {
                from price in ch.contract.ReqPriceSafe()
                from priceOpt in ch.optionsBuy.ReqPriceSafe()
                from cts in am.ComboTrades(1).Where(ct => selectedHedge == TradingMacro.HedgeCalcTypes.ByTV && ct.contract.IsStocksOrFuturesCombo).ToArray()
-               from order in am.OrderContractsInternal.Take(1).Select(oh => (oh.Value.contract, quantity: oh.Value.order.TotalQuantity.ToInt(), context: "Open Order")).DefaultIfEmpty()
+               from order in am.OrderContractsInternal.Items.Take(1).Select(oh => (oh.contract, quantity: oh.order.TotalQuantity.ToInt(), context: "Open Order")).DefaultIfEmpty()
                let ch0 = new CurrentHedge(TradingMacro.HedgeCalcTypes.ByTV + "", ch.contract.ShortString, ch.quantity, ch.ratio, ch.context, price.ask.Avg(price.bid).AutoRound2(2), ch.contract.Key)
                .SideEffect(_ => cts.Select(ct => (ct.contract, quantity: ct.position, context: "Open Trade"))
                .IfEmpty(() => order.YieldIf(o => o.contract != null))
@@ -896,12 +897,17 @@ namespace HedgeHog.Alice.Client {
     }
     [BasicAuthenticationFilter]
     public void CancelOrder(int orderId) {
-      GetAccountManager().CancelOrder(orderId);
+      var am = GetAccountManager();
+      am.CancelOrder(orderId)
+        .Subscribe(_ => {
+          am.OrderContractsInternal.Items.ByOrderId(orderId).Where(o => o.isInactive)
+          .ForEach(och => am.OrderContractsInternal.Remove(och.order.PermId));
+        });
     }
     [BasicAuthenticationFilter]
     public async Task<object[]> UpdateOrderPriceCondition(int orderId, double price) {
       var am = GetAccountManager();
-      var order = am.OrderContractsInternal.Values.First();
+      var order = am.OrderContractsInternal.Items.First();
       order.order.Conditions.Cast<PriceCondition>().ForEach(pc => pc.Price = price);
       var ret = (from co in am.CancelOrder(order.order.OrderId)
                  from po in am.PlaceOrder(order.order.SideEffect(_ => _.OrderId = 0), order.contract)
@@ -1106,7 +1112,7 @@ namespace HedgeHog.Alice.Client {
        ).Catch<ErrorMessage, GenericException<ErrorMessage>>(exc => Observable.Return(exc.Context));
 
         if(c.orderId != 0) {
-          var och = c.am.UseOrderContracts(orderContracts => orderContracts[c.orderId]).SingleOrDefault();
+          var och = c.am.UseOrderContracts(orderContracts => orderContracts.ByOrderId(c.orderId)).Concat().SingleOrDefault();
           if(och == null)
             throw new Exception($"OrderContractHoled with OrderID:{c.orderId} not found");
           var quantity = och.order.TotalQuantity.ToInt();

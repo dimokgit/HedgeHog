@@ -180,7 +180,7 @@ namespace IBApp {
       var positions = Positions.Where(p => p.position != 0).ToArray();
       var combos = (
         from c in positions/*.ParseCombos(orders)*//*.Do(c => IbClient.SetContractSubscription(c.contract))*/
-        let order = OrderContractsInternal.OpenByContract(c.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
+        let order = OrderContractsInternal.Items.OpenByContract(c.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
         select (c.contract, c.position, c.open, c.open / c.position.Abs() / c.contract.ComboMultiplier, order.LmtPrice, order.OrderId)
         );
       var comboAll = ComboTradesAllImpl().ToArray();
@@ -198,7 +198,7 @@ namespace IBApp {
       (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
        let sell = positions.All(p => p.position < 0)
        let posSign = sell ? -1 : 1
-       let order = OrderContractsInternal.OpenByContract(ca.contract.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
+       let order = OrderContractsInternal.Items.OpenByContract(ca.contract.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
        let open = ca.positions.Sum(p => p.open)
        let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
        select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, order.LmtPrice, order.OrderId));

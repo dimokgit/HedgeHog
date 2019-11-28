@@ -153,8 +153,8 @@ namespace IBApp {
 
     #region OpenOrder
 
-    public IEnumerable<OrderContractHolder> ParentHolder(OrderContractHolder h) => OrderContractsInternal.ByOrderId(h.order.ParentId);
-    public IEnumerable<OrderContractHolder> ChildHolder(OrderContractHolder h) => OrderContractsInternal.Values.ByParentId(h.order.OrderId);
+    public IEnumerable<OrderContractHolder> ParentHolder(OrderContractHolder h) => OrderContractsInternal.Items.ByOrderId(h.order.ParentId);
+    public IEnumerable<OrderContractHolder> ChildHolder(OrderContractHolder h) => OrderContractsInternal.Items.ByParentId(h.order.OrderId);
 
     #region OrderAddedEvent
     event EventHandler<OrderEventArgs> OrderAddedEvent;

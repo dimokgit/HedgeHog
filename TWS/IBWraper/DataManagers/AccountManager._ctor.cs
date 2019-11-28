@@ -17,6 +17,7 @@ using System.Reactive.Subjects;
 using IBApi;
 using System.Reactive;
 using HedgeHog.Core;
+using DynamicData;
 
 namespace IBApp {
   public partial class AccountManager {
@@ -29,9 +30,12 @@ namespace IBApp {
     public IObservable<Unit> PositionsEndObservable { get; }
     public IObservable<OpenOrderMessage> OpenOrderObservable { get; private set; }
     public IObservable<OrderStatusMessage> OrderStatusObservable { get; private set; }
-    public ConcurrentDictionary<int, OrderContractHolder> OrderContractsInternal { get; } = new ConcurrentDictionary<int, OrderContractHolder>();
+    //public ConcurrentDictionary<int, OrderContractHolder> OrderContractsInternal { get; } = new ConcurrentDictionary<int, OrderContractHolder>();
+    public SourceCache<OrderContractHolder, int> OrderContractsInternal = new SourceCache<OrderContractHolder, int>(och => och.order.PermId);
+    //readonly public IEnumerable<OrderContractHolder> OrderContractsInternalValues;
     #endregion
     public AccountManager(IBClientCore ibClient, string accountId, Func<string, Trade> createTrade, Func<Trade, double> commissionByTrade) : base(ibClient) {
+      //OrderContractsInternalValues = OrderContractsInternal.Edit(u=>u.Remove(.KeyValues.Select(kv => kv.Value);
       CommissionByTrade = commissionByTrade;
       CreateTrade = createTrade;
       Account = new Account();
@@ -101,7 +105,7 @@ namespace IBApp {
           }, i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
           select p.SideEffect(_ => {
             p.Contract.Exchange = cd.Contract.Exchange;
-            TraceDebug($"PositionContract: {new { cd.Contract,cd.Contract.Exchange }}");
+            TraceDebug($"PositionContract: {new { cd.Contract, cd.Contract.Exchange }}");
             if(p.Position == 0) _positions.TryRemove(p.Contract.Key, out var r);
             else {
               var cp = ContractPosition(p);
@@ -125,9 +129,12 @@ namespace IBApp {
         h => IbClient.OpenOrder += h,
         h => IbClient.OpenOrder -= h
         )
-        .ObserveOn(esOpenOrder)
-        .Do(x => TraceDebug($"{new { OrderKey = OrderKey(x.Order) }}: {x.Order}: {x.Contract}"))
+        .Where(x => x.Order.Account == _accountId)
+        .Do(x => TraceDebug($"OnOpenOrder: {x.Order}: {x.Contract}: {x.OrderState}"))
+        .Do(AddOrderContractHolder)
+        .Where(t => !t.OrderState.IsCancelled)
         .Distinct(x => x.Order.PermId)
+        .ObserveOn(esOpenOrder)
         .SelectMany(m => {
           var x = (from cl in (m.Contract.ComboLegs ?? new List<ComboLeg>()).ToObservable()
                    from con in ibClient.ReqContractDetailsCached(cl.ConId).Select(cd => cd.Contract)
@@ -142,7 +149,11 @@ namespace IBApp {
           return x.ObserveOn(TaskPoolScheduler.Default).DefaultIfEmpty(m);
         })
         ;
-      string OrderKey(IBApi.Order o) => new { o.PermId, o.LmtPrice, o.AuxPrice, Conditions = o.Conditions.Flatter("; "), o.Account } + "";
+      void AddOrderContractHolder(OpenOrderMessage m)
+        => OrderContractsInternal.Items.ByPermId(m.Order.PermId).RunIfEmpty(()
+        => OrderContractsInternal.AddOrUpdate(m.SideEffect(_ => TraceDebug($"Add OCI: {m}"))
+        , LambdaComparer.Factory<OrderContractHolder>((k, v) => k.order.PermId == v.order.PermId)));
+      //string OrderKey(IBApi.Order o) => new { o.PermId, o.LmtPrice, o.AuxPrice, Conditions = o.Conditions.Flatter("; "), o.Account } + "";
 
       OrderStatusObservable = Observable.FromEvent<OrderStatusHandler, OrderStatusMessage>(
         onNext
@@ -168,32 +179,48 @@ namespace IBApp {
         .Subscribe(OnPosition, () => { Trace("posObs done"); })
         .SideEffect(s => _strams.Add(s));
 
+      var _raisedOrders = new ConcurrentDictionary<int, bool>();
       OpenOrderObservable // we only get it once per order
-        .Where(x => x.Order.Account == _accountId)
-        .Do(x => Verbose($"OpenOrder: {x}"))
-        .Where(t => !t.OrderState.IsCancelled)
+        .Do(x => Verbose($"OnOpenOrder[{x.OrderId}]: {x}"))
         .Subscribe(a => OnOrderImpl(a))
         .SideEffect(s => _strams.Add(s));
 
       OrderStatusObservable
           .Do(t => TraceDebug($"OrderStatus[{t.OrderId}]:{t.Status}" + new { t.Filled, t.Remaining, t.WhyHeld, isDone = t.IsOrderDone() }))
-          .Distinct(t => new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld })
-          .Where(t => OrderContractsInternal.ByOrderId(t.OrderId).Any(oc => oc.order.Account == _accountId))
+          .DistinctUntilChanged(t => new { t.OrderId, t.Status, t.Filled, t.Remaining, t.WhyHeld })
+          .Where(t => OrderContractsInternal.Items.ByOrderId(t.OrderId).Any(oc => oc.order.Account == _accountId))
           //.Do(x => UseOrderContracts(oc => _verbous("* " + new { OrderStatus = x, Account = oc.ByOrderId(x.orderId, och => och.order.Account).SingleOrDefault() })))
           .Do(t => {
-            OrderContractsInternal.ByOrderId(t.OrderId)//.Where(oc => t.Status != "Inactive")
-                                                       //.SelectMany(oc => new[] { oc }.Concat(ocs.ByOrderId(oc.order.ParentId).Where(och => och.isNew)))
+            OrderContractsInternal.Items.ByOrderId(t.OrderId)//.Where(oc => t.Status != "Inactive")
+                                                             //.SelectMany(oc => new[] { oc }.Concat(ocs.ByOrderId(oc.order.ParentId).Where(och => och.isNew)))
               .ForEach(oc => {
                 oc.status = new OrderContractHolder.Status(t.Status, t.Filled, t.Remaining);
               });
-            IbClient.ClientSocket.reqAllOpenOrders();
-          }
-          )
+            //IbClient.OnReqMktData(()=>IbClient.ClientSocket.reqAllOpenOrders());
+          })
+          .Do(t => {
+            UseOrderContracts(oc => {
+              if(!t.IsOrderDone()) {
+                var raiseEvent = _raisedOrders.TryAdd(t.OrderId, true);
+                if(raiseEvent)
+                  oc.ByOrderId(t.OrderId).ForEach(och 
+                    => RaiseOrderAdded(OrderFromHolder(och.SideEffect(_ 
+                    => TraceDebug($"RaiseOrderAdded: {och}")))));
+              }
+            });
+          })
           .Where(m => m.IsOrderDone())
           .SelectMany(o => UseOrderContracts(ocs => ocs.ByOrderId(o.OrderId)).Concat())
           .ObserveOn(esOpenOrder)
           .Subscribe(o => RaiseOrderRemoved(o))
           .SideEffect(s => _strams.Add(s));
+
+      HedgeHog.Shared.Order OrderFromHolder(OrderContractHolder m) => new HedgeHog.Shared.Order {
+        IsBuy = m.order.Action == "BUY",
+        Lot = (int)m.order.TotalQuantity,
+        Pair = m.contract.Instrument,
+        IsEntryOrder = m.order.IsEntryOrder()
+      };
 
       portObs
         .Where(x => x.AccountName == _accountId)
@@ -211,11 +238,11 @@ namespace IBApp {
       var shouldExecute = (
       from pair in IbClient.PriceChangeObservable.Select(_ => _.EventArgs.Price.Pair)
       where false && !ibClient.ServerTime.Between(thStart(), thEnd())
-      from oc in OrderContractsInternal
-      where oc.Value.ShouldExecute
-      from paren in OrderContractsInternal.ByOrderId(oc.Value.order.ParentId).DefaultIfEmpty()
+      from oc in OrderContractsInternal.Items
+      where oc.ShouldExecute
+      from paren in OrderContractsInternal.Items.ByOrderId(oc.order.ParentId).DefaultIfEmpty()
       where (paren == null || paren.isDone)
-      select oc.Value
+      select oc
       )
       .Distinct(oc => oc.order.PermId)
       .ObserveOn(MainScheduler);
@@ -232,7 +259,7 @@ namespace IBApp {
 
       var shouldCancel = (
         from pair in IbClient.PriceChangeObservable.Select(_ => _.EventArgs.Price.Pair)
-        from child in OrderContractsInternal.ByLocalSymbol(pair)
+        from child in OrderContractsInternal.Items.ByLocalSymbol(pair)
         let any = Positions.Any(p => p.contract == child.contract)
         where !any
         select child
@@ -253,11 +280,12 @@ namespace IBApp {
       #region Local methods
       void OnOrderImpl(OpenOrderMessage m) {
         if(!m.Order.WhatIf) {
-          var raiseEvent = true;
-          var h = OrderContractsInternal.AddOrUpdate(m.OrderId, m, (k, v) => { raiseEvent = false; return m; });
-          TraceDebug0($"{nameof(OnOrderImpl)}: {h}");
-          if(raiseEvent)
-            RaiseOrderAdded(OrderFromOrderMessage(m));
+          //UseOrderContracts(oc => {
+          //  var raiseEvent = _raisedOrders.TryAdd(m.Order.PermId, true);
+          //  oc.ByOrderId(m.OrderId).Any();
+          //  if(raiseEvent)
+          //    RaiseOrderAdded(OrderFromOrderMessage(m));
+          //});
         } else if(GetTrades().IsEmpty()) {
           // TODO: WhatIf leverage, MMR
           //RaiseOrderRemoved(o.OrderId);
@@ -289,7 +317,9 @@ namespace IBApp {
 
     private void RaiseOrderRemoved(OrderContractHolder cd) {
       var trace = ($"{nameof(RaiseOrderRemoved)}: {cd}");
-      if(OrderContractsInternal.TryRemove(cd.order.OrderId, out var _)) {
+      UseOrderContracts(oc => oc.ByOrderId(cd.order.OrderId)).Concat()
+      .ForEach(oh => {
+        OrderContractsInternal.Remove(oh.order.PermId);
         var o = cd.order;
         var c = cd.contract;
         RaiseOrderRemoved(new HedgeHog.Shared.Order {
@@ -298,11 +328,11 @@ namespace IBApp {
           Pair = c.Instrument,
           IsEntryOrder = o.IsEntryOrder()
         });
-      }
+      });
     }
 
     private void OnError((int reqId, int code, string error, Exception exc) e) {
-      OrderContractsInternal.ByOrderId(e.reqId).ToList().ForEach(oc => {
+      OrderContractsInternal.Items.ByOrderId(e.reqId).ToList().ForEach(oc => {
         if(new[] { ORDER_CAMCELLED }.Contains(e.code)) {
           RaiseOrderRemoved(oc);
         }

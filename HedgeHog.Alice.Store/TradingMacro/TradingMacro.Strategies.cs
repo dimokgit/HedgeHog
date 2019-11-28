@@ -89,11 +89,11 @@ namespace HedgeHog.Alice.Store {
       var hasOptions = puts.Count +
         am.UseOrderContracts(OrderContracts =>
         (from put in CurrentPut
-         join oc in OrderContracts.Values.Where(o => !o.isDone & o.order.Action == "SELL") on put.instrument equals oc.contract.Instrument
+         join oc in OrderContracts.Where(o => !o.isDone & o.order.Action == "SELL") on put.instrument equals oc.contract.Instrument
          select true
          )).Concat().Count();
       var hasSellOrdes = am.UseOrderContracts(OrderContracts =>
-      (from oc in OrderContracts.Values.Where(o => !o.isDone && o.contract.IsPut && !o.contract.IsCombo && o.order.Action == "SELL")
+      (from oc in OrderContracts.Where(o => !o.isDone && o.contract.IsPut && !o.contract.IsCombo && o.order.Action == "SELL")
        select true
        )).Concat().Count();
       if(distanceOk && hasOptions < TradeCountMax) {
@@ -112,7 +112,7 @@ namespace HedgeHog.Alice.Store {
     });
     private void StrategyShortStraddle() => UseAccountManager(am => {
       var straddles = OpenStraddles(am);
-      var hasOrders = am.UseOrderContracts(ocs => ocs.Values.Where(o => !o.isDone)).Concat().Any();
+      var hasOrders = am.UseOrderContracts(ocs => ocs.Where(o => !o.isDone)).Concat().Any();
       if(straddles.IsEmpty() && !hasOrders) {
         TradeConditionsEval()
           .DistinctUntilChanged(td => td)
@@ -128,7 +128,7 @@ namespace HedgeHog.Alice.Store {
       }
     });
     private void StrategyLong() => UseAccountManager(am => {
-      var hasOrders = am.UseOrderContracts(ocs => ocs.Values.Where(o => o.contract.Instrument == Pair && !o.isDone)).Concat().Any();
+      var hasOrders = am.UseOrderContracts(ocs => ocs.Where(o => o.contract.Instrument == Pair && !o.isDone)).Concat().Any();
       if(Trades.IsEmpty() && !hasOrders) {
         TradeConditionsEval()
           .DistinctUntilChanged(td => td)

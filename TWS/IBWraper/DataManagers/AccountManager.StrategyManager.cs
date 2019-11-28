@@ -40,7 +40,7 @@ namespace IBApp {
        let openCond = under.PriceCondition(level.Round(2), isMore)
        let tpCond = profit < 1 ? null : under.PriceCondition((level + profit * (contract.IsCall ? 1 : -1) * r.quantity.Sign()).Round(2), isMore)
        let strategyRef = STRATEGY_PREFIX + t.option.Right
-       from hc in OrderContractsInternal.Values.Where(h => h.order.OrderRef == strategyRef).Select(h => h.order.OrderId).DefaultIfEmpty()
+       from hc in OrderContractsInternal.Items.Where(h => h.order.OrderRef == strategyRef).Select(h => h.order.OrderId).DefaultIfEmpty()
        from co in hc != 0 ? CancelOrder(hc) : Observable.Return(new ErrorMessages<OrderContractHolder>(default, default))
        where co.error.reqId == 0 || !co.error.HasError
        from ot in OpenTrade(null, t.option, r.quantity, 0, tpCond == null ? profit : 0, true, DateTime.Now.AddMinutes(10), strategyTest ? IbClient.ServerTime.AddHours(1) : default, openCond, tpCond, strategyRef)

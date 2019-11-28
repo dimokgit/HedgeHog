@@ -550,16 +550,16 @@ namespace IBApp {
       select (och.Exchange, och.TradingClass, och.Multiplier, expirations: och.Expirations.Select(e => e.FromTWSDateString(DateTime.MaxValue)).ToArray(), strikes: och.Strikes.ToArray(), symbol = cd.Contract.Symbol, currency: cd.Contract.Currency);
 
     #region ReqMktData Subject
-    object _ReqMktDataSubjectLocker = new object();
-    ISubject<Action> _ReqMktDataSubject;
-    ISubject<Action> ReqMktDataSubject {
+    static object _ReqMktDataSubjectLocker = new object();
+    static ISubject<Action> _ReqMktDataSubject;
+    static ISubject<Action> ReqMktDataSubject {
       get {
         lock(_ReqMktDataSubjectLocker)
           if(_ReqMktDataSubject == null) {
             _ReqMktDataSubject = new Subject<Action>();
             _ReqMktDataSubject
               .ObserveOn(TaskPoolScheduler.Default)
-              .RateLimit(30)
+              .RateLimit(25)
               //.Do(_ => Thread.Sleep(100))
               .Subscribe(s => s(), exc => { });
           }

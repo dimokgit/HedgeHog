@@ -22,7 +22,7 @@ namespace IBApp {
                let mul = g.Min(p => p.position.contract.ComboMultiplier) * quantity
                let openPrice = g.Sum(p => p.position.open) / mul
                let closePrice = g.Sum(p => p.close) / mul
-               let order = OrderContractsInternal.OpenByContract(hc.contract).Where(oc => oc.order.IsBuy != isBuy).Take(1).ToList()
+               let order = OrderContractsInternal.Items.OpenByContract(hc.contract).Where(oc => oc.order.IsBuy != isBuy).Take(1).ToList()
                let orderId = order.Select(o => o.order.OrderId).SingleOrDefault()
                let tp = order.Select(oc => oc.order.LmtAuxPrice).SingleOrDefault()
                let profit = (tp - openPrice) * mul

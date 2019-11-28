@@ -38,10 +38,10 @@ namespace IBApp {
       , DateTime goodAfterDate, OrderCondition condition = null, [CallerMemberName] string Caller = "") {
       bool FindOrer(OrderContractHolder oc, Contract c) => !oc.isDone && oc.contract == c && oc.order.TotalPosition().Sign() == quantity.Sign();
       UseOrderContracts(orderContracts => {
-        var aos = orderContracts.Values.Where(oc => FindOrer(oc, contract))
+        var aos = orderContracts.Where(oc => FindOrer(oc, contract))
         .Select(ao => new { ao.order, contract, ao.status.status }).ToArray();
         var ocos = (from ao in aos
-                    join oc in orderContracts.Values on ao.order.OrderId equals oc.order.ParentId
+                    join oc in orderContracts on ao.order.OrderId equals oc.order.ParentId
                     select new { oc.order, contract = contractOCO, oc.status.status }).ToArray();
         if(aos.Any()) {
           aos.Concat(ocos).ForEach(ao => {

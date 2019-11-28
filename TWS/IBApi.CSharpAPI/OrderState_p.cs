@@ -17,5 +17,7 @@ namespace IBApi {
     public bool IsCancelled => EnumUtils.Contains<OrderCancelStatuses>(Status);
     public static bool IsCancelledState(string status) => EnumUtils.Contains<OrderCancelStatuses>(status);
     public static bool IsDoneState(string status, double remaining) => EnumUtils.Contains<OrderDoneStatuses>(status) && remaining == 0;
+    public bool IsOrderDone(double remaining) =>  IsCancelled || IsDoneState(Status, remaining);
+
   }
 }

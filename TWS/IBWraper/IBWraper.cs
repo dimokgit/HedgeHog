@@ -581,7 +581,7 @@ namespace IBApp {
       return new HedgeHog.Shared.Order[0];
     }
     public IList<(string status, double filled, double remaining, bool isDone)> GetOrderStatuses(string pair = "")
-      => _accountManager?.UseOrderContracts(orderContracts => orderContracts.Values
+      => _accountManager?.UseOrderContracts(orderContracts => orderContracts
       .Where(os => pair.IsNullOrWhiteSpace() || os.contract.Instrument == pair.ToLower())
       .Select(os => pair.IsNullOrWhiteSpace()
       ? ($"{os.contract}:{os.status.status}:[{os.order.OrderId}]", os.status.filled, os.status.remaining, os.isDone)

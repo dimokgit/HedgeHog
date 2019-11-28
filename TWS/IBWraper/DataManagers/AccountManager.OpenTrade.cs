@@ -27,7 +27,7 @@ namespace IBApp {
     public void OpenOrUpdateLimitOrderByProfit2(string key, int position, int orderId, double openAmount, double profitAmount) {
       var pa = profitAmount.Abs() >= 1 ? profitAmount : openAmount.Abs() * profitAmount;
       var contract = Contract.FromCache(key).ToArray();
-      OrderContractsInternal.ByOrderId(orderId)
+      OrderContractsInternal.Items.ByOrderId(orderId)
       .Where(och => !och.isDone)
       .Do(och => {
         if(och.contract != contract.Single())
@@ -87,7 +87,7 @@ namespace IBApp {
     }
     private void OnOpenError((int reqId, int code, string error, Exception exc) e, string trace) {
       TraceError(trace + e);
-      OrderContractsInternal.Values.ByOrderId(e.reqId).ToList().ForEach(oc => {
+      OrderContractsInternal.Items.ByOrderId(e.reqId).ToList().ForEach(oc => {
         if(new[] { 200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
           //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
           RaiseOrderRemoved(oc);
@@ -103,7 +103,7 @@ namespace IBApp {
         var locker = _placedOrders.GetOrAdd(key, false);
         if(locker) return Observable.Return(ErrorMessage.Create(Default(), new ErrorMessage(order.OrderId, 0, new { key } + "", new PlaceOrderException())));
         _placedOrders.TryUpdate(key, true, false);
-        Verbose($"locker [{order.OrderId}] => {_placedOrders[key]} for {key}");
+        TraceDebug0($"locker [{order.OrderId}] => {_placedOrders[key]} for {key}");
         if(order.OrderId == 0)
           order.OrderId = NetOrderId();
         var oso = OrderStatusObservable;
@@ -111,13 +111,13 @@ namespace IBApp {
           oso = oso.TakeUntil(Observable.Timer(TimeSpan.FromSeconds(1))).DefaultIfEmpty();
         int GetOtderId(OrderStatusMessage m) => m == null ? order.OrderId : m.OrderId;
         var wte = IbClient.WireToErrorMessage(order.OrderId, oso, GetOtderId
-        , m => OrderContractsInternal.ByOrderId(GetOtderId(m))
+        , m => OrderContractsInternal.Items.ByOrderId(GetOtderId(m))
         , Default
         , e => OpenTradeError(contract, order, e, new { }));
         IbClient.OnReqMktData(() => IbClient.ClientSocket.placeOrder(order.OrderId, contract, order));
         return wte.FirstAsync()
           .Do(_ => {
-            Verbose($"locker [{order.OrderId}] <= {_placedOrders[key]} for {key}");
+            TraceDebug0($"locker [{order.OrderId}] <= {_placedOrders[key]} for {key}");
             _placedOrders.TryRemove(key, out var _);
           })
           .Select(och => och.value.IsEmpty() ? ErrorMessage.Empty(new[] { new OrderContractHolder(order, contract, "PreTransmitted") }.AsEnumerable()) : och);
@@ -125,18 +125,19 @@ namespace IBApp {
       IEnumerable<OrderContractHolder> Default() { yield return new OrderContractHolder(order, contract, default); }
     }
     public IObservable<ErrorMessages<OrderContractHolder>> CancelOrder(int orderId) {
-      var o = OrderContractsInternal.ByOrderId(orderId).SingleOrDefault(oh => oh.isInactive);
+      var o = OrderContractsInternal.Items.ByOrderId(orderId).SingleOrDefault(oh => oh.isInactive);
       if(o != null) {
-        OrderContractsInternal.TryRemove(orderId, out var oh);
+        OrderContractsInternal.Edit(u => u.Remove(o.order.PermId));
+        RaiseOrderRemoved(o);
         return Observable.Empty<ErrorMessages<OrderContractHolder>>();
       } else {
         var oso = OrderStatusObservable.Where(m => m.IsOrderDone());
         var wte = IbClient.WireToErrorMessage(orderId, oso, m => m.OrderId
-        , m => OrderContractsInternal.ByOrderId(m.OrderId)
+        , m => OrderContractsInternal.Items.ByOrderId(m.OrderId)
         , Default
         , e => {
           if(e.errorCode == 10147)
-            OrderContractsInternal.ByOrderId(orderId).ForEach(RaiseOrderRemoved);
+            OrderContractsInternal.Items.ByOrderId(orderId).ForEach(RaiseOrderRemoved);
           return true.SE(_ => Trace($"CancelOrder Error: {e}"));
         });
         IbClient.OnReqMktData(() => IbClient.ClientSocket.cancelOrder(orderId));
@@ -179,7 +180,7 @@ namespace IBApp {
     public void CancelAllOrders(string message) {
       Trace($"{nameof(CancelAllOrders)}: {message}");
       IbClient.OnReqMktData(() => IbClient.ClientSocket.reqGlobalCancel());
-      UseOrderContracts(ocs => ocs.Values.Where(oc => oc.isNew).ForEach(_ => ocs.TryRemove(_.order.OrderId, out var __)));
+      //UseOrderContracts(ocs => ocs.Values.Where(oc => oc.isNew).ForEach(_ => ocs.TryRemove(_.order.OrderId, out var __)));
     }
     public static void FillAdaptiveParams(IBApi.Order baseOrder, string priority) {
       baseOrder.AlgoStrategy = "Adaptive";
@@ -234,7 +235,7 @@ namespace IBApp {
       Trace($"{nameof(OpenTrade)}[S]: {new { contract, quantity, orderRef }} <= {Caller}");
       if(useTakeProfit && profit == 0 && takeProfitCondition == null)
         return Default(new Exception($"No profit or profit condition: {new { useTakeProfit, profit, takeProfitCondition }}")).Do(TraceOpenTradeResults);
-      var aos = OrderContractsInternal.Values
+      var aos = OrderContractsInternal.Items
         .Where(oc => !oc.isDone && oc.contract == contract && oc.order.TotalPosition().Sign() == quantity.Sign())
         .ToArray();
       var subs = aos.Where(oc => oc.isSubmitted).ToList();
@@ -299,7 +300,7 @@ namespace IBApp {
 
     private void TraceOpenTradeResults((OrderContractHolder value, ErrorMessage error)[] a) => Trace(
                 new[] { a.Select(_ => new { reqId = _.value?.order?.OrderId ?? _.error.reqId, order = _.value, _.error }).ToTextOrTable(nameof(OpenTrade) + "[E]:") + "" }
-                .Concat(new[] { OrderContractsInternal.ToTextOrTable(nameof(OrderContractsInternal) + ":") + "" })
+                .Concat(new[] { OrderContractsInternal.Items.Select(x => new {x.order.OrderId, x.order, x.contract, x.status }).ToTextOrTable(nameof(OrderContractsInternal) + ":") + "" })
                 .Flatter("\n"));
 
     private IBApi.Order OrderFactory(Contract contract, int quantity, double price, DateTime goodTillDate, DateTime goodAfterDate, string orderType, bool isPreRTH) {
