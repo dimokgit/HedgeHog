@@ -198,8 +198,8 @@ namespace HedgeHog.Alice.Client {
         App.container.SatisfyImportsOnce(this);
       } catch (CompositionException exc) {
         var ie = exc.RootCauses.Select(rc => rc.InnerException).FirstOrDefault() ?? exc.InnerException;
-        while (ie.InnerException != null)
-          ie = ie.InnerException;
+        while(ie.InnerException != null)
+          ie = ie.InnerException.SideEffect(_ => FileLogger.LogToFile(ie));
         ExceptionDispatchInfo.Capture(ie).Throw();
       }catch(ReflectionTypeLoadException exc) {
         exc.LoaderExceptions.ForEach(LogMessage.Send);

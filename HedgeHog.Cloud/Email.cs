@@ -64,7 +64,6 @@ namespace HedgeHog.Cloud {
       using(var client = new IX.ImapClient(server, true, false)) {
         if(client.Connect()) {
           if(client.Login(userName, password)) {
-            //var messages = client.Folders.Inbox.Search("UID SEARCH FROM \"13057880763@mymetropcs.com\"");
             try {
               return client.Folders.Inbox.Search(search);
             } catch(Exception exc) {

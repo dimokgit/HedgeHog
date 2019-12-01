@@ -12,9 +12,9 @@ namespace HedgeHog.Cloud.Tests {
     [TestMethod()]
     public void SendTest() {
       var path = @"C:\Users\dimok\OneDrive\Pictures\Screenshots\2018-10-27.png";
-      Emailer.Send("dimokdimon@gmail.com", 
-        "13057251125@mymetropcs.com,13057880763@mymetropcs.com", 
-        "1Aaaaaaa", 
+      Emailer.Send(AppSettings.SmsEmailAddress, 
+        AppSettings.SmsTradeConfirmation, 
+        AppSettings.SmsEmailPassword, 
         "New Trade Alert", 
         "USD/JPY"
         , new[] { Tuple.Create(File.ReadAllBytes(path), "Screen") }
@@ -23,17 +23,20 @@ namespace HedgeHog.Cloud.Tests {
 
     [TestMethod()]
     public void ReadSinceTest() {
-      var search = new Emailer.IMapSearch { 
-        From = "13057880763@mymetropcs.com" ,
+      var search = new Emailer.IMapSearch {
+        From = From(),
         Since = DateTimeOffset.Now.Date,
-        Subject ="dimokdimon"
+        Subject = "dimokdimon"
       };
-      var messages = Emailer.Read("dimokdimon", "1Aaaaaaa", "INBOX", search);
+      var messages = Emailer.Read(AppSettings.SmsEmailAddress, AppSettings.SmsEmailPassword, "INBOX", search);
       Assert.IsTrue(messages.Count > 0);
     }
+
+    private static string From() => AppSettings.SmsTradeConfirmation.Split(',')[0];
+
     [TestMethod()]
     public void ReadSubjectTest() {
-      var messages = Emailer.Read("dimokdimon", "1Aaaaaaa", "INBOX", "FROM \"13057880763@mymetropcs.com\" SUBJECT \"go\" ");
+      var messages = Emailer.Read(AppSettings.SmsEmailAddress, AppSettings.SmsEmailPassword, "INBOX", $"FROM \"{From()}\" SUBJECT \"go\" ");
       Assert.IsTrue(messages.Count > 0);
     }
   }

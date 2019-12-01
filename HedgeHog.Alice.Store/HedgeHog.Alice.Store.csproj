@@ -527,6 +527,10 @@
       <Project>{da5773fd-ef73-4eb6-8ab7-b086db49b968}</Project>
       <Name>HedgeHog.Cloud</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Config\HedgeHog.Config.csproj">
+      <Project>{853f7f01-e48b-46b9-b053-d71138a9887c}</Project>
+      <Name>HedgeHog.Config</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Core.Reactive\HedgeHog.Core.Reactive.csproj">
       <Project>{edc8fa19-6e01-4997-84ba-ee5881fb3a52}</Project>
       <Name>HedgeHog.Core.Reactive</Name>

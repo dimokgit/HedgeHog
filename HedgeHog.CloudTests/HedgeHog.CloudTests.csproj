@@ -8,7 +8,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HedgeHog.CloudTests</RootNamespace>
     <AssemblyName>HedgeHog.CloudTests</AssemblyName>
-    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
@@ -161,6 +161,10 @@
     <ProjectReference Include="..\HedgeHog.Cloud\HedgeHog.Cloud.csproj">
       <Project>{da5773fd-ef73-4eb6-8ab7-b086db49b968}</Project>
       <Name>HedgeHog.Cloud</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Config\HedgeHog.Config.csproj">
+      <Project>{853f7f01-e48b-46b9-b053-d71138a9887c}</Project>
+      <Name>HedgeHog.Config</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

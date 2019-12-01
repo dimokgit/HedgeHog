@@ -231,6 +231,7 @@
     </Reference>
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -317,6 +318,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppSettings.cs" />
     <Compile Include="BarBaseTest.cs" />
     <Compile Include="BlackScholesTests.cs" />
     <Compile Include="DataManagers\AccountManagerTests.cs" />
@@ -342,6 +344,7 @@
     <Compile Include="EnumerableEx.cs" />
     <Compile Include="Reactive.cs" />
     <Compile Include="Trading.cs" />
+    <Compile Include="ConfigurationTest.cs" />
     <Compile Include="WFDTests.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -418,6 +421,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
+    <None Include="_secrets\secret.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="TestParams.txt">

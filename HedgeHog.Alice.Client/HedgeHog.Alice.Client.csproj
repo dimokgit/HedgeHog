@@ -1478,6 +1478,9 @@
     <None Include="WWW\Scripts\package.json" />
     <None Include="WWW\Scripts\techan.min.js.map" />
     <None Include="WWW\Styles\fonts\fontawesome-webfont.eot" />
+    <None Include="_secrets\secret.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <Resource Include="WWW\Styles\fonts\fontawesome-webfont.ttf" />
     <None Include="WWW\Styles\fonts\fontawesome-webfont.woff" />
     <None Include="WWW\Styles\oxygen\AUTHORS" />

@@ -32,7 +32,6 @@ using System.Transactions;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage :Models.ModelBase {
-
     public static string ActiveSettingsPath(string path) {
       return Path.IsPathRooted(path) ? path : Path.Combine(Lib.CurrentDirectory, "Settings", path);
     }
@@ -138,22 +137,32 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region ForexDbContext factory
-    static string mongoConnectionString = "mongodb://dimok:1Aaaaaaa@ds040017.mlab.com:40017/forex";
+    static string mongoConnectionString = AppSettings.MongoUri;
     //static ForexDbContext _ForexMongoFactory;
     static ForexDbContext ForexMongoFactory() => new ForexDbContext(mongoConnectionString);
     static object _forexDbContextLocker = new object();
     public static T UseForexMongo<T>(Func<ForexDbContext, T> func) {
-      lock(_forexDbContextLocker)
-        using(var c = ForexMongoFactory())
-          return func(c);
+      try {
+        lock(_forexDbContextLocker)
+          using(var c = ForexMongoFactory())
+            return func(c);
+      } catch(Exception exc) {
+        FileLogger.LogToFile(exc);
+        throw;
+      }
     }
     public static void UseForexMongo(Action<ForexDbContext> action, bool save, Action onSave) => UseForexMongo(action, save, onSave, null);
     public static void UseForexMongo(Action<ForexDbContext> action, bool save = false, Action onSave = null, Action<ForexDbContext, Exception> onError = null) {
-      lock(_forexDbContextLocker) {
-        using(var c = ForexMongoFactory()) {
-          action(c);
-          Save(save, onSave, onError, c);
+      try {
+        lock(_forexDbContextLocker) {
+          using(var c = ForexMongoFactory()) {
+            action(c);
+            Save(save, onSave, onError, c);
+          }
         }
+      } catch(Exception exc) {
+        FileLogger.LogToFile(exc);
+        throw;
       }
     }
 

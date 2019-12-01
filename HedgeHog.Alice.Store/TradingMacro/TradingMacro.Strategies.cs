@@ -534,10 +534,9 @@ namespace HedgeHog.Alice.Store {
       //if(!IsInVirtualTrading)
       Observable.Timer(TimeSpan.FromSeconds(1))
         .Do(_ => HedgeHog.Cloud.Emailer.Send(
-          "dimokdimon@gmail.com",
-          //"dimokdimon@gmail.com",
-          "13057251125@mymetropcs.com,13057880763@mymetropcs.com",
-          "1Aaaaaaa",
+          AppSettings.SmsEmailAddress,
+          AppSettings.SmsTradeConfirmation,
+          AppSettings.SmsEmailPassword,
           header, message + "",
           //Pair + "::" + header, message + "\nhttp://ruleover.com:" + IpPort + "/trader.html",
           new[] { Tuple.Create(attachment, "File.png") }.Where(t => t.Item1 != null).ToArray())

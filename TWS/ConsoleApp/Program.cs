@@ -23,6 +23,8 @@ using System.Reactive;
 using MarkdownLog;
 using HedgeHog.Alice.Store;
 using HedgeHog.DateTimeZone;
+using System.Runtime.ExceptionServices;
+using System.Windows;
 
 namespace ConsoleApp {
   class Program {
@@ -39,6 +41,8 @@ namespace ConsoleApp {
     private const int MINIMIZE = 6;
     private const int RESTORE = 9;
     static void Main(string[] args) {
+      HedgeHog.ConfigGlobal.DoRunTest = false;
+      AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
       #region Init
       ShowWindow(ThisConsole, MAXIMIZE);
       TradesManagerStatic.dbOffers = GlobalStorage.LoadOffers();
@@ -667,6 +671,18 @@ namespace ConsoleApp {
       HandleMessage("Press any key ...");
       Console.ReadKey();
     }
+
+    private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
+      var tie = e.ExceptionObject as TypeInitializationException;
+      if(tie != null) {
+        HandleMessage(tie.InnerException);
+        MessageBox.Show(tie.InnerException+"","Initialization Error", MessageBoxButton.OK,MessageBoxImage.Error);
+      } else {
+        ExceptionDispatchInfo.Capture(e.ExceptionObject as Exception).Throw();
+
+      }
+    }
+
 
     private static void LoadHistory(IBClientCore ibClient, IList<Contract> options) {
       var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);

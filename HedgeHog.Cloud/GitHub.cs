@@ -8,6 +8,10 @@ using Octokit;
 
 namespace HedgeHog.Cloud {
   public static class GitHub {
+    class AppSettings :AppSettingsBase<AppSettings> {
+      public static string GitHubPassword => Required();
+      public static string GistHubPassword => Required();
+    }
     #region Properties
     static readonly string prefix = "strategy\\";
     static readonly string prefix_ = "strategy--";
@@ -22,8 +26,8 @@ namespace HedgeHog.Cloud {
     public static string MyApp { get; set; } = "HedgeHog";
     #endregion
     #region Gist Client Factory
-    public static GitHubClient ClientFactoryGit() => ClientFactory("dimokgit", "BudG0tov");
-    public static GitHubClient ClientFactory() => ClientFactory("dimokdimon@gmail.com", "!Qazxsw23edcvfr4");
+    public static GitHubClient ClientFactoryGit() => ClientFactory("dimokgit", AppSettings.GitHubPassword);
+    public static GitHubClient ClientFactory() => ClientFactory("dimokdimon@gmail.com", AppSettings.GistHubPassword);
     public static GitHubClient ClientFactory(string user, string password) =>
       new GitHubClient(new ProductHeaderValue(MyApp)) { Credentials = new Octokit.Credentials(user, password) };
     #endregion

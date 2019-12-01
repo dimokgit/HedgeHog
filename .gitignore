@@ -45,3 +45,6 @@ AllInOne/.vs/AllInOne/v15/sqlite3/storage.ide
 **/*.dbmdl
 **/*.jfm
 /Meta.Numerics
+/HedgeHog.Alice.Client/_secrets
+/AllInOne/UnitLib/_secrets
+/TWS/ConsoleApp/_secrets

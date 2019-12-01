@@ -154,6 +154,7 @@
   <ItemGroup>
     <Compile Include="Box.cs" />
     <Compile Include="Common.cs" />
+    <Compile Include="Configuration.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="DateTimeZone.cs" />
     <Compile Include="Enums.cs" />

@@ -58,7 +58,7 @@ namespace UnitLib {
 
     [TestMethod()]
     public void MongoTest() {
-      var client = new MongoClient("mongodb://dimok:1Aaaaaaa@ds040017.mlab.com:40017/forex");
+      var client = new MongoClient(AppSettings.MongoUri);
       var db = client.GetDatabase("forex");
       var colls = db.ListCollections().ToList();
       colls.ForEach(bd => Console.WriteLine(bd + ""));
