@@ -38,16 +38,21 @@ namespace IBApp {
     }
     public static IObservable<(Position position, double close, double pl, double closePrice)[]> HedgedPositions(IEnumerable<Position> positions) {
       return (from p in positions.ToObservable()
-         //where p.contract.IsFuture || p.contract.IsStock || p.contract.IsOption
-       from price in p.contract.ReqPriceSafe()
-       let closePrice = p.position > 0 ? price.bid : price.ask
-       let close = closePrice * p.contract.ComboMultiplier * p.position
-       let t = (p, close, close - p.open, closePrice)
-       group t by t.p.contract.SecType into g
-       from a in g.OrderBy(p => p.p.contract.Instrument).ToArray()
-       select a
+                //where p.contract.IsFuture || p.contract.IsStock || p.contract.IsOption
+              from price in p.contract.ReqPriceSafe()
+              let closePrice = p.position > 0 ? price.bid : price.ask
+              let close = closePrice * p.contract.ComboMultiplier * p.position
+              let t = (p, close, close - p.open, closePrice)
+              group t by t.p.contract.SecType into g
+              from a in g.OrderBy(p => p.p.contract.Instrument).ToArray()
+              select a
       );
     }
+    public static IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe(int quantity, string s1, string s2, double ratio1, double ratio2, bool isInTest) =>
+      from c1 in s1.ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
+      from c2 in s2.ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
+      from h in MakeHedgeComboSafe(quantity, c1, c2, ratio1, ratio2, isInTest)
+      select h;
     public static IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe(int quantity, Contract c1, Contract c2, double ratio1, double ratio2, bool isInTest) =>
       from cd1 in isInTest ? Observable.Return(c1.SetTestConId(isInTest, 0)) : c1.ReqContractDetailsCached().Select(cd => cd.Contract)
       from cd2 in isInTest ? Observable.Return(c2.SetTestConId(isInTest, 0)) : c2.ReqContractDetailsCached().Select(cd => cd.Contract)

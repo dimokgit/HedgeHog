@@ -30,8 +30,11 @@ namespace IBApp {
     public void TraceDebug0<T>(T v) { }
     protected Action<object> Trace { get; }
     protected Action<bool, object> TraceIf => (b, o) => { if(b) Trace(o); };
-    protected Action<object> Verbose => o => { if(UseVerbose || Debugger.IsAttached) TraceWithThread("{*}", o); };
+    protected Action<object> Verbose => o => { if(UseVerbose || Debugger.IsAttached) TraceWithThread("{>}", o); };
     protected Action<object> Verbose0 => o => { };
+    protected bool _doTracePositions = false;
+    public void TracePosition<T>(T v) { if(_doTracePositions && Debugger.IsAttached) TraceWithThread("{?}", v); }
+    //protected void TraceGeneric(object o, string s)  { if(UseVerbose || Debugger.IsAttached) TraceWithThread($"{{s}}", o); };
     // TODO - IBClientMaster must not be assigned more than once
     protected IBClientCore IbClient {
       get => _ibClient;

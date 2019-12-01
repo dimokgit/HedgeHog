@@ -23,7 +23,7 @@ namespace HedgeHog.Cloud {
     #endregion
     #region Gist Client Factory
     public static GitHubClient ClientFactoryGit() => ClientFactory("dimokgit", "BudG0tov");
-    public static GitHubClient ClientFactory() => ClientFactory("dimokgit2", "!Qazxsw2");
+    public static GitHubClient ClientFactory() => ClientFactory("dimokdimon@gmail.com", "!Qazxsw23edcvfr4");
     public static GitHubClient ClientFactory(string user, string password) =>
       new GitHubClient(new ProductHeaderValue(MyApp)) { Credentials = new Octokit.Credentials(user, password) };
     #endregion

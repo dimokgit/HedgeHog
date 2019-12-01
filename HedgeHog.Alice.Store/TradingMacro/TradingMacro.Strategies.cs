@@ -93,7 +93,7 @@ namespace HedgeHog.Alice.Store {
          select true
          )).Concat().Count();
       var hasSellOrdes = am.UseOrderContracts(OrderContracts =>
-      (from oc in OrderContracts.Where(o => !o.isDone && o.contract.IsPut && !o.contract.IsCombo && o.order.Action == "SELL")
+      (from oc in OrderContracts.Where(o => !o.isDone && o.contract.IsPut && !o.contract.IsOptionsCombo && o.order.Action == "SELL")
        select true
        )).Concat().Count();
       if(distanceOk && hasOptions < TradeCountMax) {

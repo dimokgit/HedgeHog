@@ -23,6 +23,11 @@ namespace HedgeHog {
     public static IObservable<T> OrderByDescending<T, TKey>(this IObservable<T> source, Func<T, TKey> sort) =>
       source.ToArray().SelectMany(a => a.OrderByDescending(sort));
 
+    public static IObservable<TResult> InjectIf<TResult>(this IObservable<TResult> thenSource, Func<TResult, bool> condition, Func<TResult, IObservable<TResult>> elseSource)
+      => thenSource.SelectMany(o => condition(o) ? elseSource(o) : Observable.Return(o));
+    public static IObservable<TResult> If<TResult>(this IEnumerable<TResult> thenSource, bool condition, Func<IObservable<TResult>> elseSource)
+      => condition ? thenSource.ToObservable() : elseSource();
+
     public static IObservable<T> OnEmpty<T>(this IObservable<T> source, Action onEmpty) {
       var isEmpty = true;
       return source.Do(_ => isEmpty = false).Finally(() => { if(isEmpty) onEmpty(); });
@@ -201,8 +206,7 @@ namespace HedgeHog {
     //Code taken from the ObserveOn(this IObservable<T> source, IScheduler schedule) v1 implementation. Queue<T> has been replaced with a field of T.
     //  Some renaming for improved readability
     public static IObservable<T> ObserveLatestOn<T>(this IObservable<T> source, IScheduler scheduler) {
-      return Observable.Create<T>(observer =>
-      {
+      return Observable.Create<T>(observer => {
         //Replace the queue with just the single notification;
         var gate = new object();
         bool active = false;
@@ -210,8 +214,7 @@ namespace HedgeHog {
 
         var cancelable = new SerialDisposable();
         var disposable = source.Materialize()
-            .Subscribe(thisNotification =>
-            {
+            .Subscribe(thisNotification => {
               bool alreadyActive;
               Notification<T> outsideNotification;
               lock(gate) {
@@ -225,27 +228,26 @@ namespace HedgeHog {
                 if(!cancelable.IsDisposed)
                   cancelable.Disposable = scheduler.Schedule(
                               self => {
-                                  Notification<T> localNotification;
-                                  lock(gate) {
-                                    localNotification = outsideNotification;
-                                    outsideNotification = null;
-                                  }
-                                  localNotification.Accept(observer);
-                                  bool hasPendingNotification;
-                                  lock(gate) {
-                                    hasPendingNotification = active = (outsideNotification != null);
-                                  }
-                                  if(hasPendingNotification) {
-                                    if(!cancelable.IsDisposed)
-                                      self();
-                                  }
-                                });
+                                Notification<T> localNotification;
+                                lock(gate) {
+                                  localNotification = outsideNotification;
+                                  outsideNotification = null;
+                                }
+                                localNotification.Accept(observer);
+                                bool hasPendingNotification;
+                                lock(gate) {
+                                  hasPendingNotification = active = (outsideNotification != null);
+                                }
+                                if(hasPendingNotification) {
+                                  if(!cancelable.IsDisposed)
+                                    self();
+                                }
+                              });
               }
                       //Edge case where (yet to be explained) the recursive scheduler never fires.
                       else if(outsideNotification.Kind != NotificationKind.OnNext) {
                 if(!cancelable.IsDisposed)
-                  cancelable.Disposable = scheduler.Schedule(thisNotification, (self, notification) =>
-                  {
+                  cancelable.Disposable = scheduler.Schedule(thisNotification, (self, notification) => {
                     notification.Accept(observer);
                     return Disposable.Empty;
                   });

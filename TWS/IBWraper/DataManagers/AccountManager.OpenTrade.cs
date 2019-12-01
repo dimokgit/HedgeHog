@@ -87,12 +87,9 @@ namespace IBApp {
     }
     private void OnOpenError((int reqId, int code, string error, Exception exc) e, string trace) {
       TraceError(trace + e);
-      OrderContractsInternal.Items.ByOrderId(e.reqId).ToList().ForEach(oc => {
-        if(new[] { 200, 201, 203, 321, 382, 383 }.Contains(e.code)) {
-          //OrderStatuses.TryRemove(oc.contract?.Symbol + "", out var os);
-          RaiseOrderRemoved(oc);
-        }
-      });
+      OrderContractsInternal.Items.ByOrderId(e.reqId)
+        .Where(_ => new[] { 200, 201, 203, 321, 382, 383 }.Contains(e.code))
+        .ToList().ForEach(OrderContractsInternal.RemoveByHolder);
     }
 
     ConcurrentDictionary<string, bool> _placedOrders = new ConcurrentDictionary<string, bool>();
@@ -101,34 +98,49 @@ namespace IBApp {
       var key = $"{ order.ActionText}::{contract.Key}::{order.TypeText}";
       lock(_placeOrderLocker) {
         var locker = _placedOrders.GetOrAdd(key, false);
-        if(locker) return Observable.Return(ErrorMessage.Create(Default(), new ErrorMessage(order.OrderId, 0, new { key } + "", new PlaceOrderException())));
+        if(locker) {
+          Verbose($"PlaceOrder: {new { key, exists = true }}");
+          return Observable.Return(ErrorMessage.Create(Default(), new ErrorMessage(order.OrderId, 0, new { key } + "", new PlaceOrderException())));
+        }
         _placedOrders.TryUpdate(key, true, false);
-        TraceDebug0($"locker [{order.OrderId}] => {_placedOrders[key]} for {key}");
+        TraceDebug($"locker [{order.OrderId}] => {_placedOrders[key]} for {key}");
         if(order.OrderId == 0)
           order.OrderId = NetOrderId();
-        var oso = OrderStatusObservable;
-        if(!order.Transmit)
-          oso = oso.TakeUntil(Observable.Timer(TimeSpan.FromSeconds(1))).DefaultIfEmpty();
-        int GetOtderId(OrderStatusMessage m) => m == null ? order.OrderId : m.OrderId;
+        var oso = OpenOrderObservable;
+        //if(true || !order.Transmit)          oso = oso.TakeUntil(Observable.Timer(TimeSpan.FromSeconds(1))).Spy("PlaceOrder Timer", t => TraceDebug(t));//.DefaultIfEmpty();
+        int GetOtderId(OpenOrderMessage m) => m == null ? order.OrderId : m.OrderId;
         var wte = IbClient.WireToErrorMessage(order.OrderId, oso, GetOtderId
         , m => OrderContractsInternal.Items.ByOrderId(GetOtderId(m))
         , Default
         , e => OpenTradeError(contract, order, e, new { }));
         IbClient.OnReqMktData(() => IbClient.ClientSocket.placeOrder(order.OrderId, contract, order));
-        return wte.FirstAsync()
-          .Do(_ => {
-            TraceDebug0($"locker [{order.OrderId}] <= {_placedOrders[key]} for {key}");
+        return wte
+          .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(0.2)))
+          .ToArray()
+          .FirstAsync()
+          .SelectMany(ems => {
+            TraceDebug($"locker [{order.OrderId}] <= {_placedOrders[key]} for {key}");
             _placedOrders.TryRemove(key, out var _);
+            if(ems.IsEmpty()) {
+              Trace($"PlaceOrder[{order.OrderId}] for {key} returned empty handed. Callint reqOpenOrders.");
+              IbClient.OnReqMktData(() => IbClient.ClientSocket.reqOpenOrders());
+              return OpenOrderObservable
+              .Where(m => m.OrderId == order.OrderId)
+              .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(1)))
+              .Take(1)
+              .Select(m => ErrorMessage.Empty(OrderContractsInternal.Items.ByOrderId(GetOtderId(m))));
+            }
+            return ems.ToObservable();
           })
           .Select(och => och.value.IsEmpty() ? ErrorMessage.Empty(new[] { new OrderContractHolder(order, contract, "PreTransmitted") }.AsEnumerable()) : och);
       }
       IEnumerable<OrderContractHolder> Default() { yield return new OrderContractHolder(order, contract, default); }
     }
     public IObservable<ErrorMessages<OrderContractHolder>> CancelOrder(int orderId) {
+      const int ORDER_TOCANCEL_NOTFOUND = 10147;
       var o = OrderContractsInternal.Items.ByOrderId(orderId).SingleOrDefault(oh => oh.isInactive);
       if(o != null) {
-        OrderContractsInternal.Edit(u => u.Remove(o.order.PermId));
-        RaiseOrderRemoved(o);
+        OrderContractsInternal.RemoveByHolder(o);
         return Observable.Empty<ErrorMessages<OrderContractHolder>>();
       } else {
         var oso = OrderStatusObservable.Where(m => m.IsOrderDone());
@@ -136,8 +148,8 @@ namespace IBApp {
         , m => OrderContractsInternal.Items.ByOrderId(m.OrderId)
         , Default
         , e => {
-          if(e.errorCode == 10147)
-            OrderContractsInternal.Items.ByOrderId(orderId).ForEach(RaiseOrderRemoved);
+          if(e.errorCode == ORDER_TOCANCEL_NOTFOUND)
+            OrderContractsInternal.RemoveByOrderId(orderId);
           return true.SE(_ => Trace($"CancelOrder Error: {e}"));
         });
         IbClient.OnReqMktData(() => IbClient.ClientSocket.cancelOrder(orderId));
@@ -224,15 +236,30 @@ namespace IBApp {
 
     public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenTrade
       (
-        Action<IBApi.Order> orderExt
+      Action<IBApi.Order> orderExt
       , Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false
       , DateTime goodTillDate = default, DateTime goodAfterDate = default
       , OrderCondition condition = null, OrderCondition takeProfitCondition = null
       , string orderRef = ""
-      , [CallerMemberName] string Caller = "") {
+      , [CallerMemberName] string Caller = "") => OpenTrade(o => {
+        orderExt(o);
+        return null;
+      }
+      , contract, quantity, price, profit, useTakeProfit
+        , goodTillDate, goodAfterDate
+        , condition, takeProfitCondition, orderRef, Caller);
+
+    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenTrade
+    (
+      Func<IBApi.Order, IObservable<(IBApi.Order order, double price, Contract contract)>> orderExt
+    , Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false
+    , DateTime goodTillDate = default, DateTime goodAfterDate = default
+    , OrderCondition condition = null, OrderCondition takeProfitCondition = null
+    , string orderRef = ""
+    , [CallerMemberName] string Caller = "") {
       contract.Check();
       string type = "";
-      Trace($"{nameof(OpenTrade)}[S]: {new { contract, quantity, orderRef }} <= {Caller}");
+      Verbose($"{nameof(OpenTrade)}[S]: {new { contract, quantity, orderRef }} <= {Caller}");
       if(useTakeProfit && profit == 0 && takeProfitCondition == null)
         return Default(new Exception($"No profit or profit condition: {new { useTakeProfit, profit, takeProfitCondition }}")).Do(TraceOpenTradeResults);
       var aos = OrderContractsInternal.Items
@@ -258,26 +285,30 @@ namespace IBApp {
         try {
           var orderType = price == 0
             ? /*(contract.IsFuturesCombo ? "REL + " : "") + */"MKT"
-            : type.IfEmpty(contract.IsStocksOrFuturesCombo ? "LMT + MKT" : "LMT");
+            : type.IfEmpty(contract.IsHedgeCombo ? "LMT + MKT" : "LMT");
           bool isPreRTH = contract.IsPreRTH(IBClientMaster.ServerTime);
           var order = OrderFactory(contract, quantity, price, goodTillDate, goodAfterDate, orderType, isPreRTH);
           order.OrderRef = orderRef;
           order.Conditions.AddRange(condition.YieldNotNull());
           order.ConditionsIgnoreRth = true;
-          orderExt?.Invoke(order);
+          var child = orderExt?.Invoke(order) ?? Observable.Empty<(IBApi.Order order, double price, Contract contract)>();
           CheckNonGiuaranteed(order, contract);
 
           if(order.NeedTriggerPrice && order.LmtPrice.IsSetOrZero() && order.AuxPrice.IsNotSetOrZero()) order.AuxPrice = order.LmtPrice;
-          if(false && !contract.IsCombo && !contract.IsFutureOption) FillAdaptiveParams(order, "Normal");
+          if(false && !contract.IsOptionsCombo && !contract.IsFutureOption) FillAdaptiveParams(order, "Normal");
           var tpOrder = (useTakeProfit
             ? MakeTakeProfitOrder2(order, contract, takeProfitCondition, profit)
             : new (IBApi.Order order, double price)[0].ToObservable()
-            ).Select(x => new { x.order, x.price });
-          var orders = new[] { new { order, price } }.ToObservable().Merge(tpOrder).ToArray();
+            ).Select(t => (t.order, t.price, contract));
+          var orders = new[] { (order, price, contract) }
+          .ToObservable()
+          .Merge(tpOrder)
+          .Merge(child)
+          .ToArray();
           var obss = (from os in orders
-                      from o in os
-                      from po in PlaceOrder(o.order, contract).Take(1)
-                      from value in po.value.DefaultIfEmpty()
+                      from o in os.OrderBy(o => o.order.ParentId)
+                      from po in PlaceOrder(o.order, o.contract).Take(1).Spy($"PlaceTrade[{o.order.OrderId}]", t => TraceDebug(t))
+                      from value in po.value.DefaultIfEmpty().SideEffect(v => TraceDebug($"PlacedTrade[{po.value.Single().order.OrderId}]"))
                       select (value, po.error)).ToArray();
           return obss.Do(TraceOpenTradeResults);
         } catch(Exception exc) {
@@ -298,9 +329,9 @@ namespace IBApp {
       return order;
     }
 
-    private void TraceOpenTradeResults((OrderContractHolder value, ErrorMessage error)[] a) => Trace(
+    private void TraceOpenTradeResults((OrderContractHolder value, ErrorMessage error)[] a) => Verbose(
                 new[] { a.Select(_ => new { reqId = _.value?.order?.OrderId ?? _.error.reqId, order = _.value, _.error }).ToTextOrTable(nameof(OpenTrade) + "[E]:") + "" }
-                .Concat(new[] { OrderContractsInternal.Items.Select(x => new {x.order.OrderId, x.order, x.contract, x.status }).ToTextOrTable(nameof(OrderContractsInternal) + ":") + "" })
+                .Concat(new[] { OrderContractsInternal.Items.Select(x => new { x.order.OrderId, x.order, x.contract, x.status }).ToTextOrTable(nameof(OrderContractsInternal) + ":") + "" })
                 .Flatter("\n"));
 
     private IBApi.Order OrderFactory(Contract contract, int quantity, double price, DateTime goodTillDate, DateTime goodAfterDate, string orderType, bool isPreRTH) {
@@ -322,7 +353,6 @@ namespace IBApp {
         order.Tif = GTC;
       if(goodAfterDate != default)
         order.GoodAfterTime = goodAfterDate.ToTWSString();
-      var isFutureCombo = contract.ComboLegs?.SelectMany(l => Contract.FromCache(c => c.ConId == l.ConId)).Any(c => c.IsFuture);
       return order;
     }
 
@@ -335,20 +365,20 @@ namespace IBApp {
       .Select(o => o.LmtPrice)
       .ToObservable()
       .Concat(Observable.Defer(()
-      => contract.ReqPriceSafe(2).Select(p => parent.IsBuy() ? p.ask : p.bid).SubscribeOn(Scheduler.CurrentThread)
+      => contract.ReqPriceSafe(2).Select(p => parent.IsBuy ? p.ask : p.bid).SubscribeOn(Scheduler.CurrentThread)
       ).SubscribeOn(Scheduler.CurrentThread)
       ).SubscribeOn(Scheduler.CurrentThread)
       //.OnEmpty(() => Trace($"No take profit order for {parent}"))
       .Select(lmtPrice => {
         parent.Transmit = false;
-        var takeProfit = (profit >= 1 ? profit : lmtPrice * profit) * (parent.IsBuy() ? 1 : -1);
+        var takeProfit = (profit >= 1 ? profit : lmtPrice * profit) * (parent.IsBuy ? 1 : -1);
         var price = lmtPrice + takeProfit;
         var order = new IBApi.Order() {
           Account = _accountId,
           ParentId = parent.OrderId,
           OrderId = NetOrderId(),
           Action = parent.Action == "BUY" ? "SELL" : "BUY",
-          OrderType = isMarket ? "MKT" : "LMT" + (contract.IsStocksOrFuturesCombo ? " + MKT" : ""),
+          OrderType = isMarket ? "MKT" : "LMT" + (contract.IsHedgeCombo ? " + MKT" : ""),
           TotalQuantity = parent.TotalQuantity,
           Tif = GTC,
           OutsideRth = isPreRTH,

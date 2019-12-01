@@ -1,4 +1,5 @@
-﻿using HedgeHog;
+﻿using DynamicData;
+using HedgeHog;
 using HedgeHog.Shared;
 using IBApi;
 using IBSampleApp.messages;
@@ -54,7 +55,7 @@ namespace IBApp {
     public static IEnumerable<OrderContractHolder> ByParentId(this IEnumerable<OrderContractHolder> source, int parentId)
       => source.Where(och => och.order.ParentId == parentId);
 
-    public static IEnumerable<OrderContractHolder> ByLocalSymbol(this IEnumerable< OrderContractHolder> source, string localSymbol)
+    public static IEnumerable<OrderContractHolder> ByLocalSymbol(this IEnumerable<OrderContractHolder> source, string localSymbol)
       => source.Where(och => och.contract.LocalSymbol == localSymbol);
     public static IEnumerable<OrderContractHolder> ByLocalSymbool(this IEnumerable<OrderContractHolder> source, string localSymbol)
       => source.Where(och => och.contract.LocalSymbol == localSymbol);
@@ -70,15 +71,18 @@ namespace IBApp {
       => source.ByContract(contract).Where(och => !och.isDone && och.hasSubmitted);
     #endregion
 
+    public static void RemoveByOrderId(this SourceCache<OrderContractHolder, int> source, int orderId)
+      => source.Items.ByOrderId(orderId).ToList().ForEach(source.Remove);
+    public static void RemoveByHolder(this SourceCache<OrderContractHolder, int> source, OrderContractHolder och)
+      => source.Remove(och.order.PermId);
+
     public static bool IsOrderDone(this OrderStatusMessage m) => (m.Status, m.Remaining).IsOrderDone();
     public static bool IsOrderDone(this (string status, double remaining) order) =>
       IBApi.OrderState.IsCancelledState(order.status) || IBApi.OrderState.IsDoneState(order.status, order.remaining);
 
     //public static void Verbous<T>(this T v)=>_ve
 
-    public static bool IsSell(this IBApi.Order o) => o.Action == "SELL";
-    public static bool IsBuy(this IBApi.Order o) => o.Action == "BUY";
-    public static double TotalPosition(this IBApi.Order o) => o.IsBuy() ? o.TotalQuantity : -o.TotalQuantity;
+    public static double TotalPosition(this IBApi.Order o) => o.IsBuy ? o.TotalQuantity : -o.TotalQuantity;
 
     private static (string symbol, bool isBuy) Key(string symbol, bool isBuy) => (symbol.WrapPair(), isBuy);
     private static (string symbol, bool isBuy) Key2(string symbol, bool isBuy) => Key(symbol, !isBuy);

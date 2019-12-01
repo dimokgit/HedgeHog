@@ -455,7 +455,31 @@ namespace HedgeHog.Alice.Client {
       } else {
         var am = GetAccountManager();
         if(c == null) throw new Exception($"{new { key }} not found");
-        if(!rel || c.IsCombo) {
+        if(rel && c.IsHedgeCombo) {
+          var contracts = c.LegsEx(t => new { t.c, q = t.leg.Quantity * positions });
+          var parent = contracts.First();
+          var child = contracts.Skip(1).First();
+          var oe = new Func<IBApi.Order, IObservable<(IBApi.Order order, double price, Contract contract)>>(p => {
+            p.Transmit = false;
+            var childOrder = new IBApi.Order();
+            childOrder.Account = p.Account;
+            childOrder.ParentId = p.OrderId;
+            childOrder.SetAction(child.q);
+            childOrder.OrderType = "MKT";
+            childOrder.TotalQuantity = parent.q.Abs();
+            childOrder.Transmit = true;
+            childOrder.HedgeType = "P";
+            childOrder.HedgeParam = contracts.Buffer(2).Select(b => (double)b[1].q / b[0].q).First().Abs() + "";
+            //child.
+            return Observable.Return((childOrder, 0.0, child.c));
+          });
+          return await (
+            from p in parent.c.ReqPriceSafe(2).Select(p => parent.q > 0 ? p.ask : p.bid)
+            from ots in am.OpenTrade(oe, parent.c, parent.q, p)
+            from ot in ots
+            select outMe(ot.holder + "", ot.error.errorMsg)
+                        ).ToArray();
+        } else if(!rel || c.IsOptionsCombo) {
           var oe = new Action<IBApi.Order>(o => o.Transmit = !test);
           var legs = await (from t in c.LegsEx().ToObservable()
                             from ots in am.OpenTrade(oe, t.contract, t.leg.Quantity * positions)
@@ -471,7 +495,7 @@ namespace HedgeHog.Alice.Client {
               let takeProfit = (isBuy ? p.ask : p.bid).With(p2 => TradesManagerStatic.PriceFromProfitAmount(500, quantity, c.ComboMultiplier, p2).Abs(p2))
               let oe = new Action<IBApi.Order>(o => {
                 o.Transmit = !test;
-                if(rel && !c.IsCombo) {
+                if(rel && !c.IsOptionsCombo) {
                   o.AuxPrice = IBApi.Order.OrderPrice(price, c);
                   o.OrderType = "REL + MKT";
                 }
@@ -722,7 +746,7 @@ namespace HedgeHog.Alice.Client {
                         : delta < 0 && (x.contract.IsCall || !hasStrike)
                         ? "#ffd3d9"
                         : "chartreuse",
-                      ic = x.contract.IsCombo,
+                      ic = x.contract.IsOptionsCombo,
                       breakEven
                     };
                   });
@@ -766,7 +790,7 @@ namespace HedgeHog.Alice.Client {
                  //let h = new { co, ratio = hh.Select(t => t.ratio).First(r => r != 1).AutoRound2(3), context = HID_BYTV/*hh.ToArray(t => t.context).MashDiffs()*/ }
                from price in ch.contract.ReqPriceSafe()
                from priceOpt in ch.optionsBuy.ReqPriceSafe()
-               from cts in am.ComboTrades(1).Where(ct => selectedHedge == TradingMacro.HedgeCalcTypes.ByTV && ct.contract.IsStocksOrFuturesCombo).ToArray()
+               from cts in am.ComboTrades(1).Where(ct => selectedHedge == TradingMacro.HedgeCalcTypes.ByTV && ct.contract.IsHedgeCombo).ToArray()
                from order in am.OrderContractsInternal.Items.Take(1).Select(oh => (oh.contract, quantity: oh.order.TotalQuantity.ToInt(), context: "Open Order")).DefaultIfEmpty()
                let ch0 = new CurrentHedge(TradingMacro.HedgeCalcTypes.ByTV + "", ch.contract.ShortString, ch.quantity, ch.ratio, ch.context, price.ask.Avg(price.bid).AutoRound2(2), ch.contract.Key)
                .SideEffect(_ => cts.Select(ct => (ct.contract, quantity: ct.position, context: "Open Trade"))
@@ -812,6 +836,7 @@ namespace HedgeHog.Alice.Client {
           var baseUnits = GetTradingMacros(pair).Concat(GetTradingMacros(hedgePar)).Where(t => t.IsActive).Select(_tm => _tm.BaseUnitSize).ToArray();
           //var hh0 = tm.TradingMacroM1(getHedges).Concat().ToArray();
           var hh0 = getHedges(tml);
+          hh0.ForEach(h => h.contract.FromCache().RunIfEmpty(() => h.contract.ReqContractDetailsCached().Subscribe()));
           if(hh0.IsEmpty()) return Observable.Empty<CurrentHedge>();
           var combo = AccountManager.MakeHedgeComboSafe(quantity, hh0[0].contract, hh0[1].contract, hh0[0].ratio, hh0[1].ratio, IsInVirtual());
           var x = (from l in combo.SelectMany(c => c.contract.LegsForHedge(pair))
@@ -1138,7 +1163,7 @@ namespace HedgeHog.Alice.Client {
           : true
           : (bool?)null;
           return from tt in c.am.OpenTrade(order => order.Transmit = true || !c.contract.IsBag, c.contract, -c.position
-          , isMore.HasValue || c.contract.IsCallPut || c.contract.IsStocksOrFuturesCombo ? 0 : c.closePrice
+          , isMore.HasValue || c.contract.IsCallPut || c.contract.IsHedgeCombo ? 0 : c.closePrice
           , 0.0, false, default, default
           , isMore.HasValue ? c.under.PriceCondition(conditionPrice.Value, isMore.Value, false) : default)
                  from t in tt
@@ -1152,6 +1177,7 @@ namespace HedgeHog.Alice.Client {
     public void CancelAllOrders() {
       var am = GetAccountManager();
       am?.CancelAllOrders(nameof(CancelAllOrders));
+      GetTradingMacros().ForEach(tm => tm.PendingEntryOrders.Select(po => po.Key).ToList().ForEach(k => tm.PendingEntryOrders.Remove(k)));
     }
     public object[] ReadContractsCache() {
       return Contract.Cache()

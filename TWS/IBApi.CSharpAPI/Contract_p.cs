@@ -26,7 +26,7 @@ namespace IBApi {
       return this;
     }
     private string HashKey => Instrument +
-      (IsCombo ? ":" + ComboLegs.OrderBy(l => l.Ratio).Select(l => $"{l.ConId}-{l.Ratio}").Flatter(":") : "");
+      (IsOptionsCombo ? ":" + ComboLegs.OrderBy(l => l.Ratio).Select(l => $"{l.ConId}-{l.Ratio}").Flatter(":") : "");
     public double IntrinsicValue(double undePrice) =>
       !IsOption
       ? 0
@@ -96,10 +96,11 @@ namespace IBApi {
     }
     public double MinTick() => LegsOrMe(MinTickImpl).Concat().Max();
     public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).Min();
+    public bool IsCombo => IsBag;
     public bool IsFuturesCombo => LegsEx(l => l.c.IsFuture).Count() > 1;
     public bool IsStocksCombo => LegsEx(l => l.c.IsStock).Count() > 1;
-    public bool IsStocksOrFuturesCombo => IsStocksCombo || IsFuturesCombo;
-    public bool IsCombo => LegsEx(l => l.c.IsOption).Count() > 1;
+    public bool IsHedgeCombo => IsStocksCombo || IsFuturesCombo;
+    public bool IsOptionsCombo => LegsEx(l => l.c.IsOption).Count() > 1;
     public bool IsCall => IsOption && Right == "C";
     public bool IsPut => IsOption && Right == "P";
     public bool IsOption => SecType == "OPT" || SecType == "FOP";
@@ -119,7 +120,7 @@ namespace IBApi {
 
     };
     public IList<DateTimeOffset> _LiquidHours = null;
-    public IList<DateTimeOffset> LiquidHours => _LiquidHours ?? (_LiquidHours 
+    public IList<DateTimeOffset> LiquidHours => _LiquidHours ?? (_LiquidHours
       = FromDetailsCache().Select(LiquidHoursImpl).SingleOrDefault(lh => lh.Any()) ?? GetTodayLiquidRange());
     static IList<DateTimeOffset> LiquidHoursImpl(ContractDetails cd) =>
       (from ranges in cd.LiquidHours.Split(';')
@@ -145,7 +146,7 @@ namespace IBApi {
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
     string ExpirationToString() => IsOption && LocalSymbol.IsNullOrWhiteSpace() || IsFutureOption ? " " + LastTradeDateOrContractMonth : "";
-    public string ShortSmart => (IsCombo && Legs((c, l) => c.LastTradeDateOrContractMonth).Distinct().Count() == 1) ? DateWithShort : ShortWithDate;
+    public string ShortSmart => (IsOptionsCombo && Legs((c, l) => c.LastTradeDateOrContractMonth).Distinct().Count() == 1) ? DateWithShort : ShortWithDate;
     public string ShortString => ComboLegsToString((c, r, a) => c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
     public string DateWithShort => ComboLegsToString((c, r, a)
       => ShowLastDate(c, s => s.Substring(4) + " ") + c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));

@@ -168,9 +168,9 @@ namespace IBApp {
       }
     }
 
-    void RaiseOrderAdded(HedgeHog.Shared.Order Order) {
-      OrderAddedEvent?.Invoke(this, new OrderEventArgs(Order));
-    }
+    void RaiseOrderAdded(OrderContractHolder contractHolder) 
+      => RaiseOrderAdded(OrderFromHolder(contractHolder.SideEffect(_=> TraceDebug($"{nameof(RaiseOrderAdded)} {contractHolder}"))));
+    void RaiseOrderAdded(HedgeHog.Shared.Order Order) => OrderAddedEvent?.Invoke(this, new OrderEventArgs(Order));
     #endregion
 
     #region OrderRemovedEvent

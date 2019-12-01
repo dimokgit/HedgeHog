@@ -25,7 +25,7 @@ namespace IBApp {
       lock(_ReqPriceSafeLocker) {
         if(cache.IsBag)
           return ReqPriceBag(cache, timeoutInSeconds);
-        if(!cache.IsStocksOrFuturesCombo && cache.IsCombo)
+        if(!cache.IsHedgeCombo && cache.IsOptionsCombo)
           return ReqPriceComboSafe(cache, timeoutInSeconds);
 
         var p0 = GetPrice(cache, title).Where(IsPriceReady).Select(MakePrice).ToArray();

@@ -14,9 +14,34 @@ using System.Threading.Tasks;
 namespace ConsoleApp {
   static class Tests {
     public static void HedgeCombo(AccountManager am) {
-      var h1 = "ESZ9";
-      var h2 = "NQZ9";
+      {
+        Func<IBApi.Order, IObservable<(IBApi.Order order, double price, Contract contract)>> orderExt(Contract c, Contract c2, int q) =>
+        parent => new[] {
+          (am.MakeOCOOrder(parent, q), 0.0, c),
+          (am.MakeOCOOrder(parent, q), 0.0, c2)
+        }.ToObservable();
+        (from c in "spy".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
+         from c2 in "qqq".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
+         from c3 in "iwm".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
+         from ot in am.OpenTrade(orderExt(c2, c3, -1), c, 1, 310)
+         select ot
+         )
+        .Subscribe(c => {
+          Program.HandleMessage(c.Select(t => new { t.holder, t.error }).ToTextOrTable("Test Order:"));
+          Program.HandleMessage(am.OrderContractsInternal.Items.Select(t => new { t.order, t.contract }).ToTextOrTable("Test Order Holders:"));
+        });
+        return;
+      }
+
+      var h1 = "SPY";
+      var h2 = "QQQ";
       var maxLegQuantity = 15;
+      {
+        AccountManager.MakeHedgeComboSafe(maxLegQuantity, h1, h2, 1, 1, false)
+          .ToArray()
+          .Subscribe(hs => Program.HandleMessage(hs.Select(h => new { h.contract, h.quantity }).ToTextTable("Hedge Combo")));
+        return;
+      }
       {
         var tvDays = 3;
         var posCorr = true;
@@ -41,15 +66,16 @@ namespace ConsoleApp {
               }
               { // New style for Options
                 var combos = hh2.CurrentOptionHedges(maxLegQuantity, Program.HandleMessage);
-                var a = combos.Select(c=> new { buy = c.buy.ShortSmart, sell = c.sell.ShortSmart, c.quantity  });
+                var a = combos.Select(c => new { buy = c.buy.ShortSmart, sell = c.sell.ShortSmart, c.quantity });
 
                 Program.HandleMessage($"{a.ToTextOrTable("Hedge Option Combos:")}");
                 (from combo in combos.ToObservable()
-                from p in combo.buy.ReqPriceSafe() select new {combo, p =new  { combo.buy.ShortSmart, p.bid, p.ask } }).Subscribe(p => {
-                  Program.HandleMessage(p.p);
-                  OpenTrade(p.combo, true);
-                  OpenTrade(p.combo, false);
-                });
+                 from p in combo.buy.ReqPriceSafe()
+                 select new { combo, p = new { combo.buy.ShortSmart, p.bid, p.ask } }).Subscribe(p => {
+                   Program.HandleMessage(p.p);
+                   OpenTrade(p.combo, true);
+                   OpenTrade(p.combo, false);
+                 });
 
                 void OpenTrade((Contract buy, Contract sell, int quantity) optionHedge, bool buy) {
                   var pos = 1;
@@ -96,7 +122,7 @@ namespace ConsoleApp {
         .ToArray()
         .Subscribe(posHedges => {
           Program.HandleMessage(posHedges.Select(h => new { h.ct.contract.ShortString, h.ct.open, h.ct.close, h.ct.pl, h.ct.closePrice, h.p }).ToTextOrTable("Positions:"));
-          var ct = posHedges.Select(p => p.ct).SingleOrDefault(p => p.contract.IsStocksOrFuturesCombo);
+          var ct = posHedges.Select(p => p.ct).SingleOrDefault(p => p.contract.IsHedgeCombo);
           if(ct == null) Program.HandleMessage("No hedged positions found.");
           else {
             return;

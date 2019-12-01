@@ -71,12 +71,20 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        (from c in "spy".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
-         from ot  in am.OpenTrade(c,1)
-         select ot
-         )
-        .Subscribe(c => c.ToTextTable("Test Order:"));
+        am.PositionsEndObservable.Subscribe(positions => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
         return;
+        {// double same order
+          (from c in "spy".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
+           from ot in am.OpenTrade(c, 1)
+           from ot2 in am.OpenTrade(c, 1)
+           select ot.Concat(ot2)
+           )
+          .Subscribe(c => {
+            HandleMessage(c.Select(t => new { t.holder, t.error }).ToTextOrTable("Test Order:"));
+            HandleMessage(am.OrderContractsInternal.Items.Select(t => new { t.order, t.contract }).ToTextOrTable("Test Order Holders:"));
+          });
+          return;
+        }
         var isTest = true;
         am.OpenOrderObservable.Subscribe(oom => HandleMessage(oom.ToTextTable("Open Order")));
         {
@@ -688,16 +696,23 @@ namespace ConsoleApp {
 
     #region Handle(Error/Massage)
 
-    static readonly string _tracePrefix;// = "OnTickPrice";
-    public static void HandleMessage2<T>(T message) => HandleMessage(message + "", false);
+    static IObserver<string> _tracer = InitTracer();
+    static IObserver<string> InitTracer() {
+      var s = new Subject<string>();
+      s
+        .SubscribeOn(TaskPoolScheduler.Default)
+        .ObserveOn(TaskPoolScheduler.Default)
+        .Subscribe(Console.WriteLine);
+      return s;
+    }
+
+    public static void HandleMessage2<T>(T message) => HandleMessage(message, false);
     public static void HandleMessage<T>(T message) => HandleMessage(message, true);
-    public static void HandleMessage<T>(T message, bool showTime = true) => HandleMessage(message + "", showTime);
-    public static void HandleMessage(string message, bool showTime = true) {
-      if(_tracePrefix.IsNullOrEmpty() || message.StartsWith(_tracePrefix))
-        if(showTime)
-          Console.WriteLine($"{DateTime.Now:mm:ss.fff}: {message}{t()}");
-        else
-          Console.WriteLine(message);
+    public static void HandleMessage<T>(T message, bool showTime = true) => HandleMessageImpl(TimeStamp(), message + "", showTime);
+    static void HandleMessageImpl(string timeStamp, string message, bool showTime = true) {
+      var m = (showTime ? timeStamp + " " : "") + $"{message}{t()}";
+      //_tracer.OnNext(m);
+      Console.WriteLine(m);
       string t() => message.Contains("~") ? "" : (DataManager.ShowThread());
     }
     private static void HandleMessageFake(string message) { }
@@ -707,6 +722,7 @@ namespace ConsoleApp {
     private static void HandleMessage(HistoricalDataEndMessage historicalDataEndMessage) {
       HandleMessage(historicalDataEndMessage + "");
     }
+    static string TimeStamp() => $"{DateTime.Now:mm:ss.fff}: ";
     #endregion
   }
 }

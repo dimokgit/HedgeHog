@@ -53,7 +53,7 @@ namespace IBApp {
           bool isPreRTH = orderType == "LMT";
           var order = OrderFactory(contract, quantity, price, goodTillDate, goodAfterDate, orderType, isPreRTH);
           order.Conditions.AddRange(condition.YieldNotNull());
-          var tpOrder = MakeOCOOrder(order, quantityOCO);
+          var tpOrder = MakeOCOOrder(order, -quantityOCO);
           new[] { (order, contract, price), (tpOrder, contractOCO, 0) }
             .ForEach(o => {
               _verbous(new { plaseOrder = o });
@@ -63,15 +63,15 @@ namespace IBApp {
       }, Caller);
     }
 
-    Order MakeOCOOrder(IBApi.Order parent, int quantity = 0) {
+    public Order MakeOCOOrder(Order parent, int quantity) {
       parent.Transmit = false;
-      return new IBApi.Order() {
+      return new Order() {
         Account = parent.Account,
         ParentId = parent.OrderId,
         OrderId = NetOrderId(),
-        Action = parent.Action == "BUY" ? "SELL" : "BUY",
+        Action = quantity < 0 ? "SELL" : "BUY",
         OrderType = "MKT",
-        TotalQuantity = quantity == 0 ? parent.TotalQuantity : quantity,
+        TotalQuantity = quantity.Abs(),
         Tif = parent.Tif,
         OutsideRth = parent.OutsideRth,
         OverridePercentageConstraints = true,
@@ -79,7 +79,7 @@ namespace IBApp {
       };
     }
 
-    bool OpenTradeError(Contract c, IBApi.Order o, (int id, int errorCode, string errorMsg, Exception exc) t, object context) {
+    bool OpenTradeError(Contract c, Order o, (int id, int errorCode, string errorMsg, Exception exc) t, object context) {
       var trace = $"{nameof(OpenTradeError)}:{c}:" + (context == null ? "" : context + ":");
       var isWarning = t.errorCode == 103 || t.errorCode == 2109;
       if(!isWarning) OnOpenError(t, trace);

@@ -7,6 +7,7 @@ namespace IBApi {
     public enum OrderTypes { MKT, LMT, MIDPRICE, Adaptive };
     public bool IsSell => Action == "SELL";
     public bool IsBuy => Action == "BUY";
+    public string SetAction(double quanity) => Action = (quanity > 0 ? "BUY" : "SELL");
 
     public bool IsLimit => OrderType.Contains("LMT");
     public bool NeedTriggerPrice => OrderType.Contains("+");
@@ -39,22 +40,22 @@ namespace IBApi {
       return this;
     }
     public Order SetType(Contract contract, DateTime serverTime, IBApi.Order.OrderTypes type) {
-          switch(type) {
-            case OrderTypes.MIDPRICE:
-              if(contract.IsStock) {
-                OutsideRth = !serverTime.Between(contract.LiquidHours);
-                OrderType = (OutsideRth ? IBApi.Order.OrderTypes.MKT : type) + "";
-              }
-              break;
-            case OrderTypes.Adaptive:
-              if(contract.IsStock || contract.IsFuture) {
-                AlgoStrategy = type + "";
-                AlgoParams = new System.Collections.Generic.List<TagValue> { new TagValue("adaptivePriority", "Normal") };
-              }
-              break;
-            default:
-              OrderType = type + "";
-              break;
+      switch(type) {
+        case OrderTypes.MIDPRICE:
+          if(contract.IsStock) {
+            OutsideRth = !serverTime.Between(contract.LiquidHours);
+            OrderType = (OutsideRth ? IBApi.Order.OrderTypes.MKT : type) + "";
+          }
+          break;
+        case OrderTypes.Adaptive:
+          if(contract.IsStock || contract.IsFuture) {
+            AlgoStrategy = type + "";
+            AlgoParams = new System.Collections.Generic.List<TagValue> { new TagValue("adaptivePriority", "Normal") };
+          }
+          break;
+        default:
+          OrderType = type + "";
+          break;
       }
       return this;
     }

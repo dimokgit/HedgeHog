@@ -52,7 +52,7 @@ namespace IBApp {
             from uc in uo
             where p.Pair == uc.LocalSymbol
             select p
-            ).Subscribe(p => ShouldExecute = ShouldExecuteImpl(order.IsBuy() ? p.Ask : p.Bid), exc => { Debugger.Break(); }, () => Debugger.Break());
+            ).Subscribe(p => ShouldExecute = ShouldExecuteImpl(order.IsBuy ? p.Ask : p.Bid), exc => { Debugger.Break(); }, () => Debugger.Break());
         } catch(Exception exc) {
           LogMessage.Send(exc);
         }
