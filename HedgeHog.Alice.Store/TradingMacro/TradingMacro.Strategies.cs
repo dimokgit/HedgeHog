@@ -145,6 +145,8 @@ namespace HedgeHog.Alice.Store {
       }
     });
     private void StrategyHedge() {
+      var hasPOs = TradingMacroHedgedAll().SelectMany(tm => tm.PendingEntryOrders).Any();
+      if(hasPOs) return;
       var gross = TradesManager.GetTrades().Net();
       if(gross > ExitGrossByHedgePositions) {
         var exitByGrossMsg = $"Gross {gross:c0} > {ExitGrossByHedgePositions:c0}";

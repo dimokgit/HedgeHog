@@ -14,22 +14,22 @@ using System.Threading.Tasks;
 namespace ConsoleApp {
   static class Tests {
     public static void HedgeCombo(AccountManager am) {
+
       {
-        Func<IBApi.Order, IObservable<(IBApi.Order order, double price, Contract contract)>> orderExt(Contract c, Contract c2, int q) =>
-        parent => new[] {
-          (am.MakeOCOOrder(parent, q), 0.0, c),
-          (am.MakeOCOOrder(parent, q), 0.0, c2)
-        }.ToObservable();
-        (from c in "spy".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
-         from c2 in "qqq".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
-         from c3 in "iwm".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
-         from ot in am.OpenTrade(orderExt(c2, c3, -1), c, 1, 310)
+        var parentContract = "spy".ContractFactory();
+        var hedgeContract = "qqq".ContractFactory();
+        var quantityParent = 1;
+        var quantityHedge = -1;
+        ;
+        (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, 1, 1, false)
+         from p in hc.contract.ReqPriceSafe().Select(ab => quantityParent > 0 ? ab.ask : ab.bid)
+         from ot in am.OpenTrade(hc.contract, hc.quantity, p)
          select ot
          )
-        .Subscribe(c => {
-          Program.HandleMessage(c.Select(t => new { t.holder, t.error }).ToTextOrTable("Test Order:"));
-          Program.HandleMessage(am.OrderContractsInternal.Items.Select(t => new { t.order, t.contract }).ToTextOrTable("Test Order Holders:"));
-        });
+         .Subscribe(c => {
+           Program.HandleMessage(c.Select(t => new { t.holder, t.error }).ToTextOrTable("Test Order:"));
+           Program.HandleMessage(am.OrderContractsInternal.Items.Select(t => new { t.order, t.contract }).ToTextOrTable("Test Order Holders:"));
+         });
         return;
       }
 
@@ -140,6 +140,7 @@ namespace ConsoleApp {
       });
       //return;
     }
+
 
     public static void CurrentOptionsTest(AccountManager am, string symbol) {
       am.CurrentOptions(symbol, double.NaN, 0, 2, c => true)

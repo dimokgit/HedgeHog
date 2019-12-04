@@ -16,14 +16,15 @@ namespace IBApp {
 
     #region Fields/Properties
     //https://stackoverflow.com/questions/11873656/how-to-make-application-properties-settings-public-and-stay-that-way
-    public static bool UseVerbose = false;
+    public static bool UseVerbose = true;
+    public static bool UseDebug = true;
     public static bool DoShowRequestErrorDone = true;
     public static IBClientCore IBClientMaster;
     private IBClientCore _ibClient;
 
     public static string ShowThread() => $"~{Thread.CurrentThread.ManagedThreadId}{Thread.CurrentThread.Name.With(tn => tn.IsNullOrEmpty() ? "" : (":" + tn))}";
     public void TraceError<T>(T v) => TraceWithThread("{!}", v);
-    public void TraceDebug<T>(T v) { if(Debugger.IsAttached) TraceWithThread("{?}", v); }
+    public void TraceDebug<T>(T v) { if(Debugger.IsAttached || UseDebug) TraceWithThread("{?}", v); }
 
     public void TraceWithThread<T>(string prefix, T v) => Trace(prefix + v + ShowThread());
 

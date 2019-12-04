@@ -456,26 +456,12 @@ namespace HedgeHog.Alice.Client {
         var am = GetAccountManager();
         if(c == null) throw new Exception($"{new { key }} not found");
         if(rel && c.IsHedgeCombo) {
-          var contracts = c.LegsEx(t => new { t.c, q = t.leg.Quantity * positions });
+          var contracts = c.LegsEx(t => new { t.c, q = t.leg.Quantity * positions })
+            .OrderByDescending(x => x.c.Instrument.ToLower() == pair.ToLower());
           var parent = contracts.First();
           var child = contracts.Skip(1).First();
-          var oe = new Func<IBApi.Order, IObservable<(IBApi.Order order, double price, Contract contract)>>(p => {
-            p.Transmit = false;
-            var childOrder = new IBApi.Order();
-            childOrder.Account = p.Account;
-            childOrder.ParentId = p.OrderId;
-            childOrder.SetAction(child.q);
-            childOrder.OrderType = "MKT";
-            childOrder.TotalQuantity = parent.q.Abs();
-            childOrder.Transmit = true;
-            childOrder.HedgeType = "P";
-            childOrder.HedgeParam = contracts.Buffer(2).Select(b => (double)b[1].q / b[0].q).First().Abs() + "";
-            //child.
-            return Observable.Return((childOrder, 0.0, child.c));
-          });
           return await (
-            from p in parent.c.ReqPriceSafe(2).Select(p => parent.q > 0 ? p.ask : p.bid)
-            from ots in am.OpenTrade(oe, parent.c, parent.q, p)
+            from ots in am.OpenHedgeOrder(parent.c, child.c, parent.q, child.q)
             from ot in ots
             select outMe(ot.holder + "", ot.error.errorMsg)
                         ).ToArray();
@@ -1653,9 +1639,11 @@ namespace HedgeHog.Alice.Client {
           var lsp = tm.LotSizePercent.ToString("p0");
           list2.Add(row("LotSizeBS", lsb + (lsb == lss ? "" : "" + lss) + lsp));
         }
-        var pos = tm.PendingEntryOrders.Concat(tm.TradingMacroHedged(tmh => tmh.PendingEntryOrders, -1).Concat()).ToArray();
+        var hpos = tm.TradingMacroHedged(tmh => new { p = tmh, po = tmh.PendingEntryOrders }, -1);
+        var pos = new[] { new { p = tm, po = tm.PendingEntryOrders } }
+        .Concat(hpos).ToArray();
         if(pos.Any())
-          list2.Add(row("Pending", pos.Select(po => po.Key).ToArray().ToJson(false)));
+          list2.Add(row("Pending", pos.SelectMany(po => po.po.Select(kv => $"{po.p}:{kv.Key}")).ToArray().ToJson(false)));
         var oss = rc.TradesManager.GetOrderStatuses();
         if(oss.Any()) {
           var s = string.Join("<br/>", oss.Select(os => $"{os.status}:{os.filled}<{os.remaining}"));

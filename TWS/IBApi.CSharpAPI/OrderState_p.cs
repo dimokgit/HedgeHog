@@ -14,6 +14,7 @@ namespace IBApi {
     public enum OrderDoneStatuses { Filled };
     public override string ToString() => new { Status, WarningText } + "";
     public bool IsPreSubmited => Status == "PreSubmitted";
+    public bool IsInactive => Status == "Inactive";
     public bool IsCancelled => EnumUtils.Contains<OrderCancelStatuses>(Status);
     public static bool IsCancelledState(string status) => EnumUtils.Contains<OrderCancelStatuses>(status);
     public static bool IsDoneState(string status, double remaining) => EnumUtils.Contains<OrderDoneStatuses>(status) && remaining == 0;

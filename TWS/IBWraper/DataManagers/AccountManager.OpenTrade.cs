@@ -115,7 +115,7 @@ namespace IBApp {
         , e => OpenTradeError(contract, order, e, new { }));
         IbClient.OnReqMktData(() => IbClient.ClientSocket.placeOrder(order.OrderId, contract, order));
         return wte
-          .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(0.2)))
+          .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(1)))
           .ToArray()
           .FirstAsync()
           .SelectMany(ems => {
@@ -285,8 +285,8 @@ namespace IBApp {
         try {
           var orderType = price == 0
             ? /*(contract.IsFuturesCombo ? "REL + " : "") + */"MKT"
-            : type.IfEmpty(contract.IsHedgeCombo ? "LMT + MKT" : "LMT");
-          bool isPreRTH = contract.IsPreRTH(IBClientMaster.ServerTime);
+            : type.IfEmpty(contract.IsHedgeCombo ? "LMT"/* + MKT"*/ : "LMT");
+          bool isPreRTH = true;// contract.IsPreRTH(IBClientMaster.ServerTime);
           var order = OrderFactory(contract, quantity, price, goodTillDate, goodAfterDate, orderType, isPreRTH);
           order.OrderRef = orderRef;
           order.Conditions.AddRange(condition.YieldNotNull());
@@ -307,7 +307,7 @@ namespace IBApp {
           .ToArray();
           var obss = (from os in orders
                       from o in os.OrderBy(o => o.order.ParentId)
-                      from po in PlaceOrder(o.order, o.contract).Take(1).Spy($"PlaceTrade[{o.order.OrderId}]", t => TraceDebug(t))
+                      from po in PlaceOrder(o.order, o.contract).Take(1)//.Spy($"PlaceTrade[{o.order.OrderId}]", t => TraceDebug(t))
                       from value in po.value.DefaultIfEmpty().SideEffect(v => TraceDebug($"PlacedTrade[{po.value.Single().order.OrderId}]"))
                       select (value, po.error)).ToArray();
           return obss.Do(TraceOpenTradeResults);
@@ -411,6 +411,20 @@ namespace IBApp {
          else
            return OpenTrade(t.rc, -t.ct.position.Abs(), 0, 0, false, DateTime.MaxValue);
        });
+    }
+    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenHedgeOrder(Contract parentContract, Contract hedgeContract, int quantityParent, int quantityHedge) {
+      Func<IBApi.Order, IObservable<(IBApi.Order order, double price, Contract contract)>> orderExt(Contract c, int q) =>
+        parent => new[] {
+            (MakeOCOOrder(parent, q), 0.0, c)
+        }.ToObservable();
+      var och = (
+        from c in parentContract.ReqContractDetailsCached().Select(cd => cd.Contract)
+        from c2 in hedgeContract.ReqContractDetailsCached().Select(cd => cd.Contract)
+        from p in c.ReqPriceSafe().Select(ab => quantityParent > 0 ? ab.ask : ab.bid)
+        from ot in OpenTrade(orderExt(c2, quantityHedge), c, quantityParent, p)
+        select ot
+       );
+      return och;
     }
     //private void OnUpdateError(int reqId, int code, string error, Exception exc) {
     //  UseOrderContracts(orderContracts => {

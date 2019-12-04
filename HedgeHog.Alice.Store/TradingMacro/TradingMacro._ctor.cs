@@ -131,7 +131,12 @@ namespace HedgeHog.Alice.Store {
             GetShowVoltageFunction()();
           if(hedgeVoltFuns.Contains(VoltageFunction2))
             GetShowVoltageFunction(VoltageFunction2, 1)();
+          if(IsHedgedTrading)
+            OnSetExitGrossByHedgeGrossess(true);
         });
+      this.WhenAnyValue(tm => tm.TradingRatio)
+        .Where(_ => IsHedgedTrading)
+        .Subscribe(_ => OnSetExitGrossByHedgeGrossess(true));
 
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy != Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)

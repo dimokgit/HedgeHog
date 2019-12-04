@@ -1769,6 +1769,7 @@ namespace HedgeHog.Alice.Store {
       => PairHedges.Skip(index <= 0 ? 0 : index)
       .Take(index < 0 ? int.MaxValue : 1)
       .SelectMany(TradingMacrosByPair).Where(tm => tm.BarPeriod == BarPeriod);
+    public IEnumerable<TradingMacro> TradingMacroHedgedAll() => TradingMacroHedged(-1);
 
     public IEnumerable<TradingMacro> TradingMacrosByPairHedge(string pair) => _tradingMacros.Where(tm => tm.PairHedge == pair).OrderBy(tm => PairIndex);
     #endregion

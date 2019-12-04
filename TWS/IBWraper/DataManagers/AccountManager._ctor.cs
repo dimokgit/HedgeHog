@@ -139,15 +139,7 @@ namespace IBApp {
         Try(() => onNext(m), nameof(IbClient.OpenOrder)),
         h => IbClient.OpenOrder += h,
         h => IbClient.OpenOrder -= h
-        )
-        .Where(x => x.Order.Account == _accountId && !x.OrderState.IsCancelled)
-        .Do(AddOrderContractHolder)
-        .Do(x => TraceDebug($"OnOpenOrder: {x.Order}: {x.Contract}: {x.OrderState}"))
-        .InjectIf(m => m.Contract.IsHedgeCombo, m => FixOpenOrderMessage(m).ObserveOn(TaskPoolScheduler.Default))
-        //.Where(t => !t.OrderState.IsCancelled)
-        //.Distinct(x => x.Order.PermId)
-        .ObserveOn(esOpenOrder)
-        ;
+        );
       #region OpenOrderObservable Helpers
       IObservable<OpenOrderMessage> FixOpenOrderMessage(OpenOrderMessage m) =>
         (from cl in (m.Contract.ComboLegs ?? new List<ComboLeg>()).ToObservable()
@@ -175,8 +167,7 @@ namespace IBApp {
         => (OrderStatusMessage m) => Try(() => onNext(m), nameof(IbClient.OrderStatus)),
         h => IbClient.OrderStatus += h,
         h => IbClient.OrderStatus -= h
-        )
-        ;
+        );
 
       var portObs = Observable.FromEvent<PortfolioHandler, UpdatePortfolioMessage>(
         onNext => (UpdatePortfolioMessage m) => Try(() => onNext(m), nameof(IbClient.UpdatePortfolio)),
@@ -196,6 +187,13 @@ namespace IBApp {
 
       var _raisedOrders = new ConcurrentDictionary<int, bool>();
       OpenOrderObservable // we only get it once per order
+        .Where(x => x.Order.Account == _accountId && !x.OrderState.IsInactive)
+        .Do(x => TraceDebug($"OnOpenOrder: {x.Order}: {x.Contract}: {x.OrderState}"))
+        .Distinct(x => x.Order.PermId)
+        .Do(AddOrderContractHolder)
+        .InjectIf(m => m.Contract.IsHedgeCombo, m => FixOpenOrderMessage(m).ObserveOn(TaskPoolScheduler.Default))
+        //.Where(t => !t.OrderState.IsCancelled)
+        .ObserveOn(esOpenOrder)
         .Do(x => Verbose($"OnOpenOrder[{x.OrderId}]: {x}"))
         .Subscribe(a => OnWhatIfOrder(a))
         .SideEffect(s => _strams.Add(s));

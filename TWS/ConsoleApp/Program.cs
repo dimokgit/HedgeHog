@@ -69,14 +69,15 @@ namespace ConsoleApp {
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7497;
-      const int clientId = 0;
+      const int clientId = 1;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       #endregion
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         am.PositionsEndObservable.Subscribe(positions => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
-        return;
+        //Tests.HedgeCombo(am);
+        //return;
         {// double same order
           (from c in "spy".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
            from ot in am.OpenTrade(c, 1)

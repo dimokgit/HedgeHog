@@ -215,7 +215,12 @@ namespace HedgeHog.Alice.Store {
     GetHedgePricesAsyncBuffer _setHedgeGrossesAsyncBuffer;
     GetHedgePricesAsyncBuffer SetHedgeGrossesAsyncBuffer => _setHedgeGrossesAsyncBuffer
       ?? (_setHedgeGrossesAsyncBuffer = new GetHedgePricesAsyncBuffer(() => ServerTime.Second / 5 + ""));
-    void OnSetExitGrossByHedgeGrossess() => SetHedgeGrossesAsyncBuffer.Push(SetExitPriceByHedgeGrosses);
+    void OnSetExitGrossByHedgeGrossess(bool isSync = false) {
+      if(!isSync)
+        SetHedgeGrossesAsyncBuffer.Push(SetExitPriceByHedgeGrosses);
+      else
+        SetExitPriceByHedgeGrosses();
+    }
     private void SetExitPriceByHedgeGrosses() {
       int hedgeIndex = 0;
       //var hedgedPositions = HedgedTrades().Select(t => t.IsBuy ? t.Lots : -t.Lots).Buffer(2)
