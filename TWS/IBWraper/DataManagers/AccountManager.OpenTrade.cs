@@ -308,7 +308,7 @@ namespace IBApp {
           var obss = (from os in orders
                       from o in os.OrderBy(o => o.order.ParentId)
                       from po in PlaceOrder(o.order, o.contract).Take(1)//.Spy($"PlaceTrade[{o.order.OrderId}]", t => TraceDebug(t))
-                      from value in po.value.DefaultIfEmpty().SideEffect(v => TraceDebug($"PlacedTrade[{po.value.Single().order.OrderId}]"))
+                      from value in po.value.DefaultIfEmpty()//.SideEffect(v => TraceDebug($"PlacedTrade[{po.value.Single().order.OrderId}]"))
                       select (value, po.error)).ToArray();
           return obss.Do(TraceOpenTradeResults);
         } catch(Exception exc) {

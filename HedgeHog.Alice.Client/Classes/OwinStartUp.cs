@@ -809,6 +809,8 @@ namespace HedgeHog.Alice.Client {
             CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(0), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByPos))
           /*)*/
           .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(1), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByPoss)))
+          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositionsGross(0), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByGross)))
+          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositionsGross(1), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByGrosss)))
           .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByTradingRatio(0), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByTR)))
           ).Merge();
 

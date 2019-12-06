@@ -263,7 +263,7 @@ namespace HedgeHog.Alice.Store {
        select (rate: r1, v: r1.PriceAvg * bu * position1 + r2.PriceAvg * buh * position2))), hedgeIndex)
       ).Concat().Concat().Concat()
       .Cma(r => r.v, cmaPeriod, cmaPasses, (r, v) => (r.rate, v));
-    public enum HedgeCalcTypes { ByTV, ByHV, ByPos, ByTR, ByPoss };
+    public enum HedgeCalcTypes { ByTV, ByHV, ByPos, ByGross, ByGrosss, ByTR, ByPoss };
     public HedgeCalcTypes HedgeCalcType { get; set; } = HedgeCalcTypes.ByHV;
     public List<HedgePosition<IBApi.Contract>> CurrentHedgesByHV(int count, int hedgeIndex) => CurrentHedgesByHV(count, DateTime.MaxValue, BarPeriodInt > 0, hedgeIndex);
     public List<HedgePosition<IBApi.Contract>> CurrentHedgesByHV(int hedgeIndex) => CurrentHedgesByHV(int.MaxValue, hedgeIndex);
@@ -283,6 +283,12 @@ namespace HedgeHog.Alice.Store {
     }
     public List<HedgePosition<IBApi.Contract>> CurrentHedgesByPositions(int hedgeIndex) {
       var hr = GetHedgeRatioByPrices(hedgeIndex);
+      if(hr.IsNaNOrZero()) return new List<HedgePosition<IBApi.Contract>>();
+      var r = hr.PositionsFromRatio();
+      return HedgePositionsByPositions(r.p1, r.p2, hedgeIndex);
+    }
+    public List<HedgePosition<IBApi.Contract>> CurrentHedgesByPositionsGross(int hedgeIndex) {
+      var hr = GetHedgeRatioByGrosses(hedgeIndex);
       if(hr.IsNaNOrZero()) return new List<HedgePosition<IBApi.Contract>>();
       var r = hr.PositionsFromRatio();
       return HedgePositionsByPositions(r.p1, r.p2, hedgeIndex);
@@ -308,9 +314,18 @@ namespace HedgeHog.Alice.Store {
     Action<double> SetHedgeRatioByPrices(int index) => index == 0 ? new Action<double>(p => _HedgeRatioByPrices = p) : p => _HedgeRatioByPrices2 = p;
     double GetHedgeRatioByPrices(int index) => index == 0 ? _HedgeRatioByPrices : _HedgeRatioByPrices2;
     private int[][] _hedgePositionMinMax2 = new[] { new int[] { 0, 200 }, new int[] { 0, 200 } };
+
+    private double _HedgeRatioByGrosses { get; set; } = double.NaN;
+    private double _HedgeRatioByGrosses2 { get; set; } = double.NaN;
+    Action<double> SetHedgeRatioByGrosses(int index) => index == 0 ? new Action<double>(p => _HedgeRatioByGrosses = p) : p => _HedgeRatioByGrosses2 = p;
+    double GetHedgeRatioByGrosses(int index) => index == 0 ? _HedgeRatioByGrosses : _HedgeRatioByGrosses2;
+    private int[][] _hedgePositionGrossMinMax2 = new[] { new int[] { 0, 200 }, new int[] { 0, 200 } };
+
     void CalcHedgeRatioByPositions() {
       CalcHedgeRatioByPositions(0);
       CalcHedgeRatioByPositions(1);
+      CalcHedgeRatioByGrosses(0);
+      CalcHedgeRatioByGrosses(1);
     }
     void CalcHedgeRatioByPositions(int hedgeIndex) {
       var pos1 = 100;// GetCurrentHedgePositions(true).max;
@@ -330,6 +345,31 @@ namespace HedgeHog.Alice.Store {
       hrs.Take(1).Where(hr => !hr.corr.IsNaNOrZero()).Select(hr => hr.pos2.Div(hr.pos1)).DefaultIfEmpty(double.NaN).ForEach(hr => SetHedgeRatioByPrices(hedgeIndex)(hr));
       sw.Stop();
       //Debug.Print($"{nameof(CalcHedgeRatioByPositions)}:{sw.Elapsed.TotalSeconds.AutoRound2(3)}sec");
+    }
+    void CalcHedgeRatioByGrosses(int hedgeIndex) {
+      var pos1 = 100;// GetCurrentHedgePositions(true).max;
+      if(pos1 == 0) pos1 = 100;
+      var sw = Stopwatch.StartNew();
+      var _hedgePositionMinMax = _hedgePositionGrossMinMax2[hedgeIndex];
+      var hrs = Enumerable.Range(_hedgePositionMinMax[0], _hedgePositionMinMax[1] - _hedgePositionMinMax[0])
+        //.Select(p => pos1 - p)
+        .Select(pos2 => new { pos1, pos2 })
+        .AsParallel()
+        .Select(p => CalcHedgeRatioByPositionsGross(p.pos1, p.pos2, hedgeIndex))
+        .ToArray()
+        .OrderBy(hr => hr.gross)
+        .ToArray();
+      if(!hrs.Any(t => !t.gross.IsNaN())) return;
+      _hedgePositionGrossMinMax2[hedgeIndex] = hrs.Take(15).Select(t => t.pos2).MinMax().With(a => new[] { a[0] - 15, a[1] + 15 });
+      hrs.Take(1).Where(hr => !hr.gross.IsNaNOrZero()).Select(hr => hr.pos2.Div(hr.pos1)).DefaultIfEmpty(double.NaN).ForEach(hr => SetHedgeRatioByGrosses(hedgeIndex)(hr));
+      sw.Stop();
+      //Debug.Print($"{nameof(CalcHedgeRatioByPositions)}:{sw.Elapsed.TotalSeconds.AutoRound2(3)}sec");
+    }
+    (double gross, int pos1, int pos2) CalcHedgeRatioByPositionsGross(int pos1, int pos2, int hedgeIndex) {
+      var sign = TMCorrelation(hedgeIndex).DefaultIfEmpty(1).Single() == 1 ? -1 : 1;
+      var grosses = GetHedgeGrosses(pos1, pos2 * sign, 0, 0, hedgeIndex);
+      var grossRange = grosses.Height(t => t.v);
+      return (grossRange.Abs(), pos1, pos2);
     }
     (double corr, int pos1, int pos2) CalcHedgeRatioByPositionsCorrelation(int pos1, int pos2, int hedgeIndex) {
       var getVolt = GetVoltByIndex(hedgeIndex == 1 ? 0 : 1);
