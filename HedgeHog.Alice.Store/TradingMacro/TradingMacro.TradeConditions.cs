@@ -1724,6 +1724,7 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<TradingMacro> TradingMacroTrender(string pair) => TradingMacrosByPair(pair).Where(tm => tm.IsTrender);
     public IEnumerable<T> TradingMacroTrader<T>(Func<TradingMacro, T> map) => TradingMacrosByPair().Where(tm => tm.IsTrader).Select(map);
     public IEnumerable<TradingMacro> TradingMacroTrader(string pair) => TradingMacrosByPair(pair).Where(tm => tm.IsTrader);
+    public void TradingMacroTrader(Action<TradingMacro> action) => TradingMacroTrader().ForEach(action);
     public IEnumerable<TradingMacro> TradingMacroTrader() {
       var tms = TradingMacrosByPair().ToArray();
       return tms.Where(tm => tm.IsTrader);
@@ -1747,6 +1748,7 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<U> TradingMacroM1<T, U>(Func<TradingMacro, IEnumerable<T>> selector, Func<IEnumerable<T>, IEnumerable<U>> many) {
       return TradingMacroM1(selector).SelectMany(many);
     }
+    public void TradingMacrosByPair(Action<TradingMacro> action) => TradingMacrosByPair().ForEach(action);
     public IEnumerable<TradingMacro> TradingMacrosByPair(Func<TradingMacro, bool> predicate) {
       return TradingMacrosByPair().Where(predicate);
     }
@@ -1759,8 +1761,11 @@ namespace HedgeHog.Alice.Store {
     public IEnumerable<TradingMacro> TradingMacrosByPair() {
       return _tradingMacros.Where(tm => tm.Pair == Pair).OrderBy(tm => PairIndex);
     }
+    public IEnumerable<TradingMacro> TradingMacrosByPair(bool withHedge) {
+      return _tradingMacros.Where(tm => tm.Pair == Pair || PairHedges.Contains(tm.Pair)).OrderBy(tm => PairIndex);
+    }
     public IEnumerable<TradingMacro> TradingMacrosByPair(string pair) {
-      return _tradingMacros.Where(tm => tm.Pair == pair).OrderBy(tm => PairIndex);
+      return _tradingMacros.Where(tm => tm.Pair.ToLower() == pair.ToLower()).OrderBy(tm => PairIndex);
     }
 
     public void TradingMacroHedged(Action<TradingMacro> map, int index) => TradingMacroHedged(index).ForEach(map);

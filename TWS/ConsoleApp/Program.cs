@@ -75,6 +75,49 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        Tests.HedgeCombo(am); ;
+        return;
+        var ess = new[] { "NQZ9", "ESZ9", "RTYZ9", "IWM", "SPY", "QQQ" }[3];
+        LoadMultiple( "SPY");
+        return;
+        void LoadMultiple(params string[] secs) {// Load bars
+          /** Load History
+          var c = new Contract() {
+            Symbol = "ES",
+            SecType = "CONTFUT",
+            Exchange = "GLOBEX"
+          };
+          LoadHistory(ibClient, new[] { c });
+          */
+          var period = 3;
+          bool repare = false;
+          Action<object> callback = o => HandleMessage(o + "");
+          secs.ToObservable()
+          .Do(sec =>
+          sec.ContractFactory().ReqContractDetailsCached()
+          .SubscribeOn(TaskPoolScheduler.Default)
+          .ObserveOn(TaskPoolScheduler.Default)
+          .Subscribe(_ => {
+            if(repare) {
+              var bars = new List<Rate>();
+              Action<RateLoadingCallbackArgs<Rate>> showProgress = (rlcArgs) => {
+                PriceHistory.SaveTickCallBack(period, sec, callback, rlcArgs);
+                rlcArgs.IsProcessed = true;
+              };
+              //fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
+              fw.GetBarsBase(sec, period, 0, DateTime.Parse("7/1/2019").SetKind(), DateTime.Parse("9/13/2019 23:59").SetKind(), new List<Rate>(), null, showProgress);
+              HandleMessage($"***** Done GetBars *****\n{bars.Select(b => b + "").ToJson(true)}");
+            } else
+              PriceHistory.AddTicks(fw, period, sec, DateTime.Now.AddMonths(-2 * period.Max(1)), callback);
+          })).Subscribe();
+          HandleMessage($"ManagedAccountsObservable thread:{Thread.CurrentThread.Name.IfTrue(th=>th.IsNullOrEmpty(),th=> Thread.CurrentThread.ManagedThreadId+"")}");
+          return;
+        }
+        {
+          "IWM".ContractFactory().ReqContractDetailsCached()
+          .Subscribe(cd => LoadHistory(ibClient, new[] { cd.Contract }));
+          return;
+        }
         am.PositionsEndObservable.Subscribe(positions => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
         //Tests.HedgeCombo(am);
         //return;
@@ -104,42 +147,7 @@ namespace ConsoleApp {
           return;
         }
 
-        {// Load bars
-          /** Load History
-          var c = new Contract() {
-            Symbol = "ES",
-            SecType = "CONTFUT",
-            Exchange = "GLOBEX"
-          };
-          LoadHistory(ibClient, new[] { c });
-          */
-          var es = new[] { "NQZ9", "ESZ9", "RTYZ9", "VXX", "SPY", "QQQ" }[2];
-          var period = 0;
-          bool repare = false;
-          Action<object> callback = o => HandleMessage(o + "");
-          es.ContractFactory().ReqContractDetailsCached()
-          .SubscribeOn(TaskPoolScheduler.Default)
-          .ObserveOn(TaskPoolScheduler.Default)
-          .Subscribe(_ => {
-            if(repare) {
-              var bars = new List<Rate>();
-              Action<RateLoadingCallbackArgs<Rate>> showProgress = (rlcArgs) => {
-                PriceHistory.SaveTickCallBack(period, es, callback, rlcArgs);
-                rlcArgs.IsProcessed = true;
-              };
-              //fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
-              fw.GetBarsBase(es, period, 0, DateTime.Parse("7/1/2019").SetKind(), DateTime.Parse("9/13/2019 23:59").SetKind(), new List<Rate>(), null, showProgress);
-              HandleMessage($"***** Done GetBars *****\n{bars.Select(b => b + "").ToJson(true)}");
-            } else
-              PriceHistory.AddTicks(fw, period, es, DateTime.Now.AddMonths(-1 * period.Max(1)), callback);
-          });
-          HandleMessage($"{Thread.CurrentThread.ManagedThreadId}");
-
-        }
         return;
-        Tests.HedgeCombo(am); ;
-        return;
-
         {
           "SPY".ContractFactory().ReqContractDetailsCached()
           //.ObserveOn(TaskPoolScheduler.Default)
@@ -677,7 +685,7 @@ namespace ConsoleApp {
       var tie = e.ExceptionObject as TypeInitializationException;
       if(tie != null) {
         HandleMessage(tie.InnerException);
-        MessageBox.Show(tie.InnerException+"","Initialization Error", MessageBoxButton.OK,MessageBoxImage.Error);
+        MessageBox.Show(tie.InnerException + "", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
       } else {
         ExceptionDispatchInfo.Capture(e.ExceptionObject as Exception).Throw();
 

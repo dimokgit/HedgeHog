@@ -198,7 +198,9 @@ namespace HedgeHog.Alice.Store {
     protected Dictionary<string, IList<TradingMacro>> _tradingMacrosDictionary = new Dictionary<string, IList<TradingMacro>>(StringComparer.OrdinalIgnoreCase);
     protected IEnumerable<TradingMacro> GetTradingMacros(string pair = "") {
       pair = pair.ToLower();
-      return TradingMacrosCopy.Where(tm => new[] { tm.Pair.ToLower(), "" }.Contains(pair) && tm.IsActive).OrderBy(tm => tm.PairIndex);
+      return TradingMacrosCopy.Where(tm => new[] { tm.Pair.ToLower(), "" }.Contains(pair) && tm.IsActive)
+        .OrderBy(tm => tm.TradingGroup)
+        .ThenBy(tm => tm.PairIndex);
     }
     #endregion
 

@@ -91,7 +91,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.HedgeRatio:
           return () => ShowVoltsByHedgeRatio(voltIndex);
         case HedgeHog.Alice.VoltageFunction.HedgePrice:
-          return () => ShowVoltsByHedgePrice(voltIndex,0);
+          return () => ShowVoltsByHedgePrice(voltIndex, 0);
         case HedgeHog.Alice.VoltageFunction.HVR:
           return () => ShowVoltsByHVR(voltIndex);
         case HedgeHog.Alice.VoltageFunction.StdRatio:
@@ -318,12 +318,12 @@ namespace HedgeHog.Alice.Store {
     }
 
     public IEnumerable<int> TMCorrelation(int hedgeIndex) =>
-      new[] { HedgeCorrelation }.Where(i => i != 0)
+      TradingMacroTrader(tm => tm.HedgeCorrelation).Where(i => i != 0)
       .IfEmpty(() => GetHedgeCorrelation(Pair, PairHedge))
       .IfEmpty(() => TradingMacroHedged(tmOther => TMCorrelationImpl((this, tmOther)), hedgeIndex).Concat().Take(1));
 
     public IEnumerable<int> TMCorrelation(TradingMacro tmOther)
-        => new[] { HedgeCorrelation }.Where(i => i != 0)
+        => TradingMacroTrader(tm => tm.HedgeCorrelation).Where(i => i != 0)
         .IfEmpty(() => GetHedgeCorrelation(Pair, tmOther.Pair))
         .IfEmpty(() => TMCorrelationImpl((this, tmOther))).Take(1);
     Func<(TradingMacro tmThis, TradingMacro tmOther), int[]> TMCorrelationImpl =
@@ -567,7 +567,6 @@ namespace HedgeHog.Alice.Store {
           .ToArray();
         if(voltRates.IsEmpty()) return null;
         VoltsFullScaleMinMax = voltRates[0].With(vr => GetFullScaleMinMax(vr.r, vr.h, GetPrice)).ToArray();
-        OnSetExitGrossByHedgeGrossess();
         var voltMap = voltRates[0].With(vr => RatioMapDouble((vr.h, VoltsFullScaleMinMax)));
         var priceMap = voltRates[0].With(vr => RatioMap((vr.r, GetPrice, null)));
 
@@ -614,7 +613,9 @@ namespace HedgeHog.Alice.Store {
           .ForEach(v3 => v3.ForEach(t => shp(t.r, t.v)));
 
         OnSetVoltsHighLowsByRegression(voltIndex);
-        OnSetCurrentHedgePosition();
+
+        OnCalcHedgeRatioByPositions();
+        OnSetExitGrossByHedgeGrossess();
       }
       return null;
 
@@ -625,6 +626,8 @@ namespace HedgeHog.Alice.Store {
 
     ActionAsyncBuffer SetCurrentHedgePositionAsyncBuffer = new ActionAsyncBuffer();
     void OnSetCurrentHedgePosition() {
+      var hci = TradingMacroTrader(tm => tm.HedgeCalcIndex).Single();
+      if(hci != PairIndex || !IsPairHedged) return;
       int hedgeIndex = 0;
       if(IsInVirtualTrading) a();
       else
@@ -655,9 +658,8 @@ namespace HedgeHog.Alice.Store {
         }
         if(hh.Any()) {
           combo = IBApp.AccountManager.MakeHedgeComboSafe(tr.ToInt(), hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio, IsInVirtualTrading);
-          combo.Subscribe(c => SetCurrentHedgePosition(c.contract, c.quantity, hct));
+          combo.Subscribe(c => tm.SetCurrentHedgePosition(c.contract, c.quantity, hct));
         }
-        OnCalcHedgeRatioByPositions();
       }
     }
     IEnumerable<(Rate[] r, double[] h)> ShowVoltsByRatioDiff_New(Func<Rate, double> map, int hedgeIndex) =>

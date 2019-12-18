@@ -76,6 +76,8 @@ namespace IBApp {
       contract.Symbol = symbol;
       contract.SecType = "BAG";
       contract.Currency = "USD";
+      if(c1.PrimaryExch == c1.PrimaryExch)
+        contract.PrimaryExch = c1.PrimaryExch;
       contract.Exchange = "SMART";
       contract.TradingClass = "COMB";
 
@@ -83,14 +85,14 @@ namespace IBApp {
       leg1.ConId = c1.ConId;
       leg1.Ratio = r1 / gcd;
       leg1.Action = "BUY";
-      leg1.Exchange = c1.Exchange;
+      leg1.Exchange = c1.PrimaryExch.IfEmpty(c1.Exchange);
 
       ComboLeg leg2 = new ComboLeg();
       leg2.ConId = c2.ConId;
       leg2.Ratio = r2 / gcd;
       string action = c1.IsCall == c2.IsCall ? "SELL" : "BUY";
       leg2.Action = action;
-      leg2.Exchange = c2.Exchange;
+      leg2.Exchange = c2.PrimaryExch.IfEmpty(c2.Exchange);
 
       contract.ComboLegs = new List<ComboLeg>();
       contract.ComboLegs.Add(leg1);

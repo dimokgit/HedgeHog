@@ -32,7 +32,7 @@ namespace IBApp {
     private readonly List<T> _list2;
     private readonly int _reqId;
     private readonly IBClient _ibClient;
-    private readonly Contract _contract;
+    private Contract _contract;
     private readonly DateTime _dateStart;
     private DateTime _endDate;
     private readonly TimeUnit _timeUnit;
@@ -44,6 +44,7 @@ namespace IBApp {
     private TimeSpan _delay;
     private readonly DataMapDelegate<T> _map;
     public bool Done { get; private set; }
+    bool useRTH;
     List<IDisposable> _disposables = new List<IDisposable>();
     #endregion
 
@@ -61,8 +62,6 @@ namespace IBApp {
       , Action<IList<T>> dataEnd
       , Action<Exception> error) {
       _ibClient = ibClient;
-      _contract = contract;
-      Passager.ThrowIf(() => _contract.Exchange.IsNullOrEmpty());
       _periodsBack = periodsBack;
       _reqId = IBClientCore.IBClientCoreMaster.ValidOrderId();
       _list = new List<T>();
@@ -85,7 +84,26 @@ namespace IBApp {
       Done = false;
       Init();
       var me = this;
+      _contract = contract;
+      var ls = _contract.LocalSymbol ?? _contract.Symbol ?? "";
+      var isETF = /*cd.LongName.Contains(" ETF") ||*/ ls.IsETF();
+      useRTH = !_contract.IsFuture && !ls.IsOption() && !ls.IsCurrenncy() && !ls.IsFuture() && !isETF && !ls.IsIndex() && _timeUnit != TimeUnit.S;
       Task.Run(RequestHistoryDataChunk);
+
+      //contract.ReqContractDetailsCached()
+      //  .SubscribeOn(TaskPoolScheduler.Default)
+      //  .ObserveOn(TaskPoolScheduler.Default)
+      //  .Timeout(2.FromSeconds())
+      //  .Catch<ContractDetails,Exception>(e=> {
+      //    LogMessage.Send(e);
+      //    CleanUp();
+      //    return  Observable.Empty<ContractDetails>();
+      //    })
+      //  .Subscribe(cd => {
+      //    _contract = cd.Contract;
+      //    Passager.ThrowIf(() => _contract.Exchange.IsNullOrEmpty());
+      //    Passager.ThrowIf(() => _contract.Exchange.IsNullOrEmpty());
+      //  },exc=> { LogMessage.Send(exc); CleanUp(); });
     }
 
     void Init() {
@@ -188,8 +206,6 @@ namespace IBApp {
         string barSizeSetting = (_barSize + "").Replace("_", " ").Trim();
         string whatToShow = "MIDPOINT";// !_contract.IsIndex() ? "TRADES" : "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
-        var ls = _contract.LocalSymbol ?? _contract.Symbol ?? "";
-        var useRTH = !_contract.IsFuture && !ls.IsOption() && !ls.IsCurrenncy() && !ls.IsFuture() && !ls.IsETF() && !ls.IsIndex() && _timeUnit != TimeUnit.S;
         // TODO: reqHistoricalData - keepUpToDate
         _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, false, new List<TagValue>());
       } catch(Exception exc) {

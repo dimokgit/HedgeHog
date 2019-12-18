@@ -2011,7 +2011,7 @@ namespace HedgeHog.Alice.Store {
       set {
         var v = value?.ToUpper();
         if(_pairHedge == v) return;
-        _pairHedge = v;
+        _pairHedge = v.ToUpper();
         OnPropertyChanged(nameof(PairHedge));
       }
     }

@@ -241,7 +241,8 @@ namespace IBApp {
       , DateTime goodTillDate = default, DateTime goodAfterDate = default
       , OrderCondition condition = null, OrderCondition takeProfitCondition = null
       , string orderRef = ""
-      , [CallerMemberName] string Caller = "") => OpenTrade(o => {
+      , [CallerMemberName] string Caller = "")
+      => OpenTrade(o => {
         orderExt(o);
         return null;
       }

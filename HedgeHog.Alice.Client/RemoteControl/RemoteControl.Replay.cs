@@ -197,7 +197,7 @@ namespace HedgeHog.Alice.Client {
         TradesManager.GetAccount().Balance = TradesManager.GetAccount().Equity = 50000;
       }
       SaveTradingSettings(tmOriginal);
-      var tms = GetTradingMacros().Where(t => t.IsActive).ToList();
+      var tms = GetTradingMacros().Where(t => t.IsActive && t.BarsCount > 0).ToList();
       ReplayArguments.SetTradingMacros(tms);
       ReplayArguments.GetOriginalBalance = new Func<double>(() => MasterModel.AccountModel.OriginalBalance);
       foreach(var tm in tms) {

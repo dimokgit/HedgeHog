@@ -147,6 +147,11 @@ namespace HedgeHog.Alice.Store {
     private void StrategyHedge() {
       var hasPOs = TradingMacroHedgedAll().SelectMany(tm => tm.PendingEntryOrders).Any();
       if(hasPOs) return;
+      var tps = TradesManager.GetTrades().Where(t => t.Close.IsNaNOrZero()).Select(t => new { t.Pair, t.Close, Is = "Zero" }).ToArray();
+      if(tps.Any()) {
+        Log = new Exception(tps.ToTextOrTable());
+        return;
+      }
       var gross = TradesManager.GetTrades().Net();
       if(gross > ExitGrossByHedgePositions) {
         var exitByGrossMsg = $"Gross {gross:c0} > {ExitGrossByHedgePositions:c0}";

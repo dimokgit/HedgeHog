@@ -131,6 +131,7 @@ namespace HedgeHog.Bars {
     }
 
     public static IList<TBar> Smoother<TBar>(this IList<TBar> bars, double stDevRatio = 4) where TBar : BarBase {
+      if(bars!=null)return bars;
       var logs = bars.Pairwise().Select(t => new { r1 = t.Item1, r2 = t.Item2, d = Math.Abs(Math.Log10(t.Item1.PriceAvg / t.Item2.PriceAvg)) });
       var cmaPeriod = 5;
       var cmas = logs.ToArray(x => x.r1.PriceAvg).Cma(cmaPeriod);

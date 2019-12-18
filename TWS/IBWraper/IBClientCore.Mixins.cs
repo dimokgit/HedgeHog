@@ -18,5 +18,6 @@ namespace IBApp {
 
     public static IObservable<ContractDetails> ReqContractDetailsCached(this Contract c) =>
       IBClientCore.IBClientCoreMaster.ReqContractDetailsCached(c);
+    public static double Price(this (double bid, double ask, DateTime time, double delta) p, bool isBuy) => isBuy ? p.ask : p.bid;
   }
 }

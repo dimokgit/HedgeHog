@@ -15,7 +15,7 @@ namespace IBApi {
     static object _gate = new object();
     public ContractDetails AddToCache() {
       lock(_gate) {
-        //if(Contract.IsFuturesCombo) { Debugger.Break(); }
+        //if(Contract.IsHedgeCombo) { Debugger.Break(); }
         ContractDetailsCache.TryAdd(contract.AddToCache().Key, this);
         return this;
       }

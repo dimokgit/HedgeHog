@@ -122,18 +122,23 @@ namespace HedgeHog.Alice.Store {
             Log = new Exception($"{nameof(SyncStraddleHistoryM1)}[{this}] - done");
           }
         });
-      var hedgeVoltFuns = new[] { VoltageFunction.HedgePrice, VoltageFunction.GrossV, VoltageFunction.HedgeRatio };
-      this.WhenAnyValue(tm => tm.CurrentHedgePosition2)
-        .Subscribe(_ => {
-          CalcHedgeRatioByPositions();
+      var hedgeVoltFuns = new[] { VoltageFunction.HedgePrice, VoltageFunction.GrossV, VoltageFunction.HedgeRatio, };
+      this.WhenAnyValue(tm => tm.CurrentHedgePosition1
+      , tm => tm.CurrentHedgePosition2
+      , tm => tm.HedgeCalcIndex
+      , tm => tm.HedgeCalcType
+      , tm => tm.TradingRatio
+      ).SubscribeToLatestOnBGThread(_ => {
+        TradingMacroTrader(tm => tm.CalcHedgeRatios());
+        TradingMacrosByPair().ForEach(tm => tm.OnCalcHedgeRatioByPositions(true));
 
-          if(hedgeVoltFuns.Contains(VoltageFunction))
-            GetShowVoltageFunction()();
-          if(hedgeVoltFuns.Contains(VoltageFunction2))
-            GetShowVoltageFunction(VoltageFunction2, 1)();
-          if(IsHedgedTrading)
-            OnSetExitGrossByHedgeGrossess(true);
-        });
+        if(hedgeVoltFuns.Contains(VoltageFunction))
+          TradingMacrosByPair(tm=>tm.GetShowVoltageFunction()());
+        if(hedgeVoltFuns.Contains(VoltageFunction2))
+          TradingMacrosByPair(tm => tm.GetShowVoltageFunction(VoltageFunction2, 1)());
+        if(IsHedgedTrading)
+          OnSetExitGrossByHedgeGrossess(true);
+      });
       this.WhenAnyValue(tm => tm.TradingRatio)
         .Where(_ => IsHedgedTrading)
         .Subscribe(_ => OnSetExitGrossByHedgeGrossess(true));

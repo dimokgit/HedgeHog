@@ -1716,7 +1716,7 @@ namespace HedgeHog.Alice.Store {
               if(indexCurrentIsOver())
                 break;
               try {
-                rate = _replayRates[indexCurrent + 1];
+                rate = _replayRates[indexCurrent + 0];
               } catch {
                 Debugger.Break();
               }
@@ -1800,12 +1800,15 @@ namespace HedgeHog.Alice.Store {
                 if(ratePrev == null || BarPeriod > BarsPeriodType.t1 || ratePrev.StartDate.Second != rate.StartDate.Second) {
                   if(!isInitiator && replayTrader.BarPeriod == BarPeriod)
                     while(rate.StartDate.AddSeconds(1) < ServerTime && indexCurrent < _replayRates.Count)
-                      UseRatesInternal(ri => ri.Add(rate = _replayRates[indexCurrent++]));
+                      UseRatesInternal(ri =>{
+                        rate = _replayRates[indexCurrent++];
+                        if(rate != ri.Last()) ri.Add(rate);
+                      });
                   if(indexCurrent >= _replayRates.Count)
                     continue;
                   ratePrev = rate;
                   RatesArraySafe.Any();
-                  if(this.TradingMacrosByPair().First() == this && (Trades.Any() || IsTradingDay())) {
+                  if(tms().First() == this && (Trades.Any() || IsTradingDay())) {
                     TradesManager.RaisePriceChanged(new Price(Pair, rate));
                   }
                   ReplayEvents();
@@ -4366,6 +4369,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       T ret;
       try {
         ret = func(_Rates);
+        //CheckRates(_Rates);
       } catch(Exception exc) {
         Log = exc;
         yield break;
@@ -4377,6 +4381,17 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         }
       }
       yield return ret;
+      ReactiveList<Rate> CheckRates(ReactiveList<Rate> rates) {
+        var e = (from r in rates
+                 group r by r.StartDate2 into g
+                 where g.Count() > 1
+                 select new { g.Key, a = g.ToArray() }
+                 ).ToArray();
+        if(e.Any())
+          Debugger.Break();
+        return rates;
+      }
+
     }
     public void UseRatesInternal(Action<ReactiveList<Rate>> action, [CallerMemberName] string Caller = "") {
       Func<ReactiveList<Rate>, Unit> f = rates => { action(rates); return Unit.Default; };

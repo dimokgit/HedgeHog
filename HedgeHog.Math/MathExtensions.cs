@@ -717,7 +717,7 @@ namespace HedgeHog {
       std = dbls.StandardDeviation(out avg);
       return std / avg;
     }
-    public static double RelativeToHeightStandardDeviation(this IList<double> dbls) {
+    public static double RelativeToHeightStandardDeviation(this IEnumerable<double> dbls) {
       double min = double.NaN, max = double.NaN;
       var std = dbls.StandardDeviation(out max, out min);
       return std / (max - min);

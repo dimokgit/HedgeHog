@@ -185,7 +185,7 @@ namespace HedgeHog.Alice.Store {
       set {
         OnPairChanging(value);
         ReportPropertyChanging("Pair");
-        _Pair = StructuralObject.SetValidValue(value, false, "Pair");
+        _Pair = StructuralObject.SetValidValue(value.ToUpper(), false, "Pair");
         ReportPropertyChanged("Pair");
         OnPairChanged();
       }
