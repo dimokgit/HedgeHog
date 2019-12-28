@@ -128,20 +128,19 @@ namespace HedgeHog.Alice.Store {
       , tm => tm.HedgeCalcIndex
       , tm => tm.HedgeCalcType
       , tm => tm.TradingRatio
+      , tm => tm.TakeProfitXRatio
+      , tm => tm.TradingRatioHedge
       ).SubscribeToLatestOnBGThread(_ => {
         TradingMacroTrader(tm => tm.CalcHedgeRatios());
         TradingMacrosByPair().ForEach(tm => tm.OnCalcHedgeRatioByPositions(true));
 
         if(hedgeVoltFuns.Contains(VoltageFunction))
-          TradingMacrosByPair(tm=>tm.GetShowVoltageFunction()());
+          TradingMacrosByPair(tm => tm.GetShowVoltageFunction()());
         if(hedgeVoltFuns.Contains(VoltageFunction2))
           TradingMacrosByPair(tm => tm.GetShowVoltageFunction(VoltageFunction2, 1)());
         if(IsHedgedTrading)
           OnSetExitGrossByHedgeGrossess(true);
       });
-      this.WhenAnyValue(tm => tm.TradingRatio)
-        .Where(_ => IsHedgedTrading)
-        .Subscribe(_ => OnSetExitGrossByHedgeGrossess(true));
 
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy != Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)

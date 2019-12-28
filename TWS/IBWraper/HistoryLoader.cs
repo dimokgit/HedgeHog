@@ -12,6 +12,7 @@ using HedgeHog.Shared;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
 using System.Threading;
+using HedgeHog.DateTimeZone;
 
 namespace IBApp {
   public enum TimeUnit { S, D, W, M, Y }
@@ -69,13 +70,14 @@ namespace IBApp {
       if(endDate.Kind == DateTimeKind.Unspecified)
         throw new Exception(new { endDate = new { endDate.Kind } } + "");
       _dateStart = endDate.Subtract(duration);
+      var lastHour = contract.IsFuture ? 17 : 20;
       _endDate = timeUnit == TimeUnit.W
-        ? endDate.ToLocalTime().Date.GetNextWeekday(DayOfWeek.Sunday).AddHours(18)
+        ? endDate.InNewYork().Date.GetNextWeekday(DayOfWeek.Friday).AddHours(lastHour)
         : endDate;//.Date.GetNextWeekday(DayOfWeek.Saturday);
       _timeUnit = timeUnit;
       _barSize = barSize;
       var durationByPeriod = barSize.Span().Multiply(periodsBack);
-      _duration = duration.Max(durationByPeriod);
+      _duration = (_endDate-_dateStart).Max(durationByPeriod);
       _done = done;
       _dataEnd = dataEnd;
       _error = error;
@@ -188,7 +190,9 @@ namespace IBApp {
       if(m.RequestId == _reqId) {
         var date2 = m.Date.FromTWSString();
         if(date2 < _endDate)
-          _endDate = _contract.Symbol == "VIX" && date2.TimeOfDay == new TimeSpan(3, 15, 0) ? date2.Round(MathCore.RoundTo.Hour) : date2;
+          _endDate = _contract.Symbol == "VIX" && date2.TimeOfDay == new TimeSpan(3, 15, 0) 
+            ? date2.Round(MathCore.RoundTo.Hour) 
+            : date2.Subtract(_barSize.Span());
         lock(_listLocker)
           _list2.Add(_map(date2, m.Open, m.High, m.Low, m.Close, m.Volume, m.Count));
       }

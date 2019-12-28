@@ -46,8 +46,16 @@ namespace HedgeHog.Alice.Store {
     //    }
     //  }
     //}
+    private double tradingRatioHedge;
     [WwwSetting(wwwSettingsTradingParams)]
-    public double TradingRatioHedge { get; set; }
+    public double TradingRatioHedge { 
+      get => tradingRatioHedge;
+      set {
+        if(tradingRatioHedge == value)return;
+        tradingRatioHedge = value;
+        OnPropertyChanged("TradingRatioHedge");
+      }
+    }
     #endregion
     TimeSpan _timeFrameTresholdTimeSpan;
     public TimeSpan TimeFrameTresholdTimeSpan {
@@ -152,7 +160,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region PriceFftLevelsSlow
-    private int _PriceFftLevelsSlow = 1;
+    private int _PriceFftLevelsSlow = 3;
     [Category(categoryCorridor)]
     public int PriceFftLevelsSlow {
       get { return _PriceFftLevelsSlow; }
@@ -238,6 +246,7 @@ namespace HedgeHog.Alice.Store {
     }
     #region SendSMS
     private bool _sendSMS = true;
+
     [WwwSetting(Group = wwwSettingsTrading)]
     [Category(categoryActiveYesNo)]
     [DisplayName("Send SMS")]

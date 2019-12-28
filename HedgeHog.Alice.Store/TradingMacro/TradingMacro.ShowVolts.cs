@@ -624,44 +624,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    ActionAsyncBuffer SetCurrentHedgePositionAsyncBuffer = new ActionAsyncBuffer();
-    void OnSetCurrentHedgePosition() {
-      var hci = TradingMacroTrader(tm => tm.HedgeCalcIndex).Single();
-      if(hci != PairIndex || !IsPairHedged) return;
-      int hedgeIndex = 0;
-      if(IsInVirtualTrading) a();
-      else
-        SetCurrentHedgePositionAsyncBuffer.Push(a);
-      void a() {
-        var tm = TradingMacroTrader().Single();
-        var hct = tm.HedgeCalcType;
-        var tr = tm.TradingRatio;
-        IObservable<(Contract contract, int quantity)> combo;
-        List<HedgePosition<Contract>> hh;
-        switch(hct) {
-          case HedgeCalcTypes.ByHV:
-            hh = CurrentHedgesByHV(hedgeIndex);
-            break;
-          case HedgeCalcTypes.ByPos:
-            hh = CurrentHedgesByPositions(hedgeIndex);
-            break;
-          case HedgeCalcTypes.ByGross:
-            hh = CurrentHedgesByPositionsGross(hedgeIndex);
-            break;
-          case HedgeCalcTypes.ByTR:
-            hh = CurrentHedgesByTradingRatio(hedgeIndex);
-            break;
-          case HedgeCalcTypes.ByTV:
-            hh = new List<HedgePosition<Contract>>();
-            break;
-          default: throw new Exception();
-        }
-        if(hh.Any()) {
-          combo = IBApp.AccountManager.MakeHedgeComboSafe(tr.ToInt(), hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio, IsInVirtualTrading);
-          combo.Subscribe(c => tm.SetCurrentHedgePosition(c.contract, c.quantity, hct));
-        }
-      }
-    }
     IEnumerable<(Rate[] r, double[] h)> ShowVoltsByRatioDiff_New(Func<Rate, double> map, int hedgeIndex) =>
       from xs in ZipHedgedRates(map, hedgeIndex)
       select (xs.Select(t => t.rate).ToArray(), xs.Select(t => t.ratio).ToArray());

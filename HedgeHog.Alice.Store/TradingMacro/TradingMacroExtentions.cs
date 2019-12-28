@@ -68,8 +68,11 @@ namespace HedgeHog.Alice.Store {
     static TimeSpan THROTTLE_INTERVAL = TimeSpan.FromSeconds(1);
 
     public void OnLoadRates(Action a = null) {
-      (_loadRatesAsyncBuffer
-        ?? (_loadRatesAsyncBuffer = new LoadRateAsyncBuffer(TradingMacrosActive.Count(/*tm => tm.BarPeriod < BarsPeriodType.m1*/)))).Push(() => LoadRates(a));
+      if(_loadRatesAsyncBuffer != null) _loadRatesAsyncBuffer.Push(() => LoadRates(a));
+      else {
+        _loadRatesAsyncBuffer = new LoadRateAsyncBuffer(TradingMacrosActive.Count(/*tm => tm.BarPeriod < BarsPeriodType.m1*/));
+        Task.Run(() => LoadRates(a));
+      }
       //broadcastLoadRates.Post(u => LoadRates(a));
     }
 

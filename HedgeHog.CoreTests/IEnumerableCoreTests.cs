@@ -106,6 +106,13 @@ namespace HedgeHog.Tests {
       Console.WriteLine(new { bd = new { bd, bd.DayOfWeek }, bd2 = new { bd2, bd2.DayOfWeek } });
       Assert.AreEqual(bd2, bd);
     }
+    [TestMethod()]
+    [TestCategory("Busness Days")]
+    public void GetNextWeekday() {
+      var start = DateTime.Now.Date.GetNextWeekday(DayOfWeek.Saturday);
+      Assert.AreEqual(start, start.GetNextWeekday(DayOfWeek.Saturday));
+    }
+
     static readonly int[,] _diffOffset =
 {
   // Su M  Tu W  Th F  Sa

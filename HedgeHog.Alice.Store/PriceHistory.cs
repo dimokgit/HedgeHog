@@ -66,7 +66,8 @@ namespace HedgeHog.Alice.Store {
           try {
             context.Configuration.ValidateOnSaveEnabled = false;
             context.SaveConcurrent();
-          } catch(System.Data.Entity.Infrastructure.DbUpdateException exc) when(exc.InnerException is System.Data.Entity.Core.UpdateException) {
+          } catch(System.Data.Entity.Infrastructure.DbUpdateException exc)
+          when(exc.InnerException is System.Data.Entity.Core.UpdateException) {
             // get failed entries
             var entries = exc.Entries;
             foreach(var entry in entries) {

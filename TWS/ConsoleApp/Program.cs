@@ -68,19 +68,18 @@ namespace ConsoleApp {
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7497;
-      const int clientId = 1;
+      const int twsPort = 7496;
+      const int clientId = 0;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       #endregion
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        Tests.HedgeCombo(am); ;
-        return;
+        //Tests.HedgeCombo(am);         return;
         var ess = new[] { "NQZ9", "ESZ9", "RTYZ9", "IWM", "SPY", "QQQ" }[3];
-        LoadMultiple( "SPY");
+        LoadMultiple(DateTime.Now.AddMonths(-6), "ESZ9");
         return;
-        void LoadMultiple(params string[] secs) {// Load bars
+        void LoadMultiple(DateTime dateStart, params string[] secs) {// Load bars
           /** Load History
           var c = new Contract() {
             Symbol = "ES",
@@ -90,7 +89,7 @@ namespace ConsoleApp {
           LoadHistory(ibClient, new[] { c });
           */
           var period = 3;
-          bool repare = false;
+          bool repare = true;
           Action<object> callback = o => HandleMessage(o + "");
           secs.ToObservable()
           .Do(sec =>
@@ -105,12 +104,13 @@ namespace ConsoleApp {
                 rlcArgs.IsProcessed = true;
               };
               //fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
-              fw.GetBarsBase(sec, period, 0, DateTime.Parse("7/1/2019").SetKind(), DateTime.Parse("9/13/2019 23:59").SetKind(), new List<Rate>(), null, showProgress);
+              fw.GetBarsBase(sec, period, 0, DateTime.Parse("10/25/2019").SetLocal(), DateTime.Parse("12/26/2019 23:59").SetLocal()
+                , new List<Rate>(), null, showProgress);
               HandleMessage($"***** Done GetBars *****\n{bars.Select(b => b + "").ToJson(true)}");
             } else
-              PriceHistory.AddTicks(fw, period, sec, DateTime.Now.AddMonths(-2 * period.Max(1)), callback);
+              PriceHistory.AddTicks(fw, period, sec, dateStart, callback);
           })).Subscribe();
-          HandleMessage($"ManagedAccountsObservable thread:{Thread.CurrentThread.Name.IfTrue(th=>th.IsNullOrEmpty(),th=> Thread.CurrentThread.ManagedThreadId+"")}");
+          HandleMessage($"ManagedAccountsObservable thread:{Thread.CurrentThread.Name.IfTrue(th => th.IsNullOrEmpty(), th => Thread.CurrentThread.ManagedThreadId + "")}");
           return;
         }
         {

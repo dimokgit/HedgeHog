@@ -984,7 +984,7 @@
         if (!isNaN(limit)) {
           var instrument = a.combo();
           var orderId = a.orderId();
-          serverCall("updateCloseOrder", [instrument, orderId, limit, null]);
+          serverCall("updateCloseOrder", [pair,instrument, orderId, limit, null]);
         }
       }
 
