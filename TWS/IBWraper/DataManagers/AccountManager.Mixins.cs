@@ -14,6 +14,15 @@ using CURRENT_HEDGES = System.Collections.Generic.List<(IBApi.Contract contract,
 
 namespace IBApp {
   public static class AccountManagerMixins {
+    private static IList<String> primaryInstruments = new String[] { "spy", "es" };
+
+    public static IEnumerable<T> Sort<T>(this IEnumerable<T> source,Func<T,Contract> contract) =>
+      source.OrderByDescending(p => primaryInstruments.Contains(contract(p).Instrument?.ToLower())
+      || primaryInstruments.Contains(contract(p).Symbol?.ToLower()));
+
+    public static IEnumerable<Position> Sort(this IEnumerable<Position> positions) =>
+      positions.OrderByDescending(p => primaryInstruments.Contains(p.contract.Instrument?.ToLower())
+      || primaryInstruments.Contains(p.contract.Symbol?.ToLower()));
     public static (Contract contract, int quantity) MakeHedgeCombo(this IEnumerable<(Contract c, double ratio)> combo, int quantity) => combo.ToList().MakeHedgeCombo(quantity);
     public static (Contract contract, int quantity) MakeHedgeCombo(this IList<(Contract c, double ratio)> combo, int quantity) =>
       combo.Count.SideEffect(c => {

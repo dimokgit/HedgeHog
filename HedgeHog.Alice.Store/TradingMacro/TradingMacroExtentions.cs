@@ -211,7 +211,7 @@ namespace HedgeHog.Alice.Store {
         return;
       }
       RatesArray.Clear();
-      UseRatesInternal(ri => ri.Clear());
+      ClearInternalRates();
       try {
         var rates = dateStart.HasValue && dateEnd.HasValue
           ? GlobalStorage.GetRateFromDBByDateRange(Pair, dateStart.Value, dateEnd.Value, BarPeriodInt).ToArray()
@@ -1575,7 +1575,7 @@ namespace HedgeHog.Alice.Store {
         _tradeEnterByCalc = new TradeCrossMethod[0];
         ResetBarsCountCalc();
         CorridorStats.Rates = null;
-        UseRatesInternal(ri => ri.Clear());
+        ClearInternalRates();
         TradeConditionsReset();
         RateLast = null;
         _waves = null;
@@ -1875,7 +1875,7 @@ namespace HedgeHog.Alice.Store {
           SetPlayBackInfo(false, args.DateStart.GetValueOrDefault(), args.DelayInSeconds.FromSeconds());
           args.StepBack = args.StepBack = args.InPause = false;
           if(!IsInVirtualTrading) {
-            UseRatesInternal(ri => ri.Clear());
+            ClearInternalRates();
             SubscribeToTradeClosedEVent(null, _tradingMacros);
             OnLoadRates();
           }
@@ -4657,7 +4657,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           goto case nameof(TakeProfitFunction);
         case nameof(BarsCount):
           if(!IsInVirtualTrading) {
-            OnLoadRates(() => UseRatesInternal(ri => ri.Clear()));
+            OnLoadRates(ClearInternalRates);
           } else {
             var func = new[] {
               SetVoltage, SetVoltage2,

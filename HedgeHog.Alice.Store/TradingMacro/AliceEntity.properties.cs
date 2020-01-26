@@ -1549,7 +1549,7 @@ namespace HedgeHog.Alice.Store {
         if(_barPeriodCalc == value)
           return;
         _barPeriodCalc = value;
-        RatesInternal.Clear();
+        ClearInternalRates();
         OnPropertyChanged("BarPeriodCalc");
       }
     }
@@ -1604,6 +1604,12 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
+    [WwwSetting(wwwSettingsBars)]
+    public bool TriggerRatesClear {
+      get { return false; }
+      set { if(value) ClearInternalRates(); }
+    }
 
     #region CanTradeAlwaysOn
     private bool _CanTradeAlwaysOn;
@@ -2018,7 +2024,7 @@ namespace HedgeHog.Alice.Store {
     [WwwSetting(wwwSettingsHedge)]
     [Category(categoryTrading)]
     public string PairHedge2 { get; set; } = "";
-    public IEnumerable<string> PairHedges => new[] { PairHedge, PairHedge2 }.Where(h=>!h.IsNullOrWhiteSpace());
+    public IEnumerable<string> PairHedges => new[] { PairHedge, PairHedge2 }.Where(h => !h.IsNullOrWhiteSpace());
     #region HedgeCorrelation
     static ConcurrentDictionary<(string pair1, string pair2), int[]> _hedgeCorrelations = new ConcurrentDictionary<(string pair1, string pair2), int[]>();
     static int[] GetHedgeCorrelation(string pair1, string pair2)

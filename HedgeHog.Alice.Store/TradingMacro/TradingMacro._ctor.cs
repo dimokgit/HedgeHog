@@ -52,7 +52,7 @@ namespace HedgeHog.Alice.Store {
           _BaseUnitSize = 0;
           _mmr = 0;
           LoadActiveSettings();
-          _Rates.Clear();
+          ClearInternalRates();
           if(!oc.prev.IsNullOrWhiteSpace() && TradesManager != null) {
             TradesManager.CoreFX.SetSymbolSubscription(Pair, () => OnLoadRates());
           }
@@ -83,7 +83,7 @@ namespace HedgeHog.Alice.Store {
         tm => tm.RatesMinutesMin,
         tm => tm.BarsCountMax,
         (rmm, bcm) => new { rmm, bcm }
-        ).Subscribe(_ => UseRatesInternal(ri => ri.SideEffect(__ => { Log = new Exception($"{Pair}: InternalRates cleared."); }).Clear()));
+        ).Subscribe(_ => ClearInternalRates());
       this.WhenAnyValue(
         tm => tm.RatesMinutesMin,
         tm => tm.BarsCount,
@@ -141,7 +141,7 @@ namespace HedgeHog.Alice.Store {
         if(IsHedgedTrading)
           OnSetExitGrossByHedgeGrossess(true);
       });
-
+      MessageBus.Current.Listen<ConnectionRestoredMessage>().Subscribe(_ => ClearInternalRates());
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy != Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)
         .Subscribe(nc => {
@@ -199,7 +199,7 @@ namespace HedgeHog.Alice.Store {
           //if (BarsCount != m.BarCount) BarsCount = m.BarCount;
           if(BarPeriodInt != m.BarPeriod)
             BarPeriod = (BarsPeriodType)m.BarPeriod;
-          UseRatesInternal(ri => ri.Clear());
+          ClearInternalRates();
           RatesArray.Clear();
           CorridorStartDate = null;
           ShowSnaphot(m.DateStart, m.DateEnd);
@@ -216,7 +216,8 @@ namespace HedgeHog.Alice.Store {
       });
       //MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveActiveSettings());
     }
-
+    private void ClearInternalRates() =>
+      UseRatesInternal(ri => ri.SideEffect(__ => { Log = new Exception($"{this}: InternalRates cleared."); }).Clear());
     private void ResetVoltage() => UseRates(ra => {
       ra.ForEach(r => SetVoltage(r, double.NaN));
       GetVoltageHigh = GetVoltageAverage = GetVoltageLow = () => EMPTY_DOUBLE;

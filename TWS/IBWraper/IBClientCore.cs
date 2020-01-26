@@ -716,6 +716,7 @@ namespace IBApp {
         if(errorCode == 1102) {
           Trace("Cleaning price requests");
           MarketDataManager.ActiveRequestCleaner();
+          ReactiveUI.MessageBus.Current.SendMessage(new ConnectionRestoredMessage());
           Trace("Re-submitted price requests");
         }
       }

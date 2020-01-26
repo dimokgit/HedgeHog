@@ -678,8 +678,8 @@ namespace HedgeHog.Alice.Client {
                , id = oc.order.OrderId
                , f = oc.status.filled
                , r = oc.status.remaining
-               , lp = oc.order.LmtPrice.IfNotSetOrZero(oc.order.AuxPrice).IfNotSetOrZero(0)
-               , p = oc.order.Action == "BUY" ? ask : bid
+               , lp = oc.order.LmtPrice.IfNotSetOrZero(oc.order.AuxPrice).IfNotSetOrZero(0).Round(2)
+               , p = (oc.order.Action == "BUY" ? ask : bid).Round(2)
                , a = oc.order.Action.Substring(0, 1)
                , s = oc.status.status.AllCaps()
                , c = oc.order.ParentId != 0
@@ -781,6 +781,7 @@ namespace HedgeHog.Alice.Client {
                           from sc in selectedCombos
                           where cts.Count(ct => ct.contract.Instrument == sc) == 0
                           from c in Contract.FromCache(sc).SelectMany(l => l.LegsOrMe())
+                          where c.IsOption
                           from price in c.ReqPriceSafe()
                           from trades in am.ComboTrades(1).Where(ct => ct.contract == c).ToArray()
                           let debit = trades.Select(t => t.openPrice.Abs()).DefaultIfEmpty(price.bid).Single()

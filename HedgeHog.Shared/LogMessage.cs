@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 
 namespace HedgeHog.Shared {
+  public abstract class BusMessageArgs {  }
+  public class ConnectionRestoredMessage :BusMessageArgs { }
   public class LogMessage {
     public Exception Exception { get; set; }
     public LogMessage(object message) : this(new Exception(message + "")) { }
@@ -11,6 +13,5 @@ namespace HedgeHog.Shared {
     public static void Send<T>(T message) { Send(message + ""); }
     public static void Send(string message) { GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new Exception(message)); }
     public static void Send(Exception exc) { GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc); }
-
   }
 }

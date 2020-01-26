@@ -1,4 +1,5 @@
-﻿using HedgeHog.Bars;
+﻿using EntityFramework.BulkInsert.Extensions;
+using HedgeHog.Bars;
 using HedgeHog.DB;
 using HedgeHog.Shared;
 using HedgeHog.Shared.Messages;
@@ -29,7 +30,7 @@ namespace HedgeHog.Alice.Store {
 
         var offset = TimeSpan.FromMinutes(period);
         if(dateStart > DateTime.MinValue) {
-          var dateMin = GlobalStorage.UseForexContext(120, IsolationLevel.ReadUncommitted, context 
+          var dateMin = GlobalStorage.UseForexContext(120, IsolationLevel.ReadUncommitted, context
             => new DateTime(context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Min(b => (DateTimeOffset?)b.StartDate).GetValueOrDefault().DateTime.Ticks, DateTimeKind.Utc));
           if(dateMin.IsMin())
             dateMin = DateTime.Now;
@@ -37,7 +38,7 @@ namespace HedgeHog.Alice.Store {
           if(dateStart < dateMin)
             fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), null, showProgress);
         }
-        var q = GlobalStorage.UseForexContext(120, IsolationLevel.ReadUncommitted, context 
+        var q = GlobalStorage.UseForexContext(120, IsolationLevel.ReadUncommitted, context
           => context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty().Max());
         if(dateStart == DateTime.MinValue && q == DateTimeOffset.MinValue)
           throw new Exception("dateStart must be provided there is no bars in database.");
@@ -58,7 +59,16 @@ namespace HedgeHog.Alice.Store {
         Debug.WriteLine("{0}", args.Message);
       //var context = new ForexEntities();
       //context.Configuration.AutoDetectChangesEnabled = false;
-      Action<ForexEntities> a = context=>
+      Action<ForexEntities> b = context => {
+        var bars = args.NewRates.Distinct(r => r.StartDate2).Select(t => FillBar(period, pair, new t_Bar(), t)).ToArray();
+        try {
+          context.BulkInsert(bars);
+          args.NewRates.Clear();
+        } catch(Exception exc) {
+          throw exc;
+        }
+      };
+      Action<ForexEntities> a = context =>
         args.NewRates.Distinct(r => r.StartDate2).Do(t => {
           context.t_Bar.Add(FillBar(period, pair, context.t_Bar.Create(), t));
         }).TakeLast(1)
@@ -79,7 +89,7 @@ namespace HedgeHog.Alice.Store {
           context.Dispose();
           args.NewRates.Clear();
         });
-      GlobalStorage.UseForexContext(a);
+      GlobalStorage.UseForexContext(b);
       //saveTickActionBlock.Post(a);
     }
     private static t_Bar FillBar(int period, string pair, t_Bar bar, Rate t) {

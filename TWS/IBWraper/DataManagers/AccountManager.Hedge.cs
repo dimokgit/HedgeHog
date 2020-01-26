@@ -37,14 +37,14 @@ namespace IBApp {
       //).ToArray();
     }
     public static IObservable<(Position position, double close, double pl, double closePrice)[]> HedgedPositions(IEnumerable<Position> positions) {
-      return (from p in positions.ToObservable()
+      return (from p in positions.Sort().ToObservable()
                 //where p.contract.IsFuture || p.contract.IsStock || p.contract.IsOption
               from price in p.contract.ReqPriceSafe()
               let closePrice = p.position > 0 ? price.bid : price.ask
               let close = closePrice * p.contract.ComboMultiplier * p.position
               let t = (p, close, close - p.open, closePrice)
               group t by t.p.contract.SecType into g
-              from a in g.OrderBy(p => p.p.contract.Instrument).ToArray()
+              from a in g/*.OrderBy(p => p.p.contract.Instrument)*/.ToArray()
               select a
       );
     }

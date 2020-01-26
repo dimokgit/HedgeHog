@@ -76,8 +76,8 @@ namespace ConsoleApp {
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
         //Tests.HedgeCombo(am);         return;
-        var ess = new[] { "NQZ9", "ESZ9", "RTYZ9", "IWM", "SPY", "QQQ" }[3];
-        LoadMultiple(DateTime.Now.AddMonths(-6), "ESZ9");
+        var ess = new[] {"VX04F0", "NQZ9", "ESZ9", "RTYZ9", "IWM", "SPY", "QQQ" }[3];
+        LoadMultiple(DateTime.Now.AddMonths(-6), "SPY");
         return;
         void LoadMultiple(DateTime dateStart, params string[] secs) {// Load bars
           /** Load History
@@ -89,7 +89,7 @@ namespace ConsoleApp {
           LoadHistory(ibClient, new[] { c });
           */
           var period = 3;
-          bool repare = true;
+          bool repare = false;
           Action<object> callback = o => HandleMessage(o + "");
           secs.ToObservable()
           .Do(sec =>
@@ -104,11 +104,13 @@ namespace ConsoleApp {
                 rlcArgs.IsProcessed = true;
               };
               //fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
-              fw.GetBarsBase(sec, period, 0, DateTime.Parse("10/25/2019").SetLocal(), DateTime.Parse("12/26/2019 23:59").SetLocal()
+              fw.GetBarsBase(sec, period, 0, DateTime.Parse("1/14/2020").SetLocal(), DateTime.Parse("1/14/2020 23:59").SetLocal()
                 , new List<Rate>(), null, showProgress);
               HandleMessage($"***** Done GetBars *****\n{bars.Select(b => b + "").ToJson(true)}");
-            } else
+            } else {
               PriceHistory.AddTicks(fw, period, sec, dateStart, callback);
+              HandleMessage($"***** Done AddTick *****");
+            }
           })).Subscribe();
           HandleMessage($"ManagedAccountsObservable thread:{Thread.CurrentThread.Name.IfTrue(th => th.IsNullOrEmpty(), th => Thread.CurrentThread.ManagedThreadId + "")}");
           return;

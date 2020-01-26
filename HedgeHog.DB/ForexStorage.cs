@@ -37,7 +37,9 @@ namespace HedgeHog.DB {
     public static void SaveConcurrent(this DbContext context) {
       try {
         context.SaveChanges();
-      } catch(System.Data.Entity.Infrastructure.DbUpdateConcurrencyException) {
+      } catch(System.Data.Entity.Infrastructure.DbUpdateConcurrencyException exc) {
+        return;
+        throw exc;
       } catch {
         throw;
       }
