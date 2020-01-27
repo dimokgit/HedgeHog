@@ -193,7 +193,7 @@ namespace IBApi {
       if(ComboLegs == null) yield break;
       var x = (from l in ComboLegs
                join c in Contracts on l.ConId equals c.Value.ConId
-               orderby l.Action ascending, l.Ratio descending, c.Value.ConId
+               //orderby l.Action ascending, l.Ratio descending, c.Value.ConId
                select map(c.Value, l)
        );
       foreach(var t in x)

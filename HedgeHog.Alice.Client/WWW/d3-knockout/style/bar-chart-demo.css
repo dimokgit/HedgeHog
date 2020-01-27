@@ -47,8 +47,8 @@
 
 /* line chart specifics.*/
 .line {
-    fill: none;
-    stroke: gray;
-    stroke-width: 1px;
+  fill: none;
+  stroke: lightblue;
+  stroke-width: 1px;
 }
 

@@ -29,7 +29,7 @@
   PNotify.prototype.options.styling = "fontawesome";
   Array.prototype.sum = Array.prototype.sum || function () {
     return this.reduce(function (sum, a) { return sum + Number(a) }, 0);
-  }
+  };
   function standardDeviation(values) {
     var avg = average(values);
 
@@ -240,7 +240,11 @@
       .done(function (response) {
         Enumerable.from(response)
           .forEach(function (r) {
-            dataViewModel.updateChart(r);
+            if (r.BarPeriodInt > 0)
+              dataViewModel.updateChart2(r);
+            else
+              dataViewModel.updateChart(r);
+
           });
         resetPlotter2();
       })

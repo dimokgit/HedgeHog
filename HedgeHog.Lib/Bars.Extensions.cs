@@ -131,10 +131,13 @@ namespace HedgeHog.Bars {
     }
 
     public static IList<TBar> Smoother<TBar>(this IList<TBar> bars, double stDevRatio = 4) where TBar : BarBase {
-      if(bars!=null)return bars;
-      var logs = bars.Pairwise().Select(t => new { r1 = t.Item1, r2 = t.Item2, d = Math.Abs(Math.Log10(t.Item1.PriceAvg / t.Item2.PriceAvg)) });
+      return bars.Smoother(r => r.AskHigh, stDevRatio).Smoother(r => r.BidLow, stDevRatio);
+    }
+    private static IList<TBar> Smoother<TBar>(this IList<TBar> bars,Func<TBar,double> getter, double stDevRatio = 4) where TBar : BarBase {
+      //if(bars!=null)return bars;
+      var logs = bars.Pairwise().Select(t => new { r1 = t.Item1, r2 = t.Item2, d = Math.Abs(Math.Log10(getter(t.Item1) / getter(t.Item2))) });
       var cmaPeriod = 5;
-      var cmas = logs.ToArray(x => x.r1.PriceAvg).Cma(cmaPeriod);
+      var cmas = logs.ToArray(x => getter(x.r1)).Cma(cmaPeriod);
       var stDev = logs.StandardDeviation(x => x.d) * stDevRatio;
       IMapper mapper = new MapperConfiguration(cfg 
         => cfg.CreateMap<TBar, TBar>()
@@ -144,9 +147,13 @@ namespace HedgeHog.Bars {
         .ForSourceMember(r => r.StartDate, o => o.DoNotValidate())
         )
         .CreateMapper();
-      logs.Zip(cmas,(l,c)=>new {l,c }).ForEach(x => {
+      var lll0 = logs.Zip(cmas, (l, c) => new { l, c });
+      var lll = lll0
+       .Where(x=>x.l.d > stDev)
+        ;
+      lll.ForEach(x => {
         if(x.l.d > stDev) {
-          if(x.l.r1.StartDate2.TimeOfDay == TimeSpan.FromHours(8) || x.l.r2.PriceAvg.Abs(x.c)< x.l.r1.PriceAvg.Abs(x.c)) {
+          if(x.l.r1.StartDate.TimeOfDay == TimeSpan.FromHours(4) || getter(x.l.r2).Abs(x.c)< getter(x.l.r1).Abs(x.c)) {
             Debug.WriteLine(new { Smoother = new { From = x.l.r2, To = x.l.r1 } } + "");
             mapper.Map(x.l.r2, x.l.r1);
           } else {

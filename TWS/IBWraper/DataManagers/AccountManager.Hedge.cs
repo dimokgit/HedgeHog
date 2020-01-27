@@ -15,7 +15,7 @@ namespace IBApp {
     public IObservable<ComboTrade> MakeComboHedgeFromPositions(IEnumerable<Position> positions) {
       var a = (from g in HedgedPositions(positions)//.OrderBy(p => p.position.contract.Instrument)
                where g.Length == 2
-               from hc in g.Pairwise((o, t) => MakeHedgeCombo(1, o.position.contract, t.position.contract, o.position.position.Abs(), t.position.position.Abs()))
+               from hc in g.Pairwise((o, t) => MakeHedgeCombo(1, o.position.contract, t.position.contract, o.position.position.Abs(), -o.position.position.Sign() * t.position.position.Sign()))
                let quantity = hc.quantity * g.First().position.position.Sign()
                let isBuy = quantity > 0
                let pl = g.Sum(p => p.pl)
@@ -64,7 +64,7 @@ namespace IBApp {
       if(c2.ConId == 0)
         throw new Exception($"ComboLeg contract2 has ConId = 0");
       int r1 = (ratio1 * quantity).ToInt();
-      int r2 = (ratio2 * quantity).ToInt();
+      int r2 = (ratio2.Abs() * quantity).ToInt();
       if(r1 == int.MinValue || r2 == int.MinValue) {
         Debugger.Break();
       }
@@ -90,7 +90,7 @@ namespace IBApp {
       ComboLeg leg2 = new ComboLeg();
       leg2.ConId = c2.ConId;
       leg2.Ratio = r2 / gcd;
-      string action = c1.IsCall == c2.IsCall ? "SELL" : "BUY";
+      string action = ratio2 < 0 ? "BUY" : c1.IsCall == c2.IsCall ? "SELL" : "BUY";
       leg2.Action = action;
       leg2.Exchange = c2.PrimaryExch.IfEmpty(c2.Exchange);
 

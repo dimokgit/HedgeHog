@@ -1554,9 +1554,9 @@ namespace HedgeHog.Alice.Store {
         var doGroupTick = BarPeriodCalc == BarsPeriodType.s1;
         Func<List<Rate>, List<Rate>> groupTicks = rates => doGroupTick ? GroupTicksToSeconds(rates) : rates;
         var _replayRates = GlobalStorage.GetRateFromDBBackwards(Pair, args.DateStart.Value.ToUniversalTime(), BarsCountCount(), dbBarPeriod, groupTicks);
-        if(BarPeriod != BarsPeriodType.t1) _replayRates.Smoother();
         _replayRates.CopyLast(1).Select(r => r.StartDate2)
           .ForEach(startDate => _replayRates.AddRange(groupTicks(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, startDate, BarsCount, dbBarPeriod))));
+        if(BarPeriod != BarsPeriodType.t1) _replayRates.Smoother(4);
         //var rateStart = rates.SkipWhile(r => r.StartDate < args.DateStart.Value).First();
         //var rateStartIndex = rates.IndexOf(rateStart);
         //var rateIndexStart = (rateStartIndex - BarsCount).Max(0);
@@ -1708,7 +1708,7 @@ namespace HedgeHog.Alice.Store {
                 if(moreRates.Count == 0)
                   noMoreDbRates = true;
                 else {
-                  if(BarPeriod != BarsPeriodType.t1) moreRates.Smoother();
+                  if(BarPeriod != BarsPeriodType.t1) moreRates.Smoother(2);
                   _replayRates.AddRange(moreRates);
                   var maxCount = BarsCountCount() + moreRates.Count;
                   var slack = (_replayRates.Count - maxCount).Max(0);
@@ -2444,7 +2444,7 @@ namespace HedgeHog.Alice.Store {
             if(IsInVirtualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
             #endregion
-            if(BarPeriod > BarsPeriodType.m1)
+            if(BarPeriod > BarsPeriodType.m3)
               ScanForWaveRanges2(RatesArray);
 
             OnPriceSpreadAverage(()

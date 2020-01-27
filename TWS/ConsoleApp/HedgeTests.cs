@@ -17,25 +17,16 @@ namespace ConsoleApp {
     public static void HedgeCombo(AccountManager am) {
       am.PositionsObservable.Subscribe(positions => Program.HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
 
-      (from pos in am.PositionsObservable.Take(2).ToArray()
-       from ct in am.ComboTrades(1)
-       where ct.contract.IsBag
-       from p in ct.contract.ReqPriceSafe().Select(ab=>ab.Price(true))
-       from ots in am.OpenTrade(o=> o.Transmit=false , ct.contract, -ct.position)
-       from ot in ots
-       select ot
-      ).Subscribe(oc => Program.HandleMessage(oc));
-      return;
       {
         var parentContract = "spy".ContractFactory();
-        var hedgeContract = "iwm".ContractFactory();
+        var hedgeContract = "vxx".ContractFactory();
         var quantityParent = 600;
-        var r = quantityParent / ((quantityParent / 1.75).Round(0) + 1);
+        var r = quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
         while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1)
           r += 0.01;
         var isTest = true;
-        (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, hp().p2, false)
+        (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, -hp().p2, false)
          from p in hc.contract.ReqPriceSafe().Select(ab => quantityParent > 0 ? ab.ask : ab.bid)
          from ot in am.OpenTrade(o => o.Transmit = !isTest, hc.contract, hc.quantity, p)
          select ot
@@ -46,6 +37,15 @@ namespace ConsoleApp {
          });
         return;
       }
+      (from pos in am.PositionsObservable.Take(2).ToArray()
+       from ct in am.ComboTrades(1)
+       where ct.contract.IsBag
+       from p in ct.contract.ReqPriceSafe().Select(ab=>ab.Price(true))
+       from ots in am.OpenTrade(o=> o.Transmit=false , ct.contract, -ct.position)
+       from ot in ots
+       select ot
+      ).Subscribe(oc => Program.HandleMessage(oc));
+      return;
 
       var h1 = "SPY";
       var h2 = "QQQ";

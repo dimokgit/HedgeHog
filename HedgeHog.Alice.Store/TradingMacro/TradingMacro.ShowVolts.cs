@@ -632,7 +632,7 @@ namespace HedgeHog.Alice.Store {
       from tm2 in TradingMacroHedged(hedgeIndex)
       from corr in TMCorrelation(tm2)
       let m = corr == 1 ? map : new Func<Rate, double>((r) => 1 / map(r))
-      from xs in UseRates(tm2, (ra, ra2) => ZipRateArrays((ra, ra2), map))
+      from xs in UseRates(tm2, (ra, ra2) => ZipRateArrays((ra, ra2), m))
       select xs;
 
     Func<(List<Rate> ra, List<Rate> ra2), Func<Rate, double>, IList<(Rate rate, double ratio)>> ZipRateArrays = ZipRateArraysImpl2;//.MemoizeLast(t => t.ra.LastOrDefault().StartDate);

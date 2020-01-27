@@ -75,9 +75,9 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        //Tests.HedgeCombo(am);         return;
+        Tests.HedgeCombo(am);         return;
         var ess = new[] {"VX04F0", "NQZ9", "ESZ9", "RTYZ9", "IWM", "SPY", "QQQ" }[3];
-        LoadMultiple(DateTime.Now.AddMonths(-6), "SPY");
+        LoadMultiple(DateTime.Now.AddMonths(-6), "IWM");
         return;
         void LoadMultiple(DateTime dateStart, params string[] secs) {// Load bars
           /** Load History
@@ -104,7 +104,7 @@ namespace ConsoleApp {
                 rlcArgs.IsProcessed = true;
               };
               //fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
-              fw.GetBarsBase(sec, period, 0, DateTime.Parse("1/14/2020").SetLocal(), DateTime.Parse("1/14/2020 23:59").SetLocal()
+              fw.GetBarsBase(sec, period, 0, DateTime.Parse("11/29/2019").SetLocal(), DateTime.Parse("11/29/2019 23:59").SetLocal()
                 , new List<Rate>(), null, showProgress);
               HandleMessage($"***** Done GetBars *****\n{bars.Select(b => b + "").ToJson(true)}");
             } else {
