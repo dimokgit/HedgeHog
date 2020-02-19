@@ -75,9 +75,10 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        Tests.HedgeCombo(am);         return;
+        //Tests.HedgeCombo(am);         return;
         var ess = new[] {"VX04F0", "NQZ9", "ESZ9", "RTYZ9", "IWM", "SPY", "QQQ" }[3];
-        LoadMultiple(DateTime.Now.AddMonths(-6), "IWM");
+        LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
+        LoadMultiple(DateTime.Now.AddMonths(-24), "SPY");
         return;
         void LoadMultiple(DateTime dateStart, params string[] secs) {// Load bars
           /** Load History
