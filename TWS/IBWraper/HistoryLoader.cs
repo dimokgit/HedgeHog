@@ -33,7 +33,7 @@ namespace IBApp {
     private readonly SortedSet<T> _list;
     private readonly SortedSet<T> _list2;
     private int _reqId;
-    private readonly IBClient _ibClient;
+    private readonly IBClientCore _ibClient;
     private Contract _contract;
     private readonly DateTime _dateStart;
     private DateTime __endDate;
@@ -154,11 +154,11 @@ namespace IBApp {
           ? _endDate.AddDays(-1)
           : _endDate.AddSeconds(-BarSizeRange(_barSize, _timeUnit).Last());
         _endDate = newEndDate;
-        _error(new SoftException(new { _endDate } + ""));
+        _error(new SoftException(new { endDate = _endDate } + ""));
         RequestNextDataChunk();
       } else if(code == SERVER_ERROR && error.Contains("pacing violation")) {
         _delay = TimeSpan.FromSeconds(_delay.TotalSeconds + 1).Min(10.FromSeconds());
-        _error(new DelayException($"HistoryLoader:{_contract.Instrument}:{_barSize}:{_reqId}", _delay));
+        _error(new DelayException($"HistoryLoader:{_contract.Instrument}:{_barSize}:{_reqId}:{new { listCount = _list.Count }}", _delay));
         RequestNextDataChunk();
       } else if(code == SERVER_ERROR && error.Contains(NO_DATA)) {
         CleanUp();
@@ -184,7 +184,7 @@ namespace IBApp {
         return;
       _delay = TimeSpan.Zero;
       Debug.WriteLine(m);
-      var ds = m.StartDate.FromTWSString();
+      var ds = m.StartDate.FromTWSString().Min((_cache.FirstOrDefault()?.StartDate).GetValueOrDefault(DateTime.MaxValue));
       var de = m.EndDate.FromTWSString();
       lock(_listLocker) {
         var c = _list2.Distinct().Except(_cache, comp)
@@ -194,15 +194,16 @@ namespace IBApp {
           }).Count() > 0;
         var d = _cache.GroupBy(r => r.StartDate.Date).ToDictionary(g => g.Key, g => g.Count());
         //_list.InsertRange(0, _list2.Distinct().SkipWhile(b => _periodsBack == 0 && b.StartDate < _dateStart));
-        if(!c || (_periodsBack == 0 && _endDate <= _dateStart) || (_periodsBack > 0 && _list.Count >= _periodsBack)) {
-          if(ds < _dateStart) {
+        if(!c /*|| (_periodsBack == 0 && _endDate <= _dateStart) || (_periodsBack > 0 && _list.Count >= _periodsBack)*/) {
+          if(_periodsBack == 0 && ds < _dateStart || _list.Count >= _periodsBack.IfZero(int.MaxValue)) {
             CleanUp();
             _dataEnd(_list);
             _done(_cache);
             return;
           } else {
             _reqId = IBClientCore.IBClientCoreMaster.ValidOrderId();
-            _endDate = ds;
+            _error(new SoftException($"HistoryLoader:{new { _reqId, listCount = _list.Count }}"));
+            _endDate = ds.Subtract(_barSize.Span());
           }
         } else {
           if(_list.Any())
@@ -238,7 +239,9 @@ namespace IBApp {
         string whatToShow = "MIDPOINT";// !_contract.IsIndex() ? "TRADES" : "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         // TODO: reqHistoricalData - keepUpToDate
-        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, false, new List<TagValue>());
+        _ibClient.OnReqMktData(() =>
+        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, false, new List<TagValue>())
+        );
       } catch(Exception exc) {
         _error(exc);
         CleanUp();
