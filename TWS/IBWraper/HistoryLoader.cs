@@ -13,7 +13,6 @@ using System.Reactive.Linq;
 using System.Reactive.Concurrency;
 using System.Threading;
 using HedgeHog.DateTimeZone;
-using System.Diagnostics;
 
 namespace IBApp {
   public enum TimeUnit { S, D, W, M, Y }
@@ -30,26 +29,19 @@ namespace IBApp {
     #region Fields
     private const int IBERROR_NOT_CONNECTED = 504;
     private const int SERVER_ERROR = 162;
-    private readonly SortedSet<T> _list;
-    private readonly SortedSet<T> _list2;
-    private int _reqId;
-    private readonly IBClientCore _ibClient;
+    private readonly List<T> _list;
+    private readonly List<T> _list2;
+    private readonly int _reqId;
+    private readonly IBClient _ibClient;
     private Contract _contract;
     private readonly DateTime _dateStart;
-    private DateTime __endDate;
-    private DateTime _endDate {
-      get { return __endDate; }
-      set {
-        Debug.WriteLine(new { __endDate, value });
-        __endDate = value;
-      }
-    }
+    private DateTime _endDate;
     private readonly TimeUnit _timeUnit;
     private readonly BarSize _barSize;
     private readonly TimeSpan _duration;
-    private readonly Action<ICollection<T>> _done;
+    private readonly Action<IList<T>> _done;
     private readonly Action<Exception> _error;
-    private readonly Action<ICollection<T>> _dataEnd;
+    private readonly Action<IList<T>> _dataEnd;
     private TimeSpan _delay;
     private readonly DataMapDelegate<T> _map;
     public bool Done { get; private set; }
@@ -67,19 +59,19 @@ namespace IBApp {
       , TimeUnit timeUnit
       , BarSize barSize
       , DataMapDelegate<T> map
-      , Action<ICollection<T>> done
-      , Action<ICollection<T>> dataEnd
+      , Action<IList<T>> done
+      , Action<IList<T>> dataEnd
       , Action<Exception> error) {
       _ibClient = ibClient;
       _periodsBack = periodsBack;
       _reqId = IBClientCore.IBClientCoreMaster.ValidOrderId();
-      _list = new SortedSet<T>();
-      _list2 = new SortedSet<T>();
+      _list = new List<T>();
+      _list2 = new List<T>();
       if(endDate.Kind == DateTimeKind.Unspecified)
         throw new Exception(new { endDate = new { endDate.Kind } } + "");
       _dateStart = endDate.Subtract(duration);
       var lastHour = contract.IsFuture ? 17 : 20;
-      _endDate = false && timeUnit == TimeUnit.W
+      _endDate = timeUnit == TimeUnit.W
         ? endDate.InNewYork().Date.GetNextWeekday(DayOfWeek.Friday).AddHours(lastHour)
         : endDate;//.Date.GetNextWeekday(DayOfWeek.Saturday);
       _timeUnit = timeUnit;
@@ -154,11 +146,11 @@ namespace IBApp {
           ? _endDate.AddDays(-1)
           : _endDate.AddSeconds(-BarSizeRange(_barSize, _timeUnit).Last());
         _endDate = newEndDate;
-        _error(new SoftException(new { endDate = _endDate } + ""));
+        _error(new SoftException(new { _endDate } + ""));
         RequestNextDataChunk();
       } else if(code == SERVER_ERROR && error.Contains("pacing violation")) {
         _delay = TimeSpan.FromSeconds(_delay.TotalSeconds + 1).Min(10.FromSeconds());
-        _error(new DelayException($"HistoryLoader:{_contract.Instrument}:{_barSize}:{_reqId}:{new { listCount = _list.Count }}", _delay));
+        _error(new DelayException($"HistoryLoader:{_contract.Instrument}:{_barSize}:{_reqId}", _delay));
         RequestNextDataChunk();
       } else if(code == SERVER_ERROR && error.Contains(NO_DATA)) {
         CleanUp();
@@ -175,49 +167,29 @@ namespace IBApp {
       return exc ?? new Exception(new { HistoryLoader = new { reqId, contract, code, error } } + "");
     }
 
-    SortedSet<T> _cache = new System.Collections.Generic.SortedSet<T>();
     object _listLocker = new object();
-
-    static LambdaComparer<T> comp = LambdaComparer.Factory<T>((r1, r2) => r1.StartDate == r2.StartDate);
     private void IbClient_HistoricalDataEnd(HistoricalDataEndMessage m) {
       if(m.RequestId != _reqId)
         return;
       _delay = TimeSpan.Zero;
-      Debug.WriteLine(m);
-      var ds = m.StartDate.FromTWSString().Min((_cache.FirstOrDefault()?.StartDate).GetValueOrDefault(DateTime.MaxValue));
-      var de = m.EndDate.FromTWSString();
       lock(_listLocker) {
-        var c = _list2.Distinct().Except(_cache, comp)
-          .Do(r => {
-            if(r.StartDate.Between(ds, de)) _list.Add(r);
-            _cache.Add(r);
-          }).Count() > 0;
-        var d = _cache.GroupBy(r => r.StartDate.Date).ToDictionary(g => g.Key, g => g.Count());
-        //_list.InsertRange(0, _list2.Distinct().SkipWhile(b => _periodsBack == 0 && b.StartDate < _dateStart));
-        if(!c /*|| (_periodsBack == 0 && _endDate <= _dateStart) || (_periodsBack > 0 && _list.Count >= _periodsBack)*/) {
-          if(_periodsBack == 0 && ds < _dateStart || _list.Count >= _periodsBack.IfZero(int.MaxValue)) {
-            CleanUp();
-            _dataEnd(_list);
-            _done(_cache);
-            return;
-          } else {
-            _reqId = IBClientCore.IBClientCoreMaster.ValidOrderId();
-            _error(new SoftException($"HistoryLoader:{new { _reqId, listCount = _list.Count }}"));
-            _endDate = ds.Subtract(_barSize.Span());
-          }
+        _list.InsertRange(0, _list2.Distinct().SkipWhile(b => _periodsBack == 0 && b.StartDate < _dateStart));
+        if((_periodsBack == 0 && _endDate <= _dateStart) || (_periodsBack > 0 && _list.Count >= _periodsBack)) {
+          CleanUp();
+          _dataEnd(_list);
+          _done(_list);
         } else {
-          if(_list.Any())
-            _dataEnd(_list);
+          _dataEnd(_list);
+          var me = this;
           _list2.Clear();
+          RequestNextDataChunk();
         }
-        RequestHistoryDataChunk();
       }
     }
     private void IbClient_HistoricalData(HistoricalDataMessage m) {
       if(m.RequestId == _reqId) {
-        Debug.WriteLine(m);
         var date2 = m.Date.FromTWSString();
-        if(false && date2 < _endDate)
+        if(date2 < _endDate)
           _endDate = _contract.Symbol == "VIX" && date2.TimeOfDay == new TimeSpan(3, 15, 0)
             ? date2.Round(MathCore.RoundTo.Hour)
             : date2.Subtract(_barSize.Span());
@@ -239,9 +211,7 @@ namespace IBApp {
         string whatToShow = "MIDPOINT";// !_contract.IsIndex() ? "TRADES" : "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         // TODO: reqHistoricalData - keepUpToDate
-        _ibClient.OnReqMktData(() =>
-        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, false, new List<TagValue>())
-        );
+        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, false, new List<TagValue>());
       } catch(Exception exc) {
         _error(exc);
         CleanUp();

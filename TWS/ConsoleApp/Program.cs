@@ -68,7 +68,7 @@ namespace ConsoleApp {
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7496;
+      const int twsPort = 7497;
       const int clientId = 0;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       #endregion
@@ -77,8 +77,8 @@ namespace ConsoleApp {
         var am = fw.AccountManager;
         //Tests.HedgeCombo(am);         return;
         var ess = new[] {"VX04F0", "NQZ9", "ESZ9", "RTYZ9", "IWM", "SPY", "QQQ" }[3];
-        LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
-        LoadMultiple(DateTime.Now.AddMonths(-24), "SPY");
+        //LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
+        LoadMultiple(DateTime.Now.AddMonths(-1), "SPY");
         return;
         void LoadMultiple(DateTime dateStart, params string[] secs) {// Load bars
           /** Load History
@@ -89,8 +89,8 @@ namespace ConsoleApp {
           };
           LoadHistory(ibClient, new[] { c });
           */
-          var period = 3;
-          bool repare = false;
+          var period = 0;
+          bool repare = true;
           Action<object> callback = o => HandleMessage(o + "");
           secs.ToObservable()
           .Do(sec =>
@@ -101,13 +101,15 @@ namespace ConsoleApp {
             if(repare) {
               var bars = new List<Rate>();
               Action<RateLoadingCallbackArgs<Rate>> showProgress = (rlcArgs) => {
-                PriceHistory.SaveTickCallBack(period, sec, callback, rlcArgs);
+                //PriceHistory.SaveTickCallBack(period, sec, callback, rlcArgs);
+                HandleMessage(rlcArgs.Message);
                 rlcArgs.IsProcessed = true;
               };
               //fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
-              fw.GetBarsBase(sec, period, 0, DateTime.Parse("11/29/2019").SetLocal(), DateTime.Parse("11/29/2019 23:59").SetLocal()
-                , new List<Rate>(), null, showProgress);
-              HandleMessage($"***** Done GetBars *****\n{bars.Select(b => b + "").ToJson(true)}");
+              //fw.GetBarsBase(sec, period, 0, DateTime.Parse("11/29/2019").SetLocal(), DateTime.Parse("11/29/2019 23:59").SetLocal()
+              fw.GetBarsBase(sec, period, 8000, TradesManagerStatic.FX_DATE_NOW, DateTime.Now.SetLocal()
+                , bars, null, showProgress);
+              HandleMessage($"***** Done GetBars {bars.Count}*****");
             } else {
               PriceHistory.AddTicks(fw, period, sec, dateStart, callback);
               HandleMessage($"***** Done AddTick *****");
