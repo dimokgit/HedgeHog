@@ -1099,7 +1099,7 @@ namespace HedgeHog.Alice.Store {
           .Subscribe(e => PriceChangedAsyncBufferInstance.Push(e.EventArgs)).SideEffect(_strams.Add);
         PriceChangedAsyncBufferInstance.Error.Subscribe(exc => Log = exc).SideEffect(s => _strams.Add(s));
         a // Run Strategy
-          .Where(pce => IsTrader && Strategy == Strategies.Hedge && (pce.EventArgs.Price.Pair == Pair || pce.EventArgs.Price.Pair == PairHedge))
+          .Where(pce => IsTrader && Strategy == Strategies.HedgeA && (pce.EventArgs.Price.Pair == Pair || pce.EventArgs.Price.Pair == PairHedge))
           .Subscribe(e => {
             // TODO - Hedge resubscribe when PairHedge changes
             TradingMacroHedged(-1).Concat(new[] { this }).SelectMany(tm => tm.Trades).ForEach(t => t.UpdateByPrice(TradesManager));
@@ -1504,7 +1504,7 @@ namespace HedgeHog.Alice.Store {
       if(args.Initiator != replayTrader)
         throw new Exception("Replay Initiator must be also Replay Trader");
       if(args.Initiator.Strategy == Strategies.None) {
-        args.Initiator.Strategy = IsPairHedged ? Strategies.Hedge : Strategies.UniversalA;
+        args.Initiator.Strategy = IsPairHedged ? Strategies.HedgeA : Strategies.UniversalA;
         Log = new ApplicationException($"Testing strategy set to {args.Initiator.Strategy}");
       }
       if(tms().Count(tm => tm.IsTrender) == 0)
@@ -2499,7 +2499,7 @@ namespace HedgeHog.Alice.Store {
                 CorridorAngle = TLRed.Angle;
                 TakeProfitPips = InPips(CalculateTakeProfit());
               } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
-            }, IsHedgedTrading || IsInVirtualTrading);
+            }, Strategy.IsHedge() || IsInVirtualTrading);
             OnPropertyChanged(nameof(TradingDistanceInPips));
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
             OnPropertyChanged(() => SpreadForCorridorInPips);

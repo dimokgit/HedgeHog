@@ -1991,7 +1991,7 @@ namespace HedgeHog.Alice.Store {
     public string PairPlain { get { return TradesManagerStatic.WrapPair(Pair); } }
 
     public bool IsPairHedged => !PairHedge.IsNullOrWhiteSpace() && (true || TradeConditionsHedge().Any() || TradingMacroTrader(tm => tm.TradeConditionsHedge()).Concat().Any());
-    public bool IsHedgedTrading => !PairHedge.IsNullOrWhiteSpace() && (Strategy == Strategies.Hedge || HedgedTrading);
+    public bool IsHedgedTrading => !PairHedge.IsNullOrWhiteSpace() && (Strategy == Strategies.HedgeA || HedgedTrading);
     public IEnumerable<TradingMacro> HedgeParent => TradingMacrosByPairHedge(Pair).Take(1);
     public bool IsHedgeChild => HedgeParent.Any();
     public IEnumerable<TradingMacro> HedgeOther(int hedgeIndex) => TradingMacroHedged(hedgeIndex).Concat(HedgeParent);

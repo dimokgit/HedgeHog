@@ -731,7 +731,7 @@ namespace HedgeHog.Alice.Client {
                     var delta = (hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs()) * (-x.position.Sign());
                     var contract = x.contract;
                     var breakEven = contract.BreakEven(-x.openPrice).ToArray();
-                    var profit = tm.Strategy == Strategies.Hedge ? tm.ExitGrossByHedgePositions : x.profit;
+                    var profit = tm.Strategy.IsHedge() ? tm.ExitGrossByHedgePositions : x.profit;
                     return new {
                       combo = x.contract.Instrument
                       , i = x.contract.Instrument
@@ -971,7 +971,7 @@ namespace HedgeHog.Alice.Client {
               : profit.Value.Abs() >= 0.01 ? profit.Value
               : am.Account.Equity * profit.Value;
               var tm = UseTraderMacro(pair).Single();
-              if(trade.contract.IsBag && tm.Strategy == Strategies.Hedge)
+              if(trade.contract.IsBag && tm.Strategy.IsHedge())
                 tm.ExitGrossByHedgePositions = p;
               else {
                 tm.ExitGrossByHedgePositions = double.NaN;
@@ -1666,7 +1666,7 @@ namespace HedgeHog.Alice.Client {
           list2.Add(row("PipAmountBuy", tm.PipAmountBuy.AutoRound2("$", 2) + "/" + (tm.PipAmountBuyPercent * 100).AutoRound2(2, "%")));
           list2.Add(row("PipAmountSell", tm.PipAmountSell.AutoRound2("$", 2) + "/" + (tm.PipAmountSellPercent * 100).AutoRound2(2, "%")));
         }
-        if(!tm.IsHedgedTrading) {
+        if(!tm.Strategy.IsHedge()) {
           list2.Add(row("PipsToMC", (!ht ? 0 : am.PipsToMC).ToString("n0")));
           var lsb = (tm.IsCurrency ? (tm.LotSizeByLossBuy / 1000.0).Floor() + "K/" : tm.LotSizeByLossBuy + "/");
           var lss = (tm.IsCurrency ? (tm.LotSizeByLossSell / 1000.0).Floor() + "K/" : tm.LotSizeByLossSell + "/");
@@ -1683,7 +1683,7 @@ namespace HedgeHog.Alice.Client {
           var s = string.Join("<br/>", oss.Select(os => $"{os.status}:{os.filled}<{os.remaining}"));
           list2.Add(row("Orders", s));
         }
-        if(tm.IsHedgedTrading)
+        if(tm.Strategy.IsHedge())
           list2.Add(row("Hedge Profit", $"{tm.ExitGrossByHedgePositions:c0}"));
         if(false && trader.Value.GrossToExitCalc() != 0) {
           var ca = CompInt(trader.Value.GrossToExitCalc().Abs());

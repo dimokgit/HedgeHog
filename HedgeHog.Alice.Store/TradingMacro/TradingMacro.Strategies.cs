@@ -55,7 +55,7 @@ namespace HedgeHog.Alice.Store {
 
     Action StrategyAction {
       get {
-        switch((Strategy & ~Strategies.Auto)) {
+        switch((Strategy /*& ~Strategies.Auto*/)) {
           case Strategies.Hot:
             return StrategyEnterUniversal;
           case Strategies.Universal:
@@ -66,9 +66,10 @@ namespace HedgeHog.Alice.Store {
             return StrategyShortStraddle;
           case Strategies.Long:
             return StrategyLong;
-          case Strategies.Hedge:
+          case Strategies.HedgeA:
             return StrategyHedge;
           case Strategies.None:
+          case Strategies.Hedge:
             return () => { };
         }
         throw new NotSupportedException("Strategy " + Strategy + " is not supported.");

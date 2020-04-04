@@ -50,7 +50,7 @@ namespace HedgeHog.Alice {
     StdOverPrice,
     StdRatioLime,
     Slope
-    
+
   }
 }
 namespace HedgeHog.Alice.Store {
@@ -61,6 +61,8 @@ namespace HedgeHog.Alice.Store {
     public static bool IsDirect(this TradingMacroTakeProfitFunction e) {
       return e == TradingMacroTakeProfitFunction.TradeHeight || e == TradingMacroTakeProfitFunction.Pips;
     }
+    public static bool IsHedge(this Strategies strategy) => strategy.HasFlag(Strategies.Hedge);
+    public static bool IsAuto(this Strategies strategy) => strategy.HasFlag(Strategies.Auto);
   }
   public enum RatesLengthFunction {
     None = 0,
@@ -229,6 +231,7 @@ namespace HedgeHog.Alice.Store {
     ShortStraddle = ShortPut * 2,
     Long = ShortStraddle * 2,
     Hedge = Long * 2,
+    HedgeA = Hedge + Auto,
   }
   public enum MovingAverageValues {
     PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3

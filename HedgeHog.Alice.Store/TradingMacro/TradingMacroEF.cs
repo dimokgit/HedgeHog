@@ -249,7 +249,7 @@ namespace HedgeHog.Alice.Store {
         return _CurrentLoss;
       }
       set {
-        if(IsHedgedTrading || IsHedgeChild) return;
+        if(Strategy.IsHedge() || IsHedgeChild) return;
         OnCurrentLossChanging(value);
         ReportPropertyChanging("CurrentLoss");
         _CurrentLoss = StructuralObject.SetValidValue(value, "CurrentLoss");

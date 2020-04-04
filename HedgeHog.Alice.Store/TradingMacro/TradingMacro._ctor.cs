@@ -138,7 +138,7 @@ namespace HedgeHog.Alice.Store {
           TradingMacrosByPair(tm => tm.GetShowVoltageFunction()());
         if(hedgeVoltFuns.Contains(VoltageFunction2))
           TradingMacrosByPair(tm => tm.GetShowVoltageFunction(VoltageFunction2, 1)());
-        if(IsHedgedTrading)
+        if(Strategy.IsHedge())
           OnSetExitGrossByHedgeGrossess(true);
       });
       MessageBus.Current.Listen<ConnectionRestoredMessage>().Subscribe(_ => ClearInternalRates());
