@@ -254,6 +254,7 @@
     <Compile Include="types\IBTypes.cs" />
     <Compile Include="util\Utils.cs" />
     <Compile Include="util\XmlHelper.cs" />
+    <Compile Include="HistoryLoader_Slow.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\HedgeHog.Core.Reactive\HedgeHog.Core.Reactive.csproj">

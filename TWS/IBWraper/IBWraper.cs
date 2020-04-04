@@ -155,7 +155,7 @@ namespace IBApp {
       var barSize = period == 0 ? BarSize._1_secs : period == 1 ? BarSize._1_min : BarSize._3_mins;
       var duration = (endDate - startDate).Duration();
       var lastTime = DateTime.Now;
-      new HistoryLoader<TBar>(
+      new HistoryLoader_Slow<TBar>(
         _ibClient,
         contract,
         periodsBack,

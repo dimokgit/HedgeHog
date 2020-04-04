@@ -77,7 +77,7 @@ namespace ConsoleApp {
         var am = fw.AccountManager;
         var ess = new[] { "VXM0", "NQZ9", "ESM0", "RTYZ9", "IWM", "SPY", "QQQ" };
         //LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
-        LoadMultiple(DateTime.Now.AddMonths(-1), ess[2]);
+        LoadMultiple(DateTime.Now.AddMonths(-6), ess[0], ess[2]);
         return;
         am.PositionsObservable.Do(positions => {
           Program.HandleMessage(am.Positions.ToTextOrTable("All Positions:"));
