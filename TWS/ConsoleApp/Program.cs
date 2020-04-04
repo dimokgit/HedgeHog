@@ -75,6 +75,10 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        var ess = new[] { "VXM0", "NQZ9", "ESM0", "RTYZ9", "IWM", "SPY", "QQQ" };
+        //LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
+        LoadMultiple(DateTime.Now.AddMonths(-1), ess[2]);
+        return;
         am.PositionsObservable.Do(positions => {
           Program.HandleMessage(am.Positions.ToTextOrTable("All Positions:"));
         }).Skip(1)
@@ -93,9 +97,8 @@ namespace ConsoleApp {
         Tests.HedgeCombo(am); return;
         am.PositionsObservable.Subscribe(_ => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
         return;
-        var ess = new[] { "VX04F0", "NQZ9", "ESZ9", "RTYZ9", "IWM", "SPY", "QQQ" }[3];
-        //LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
-        LoadMultiple(DateTime.Now.AddMonths(-1), "SPY");
+        new Contract { Symbol = "VIX", SecType = "FUT+CONTFUT", Exchange = "CFE" }.ReqContractDetailsCached()
+        .Subscribe(cd => HandleMessage(cd.ToJson(true)));
         return;
         void LoadMultiple(DateTime dateStart, params string[] secs) {// Load bars
           /** Load History
@@ -106,8 +109,8 @@ namespace ConsoleApp {
           };
           LoadHistory(ibClient, new[] { c });
           */
-          var period = 0;
-          bool repare = true;
+          var period = 3;
+          bool repare = false;
           Action<object> callback = o => HandleMessage(o + "");
           secs.ToObservable()
           .Do(sec =>

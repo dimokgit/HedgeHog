@@ -15,7 +15,7 @@ namespace IBApp {
     public IObservable<ComboTrade> MakeComboHedgeFromPositions(IEnumerable<Position> positions) {
       var a = (from g in HedgedPositions(positions)//.OrderBy(p => p.position.contract.Instrument)
                where g.Length == 2
-               from hc in g.Pairwise((o, t) => MakeHedgeCombo(1, o.position.contract, t.position.contract, o.position.position.Abs(), -o.position.position.Sign() * t.position.position.Sign()))
+               from hc in g.Pairwise((o, t) => MakeHedgeCombo(1, o.position.contract, t.position.contract, o.position.position.Abs(), -o.position.position.Sign() * t.position.position))
                let quantity = hc.quantity * g.First().position.position.Sign()
                let isBuy = quantity > 0
                let pl = g.Sum(p => p.pl)

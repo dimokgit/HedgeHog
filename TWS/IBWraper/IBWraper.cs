@@ -138,13 +138,14 @@ namespace IBApp {
 
       Thread.CurrentThread.Name.ThrowIf(threadName => threadName == "MsgProc");
       var contract = Contract.FromCache(pair).Count(1, $"{nameof(GetBarsBase)}: {new { pair }}").Single();
+      var cd = contract.FromDetailsCache().Single();
       if(contract.IsFuture)
         contract = new Contract {
           SecType = "CONTFUT"
           ,
-          Exchange = "GLOBEX"/*contract.Exchange*//*, TradingClass = contract.TradingClass*/
+          Exchange = cd.ValidExchanges.Split(new[] { ';',',' })[0]// "GLOBEX"/*contract.Exchange*//*, TradingClass = contract.TradingClass*/
           ,
-          Symbol = contract.FromDetailsCache().Single().MarketName
+          Symbol = cd.UnderSymbol
         };
       var isDone = false;
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
