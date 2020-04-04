@@ -75,8 +75,25 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        //Tests.HedgeCombo(am);         return;
-        var ess = new[] {"VX04F0", "NQZ9", "ESZ9", "RTYZ9", "IWM", "SPY", "QQQ" }[3];
+        am.PositionsObservable.Do(positions => {
+          Program.HandleMessage(am.Positions.ToTextOrTable("All Positions:"));
+        }).Skip(1)
+        .Where(_ => am.Positions.Count > 1)
+        .SelectMany(_ =>
+          am.ComboTrades(1)
+          .ToArray()
+          )
+        .Subscribe(comboPrices => {
+          var swCombo = Stopwatch.StartNew();
+          HandleMessage2("Matches: Start");
+          comboPrices.ForEach(comboPrice => HandleMessage2(new { comboPrice }));
+          HandleMessage2($"Matches: Done in {swCombo.ElapsedMilliseconds} ms =========================================");
+        });
+        return;
+        Tests.HedgeCombo(am); return;
+        am.PositionsObservable.Subscribe(_ => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
+        return;
+        var ess = new[] { "VX04F0", "NQZ9", "ESZ9", "RTYZ9", "IWM", "SPY", "QQQ" }[3];
         //LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
         LoadMultiple(DateTime.Now.AddMonths(-1), "SPY");
         return;
@@ -123,7 +140,6 @@ namespace ConsoleApp {
           .Subscribe(cd => LoadHistory(ibClient, new[] { cd.Contract }));
           return;
         }
-        am.PositionsEndObservable.Subscribe(positions => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
         //Tests.HedgeCombo(am);
         //return;
         {// double same order
@@ -439,7 +455,6 @@ namespace ConsoleApp {
           });
           //TestMakeBullPut("ESM8", false);
         }); return;
-        TestParsedCombos();
         TestCurrentStraddles(1, 1);
         TestCurrentStraddles(1, 1); return;
         TestCombosTrades(10).Subscribe(); return;

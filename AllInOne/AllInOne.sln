@@ -18,21 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Forex-Azure.scmp = Forex-Azure.scmp
 		HedgeHog.ico = HedgeHog.ico
 		Local.testsettings = Local.testsettings
-		Performance1.psess = Performance1.psess
-		Performance10.psess = Performance10.psess
-		Performance11.psess = Performance11.psess
-		Performance12.psess = Performance12.psess
-		Performance13.psess = Performance13.psess
-		Performance14.psess = Performance14.psess
-		Performance15.psess = Performance15.psess
-		Performance2.psess = Performance2.psess
-		Performance3.psess = Performance3.psess
-		Performance4.psess = Performance4.psess
-		Performance5.psess = Performance5.psess
-		Performance6.psess = Performance6.psess
-		Performance7.psess = Performance7.psess
-		Performance8.psess = Performance8.psess
-		Performance9.psess = Performance9.psess
+		RenewSslCert.cmd = RenewSslCert.cmd
 		..\ta-lib-0.4.0-msvc\TA-Lib-Core.dll = ..\ta-lib-0.4.0-msvc\TA-Lib-Core.dll
 		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
 	EndProjectSection
@@ -130,6 +116,26 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Manheim.Web", "..\Manheim.Web\Manheim.Web.csproj", "{5F4F24D9-AFF7-43CB-982F-3543A2A52CD9}"
 EndProject
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Mamheim.WebSite", "http://localhost:57982", "{F3F6E2FB-B6BB-44DF-AD35-38F2014E235A}"
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/Mamheim.WebSite"
+		Debug.AspNetCompiler.PhysicalPath = "..\Mamheim.WebSite\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\Mamheim.WebSite\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/Mamheim.WebSite"
+		Release.AspNetCompiler.PhysicalPath = "..\Mamheim.WebSite\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\Mamheim.WebSite\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "..\Mamheim.WebSite\"
+		DefaultWebSiteLanguage = "Visual C#"
+	EndProjectSection
 	ProjectSection(WebsiteProperties) = preProject
 		UseIISExpress = "true"
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
@@ -958,6 +964,25 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "WWW", "http://localhost:360
 		Release.AspNetCompiler.Debug = "False"
 		SlnRelativePath = "..\HedgeHog.Alice.Client\WWW\"
 	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "true"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/localhost_36054"
+		Debug.AspNetCompiler.PhysicalPath = "..\HedgeHog.Alice.Client\WWW\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_36054\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/localhost_36054"
+		Release.AspNetCompiler.PhysicalPath = "..\HedgeHog.Alice.Client\WWW\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_36054\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "..\HedgeHog.Alice.Client\WWW\"
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.CoreTests", "..\HedgeHog.CoreTests\HedgeHog.CoreTests.csproj", "{BCA76A7A-18D9-4776-BC77-C2015807F3A0}"
 EndProject
@@ -996,7 +1021,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlackScholes", "BlackSchole
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HedgeHog.NetCore.Core", "..\HedgeHog.NetCore.Core\HedgeHog.NetCore.Core.csproj", "{4BC8F1A8-BC64-4B15-B98F-DCC8363693A5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Config", "..\HedgeHog.Config\HedgeHog.Config.csproj", "{853F7F01-E48B-46B9-B053-D71138A9887C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HedgeHog.Config", "..\HedgeHog.Config\HedgeHog.Config.csproj", "{853F7F01-E48B-46B9-B053-D71138A9887C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
