@@ -1,6 +1,7 @@
 ﻿using HedgeHog;
 using HedgeHog.Core;
 using HedgeHog.DateTimeZone;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -69,11 +70,11 @@ namespace IBApi {
                                                        where !cd.UnderSymbol.IsNullOrWhiteSpace()
                                                        from cdu in ContractDetails.FromCache(cd.UnderSymbol)
                                                        select cdu.Contract);
-    public IEnumerable<ContractDetails> FromDetailsCache() => ContractDetails.FromCache(this);
+    public IEnumerable<ContractDetails> FromDetailsCache() => FromCache().SelectMany(c => ContractDetails.FromCache(c));
     static object _gate = new object();
     public IEnumerable<Contract> FromCache() {
       lock(_gate)
-        return FromCache(Key).IfEmpty(()
+        return FromCache(Key).Concat(FromCache(ConId)).Take(1).IfEmpty(()
           => IsBag
           ? new[] { new ContractDetails() { Contract = this }.AddToCache().Contract }
           : new Contract[0]
@@ -84,6 +85,8 @@ namespace IBApi {
     public IEnumerable<T> FromCache<T>(Func<Contract, T> map) => FromCache(Key, map);
     public static IEnumerable<Contract> Cache() => Contracts.Values;
     public static IEnumerable<Contract> FromCache(string instrument) => Contracts.TryGetValue(instrument);
+    public static IEnumerable<Contract> FromCache(int conId) => 
+      Contracts.Where(c => conId !=0 && c.Value.ConId == conId).Take(1).Select(kv => kv.Value);
     public static IEnumerable<T> FromCache<T>(string instrument, Func<Contract, T> map) => Contracts.TryGetValue(instrument).Select(map);
     public static IEnumerable<Contract> FromCache(Func<Contract, bool> filter) => Contracts.Where(kv => filter(kv.Value)).Select(kv => kv.Value);
 
@@ -120,6 +123,7 @@ namespace IBApi {
 
     };
     public IList<DateTimeOffset> _LiquidHours = null;
+    [JsonIgnore]
     public IList<DateTimeOffset> LiquidHours => _LiquidHours ?? (_LiquidHours
       = FromDetailsCache().Select(LiquidHoursImpl).SingleOrDefault(lh => lh.Any()) ?? GetTodayLiquidRange());
     static IList<DateTimeOffset> LiquidHoursImpl(ContractDetails cd) =>
