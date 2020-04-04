@@ -70,7 +70,7 @@ namespace IBApp {
     #endregion
 
     public Trade CreateTrade(string symbol)
-      => Trade.Create(this, symbol, GetPointSize(symbol), GetBaseUnitSize(symbol), null);
+      => Trade.Create(this, symbol, GetPipSize(symbol), GetBaseUnitSize(symbol), null);
 
     object _accountManagerLocket = new object();
     private void OnManagedAccounts(ManagedAccountsMessage m) {
@@ -232,7 +232,6 @@ namespace IBApp {
       if(!trades.Any())
         return int.MaxValue;
       var pair = trades[0].Pair;
-      var offer = GetOffer(pair);
       return TryGetPrice(pair, out var price)
         ? trades.Sum(trade =>
            MoneyAndLotToPips(pair, account.ExcessLiquidity, trade.Lots, price.Average, GetPipSize(pair)) * trade.Lots) / trades.Lots()
@@ -609,7 +608,7 @@ namespace IBApp {
     //  throw new NotImplementedException();
     //}
 
-    public double GetPipSize(string pair) => 1.0;// ContractDetails.FromCache(pair, cd => cd.MinTick < 1 ? 0.01 : cd.MinTick).DefaultIfEmpty(double.NaN).Single();
+    public double GetPipSize(string pair) => ContractDetails.FromCache(pair, cd => cd.PriceMagnifier).Count(1,_=>new Exception($"new{pair} not found in cache."),null).Single();
     //cd => Math.Pow(10, Math.Log10(cd.MinTick.Floor()))).DefaultIfEmpty().Single();
 
     public IEnumerable<Price> TryGetPrice(string pair) {

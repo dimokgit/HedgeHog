@@ -282,8 +282,13 @@ namespace IBApp {
         TraceDebug0("");
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
         Debugger.Break();
-      var c = contract.FromDetailsCache().ToArray();
-      if(c.Any()) return c.ToObservable();
+      var cd = contract.FromDetailsCache().ToArray();
+      if(cd.Any()) {
+        var cd2 = cd.ToObservable();
+        return !contract.IsBag ? cd2
+          : cd2.SelectMany(_ => _.Contract.ComboLegs.Select(l => ReqContractDetailsCached(l.ConId)))
+          .SelectMany(_ => _).ToArray().SelectMany(_ => cd).FirstAsync();
+      }
       return ReqContractDetailsAsync(contract);
     }
 
@@ -293,10 +298,16 @@ namespace IBApp {
       //  throw new Exception("Contract's Symbol property is empty");
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
         Debugger.Break();
-      if(contract.IsBag)
-        Debugger.Break();
-      //var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol, contract.ConId + "")}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
       var key = $"{contract.Key}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
+      if(contract.IsBag) {
+        TraceError(new { contract.IsBag, key });
+        if(Debugger.IsAttached)
+          Debugger.Break();
+        else
+          throw new Exception(new { contract.IsBag, key } + "");
+
+      }
+      //var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol, contract.ConId + "")}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
       lock(ReqContractDetails) {
         if(ReqContractDetails.TryGetValue(key, out var o)) return o.SelectMany(cd0 => cd0.FromCache());
 

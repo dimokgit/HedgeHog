@@ -106,24 +106,7 @@ namespace IBApp {
           if(x.Contract.LocalSymbol == "QQQ" && x.Contract.Exchange == "NASDAQ")
             x.Contract.Exchange = "SMART";
         })
-        .SelectMany(p =>
-          from cds in IbClient.ReqContractDetailsCached(p.Contract).ToArray()
-          from cd in cds.Count(1, i => {
-            var m = $"Position contract {p.Contract.FullString} has no details";
-            TraceError(m);
-            throw new Exception(m);
-            //RequestPositions();
-          }, i => TraceError($"Position contract {p.Contract} has more then 1 [{i}] details"))
-          select p.SideEffect(_ => {
-            p.Contract.Exchange = cd.Contract.Exchange;
-            TracePosition($"PositionContract: {new { cd.Contract, cd.Contract.Exchange }}");
-            if(p.Position == 0) _positions.TryRemove(p.Contract.Key, out var r);
-            else {
-              var cp = ContractPosition(p);
-              _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
-            }
-          })
-        )
+        .SelectMany(p => ReqPositionContractDetailsAsync(p).Select(_ => p))
         //.Spy("**** AccountManager.PositionsObservable ****")
         ;
       PositionsEndObservable = Observable.FromEvent(
@@ -190,6 +173,7 @@ namespace IBApp {
         .Where(x => x.Order.Account == _accountId && !x.OrderState.IsInactive)
         .Do(x => TraceDebug($"OnOpenOrder: {x.Order}: {x.Contract}: {x.OrderState}"))
         .Distinct(x => x.Order.PermId)
+        .SelectMany(x => ReqContextContractDetailsAsync(x.Contract).Select(_ => x))
         .Do(AddOrderContractHolder)
         .InjectIf(m => m.Contract.IsHedgeCombo, m => FixOpenOrderMessage(m).ObserveOn(TaskPoolScheduler.Default))
         //.Where(t => !t.OrderState.IsCancelled)
@@ -317,6 +301,26 @@ namespace IBApp {
       #endregion
 
     }
+
+    private IObservable<PositionMessage> ReqPositionContractDetailsAsync(PositionMessage p) =>
+      from cd in ReqContextContractDetailsAsync(p.Contract)
+      select p.SideEffect(_ => {
+        p.Contract.Exchange = cd.Contract.Exchange;
+        TracePosition($"PositionContract: {new { cd.Contract, cd.Contract.Exchange }}");
+        if(p.Position == 0) _positions.TryRemove(p.Contract.Key, out var r);
+        else {
+          var cp = ContractPosition(p);
+          _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
+        }
+      });
+    private IObservable<ContractDetails> ReqContextContractDetailsAsync(Contract Contract) =>
+      from cds in IbClient.ReqContractDetailsCached(Contract).ToArray()
+      from cd in cds.Count(1, i => {
+        var m = $"Contract {Contract.FullString} has no details";
+        TraceError(m);
+        //throw new Exception(m);
+      }, i => TraceError($"Contract {Contract} has more then 1 [{i}] details"))
+      select cd;
 
     private HedgeHog.Shared.Order OrderFromHolder(OrderContractHolder m) => new HedgeHog.Shared.Order {
       IsBuy = m.order.Action == "BUY",
