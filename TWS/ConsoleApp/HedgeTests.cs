@@ -18,13 +18,13 @@ namespace ConsoleApp {
 
       {
         var parentContract = "ESM0".ContractFactory();
-        var hedgeContract = "NQM0".ContractFactory();
-        var quantityParent = 6;
-        var r = 0.8;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
+        var hedgeContract = "VXM0".ContractFactory();
+        var quantityParent = 100;
+        var r = 1.0;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
         //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
-        var isTest = false;
-        (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, hp().p2, false)
+        var isTest = true;
+        (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, -hp().p2, false)
          from cd in hc.contract.ReqContractDetailsCached()
          from p in cd.Contract.ReqPriceSafe().Select(ab => quantityParent > 0 ? ab.ask : ab.bid)
          from ot in am.OpenTrade(o => o.Transmit = !isTest, cd.Contract, hc.quantity, p)

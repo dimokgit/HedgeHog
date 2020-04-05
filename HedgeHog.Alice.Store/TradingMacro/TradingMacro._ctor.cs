@@ -40,7 +40,7 @@ namespace HedgeHog.Alice.Store {
         .Subscribe(tl => new Exception(new { TradeLevelCrossed = new { tl.level.IsBuy, tl.crossed.Direction } } + ""), () => { });
 
       this.ObservableForProperty(tm => tm.Pair, false, false)
-        .Where(_ => !IsInVirtualTrading)
+        .Where(_ => TradesManager != null && !IsInVirtualTrading)
         .Select(oc => oc.GetValue())
         .Scan((prev: "", curr: ""), (prev, curr) => (prev.curr, curr))
         .Where(pair => !pair.curr.IsNullOrWhiteSpace())

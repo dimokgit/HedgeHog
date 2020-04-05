@@ -75,9 +75,10 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        Tests.HedgeCombo(am); return;
         var ess = new[] { "VXM0", "NQZ9", "ESM0", "RTYZ9", "IWM", "SPY", "QQQ" };
         //LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
-        LoadMultiple(DateTime.Now.AddMonths(-6), ess[0], ess[2]);
+        LoadMultiple(DateTime.Now.AddMonths(-6), ess[2]);
         return;
         am.PositionsObservable.Do(positions => {
           Program.HandleMessage(am.Positions.ToTextOrTable("All Positions:"));
@@ -94,7 +95,6 @@ namespace ConsoleApp {
           HandleMessage2($"Matches: Done in {swCombo.ElapsedMilliseconds} ms =========================================");
         });
         return;
-        Tests.HedgeCombo(am); return;
         am.PositionsObservable.Subscribe(_ => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
         return;
         new Contract { Symbol = "VIX", SecType = "FUT+CONTFUT", Exchange = "CFE" }.ReqContractDetailsCached()
@@ -718,7 +718,7 @@ namespace ConsoleApp {
 
     private static void LoadHistory(IBClientCore ibClient, IList<Contract> options) {
       var dateEnd = DateTime.Now;// new DateTime(DateTime.Parse("2017-06-21 12:00").Ticks, DateTimeKind.Local);
-      HistoryLoader<Rate>.DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, long volume, int count) => new Rate(date, high, low, true);
+      DataMapDelegate<Rate> map = (DateTime date, double open, double high, double low, double close, long volume, int count) => new Rate(date, high, low, true);
       var counter = 0;
       if(options.Any()) {
         var c = options[0].ContractFactory();

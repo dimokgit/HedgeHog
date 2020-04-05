@@ -59,6 +59,7 @@ namespace HedgeHog.Alice.Store {
           case Strategies.Hot:
             return StrategyEnterUniversal;
           case Strategies.Universal:
+          case Strategies.UniversalA:
             return StrategyEnterUniversal;
           case Strategies.ShortPut:
             return StrategyShortPut;

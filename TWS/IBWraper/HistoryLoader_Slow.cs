@@ -17,7 +17,7 @@ using System.Diagnostics;
 
 namespace IBApp {
   #region HistoryLoader_Slow
-  public class HistoryLoader_Slow<T> where T : HedgeHog.Bars.BarBaseDate {
+  public class HistoryLoader_Slow<T> :IHistoryLoader where T : HedgeHog.Bars.BarBaseDate {
     private static EventLoopScheduler HistoryLoader_SlowScheduler = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "HistoryLoader_Slow", Priority = ThreadPriority.Normal });
     #region Fields
     private const int IBERROR_NOT_CONNECTED = 504;
@@ -44,13 +44,11 @@ namespace IBApp {
     private readonly Action<ICollection<T>> _dataEnd;
     private TimeSpan _delay;
     private readonly DataMapDelegate<T> _map;
-    public bool Done { get; private set; }
     bool useRTH;
     List<IDisposable> _disposables = new List<IDisposable>();
     #endregion
 
     #region ctor
-    public delegate TDM DataMapDelegate<TDM>(DateTime date, double open, double high, double low, double close, long volume, int count);
     public HistoryLoader_Slow(IBClientCore ibClient
       , Contract contract
       , int periodsBack
@@ -83,7 +81,6 @@ namespace IBApp {
       _error = error;
       _delay = TimeSpan.Zero;
       _map = map;
-      Done = false;
       Init();
       var me = this;
       _contract = contract;
@@ -125,7 +122,6 @@ namespace IBApp {
         _disposables[0].Dispose();
         _disposables.RemoveAt(0);
       }
-      Done = true;
     }
     #endregion
 

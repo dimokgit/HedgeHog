@@ -177,6 +177,7 @@
     <Compile Include="ErrorMessage.cs" />
     <Compile Include="IBClientCore.Mixins.cs" />
     <Compile Include="IBClient_p.cs" />
+    <Compile Include="IHistoryLoader.cs" />
     <Compile Include="MessageQueueSynchronizationContext.cs" />
     <Compile Include="Messages\AccountDownloadEndMessage.cs" />
     <Compile Include="Messages\AccountSummaryEndMessage.cs" />

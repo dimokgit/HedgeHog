@@ -136,8 +136,8 @@ namespace HedgeHog.Shared {
     }
 
     public static (double p1, double p2) PositionsFromRatio(this double r) {
-      var r0 = r > 1 ? 1 / r : 1;
-      var r1 = r < 1 ? r : 1;
+      var r0 = r.Abs() > 1 ? 1 / r : 1;
+      var r1 = r.Abs() < 1 ? r : 1;
       return (r0, r1);
     }
 

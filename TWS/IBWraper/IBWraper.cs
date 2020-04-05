@@ -143,7 +143,7 @@ namespace IBApp {
         contract = new Contract {
           SecType = "CONTFUT"
           ,
-          Exchange = cd.ValidExchanges.Split(new[] { ';',',' })[0]// "GLOBEX"/*contract.Exchange*//*, TradingClass = contract.TradingClass*/
+          Exchange = cd.ValidExchanges.Split(new[] { ';', ',' })[0]// "GLOBEX"/*contract.Exchange*//*, TradingClass = contract.TradingClass*/
           ,
           Symbol = cd.UnderSymbol
         };
@@ -155,7 +155,10 @@ namespace IBApp {
       var barSize = period == 0 ? BarSize._1_secs : period == 1 ? BarSize._1_min : BarSize._3_mins;
       var duration = (endDate - startDate).Duration();
       var lastTime = DateTime.Now;
-      new HistoryLoader_Slow<TBar>(
+      var runFast = periodsBack > 0 || duration.TotalDays < 2;
+      var fac = new HistoryLoaderDelegate<TBar>(runFast ? IHistoryLoader.Factory : (HistoryLoaderDelegate<TBar>)IHistoryLoader.Factory_Slow);
+      Trace(new { fac, runFast, pair, period, startDate, endDate });
+      fac(
         _ibClient,
         contract,
         periodsBack,
@@ -609,7 +612,7 @@ namespace IBApp {
     //  throw new NotImplementedException();
     //}
 
-    public double GetPipSize(string pair) => ContractDetails.FromCache(pair, cd => cd.PriceMagnifier).Count(1,_=>new Exception($"new{pair} not found in cache."),null).Single();
+    public double GetPipSize(string pair) => ContractDetails.FromCache(pair, cd => cd.PriceMagnifier).Count(1, _ => new Exception($"new{pair} not found in cache."), null).Single();
     //cd => Math.Pow(10, Math.Log10(cd.MinTick.Floor()))).DefaultIfEmpty().Single();
 
     public IEnumerable<Price> TryGetPrice(string pair) {

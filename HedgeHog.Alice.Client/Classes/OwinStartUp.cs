@@ -873,7 +873,7 @@ namespace HedgeHog.Alice.Client {
              where q != 0
              from c in MakeHedgeComboSafe()
              from p in IsInVirtual() ? CalcComboPrice() : c.contract.ReqPriceSafe().DefaultIfEmpty()
-             let rc = new { ratio = (hh[0].ratio < 1 ? 1 / hh[0].ratio : hh[1].ratio).AutoRound2(3), context = id/* hh.ToArray(t => t.context).MashDiffs()*/ }
+             let rc = new { ratio = (hh[0].ratio.Abs() < 1 ? 1 / hh[0].ratio : hh[1].ratio).AutoRound2(3), context = id/* hh.ToArray(t => t.context).MashDiffs()*/ }
              let contract = c.contract.ShortString
              select new CurrentHedge(id, contract, c.quantity, rc.ratio, rc.context, p.bid.Avg(p.ask).ToInt(), c.contract.Key)
              ).Catch((Exception exc) => {
