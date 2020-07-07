@@ -47,8 +47,8 @@ namespace IBApi {
           : 0;
 
     private const string BAG = "BAG";
-    DateTime? _lastTradeDateOrContractMonth;
     public DateTime Expiration => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max().FromTWSDateString(DateTime.Now.Date);
+    public bool IsExpired => Expiration < DateTime.Now.Date;
     public string LastTradeDateOrContractMonth2 => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max();
 
     public string Key => Instrument;
@@ -98,7 +98,7 @@ namespace IBApi {
       return x.Concat(y).Select(cd => cd.MinTick);
     }
     public double MinTick() => LegsOrMe(MinTickImpl).Concat().Max();
-    public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).Min();
+    public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).Last();
     public bool IsCombo => IsBag;
     public bool IsFuturesCombo => LegsEx(l => l.c.IsFuture).Count() > 1;
     public bool IsStocksCombo => LegsEx(l => l.c.IsStock).Count() > 1;
@@ -117,6 +117,7 @@ namespace IBApi {
     public double ComboStrike() => Strike > 0 ? Strike : LegsEx().With(cls => cls.Sum(c => c.contract.strike * c.leg.Ratio) / cls.Sum(c => c.leg.Ratio));
     public bool HasOptions => LegsOrMe(l => l.IsOption).Max();
     public int ReqMktDataId { get; set; }
+    public int DeltaSign => IsPut ? -1 : 1;
     public IEnumerable<double> BreakEven(double openPrice) => Legs().Select(l => l.c.Strike + (l.c.IsCall ? 1 : -1) * openPrice);
 
     public static IList<DateTimeOffset> _LiquidHoursDefault = new List<DateTimeOffset> {

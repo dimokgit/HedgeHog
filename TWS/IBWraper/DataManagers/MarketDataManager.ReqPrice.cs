@@ -101,18 +101,20 @@ namespace IBApp {
     }
     public IObservable<(double bid, double ask, DateTime time, double delta)> ReqPriceBag(Contract combo, double timeoutInSeconds, [CallerMemberName] string Caller = "") {
       string title() => $"{nameof(ReqPriceBag)}: {new { combo, key = combo._key() }}";
-      var x0 = (from l in combo.LegsEx().ToObservable()
+      var legs = combo.LegsEx().ToList();
+      if(legs.Count < 2) Trace($"{title()} is no a combo");
+      var x0 = (from l in legs.ToObservable()
                 from p in l.contract.ReqPriceSafe(timeoutInSeconds).DefaultIfEmpty()
                   //               from ab in new[] { (price.bid, multiplier: l.c.ComboMultiplier, positions: l.r), (price.ask, multiplier: l.c.ComboMultiplier, positions: l.r) }
                 select new { c = l.contract, p, r = (double)l.leg.Ratio * (l.leg.IsBuy ? 1 : -1), l.leg.IsBuy }
                )
-               .ToArray()
+               .ToList()
                .Do(a => {
-                 if(a.Length != 2) {
-                   TraceError($"{title()} - yelded no leg prices");
+                 if(a.Count < legs.Count) {
+                   TraceError($"{title()} - yelded prices for only {a.Count} legs");
                  }
                })
-               .Where(a => a.Length == 2)
+               //.Where(a => a.Length == 2)
                .Select(a => {
                  var bid = a.Select(x => (price: x.IsBuy ? x.p.bid : x.p.ask, multiplier: x.c.ComboMultiplier, positions: x.r)).ToArray().CalcHedgePrice();
                  var ask = a.Select(x => (price: x.IsBuy ? x.p.ask : x.p.bid, multiplier: x.c.ComboMultiplier, positions: x.r)).ToArray().CalcHedgePrice();

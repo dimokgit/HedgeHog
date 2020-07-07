@@ -146,7 +146,8 @@ namespace IBApp {
         RequestNextDataChunk();
       } else if(code == SERVER_ERROR && error.Contains("pacing violation")) {
         _delay = TimeSpan.FromSeconds(_delay.TotalSeconds + 1).Min(10.FromSeconds());
-        _error(new DelayException($"HistoryLoader:{_contract.Instrument}:{_barSize}:{_reqId}", _delay));
+        if(_delay >= 5.FromSeconds())
+          _error(new DelayException($"HistoryLoader:{_contract.Instrument}:{_barSize}:{_reqId}", _delay));
         RequestNextDataChunk();
       } else if(code == SERVER_ERROR && error.Contains(NO_DATA)) {
         CleanUp();

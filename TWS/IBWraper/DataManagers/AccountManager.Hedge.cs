@@ -19,7 +19,7 @@ namespace IBApp {
                let quantity = hc.quantity * g.First().position.position.Sign()
                let isBuy = quantity > 0
                let pl = g.Sum(p => p.pl)
-               let mul = g.Min(p => p.position.contract.ComboMultiplier) * quantity
+               let mul = g.LastOrDefault().position.contract.ComboMultiplier * quantity
                let openPrice = g.Sum(p => p.position.open) / mul
                let closePrice = g.Sum(p => p.close) / mul
                let order = OrderContractsInternal.Items.OpenByContract(hc.contract).Where(oc => oc.order.IsBuy != isBuy).Take(1).ToList()
@@ -45,6 +45,7 @@ namespace IBApp {
               let t = (p, close, close - p.open, closePrice)
               group t by t.p.contract.SecType into g
               from a in g/*.OrderBy(p => p.p.contract.Instrument)*/.ToArray()
+              where a.Distinct(t=>t.p.contract.Symbol).Count() == 2
               select a
       );
     }
@@ -78,21 +79,22 @@ namespace IBApp {
       contract.Currency = "USD";
       if(c1.PrimaryExch == c1.PrimaryExch)
         contract.PrimaryExch = c1.PrimaryExch;
-      contract.Exchange = "SMART";
+      const string EXCHAGE = "SMART";
+      contract.Exchange = EXCHAGE;
       contract.TradingClass = "COMB";
 
       ComboLeg leg1 = new ComboLeg();
       leg1.ConId = c1.ConId;
       leg1.Ratio = r1 / gcd;
       leg1.Action = "BUY";
-      leg1.Exchange = c1.PrimaryExch.IfEmpty(c1.Exchange);
+      leg1.Exchange = c1.IsFuture ? c1.PrimaryExch.IfEmpty(c1.Exchange) : EXCHAGE;
 
       ComboLeg leg2 = new ComboLeg();
       leg2.ConId = c2.ConId;
       leg2.Ratio = r2 / gcd;
       string action = ratio2 < 0 ? "BUY" : c1.IsCall == c2.IsCall ? "SELL" : "BUY";
       leg2.Action = action;
-      leg2.Exchange = c2.PrimaryExch.IfEmpty(c2.Exchange);
+      leg2.Exchange = c2.IsFuture ? c2.PrimaryExch.IfEmpty(c2.Exchange) : EXCHAGE;
 
       contract.ComboLegs = new List<ComboLeg>();
       contract.ComboLegs.Add(leg1);

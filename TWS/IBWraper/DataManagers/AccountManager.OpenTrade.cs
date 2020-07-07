@@ -150,7 +150,7 @@ namespace IBApp {
         , e => {
           if(e.errorCode == ORDER_TOCANCEL_NOTFOUND)
             OrderContractsInternal.RemoveByOrderId(orderId);
-          return true.SE(_ => Trace($"CancelOrder Error: {e}"));
+          return true.SideEffect(_ => Trace($"CancelOrder Error: {e}"));
         });
         IbClient.OnReqMktData(() => IbClient.ClientSocket.cancelOrder(orderId));
         return wte.FirstAsync();
@@ -320,7 +320,7 @@ namespace IBApp {
     }
 
     private static IBApi.Order CheckNonGiuaranteed(IBApi.Order order, Contract contract) {
-      if(contract.IsBag || order.NeedTriggerPrice) {
+      if(contract.IsBag && !contract.HasFutureOption || order.NeedTriggerPrice) {
         order.SmartComboRoutingParams = new List<TagValue>();
         order.SmartComboRoutingParams.Add(new TagValue("NonGuaranteed", "1"));
         //order.Transmit = false;

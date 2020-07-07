@@ -851,18 +851,11 @@ namespace HedgeHog.Alice.Client {
           hh0.ForEach(h => h.contract.FromCache().RunIfEmpty(() => h.contract.ReqContractDetailsCached().Subscribe()));
           if(hh0.IsEmpty()) return Observable.Empty<CurrentHedge>();
           var combo = AccountManager.MakeHedgeComboSafe(quantity, hh0[0].contract, hh0[1].contract, hh0[0].ratio, hh0[1].ratio, IsInVirtual());
-          var x = (from l in combo.SelectMany(c => c.contract.LegsForHedge(pair))
-                   from hh in hh0
-                   where l.c.ConId == hh.contract.ConId
-                   select (hh.price, hh.contract.ComboMultiplier, (double)l.leg.Quantity)
-                   )
-                   .ToArray()
-                   .Select(xx => xx.CalcHedgePrice());
           IObservable<(double bid, double ask, DateTime time, double delta)> CalcComboPrice()
           => (from l in combo.SelectMany(c => c.contract.LegsForHedge(pair))
               from hh in hh0
               where l.c.ConId == hh.contract.ConId
-              select (hh.price, hh.contract.ComboMultiplier, (double)l.leg.Quantity)
+              select (hh.price, TradesManagerStatic.GetBaseUnitSize(hh.contract.LocalSymbol), (double)l.leg.Quantity)
               )
               .ToArray()
               .Select(xx => xx.CalcHedgePrice().With(p => (bid: p, ask: p, time: tml.ServerTime, delta: 1.0)));
@@ -873,7 +866,7 @@ namespace HedgeHog.Alice.Client {
              where q != 0
              from c in MakeHedgeComboSafe()
              from p in IsInVirtual() ? CalcComboPrice() : c.contract.ReqPriceSafe().DefaultIfEmpty()
-             let rc = new { ratio = (hh[0].ratio.Abs() < 1 ? 1 / hh[0].ratio : hh[1].ratio).AutoRound2(3), context = id/* hh.ToArray(t => t.context).MashDiffs()*/ }
+             let rc = new { ratio = (hh[0].ratio.Abs() < 1 ? 1 / hh[0].ratio : hh[1].ratio).Abs().AutoRound2(3), context = id/* hh.ToArray(t => t.context).MashDiffs()*/ }
              let contract = c.contract.ShortString
              select new CurrentHedge(id, contract, c.quantity, rc.ratio, rc.context, p.bid.Avg(p.ask).ToInt(), c.contract.Key)
              ).Catch((Exception exc) => {
@@ -1001,11 +994,11 @@ namespace HedgeHog.Alice.Client {
       if(profit == 0) throw new Exception("No trend line found for profit calculation");
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
-        return await OpenCondOrder(am, tm, contract, null, quantity, conditionPrice, profit);
+        return await OpenCondOrder(am, tm, contract, null, quantity, (conditionPrice.GetValueOrDefault(), pair), profit);
       else
         return new[] { new { instrument, not = "found" } + "" };
     }
-    static async Task<string[]> OpenCondOrder(AccountManager am, TradingMacro tm, Contract option, bool? isCall, int quantity, double? conditionPrice, double profit) {
+    static async Task<string[]> OpenCondOrder(AccountManager am, TradingMacro tm, Contract option, bool? isCall, int quantity, (double price, string instrument) condition, double profit) {
       if(option != null && isCall != null || option == null && isCall == null)
         throw new Exception(new { OpenCondOrder = new { option, isCall } } + "");
       var hasStrategy = tm.Strategy.HasFlag(Strategies.Universal);
@@ -1014,25 +1007,25 @@ namespace HedgeHog.Alice.Client {
         throw new Exception("Buy/Sell levels are not set by strategy");
       var isSell = quantity < 0;
       var isBuy = quantity > 0;
-      var hasCondition = conditionPrice.HasValue;
+      var hasCondition = condition.price > 0;
       var dateAfter = _isTest ? DateTime.Now.AddDays(1) : DateTime.MinValue;
-
+      int Delta(Contract c) => c.DeltaSign * quantity;
       var contracts = new[] { option }.ToObservable();
       var res = await (from contract in contracts
                        from price in contract.ReqPriceSafe()
-                       from under in contract.UnderContract
+                       from under in hasCondition ? Contract.FromCache(condition.instrument) : contract.UnderContract
                        from up in under.ReqPriceSafe().Select(p => p.ask.Avg(p.bid))
-                       let condPrice = conditionPrice.GetValueOrDefault(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
-                       let isMore = contract.IsCallPut ? condPrice > up : contract.IsCall && isBuy || contract.IsPut && isSell
-                       let upProfit = profit * (isMore ? 1 : -1)
-                       let condTakeProfit = option.IsCallPut ? null : under.PriceCondition((condPrice.IfNaNOrZero(up) + upProfit).Round(2), isMore, false)
-                       let t = new { price = condPrice == 0 ? isSell ? price.bid : price.ask : 0, under, condTakeProfit, condPrice, isMore, contract }
+                       let condPrice = condition.price.IfNaNOrZero(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
+                       let isMoreOrder = condPrice.IsNaNOrZero()? (bool?)null : condPrice > up
+                       let upProfit = profit * Delta(contract)
+                       let condTakeProfit = contract.IsCallPut ? null : under.PriceCondition((condPrice.IfNaNOrZero(up) + upProfit).Round(2), upProfit > 0, false)
+                       let t = new { price = condPrice == 0 ? isSell ? price.bid : price.ask : 0, under, condTakeProfit, condPrice, contract }
                        from ots in am.OpenTrade(t.contract, quantity, t.price, 0, false, DateTime.MaxValue, dateAfter
-                        , t.price != 0 ? null : OrderConditionParam.PriceCondition(t.under, t.condPrice.Round(2), !t.isMore, false)
+                        , t.price != 0  || !isMoreOrder.HasValue || contract.IsCallPut? null : OrderConditionParam.PriceCondition(t.under, t.condPrice.Round(2), isMoreOrder.Value, false)
                         , t.condTakeProfit)
                        from ot in ots
                        where ot.error.HasError
-                       select ot.error.exc.Message
+                       select ot.error.exc?.Message ?? $"{ot.error.errorCode}: {ot.error.errorMsg}"
         ).ToArray();
       return res;
     }

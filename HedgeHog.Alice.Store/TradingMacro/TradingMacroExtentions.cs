@@ -1138,7 +1138,7 @@ namespace HedgeHog.Alice.Store {
           .Sample(TimeSpan.FromSeconds(0.5))
           .Publish().RefCount();
 
-          if(false && !IsInVirtualTrading && IsTrader) {
+          if(!IsInVirtualTrading && IsTrader) {
             _currentOptionDisposable?.Dispose();
             _currentOptionDisposable = (
               from price in _priceChangeObservable
@@ -1176,7 +1176,7 @@ namespace HedgeHog.Alice.Store {
             string straddlePair = "VXX";
             var pairCode = Pair.FutureCode();
             //var straddleTime = DateTime.Now.AddSeconds(-BarsCountMax).SetKind();
-            if(false || VoltageFunction == VoltageFunction.Straddle || VoltageFunction2 == VoltageFunction.Straddle) {
+            if(true || VoltageFunction == VoltageFunction.Straddle || VoltageFunction2 == VoltageFunction.Straddle) {
               TradingMacroM1(tmM1 => {
                 tmM1.WhenAny(tm => tm.RatesDuration, irs => irs.Value)
                 .Where(irs => irs > 0)
@@ -1187,11 +1187,11 @@ namespace HedgeHog.Alice.Store {
                   GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories.Where(t => t.time < startDate)), true);
                   GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories2.Where(t => t.time < startDate)), true);
                   GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == pairCode).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
-                  if(VoltageFunction == VoltageFunction.Straddle) {
+                  if(true || VoltageFunction == VoltageFunction.Straddle) {
                     SyncStraddleHistoryT1(this);
                     Log = new Exception($"{nameof(SyncStraddleHistoryT1)}[{this}] - done");
                   }
-                  if(VoltageFunction2 == VoltageFunction.Straddle) {
+                  if(true || VoltageFunction2 == VoltageFunction.Straddle) {
                     SyncStraddleHistoryM1(tmM1);
                     Log = new Exception($"{nameof(SyncStraddleHistoryM1)}[{this}] - done");
                   }
@@ -1811,6 +1811,7 @@ namespace HedgeHog.Alice.Store {
                     continue;
                   ratePrev = rate;
                   RatesArraySafe.Any();
+                  CurrentPrice = new Price(Pair, rate);
                   if(tms().First() == this && (Trades.Any() || IsTradingDay())) {
                     TradesManager.RaisePriceChanged(new Price(Pair, rate));
                   }

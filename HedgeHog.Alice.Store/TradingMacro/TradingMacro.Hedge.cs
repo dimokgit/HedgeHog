@@ -80,7 +80,7 @@ namespace HedgeHog.Alice.Store {
     IBApi.Contract _currentHedgeContract = null;
     public void SetCurrentHedgePosition<T>(IBApi.Contract contract, int quantity, T context) {
       lock(_currentHedgePositionsLock) {
-        if(contract.Legs().First().c.Instrument!=Pair)
+        if(contract.Legs().First().c.Instrument != Pair)
           Debugger.Break();
         _currentHedgeContract = contract;
         var legs = contract.LegsForHedge(Pair).ToList();
@@ -91,8 +91,10 @@ namespace HedgeHog.Alice.Store {
         CurrentHedgePosition1 = legs[0].leg.Ratio;
         var p2 = CurrentHedgePosition2;
         CurrentHedgePosition2 = legs[1].leg.Ratio * (legs[1].leg.IsBuy ? 1 : -1);
-        if(TMCorrelation(0).Any(c => c.Sign() == CurrentHedgePosition2.Sign()))
+        if(CurrentHedgePosition2 != 0 && TMCorrelation(0).Any(c => c.Sign() == CurrentHedgePosition2.Sign())) {
           Debugger.Break();
+          Log = new SoftException($"{nameof(OnSetCurrentHedgePosition)}:{new { CurrentHedgePosition2, mustHave = "Oposite sign as correlation" }} ");
+        }
         CurrentHedgeQuantity = quantity;
         if(false && p2 != CurrentHedgePosition2)
           Log = new DebugLogException($"{nameof(SetCurrentHedgePosition)}:{new { Pair, contract = contract.ShortString, quantity, context }}");
@@ -170,9 +172,10 @@ namespace HedgeHog.Alice.Store {
           var period = GetVoltCmaPeriodByIndex(voltIndex);
           var passes = GetVoltCmaPassesByIndex(voltIndex);
           var volts0 = GetHedgeGrosses(chp.p1, chp.p2, period, passes, hedgeIndex).ToArray();
+          if(volts0.IsEmpty()) return null;
           var vMin = volts0.Min(v => v.v);
           var vMax = volts0.Max(v => v.v);
-          var volts01 = volts0.Select(t=>t.v - vMin).ToList();
+          var volts01 = volts0.Select(t => t.v - vMin).ToList();
 
           var volts = volts0.Select(t => new { t.rate, v = t.v - vMin }).Cma(v => v.v, period, passes, (r, v2) => new { r.rate.StartDate, r.v, v2 }).ToList();
           var sv = SetVoltByIndex(voltIndex);

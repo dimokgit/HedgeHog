@@ -3,6 +3,7 @@ using HedgeHog.Shared;
 using IBApi;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
@@ -168,7 +169,12 @@ namespace IBApp {
 
     IObservable<(double bid, double ask, double average)> UnderPrice(Contract contract, double priceTimeoutInSeconds) {
       var cds = contract.FromDetailsCache().Concat(contract.Legs().SelectMany(l => l.c.FromDetailsCache()))
-        .Select(c => c.Contract.IsOption ? c.UnderSymbol : c.Contract.LocalSymbol).Take(1);
+        .Select(c => c.Contract.IsOption ? c.UnderSymbol : c.Contract.LocalSymbol).Where(s=>!s.IsNullOrWhiteSpace()).Take(1);
+      if(cds.Any(s => s.IsNullOrWhiteSpace())) {
+        if(Debugger.IsAttached)
+          Debugger.Break();
+        return new (double bid, double ask, double average)[0].ToObservable();
+      }
       return (
         from underSymbol in cds.ToObservable()
         from u in IbClient.ReqContractDetailsCached(underSymbol)
@@ -182,7 +188,7 @@ namespace IBApp {
         from c in positions/*.ParseCombos(orders)*//*.Do(c => IbClient.SetContractSubscription(c.contract))*/
         let order = OrderContractsInternal.Items.OpenByContract(c.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
         select (c.contract, c.position, c.open, c.open / c.position.Abs() / c.contract.ComboMultiplier, order.LmtPrice, order.OrderId)
-        );
+        ).ToList();
       var comboAll = ComboTradesAllImpl().ToArray();
       return combos.Concat(comboAll).Distinct(c => c.contract.Instrument);
     }

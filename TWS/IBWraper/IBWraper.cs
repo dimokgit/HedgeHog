@@ -157,7 +157,7 @@ namespace IBApp {
       var lastTime = DateTime.Now;
       var runFast = periodsBack > 0 || duration.TotalDays < 2;
       var fac = new HistoryLoaderDelegate<TBar>(runFast ? IHistoryLoader.Factory : (HistoryLoaderDelegate<TBar>)IHistoryLoader.Factory_Slow);
-      Trace(new { fac, runFast, pair, period, startDate, endDate });
+      //Trace(new { fac, runFast, pair, period, periodsBack, startDate, endDate });
       fac(
         _ibClient,
         contract,

@@ -76,7 +76,7 @@ namespace HedgeHog.Shared {
     }
 
     public static double CalcHedgePrice(this IList<(double price, int multiplier, double positions)> hedges) => CalcHedgePrice(hedges.Select(h => (h.price, (double)h.multiplier, h.positions)).ToArray());
-    public static double CalcHedgePrice(this IList<(double price, double multiplier, double positions)> hedges) => hedges.Sum(h => h.price * h.multiplier * h.positions) / hedges.Min(h => h.multiplier);
+    public static double CalcHedgePrice(this IList<(double price, double multiplier, double positions)> hedges) => hedges.Sum(h => h.price * h.multiplier * h.positions) / hedges.LastOrDefault().multiplier;
 
     public static ((TContract contract, int quantity)[] contracts, int quantity) HedgeQuanitiesByValue<TContract>(int multiplier
       , string mashDivider
@@ -149,7 +149,7 @@ namespace HedgeHog.Shared {
     }
 
     public static bool IsCurrenncy(this string s) => _currencies.Any(c => s.ToUpper().StartsWith(c)) && _currencies.Any(c => s.ToUpper().EndsWith(c));
-    private static Regex FutureMatch = new Regex(@"^(?<code>\w{2,3})[HMQUZ]\d{1,2}|VX[A-Z]\d$", RegexOptions.IgnoreCase);
+    private static Regex FutureMatch = new Regex(@"^(?<code>\w{2,3})[HMJQUZ]\d{1,2}|VX[A-Z]\d$", RegexOptions.IgnoreCase);
     public static bool IsFuture(this string s) => FutureMatch.IsMatch(s);
     public static string FutureCode(this string s) => IsFuture(s) ? FutureMatch.Match(s).Groups["code"].Value : s;
     public static bool IsCommodity(this string s) => _commodities.Contains(s.ToUpper());

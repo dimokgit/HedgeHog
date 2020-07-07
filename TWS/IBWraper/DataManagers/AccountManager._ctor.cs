@@ -307,7 +307,7 @@ namespace IBApp {
       select p.SideEffect(_ => {
         p.Contract.Exchange = cd.Contract.Exchange;
         TracePosition($"PositionContract: {new { cd.Contract, cd.Contract.Exchange }}");
-        if(p.Position == 0) _positions.TryRemove(p.Contract.Key, out var r);
+        if(p.Position == 0  || p.Contract.IsExpired) _positions.TryRemove(p.Contract.Key, out var r);
         else {
           var cp = ContractPosition(p);
           _positions.AddOrUpdate(cp.contract.Key, cp, (k, v) => cp);
