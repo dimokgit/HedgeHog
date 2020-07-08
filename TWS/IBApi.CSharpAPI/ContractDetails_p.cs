@@ -16,6 +16,8 @@ namespace IBApi {
     public ContractDetails AddToCache() {
       lock(_gate) {
         //if(Contract.IsHedgeCombo) { Debugger.Break(); }
+        if(!Contract.IsBag && Contract.ConId == 0 && Debugger.IsAttached)
+          Debugger.Break();
         ContractDetailsCache.TryAdd(contract.AddToCache().Key, this);
         return this;
       }

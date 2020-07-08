@@ -14,7 +14,18 @@ using System.Text.RegularExpressions;
 
 namespace IBApi {
   public partial class Contract :IEquatable<Contract> {
+    public Contract() {
 
+    }
+    public Contract(int conId,Action<object> trace) {
+      if(conId == 0) {
+        var m = new { ReqContractDetailsCached = new { conId } } + "";
+        trace(m);
+        throw new Exception(m);
+      }
+
+      ConId = conId;
+    }
     public Contract SetTestConId(bool isInTest, int multiplier) {
       if(isInTest && ConId == 0) {
         if(Symbol.IsNullOrEmpty()) Symbol = LocalSymbol;
@@ -65,7 +76,7 @@ namespace IBApi {
       return this;
     }
     [Newtonsoft.Json.JsonIgnore]
-    public IEnumerable<Contract> UnderContract => !IsOption ? new[] { this } : LegsOrMe(c => c.UnderContractImpl).Concat().Distinct().Count(1, i => { }, i => throw new Exception($"Too many UnderContracts in {this}"));
+    public IEnumerable<Contract> UnderContract => LegsOrMe(c => c.UnderContractImpl).Concat().Distinct().Count(1, i => { }, i => throw new Exception($"Too many UnderContracts in {this}"));
     public IEnumerable<Contract> UnderContractImpl => (from cd in FromDetailsCache()
                                                        where !cd.UnderSymbol.IsNullOrWhiteSpace()
                                                        from cdu in ContractDetails.FromCache(cd.UnderSymbol)

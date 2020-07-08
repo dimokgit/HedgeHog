@@ -14,7 +14,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-
+using ORDEREXT = System.Func<IBApi.Order, System.IObservable<(IBApi.Order order, double price, IBApi.Contract contract)>>;
 namespace IBApp {
   public partial class AccountManager {
     private int NetOrderId() => IbClient.ValidOrderId();
@@ -232,14 +232,14 @@ namespace IBApp {
       (Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false
       , DateTime goodTillDate = default, DateTime goodAfterDate = default
       , OrderCondition condition = null, OrderCondition takeProfitCondition = null
-      , [CallerMemberName] string Caller = "") => OpenTrade(null, contract, quantity, price, profit, useTakeProfit, goodTillDate, goodAfterDate, condition, takeProfitCondition, "");
+      , [CallerMemberName] string Caller = "") => OpenTrade((ORDEREXT)null, contract, quantity, price, profit, useTakeProfit, goodTillDate, goodAfterDate, condition, new[] { takeProfitCondition }, "");
 
-    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenTrade
+    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenTradeWithAction
       (
       Action<IBApi.Order> orderExt
       , Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false
       , DateTime goodTillDate = default, DateTime goodAfterDate = default
-      , OrderCondition condition = null, OrderCondition takeProfitCondition = null
+      , OrderCondition condition = null, IList<OrderCondition> takeProfitCondition = null
       , string orderRef = ""
       , [CallerMemberName] string Caller = "")
       => OpenTrade(o => {
@@ -252,16 +252,16 @@ namespace IBApp {
 
     public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenTrade
     (
-      Func<IBApi.Order, IObservable<(IBApi.Order order, double price, Contract contract)>> orderExt
+      ORDEREXT orderExt
     , Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false
     , DateTime goodTillDate = default, DateTime goodAfterDate = default
-    , OrderCondition condition = null, OrderCondition takeProfitCondition = null
+    , OrderCondition condition = null, IList<OrderCondition> takeProfitCondition = null
     , string orderRef = ""
     , [CallerMemberName] string Caller = "") {
       contract.Check();
       string type = "";
       Verbose($"{nameof(OpenTrade)}[S]: {new { contract, quantity, orderRef }} <= {Caller}");
-      if(useTakeProfit && profit == 0 && takeProfitCondition == null)
+      if(useTakeProfit && profit == 0 && takeProfitCondition?.Count == 0)
         return Default(new Exception($"No profit or profit condition: {new { useTakeProfit, profit, takeProfitCondition }}")).Do(TraceOpenTradeResults);
       var aos = OrderContractsInternal.Items
         .Where(oc => !oc.isDone && oc.contract == contract && oc.order.TotalPosition().Sign() == quantity.Sign())
@@ -357,12 +357,12 @@ namespace IBApp {
       return order;
     }
 
-    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract, OrderCondition takeProfitCondition, double profit) {
-      var takeProfitPrice = (takeProfitCondition as PriceCondition)?.Price;
+    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract,IList<OrderCondition> takeProfitCondition, double profit) {
+      var takeProfitPrice = takeProfitCondition.OfType<PriceCondition>().ToList();
       bool isPreRTH = false;
-      var isMarket = takeProfitPrice.HasValue;
+      var isMarket = takeProfitPrice.Any();
       return new[] { parent }
-      .Where(o => takeProfitPrice.HasValue || o.OrderType == "LMT")
+      .Where(o => takeProfitPrice.Any() || o.OrderType == "LMT")
       .Select(o => o.LmtPrice)
       .ToObservable()
       .Concat(Observable.Defer(()
@@ -387,7 +387,7 @@ namespace IBApp {
           Transmit = true
         };
         order.SetLimit(isMarket ? 0 : OrderPrice(price, contract));
-        order.Conditions.AddRange(new[] { takeProfitCondition }.Where(c => c != null));
+        order.Conditions.AddRange(takeProfitCondition.Where(c => c != null));
         order.ConditionsIgnoreRth = true;
         CheckNonGiuaranteed(order, contract);
         return (order, price);

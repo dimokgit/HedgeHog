@@ -212,11 +212,15 @@ namespace IBApp {
     }
 
     public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
+      var title = nameof(GetBars) + ":: ";
       if(Contract.FromCache(pair).IsEmpty()) {
-        Trace($"Contract.FromCache({pair}).IsEmpty()");
+        Trace(title + $"Contract.FromCache({pair}).IsEmpty(). Running _ibClient.ReqContractDetailsCached({pair}).");
         _ibClient.ReqContractDetailsCached(pair)
           .ObserveOn(TaskPoolScheduler.Default)
-          .ForEachAsync(_ => GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack))
+          .ForEachAsync(_ => {
+            Trace(title + new { _.Contract, _.Contract.ConId });
+            GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack);
+          })
           .GetAwaiter().GetResult();
       } else
         GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack);

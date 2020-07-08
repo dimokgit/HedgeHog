@@ -38,7 +38,7 @@ namespace IBApp {
        where !hasPos
        where isCall && underPrice.ask > level || !isCall && underPrice.bid < level
        let openCond = under.PriceCondition(level.Round(2), isMore)
-       let tpCond = profit < 1 ? null : under.PriceCondition((level + profit * (contract.IsCall ? 1 : -1) * r.quantity.Sign()).Round(2), isMore)
+       let tpCond = profit < 1 ? null : new[] { under.PriceCondition((level + profit * (contract.IsCall ? 1 : -1) * r.quantity.Sign()).Round(2), isMore) }
        let strategyRef = STRATEGY_PREFIX + t.option.Right
        from hc in OrderContractsInternal.Items.Where(h => h.order.OrderRef == strategyRef).Select(h => h.order.OrderId).DefaultIfEmpty()
        from co in hc != 0 ? CancelOrder(hc) : Observable.Return(new ErrorMessages<OrderContractHolder>(default, default))

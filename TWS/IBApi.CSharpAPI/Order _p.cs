@@ -8,7 +8,7 @@ namespace IBApi {
     public bool IsSell => Action == "SELL";
     public bool IsBuy => Action == "BUY";
     public string SetAction(double quanity) => Action = (quanity > 0 ? "BUY" : "SELL");
-
+    public void SetGoodAfter(DateTime d) { if(d != default) GoodAfterTime = d.ToTWSString(); }
     public bool IsLimit => OrderType.Contains("LMT");
     public bool NeedTriggerPrice => OrderType.Contains("+");
     public void SetLimit(double price) {

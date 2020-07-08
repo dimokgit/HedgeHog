@@ -1370,16 +1370,16 @@
     </div>
     <table border="1">
       <tbody data-bind="foreach:openOrders">
-        <tr data-bind="style:{backgroundColor:c()?'gainsboro':''}" style="text-align:right">
+        <tr data-bind="style:{backgroundColor:c()?'gainsboro':''},attr:{title:JSON.stringify({gat:gat()})}" style="text-align:right">
           <td style="font-family:monospace">
             <span data-bind="text:i,click:$root.toggleActiveOrder.bind(null,$data)"></span>
-            <!-- ko foreach:pc().filter(function(p){return $data.id()!=ko.unwrap(($root.selectedOrder()||{}).id)}) -->
+            <!-- ko foreach:pc().splice(0,0).filter(function(p){return $data.id()!=ko.unwrap(($root.selectedOrder()||{}).id)}) -->
             <span data-bind="text:$data"></span>
             <!-- /ko -->
             <!-- ko foreach:Enumerable.from(pc().filter(function(p){return $data.id()==ko.unwrap(($root.selectedOrder()||{}).id)})).defaultIfEmpty("0000").toArray() -->
             <input data-bind="value:$root.currentPriceCondition" style="width:3em;display:none" />
             <!-- /ko -->
-          <td data-bind="text:a,style:{backgroundColor: a()=='B'?'deepskyblue':'red'}"></td>
+<td data-bind="text:a,style:{backgroundColor: a()=='B'?'deepskyblue':'red'}"></td>
           <td data-bind="text:p"></td>
           <td data-bind="text:lp"></td>
           <td data-bind="text:f()+'<'+r()"></td>

@@ -475,7 +475,7 @@ namespace HedgeHog.Alice.Client {
         if(!rel || c.IsOptionsCombo) {
           var oe = new Action<IBApi.Order>(o => o.Transmit = !test);
           var legs = await (from t in c.LegsEx().ToObservable()
-                            from ots in am.OpenTrade(oe, t.contract, t.leg.Quantity * positions)
+                            from ots in am.OpenTradeWithAction(oe, t.contract, t.leg.Quantity * positions)
                             from ot in ots
                             select outMe(ot.holder + "", ot.error.errorMsg)
                            ).ToArray();
@@ -493,7 +493,7 @@ namespace HedgeHog.Alice.Client {
                 o.OrderType = "REL + MKT";
               }
             })
-            from ots in am.OpenTrade(oe, c, positions, 0, 0, false)
+            from ots in am.OpenTradeWithAction(oe, c, positions, 0, 0, false)
             from ot in ots
             select outMe(ot.holder + "", ot.error.errorMsg)
            ).ToArray();
@@ -511,7 +511,7 @@ namespace HedgeHog.Alice.Client {
           o.LmtPrice = o.AuxPrice = IBApi.Order.OrderPrice(price, c);
           o.OrderType = "LMT";
         })
-        from ots in am.OpenTrade(oe, c, positions)
+        from ots in am.OpenTradeWithAction(oe, c, positions)
         from ot in ots
         select ot
         ).ToArray();
@@ -673,18 +673,19 @@ namespace HedgeHog.Alice.Client {
             #region openOrders
             var orderMap = MonoidsCore.ToFunc((AccountManager.OrderContractHolder oc, double ask, double bid) => new {
               i = new[] { oc.contract.DateWithShort }
-              .Where(_ => am.ParentHolder(oc).Select(p => p.isDone).DefaultIfEmpty(true).Single())
-              .Concat(oc.order.Conditions.ToTexts(showPrice: false)).Flatter("::")
-               , id = oc.order.OrderId
-               , f = oc.status.filled
-               , r = oc.status.remaining
-               , lp = oc.order.LmtPrice.IfNotSetOrZero(oc.order.AuxPrice).IfNotSetOrZero(0).Round(2)
-               , p = (oc.order.Action == "BUY" ? ask : bid).Round(2)
-               , a = oc.order.Action.Substring(0, 1)
-               , s = oc.status.status.AllCaps()
-               , c = oc.order.ParentId != 0
-               , e = oc.ShouldExecute
-               , pc = oc.order.Conditions.SelectMany(c => c.ParsePriceCondition()).Select(c => c.price).ToArray()
+               .Where(_ => am.ParentHolder(oc).Select(p => p.isDone).DefaultIfEmpty(true).Single())
+               .Concat(oc.order.Conditions.ToTexts()).Flatter(" & ")
+              , id = oc.order.OrderId
+              , f = oc.status.filled
+              , r = oc.status.remaining
+              , lp = oc.order.LmtPrice.IfNotSetOrZero(oc.order.AuxPrice).IfNotSetOrZero(0).Round(2)
+              , p = (oc.order.Action == "BUY" ? ask : bid).Round(2)
+              , a = oc.order.Action.Substring(0, 1)
+              , s = oc.status.status.AllCaps()
+              , c = oc.order.ParentId != 0
+              , e = oc.ShouldExecute
+              , gat = oc.order.GoodAfterTime
+              , pc = oc.order.Conditions.SelectMany(c => c.ParsePriceCondition()).Select(c => c.price).ToArray()
             }); ;
             Action openOrders = () =>
               (from oc in am.OrderContractsInternal.Items.ToObservable()
@@ -1001,33 +1002,54 @@ namespace HedgeHog.Alice.Client {
     static async Task<string[]> OpenCondOrder(AccountManager am, TradingMacro tm, Contract option, bool? isCall, int quantity, (double price, string instrument) condition, double profit) {
       if(option != null && isCall != null || option == null && isCall == null)
         throw new Exception(new { OpenCondOrder = new { option, isCall } } + "");
-      var hasStrategy = tm.Strategy.HasFlag(Strategies.Universal);
-      var bs = hasStrategy ? new { b = tm.BuyLevel.Rate, s = tm.SellLevel.Rate } : new { b = double.NaN, s = double.NaN };
-      if(hasStrategy && (bs.s.IsNaN() || bs.b.IsNaN()))
-        throw new Exception("Buy/Sell levels are not set by strategy");
-      var isSell = quantity < 0;
-      var isBuy = quantity > 0;
-      var hasCondition = condition.price > 0;
-      var dateAfter = _isTest ? DateTime.Now.AddDays(1) : DateTime.MinValue;
-      int Delta(Contract c) => c.DeltaSign * quantity;
-      var contracts = new[] { option }.ToObservable();
-      var res = await (from contract in contracts
-                       from price in contract.ReqPriceSafe()
-                       from under in hasCondition ? Contract.FromCache(condition.instrument) : contract.UnderContract
-                       from up in under.ReqPriceSafe().Select(p => p.ask.Avg(p.bid))
-                       let condPrice = condition.price.IfNaNOrZero(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
-                       let isMoreOrder = condPrice.IsNaNOrZero()? (bool?)null : condPrice > up
-                       let upProfit = profit * Delta(contract)
-                       let condTakeProfit = contract.IsCallPut ? null : under.PriceCondition((condPrice.IfNaNOrZero(up) + upProfit).Round(2), upProfit > 0, false)
-                       let t = new { price = condPrice == 0 ? isSell ? price.bid : price.ask : 0, under, condTakeProfit, condPrice, contract }
-                       from ots in am.OpenTrade(t.contract, quantity, t.price, 0, false, DateTime.MaxValue, dateAfter
-                        , t.price != 0  || !isMoreOrder.HasValue || contract.IsCallPut? null : OrderConditionParam.PriceCondition(t.under, t.condPrice.Round(2), isMoreOrder.Value, false)
-                        , t.condTakeProfit)
-                       from ot in ots
-                       where ot.error.HasError
-                       select ot.error.exc?.Message ?? $"{ot.error.errorCode}: {ot.error.errorMsg}"
-        ).ToArray();
-      return res;
+      {
+        var hasStrategy = tm.Strategy.HasFlag(Strategies.Universal);
+        var bs = hasStrategy ? new { b = tm.BuyLevel.Rate, s = tm.SellLevel.Rate } : new { b = double.NaN, s = double.NaN };
+        if(hasStrategy && (bs.s.IsNaN() || bs.b.IsNaN()))
+          throw new Exception("Buy/Sell levels are not set by strategy");
+        var isSell = quantity < 0;
+        var isBuy = quantity > 0;
+        var hasCondition = condition.price > 0;
+        var dateAfter = _isTest ? DateTime.Now.AddDays(1) : default;
+        int Delta(Contract c) => c.DeltaSign * quantity;
+        Action<IBApi.Order> orderExt = o => o.SetGoodAfter(dateAfter);
+        var res = await (from contract in Observable.Return(option)
+                         from price in contract.ReqPriceSafe()
+                         from underContract in contract.UnderContract
+                         from underPrice in underContract.ReqPriceSafe().Select(p => p.ask.Avg(p.bid))
+                         let condPrice = condition.price.IfNaNOrZero(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
+                         let isMoreOrder = condPrice.IsNaNOrZero() ? (bool?)null : condPrice > underPrice
+                         let upProfit = profit * Delta(contract)
+                         let condTakeProfit = contract.IsCallPut
+                         ? buildConditions(underContract
+                          , condition.price.IfNaNOrZero(underPrice).With(p => new[] { p - 5, p + 5 }), null, tm.ServerTime.AddHours(2), a=>orderExt+=a)
+                         : new[] { underContract.PriceCondition((condPrice.IfNaNOrZero(underPrice) + upProfit).Round(2), upProfit > 0, false) }
+                         let t = new { price = condPrice == 0 ? isSell ? price.bid : price.ask : 0 }
+                         from ots in am.OpenTradeWithAction(orderExt, contract, quantity, t.price, 0
+                          , (bool)condTakeProfit?.Any(), DateTime.MaxValue, default
+                          , t.price != 0 || !isMoreOrder.HasValue || contract.IsCallPut ? null
+                          : underContract.PriceCondition(condPrice.Round(2), isMoreOrder.Value, false)
+                          , condTakeProfit)
+                         from ot in ots
+                         where ot.error.HasError
+                         select ot.error.exc?.Message ?? $"{ot.error.errorCode}: {ot.error.errorMsg}"
+          ).ToArray();
+        return res;
+      }
+      IList<OrderCondition> buildConditions
+        (Contract condContract, IList<double> prices, bool? isMore, DateTime goodAfter = default, Action<Action<IBApi.Order>> orderExt = default) {
+        if(prices.Count == 1)
+          return prices.Where(_ => isMore.HasValue).Select(p => condContract.PriceCondition(p, isMore.Value)).ToList();
+        if(goodAfter == default) throw new Exception($"{nameof(goodAfter)} parameter is missing, {new { goodAfter }}");
+        if(isMore.HasValue)
+          throw new Exception($"{nameof(isMore)} parameter must be empty with multiple peices. {new { isMore, prices = prices.Flatter(",") }}");
+        if(prices.Count != 2)
+          throw new Exception($"{nameof(prices)} parameter must have exactly 2 prices, {new { prices = prices.Flatter(",") }}");
+        // Set between condition
+        return prices.OrderBy(p => p).Select((p, i) => condContract.PriceCondition(p, i == 0, true))
+          .Concat(new[] { goodAfter.TimeCondition(true, true) })
+          .ToList();
+      }
     }
     public async Task<object[]> OpenStrategyOption(string option, int quantity, double level, double profit) =>
       await (from contract in DataManager.IBClientMaster.ReqContractDetailsCached(option).Select(cd => cd.Contract)
@@ -1173,7 +1195,7 @@ namespace HedgeHog.Alice.Client {
           ? false
           : true
           : (bool?)null;
-          return from tt in c.am.OpenTrade(order => order.Transmit = true || !c.contract.IsBag, c.contract, -c.position
+          return from tt in c.am.OpenTradeWithAction(order => order.Transmit = true || !c.contract.IsBag, c.contract, -c.position
           , isMore.HasValue || c.contract.IsCallPut || c.contract.IsHedgeCombo ? 0 : c.closePrice
           , 0.0, false, default, default
           , isMore.HasValue ? c.under.PriceCondition(conditionPrice.Value, isMore.Value, false) : default)

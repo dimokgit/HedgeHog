@@ -275,14 +275,19 @@ namespace IBApp {
     #region Req-* functions
     int NextReqId() => ValidOrderId();
 
-    public IObservable<ContractDetails> ReqContractDetailsCached(int conId) => ReqContractDetailsCached(new Contract { ConId = conId });
+    public IObservable<ContractDetails> ReqContractDetailsCached(int conId) => ReqContractDetailsCached(new Contract(conId, Trace));
     public IObservable<ContractDetails> ReqContractDetailsCached(string symbol) => ReqContractDetailsCached(symbol.ContractFactory());
     public IObservable<ContractDetails> ReqContractDetailsCached(Contract contract) {
       if(Thread.CurrentThread.Name == "MsgProg")
         TraceDebug0("");
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
         Debugger.Break();
-      var cd = contract.FromDetailsCache().ToArray();
+      var cd = contract.FromDetailsCache()
+        .Do(cd => {
+          if(!cd.Contract.IsBag && cd.Contract.ConId == 0)
+            Trace(new { cd.Contract, cd.Contract.ConId });
+        })
+        .ToArray();
       if(cd.Any()) {
         var cd2 = cd.ToObservable();
         return !contract.IsBag ? cd2
@@ -291,7 +296,12 @@ namespace IBApp {
       }
       return ReqContractDetailsAsync(contract);
     }
-
+    /*
+     * .Do(cd => {
+            if(cd.Contract.ConId == 0)
+              Trace(new { cd.Contract, cd.Contract.ConId });
+          })
+          */
     public static ConcurrentDictionary<string, IObservable<ContractDetails>> ReqContractDetails { get; } = new ConcurrentDictionary<string, IObservable<ContractDetails>>();
     private IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
       //if(contract.Instrument.IsNullOrWhiteSpace())
