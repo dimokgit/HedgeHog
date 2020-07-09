@@ -315,7 +315,7 @@ namespace IBApp {
         if(Debugger.IsAttached)
           Debugger.Break();
         else
-          throw new Exception(new { contract.IsBag, key } + "");
+          Trace(new { contract.IsBag, key } + "");
 
       }
       //var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol, contract.ConId + "")}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
@@ -464,7 +464,7 @@ namespace IBApp {
           });
       }
     }
-    public bool IsExpired(DateTime expiration) => !expiration.IsMin() && expiration.InNewYork().Add(new TimeSpan(16, 15, 0)) < ServerTime.InNewYork();
+    public bool IsExpired(DateTime expiration) => false;//!expiration.IsMin() && expiration.InNewYork().Add(new TimeSpan(16, 15, 0)) < ServerTime.InNewYork();
     public IObservable<Contract> ReqOptionChainOldAsync(string symbol, DateTime expirationDate, double strike, bool waitForAllStrikes) {
       Passager.ThrowIf(() => expirationDate.IsMin() && strike == 0, new { expirationDate, strike } + "");
       var fopDate = expirationDate;

@@ -44,7 +44,7 @@ using System.Reactive.Concurrency;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson;
 using IBApp;
-using COMBO_HISTORY = System.Collections.Generic.List<(double bid, double ask, System.DateTime time, double delta)>;
+//using COMBO_HISTORY = System.Collections.Generic.List<IBApp.MarketPrice>;
 using CURRENT_OPTION = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option, double deltaBid, double deltaAsk)>;
 using CURRENT_STRADDLE = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (IBApi.Contract contract, IBApi.Contract[] options) combo)>;
 using IBApi;
@@ -1136,7 +1136,8 @@ namespace HedgeHog.Alice.Store {
           .Where(_ => ibWraper?.AccountManager != null)
           .Where(price => price.EventArgs.Price.Pair == Pair)
           .Sample(TimeSpan.FromSeconds(0.5))
-          .Publish().RefCount();
+          //.Publish().RefCount()
+          ;
 
           if(!IsInVirtualTrading && IsTrader) {
             _currentOptionDisposable?.Dispose();
@@ -1185,8 +1186,7 @@ namespace HedgeHog.Alice.Store {
                 .Subscribe(x => {
                   var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime().AddDays(-5);
                   GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories.Where(t => t.time < startDate)), true);
-                  GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories2.Where(t => t.time < startDate)), true);
-                  GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == pairCode).OrderBy(t => t.time).ToArray().Select(sh => (sh.bid, sh.ask, sh.time, sh.delta)).OrderBy(t => t.time)));
+                  GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == pairCode).OrderBy(t => t.time).ToArray().Select(sh => new MarketPrice(sh.bid, sh.ask, sh.time, sh.delta,double.NaN)).OrderBy(t => t.time)));
                   if(true || VoltageFunction == VoltageFunction.Straddle) {
                     SyncStraddleHistoryT1(this);
                     Log = new Exception($"{nameof(SyncStraddleHistoryT1)}[{this}] - done");
@@ -1212,7 +1212,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private void TimeValueHistory(string pairCode, Func<TradingMacro, COMBO_HISTORY> straddleHistory, Func<GlobalStorage.ForexDbContext, Microsoft.EntityFrameworkCore.DbSet<StraddleHistory>> straddleHistoryDbSet, IBWraper ibWraper, int shcp, long straddleStartId, Func<long> _id, int straddleCount, Func<DateTime> resetSaveTime) {
+    private void TimeValueHistory(string pairCode, Func<TradingMacro, List<MarketPrice>> straddleHistory, Func<GlobalStorage.ForexDbContext, Microsoft.EntityFrameworkCore.DbSet<StraddleHistory>> straddleHistoryDbSet, IBWraper ibWraper, int shcp, long straddleStartId, Func<long> _id, int straddleCount, Func<DateTime> resetSaveTime) {
       DateTime saveTime = resetSaveTime();
       //var nextFriday = TradesManagerStatic.ExpirationDaysSkip(0);
       int nextFriday() => (DateTime.Today.GetNextWeekday(DayOfWeek.Friday) - DateTime.Today).TotalDays.ToInt();
@@ -1229,22 +1229,25 @@ namespace HedgeHog.Alice.Store {
       .Subscribe(straddle => {
         UseStraddleHistory(straddleHistory, shs => {
           shs.BackwardsIterator().Take(1)
-          .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
+          .DefaultIfEmpty(new MarketPrice(double.NaN, double.NaN, DateTime.MinValue, double.NaN,double.NaN))
           .ToList()
           .ForEach(sh => shs.Add(
-            (
-            bid: sh.bid.Cma(shcp, GetStraddlePrice(straddle)),
-            ask: GetStraddlePrice(straddle.Where(s => s.option.IsCall)),
-            time: ServerTime,
-            delta: GetStraddlePrice(straddle.Where(s => s.option.IsPut))
+new MarketPrice(
+            sh.bid.Cma(shcp, GetStraddlePrice(straddle)),
+            GetStraddlePrice(straddle.Where(s => s.option.IsCall)),
+            ServerTime,
+            GetStraddlePrice(straddle.Where(s => s.option.IsPut)),
+            sh.theta
             )
-            .SideEffect(t => GlobalStorage.UseForexMongo(c => straddleHistoryDbSet(c).Add(new StraddleHistory(
+            // turned off to test for leaks
+            .SideEffect(()=> straddle.Length == 0, t => GlobalStorage.UseForexMongo(c => straddleHistoryDbSet(c).Add(new StraddleHistory(
               straddleStartId + _id(),
               pairCode,
               t.bid,
               t.ask,
               t.delta,
-              t.time
+              t.time,
+              t.theta
             ))
             , saveTime < DateTime.Now
             , () => saveTime = resetSaveTime()
@@ -1289,14 +1292,15 @@ namespace HedgeHog.Alice.Store {
         var deltaWing = straddle.callWing.deltaAsk;
         UseStraddleHistory(shs => {
           shs.BackwardsIterator().Take(1)
-          .DefaultIfEmpty((bid: double.NaN, ask: double.NaN, time: DateTime.MinValue, delta: double.NaN))
+          .DefaultIfEmpty(new MarketPrice(double.NaN, double.NaN, DateTime.MinValue, double.NaN,double.NaN))
           .ToList()
           .ForEach(sh => shs.Add(
             (
             bid: sh.bid.Cma(shcp, deltaBody - deltaWing),
             ask: 0,
             time: straddle.callBody.time.Max(straddle.callWing.time),
-            delta: 0
+            delta: 0,
+            theta: double.NaN
             )
             .SideEffect(() => !IsInVirtualTrading, t => GlobalStorage.UseForexMongo(c => c.StraddleHistories.Add(new StraddleHistory(
                 straddleStartId + Interlocked.Increment(ref _id),
@@ -1304,7 +1308,8 @@ namespace HedgeHog.Alice.Store {
                 t.bid,
                 t.ask,
                 t.delta,
-                t.time
+                t.time,
+                t.theta
               ))
               , saveTime < DateTime.Now
               , ResetSaveTime
@@ -1320,8 +1325,8 @@ namespace HedgeHog.Alice.Store {
       return _id;
     }
 
-    COMBO_HISTORY StraddleHistory = new COMBO_HISTORY();
-    COMBO_HISTORY VerticalPutHistory = new COMBO_HISTORY();
+    List<MarketPrice> StraddleHistory = new List<MarketPrice>();
+    List<MarketPrice> VerticalPutHistory = new List<MarketPrice>();
     private void HansleTick(PriceChangedEventArgs pce) {
       try {
         CurrentPrice = pce.Price;
@@ -4402,9 +4407,9 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       UseRatesInternal(f, 3000, Caller).Count();
     }
 
-    public IEnumerable<T> UseStraddleHistory<T>(Func<COMBO_HISTORY, T> func, int timeoutInMilliseconds = 500, [CallerMemberName] string Caller = "")
+    public IEnumerable<T> UseStraddleHistory<T>(Func<List<MarketPrice>, T> func, int timeoutInMilliseconds = 500, [CallerMemberName] string Caller = "")
       => UseStraddleHistory(tm => tm.StraddleHistory, func, timeoutInMilliseconds, Caller);
-    public IEnumerable<T> UseStraddleHistory<T>(Func<TradingMacro, COMBO_HISTORY> history, Func<COMBO_HISTORY, T> func, int timeoutInMilliseconds = 500, [CallerMemberName] string Caller = "") {
+    public IEnumerable<T> UseStraddleHistory<T>(Func<TradingMacro, List<MarketPrice>> history, Func<List<MarketPrice>, T> func, int timeoutInMilliseconds = 500, [CallerMemberName] string Caller = "") {
       if(!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds)) {
         var message = new { Pair, PairIndex, Method = nameof(UseRatesInternal), Caller, timeoutInMilliseconds } + "";
         Log = new TimeoutException(message);
@@ -4424,12 +4429,12 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         }
       }
     }
-    public void UseStraddleHistory(Func<TradingMacro, COMBO_HISTORY> history, Action<COMBO_HISTORY> action, [CallerMemberName] string Caller = "") {
-      Func<COMBO_HISTORY, Unit> f = rates => { action(rates); return Unit.Default; };
+    public void UseStraddleHistory(Func<TradingMacro, List<MarketPrice>> history, Action<List<MarketPrice>> action, [CallerMemberName] string Caller = "") {
+      Func<List<MarketPrice>, Unit> f = rates => { action(rates); return Unit.Default; };
       UseStraddleHistory(history, f, 3000, Caller).Count();
     }
-    public void UseStraddleHistory(Action<COMBO_HISTORY> action, [CallerMemberName] string Caller = "") {
-      Func<COMBO_HISTORY, Unit> f = rates => { action(rates); return Unit.Default; };
+    public void UseStraddleHistory(Action<List<MarketPrice>> action, [CallerMemberName] string Caller = "") {
+      Func<List<MarketPrice>, Unit> f = rates => { action(rates); return Unit.Default; };
       UseStraddleHistory(tm => tm.StraddleHistory, f, 3000, Caller).Count();
     }
 

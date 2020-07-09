@@ -161,7 +161,7 @@ namespace ConsoleApp {
         am.OpenOrderObservable.Subscribe(oom => HandleMessage(oom.ToTextTable("Open Order")));
         {
           (from c in "SPY".ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
-           from ots in am.OpenTrade(o => o.SetType(c, DateTime.Now, IBApi.Order.OrderTypes.MIDPRICE).Transmit = !isTest, c, 1)
+           from ots in am.OpenTradeWithAction(o => o.SetType(c, DateTime.Now, IBApi.Order.OrderTypes.MIDPRICE).Transmit = !isTest, c, 1)
              //from ots in am.OpenTrade(c, 1)
            from ot in ots
            select new { ot.holder, ot.error }
@@ -525,7 +525,7 @@ namespace ConsoleApp {
         }
         void TestMakeComboAll(bool placeOrder) {
           HandleMessage2("ComboTrade Start");
-          AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass) => pos.contract.TradingClass == tradingClass)
+          AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass,ps) => pos.contract.TradingClass == tradingClass && pos.position.Sign() == ps)
           .ForEach(comboPrice => {
             HandleMessage2(new { comboPrice.contract });
             comboPrice.contract.contract.ReqPriceSafe()

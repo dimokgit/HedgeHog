@@ -131,7 +131,6 @@ namespace HedgeHog.Alice.Store {
       public Microsoft.EntityFrameworkCore.DbSet<TraderModelPersist> TraderSettings { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<Shared.Trade> Trades { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<StraddleHistory> StraddleHistories { get; set; }
-      public Microsoft.EntityFrameworkCore.DbSet<StraddleHistory> StraddleHistories2 { get; set; }
     }
 
     #endregion

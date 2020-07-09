@@ -379,7 +379,7 @@ namespace HedgeHog.Alice.Store {
 
     private IEnumerable<double[]> CurrentStraddleBidMinMax() => UseStraddleHistory(sh => sh.GetRange(RatesArray.Count.Min(sh.Count)).MinMax(t => t.bid));
 
-    CorridorStatistics ShowVoltsByStraddle(Func<(double bid, double ask, DateTime time, double delta), double> value, int voltIndex) {
+    CorridorStatistics ShowVoltsByStraddle(Func<IBApp.MarketPrice, double> value, int voltIndex) {
       if(UseCalc()) {
         SetVoltsByStraddle()
           .TakeLast(1)

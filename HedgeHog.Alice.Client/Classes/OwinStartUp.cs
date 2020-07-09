@@ -678,7 +678,7 @@ namespace HedgeHog.Alice.Client {
               , id = oc.order.OrderId
               , f = oc.status.filled
               , r = oc.status.remaining
-              , lp = oc.order.LmtPrice.IfNotSetOrZero(oc.order.AuxPrice).IfNotSetOrZero(0).Round(2)
+              , lp = !oc.order.IsLimit ? 0 : oc.order.LmtPrice.IfNotSetOrZero(oc.order.AuxPrice).IfNotSetOrZero(0).Round(2)
               , p = (oc.order.Action == "BUY" ? ask : bid).Round(2)
               , a = oc.order.Action.Substring(0, 1)
               , s = oc.status.status.AllCaps()
@@ -852,14 +852,14 @@ namespace HedgeHog.Alice.Client {
           hh0.ForEach(h => h.contract.FromCache().RunIfEmpty(() => h.contract.ReqContractDetailsCached().Subscribe()));
           if(hh0.IsEmpty()) return Observable.Empty<CurrentHedge>();
           var combo = AccountManager.MakeHedgeComboSafe(quantity, hh0[0].contract, hh0[1].contract, hh0[0].ratio, hh0[1].ratio, IsInVirtual());
-          IObservable<(double bid, double ask, DateTime time, double delta)> CalcComboPrice()
+          IObservable<MarketPrice> CalcComboPrice()
           => (from l in combo.SelectMany(c => c.contract.LegsForHedge(pair))
               from hh in hh0
               where l.c.ConId == hh.contract.ConId
               select (hh.price, TradesManagerStatic.GetBaseUnitSize(hh.contract.LocalSymbol), (double)l.leg.Quantity)
               )
               .ToArray()
-              .Select(xx => xx.CalcHedgePrice().With(p => (bid: p, ask: p, time: tml.ServerTime, delta: 1.0)));
+              .Select(xx => xx.CalcHedgePrice().With(p => new MarketPrice(p, p, tml.ServerTime, delta: 1.0, double.NaN)));
           try {
             var hh = hh0.Zip(baseUnits, (h, BaseUnitSize) => new { h.contract, h.ratio, h.price, h.context, BaseUnitSize }).ToArray();
             return
@@ -1024,11 +1024,11 @@ namespace HedgeHog.Alice.Client {
                          let upProfit = profit * Delta(contract)
                          let condTakeProfit = contract.IsCallPut
                          ? buildConditions(underContract
-                          , condition.price.IfNaNOrZero(underPrice).With(p 
-                          => contract.ComboStrike().With(s 
+                          , condition.price.IfNaNOrZero(underPrice).With(p
+                          => contract.ComboStrike().With(s
                           => new[] { s - std, s + std })), isBuy, tm.ServerTime.AddHours(2), a => orderExt += a)
                          : new[] { underContract.PriceCondition((condPrice.IfNaNOrZero(underPrice) + upProfit).Round(2), upProfit > 0, false) }
-                         let t = new { price = condPrice == 0 ? isSell ? price.bid : price.ask : 0 }
+                         let t = new { price = condPrice == 0 ? lp(contract,isSell, price) : 0 }
                          from ots in am.OpenTradeWithAction(orderExt, contract, quantity, t.price, 0
                           , (bool)condTakeProfit?.Any(), DateTime.MaxValue, default
                           , t.price != 0 || !isMoreOrder.HasValue ? null
@@ -1039,6 +1039,10 @@ namespace HedgeHog.Alice.Client {
                          select ot.error.exc?.Message ?? $"{ot.error.errorCode}: {ot.error.errorMsg}"
           ).ToArray();
         return res;
+      }
+      double lp(Contract c,bool isSell,MarketPrice p) {
+        if(isSell) return c.IsCallPut ? p.ask : p.bid;
+        return c.IsCallPut ? p.bid : p.ask;
       }
       IList<OrderCondition> buildConditions
         (Contract condContract, IList<double> prices, bool isMore, DateTime goodAfter = default, Action<Action<IBApi.Order>> orderExt = default) {
@@ -1175,7 +1179,7 @@ namespace HedgeHog.Alice.Client {
           var och = c.am.UseOrderContracts(orderContracts => orderContracts.ByOrderId(c.orderId)).Concat().SingleOrDefault();
           if(och == null)
             throw new Exception($"OrderContractHoled with OrderID:{c.orderId} not found");
-          var quantity = och.order.TotalQuantity.ToInt();
+          var quantity = och.order.TotalQuantity.ToInt() * (och.order.IsBuy ? 1 : -1);
           var isMarket = c.contract.IsBag;
           if(isMarket) {
             return (from co in c.am.CancelOrder(c.orderId)

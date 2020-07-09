@@ -201,7 +201,7 @@ namespace IBApp {
     }
 
     public void OpenLimitOrder(Contract contract, int quantity, double profit, bool useMarketPrice, bool useTakeProfit) {
-      double ask((double ask, double bid, DateTime time, double) p) => useMarketPrice ? p.ask : p.bid;
+      double ask(MarketPrice p) => useMarketPrice ? p.ask : p.bid;
       double bid(double a, double b) => useMarketPrice ? b : a;
       contract.ReqPriceSafe().Select(p => quantity > 0 ? ask(p) : bid(p.ask, p.bid))
        .Subscribe(price => OpenTrade(contract, quantity, price, profit, useTakeProfit).Subscribe());

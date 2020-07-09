@@ -41,7 +41,7 @@ namespace IBApp {
     }
 
     private static (string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo, double deltaBid, double deltaAsk)
-      CurrentComboInfo(double underPrice, (Contract contract, Contract[] options) combo, (double bid, double ask, DateTime time, double delta) p) {
+      CurrentComboInfo(double underPrice, (Contract contract, Contract[] options) combo, MarketPrice p) {
       var strikeAvg = combo.options.Average(o => o.Strike);
       double pa = p.ask.Avg(p.bid);
       var iv = combo.options.Sum(o => o.IntrinsicValue(underPrice));
@@ -212,7 +212,7 @@ namespace IBApp {
          select es.Any() && nq.Any() ? TradesManagerStatic.HedgeRatioByValue(mashDivider, posCorr, hh).ToList() : new CURRENT_HEDGES());
     public IObservable<(Contract option, Contract contract, double underPrice, double bid, double ask, double delta)[]> CurrentTimeValue(string symbol, int tvDays) {
       return (
-        from u in IbClient.ReqContractDetailsCached(symbol)
+        from u in IbClient.ReqContractDetailsCached(symbol).Take(0)
         from up in u.Contract.ReqPriceSafe()
         let nextFriday = MathCore.GetWorkingDays(DateTime.Now, DateTime.Now.AddDays(tvDays).GetNextWeekday(DayOfWeek.Friday))
         from cs in CurrentOptions(symbol, double.NaN, nextFriday, 6, c => c.Expiration.DayOfWeek == DayOfWeek.Friday)
