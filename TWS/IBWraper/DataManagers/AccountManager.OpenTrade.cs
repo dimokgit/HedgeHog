@@ -268,7 +268,7 @@ namespace IBApp {
         .ToArray();
       var subs = aos.Where(oc => oc.isSubmitted).ToList();
       if(subs.Any())
-        return subs.Select(s => (s, new ErrorMessage(0, -1, "Already submitter", null))).ToObservable().ToArray();
+        return subs.Select(s => (s, new ErrorMessage(0, -1, $"Order {s} is already active", null))).ToObservable().ToArray();
 
       OrderContractHolder TraceLocal(OrderContractHolder ao) { Trace($"OpenTrade: Cancelling existing order {ao.order}[{ao.order.OrderId}] for { contract } with {new { ao.status.status }}."); return ao; }
       if(aos.Any()) {

@@ -41,7 +41,7 @@ namespace HedgeHog.Alice.Store {
       var p = BlackScholes.PutPrice(spot, strikeDown, intRate, dividents, daysToExp, volatility);
       _currentCallByHV = c;
       _currentPutByHV = p;
-      return (strikeUp + c + p, strikeDown - c - p);
+      return (strikeUp + c, strikeDown - p);
     }
 
     private double HistoricalVolatilityAnnualized() {

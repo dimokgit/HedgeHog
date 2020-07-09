@@ -9,7 +9,7 @@ namespace IBApi {
       => conditions.ToTexts(showPrice: showPrice).Flatter(";").With(t => t.IsNullOrEmpty() ? "" : prefix + t);
     public static IEnumerable<string> ToTexts(this IList<OrderCondition> conditions, string prefix = "", bool showPrice = true)
       => conditions.SelectMany(c => 
-      c.ParsePriceCondition().Select(pc => pc.contract + " " + pc.@operator + (showPrice ? " " + pc.price : ""))
+      c.ParsePriceCondition().Select(pc => pc.contract + " " + pc.@operator + (showPrice ? " " + pc.price.AutoRound2(4) : ""))
       .Concat(c.ParseTimeCondition())
       );
     public static IEnumerable<string> ParseTimeCondition(this OrderCondition oc) {

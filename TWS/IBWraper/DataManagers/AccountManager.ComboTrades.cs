@@ -200,22 +200,26 @@ namespace IBApp {
       return positionsByExpiration.Select(g => ComboTradesAllImpl2(g.ToArray())).Concat();
     }
 
-    private COMBO_TRADES_IMPL ComboTradesAllImpl2(Position[] positions) =>
-      (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
-       let sell = positions.All(p => p.position < 0)
-       let posSign = sell ? -1 : 1
-       let order = OrderContractsInternal.Items.OpenByContract(ca.contract.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
-       let open = ca.positions.Sum(p => p.open)
-       let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
-       select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, order.LmtPrice, order.OrderId));
+    static Func<Position, string, int, bool> _filterCombos = (p, tc, ps) => p.contract.TradingClass == tc && p.position.Sign() == ps;
+    private COMBO_TRADES_IMPL ComboTradesAllImpl2(Position[] positions) {
+      return (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, _filterCombos)
+              let sell = ca.positions.All(p => p.position < 0)
+              let posSign = sell ? -1 : 1
+              let order = OrderContractsInternal.Items.OpenByContract(ca.contract.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
+              let open = ca.positions.Sum(p => p.open)
+              let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
+              select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, order.LmtPrice, order.OrderId));
+    }
 
-    private COMBO_TRADES_IMPL ComboTradesHedge((Contract contract, int position, double open, double price, double pipCost)[] positions) =>
-      (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, (p, tc) => p.contract.TradingClass == tc)
-       let sell = positions.All(p => p.position < 0)
-       let posSign = sell ? -1 : 1
-       let open = ca.positions.Sum(p => p.open)
-       let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
-       select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, 0.0, 0));
+    static Func<(Contract contract, int position, double open, double price, double pipCost), string, int, bool> _filterByContract = (p, tc, ps) => p.contract.TradingClass == tc && p.position.Sign() == ps;
+    private COMBO_TRADES_IMPL ComboTradesHedge((Contract contract, int position, double open, double price, double pipCost)[] positions) {
+      return (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, _filterByContract)
+              let sell = ca.positions.All(p => p.position < 0)
+              let posSign = sell ? -1 : 1
+              let open = ca.positions.Sum(p => p.open)
+              let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
+              select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, 0.0, 0));
+    }
 
 
     //public COMBO_TRADES_IMPL ComboTradesUnder() {

@@ -1038,7 +1038,7 @@ namespace HedgeHog.Alice.Store {
     public ITradesManager TradesManager { get { return _TradesManager(); } }
     public bool HasTicks => (TradesManager?.HasTicks).GetValueOrDefault();
     IDisposable _priceChangeDisposable;
-    public int ExpDayToSkip() => OpenPuts().Take(0).Select(p => (p.contract.Expiration - ServerTime.Date).Days).OrderBy(d => d).Take(1).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
+    public int ExpDayToSkip() => 0;// OpenPuts().Take(0).Select(p => (p.contract.Expiration - ServerTime.Date).Days).OrderBy(d => d).Take(1).DefaultIfEmpty(TradesManagerStatic.ExpirationDaysSkip(OptionsDaysGap)).Max();
 
     List<IDisposable> _strams = new List<IDisposable>();
     class PriceChangedAsyncBuffer :AsyncBuffer<PriceChangedAsyncBuffer, PriceChangedEventArgs> {

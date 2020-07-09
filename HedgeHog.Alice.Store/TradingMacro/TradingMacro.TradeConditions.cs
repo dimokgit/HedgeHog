@@ -1308,13 +1308,14 @@ namespace HedgeHog.Alice.Store {
         //.Add(new { HgSlope = $"{VoltsReg(this, 1)}/{VoltsReg(this, 0)}" })
         //.Add(new { HgSlope2 = tm1s.Select(tm1 => $"{VoltsReg(tm1, 1)}/{VoltsReg(tm1, 0)}").SingleOrDefault() })
         .Add(new { ExitGrsPrc = $"{ExitGrossByHedgePositions.SideEffect(_ => OnSetExitGrossByHedgeGrossess()):c0}/{ExitPriceByHedgePrices:c0}" })
-        .Add(new { VltCma = $"{VltCma2Ok()}/{GetVoltCmaWaveAvg().With(t => (t.avg.Mult(100).AutoRound2(2), t.avgCount, t.last.Mult(100).AutoRound2(2), t.lastCount))}" })
+        //.Add(new { VltCma = $"{VltCma2Ok()}/{GetVoltCmaWaveAvg().With(t => (t.avg.Mult(100).AutoRound2(2), t.avgCount, t.last.Mult(100).AutoRound2(2), t.lastCount))}" })
+        .Add(new { HistVol = tm1s.SelectMany(tm1 => tm1.HistoricalVolatility()).FirstOrDefault().AutoRound2(4)})
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
       //.Merge(new { BPA1Tip__ = _wwwBpa1 }, () =>TradeConditionsHave(BPA12Ok))
       )
-      .SingleOrDefault();
+      .FirstOrDefault();
       IEnumerable<double> HV(TradingMacro tm) => tm.HistoricalVolatility();
       double[] HVPt(TradingMacro tm) => tm.HistoricalVolatilityByPoints(true);
       double VoltsReg(TradingMacro tm, int index) {

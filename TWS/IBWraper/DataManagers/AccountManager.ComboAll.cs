@@ -11,14 +11,14 @@ using static HedgeHog.MathCore;
 namespace IBApp {
   public partial class AccountManager {
     public static (TPositions[] positions, (Contract contract, int positions) contract)[] MakeComboAll<TPositions>
-      (IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, string, bool> filterByTradingClass) =>
+      (IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, string,int, bool> filter) =>
       combosAll
       .Where(c => c.c.HasOptions)
-      .GroupBy(combo => (combo.c.Symbol, combo.c.TradingClass, combo.c.Exchange, combo.c.Currency, combo.c.Expiration))
+      .GroupBy(combo => (combo.c.Symbol, combo.c.TradingClass, combo.c.Exchange, combo.c.Currency, combo.c.Expiration,ps:combo.p.Sign()))
       .Where(g => g.Count() > 1)
       .Select(combos =>
         (
-        positions.Where(p => filterByTradingClass(p, combos.Key.TradingClass)).ToArray(),
+        positions.Where(p => filter(p, combos.Key.TradingClass,combos.Key.ps)).ToArray(),
         MakeComboCache(combos.Key.Symbol, combos.Key.Exchange, combos.Key.Currency
           , CombosLegs(combos).OrderBy(c => c.ConId).ToArray())
         )

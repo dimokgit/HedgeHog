@@ -27,6 +27,7 @@ namespace HedgeHog.Shared {
     public double Ask { get => ask; set { ask = value; IsAskSet = IsAskSet || (value != 0 && value != -1); } }
     public double Average { get { return (Ask + Bid) / 2; } }
     public double GreekDelta { get; set; } = 1;
+    public double GreekTheta { get; set; } = double.NaN;
 
     public double Spread { get { return Ask - Bid; } }
     private DateTime _time2;
