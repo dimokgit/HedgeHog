@@ -443,10 +443,10 @@ namespace IBApp {
                         let symbol = under.Contract.LocalSymbol
                         from byStrike in ReqOptionChainOldCache(under.Contract.LocalSymbol, DateTime.MinValue
                         , strike, false)
-                        let exps = byStrike.Where(o => !o.IsExpired).Select(o => o.Expiration).Distinct().OrderBy(ex => ex).ToArray()
+                        let exps = byStrike.Select(o => o.Expiration).Distinct().OrderBy(ex => ex).ToArray()
                         from exp in exps.Take(1)
                         from byExp in ReqOptionChainOldCache(under.Contract.LocalSymbol, exp, 0, false)
-                        let strikes = byExp.Where(o => !o.IsExpired).Select(o => o.Strike).Distinct().OrderBy(st => st).ToArray()
+                        let strikes = byExp.Select(o => o.Strike).Distinct().OrderBy(st => st).ToArray()
                         select (exps, strikes)).Replay().RefCount();
         return _allStrikesAndExpirations.TryAdd(underSymbol, newCache) ? newCache : _allStrikesAndExpirations[underSymbol];
       }
@@ -464,7 +464,7 @@ namespace IBApp {
           });
       }
     }
-    public bool IsExpired(DateTime expiration) => false;//!expiration.IsMin() && expiration.InNewYork().Add(new TimeSpan(16, 15, 0)) < ServerTime.InNewYork();
+    public bool IsExpired(DateTime expiration) => !expiration.IsMin() && expiration.InNewYork().Add(new TimeSpan(16, 15, 0)) < ServerTime.InNewYork();
     public IObservable<Contract> ReqOptionChainOldAsync(string symbol, DateTime expirationDate, double strike, bool waitForAllStrikes) {
       Passager.ThrowIf(() => expirationDate.IsMin() && strike == 0, new { expirationDate, strike } + "");
       var fopDate = expirationDate;

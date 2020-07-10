@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using CURRENT_OPTIONS = System.Collections.Generic.IList<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option, double deltaBid, double deltaAsk)>;
+using CURRENT_OPTIONS = System.Collections.Generic.IList<IBApp.CurrentCombo>;
 using CURRENT_ROLLOVERS = System.IObservable<(IBApp.ComboTrade trade, IBApi.Contract roll, int days, double bid, double ppw, double amount, double dpw, double perc, double delta)>;
 using CURRENT_HEDGES = System.Collections.Generic.List<(IBApi.Contract contract, IBApi.Contract[] options, double ratio, double price, string context, bool isBuy)>;
 using System.Reactive.Concurrency;
@@ -21,7 +21,7 @@ namespace IBApp {
   public partial class AccountManager {
 
     #region Make Straddles
-    public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo, double deltaBid, double deltaAsk)[]>
+    public IObservable<CurrentCombo[]>
       CurrentStraddles(string symbol, double strikeLevel, int expirationDaysSkip, int count, int gap) {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
@@ -30,39 +30,36 @@ namespace IBApp {
         from p in combo.contract.ReqPriceSafe().DefaultIfEmpty()
         select CurrentComboInfo(price, combo, p)).ToArray()
         .Select(b => b
-         .OrderBy(t => t.ask.Avg(t.bid))
+         .OrderBy(t => t.marketPrice.ask.Avg(t.marketPrice.bid))
          .Select((t, i) => ((t, i)))
          .OrderBy(t => t.i > 1)
-         .ThenBy(t => t.t.ask.Avg(t.t.bid) / t.t.delta)
-         .ThenByDescending(t => t.t.delta)
+         .ThenBy(t => t.t.marketPrice.ask.Avg(t.t.marketPrice.bid) / t.t.deltaAsk.Avg(t.t.deltaBid))
+         .ThenByDescending(t => t.t.deltaAsk.Avg(t.t.deltaBid))
          .Select(t => t.t)
          .ToArray()
          );
     }
 
-    private static (string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo, double deltaBid, double deltaAsk)
+    private static CurrentCombo
       CurrentComboInfo(double underPrice, (Contract contract, Contract[] options) combo, MarketPrice p) {
       var strikeAvg = combo.options.Average(o => o.Strike);
       double pa = p.ask.Avg(p.bid);
       var iv = combo.options.Sum(o => o.IntrinsicValue(underPrice));
-      return (
-              instrument: combo.contract.Instrument,
-              p.bid,
-              p.ask,
-              p.time,//.ToString("HH:mm:ss"),
-              delta: pa - iv,
+      //p.delta = pa - iv;
+      return new CurrentCombo(
+              combo.contract.Instrument,
+              p,
               strikeAvg,
               underPrice,
-              breakEven: (up: strikeAvg + pa, dn: strikeAvg - pa),
+              (up: strikeAvg + pa, dn: strikeAvg - pa),
               combo,
-              deltaBid: p.bid - iv,
-              deltaAsk: p.ask - iv
+              p.bid - iv,
+              p.ask - iv
             );
     }
 
     public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo)[]>
       CurrentStraddles(string symbol, int expirationDaysSkip, int count, int gap) {
-      (IBApi.Contract contract, double bid, double ask, DateTime time) priceEmpty = default;
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
         from underPrice in cd.Contract.ReqPriceSafe(5).Select(p => p.bid)
@@ -216,9 +213,9 @@ namespace IBApp {
         from up in u.Contract.ReqPriceSafe()
         let nextFriday = MathCore.GetWorkingDays(DateTime.Now, DateTime.Now.AddDays(tvDays).GetNextWeekday(DayOfWeek.Friday))
         from cs in CurrentOptions(symbol, double.NaN, nextFriday, 6, c => c.Expiration.DayOfWeek == DayOfWeek.Friday)
-        let calls = cs.Where(c => c.option.IsCall).OrderByDescending(c => c.delta).Take(2)
-        let puts = cs.Where(c => c.option.IsPut).OrderByDescending(c => c.delta).Take(2)
-        select calls.Concat(puts).Select(o => (o.option, u.Contract, o.underPrice, o.bid, o.ask, o.delta)).ToArray());
+        let calls = cs.Where(c => c.option.IsCall).OrderByDescending(c => c.marketPrice.delta).Take(2)
+        let puts = cs.Where(c => c.option.IsPut).OrderByDescending(c => c.marketPrice.delta).Take(2)
+        select calls.Concat(puts).Select(o => (o.option, u.Contract, o.underPrice, o.marketPrice.bid, o.marketPrice.ask, o.marketPrice.delta)).ToArray());
     }
     //public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count) =>
     static IScheduler esCurrOptions = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "CurrOptions" });
@@ -237,25 +234,22 @@ namespace IBApp {
           where filter(option)
           from p in option.ReqPriceSafe(10, Common.CallerChain("Current Option")).DefaultIfEmpty()
           let pa = p.ask.Avg(p.bid)
-          select (
+          select (CurrentCombo)(
             instrument: option.Instrument,
-            p.bid,
-            p.ask,
-            p.time,//.ToString("HH:mm:ss"),
-            delta: option.ExtrinsicValue(pa, price),
+            p,
             option.Strike,
             price,
             breakEven: (up: option.Strike + pa, dn: option.Strike - pa),
             option,
             deltaBid: option.ExtrinsicValue(p.bid, price),
-            deltaAsk: p.delta
+            deltaAsk: option.ExtrinsicValue(p.ask, price)
           ))
         .ToArray()
         .Select(b => b
-        .OrderBy(t => t.ask.Avg(t.bid))
+        .OrderBy(t => t.marketPrice.ask.Avg(t.marketPrice.bid))
         .Select((t, i) => (t, i))
         .OrderBy(t => t.i > 3)
-        .ThenBy(t => t.t.ask.Avg(t.t.bid) / t.t.delta)
+        .ThenBy(t => t.t.marketPrice.ask.Avg(t.t.marketPrice.bid) / t.t.deltaAsk.Avg(t.t.deltaBid))
         .ThenBy(t => t.t.option.Right)
         .Select(t => t.t)
         .ToArray())

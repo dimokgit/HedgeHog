@@ -45,7 +45,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson;
 using IBApp;
 //using COMBO_HISTORY = System.Collections.Generic.List<IBApp.MarketPrice>;
-using CURRENT_OPTION = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, IBApi.Contract option, double deltaBid, double deltaAsk)>;
+using CURRENT_OPTION = System.Collections.Generic.List<IBApp.CurrentCombo>;
 using CURRENT_STRADDLE = System.Collections.Generic.List<(string instrument, double bid, double ask, System.DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (IBApi.Contract contract, IBApi.Contract[] options) combo)>;
 using IBApi;
 using ReactiveUI.Legacy;
@@ -1203,7 +1203,8 @@ namespace HedgeHog.Alice.Store {
                 DateTime saveTime = DateTime.MinValue;
                 DateTime ResetSaveTime() => DateTime.Now.AddMinutes(1);
                 saveTime = ResetSaveTime();
-                TimeValueHistory(pairCode, tm => tm.StraddleHistory, c => c.StraddleHistories, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
+                TimeValueHistory(pairCode, tm => tm.StraddleHistory, c => c.StraddleHistories, ibWraper, shcp, straddleStartId
+                  , () => Interlocked.Increment(ref _id), 3, ResetSaveTime);
                 //TimeValueHistory(straddlePair, tm => tm.StraddleHistory2, c => c.StraddleHistories2, ibWraper, shcp, straddleStartId, () => Interlocked.Increment(ref _id), 4, ResetSaveTime);
               }
             }
@@ -1218,13 +1219,11 @@ namespace HedgeHog.Alice.Store {
       int nextFriday() => (DateTime.Today.GetNextWeekday(DayOfWeek.Friday) - DateTime.Today).TotalDays.ToInt();
       _priceChangeDisposable = (
         from price in _priceChangeObservable
-        from x in ibWraper.AccountManager.CurrentOptions(Pair, double.NaN, TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, c => true)
-        let calls = x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(2)
-        let puts = x.Where(t => t.option.IsPut).OrderByDescending(t => t.deltaBid).Take(2)
-        select calls.Concat(puts).Where(p => p.deltaBid > 0).ToArray()
+        from x in ibWraper.AccountManager.CurrentStraddles(Pair, double.NaN, TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, 0)
+        where x.Length == 3
+        select x
       )
-      .Where(a => a.Length == 4)
-      .Scan((p, n) => p.EmptyIfNull().Concat(n).TakeLast(4 * 5).ToArray())
+      //.Scan((p, n) => p.EmptyIfNull().Concat(n).TakeLast(4 * 5).ToArray())
       //.Select(a => a.Average(p => p.deltaBid))
       .Subscribe(straddle => {
         UseStraddleHistory(straddleHistory, shs => {
@@ -1232,15 +1231,16 @@ namespace HedgeHog.Alice.Store {
           .DefaultIfEmpty(new MarketPrice(double.NaN, double.NaN, DateTime.MinValue, double.NaN,double.NaN))
           .ToList()
           .ForEach(sh => shs.Add(
+            sh.bid.Cma(shcp, GetStraddlePrice(straddle)).With(x=>
 new MarketPrice(
-            sh.bid.Cma(shcp, GetStraddlePrice(straddle)),
-            GetStraddlePrice(straddle.Where(s => s.option.IsCall)),
+            sh.bid.Cma(shcp, x),
+            sh.ask.Cma(shcp, x),
             ServerTime,
-            GetStraddlePrice(straddle.Where(s => s.option.IsPut)),
+            sh.delta.Cma(shcp, x),
             sh.theta
-            )
+            ))
             // turned off to test for leaks
-            .SideEffect(()=> straddle.Length == 0, t => GlobalStorage.UseForexMongo(c => straddleHistoryDbSet(c).Add(new StraddleHistory(
+            .SideEffect(()=> straddle.Length < 0, t => GlobalStorage.UseForexMongo(c => straddleHistoryDbSet(c).Add(new StraddleHistory(
               straddleStartId + _id(),
               pairCode,
               t.bid,
@@ -1273,7 +1273,7 @@ new MarketPrice(
         }, () => {
           Log = new Exception("_priceChangeDisposable done");
         });
-      double GetStraddlePrice(IEnumerable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract option, double deltaBid, double deltaAsk)> straddle)
+      double GetStraddlePrice(IEnumerable<CurrentCombo> straddle)
         => straddle.Select(p => p.deltaBid.Avg(p.deltaAsk)).OrderByDescending(d => d).Take(4).Average();
     }
 
@@ -1286,7 +1286,7 @@ new MarketPrice(
         from callWing in x.Where(t => t.option.IsCall && t.strikeAvg <= callBody.strikeAvg - 25).OrderByDescending(t => t.strikeAvg).Take(1)
         select (callBody, callWing)
       )
-      .Where(straddle => straddle.callBody.bid > 0 && straddle.callWing.deltaAsk > 0)
+      .Where(straddle => straddle.callBody.marketPrice.bid > 0 && straddle.callWing.deltaAsk > 0)
       .Subscribe(straddle => {
         var deltaBody = straddle.callBody.deltaBid;
         var deltaWing = straddle.callWing.deltaAsk;
@@ -1298,7 +1298,7 @@ new MarketPrice(
             (
             bid: sh.bid.Cma(shcp, deltaBody - deltaWing),
             ask: 0,
-            time: straddle.callBody.time.Max(straddle.callWing.time),
+            time: straddle.callBody.marketPrice.time.Max(straddle.callWing.marketPrice.time),
             delta: 0,
             theta: double.NaN
             )

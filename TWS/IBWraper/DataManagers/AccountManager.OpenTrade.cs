@@ -157,30 +157,36 @@ namespace IBApp {
       }
       IEnumerable<OrderContractHolder> Default() { yield break; }
     }
-    public PendingOrder OpenSpreadTrade((string pair, bool buy, int lots)[] legs, double takeProfit, double stopLoss, string remark, bool whatIf) {
-      UseOrderContracts(orderContracts => {
-        var isStock = legs.All(l => l.pair.IsUSStock());
-        var legs2 = legs.Select(t => (t.pair, t.buy, t.lots, price: IbClient.GetPrice(t.pair))).ToArray();
-        var price = legs2[0].price;
-        var rth = Lazy.Create(() => new[] { price.Time.Date.AddHours(9.5), price.Time.Date.AddHours(16) });
-        var isPreRTH = !whatIf && isStock && !price.Time.Between(rth.Value);
-        var orderType = "MKT";
-        var c = ContractSamples.StockComboContract();
-        var o = new IBApi.Order() {
-          Account = _accountId,
-          OrderId = NetOrderId(),
-          Action = legs[0].buy ? "BUY" : "SELL",
-          OrderType = orderType,
-          TotalQuantity = legs[0].lots,
-          Tif = GTC,
-          OutsideRth = isPreRTH,
-          WhatIf = whatIf,
-          OverridePercentageConstraints = true
-        };
-        _verbous(new { plaseOrder = new { o, c } });
-        IbClient.OnReqMktData(() => IbClient.ClientSocket.placeOrder(o.OrderId, c, o));
-      });
-      return null;
+    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenEdgeTrade(string instrument, bool isCall, int quantity, double edge, double takeProfitPoints, string ocaGroup) {
+      return UseOrderContracts(orderContracts => {
+        var mul = isCall ? -1 : 1;
+        var enterLevel = edge;
+        var exitLevel = enterLevel + takeProfitPoints * mul;
+        var orderError =
+        from ucd in IbClient.ReqContractDetailsCached(instrument)
+        let underContract = ucd.Contract
+        from up in underContract.ReqPriceSafe()
+        let enterCondition = underContract.PriceCondition(enterLevel.ThrowIf(() => isCall ? enterLevel < up.ask : enterLevel > up.bid), isCall)
+        let exitCondition = underContract.PriceCondition(exitLevel, !isCall)
+        from options in CurrentOptions(instrument, enterLevel, 0, 2, c => c.IsCall == isCall)
+        from option in options.OrderBy(o => o.option.Strike * mul).Take(1)
+        let profit = quantity * takeProfitPoints * option.option.ComboMultiplier
+        from ots in OpenTradeWithAction(
+          o => {
+            if(!ocaGroup.IsNullOrEmpty()) {
+              o.OcaGroup = ocaGroup;
+              o.OcaType = (int)OCAType.CancelWithBlocking.Value;
+            }
+          },
+          option.option, -quantity,
+          condition: enterCondition,
+          useTakeProfit: true,
+          profit: profit,
+          takeProfitCondition: new[] { exitCondition }
+          )
+        select ots;
+        return orderError;
+      }).SingleOrDefault() ?? Observable.Empty<(OrderContractHolder holder, ErrorMessage error)[]>();
     }
     double OrderPrice(double orderPrice, Contract contract) {
       var minTick = contract.MinTick();
@@ -357,7 +363,7 @@ namespace IBApp {
       return order;
     }
 
-    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract,IList<OrderCondition> takeProfitCondition, double profit) {
+    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract, IList<OrderCondition> takeProfitCondition, double profit) {
       var takeProfitPrice = takeProfitCondition.OfType<PriceCondition>().ToList();
       bool isPreRTH = false;
       var isMarket = takeProfitPrice.Any();

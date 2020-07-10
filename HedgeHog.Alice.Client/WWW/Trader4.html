@@ -1332,6 +1332,7 @@
         <b data-bind="text:d3.format('.2f')(spread)"></b>
         <!-- /ko -->
         <select data-bind="options:strategyType,optionsText:'text',optionsValue:'text',value:strategyCurrent,optionsCaption:'...'"></select>
+        <button class="small" data-bind="click:openEdge,enable:canTrade">Edge</button>
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
         <select data-bind="options:rollOversList,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>
@@ -1444,7 +1445,7 @@
         <!--<td>Bid</td>-->
         <td>Ask</td>
         <td>PL$</td>
-        <td>UPL$</td>
+        <td>Δ/Θ</td>
         <td style="text-align:center">Trade</td>
       </tr>
       <!-- ko foreach:currentCombos -->
@@ -1460,7 +1461,7 @@
         <!--<td data-bind="text:d3.format('.2f')(bid())"></td>-->
         <td data-bind="text:d3.format('.2f')(ask())"></td>
         <td data-bind="text:d3.format('$.0f')(maxPL())"></td>
-        <td data-bind="text:d3.format('.1f')(Math.abs(greekDelta()))+'/'+d3.format('.1f')($root.currentProfit()*Math.abs(greekDelta())/ask())"></td>
+        <td data-bind="text:d3.format('.1f')(Math.abs(greekDelta()))+'/'+d3.format('.1f')(theta())"></td>
         <td>
           <button data-bind="click:$parent.openButterfly.bind($root,false,$data,true),enabled:$root.canTrade,visible:!$root.hasStrategy()" title="Sell with condition">Sell</button>
           <button data-bind="click:$parent.openButterfly.bind($root,true,$data,true),enabled:$root.canTrade" title="Buy with condition">Buy</button>

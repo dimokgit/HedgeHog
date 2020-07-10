@@ -69,13 +69,28 @@ namespace ConsoleApp {
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7497;
-      const int clientId = 0;
+      const int clientId = 1;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       #endregion
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        Tests.HedgeCombo(am); return;
+        //Tests.HedgeCombo(am); return;
+        {
+          var ocaGroup = "oca-edge-option:" + DateTime.Now.Ticks;
+          var symbol = "ESU0";
+          HandleMessage("am.OpenEdgeTrade(\"ESU0\", true, 1, new[] { 3190.0, 3120.0 }, 15,ocaGroup)");
+          (from c in symbol.ReqContractDetailsCached().Select(cd => cd.Contract)
+           from p in c.ReqPriceSafe()
+           select p.avg
+           ).Subscribe(level => {
+             am.OpenEdgeTrade(symbol, true, 1, level+ 30, 15, ocaGroup)
+             .Subscribe(HandleMessage);
+             am.OpenEdgeTrade(symbol, false, 1, level-30.0, 15, ocaGroup)
+             .Subscribe(HandleMessage);
+           });
+          return;
+        }
         var ess = new[] { "VXM0", "NQZ9", "ESM0", "RTYZ9", "IWM", "SPY", "QQQ" };
         //LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
         LoadMultiple(DateTime.Now.AddMonths(-6), ess[2]);

@@ -22,10 +22,12 @@ using System.Threading;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
-
-    public (double up, double down) StraddleRange(double gap) {
+    static TimeSpan _beforeHourTime = 9.5.FromHours();
+    static TimeSpan _afterHourTime = 17.0.FromHours();
+    public BlackScholesRange StraddleRange() {
       double volatility = HistoricalVolatilityAnnualized();
-      double spot = BeforeHours.SkipWhile(h => h.dates.Last().TimeOfDay < 9.5.FromHours()).Take(1).Select(h => h.upDown.Average()).SingleOrDefault();// UseRates(ra => ra.BackwardsIterator().SkipWhile(r => r.StartDate.Hour != 8).Take(1)).Concat().ToArray();
+      var hh = CurrentSpecialHours().SingleOrDefault();
+      double spot = (hh.upDown?.Average()).GetValueOrDefault();// UseRates(ra => ra.BackwardsIterator().SkipWhile(r => r.StartDate.Hour != 8).Take(1)).Concat().ToArray();
       if(volatility == 0 || spot == 0) {
         //Log = new Exception(new { StraddleRange = new { volatility, spot } } + "");
         return default;
@@ -33,18 +35,30 @@ namespace HedgeHog.Alice.Store {
       double intRate = 2.0 / 100;// (Math.Pow(2 / 100 + 1, 1) - 1);
       int daysToExp = 1;
       double strikeStep = 5;
+      double gap = 0;
       double strikeShift = gap * strikeStep / 2;
       double strikeUp = gap == 0 ? spot.RoundBySample(strikeStep) : (spot + strikeShift).RoundBySample(strikeStep);
       double strikeDown = gap == 0 ? spot.RoundBySample(strikeStep) : (spot - strikeShift).RoundBySample(strikeStep);
       double dividents = 2.0029 / 100;
-      var c = BlackScholes.CallPrice(spot, strikeUp, intRate, dividents, daysToExp, volatility);
-      var p = BlackScholes.PutPrice(spot, strikeDown, intRate, dividents, daysToExp, volatility);
+      double r = hh.r;
+      var c = BlackScholes.CallPrice(spot, strikeUp, intRate, dividents, daysToExp, volatility) * r;
+      var p = BlackScholes.PutPrice(spot, strikeDown, intRate, dividents, daysToExp, volatility) * r;
       _currentCallByHV = c;
       _currentPutByHV = p;
-      return (strikeUp + c, strikeDown - p);
+      return new BlackScholesRange(strikeUp, strikeDown, c, p);
     }
 
+
+    private double HistoricalVolatilityAnnualizedMini() {
+      var ano = Math.Sqrt(365);
+      //var days0 = UseRatesInternal(ri => ri.GroupBy(r => r.StartDate.Date).ToArray());
+      var hv = UseRatesInternal(ri => ri.GroupBy(r => r.StartDate.Round(1))
+       .Select(g => g.FirstOrDefault().PriceAvg).ToArray())
+        .Select(days0 => days0.HistoricalVolatility() * ano);
+      return hv.SingleOrDefault();
+    }
     private double HistoricalVolatilityAnnualized() {
+      if(BarPeriod == BarsPeriodType.t1) return HistoricalVolatilityAnnualizedMini();
       var ano = Math.Sqrt(365);
       //var days0 = UseRatesInternal(ri => ri.GroupBy(r => r.StartDate.Date).ToArray());
       var hv = UseRatesInternal(ri => ri.Where(r => r.StartDate.Hour == 16).GroupBy(r => r.StartDate.Date)
@@ -107,7 +121,7 @@ namespace HedgeHog.Alice.Store {
             var pos = -puts.Select(p => p.position.Abs()).DefaultIfEmpty(TradingRatio.ToInt()).Max();
             CurrentPut?.ForEach(p => {
               Log = new Exception($"{nameof(TradeConditionsTrigger)}:{nameof(am.OpenTrade)}:{new { p.option, pos, Thread.CurrentThread.ManagedThreadId }}");
-              am.OpenTrade(p.option, pos, p.ask, 0.2, true, ServerTime.AddMinutes(5));
+              am.OpenTrade(p.option, pos, p.marketPrice.ask, 0.2, true, ServerTime.AddMinutes(5));
             });
           });
       }
@@ -775,5 +789,46 @@ namespace HedgeHog.Alice.Store {
     private double _currentCallByHV;
 
     private double _currentPutByHV;
+  }
+
+  public struct BlackScholesRange {
+    public readonly double Up;
+    public readonly double Down;
+    public readonly double StrikeAvg;
+
+    public double StrikeUp { get; }
+    public double StrikeDown { get; }
+    public double CallPrice { get; }
+    public double PutPrice { get; }
+
+    public BlackScholesRange(double strikeUp, double strikeDown, double callPrice, double putPrice) {
+      StrikeUp = strikeUp;
+      StrikeDown = strikeDown;
+      CallPrice = callPrice;
+      PutPrice = putPrice;
+
+      Up = StrikeUp + CallPrice;
+      Down = StrikeDown - PutPrice;
+      StrikeAvg = StrikeUp.Avg(StrikeDown);
+    }
+
+    public override bool Equals(object obj) => obj is BlackScholesRange other && Up == other.Up && Down == other.Down;
+
+    public override int GetHashCode() {
+      var hashCode = -1748491979;
+      hashCode = hashCode * -1521134295 + StrikeUp.GetHashCode();
+      hashCode = hashCode * -1521134295 + StrikeDown.GetHashCode();
+      hashCode = hashCode * -1521134295 + CallPrice.GetHashCode();
+      hashCode = hashCode * -1521134295 + PutPrice.GetHashCode();
+      return hashCode;
+    }
+
+    public static bool operator ==(BlackScholesRange left, BlackScholesRange right) {
+      return left.Equals(right);
+    }
+
+    public static bool operator !=(BlackScholesRange left, BlackScholesRange right) {
+      return !(left == right);
+    }
   }
 }

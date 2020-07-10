@@ -232,7 +232,7 @@ namespace HedgeHog.Alice.Client {
   }
 
   [BasicAuthenticationFilter]
-  public class MyHub :Hub {
+  public partial class MyHub :Hub {
     class SendChartBuffer :AsyncBuffer<SendChartBuffer, Action> {
       protected override Action PushImpl(Action action) {
         return action;
@@ -566,25 +566,27 @@ namespace HedgeHog.Alice.Client {
                   .Select(ts => {
                     var cs = ts.Select(t => {
                       var d = DaysTillExpiration(t.combo.contract.Expiration);
-                      var breakEven = t.combo.contract.BreakEven(t.bid).ToArray();
+                      var mp = t.marketPrice;
+                      var breakEven = t.combo.contract.BreakEven(mp.bid).ToArray();
                       return new {
                         i = t.instrument,
                         l = t.combo.contract.DateWithShort,
                         d = (t.combo.contract.IsFutureOption ? d.Round(1) + " " : ""),
-                        t.bid,
-                        t.ask,
-                        avg = t.ask.Avg(t.bid),
-                        time = t.time.ToString("HH:mm:ss"),
+                        mp.bid,
+                        mp.ask,
+                        avg = mp.ask.Avg(mp.bid),
+                        time = mp.time.ToString("HH:mm:ss"),
                         delta = t.deltaBid,
                         strike = t.strikeAvg,
-                        perc = (t.bid / t.underPrice * 100),
+                        perc = (mp.bid / t.underPrice * 100),
                         strikeDelta = t.strikeAvg - strikeLevel.GetValueOrDefault(t.underPrice),
                         be = new { t.breakEven.up, t.breakEven.dn },
                         isActive = false,
-                        maxPlPerc = t.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100 / d,
-                        maxPL = t.bid * quantity * t.combo.contract.ComboMultiplier,
+                        maxPlPerc = mp.bid * quantity * t.combo.contract.ComboMultiplier / am.Account.Equity * 100 / d,
+                        maxPL = mp.bid * quantity * t.combo.contract.ComboMultiplier,
                         underPL = 0,
-                        greekDelta = t.deltaAsk,
+                        greekDelta = mp.delta,
+                        mp.theta,
                         breakEven
                       };
                     });
@@ -605,27 +607,32 @@ namespace HedgeHog.Alice.Client {
                 var exp = ts.Select(t => new { dte = DateTime.Now.Date.GetWorkingDays(t.option.Expiration), exp = t.option.LastTradeDateOrContractMonth2 }).Take(1).ToArray();
                 var options = ts
                 .Select(t => {
-                  var maxPL = t.deltaBid * quantity * t.option.ComboMultiplier;
+                  var mp = t.marketPrice;
+                  var option = t.combo.contract;
+                  var maxPL = t.deltaBid * quantity * option.ComboMultiplier;
                   var strikeDelta = t.strikeAvg - t.underPrice;
                   var _sd = t.strikeAvg - sl.IfNaNOrZero(t.underPrice);
                   return new {
-                    i = t.option.Instrument,
-                    l = t.option.DateWithShort,
-                    t.bid,
-                    t.ask,
-                    avg = t.ask.Avg(t.bid),
-                    time = t.time.ToString("HH:mm:ss"),
+                    i = option.Instrument,
+                    l = option.DateWithShort,
+                    mp.bid,
+                    mp.ask,
+                    avg = mp.ask.Avg(mp.bid),
+                    time = mp.time.ToString("HH:mm:ss"),
                     delta = t.deltaBid,
                     strike = t.strikeAvg,
-                    perc = (t.ask.Avg(t.bid) / t.underPrice * 100),
+                    perc = (mp.ask.Avg(mp.bid) / t.underPrice * 100),
                     strikeDelta,
                     be = new { t.breakEven.up, t.breakEven.dn },
                     isActive = false,
-                    cp = t.option.Right,
-                    maxPlPerc = t.deltaBid * quantity * t.option.ComboMultiplier / am.Account.Equity * 100 / exp[0].dte,
+                    cp = option.Right,
+                    maxPlPerc = t.deltaBid * quantity * option.ComboMultiplier / am.Account.Equity * 100 / exp[0].dte,
                     maxPL,
                     _sd,
-                    greekDelta = t.deltaAsk
+                    greekDelta = mp.delta,
+                    mp.theta,
+                    t.breakEven
+
                   };
                 })
                 .OrderBy(t => t.strike.Abs(sl))
@@ -981,80 +988,22 @@ namespace HedgeHog.Alice.Client {
           }
         });
     }
-    static bool _isTest = false;
-    [BasicAuthenticationFilter]
-    public async Task<string[]> OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice, double? profitInPoints, string rollTrade = null) {
-      if(!rollTrade.IsNullOrWhiteSpace()) {
-        return await RollTrade(rollTrade, instrument);
-      }
 
+    [BasicAuthenticationFilter]
+    public async Task<string> CreateEdgeOrder(string pair, bool isCall, int quantity) {
       var tm = UseTraderMacro(pair).Single();
+      var tm1 = tm.TradingMacroM1().SingleOrDefault();
+      if(tm1 == null) return "No TradingMacroM1 found.";
+      var am = GetAccountManager();
+      var edge = tm1.StraddleRange().With(sr => isCall ? sr.Up : sr.Down);
+      if(edge == 0) throw new Exception($"No edges in {nameof(tm.CurrentSpecialHours)}");
       var std = tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
-      var profit = profitInPoints.GetValueOrDefault(std * 4);
-      if(profit == 0) throw new Exception("No trend line found for profit calculation");
-      var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
-      if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
-        return await OpenCondOrder(am, tm, contract, null, quantity, (conditionPrice.GetValueOrDefault(), pair), profit);
-      else
-        return new[] { new { instrument, not = "found" } + "" };
-    }
-    static async Task<string[]> OpenCondOrder(AccountManager am, TradingMacro tm, Contract option, bool? isCall, int quantity, (double price, string instrument) condition, double profit) {
-      if(option != null && isCall != null || option == null && isCall == null)
-        throw new Exception(new { OpenCondOrder = new { option, isCall } } + "");
       {
-        var std = tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
-        var hasStrategy = tm.Strategy.HasFlag(Strategies.Universal);
-        var bs = hasStrategy ? new { b = tm.BuyLevel.Rate, s = tm.SellLevel.Rate } : new { b = double.NaN, s = double.NaN };
-        if(hasStrategy && (bs.s.IsNaN() || bs.b.IsNaN()))
-          throw new Exception("Buy/Sell levels are not set by strategy");
-        var isSell = quantity < 0;
-        var isBuy = quantity > 0;
-        var hasCondition = condition.price > 0;
-        var dateAfter = _isTest ? DateTime.Now.AddDays(1) : default;
-        int Delta(Contract c) => c.DeltaSign * quantity;
-        Action<IBApi.Order> orderExt = o => o.SetGoodAfter(dateAfter);
-        var res = await (from contract in Observable.Return(option)
-                         from price in contract.ReqPriceSafe()
-                         from underContract in contract.UnderContract
-                         from underPrice in underContract.ReqPriceSafe().Select(p => p.ask.Avg(p.bid))
-                         from call in am.CurrentOptions(underContract.SymbolSafe, underPrice, 0, 1, c => c.IsCall)
-                         from put in am.CurrentOptions(underContract.SymbolSafe, underPrice, 0, 1, c => c.IsPut)
-                         let condPrice = condition.price.IfNaNOrZero(hasStrategy ? contract.IsPut && isBuy || contract.IsCall && isSell ? bs.s : bs.b : 0).Round(2)
-                         let isMoreOrder = condPrice.IsNaNOrZero() ? (bool?)null : condPrice > underPrice
-                         let upProfit = profit * Delta(contract)
-                         let condTakeProfit = contract.IsCallPut
-                         ? buildConditions(underContract
-                          , condition.price.IfNaNOrZero(underPrice).With(p
-                          => contract.ComboStrike().With(s
-                          => new[] { s - std, s + std })), isBuy, tm.ServerTime.AddHours(2), a => orderExt += a)
-                         : new[] { underContract.PriceCondition((condPrice.IfNaNOrZero(underPrice) + upProfit).Round(2), upProfit > 0, false) }
-                         let t = new { price = condPrice == 0 ? lp(contract,isSell, price) : 0 }
-                         from ots in am.OpenTradeWithAction(orderExt, contract, quantity, t.price, 0
-                          , (bool)condTakeProfit?.Any(), DateTime.MaxValue, default
-                          , t.price != 0 || !isMoreOrder.HasValue ? null
-                          : underContract.PriceCondition(condPrice.Round(2), isMoreOrder.Value, false)
-                          , condTakeProfit)
-                         from ot in ots
-                         where ot.error.HasError
-                         select ot.error.exc?.Message ?? $"{ot.error.errorCode}: {ot.error.errorMsg}"
-          ).ToArray();
-        return res;
-      }
-      double lp(Contract c,bool isSell,MarketPrice p) {
-        if(isSell) return c.IsCallPut ? p.ask : p.bid;
-        return c.IsCallPut ? p.bid : p.ask;
-      }
-      IList<OrderCondition> buildConditions
-        (Contract condContract, IList<double> prices, bool isMore, DateTime goodAfter = default, Action<Action<IBApi.Order>> orderExt = default) {
-        if(prices.Count == 1)
-          return prices.Select(p => condContract.PriceCondition(p, isMore)).ToList();
-        if(goodAfter == default) throw new Exception($"{nameof(goodAfter)} parameter is missing, {new { goodAfter }}");
-        if(prices.Count != 2)
-          throw new Exception($"{nameof(prices)} parameter must have exactly 2 prices, {new { prices = prices.Flatter(",") }}");
-        // Set between condition
-        return prices.OrderBy(p => p).Select((p, i) => condContract.PriceCondition(p, isMore ? i != 0 : i == 0, !isMore))
-          .Concat(new[] { goodAfter.TimeCondition(true, true) }.Where(_ => !isMore))
-          .ToList();
+        var x = from ots in am.OpenEdgeTrade(pair, isCall, quantity, edge, std, "oca-edge-options:" + DateTime.Now.Ticks)
+                from ot in ots
+                where ot.error.HasError
+                select ot.error.exc?.Message ?? $"{ot.error.errorCode}: {ot.error.errorMsg}";
+        return await x;
       }
     }
     public async Task<object[]> OpenStrategyOption(string option, int quantity, double level, double profit) =>

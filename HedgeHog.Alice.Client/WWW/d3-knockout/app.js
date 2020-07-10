@@ -1167,6 +1167,15 @@
           , function () { this.canTrade(true); }.bind(this)
         );
       }.bind(this);
+      this.openEdge = function () {
+        this.canTrade(false);
+        var isCall = true;
+        serverCall("createEdgeOrder", [pair, isCall, this.comboQuantity()]
+          , null
+          , null
+          , function () { this.canTrade(true); }.bind(this)
+        );
+      }.bind(this);
       this.closeCombo = function (key) {
         this.canTrade(false);
         serverCall("closeCombo", [ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel()], done, null, function () { this.canTrade(false); }.bind(this));

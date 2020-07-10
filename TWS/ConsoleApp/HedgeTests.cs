@@ -27,7 +27,7 @@ namespace ConsoleApp {
         (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, -hp().p2, false)
          from cd in hc.contract.ReqContractDetailsCached()
          from p in cd.Contract.ReqPriceSafe().Select(ab => quantityParent > 0 ? ab.ask : ab.bid)
-         from ot in am.OpenTrade(o => o.Transmit = !isTest, cd.Contract, hc.quantity, p)
+         from ot in am.OpenTradeWithAction(o => o.Transmit = !isTest, cd.Contract, hc.quantity, p)
          select ot
          )
          .Subscribe(c => {
@@ -40,7 +40,7 @@ namespace ConsoleApp {
        from ct in am.ComboTrades(1)
        where ct.contract.IsBag
        from p in ct.contract.ReqPriceSafe().Select(ab => ab.Price(true))
-       from ots in am.OpenTrade(o => o.Transmit = false, ct.contract, -ct.position)
+       from ots in am.OpenTradeWithAction(o => o.Transmit = false, ct.contract, -ct.position)
        from ot in ots
        select ot
       ).Subscribe(oc => Program.HandleMessage(oc));
@@ -97,7 +97,7 @@ namespace ConsoleApp {
                     //.Subscribe(orderHolder => {
                     //  HandleMessage(orderHolder.ToTextOrTable());
                     //});
-                    am.OpenTrade(o => o.Transmit = false, buy ? optionHedge.buy : optionHedge.sell, optionHedge.quantity)
+                    am.OpenTradeWithAction(o => o.Transmit = false, buy ? optionHedge.buy : optionHedge.sell, optionHedge.quantity)
                     .SelectMany(ohs => ohs.Select(oh => new { oh.holder, oh.error }))
                     .ToArray()
                     //.Do(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable("Hedge Order")); })
@@ -112,7 +112,7 @@ namespace ConsoleApp {
         return;
       }
       am.CurrentOptions(h1, double.NaN, 0, 10, c => true)
-      .Subscribe(os => Program.HandleMessage(os.Select(o => new { o.option, o.bid, o.ask }).ToArray().ToTextOrTable("Options:")));
+      .Subscribe(os => Program.HandleMessage(os.Select(o => new { o.option, o.marketPrice.bid, o.marketPrice.ask }).ToArray().ToTextOrTable("Options:")));
 
 
       (from o in am.OpenOrderObservable
@@ -139,13 +139,13 @@ namespace ConsoleApp {
           if(ct == null) Program.HandleMessage("No hedged positions found.");
           else {
             return;
-            am.OpenTrade(o => o.Transmit = false, ct.contract, -ct.position)
+            am.OpenTradeWithAction(o => o.Transmit = false, ct.contract, -ct.position)
             .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
             var combo = AccountManager.MakeHedgeCombo(maxLegQuantity, Contract.FromCache(h1).Single(), Contract.FromCache(h2).Single(), 1, 0.6).With(c => new { c.contract, c.quantity });
             var j2 = combo.contract.ToJson(true);
             var pos = -1;
             if(pos == -11)
-              am.OpenTrade(o => o.Transmit = false, combo.contract, combo.quantity * pos)
+              am.OpenTradeWithAction(o => o.Transmit = false, combo.contract, combo.quantity * pos)
               .Subscribe(orderHolder => { Program.HandleMessage(orderHolder.ToTextOrTable()); });
           }
         });

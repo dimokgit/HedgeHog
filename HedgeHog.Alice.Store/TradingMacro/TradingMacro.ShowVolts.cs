@@ -372,7 +372,7 @@ namespace HedgeHog.Alice.Store {
         from vl in GetVoltageAverage()
         from vh in GetVoltageHigh()
         where !vl.IsNaN() && !vh.IsNaN()
-        select (vl.Percentage(vh) - put.ask.Percentage(put.bid)).ToPercent()
+        select (vl.Percentage(vh) - put.marketPrice.ask.Percentage(put.marketPrice.bid)).ToPercent()
         ).ForEach(v => SetVolts(v, 1)));
       return null;
     }
@@ -873,6 +873,11 @@ namespace HedgeHog.Alice.Store {
     [WwwSetting]
     public double CoMEndHour { get; set; } = 9.5;
 
+    public List<(double[] upDown, DateTime[] dates, double r)> CurrentSpecialHours() {
+      var bh = BeforeHours.SkipWhile(h => h.dates.Last().TimeOfDay < _beforeHourTime).Select(h => (h.upDown, h.dates, r: 1.0)).Take(1);
+      var ah = AfterHours.SkipWhile(h => h.dates.Last().TimeOfDay < _afterHourTime).Select(h => (h.upDown, h.dates, r: 0.75)).Take(1);
+      return bh.Concat(ah).OrderByDescending(h => h.dates.Last()).Take(1).ToList();
+    }
     public (double[] upDown, DateTime[] dates)[] BeforeHours = new (double[], DateTime[])[0];
     public (double[] upDown, DateTime[] dates)[] AfterHours = new (double[], DateTime[])[0];
     private void SetBeforeHours() {

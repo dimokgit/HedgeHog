@@ -16,6 +16,8 @@ namespace IBApp {
       ReqPriceSafe(this ContractDetails cd, double timeoutInSeconds = 2, [CallerMemberName] string Caller = "")
     => cd.Contract.ReqPriceSafe(timeoutInSeconds, Caller);
 
+    public static IObservable<ContractDetails> ReqContractDetailsCached(this string instriment) =>
+      IBClientCore.IBClientCoreMaster.ReqContractDetailsCached(instriment);
     public static IObservable<ContractDetails> ReqContractDetailsCached(this Contract c) =>
       IBClientCore.IBClientCoreMaster.ReqContractDetailsCached(c);
     public static double Price(this MarketPrice p, bool isBuy) => isBuy ? p.ask : p.bid;

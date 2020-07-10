@@ -229,21 +229,6 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    double _straddleGap = 0;
-    [EdmScalarPropertyAttribute(EntityKeyProperty = false, IsNullable = false)]
-    [DataMemberAttribute()]
-    [WwwSetting(Group = wwwSettingsTradingConditions)]
-    [Category(categoryActive)]
-    [DisplayName("Straddle Gap")]
-    public double StraddleGap {
-      get { return _straddleGap; }
-      set {
-        if(_straddleGap != value) {
-          _straddleGap = value;
-          OnPropertyChanged(nameof(StraddleGap));
-        }
-      }
-    }
     #region SendSMS
     private bool _sendSMS = true;
 

@@ -59,7 +59,7 @@ namespace IBApi {
 
     private const string BAG = "BAG";
     public DateTime Expiration => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max().FromTWSDateString(DateTime.Now.Date);
-    public bool IsExpired => false;// (LastTradeDateOrContractMonth+" 16:00:00").FromTWSString() <  DateTime.Now.Date.InNewYork();
+    public bool IsExpired => !LastTradeDateOrContractMonth.IsNullOrEmpty() && (LastTradeDateOrContractMonth+" 16:00:00").FromTWSString() <  DateTime.Now.Date.InNewYork();
     public string LastTradeDateOrContractMonth2 => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max();
 
     public string SymbolSafe => IsFuture ? LocalSymbol : Symbol;
