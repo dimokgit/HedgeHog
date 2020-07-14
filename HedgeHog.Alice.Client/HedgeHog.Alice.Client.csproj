@@ -796,7 +796,7 @@
       <DependentUpon>DocumentDbStrings.tt</DependentUpon>
     </Compile>
     <Compile Include="Classes\Filters\BasicAuthenticationFilter.cs" />
-    <Compile Include="Classes\OwinStartUp.MyHub.Orders.cs" />
+    <Compile Include="Classes\OwinStartUp.Orders.cs" />
     <Compile Include="Classes\Security\BasicAuthenticationIdentity.cs" />
     <Compile Include="Classes\IAccountHolder.cs" />
     <Compile Include="Classes\Market.cs" />

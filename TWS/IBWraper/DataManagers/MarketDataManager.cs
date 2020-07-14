@@ -236,7 +236,7 @@ namespace IBApp {
       const int HIGH_52 = 20;
       price2.GreekDelta = (t.Delta.Abs().Between(0, 1) ? t.Delta : 1).Round(1);
       if(!t.Theta.IsNaNOrZero())
-        price2.GreekTheta = price2.GreekTheta.Cma(10,t.Theta);
+        price2.GreekTheta = ar.contract.IsExpiring ? price2.Ask.Avg(price2.Bid): price2.GreekTheta.Min(0).Cma(10,t.Theta);
       var price = t.OptPrice;
       switch(priceMessage.Field) {
         case 1: { // Bid

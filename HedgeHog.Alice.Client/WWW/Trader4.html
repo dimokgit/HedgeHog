@@ -1320,7 +1320,8 @@
         <label><input type="radio" value="C" data-bind="checked: showOptionType" />C</label>
         <label><input type="radio" value="P" data-bind="checked: showOptionType" />P</label>
         <label><input type="radio" value="R" data-bind="checked: showOptionType" />R</label>
-        <label><input type="checkbox" data-bind="checked: freezeCombos" />F</label>
+        <label><input type="checkbox" data-bind="checked: freezeCombos" title="Freeze options panel" />F</label>
+        <label><input type="checkbox" data-bind="checked: hedgeTest" title="Use test orders" />T</label>
       </div>
       <div style="display:inline-table">
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>
@@ -1332,7 +1333,7 @@
         <b data-bind="text:d3.format('.2f')(spread)"></b>
         <!-- /ko -->
         <select data-bind="options:strategyType,optionsText:'text',optionsValue:'text',value:strategyCurrent,optionsCaption:'...'"></select>
-        <button class="small" data-bind="click:openEdge,enable:canTrade">Edge</button>
+        <button class="small" data-bind="click:openEdge,enable:canTrade,text:'Edge'+showOptionType(),visible:canOpenEdge()"></button>
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
         <select data-bind="options:rollOversList,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>

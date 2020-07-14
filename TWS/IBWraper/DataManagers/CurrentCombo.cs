@@ -55,6 +55,18 @@ namespace IBApp {
       deltaAsk = this.deltaAsk;
     }
 
+    public object ToAnon() => new {
+      instrument,
+      marketPrice,
+      strikeAvg,
+      underPrice,
+      breakEven,
+      combo,
+      deltaBid,
+      deltaAsk
+    };
+    public override string ToString() => base.ToString();
+
     public static implicit operator (string instrument, MarketPrice marketPrice, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract contract, double deltaBid, double deltaAsk)(CurrentCombo value) => (value.instrument, value.marketPrice, value.strikeAvg, value.underPrice, value.breakEven, value.combo.contract, value.deltaBid, value.deltaAsk);
     public static implicit operator (string instrument, MarketPrice marketPrice, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo, double deltaBid, double deltaAsk)(CurrentCombo value) => (value.instrument, value.marketPrice, value.strikeAvg, value.underPrice, value.breakEven, value.combo, value.deltaBid, value.deltaAsk);
 

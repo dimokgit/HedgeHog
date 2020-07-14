@@ -24,6 +24,11 @@ namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     static TimeSpan _beforeHourTime = 9.5.FromHours();
     static TimeSpan _afterHourTime = 17.0.FromHours();
+    public BlackScholesRange StraddleRangeM1() {
+      var tm1 = TradingMacroM1().SingleOrDefault();
+      return tm1 != null ? tm1.StraddleRange() : throw new Exception("No TradingMacroM1 found.");
+    }
+
     public BlackScholesRange StraddleRange() {
       double volatility = HistoricalVolatilityAnnualized();
       var hh = CurrentSpecialHours().SingleOrDefault();
@@ -800,6 +805,7 @@ namespace HedgeHog.Alice.Store {
     public double StrikeDown { get; }
     public double CallPrice { get; }
     public double PutPrice { get; }
+    public double TakePrifit => (Up - Down) / 3;
 
     public BlackScholesRange(double strikeUp, double strikeDown, double callPrice, double putPrice) {
       StrikeUp = strikeUp;

@@ -502,7 +502,7 @@ namespace HedgeHog.Alice.Client {
         }
       }
     }
-    static IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenHedgeRELTrade
+    static IObservable<OrderContractHolderWithError[]> OpenHedgeRELTrade
       (AccountManager am, Contract c, int positions, bool isTest) {
       return (
         from price in c.ReqPriceSafe(5).Select(p => p.Price(positions > 0))
@@ -926,8 +926,8 @@ namespace HedgeHog.Alice.Client {
              select h;
     }
     [BasicAuthenticationFilter]
-    public async Task<string[]> RollTrade(string currentSymbol, string rollSymbol) {
-      var res = await GetAccountManager().OpenRollTrade(currentSymbol, rollSymbol).SelectMany(t => t).ToArray();
+    public async Task<string[]> RollTrade(string currentSymbol, string rollSymbol,bool isTest) {
+      var res = await GetAccountManager().OpenRollTrade(currentSymbol, rollSymbol,isTest).SelectMany(t => t).ToArray();
       return res.Where(t => t.error.HasError)
         .Do(e => LogMessage.Send(e.error.exc))
         .Select(e => e.error.exc.Message)
@@ -989,23 +989,6 @@ namespace HedgeHog.Alice.Client {
         });
     }
 
-    [BasicAuthenticationFilter]
-    public async Task<string> CreateEdgeOrder(string pair, bool isCall, int quantity) {
-      var tm = UseTraderMacro(pair).Single();
-      var tm1 = tm.TradingMacroM1().SingleOrDefault();
-      if(tm1 == null) return "No TradingMacroM1 found.";
-      var am = GetAccountManager();
-      var edge = tm1.StraddleRange().With(sr => isCall ? sr.Up : sr.Down);
-      if(edge == 0) throw new Exception($"No edges in {nameof(tm.CurrentSpecialHours)}");
-      var std = tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
-      {
-        var x = from ots in am.OpenEdgeTrade(pair, isCall, quantity, edge, std, "oca-edge-options:" + DateTime.Now.Ticks)
-                from ot in ots
-                where ot.error.HasError
-                select ot.error.exc?.Message ?? $"{ot.error.errorCode}: {ot.error.errorMsg}";
-        return await x;
-      }
-    }
     public async Task<object[]> OpenStrategyOption(string option, int quantity, double level, double profit) =>
       await (from contract in DataManager.IBClientMaster.ReqContractDetailsCached(option).Select(cd => cd.Contract)
              from under in contract.UnderContract
@@ -1144,11 +1127,9 @@ namespace HedgeHog.Alice.Client {
           return c.am.PlaceOrder(och.order, och.contract).Select(m => m.error);
         } else {
           //am.CancelAllOrders("CloseCombo");
-          bool? isMore = !c.contract.IsCallPut ? null
-          : conditionPrice.HasValue
-          ? c.underPrice.bid > conditionPrice
-          ? false
-          : true
+          var isBuy = c.position.Sign() < 0;
+          bool? isMore = conditionPrice.HasValue
+          ? IsMore(conditionPrice.Value, c.underPrice.avg, isBuy,c.contract.DeltaSignCombined)
           : (bool?)null;
           return from tt in c.am.OpenTradeWithAction(order => order.Transmit = true || !c.contract.IsBag, c.contract, -c.position
           , isMore.HasValue || c.contract.IsCallPut || c.contract.IsHedgeCombo ? 0 : c.closePrice
@@ -1158,10 +1139,16 @@ namespace HedgeHog.Alice.Client {
                  select t.error;
         }
       }).ToArray()).Where(t => !t.IsDefault()).ToArray();
-      return res.Where(e => e.exc != null).Do(e => Log = e.exc)
-      .Select(e => e.exc.Message)
+      return res.Where(e => e.HasError).Do(e => Log = e.exc ?? new Exception(e.ToString()))
+      .Select(e => e.exc?.Message ?? e.ToString())
       .DefaultIfEmpty($"Closing {instrument} all good.")
       .ToArray();
+    }
+    static bool IsMore(double conditionPrice, double currentPrice, bool isBuy, int deltaSign) {
+      var mul = deltaSign * (isBuy ? 1 : -1);
+      if(mul > 0 && conditionPrice > currentPrice) throw new Exception($"Codition price ${conditionPrice.Round(2)} < current price {currentPrice.Round(2)}");
+      if(mul < 0 && conditionPrice < currentPrice) throw new Exception($"Codition price ${conditionPrice.Round(2)} < current price {currentPrice.Round(2)}");
+      return conditionPrice > currentPrice;
     }
     [BasicAuthenticationFilter]
     public void CancelAllOrders() {

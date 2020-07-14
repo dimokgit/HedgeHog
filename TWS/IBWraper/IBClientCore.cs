@@ -310,13 +310,11 @@ namespace IBApp {
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
         Debugger.Break();
       var key = $"{contract.Key}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
-      if(contract.IsBag) {
+      if(contract.IsBag) {// BAG contract should have been manually added to cache during Add
         TraceError(new { contract.IsBag, key });
         if(Debugger.IsAttached)
           Debugger.Break();
-        else
-          Trace(new { contract.IsBag, key } + "");
-
+        
       }
       //var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol, contract.ConId + "")}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
       lock(ReqContractDetails) {
@@ -336,14 +334,21 @@ namespace IBApp {
           )
           .Distinct(t => t.ContractDetails.Contract.ConId)
           .ToArray()
-          .Do(a => a.ForEach(t => {
-            if(t.ContractDetails.Contract.Exchange == "QBALGO") t.ContractDetails.Contract.Exchange = "GLOBEX";
-            t.ContractDetails.AddToCache();
-            if(t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty())
-              ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Subscribe();
-          }))
+          .Do(a => {
+            if(a.IsEmpty()) {
+              TraceError($"Contract {key} not found");
+              ReqContractDetails.TryRemove(key, out var o);
+            }
+            a.ForEach(t => {
+              if(t.ContractDetails.Contract.Exchange == "QBALGO") t.ContractDetails.Contract.Exchange = "GLOBEX";
+              t.ContractDetails.AddToCache();
+              if(t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty())
+                ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Subscribe();
+            });
+          })
           //.Do(_ => TraceDebug0($"{nameof(ReqContractDetailsAsync)}:{key} found:{_.Length} contracts"))
           .SelectMany(a => a.Select(t => t.ContractDetails))
+          .Replay().RefCount()
         //.ObserveOn(esReqContract)
         //.Select(t => t.cd.SideEffect(d => Verbose($"Adding {d.Contract} to cache")).AddToCache())
         //.ObserveOn(esReqCont)
@@ -443,7 +448,7 @@ namespace IBApp {
                         let symbol = under.Contract.LocalSymbol
                         from byStrike in ReqOptionChainOldCache(under.Contract.LocalSymbol, DateTime.MinValue
                         , strike, false)
-                        let exps = byStrike.Select(o => o.Expiration).Distinct().OrderBy(ex => ex).ToArray()
+                        let exps = byStrike.Select(o => o.Expiration).Where(e=>!IsExpired(e)).Distinct().OrderBy(ex => ex).ToArray()
                         from exp in exps.Take(1)
                         from byExp in ReqOptionChainOldCache(under.Contract.LocalSymbol, exp, 0, false)
                         let strikes = byExp.Select(o => o.Strike).Distinct().OrderBy(st => st).ToArray()

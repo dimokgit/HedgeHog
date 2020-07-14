@@ -12,23 +12,24 @@ using Westwind.Web.WebApi;
 namespace HedgeHog.Alice.Client {
   partial class MyHub {
     static bool _isTest = false;
+    #region OpenButterfly
     [BasicAuthenticationFilter]
-    public async Task<string[]> OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice, double? profitInPoints, string rollTrade = null) {
+    public async Task<string[]> OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice, double? profitInPoints, string rollTrade = null, bool isTest = false) {
       if(!rollTrade.IsNullOrWhiteSpace()) {
-        return await RollTrade(rollTrade, instrument);
+        return await RollTrade(rollTrade, instrument, isTest);
       }
 
       var tm = UseTraderMacro(pair).Single();
-      var std = tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
+      var std = tm.StraddleRangeM1().TakePrifit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
       var profit = profitInPoints.GetValueOrDefault(std);
       if(profit == 0) throw new Exception("No trend line found for profit calculation");
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
-        return await OpenCondOrder(am, tm, contract, null, quantity, (conditionPrice.GetValueOrDefault(), pair), profit);
+        return await OpenCondOrder(am, tm, contract, null, quantity, (conditionPrice.GetValueOrDefault(), pair), profit, isTest);
       else
         return new[] { new { instrument, not = "found" } + "" };
     }
-    static async Task<string[]> OpenCondOrder(AccountManager am, TradingMacro tm, Contract option, bool? isCall, int quantity, (double price, string instrument) condition, double profit) {
+    static async Task<string[]> OpenCondOrder(AccountManager am, TradingMacro tm, Contract option, bool? isCall, int quantity, (double price, string instrument) condition, double profit, bool isTest) {
       if(option != null && isCall != null || option == null && isCall == null)
         throw new Exception(new { OpenCondOrder = new { option, isCall } } + "");
       {
@@ -40,9 +41,8 @@ namespace HedgeHog.Alice.Client {
         var isSell = quantity < 0;
         var isBuy = quantity > 0;
         var hasCondition = condition.price > 0;
-        var dateAfter = _isTest ? DateTime.Now.AddDays(1) : default;
         int Delta(Contract c) => c.DeltaSign * quantity.Sign();
-        Action<IBApi.Order> orderExt = o => o.SetGoodAfter(dateAfter);
+        Action<IBApi.Order> orderExt = o => o.Transmit = !isTest;
         var res = await (from contract in Observable.Return(option)
                          from price in contract.ReqPriceSafe()
                          from underContract in contract.UnderContract
@@ -87,5 +87,25 @@ namespace HedgeHog.Alice.Client {
           .ToList();
       }
     }
+    #endregion
+
+    #region CreateEdgeOrder
+    [BasicAuthenticationFilter]
+    public async Task<string> OpenEdgeOrder(string pair, bool isCall, int quantity, double? currentStrikeLevel) {
+      var tm = UseTraderMacro(pair).Single();
+      var am = GetAccountManager();
+      var range = tm.StraddleRangeM1();
+      var edge = currentStrikeLevel.GetValueOrDefault(isCall ? range.Up : range.Down);
+      if(edge == 0) throw new Exception($"No edges in {nameof(tm.CurrentSpecialHours)}");
+      var takeProfitPoints = range.TakePrifit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
+      {
+        var x = from ots in am.OpenEdgeOrder(pair, isCall, -quantity, edge, takeProfitPoints, "oca-edge-options:" + DateTime.Now.Ticks)
+                from ot in ots
+                where ot.error.HasError
+                select ot.error.ToString();
+        return await x.DefaultIfEmpty();
+      }
+    }
+    #endregion
   }
 }

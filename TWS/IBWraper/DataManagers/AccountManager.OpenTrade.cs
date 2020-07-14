@@ -14,11 +14,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using ORDEREXT = System.Func<IBApi.Order, System.IObservable<(IBApi.Order order, double price, IBApi.Contract contract)>>;
+using ORDEREXT = System.Func<IBApi.Order, System.IObservable<IBApp.OrderPriceContract>>;
 namespace IBApp {
   public partial class AccountManager {
     private int NetOrderId() => IbClient.ValidOrderId();
-    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenTradeWhatIf(string pair, bool buy) {
+    public IObservable<OrderContractHolderWithError[]> OpenTradeWhatIf(string pair, bool buy) {
       var anount = GetTrades().Where(t => t.Pair == pair).Select(t => t.GrossPL).DefaultIfEmpty(Account.Equity).Sum() / 2;
       if(!IBApi.Contract.Contracts.TryGetValue(pair, out var contract))
         throw new Exception($"Pair:{pair} is not fround in Contracts");
@@ -50,7 +50,7 @@ namespace IBApp {
     public void OpenOrUpdateLimitOrder(Contract contract, int position, int orderId, double lmpPrice) {
       UseOrderContracts(orderContracts =>
         orderContracts.ByOrderId(orderId)
-        .Where(och => !och.isDone)
+        .Where(och => !och.isDone && och.order.IsLimit)
         .Do(och => {
           if(och.contract.Instrument != contract.Instrument)
             throw new Exception($"{nameof(OpenOrUpdateLimitOrder)}:{new { orderId, och.contract.Instrument, dontMatch = contract.Instrument }}");
@@ -77,6 +77,7 @@ namespace IBApp {
         if(order.OpenClose.IsNullOrWhiteSpace())
           order.OpenClose = "C";
         order.VolatilityType = 0;
+        order.Conditions = new List<OrderCondition>();
         IbClient.WatchReqError(1.FromSeconds(), orderId, e => {
           OnOpenError(e, $"{nameof(UpdateOrder)}:{och.contract}:{new { order.LmtPrice }}");
           if(e.errorCode == E110)
@@ -157,36 +158,47 @@ namespace IBApp {
       }
       IEnumerable<OrderContractHolder> Default() { yield break; }
     }
-    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenEdgeTrade(string instrument, bool isCall, int quantity, double edge, double takeProfitPoints, string ocaGroup) {
+    public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(string instrument, bool isCall, int quantity, double edge, double takeProfitPoints, string ocaGroup = null) {
       return UseOrderContracts(orderContracts => {
         var mul = isCall ? -1 : 1;
         var enterLevel = edge;
         var exitLevel = enterLevel + takeProfitPoints * mul;
         var orderError =
-        from ucd in IbClient.ReqContractDetailsCached(instrument)
+        from ucd in instrument.ReqContractDetailsCached()
         let underContract = ucd.Contract
-        from up in underContract.ReqPriceSafe()
-        let enterCondition = underContract.PriceCondition(enterLevel.ThrowIf(() => isCall ? enterLevel < up.ask : enterLevel > up.bid), isCall)
-        let exitCondition = underContract.PriceCondition(exitLevel, !isCall)
-        from options in CurrentOptions(instrument, enterLevel, 0, 2, c => c.IsCall == isCall)
-        from option in options.OrderBy(o => o.option.Strike * mul).Take(1)
-        let profit = quantity * takeProfitPoints * option.option.ComboMultiplier
-        from ots in OpenTradeWithAction(
+        from underPrice in underContract.ReqPriceSafe()
+        let enterCondition = underContract.PriceCondition(enterLevel.ThrowIf(() => isCall ? enterLevel < underPrice.ask : enterLevel > underPrice.bid), isCall)
+        //let exitCondition = underContract.PriceCondition(exitLevel, !isCall)
+        let cp = underPrice.avg
+        .ThrowIf(() => isCall && underPrice.avg > enterLevel)
+        .ThrowIf(() => !isCall && underPrice.avg < enterLevel)
+        from current in CurrentOptionOutMoney(instrument, cp, isCall)
+        from option in CurrentOptionOutMoney(instrument, enterLevel, isCall)
+        let price = current.marketPrice.avg
+        let takeProfit = takeProfitPoints * 0.5
+        from ots in OpenTrade(
           o => {
+            var limitOrder = MakeTakeProfitOrder2(o, option.option, takeProfit);
             if(!ocaGroup.IsNullOrEmpty()) {
               o.OcaGroup = ocaGroup;
               o.OcaType = (int)OCAType.CancelWithBlocking.Value;
             }
+            return limitOrder ?? Observable.Empty<OrderPriceContract>();
           },
-          option.option, -quantity,
+          option.option, quantity,
           condition: enterCondition,
-          useTakeProfit: true,
-          profit: profit,
-          takeProfitCondition: new[] { exitCondition }
+          useTakeProfit: false,
+          price: price
           )
         select ots;
         return orderError;
-      }).SingleOrDefault() ?? Observable.Empty<(OrderContractHolder holder, ErrorMessage error)[]>();
+      }).SingleOrDefault() ?? Observable.Empty<OrderContractHolderWithError[]>();
+    }
+    IObservable<CurrentCombo> CurrentOptionOutMoney(string instrument, double enterLevel, bool isCall) {
+      var mul = isCall ? -1 : 1;
+      return from options in CurrentOptions(instrument, enterLevel, 0, 2, c => c.IsCall == isCall)
+             from option in options.OrderBy(o => o.option.Strike * mul).Take(1)
+             select option;
     }
     double OrderPrice(double orderPrice, Contract contract) {
       var minTick = contract.MinTick();
@@ -234,13 +246,13 @@ namespace IBApp {
        .Subscribe();
     }
 
-    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenTrade
+    public IObservable<OrderContractHolderWithError[]> OpenTrade
       (Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false
       , DateTime goodTillDate = default, DateTime goodAfterDate = default
       , OrderCondition condition = null, OrderCondition takeProfitCondition = null
       , [CallerMemberName] string Caller = "") => OpenTrade((ORDEREXT)null, contract, quantity, price, profit, useTakeProfit, goodTillDate, goodAfterDate, condition, new[] { takeProfitCondition }, "");
 
-    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenTradeWithAction
+    public IObservable<OrderContractHolderWithError[]> OpenTradeWithAction
       (
       Action<IBApi.Order> orderExt
       , Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false
@@ -256,7 +268,7 @@ namespace IBApp {
         , goodTillDate, goodAfterDate
         , condition, takeProfitCondition, orderRef, Caller);
 
-    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenTrade
+    public IObservable<OrderContractHolderWithError[]> OpenTrade
     (
       ORDEREXT orderExt
     , Contract contract, int quantity, double price = 0, double profit = 0, bool useTakeProfit = false
@@ -268,13 +280,13 @@ namespace IBApp {
       string type = "";
       Verbose($"{nameof(OpenTrade)}[S]: {new { contract, quantity, orderRef }} <= {Caller}");
       if(useTakeProfit && profit == 0 && takeProfitCondition?.Count == 0)
-        return Default(new Exception($"No profit or profit condition: {new { useTakeProfit, profit, takeProfitCondition }}")).Do(TraceOpenTradeResults);
+        return Default(new Exception($"No profit or profit condition: {new { useTakeProfit, profit, takeProfitCondition }}")).Do(TraceOpenTradeResults).ToArray();
       var aos = OrderContractsInternal.Items
         .Where(oc => !oc.isDone && oc.contract == contract && oc.order.TotalPosition().Sign() == quantity.Sign())
         .ToArray();
       var subs = aos.Where(oc => oc.isSubmitted).ToList();
       if(subs.Any())
-        return subs.Select(s => (s, new ErrorMessage(0, -1, $"Order {s} is already active", null))).ToObservable().ToArray();
+        return subs.Select(s => (OrderContractHolderWithError)(s, new ErrorMessage(0, -1, $"Order {s} is already active", null))).ToObservable().ToArray();
 
       OrderContractHolder TraceLocal(OrderContractHolder ao) { Trace($"OpenTrade: Cancelling existing order {ao.order}[{ao.order.OrderId}] for { contract } with {new { ao.status.status }}."); return ao; }
       if(aos.Any()) {
@@ -288,7 +300,7 @@ namespace IBApp {
       }
       return action();
 
-      IObservable<(OrderContractHolder holder, ErrorMessage error)[]> action() {
+      IObservable<OrderContractHolderWithError[]> action() {
         try {
           var orderType = price == 0
             ? /*(contract.IsFuturesCombo ? "REL + " : "") + */"MKT"
@@ -298,16 +310,16 @@ namespace IBApp {
           order.OrderRef = orderRef;
           order.Conditions.AddRange(condition.YieldNotNull());
           order.ConditionsIgnoreRth = true;
-          var child = orderExt?.Invoke(order) ?? Observable.Empty<(IBApi.Order order, double price, Contract contract)>();
+          var child = orderExt?.Invoke(order) ?? Observable.Empty<OrderPriceContract>();
           CheckNonGiuaranteed(order, contract);
 
-          if(order.NeedTriggerPrice && order.LmtPrice.IsSetOrZero() && order.AuxPrice.IsNotSetOrZero()) order.AuxPrice = order.LmtPrice;
+          if(order.NeedTriggerPrice && order.LmtPrice.IsSetAndNotZero() && order.AuxPrice.IsNotSetOrZero()) order.AuxPrice = order.LmtPrice;
           if(false && !contract.IsOptionsCombo && !contract.IsFutureOption) FillAdaptiveParams(order, "Normal");
           var tpOrder = (useTakeProfit
             ? MakeTakeProfitOrder2(order, contract, takeProfitCondition, profit)
-            : new (IBApi.Order order, double price)[0].ToObservable()
-            ).Select(t => (t.order, t.price, contract));
-          var orders = new[] { (order, price, contract) }
+            : Observable.Empty<OrderPriceContract>()
+            );
+          var orders = new[] { new OrderPriceContract(order, price, contract) }
           .ToObservable()
           .Merge(tpOrder)
           .Merge(child)
@@ -316,13 +328,14 @@ namespace IBApp {
                       from o in os.OrderBy(o => o.order.ParentId)
                       from po in PlaceOrder(o.order, o.contract).Take(1)//.Spy($"PlaceTrade[{o.order.OrderId}]", t => TraceDebug(t))
                       from value in po.value.DefaultIfEmpty()//.SideEffect(v => TraceDebug($"PlacedTrade[{po.value.Single().order.OrderId}]"))
-                      select (value, po.error)).ToArray();
-          return obss.Do(TraceOpenTradeResults);
+                      select (OrderContractHolderWithError)(value, po.error));
+          return obss.Do(TraceOpenTradeResults).ToArray();
         } catch(Exception exc) {
-          return Default(exc);
+          return Default(exc).ToArray();
         }
       }
-      IObservable<(OrderContractHolder holder, ErrorMessage error)[]> Default(Exception exc) => new[] { (default(OrderContractHolder), new ErrorMessage(0, 0, nameof(OpenTrade), exc)) }.ToObservable().ToArray();
+      IObservable<OrderContractHolderWithError> Default(Exception exc) =>
+        Observable.Return((OrderContractHolderWithError)(default(OrderContractHolder), new ErrorMessage(0, 0, nameof(OpenTrade), exc)));
     }
 
     private static IBApi.Order CheckNonGiuaranteed(IBApi.Order order, Contract contract) {
@@ -331,28 +344,28 @@ namespace IBApp {
         order.SmartComboRoutingParams.Add(new TagValue("NonGuaranteed", "1"));
         //order.Transmit = false;
       }
-      if(order.NeedTriggerPrice && order.LmtPrice.IsSetOrZero())
+      if(order.NeedTriggerPrice && order.LmtPrice.IsSetAndNotZero())
         order.AuxPrice = order.LmtPrice;
       return order;
     }
 
-    private void TraceOpenTradeResults((OrderContractHolder value, ErrorMessage error)[] a) => Verbose(
-                new[] { a.Select(_ => new { reqId = _.value?.order?.OrderId ?? _.error.reqId, order = _.value, _.error }).ToTextOrTable(nameof(OpenTrade) + "[E]:") + "" }
+    private void TraceOpenTradeResults(OrderContractHolderWithError a) => Verbose(
+                new[] { a.value.Select(_ => new { reqId = _?.order?.OrderId ?? a.error.reqId, order = _.order, a.error }).ToTextOrTable(nameof(OpenTrade) + "[E]:") + "" }
                 .Concat(new[] { OrderContractsInternal.Items.Select(x => new { x.order.OrderId, x.order, x.contract, x.status }).ToTextOrTable(nameof(OrderContractsInternal) + ":") + "" })
                 .Flatter("\n"));
 
-    private IBApi.Order OrderFactory(Contract contract, int quantity, double price, DateTime goodTillDate, DateTime goodAfterDate, string orderType, bool isPreRTH) {
+    private IBApi.Order OrderFactory(Contract contract, double quantity, double price, DateTime goodTillDate, DateTime goodAfterDate, string orderType, bool isPreRTH) {
       var order = new IBApi.Order() {
         Account = _accountId,
         OrderId = NetOrderId(),
         Action = quantity > 0 ? "BUY" : "SELL",
         OrderType = orderType,
-        LmtPrice = OrderPrice(price, contract),
         TotalQuantity = quantity.Abs(),
         OutsideRth = isPreRTH,
         OverridePercentageConstraints = true,
         Transmit = true
       };
+      order.SetLimit(OrderPrice(price, contract));
       if(goodTillDate != default && !goodTillDate.IsMax()) {
         order.Tif = GTD;
         order.GoodTillDate = goodTillDate.ToTWSString();
@@ -360,15 +373,43 @@ namespace IBApp {
         order.Tif = GTC;
       if(goodAfterDate != default)
         order.GoodAfterTime = goodAfterDate.ToTWSString();
+      CheckNonGiuaranteed(order, contract);
       return order;
     }
 
-    IObservable<(IBApi.Order order, double price)> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract, IList<OrderCondition> takeProfitCondition, double profit) {
+    public IObservable<OrderPriceContract> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract, double profit = double.NaN, double limitPrice = double.NaN) {
+      Passager.ThrowIf(() => profit.IsSetAndNotZero() && limitPrice.IsSetAndNotZero());
+      Passager.ThrowIf(() => profit.IsSetAndNotZero() && parent.IsMarket);
+      parent.Transmit = false;
+      var takeProfit = parent.LmtPrice + (profit >= 1 ? profit : parent.LmtPrice * profit) * (parent.IsBuy ? 1 : -1);
+      var price = limitPrice.IfNaNOrZero(takeProfit);
+      var orderType = "LMT" + (contract.IsHedgeCombo ? " + MKT" : "");
+      var order = OrderFactory(contract, -parent.Quantity, price, default, default, orderType, parent.OutsideRth);
+      order.ParentId = parent.OrderId;
+      return Observable.Return((OrderPriceContract)(order, price, contract));
+    }
+    public IObservable<OrderPriceContract> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract, IList<OrderCondition> takeProfitCondition) {
       var takeProfitPrice = takeProfitCondition.OfType<PriceCondition>().ToList();
-      bool isPreRTH = false;
+      var transmit = parent.Transmit;
+      parent.Transmit = false;
+      var orderType = "MKT";
+      var order = OrderFactory(contract, -parent.Quantity, 0, default, default, orderType, parent.OutsideRth);
+      order.ParentId = parent.OrderId;
+      order.Transmit = transmit;
+      order.Conditions.AddRange(takeProfitCondition.Where(c => c != null));
+      order.ConditionsIgnoreRth = true;
+      return Observable.Return((OrderPriceContract)(order, 0.0, contract));
+    }
+
+    public IObservable<OrderPriceContract> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract, IList<OrderCondition> takeProfitCondition, double profit) {
+      if(takeProfitCondition.IsEmpty() && profit.IsNaNOrZero()) {
+        TraceError("Either takeProfitCondition or profit must be present");
+        throw new Exception("Either takeProfitCondition or profit must be present");
+      }
+      var takeProfitPrice = takeProfitCondition.OfType<PriceCondition>().ToList();
       var isMarket = takeProfitPrice.Any();
+      var transmit = parent.Transmit;
       return new[] { parent }
-      .Where(o => takeProfitPrice.Any() || o.OrderType == "LMT")
       .Select(o => o.LmtPrice)
       .ToObservable()
       .Concat(Observable.Defer(()
@@ -380,30 +421,20 @@ namespace IBApp {
         parent.Transmit = false;
         var takeProfit = (profit >= 1 ? profit : lmtPrice * profit) * (parent.IsBuy ? 1 : -1);
         var price = lmtPrice + takeProfit;
-        var order = new IBApi.Order() {
-          Account = _accountId,
-          ParentId = parent.OrderId,
-          OrderId = NetOrderId(),
-          Action = parent.Action == "BUY" ? "SELL" : "BUY",
-          OrderType = isMarket ? "MKT" : "LMT" + (contract.IsHedgeCombo ? " + MKT" : ""),
-          TotalQuantity = parent.TotalQuantity,
-          Tif = GTC,
-          OutsideRth = isPreRTH,
-          OverridePercentageConstraints = true,
-          Transmit = true
-        };
-        order.SetLimit(isMarket ? 0 : OrderPrice(price, contract));
+        var orderType = isMarket ? "MKT" : "LMT" + (contract.IsHedgeCombo ? " + MKT" : "");
+        var order = OrderFactory(contract, -parent.Quantity, price, default, default, orderType, parent.OutsideRth);
+        order.ParentId = parent.OrderId;
+        order.Transmit = transmit;
         order.Conditions.AddRange(takeProfitCondition.Where(c => c != null));
         order.ConditionsIgnoreRth = true;
-        CheckNonGiuaranteed(order, contract);
-        return (order, price);
+        return (OrderPriceContract)(order, price, contract);
       })
       .Take(1)
       .OnEmpty(() => Trace($"No take profit order for {parent}"))
         ;
     }
 
-    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenRollTrade(string currentSymbol, string rollSymbol) {
+    public IObservable<OrderContractHolderWithError[]> OpenRollTrade(string currentSymbol, string rollSymbol, bool isTest) {
       return (from cc in IbClient.ReqContractDetailsCached(currentSymbol).Select(cd => cd.Contract)
               from rc in IbClient.ReqContractDetailsCached(rollSymbol).Select(cd => cd.Contract)
               from ct in ComboTrades(5)
@@ -414,16 +445,20 @@ namespace IBApp {
          var tradeDateCondition = IbClient.ServerTime.Date.AddHours(15).AddMinutes(45).TimeCondition();
          if(t.cc.IsOption)
            return CreateRoll(currentSymbol, rollSymbol)
-             .SelectMany(rc => OpenTrade(rc.rollContract, -rc.currentTrade.position, 0, 0, false));
+             .SelectMany(rc => OpenTradeWithAction(
+               orderExt: o => o.Transmit = !isTest,
+               contract: rc.rollContract,
+               quantity: -rc.currentTrade.position));
          else
-           return OpenTrade(t.rc, -t.ct.position.Abs(), 0, 0, false, DateTime.MaxValue);
+           return OpenTradeWithAction(
+             orderExt: o => o.Transmit = !isTest,
+             contract: t.rc,
+             quantity: -t.ct.position.Abs());
        });
     }
-    public IObservable<(OrderContractHolder holder, ErrorMessage error)[]> OpenHedgeOrder(Contract parentContract, Contract hedgeContract, int quantityParent, int quantityHedge) {
-      Func<IBApi.Order, IObservable<(IBApi.Order order, double price, Contract contract)>> orderExt(Contract c, int q) =>
-        parent => new[] {
-            (MakeOCOOrder(parent, q), 0.0, c)
-        }.ToObservable();
+    public IObservable<OrderContractHolderWithError[]> OpenHedgeOrder(Contract parentContract, Contract hedgeContract, int quantityParent, int quantityHedge) {
+      Func<IBApi.Order, IObservable<OrderPriceContract>> orderExt(Contract c, int q) =>
+        parent => Observable.Return((OrderPriceContract)(MakeOCOOrder(parent, q), 0.0, c));
       var och = (
         from c in parentContract.ReqContractDetailsCached().Select(cd => cd.Contract)
         from c2 in hedgeContract.ReqContractDetailsCached().Select(cd => cd.Contract)
@@ -454,4 +489,62 @@ namespace IBApp {
     //  });
     //}
   }
+
+  //  public struct OrderContractHolderWithError {
+  //    public AccountManager.OrderContractHolder holder;
+  //    public ErrorMessage error;
+
+  //    public OrderContractHolderWithError(AccountManager.OrderContractHolder holder, ErrorMessage error) {
+  //      this.holder = holder;
+  //      this.error = error;
+  //    }
+
+  //    public override bool Equals(object obj) => obj is OrderContractHolderWithError other && EqualityComparer<AccountManager.OrderContractHolder>.Default.Equals(holder, other.holder) && EqualityComparer<ErrorMessage>.Default.Equals(error, other.error);
+
+  //    public override int GetHashCode() {
+  //      var hashCode = -1913285320;
+  //      hashCode = hashCode * -1521134295 + EqualityComparer<AccountManager.OrderContractHolder>.Default.GetHashCode(holder);
+  //      hashCode = hashCode * -1521134295 + error.GetHashCode();
+  //      return hashCode;
+  //    }
+
+  //    public void Deconstruct(out AccountManager.OrderContractHolder holder, out ErrorMessage error) {
+  //      holder = this.holder;
+  //      error = this.error;
+  //    }
+
+  //    public static implicit operator (AccountManager.OrderContractHolder holder, ErrorMessage error)(OrderContractHolderWithError value) => (value.holder, value.error);
+  //    public static implicit operator OrderContractHolderWithError((AccountManager.OrderContractHolder holder, ErrorMessage error) value) => new OrderContractHolderWithError(value.holder, value.error);
+  //  }
+  public struct OrderPriceContract {
+    public IBApi.Order order;
+    public double price;
+    public Contract contract;
+
+    public OrderPriceContract(IBApi.Order order, double price, Contract contract) {
+      this.order = order;
+      this.price = price;
+      this.contract = contract;
+    }
+
+    public override bool Equals(object obj) => obj is OrderPriceContract other && EqualityComparer<IBApi.Order>.Default.Equals(order, other.order) && price == other.price && EqualityComparer<Contract>.Default.Equals(contract, other.contract);
+
+    public override int GetHashCode() {
+      var hashCode = 1695776068;
+      hashCode = hashCode * -1521134295 + EqualityComparer<IBApi.Order>.Default.GetHashCode(order);
+      hashCode = hashCode * -1521134295 + price.GetHashCode();
+      hashCode = hashCode * -1521134295 + EqualityComparer<Contract>.Default.GetHashCode(contract);
+      return hashCode;
+    }
+
+    public void Deconstruct(out IBApi.Order order, out double price, out Contract contract) {
+      order = this.order;
+      price = this.price;
+      contract = this.contract;
+    }
+
+    public static implicit operator (IBApi.Order order, double price, Contract contract)(OrderPriceContract value) => (value.order, value.price, value.contract);
+    public static implicit operator OrderPriceContract((IBApi.Order order, double price, Contract contract) value) => new OrderPriceContract(value.order, value.price, value.contract);
+  }
 }
+

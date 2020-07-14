@@ -1163,7 +1163,7 @@ namespace HedgeHog {
       return MA.Value + (NewValue - MA.Value) / (Periods + 1);
     }
     public static double Cma(this double MA, double Periods, double NewValue) {
-      if(double.IsNaN(MA))
+      if(double.IsNaN(MA) || double.IsInfinity(MA) || MA == default)
         return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return MA + (NewValue - MA) / (Periods + 1);
     }

@@ -8,15 +8,20 @@ using static IBApp.AccountManager;
 namespace IBApp {
   public class OrderContractHolders :IEnumerable<OrderContractHolder> {
     private readonly IEnumerable<OrderContractHolder> source;
+    public OrderContractHolders(OrderContractHolder source) : this(new[] { source }) {
+    }
     public OrderContractHolders(IEnumerable<OrderContractHolder> source) {
       this.source = source;
     }
     public IEnumerator<OrderContractHolder> GetEnumerator() => source.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
   }
-  class OrderContractHolderWithError :ErrorMessage<OrderContractHolders> {
+ public class OrderContractHolderWithError :ErrorMessage<OrderContractHolders> {
+    public OrderContractHolder holder => value.SingleOrDefault();
     public OrderContractHolderWithError(OrderContractHolders value, ErrorMessage error = default) : base(value, error) {
     }
+    public static implicit operator OrderContractHolderWithError((OrderContractHolder holder, ErrorMessage error) value) => new OrderContractHolderWithError(new OrderContractHolders(value.holder), value.error);
+
   }
   public class ErrorMessages<T> {
     public readonly IEnumerable<T> value;

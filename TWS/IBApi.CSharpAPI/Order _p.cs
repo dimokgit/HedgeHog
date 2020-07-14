@@ -10,16 +10,26 @@ namespace IBApi {
     public string SetAction(double quanity) => Action = (quanity > 0 ? "BUY" : "SELL");
     public void SetGoodAfter(DateTime d) { if(d != default) GoodAfterTime = d.ToTWSString(); }
     public bool IsLimit => OrderType.Contains("LMT");
+    public bool IsMarket => OrderType.Contains("MKT");
     public bool NeedTriggerPrice => OrderType.Contains("+");
-    public void SetLimit(double price) {
-      LmtPrice = price;
+    public void SetLimit(double price, string orderType) {
+      OrderType = orderType;
+      SetLimit(price);
+    }
+    public void SetLimit(double price, bool force = false) {
+      if(price != 0 && OrderType.IsNullOrEmpty()) throw new Exception("SetLimit with price != 0  can not be used when OrderType is empty.");
+      if(IsLimit || !IsMarket || NeedTriggerPrice || force)
+        LmtPrice = price;
+      if(LmtPrice.IsSetAndNotZero())
+        OrderType = OrderTypes.LMT.ToString();
       if(NeedTriggerPrice)
         AuxPrice = price;
     }
+    public double Quantity => IsBuy ? TotalQuantity : -TotalQuantity;
     public string TypeText => $"{OrderType}{(IsLimit ? "[" + LmtPrice + "]" : "")}";
     public string ActionText => Action.Substring(0, 3);
     public string Key => $"{ActionText}:{TypeText}:{TotalQuantity}";
-    public double LmtAuxPrice => LmtPrice.IfNotSetOrZero(AuxPrice.IfNotSetOrZero(0));
+    public double LmtAuxPrice => IsLimit ? LmtPrice.IfNotSetOrZero(AuxPrice.IfNotSetOrZero(0)) : 0;
     public override string ToString() => $"{Key}{Conditions.ToText(":")}";
     public static double OrderPrice(double orderPrice, Contract contract) {
       var minTick = contract.MinTick();

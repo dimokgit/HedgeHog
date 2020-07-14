@@ -75,19 +75,25 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        am.CurrentOptions("ESU0",3145,2,3,c=>true)
+        .Subscribe(se => {
+          HandleMessage(se.Select(x=>new { x.combo }).ToMarkdownTable());
+        });
+        return;
         //Tests.HedgeCombo(am); return;
         {
           var ocaGroup = "oca-edge-option:" + DateTime.Now.Ticks;
           var symbol = "ESU0";
-          HandleMessage("am.OpenEdgeTrade(\"ESU0\", true, 1, new[] { 3190.0, 3120.0 }, 15,ocaGroup)");
           (from c in symbol.ReqContractDetailsCached().Select(cd => cd.Contract)
            from p in c.ReqPriceSafe()
            select p.avg
            ).Subscribe(level => {
-             am.OpenEdgeTrade(symbol, true, 1, level+ 30, 15, ocaGroup)
-             .Subscribe(HandleMessage);
-             am.OpenEdgeTrade(symbol, false, 1, level-30.0, 15, ocaGroup)
-             .Subscribe(HandleMessage);
+             HandleMessage($"am.OpenEdgeTrade(\"{symbol}\", true, 1, {level + 30}, 15,ocaGroup)");
+             am.OpenEdgeOrder(symbol, true, 1, level + 30, 15, ocaGroup)
+             .Subscribe(ochs => ochs.Select(och => new { och.holder, och.error }).ForEach(HandleMessage));
+             HandleMessage($"am.OpenEdgeTrade(\"{symbol}\", false, 1, {level - 30}, 15,ocaGroup)");
+             am.OpenEdgeOrder(symbol, false, 1, level - 30.0, 15, ocaGroup)
+             .Subscribe(ochs => ochs.Select(och => new { och.holder, och.error }).ForEach(HandleMessage));
            });
           return;
         }
@@ -540,7 +546,7 @@ namespace ConsoleApp {
         }
         void TestMakeComboAll(bool placeOrder) {
           HandleMessage2("ComboTrade Start");
-          AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass,ps) => pos.contract.TradingClass == tradingClass && pos.position.Sign() == ps)
+          AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass, ps) => pos.contract.TradingClass == tradingClass && pos.position.Sign() == ps)
           .ForEach(comboPrice => {
             HandleMessage2(new { comboPrice.contract });
             comboPrice.contract.contract.ReqPriceSafe()

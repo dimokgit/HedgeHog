@@ -17,7 +17,7 @@ namespace IBApi {
     public Contract() {
 
     }
-    public Contract(int conId,Action<object> trace) {
+    public Contract(int conId, Action<object> trace) {
       if(conId == 0) {
         var m = new { ReqContractDetailsCached = new { conId } } + "";
         trace(m);
@@ -59,11 +59,12 @@ namespace IBApi {
 
     private const string BAG = "BAG";
     public DateTime Expiration => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max().FromTWSDateString(DateTime.Now.Date);
-    public bool IsExpired => !LastTradeDateOrContractMonth.IsNullOrEmpty() && (LastTradeDateOrContractMonth+" 16:00:00").FromTWSString() <  DateTime.Now.Date.InNewYork();
+    public bool IsExpired => !LastTradeDateOrContractMonth.IsNullOrEmpty() && (LastTradeDateOrContractMonth + " 16:00:00").FromTWSString() < DateTime.Now.Date.InNewYork();
+    public bool IsExpiring => Expiration.Date == DateTime.Now.Date.InNewYork();
     public string LastTradeDateOrContractMonth2 => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max();
 
     public string SymbolSafe => IsFuture ? LocalSymbol : Symbol;
-    public string Key => Instrument;
+    public string Key => ComboLegs?.OrderBy(l => l.ConId).Select(l => l.ConId + ":" + l.Ratio + ":" + l.Action).DefaultIfEmpty(SafeInstrument).Flatter(",") ?? SafeInstrument;
     string SafeInstrument => LocalSymbol.IfEmpty(Symbol, ConId + "");
     public string Instrument => ComboLegsToString().IfEmpty((SafeInstrument?.Replace(".", "") + "").ToUpper());
 
@@ -71,8 +72,11 @@ namespace IBApi {
     public static IDictionary<string, Contract> Contracts => _contracts;
     public static IEnumerable<(int[] conIds, Contract contract)> ContractConIds => _contracts.Select(c => (c.Value.ConIds.ToArray(), c.Value));
     //public Contract FromCache() => _contracts.TryGetValue(Key, out var c).With(_ => c);
+    private static bool AddToCacheImpl(Contract c) => _contracts.TryAdd(c.Key, c);
     public Contract AddToCache() {
-      if(!_contracts.TryAdd(Key, this) && _contracts[Key].HashKey != HashKey)
+      if(IsBag)
+        FromCache().Single();
+      if(!AddToCacheImpl(this) && _contracts[Key].HashKey != HashKey)
         _contracts.AddOrUpdate(Key, this, (k, c) => this);
       return this;
     }
@@ -82,23 +86,31 @@ namespace IBApi {
                                                        where !cd.UnderSymbol.IsNullOrWhiteSpace()
                                                        from cdu in ContractDetails.FromCache(cd.UnderSymbol)
                                                        select cdu.Contract);
-    public IEnumerable<ContractDetails> FromDetailsCache() => FromCache().SelectMany(c => ContractDetails.FromCache(c));
+    public IEnumerable<ContractDetails> FromDetailsCache() {
+      var fc = FromCache().ToArray();
+      return fc.SelectMany(c => {
+        var fc2 = ContractDetails.FromCache(c).ToArray();
+        if(fc.Length > 0 && fc2.Length == 0) Debugger.Break();
+        return fc2;
+      });
+    }
     static object _gate = new object();
     public IEnumerable<Contract> FromCache() {
       lock(_gate)
         return FromCache(Key).Concat(FromCache(ConId)).Take(1).IfEmpty(()
           => IsBag
-          ? new[] { new ContractDetails() { Contract = this }.AddToCache().Contract }
+          ? new[] { AddBag().Contract }
           : new Contract[0]
           );
     }
+    ContractDetails AddBag() => new ContractDetails() { Contract = this.SideEffect(_ => AddToCacheImpl(_)) }.AddToCache();
 
     public bool IsBag => SecType == BAG;
     public IEnumerable<T> FromCache<T>(Func<Contract, T> map) => FromCache(Key, map);
     public static IEnumerable<Contract> Cache() => Contracts.Values;
     public static IEnumerable<Contract> FromCache(string instrument) => Contracts.TryGetValue(instrument);
-    public static IEnumerable<Contract> FromCache(int conId) => 
-      Contracts.Where(c => conId !=0 && c.Value.ConId == conId).Take(1).Select(kv => kv.Value);
+    public static IEnumerable<Contract> FromCache(int conId) =>
+      Contracts.Where(c => conId != 0 && c.Value.ConId == conId).Take(1).Select(kv => kv.Value);
     public static IEnumerable<T> FromCache<T>(string instrument, Func<Contract, T> map) => Contracts.TryGetValue(instrument).Select(map);
     public static IEnumerable<Contract> FromCache(Func<Contract, bool> filter) => Contracts.Where(kv => filter(kv.Value)).Select(kv => kv.Value);
 
@@ -130,6 +142,7 @@ namespace IBApi {
     public bool HasOptions => LegsOrMe(l => l.IsOption).Max();
     public int ReqMktDataId { get; set; }
     public int DeltaSign => IsPut ? -1 : 1;
+    public int DeltaSignCombined => LegsOrMe(c => c.DeltaSign).MinMax().With(a => a[0] + a[1]);
     public IEnumerable<double> BreakEven(double openPrice) => Legs().Select(l => l.c.Strike + (l.c.IsCall ? 1 : -1) * openPrice);
 
     public static IList<DateTimeOffset> _LiquidHoursDefault = new List<DateTimeOffset> {

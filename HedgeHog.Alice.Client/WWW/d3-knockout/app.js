@@ -961,8 +961,8 @@
       this.rollTrade = function (data) {
         var i = ko.unwrap(data.i);
         if (!i) showWarning("Select trade to roll");
-        else serverCall("rollTrade", [rollCombo(), i]);
-      }
+        else serverCall("rollTrade", [rollCombo(), i, self.hedgeTest()]);
+      };
       this.cancelOrder = function (data) {
         var orderId = ko.unwrap(data.id);
         serverCall("cancelOrder", [orderId]);
@@ -1142,7 +1142,7 @@
       this.openButterfly = function (isBuy, key, useMarketPrice) {
         this.canTrade(false);
         var combo = ko.unwrap(ko.unwrap(key).i);
-        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(), this.currentProfit(), self.rollCombo()]
+        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(), this.currentProfit(), self.rollCombo(),self.hedgeTest()]
           , r => (r || []).forEach(e => showErrorPerm("openButterfly:\n" + e))
           , null
           , function () { this.canTrade(true); }.bind(this)
@@ -1167,10 +1167,16 @@
           , function () { this.canTrade(true); }.bind(this)
         );
       }.bind(this);
+      this.canOpenEdge = ko.pureComputed(function () {
+        var ot = self.showOptionType();
+        return ot === "C" || ot === "P";
+      });
       this.openEdge = function () {
+        var ot = this.showOptionType();
+        var isCall = ot === "C" ? true : ot === "P" ? false : null;
+        if (isCall === null) return showError("Option type " + ot + " is not sutable for openEdge request");
         this.canTrade(false);
-        var isCall = true;
-        serverCall("createEdgeOrder", [pair, isCall, this.comboQuantity()]
+        serverCall("openEdgeOrder", [pair, isCall, this.comboQuantity(), self.comboCurrentStrikeLevel()]
           , null
           , null
           , function () { this.canTrade(true); }.bind(this)
