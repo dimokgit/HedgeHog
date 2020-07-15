@@ -20,7 +20,7 @@ namespace HedgeHog.Alice.Client {
       }
 
       var tm = UseTraderMacro(pair).Single();
-      var std = tm.StraddleRangeM1().TakePrifit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
+      var std = tm.StraddleRangeM1().TakeProfit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
       var profit = profitInPoints.GetValueOrDefault(std);
       if(profit == 0) throw new Exception("No trend line found for profit calculation");
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
@@ -92,12 +92,11 @@ namespace HedgeHog.Alice.Client {
     #region CreateEdgeOrder
     [BasicAuthenticationFilter]
     public async Task<string> OpenEdgeOrder(string pair, bool isCall, int quantity, double? currentStrikeLevel) {
-      var tm = UseTraderMacro(pair).Single();
       var am = GetAccountManager();
-      var range = tm.StraddleRangeM1();
-      var edge = currentStrikeLevel.GetValueOrDefault(isCall ? range.Up : range.Down);
-      if(edge == 0) throw new Exception($"No edges in {nameof(tm.CurrentSpecialHours)}");
-      var takeProfitPoints = range.TakePrifit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
+      var range = StraddleEdges().First();
+      var edge = currentStrikeLevel.GetValueOrDefault(range.edge);
+      if(edge.IsNotSetOrZero()) throw new Exception($"No {nameof(StraddleEdges)} edges found");
+      var takeProfitPoints = range.profit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
       {
         var x = from ots in am.OpenEdgeOrder(pair, isCall, -quantity, edge, takeProfitPoints, "oca-edge-options:" + DateTime.Now.Ticks)
                 from ot in ots
@@ -105,7 +104,32 @@ namespace HedgeHog.Alice.Client {
                 select ot.error.ToString();
         return await x.DefaultIfEmpty();
       }
+      IEnumerable<(double edge, double profit)> StraddleEdges() =>
+        UseTradingMacro(pair, tm => tm.IsTrader, tm =>
+          tm.StraddleRangeM1().With(r => (isCall ? r.Up : r.Down, r.TakeProfit))
+        );
     }
+    [BasicAuthenticationFilter]
+    public async Task<string> OpenTrendOrder(string pair, bool isCall, int quantity) {
+      var am = GetAccountManager();
+      var range = TrendEdges(pair, isCall).First();
+      var edge = range.edge;
+      if(edge.IsNotSetOrZero()) throw new Exception($"No {nameof(TrendEdges)} edges found");
+      var takeProfitPoints = range.profit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
+      {
+        var x = from ots in am.OpenEdgeOrder(pair, isCall, -quantity, edge, takeProfitPoints, "oca-edge-options:" + DateTime.Now.Ticks)
+                from ot in ots
+                where ot.error.HasError
+                select ot.error.ToString();
+        return await x.FirstOrDefaultAsync();
+      }
+    }
+    private IEnumerable<(double edge, double profit)> TrendEdges(string pair, bool isCall) {
+      return UseTradingMacro(pair, tm => tm.IsTrader, tm =>
+      tm.TLLime.With(tl=> tl.IsEmpty ? (0.0, 0.0) : (isCall ? tl.PriceAvg2 : tl.PriceAvg3, tl.PriceAvg2.Abs(tl.PriceAvg3) / 2))
+      );
+    }
+
     #endregion
   }
 }

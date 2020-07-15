@@ -16,10 +16,10 @@ namespace IBApp {
     public IEnumerator<OrderContractHolder> GetEnumerator() => source.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
   }
- public class OrderContractHolderWithError :ErrorMessage<OrderContractHolders> {
+  public class OrderContractHolderWithError :ErrorMessage<OrderContractHolders> {
     public OrderContractHolder holder => value.SingleOrDefault();
-    public OrderContractHolderWithError(OrderContractHolders value, ErrorMessage error = default) : base(value, error) {
-    }
+    public OrderContractHolderWithError(OrderContractHolders value, ErrorMessage error = default) : base(value, error) { }
+    public OrderContractHolderWithError(ErrorMessages<OrderContractHolder> em) : base(new OrderContractHolders(em.value), em.error) { }
     public static implicit operator OrderContractHolderWithError((OrderContractHolder holder, ErrorMessage error) value) => new OrderContractHolderWithError(new OrderContractHolders(value.holder), value.error);
 
   }
@@ -32,6 +32,9 @@ namespace IBApp {
       this.error = error;
     }
     public override string ToString() => new { values = value.Flatter(Environment.NewLine), error } + "";
+  }
+  public static class GenericException {
+    public static GenericException<T> Create<T>(T t) => new GenericException<T>(t);
   }
   public class GenericException<TData> :Exception {
     public GenericException(TData context) {

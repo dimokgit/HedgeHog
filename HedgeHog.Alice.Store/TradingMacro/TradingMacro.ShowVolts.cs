@@ -880,7 +880,9 @@ namespace HedgeHog.Alice.Store {
     }
     public (double[] upDown, DateTime[] dates)[] BeforeHours = new (double[], DateTime[])[0];
     public (double[] upDown, DateTime[] dates)[] AfterHours = new (double[], DateTime[])[0];
-    private void SetBeforeHours() {
+    Action<DateTime> _SetBeforeHoursMemoize;
+    private Action<DateTime> SetBeforeHours => _SetBeforeHoursMemoize ?? (_SetBeforeHoursMemoize = new Action<DateTime>(d => SetBeforeHoursImpl()).MemoizeLast());
+    private void SetBeforeHoursImpl() {
       var startHour = CoMStartHour;
       var endHour = CoMEndHour;
       if(!TryServerTime(out var serverTime)) return;
@@ -903,7 +905,9 @@ namespace HedgeHog.Alice.Store {
       })).Any()) { };
       set(afterHours.ToArray());
     }
-    private void SetCentersOfMass() {
+    Func<DateTime,object> _SetCentersOfMassMemoize;
+    private Func<DateTime,object> SetCentersOfMass => _SetCentersOfMassMemoize ?? (_SetCentersOfMassMemoize = new Func<DateTime,object>(d => { SetCentersOfMassImpl(); return null; }).MemoizeLast(d=>d));
+    private void SetCentersOfMassImpl() {
       var startHour = CoMStartHour;
       var endHour = CoMEndHour;
       if(!TryServerTime(out var serverTime)) return;
@@ -913,6 +917,7 @@ namespace HedgeHog.Alice.Store {
         CenterOfMassSell = t.upDown[0];
         return CenterOfMassDates = t.dates;
       });
+      return;
       stripHours = SetCenterOfMassByM1Hours(stripHours, t => {
         CenterOfMassBuy2 = t.upDown[1];
         CenterOfMassSell2 = t.upDown[0];

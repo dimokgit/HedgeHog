@@ -26,10 +26,12 @@ namespace HedgeHog.Alice.Store {
     static TimeSpan _afterHourTime = 17.0.FromHours();
     public BlackScholesRange StraddleRangeM1() {
       var tm1 = TradingMacroM1().SingleOrDefault();
-      return tm1 != null ? tm1.StraddleRange() : throw new Exception("No TradingMacroM1 found.");
+      return tm1 != null ? tm1.StraddleRange(RateLast?.StartDate.Round() ?? DateTime.Today) : throw new Exception("No TradingMacroM1 found.");
     }
-
-    public BlackScholesRange StraddleRange() {
+    Func<DateTime, BlackScholesRange> _StraddleRangeMemoize;
+    Func<DateTime, BlackScholesRange> StraddleRange => _StraddleRangeMemoize
+      ?? (_StraddleRangeMemoize = new Func<DateTime, BlackScholesRange>(d => StraddleRangeImpl()).MemoizeLast(d => d));
+    public BlackScholesRange StraddleRangeImpl() {
       double volatility = HistoricalVolatilityAnnualized();
       var hh = CurrentSpecialHours().SingleOrDefault();
       double spot = (hh.upDown?.Average()).GetValueOrDefault();// UseRates(ra => ra.BackwardsIterator().SkipWhile(r => r.StartDate.Hour != 8).Take(1)).Concat().ToArray();
@@ -805,7 +807,7 @@ namespace HedgeHog.Alice.Store {
     public double StrikeDown { get; }
     public double CallPrice { get; }
     public double PutPrice { get; }
-    public double TakePrifit => (Up - Down) / 3;
+    public double TakeProfit => (Up - Down) / 3;
 
     public BlackScholesRange(double strikeUp, double strikeDown, double callPrice, double putPrice) {
       StrikeUp = strikeUp;

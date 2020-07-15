@@ -65,6 +65,15 @@ namespace HedgeHog {
         return r[0].Item2;
       };
     }
+    public static Action<A> MemoizeLast<A>(this Action<A> f) {
+      var cache = default(A);
+      return a => {
+        if(!EqualityComparer<A>.Default.Equals(cache, a)) {
+          cache = a;
+          f(a);
+        };
+      };
+    }
     public static Func<A, R> MemoizePrev<A, R>(this Func<A, R> f, Predicate<R> usePrevCondition) {
       var cache = default(R);
       return a => {

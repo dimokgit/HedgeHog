@@ -1176,7 +1176,7 @@
         var isCall = ot === "C" ? true : ot === "P" ? false : null;
         if (isCall === null) return showError("Option type " + ot + " is not sutable for openEdge request");
         this.canTrade(false);
-        serverCall("openEdgeOrder", [pair, isCall, this.comboQuantity(), self.comboCurrentStrikeLevel()]
+        serverCall("openTrendOrder", [pair, isCall, this.comboQuantity()]//, self.comboCurrentStrikeLevel()]
           , null
           , null
           , function () { this.canTrade(true); }.bind(this)

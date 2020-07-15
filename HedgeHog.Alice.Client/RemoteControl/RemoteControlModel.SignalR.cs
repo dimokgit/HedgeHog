@@ -14,7 +14,7 @@ namespace HedgeHog.Alice.Client {
 
     public object[] ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
       var cp = tm.CurrentPrice?.Average;
-      var histVol = tm.BarPeriod > 0 ? tm.StraddleRange().With(hv => new { up = hv.Up, down = hv.Down }) : new { up = 0.0, down = 0.0 };
+      var histVol = tm.BarPeriod > 0 ? tm.StraddleRangeM1().With(hv => new { up = hv.Up, down = hv.Down }) : new { up = 0.0, down = 0.0 };
       var digits = tm.Digits() + 2;
       if(dateEnd > tm.LoadRatesStartDate2)
         dateEnd = tm.LoadRatesStartDate2;

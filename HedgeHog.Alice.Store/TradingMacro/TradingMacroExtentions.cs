@@ -2436,7 +2436,11 @@ new MarketPrice(
             //ResetBarsCountCalc();
             RatesHeight = RatesArray.Height(r => r.AskHigh, r => r.BidLow, out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
             RatioFromRatesHigh = 1 - (CurrentPrice?.Average).GetValueOrDefault() / RatesMax;
-            SetCentersOfMassSubject.OnNext(() => { SetBeforeHours(); SetCentersOfMass(); });
+            SetCentersOfMassSubject.OnNext(() => {
+              rateLast.ForEach(r => SetBeforeHours(r.StartDate.Round()));
+              if(BarPeriod == BarsPeriodType.t1)
+                rateLast.ForEach(r=> SetCentersOfMass(r.StartDate.Round()));
+            });
             if(IsAsleep) {
               BarsCountCalc = BarsCount;
               RaiseShowChart();
