@@ -165,70 +165,38 @@ namespace IBApp {
       }
       IEnumerable<OrderContractHolder> Default() { yield break; }
     }
-    public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder_Old(string instrument, bool isCall, int quantity, double edge, double takeProfitPoints, string ocaGroup = null) {
-      return UseOrderContracts(orderContracts => {
-        var mul = isCall ? -1 : 1;
-        var enterLevel = edge;
-        var exitLevel = enterLevel + takeProfitPoints * mul;
-        var orderError =
-        from ucd in instrument.ReqContractDetailsCached()
-        let underContract = ucd.Contract
-        from underPrice in underContract.ReqPriceSafe()
-        let enterCondition = underContract.PriceCondition(enterLevel.ThrowIf(() => isCall ? enterLevel < underPrice.ask : enterLevel > underPrice.bid), isCall)
-        //let exitCondition = underContract.PriceCondition(exitLevel, !isCall)
-        let cp = underPrice.avg
-        .ThrowIf(() => isCall && underPrice.avg > enterLevel)
-        .ThrowIf(() => !isCall && underPrice.avg < enterLevel)
-        from current in CurrentOptions(instrument, cp, 0, 2, c => c.IsCall == isCall)
-        from option in CurrentOptionOutMoney(instrument, enterLevel, isCall)
-        let price = current.Average(c => c.marketPrice.bid)
-        let takeProfit = takeProfitPoints * 0.5
-        from ots in OpenTrade(
-          o => {
-            var limitOrder = MakeTakeProfitOrder2(o, option.option, takeProfit);
-            if(!ocaGroup.IsNullOrEmpty()) {
-              o.OcaGroup = ocaGroup;
-              o.OcaType = (int)OCAType.CancelWithBlocking.Value;
-            }
-            return limitOrder ?? Observable.Empty<OrderPriceContract>();
-          },
-          contract: option.option,
-          quantity: quantity,
-          condition: enterCondition,
-          useTakeProfit: false,
-          price: price
-          )
-        select ots;
-        return orderError.Catch<OrderContractHolderWithError[], GenericException<OrderContractHolderWithError>>(exc => Observable.Return(exc.Context).ToArray());
-      }).SingleOrDefault() ?? Observable.Empty<OrderContractHolderWithError[]>();
-    }
-    public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(string instrument, bool isCall, int quantity, double edge, double takeProfitPoints, string ocaGroup = "") {
-      var @params = OpenEdgeOrderParams(instrument, isCall, quantity, edge, takeProfitPoints);
-      var update = from p in @params
-                   from orderToUpdate in CanUpdateOrder(p.contract, p.quantity, OrderTypes.LMT, p.enterCondition)
+    public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(string instrument, bool isCall, int quantity, int daysToSkip, double edge, double takeProfitPoints, string ocaGroup = "")
+      => OpenEdgeOrder(null,instrument, isCall, quantity, daysToSkip, edge, takeProfitPoints, ocaGroup);
+    public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(Action<IBApi.Order> changeOrder, string instrument, bool isCall, int quantity, int daysToSkip, double edge, double takeProfitPoints, string ocaGroup = "") {
+      var @params = OpenEdgeOrderParams(instrument, isCall, quantity, daysToSkip, edge, takeProfitPoints);
+      var update = from p in @params.Take(0)
+                   from orderToUpdate in CanUpdateOrder(p.contract, p.quantity, OrderTypes.LMT, p.enterConditions)
                    where orderToUpdate.context.type && orderToUpdate.context.condition
-                   from uo in UpdateEdgeOrder(orderToUpdate.och, p.price, p.enterCondition)
+                   from uo in UpdateEdgeOrder(orderToUpdate.och, p.price, p.enterConditions)
                    select uo;
       var open = from p in @params
                  from ots in OpenTrade(o => {
+                   changeOrder?.Invoke(o);
                    var limitOrder = MakeTakeProfitOrder2(o, p.contract, p.takeProfit);
                    if(!ocaGroup.IsNullOrEmpty()) {
                      o.OcaGroup = ocaGroup;
                      o.OcaType = (int)OCAType.CancelWithBlocking.Value;
                    }
                    return limitOrder ?? Observable.Empty<OrderPriceContract>();
-                 }, p.contract,quantity,condition: p.enterCondition,useTakeProfit: false,price: p.price)
+                 }, p.contract, quantity, condition: p.enterConditions.SingleOrDefault(), useTakeProfit: false, price: p.price)
                  select ots;
-      return update.Concat(open).Where(a=>a.Any()).Take(1);
-      IObservable<OrderContractHolderWithError[]> UpdateEdgeOrder(OrderContractHolder och, double price, OrderCondition enterCondition) {
+      return update.Concat(open).Where(a => a.Any()).Take(1);
+      IObservable<OrderContractHolderWithError[]> UpdateEdgeOrder(OrderContractHolder och, double price, OrderCondition[] enterConditions) {
         och.order.LmtPrice = price;
         och.order.VolatilityType = 0;
-        och.order.Conditions.OfType<PriceCondition>().Do(pc => pc.Price = ((PriceCondition)enterCondition).Price).Single();
+        och.order.Conditions.OfType<PriceCondition>()
+          .Zip(enterConditions.OfType<PriceCondition>(), (pc, ec) => pc.Price = ec.Price).Count();
+        changeOrder(och.order);
         return PlaceOrder(och.order, och.contract).Select(em => new OrderContractHolderWithError(em)).ToArray();
       }
     }
-    public IObservable<(Contract contract, int quantity, OrderCondition enterCondition, double price, double takeProfit)>
-      OpenEdgeOrderParams(string instrument, bool isCall, int quantity, double edge, double takeProfitPoints) {
+    public IObservable<OpenEdgeParams>
+      OpenEdgeOrderParams(string instrument, bool isCall, int quantity, int daysToSkip, double edge, double takeProfitPoints) {
       var mul = isCall ? -1 : 1;
       var enterLevel = edge;
       var exitLevel = enterLevel + takeProfitPoints * mul;
@@ -241,25 +209,25 @@ namespace IBApp {
       let cp = underPrice.avg
     .ThrowIf(() => isCall && underPrice.avg > enterLevel)
     .ThrowIf(() => !isCall && underPrice.avg < enterLevel)
-      from current in CurrentOptions(instrument, cp, 0, 2, c => c.IsCall == isCall)
-      from combo in CurrentOptionOutMoney(instrument, enterLevel, isCall)
+      from current in CurrentOptions(instrument, cp, daysToSkip, 2, c => c.IsCall == isCall)
+      from combo in CurrentOptionOutMoney(instrument, enterLevel, isCall, daysToSkip)
       let contract = combo.option
-      let price = current.Average(c => c.marketPrice.bid)
-      let takeProfit = takeProfitPoints * 0.5
-      select (
+      let price = current.Average(c => c.option.ExtrinsicValue(c.marketPrice.bid, underPrice.bid))
+      let takeProfit = price.Min(price / 2, takeProfitPoints * 0.5)
+      select (OpenEdgeParams)(
         contract,
         quantity,
-        enterCondition,
+        new[] { enterCondition },
         price,
         takeProfit
         );
 
     }
-    IEnumerable<(OrderContractHolder och, (bool type, bool condition) context)> CanUpdateOrder(Contract contract, int quantity, OrderTypes orderType, OrderCondition conditions) {
+    IEnumerable<(OrderContractHolder och, (bool type, bool condition) context)> CanUpdateOrder(Contract contract, int quantity, OrderTypes orderType, IList<OrderCondition> conditions) {
       var eos = FindExistingOrder(contract, quantity, och => {
         var type = EnumUtils.Compare(och.order.OrderType, orderType, true);
         var condition = och.order.Conditions.OfType<PriceCondition>().Select(parseCond)
-        .SequenceEqual(new[] { conditions }.OfType<PriceCondition>().Select(parseCond));
+        .SequenceEqual(conditions.OfType<PriceCondition>().Select(parseCond));
         return (type, condition);
       });
       return eos;
@@ -267,9 +235,9 @@ namespace IBApp {
     }
 
 
-    IObservable<CurrentCombo> CurrentOptionOutMoney(string instrument, double enterLevel, bool isCall) {
+    IObservable<CurrentCombo> CurrentOptionOutMoney(string instrument, double enterLevel, bool isCall, int daysToSkip) {
       var mul = isCall ? -1 : 1;
-      return from options in CurrentOptions(instrument, enterLevel, 0, 2, c => c.IsCall == isCall)
+      return from options in CurrentOptions(instrument, enterLevel, daysToSkip, 2, c => c.IsCall == isCall)
              from option in options.OrderBy(o => o.option.Strike * mul).Take(1)
              select option;
     }
@@ -458,12 +426,14 @@ namespace IBApp {
     public IObservable<OrderPriceContract> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract, double profit = double.NaN, double limitPrice = double.NaN) {
       Passager.ThrowIf(() => profit.IsSetAndNotZero() && limitPrice.IsSetAndNotZero());
       Passager.ThrowIf(() => profit.IsSetAndNotZero() && parent.IsMarket);
+      var transmit = parent.Transmit;
       parent.Transmit = false;
       var takeProfit = parent.LmtPrice + (profit >= 1 ? profit : parent.LmtPrice * profit) * (parent.IsBuy ? 1 : -1);
       var price = limitPrice.IfNaNOrZero(takeProfit);
       var orderType = "LMT" + (contract.IsHedgeCombo ? " + MKT" : "");
       var order = OrderFactory(contract, -parent.Quantity, price, default, default, orderType, parent.OutsideRth);
       order.ParentId = parent.OrderId;
+      order.Transmit = transmit;
       return Observable.Return((OrderPriceContract)(order, price, contract));
     }
     public IObservable<OrderPriceContract> MakeTakeProfitOrder2(IBApi.Order parent, Contract contract, IList<OrderCondition> takeProfitCondition) {

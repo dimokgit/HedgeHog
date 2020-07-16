@@ -1334,6 +1334,10 @@
         <!-- /ko -->
         <select data-bind="options:strategyType,optionsText:'text',optionsValue:'text',value:strategyCurrent,optionsCaption:'...'"></select>
         <button class="small" data-bind="click:openEdge,enable:canTrade,text:'Edge'+showOptionType(),visible:canOpenEdge()"></button>
+        <select data-bind="value:edgeType">
+          <option value="T">T</option>
+          <option value="S">S</option>
+        </select>
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
         <select data-bind="options:rollOversList,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>

@@ -55,8 +55,13 @@ namespace HedgeHog.Alice.Store {
       return new BlackScholesRange(strikeUp, strikeDown, c, p);
     }
 
+    private DateTime LastStartDate => RateLast?.StartDate.Round(MathCore.RoundTo.Minute) ?? DateTime.MinValue;
 
-    private double HistoricalVolatilityAnnualizedMini() {
+    Func<DateTime, double> _HistoricalVolatilityAnnualizedMini;
+    Func<DateTime, double> HistoricalVolatilityAnnualizedMiniMem => _HistoricalVolatilityAnnualizedMini ??
+      (_HistoricalVolatilityAnnualizedMini = new Func<DateTime, double>(d => HistoricalVolatilityAnnualizedMiniImpl()).MemoizeLast(d => d));
+    public double HistoricalVolatilityAnnualizedMini() => HistoricalVolatilityAnnualizedMiniMem(LastStartDate);
+    private double HistoricalVolatilityAnnualizedMiniImpl() {
       var ano = Math.Sqrt(365);
       //var days0 = UseRatesInternal(ri => ri.GroupBy(r => r.StartDate.Date).ToArray());
       var hv = UseRatesInternal(ri => ri.GroupBy(r => r.StartDate.Round(1))
@@ -64,8 +69,14 @@ namespace HedgeHog.Alice.Store {
         .Select(days0 => days0.HistoricalVolatility() * ano);
       return hv.SingleOrDefault();
     }
-    private double HistoricalVolatilityAnnualized() {
-      if(BarPeriod == BarsPeriodType.t1) return HistoricalVolatilityAnnualizedMini();
+
+    Func<DateTime, double> _HistoricalVolatilityAnnualized;
+    Func<DateTime, double> HistoricalVolatilityAnnualizedMem => _HistoricalVolatilityAnnualized ??
+      (_HistoricalVolatilityAnnualized = new Func<DateTime, double>(d => HistoricalVolatilityAnnualizedImpl()).MemoizeLast(d => d));
+
+    public double HistoricalVolatilityAnnualized() => HistoricalVolatilityAnnualizedMem(LastStartDate);
+    private double HistoricalVolatilityAnnualizedImpl() {
+      if(BarPeriod == BarsPeriodType.t1) return HistoricalVolatilityAnnualizedMiniImpl();
       var ano = Math.Sqrt(365);
       //var days0 = UseRatesInternal(ri => ri.GroupBy(r => r.StartDate.Date).ToArray());
       var hv = UseRatesInternal(ri => ri.Where(r => r.StartDate.Hour == 16).GroupBy(r => r.StartDate.Date)
@@ -807,6 +818,7 @@ namespace HedgeHog.Alice.Store {
     public double StrikeDown { get; }
     public double CallPrice { get; }
     public double PutPrice { get; }
+    public double Height => Up - Down;
     public double TakeProfit => (Up - Down) / 3;
 
     public BlackScholesRange(double strikeUp, double strikeDown, double callPrice, double putPrice) {

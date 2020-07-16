@@ -950,6 +950,7 @@
         self.comboCurrentStrikeLevel(!self.comboCurrentStrikeLevel() ? Math.round(self.priceAvg()) : "");
       }
       this.currentProfit = ko.observable().extend({ persist: "currentProfit" + pair });
+      this.edgeType = ko.observable().extend({ persist: "edgeType" + pair });
       this.comboGap = ko.observable(1).extend({ persist: "comboGap" + pair });
       this.comboGap.subscribe(refreshCombos);
       this.numOfCombos = ko.observable(0).extend({ persist: "numOfCombos" + pair });
@@ -988,7 +989,7 @@
         if (!isNaN(limit)) {
           var instrument = a.combo();
           var orderId = a.orderId();
-          serverCall("updateCloseOrder", [pair,instrument, orderId, limit, null]);
+          serverCall("updateCloseOrder", [pair, instrument, orderId, limit, null]);
         }
       }
 
@@ -1028,7 +1029,7 @@
       this.tradesBreakEvens = ko.mapping.fromJS(ko.observableArray());
 
       this.hedgeREL = ko.observable(true);
-      this.hedgeTest = ko.observable(false);
+      this.hedgeTest = ko.observable().extend({ persist: "hedgeTest" + pair });;
       this.hedgeCombo = ko.mapping.fromJS(ko.observableArray());
       this.hedgeCombo2 = ko.mapping.fromJS(ko.observableArray());
       function mapHedgeCombos() {
@@ -1142,7 +1143,7 @@
       this.openButterfly = function (isBuy, key, useMarketPrice) {
         this.canTrade(false);
         var combo = ko.unwrap(ko.unwrap(key).i);
-        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(), this.currentProfit(), self.rollCombo(),self.hedgeTest()]
+        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(), this.currentProfit(), self.rollCombo(), self.hedgeTest()]
           , r => (r || []).forEach(e => showErrorPerm("openButterfly:\n" + e))
           , null
           , function () { this.canTrade(true); }.bind(this)
@@ -1176,7 +1177,12 @@
         var isCall = ot === "C" ? true : ot === "P" ? false : null;
         if (isCall === null) return showError("Option type " + ot + " is not sutable for openEdge request");
         this.canTrade(false);
-        serverCall("openTrendOrder", [pair, isCall, this.comboQuantity()]//, self.comboCurrentStrikeLevel()]
+        serverCall("openEdgeOrder", [pair, isCall, this.comboQuantity(), this.expDaysSkip() || 0
+          , this.comboCurrentStrikeLevel() || 0
+          , this.currentProfit() || 0
+          , this.edgeType() || "T"
+          , this.hedgeTest() || false
+        ]
           , null
           , null
           , function () { this.canTrade(true); }.bind(this)

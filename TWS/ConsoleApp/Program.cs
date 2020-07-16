@@ -75,7 +75,9 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        am.CurrentOptions("ESU0",3145,2,3,c=>true)
+        EdgeTests.MoveEdge(am);
+        return;
+        am.CurrentOptions("ESU0",0,0,3,c=>true)
         .Subscribe(se => {
           HandleMessage(se.Select(x=>new { x.combo }).ToMarkdownTable());
         });
@@ -89,10 +91,10 @@ namespace ConsoleApp {
            select p.avg
            ).Subscribe(level => {
              HandleMessage($"am.OpenEdgeTrade(\"{symbol}\", true, 1, {level + 30}, 15,ocaGroup)");
-             am.OpenEdgeOrder(symbol, true, 1, level + 30, 15, ocaGroup)
+             am.OpenEdgeOrder(symbol, true, 1,0, level + 30, 15, ocaGroup)
              .Subscribe(ochs => ochs.Select(och => new { och.holder, och.error }).ForEach(HandleMessage));
              HandleMessage($"am.OpenEdgeTrade(\"{symbol}\", false, 1, {level - 30}, 15,ocaGroup)");
-             am.OpenEdgeOrder(symbol, false, 1, level - 30.0, 15, ocaGroup)
+             am.OpenEdgeOrder(symbol, false, 1,0, level - 30.0, 15, ocaGroup)
              .Subscribe(ochs => ochs.Select(och => new { och.holder, och.error }).ForEach(HandleMessage));
            });
           return;

@@ -1135,7 +1135,7 @@ namespace HedgeHog.Alice.Store {
           )
           .Where(_ => ibWraper?.AccountManager != null)
           .Where(price => price.EventArgs.Price.Pair == Pair)
-          .Sample(TimeSpan.FromSeconds(0.5))
+          .Sample(TimeSpan.FromSeconds(1))
           //.Publish().RefCount()
           ;
 
@@ -1225,6 +1225,7 @@ namespace HedgeHog.Alice.Store {
       )
       //.Scan((p, n) => p.EmptyIfNull().Concat(n).TakeLast(4 * 5).ToArray())
       //.Select(a => a.Average(p => p.deltaBid))
+      .DistinctUntilChanged(GetStraddlePrice)
       .Subscribe(straddle => {
         UseStraddleHistory(straddleHistory, shs => {
           shs.BackwardsIterator().Take(1)
@@ -1240,7 +1241,7 @@ new MarketPrice(
             sh.theta
             ))
             // turned off to test for leaks
-            .SideEffect(()=> straddle.Length < 0, t => GlobalStorage.UseForexMongo(c => straddleHistoryDbSet(c).Add(new StraddleHistory(
+            .SideEffect(()=> straddle.Length > 0, t => GlobalStorage.UseForexMongo(c => straddleHistoryDbSet(c).Add(new StraddleHistory(
               straddleStartId + _id(),
               pairCode,
               t.bid,

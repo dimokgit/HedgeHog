@@ -712,7 +712,7 @@ namespace HedgeHog {
     }
     public static double IfNotSetOrZero(this double d, double other) => d.IsNotSetOrZero() ? other : d;
     public static bool IsSetAndNotZero(this double d) => !d.IsNotSetOrZero();
-    public static bool IsNotSetOrZero(this double d) =>double.IsNaN(d) || d == 0 || d == double.MaxValue || d == double.MinValue;
+    public static bool IsNotSetOrZero(this double d) =>double.IsNaN(d) || d == 0 || d == double.MaxValue || d == double.MinValue || double.IsInfinity(d);
     public static bool IsNaN(this double d) {
       return double.IsNaN(d);
     }

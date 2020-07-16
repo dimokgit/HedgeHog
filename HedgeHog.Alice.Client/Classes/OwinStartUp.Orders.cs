@@ -90,46 +90,38 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region CreateEdgeOrder
+    public enum EdgeRangeType { T, S }
     [BasicAuthenticationFilter]
-    public async Task<string> OpenEdgeOrder(string pair, bool isCall, int quantity, double? currentStrikeLevel) {
+    public Task OpenEdgeOrder(string pair, bool isCall, int quantity, int daysToSkip, double currentStrikeLevel, double profitInPoints, EdgeRangeType rangeType, bool isTest)
+      => OpenTrendOrder(pair, isCall, quantity, daysToSkip, currentStrikeLevel, profitInPoints, rangeType==EdgeRangeType.S?StraddleEdges:(EdgesDelegate)TrendEdges , isTest);
+
+    
+    private async Task OpenTrendOrder(string pair, bool isCall, int quantity, int daysToSkip, double currentStrikeLevel, double profitInPoints, EdgesDelegate calcEdges, bool isTest) {
       var am = GetAccountManager();
-      var range = StraddleEdges().First();
-      var edge = currentStrikeLevel.GetValueOrDefault(range.edge);
-      if(edge.IsNotSetOrZero()) throw new Exception($"No {nameof(StraddleEdges)} edges found");
-      var takeProfitPoints = range.profit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
-      {
-        var x = from ots in am.OpenEdgeOrder(pair, isCall, -quantity, edge, takeProfitPoints, "oca-edge-options:" + DateTime.Now.Ticks)
-                from ot in ots
-                where ot.error.HasError
-                select ot.error.ToString();
-        return await x.DefaultIfEmpty();
-      }
-      IEnumerable<(double edge, double profit)> StraddleEdges() =>
-        UseTradingMacro(pair, tm => tm.IsTrader, tm =>
-          tm.StraddleRangeM1().With(r => (isCall ? r.Up : r.Down, r.TakeProfit))
-        );
-    }
-    [BasicAuthenticationFilter]
-    public async Task<string> OpenTrendOrder(string pair, bool isCall, int quantity) {
-      var am = GetAccountManager();
-      var range = TrendEdges(pair, isCall).First();
-      var edge = range.edge;
+      var range = calcEdges(pair, isCall).First();
+      var edge = currentStrikeLevel.IfNotSetOrZero(range.edge);
       if(edge.IsNotSetOrZero()) throw new Exception($"No {nameof(TrendEdges)} edges found");
-      var takeProfitPoints = range.profit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
+      var takeProfitPoints = profitInPoints.IfNotSetOrZero(range.profit);// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
       {
-        var x = from ots in am.OpenEdgeOrder(pair, isCall, -quantity, edge, takeProfitPoints, "oca-edge-options:" + DateTime.Now.Ticks)
-                from ot in ots
-                where ot.error.HasError
-                select ot.error.ToString();
-        return await x.FirstOrDefaultAsync();
+        var x = await (from ots in am.OpenEdgeOrder(o => o.Transmit = !isTest, pair, isCall, -quantity, daysToSkip, edge, takeProfitPoints, "oca-edge-options:" + DateTime.Now.Ticks)
+                       from ot in ots
+                       where ot.error.HasError
+                       select ot.error.ToString()
+                      ).DefaultIfEmpty();
+        if(!x.IsNullOrEmpty()) throw new Exception(x);
       }
     }
+    private IEnumerable<(double edge, double profit)> StraddleEdges(string pair, bool isCall) =>
+      UseTradingMacro(pair, tm => tm.IsTrader, tm =>
+        tm.StraddleRangeM1().With(r => (isCall ? r.Up : r.Down, r.TakeProfit))
+      );
     private IEnumerable<(double edge, double profit)> TrendEdges(string pair, bool isCall) {
       return UseTradingMacro(pair, tm => tm.IsTrader, tm =>
-      tm.TLLime.With(tl=> tl.IsEmpty ? (0.0, 0.0) : (isCall ? tl.PriceAvg2 : tl.PriceAvg3, tl.PriceAvg2.Abs(tl.PriceAvg3) / 2))
+      tm.TLLime.With(tl => tl.IsEmpty ? (0.0, 0.0) : (isCall ? tl.PriceAvg2 : tl.PriceAvg3, tl.PriceAvg2.Abs(tl.PriceAvg3) / 2))
       );
     }
+    delegate IEnumerable<(double edge, double profit)> EdgesDelegate(string pair, bool isCall);
 
-    #endregion
+      #endregion
+    }
   }
-}
