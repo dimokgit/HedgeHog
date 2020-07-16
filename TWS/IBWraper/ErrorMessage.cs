@@ -14,6 +14,7 @@ namespace IBApp {
       this.source = source;
     }
     public IEnumerator<OrderContractHolder> GetEnumerator() => source.GetEnumerator();
+    public override string ToString() => base.ToString();
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
   }
   public class OrderContractHolderWithError :ErrorMessage<OrderContractHolders> {
@@ -21,7 +22,8 @@ namespace IBApp {
     public OrderContractHolderWithError(OrderContractHolders value, ErrorMessage error = default) : base(value, error) { }
     public OrderContractHolderWithError(ErrorMessages<OrderContractHolder> em) : base(new OrderContractHolders(em.value), em.error) { }
     public static implicit operator OrderContractHolderWithError((OrderContractHolder holder, ErrorMessage error) value) => new OrderContractHolderWithError(new OrderContractHolders(value.holder), value.error);
-
+    public object ToAnon() => new { holders = value.Flatter(","), error };
+    public override string ToString() => ToAnon().ToString();
   }
   public class ErrorMessages<T> {
     public readonly IEnumerable<T> value;

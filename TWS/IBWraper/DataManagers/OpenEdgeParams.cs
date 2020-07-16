@@ -1,19 +1,23 @@
 ﻿using IBApi;
 using System.Collections.Generic;
+using static IBApp.AccountManager;
+
 namespace IBApp {
   public struct OpenEdgeParams {
-    public Contract contract;
-    public int quantity;
-    public OrderCondition[] enterConditions;
-    public double price;
-    public double takeProfit;
+    public readonly Contract contract;
+    public readonly int quantity;
+    public readonly OrderCondition[] enterConditions;
+    public readonly double price;
+    public readonly double takeProfit;
+    public readonly IEnumerable<(OrderContractHolder holder, bool me)> currentOrders;
 
-    public OpenEdgeParams(Contract contract, int quantity, OrderCondition[] enterConditions, double price, double takeProfit) {
+    public OpenEdgeParams(Contract contract, int quantity, OrderCondition[] enterConditions, double price, double takeProfit, IEnumerable<(OrderContractHolder holder, bool me)> currentOrders) {
       this.contract = contract;
       this.quantity = quantity;
       this.enterConditions = enterConditions;
       this.price = price;
       this.takeProfit = takeProfit;
+      this.currentOrders = currentOrders;
     }
 
     public override bool Equals(object obj) => obj is OpenEdgeParams other && EqualityComparer<Contract>.Default.Equals(contract, other.contract) && quantity == other.quantity && EqualityComparer<OrderCondition[]>.Default.Equals(enterConditions, other.enterConditions) && price == other.price && takeProfit == other.takeProfit;
@@ -39,7 +43,6 @@ namespace IBApp {
     public override string ToString() => new { contract, quantity, price, takeProfit } + "";
 
     public static implicit operator (Contract contract, int quantity, OrderCondition[] enterConditions, double price, double takeProfit)(OpenEdgeParams value) => (value.contract, value.quantity, value.enterConditions, value.price, value.takeProfit);
-    public static implicit operator OpenEdgeParams((Contract contract, int quantity, OrderCondition[] enterConditions, double price, double takeProfit) value) => new OpenEdgeParams(value.contract, value.quantity, value.enterConditions, value.price, value.takeProfit);
   }
 }
 

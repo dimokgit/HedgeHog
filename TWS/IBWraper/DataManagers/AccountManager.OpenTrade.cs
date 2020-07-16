@@ -166,15 +166,20 @@ namespace IBApp {
       IEnumerable<OrderContractHolder> Default() { yield break; }
     }
     public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(string instrument, bool isCall, int quantity, int daysToSkip, double edge, double takeProfitPoints, string ocaGroup = "")
-      => OpenEdgeOrder(null,instrument, isCall, quantity, daysToSkip, edge, takeProfitPoints, ocaGroup);
+      => OpenEdgeOrder(null, instrument, isCall, quantity, daysToSkip, edge, takeProfitPoints, ocaGroup);
     public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(Action<IBApi.Order> changeOrder, string instrument, bool isCall, int quantity, int daysToSkip, double edge, double takeProfitPoints, string ocaGroup = "") {
       var @params = OpenEdgeOrderParams(instrument, isCall, quantity, daysToSkip, edge, takeProfitPoints);
+      return OpenEdgeOrder(changeOrder, @params, ocaGroup);
+    }
+    public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(Action<IBApi.Order> changeOrder, IObservable<OpenEdgeParams> @params, string ocaGroup = "") {
       var update = from p in @params.Take(0)
                    from orderToUpdate in CanUpdateOrder(p.contract, p.quantity, OrderTypes.LMT, p.enterConditions)
                    where orderToUpdate.context.type && orderToUpdate.context.condition
                    from uo in UpdateEdgeOrder(orderToUpdate.och, p.price, p.enterConditions)
                    select uo;
       var open = from p in @params
+                 from ps in p.currentOrders.Where(co => !co.me).Select(currentOrder => CancelOrder(currentOrder.holder.order.OrderId)).Merge().ToArray()
+                 let canceled = ps.Any(p => !p.error.HasError ? false : throw GenericException.Create(new { context = p.value.Flatter(","), p.error }))
                  from ots in OpenTrade(o => {
                    changeOrder?.Invoke(o);
                    var limitOrder = MakeTakeProfitOrder2(o, p.contract, p.takeProfit);
@@ -183,7 +188,7 @@ namespace IBApp {
                      o.OcaType = (int)OCAType.CancelWithBlocking.Value;
                    }
                    return limitOrder ?? Observable.Empty<OrderPriceContract>();
-                 }, p.contract, quantity, condition: p.enterConditions.SingleOrDefault(), useTakeProfit: false, price: p.price)
+                 }, p.contract, p.quantity, condition: p.enterConditions.SingleOrDefault(), useTakeProfit: false, price: p.price)
                  select ots;
       return update.Concat(open).Where(a => a.Any()).Take(1);
       IObservable<OrderContractHolderWithError[]> UpdateEdgeOrder(OrderContractHolder och, double price, OrderCondition[] enterConditions) {
@@ -214,15 +219,31 @@ namespace IBApp {
       let contract = combo.option
       let price = current.Average(c => c.option.ExtrinsicValue(c.marketPrice.bid, underPrice.bid))
       let takeProfit = price.Min(price / 2, takeProfitPoints * 0.5)
-      select (OpenEdgeParams)(
+      let currentOrders = FindEdgeOrders(contract)
+      select new OpenEdgeParams(
         contract,
         quantity,
         new[] { enterCondition },
         price,
-        takeProfit
+        takeProfit,
+        currentOrders
         );
 
     }
+    public IEnumerable<(OrderContractHolder holder, bool me)> FindEdgeOrders(Contract contract) {
+      var edgeOrders = UseOrderContracts(ocs => ocs.Where(oc =>
+        oc.order.IsSell &&
+        !oc.isDone &&
+        oc.contract.IsOption &&
+        oc.contract.IsCall == contract.IsCall &&
+        oc.contract.Symbol == contract.Symbol &&
+        oc.order.HasPriceCodition
+      )).Concat();
+      return edgeOrders.Select(h => (h, contract.Key == h.contract.Key));
+      //edgeOrders.ThrowIf(() => edgeOrders.IsEmpty());
+
+    }
+
     IEnumerable<(OrderContractHolder och, (bool type, bool condition) context)> CanUpdateOrder(Contract contract, int quantity, OrderTypes orderType, IList<OrderCondition> conditions) {
       var eos = FindExistingOrder(contract, quantity, och => {
         var type = EnumUtils.Compare(och.order.OrderType, orderType, true);

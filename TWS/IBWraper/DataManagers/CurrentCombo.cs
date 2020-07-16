@@ -14,8 +14,8 @@ namespace IBApp {
     public MarketPrice marketPrice { get; }
     public Contract option => combo.contract;
 
-    public CurrentCombo(string instrument, MarketPrice marketPrice, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract contract, double deltaBid, double deltaAsk) :this(
-      instrument, marketPrice, strikeAvg, underPrice,  breakEven, (contract,new Contract[0]), deltaBid, deltaAsk
+    public CurrentCombo(string instrument, MarketPrice marketPrice, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract contract, double deltaBid, double deltaAsk) : this(
+      instrument, marketPrice, strikeAvg, underPrice, breakEven, (contract, new Contract[0]), deltaBid, deltaAsk
       ) {
     }
     public CurrentCombo(string instrument, MarketPrice marketPrice, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo, double deltaBid, double deltaAsk) {
@@ -65,7 +65,7 @@ namespace IBApp {
       deltaBid,
       deltaAsk
     };
-    public override string ToString() => base.ToString();
+    public override string ToString() => ToAnon().ToString();
 
     public static implicit operator (string instrument, MarketPrice marketPrice, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract contract, double deltaBid, double deltaAsk)(CurrentCombo value) => (value.instrument, value.marketPrice, value.strikeAvg, value.underPrice, value.breakEven, value.combo.contract, value.deltaBid, value.deltaAsk);
     public static implicit operator (string instrument, MarketPrice marketPrice, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo, double deltaBid, double deltaAsk)(CurrentCombo value) => (value.instrument, value.marketPrice, value.strikeAvg, value.underPrice, value.breakEven, value.combo, value.deltaBid, value.deltaAsk);

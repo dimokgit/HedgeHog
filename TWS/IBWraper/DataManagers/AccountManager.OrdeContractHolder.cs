@@ -29,6 +29,7 @@ namespace IBApp {
 
       private readonly IDisposable _shouldExecuteDisposable;
 
+      public int OrderId => order.OrderId;
       public bool isDone => (status.status, status.remaining).IsOrderDone();
       public bool isNew => status.status == "new";
       public bool isSubmitted => status.status == "Submitted";
