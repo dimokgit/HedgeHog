@@ -1,5 +1,7 @@
 using HedgeHog;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace IBApi {
   partial class Order {
@@ -37,6 +39,8 @@ namespace IBApi {
       p = Math.Round(p, 4);
       return p;
     }
+    public IEnumerable<PriceCondition> PriceCoditions { get { if(Conditions != null) foreach(var pc in Conditions.OfType<PriceCondition>()) yield return pc; } }
+    public bool HasPriceCodition => PriceCoditions.Any();
     public Order SetDefaultType(Contract contract, DateTime serverTime) {
       if(!OrderType.IsNullOrEmpty()) {
         if(LmtPrice.IsNotSetOrZero())
