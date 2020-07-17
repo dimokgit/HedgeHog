@@ -1139,6 +1139,18 @@ namespace HedgeHog.Alice.Store {
           //.Publish().RefCount()
           ;
 
+          _priceChangeObservable.Subscribe(_ => {
+            if(TLLime.IsEmpty) return;
+            try {
+              ibWraper.AccountManager.TrendEdgeLevel.OnNext(new[] {
+                (Pair, TLLime.PriceAvg2.Max(CurrentPrice.Ask), true, TradingRatio.ToInt(), CalculateTakeProfitInPips()),
+                (Pair, TLLime.PriceAvg3.Min(CurrentPrice.Bid), false, TradingRatio.ToInt(), CalculateTakeProfitInPips())
+              });
+            } catch(Exception exc) {
+              Log = exc;
+            }
+          });
+
           if(!IsInVirtualTrading && IsTrader) {
             _currentOptionDisposable?.Dispose();
             _currentOptionDisposable = (
@@ -1186,7 +1198,7 @@ namespace HedgeHog.Alice.Store {
                 .Subscribe(x => {
                   var startDate = tmM1.RatesArray[0].StartDate.ToUniversalTime().AddDays(-5);
                   GlobalStorage.UseForexMongo(c => c.StraddleHistories.RemoveRange(c.StraddleHistories.Where(t => t.time < startDate)), true);
-                  GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == pairCode).OrderBy(t => t.time).ToArray().Select(sh => new MarketPrice(sh.bid, sh.ask, sh.time, sh.delta,double.NaN)).OrderBy(t => t.time)));
+                  GlobalStorage.UseForexMongo(c => StraddleHistory.AddRange(c.StraddleHistories.Where(t => t.pair == pairCode).OrderBy(t => t.time).ToArray().Select(sh => new MarketPrice(sh.bid, sh.ask, sh.time, sh.delta, double.NaN)).OrderBy(t => t.time)));
                   if(true || VoltageFunction == VoltageFunction.Straddle) {
                     SyncStraddleHistoryT1(this);
                     Log = new Exception($"{nameof(SyncStraddleHistoryT1)}[{this}] - done");
@@ -1229,10 +1241,10 @@ namespace HedgeHog.Alice.Store {
       .Subscribe(straddle => {
         UseStraddleHistory(straddleHistory, shs => {
           shs.BackwardsIterator().Take(1)
-          .DefaultIfEmpty(new MarketPrice(double.NaN, double.NaN, DateTime.MinValue, double.NaN,double.NaN))
+          .DefaultIfEmpty(new MarketPrice(double.NaN, double.NaN, DateTime.MinValue, double.NaN, double.NaN))
           .ToList()
           .ForEach(sh => shs.Add(
-            sh.bid.Cma(shcp, GetStraddlePrice(straddle)).With(x=>
+            sh.bid.Cma(shcp, GetStraddlePrice(straddle)).With(x =>
 new MarketPrice(
             sh.bid.Cma(shcp, x),
             sh.ask.Cma(shcp, x),
@@ -1241,31 +1253,31 @@ new MarketPrice(
             sh.theta
             ))
             // turned off to test for leaks
-            .SideEffect(()=> straddle.Length > 0, t => GlobalStorage.UseForexMongo(c => straddleHistoryDbSet(c).Add(new StraddleHistory(
-              straddleStartId + _id(),
-              pairCode,
-              t.bid,
-              t.ask,
-              t.delta,
-              t.time,
-              t.theta
-            ))
-            , saveTime < DateTime.Now
-            , () => saveTime = resetSaveTime()
-            , (c, exc) => {
-              Log = exc;
-              try {
-                var e = from h in straddleHistoryDbSet(c)
-                        group h by h._id into g
-                        where g.Count() > 1
-                        select c.Remove(g.First());
-                e.Count();
-                c.SaveChanges();
-              } catch(Exception exc2) {
-                Log = exc2;
-              }
-            }
-            ))
+            .SideEffect(() => straddle.Length > 0, t => GlobalStorage.UseForexMongo(c => straddleHistoryDbSet(c).Add(new StraddleHistory(
+               straddleStartId + _id(),
+               pairCode,
+               t.bid,
+               t.ask,
+               t.delta,
+               t.time,
+               t.theta
+             ))
+             , saveTime < DateTime.Now
+             , () => saveTime = resetSaveTime()
+             , (c, exc) => {
+               Log = exc;
+               try {
+                 var e = from h in straddleHistoryDbSet(c)
+                         group h by h._id into g
+                         where g.Count() > 1
+                         select c.Remove(g.First());
+                 e.Count();
+                 c.SaveChanges();
+               } catch(Exception exc2) {
+                 Log = exc2;
+               }
+             }
+             ))
           ));
         });
       }
@@ -1293,7 +1305,7 @@ new MarketPrice(
         var deltaWing = straddle.callWing.deltaAsk;
         UseStraddleHistory(shs => {
           shs.BackwardsIterator().Take(1)
-          .DefaultIfEmpty(new MarketPrice(double.NaN, double.NaN, DateTime.MinValue, double.NaN,double.NaN))
+          .DefaultIfEmpty(new MarketPrice(double.NaN, double.NaN, DateTime.MinValue, double.NaN, double.NaN))
           .ToList()
           .ForEach(sh => shs.Add(
             (
@@ -1809,7 +1821,7 @@ new MarketPrice(
                 if(ratePrev == null || BarPeriod > BarsPeriodType.t1 || ratePrev.StartDate.Second != rate.StartDate.Second) {
                   if(!isInitiator && replayTrader.BarPeriod == BarPeriod)
                     while(rate.StartDate.AddSeconds(1) < ServerTime && indexCurrent < _replayRates.Count)
-                      UseRatesInternal(ri =>{
+                      UseRatesInternal(ri => {
                         rate = _replayRates[indexCurrent++];
                         if(rate != ri.Last()) ri.Add(rate);
                       });
@@ -2440,7 +2452,7 @@ new MarketPrice(
             SetCentersOfMassSubject.OnNext(() => {
               rateLast.ForEach(r => SetBeforeHours(r.StartDate.Round()));
               if(BarPeriod == BarsPeriodType.t1)
-                rateLast.ForEach(r=> SetCentersOfMass(r.StartDate.Round()));
+                rateLast.ForEach(r => SetCentersOfMass(r.StartDate.Round()));
             });
             if(IsAsleep) {
               BarsCountCalc = BarsCount;

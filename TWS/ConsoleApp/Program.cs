@@ -402,15 +402,15 @@ namespace ConsoleApp {
            .Subscribe(p => HandleMessage(p));
           var rollSymbols = new[] { "VIX", "ESH9" };//"VXX   190111P00043000"
           Task.Delay(5000).ContinueWith(_ => rollSymbols.ForEach(rs => ReadRolls(rs, false, DateTime.Now.Date)));
-          void ReadRolls(string instrument, bool isCall, DateTime exp) {
-            HandleMessage("ReadRolls: start " + instrument);
-            (from roll in exp.IsMin() ? am.CurrentRollOver(instrument, false, 2, 10) : am.CurrentRollOver(instrument, isCall, exp, 2, 10)
+          void ReadRolls(string rollinstrument, bool isCallRoll, DateTime exp) {
+            HandleMessage("ReadRolls: start " + rollinstrument);
+            (from roll in exp.IsMin() ? am.CurrentRollOver(rollinstrument, false, 2, 10) : am.CurrentRollOver(rollinstrument, isCallRoll, exp, 2, 10)
              select new { roll.roll, days = roll.days.ToString("00"), bid = roll.bid.ToString("0.00"), perc = roll.perc.ToString("0.0"), dpw = roll.dpw.ToInt(), roll.ppw, roll.amount, roll.delta }
              )
              .ToArray()
              .Subscribe(_ => {
                HandleMessage("\n" + _.OrderByDescending(t => t.dpw).ToMarkdownTable(TableOptions.Default).ToMarkdown());
-               HandleMessage("ReadRolls: end " + instrument);
+               HandleMessage("ReadRolls: end " + rollinstrument);
              });
           }
         }

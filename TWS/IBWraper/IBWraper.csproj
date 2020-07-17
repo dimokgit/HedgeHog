@@ -161,6 +161,7 @@
     <Compile Include="DataManagers\AccountManager.Hedge.cs" />
     <Compile Include="DataManagers\AccountManager.Mixins.cs" />
     <Compile Include="DataManagers\AccountManager.Positions.cs" />
+    <Compile Include="DataManagers\AccountManager.TrendEdge.cs" />
     <Compile Include="DataManagers\AccountManager.StrategyManager.cs" />
     <Compile Include="DataManagers\AccountManager.UseOrderContracts.cs" />
     <Compile Include="DataManagers\AccountManager._ctor.cs" />

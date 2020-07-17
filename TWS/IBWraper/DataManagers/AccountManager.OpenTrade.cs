@@ -168,27 +168,28 @@ namespace IBApp {
     public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(string instrument, bool isCall, int quantity, int daysToSkip, double edge, double takeProfitPoints, string ocaGroup = "")
       => OpenEdgeOrder(null, instrument, isCall, quantity, daysToSkip, edge, takeProfitPoints, ocaGroup);
     public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(Action<IBApi.Order> changeOrder, string instrument, bool isCall, int quantity, int daysToSkip, double edge, double takeProfitPoints, string ocaGroup = "") {
-      var @params = OpenEdgeOrderParams(instrument, isCall, quantity, daysToSkip, edge, takeProfitPoints);
-      return OpenEdgeOrder(changeOrder, @params, ocaGroup);
+      return OpenEdgeOrderParams(instrument, isCall, daysToSkip, edge).SelectMany(p
+        => OpenEdgeOrder(changeOrder, p, quantity, takeProfitPoints, ocaGroup));
     }
-    public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(Action<IBApi.Order> changeOrder, IObservable<OpenEdgeParams> @params, string ocaGroup = "") {
-      var update = from p in @params.Take(0)
-                   from orderToUpdate in CanUpdateOrder(p.contract, p.quantity, OrderTypes.LMT, p.enterConditions)
-                   where orderToUpdate.context.type && orderToUpdate.context.condition
-                   from uo in UpdateEdgeOrder(orderToUpdate.och, p.price, p.enterConditions)
+    public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(Action<IBApi.Order> changeOrder, OpenEdgeParams p, int quantity, double takeProfitPoints, string ocaGroup = "") {
+      var update = 
+                   from orderToUpdate in CanUpdateOrder(p.contract, quantity, OrderTypes.LMT, p.enterConditions).ToObservable()
+                   where false && orderToUpdate.context.type && orderToUpdate.context.condition
+                   from uo in UpdateEdgeOrder(orderToUpdate.och, p.limitPrice, p.enterConditions)
                    select uo;
-      var open = from p in @params
-                 from ps in p.currentOrders.Where(co => !co.me).Select(currentOrder => CancelOrder(currentOrder.holder.order.OrderId)).Merge().ToArray()
+      var open = 
+                 from ps in p.currentOrders.Select(currentOrder => CancelOrder(currentOrder.OrderId)).Merge().ToArray()
                  let canceled = ps.Any(p => !p.error.HasError ? false : throw GenericException.Create(new { context = p.value.Flatter(","), p.error }))
+                 let takeProfit = (p.limitPrice / 2).Min(takeProfitPoints * 0.5)
                  from ots in OpenTrade(o => {
                    changeOrder?.Invoke(o);
-                   var limitOrder = MakeTakeProfitOrder2(o, p.contract, p.takeProfit);
+                   var limitOrder = MakeTakeProfitOrder2(o, p.contract, takeProfit);
                    if(!ocaGroup.IsNullOrEmpty()) {
                      o.OcaGroup = ocaGroup;
                      o.OcaType = (int)OCAType.CancelWithBlocking.Value;
                    }
                    return limitOrder ?? Observable.Empty<OrderPriceContract>();
-                 }, p.contract, p.quantity, condition: p.enterConditions.SingleOrDefault(), useTakeProfit: false, price: p.price)
+                 }, p.contract, quantity, condition: p.enterConditions.SingleOrDefault(), useTakeProfit: false, price: p.limitPrice)
                  select ots;
       return update.Concat(open).Where(a => a.Any()).Take(1);
       IObservable<OrderContractHolderWithError[]> UpdateEdgeOrder(OrderContractHolder och, double price, OrderCondition[] enterConditions) {
@@ -201,10 +202,10 @@ namespace IBApp {
       }
     }
     public IObservable<OpenEdgeParams>
-      OpenEdgeOrderParams(string instrument, bool isCall, int quantity, int daysToSkip, double edge, double takeProfitPoints) {
+      OpenEdgeOrderParams(string instrument, bool isCall, int daysToSkip, double edge) {
       var mul = isCall ? -1 : 1;
       var enterLevel = edge;
-      var exitLevel = enterLevel + takeProfitPoints * mul;
+      //var exitLevel = enterLevel + takeProfitPoints * mul;
       return
       from ucd in instrument.ReqContractDetailsCached()
       let underContract = ucd.Contract
@@ -217,29 +218,28 @@ namespace IBApp {
       from current in CurrentOptions(instrument, cp, daysToSkip, 2, c => c.IsCall == isCall)
       from combo in CurrentOptionOutMoney(instrument, enterLevel, isCall, daysToSkip)
       let contract = combo.option
-      let price = current.Average(c => c.option.ExtrinsicValue(c.marketPrice.bid, underPrice.bid))
-      let takeProfit = price.Min(price / 2, takeProfitPoints * 0.5)
+      let limitPrice = current.Average(c => c.option.ExtrinsicValue(c.marketPrice.bid, underPrice.bid))
+      //let takeProfit = price.Min(price / 2, takeProfitPoints * 0.5)
       let currentOrders = FindEdgeOrders(contract)
       select new OpenEdgeParams(
         contract,
-        quantity,
         new[] { enterCondition },
-        price,
-        takeProfit,
+        limitPrice,
         currentOrders
         );
 
     }
-    public IEnumerable<(OrderContractHolder holder, bool me)> FindEdgeOrders(Contract contract) {
+    public IEnumerable<OrderContractHolder> FindEdgeOrders(Contract contract) {
       var edgeOrders = UseOrderContracts(ocs => ocs.Where(oc =>
         oc.order.IsSell &&
         !oc.isDone &&
         oc.contract.IsOption &&
         oc.contract.IsCall == contract.IsCall &&
         oc.contract.Symbol == contract.Symbol &&
+        (contract.IsCall ? oc.contract.Strike <= contract.Strike : oc.contract.Strike >= contract.Strike) &&
         oc.order.HasPriceCodition
       )).Concat();
-      return edgeOrders.Select(h => (h, contract.Key == h.contract.Key));
+      return edgeOrders;
       //edgeOrders.ThrowIf(() => edgeOrders.IsEmpty());
 
     }

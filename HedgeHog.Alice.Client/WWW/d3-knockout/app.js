@@ -1143,7 +1143,7 @@
       this.openButterfly = function (isBuy, key, useMarketPrice) {
         this.canTrade(false);
         var combo = ko.unwrap(ko.unwrap(key).i);
-        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(), this.currentProfit(), self.rollCombo(), self.hedgeTest()]
+        serverCall("openButterfly", [pair, combo, (isBuy ? 1 : -1) * this.comboQuantity(), useMarketPrice, this.comboCurrentStrikeLevel(), this.currentProfit(), self.rollCombo(), !!self.hedgeTest()]
           , r => (r || []).forEach(e => showErrorPerm("openButterfly:\n" + e))
           , null
           , function () { this.canTrade(true); }.bind(this)
