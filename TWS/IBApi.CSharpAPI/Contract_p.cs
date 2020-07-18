@@ -59,6 +59,10 @@ namespace IBApi {
 
     private const string BAG = "BAG";
     public DateTime Expiration => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max().FromTWSDateString(DateTime.Now.Date);
+    private DateTime? lastTradeDate;
+    public DateTime LastTradeDate => (lastTradeDate ?? (lastTradeDate = LastTradeDateOrContractMonth.FromTWSDateString(default))).Value;
+    private DateTime? lastTradeTime;
+    public DateTime LastTradeTime => (lastTradeTime ?? (lastTradeTime= (LastTradeDateOrContractMonth + " 14:00:00").FromTWSString())).Value;
     public bool IsExpired => !LastTradeDateOrContractMonth.IsNullOrEmpty() && (LastTradeDateOrContractMonth + " 16:00:00").FromTWSString() < DateTime.Now.Date.InNewYork();
     public bool IsExpiring => Expiration.Date == DateTime.Now.Date.InNewYork();
     public string LastTradeDateOrContractMonth2 => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max();
@@ -181,7 +185,7 @@ namespace IBApi {
     public string DateWithShort => ComboLegsToString((c, r, a)
       => ShowLastDate(c, s => s.Substring(4) + " ") + c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
     public string ShortWithDate => ComboLegsToString((c, r, a)
-      => c.Symbol + " " + ShowLastDate(c, s => s.Substring(4) + " ") + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
+      => c.Symbol + " " + ShowLastDateShort(c) + " " + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
     public string ShortWithDate2 => ComboLegsToString((c, r, a) => c.Symbol + "" + ShowLastDate(c, s => _right.Match(s.Substring(4)) + "") + LegLabel(r, a) + RightStrikeLabel2(r, c), () => LocalSymbol.IfEmpty(Symbol));
     public string FullString => $"{LocalSymbol.IfEmpty(Symbol)}:{Exchange}";
     public override string ToString() =>
@@ -189,6 +193,8 @@ namespace IBApi {
       .IfEmpty(() => $"{LocalSymbol.IfEmpty(Symbol)}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
 
     static string ShowLastDate(Contract c, Func<string, string> show) => c.LastTradeDateOrContractMonth.IfTrue(s => !s.IsNullOrEmpty(), s => show(s), "");
+    static string ShowLastDateShort(Contract c) =>
+      c.LastTradeDateOrContractMonth.IfTrue(s => !s.IsNullOrEmpty(), s => c.LastTradeDateOrContractMonth.Substring(c.Expiration.Month == DateTime.Today.Month ? 6 : 4), "");
 
     internal string ComboLegsToString() => ComboLegsToString((c, r, a) => LegLabel(r, a) + c.LocalSymbol, () => LocalSymbol.IfEmpty(Symbol));
     internal string ComboLegsToString(Func<Contract, int, string, string> label, Func<string> defaultFotNotOption/*,Func<(Contract c, int r, string a),string> orderBy = null*/) {
@@ -239,6 +245,7 @@ namespace IBApi {
     }
     public IEnumerable<int> ConIds => LegsOrMe(c => c.ConId).Where(cid => cid != 0);
     public IEnumerable<(string Context, bool Ok)> Ok => LegsOrMe(c => ($"Contract: {c}.Exchange={c.Exchange}", !c.Exchange.IsNullOrEmpty()));
+
     public void Check() => Ok.Where(t => !t.Ok).ForEach(ok => throw new Exception(ok.Context));
 
     public static bool operator !=(Contract a, Contract b) => !(a == b);

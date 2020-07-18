@@ -1140,11 +1140,13 @@ namespace HedgeHog.Alice.Store {
           ;
 
           _priceChangeObservable.Subscribe(_ => {
-            if(TLLime.IsEmpty) return;
+            if(!IsTrader || TLLime.IsEmpty) return;
             try {
+              var c = TrendEdge(true);
+              var p = TrendEdge(false);
               ibWraper.AccountManager.TrendEdgeLevel.OnNext(new[] {
-                (Pair, TLLime.PriceAvg2.Max(CurrentPrice.Ask), true, TradingRatio.ToInt(), CalculateTakeProfitInPips()),
-                (Pair, TLLime.PriceAvg3.Min(CurrentPrice.Bid), false, TradingRatio.ToInt(), CalculateTakeProfitInPips())
+                (Pair, c.edge.Max(CurrentPrice.Ask), true, TradingRatio.ToInt(), c.profit),
+                (Pair, p.edge.Min(CurrentPrice.Bid), false, TradingRatio.ToInt(), p.profit)
               });
             } catch(Exception exc) {
               Log = exc;
@@ -1225,6 +1227,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public (double edge, double profit) TrendEdge(bool isCall) {
+      return
+      TLLime.With(tl => tl.IsEmpty ? (0.0, 0.0) : (isCall ? tl.PriceAvg2 : tl.PriceAvg3,
+      GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction.Lime, TakeProfitXRatio)
+      ));
+    }
+
+    public double LimeTakeProfit() => GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction.Lime, TakeProfitXRatio);
+
     private void TimeValueHistory(string pairCode, Func<TradingMacro, List<MarketPrice>> straddleHistory, Func<GlobalStorage.ForexDbContext, Microsoft.EntityFrameworkCore.DbSet<StraddleHistory>> straddleHistoryDbSet, IBWraper ibWraper, int shcp, long straddleStartId, Func<long> _id, int straddleCount, Func<DateTime> resetSaveTime) {
       DateTime saveTime = resetSaveTime();
       //var nextFriday = TradesManagerStatic.ExpirationDaysSkip(0);
@@ -1232,7 +1243,7 @@ namespace HedgeHog.Alice.Store {
       _priceChangeDisposable = (
         from price in _priceChangeObservable
         from x in ibWraper.AccountManager.CurrentStraddles(Pair, double.NaN, TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, 0)
-        where x.Length == 3
+        where x.Length == 3 && x.All(c => c.marketPrice.isSet)
         select x
       )
       //.Scan((p, n) => p.EmptyIfNull().Concat(n).TakeLast(4 * 5).ToArray())
@@ -1287,7 +1298,7 @@ new MarketPrice(
           Log = new Exception("_priceChangeDisposable done");
         });
       double GetStraddlePrice(IEnumerable<CurrentCombo> straddle)
-        => straddle.Select(p => p.deltaBid.Avg(p.deltaAsk)).OrderByDescending(d => d).Take(4).Average();
+        => straddle.Select(p => p.deltaBid.Avg(p.deltaAsk)).OrderByDescending(d => d).Take(4).Average() /2;
     }
 
 
@@ -3866,7 +3877,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         return _TradeLevelFuncs;
       }
     }
-    private double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function, double xRatio) {
+    public double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function, double xRatio) {
       var tp = double.NaN;
       Func<TradeLevelBy, TradeLevelBy, double> tradeLeveBy = (h, l) => (TradeLevelFuncs[h]() - TradeLevelFuncs[l]()) * xRatio;
       Func<Func<TradingMacro, double>, double> useTrender = f => TradingMacroTrender(f).DefaultIfEmpty(double.NaN).Single();

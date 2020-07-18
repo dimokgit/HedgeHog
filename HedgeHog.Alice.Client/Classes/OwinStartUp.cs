@@ -569,8 +569,8 @@ namespace HedgeHog.Alice.Client {
                       var mp = t.marketPrice;
                       var breakEven = t.combo.contract.BreakEven(mp.bid).ToArray();
                       return new {
-                        i = t.instrument,
-                        l = t.combo.contract.DateWithShort,
+                        i = t.combo.contract.Key,
+                        l = t.combo.contract.ShortWithDate,
                         d = (t.combo.contract.IsFutureOption ? d.Round(1) + " " : ""),
                         mp.bid,
                         mp.ask,
@@ -613,8 +613,8 @@ namespace HedgeHog.Alice.Client {
                   var strikeDelta = t.strikeAvg - t.underPrice;
                   var _sd = t.strikeAvg - sl.IfNaNOrZero(t.underPrice);
                   return new {
-                    i = option.Instrument,
-                    l = option.DateWithShort,
+                    i = option.Key,
+                    l = option.ShortWithDate,
                     mp.bid,
                     mp.ask,
                     avg = mp.ask.Avg(mp.bid),
@@ -742,8 +742,8 @@ namespace HedgeHog.Alice.Client {
                     var profit = tm.Strategy.IsHedge() ? tm.ExitGrossByHedgePositions : x.profit;
                     return new {
                       combo = x.contract.Instrument
-                      , i = x.contract.Instrument
-                      , l = x.contract.ShortString
+                      , i = x.contract.Key
+                      , l = x.contract.ShortWithDate
                       , netPL = x.pl - x.Commission
                       , x.position
                         , x.closePrice
@@ -847,7 +847,14 @@ namespace HedgeHog.Alice.Client {
           ).Merge();
 
         var distFromHigh = tm.TradingMacroM1().DefaultIfEmpty(tm).Select(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
-        return new { tm.TradingRatio, tm.OptionsDaysGap, Strategy = tm.Strategy + "", DistanceFromHigh = distFromHigh, HedgeCalcType = tm.HedgeCalcType + "" + tm.HedgeCalcIndex };
+        return new { 
+          tm.TradingRatio, 
+          tm.OptionsDaysGap, 
+          Strategy = tm.Strategy + "", 
+          DistanceFromHigh = distFromHigh, 
+          HedgeCalcType = tm.HedgeCalcType + "" + tm.HedgeCalcIndex,
+          GetAccountManager().TrendEdgesLastDate
+        };
         string HedgeCalcTypeContext(TradingMacro tml, TradingMacro.HedgeCalcTypes hct) => hct.ToString() + tml.PairIndex;
         ////
         IObservable<CurrentHedge> CurrentHedgesTM1(TradingMacro tml, Func<TradingMacro, CURRENT_HEDGES> getHedges, string id) {

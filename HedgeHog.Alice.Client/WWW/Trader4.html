@@ -335,7 +335,7 @@
       width: 100%;
       border: none;
       text-align: right;
-    }
+    }.toLocaleTimeString()
 
     .hide {
       display: none;
@@ -1215,6 +1215,9 @@
   <!--#endregion-->
   <!--#region Butterflies-->
   <div data-bind="elementer:butterfliesDialog" style="display:none;padding:0">
+    <div id="server_errors">
+      <div style="background-color: darkred; color: greenyellow;" data-bind="text:trendEdgesError"></div>
+    </div>
     <table border="1" cellspacing="0" class="wwwInfo liveCombos">
       <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
       <tbody data-bind="foreach:liveCombos">
@@ -1435,7 +1438,7 @@
       </tbody>
     </table>
     <table border="1" cellspacing="0" class="wwwInfo" data-bind="visible:currentCombos().length, expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
-      <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
+      <colgroup span="2" style="background-color: lightslategray; color: white"></colgroup>
       <tr style="background-color: lightslategray;color: white;font-weight: bold;text-align: center;" class="pgGroupRow">
         <td data-bind="foreach:stockOptionsInfo">
           <span data-bind="text:exp"></span>:<span data-bind="text:dte"></span>

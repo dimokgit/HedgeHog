@@ -9,6 +9,7 @@ namespace IBApp {
     public double delta;
     public double theta;
     public double avg;
+    public bool isSet { get { return bid.IsSetAndNotZero() && ask.IsSetAndNotZero(); } }
 
     public MarketPrice(double bid, double ask, DateTime time, double delta, double theta) {
       this.bid = bid;

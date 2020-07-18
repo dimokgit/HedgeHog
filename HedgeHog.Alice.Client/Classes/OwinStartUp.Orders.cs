@@ -71,8 +71,8 @@ namespace HedgeHog.Alice.Client {
         return res;
       }
       double limitPrice(Contract c, bool isSell, MarketPrice p) {
-        if(isSell) return c.IsCallPut ? p.ask : p.bid;
-        return c.IsCallPut ? p.bid : p.ask;
+        if(isSell) return c.IsCallPut ? p.bid : p.bid;
+        return c.IsCallPut ? p.ask : p.ask;
       }
       IList<OrderCondition> buildConditions
         (Contract condContract, IList<double> prices, bool isMore, DateTime goodAfter = default, Action<Action<IBApi.Order>> orderExt = default) {
@@ -115,11 +115,8 @@ namespace HedgeHog.Alice.Client {
       UseTradingMacro(pair, tm => tm.IsTrader, tm =>
         tm.StraddleRangeM1().With(r => (isCall ? r.Up : r.Down, r.TakeProfit))
       );
-    private IEnumerable<(double edge, double profit)> TrendEdges(string pair, bool isCall) {
-      return UseTradingMacro(pair, tm => tm.IsTrader, tm =>
-      tm.TLLime.With(tl => tl.IsEmpty ? (0.0, 0.0) : (isCall ? tl.PriceAvg2 : tl.PriceAvg3, tl.PriceAvg2.Abs(tl.PriceAvg3) / 2))
-      );
-    }
+    private IEnumerable<(double edge, double profit)> TrendEdges(string pair, bool isCall) =>
+      UseTradingMacro(pair, tm => tm.IsTrader, tm => tm.TrendEdge(isCall));
     delegate IEnumerable<(double edge, double profit)> EdgesDelegate(string pair, bool isCall);
 
       #endregion

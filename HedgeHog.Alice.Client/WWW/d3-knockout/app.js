@@ -376,6 +376,7 @@
             dataViewModel.strategyCurrent(x.Strategy);
           dataViewModel.distanceFromHigh(x.DistanceFromHigh);
           dataViewModel.selectedHedgeCombo(x.HedgeCalcType);
+          dataViewModel.trendEdgesLastDate(new Date(x.TrendEdgesLastDate));
         });
       }
       , null
@@ -1712,6 +1713,10 @@
       });
       this.hasStrategy = ko.pureComputed(() => !!self.strategyCurrent() && self.strategyCurrent() !== "None");
       this.doShowHedgeUI = ko.pureComputed(() => self.strategyCurrent() === "Hedge");
+      this.trendEdgesLastDate = ko.observable(new Date());
+      this.trendEdgesError = ko.pureComputed(function () {
+        return (new Date() - self.trendEdgesLastDate()) / 1000 / 60 > 1 ? "TrendEdge Monitor: " + self.trendEdgesLastDate().toLocaleTimeString() : "";
+      });
       var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
       // #endregion
       // #region GetAccounting

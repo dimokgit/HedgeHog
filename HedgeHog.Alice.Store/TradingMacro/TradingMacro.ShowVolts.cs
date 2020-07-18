@@ -876,7 +876,7 @@ namespace HedgeHog.Alice.Store {
     public List<(double[] upDown, DateTime[] dates, double r)> CurrentSpecialHours() {
       var bh = BeforeHours.SkipWhile(h => h.dates.Last().TimeOfDay < _beforeHourTime).Select(h => (h.upDown, h.dates, r: 1.0)).Take(1);
       var ah = AfterHours.SkipWhile(h => h.dates.Last().TimeOfDay < _afterHourTime).Select(h => (h.upDown, h.dates, r: 0.75)).Take(1);
-      return bh.Concat(ah).OrderByDescending(h => h.dates.Last()).Take(1).ToList();
+      return bh.Concat(ah).Where(h => h.dates.Last()<=ServerTime).OrderByDescending(h => h.dates.Last()).Take(1).ToList();
     }
     public (double[] upDown, DateTime[] dates)[] BeforeHours = new (double[], DateTime[])[0];
     public (double[] upDown, DateTime[] dates)[] AfterHours = new (double[], DateTime[])[0];

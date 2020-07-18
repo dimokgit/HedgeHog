@@ -75,7 +75,6 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        EdgeTests.MoveEdge(am);
         return;
         am.CurrentOptions("ESU0",0,0,3,c=>true)
         .Subscribe(se => {
