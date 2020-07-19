@@ -11,6 +11,9 @@ namespace IBApp {
     public readonly OrderCondition[] enterConditions;
     public readonly double limitPrice;
     public readonly IEnumerable<OrderContractHolder> currentOrders;
+    public readonly string levelError;
+    public bool hasError;
+
     public IEnumerable<OrderContractHolder> replaceOrders {
       get {
         var me = contract;
@@ -19,11 +22,13 @@ namespace IBApp {
       }
     }
 
-    public OpenEdgeParams(Contract contract, OrderCondition[] enterConditions, double limitPrice, IEnumerable<OrderContractHolder> currentOrders) {
+    public OpenEdgeParams(Contract contract, OrderCondition[] enterConditions, double limitPrice, IEnumerable<OrderContractHolder> currentOrders, string levelError) {
       this.contract = contract;
       this.enterConditions = enterConditions;
       this.limitPrice = limitPrice;
       this.currentOrders = currentOrders;
+      this.levelError = levelError;
+      this.hasError = !levelError.IsNullOrWhiteSpace();
     }
 
     public override bool Equals(object obj) => obj is OpenEdgeParams other && EqualityComparer<Contract>.Default.Equals(contract, other.contract) && EqualityComparer<OrderCondition[]>.Default.Equals(enterConditions, other.enterConditions) && limitPrice == other.limitPrice;

@@ -8,88 +8,8 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using COMBO_TRADES_IMPL = System.Collections.Generic.IEnumerable<(IBApi.Contract contract, int position, double open, double openPrice, double takeProfit, int orderId)>;
+using COMBO_TRADES_IMPL = System.Collections.Generic.IEnumerable<ComboTradeImpl>;
 namespace IBApp {
-  public class ComboTrade {
-    public bool IsVirtual { get; private set; }
-    public double Change => closePrice * position.Sign() - openPrice;
-    public double Commission => contract.Legs((c, l) => (c, q: l.Ratio.Abs())).DefaultIfEmpty((c: contract, q: 1))
-      .Sum(t => AccountManager.CommissionPerContract(t.c) * t.q) * position.Abs();
-    //new HedgeCombo(hc.contract, pl, openPrice, closePrice, hc.quantity * g.First().position.position.Sign())
-    public ComboTrade() {
-
-    }
-    public ComboTrade(Contract contract, double pl, double openPrice, double closePrice, int position, double takeProfit, double profit, double open, int orderId) {
-      this.contract = contract;
-      this.pl = pl;
-      this.openPrice = openPrice;
-      this.closePrice = closePrice;
-      this.position = position;
-      this.takeProfit = takeProfit;
-      this.profit = profit;
-      this.open = open;
-      this.orderId = orderId;
-    }
-    public ComboTrade(Contract contract) {
-      this.contract = contract;
-      position = 1;
-      IsVirtual = true;
-    }
-    public ComboTrade(IBApi.Contract contract, int position, double open, double close, double pl, double change, double underPrice
-      , double strikeAvg, double openPrice, double closePrice, (double bid, double ask) price, double takeProfit, double profit
-      , double pmc, double mcUnder, int orderId) {
-      this.contract = contract;
-      this.position = position;
-      this.open = open;
-      this.close = close;
-      this.pl = pl;
-      this.change = change;
-      this.underPrice = underPrice;
-      this.strikeAvg = strikeAvg;
-      this.openPrice = openPrice;
-      this.closePrice = closePrice;
-      this.price = price;
-      this.takeProfit = takeProfit;
-      this.profit = profit;
-      this.pmc = pmc;
-      this.mcUnder = mcUnder;
-      this.orderId = orderId;
-    }
-    public override string ToString() => new {
-      this.contract,
-      this.position,
-      this.open,
-      this.close,
-      this.pl,
-      this.change,
-      this.underPrice,
-      this.strikeAvg,
-      this.openPrice,
-      this.closePrice,
-      this.price,
-      this.takeProfit,
-      this.profit,
-      this.pmc,
-      this.mcUnder,
-      this.orderId
-    } + "";
-    public Contract contract { get; }
-    public int position { get; }
-    public double open { get; }
-    public double close { get; }
-    public double pl { get; }
-    public double change { get; }
-    public double underPrice { get; }
-    public double strikeAvg { get; }
-    public double openPrice { get; }
-    public double closePrice { get; }
-    public (double bid, double ask) price { get; }
-    public double takeProfit { get; }
-    public double profit { get; }
-    public double pmc { get; }
-    public double mcUnder { get; }
-    public int orderId { get; }
-  }
   public partial class AccountManager {
     #region BreakEvens  
     public static (double level, bool isCall)[] BreakEvens((double strike, double debit, bool isCall)[] positions) =>
@@ -182,12 +102,12 @@ namespace IBApp {
         select (underPrice.bid, underPrice.ask, underPrice.ask.Avg(underPrice.bid))
         ).Take(1);
     }
-    public IEnumerable<(Contract contract, int position, double open, double openPrice, double takeProfit, int orderId)> ComboTradesImpl() {
+    public IEnumerable<ComboTradeImpl> ComboTradesImpl() {
       var positions = Positions.Where(p => p.position != 0).ToArray();
       var combos = (
         from c in positions/*.ParseCombos(orders)*//*.Do(c => IbClient.SetContractSubscription(c.contract))*/
         let order = OrderContractsInternal.Items.OpenByContract(c.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
-        select (c.contract, c.position, c.open, c.open / c.position.Abs() / c.contract.ComboMultiplier, order.LmtPrice, order.OrderId)
+        select (ComboTradeImpl)(c.contract, c.position, c.open, c.open / c.position.Abs() / c.contract.ComboMultiplier, order.LmtPrice, order.OrderId)
         ).ToList();
       var comboAll = ComboTradesAllImpl().ToArray();
       return combos.Concat(comboAll).Distinct(c => c.contract.Instrument);
@@ -208,7 +128,7 @@ namespace IBApp {
               let order = OrderContractsInternal.Items.OpenByContract(ca.contract.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
               let open = ca.positions.Sum(p => p.open)
               let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
-              select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, order.LmtPrice, order.OrderId));
+              select (ComboTradeImpl)(ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, order.LmtPrice, order.OrderId));
     }
 
     static Func<(Contract contract, int position, double open, double price, double pipCost), string, int, bool> _filterByContract = (p, tc, ps) => p.contract.TradingClass == tc && p.position.Sign() == ps;
@@ -218,7 +138,7 @@ namespace IBApp {
               let posSign = sell ? -1 : 1
               let open = ca.positions.Sum(p => p.open)
               let openPrice = open / ca.contract.positions.Abs() / ca.contract.contract.ComboMultiplier
-              select (ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, 0.0, 0));
+              select (ComboTradeImpl)(ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, 0.0, 0));
     }
 
 

@@ -75,6 +75,7 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
+        PositionsTest.ComboTrades(am);
         return;
         am.CurrentOptions("ESU0",0,0,3,c=>true)
         .Subscribe(se => {
@@ -102,20 +103,6 @@ namespace ConsoleApp {
         //LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
         LoadMultiple(DateTime.Now.AddMonths(-6), ess[2]);
         return;
-        am.PositionsObservable.Do(positions => {
-          Program.HandleMessage(am.Positions.ToTextOrTable("All Positions:"));
-        }).Skip(1)
-        .Where(_ => am.Positions.Count > 1)
-        .SelectMany(_ =>
-          am.ComboTrades(1)
-          .ToArray()
-          )
-        .Subscribe(comboPrices => {
-          var swCombo = Stopwatch.StartNew();
-          HandleMessage2("Matches: Start");
-          comboPrices.ForEach(comboPrice => HandleMessage2(new { comboPrice }));
-          HandleMessage2($"Matches: Done in {swCombo.ElapsedMilliseconds} ms =========================================");
-        });
         return;
         am.PositionsObservable.Subscribe(_ => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
         return;

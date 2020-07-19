@@ -167,6 +167,8 @@
     <Compile Include="DataManagers\AccountManager._ctor.cs" />
     <Compile Include="DataManagers\AccountManager.OpenTrade.cs" />
     <Compile Include="DataManagers\AccountManager.OrdeContractHolder.cs" />
+    <Compile Include="DataManagers\ComboTrade.cs" />
+    <Compile Include="DataManagers\ComboTradeImpl.cs" />
     <Compile Include="DataManagers\CurrentCombo.cs" />
     <Compile Include="DataManagers\MarketDataManager.ReqPrice.cs" />
     <Compile Include="DataManagers\MarketPrice.cs" />

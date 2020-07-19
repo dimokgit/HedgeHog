@@ -172,12 +172,13 @@ namespace IBApp {
         => OpenEdgeOrder(changeOrder, p, quantity, takeProfitPoints, ocaGroup));
     }
     public IObservable<OrderContractHolderWithError[]> OpenEdgeOrder(Action<IBApi.Order> changeOrder, OpenEdgeParams p, int quantity, double takeProfitPoints, string ocaGroup = "") {
-      var update = 
+      if(p.hasError) throw new Exception(p.levelError);
+      var update =
                    from orderToUpdate in CanUpdateOrder(p.contract, quantity, OrderTypes.LMT, p.enterConditions).ToObservable()
                    where false && orderToUpdate.context.type && orderToUpdate.context.condition
                    from uo in UpdateEdgeOrder(orderToUpdate.och, p.limitPrice, p.enterConditions)
                    select uo;
-      var open = 
+      var open =
                  from ps in p.currentOrders.Select(currentOrder => CancelOrder(currentOrder.OrderId)).Merge().ToArray()
                  let canceled = ps.Any(p => !p.error.HasError ? false : throw GenericException.Create(new { context = p.value.Flatter(","), p.error }))
                  let takeProfit = (p.limitPrice / 2).Min(takeProfitPoints * 0.5)
@@ -210,11 +211,12 @@ namespace IBApp {
       from ucd in instrument.ReqContractDetailsCached()
       let underContract = ucd.Contract
       from underPrice in underContract.ReqPriceSafe()
-      let enterCondition = underContract.PriceCondition(enterLevel.ThrowIf(() => isCall ? enterLevel < underPrice.ask : enterLevel > underPrice.bid), isCall)
+      let enterCondition = underContract.PriceCondition(enterLevel, isCall)
       //let exitCondition = underContract.PriceCondition(exitLevel, !isCall)
+      let levelError =
+        isCall && enterLevel < underPrice.bid ? "Edge is too low " + enterLevel :
+        !isCall && enterLevel > underPrice.ask ? "Edge is too high " + enterLevel : ""
       let cp = underPrice.avg
-    .ThrowIf(() => isCall && underPrice.avg > enterLevel)
-    .ThrowIf(() => !isCall && underPrice.avg < enterLevel)
       from current in CurrentOptions(instrument, cp, daysToSkip, 2, c => c.IsCall == isCall)
       from combo in CurrentOptionOutMoney(instrument, enterLevel, isCall, daysToSkip)
       let contract = combo.option
@@ -225,7 +227,8 @@ namespace IBApp {
         contract,
         new[] { enterCondition },
         limitPrice,
-        currentOrders
+        currentOrders,
+        levelError
         );
 
     }

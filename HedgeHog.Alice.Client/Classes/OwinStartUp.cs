@@ -570,7 +570,7 @@ namespace HedgeHog.Alice.Client {
                       var breakEven = t.combo.contract.BreakEven(mp.bid).ToArray();
                       return new {
                         i = t.combo.contract.Key,
-                        l = t.combo.contract.ShortWithDate,
+                        l = t.combo.contract.WithDate,
                         d = (t.combo.contract.IsFutureOption ? d.Round(1) + " " : ""),
                         mp.bid,
                         mp.ask,
@@ -614,7 +614,7 @@ namespace HedgeHog.Alice.Client {
                   var _sd = t.strikeAvg - sl.IfNaNOrZero(t.underPrice);
                   return new {
                     i = option.Key,
-                    l = option.ShortWithDate,
+                    l = option.WithDate,
                     mp.bid,
                     mp.ask,
                     avg = mp.ask.Avg(mp.bid),
