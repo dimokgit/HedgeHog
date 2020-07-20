@@ -75,7 +75,7 @@ namespace ConsoleApp {
 
       ibClient.ManagedAccountsObservable.Subscribe(s => {
         var am = fw.AccountManager;
-        PositionsTest.ComboTrades(am);
+        EdgeTests.OpenEdgeCallPut(am);
         return;
         am.CurrentOptions("ESU0",0,0,3,c=>true)
         .Subscribe(se => {

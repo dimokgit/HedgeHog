@@ -87,9 +87,12 @@ namespace IBApp {
          );
     }
 
+    bool _test = true;
     IObservable<(double bid, double ask, double average)> UnderPrice(Contract contract, double priceTimeoutInSeconds) {
       var cds = contract.FromDetailsCache().Concat(contract.Legs().SelectMany(l => l.c.FromDetailsCache()))
-        .Select(c => c.Contract.IsOption ? c.UnderSymbol : c.Contract.LocalSymbol).Where(s=>!s.IsNullOrWhiteSpace()).Take(1);
+        .Select(c => c.Contract.IsOption ? c.UnderSymbol : c.Contract.LocalSymbol).Where(s=>!s.IsNullOrWhiteSpace()).Take(1).ToList();
+      if(cds.FirstOrDefault() == "16472979" && Debugger.IsAttached && _test)
+        Debugger.Break();
       if(cds.Any(s => s.IsNullOrWhiteSpace())) {
         if(Debugger.IsAttached)
           Debugger.Break();

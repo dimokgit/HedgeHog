@@ -16,6 +16,16 @@ using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
+    private static Func<T> MemoizedCurry<T>(TradingMacro tm, Func<TradingMacro, T> f) => MemoizedCurry(tm, f, tm => (tm.Pair, tm.BarPeriod, tm.LastStartDate));
+    private static Func<T> MemoizedCurry<T, K>(TradingMacro tm, Func<TradingMacro, T> f, Func<TradingMacro, K> key) {
+      var m = f.MemoizeLast(key);
+      return () => m(tm);
+    }
+    private Func<T> MemoizedCurry<T>( Func<T> f) => MemoizedCurry( f, () => LastStartDate);
+    private Func<T> MemoizedCurry<T, K>( Func<T> f, Func<K> key) {
+      var m = f.MemoizeLast(key);
+      return () => m();
+    }
     Action<SuppRes> _tradeLevelChanged;
     Action<(SuppRes level, SuppRes.CrossedEvetArgs crossed)> _tradeLevelCrossed;
     IBApp.IBWraper ibWraper => TradesManager as IBApp.IBWraper;
@@ -23,7 +33,9 @@ namespace HedgeHog.Alice.Store {
     private void OnOrderEntryLevel(IEnumerable<(double Rate, double TradingRatio, bool IsCall)> tls)
       => ibWraper.AccountManager.OrderEnrtyLevel.OnNext(tls.Select(tl
         => (Pair, tl.Rate, tl.IsCall, tl.TradingRatio.ToInt(), TLLime.PriceAvg2.Abs(TLLime.PriceAvg3))).ToArray());
+    public readonly Func<double> HistoricalVolatilityAnnualized2;
     public TradingMacro() {
+      HistoricalVolatilityAnnualized2 = MemoizedCurry(HistoricalVolatilityAnnualized2Impl);
       GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
 
       var tls = (from sr in Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _tradeLevelChanged += h, h => _tradeLevelChanged -= h)

@@ -14,6 +14,20 @@ using System.Collections.Concurrent;
 
 namespace HedgeHog {
   public static class ObservableExtensions {
+    // https://stackoverflow.com/questions/18978523/write-an-rx-retryafter-extension-method
+    public static IObservable<TSource> RetryAfterDelay<TSource, TException>(
+      this IObservable<TSource> source, TimeSpan retryDelay,
+      int retryCount,
+      IScheduler scheduler) where TException : Exception {
+      return source.Catch<TSource, TException>(ex => {
+        if(retryCount <= 0) {
+          return Observable.Throw<TSource>(ex);
+        }
+
+        return source.DelaySubscription(retryDelay, scheduler)
+              .RetryAfterDelay<TSource, TException>(retryDelay, --retryCount, scheduler);
+      });
+    }
     public static IObservable<T> ToObservable<T>(this Action<T> action) => Observable.FromEvent<Action<T>, T>(h => action += h, h => action -= h);
     public static IObservable<U> ToObservable<T, U>(this Action<T> action, Func<T, U> map)
       => Observable.FromEvent<Action<T>, U>(next => t => map(t), h => action += h, h => action -= h);

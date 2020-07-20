@@ -1309,7 +1309,7 @@ namespace HedgeHog.Alice.Store {
         //.Add(new { HgSlope2 = tm1s.Select(tm1 => $"{VoltsReg(tm1, 1)}/{VoltsReg(tm1, 0)}").SingleOrDefault() })
         .Add(new { ExitGrsPrc = $"{ExitGrossByHedgePositions.SideEffect(_ => OnSetExitGrossByHedgeGrossess()):c0}/{ExitPriceByHedgePrices:c0}" })
         //.Add(new { VltCma = $"{VltCma2Ok()}/{GetVoltCmaWaveAvg().With(t => (t.avg.Mult(100).AutoRound2(2), t.avgCount, t.last.Mult(100).AutoRound2(2), t.lastCount))}" })
-        .Add(new { BlkSch_HVAs = $"{StraddleRangeM1().Height.AutoRound2(3)}/{tm1s.Select(tm1 => tm1.HistoricalVolatilityAnnualized()).FirstOrDefault().AutoRound2(2)}"} )
+        .Add(new { BlSch_HVAs = $"{StraddleRangeM1().Height.AutoRound2(3)}/{tm1s.Select(tm1 => new[] { tm1.HistoricalVolatilityAnnualized(), tm1.HistoricalVolatilityAnnualized2() }.Select(v => v.AutoRound2(3)).Flatter("/")).FirstOrDefault()}" })
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
