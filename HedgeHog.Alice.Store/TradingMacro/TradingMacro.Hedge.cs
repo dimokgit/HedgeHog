@@ -448,8 +448,8 @@ namespace HedgeHog.Alice.Store {
     private (double corr, int pos1, int pos2) CalcHedgeRatioByPositionsCorrelation(int pos1, int pos2, int hedgeIndex) {
       var getVolt = GetVoltByIndex(hedgeIndex == 1 ? 0 : 1);
       var hedgePrices = UseRates(ra => TradingMacroHedged(tmh => tmh.UseRates(rah =>
-          from r1 in ra
           from corr in TMCorrelation(hedgeIndex)
+          from r1 in ra
           join r2 in rah on r1.StartDate equals r2.StartDate
           let t = (a1: r1.PriceAvg * BaseUnitSize * pos1, a2: r2.PriceAvg * tmh.BaseUnitSize * pos2, diff: getVolt(r1))
           where t.a1.IsNotNaN() && t.a2.IsNotNaN() && t.diff.IsNotNaN()
@@ -464,7 +464,7 @@ namespace HedgeHog.Alice.Store {
     ActionAsyncBuffer CalcHedgeRatioByPositionsAsyncBuffer => _CalcHedgeRatioByPositionsAsyncBuffer
       ?? (_CalcHedgeRatioByPositionsAsyncBuffer = IsInVirtualTrading
       ? new ActionAsyncBuffer()
-      : new ActionAsyncBuffer(() => (BarPeriodInt > 10 ? ServerTime.Minute : ServerTime.Second) % 10 + ""));
+      : new ActionAsyncBuffer(() => (ServerTime.Second - ServerTime.Second % 10) + ""));
 
     void OnCalcHedgeRatioByPositions(bool runSync = false) {
       if(runSync) CalcHedgeRatios();
