@@ -16,15 +16,29 @@ using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
-    private static Func<T> MemoizedCurry<T>(TradingMacro tm, Func<TradingMacro, T> f) => MemoizedCurry(tm, f, tm => (tm.Pair, tm.BarPeriod, tm.LastStartDate));
-    private static Func<T> MemoizedCurry<T, K>(TradingMacro tm, Func<TradingMacro, T> f, Func<TradingMacro, K> key) {
+    private Func<(string Pair, BarsPeriodType BarPeriod, DateTime LastStartDate)> StartDateKey() => () => (Pair, BarPeriod, LastStartDate);
+
+    private static Func<T> MemoizedCurryStat<T>(TradingMacro tm, Func<TradingMacro, T> f) => MemoizedCurryStat(tm, f, tm => (tm.Pair, tm.BarPeriod, tm.LastStartDate));
+    private static Func<T> MemoizedCurryStat<T, K>(TradingMacro tm, Func<TradingMacro, T> f, Func<TradingMacro, K> key) {
       var m = f.MemoizeLast(key);
       return () => m(tm);
     }
-    private Func<T> MemoizedCurry<T>( Func<T> f) => MemoizedCurry( f, () => LastStartDate);
-    private Func<T> MemoizedCurry<T, K>( Func<T> f, Func<K> key) {
+
+    private Func<T1, T2, T3, T> MemoizedCurry<T1, T2, T3, T>(Func<T1, T2, T3, T> f) => MemoizedCurry(f, StartDateKey());
+    private Func<T1, T2, T3, T> MemoizedCurry<T1, T2, T3, T, K>(Func<T1, T2, T3, T> f, Func<K> key) {
+      var m = f.MemoizeLast(key);
+      return (t1, t2, t3) => m(t1, t2, t3);
+    }
+
+    private Func<T> MemoizedCurry<T>(Func<T> f) => MemoizedCurry(f, StartDateKey);
+    private Func<T> MemoizedCurry<T, K>(Func<T> f, Func<K> key) {
       var m = f.MemoizeLast(key);
       return () => m();
+    }
+    //private Action<T> MemoizedCurry<T>(Action<T> f) => MemoizedCurry(f, StartDateKey);
+    private Action<T> MemoizedCurry<T, K>(Action<T> f, Func<T,K> key) {
+      var m = f.MemoizeLast(key);
+      return p => m(p);
     }
     Action<SuppRes> _tradeLevelChanged;
     Action<(SuppRes level, SuppRes.CrossedEvetArgs crossed)> _tradeLevelCrossed;
@@ -35,7 +49,9 @@ namespace HedgeHog.Alice.Store {
         => (Pair, tl.Rate, tl.IsCall, tl.TradingRatio.ToInt(), TLLime.PriceAvg2.Abs(TLLime.PriceAvg3))).ToArray());
     public readonly Func<double> HistoricalVolatilityAnnualized2;
     public TradingMacro() {
+      #region Memoizes
       HistoricalVolatilityAnnualized2 = MemoizedCurry(HistoricalVolatilityAnnualized2Impl);
+      #endregion
       GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
 
       var tls = (from sr in Observable.FromEvent<Action<SuppRes>, SuppRes>(h => _tradeLevelChanged += h, h => _tradeLevelChanged -= h)

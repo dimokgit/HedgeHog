@@ -77,6 +77,7 @@ namespace IBApp {
       lock(_accountManagerLocket) {
         if(_accountManager != null) {
           Trace(new { _accountManager, isNotNull = true });
+          IBClientCore.CleanActiveRequests(Trace);
           //_accountManager.Dispose();
           return;
         }

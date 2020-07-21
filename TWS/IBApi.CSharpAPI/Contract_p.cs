@@ -62,15 +62,15 @@ namespace IBApi {
     private DateTime? lastTradeDate;
     public DateTime LastTradeDate => (lastTradeDate ?? (lastTradeDate = LastTradeDateOrContractMonth.FromTWSDateString(default))).Value;
     private DateTime? lastTradeTime;
-    public DateTime LastTradeTime => (lastTradeTime ?? (lastTradeTime= (LastTradeDateOrContractMonth + " 14:00:00").FromTWSString())).Value;
-    public bool IsExpired => !LastTradeDateOrContractMonth.IsNullOrEmpty() && (LastTradeDateOrContractMonth + " 16:00:00").FromTWSString() < DateTime.Now.Date.InNewYork();
+    public DateTime LastTradeTime => (lastTradeTime ?? (lastTradeTime = (LastTradeDateOrContractMonth + " 14:00:00").FromTWSString())).Value;
+    public bool IsExpired => !LastTradeDateOrContractMonth.IsNullOrEmpty() && (LastTradeDateOrContractMonth + " 16:15:00").FromTWSString() < DateTime.Now.Date.InNewYork();
     public bool IsExpiring => Expiration.Date == DateTime.Now.Date.InNewYork();
     public string LastTradeDateOrContractMonth2 => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max();
 
     public string SymbolSafe => IsFuture ? LocalSymbol : Symbol;
-    public string Key => ComboLegs?.OrderBy(l => l.ConId).Select(l => l.ConId + ":" + l.Ratio + ":" + l.Action).DefaultIfEmpty(SafeInstrument).Flatter(",") ?? SafeInstrument;
-    string SafeInstrument => LocalSymbol.IfEmpty(Symbol, ConId + "");
-    public string Instrument => ComboLegsToString().IfEmpty((SafeInstrument?.Replace(".", "") + "").ToUpper());
+    public string Key => Instrument;
+    string SafeInstrument => LocalSymbol.IfEmpty(Symbol, CCId(this) + "");
+    public string Instrument => ComboLegsToString();
 
     static readonly ConcurrentDictionary<string, Contract> _contracts = new ConcurrentDictionary<string, Contract>(StringComparer.OrdinalIgnoreCase);
     public static IDictionary<string, Contract> Contracts => _contracts;
@@ -203,7 +203,7 @@ namespace IBApi {
       var legs = Legs();
       //if(orderBy!=null)
       return legs
-      //.OrderBy(l => l.c.Instrument)
+      .OrderBy(l => l.c.LocalSymbol + l.a + l.r)
       .Select(l => label(l.c, l.r, l.a))
       .RunIfEmpty(() => IsOption ? label(this, 0, "") + "" : defaultFotNotOption() + "")
       .ToArray()
@@ -237,13 +237,11 @@ namespace IBApi {
       foreach(var t in x)
         yield return t;
     }
-    public string _key() {
-      return ComboLegsToString((c, r, a) => $"{CCId(c.ConId)}{LegLabel(r, a)}", () => CCId(ConId) + "");
-      int CCId(int cid) {
-        if(cid == 0)
-          throw new Exception(new { Instrument, ConId = "Is Zero" } + "");
-        return cid;
-      }
+    public string _key() => ComboLegsToString((c, r, a) => $"{CCId(c)}{LegLabel(r, a)}", () => CCId(this) + "");
+    static int CCId(Contract c) {
+      if(c.ConId == 0)
+        throw new Exception(new { c.LocalSymbol, c.Symbol, ConId = "Is Zero" } + "");
+      return c.ConId;
     }
     public IEnumerable<int> ConIds => LegsOrMe(c => c.ConId).Where(cid => cid != 0);
     public IEnumerable<(string Context, bool Ok)> Ok => LegsOrMe(c => ($"Contract: {c}.Exchange={c.Exchange}", !c.Exchange.IsNullOrEmpty()));

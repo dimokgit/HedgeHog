@@ -92,7 +92,7 @@ namespace HedgeHog.Alice.Store {
         var p2 = CurrentHedgePosition2;
         CurrentHedgePosition2 = legs[1].leg.Ratio * (legs[1].leg.IsBuy ? 1 : -1);
         if(CurrentHedgePosition2 != 0 && TMCorrelation(0).Any(c => c.Sign() == CurrentHedgePosition2.Sign())) {
-          Debugger.Break();
+          //Debugger.Break();
           Log = new SoftException($"{nameof(OnSetCurrentHedgePosition)}:{new { CurrentHedgePosition2, mustHave = "Oposite sign as correlation" }} ");
         }
         CurrentHedgeQuantity = quantity;
@@ -445,7 +445,7 @@ namespace HedgeHog.Alice.Store {
       var grossRange = grosses.Select(t => t.v).RelativeToHeightStandardDeviation();
       return (grossRange.Abs(), pos1, pos2);
     }
-    (double corr, int pos1, int pos2) CalcHedgeRatioByPositionsCorrelation(int pos1, int pos2, int hedgeIndex) {
+    private (double corr, int pos1, int pos2) CalcHedgeRatioByPositionsCorrelation(int pos1, int pos2, int hedgeIndex) {
       var getVolt = GetVoltByIndex(hedgeIndex == 1 ? 0 : 1);
       var hedgePrices = UseRates(ra => TradingMacroHedged(tmh => tmh.UseRates(rah =>
           from r1 in ra
@@ -464,7 +464,7 @@ namespace HedgeHog.Alice.Store {
     ActionAsyncBuffer CalcHedgeRatioByPositionsAsyncBuffer => _CalcHedgeRatioByPositionsAsyncBuffer
       ?? (_CalcHedgeRatioByPositionsAsyncBuffer = IsInVirtualTrading
       ? new ActionAsyncBuffer()
-      : new ActionAsyncBuffer(() => (BarPeriodInt > 10 ? ServerTime.Minute : ServerTime.Second) % 5 + ""));
+      : new ActionAsyncBuffer(() => (BarPeriodInt > 10 ? ServerTime.Minute : ServerTime.Second) % 10 + ""));
 
     void OnCalcHedgeRatioByPositions(bool runSync = false) {
       if(runSync) CalcHedgeRatios();

@@ -1,4 +1,5 @@
 ﻿using HedgeHog;
+using HedgeHog.DateTimeZone;
 using IBApi;
 using System;
 using System.Collections.Generic;
@@ -44,6 +45,7 @@ namespace IBApp {
     }
     public IObservable<OpenEdgeParams>
       OpenEdgeOrderParams(string instrument, bool isCall, int daysToSkip, double edge) {
+      if(IBClientMaster.ServerTime.InNewYork().Hour > 14) daysToSkip++;
       var mul = isCall ? -1 : 1;
       var enterLevel = edge;
       //var exitLevel = enterLevel + takeProfitPoints * mul;

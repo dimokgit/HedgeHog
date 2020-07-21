@@ -554,7 +554,9 @@ namespace HedgeHog.Alice.Client {
                .Subscribe(_ => {
                  base.Clients.Caller.rollOvers(_.OrderByDescending(t => t.dpw).Select(t =>
                  new {
-                   i = t.roll.Instrument, o = t.roll.DateWithShort, t.days, bid = t.bid.AutoRound2(3), perc = t.perc.ToString("0.0"), dpw = t.dpw.ToInt()
+                   i = t.roll.Instrument, o = t.roll.DateWithShort, t.days, bid = t.bid.AutoRound2(3), perc = t.perc.ToString("0.0")
+                   , dpw = t.dpw.ToInt()
+                   , amount = t.amount.ToInt()
                  , exp = t.roll.LastTradeDateOrContractMonth2.Substring(4), d = t.delta.Round(1)
                  }).ToArray());
                });
@@ -847,11 +849,11 @@ namespace HedgeHog.Alice.Client {
           ).Merge();
 
         var distFromHigh = tm.TradingMacroM1().DefaultIfEmpty(tm).Select(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
-        return new { 
-          tm.TradingRatio, 
-          tm.OptionsDaysGap, 
-          Strategy = tm.Strategy + "", 
-          DistanceFromHigh = distFromHigh, 
+        return new {
+          tm.TradingRatio,
+          tm.OptionsDaysGap,
+          Strategy = tm.Strategy + "",
+          DistanceFromHigh = distFromHigh,
           HedgeCalcType = tm.HedgeCalcType + "" + tm.HedgeCalcIndex,
           GetAccountManager().TrendEdgesLastDate
         };
@@ -933,8 +935,8 @@ namespace HedgeHog.Alice.Client {
              select h;
     }
     [BasicAuthenticationFilter]
-    public async Task<string[]> RollTrade(string currentSymbol, string rollSymbol,bool isTest) {
-      var res = await GetAccountManager().OpenRollTrade(currentSymbol, rollSymbol,isTest).SelectMany(t => t).ToArray();
+    public async Task<string[]> RollTrade(string currentSymbol, string rollSymbol, bool isTest) {
+      var res = await GetAccountManager().OpenRollTrade(currentSymbol, rollSymbol, isTest).SelectMany(t => t).ToArray();
       return res.Where(t => t.error.HasError)
         .Do(e => LogMessage.Send(e.error.exc))
         .Select(e => e.error.exc.Message)
@@ -1136,7 +1138,7 @@ namespace HedgeHog.Alice.Client {
           //am.CancelAllOrders("CloseCombo");
           var isBuy = c.position.Sign() < 0;
           bool? isMore = conditionPrice.HasValue
-          ? IsMore(conditionPrice.Value, c.underPrice.avg, isBuy,c.contract.DeltaSignCombined)
+          ? IsMore(conditionPrice.Value, c.underPrice.avg, isBuy, c.contract.DeltaSignCombined)
           : (bool?)null;
           return from tt in c.am.OpenTradeWithAction(order => order.Transmit = true || !c.contract.IsBag, c.contract, -c.position
           , isMore.HasValue || c.contract.IsCallPut || c.contract.IsHedgeCombo ? 0 : c.closePrice
@@ -1496,7 +1498,7 @@ namespace HedgeHog.Alice.Client {
     bool IsEOW(DateTime date) => date.DayOfWeek == DayOfWeek.Friday && date.InNewYork().TimeOfDay > new TimeSpan(16, 0, 0);
     public Trade[] ReadClosedTrades(string pair, bool showAll = false) {
       try {
-        var tms = GetTradingMacros(pair)/*.Where(tm => tm.BarPeriod > BarsPeriodType.t1)*/.Take(1).ToArray();
+        var tms = GetTradingMacros(pair).OrderByDescending(tm => tm.BarPeriod).Take(1);
         var rc = remoteControl.Value;
         var trades = rc.GetClosedTrades("").Concat(rc.TradesManager.GetTrades()).ToArray();
         var tradesNew = (
@@ -1758,6 +1760,9 @@ namespace HedgeHog.Alice.Client {
         return new TradingMacro[0];
       }
     }
+
+    IEnumerable<T> UseTradingMacroM1<T>(string pair, Func<TradingMacro, T> func) => UseTraderMacro(pair, tm => tm.TradingMacroM1(func)).Concat();
+
     T UseTradingMacro<T>(string pair, Func<TradingMacro, T> func) {
       return UseTraderMacro(pair, func).First();
     }

@@ -28,6 +28,19 @@ namespace HedgeHog {
               .RetryAfterDelay<TSource, TException>(retryDelay, --retryCount, scheduler);
       });
     }
+    public static IObservable<TSource> RetryAfterDelay<TSource>(
+      this IObservable<TSource> source, TimeSpan retryDelay,
+      int retryCount,
+      IScheduler scheduler) {
+      return source.Catch<TSource, Exception>(ex => {
+        if(retryCount <= 0) {
+          return Observable.Throw<TSource>(ex);
+        }
+
+        return source.DelaySubscription(retryDelay, scheduler)
+              .RetryAfterDelay<TSource, Exception>(retryDelay, --retryCount, scheduler);
+      });
+    }
     public static IObservable<T> ToObservable<T>(this Action<T> action) => Observable.FromEvent<Action<T>, T>(h => action += h, h => action -= h);
     public static IObservable<U> ToObservable<T, U>(this Action<T> action, Func<T, U> map)
       => Observable.FromEvent<Action<T>, U>(next => t => map(t), h => action += h, h => action -= h);

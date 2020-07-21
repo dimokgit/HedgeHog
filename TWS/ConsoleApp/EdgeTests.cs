@@ -57,7 +57,7 @@ namespace ConsoleApp {
        ).Subscribe(ochs =>HandleMessage(ochs.Select(och=>new {och.holder,och.error }).ToTextTable()));
 
     }
-    public static void OpenEdgeCallPut(AccountManager am) {
+    public static IObservable<IEnumerable<OrderContractHolderWithError>> OpenEdgeCallPut(AccountManager am) {
       var instrument = "ESU0";
       int quantity = -1;
       int daysToSkip = 0;
@@ -66,12 +66,12 @@ namespace ConsoleApp {
       double takeProfitPoints = 20;
 
       // Create test edge orders
-      (from tp in TestParams(instrument)
+      return (from tp in TestParams(instrument)
        from edgeCall in am.OpenEdgeOrder(instrument, true, quantity, daysToSkip, tp.underPrice.ask + edgeShift(true), takeProfitPoints)
        from edgePut in am.OpenEdgeOrder(instrument, false, quantity, daysToSkip, tp.underPrice.ask + edgeShift(false), takeProfitPoints)
        select edgeCall.Concat(edgePut)
        )
-       .Subscribe(eps => HandleMessage(eps.OrderBy(h => h.holder.OrderId).Select(holder => new { holder }).ToTextOrTable("Move Edge")), exc => HandleMessage(exc));
+       .Do(eps => HandleMessage(eps.OrderBy(h => h.holder.OrderId).Select(holder => new { holder }).ToTextOrTable("Move Edge")), exc => HandleMessage(exc));
     }
 
     private static IObservable<(string instrument, MarketPrice underPrice)> TestParams(string instrument) => 

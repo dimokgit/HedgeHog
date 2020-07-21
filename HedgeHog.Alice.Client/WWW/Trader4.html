@@ -1342,7 +1342,7 @@
           <option value="S">S</option>
         </select>
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
-        <select data-bind="options:rollOversList,optionsText:'combo',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
+        <select data-bind="options:rollOversList,optionsText:'l',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>
     </div>
     <table data-bind="visible:doShowHedgeUI">
@@ -1426,9 +1426,8 @@
           <td data-bind="text:days"></td>
           <td data-bind="text:bid"></td>
           <td data-bind="text:perc()+'%'"></td>
+          <td data-bind="text:'$'+amount()"></td>
           <td data-bind="text:'$'+dpw()"></td>
-          <td data-bind="text:exp"></td>
-          <td data-bind="text:d"></td>
           <td>
             <button data-bind="click:$parent.rollTrade.bind(null,$data)" title="Roll Trade">
               <span class="glyphicon glyphicon-fast-forward"></span>

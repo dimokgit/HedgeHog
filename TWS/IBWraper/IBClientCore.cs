@@ -117,7 +117,28 @@ namespace IBApp {
     #region Ctor
     public static IBClientCore Create(Action<object> trace) {
       var signal = new EReaderMonitorSignal();
-      return new IBClientCore(signal, trace) { _signal = signal };
+      var ibClient = new IBClientCore(signal, trace) { _signal = signal };
+      ibClient.ErrorObservable
+        .Where(e => e.errorCode == 0 && e.id == 0 && ibClient.ClientSocket.IsConnected())
+        .ObserveOn(HedgeHog.ObservableExtensions.BGTreadSchedulerFactory())
+        .Subscribe(_ => {
+          ibClient.Disconnect();
+          return;
+          Observable.Interval(5.FromSeconds())
+          .Take(20)
+          .ObserveOn(HedgeHog.ObservableExtensions.BGTreadSchedulerFactory())
+          .Do(i => ibClient.TraceError("Attempt to connect: " + i))
+          .Select(t => {
+              var ok = ibClient.LogOn(ibClient._logOnCache);
+            if(ok)
+              Task.Delay(1.FromSeconds()).ContinueWith(t => CleanActiveRequests(ibClient.Trace));
+              return ok;
+          })
+          .Where(b => b)
+          .Take(1)
+          .Subscribe(i => ibClient.TraceError($"Reconnect " + i));
+        });
+      return ibClient;
     }
 
     static IBClientCore _IBClientCoreMaster;
@@ -314,7 +335,7 @@ namespace IBApp {
         TraceError(new { contract.IsBag, key });
         if(Debugger.IsAttached)
           Debugger.Break();
-        
+
       }
       //var key = $"{contract.Symbol.IfEmpty(contract.LocalSymbol, contract.ConId + "")}:{contract.SecType}:{contract.Exchange}:{contract.Currency}:{contract.LastTradeDateOrContractMonth}:{contract.Right}:{contract.Strike}";
       lock(ReqContractDetails) {
@@ -448,7 +469,7 @@ namespace IBApp {
                         let symbol = under.Contract.LocalSymbol
                         from byStrike in ReqOptionChainOldCache(under.Contract.LocalSymbol, DateTime.MinValue
                         , strike, false)
-                        let exps = byStrike.Select(o => o.Expiration).Where(e=>!IsExpired(e)).Distinct().OrderBy(ex => ex).ToArray()
+                        let exps = byStrike.Select(o => o.Expiration).Where(e => !IsExpired(e)).Distinct().OrderBy(ex => ex).ToArray()
                         from exp in exps.Take(1)
                         from byExp in ReqOptionChainOldCache(under.Contract.LocalSymbol, exp, 0, false)
                         let strikes = byExp.Select(o => o.Strike).Distinct().OrderBy(st => st).ToArray()
@@ -736,18 +757,22 @@ namespace IBApp {
       if(exc is System.Net.Sockets.SocketException && !ClientSocket.IsConnected())
         RaiseLoginError(exc);
       if(exc != null)
-        Trace(exc);
+        TraceError(exc);
       else {
         //{"message":"{ IBCC = { id = -1, errorCode = 504, message = Not connected } }","timestamp":"2019-08-11T21:05:17.6737296-04:00"}
         // TODO Send SMS
-        Trace(new { IBCC = new { id, errorCode, message } });
+        TraceError(new { IBCC = new { id, errorCode, message } });
         if(errorCode == 1102) {
-          Trace("Cleaning price requests");
-          MarketDataManager.ActiveRequestCleaner();
-          ReactiveUI.MessageBus.Current.SendMessage(new ConnectionRestoredMessage());
-          Trace("Re-submitted price requests");
+          CleanActiveRequests(Trace);
         }
       }
+    }
+
+    public static void CleanActiveRequests(Action<object> trace) {
+      trace("Cleaning price requests");
+      MarketDataManager.ActiveRequestCleaner();
+      ReactiveUI.MessageBus.Current.SendMessage(new ConnectionRestoredMessage());
+      trace("Re-submitted price requests");
     }
 
     #region TradeClosedEvent
@@ -832,6 +857,8 @@ namespace IBApp {
     #region Events
     private EventHandler<LoggedInEventArgs> LoggedInEvent;
     private int iClientId;
+    private (string host, string port, string clientId, bool isDemo) _logOnCache;
+
     public int ClientId { get => iClientId; set => iClientId = value; }
 
     public event EventHandler<LoggedInEventArgs> LoggedIn {
@@ -867,7 +894,9 @@ namespace IBApp {
     }
 
     #region Log(In/Out)
+    public bool LogOn((string host, string port, string clientId, bool isDemo) t) => LogOn(t.host, t.port, t.clientId, t.isDemo);
     public bool LogOn(string host, string port, string clientId, bool isDemo) {
+      _logOnCache = (host, port, clientId, isDemo);
       try {
         var hosts = host.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
         _managedAccount = hosts.Skip(1).LastOrDefault();

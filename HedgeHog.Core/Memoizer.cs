@@ -75,6 +75,38 @@ namespace HedgeHog {
         return r[0].Item2;
       };
     }
+    public static Func<T1, T2, T3, R> MemoizeLast<T1, T2, T3, R, K>(this Func<T1, T2, T3, R> f, Func<K> key) {
+      var cache = new Tuple<K, R>[0];
+      return (t1, t2, t3) => {
+        K k = key();
+        var r = cache.Where(t => EqualityComparer<K>.Default.Equals(t.Item1, k)).ToArray();
+        if(r.Length == 0)
+          r = cache = new[] { Tuple.Create(k, f(t1, t2, t3)) };
+        return r[0].Item2;
+      };
+    }
+    public static Action<R> MemoizeLast<R, K>(this Action<R> f, Func<K> key) {
+      var cache = new K[0];
+      return p => {
+        var k = key();
+        var r = cache.Where(t => EqualityComparer<K>.Default.Equals(t, k)).ToArray();
+        if(r.Length == 0) {
+          r = cache = new[] { k };
+          f(p);
+        }
+      };
+    }
+    public static Action<T> MemoizeLast<T, K>(this Action<T> f, Func<T,K> key) {
+      var cache = new K[0];
+      return p => {
+        var k = key(p);
+        var r = cache.Where(t => EqualityComparer<K>.Default.Equals(t, k)).ToArray();
+        if(r.Length == 0) {
+          r = cache = new[] { k };
+          f(p);
+        }
+      };
+    }
     public static Action<A> MemoizeLast<A>(this Action<A> f) {
       var cache = default(A);
       return a => {
