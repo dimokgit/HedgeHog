@@ -303,25 +303,26 @@ namespace IBApp {
        from yes in Observable.Return(!symbol.IsNullOrEmpty())
        where yes
        from cd in IbClient.ReqContractDetailsCached(symbol)
-       from trade in ComboTrades(1).DefaultIfEmpty(new ComboTrade(cd.Contract))
-       from cro in CurrentRollOverImpl(trade, cd.Contract, useStraddle, strikesCount, weeks)
+       from trades in ComboTrades(1).DefaultIfEmpty(new ComboTrade(cd.Contract)).ToArray()
+       from trade in trades
+       from cro in CurrentRollOverImpl(trade, cd.Contract, useStraddle, strikesCount, weeks, trades)
        select cro;
 
-    public CURRENT_ROLLOVERS CurrentRollOver(string underSymbol, bool? isCall, DateTime expiration, int strikesCount, int weeks) =>
+    public CURRENT_ROLLOVERS CurrentRollOver(string underSymbol, bool? isCall, DateTime expiration, int strikesCount, int weeks, ComboTrade[] trades) =>
       from contract in IbClient.ReqContractDetailsCached(underSymbol)
-      from roll in CurrentRollOverImpl2(new ComboTrade(contract.Contract), isCall, expiration, strikesCount, weeks)
+      from roll in CurrentRollOverImpl2(new ComboTrade(contract.Contract), isCall, expiration, strikesCount, weeks, trades)
       select roll;
 
-    CURRENT_ROLLOVERS CurrentRollOverImpl(ComboTrade trade, Contract contractFilter, bool useStraddle, int strikesCount, int weeks) =>
+    CURRENT_ROLLOVERS CurrentRollOverImpl(ComboTrade trade, Contract contractFilter, bool useStraddle, int strikesCount, int weeks, ComboTrade[] trades) =>
       from yes in Observable.Return(trade.contract == contractFilter && strikesCount > 0 && weeks > 0)
       where yes
       let symbol = contractFilter.LocalSymbol
       let IsCall = useStraddle ? (bool?)null : contractFilter.IsOption ? contractFilter.IsCall : trade.position > 0
       let Expiration = contractFilter.IsOption ? contractFilter.Expiration : IbClient.ServerTime.Date
-      from roll in CurrentRollOverImpl2(trade, IsCall, Expiration, strikesCount, weeks)
+      from roll in CurrentRollOverImpl2(trade, IsCall, Expiration, strikesCount, weeks, trades)
       select roll;
 
-    public CURRENT_ROLLOVERS CurrentRollOverImpl2(ComboTrade trade, bool? isCall, DateTime expiration, int strikesCount, int weeks) =>
+    public CURRENT_ROLLOVERS CurrentRollOverImpl2(ComboTrade trade, bool? isCall, DateTime expiration, int strikesCount, int weeks, ComboTrade[] trades) =>
       from yes in Observable.Return(strikesCount > 0 && weeks > 0)
       where yes
       from up in UnderPrice(trade.contract, 3)
@@ -332,13 +333,20 @@ namespace IBApp {
       let strikeDelta = (roll.ComboStrike() - trade.underPrice) * strikeSign
       from rp in roll.ReqPriceSafe()
       let bid = roll.ExtrinsicValue(rp.bid, up.bid)
-      where trade.contract.IsOption && bid > strikeDelta.Max(-trade.change) || bid > -trade.change
+      let coveredChange = CoveredPut(trade.contract, trades).Select(ct => ct.change).Sum()
+      let change = -trade.change - coveredChange
+      where trade.contract.IsOption && bid > strikeDelta.Max(-trade.change) || bid > change
       let days = (roll.Expiration - expiration).TotalDays.Floor()//.SideEffect(_ => TraceDebug(new { roll, roll.Expiration, expiration, days = _ }))
       let workDays = expiration.GetWorkingDays(roll.Expiration)
       let amount = bid * trade.position.Abs() * roll.ComboMultiplier
       let w = 5.0 / workDays
       let perc = bid / up.bid
       select (trade, roll, days, bid, ppw: (bid * w).AutoRound2(2), amount, amount * w, (perc * 100).AutoRound2(3), delta: rp.delta.Round(1));
+
+    public static IEnumerable<ComboTrade> CoveredPut(Contract under, ComboTrade[] trades) {
+      return trades.Where(t => t.contract.IsOption && !t.contract.IsCall && t.position < 0 && t.contract.Expiration <= DateTime.Today.AddDays(1) && t.contract.UnderContract.Any(u => u.Key == under.Key));
+    }
+
   }
   static class CombosMixins {
     #region Parse Combos
