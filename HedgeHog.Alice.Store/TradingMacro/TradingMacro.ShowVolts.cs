@@ -873,10 +873,10 @@ namespace HedgeHog.Alice.Store {
     [WwwSetting]
     public double CoMEndHour { get; set; } = 9.5;
 
-    public List<(double[] upDown, DateTime[] dates, double r)> CurrentSpecialHours() {
-      var bh = BeforeHours.SkipWhile(h => h.dates.Last().TimeOfDay < _beforeHourTime).Select(h => (h.upDown, h.dates, r: 1.0)).Take(1);
-      var ah = AfterHours.SkipWhile(h => h.dates.Last().TimeOfDay < _afterHourTime).Select(h => (h.upDown, h.dates, r: 0.75)).Take(1);
-      return bh.Concat(ah).Where(h => h.dates.Last()<=ServerTime).OrderByDescending(h => h.dates.Last()).Take(1).ToList();
+    public List<(double[] upDown, DateTime[] dates, double r, bool isAH)> CurrentSpecialHours() {
+      var bh = BeforeHours.SkipWhile(h => h.dates.Last().TimeOfDay < _beforeHourTime).Select(h => (h.upDown, h.dates, r: 1.0, isAH: false)).Take(1);
+      var ah = AfterHours.SkipWhile(h => h.dates.Last().TimeOfDay < _afterHourTime).Select(h => (h.upDown, h.dates, r: 0.75, true)).Take(1);
+      return bh.Concat(ah).Where(h => h.dates.Last() <= ServerTime).OrderByDescending(h => h.dates.Last()).Take(1).ToList();
     }
     public (double[] upDown, DateTime[] dates)[] BeforeHours = new (double[], DateTime[])[0];
     public (double[] upDown, DateTime[] dates)[] AfterHours = new (double[], DateTime[])[0];
@@ -905,8 +905,8 @@ namespace HedgeHog.Alice.Store {
       })).Any()) { };
       set(afterHours.ToArray());
     }
-    Func<DateTime,object> _SetCentersOfMassMemoize;
-    private Func<DateTime,object> SetCentersOfMass => _SetCentersOfMassMemoize ?? (_SetCentersOfMassMemoize = new Func<DateTime,object>(d => { SetCentersOfMassImpl(); return null; }).MemoizeLast(d=>d));
+    Func<DateTime, object> _SetCentersOfMassMemoize;
+    private Func<DateTime, object> SetCentersOfMass => _SetCentersOfMassMemoize ?? (_SetCentersOfMassMemoize = new Func<DateTime, object>(d => { SetCentersOfMassImpl(); return null; }).MemoizeLast(d => d));
     private void SetCentersOfMassImpl() {
       var startHour = CoMStartHour;
       var endHour = CoMEndHour;

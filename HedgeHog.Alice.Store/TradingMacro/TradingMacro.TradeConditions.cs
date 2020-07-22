@@ -1307,9 +1307,10 @@ namespace HedgeHog.Alice.Store {
         .Add(new { CHP2 = $"{CurrentHedgePosition2}{TradingMacroM1(tm1 => "/" + tm1.CurrentHedgePosition2).SingleOrDefault()}" })
         //.Add(new { HgSlope = $"{VoltsReg(this, 1)}/{VoltsReg(this, 0)}" })
         //.Add(new { HgSlope2 = tm1s.Select(tm1 => $"{VoltsReg(tm1, 1)}/{VoltsReg(tm1, 0)}").SingleOrDefault() })
-        .Add(new { ExitGrsPrc = $"{ExitGrossByHedgePositions.SideEffect(_ => OnSetExitGrossByHedgeGrossess()):c0}/{ExitPriceByHedgePrices:c0}" })
+        //.Add(new { ExitGrsPrc = $"{ExitGrossByHedgePositions.SideEffect(_ => OnSetExitGrossByHedgeGrossess()):c0}/{ExitPriceByHedgePrices:c0}" })
         //.Add(new { VltCma = $"{VltCma2Ok()}/{GetVoltCmaWaveAvg().With(t => (t.avg.Mult(100).AutoRound2(2), t.avgCount, t.last.Mult(100).AutoRound2(2), t.lastCount))}" })
-        .Add(new { BlSch_HVAs = $"{StraddleRangeM1().Height.AutoRound2(3)}/{tm1s.Select(tm1 => new[] { tm1.HistoricalVolatilityAnnualized(), tm1.HistoricalVolatilityAnnualized2() }.Select(v => v.AutoRound2(3)).Flatter("/")).FirstOrDefault()}" })
+        .Add(new { BlSch = $"{StraddleRangeM1().Height.AutoRound2(3)}/{tm1s.Select(tm1 => new[] { tm1.HistoricalVolatilityAnnualized(true) }.Select(v => v.AutoRound2(3)).Flatter("/")).FirstOrDefault()}" })
+        .Add(new { HVAs = $"{tm1s.Select(tm1 => new[] { tm1.HistoricalVolatilityAnnualized2(), tm1.HistoricalVolatilityAnnualized3() }.Select(v => v.AutoRound2(3)).Flatter("/")).FirstOrDefault()}" })
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))
@@ -1324,7 +1325,7 @@ namespace HedgeHog.Alice.Store {
         return (slope / (max - min)).Mult(1000).AutoRound2(3);
       }
     }
-    double[] HVA(TradingMacro tm) => new[] { tm.HistoricalVolatilityAnnualized() };
+    double[] HVA(TradingMacro tm) => new[] { tm.HistoricalVolatilityAnnualized(true) };
     double[] HVP(TradingMacro tm) => tm.HistoricalVolatilityByPips();
 
     public double StdOverCurrPriceRatio() => StdOverCurrPriceRatio(StDevByPriceAvg, CurrentPriceAvg());

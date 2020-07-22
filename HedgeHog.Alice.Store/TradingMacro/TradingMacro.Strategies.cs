@@ -32,8 +32,8 @@ namespace HedgeHog.Alice.Store {
     Func<DateTime, BlackScholesRange> StraddleRange => _StraddleRangeMemoize
       ?? (_StraddleRangeMemoize = new Func<DateTime, BlackScholesRange>(d => StraddleRangeImpl()).MemoizeLast(d => d));
     public BlackScholesRange StraddleRangeImpl() {
-      double volatility = HistoricalVolatilityAnnualized();
       var hh = CurrentSpecialHours().SingleOrDefault();
+      double volatility = HistoricalVolatilityAnnualized(hh.isAH);
       double spot = (hh.upDown?.Average()).GetValueOrDefault();// UseRates(ra => ra.BackwardsIterator().SkipWhile(r => r.StartDate.Hour != 8).Take(1)).Concat().ToArray();
       if(volatility == 0 || spot == 0) {
         //Log = new Exception(new { StraddleRange = new { volatility, spot } } + "");
@@ -47,7 +47,7 @@ namespace HedgeHog.Alice.Store {
       double strikeUp = gap == 0 ? spot.RoundBySample(strikeStep) : (spot + strikeShift).RoundBySample(strikeStep);
       double strikeDown = gap == 0 ? spot.RoundBySample(strikeStep) : (spot - strikeShift).RoundBySample(strikeStep);
       double dividents = 2.0029 / 100;
-      double r = hh.r;
+      double r = _useAverage ? 1.0 : hh.r;
       var c = BlackScholes.CallPrice(spot, strikeUp, intRate, dividents, daysToExp, volatility) * r;
       var p = BlackScholes.PutPrice(spot, strikeDown, intRate, dividents, daysToExp, volatility) * r;
       _currentCallByHV = c;
@@ -74,8 +74,12 @@ namespace HedgeHog.Alice.Store {
     Func<DateTime, double> HistoricalVolatilityAnnualizedMem => _HistoricalVolatilityAnnualized ??
       (_HistoricalVolatilityAnnualized = new Func<DateTime, double>(d => HistoricalVolatilityAnnualizedImpl()).MemoizeLast(d => d));
 
-    bool _useAverage = false;
-    public double HistoricalVolatilityAnnualized() => _useAverage ? HistoricalVolatilityAnnualized2() : HistoricalVolatilityAnnualizedMem(LastStartDate);
+    bool _useAverage = true;
+    public double HistoricalVolatilityAnnualized(bool isAfterHours) => _useAverage
+      ? isAfterHours
+      ? HistoricalVolatilityAnnualized3()
+      : HistoricalVolatilityAnnualized2()
+      : HistoricalVolatilityAnnualizedMem(LastStartDate);
     private double HistoricalVolatilityAnnualizedImpl() {
       if(BarPeriod == BarsPeriodType.t1) return HistoricalVolatilityAnnualizedMiniImpl();
       var ano = Math.Sqrt(365);
@@ -91,10 +95,21 @@ namespace HedgeHog.Alice.Store {
       if(BarPeriod == BarsPeriodType.t1) return HistoricalVolatilityAnnualizedMiniImpl();
       var ano = Math.Sqrt(365);
       //var days0 = UseRatesInternal(ri => ri.GroupBy(r => r.StartDate.Date).ToArray());
-      var hv = UseRatesInternal(ri => ri.GroupBy(r => r.StartDate.Date)
+      var hv = UseRatesInternal(ri => ri.Where(r => r.StartDate.Hour.Between(9.5, 16)).GroupBy(r => r.StartDate.Date)
        .Select(g => g.Average(r => r.PriceAvg)).ToArray())
         .Select(days0 => days0.HistoricalVolatility() * ano);
       return hv.SingleOrDefault();
+    }
+    private double HistoricalVolatilityAnnualized3Impl() {
+      if(BarPeriod == BarsPeriodType.t1) return HistoricalVolatilityAnnualizedMiniImpl();
+      var ano = Math.Sqrt(365);
+      //var days0 = UseRatesInternal(ri => ri.GroupBy(r => r.StartDate.Date).ToArray());
+      var hv = UseRatesInternal(ri => {
+        var outside = ri.ToList().GroupedDistinct(r => !r.StartDate.Hour.Between(9, 16), g => new { a = g.Average(r => r.PriceAvg), g }).ToArray();
+        return outside.Select(x => x.a).ToArray();
+      });
+      //;
+      return hv.Select(f => f.HistoricalVolatility() * ano).SingleOrDefault();
     }
 
     Action StrategyAction {
