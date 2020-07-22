@@ -65,11 +65,11 @@ namespace HedgeHog {
         return r[0].Item2;
       };
     }
-    public static Func<R> MemoizeLast<R, K>(this Func<R> f, Func<K> key) {
+    public static Func<R> MemoizeLast<R, K>(this Func<R> f, Func<K> key, Predicate<R> result) {
       var cache = new Tuple<K, R>[0];
       return () => {
         K k = key();
-        var r = cache.Where(t => EqualityComparer<K>.Default.Equals(t.Item1, k)).ToArray();
+        var r = cache.Where(t => result(t.Item2) && EqualityComparer<K>.Default.Equals(t.Item1, k)).ToArray();
         if(r.Length == 0)
           r = cache = new[] { Tuple.Create(k, f()) };
         return r[0].Item2;

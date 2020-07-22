@@ -30,13 +30,13 @@ namespace HedgeHog.Alice.Store {
       return (t1, t2, t3) => m(t1, t2, t3);
     }
 
-    private Func<T> MemoizedCurry<T>(Func<T> f) => MemoizedCurry(f, StartDateKey);
-    private Func<T> MemoizedCurry<T, K>(Func<T> f, Func<K> key) {
-      var m = f.MemoizeLast(key);
+    private Func<T> MemoizedCurry<T>(Func<T> f, Predicate<T> test) => MemoizedCurry(f, StartDateKey(), test);
+    private Func<T> MemoizedCurry<T, K>(Func<T> f, Func<K> key, Predicate<T> test) {
+      var m = f.MemoizeLast(key, test);
       return () => m();
     }
     //private Action<T> MemoizedCurry<T>(Action<T> f) => MemoizedCurry(f, StartDateKey);
-    private Action<T> MemoizedCurry<T, K>(Action<T> f, Func<T,K> key) {
+    private Action<T> MemoizedCurry<T, K>(Action<T> f, Func<T, K> key) {
       var m = f.MemoizeLast(key);
       return p => m(p);
     }
@@ -48,9 +48,11 @@ namespace HedgeHog.Alice.Store {
       => ibWraper.AccountManager.OrderEnrtyLevel.OnNext(tls.Select(tl
         => (Pair, tl.Rate, tl.IsCall, tl.TradingRatio.ToInt(), TLLime.PriceAvg2.Abs(TLLime.PriceAvg3))).ToArray());
     public readonly Func<double> HistoricalVolatilityAnnualized2;
+    public readonly Func<double> HistoricalVolatilityAnnualized3;
     public TradingMacro() {
       #region Memoizes
-      HistoricalVolatilityAnnualized2 = MemoizedCurry(HistoricalVolatilityAnnualized2Impl);
+      HistoricalVolatilityAnnualized2 = MemoizedCurry(HistoricalVolatilityAnnualized2Impl, r => r != 0);
+      HistoricalVolatilityAnnualized3 = MemoizedCurry(HistoricalVolatilityAnnualized3Impl, r => r != 0);
       #endregion
       GroupRates = MonoidsCore.ToFunc((IList<Rate> rates) => GroupRatesImpl(rates, GroupRatesCount)).MemoizeLast(r => r.Last().StartDate);
 
