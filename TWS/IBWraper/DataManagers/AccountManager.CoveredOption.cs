@@ -46,7 +46,7 @@ namespace IBApp {
         if(aos.Any()) {
           aos.Concat(ocos).ForEach(ao => {
             Trace($"OpenTrade: {ao.contract} already has active order {ao.order.OrderId} with status: {ao.status}.\nUpdating {new { price, ao.contract }}");
-            UpdateOrder(ao.order.OrderId, OrderPrice(price, ao.contract));
+            UpdateOrder(ao.order.OrderId, OrderPrice(price, ao.contract), false);
           });
         } else {
           var orderType = price == 0 ? "MKT" : type.IfEmpty("LMT");

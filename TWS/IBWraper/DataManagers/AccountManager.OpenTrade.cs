@@ -25,42 +25,38 @@ namespace IBApp {
         throw new Exception($"Pair:{pair} is not fround in Contracts");
       return OpenTrade(contract, contract.IsFuture ? 1 : 100);
     }
-    public void OpenOrUpdateLimitOrderByProfit2(string key, int position, int orderId, double openAmount, double profitAmount) {
+    public void OpenOrUpdateLimitOrderByProfit2(Contract contract, int position, int orderId, double openAmount, double profitAmount, bool isTest) {
       var pa = profitAmount.Abs() >= 1 ? profitAmount : openAmount.Abs() * profitAmount;
-      var contract = Contract.FromCache(key).ToArray();
       OrderContractsInternal.Items.ByOrderId(orderId)
       .Where(och => !och.isDone)
       .Do(och => {
-        if(och.contract != contract.Single())
-          throw new Exception($"{nameof(OpenOrUpdateLimitOrderByProfit2)}:{new { orderId, och.contract.Instrument, dontMatch = key }}");
+        if(och.contract.Key != contract.Key)
+          throw new Exception($"{nameof(OpenOrUpdateLimitOrderByProfit2)}:{new { orderId, och.contract.Instrument, dontMatch = contract.ToString() }}");
         var limit = OrderPrice(priceFromProfit(pa, position, och.contract.ComboMultiplier, openAmount), och.contract);
-        UpdateOrder(orderId, limit);
+        UpdateOrder(orderId, limit, isTest);
       })
       .RunIfEmpty(() => { // Create new order
-        contract
-        .ForEach(c => {
-          var lmtPrice = OrderPrice(priceFromProfit(pa, position, c.ComboMultiplier, openAmount), c);
-          OpenTrade(c, -position, lmtPrice, 0.0, false, DateTime.MaxValue).Subscribe();
-        });
+        var lmtPrice = OrderPrice(priceFromProfit(pa, position, contract.ComboMultiplier, openAmount), contract);
+        OpenTradeWithAction(o => o.Transmit = !isTest, contract, -position, lmtPrice, 0.0, false, DateTime.MaxValue).Subscribe();
       });
     }
     public void OpenOrUpdateLimitOrderByProfit3(Contract contract, int position, int orderId, double openPrice, double profitAmount) {
       var limit = profitAmount.Abs() >= 1 ? profitAmount / contract.PipCost() * position : openPrice * profitAmount;
-      OpenOrUpdateLimitOrder(contract, position, orderId, openPrice + limit);
+      OpenOrUpdateLimitOrder(contract, position, orderId, openPrice + limit, false);
     }
-    public void OpenOrUpdateLimitOrder(Contract contract, int position, int orderId, double lmpPrice) {
+    public void OpenOrUpdateLimitOrder(Contract contract, int position, int orderId, double lmpPrice, bool isTest) {
       UseOrderContracts(orderContracts =>
         orderContracts.ByOrderId(orderId)
         .Where(och => !och.isDone && och.order.IsLimit)
         .Do(och => {
           if(och.contract.Instrument != contract.Instrument)
             throw new Exception($"{nameof(OpenOrUpdateLimitOrder)}:{new { orderId, och.contract.Instrument, dontMatch = contract.Instrument }}");
-          UpdateOrder(orderId, OrderPrice(lmpPrice, och.contract));
+          UpdateOrder(orderId, OrderPrice(lmpPrice, och.contract), isTest);
         })
-        .RunIfEmpty(() => OpenTrade(contract, -position, lmpPrice, 0.0, false, DateTime.MaxValue).Subscribe()
+        .RunIfEmpty(() => OpenTradeWithAction(o => o.Transmit = !isTest, contract, -position, lmpPrice, 0.0, false, DateTime.MaxValue).Subscribe()
       ));
     }
-    public void UpdateOrder(int orderId, double lmpPrice, int minTickMultiplier = 1) {
+    public void UpdateOrder(int orderId, double lmpPrice, bool isTest, int minTickMultiplier = 1) {
       UseOrderContracts(orderContracts => {
         var och = orderContracts.ByOrderId(orderId).SingleOrDefault();
         if(och == null)
@@ -79,10 +75,11 @@ namespace IBApp {
           order.OpenClose = "C";
         order.VolatilityType = 0;
         order.Conditions = new List<OrderCondition>();
+        order.Transmit = !isTest;
         IbClient.WatchReqError(1.FromSeconds(), orderId, e => {
           OnOpenError(e, $"{nameof(UpdateOrder)}:{och.contract}:{new { order.LmtPrice }}");
           if(e.errorCode == E110)
-            UpdateOrder(orderId, lmpPrice, ++minTickMultiplier);
+            UpdateOrder(orderId, lmpPrice, isTest, ++minTickMultiplier);
         }, () => { });
         IbClient.OnReqMktData(() => IbClient.ClientSocket.placeOrder(order.OrderId, och.contract, order));
       });

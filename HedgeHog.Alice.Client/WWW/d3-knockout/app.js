@@ -357,7 +357,7 @@
     var expDaysSkip = dataViewModel.expDaysSkip() || 0;
     var hedgeDate = dataViewModel.hedgeVirtualDate();
     var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
-    var context = { selectedHedge: ko.unwrap(dataViewModel.selectedHedgeCombo) || "" };
+    var context = { currentProfit: ko.unwrap(dataViewModel.currentProfit) || "0" };
     var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, dataViewModel.rollCombo(), selectedCombos, context];
     args.noNote = true;
     readingCombos = true;
@@ -963,7 +963,7 @@
       this.rollTrade = function (data) {
         var i = ko.unwrap(data.i);
         if (!i) showWarning("Select trade to roll");
-        else serverCall("rollTrade", [rollCombo(), i, self.hedgeTest()]);
+        else serverCall("rollTrade", [rollCombo(), i, self.hedgeTest() || false]);
       };
       this.cancelOrder = function (data) {
         var orderId = ko.unwrap(data.id);
@@ -974,9 +974,9 @@
         if (!isNaN(profitAmount)) {
           var instrument = a.combo();
           var orderId = a.orderId();
-          serverCall("updateCloseOrder", [pair, instrument, orderId, null, profitAmount]);
+          serverCall("updateCloseOrder", [pair, instrument, orderId, null, profitAmount, self.hedgeTest() || false]);
         }
-      }
+      };
       this.showNextInput = function (a, b, c) {
         var v = $(b.target).toggle().text().replace("$", "");
         $(b.target).next("input").eq(0).toggle().focus().val(v);
@@ -990,7 +990,7 @@
         if (!isNaN(limit)) {
           var instrument = a.combo();
           var orderId = a.orderId();
-          serverCall("updateCloseOrder", [pair, instrument, orderId, limit, null]);
+          serverCall("updateCloseOrder", [pair, instrument, orderId, limit, null, self.hedgeTest() || false]);
         }
       }
 
@@ -1030,7 +1030,7 @@
       this.tradesBreakEvens = ko.mapping.fromJS(ko.observableArray());
 
       this.hedgeREL = ko.observable(true);
-      this.hedgeTest = ko.observable().extend({ persist: "hedgeTest" + pair });;
+      this.hedgeTest = ko.observable(false).extend({ persist: "hedgeTest" + pair });
       this.hedgeCombo = ko.mapping.fromJS(ko.observableArray());
       this.hedgeCombo2 = ko.mapping.fromJS(ko.observableArray());
       function mapHedgeCombos() {

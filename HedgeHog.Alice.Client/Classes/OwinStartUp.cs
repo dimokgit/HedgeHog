@@ -548,7 +548,8 @@ namespace HedgeHog.Alice.Client {
           if(am != null) {
             Action rollOvers = () => {
               var show = !rollCombo.IsNullOrWhiteSpace() && optionTypeMap == "R";
-              am.CurrentRollOver(rollCombo, false, show ? numOfCombos : 0, expDaysSkip.Max(2))
+              int.TryParse((string)(contextDict["currentProfit"] ?? "0"), out var currentProfit);
+              am.CurrentRollOver(rollCombo, false, show ? numOfCombos : 0, expDaysSkip.Max(2), currentProfit)
               .ToArray()
                //.Where(a => a.Length > 0)
                .Subscribe(_ => {
@@ -964,7 +965,7 @@ namespace HedgeHog.Alice.Client {
       return await ret;
     }
     [BasicAuthenticationFilter]
-    public void UpdateCloseOrder(string pair, string instrument, int orderId, double? limit, double? profit) {
+    public void UpdateCloseOrder(string pair, string instrument, int orderId, double? limit, double? profit, bool isTest) {
       var am = GetAccountManager();
       am.ComboTrades(2)
         .Where(ct => ct.contract.Instrument == instrument)
@@ -975,7 +976,7 @@ namespace HedgeHog.Alice.Client {
             if(!limit.HasValue && !profit.HasValue && !trade.contract.IsBag)
               throw new ArgumentException(new { limit, profit, error = "One must have a value" } + "");
             if(limit.HasValue)
-              am.OpenOrUpdateLimitOrder(trade.contract, trade.position, orderId, limit.Value);
+              am.OpenOrUpdateLimitOrder(trade.contract, trade.position, orderId, limit.Value, isTest);
             else {
               var p = profit.Value.Abs() > 1 ? profit.Value
               : profit.Value.Abs() >= 0.01 ? profit.Value
@@ -985,7 +986,7 @@ namespace HedgeHog.Alice.Client {
                 tm.ExitGrossByHedgePositions = p;
               else {
                 tm.ExitGrossByHedgePositions = double.NaN;
-                am.OpenOrUpdateLimitOrderByProfit2(trade.contract.Instrument, trade.position, orderId, trade.open, p);
+                am.OpenOrUpdateLimitOrderByProfit2(trade.contract, trade.position, orderId, trade.open, p, isTest);
               }
             }
             am.OpenOrderObservable

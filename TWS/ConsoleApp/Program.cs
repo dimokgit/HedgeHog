@@ -299,7 +299,7 @@ namespace ConsoleApp {
           {
             Task.Delay(3000).ContinueWith(_ => {
               (from trade in am.Positions.Select(p => p.contract).Take(1).ToObservable()
-               from rolls in am.CurrentRollOver(trade.LocalSymbol, false, 2, 2).OrderByDescending(r => r.dpw).ToArray()
+               from rolls in am.CurrentRollOver(trade.LocalSymbol, false, 2, 2,0).OrderByDescending(r => r.dpw).ToArray()
                select new { rolls, trade.LocalSymbol }
               )
               .Do(rolls => HandleMessage($"Rolls for {rolls.LocalSymbol}:\n" + rolls.rolls.Select(roll => new { roll.roll, roll.days, roll.bid }).ToMarkdownTable()))
