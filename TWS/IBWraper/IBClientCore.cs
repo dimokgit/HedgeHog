@@ -129,10 +129,10 @@ namespace IBApp {
           .ObserveOn(HedgeHog.ObservableExtensions.BGTreadSchedulerFactory())
           .Do(i => ibClient.TraceError("Attempt to connect: " + i))
           .Select(t => {
-              var ok = ibClient.LogOn(ibClient._logOnCache);
+            var ok = ibClient.LogOn(ibClient._logOnCache);
             if(ok)
               Task.Delay(1.FromSeconds()).ContinueWith(t => CleanActiveRequests(ibClient.Trace));
-              return ok;
+            return ok;
           })
           .Where(b => b)
           .Take(1)
@@ -354,6 +354,11 @@ namespace IBApp {
           }
           )
           .Distinct(t => t.ContractDetails.Contract.ConId)
+          .SelectMany(t => {
+            if(t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty())
+              return ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Select(_ => t);
+            return Observable.Return(t);
+          })
           .ToArray()
           .Do(a => {
             if(a.IsEmpty()) {
