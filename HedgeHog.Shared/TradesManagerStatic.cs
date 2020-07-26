@@ -76,7 +76,7 @@ namespace HedgeHog.Shared {
     }
 
     public static double CalcHedgePrice(this IList<(double price, int multiplier, double positions)> hedges) => CalcHedgePrice(hedges.Select(h => (h.price, (double)h.multiplier, h.positions)).ToArray());
-    public static double CalcHedgePrice(this IList<(double price, double multiplier, double positions)> hedges) => hedges.Sum(h => h.price * h.multiplier * h.positions) / hedges.LastOrDefault().multiplier;
+    public static double CalcHedgePrice(this IList<(double price, double multiplier, double positions)> hedges) => hedges.Sum(h => h.price * h.multiplier * h.positions) / hedges.Min(h => h.multiplier);
 
     public static ((TContract contract, int quantity)[] contracts, int quantity) HedgeQuanitiesByValue<TContract>(int multiplier
       , string mashDivider
