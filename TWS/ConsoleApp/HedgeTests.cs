@@ -11,14 +11,44 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static ConsoleApp.Program;
 
 namespace ConsoleApp {
   static class Tests {
+    public static void MakeStockCombo(AccountManager am) {
+      var portfolio = new[] { "AAPL","MSFT", "AMZN" }.TakeLast(3).Select(s => s.ReqContractDetailsCached().Select(cd => cd.Contract)).Merge();
+      (from contract in portfolio
+       from price in contract.ReqPriceSafe()
+       select new { contract, price }
+       )
+       .ToArray()
+       .Subscribe(ps => {
+         HandleMessage(ps.ToTextOrTable("Stocks"));
+         var combo = AccountManager.MakeStockCombo(10000, ps.Select(l => (l.contract, l.price.avg)).ToList());
+         combo.contract.ReqContractDetailsCached().Subscribe(_=>HandleMessage(_));
+         combo.contract.ReqPriceSafe().Subscribe(p => HandleMessage(new { combo, p }.ToTextTable("Combo Price")));
+         (from oc in am.OpenTradeWithAction(o => o.Transmit = false, combo.contract, combo.quantity)
+          select oc
+          ).Subscribe(oc => HandleMessage(oc));
+       });
+    }
+    public static void MakeHedgeCombo(AccountManager am) {
+      am.PositionsObservable.Do(positions => {
+        HandleMessage(am.Positions.ToTextOrTable("All Positions:"));
+      })
+      .Where(_ => am.Positions.Count > 2)
+      .Take(1)
+      .SelectMany(_ => am.MakeComboHedgeFromPositions(am.Positions))
+      .Subscribe(c => {
+        HandleMessage(new { c.contract, c.position, c.openPrice, c.closePrice, c.price.bid, c.price.ask }.ToTextTable("Hedge Combo"), false);
+      });
+    }
+
     public static void HedgeCombo(AccountManager am) {
 
       {
-        var parentContract = "ESM0".ContractFactory();
-        var hedgeContract = "VXM0".ContractFactory();
+        var parentContract = "AAPL".ContractFactory();
+        var hedgeContract = "MSFT".ContractFactory();
         var quantityParent = 100;
         var r = 2.5;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();

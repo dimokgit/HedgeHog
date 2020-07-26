@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 using System.Reflection;
-using HedgeHog.Core;
 using static HedgeHog.MathCore;
 using static HedgeHog.LinearRegression;
 
@@ -19,6 +18,11 @@ namespace HedgeHog.Tests {
       Assert.IsTrue(new[] { 1, 4, 4 }.SequenceEqual(new[] { 5, 20, 20 }.AdjustByGcd().values));
     }
 
+    [TestMethod]
+    public void GDCStocks() {
+      var gdc = new[] { 370, 201, 3009 }.GCD();
+      Console.WriteLine(gdc);
+    }
     [TestMethod]
     public void CompoundAmount() {
       double interestRate = 0.5 / 100, days = 256 * 5, Amount = 30000;

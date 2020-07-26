@@ -2459,7 +2459,6 @@ new MarketPrice(
             //if (IsAsleep)
             //ResetBarsCountCalc();
             RatesHeight = RatesArray.Height(r => r.AskHigh, r => r.BidLow, out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
-            RatioFromRatesHigh = 1 - (CurrentPrice?.Average).GetValueOrDefault() / RatesMax;
             SetCentersOfMassSubject.OnNext(() => {
               rateLast.ForEach(r => SetBeforeHours(r.StartDate.Round()));
               if(BarPeriod == BarsPeriodType.t1)
@@ -4806,8 +4805,6 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         OnPropertyChanged(() => RatesHeightInPips);
       }
     }
-
-    public double RatioFromRatesHigh { get; private set; }
 
     public double RatesHeightInPips { get { return InPips(RatesHeight); } }
 

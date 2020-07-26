@@ -17,5 +17,11 @@ namespace ConsoleApp {
           HandleMessage(es.Select(x => new { x.option }).ToMarkdownTable());
         });
       });
+    public static void ButterFly(AccountManager am) =>
+      (from bf in am.MakeButterflies("ESU0", 3225)
+       from oc in am.OpenTradeWithAction(o=>o.Transmit=false,bf.contract,1)
+       select oc)
+      .Subscribe();
+      
   }
 }

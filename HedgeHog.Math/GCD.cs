@@ -12,7 +12,7 @@ namespace HedgeHog {
       return (gcd, x);
     }
 
-    public static int GCD(this int[] numbers) => numbers.Aggregate(GCD);
+    public static int GCD(this IEnumerable<int> numbers) => numbers.Aggregate(GCD);
 
     static int GCD(int a, int b) {
       try {

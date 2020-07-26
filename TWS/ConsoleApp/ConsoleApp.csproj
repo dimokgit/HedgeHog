@@ -272,6 +272,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CurrentOptionsTest.cs" />
+    <Compile Include="OrdersTest.cs" />
     <Compile Include="PositionsTest.cs" />
     <Compile Include="EdgeTests.cs" />
     <Compile Include="HedgeTests.cs" />

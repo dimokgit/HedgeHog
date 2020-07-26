@@ -88,9 +88,11 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
-          PositionsTest.Rolls(am);
-          //EdgeTests.OpenEdgeCallPut(am).Subscribe(_ => PositionsTest.ComboTrades(am));
-          return;
+          CurrentOptionsTest.ButterFly(am);return;
+          Tests.MakeStockCombo(am);return;
+          OrdersTest.HedgeOrder(am); return;
+          Tests.HedgeCombo(am);
+          EdgeTests.OpenEdgeCallPut(am).Subscribe(_ => PositionsTest.ComboTrades(am));
           return;
           //Tests.HedgeCombo(am); return;
           {

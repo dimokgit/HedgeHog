@@ -34,7 +34,7 @@ namespace ConsoleApp {
         var trade = rollContext.under;
         var cover = rollContext.coveredPut;
         //HandleMessage(trade.ToTextTable("Covered Put"), false);
-        HandleMessage(new[] { a(trade),a(cover) }.ToTextOrTable("Roll Trade"), false);
+        HandleMessage(new[] { a(trade), a(cover) }.ToTextOrTable("Roll Trade"), false);
         am.CurrentRollOver(trade.contract.LocalSymbol, false, 2, 2, 0)
         .ToArray()
         .Subscribe(roll => HandleMessage(roll.Select(r => new {

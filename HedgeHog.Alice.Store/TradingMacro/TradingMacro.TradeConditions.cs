@@ -431,12 +431,6 @@ namespace HedgeHog.Alice.Store {
         return () => TradeDirectionByBool(IsTradingHour());
       }
     }
-    public TradeConditionDelegate PFRHOk {
-      get {
-        TradingMacroTrader(tm => Log = new Exception(new { PFRHOk = new { tm.PercFromRatesHigh } } + ""));
-        return () => TradingMacroM1(tm => TradeDirectionByBool(tm.RatioFromRatesHigh * 100 > PercFromRatesHigh)).SingleOrDefault();
-      }
-    }
     private double _distVolt;
     public TradeConditionDelegate VAOk {
       get {
