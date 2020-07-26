@@ -42,6 +42,8 @@ namespace IBApp {
       theta = this.theta;
     }
 
+    public override string ToString() => new { bid, ask } + "";
+
     public static implicit operator (double bid, double ask, DateTime time, double delta, double theta)(MarketPrice value)
       => (value.bid, value.ask, value.time, value.delta, value.theta);
     public static implicit operator MarketPrice((double bid, double ask, DateTime time, double delta, double theta) value)

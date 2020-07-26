@@ -16,7 +16,14 @@ namespace IBApp {
       pipCost = contract.ComboMultiplier * position.Abs();
       price = averageCost / contract.ComboMultiplier;
     }
-
+    public Position(Contract contract,double position, double averageCost) {
+      this.contract = contract;
+      this.position = position.ToInt();
+      this.averageCost = averageCost;
+      open = averageCost * position;
+      pipCost = contract.ComboMultiplier * position.Abs();
+      price = averageCost / contract.ComboMultiplier;
+    }
     public Contract contract { get; }
     public int position { get; }
     public int Quantity => position.Abs();

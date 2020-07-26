@@ -336,7 +336,7 @@ namespace IBApp {
     }
 
     private void TraceOpenTradeResults(OrderContractHolderWithError a) => Verbose(
-                new[] { a.value.Select(_ => new { reqId = _?.order?.OrderId ?? a.error.reqId, order = _.order, a.error }).ToTextOrTable(nameof(OpenTrade) + "[E]:") + "" }
+                new[] { a.value.Select(_ => new { reqId = _?.order?.OrderId ?? a.error.reqId, order = _, a.error }).ToTextOrTable(nameof(OpenTrade) + "[E]:") + "" }
                 .Concat(new[] { OrderContractsInternal.Items.Select(x => new { x.order.OrderId, x.order, x.contract, x.status }).ToTextOrTable(nameof(OrderContractsInternal) + ":") + "" })
                 .Flatter("\n"));
 

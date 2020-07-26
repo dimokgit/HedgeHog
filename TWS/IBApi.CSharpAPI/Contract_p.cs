@@ -62,7 +62,7 @@ namespace IBApi {
     private DateTime? lastTradeDate;
     public DateTime LastTradeDate => (lastTradeDate ?? (lastTradeDate = LastTradeDateOrContractMonth.FromTWSDateString(default))).Value;
     private DateTime? lastTradeTime;
-    public DateTime LastTradeTime => (lastTradeTime ?? (lastTradeTime= (LastTradeDateOrContractMonth + " 14:00:00").FromTWSString())).Value;
+    public DateTime LastTradeTime => (lastTradeTime ?? (lastTradeTime = (LastTradeDateOrContractMonth + " 14:00:00").FromTWSString())).Value;
     public bool IsExpired => !LastTradeDateOrContractMonth.IsNullOrEmpty() && (LastTradeDateOrContractMonth + " 16:15:00").FromTWSString() < DateTime.Now.Date.InNewYork();
     public bool IsExpiring => Expiration.Date == DateTime.Now.Date.InNewYork();
     public string LastTradeDateOrContractMonth2 => LegsOrMe(l => l.LastTradeDateOrContractMonth).Max();
@@ -126,7 +126,7 @@ namespace IBApi {
       return x.Concat(y).Select(cd => cd.MinTick);
     }
     public double MinTick() => LegsOrMe(MinTickImpl).Concat().Max();
-    public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).Last();
+    public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).Min();
     public bool IsCombo => IsBag;
     public bool IsFuturesCombo => LegsEx(l => l.c.IsFuture).Count() > 1;
     public bool IsStocksCombo => LegsEx(l => l.c.IsStock).Count() > 1;
@@ -155,9 +155,9 @@ namespace IBApi {
     public IList<DateTimeOffset> _LiquidHours = null;
     [JsonIgnore]
     public IList<DateTimeOffset> LiquidHours => _LiquidHours ?? (_LiquidHours
-      = FromDetailsCache().Select(LiquidHoursImpl).SingleOrDefault(lh => lh.Any()) ?? GetTodayLiquidRange());
+      = FromDetailsCache().Where(cd => !cd.LiquidHours.IsNullOrEmpty()).Select(LiquidHoursImpl).SingleOrDefault(lh => lh.Any()) ?? GetTodayLiquidRange());
     static IList<DateTimeOffset> LiquidHoursImpl(ContractDetails cd) =>
-      (from ranges in cd.LiquidHours.Split(';')
+      (from ranges in (cd.LiquidHours ?? "").Split(';')
        let range = ranges.Split('-')
        where range.Length == 2
        from t in range
@@ -167,7 +167,7 @@ namespace IBApi {
       .ToArray();
     IList<DateTimeOffset> GetTodayLiquidRange() =>
       (from t in new[] { "0930", "1600" }
-       select DateTimeOffset.ParseExact(t, "yyyyMMdd:HHmm", null, DateTimeStyles.None).InTZ(TimeZone).InNewYork()
+       select DateTimeOffset.ParseExact(t, "HHmm", null, DateTimeStyles.None).InTZ(TimeZone).InNewYork()
        ).ToArray();
     public bool IsPreRTH(DateTime serverTime) => !serverTime.Between(LiquidHours);
 
@@ -175,7 +175,7 @@ namespace IBApi {
     TimeZoneInfo _timeZone = null;
     TimeZoneInfo TimeZone => (_timeZone ?? (_timeZone = FromDetailsCache().Select(TimeZoneFromContractDetails).Single()));
     static TimeZoneInfo TimeZoneFromContractDetails(ContractDetails cd) => TimeZoneInfo.FindSystemTimeZoneById(ParseTimeZone(cd));
-    static string ParseTimeZone(ContractDetails cd) => Regex.Match(cd.TimeZoneId, @".+\((.+)\)").Groups[1] + "";
+    static string ParseTimeZone(ContractDetails cd) => Regex.Match(cd.TimeZoneId ?? "EST (Eastern Standard Time)", @".+\((.+)\)").Groups[1] + "";
     #endregion
 
     string SecTypeToString() => SecType == "OPT" ? "" : " " + SecType;
@@ -185,7 +185,7 @@ namespace IBApi {
     public string DateWithShort => ComboLegsToString((c, r, a)
       => ShowLastDate(c, s => s.Substring(4) + " ") + c.Symbol + " " + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
     public string ShortWithDate => ComboLegsToString((c, r, a)
-      => c.Symbol + " " + ShowLastDateShort(c) + " " + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
+      => c.Symbol + ShowLastDateShort(c, " ") + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
     public string WithDate => ComboLegsToString((c, r, a)
       => ShowLastDateShort(c) + " " + LegLabel(r, a) + RightStrikeLabel(r, c), () => LocalSymbol.IfEmpty(Symbol));
     public string ShortWithDate2 => ComboLegsToString((c, r, a) => c.Symbol + "" + ShowLastDate(c, s => _right.Match(s.Substring(4)) + "") + LegLabel(r, a) + RightStrikeLabel2(r, c), () => LocalSymbol.IfEmpty(Symbol));
@@ -195,8 +195,9 @@ namespace IBApi {
       .IfEmpty(() => $"{LocalSymbol.IfEmpty(Symbol)}{SecTypeToString()}{ExpirationToString()}");// {Exchange} {Currency}";
 
     static string ShowLastDate(Contract c, Func<string, string> show) => c.LastTradeDateOrContractMonth.IfTrue(s => !s.IsNullOrEmpty(), s => show(s), "");
-    static string ShowLastDateShort(Contract c) =>
-      c.LastTradeDateOrContractMonth.IfTrue(s => !s.IsNullOrEmpty(), s => c.LastTradeDateOrContractMonth.Substring(c.Expiration.Month == DateTime.Today.Month ? 6 : 4), "");
+    static string ShowLastDateShort(Contract c, string prefix = "") =>
+      c.LastTradeDateOrContractMonth.IfTrue(s => !s.IsNullOrEmpty(),
+        s => prefix + c.LastTradeDateOrContractMonth.Substring(c.Expiration.Month == DateTime.Today.Month ? 6 : 4) + " ", "");
 
     internal string ComboLegsToString() => ComboLegsToString((c, r, a) => LegLabel(r, a) + c.LocalSymbol, () => LocalSymbol.IfEmpty(Symbol));
     internal string ComboLegsToString(Func<Contract, int, string, string> label, Func<string> defaultFotNotOption/*,Func<(Contract c, int r, string a),string> orderBy = null*/) {
