@@ -152,8 +152,11 @@ namespace IBApp {
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);
       startDate = fxDate(startDate);
-      var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D : TimeUnit.W;
-      var barSize = period == 0 ? BarSize._1_secs : period == 1 ? BarSize._1_min : BarSize._3_mins;
+      var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D : period == 3 ? TimeUnit.W : TimeUnit.Y;
+      var barSize = period == 0 ? BarSize._1_secs
+        : period == 1 ? BarSize._1_min
+        : period == 3 ? BarSize._3_mins
+        : BarSize._1_day;
       var duration = (endDate - startDate).Duration();
       var lastTime = DateTime.Now;
       var runFast = periodsBack > 0 || duration.TotalDays < 2;

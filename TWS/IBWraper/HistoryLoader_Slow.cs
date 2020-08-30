@@ -227,8 +227,9 @@ namespace IBApp {
         string whatToShow = "MIDPOINT";// !_contract.IsIndex() ? "TRADES" : "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         // TODO: reqHistoricalData - keepUpToDate
+        var duration = Duration(_barSize, _timeUnit, _duration);
         _ibClient.OnReqMktData(() =>
-        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, false, new List<TagValue>())
+        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), duration, barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, false, new List<TagValue>())
         );
       } catch(Exception exc) {
         _error(exc);
@@ -248,6 +249,9 @@ namespace IBApp {
       },
       [BarSize._3_mins] = new Dictionary<TimeUnit, int[]> {
         [TimeUnit.W] = new[] { 1, 1 }
+      },
+      [BarSize._1_day] = new Dictionary<TimeUnit, int[]> {
+        [TimeUnit.Y] = new[] { 1, 1 }
       }
     };
     private readonly int _periodsBack;
@@ -256,7 +260,8 @@ namespace IBApp {
       return BarSizeRanges[barSize][timeUnit];
     }
     public static string Duration(BarSize barSize, TimeUnit timeUnit, TimeSpan timeSpan) {
-      var interval = (timeUnit == TimeUnit.S ? timeSpan.TotalSeconds : timeUnit == TimeUnit.D ? timeSpan.TotalMinutes : timeSpan.TotalDays * 7);
+      var interval = (timeUnit == TimeUnit.S ? timeSpan.TotalSeconds 
+        : timeUnit == TimeUnit.D ? timeSpan.TotalMinutes : timeSpan.TotalDays * 7);
       var range = BarSizeRange(barSize, timeUnit);
       var duration = Math.Min(Math.Max(interval, range[0]), range[1]).Ceiling();
       return duration + " " + timeUnit;

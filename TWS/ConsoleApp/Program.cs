@@ -88,40 +88,23 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          LoadMultiple(DateTime.Now.AddMonths(-24), 3, "VXU0"); return;
+          PositionsTest.RollAutoOpen(am); return;
           CurrentOptionsTest.ButterFly(am);return;
           Tests.MakeStockCombo(am);return;
           OrdersTest.HedgeOrder(am); return;
           Tests.HedgeCombo(am);
           EdgeTests.OpenEdgeCallPut(am).Subscribe(_ => PositionsTest.ComboTrades(am));
           return;
-          //Tests.HedgeCombo(am); return;
-          {
-            var ocaGroup = "oca-edge-option:" + DateTime.Now.Ticks;
-            var symbol = "ESU0";
-            (from c in symbol.ReqContractDetailsCached().Select(cd => cd.Contract)
-             from p in c.ReqPriceSafe()
-             select p.avg
-             ).Subscribe(level => {
-               HandleMessage($"am.OpenEdgeTrade(\"{symbol}\", true, 1, {level + 30}, 15,ocaGroup)");
-               am.OpenEdgeOrder(symbol, true, 1, 0, level + 30, 15, ocaGroup)
-               .Subscribe(ochs => ochs.Select(och => new { och.holder, och.error }).ForEach(HandleMessage));
-               HandleMessage($"am.OpenEdgeTrade(\"{symbol}\", false, 1, {level - 30}, 15,ocaGroup)");
-               am.OpenEdgeOrder(symbol, false, 1, 0, level - 30.0, 15, ocaGroup)
-               .Subscribe(ochs => ochs.Select(och => new { och.holder, och.error }).ForEach(HandleMessage));
-             });
-            return;
-          }
           var ess = new[] { "VXM0", "NQZ9", "ESM0", "RTYZ9", "IWM", "SPY", "QQQ" };
           //LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
-          LoadMultiple(DateTime.Now.AddMonths(-6), ess[2]);
-          return;
           return;
           am.PositionsObservable.Subscribe(_ => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
           return;
           new Contract { Symbol = "VIX", SecType = "FUT+CONTFUT", Exchange = "CFE" }.ReqContractDetailsCached()
           .Subscribe(cd => HandleMessage(cd.ToJson(true)));
           return;
-          void LoadMultiple(DateTime dateStart, params string[] secs) {// Load bars
+          void LoadMultiple(DateTime dateStart,int period, params string[] secs) {// Load bars
             /** Load History
             var c = new Contract() {
               Symbol = "ES",
@@ -130,7 +113,6 @@ namespace ConsoleApp {
             };
             LoadHistory(ibClient, new[] { c });
             */
-            var period = 3;
             bool repare = false;
             Action<object> callback = o => HandleMessage(o + "");
             secs.ToObservable()

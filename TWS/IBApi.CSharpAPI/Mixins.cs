@@ -35,7 +35,7 @@ namespace IBApi {
     public static DateTime FromTWSString(this string dateTime) {
       if(dateTime.IsNullOrWhiteSpace()) return default;
       var date = Regex.Split(dateTime, @"\s+")[0];
-      var time = Regex.Split(dateTime, @"\s+")[1];
+      var time = Regex.Split(dateTime, @"\s+").Skip(1).FirstOrDefault();
       return date.ToDateTime("yyyyMMdd", DateTimeKind.Local) +
         time.ToDateTime("HH:mm:ss", DateTimeKind.Local).TimeOfDay;
     }

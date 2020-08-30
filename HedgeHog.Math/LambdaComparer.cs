@@ -96,4 +96,35 @@ namespace HedgeHog {
       return _lambdaHash(obj);
     }
   }
+  public class ProjectionEqualityComparer {
+    public static IEqualityComparer<T> Create<T, TProperty>(Func<T, TProperty> projection, IEqualityComparer<TProperty> propertyComparer = null)
+        where T : class {
+      return new ProjectionEqualityComparer<T, TProperty>(projection, propertyComparer);
+    }
+  }
+
+  public class ProjectionEqualityComparer<T, TProperty> :IEqualityComparer<T> where T : class {
+    readonly IEqualityComparer<TProperty> _comparer;
+    readonly Func<T, TProperty> _projection;
+    public ProjectionEqualityComparer(Func<T, TProperty> projection, IEqualityComparer<TProperty> propertyComparer) {
+      _projection = projection;
+      _comparer = propertyComparer ?? EqualityComparer<TProperty>.Default;
+    }
+
+    public new bool Equals(object x, object y) {
+      return Equals(x as T, y as T);
+    }
+
+    public bool Equals(T x, T y) {
+      return _comparer.Equals(_projection(x), _projection(y));
+    }
+
+    public int GetHashCode(object obj) {
+      return GetHashCode(obj as T);
+    }
+
+    public int GetHashCode(T obj) {
+      return obj == null ? 0 : _projection(obj)?.GetHashCode() ?? 0;
+    }
+  }
 }

@@ -16,7 +16,7 @@ namespace HedgeHog.Alice.Client {
     [BasicAuthenticationFilter]
     public async Task<string[]> OpenButterfly(string pair, string instrument, int quantity, bool useMarketPrice, double? conditionPrice, double? profitInPoints, string rollTrade = null, bool isTest = false) {
       if(!rollTrade.IsNullOrWhiteSpace()) {
-        return await RollTrade(rollTrade, instrument, isTest);
+        return await RollTrade(rollTrade, instrument, quantity, isTest);
       }
 
       var tm = UseTraderMacro(pair).Single();
@@ -93,9 +93,9 @@ namespace HedgeHog.Alice.Client {
     public enum EdgeRangeType { T, S }
     [BasicAuthenticationFilter]
     public Task OpenEdgeOrder(string pair, bool isCall, int quantity, int daysToSkip, double currentStrikeLevel, double profitInPoints, EdgeRangeType rangeType, bool isTest)
-      => OpenTrendOrder(pair, isCall, quantity, daysToSkip, currentStrikeLevel, profitInPoints, rangeType==EdgeRangeType.S?StraddleEdges:(EdgesDelegate)TrendEdges , isTest);
+      => OpenTrendOrder(pair, isCall, quantity, daysToSkip, currentStrikeLevel, profitInPoints, rangeType == EdgeRangeType.S ? StraddleEdges : (EdgesDelegate)TrendEdges, isTest);
 
-    
+
     private async Task OpenTrendOrder(string pair, bool isCall, int quantity, int daysToSkip, double currentStrikeLevel, double profitInPoints, EdgesDelegate calcEdges, bool isTest) {
       var am = GetAccountManager();
       var range = calcEdges(pair, isCall).First();
@@ -119,6 +119,6 @@ namespace HedgeHog.Alice.Client {
       UseTradingMacro(pair, tm => tm.IsTrader, tm => tm.TrendEdge(isCall));
     delegate IEnumerable<(double edge, double profit)> EdgesDelegate(string pair, bool isCall);
 
-      #endregion
-    }
+    #endregion
   }
+}

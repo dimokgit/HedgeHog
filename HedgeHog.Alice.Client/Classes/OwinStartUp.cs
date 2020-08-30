@@ -548,8 +548,9 @@ namespace HedgeHog.Alice.Client {
           if(am != null) {
             Action rollOvers = () => {
               var show = !rollCombo.IsNullOrWhiteSpace() && optionTypeMap == "R";
+              show = optionTypeMap == "R";
               int.TryParse((string)(contextDict["currentProfit"] ?? "0"), out var currentProfit);
-              am.CurrentRollOver(rollCombo, false, show ? numOfCombos : 0, expDaysSkip.Max(2), currentProfit)
+              am.CurrentRollOverByUnder(pair, quantity, show ? numOfCombos : 0, expDaysSkip.Max(1), currentProfit)
               .ToArray()
                //.Where(a => a.Length > 0)
                .Subscribe(_ => {
@@ -936,8 +937,8 @@ namespace HedgeHog.Alice.Client {
              select h;
     }
     [BasicAuthenticationFilter]
-    public async Task<string[]> RollTrade(string currentSymbol, string rollSymbol, bool isTest) {
-      var res = await GetAccountManager().OpenRollTrade(currentSymbol, rollSymbol, isTest).SelectMany(t => t).ToArray();
+    public async Task<string[]> RollTrade(string currentSymbol, string rollSymbol, int rollQuantity, bool isTest) {
+      var res = await GetAccountManager().OpenRollTrade(currentSymbol, rollSymbol, rollQuantity, isTest).SelectMany(t => t).ToArray();
       return res.Where(t => t.error.HasError)
         .Do(e => LogMessage.Send(e.error.exc))
         .Select(e => e.error.exc.Message)

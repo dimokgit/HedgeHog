@@ -261,7 +261,7 @@ namespace IBApi {
       ? true
       : other is null || this is null
       ? false
-      : _key().Equals(other._key());
+      : Key == other.Key;
   }
   public static class ContractMixins {
     public static string ToLable(this ComboLeg l) => l.Ratio == 0 ? "" : (l.Action == "BUY" ? "+" : "-") + (l.Ratio > 1 ? l.Ratio + "" : "");

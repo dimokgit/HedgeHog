@@ -422,27 +422,29 @@ namespace IBApp {
         ;
     }
 
-    public IObservable<OrderContractHolderWithError[]> OpenRollTrade(string currentSymbol, string rollSymbol, bool isTest) {
+    public IObservable<OrderContractHolderWithError[]> OpenRollTrade(string currentSymbol, string rollSymbol, int rollQuantity, bool isTest) {
       return (from cc in IbClient.ReqContractDetailsCached(currentSymbol).Select(cd => cd.Contract)
               from rc in IbClient.ReqContractDetailsCached(rollSymbol).Select(cd => cd.Contract)
               from ct in ComboTrades(5)
               where ct.contract.ConId == cc.ConId
-              select (cc, rc, ct)
-       )
-       .SelectMany(t => {
-         var tradeDateCondition = IbClient.ServerTime.Date.AddHours(15).AddMinutes(45).TimeCondition();
-         if(t.cc.IsOption)
-           return CreateRoll(currentSymbol, rollSymbol)
-             .SelectMany(rc => OpenTradeWithAction(
-               orderExt: o => o.Transmit = !isTest,
-               contract: rc.rollContract,
-               quantity: -rc.currentTrade.position));
-         else
-           return OpenTradeWithAction(
-             orderExt: o => o.Transmit = !isTest,
-             contract: t.rc,
-             quantity: -t.ct.position.Abs());
-       });
+              from or in OpenRollTrade(ct, rc, rollQuantity, isTest)
+              select or
+       );
+    }
+    public IObservable<OrderContractHolderWithError[]> OpenRollTrade(ComboTrade ct, Contract rc, int rollQuantity, bool isTest) {
+      var tradeDateCondition = IbClient.ServerTime.Date.AddHours(15).AddMinutes(45).TimeCondition();
+      var cc = ct.contract;
+      if(cc.IsOption)
+        return CreateRoll(cc, ct.position.Abs(), rc, rollQuantity)
+          .SelectMany(rc => OpenTradeWithAction(
+            orderExt: o => o.Transmit = !isTest,
+            contract: rc.rollContract.contract,
+            quantity: rc.rollContract.quantity));
+      else
+        return OpenTradeWithAction(
+          orderExt: o => o.Transmit = !isTest,
+          contract: rc,
+          quantity: -ct.position.Abs());
     }
     public IObservable<OrderContractHolderWithError[]> OpenHedgeOrder(Contract parentContract, Contract hedgeContract, int quantityParent, int quantityHedge) {
       Func<IBApi.Order, IObservable<OrderPriceContract>> orderExt(Contract c, int q) =>

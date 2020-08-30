@@ -963,7 +963,7 @@
       this.rollTrade = function (data) {
         var i = ko.unwrap(data.i);
         if (!i) showWarning("Select trade to roll");
-        else serverCall("rollTrade", [rollCombo(), i, self.hedgeTest() || false]);
+        else serverCall("rollTrade", [rollCombo(), i, self.comboQuantity(), self.hedgeTest() || false]);
       };
       this.cancelOrder = function (data) {
         var orderId = ko.unwrap(data.id);

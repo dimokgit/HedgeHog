@@ -101,7 +101,7 @@ namespace IBApp {
       return x;
     }
     public IObservable<MarketPrice> ReqPriceBag(Contract combo, double timeoutInSeconds, [CallerMemberName] string Caller = "") {
-      string title() => $"{nameof(ReqPriceBag)}: {new { combo, key = combo._key() }}";
+      string title() => $"{nameof(ReqPriceBag)}: {new { combo, key = combo.Key }}";
       var legs = combo.LegsEx().ToList();
       if(legs.Count < 2) Trace($"{title()} is no a combo");
       var x0 = (from l in legs.ToObservable()

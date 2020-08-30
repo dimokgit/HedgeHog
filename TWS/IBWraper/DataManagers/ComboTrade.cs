@@ -1,5 +1,7 @@
 ﻿using HedgeHog;
 using IBApi;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 namespace IBApp {
@@ -8,6 +10,15 @@ namespace IBApp {
     public double Change => closePrice * position.Sign() - openPrice;
     public double Commission => contract.Legs((c, l) => (c, q: l.Ratio.Abs())).DefaultIfEmpty((c: contract, q: 1))
       .Sum(t => AccountManager.CommissionPerContract(t.c) * t.q) * position.Abs();
+    public IEnumerable<ComboTrade> CoveredOption(ComboTrade[] trades) {
+      return trades.Where(_ => !contract.IsOption).
+        Where(t => t.contract.IsOption 
+        && IsBuy == t.contract.IsCall 
+        && t.position < 0 
+        && t.contract.Expiration <= DateTime.Today.AddDays(1) 
+        && t.contract.UnderContract.Any(u => u.Key == contract.Key));
+    }
+
     //new HedgeCombo(hc.contract, pl, openPrice, closePrice, hc.quantity * g.First().position.position.Sign())
     public ComboTrade() {
 
@@ -64,7 +75,8 @@ namespace IBApp {
       this.profit,
       this.pmc,
       this.mcUnder,
-      this.orderId
+      this.orderId,
+      this.IsBuy
     } + "";
     public Contract contract { get; }
     public int position { get; }
@@ -82,6 +94,8 @@ namespace IBApp {
     public double pmc { get; }
     public double mcUnder { get; }
     public int orderId { get; }
+    public bool IsBuy => position > 0;
+
     public object ToAnon() => new {
       contract,
       pl,
@@ -91,7 +105,8 @@ namespace IBApp {
       takeProfit,
       profit,
       open,
-      orderId
+      orderId,
+      IsBuy
     };
   }
 }

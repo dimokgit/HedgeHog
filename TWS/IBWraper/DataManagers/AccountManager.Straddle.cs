@@ -299,19 +299,38 @@ namespace IBApp {
       ).ToArray()
       .Select(a => a.OrderBy(c => c.Expiration).ThenBy(c => c.Strike).ToArray());//.Spy(_spy("CurrentRollOvers"));
 
+    public IObservable<Contract[]> CurrentRollOversByUnder(string underSymbol, bool isCall, DateTime expiration, int strikesCount, int weeks) =>
+       underSymbol.ReqContractDetailsCached().SelectMany(uc => CurrentRollOversByUnder(uc.Contract, isCall, expiration, strikesCount, weeks));
+
+    public IObservable<Contract[]> CurrentRollOversByUnder(Contract underContract, bool isCall, DateTime expiration, int strikesCount, int weeks) =>
+      (from yes in Observable.Return(strikesCount > 0 && weeks > 0)
+       where yes
+       from price in underContract.ReqPriceSafe()//.Spy(_spy("ReqPriceSafe"))
+       from allStkExp in IbClient.ReqStrikesAndExpirations(underContract.LocalSymbol)//.Spy(_spy("AllStrikesAndExpirations"))
+       let exps = allStkExp.expirations.Where(ex => ex > expiration && ex <= expiration.AddDays(weeks * 7)).OrderBy(ex => ex).ToArray()
+       let priceAvg = price.ask.Avg(price.bid)
+       let strikes2 = allStkExp.strikes.OrderBy(strike => strike.Abs(priceAvg)).ToArray()
+       from strikeFirst in strikes2.Take(1)
+       let strikes3 = strikes2.Where(strike => (isCall && strike >= strikeFirst) || (!isCall && strike <= strikeFirst)).Take(strikesCount).ToArray()
+       from strike in strikes3
+       from exp in exps
+       from cds in IbClient.ReqOptionChainOldCache(underContract.LocalSymbol, exp, strike)//.Spy(_spy("ReqOptionChainOldCache 2"))
+       from cdRoll in cds
+       where isCall == cdRoll.IsCall
+       group cdRoll by (cdRoll.Strike, cdRoll.LastTradeDateOrContractMonth) into g
+       from sr in g.ToArray()
+       select sr.Length == 1 ? sr.Single() : MakeStraddle(sr)
+      ).ToArray()
+      .Select(a => a.OrderBy(c => c.Expiration).ThenBy(c => (isCall ? -1 : 1) * c.Strike).ToArray());//.Spy(_spy("CurrentRollOvers"));
+
     public CURRENT_ROLLOVERS CurrentRollOver(string symbol, bool useStraddle, int strikesCount, int weeks, int creditIdDollars) =>
        from yes in Observable.Return(!symbol.IsNullOrEmpty())
        where yes
        from cd in IbClient.ReqContractDetailsCached(symbol)
        from trades in ComboTrades(1).DefaultIfEmpty(new ComboTrade(cd.Contract)).ToArray()
        from trade in trades
-       from cro in CurrentRollOverImpl(trade, cd.Contract, useStraddle, strikesCount, weeks, trades,creditIdDollars)
+       from cro in CurrentRollOverImpl(trade, cd.Contract, useStraddle, strikesCount, weeks, trades, creditIdDollars)
        select cro;
-
-    public CURRENT_ROLLOVERS CurrentRollOver(string underSymbol, bool? isCall, DateTime expiration, int strikesCount, int weeks, ComboTrade[] trades, int creditIdDollars) =>
-      from contract in IbClient.ReqContractDetailsCached(underSymbol)
-      from roll in CurrentRollOverImpl2(new ComboTrade(contract.Contract), isCall, expiration, strikesCount, weeks, trades, creditIdDollars)
-      select roll;
 
     CURRENT_ROLLOVERS CurrentRollOverImpl(ComboTrade trade, Contract contractFilter, bool useStraddle, int strikesCount, int weeks, ComboTrade[] trades, int creditIdDollars) =>
       from yes in Observable.Return(trade.contract == contractFilter && strikesCount > 0 && weeks > 0)
@@ -333,7 +352,7 @@ namespace IBApp {
       let strikeDelta = (roll.ComboStrike() - trade.underPrice) * strikeSign
       from rp in roll.ReqPriceSafe()
       let bid = roll.ExtrinsicValue(rp.bid, up.bid)
-      let coveredChange = CoveredPut(trade.contract, trades).Select(ct => ct.change).Sum() + creditIdDollars
+      let coveredChange = trade.CoveredOption(trades).Select(ct => ct.change).Sum() + creditIdDollars
       let change = -trade.change - coveredChange
       where trade.contract.IsOption && bid > strikeDelta.Max(-trade.change) || bid > change
       let days = (roll.Expiration - expiration).TotalDays.Floor()//.SideEffect(_ => TraceDebug(new { roll, roll.Expiration, expiration, days = _ }))
@@ -343,10 +362,34 @@ namespace IBApp {
       let perc = bid / up.bid
       select (trade, roll, days, bid, ppw: (bid * w).AutoRound2(2), amount, amount * w, (perc * 100).AutoRound2(3), delta: rp.delta.Round(1));
 
-    public static IEnumerable<ComboTrade> CoveredPut(Contract under, ComboTrade[] trades) {
-      return trades.Where(t => t.contract.IsOption && !t.contract.IsCall && t.position < 0 && t.contract.Expiration <= DateTime.Today.AddDays(1) && t.contract.UnderContract.Any(u => u.Key == under.Key));
-    }
-
+    public IObservable<RollOver> CurrentRollOverByUnder(string under, int quantity, int strikesCount, int weeks, int creditIdDollars)
+      => under.ReqContractDetailsCached().SelectMany(cd
+        => CurrentRollOverByUnder(cd.Contract, quantity, strikesCount, weeks, creditIdDollars));
+    public IObservable<RollOver> CurrentRollOverByUnder(Contract under, int quantity, int strikesCount, int weeks, int creditIdDollars) =>
+      from yes in Observable.Return(strikesCount > 0 && weeks > 0)
+      where yes
+      from allTrades in ComboTrades(1).ToArray()
+      where allTrades.Any()
+      let exp = allTrades.Min(t => t.contract.Expiration)
+      let tradesLost = allTrades.Where(t => t.contract.Expiration == exp && t.contract.IsOption && t.change <= 0 && !t.IsBuy).ToArray()
+      from isCall in tradesLost.Select(t => t.contract.IsCall).Distinct()
+      from up in under.ReqPriceSafe()
+      from rolls in CurrentRollOversByUnder(under, isCall,exp, strikesCount, weeks)
+      from roll in rolls//.SideEffect(_ => TraceDebug(rolls.Select(r => new { roll = r.Instrument }).ToTextOrTable("Rolls:")))
+      let mul = roll.ComboMultiplier * quantity
+      let strikeSign = 1
+      let strikeDeltaAmount = (roll.ComboStrike() - up.avg) * strikeSign * mul
+      from rp in roll.ReqPriceSafe()
+      let bid = roll.ExtrinsicValue(rp.bid, up.bid)
+      let bidAmount = bid * mul
+      let tradesChangeAmount = tradesLost.Select(ct => ct.pl).Sum()
+      let changeAmount = -tradesChangeAmount - creditIdDollars
+      where bidAmount > strikeDeltaAmount.Max(changeAmount)
+      let days = (roll.Expiration - exp).TotalDays.Floor()//.SideEffect(_ => TraceDebug(new { roll, roll.Expiration, expiration, days = _ }))
+      let workDays = exp.GetWorkingDays(roll.Expiration).Max(1)
+      let w = 5.0 / workDays
+      let perc = bid / up.bid
+      select new RollOver(under, roll, days, bid, (bid * w).AutoRound2(2), bidAmount, bidAmount * w, (perc * 100).AutoRound2(3), rp.delta.Round(1));
   }
   static class CombosMixins {
     #region Parse Combos

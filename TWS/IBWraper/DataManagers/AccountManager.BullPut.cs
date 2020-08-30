@@ -85,16 +85,24 @@ namespace IBApp {
       return c.AddToCache();
     }
 
-    IObservable<(Contract currentContract, Contract rollContract, ComboTrade currentTrade)> CreateRoll(string currentSymbol, string rollSymbol) =>
+    IObservable<(Contract currentContract, (Contract contract, int quantity) rollContract, ComboTrade currentTrade)> CreateRoll(string currentSymbol, int quantity, string rollSymbol, int rollQuantity) =>
       (from cd in IbClient.ReqContractDetailsCached(currentSymbol)
        let cc = cd.Contract.ThrowIf(contract => !contract.IsOption)
        from rcd in IbClient.ReqContractDetailsCached(rollSymbol)
        from uc in cc.UnderContract
        from ct in ComboTrades(5)
        where ct.contract.ConId == cc.ConId
-       select (cc, MakeRollContract(cc, rcd.Contract, uc), ct));
+       select (cc, MakeRollContract(cc, quantity, rcd.Contract, rollQuantity, uc), ct));
 
-    static Contract MakeRollContract(Contract current, Contract roll, Contract under) {
+    IObservable<(Contract currentContract, (Contract contract, int quantity) rollContract, ComboTrade currentTrade)> CreateRoll(Contract cc, int quantity
+      , Contract rc, int rollQuantity) =>
+      (from uc in cc.UnderContract.ToObservable()
+       from ct in ComboTrades(5)
+       where ct.contract.ConId == cc.ConId
+       select (cc, MakeRollContract(cc, quantity, rc, rollQuantity, uc), ct));
+
+    static (Contract contract, int quantity) MakeRollContract(Contract current, int quantity, Contract roll, int rollQuantity, Contract under) {
+      var gcd = new[] { quantity, rollQuantity }.GCD();
       var c = new Contract() {
         Symbol = under.Symbol,
         SecType = "BAG",
@@ -103,18 +111,18 @@ namespace IBApp {
       };
       var call = new ComboLeg() {
         ConId = current.ConId,
-        Ratio = 1,
+        Ratio = quantity / gcd,
         Action = "BUY",
         Exchange = current.Exchange
       };
       var put = new ComboLeg() {
         ConId = roll.ConId,
-        Ratio = 1,
+        Ratio = rollQuantity / gcd,
         Action = "SELL",
         Exchange = roll.Exchange
       };
       c.ComboLegs = new List<ComboLeg> { call, put };
-      return c.AddToCache();
+      return (c.AddToCache(), gcd);
     }
 
   }

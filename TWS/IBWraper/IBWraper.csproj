@@ -181,6 +181,7 @@
     <Compile Include="DataManagers\AccountManager.cs" />
     <Compile Include="Contracts.cs" />
     <Compile Include="DataManagers\MarketDataManager.cs" />
+    <Compile Include="DataManagers\RollOver.cs" />
     <Compile Include="ErrorMessage.cs" />
     <Compile Include="IBClientCore.Mixins.cs" />
     <Compile Include="IBClient_p.cs" />

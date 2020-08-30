@@ -227,6 +227,9 @@ namespace IBApp {
       },
       [BarSize._3_mins] = new Dictionary<TimeUnit, int[]> {
         [TimeUnit.W] = new[] { 1, 1 }
+      },
+      [BarSize._1_day] = new Dictionary<TimeUnit, int[]> {
+        [TimeUnit.Y] = new[] { 1, 1 }
       }
     };
     private readonly int _periodsBack;
