@@ -1,0 +1,2 @@
+﻿CREATE VIEW [dbo].[vStats] AS
+SELECT * FROM Stats('EUR/JPY',1,'4/10/2013 10:00 PM',1440,1440)

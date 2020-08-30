@@ -1,0 +1,266 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Name>ForexDB</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.1</ProjectVersion>
+    <ProjectGuid>{30081664-625e-41cb-a3a0-299f9dc4ee0d}</ProjectGuid>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql130DatabaseSchemaProvider</DSP>
+    <OutputType>Database</OutputType>
+    <RootPath>
+    </RootPath>
+    <RootNamespace>ForexDB</RootNamespace>
+    <AssemblyName>ForexDB</AssemblyName>
+    <ModelCollation>1033,CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabase>True</DeployToDatabase>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetLanguage>CS</TargetLanguage>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <SqlServerVerification>False</SqlServerVerification>
+    <IncludeCompositeObjects>True</IncludeCompositeObjects>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <DefaultCollation>SQL_Latin1_General_CP1_CI_AS</DefaultCollation>
+    <DefaultFilegroup>PRIMARY</DefaultFilegroup>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
+    <!-- Default to the v11.0 targets path if the targets file for the current VS version is not found -->
+    <SSDTExists Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')">True</SSDTExists>
+    <VisualStudioVersion Condition="'$(SSDTExists)' == ''">11.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Condition="'$(SQLDBExtensionsRefPath)' != ''" Project="$(SQLDBExtensionsRefPath)\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <ItemGroup>
+    <Folder Include="Properties" />
+    <Folder Include="dbo\" />
+    <Folder Include="dbo\Tables\" />
+    <Folder Include="news\" />
+    <Folder Include="news\Tables\" />
+    <Folder Include="stats\" />
+    <Folder Include="stats\Tables\" />
+    <Folder Include="dbo\Views\" />
+    <Folder Include="news\Views\" />
+    <Folder Include="Security\" />
+    <Folder Include="dbo\Functions\" />
+    <Folder Include="stats\Functions\" />
+    <Folder Include="dbo\Stored Procedures\" />
+    <Folder Include="dbo\User Defined Types\" />
+    <Folder Include="Assemblies\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="dbo\Tables\Blackout.sql" />
+    <Build Include="dbo\Tables\t_BarExtender.sql" />
+    <Build Include="dbo\Tables\t_Offer.sql" />
+    <Build Include="dbo\Tables\t_Trade.sql" />
+    <Build Include="dbo\Tables\t_Stat.sql" />
+    <Build Include="dbo\Tables\t_TradeValue.sql" />
+    <Build Include="dbo\Tables\SuppRes.sql" />
+    <Build Include="dbo\Tables\t_Session.sql" />
+    <Build Include="dbo\Tables\t_Price.sql" />
+    <Build Include="dbo\Tables\t_ClosedTrades.sql" />
+    <Build Include="dbo\Tables\t_Volts.sql" />
+    <Build Include="dbo\Tables\t_Trade_Bak.sql" />
+    <Build Include="dbo\Tables\Table_1.sql" />
+    <Build Include="dbo\Tables\OrderTemplate.sql" />
+    <Build Include="news\Tables\EventLevel.sql" />
+    <Build Include="dbo\Tables\t_Tick.sql" />
+    <Build Include="dbo\Tables\TradingMacro.bak.sql" />
+    <Build Include="dbo\Tables\t_Tick1.sql" />
+    <Build Include="dbo\Tables\t_Tick_20.sql" />
+    <Build Include="dbo\Tables\t_Tick_Volts.sql" />
+    <Build Include="stats\Tables\MonthlyStats.sql" />
+    <Build Include="dbo\Tables\t_Tick_VoltsPerSecond.sql" />
+    <Build Include="news\Tables\Event.sql" />
+    <Build Include="dbo\Tables\t_TickMaxima.sql" />
+    <Build Include="dbo\Tables\t_Tick_Mew.sql" />
+    <Build Include="dbo\Tables\t_BarHeight.sql" />
+    <Build Include="dbo\Tables\TradingMacro.sql" />
+    <Build Include="dbo\Tables\t_Currency.sql" />
+    <Build Include="dbo\Tables\HistVol.sql" />
+    <Build Include="dbo\Tables\TradingAccount.sql" />
+    <Build Include="dbo\Tables\t_BarStats.sql" />
+    <Build Include="dbo\Tables\t_Report.sql" />
+    <Build Include="dbo\Tables\t_Bar.sql" />
+    <Build Include="dbo\Tables\t_Report1.sql" />
+    <Build Include="dbo\Tables\constituents-financials.sql" />
+    <Build Include="dbo\Tables\SP500.sql" />
+    <Build Include="dbo\Tables\SP500EndOfDay.sql" />
+    <Build Include="dbo\Views\v_TcksPerMinute.sql" />
+    <Build Include="dbo\Views\v_Tick.sql" />
+    <Build Include="dbo\Views\v_BarSpreadMA.sql" />
+    <Build Include="dbo\Views\v_Tick_.sql" />
+    <Build Include="dbo\Views\v_Trade.sql" />
+    <Build Include="dbo\Views\v_Tick_10.sql" />
+    <Build Include="dbo\Views\v_Tick_20.sql" />
+    <Build Include="news\Views\vEvent.sql" />
+    <Build Include="dbo\Views\v_Tick_30.sql" />
+    <Build Include="dbo\Views\vStats.sql" />
+    <Build Include="dbo\Views\v_Tick_40.sql" />
+    <Build Include="dbo\Views\v_Tick_Volts.sql" />
+    <Build Include="dbo\Views\v_BarsSummary.sql" />
+    <Build Include="dbo\Views\v_Tick_VoltsPerSecons.sql" />
+    <Build Include="dbo\Views\v_TradesBySession.sql" />
+    <Build Include="dbo\Views\v_TickMaxima_10.sql" />
+    <Build Include="dbo\Views\v_TickMaxima.sql" />
+    <Build Include="dbo\Views\v_Bars_01.sql" />
+    <Build Include="dbo\Views\v_BarTest.sql" />
+    <Build Include="dbo\Views\v_Bars_Error.sql" />
+    <Build Include="dbo\Views\v_Pair.sql" />
+    <Build Include="dbo\Views\v_BarStats.sql" />
+    <Build Include="dbo\Views\v_TradeSession_05.sql" />
+    <Build Include="dbo\Views\v_TradeSession_10.sql" />
+    <Build Include="dbo\Views\v_BarBump.sql" />
+    <Build Include="dbo\Views\v_TradeSession.sql" />
+    <Build Include="dbo\Views\v_TradeValue.sql" />
+    <Build Include="dbo\Views\v_Bar.sql" />
+    <Build Include="dbo\Views\v_BlackoutTime.sql" />
+    <Build Include="dbo\Views\vConsensus.sql" />
+    <Build Include="dbo\Views\vBarSP500.sql" />
+    <Build Include="Security\DHOME_User.sql" />
+    <Build Include="Security\DIMONFX_Traders.sql" />
+    <Build Include="Security\DHOME_lesha.sql" />
+    <Build Include="Security\SQLCLRTestLogin.sql" />
+    <Build Include="dbo\Functions\EOWEEK.sql" />
+    <Build Include="dbo\Functions\MA.sql" />
+    <Build Include="dbo\Functions\MA_H1.sql" />
+    <Build Include="dbo\Functions\Corridor.sql" />
+    <Build Include="dbo\Functions\GetSessionValue.sql" />
+    <Build Include="dbo\Functions\GetBarsHeight.sql" />
+    <Build Include="dbo\Functions\Regression.sql" />
+    <Build Include="dbo\Functions\ISOweek.sql" />
+    <Build Include="dbo\Functions\clr_RegEx_Replace.sql" />
+    <Build Include="dbo\Functions\Time.sql" />
+    <Build Include="dbo\Functions\Function2.sql" />
+    <Build Include="dbo\Functions\RoundToMinute.sql" />
+    <Build Include="dbo\Functions\Date.sql" />
+    <Build Include="dbo\Functions\ToDateTimeOffset.sql" />
+    <Build Include="dbo\Functions\Split.sql" />
+    <Build Include="dbo\Functions\Voltages.sql" />
+    <Build Include="dbo\Functions\GetMaximas.sql" />
+    <Build Include="dbo\Functions\Bars.sql" />
+    <Build Include="dbo\Functions\clrSplit.sql" />
+    <Build Include="dbo\Functions\clrSplitTwo.sql" />
+    <Build Include="dbo\Functions\fOpenCloseDiff2.sql" />
+    <Build Include="dbo\Functions\fCountByPairPeriod.sql" />
+    <Build Include="dbo\Functions\Stats.sql" />
+    <Build Include="dbo\Functions\ComposeDate.sql" />
+    <Build Include="stats\Functions\fMonthsBack.sql" />
+    <Build Include="stats\Functions\fHourly.sql" />
+    <Build Include="dbo\Functions\BarList.sql" />
+    <Build Include="dbo\Functions\Bar.sql" />
+    <Build Include="dbo\Functions\CorridorAverage.sql" />
+    <Build Include="dbo\Functions\FindMaximas.sql" />
+    <Build Include="dbo\Functions\WeekOfMonthCut.sql" />
+    <Build Include="dbo\Functions\MaxNum.sql" />
+    <Build Include="dbo\Functions\WeekOfMonthWhole.sql" />
+    <Build Include="dbo\Functions\fGetSessionValue.sql" />
+    <Build Include="dbo\Functions\GetBarStats.sql" />
+    <Build Include="dbo\Functions\fPriceDelta.sql" />
+    <Build Include="dbo\Functions\fOpenCloseDiff.sql" />
+    <Build Include="dbo\Functions\fBarWithPricePrev.sql" />
+    <Build Include="dbo\Functions\RunningBalanceMinimumAverage.sql" />
+    <Build Include="dbo\Functions\RunningBalanceStats.sql" />
+    <Build Include="dbo\Stored Procedures\sSetBarStats_Start.sql" />
+    <Build Include="dbo\Stored Procedures\s_Session_Delete.sql" />
+    <Build Include="dbo\Stored Procedures\s_PrepTicks.sql" />
+    <Build Include="dbo\Stored Procedures\GetCorridor.sql" />
+    <Build Include="dbo\Stored Procedures\sHedgeTrades.sql" />
+    <Build Include="dbo\Stored Procedures\GetCorridorAverage.sql" />
+    <Build Include="dbo\Stored Procedures\sAnalitycs.sql" />
+    <Build Include="dbo\Stored Procedures\BarsByMinutes.sql" />
+    <Build Include="dbo\Stored Procedures\sGetStats.sql" />
+    <Build Include="dbo\Stored Procedures\sSetBarHeights.sql" />
+    <Build Include="dbo\Stored Procedures\s_Bars.sql" />
+    <Build Include="dbo\Stored Procedures\s_Bar_Fix.sql" />
+    <Build Include="dbo\Stored Procedures\sStats.sql" />
+    <Build Include="dbo\Stored Procedures\sSetBarStats.sql" />
+    <Build Include="dbo\Stored Procedures\s_CleanBars.sql" />
+    <Build Include="dbo\Stored Procedures\sHistoricalVolatility.sql" />
+    <Build Include="dbo\Stored Procedures\s_Currency_Manage.sql" />
+    <Build Include="dbo\Stored Procedures\sClearBars.sql" />
+    <Build Include="dbo\Stored Procedures\sCleatVirtuaslTrades.sql" />
+    <Build Include="dbo\Stored Procedures\sCleatVirtuaslTradesBySessionUID.sql" />
+    <Build Include="dbo\Stored Procedures\sCleatVirtuaslTradesBySuperSession.sql" />
+    <Build Include="dbo\Stored Procedures\sCopyTradingMacro.sql" />
+    <Build Include="dbo\Stored Procedures\sGetBarsBackwards.sql" />
+    <Build Include="dbo\Stored Procedures\sGetBarsForward.sql" />
+    <Build Include="dbo\Stored Procedures\sVolatility.sql" />
+    <Build Include="dbo\Stored Procedures\s_CleanTrades.sql" />
+    <Build Include="dbo\Stored Procedures\s_SetBarRows.sql" />
+    <Build Include="dbo\Stored Procedures\sSP500EndOfDay.sql" />
+    <Build Include="dbo\Stored Procedures\s_GetBarStats.sql" />
+    <Build Include="dbo\Stored Procedures\ProcessTrades.sql" />
+    <Build Include="dbo\User Defined Types\dt_VoltsTable.sql" />
+    <Build Include="dbo\User Defined Types\SlopeData.sql" />
+    <Build Include="dbo\Functions\Linear.sql" />
+    <Build Include="Security\stats.sql" />
+    <Build Include="Security\news.sql" />
+    <Build Include="ExtendedProperties.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Assemblies\LightLib.dll" />
+    <None Include="Assemblies\SQLCLR.dll" />
+    <None Include="Assemblies\TA-Lib-Core.dll" />
+    <None Include="Assemblies\SQL_DateFuncs.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="LightLib">
+      <HintPath>Assemblies\LightLib.dll</HintPath>
+      <SqlAssemblyName>LightLib</SqlAssemblyName>
+      <IsModelAware>True</IsModelAware>
+      <GenerateSqlClrDdl>False</GenerateSqlClrDdl>
+      <SqlOwnerName>dbo</SqlOwnerName>
+      <SqlPermissionSet>SAFE</SqlPermissionSet>
+    </Reference>
+    <Reference Include="SQLCLR">
+      <HintPath>Assemblies\SQLCLR.dll</HintPath>
+      <SqlAssemblyName>SQLCLR</SqlAssemblyName>
+      <IsModelAware>True</IsModelAware>
+      <GenerateSqlClrDdl>False</GenerateSqlClrDdl>
+      <SqlOwnerName>dbo</SqlOwnerName>
+      <SqlPermissionSet>SAFE</SqlPermissionSet>
+    </Reference>
+    <Reference Include="TA-Lib-Core">
+      <HintPath>Assemblies\TA-Lib-Core.dll</HintPath>
+      <SqlAssemblyName>TA-Lib-Core</SqlAssemblyName>
+      <IsModelAware>True</IsModelAware>
+      <GenerateSqlClrDdl>False</GenerateSqlClrDdl>
+      <SqlOwnerName>dbo</SqlOwnerName>
+      <SqlPermissionSet>UNSAFE</SqlPermissionSet>
+    </Reference>
+    <Reference Include="SQL_DateFuncs">
+      <HintPath>Assemblies\SQL_DateFuncs.dll</HintPath>
+      <SqlAssemblyName>SQL_DateFuncs</SqlAssemblyName>
+      <IsModelAware>True</IsModelAware>
+      <GenerateSqlClrDdl>False</GenerateSqlClrDdl>
+      <SqlOwnerName>dbo</SqlOwnerName>
+      <SqlPermissionSet>SAFE</SqlPermissionSet>
+    </Reference>
+  </ItemGroup>
+</Project>

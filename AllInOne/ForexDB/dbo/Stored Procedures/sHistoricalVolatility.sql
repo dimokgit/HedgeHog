@@ -1,0 +1,33 @@
+﻿CREATE PROCEDURE [dbo].[sHistoricalVolatility]
+--DECLARE 
+@Pair varchar(3) = 'SPX'
+AS
+IF OBJECT_ID('tempdb..#T') IS NULL
+WITH T0 AS
+(
+SELECT TOP 10000000 ROW_NUMBER() OVER(ORDER BY StartDate) Row , StartDate,BidLow,AskHigh
+FROM t_Bar WHERE Pair=@Pair ORDER BY StartDate
+), T1 AS
+(
+SELECT T1.Row
+, T1.StartDate, LOG(T2.AskHigh/T1.BidLow) Delta, T1.AskHigh, T1.BidLow
+FROM T0 T1 
+INNER JOIN T0 T2 ON T2.Row = T1.Row+1
+)
+SELECT * iNTO #T FROM T1
+
+DELETE HistVol WHERE Pair = @Pair
+
+;WITH T AS
+(
+SELECT TOP 10000000 *
+, STDEV(Delta) OVER(ORDER BY T1.StartDate ROWS BETWEEN 389 PRECEDING AND CURRENT ROW  ) DailyHV  
+, COUNT(*) OVER(ORDER BY T1.StartDate ROWS BETWEEN 389 PRECEDING AND CURRENT ROW  ) Count  
+FROM #T T1
+ORDER BY Row
+)
+INSERT INTO HistVol
+SELECT @Pair Pair,StartDate,Delta,(AskHigh+BidLow)/2 Price,DailyHV,Count
+FROM T
+WHERE Count = 390
+ORDER BY Row

@@ -1,0 +1,6 @@
+﻿CREATE FUNCTION [dbo].[Time]
+(@date DATETIME NULL)
+RETURNS DATETIME
+AS
+ EXTERNAL NAME [SQLCLR].[UserDefinedFunctions].[Time]
+
