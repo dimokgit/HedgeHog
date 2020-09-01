@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -100,6 +101,7 @@ namespace IBApp {
         ));
       return x;
     }
+    static Subject<Action> throttledSubject = new Subject<Action>().SideEffect(_=> _.Sample(5.FromSeconds()).Subscribe(a => a()));
     public IObservable<MarketPrice> ReqPriceBag(Contract combo, double timeoutInSeconds, [CallerMemberName] string Caller = "") {
       string title() => $"{nameof(ReqPriceBag)}: {new { combo, key = combo.Key }}";
       var legs = combo.LegsEx().ToList();
@@ -122,6 +124,10 @@ namespace IBApp {
                  if(bid == 0 || ask == 0)
                    TraceError($"{title()}: {new { ask, bid }}");
                  return (MarketPrice)(bid, ask, a.Max(b => b.p.time), a.Sum(b => b.p.delta), a.Sum(b => b.p.theta));
+               })
+               .Catch((Exception exc) => {
+                 throttledSubject.OnNext(() => TraceError(exc));
+                 return Observable.Empty<MarketPrice>();
                })
                ;
       return x0.Where(p => p.ask != 0 && p.bid != 0);

@@ -857,7 +857,7 @@ namespace HedgeHog.Alice.Client {
           Strategy = tm.Strategy + "",
           DistanceFromHigh = distFromHigh,
           HedgeCalcType = tm.HedgeCalcType + "" + tm.HedgeCalcIndex,
-          GetAccountManager().TrendEdgesLastDate
+          GetAccountManager()?.TrendEdgesLastDate
         };
         string HedgeCalcTypeContext(TradingMacro tml, TradingMacro.HedgeCalcTypes hct) => hct.ToString() + tml.PairIndex;
         ////

@@ -163,15 +163,23 @@ namespace HedgeHog.Alice.Store {
         return (t.r1, p);
       });
 
+    static (T r,Stopwatch sw) Time<T>(Func<T> func) {
+      var sw = Stopwatch.StartNew();
+        var r = func();
+        sw.Stop();
+      return (r, sw);
+    }
     CorridorStatistics ShowVoltsByGrossVirtual(int voltIndex, int hedgeIndex) {
       var sw = Stopwatch.StartNew();
+      var sws = new List<Stopwatch>();
       try {
         var chp = GetHedgedTradePositionsOrDefualt();
         if(!UseCalc() || chp.p1 == 0 || chp.p2 == 0) return null;
         if(HedgeTradesVirtual.IsEmpty()) {
           var period = GetVoltCmaPeriodByIndex(voltIndex);
           var passes = GetVoltCmaPassesByIndex(voltIndex);
-          var volts0 = GetHedgeGrosses(chp.p1, chp.p2, period, passes, hedgeIndex).ToArray();
+          var volts0 = Time(() => GetHedgeGrosses(chp.p1, chp.p2, period, passes, hedgeIndex).ToArray())
+            .With(t => { sws.Add(t.sw); return t.r; });
           if(volts0.IsEmpty()) return null;
           var vMin = volts0.Min(v => v.v);
           var vMax = volts0.Max(v => v.v);
@@ -212,8 +220,8 @@ namespace HedgeHog.Alice.Store {
         sw.Stop();
         //Debug.WriteLine(s);
         _ShowVoltsByGrossVirtualElapsed = _ShowVoltsByGrossVirtualElapsed.Cma(10, sw.ElapsedMilliseconds);
-        if(IsInVirtualTrading && !Debugger.IsAttached && _ShowVoltsByGrossVirtualElapsed > 100) {
-          var s = $"{nameof(ShowVoltsByGrossVirtual)}[{this}]:{new { _ShowVoltsByGrossVirtualElapsed }}";
+        if(IsInVirtualTrading && !Debugger.IsAttached && _ShowVoltsByGrossVirtualElapsed > 150) {
+          var s = $"{nameof(ShowVoltsByGrossVirtual)}[{this}]:{new { _ShowVoltsByGrossVirtualElapsed }}+[{sws.Select(s=>s.ElapsedMilliseconds).Flatter(",")}]";
           Log = new Exception(s);
         }
       }

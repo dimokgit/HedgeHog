@@ -431,6 +431,7 @@ namespace HedgeHog.Shared {
     }
     public bool TryGetPrice(string pair, out Price price) => PriceCurrent.TryGetValue(pair, out price);
     public Price GetPrice(string pair) {
+      throw new NotImplementedException();
       if(PriceCurrent.Count == 0)
         return new Price(pair);
       if(!PriceCurrent.TryGetValue(pair, out var price))

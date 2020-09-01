@@ -317,7 +317,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug 2|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x86\Debug 2\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\Data\Forex\Builds\Debug_RealMicro 2\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <NoWarn>1591</NoWarn>
     <DebugType>full</DebugType>

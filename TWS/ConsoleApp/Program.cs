@@ -68,7 +68,7 @@ namespace ConsoleApp {
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7497;
+      const int twsPort = 7496;
       const int clientId = 1;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       bool Connect() => ibClient.LogOn("127.0.0.1", twsPort + "", clientId + "", false);
@@ -88,12 +88,12 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
-          LoadMultiple(DateTime.Now.AddMonths(-24), 3, "VXU0"); return;
+          Tests.HedgeCombo(am); return;
+          LoadMultiple(DateTime.Now.AddMonths(-6), 3, "ESU0"); return;
           PositionsTest.RollAutoOpen(am); return;
           CurrentOptionsTest.ButterFly(am);return;
           Tests.MakeStockCombo(am);return;
           OrdersTest.HedgeOrder(am); return;
-          Tests.HedgeCombo(am);
           EdgeTests.OpenEdgeCallPut(am).Subscribe(_ => PositionsTest.ComboTrades(am));
           return;
           var ess = new[] { "VXM0", "NQZ9", "ESM0", "RTYZ9", "IWM", "SPY", "QQQ" };

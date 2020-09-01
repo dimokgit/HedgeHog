@@ -227,8 +227,8 @@ namespace HedgeHog.Alice.Client {
       var tradeFoo = MonoidsCore.ToFunc((bool isBuy) => new { o = getTrades(isBuy).NetOpen(), t = getTrades(isBuy).Max(t => t.Time) });
       getTrades(true).Take(1).ForEach(_ => trades.Add(new { buy = tradeFoo(true) }));
       getTrades(false).Take(1).ForEach(_ => trades.Add(new { sell = tradeFoo(false) }));
-      if(!tmg.TryGetPrice(pair, out var price)) return new object[0];
-      var askBid = new { ask = price.Ask.Round(digits), bid = price.Bid.Round(digits) };
+      if(tm.CurrentPrice == null) return new object[0];
+      var askBid = tm.CurrentPrice.With(cp2 => cp2 == null ? new { ask = 0.0, bid = 0.0 } : new { ask = cp2.Ask.Round(digits), bid = cp2.Bid.Round(digits) });
       var ish = tm.IsPairHedged;
       var hph = !tm.PairHedge.IsNullOrWhiteSpace();
       var ret = tm.UseRates(ratesArray => ratesArray.Take(1).ToArray(), x => x).ToArray(_ => new {

@@ -38,13 +38,20 @@ namespace IBApp {
       //   )
       //).ToArray();
     }
-    public static IEnumerable<Position> CoveredOption(Position under, IEnumerable<Position> positions) => 
-      positions.Where(p => p.contract.IsOption && under.IsBuy == p.contract.IsCall && !p.IsBuy && p.contract.Expiration <= DateTime.Today.AddDays(1) && p.contract.UnderContract.Any(u => u.Key == under.contract.Key));
+    public static IEnumerable<Position> IsPartOfStraddle(Position option, IEnumerable<Position> positions) =>
+      positions.Where(p => p.contract.IsOption && option.contract.IsOption
+      && option.IsBuy == p.IsBuy
+      && p.contract.Expiration == option.contract.Expiration
+      && p.contract.IsCall == option.contract.IsPut
+      && p.contract.UnderContract.SequenceEqual(option.contract.UnderContract));
+    public static IEnumerable<Position> CoveredOption(Position under, IEnumerable<Position> positions) =>
+      positions
+      .Where(p => !IsPartOfStraddle(p,positions).Any() && p.contract.IsOption && under.IsBuy == p.contract.IsCall && !p.IsBuy && p.contract.Expiration <= DateTime.Today.AddDays(1) && p.contract.UnderContract.Any(u => u.Key == under.contract.Key));
 
     public static IObservable<(Position position, double close, double pl, double closePrice)[]> HedgedPositions(IEnumerable<Position> positions) {
       return (from p0 in positions.Sort().ToObservable()
                 //where p.contract.IsFuture || p.contract.IsStock || p.contract.IsOption
-              let cp = (p0.position.Abs() + CoveredOption(p0, positions).Sum(p => p.position)) * p0.position.Sign()
+              let cp = (p0.position.Abs() /*+ CoveredOption(p0, positions).Sum(p => p.position)*/) * p0.position.Sign()
               let p = p0.position == cp ? p0 : new Position(p0.contract, cp, p0.averageCost)
               where p.position != 0
               from price in p.contract.ReqPriceSafe()
@@ -72,8 +79,8 @@ namespace IBApp {
         throw new Exception($"ComboLeg contract1 has ConId = 0");
       if(c2.ConId == 0)
         throw new Exception($"ComboLeg contract2 has ConId = 0");
-      int r1 = (ratio1 * quantity).ToInt();
-      int r2 = (ratio2.Abs() * quantity).ToInt();
+      int r1 = (ratio1 * quantity).ToInt().Max(1);
+      int r2 = (ratio2.Abs() * quantity).ToInt().Max(1);
       if(r1 == int.MinValue || r2 == int.MinValue) {
         Debugger.Break();
       }

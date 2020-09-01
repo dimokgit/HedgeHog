@@ -245,6 +245,15 @@ namespace HedgeHog {
       max = rates.Max(valueMax);
       return max - min;
     }
+    public static double Height<T>(this IEnumerable<T> rates, Func<T, double> valueMax, Func<T, double> valueMin, out T min, out T max) {
+      if(!rates.Any()) {
+        min = max = default(T);
+        return 0;
+      }
+      min = rates.OrderBy(valueMin).First();
+      max = rates.OrderByDescending(valueMax).First();
+      return valueMax(max) - valueMin(min);
+    }
     public static double Height(this IList<double> rates, out double min, out double max) {
       if(rates.Count == 0)
         return min = max = double.NaN;

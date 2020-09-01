@@ -47,10 +47,10 @@ namespace ConsoleApp {
     public static void HedgeCombo(AccountManager am) {
 
       {
-        var parentContract = "AAPL".ContractFactory();
-        var hedgeContract = "MSFT".ContractFactory();
-        var quantityParent = 100;
-        var r = 2.5;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
+        var parentContract = "ESU0".ContractFactory();
+        var hedgeContract = "VXU0".ContractFactory();
+        var quantityParent = 2;
+        var r = 2.0;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
         //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
         var isTest = true;
