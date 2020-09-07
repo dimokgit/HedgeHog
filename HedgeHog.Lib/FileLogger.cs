@@ -26,7 +26,9 @@ namespace HedgeHog {
 
       } catch {
         try {
-          MessageBox.Show(System.Windows.Application.Current.MainWindow, exc.ToString());
+          if(System.Windows.Application.Current !=null)
+          MessageBox.Show(Application.Current.MainWindow, exc.ToString());
+          else MessageBox.Show(exc.ToString());
         } catch { }
       }
       return exc;
