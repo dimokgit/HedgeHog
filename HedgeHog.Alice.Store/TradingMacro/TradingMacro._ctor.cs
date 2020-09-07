@@ -160,7 +160,11 @@ namespace HedgeHog.Alice.Store {
       , tm => tm.TradingRatio
       , tm => tm.TakeProfitXRatio
       , tm => tm.TradingRatioHedge
-      ).SubscribeToLatestOnBGThread(_ => {
+      ).Select(_ => true)
+      .Merge((this).WhenAnyValue(tm => tm.HedgeQuantity).Select(_ => true))
+      .Throttle(1.FromSeconds())
+      .SubscribeToLatestOnBGThread(_ => {
+        Log = new Exception("Hedge setting changed.");
         TradingMacroTrader(tm => tm.CalcHedgeRatios());
         TradingMacrosByPair().ForEach(tm => tm.OnCalcHedgeRatioByPositions(true));
 

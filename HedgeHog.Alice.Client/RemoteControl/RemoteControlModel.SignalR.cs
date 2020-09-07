@@ -13,6 +13,7 @@ namespace HedgeHog.Alice.Client {
   partial class RemoteControlModel {
 
     public object[] ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
+      if(!IsLoggedIn) return new object[0];
       var cp = tm.CurrentPrice?.Average;
       var histVol = tm.BarPeriod > 0 ? tm.StraddleRangeM1().With(hv => new { up = hv.Up, down = hv.Down }) : new { up = 0.0, down = 0.0 };
       var digits = tm.Digits() + 2;

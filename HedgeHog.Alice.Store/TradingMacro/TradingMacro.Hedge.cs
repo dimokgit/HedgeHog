@@ -359,7 +359,7 @@ namespace HedgeHog.Alice.Store {
       void a() {
         var tm = TradingMacroTrader().Single();
         var hct = tm.HedgeCalcType;
-        var tr = tm.TradingRatio;
+        var tr = tm.HedgeQuantity;
         IObservable<(IBApi.Contract contract, int quantity)> combo;
         List<HedgePosition<IBApi.Contract>> hh;
         switch(hct) {
@@ -381,7 +381,7 @@ namespace HedgeHog.Alice.Store {
           default: throw new Exception();
         }
         if(hh.Any()) {
-          combo = IBApp.AccountManager.MakeHedgeComboSafe(tr.ToInt(), hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio, IsInVirtualTrading);
+          combo = IBApp.AccountManager.MakeHedgeComboSafe(tr, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio, IsInVirtualTrading);
           combo.Subscribe(c => tm.SetCurrentHedgePosition(c.contract, c.quantity, hct));
         }
       }

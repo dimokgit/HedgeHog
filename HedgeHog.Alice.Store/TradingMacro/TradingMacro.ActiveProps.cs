@@ -46,12 +46,23 @@ namespace HedgeHog.Alice.Store {
     //    }
     //  }
     //}
+    int _HedgeQuantity = 1;
+    public int HedgeQuantity {
+      get {
+        return _HedgeQuantity;
+      }
+      set {
+        if(_HedgeQuantity == value) return;
+        _HedgeQuantity = value;
+        OnPropertyChanged("HedgeQuantity");
+      }
+    }
     private double tradingRatioHedge;
     [WwwSetting(wwwSettingsTradingParams)]
-    public double TradingRatioHedge { 
+    public double TradingRatioHedge {
       get => tradingRatioHedge;
       set {
-        if(tradingRatioHedge == value)return;
+        if(tradingRatioHedge == value) return;
         tradingRatioHedge = value;
         OnPropertyChanged("TradingRatioHedge");
       }

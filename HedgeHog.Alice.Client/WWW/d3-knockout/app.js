@@ -357,7 +357,10 @@
     var expDaysSkip = dataViewModel.expDaysSkip() || 0;
     var hedgeDate = dataViewModel.hedgeVirtualDate();
     var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
-    var context = { currentProfit: ko.unwrap(dataViewModel.currentProfit) || "0" };
+    var context = {
+      currentProfit: ko.unwrap(dataViewModel.currentProfit) || "0",
+      hedgeQuantity: ko.unwrap(dataViewModel.hedgeQuantity) || "1"
+    };
     var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, dataViewModel.rollCombo(), selectedCombos, context];
     args.noNote = true;
     readingCombos = true;
@@ -1029,6 +1032,11 @@
       this.butterflies = ko.mapping.fromJS(ko.observableArray());
       this.tradesBreakEvens = ko.mapping.fromJS(ko.observableArray());
 
+      this.hedgeQuantity = ko.observable(1).extend({ persist: "hedgeQuantity" + pair });
+      this.hedgeQuantityInEdit = ko.observable();
+      this.hedgeQuantityInEdit.subscribe(function (isEdit) {
+        if (!isEdit) serverCall("updateHedgeQuantity", [pair, this.hedgeQuantity()]);
+      }.bind(this));
       this.hedgeREL = ko.observable(true);
       this.hedgeTest = ko.observable(false).extend({ persist: "hedgeTest" + pair });
       this.hedgeCombo = ko.mapping.fromJS(ko.observableArray());
@@ -1191,7 +1199,7 @@
       }.bind(this);
       this.closeCombo = function (key) {
         this.canTrade(false);
-        serverCall("closeCombo", [ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel()], done, null, function () { this.canTrade(false); }.bind(this));
+        serverCall("closeCombo", [pair, ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel(), self.hedgeTest() || false], done, null, function () { this.canTrade(false); }.bind(this));
         function done(openOrderMessage) {
           (openOrderMessage || []).forEach(e => showErrorPerm("closeCombo:\n" + e));
           self.canTrade(true);
