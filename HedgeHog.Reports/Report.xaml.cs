@@ -13,7 +13,6 @@ using System.Windows.Shapes;
 using X = System.Xml;
 using XQ = System.Xml.Linq;
 using System.Data;
-using Order2GoAddIn;
 using HedgeHog.Shared;
 using Telerik.Windows.Controls.GridView.Settings;
 using System.ComponentModel.Composition;
@@ -95,22 +94,7 @@ namespace HedgeHog.Reports {
       settings.LoadState(fileName);
 
       System.Windows.Data.CollectionViewSource tradeViewSource = ((System.Windows.Data.CollectionViewSource)(this.FindResource("tradeViewSource")));
-      var accountId = "dturbo";
-      var password = "1234";
-      var isDemo = true;
-      var logOff = false;
-      logOff = !fw.IsLoggedIn && ((FXCoreWrapper)fw).CoreFX.LogOn(accountId,"", password, isDemo);
-      if (fw.IsLoggedIn) {
-        try {// Load Report
-          var trades = ((FXCoreWrapper)fw).GetTradesFromReport(DateTime.Now.AddMonths(-1), DateTime.Now.AddDays(1).Date);
-          if (logOff) ((FXCoreWrapper)fw).CoreFX.Logout();
-          // Load data by setting the CollectionViewSource.Source property:
-          tradeViewSource.Source = trades;
-        } catch (Exception exc) {
-          MessageBox.Show(exc.ToString());
-        }
-      } else
-        tradeViewSource.Source = new Trade[] { };
+      tradeViewSource.Source = new Trade[] { };
     }
     #endregion
 
