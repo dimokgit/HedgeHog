@@ -35,7 +35,8 @@ namespace HedgeHog.Shared {
             new Offer { Pair = "SPY", Digits = 3, PointSize = 0.01, MMRLong = 0.250, MMRShort= 0.3, ContractSize = 1 },
             new Offer { Pair = "TVIX", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 },
             new Offer { Pair = "UVXY", Digits = 3, PointSize = 0.01, MMRLong = 1/1.14, MMRShort= 1/1.14, ContractSize = 1 },
-            new Offer { Pair = "ES", Digits = 2, PointSize = 1, MMRLong = 1/4, MMRShort= 1/3, ContractSize = 50 }
+            new Offer { Pair = "ES", Digits = 2, PointSize = 1, MMRLong = 1/4, MMRShort= 1/3, ContractSize = 50 },
+            new Offer { Pair = "VX", Digits = 2, PointSize = 1, MMRLong = 1/4, MMRShort= 1/3, ContractSize = 1000 }
           };
     static Func<string, Offer> GetOfferImpl = symbol
         => dbOffers
@@ -158,7 +159,7 @@ namespace HedgeHog.Shared {
     }
 
     public static bool IsCurrenncy(this string s) => _currencies.Any(c => s.ToUpper().StartsWith(c)) && _currencies.Any(c => s.ToUpper().EndsWith(c));
-    private static Regex FutureMatch = new Regex(@"^(?<code>\w{2,3})[HMJQUZ]\d{1,2}|VX[A-Z]\d$", RegexOptions.IgnoreCase);
+    private static Regex FutureMatch = new Regex(@"^(?<code>\w{2,3})[A-Z]\d{1,2}$", RegexOptions.IgnoreCase);
     public static bool IsFuture(this string s) => FutureMatch.IsMatch(s);
     public static string FutureCode(this string s) => IsFuture(s) ? FutureMatch.Match(s).Groups["code"].Value : s;
     public static bool IsCommodity(this string s) => _commodities.Contains(s.ToUpper());
