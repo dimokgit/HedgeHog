@@ -90,10 +90,14 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region CreateEdgeOrder
-    public enum EdgeRangeType { T, S }
+    public enum EdgeRangeType { T, S, N }
     [BasicAuthenticationFilter]
     public Task OpenEdgeOrder(string pair, bool isCall, int quantity, int daysToSkip, double currentStrikeLevel, double profitInPoints, EdgeRangeType rangeType, bool isTest)
-      => OpenTrendOrder(pair, isCall, quantity, daysToSkip, currentStrikeLevel, profitInPoints, rangeType == EdgeRangeType.S ? StraddleEdges : (EdgesDelegate)TrendEdges, isTest);
+      => OpenTrendOrder(pair, isCall, quantity, daysToSkip, currentStrikeLevel, profitInPoints
+        , rangeType == EdgeRangeType.S ? StraddleEdges 
+        : rangeType == EdgeRangeType.T ? (EdgesDelegate)TrendEdges
+        : NoEdges
+        , isTest);
 
 
     private async Task OpenTrendOrder(string pair, bool isCall, int quantity, int daysToSkip, double currentStrikeLevel, double profitInPoints, EdgesDelegate calcEdges, bool isTest) {
@@ -117,6 +121,7 @@ namespace HedgeHog.Alice.Client {
       );
     private IEnumerable<(double edge, double profit)> TrendEdges(string pair, bool isCall) =>
       UseTradingMacro(pair, tm => tm.IsTrader, tm => tm.TrendEdge(isCall));
+    private IEnumerable<(double edge, double profit)> NoEdges(string pair, bool isCall) => new (double edge, double profit)[0];
     delegate IEnumerable<(double edge, double profit)> EdgesDelegate(string pair, bool isCall);
 
     #endregion

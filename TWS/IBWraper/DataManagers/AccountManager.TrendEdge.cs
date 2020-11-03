@@ -27,8 +27,8 @@ namespace IBApp {
 
       (from par in parameter
        .Do(p => Trace($"Replacing {p.param.replaceOrders.Flatter("")}"))
-       from och in OpenEdgeOrder(o => { }, par.param, -par.tl.quantity, par.tl.profit)
-       select och
+       //from och in OpenEdgeOrder(o => { }, par.param, -par.tl.quantity, par.tl.profit)
+       select par
        ).Subscribe();
     }
   }
