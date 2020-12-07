@@ -88,8 +88,13 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          {
+            var secs = new[] { "SPY"/*,ESZ0","NQZ0","RTYZ0"*/};
+            Console.WriteLine("Loadint " + secs.Flatter(","));
+            LoadMultiple(DateTime.Now.AddMonths(-1), 3, secs);
+            return;
+          }
           Tests.HedgeCombo(am); return;
-          LoadMultiple(DateTime.Now.AddMonths(-6), 3, "ESU0"); return;
           PositionsTest.RollAutoOpen(am); return;
           CurrentOptionsTest.ButterFly(am);return;
           Tests.MakeStockCombo(am);return;

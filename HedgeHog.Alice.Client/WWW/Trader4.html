@@ -1338,6 +1338,7 @@
         <select data-bind="options:strategyType,optionsText:'text',optionsValue:'text',value:strategyCurrent,optionsCaption:'...'"></select>
         <button class="small" data-bind="click:openEdge,enable:canTrade,text:'Edge'+showOptionType(),visible:canOpenEdge()"></button>
         <select data-bind="value:edgeType">
+          <option value="N">N</option>
           <option value="T">T</option>
           <option value="S">S</option>
         </select>

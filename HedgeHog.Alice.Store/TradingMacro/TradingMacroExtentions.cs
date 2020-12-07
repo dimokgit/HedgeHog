@@ -1298,7 +1298,7 @@ new MarketPrice(
           Log = new Exception("_priceChangeDisposable done");
         });
       double GetStraddlePrice(IEnumerable<CurrentCombo> straddle)
-        => straddle.Select(p => p.deltaBid.Avg(p.deltaAsk)).OrderByDescending(d => d).Take(4).Average() /2;
+        => straddle.Select(p => p.deltaBid.Avg(p.deltaAsk)).OrderByDescending(d => d).Take(4).Average() / 2;
     }
 
 
@@ -2460,9 +2460,11 @@ new MarketPrice(
             //ResetBarsCountCalc();
             RatesHeight = RatesArray.Height(r => r.AskHigh, r => r.BidLow, out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
             SetCentersOfMassSubject.OnNext(() => {
-              rateLast.ForEach(r => SetBeforeHours(r.StartDate.Round()));
-              if(BarPeriod == BarsPeriodType.t1)
-                rateLast.ForEach(r => SetCentersOfMass(r.StartDate.Round()));
+              RatesArray.TakeLast(1).ForEach(r => {
+                SetBeforeHours(r.StartDate.Round());
+                if(BarPeriod == BarsPeriodType.t1)
+                  SetCentersOfMass(r.StartDate.Round());
+              });
             });
             if(IsAsleep) {
               BarsCountCalc = BarsCount;
@@ -4366,10 +4368,10 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
              from v in vs
              select v;
     }
-    public U[] UseRates<T, U>(Func<List<Rate>, IEnumerable<T>> func, Func<IEnumerable<T>, IEnumerable<U>> many, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber]int LineNumber = 0) {
+    public U[] UseRates<T, U>(Func<List<Rate>, IEnumerable<T>> func, Func<IEnumerable<T>, IEnumerable<U>> many, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber] int LineNumber = 0) {
       return UseRates(func, timeoutInMilliseconds, Caller, LastFile, LineNumber).SelectMany(many).ToArray();
     }
-    public T[] UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber]int LineNumber = 0) {
+    public T[] UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 100, [CallerMemberName] string Caller = "", [CallerFilePath] string LastFile = "", [CallerLineNumber] int LineNumber = 0) {
       return new[] { func(RatesArray) };
       var sw = new Stopwatch();
       if(!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds)) {
@@ -4473,13 +4475,12 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     public void LoadRates(Action before = null) {
       if(!IsActive || !isLoggedIn || TradesManager == null || TradesManager.IsInTest || IsInVirtualTrading || IsInPlayback)
         return;
-      var noRates = UseRatesInternal(ri => ri.Count < 0);
+      var noRates = UseRatesInternal(ri => ri.Count < 60);
       if(noRates.IsEmpty())
         return;
       if(noRates.Any(b => b)) {
-        if(Debugger.IsAttached)
-          Debug.Fail("LoadRates: Should not be here");
-        var dbRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, ServerTime.ToUniversalTime(), BarsCountCount(), BarPeriodInt, BarPeriodCalc == BarsPeriodType.s1 ? GroupTicksToSeconds : (Func<List<Rate>, List<Rate>>)null);
+        //if(Debugger.IsAttached) Debug.Fail("LoadRates: Should not be here");
+        var dbRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, ServerTime.ToUniversalTime(), BarsCountCount(), BarPeriodInt);
         if(UseRatesInternal(ri => { ri.AddRange(dbRates); return true; }).IsEmpty())
           return;
       }
