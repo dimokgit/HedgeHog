@@ -67,14 +67,7 @@ namespace HedgeHog.Alice.Store {
     #region Subjechiss
     static TimeSpan THROTTLE_INTERVAL = TimeSpan.FromSeconds(1);
 
-    public void OnLoadRates(Action a = null) {
-      if(_loadRatesAsyncBuffer != null) _loadRatesAsyncBuffer.Push(() => LoadRates(a));
-      else {
-        _loadRatesAsyncBuffer = new LoadRateAsyncBuffer(TradingMacrosActive.Count(/*tm => tm.BarPeriod < BarsPeriodType.m1*/));
-        Task.Run(() => LoadRates(a));
-      }
-      //broadcastLoadRates.Post(u => LoadRates(a));
-    }
+    public void OnLoadRates(Action a = null) => LoadRatesAsyncBuffer.Push(() => LoadRates(a));
 
     #region ScanCorridor Broadcast
     #endregion
@@ -4475,11 +4468,12 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     public void LoadRates(Action before = null) {
       if(!IsActive || !isLoggedIn || TradesManager == null || TradesManager.IsInTest || IsInVirtualTrading || IsInPlayback)
         return;
-      var noRates = UseRatesInternal(ri => ri.Count < 60);
+      var noRates = UseRatesInternal(ri => ri.Count < 60 && BarPeriodInt > 0);
       if(noRates.IsEmpty())
         return;
-      if(noRates.Any(b => b)) {
+      if(false && noRates.Any(b => b)) {
         //if(Debugger.IsAttached) Debug.Fail("LoadRates: Should not be here");
+        PriceHistory.AddTicks(TradesManager, BarPeriodInt, Pair, ServerTime.AddMonths(-1), o => Log = new Exception(o + ""));
         var dbRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, ServerTime.ToUniversalTime(), BarsCountCount(), BarPeriodInt);
         if(UseRatesInternal(ri => { ri.AddRange(dbRates); return true; }).IsEmpty())
           return;
@@ -4656,7 +4650,14 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       public LoadRateAsyncBuffer(int tmCount) : base(1, 11.FromSeconds().Multiply(tmCount), true, (Func<string>)null) { }
       protected override Action PushImpl(Action context) => context;
     }
+    object _loadRatesAsyncBufferGate = new object();
     LoadRateAsyncBuffer _loadRatesAsyncBuffer;
+    LoadRateAsyncBuffer LoadRatesAsyncBuffer {
+      get {
+        lock(_loadRatesAsyncBufferGate)
+          return _loadRatesAsyncBuffer ?? (_loadRatesAsyncBuffer = new LoadRateAsyncBuffer(TradingMacrosActive.Count(/*tm => tm.BarPeriod < BarsPeriodType.m1*/)));
+      }
+    }
     BroadcastBlock<Action<Unit>> _broadcastLoadRates;
     BroadcastBlock<Action<Unit>> broadcastLoadRates {
       get {

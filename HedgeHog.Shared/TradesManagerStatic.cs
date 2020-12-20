@@ -76,7 +76,12 @@ namespace HedgeHog.Shared {
       return Regex.Replace(pair, @"(\w3)(\w3)", "$1/$2");
     }
 
-    static (int[]mm,int m)[] multipliers = new[] { (new[] { 50, 20 }, 20 ), (new[] { 50, 1000 }, 1000 ) };
+    static (int[] mm, int m)[] multipliers = new[] {
+      (new[] { 50, 20 }, 20 ),
+      (new[] { 5, 2 }, 2 ),
+      (new[] { 50, 1000 }, 1000 ),
+      (new[] { 5, 100 }, 100 ) 
+    };
     static int multiplier(int[] mm) => multiplier(mm[0], mm[1]);
     static int multiplier(int m1, int m2) {
       if(m1 == m2) return m1;
@@ -85,7 +90,7 @@ namespace HedgeHog.Shared {
       return m;
     }
     public static double CalcHedgePrice(this IList<(double price, int multiplier, double positions)> hedges) => CalcHedgePrice(hedges.Select(h => (h.price, (double)h.multiplier, h.positions)).ToArray());
-    public static double CalcHedgePrice(this IList<(double price, double multiplier, double positions)> hedges) 
+    public static double CalcHedgePrice(this IList<(double price, double multiplier, double positions)> hedges)
       => hedges.Sum(h => h.price * h.multiplier * h.positions) / multiplier(hedges.Select(h => h.multiplier.ToInt()).ToArray());
 
     public static ((TContract contract, int quantity)[] contracts, int quantity) HedgeQuanitiesByValue<TContract>(int multiplier

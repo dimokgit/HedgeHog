@@ -89,7 +89,7 @@ namespace ConsoleApp {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
           {
-            var secs = new[] { "SPY"/*,ESZ0","NQZ0","RTYZ0"*/};
+            var secs = new[] { "SPY","VXX","ESZ0","NQZ0","RTYZ0"}.Take(1).ToArray();
             Console.WriteLine("Loadint " + secs.Flatter(","));
             LoadMultiple(DateTime.Now.AddMonths(-1), 3, secs);
             return;
