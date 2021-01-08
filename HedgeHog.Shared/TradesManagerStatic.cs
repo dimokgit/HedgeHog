@@ -80,7 +80,9 @@ namespace HedgeHog.Shared {
       (new[] { 50, 20 }, 20 ),
       (new[] { 5, 2 }, 2 ),
       (new[] { 50, 1000 }, 1000 ),
-      (new[] { 5, 100 }, 100 ) 
+      (new[] { 5, 100 }, 100 ),
+      (new[] { 5, 10 }, 10 ),
+      (new[] { 50, 100 }, 100 )
     };
     static int multiplier(int[] mm) => multiplier(mm[0], mm[1]);
     static int multiplier(int m1, int m2) {
