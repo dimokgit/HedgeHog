@@ -1077,7 +1077,6 @@ namespace HedgeHog.Alice.Store {
       TradesManager.TradeClosed += TradeCloseHandler;
       TradesManager.TradeAdded -= TradeAddedHandler;
       TradesManager.TradeAdded += TradeAddedHandler;
-      var digits = TradesManager.GetDigits(Pair);
       var a = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>
         , PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
 
@@ -4209,7 +4208,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
     public int GetLotsToTrade(double equity, double mmr, double tradeRatio) {
       return TradesManagerStatic.GetLotstoTrade((CurrentPrice?.Average).GetValueOrDefault()
-        , Pair, equity, TradesManagerStatic.Leverage(Pair, mmr), tradeRatio, BaseUnitSize);
+        , Pair, equity, TradesManagerStatic.Leverage(BaseUnitSize, mmr), tradeRatio, BaseUnitSize);
     }
 
     public int MaxPipsToPMC() {

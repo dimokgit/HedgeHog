@@ -9,10 +9,10 @@ using MarkdownLog;
 namespace ConsoleApp {
   static class CurrentOptionsTest {
     public static void CurrentOptions(AccountManager am) =>
-      am.CurrentOptions("NQU0", 0, 3, 4, c => true)
+      am.CurrentOptions("GCG1", 0, 0, 4, c => true)
       .Subscribe(se => {
         HandleMessage(se.Select(x => new { x.option }).ToMarkdownTable());
-        am.CurrentOptions("ESU0", 0, 3, 4, c => true)
+        am.CurrentOptions("ESH1", 0, 3, 4, c => true)
         .Subscribe(es => {
           HandleMessage(es.Select(x => new { x.option }).ToMarkdownTable());
         });

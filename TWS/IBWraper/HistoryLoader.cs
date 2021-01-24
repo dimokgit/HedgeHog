@@ -18,7 +18,7 @@ namespace IBApp {
   public enum TimeUnit { S, D, W, M, Y }
   public enum BarSize {
     _1_secs, _5_secs, _15_secs, _30_secs, _1_min, _2_mins,
-    _3_mins, _5_mins, _15_mins, _30_mins, _1_hour, _1_day
+    _3_mins, _5_mins, _10_mins, _15_mins, _30_mins, _1_hour, _1_day
   }
   public class DelayException :SoftException {
     public DelayException(string instrument, TimeSpan delay) : base($"{instrument}{new { delay }}") { }
@@ -227,6 +227,12 @@ namespace IBApp {
       },
       [BarSize._3_mins] = new Dictionary<TimeUnit, int[]> {
         [TimeUnit.W] = new[] { 1, 1 }
+      },
+      [BarSize._5_mins] = new Dictionary<TimeUnit, int[]> {
+        [TimeUnit.W] = new[] { 1, 1 }
+      },
+      [BarSize._10_mins] = new Dictionary<TimeUnit, int[]> {
+        [TimeUnit.M] = new[] { 1, 1 }
       },
       [BarSize._1_day] = new Dictionary<TimeUnit, int[]> {
         [TimeUnit.Y] = new[] { 1, 1 }

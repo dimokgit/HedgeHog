@@ -22,7 +22,7 @@ namespace HedgeHog.Alice.Client {
       var tm = UseTraderMacro(pair).Single();
       var std = tm.StraddleRangeM1().TakeProfit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
       var profit = profitInPoints.GetValueOrDefault(std);
-      if(profit == 0) throw new Exception("No trend line found for profit calculation");
+      //if(profit == 0) throw new Exception("No trend line found for profit calculation");
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
         return await OpenCondOrder(am, tm, contract, null, quantity, (conditionPrice.GetValueOrDefault(), pair), profit, isTest);
@@ -52,12 +52,13 @@ namespace HedgeHog.Alice.Client {
                          ? bs.s : bs.b : 0).Round(2)
                          let isMoreOrder = condPrice.IsNaNOrZero() ? (bool?)null : condPrice > underPrice
                          let upProfit = profit * Delta(contract) * price.delta
-                         let condTakeProfit = contract.IsCallPut
+                         let condTakeProfit = (contract.IsCallPut
                          ? buildConditions(underContract
                           , condition.price.IfNaNOrZero(underPrice).With(p
                           => contract.ComboStrike().With(s
                           => new[] { s - std / 4, s + std / 4 })), isBuy, tm.ServerTime.AddHours(2), a => orderExt += a)
                          : new[] { underContract.PriceCondition((condPrice.IfNaNOrZero(underPrice) + upProfit).Round(2), upProfit > 0, false) }
+                         ).Take(0).ToList()
                          let t = new { price = condPrice == 0 ? limitPrice(contract, isSell, price) : 0 }
                          from ots in am.OpenTradeWithAction(orderExt, contract, quantity, t.price, 0
                           , (bool)condTakeProfit?.Any(), DateTime.MaxValue, default
@@ -125,5 +126,40 @@ namespace HedgeHog.Alice.Client {
     delegate IEnumerable<(double edge, double profit)> EdgesDelegate(string pair, bool isCall);
 
     #endregion
+
+    [BasicAuthenticationFilter]
+    public void UpdateCloseOrder(string pair, string instrument, int orderId, double? limit, double? profit, bool isTest) {
+      var am = GetAccountManager();
+      am.ComboTrades(2)
+        .Where(ct => ct.contract.Instrument == instrument)
+        .Subscribe(trade => {
+          try {
+            if(limit.HasValue && profit.HasValue)
+              throw new ArgumentException(new { limit, profit, error = "Only one can have value" } + "");
+            if(!limit.HasValue && !profit.HasValue && !trade.contract.IsBag)
+              throw new ArgumentException(new { limit, profit, error = "One must have a value" } + "");
+            if(limit.HasValue)
+              am.OpenOrUpdateLimitOrder(trade.contract, trade.position, orderId, limit.Value, isTest);
+            else {
+              var p = profit.Value.Abs() > 1 ? profit.Value
+              : profit.Value.Abs() >= 0.01 ? profit.Value
+              : am.Account.Equity * profit.Value;
+              var tm = UseTraderMacro(pair).Single();
+              if(trade.contract.IsBag && tm.Strategy == Strategies.HedgeA)
+                tm.ExitGrossByHedgePositions = p;
+              else {
+                tm.ExitGrossByHedgePositions = double.NaN;
+                am.OpenOrUpdateLimitOrderByProfit2(trade.contract, trade.position, orderId, trade.open, p, isTest);
+              }
+            }
+            am.OpenOrderObservable
+            .TakeUntil(DateTimeOffset.Now.AddSeconds(5))
+            .Throttle(TimeSpan.FromSeconds(1))
+            .Subscribe(_ => Clients.Caller.MustReadStraddles());
+          } catch(Exception exc) {
+            Log = exc;
+          }
+        });
+    }
   }
 }

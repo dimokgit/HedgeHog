@@ -153,6 +153,14 @@ namespace HedgeHog.Alice.Store {
           }
         });
       var hedgeVoltFuns = new[] { VoltageFunction.HedgePrice, VoltageFunction.GrossV, VoltageFunction.HedgeRatio, };
+      this.WhenAnyValue(tm => tm.Strategy)
+        .Subscribe(s => {
+        if(s.IsHedge()) {
+          VoltageFunction2 = VoltageFunction.RatioDiff;
+          VoltageFunction = VoltageFunction.GrossV;
+          Log = new Exception(new { Set = new { VoltageFunction, VoltageFunction2 } } +"");
+        }
+      });
       this.WhenAnyValue(tm => tm.CurrentHedgePosition1
       , tm => tm.CurrentHedgePosition2
       , tm => tm.HedgeCalcIndex

@@ -1472,6 +1472,7 @@
           }.bind(this));
       }.bind(this);
       var readStrategies = this.readStrategies = function readStrategies() {
+        showWarning("readStrategies is disabled"); return;
         return serverCall("readStrategies", [pair], function (strategies) {
           this.strategies(strategies.map(function (s2) {
             var s = s2[0];

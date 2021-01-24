@@ -280,6 +280,7 @@ namespace IBApp {
         } else if(GetTrades().IsEmpty()) {
           // TODO: WhatIf leverage, MMR
           //RaiseOrderRemoved(o.OrderId);
+          return;
           var offer = TradesManagerStatic.GetOffer(m.Contract.Instrument);
           var isBuy = m.Order.IsBuy;
           var levelrage = (m.Order.LmtPrice * m.Order.TotalQuantity) / (double.Parse(m.OrderState.InitMarginChange));

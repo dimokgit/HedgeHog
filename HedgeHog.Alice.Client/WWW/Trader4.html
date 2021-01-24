@@ -1471,9 +1471,9 @@
         <td data-bind="text:d3.format('$.0f')(maxPL())"></td>
         <td data-bind="text:d3.format('.1f')(Math.abs(greekDelta()))+'/'+d3.format('.1f')(theta())"></td>
         <td>
-          <button data-bind="click:$parent.openButterfly.bind($root,false,$data,true),enabled:$root.canTrade,visible:!$root.hasStrategy()" title="Sell with condition">Sell</button>
+          <button data-bind="click:$parent.openButterfly.bind($root,false,$data,true),enabled:$root.canTrade" title="Sell with condition">Sell</button>
           <button data-bind="click:$parent.openButterfly.bind($root,true,$data,true),enabled:$root.canTrade" title="Buy with condition">Buy</button>
-          <button data-bind="click:$parent.openCovered,enabled:$root.canTrade,visible:!$root.hasStrategy()" title="Open Covered">OC</button>
+          <!--<button _data-bind_="click:$parent.openCovered,enabled:$root.canTrade,visible:!$root.hasStrategy()" title="Open Covered">OC</button>-->
         </td>
       </tr>
       <!-- /ko -->

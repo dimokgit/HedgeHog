@@ -152,10 +152,12 @@ namespace IBApp {
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);
       startDate = fxDate(startDate);
-      var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D : period == 3 ? TimeUnit.W : TimeUnit.Y;
+      var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D : period == 3 ? TimeUnit.W : period == 10? TimeUnit.M : TimeUnit.Y;
       var barSize = period == 0 ? BarSize._1_secs
         : period == 1 ? BarSize._1_min
         : period == 3 ? BarSize._3_mins
+        : period == 5 ? BarSize._5_mins
+        : period == 10 ? BarSize._10_mins
         : BarSize._1_day;
       var duration = (endDate - startDate).Duration();
       var lastTime = DateTime.Now;
@@ -578,7 +580,7 @@ namespace IBApp {
       //Trace(new NotImplementedException(new { NotImplementedException } + ""));
     }
 
-    public int GetDigits(string pair) => TradesManagerStatic.GetDigits(pair);
+    public int GetDigits(string pair) => Contract.FromCache(pair).Select(c => Math.Abs(Math.Log10(c.MinTick()).Floor())).Single();
 
     public Trade GetLastTrade(string pair) {
       //RaiseNotImplemented(nameof(GetLastTrade));

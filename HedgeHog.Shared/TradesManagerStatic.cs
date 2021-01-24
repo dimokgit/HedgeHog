@@ -45,12 +45,14 @@ namespace HedgeHog.Shared {
     .Count(1, c => throw new Exception($"{new { symbol }} is missing in dbOffers"), null)
       //.DefaultIfEmpty(OfferDefault)
       .Single();
-    public static Offer GetOffer(string pair) => GetOfferImpl(pair);
-    public static double GetPointSize(string symbol) => GetOffer(symbol).PointSize;
-    public static int GetBaseUnitSize(string symbol) => GetOffer(symbol).ContractSize;
-    public static int GetDigits(string symbol) => GetOffer(symbol).Digits;
-    public static double GetMMR(string symbol, bool isBuy) => isBuy ? GetOffer(symbol).MMRLong : GetOffer(symbol).MMRShort;
-    public static double Leverage(string pair, double mmr) => GetBaseUnitSize(pair) / mmr;
+    public static Offer GetOffer(string pair) => 
+      throw new NotImplementedException();
+    //GetOfferImpl(pair);
+    public static double GetPointSize(string symbol) => 1;// GetOffer(symbol).PointSize;
+    //public static int GetBaseUnitSize(string symbol) => GetOffer(symbol).ContractSize;
+    //public static int GetDigits(string symbol) => GetOffer(symbol).Digits;
+    public static double GetMMR(string symbol, bool isBuy) => 1;// isBuy ? GetOffer(symbol).MMRLong : GetOffer(symbol).MMRShort;
+    public static double Leverage(int baseUnitSize, double mmr) => baseUnitSize / mmr;
 
     private static string[] _currencies = new[]{
       "USD",
@@ -82,14 +84,17 @@ namespace HedgeHog.Shared {
       (new[] { 50, 1000 }, 1000 ),
       (new[] { 5, 100 }, 100 ),
       (new[] { 5, 10 }, 10 ),
-      (new[] { 50, 100 }, 100 )
+      (new[] { 50, 100 }, 100 ),
+      (new[] { 10, 1000 }, 10 ),
     };
     static int multiplier(int[] mm) => multiplier(mm[0], mm[1]);
+    static int multiplierErrorCount = 5;
     static int multiplier(int m1, int m2) {
       if(m1 == m2) return m1;
       var m = multipliers.SingleOrDefault(mm => mm.mm[0] == m1 && mm.mm[1] == m2 || mm.mm[0] == m2 && mm.mm[1] == m1).m;
-      if(m == 0) throw new Exception(new { m1, m2 } + $" has no matching multiplier pair {multipliers.ToJson(false)}");
-      return m;
+      if(m == 0 && multiplierErrorCount-- > 0)
+        LogMessage.Send(new Exception(new { m1, m2 } + $" has no matching multiplier pair {multipliers.ToJson(false)}. Will use {m1.Max(m2)}"));
+      return m == 0 ? m1.Max(m2) : m;
     }
     public static double CalcHedgePrice(this IList<(double price, int multiplier, double positions)> hedges) => CalcHedgePrice(hedges.Select(h => (h.price, (double)h.multiplier, h.positions)).ToArray());
     public static double CalcHedgePrice(this IList<(double price, double multiplier, double positions)> hedges)

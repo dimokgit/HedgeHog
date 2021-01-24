@@ -466,7 +466,7 @@ namespace IBApp {
     public IObservable<(DateTime[] expirations, double[] strikes)> ReqStrikesAndExpirations(string underSymbol) {
       lock(_allStrikesAndExpirations) {
         if(_allStrikesAndExpirations.TryGetValue(underSymbol, out var cache)) return cache;
-        var increments = new[] { 50.0, 10, 5, 2.5, 1 };
+        var increments = new[] { 50.0, 10, 5, 1 };
         IEnumerable<double> CurrentIncrement(double price) => increments.OrderBy(i => (price * 0.002).Abs(i)).Take(1).Select(i => (price / i).ToInt() * i);
         var newCache = (from under in ReqContractDetailsCached(underSymbol)
                         from price in under.Contract.ReqPriceSafe()

@@ -878,7 +878,7 @@ namespace HedgeHog.Alice.Client {
           => (from l in combo.SelectMany(c => c.contract.LegsForHedge(pair))
               from hh in hh0
               where l.c.ConId == hh.contract.ConId
-              select (hh.price, TradesManagerStatic.GetBaseUnitSize(hh.contract.LocalSymbol), (double)l.leg.Quantity)
+              select (hh.price, hh.contract.ComboMultiplier, (double)l.leg.Quantity)
               )
               .ToArray()
               .Select(xx => xx.CalcHedgePrice().With(p => new MarketPrice(p, p, tml.ServerTime, delta: 1.0, double.NaN)));
@@ -968,40 +968,6 @@ namespace HedgeHog.Alice.Client {
                  select new { po.error, prder = h.order + "" }).ToArray();
 
       return await ret;
-    }
-    [BasicAuthenticationFilter]
-    public void UpdateCloseOrder(string pair, string instrument, int orderId, double? limit, double? profit, bool isTest) {
-      var am = GetAccountManager();
-      am.ComboTrades(2)
-        .Where(ct => ct.contract.Instrument == instrument)
-        .Subscribe(trade => {
-          try {
-            if(limit.HasValue && profit.HasValue)
-              throw new ArgumentException(new { limit, profit, error = "Only one can have value" } + "");
-            if(!limit.HasValue && !profit.HasValue && !trade.contract.IsBag)
-              throw new ArgumentException(new { limit, profit, error = "One must have a value" } + "");
-            if(limit.HasValue)
-              am.OpenOrUpdateLimitOrder(trade.contract, trade.position, orderId, limit.Value, isTest);
-            else {
-              var p = profit.Value.Abs() > 1 ? profit.Value
-              : profit.Value.Abs() >= 0.01 ? profit.Value
-              : am.Account.Equity * profit.Value;
-              var tm = UseTraderMacro(pair).Single();
-              if(trade.contract.IsBag && tm.Strategy.IsHedge())
-                tm.ExitGrossByHedgePositions = p;
-              else {
-                tm.ExitGrossByHedgePositions = double.NaN;
-                am.OpenOrUpdateLimitOrderByProfit2(trade.contract, trade.position, orderId, trade.open, p, isTest);
-              }
-            }
-            am.OpenOrderObservable
-            .TakeUntil(DateTimeOffset.Now.AddSeconds(5))
-            .Throttle(TimeSpan.FromSeconds(1))
-            .Subscribe(_ => Clients.Caller.MustReadStraddles());
-          } catch(Exception exc) {
-            Log = exc;
-          }
-        });
     }
 
     public async Task<object[]> OpenStrategyOption(string option, int quantity, double level, double profit) =>

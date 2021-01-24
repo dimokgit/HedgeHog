@@ -69,7 +69,7 @@ namespace ConsoleApp {
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       DataManager.DoShowRequestErrorDone = true;
       const int twsPort = 7496;
-      const int clientId = 1;
+      const int clientId = 10;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       bool Connect() => ibClient.LogOn("127.0.0.1", twsPort + "", clientId + "", false);
       #endregion
@@ -88,21 +88,21 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          CurrentOptionsTest.CurrentOptions(am); return;
+          LoadMultiple(DateTime.Now.AddMonths(-2),10, "VXX"); return;
+          Tests.HedgeCombo(am); return;
           {
             var secs = new[] { "SPY","VXX","ESZ0","NQZ0","RTYZ0"}.Take(1).ToArray();
             Console.WriteLine("Loadint " + secs.Flatter(","));
             LoadMultiple(DateTime.Now.AddMonths(-1), 3, secs);
             return;
           }
-          Tests.HedgeCombo(am); return;
           PositionsTest.RollAutoOpen(am); return;
-          CurrentOptionsTest.ButterFly(am);return;
           Tests.MakeStockCombo(am);return;
           OrdersTest.HedgeOrder(am); return;
           EdgeTests.OpenEdgeCallPut(am).Subscribe(_ => PositionsTest.ComboTrades(am));
           return;
           var ess = new[] { "VXM0", "NQZ9", "ESM0", "RTYZ9", "IWM", "SPY", "QQQ" };
-          //LoadMultiple(DateTime.Now.AddMonths(-24), "VXX");
           return;
           am.PositionsObservable.Subscribe(_ => HandleMessage(am.Positions.ToTextOrTable("All Positions:")));
           return;
