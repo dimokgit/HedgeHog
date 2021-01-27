@@ -278,7 +278,7 @@ namespace HedgeHog.Alice.Store {
         ? UseRates(ra => ra.Select(GetVoltage).ToList()).Single()
         : GetHedgeGrosses(position1, position2, 2, 2, hedgeIndex).Select(t => t.v).ToList();
       //return prices0.StandardDeviation().Round();
-      return prices0.Height() * TakeProfitXRatio;
+      return prices0.Any() ? prices0.Height() * TakeProfitXRatio : double.NaN;
       var bufferCount = prices0.Count / bufferCountRatio;
       var bufferSkip = (prices0.Count * 0.05).ToInt();
       var prices1 = prices0.Buffer(bufferCount.Max(1), bufferSkip.Max(1)).Where(b => b.Count == bufferCount);

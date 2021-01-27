@@ -88,17 +88,17 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
-          CurrentOptionsTest.CurrentOptions(am); return;
-          LoadMultiple(DateTime.Now.AddMonths(-2),10, "VXX"); return;
           Tests.HedgeCombo(am); return;
+          LoadMultiple(DateTime.Now.AddMonths(-2), 5, "M6EH1"); return;
+          CurrentOptionsTest.CurrentOptions(am); return;
           {
-            var secs = new[] { "SPY","VXX","ESZ0","NQZ0","RTYZ0"}.Take(1).ToArray();
+            var secs = new[] { "SPY", "VXX", "ESZ0", "NQZ0", "RTYZ0" }.Take(1).ToArray();
             Console.WriteLine("Loadint " + secs.Flatter(","));
             LoadMultiple(DateTime.Now.AddMonths(-1), 3, secs);
             return;
           }
           PositionsTest.RollAutoOpen(am); return;
-          Tests.MakeStockCombo(am);return;
+          Tests.MakeStockCombo(am); return;
           OrdersTest.HedgeOrder(am); return;
           EdgeTests.OpenEdgeCallPut(am).Subscribe(_ => PositionsTest.ComboTrades(am));
           return;
@@ -109,7 +109,7 @@ namespace ConsoleApp {
           new Contract { Symbol = "VIX", SecType = "FUT+CONTFUT", Exchange = "CFE" }.ReqContractDetailsCached()
           .Subscribe(cd => HandleMessage(cd.ToJson(true)));
           return;
-          void LoadMultiple(DateTime dateStart,int period, params string[] secs) {// Load bars
+          void LoadMultiple(DateTime dateStart, int period, params string[] secs) {// Load bars
             /** Load History
             var c = new Contract() {
               Symbol = "ES",
@@ -118,7 +118,7 @@ namespace ConsoleApp {
             };
             LoadHistory(ibClient, new[] { c });
             */
-            bool repare = false;
+            bool repare = true;
             Action<object> callback = o => HandleMessage(o + "");
             secs.ToObservable()
             .Do(sec =>
@@ -135,7 +135,7 @@ namespace ConsoleApp {
                 };
                 //fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
                 //fw.GetBarsBase(sec, period, 0, DateTime.Parse("11/29/2019").SetLocal(), DateTime.Parse("11/29/2019 23:59").SetLocal()
-                fw.GetBarsBase(sec, period, 8000, TradesManagerStatic.FX_DATE_NOW, DateTime.Now.SetLocal()
+                fw.GetBarsBase(sec, period, 8000, TradesManagerStatic.FX_DATE_NOW, DateTime.Now.SetLocal(), true
                     , bars, null, showProgress);
                 HandleMessage($"***** Done GetBars {bars.Count}*****");
               } else {
@@ -288,7 +288,7 @@ namespace ConsoleApp {
           {
             Task.Delay(3000).ContinueWith(_ => {
               (from trade in am.Positions.Select(p => p.contract).Take(1).ToObservable()
-               from rolls in am.CurrentRollOver(trade.LocalSymbol, false, 2, 2,0).OrderByDescending(r => r.dpw).ToArray()
+               from rolls in am.CurrentRollOver(trade.LocalSymbol, false, 2, 2, 0).OrderByDescending(r => r.dpw).ToArray()
                select new { rolls, trade.LocalSymbol }
               )
               .Do(rolls => HandleMessage($"Rolls for {rolls.LocalSymbol}:\n" + rolls.rolls.Select(roll => new { roll.roll, roll.days, roll.bid }).ToMarkdownTable()))

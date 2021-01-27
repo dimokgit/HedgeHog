@@ -895,12 +895,12 @@ namespace HedgeHog.Alice.Client {
             var tm0 = tm;
             (sender as ICoreFX).SetSymbolSubscription(tm.Pair, () => tm0.SetLotSize(TradesManager.GetAccount()));
             //tm.CurrentPrice = TradesManager.GetPrice(tm.Pair);
+            tm.OnLoadRates();
           }
           tm.CurrentLot = tm.Trades.Sum(t => t.Lots);
           if(!IsInVirtualTrading) {
             var currTM = tm;
             Task.Factory.StartNew(() => currTM.LastTrade = TradesManager.GetLastTrade(currTM.Pair));
-            tm.OnLoadRates();
             runPriceQueue.Add(() => {
               //currTM.RunPriceChanged(new PriceChangedEventArgs(currTM.Pair, TradesManager.GetPrice(currTM.Pair), TradesManager.GetAccount(), TradesManager.GetTradesInternal(currTM.Pair)), null);
             });

@@ -48,9 +48,9 @@ namespace ConsoleApp {
 
       {
         var parentContract = "MGCG1".ContractFactory();
-        var hedgeContract = "SILH1".ContractFactory();
+        var hedgeContract = "M6EH1".ContractFactory();
         var quantityParent = 5;
-        var r = 1/2.68;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
+        var r = 2.69;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
         //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
         var isTest = true;

@@ -132,6 +132,7 @@ namespace IBApp {
       , int periodsBack
       , DateTime startDate
       , DateTime endDate
+      , bool? isFast
       , List<TBar> ticks
       , Func<List<TBar>, List<TBar>> map
       , Action<RateLoadingCallbackArgs<TBar>> callBack = null
@@ -146,13 +147,13 @@ namespace IBApp {
           ,
           Exchange = cd.ValidExchanges.Split(new[] { ';', ',' })[0]// "GLOBEX"/*contract.Exchange*//*, TradingClass = contract.TradingClass*/
           ,
-          Symbol = cd.UnderSymbol
+          Symbol = cd.UnderSecType == "CASH" ? contract.Symbol : cd.UnderSymbol
         };
       var isDone = false;
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);
       startDate = fxDate(startDate);
-      var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D : period == 3 ? TimeUnit.W : period == 10? TimeUnit.M : TimeUnit.Y;
+      var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D : period.Between(3, 15) ? TimeUnit.W : throw new ArgumentOutOfRangeException($"period[{period}]", $"Is out of range");
       var barSize = period == 0 ? BarSize._1_secs
         : period == 1 ? BarSize._1_min
         : period == 3 ? BarSize._3_mins
@@ -161,7 +162,7 @@ namespace IBApp {
         : BarSize._1_day;
       var duration = (endDate - startDate).Duration();
       var lastTime = DateTime.Now;
-      var runFast = periodsBack > 0 || duration.TotalDays < 2;
+      var runFast = isFast.GetValueOrDefault(period == 0 || periodsBack > 0);
       var fac = new HistoryLoaderDelegate<TBar>(runFast ? IHistoryLoader.Factory : (HistoryLoaderDelegate<TBar>)IHistoryLoader.Factory_Slow);
       //Trace(new { fac, runFast, pair, period, periodsBack, startDate, endDate });
       fac(
@@ -213,11 +214,11 @@ namespace IBApp {
 
       return;
     }
-    public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map) {
+    public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, bool? isFast, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map) {
       throw new NotImplementedException();
     }
 
-    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, bool? isFast, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
       var title = nameof(GetBars) + ":: ";
       if(Contract.FromCache(pair).IsEmpty()) {
         Trace(title + $"Contract.FromCache({pair}).IsEmpty(). Running _ibClient.ReqContractDetailsCached({pair}).");
@@ -225,11 +226,11 @@ namespace IBApp {
           .ObserveOn(TaskPoolScheduler.Default)
           .ForEachAsync(_ => {
             Trace(title + new { _.Contract, _.Contract.ConId });
-            GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack);
+            GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, isFast, Bars, map, callBack);
           })
           .GetAwaiter().GetResult();
       } else
-        GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars, map, callBack);
+        GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, isFast, Bars, map, callBack);
     }
     public Account GetAccount() {
       try {
@@ -580,7 +581,9 @@ namespace IBApp {
       //Trace(new NotImplementedException(new { NotImplementedException } + ""));
     }
 
-    public int GetDigits(string pair) => Contract.FromCache(pair).Select(c => Math.Abs(Math.Log10(c.MinTick()).Floor())).Single();
+    static Func<string, int> _getDigitsImpl = (pair) => Contract.FromCache(pair).Select(c => Math.Abs(Math.Log10(c.MinTick()).Floor())).Single();
+    static Func<string, int> _getDigits = _getDigitsImpl.Memoize(s => s, i => i > 0);
+    public int GetDigits(string pair) => _getDigits(pair);
 
     public Trade GetLastTrade(string pair) {
       //RaiseNotImplemented(nameof(GetLastTrade));

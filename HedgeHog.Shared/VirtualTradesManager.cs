@@ -524,7 +524,7 @@ namespace HedgeHog.Shared {
       throw new NotImplementedException();
     }
 
-    public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map) {
+    public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate,bool? isFast, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map) {
       throw new NotImplementedException();
     }
 
@@ -569,7 +569,7 @@ namespace HedgeHog.Shared {
       throw new NotImplementedException();
     }
 
-    public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate, new() {
+    public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate,bool? isFast, List<TBar> ticks, Func<List<TBar>, List<TBar>> map, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate, new() {
       throw new NotImplementedException();
     }
 
@@ -592,7 +592,7 @@ namespace HedgeHog.Shared {
       throw new NotImplementedException();
     }
 
-    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate,bool? isFast, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
       throw new NotImplementedException();
     }
 

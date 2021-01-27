@@ -20,8 +20,8 @@ namespace HedgeHog.Alice.Client {
       }
 
       var tm = UseTraderMacro(pair).Single();
-      var std = tm.StraddleRangeM1().TakeProfit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
-      var profit = profitInPoints.GetValueOrDefault(std);
+      //var std = tm.StraddleRangeM1().TakeProfit;// tm.RatesArraySafe.StandardDeviation(r => r.PriceAvg);
+      var profit = profitInPoints.GetValueOrDefault();// std);
       //if(profit == 0) throw new Exception("No trend line found for profit calculation");
       var am = ((IBWraper)trader.Value.TradesManager).AccountManager;
       if(IBApi.Contract.Contracts.TryGetValue(instrument, out var contract))
