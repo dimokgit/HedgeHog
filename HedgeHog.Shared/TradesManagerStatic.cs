@@ -86,9 +86,10 @@ namespace HedgeHog.Shared {
       (new[] { 5, 10 }, 10 ),
       (new[] { 50, 100 }, 100 ),
       (new[] { 10, 1000 }, 10 ),
+      (new[] { 10, 12500 }, 10 ),
     };
     static int multiplier(int[] mm) => multiplier(mm[0], mm[1]);
-    static int multiplierErrorCount = 5;
+    static int multiplierErrorCount = 0;
     static int multiplier(int m1, int m2) {
       if(m1 == m2) return m1;
       var m = multipliers.SingleOrDefault(mm => mm.mm[0] == m1 && mm.mm[1] == m2 || mm.mm[0] == m2 && mm.mm[1] == m1).m;
@@ -96,9 +97,11 @@ namespace HedgeHog.Shared {
         LogMessage.Send(new Exception(new { m1, m2 } + $" has no matching multiplier pair {multipliers.ToJson(false)}. Will use {m1.Max(m2)}"));
       return m == 0 ? m1.Max(m2) : m;
     }
+    public static double Multiplier(this IList<(double price, double multiplier, double positions)> hedges) =>
+      hedges.OrderByDescending(h => h.price * h.multiplier).First().multiplier;
     public static double CalcHedgePrice(this IList<(double price, int multiplier, double positions)> hedges) => CalcHedgePrice(hedges.Select(h => (h.price, (double)h.multiplier, h.positions)).ToArray());
     public static double CalcHedgePrice(this IList<(double price, double multiplier, double positions)> hedges)
-      => hedges.Sum(h => h.price * h.multiplier * h.positions) / multiplier(hedges.Select(h => h.multiplier.ToInt()).ToArray());
+      => hedges.Sum(h => h.price * h.multiplier * h.positions) / hedges.Multiplier();// multiplier(hedges.Select(h => h.multiplier.ToInt()).ToArray());
 
     public static ((TContract contract, int quantity)[] contracts, int quantity) HedgeQuanitiesByValue<TContract>(int multiplier
       , string mashDivider
