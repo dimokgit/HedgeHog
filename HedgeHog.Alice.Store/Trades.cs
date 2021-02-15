@@ -17,7 +17,7 @@ namespace HedgeHog.Alice.Store {
     public Double theta { get; set; }
     public DateTime time { get; set; }
 
-    public StraddleHistory(long id, string pair,double bid,double ask,double delta,DateTime time,double  theta) {
+    public StraddleHistory(long id, string pair, double bid, double ask, double delta, DateTime time, double theta) {
       this._id = id;
       this.pair = pair;
       this.bid = bid;

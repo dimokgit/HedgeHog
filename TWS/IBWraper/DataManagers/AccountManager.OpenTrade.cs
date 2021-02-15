@@ -27,16 +27,17 @@ namespace IBApp {
     }
     public void OpenOrUpdateLimitOrderByProfit2(Contract contract, int position, int orderId, double openAmount, double profitAmount, bool isTest) {
       var pa = profitAmount.Abs() >= 1 ? profitAmount : openAmount.Abs() * profitAmount;
+      var mul = contract.HedgeComboPrimary(s => TraceError(s)).Single().ComboMultiplier;
       OrderContractsInternal.Items.ByOrderId(orderId)
       .Where(och => !och.isDone)
       .Do(och => {
         if(och.contract.Key != contract.Key)
           throw new Exception($"{nameof(OpenOrUpdateLimitOrderByProfit2)}:{new { orderId, och.contract.Instrument, dontMatch = contract.ToString() }}");
-        var limit = OrderPrice(priceFromProfit(pa, position, och.contract.ComboMultiplier, openAmount), och.contract);
+        var limit = OrderPrice(priceFromProfit(pa, position, mul, openAmount), och.contract);
         UpdateOrder(orderId, limit, isTest);
       })
       .RunIfEmpty(() => { // Create new order
-        var lmtPrice = OrderPrice(priceFromProfit(pa, position, contract.ComboMultiplier, openAmount), contract);
+        var lmtPrice = OrderPrice(priceFromProfit(pa, position, mul, openAmount), contract);
         OpenTradeWithAction(o => o.Transmit = !isTest, contract, -position, lmtPrice, 0.0, false, DateTime.MaxValue).Subscribe();
       });
     }
@@ -182,9 +183,12 @@ namespace IBApp {
              select option;
     }
     double OrderPrice(double orderPrice, Contract contract) {
-      var minTick = contract.MinTick();
-      var p = (Math.Round(orderPrice / minTick) * minTick);
-      p = Math.Round(p, 4);
+      var minTick3 = contract.MinTick();
+      var minTick2 = contract.MinTicks().Min();
+      var mt = contract.HedgeComboPrimary((m1,m2)=>throw new Exception()).SelectMany(c=>c.MinTicks()).Single();
+      var p = Math.Round(orderPrice / mt) * mt;
+      var l = (mt + "").Split('.')[1].Length;
+      p = Math.Round(p, l);
       return p;
     }
 

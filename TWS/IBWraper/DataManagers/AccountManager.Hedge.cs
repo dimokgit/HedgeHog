@@ -21,7 +21,7 @@ namespace IBApp {
                let quantity = hc.quantity * g.First().position.position.Sign()
                let isBuy = quantity > 0
                let pl = g.Sum(p => p.pl)
-               let mul = g.LastOrDefault().position.contract.ComboMultiplier * quantity
+               let mul = hc.multiplier// g.Select(x => x.position.contract.ComboMultiplier).ToArray().multiplier() * quantity
                let openPrice = g.Sum(p => p.position.open) / mul
                let closePrice = g.Sum(p => p.close) / mul
                let order = OrderContractsInternal.Items.OpenByContract(hc.contract).Where(oc => oc.order.IsBuy != isBuy).Take(1).ToList()
@@ -46,7 +46,7 @@ namespace IBApp {
       && p.contract.UnderContract.SequenceEqual(option.contract.UnderContract));
     public static IEnumerable<Position> CoveredOption(Position under, IEnumerable<Position> positions) =>
       positions
-      .Where(p => !IsPartOfStraddle(p,positions).Any() && p.contract.IsOption && under.IsBuy == p.contract.IsCall && !p.IsBuy && p.contract.Expiration <= DateTime.Today.AddDays(1) && p.contract.UnderContract.Any(u => u.Key == under.contract.Key));
+      .Where(p => !IsPartOfStraddle(p, positions).Any() && p.contract.IsOption && under.IsBuy == p.contract.IsCall && !p.IsBuy && p.contract.Expiration <= DateTime.Today.AddDays(1) && p.contract.UnderContract.Any(u => u.Key == under.contract.Key));
 
     public static IObservable<(Position position, double close, double pl, double closePrice)[]> HedgedPositions(IEnumerable<Position> positions) {
       return (from p0 in positions.Sort().ToObservable()
@@ -64,17 +64,17 @@ namespace IBApp {
               select a
       );
     }
-    public static IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe(int quantity, string s1, string s2, double ratio1, double ratio2, bool isInTest) =>
+    public static IObservable<HedgeCombo> MakeHedgeComboSafe(int quantity, string s1, string s2, double ratio1, double ratio2, bool isInTest) =>
       from c1 in s1.ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
       from c2 in s2.ContractFactory().ReqContractDetailsCached().Select(cd => cd.Contract)
       from h in MakeHedgeComboSafe(quantity, c1, c2, ratio1, ratio2, isInTest)
       select h;
-    public static IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe(int quantity, Contract c1, Contract c2, double ratio1, double ratio2, bool isInTest) =>
+    public static IObservable<HedgeCombo> MakeHedgeComboSafe(int quantity, Contract c1, Contract c2, double ratio1, double ratio2, bool isInTest) =>
       from cd1 in isInTest ? Observable.Return(c1.SetTestConId(isInTest, 0)) : c1.ReqContractDetailsCached().Select(cd => cd.Contract)
       from cd2 in isInTest ? Observable.Return(c2.SetTestConId(isInTest, 0)) : c2.ReqContractDetailsCached().Select(cd => cd.Contract)
       select MakeHedgeCombo(quantity, cd1, cd2, ratio1, ratio2).SideEffect(x => x.contract.SetTestConId(isInTest, 0));
 
-    public static (Contract contract, int quantity) MakeHedgeCombo(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) {
+    public static HedgeCombo MakeHedgeCombo(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) {
       if(c1.ConId == 0)
         throw new Exception($"ComboLeg contract1 has ConId = 0");
       if(c2.ConId == 0)
@@ -116,17 +116,17 @@ namespace IBApp {
       contract.ComboLegs.Add(leg2);
 
       var cache = Contract.Contracts.Any() ? contract.FromCache().Single() : contract;
-      return (cache, gcd);
+      return (cache, gcd, GetComboMultiplier(cache));
     }
 
-    public static (Contract contract, int quantity) MakeStockCombo(double amount, IList<(Contract contract, double price)> legs) {
+    public static HedgeCombo MakeStockCombo(double amount, IList<(Contract contract, double price)> legs) {
       const string EXCHAGE = "SMART";
       Contract contract = new Contract();
 
       var c1 = legs.First().contract;
       var symbol = c1.IsFuture || c1.IsOption
         ? c1.Symbol.IfEmpty(Regex.Match(c1.LocalSymbol, "(.+).{2}$").Groups[1] + "").ThrowIf(contractSymbol => contractSymbol.IsNullOrWhiteSpace())
-        : legs.Select(l=> l.contract.Symbol).OrderBy(s => s).Flatter(",");
+        : legs.Select(l => l.contract.Symbol).OrderBy(s => s).Flatter(",");
       contract.Symbol = symbol;
       contract.SecType = "BAG";
       contract.Currency = "USD";
@@ -149,8 +149,40 @@ namespace IBApp {
       contract.ComboLegs.AddRange(comboLegs);
 
       var cache = Contract.Contracts.Any() ? contract.FromCache().Single() : contract;
-      return (cache, gdc);
+      return (cache, gdc, GetComboMultiplier(cache));
     }
+
+    private static int GetComboMultiplier(Contract cache) => cache.HedgeComboPrimary((m1, m2)
+      => LogMessage.Send(new { AccountManager = new { GetComboMultiplier = new { NotFound = new { m1, m2 } } } })).Single().ComboMultiplier;
   }
 
+  public struct HedgeCombo {
+    public Contract contract;
+    public int quantity;
+    public double multiplier;
+
+    public HedgeCombo(Contract contract, int quantity, double multiplier) {
+      this.contract = contract;
+      this.quantity = quantity;
+      this.multiplier = multiplier;
+    }
+
+    public override bool Equals(object obj) => obj is HedgeCombo other && EqualityComparer<Contract>.Default.Equals(contract, other.contract) && quantity == other.quantity;
+
+    public override int GetHashCode() {
+      int hashCode = -1882738349;
+      hashCode = hashCode * -1521134295 + EqualityComparer<Contract>.Default.GetHashCode(contract);
+      hashCode = hashCode * -1521134295 + quantity.GetHashCode();
+      return hashCode;
+    }
+
+    public void Deconstruct(out Contract contract, out int quantity, out double multiplier) {
+      contract = this.contract;
+      quantity = this.quantity;
+      multiplier = this.multiplier;
+    }
+
+    public static implicit operator (Contract contract, int quantity, double multiplier)(HedgeCombo value) => (value.contract, value.quantity, value.multiplier);
+    public static implicit operator HedgeCombo((Contract contract, int quantity, double multiplier) value) => new HedgeCombo(value.contract, value.quantity, value.multiplier);
+  }
 }

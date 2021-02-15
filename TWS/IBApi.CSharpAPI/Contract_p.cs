@@ -8,9 +8,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using static HedgeHog.IEnumerableCore;
 
 namespace IBApi {
   public partial class Contract :IEquatable<Contract> {
@@ -125,8 +127,10 @@ namespace IBApi {
       var y = c.UnderContract.SelectMany(uc => uc.FromDetailsCache());
       return x.Concat(y).Select(cd => cd.MinTick);
     }
+    public IEnumerable<double> MinTicks() => LegsOrMe(MinTickImpl).Concat();
     public double MinTick() => LegsOrMe(MinTickImpl).Concat().Max();
-    public int ComboMultiplier => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse).Min();
+    public IEnumerable<int> ComboMultipliers => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse);
+    public int ComboMultiplier => ComboMultipliers.Min();
     public bool IsCombo => IsBag;
     public bool IsFuturesCombo => LegsEx(l => l.c.IsFuture).Count() > 1;
     public bool IsStocksCombo => LegsEx(l => l.c.IsStock).Count() > 1;
@@ -262,8 +266,59 @@ namespace IBApi {
       : other is null || this is null
       ? false
       : Key == other.Key;
+    #region Hedge Primary
+    public IEnumerable<Contract> HedgeComboPrimary(Action<string> notFound, [CallerMemberName] string Caller = "") {
+      void error(int m1, int m2) => notFound(new {NotFound = $"By {Caller}", m1, m2  } + "");
+      return HedgeComboPrimary(error);
+    }
+    public IEnumerable<Contract> HedgeComboPrimary(Action<int, int> notFound) {
+      return (from legs in Legs().Select(l => l.c).Buffer(2)
+              let c1 = legs[0]
+              let c2 = legs[1]
+              let s = UnderCombo((c1.Symbol, c2.Symbol), () => ByMult(legs).Symbol)
+              select legs.First(legs => legs.Symbol == s)
+              );
+      Contract ByMult(IList<Contract> contracts) {
+        var m = new[] { contracts[0].ComboMultiplier, contracts[1].ComboMultiplier }.multiplier(notFound);
+        return contracts.First(c => c.ComboMultiplier == m);
+      }
+    }
+    private static readonly Dictionary<(string under1, string under2), string> _underCombos = new Dictionary<(string under1, string under2), string> {
+      [("MGC", "TN")] = "TN",
+      [("NQ", "ES")] = "NQ",
+    };
+    public static string UnderCombo((string under1, string under2) t, Func<string> @default) =>
+      HedgePairs.Where(hp => hp.hedge1 == t.under1 && hp.hedge2 == t.under2 || hp.hedge1 == t.under2 && hp.hedge2 == t.under1)
+      .Select(h => h.prime)
+      .IfEmpty(() => new[] { @default() })
+      .Single();
+    #endregion
+    public static (string hedge1, string hedge2, string prime)[] HedgePairs { get; set; }
   }
   public static class ContractMixins {
     public static string ToLable(this ComboLeg l) => l.Ratio == 0 ? "" : (l.Action == "BUY" ? "+" : "-") + (l.Ratio > 1 ? l.Ratio + "" : "");
+    static (int[] mm, int m)[] multipliers = new[] {
+      (new[] { 2, 5 }, 2 ),
+      (new[] { 5, 10 }, 10 ),
+      (new[] { 5, 100 }, 100 ),
+      (new[] { 5, 1000 }, 5 ),
+      (new[] { 10, 1000 }, 10 ),
+      (new[] { 10, 12500 }, 10 ),
+      (new[] { 20, 50 }, 20 ),
+      (new[] { 50, 100 }, 100 ),
+      (new[] { 50, 1000 }, 1000 ),
+    };
+    static int multiplierErrorCount = 0;
+    public static int multiplier(this int[] mm, Action<int, int> notFound) => multiplier(mm[0], mm[1], notFound);
+    public static int multiplier(int m1, int m2, Action<int, int> notFound) {
+      if(m1 == m2) return m1;
+      var m = multipliers.SingleOrDefault(mm => mm.mm[0] == m1 && mm.mm[1] == m2 || mm.mm[0] == m2 && mm.mm[1] == m1).m;
+      if(m == 0 && multiplierErrorCount-- > 0)
+        notFound(m1, m2);
+      //LogMessage.Send(new Exception(new { m1, m2 } + $" has no matching multiplier pair {multipliers.ToJson(false)}. Will use {m1.Max(m2)}"));
+      return m == 0 ? m1.Max(m2) : m;
+    }
+
   }
+
 }

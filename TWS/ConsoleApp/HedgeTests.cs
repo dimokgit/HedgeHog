@@ -16,7 +16,7 @@ using static ConsoleApp.Program;
 namespace ConsoleApp {
   static class Tests {
     public static void MakeStockCombo(AccountManager am) {
-      var portfolio = new[] { "AAPL","MSFT", "AMZN" }.TakeLast(3).Select(s => s.ReqContractDetailsCached().Select(cd => cd.Contract)).Merge();
+      var portfolio = new[] { "AAPL", "MSFT", "AMZN" }.TakeLast(3).Select(s => s.ReqContractDetailsCached().Select(cd => cd.Contract)).Merge();
       (from contract in portfolio
        from price in contract.ReqPriceSafe()
        select new { contract, price }
@@ -25,7 +25,7 @@ namespace ConsoleApp {
        .Subscribe(ps => {
          HandleMessage(ps.ToTextOrTable("Stocks"));
          var combo = AccountManager.MakeStockCombo(10000, ps.Select(l => (l.contract, l.price.avg)).ToList());
-         combo.contract.ReqContractDetailsCached().Subscribe(_=>HandleMessage(_));
+         combo.contract.ReqContractDetailsCached().Subscribe(_ => HandleMessage(_));
          combo.contract.ReqPriceSafe().Subscribe(p => HandleMessage(new { combo, p }.ToTextTable("Combo Price")));
          (from oc in am.OpenTradeWithAction(o => o.Transmit = false, combo.contract, combo.quantity)
           select oc
@@ -36,7 +36,7 @@ namespace ConsoleApp {
       am.PositionsObservable.Do(positions => {
         HandleMessage(am.Positions.ToTextOrTable("All Positions:"));
       })
-      .Where(_ => am.Positions.Count > 2)
+      .Where(_ => am.Positions.Count >= 2)
       .Take(1)
       .SelectMany(_ => am.MakeComboHedgeFromPositions(am.Positions))
       .Subscribe(c => {
@@ -44,13 +44,28 @@ namespace ConsoleApp {
       });
     }
 
+    public static void HedgeComboPrimary(AccountManager am,string localSymbol1, string localSymbol2) {
+        var parentContract = localSymbol1.ContractFactory();
+        var hedgeContract = localSymbol2.ContractFactory();
+        var quantityParent = 1;
+        var r = 1.0;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
+        Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
+        //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
+      (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, hp().p2, false)
+       from cd in hc.contract.ReqContractDetailsCached()
+       select cd.Contract.HedgeComboPrimary((m1, m2) => throw new SoftException(new { m1, m2, error = "not found" } + ""))
+         )
+         .Subscribe(c => {
+           c.ForEach(primaryContract => HandleMessage(new { parentContract, hedgeContract, primaryContract }));
+         });
+    }
     public static void HedgeCombo(AccountManager am) {
 
       {
-        var parentContract = "MGCG1".ContractFactory();
-        var hedgeContract = "M6EH1".ContractFactory();
-        var quantityParent = 5;
-        var r = 2.69;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
+        var parentContract = "MGCJ1".ContractFactory();
+        var hedgeContract = "GCJ1".ContractFactory();
+        var quantityParent = 10;
+        var r = 0.10;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
         //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
         var isTest = true;
@@ -66,14 +81,14 @@ namespace ConsoleApp {
          });
         return;
       }
-      (from pos in am.PositionsObservable.Take(2).ToArray()
-       from ct in am.ComboTrades(1)
-       where ct.contract.IsBag
-       from p in ct.contract.ReqPriceSafe().Select(ab => ab.Price(true))
-       from ots in am.OpenTradeWithAction(o => o.Transmit = false, ct.contract, -ct.position)
-       from ot in ots
-       select ot
-      ).Subscribe(oc => Program.HandleMessage(oc));
+    (from pos in am.PositionsObservable.Take(2).ToArray()
+     from ct in am.ComboTrades(1)
+     where ct.contract.IsBag
+     from p in ct.contract.ReqPriceSafe().Select(ab => ab.Price(true))
+     from ots in am.OpenTradeWithAction(o => o.Transmit = false, ct.contract, -ct.position)
+     from ot in ots
+     select ot
+    ).Subscribe(oc => Program.HandleMessage(oc));
       return;
 
       var h1 = "SPY";

@@ -105,6 +105,7 @@ namespace IBApp {
     public IObservable<MarketPrice> ReqPriceBag(Contract combo, double timeoutInSeconds, [CallerMemberName] string Caller = "") {
       string title() => $"{nameof(ReqPriceBag)}: {new { combo, key = combo.Key }}";
       var legs = combo.LegsEx().ToList();
+      var mul = combo.HedgeComboPrimary((m1,m2)=>TraceError(new { HedgeNotFound = new { m1, m2 } })).Select(c => c.ComboMultiplier);
       if(legs.Count < 2) Trace($"{title()} is no a combo");
       var x0 = (from l in legs.ToObservable()
                 from p in l.contract.ReqPriceSafe(timeoutInSeconds).DefaultIfEmpty()
@@ -119,8 +120,9 @@ namespace IBApp {
                })
                //.Where(a => a.Length == 2)
                .Select(a => {
-                 var bid = a.Select(x => (price: x.IsBuy ? x.p.bid : x.p.ask, multiplier: x.c.ComboMultiplier, positions: x.r)).ToArray().CalcHedgePrice();
-                 var ask = a.Select(x => (price: x.IsBuy ? x.p.ask : x.p.bid, multiplier: x.c.ComboMultiplier, positions: x.r)).ToArray().CalcHedgePrice();
+                 var m = mul.Single();
+                 var bid = a.Select(x => (price: x.IsBuy ? x.p.bid : x.p.ask, multiplier: x.c.ComboMultiplier, positions: x.r)).ToArray().CalcHedgePrice(m);
+                 var ask = a.Select(x => (price: x.IsBuy ? x.p.ask : x.p.bid, multiplier: x.c.ComboMultiplier, positions: x.r)).ToArray().CalcHedgePrice(m);
                  if(bid == 0 || ask == 0)
                    TraceError($"{title()}: {new { ask, bid }}");
                  return (MarketPrice)(bid, ask, a.Max(b => b.p.time), a.Sum(b => b.p.delta), a.Sum(b => b.p.theta));

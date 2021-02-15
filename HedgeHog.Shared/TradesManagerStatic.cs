@@ -45,7 +45,7 @@ namespace HedgeHog.Shared {
     .Count(1, c => throw new Exception($"{new { symbol }} is missing in dbOffers"), null)
       //.DefaultIfEmpty(OfferDefault)
       .Single();
-    public static Offer GetOffer(string pair) => 
+    public static Offer GetOffer(string pair) =>
       throw new NotImplementedException();
     //GetOfferImpl(pair);
     public static double GetPointSize(string symbol) => 1;// GetOffer(symbol).PointSize;
@@ -79,16 +79,17 @@ namespace HedgeHog.Shared {
     }
 
     static (int[] mm, int m)[] multipliers = new[] {
-      (new[] { 50, 20 }, 20 ),
-      (new[] { 5, 2 }, 2 ),
-      (new[] { 50, 1000 }, 1000 ),
-      (new[] { 5, 100 }, 100 ),
+      (new[] { 2, 5 }, 2 ),
       (new[] { 5, 10 }, 10 ),
-      (new[] { 50, 100 }, 100 ),
+      (new[] { 5, 100 }, 100 ),
+      (new[] { 5, 1000 }, 5 ),
       (new[] { 10, 1000 }, 10 ),
       (new[] { 10, 12500 }, 10 ),
+      (new[] { 20, 50 }, 20 ),
+      (new[] { 50, 100 }, 100 ),
+      (new[] { 50, 1000 }, 1000 ),
     };
-    static int multiplier(int[] mm) => multiplier(mm[0], mm[1]);
+    static int multiplier(this int[] mm) => multiplier(mm[0], mm[1]);
     static int multiplierErrorCount = 0;
     static int multiplier(int m1, int m2) {
       if(m1 == m2) return m1;
@@ -97,11 +98,12 @@ namespace HedgeHog.Shared {
         LogMessage.Send(new Exception(new { m1, m2 } + $" has no matching multiplier pair {multipliers.ToJson(false)}. Will use {m1.Max(m2)}"));
       return m == 0 ? m1.Max(m2) : m;
     }
-    public static double Multiplier(this IList<(double price, double multiplier, double positions)> hedges) =>
+    static double Multiplier(this IList<(double price, double multiplier, double positions)> hedges) =>
       hedges.OrderByDescending(h => h.price * h.multiplier).First().multiplier;
-    public static double CalcHedgePrice(this IList<(double price, int multiplier, double positions)> hedges) => CalcHedgePrice(hedges.Select(h => (h.price, (double)h.multiplier, h.positions)).ToArray());
-    public static double CalcHedgePrice(this IList<(double price, double multiplier, double positions)> hedges)
-      => hedges.Sum(h => h.price * h.multiplier * h.positions) / hedges.Multiplier();// multiplier(hedges.Select(h => h.multiplier.ToInt()).ToArray());
+    public static double CalcHedgePrice(this IList<(double price, int multiplier, double positions)> hedges, double multiplier) => CalcHedgePrice(hedges.Select(h => (h.price, (double)h.multiplier, h.positions)).ToArray(),multiplier);
+    public static double CalcHedgePrice(this IList<(double price, double multiplier, double positions)> hedges, double multiplier)
+      => hedges.Sum(h => h.price * h.multiplier * h.positions) / multiplier;// (hedges.Select(h => h.multiplier.ToInt()).ToArray());
+    //=> hedges.Sum(h => h.price * h.multiplier * h.positions) / hedges.Multiplier();// multiplier(hedges.Select(h => h.multiplier.ToInt()).ToArray());
 
     public static ((TContract contract, int quantity)[] contracts, int quantity) HedgeQuanitiesByValue<TContract>(int multiplier
       , string mashDivider
@@ -174,8 +176,10 @@ namespace HedgeHog.Shared {
     }
 
     public static bool IsCurrenncy(this string s) => _currencies.Any(c => s.ToUpper().StartsWith(c)) && _currencies.Any(c => s.ToUpper().EndsWith(c));
+    private static string[] _treasures = new[] { "ZN   ", "ZB   ", "ZF   " };
+    private static Regex TreasureMatch = new Regex(@"^(?<code>\w{2,3})\s{3}", RegexOptions.IgnoreCase);
     private static Regex FutureMatch = new Regex(@"^(?<code>\w{2,3})[A-Z]\d{1,2}$", RegexOptions.IgnoreCase);
-    public static bool IsFuture(this string s) => FutureMatch.IsMatch(s);
+    public static bool IsFuture(this string s) => FutureMatch.IsMatch(s) || TreasureMatch.IsMatch(s);
     public static string FutureCode(this string s) => IsFuture(s) ? FutureMatch.Match(s).Groups["code"].Value : s;
     public static bool IsCommodity(this string s) => _commodities.Contains(s.ToUpper());
     public static bool IsUSStock(this string s) => !s.IsCurrenncy() && !s.IsFuture() && !s.IsCommodity();

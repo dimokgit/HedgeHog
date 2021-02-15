@@ -1231,6 +1231,7 @@ namespace HedgeHog.Alice.Client {
         if(_default != null)
           throw new InvalidOperationException(nameof(TraderModel) + " has already beem initialized.");
         _default = this;
+        IBApi.Contract.HedgePairs = GlobalStorage.LoadHadgePairs().Select(h => (h.hedge1, h.hedge2, h.prime)).ToArray();
         Initialize();
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
         LoadOffers();

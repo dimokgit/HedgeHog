@@ -171,7 +171,7 @@ namespace IBApp {
       var _raisedOrders = new ConcurrentDictionary<int, bool>();
       OpenOrderObservable // we only get it once per order
         .Where(x => x.Order.Account == _accountId && !x.OrderState.IsInactive)
-        .Do(x => TraceDebug($"OnOpenOrder: {x.Order}: {x.Contract}: {x.OrderState}"))
+        .Do(x => TraceDebug($"OnOpenOrder: {x.Order}: {x.Contract}: {x.OrderState}: {x.Contract.Exchange}"))
         .Distinct(x => x.Order.PermId)
         .SelectMany(x => ReqContextContractDetailsAsync(x.Contract).Select(_ => x))
         .Do(AddOrderContractHolder)

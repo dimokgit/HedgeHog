@@ -80,8 +80,7 @@ namespace HedgeHog.Alice.Store {
     IBApi.Contract _currentHedgeContract = null;
     public void SetCurrentHedgePosition<T>(IBApi.Contract contract, int quantity, T context) {
       lock(_currentHedgePositionsLock) {
-        if(contract.Legs().First().c.Instrument != Pair)
-          Debugger.Break();
+        if(false && contract.Legs().First().c.Instrument != Pair) Debugger.Break();
         _currentHedgeContract = contract;
         var legs = contract.LegsForHedge(Pair).ToList();
         if(legs.Count != 2) {
@@ -136,13 +135,16 @@ namespace HedgeHog.Alice.Store {
         if(true || GetVoltByIndex(voltIndex)(RatesArraySafe[0]).IsNaN())
           RunCalcHedgePrices(voltIndex, chp.p1, chp.p2, hedgeIndex);
         TradingMacroHedged(tmh => {
-          var p = new[] { MakeParam(this, chp.p1), MakeParam(tmh, chp.p2) }.CalcHedgePrice();
+          int m = GetHedgeMultiplier();
+          var p = new[] { MakeParam(this, chp.p1), MakeParam(tmh, chp.p2) }.CalcHedgePrice(m);
           SetVolts(p, voltIndex, true);
         }, hedgeIndex);
       }
       return null;
       (double, int, double) MakeParam(TradingMacro tm, double pos) => ((tm.RatesArraySafe.LastBC()?.PriceAvg).GetValueOrDefault(double.NaN), tm.BaseUnitSize, pos);
     }
+
+    private int GetHedgeMultiplier() => _currentHedgeContract.HedgeComboPrimary((m1, m2) => { }).Single().ComboMultiplier;
 
     private void RunCalcHedgePrices(int voltIndex, int p1, int p2, int hedgeIndex) {
       var sw = Stopwatch.StartNew();
@@ -159,14 +161,14 @@ namespace HedgeHog.Alice.Store {
     private IEnumerable<(Rate rate, double price)> CalcHedgePricesImpl(List<Rate> ra, TradingMacro tmh, List<Rate> ram, double p1, double p2)
       => ra.Zip(r => r.StartDate, ram, r => r.StartDate, (r1, r2) => (r1, r2))
       .Select(t => {
-        var p = (new[] { (t.r1.PriceAvg, BaseUnitSize, p1), (t.r2.PriceAvg, tmh.BaseUnitSize, p2) }).CalcHedgePrice();
+        var p = (new[] { (t.r1.PriceAvg, BaseUnitSize, p1), (t.r2.PriceAvg, tmh.BaseUnitSize, p2) }).CalcHedgePrice(GetHedgeMultiplier());
         return (t.r1, p);
       });
 
-    static (T r,Stopwatch sw) Time<T>(Func<T> func) {
+    static (T r, Stopwatch sw) Time<T>(Func<T> func) {
       var sw = Stopwatch.StartNew();
-        var r = func();
-        sw.Stop();
+      var r = func();
+      sw.Stop();
       return (r, sw);
     }
     CorridorStatistics ShowVoltsByGrossVirtual(int voltIndex, int hedgeIndex) {
@@ -221,7 +223,7 @@ namespace HedgeHog.Alice.Store {
         //Debug.WriteLine(s);
         _ShowVoltsByGrossVirtualElapsed = _ShowVoltsByGrossVirtualElapsed.Cma(10, sw.ElapsedMilliseconds);
         if(IsInVirtualTrading && !Debugger.IsAttached && _ShowVoltsByGrossVirtualElapsed > 150) {
-          var s = $"{nameof(ShowVoltsByGrossVirtual)}[{this}]:{new { _ShowVoltsByGrossVirtualElapsed }}+[{sws.Select(s=>s.ElapsedMilliseconds).Flatter(",")}]";
+          var s = $"{nameof(ShowVoltsByGrossVirtual)}[{this}]:{new { _ShowVoltsByGrossVirtualElapsed }}+[{sws.Select(s => s.ElapsedMilliseconds).Flatter(",")}]";
           Log = new Exception(s);
         }
       }
@@ -230,7 +232,7 @@ namespace HedgeHog.Alice.Store {
     [TraderOnlyMember]
     int HedgeIndexByPair(string hp) => PairHedges.Select((h, i) => (h, i)).Where(t => t.h == hp).Select(t => t.i).SingleOrDefault();
     private (int p1, int p2, int hedgeIndex) GetHedgedTradePositionsOrDefualt() =>
-      !IsTrader ? TradingMacroTrader(tm => tm.GetHedgedTradePositionsOrDefualt()).Single()
+      !IsTrader ? TradingMacroTrader(tm => tm.GetHedgedTradePositionsOrDefualt()).SingleOrDefault()
       : HedgedTrades()
       .Select(ht => (p: (int)ht.Position, ht.Pair))
       .Pairwise((p1, p2) => (p1.p * p1.p.Sign(), p2.p * p1.p.Sign(), HedgeIndexByPair(p2.Pair)))
@@ -360,7 +362,7 @@ namespace HedgeHog.Alice.Store {
         var tm = TradingMacroTrader().Single();
         var hct = tm.HedgeCalcType;
         var tr = tm.HedgeQuantity;
-        IObservable<(IBApi.Contract contract, int quantity)> combo;
+        IObservable<HedgeCombo> combo;
         List<HedgePosition<IBApi.Contract>> hh;
         switch(hct) {
           case HedgeCalcTypes.ByHV:

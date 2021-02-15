@@ -29,6 +29,7 @@ using MongoDB.Bson;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Transactions;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage :Models.ModelBase {
@@ -131,6 +132,7 @@ namespace HedgeHog.Alice.Store {
       public Microsoft.EntityFrameworkCore.DbSet<TraderModelPersist> TraderSettings { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<Shared.Trade> Trades { get; set; }
       public Microsoft.EntityFrameworkCore.DbSet<StraddleHistory> StraddleHistories { get; set; }
+      public Microsoft.EntityFrameworkCore.DbSet<HedgePair> HedgePairs { get; set; }
     }
 
     #endregion
@@ -189,6 +191,7 @@ namespace HedgeHog.Alice.Store {
     static IMapper offersMapper = new MapperConfiguration(cfg => cfg.CreateMap<MongoDB.Offer, HedgeHog.Shared.Offer>()).CreateMapper();
     public static Shared.Offer[] LoadOffers() => UseForexMongo(c => c.Offer.Select(o => offersMapper.Map<Shared.Offer>(o)).ToArray());
     #endregion
+    public static HedgePair[] LoadHadgePairs() => UseForexMongo(c => c.HedgePairs.ToArray());
 
     #region TraderSettings
     static IMapper traderMapper = new MapperConfiguration(cfg => cfg.CreateMap<TraderModelPersist, TraderModelBase>()).CreateMapper();

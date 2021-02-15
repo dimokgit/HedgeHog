@@ -23,8 +23,8 @@ namespace IBApp {
     public static IEnumerable<Position> Sort(this IEnumerable<Position> positions) =>
       positions.OrderByDescending(p => primaryInstruments.Contains(p.contract.Instrument?.ToLower())
       || primaryInstruments.Contains(p.contract.Symbol?.ToLower()));
-    public static (Contract contract, int quantity) MakeHedgeCombo(this IEnumerable<(Contract c, double ratio)> combo, int quantity) => combo.ToList().MakeHedgeCombo(quantity);
-    public static (Contract contract, int quantity) MakeHedgeCombo(this IList<(Contract c, double ratio)> combo, int quantity) =>
+    public static HedgeCombo MakeHedgeCombo(this IEnumerable<(Contract c, double ratio)> combo, int quantity) => combo.ToList().MakeHedgeCombo(quantity);
+    public static HedgeCombo MakeHedgeCombo(this IList<(Contract c, double ratio)> combo, int quantity) =>
       combo.Count.SideEffect(c => {
         if(c != 2)
           Debugger.Break();

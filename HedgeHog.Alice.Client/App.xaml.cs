@@ -52,7 +52,7 @@ namespace HedgeHog.Alice.Client {
       Process[] Runs() => Process.GetProcessesByName(me.ProcessName).Where(p => p.MainModule.FileName == me.MainModule.FileName).ToArray();
       Observable.Interval(TimeSpan.FromSeconds(1)).ObserveOnDispatcher()
       .SkipWhile(_ => Runs().Length > 1)
-      .Timeout(DateTimeOffset.Now.AddSeconds(30))
+      .Timeout(DateTimeOffset.Now.AddSeconds(60))
       .Catch<long, Exception>(exc => {
         AsyncMessageBox.BeginMessageBoxAsync($"{me.MainModule.FileName} is already running.");
         return Observable.Return(-1L);

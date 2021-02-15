@@ -581,7 +581,7 @@ namespace IBApp {
       //Trace(new NotImplementedException(new { NotImplementedException } + ""));
     }
 
-    static Func<string, int> _getDigitsImpl = (pair) => Contract.FromCache(pair).Select(c => Math.Abs(Math.Log10(c.MinTick()).Floor())).Single();
+    static Func<string, int> _getDigitsImpl = (pair) => Contract.FromCache(pair).Select(c => Math.Abs(Math.Log10(c.MinTick()).Floor())).SingleOrDefault();
     static Func<string, int> _getDigits = _getDigitsImpl.Memoize(s => s, i => i > 0);
     public int GetDigits(string pair) => _getDigits(pair);
 

@@ -35,11 +35,10 @@ namespace IBApi
         private List<ComboLeg> comboLegs;
         private DeltaNeutralContract deltaNeutralContract;
 
-
-        /**
-        * @brief The unique IB contract identifier
-        */
-        public int ConId
+    /**
+    * @brief The unique IB contract identifier
+    */
+    public int ConId
         {
             get { return conId; }
             set { conId = value; }

@@ -872,16 +872,19 @@ namespace HedgeHog.Alice.Client {
           //var hh0 = tm.TradingMacroM1(getHedges).Concat().ToArray();
           var hh0 = getHedges(tml);
           hh0.ForEach(h => h.contract.FromCache().RunIfEmpty(() => h.contract.ReqContractDetailsCached().Subscribe()));
-          if(hh0.IsEmpty()) return Observable.Empty<CurrentHedge>();
-          var combo = AccountManager.MakeHedgeComboSafe(hQuantity, hh0[0].contract, hh0[1].contract, hh0[0].ratio, hh0[1].ratio, IsInVirtual());
+          if(hh0.Count < 2) return Observable.Empty<CurrentHedge>();
+          var combo0 = AccountManager.MakeHedgeComboSafe(hQuantity, hh0[0].contract, hh0[1].contract, hh0[0].ratio, hh0[1].ratio, IsInVirtual());
           IObservable<MarketPrice> CalcComboPrice()
-          => (from l in combo.SelectMany(c => c.contract.LegsForHedge(pair))
-              from hh in hh0
-              where l.c.ConId == hh.contract.ConId
-              select (hh.price, hh.contract.ComboMultiplier, (double)l.leg.Quantity)
+          => (
+          from c in combo0
+          from l in c.contract.LegsForHedge(pair)
+          from hh in hh0
+          where l.c.ConId == hh.contract.ConId
+          select (hh.price, hh.contract.ComboMultiplier, quantiy: (double)l.leg.Quantity, c.multiplier)
               )
               .ToArray()
-              .Select(xx => xx.CalcHedgePrice().With(p => new MarketPrice(p, p, tml.ServerTime, delta: 1.0, double.NaN)));
+              .Select(xx => new { xx = xx.Select(x => (x.price, x.ComboMultiplier, x.quantiy)).ToArray(), xx[0].multiplier })
+              .Select(x => x.xx.CalcHedgePrice(x.multiplier).With(p => new MarketPrice(p, p, tml.ServerTime, delta: 1.0, double.NaN)));
           try {
             var hh = hh0.Zip(baseUnits, (h, BaseUnitSize) => new { h.contract, h.ratio, h.price, h.context, BaseUnitSize }).ToArray();
             return
@@ -897,7 +900,7 @@ namespace HedgeHog.Alice.Client {
                return Observable.Empty<CurrentHedge>();
              });
             /// Locals
-            IObservable<(Contract contract, int quantity)> MakeHedgeComboSafe() => AccountManager.MakeHedgeComboSafe(hQuantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio, IsInVirtual());
+            IObservable<HedgeCombo> MakeHedgeComboSafe() => AccountManager.MakeHedgeComboSafe(hQuantity, hh[0].contract, hh[1].contract, hh[0].ratio, hh[1].ratio, IsInVirtual());
           } catch(Exception exc) {
             Log = exc;
             return Observable.Empty<CurrentHedge>();

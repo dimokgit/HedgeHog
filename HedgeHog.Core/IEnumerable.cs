@@ -447,6 +447,14 @@ namespace HedgeHog {
     public static void WithNotNull<T>(this T v, Action<T> m) { if(v != null) m(v); }
     public static T SideEffect<T>(this T v, Action<T> io) { io(v); return v; }
     public static T SideEffect<T>(this T v, Func<bool> condition, Action<T> io) { if(condition()) io(v); return v; }
+    public static T SideEffect<T>(this T v, Func<bool> condition, Action<T> io, Action<Exception> onError) {
+      try {
+        if(condition()) io(v);
+      }catch(Exception exc) {
+        onError?.Invoke(exc);
+      }
+      return v;
+    }
     public static T SideEffect<T>(this T v, Action io) { io(); return v; }
     public static void IfFalse(this bool v, Action action) => (!v).IfTrue(action);
     public static void IfTrue(this bool v, Action action) {

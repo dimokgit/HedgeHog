@@ -226,6 +226,7 @@
     <Compile Include="CloseAllTradesMessage.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Extenssions.cs" />
+    <Compile Include="HedgePair.cs" />
     <Compile Include="ITradesManager.cs" />
     <Compile Include="LoginInfo.cs" />
     <Compile Include="LogMessage.cs" />

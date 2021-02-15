@@ -47,8 +47,13 @@ namespace IBApp {
 
     public void AddRequestSync(Contract contract, Action<int, Contract> callback = null, string genericTickList = null, [CallerMemberName] string Caller = "") {
       var cache = contract.FromCache().SingleOrDefault();
-      if(cache == null)
-        Debugger.Break();
+      if(cache == null) {
+        if(Debugger.IsAttached)
+          Debugger.Break();
+        TraceError($"{nameof(AddRequestSync)}: ReqContractDetailsCached({contract})");
+        contract.ReqContractDetailsCached().ObserveOn(TaskPoolScheduler.Default).Subscribe(cd => AddRequestSync(cd.Contract, callback, genericTickList, Caller));
+        return;
+      }
       if((true || cache.IsOptionsCombo || cache.IsHedgeCombo)) {
         AddRequestImpl(cache, callback, genericTickList, Common.CallerChain(Caller));
       } else {
@@ -68,7 +73,15 @@ namespace IBApp {
       var title = Common.CallerChain(Caller);
       lock(_addRequestImplLock) {
         var ar = activeRequests.Where(kv => kv.Value.contract == contract).ToArray();
-        var ar0 = activeRequests.Where(kv => kv.Value.contract.Instrument == contract.Instrument).ToArray();
+        var ar0 = activeRequests.Where(kv => {
+          if((kv.Value.contract == null || contract == null)) {
+            if(Debugger.IsAttached)
+              Debugger.Break();
+            else
+              TraceError(new { AddRequestImpl = new { kv = new { Value = new { kv.Value.contract } } }, contract });
+          }
+          return kv.Value.contract.Instrument == contract.Instrument;
+        }).ToArray();
         if(ar0.Length != ar.Length)
           Debugger.Break();
         if(ar.Any()) {
@@ -236,7 +249,7 @@ namespace IBApp {
       const int HIGH_52 = 20;
       price2.GreekDelta = (t.Delta.Abs().Between(0, 1) ? t.Delta : 1).Round(1);
       if(t.Theta.IsSetAndNotZero())
-        price2.GreekTheta = price2.GreekTheta.Min(0).Cma(10,t.Theta);
+        price2.GreekTheta = price2.GreekTheta.Min(0).Cma(10, t.Theta);
       var price = t.OptPrice;
       switch(priceMessage.Field) {
         case 1: { // Bid
