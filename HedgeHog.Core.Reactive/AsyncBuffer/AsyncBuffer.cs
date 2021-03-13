@@ -76,7 +76,7 @@ namespace HedgeHog {
     protected abstract Action PushImpl(TContext context);
     public void Push(TContext context) {
       if(_StartProcessDisposable == null)
-        throw new InvalidOperationException(new { Pipe = typeof(TDerived).FullName, Error = "Calling Push after pipe was disposed." } + "");
+        throw new InvalidOperationException(new { Pipe = typeof(TDerived).FullName, Error = $"Calling Push({context}) after pipe was disposed." } + "");
       _StartProcessSubject.OnNext(PushImpl(context));
       _lastContext = context;
     }

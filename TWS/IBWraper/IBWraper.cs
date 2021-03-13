@@ -141,7 +141,7 @@ namespace IBApp {
       Thread.CurrentThread.Name.ThrowIf(threadName => threadName == "MsgProc");
       var contract = Contract.FromCache(pair).Count(1, $"{nameof(GetBarsBase)}: {new { pair }}").Single();
       var cd = contract.FromDetailsCache().Single();
-      if(contract.IsFuture)
+      if(contract.IsFuture && !contract.Symbol.StartsWith("VX"))
         contract = new Contract {
           SecType = "CONTFUT"
           ,

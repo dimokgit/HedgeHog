@@ -1056,7 +1056,7 @@ namespace HedgeHog.Alice.Store {
     }
     PriceChangedAsyncBuffer _priceChangedAsyncBuffer;
     PriceChangedAsyncBuffer PriceChangedAsyncBufferInstance => _priceChangedAsyncBuffer
-      ?? (_priceChangedAsyncBuffer = new PriceChangedAsyncBuffer(this));
+      ?? (_priceChangedAsyncBuffer = new PriceChangedAsyncBuffer(this).SideEffect(_strams.Add));
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
       _tradingMacros = tradingMacros;
       if(TradingMacroTrader(Pair).Count() > 1) {
@@ -1431,8 +1431,8 @@ new MarketPrice(
         tradesManager.TradeClosed -= TradeCloseHandler;
         tradesManager.TradeAdded -= TradeAddedHandler;
       }
-      if(PriceChangedAsyncBufferInstance != null)
-        PriceChangedAsyncBufferInstance.Dispose();
+      if(false && _priceChangedAsyncBuffer != null)
+        _priceChangedAsyncBuffer.Dispose();
 
       _strams.ForEach(s => s?.Dispose());
       _strams.Clear();
@@ -3687,7 +3687,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     [Category(categoryActiveYesNo)]
     [WwwSetting()]
     public bool IsTrender {
-      get { return _IsTrender; }
+      get { return TradingMacrosByPair().Count() == 1 || _IsTrender; }
       set {
         if(_IsTrender != value) {
           _IsTrender = value;

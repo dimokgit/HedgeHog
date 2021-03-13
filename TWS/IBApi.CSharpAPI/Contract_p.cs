@@ -273,6 +273,7 @@ namespace IBApi {
     }
     public IEnumerable<Contract> HedgeComboPrimary(Action<int, int> notFound) {
       return (from legs in Legs().Select(l => l.c).Buffer(2)
+              where legs.Count == 2
               let c1 = legs[0]
               let c2 = legs[1]
               let s = UnderCombo((c1.Symbol, c2.Symbol), () => ByMult(legs).Symbol)

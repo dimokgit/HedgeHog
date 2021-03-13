@@ -69,8 +69,8 @@ namespace ConsoleApp {
       //var opt = ContractSamples.Option("SPX","20180305",2695,true,"SPXW");
       var opt = ContractSamples.Option("SPXW  180305C02680000");
       DataManager.DoShowRequestErrorDone = true;
-      const int twsPort = 7497;
-      const int clientId = 10;
+      const int twsPort = 7496;
+      const int clientId = 11;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
       bool Connect() => ibClient.LogOn("127.0.0.1", twsPort + "", clientId + "", false);
       #endregion
@@ -89,6 +89,9 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          CurrentOptionsTest.CurrentOptions(am); return;
+          "VIXW  210302C00027000".ReqContractDetailsCached().SelectMany(cd=>cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage);return;
+          LoadMultiple(DateTime.Now.AddMonths(-24), 5, "VIX"); return;
           Tests.HedgeCombo(am); return;
           Tests.HedgeComboPrimary(am, "MGCJ1", "TN   MAR 21"); return;
           Tests.MakeHedgeCombo(am); return;
@@ -99,8 +102,6 @@ namespace ConsoleApp {
             cd.Contract.ReqPriceSafe().Subscribe(HandleMessage);
           });
           return;
-          LoadMultiple(DateTime.Now.AddMonths(-2), 5, "M6EH1"); return;
-          CurrentOptionsTest.CurrentOptions(am); return;
           {
             var secs = new[] { "SPY", "VXX", "ESZ0", "NQZ0", "RTYZ0" }.Take(1).ToArray();
             Console.WriteLine("Loadint " + secs.Flatter(","));
@@ -149,7 +150,7 @@ namespace ConsoleApp {
                     , bars, null, showProgress);
                 HandleMessage($"***** Done GetBars {bars.Count}*****");
               } else {
-                PriceHistory.AddTicks(fw, period, sec, dateStart, callback);
+                PriceHistory.AddTicks(fw, period, sec, dateStart, callback,false);
                 HandleMessage($"***** Done AddTick *****");
               }
             })).Subscribe();

@@ -19,7 +19,7 @@ namespace HedgeHog.Alice.Store {
         AddTicks(fw, pair.Item2, pair.Item1, DateTime.Now.AddYears(-1), progressCallback);
     }
     //[MethodImpl(MethodImplOptions.Synchronized)]
-    public static void AddTicks(ITradesManager fw, int period, string pair, DateTime dateStart, Action<object> progressCallback) {
+    public static void AddTicks(ITradesManager fw, int period, string pair, DateTime dateStart, Action<object> progressCallback, bool isRunFast = true) {
       try {
         #region callback
         Action<RateLoadingCallbackArgs<Rate>> showProgress = (args) => {
@@ -36,7 +36,7 @@ namespace HedgeHog.Alice.Store {
             dateMin = DateTime.Now;
           var dateEnd = dateMin.Subtract(offset);
           if(dateStart < dateMin)
-            fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, true, new List<Rate>(), null, showProgress);
+            fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, isRunFast, new List<Rate>(), null, showProgress);
         }
         var q = GlobalStorage.UseForexContext(120, IsolationLevel.ReadUncommitted, context
           => context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty().Max());
@@ -46,7 +46,7 @@ namespace HedgeHog.Alice.Store {
         dateStart = q.LocalDateTime.Add(p.FromMinutes());
         if(period == 0)
           dateStart = dateStart.Max(DateTime.Now.AddYears(-1));
-        fw.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, true, new List<Rate>(), null, showProgress);
+        fw.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, isRunFast, new List<Rate>(), null, showProgress);
       } catch(Exception exc) {
         ReactiveUI.MessageBus.Current.SendMessage(new LogMessage(exc));
       }

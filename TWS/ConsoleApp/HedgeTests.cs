@@ -63,7 +63,7 @@ namespace ConsoleApp {
 
       {
         var parentContract = "MGCJ1".ContractFactory();
-        var hedgeContract = "GCJ1".ContractFactory();
+        var hedgeContract = "GCM1".ContractFactory();
         var quantityParent = 10;
         var r = 0.10;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();

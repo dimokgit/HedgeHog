@@ -224,7 +224,7 @@ namespace IBApp {
     private void RequestHistoryDataChunk() {
       try {
         string barSizeSetting = (_barSize + "").Replace("_", " ").Trim();
-        string whatToShow = "MIDPOINT";// !_contract.IsIndex() ? "TRADES" : "MIDPOINT";
+        string whatToShow = _contract.IsIndex ? "TRADES" : "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         // TODO: reqHistoricalData - keepUpToDate
         var duration = Duration(_barSize, _timeUnit, _duration);

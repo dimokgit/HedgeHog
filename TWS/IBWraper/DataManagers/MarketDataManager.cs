@@ -212,10 +212,11 @@ namespace IBApp {
             break;
           }
         case 37:
+          break;
         case 4: {
-            if(!price2.IsAskSet && price2.Ask <= 0)
+            if(ar.contract.IsIndex || !price2.IsAskSet && price2.Ask <= 0)
               price2.Ask = price;
-            if(!price2.IsBidSet && price2.Bid <= 0)
+            if(ar.contract.IsIndex || !price2.IsBidSet && price2.Bid <= 0)
               price2.Bid = price;
             price2.Time2 = IbClient.ServerTime;
             RaisePriceChanged(ar);
