@@ -222,7 +222,7 @@ namespace IBApp {
         .SideEffect(s => _strams.Add(s));
 
       WireOrderEntryLevels();
-      WireTrendEdges();
+      if(false) WireTrendEdges();
 
       DateTime thStart() => ibClient.ServerTime.Date.AddHours(9).AddMinutes(29);
       DateTime thEnd() => ibClient.ServerTime.Date.AddHours(16);

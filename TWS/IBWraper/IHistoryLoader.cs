@@ -11,6 +11,7 @@ namespace IBApp {
   , TimeSpan duration
   , TimeUnit timeUnit
   , BarSize barSize
+      , bool? useRTH
   , DataMapDelegate<T> map
   , Action<ICollection<T>> done
   , Action<ICollection<T>> dataEnd
@@ -23,6 +24,7 @@ namespace IBApp {
       , TimeSpan duration
       , TimeUnit timeUnit
       , BarSize barSize
+      , bool? useRTH
       , DataMapDelegate<T> map
       , Action<ICollection<T>> done
       , Action<ICollection<T>> dataEnd
@@ -34,6 +36,7 @@ namespace IBApp {
         , duration
         , timeUnit
         , barSize
+      ,  useRTH
         , map
         , done
         , dataEnd
@@ -46,6 +49,7 @@ namespace IBApp {
       , TimeSpan duration
       , TimeUnit timeUnit
       , BarSize barSize
+      , bool? useRTH
       , DataMapDelegate<T> map
       , Action<ICollection<T>> done
       , Action<ICollection<T>> dataEnd
@@ -57,6 +61,7 @@ namespace IBApp {
         , duration
         , timeUnit
         , barSize
+      , useRTH
         , map
         , done
         , dataEnd

@@ -92,6 +92,8 @@ namespace HedgeHog {
     // Flag: Has Dispose already been called? 
     bool _disposed = false;
 
+    public bool Disposed { get => _disposed; set => _disposed = value; }
+
     // Public implementation of Dispose pattern callable by consumers. 
     public void Dispose() {
       Dispose(true);

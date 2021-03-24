@@ -378,6 +378,7 @@
           if (dataViewModel.strategyCurrent() !== x.Strategy)
             dataViewModel.strategyCurrent(x.Strategy);
           dataViewModel.distanceFromHigh(x.DistanceFromHigh);
+          dataViewModel.distanceFromLow(x.DistanceFromLow);
           dataViewModel.selectedHedgeCombo(x.HedgeCalcType);
           dataViewModel.trendEdgesLastDate(new Date(x.TrendEdgesLastDate));
         });
@@ -941,8 +942,9 @@
           readCombos();
         }
       });
-      this.expDaysSkip = ko.observable();
+      this.expDaysSkip = ko.observable().extend({ persist: "expDaysSkip_" + pair });;
       this.distanceFromHigh = ko.observable();
+      this.distanceFromLow = ko.observable();
       this.comboQuantity = ko.observable("");//.extend({ persist: "comboQuantity" + pair });
       this.comboQuantity.subscribe(refreshCombos);
       this.comboQuantityInEdit = ko.observable();
@@ -1137,14 +1139,6 @@
       this.rollOversList = ko.pureComputed(function () {
         return self.liveCombos().filter(lc => !lc.ic());
       });
-      this.combosStats = ko.pureComputed(function () {
-        var combos = this.butterflies();
-        var top2 = combos
-          //.sort(function (v1, v2) { return v1.avg - v2.avg; })
-          .slice(0, 2);
-        var spread = top2.map(function (v) { return v.ask() - v.bid(); }).sum() / 2;
-        return { spread: spread };
-      }, this);
       this.butterfliesDialog = ko.observable();
       this.butterfliesDialog.subscribe(function () {
         setTimeout(self.showButterflies, 1000);

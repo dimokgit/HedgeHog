@@ -1616,6 +1616,7 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActiveYesNo)]
     [DisplayName("Can Trade On")]
     [Description("CanTradeAlwaysOn")]
+    [WwwSetting(wwwSettingsBars)]
     public bool CanTradeAlwaysOn {
       get { return _CanTradeAlwaysOn; }
       set {

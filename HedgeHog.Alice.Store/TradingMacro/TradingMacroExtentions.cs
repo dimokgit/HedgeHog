@@ -1055,8 +1055,9 @@ namespace HedgeHog.Alice.Store {
         => () => tm.RunPriceChanged(context, null);
     }
     PriceChangedAsyncBuffer _priceChangedAsyncBuffer;
-    PriceChangedAsyncBuffer PriceChangedAsyncBufferInstance => _priceChangedAsyncBuffer
-      ?? (_priceChangedAsyncBuffer = new PriceChangedAsyncBuffer(this).SideEffect(_strams.Add));
+    PriceChangedAsyncBuffer PriceChangedAsyncBufferInstance =>
+      (_priceChangedAsyncBuffer == null || _priceChangedAsyncBuffer.Disposed)
+      ? (_priceChangedAsyncBuffer = new PriceChangedAsyncBuffer(this).SideEffect(_strams.Add)) : _priceChangedAsyncBuffer;
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
       _tradingMacros = tradingMacros;
       if(TradingMacroTrader(Pair).Count() > 1) {
@@ -1157,7 +1158,7 @@ namespace HedgeHog.Alice.Store {
             }
           });
 
-          if(!IsInVirtualTrading && IsTrader) {
+          if(false && !IsInVirtualTrading && IsTrader) {
             _currentOptionDisposable?.Dispose();
             _currentOptionDisposable = (
               from price in _priceChangeObservable
@@ -2431,8 +2432,8 @@ new MarketPrice(
       get {
         try {
           if(!SnapshotArguments.IsTarget && RatesInternal.Count < Math.Max(1, BarsCount)) {
-            if(RatesInternal.Count > BarsCount * 0.5)
-              Log = new Exception(new { RatesInternal = new { RatesInternal.Count }, LessThen = new { BarsCount } } + "");
+            //if(RatesInternal.Count > BarsCount * 0.5)
+              Log = new Exception(new { Pair, RatesInternal = new { RatesInternal.Count }, LessThen = new { BarsCount } } + "");
             return new List<Rate>();
           }
 
@@ -4532,7 +4533,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
             periodsBack = 0;
           var groupTicks = false && BarPeriodCalc == BarsPeriodType.s1;
           var isFast = true;// BarPeriod == BarsPeriodType.t1;
-          LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate.AddSeconds(1), TradesManagerStatic.FX_DATE_NOW, isFast, ratesList, groupTicks);
+          bool? useRTH = CanTradeAlwaysOn ? true : (bool?)null;
+          LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate.AddSeconds(1), TradesManagerStatic.FX_DATE_NOW, isFast,useRTH, ratesList, groupTicks);
           if(BarPeriod != BarsPeriodType.t1)
             ratesList.Smoother();
           if(BarPeriod != BarsPeriodType.t1)
@@ -4544,7 +4546,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
                 if(delay > (delayMax + delayMax))
                   Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
                 ratesList.RemoveAt(ratesList.Count - 1);
-                LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, null, ratesList, groupTicks);
+                LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, null,useRTH, ratesList, groupTicks);
               }
             });
           {
@@ -4566,6 +4568,10 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
                   rl.AddRange(ratesToAdd);
                   var rateTail = ratesLocal.SkipWhile(r => r.StartDate <= sd1).ToArray();
                   rl.AddRange(rateTail);
+                  if(rl.Count < BarsCount) {
+                    Log = new Exception($"Rates count {rl.Count} < {new { BarsCount }}");
+                    TriggerRatesClear = true;
+                  }
                   return;
                 });
               } else
@@ -4609,7 +4615,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     public DateTimeOffset LoadRatesStartDate2 { get; set; }
     #region Overrides
     //[MethodImpl(MethodImplOptions.Synchronized)]
-    void LoadRatesImpl(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, bool? isFast, List<Rate> ratesList, bool groupToSeconds) {
+    void LoadRatesImpl(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, bool? isFast, bool? useRTH, List<Rate> ratesList, bool groupToSeconds) {
       Func<List<Rate>, List<Rate>> map = groupToSeconds ? TradingMacro.GroupTicksToSeconds<Rate> : (Func<List<Rate>, List<Rate>>)null;
       if(ratesList.Count() == -1) {
         if(periodMinutes > 0)
@@ -4622,7 +4628,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       //    .Select(r => r.StartDate).DefaultIfEmpty(TradesManagerStatic.FX_DATE_NOW).Min();
       //  ratesList.RemoveAll(r => r.StartDate >= d);
       //}
-      fw.GetBars(pair, periodMinutes, periodsBack, startDate, endDate, isFast, ratesList, z => {
+      fw.GetBars(pair, periodMinutes, periodsBack, startDate, endDate, isFast, useRTH, ratesList, z => {
         if(groupToSeconds)
           Log = new Exception(new { GetDars = new { z.Message } } + "");
         if(DoLogSaveRates)

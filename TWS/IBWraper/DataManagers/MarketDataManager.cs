@@ -335,7 +335,7 @@ namespace IBApp {
       }
       if(!_currentPrices.Contains(t.price.Pair)) {
         {
-          var cip = t.contract.Legs().Count() > 0 ? new CacheItemPolicy() {
+          var cip = true || t.contract.Legs().Count() > 0 ? new CacheItemPolicy() {
             RemovedCallback = ce => {
               ActiveRequestCleaner((Price)ce.CacheItem.Value);
             },

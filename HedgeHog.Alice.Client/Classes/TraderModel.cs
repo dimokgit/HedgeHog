@@ -511,8 +511,8 @@ namespace HedgeHog.Alice.Client {
         lock(_logQueue) {
           while(_logQueue.Count > 150)
             _logQueue.Dequeue();
-          var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss.fff] ") + exc.GetExceptionShort() });
-          while(exc.InnerException != null) {
+          var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss.fff] ") + exc?.GetExceptionShort() });
+          while(exc?.InnerException != null) {
             messages.Add(exc.InnerException.GetExceptionShort());
             exc = exc.InnerException;
           }

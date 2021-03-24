@@ -1330,11 +1330,11 @@
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>
         <input data-bind="value:comboCurrentStrikeLevel" size="1" />
         <input data-bind="value:currentProfit" size="1" style="width:2em" />
-        <label data-bind="text:d3.format('.2%')(distanceFromHigh())"></label>
-        <!-- ko with: combosStats -->
+
+        <label data-bind="text:d3.format('.1%')(distanceFromLow())"></label>
         <span class="glyphicon glyphicon-resize-vertical"></span>
-        <b data-bind="text:d3.format('.2f')(spread)"></b>
-        <!-- /ko -->
+        <label data-bind="text:d3.format('.1%')(distanceFromHigh())"></label>
+
         <select data-bind="options:strategyType,optionsText:'text',optionsValue:'text',value:strategyCurrent,optionsCaption:'...'"></select>
         <button class="small" data-bind="click:openEdge,enable:canTrade,text:'Edge'+showOptionType(),visible:canOpenEdge()"></button>
         <select data-bind="value:edgeType">

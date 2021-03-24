@@ -34,9 +34,12 @@ namespace IBApi {
     public double LmtAuxPrice => IsLimit ? LmtPrice.IfNotSetOrZero(AuxPrice.IfNotSetOrZero(0)) : 0;
     public override string ToString() => $"{Key}{Conditions.ToText(":")}";
     public static double OrderPrice(double orderPrice, Contract contract) {
-      var minTick = contract.MinTick();
-      var p = (Math.Round(orderPrice / minTick) * minTick);
-      p = Math.Round(p, 4);
+      var minTick3 = contract.MinTick();
+      var minTick2 = contract.MinTicks().Min();
+      var mt = contract.HedgeComboPrimary((m1, m2) => throw new Exception()).SelectMany(c => c.MinTicks()).DefaultIfEmpty(contract.MinTick()).First();
+      var p = Math.Round(orderPrice / mt) * mt;
+      var l = (mt + "").Split('.').Skip(1).Select(s => s.Length).SingleOrDefault();
+      p = Math.Round(p, l);
       return p;
     }
     public IEnumerable<PriceCondition> PriceCoditions { get { if(Conditions != null) foreach(var pc in Conditions.OfType<PriceCondition>()) yield return pc; } }

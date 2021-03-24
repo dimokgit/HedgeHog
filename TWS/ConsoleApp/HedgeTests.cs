@@ -47,25 +47,29 @@ namespace ConsoleApp {
     public static void HedgeComboPrimary(AccountManager am,string localSymbol1, string localSymbol2) {
         var parentContract = localSymbol1.ContractFactory();
         var hedgeContract = localSymbol2.ContractFactory();
-        var quantityParent = 1;
-        var r = 1.0;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
+        var quantityParent = 10;
+        var r = 0.1;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
         //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
       (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, hp().p2, false)
        from cd in hc.contract.ReqContractDetailsCached()
-       select cd.Contract.HedgeComboPrimary((m1, m2) => throw new SoftException(new { m1, m2, error = "not found" } + ""))
+       let pcs = cd.Contract.HedgeComboPrimary((m1, m2) => throw new SoftException(new { m1, m2, error = "not found" } + ""))
+       from pc in pcs
+       from p in cd.Contract.ReqPriceSafe()
+
+       select new { pc, p }
          )
-         .Subscribe(c => {
-           c.ForEach(primaryContract => HandleMessage(new { parentContract, hedgeContract, primaryContract }));
+         .Subscribe(x => {
+            HandleMessage(new { parentContract, hedgeContract, primaryContract = x.pc,price = x.p});
          });
     }
     public static void HedgeCombo(AccountManager am) {
 
       {
-        var parentContract = "MGCJ1".ContractFactory();
-        var hedgeContract = "GCM1".ContractFactory();
-        var quantityParent = 10;
-        var r = 0.10;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
+        var parentContract = "M6BM1".ContractFactory();
+        var hedgeContract = "MESH1".ContractFactory();
+        var quantityParent = 5;
+        double r = 0.17;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
         //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
         var isTest = true;

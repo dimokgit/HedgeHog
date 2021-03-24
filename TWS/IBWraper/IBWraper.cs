@@ -133,6 +133,7 @@ namespace IBApp {
       , DateTime startDate
       , DateTime endDate
       , bool? isFast
+      , bool? useRTH
       , List<TBar> ticks
       , Func<List<TBar>, List<TBar>> map
       , Action<RateLoadingCallbackArgs<TBar>> callBack = null
@@ -141,7 +142,8 @@ namespace IBApp {
       Thread.CurrentThread.Name.ThrowIf(threadName => threadName == "MsgProc");
       var contract = Contract.FromCache(pair).Count(1, $"{nameof(GetBarsBase)}: {new { pair }}").Single();
       var cd = contract.FromDetailsCache().Single();
-      if(contract.IsFuture && !contract.Symbol.StartsWith("VX"))
+      var startsWith = new[] { "VX", "BZ" };
+      if(contract.IsFuture && !startsWith.Any(s => contract.Symbol.StartsWith(s)))
         contract = new Contract {
           SecType = "CONTFUT"
           ,
@@ -173,6 +175,7 @@ namespace IBApp {
         duration,
         timeUnit,
         barSize,
+        useRTH,
         ToRate<TBar>,
          list => { ticks.AddRange(list); ticks.Sort(); isDone = true; },
          list => {
@@ -214,11 +217,11 @@ namespace IBApp {
 
       return;
     }
-    public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, bool? isFast, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map) {
+    public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, bool? isFast, bool? useRTH, List<Rate> ratesList, bool doTrim, Func<List<Rate>, List<Rate>> map) {
       throw new NotImplementedException();
     }
 
-    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, bool? isFast, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, bool? isFast, bool? useRTH, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim, Func<List<Rate>, List<Rate>> map) {
       var title = nameof(GetBars) + ":: ";
       if(Contract.FromCache(pair).IsEmpty()) {
         Trace(title + $"Contract.FromCache({pair}).IsEmpty(). Running _ibClient.ReqContractDetailsCached({pair}).");
@@ -226,11 +229,11 @@ namespace IBApp {
           .ObserveOn(TaskPoolScheduler.Default)
           .ForEachAsync(_ => {
             Trace(title + new { _.Contract, _.Contract.ConId });
-            GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, isFast, Bars, map, callBack);
+            GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, isFast,useRTH, Bars, map, callBack);
           })
           .GetAwaiter().GetResult();
       } else
-        GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, isFast, Bars, map, callBack);
+        GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, isFast,useRTH, Bars, map, callBack);
     }
     public Account GetAccount() {
       try {

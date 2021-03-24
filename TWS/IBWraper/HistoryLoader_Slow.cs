@@ -44,7 +44,7 @@ namespace IBApp {
     private readonly Action<ICollection<T>> _dataEnd;
     private TimeSpan _delay;
     private readonly DataMapDelegate<T> _map;
-    bool useRTH;
+    bool _useRTH;
     List<IDisposable> _disposables = new List<IDisposable>();
     #endregion
 
@@ -56,6 +56,7 @@ namespace IBApp {
       , TimeSpan duration
       , TimeUnit timeUnit
       , BarSize barSize
+      , bool? useRTH
       , DataMapDelegate<T> map
       , Action<ICollection<T>> done
       , Action<ICollection<T>> dataEnd
@@ -86,7 +87,7 @@ namespace IBApp {
       _contract = contract;
       var ls = _contract.LocalSymbol ?? _contract.Symbol ?? "";
       var isETF = /*cd.LongName.Contains(" ETF") ||*/ ls.IsETF();
-      useRTH = !_contract.IsFuture && !ls.IsOption() && !ls.IsCurrenncy() && !ls.IsFuture() && !isETF && !ls.IsIndex() && _timeUnit != TimeUnit.S;
+      _useRTH = useRTH.GetValueOrDefault(!_contract.IsFuture && !ls.IsOption() && !ls.IsCurrenncy() && !ls.IsFuture() && !isETF && !ls.IsIndex() && _timeUnit != TimeUnit.S);
       Task.Run(RequestHistoryDataChunk);
 
       //contract.ReqContractDetailsCached()
@@ -142,7 +143,7 @@ namespace IBApp {
           ? _endDate.AddDays(-1)
           : _endDate.AddSeconds(-BarSizeRange(_barSize, _timeUnit).Last());
         _endDate = newEndDate;
-        _error(new SoftException(new { endDate = _endDate } + ""));
+        _error(new SoftException(GetType().Name + new { _contract, _endDate, } + " No Data"));
         RequestNextDataChunk();
       } else if(code == SERVER_ERROR && error.Contains("pacing violation")) {
         _delay = TimeSpan.FromSeconds(_delay.TotalSeconds + 1).Min(10.FromSeconds());
@@ -190,7 +191,7 @@ namespace IBApp {
             return;
           } else {
             _reqId = IBClientCore.IBClientCoreMaster.ValidOrderId();
-            _error(new SoftException($"HistoryLoader_Slow:{new { _reqId, listCount = _list.Count }}"));
+            _error(new SoftException($"HistoryLoader_Slow[{_contract}]:{new { _reqId, listCount = _list.Count }}"));
             _endDate = ds.Subtract(_barSize.Span());
           }
         } else {
@@ -229,7 +230,7 @@ namespace IBApp {
         // TODO: reqHistoricalData - keepUpToDate
         var duration = Duration(_barSize, _timeUnit, _duration);
         _ibClient.OnReqMktData(() =>
-        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), duration, barSizeSetting, whatToShow, useRTH ? 1 : 0, 1, false, new List<TagValue>())
+        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), duration, barSizeSetting, whatToShow, _useRTH ? 1 : 0, 1, false, new List<TagValue>())
         );
       } catch(Exception exc) {
         _error(exc);

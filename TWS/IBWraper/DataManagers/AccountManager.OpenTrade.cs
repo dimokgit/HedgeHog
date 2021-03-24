@@ -182,15 +182,6 @@ namespace IBApp {
              from option in options.OrderBy(o => o.option.Strike * mul).Take(1)
              select option;
     }
-    double OrderPrice(double orderPrice, Contract contract) {
-      var minTick3 = contract.MinTick();
-      var minTick2 = contract.MinTicks().Min();
-      var mt = contract.HedgeComboPrimary((m1, m2) => throw new Exception()).SelectMany(c => c.MinTicks()).DefaultIfEmpty(contract.MinTick()).First();
-      var p = Math.Round(orderPrice / mt) * mt;
-      var l = (mt + "").Split('.').Skip(1).Select(s => s.Length).SingleOrDefault();
-      p = Math.Round(p, l);
-      return p;
-    }
 
     public void CancelAllOrders(string message) {
       Trace($"{nameof(CancelAllOrders)}: {message}");

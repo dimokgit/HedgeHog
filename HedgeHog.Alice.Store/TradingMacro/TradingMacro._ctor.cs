@@ -18,7 +18,7 @@ namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     private Func<(string Pair, BarsPeriodType BarPeriod, DateTime LastStartDate)> StartDateKey() => () => (Pair, BarPeriod, LastStartDate);
 
-    private static Func<T> MemoizedCurryStat<T>(TradingMacro tm, Func<TradingMacro, T> f) => MemoizedCurryStat(tm, f, tm => (tm.Pair, tm.BarPeriod, tm.LastStartDate));
+    private static Func<T> MemoizedCurryStat<T>(TradingMacro tm, Func<TradingMacro, T> f) => MemoizedCurryStat(tm, f, tm2 => (tm2.Pair, tm.BarPeriod, tm.LastStartDate));
     private static Func<T> MemoizedCurryStat<T, K>(TradingMacro tm, Func<TradingMacro, T> f, Func<TradingMacro, K> key) {
       var m = f.MemoizeLast(key);
       return () => m(tm);

@@ -46,7 +46,7 @@ namespace ConsoleApp {
       #region Init
       ShowWindow(ThisConsole, MAXIMIZE);
       TradesManagerStatic.dbOffers = GlobalStorage.LoadOffers();
-      Contract.HedgePairs = GlobalStorage.LoadHadgePairs().Select(h=>(h.hedge1,h.hedge2,h.prime)).ToArray();
+      Contract.HedgePairs = GlobalStorage.LoadHadgePairs().Select(h => (h.hedge1, h.hedge2, h.prime)).ToArray();
       int _nextValidId = 0;
 
       TradesManagerStatic.AccountCurrency = "USD";
@@ -89,11 +89,11 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
-          CurrentOptionsTest.CurrentOptions(am); return;
-          "VIXW  210302C00027000".ReqContractDetailsCached().SelectMany(cd=>cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage);return;
-          LoadMultiple(DateTime.Now.AddMonths(-24), 5, "VIX"); return;
+          Tests.HedgeComboPrimary(am, "MESH1", "CLJ1"); return;
           Tests.HedgeCombo(am); return;
-          Tests.HedgeComboPrimary(am, "MGCJ1", "TN   MAR 21"); return;
+          LoadMultiple(DateTime.Now.AddMonths(-14), 5, "SPY", "QQQ"); return;
+          CurrentOptionsTest.CurrentOptions(am); return;
+          "VIXW  210302C00027000".ReqContractDetailsCached().SelectMany(cd => cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage); return;
           Tests.MakeHedgeCombo(am); return;
           //new Contract { Symbol = "VIX", SecType = "FUT+CONTFUT", Exchange = "CFE" }.ReqContractDetailsCached()
           new Contract { Symbol = "ZN", SecType = "FUT+CONTFUT", Exchange = "ECBOT" }.ReqContractDetailsCached()
@@ -129,7 +129,7 @@ namespace ConsoleApp {
             };
             LoadHistory(ibClient, new[] { c });
             */
-            bool repare = true;
+            bool repare = false;
             Action<object> callback = o => HandleMessage(o + "");
             secs.ToObservable()
             .Do(sec =>
@@ -146,11 +146,11 @@ namespace ConsoleApp {
                 };
                 //fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
                 //fw.GetBarsBase(sec, period, 0, DateTime.Parse("11/29/2019").SetLocal(), DateTime.Parse("11/29/2019 23:59").SetLocal()
-                fw.GetBarsBase(sec, period, 8000, TradesManagerStatic.FX_DATE_NOW, DateTime.Now.SetLocal(), true
+                fw.GetBarsBase(sec, period, 8000, TradesManagerStatic.FX_DATE_NOW, DateTime.Now.SetLocal(), true, false
                     , bars, null, showProgress);
                 HandleMessage($"***** Done GetBars {bars.Count}*****");
               } else {
-                PriceHistory.AddTicks(fw, period, sec, dateStart, callback,false);
+                PriceHistory.AddTicks(fw, period, sec, dateStart, callback, false);
                 HandleMessage($"***** Done AddTick *****");
               }
             })).Subscribe();
@@ -720,7 +720,7 @@ namespace ConsoleApp {
       if(options.Any()) {
         var c = options[0].ContractFactory();
         HandleMessage($"Loading History for {c}");
-        new HistoryLoader<Rate>(ibClient, c, 0, dateEnd, TimeSpan.FromDays(5), TimeUnit.W, BarSize._3_mins,
+        new HistoryLoader<Rate>(ibClient, c, 0, dateEnd, TimeSpan.FromDays(5), TimeUnit.W, BarSize._3_mins, false,
            map,
            list => {
              HandleMessage($"{c} {new { list = new { list.Count, first = list.First().StartDate, last = list.Last().StartDate, Thread = Thread.CurrentThread.ManagedThreadId } }}");
