@@ -43,7 +43,7 @@ namespace HedgeHog.Alice.Store {
     public double MacdRsdAvg { get; set; }
     bool _isRatesLengthStable = false;
     public bool IsRatesLengthStable {
-      get { return _isRatesLengthStable; }
+      get { return RatesLengthBy == RatesLengthFunction.None || _isRatesLengthStable; }
       set {
         if(_isRatesLengthStable == value)
           return;

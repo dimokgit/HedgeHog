@@ -89,6 +89,7 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          TestCombosTrades(10).Subscribe(); return;
           Tests.HedgeComboPrimary(am, "MESH1", "CLJ1"); return;
           Tests.HedgeCombo(am); return;
           LoadMultiple(DateTime.Now.AddMonths(-14), 5, "SPY", "QQQ"); return;
@@ -466,7 +467,6 @@ namespace ConsoleApp {
           }); return;
           TestCurrentStraddles(1, 1);
           TestCurrentStraddles(1, 1); return;
-          TestCombosTrades(10).Subscribe(); return;
           var cdsVXX = ibClient.ReqContractDetailsCached("VXX   180329C00051500".ContractFactory()).ToEnumerable().Count(0, new { }).ToArray();
           var symbols = new[] { "SPX", "VXX", "SPY" };
           var timeOut = Observable.Return(0).Delay(TimeSpan.FromSeconds(100)).Timeout(TimeSpan.FromSeconds(15 * 1000)).Subscribe();

@@ -2433,7 +2433,7 @@ new MarketPrice(
         try {
           if(!SnapshotArguments.IsTarget && RatesInternal.Count < Math.Max(1, BarsCount)) {
             //if(RatesInternal.Count > BarsCount * 0.5)
-              Log = new Exception(new { Pair, RatesInternal = new { RatesInternal.Count }, LessThen = new { BarsCount } } + "");
+            Log = new Exception(new { Pair, RatesInternal = new { RatesInternal.Count }, LessThen = new { BarsCount } } + "");
             return new List<Rate>();
           }
 
@@ -3394,7 +3394,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
         #region LoadRates
         var tmCount = TradingMacrosActive.Count(tm => tm.BarPeriod == BarPeriod);
         if(!TradesManager.IsInTest && !IsInPlayback
-          && (!UseRatesInternal(ri => ri.Any()).DefaultIfEmpty(true).Single() || LastRatePullTime.AddMinutes((0.25 * tmCount).Max((double)BarPeriod / 2)) <= ServerTime))
+          && (!UseRatesInternal(ri => ri.Any()).DefaultIfEmpty(true).Single() || BarPeriod > BarsPeriodType.t1 || LastRatePullTime.AddMinutes((0.25 * tmCount).Max((double)BarPeriod / 2)) <= ServerTime))
           OnLoadRates();
         #endregion
         OnRunPriceBroadcast(e);
@@ -3662,6 +3662,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     [WwwSetting]
     public bool IsTrader {
       get {
+        var tmc = TradingMacrosByPair().Count();
+        if(!_IsTrader && tmc == 1 && BarPeriod < BarsPeriodType.m1) _IsTrader = true;
         return TradingMacrosByPair().Count() == 1 || _IsTrader;
       }
       set {
@@ -3800,7 +3802,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
       get {
         var tmt = TradingMacrosByPair(tm => !tm.IsAsleep && tm.IsTrender).OrderBy(tm => tm.PairIndex).DefaultIfEmpty(this);
         if(!IsTrader)
-          throw new Exception(new { TradeLevelFuncs = new { IsTrader } } + "");
+          throw new Exception(new { TradeLevelFuncs = new { IsTrader }, This = this } + "");
         double maxDefault() => double.NaN;// UseRates(rates => rates.Max(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
         double minDefault() => double.NaN;// UseRates(rates => rates.Min(_priceAvg)).DefaultIfEmpty(double.NaN).Single();
         double level(Func<TradingMacro, double> f) => f(tmt.Where(tm => tm.IsTrader).DefaultIfEmpty(tmt.First()).First());
@@ -4534,7 +4536,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           var groupTicks = false && BarPeriodCalc == BarsPeriodType.s1;
           var isFast = true;// BarPeriod == BarsPeriodType.t1;
           bool? useRTH = CanTradeAlwaysOn ? true : (bool?)null;
-          LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate.AddSeconds(1), TradesManagerStatic.FX_DATE_NOW, isFast,useRTH, ratesList, groupTicks);
+          LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate.AddSeconds(1), TradesManagerStatic.FX_DATE_NOW, isFast, useRTH, ratesList, groupTicks);
           if(BarPeriod != BarsPeriodType.t1)
             ratesList.Smoother();
           if(BarPeriod != BarsPeriodType.t1)
@@ -4546,7 +4548,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
                 if(delay > (delayMax + delayMax))
                   Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
                 ratesList.RemoveAt(ratesList.Count - 1);
-                LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, null,useRTH, ratesList, groupTicks);
+                LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, null, useRTH, ratesList, groupTicks);
               }
             });
           {
@@ -4676,7 +4678,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     LoadRateAsyncBuffer LoadRatesAsyncBuffer {
       get {
         lock(_loadRatesAsyncBufferGate)
-          return _loadRatesAsyncBuffer ?? (_loadRatesAsyncBuffer = new LoadRateAsyncBuffer(BarPeriod > 0 ? 3 : TradingMacrosActive.Count(tm => tm.BarPeriod < BarsPeriodType.m1)));
+          return _loadRatesAsyncBuffer ?? (_loadRatesAsyncBuffer = new LoadRateAsyncBuffer(BarPeriod > 0 ? 1 : TradingMacrosActive.Count(tm => tm.BarPeriod < BarsPeriodType.m1)));
       }
     }
     BroadcastBlock<Action<Unit>> _broadcastLoadRates;
