@@ -89,8 +89,8 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          Tests.HedgeComboPrimary(am, "MESM1", "MNQM1"); return;
           TestCombosTrades(10).Subscribe(); return;
-          Tests.HedgeComboPrimary(am, "MESH1", "CLJ1"); return;
           Tests.HedgeCombo(am); return;
           LoadMultiple(DateTime.Now.AddMonths(-14), 5, "SPY", "QQQ"); return;
           CurrentOptionsTest.CurrentOptions(am); return;

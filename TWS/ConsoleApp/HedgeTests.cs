@@ -47,8 +47,8 @@ namespace ConsoleApp {
     public static void HedgeComboPrimary(AccountManager am,string localSymbol1, string localSymbol2) {
         var parentContract = localSymbol1.ContractFactory();
         var hedgeContract = localSymbol2.ContractFactory();
-        var quantityParent = 10;
-        var r = 0.1;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
+        var quantityParent = 5;
+        var r = 0.62;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
         //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
       (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, hp().p2, false)

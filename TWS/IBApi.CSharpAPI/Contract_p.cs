@@ -288,7 +288,7 @@ namespace IBApi {
       [("MGC", "TN")] = "TN",
       [("NQ", "ES")] = "NQ",
     };
-    public static string UnderCombo((string under1, string under2) t, Func<string> @default) =>
+    static string UnderCombo((string under1, string under2) t, Func<string> @default) =>
       HedgePairs.Where(hp => hp.hedge1 == t.under1 && hp.hedge2 == t.under2 || hp.hedge1 == t.under2 && hp.hedge2 == t.under1)
       .Select(h => h.prime)
       .IfEmpty(() => new[] { @default() })
