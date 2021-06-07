@@ -81,14 +81,19 @@ namespace IBApp {
       //EXEND
       return contract;
     }
-    public static Contract Future(string symbol) {
+    public static Contract Future(string localSymbol) {
+      var symbol = localSymbol.Substring(0, localSymbol.Length - 2).ToUpper();
       Contract contract = new Contract();
       contract.SecType = "FUT";
       //contract.Exchange = "GLOBEX";
       contract.Currency = "USD";
-      contract.LocalSymbol = symbol;
+      contract.LocalSymbol = localSymbol;
       contract.IncludeExpired = true;
       ;
+      if(symbol == "MBT") {
+        contract.Exchange = "CMECRYPTO";
+        contract.Symbol = "BRR";
+      }
       //EXEND
       return contract;
     }

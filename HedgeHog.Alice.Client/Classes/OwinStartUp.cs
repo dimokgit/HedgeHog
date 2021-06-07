@@ -541,6 +541,8 @@ namespace HedgeHog.Alice.Client {
         const string HID_BYTV = "ByTV";
         const string HID_BYHV = "ByHV";
         const string HID_BYPOS = "ByPos";
+        var useNaked = numOfCombos >= 0;
+        numOfCombos = numOfCombos.Abs();
         var contextDict = (IDictionary<string, object>)context;
         var selectedHedge = tm.HedgeCalcType;// (string)(contextDict["selectedHedge"] ?? "");
         int.TryParse(Convert.ToString(contextDict["hedgeQuantity"] ?? "1"), out var hedgeQuantity);
@@ -617,7 +619,7 @@ namespace HedgeHog.Alice.Client {
                 .Select(t => {
                   var mp = t.marketPrice;
                   var option = t.combo.contract;
-                  var maxPL = t.deltaBid * quantity * option.ComboMultiplier;
+                  var maxPL = t.marketPrice.avg * quantity * option.ComboMultiplier;
                   var strikeDelta = t.strikeAvg - t.underPrice;
                   var _sd = t.strikeAvg - sl.IfNaNOrZero(t.underPrice);
                   return new {
@@ -646,8 +648,8 @@ namespace HedgeHog.Alice.Client {
                 .OrderBy(t => t.strike.Abs(sl))
                 .ToArray();
 
-                var puts = options.Where(t => t.cp == "P" && t._sd < 5);
-                var calls = options.Where(t => t.cp == "C" && t._sd > -5);
+              var puts = options.Where(t => t.cp == "P" && (useNaked ? t._sd <= 5 : t._sd >= -5));
+                var calls = options.Where(t => t.cp == "C" && (useNaked ? t._sd >= -5 : t._sd <= 5));
                 //return (exp, b: options.OrderByDescending(x => x.strike));
                 return (exp, b: calls.OrderByDescending(x => x.strike).Concat(puts.OrderByDescending(x => x.strike)).ToArray());
               })

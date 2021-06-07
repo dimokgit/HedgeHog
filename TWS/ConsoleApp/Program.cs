@@ -89,6 +89,8 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          "MBTM1".ReqContractDetailsCached().SelectMany(cd => cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage); return;
+
           Tests.HedgeComboPrimary(am, "MESM1", "MNQM1"); return;
           TestCombosTrades(10).Subscribe(); return;
           Tests.HedgeCombo(am); return;
