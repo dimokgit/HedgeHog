@@ -40,7 +40,7 @@ namespace IBApp {
       }).SetTestConId(isInTest, 0);
 
     public static Contract ContractFactory(this string pair) => pair.ContractFactory(false, 0);
-    public static Contract ContractFactory(this string pair, bool isInTest,int multiplier) {
+    public static Contract ContractFactory(this string pair, bool isInTest,double multiplier) {
       if(pair.IsNullOrWhiteSpace()) throw new Exception(new { pair } + "");
       pair = pair.ToUpper();
       return (pair.IsCurrenncy()

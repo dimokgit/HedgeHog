@@ -78,7 +78,7 @@ namespace HedgeHog.Shared {
       return _pipSizeDictionary[pair];
     }
     public int GetDigits(string pair) { return GetOffer(pair).Digits; }
-    public int GetContractSize(string pair) => GetOffer(pair).ContractSize;
+    public double GetContractSize(string pair) => GetOffer(pair).ContractSize;
 
     //IDictionary<string, double> _pipCostDictionary = new Dictionary<string, double>();
     //public double GetPipCost(string pair) {
@@ -88,7 +88,7 @@ namespace HedgeHog.Shared {
     //  return _pipCostDictionary[pair];
     //}
 
-    public int GetBaseUnitSize(string pair) { return baseUnits.TryGetValue(pair.FutureCode(), out var bu) ? bu : 1; }
+    public double GetBaseUnitSize(string pair) { return baseUnits.TryGetValue(pair.FutureCode(), out var bu) ? bu : 1; }
 
     public Func<Trade, double> CommissionByTrade { get; set; }
 

@@ -41,7 +41,7 @@ namespace IBApp {
       return (from pos in bes select BreakEvens(pos));
 
     }
-    public static double priceFromProfit(double profit, double position, int multiplier, double open)
+    public static double priceFromProfit(double profit, double position, double multiplier, double open)
       => (profit + open) / position / multiplier;
     public IObservable<ComboTrade> ComboTrades(double priceTimeoutInSeconds) {
       var combos = (

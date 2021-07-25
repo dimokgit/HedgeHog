@@ -1133,7 +1133,7 @@ namespace HedgeHog.Alice.Client {
         GetTradingMacros(trade.Pair).Take(1).ForEach(tm => {
           var trades = TradesManager.GetTradesInternal(trade.Pair);
           tm.CurrentLot = trades.Sum(t => t.Lots);
-          var amountK = tm.CurrentLot / tm.BaseUnitSize;
+          var amountK = (tm.CurrentLot / tm.BaseUnitSize).ToInt();
           if(tm.HistoryMaximumLot < amountK)
             tm.HistoryMaximumLot = amountK;
           var ts = tm.SetTradeStatistics(trade);

@@ -52,7 +52,7 @@ namespace HedgeHog.Shared {
     //public static int GetBaseUnitSize(string symbol) => GetOffer(symbol).ContractSize;
     //public static int GetDigits(string symbol) => GetOffer(symbol).Digits;
     public static double GetMMR(string symbol, bool isBuy) => 1;// isBuy ? GetOffer(symbol).MMRLong : GetOffer(symbol).MMRShort;
-    public static double Leverage(int baseUnitSize, double mmr) => baseUnitSize / mmr;
+    public static double Leverage(double baseUnitSize, double mmr) => baseUnitSize / mmr;
 
     private static string[] _currencies = new[]{
       "USD",
@@ -223,13 +223,13 @@ namespace HedgeHog.Shared {
       return rates.Last().StartDate;
     }
     public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
-    public static int GetLotSize(double lot, int baseUnitSize, bool useCeiling) {
-      return (lot / baseUnitSize).ToInt(useCeiling) * baseUnitSize;
+    public static int GetLotSize(double lot, double baseUnitSize, bool useCeiling) {
+      return ((lot / baseUnitSize).ToInt(useCeiling) * baseUnitSize).ToInt();
     }
-    public static int GetLotSize(double lot, int baseUnitSize) {
+    public static int GetLotSize(double lot, double baseUnitSize) {
       return GetLotSize(lot, baseUnitSize, false);
     }
-    public static int GetLotstoTrade(double rate, string symbol, double balance, double leverage, double tradeRatio, int baseUnitSize) {
+    public static int GetLotstoTrade(double rate, string symbol, double balance, double leverage, double tradeRatio, double baseUnitSize) {
       var amountToTrade = symbol.IsCurrenncy()
         ? balance * leverage * tradeRatio
         : rate == 0
@@ -302,7 +302,7 @@ namespace HedgeHog.Shared {
         () => ml / pipSize);
     }
     #region PipCost
-    public static double PipCost(string pair, double rate, int baseUnit, double pipSize) {
+    public static double PipCost(string pair, double rate, double baseUnit, double pipSize) {
       return PipByPair(pair,
         () => baseUnit * pipSize / rate,
         () => baseUnit / 10000.0,
@@ -319,7 +319,7 @@ namespace HedgeHog.Shared {
     public static double PipToMarginCall(int lot, double pl, double balance, double mmr, double baseUnitSize, double pipAmount) {
       return MarginLeft2(lot, pl, balance, mmr, baseUnitSize, pipAmount) / pipAmount;
     }
-    public static int LotToMarginCall(int pipsToMC, double balance, int baseUnitSize, double pipCost, double MMR) {
+    public static int LotToMarginCall(int pipsToMC, double balance, double baseUnitSize, double pipCost, double MMR) {
       var lot = balance / (pipsToMC * pipCost / baseUnitSize + 1.0 / baseUnitSize * MMR);
       return pipsToMC < 1 ? 0 : GetLotSize(lot, baseUnitSize);
     }
@@ -328,7 +328,7 @@ namespace HedgeHog.Shared {
     public static int GetMaxBarCount(int periodsBack, DateTime StartDate, List<Rate> Bars) {
       return Math.Max(StartDate == TradesManagerStatic.FX_DATE_NOW ? 0 : Bars.Count(b => b.StartDate >= StartDate), periodsBack);
     }
-    public static double PriceFromProfitAmount(double profitAmount, double position, int multiplier, double openPrce)
+    public static double PriceFromProfitAmount(double profitAmount, double position, double multiplier, double openPrce)
       => profitAmount / position / multiplier + openPrce;
   }
 }

@@ -135,16 +135,16 @@ namespace HedgeHog.Alice.Store {
         if(true || GetVoltByIndex(voltIndex)(RatesArraySafe[0]).IsNaN())
           RunCalcHedgePrices(voltIndex, chp.p1, chp.p2, hedgeIndex);
         TradingMacroHedged(tmh => {
-          int m = GetHedgeMultiplier();
+          double m = GetHedgeMultiplier();
           var p = new[] { MakeParam(this, chp.p1), MakeParam(tmh, chp.p2) }.CalcHedgePrice(m);
           SetVolts(p, voltIndex, true);
         }, hedgeIndex);
       }
       return null;
-      (double, int, double) MakeParam(TradingMacro tm, double pos) => ((tm.RatesArraySafe.LastBC()?.PriceAvg).GetValueOrDefault(double.NaN), tm.BaseUnitSize, pos);
+      (double, double, double) MakeParam(TradingMacro tm, double pos) => ((tm.RatesArraySafe.LastBC()?.PriceAvg).GetValueOrDefault(double.NaN), tm.BaseUnitSize, pos);
     }
 
-    private int GetHedgeMultiplier() => _currentHedgeContract.HedgeComboPrimary((m1, m2) => { }).Single().ComboMultiplier;
+    private double GetHedgeMultiplier() => _currentHedgeContract.HedgeComboPrimary((m1, m2) => { }).Single().ComboMultiplier;
 
     private void RunCalcHedgePrices(int voltIndex, int p1, int p2, int hedgeIndex) {
       var sw = Stopwatch.StartNew();
@@ -513,9 +513,9 @@ namespace HedgeHog.Alice.Store {
           where t.a1.IsNotNaN() && t.a2.IsNotNaN() && t.diff.IsNotNaN()
           select new { price = (t.a1 - t.a2 * corr2), t.diff }
         ), hedgeIndex)).Concat().Concat().Concat().ToList();
-      var corr = hedgePrices.IsEmpty() ? double.NaN : MathNet.Numerics.Statistics.Correlation.Pearson(hedgePrices.Select(x => x.price), hedgePrices.Select(x => x.diff));
+      //var corr = hedgePrices.IsEmpty() ? double.NaN : MathNet.Numerics.Statistics.Correlation.Pearson(hedgePrices.Select(x => x.price), hedgePrices.Select(x => x.diff));
       //var corr = hedgePrices.IsEmpty() ? double.NaN : hedgePrices.Average(x => x.price).Abs() / hedgePrices.Height(x => x.price);
-      //var corr = hedgePrices.IsEmpty() ? double.NaN : 1 / hedgePrices.Select(x => x.price).ToArray().LinearSlope().Abs();
+      var corr = hedgePrices.IsEmpty() ? double.NaN : 1 / hedgePrices.Select(x => x.price).ToArray().LinearSlope().Abs();
       return (corr, pos1, pos2);
     }
     ActionAsyncBuffer _CalcHedgeRatioByPositionsAsyncBuffer;

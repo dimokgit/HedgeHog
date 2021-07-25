@@ -186,7 +186,7 @@ namespace HedgeHog.Alice.Store {
             var end = grouped2[i2].With(rg => rg.Index + rg.Count);
             var height = (maxer(max).Max(maxer(grouped2[i].MinMax[1]), maxer(grouped2[i2].MinMax[1]))
             - miner(min).Min(miner(grouped2[i].MinMax[0]), miner(grouped2[i2].MinMax[0])))
-            .RoundBySqrt(digits - 1);
+            .RoundBySqrt((digits - 1).Max(0));
             return new { start = start, count = end - start, startEnd = new[] { start, end }, height, isOut, i, i2, dist = distCurr };
           })
           .TakeWhile(x => !x.isOut)

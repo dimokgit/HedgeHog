@@ -116,7 +116,7 @@ namespace IBApp {
     #region Methods
     //public int GetBaseUnitSize(string pair) => TradesManagerStatic.IsCurrenncy(pair) ? 1 : 1;
     //public int GetBaseUnitSize(string pair) => IBApi.Contract.ContractDetails.TryGetValue(pair, out var m) ? int.Parse(m.Summary.Multiplier.IfEmpty("0")) : 0;
-    public int GetBaseUnitSize(string pair) => IBApi.Contract.FromCache(pair, m => int.Parse(m.Multiplier.IfEmpty("1"))).DefaultIfEmpty().Single();
+    public double GetBaseUnitSize(string pair) => IBApi.Contract.FromCache(pair, m => double.Parse(m.Multiplier.IfEmpty("1"))).DefaultIfEmpty().Single();
 
     public double Leverage(string pair, bool isBuy) => GetBaseUnitSize(pair) / GetMMR(pair, isBuy);
     public Trade TradeFactory(string pair) => Trade.Create(this, pair, GetPipSize(pair), GetBaseUnitSize(pair), CommissionByTrade);
@@ -142,7 +142,7 @@ namespace IBApp {
       Thread.CurrentThread.Name.ThrowIf(threadName => threadName == "MsgProc");
       var contract = Contract.FromCache(pair).Count(1, $"{nameof(GetBarsBase)}: {new { pair }}").Single();
       var cd = contract.FromDetailsCache().Single();
-      var startsWith = new[] { "VX", "BZ" };
+      var startsWith = new[] { /*"VX",*/ "BZ" };
       if(contract.IsFuture && !startsWith.Any(s => contract.Symbol.StartsWith(s)))
         contract = new Contract {
           SecType = "CONTFUT"
@@ -682,10 +682,10 @@ namespace IBApp {
     }
 
     public double GetMinTick(string pair) => GetMinTickImpl(pair);
-    public int GetContractSize(string pair) => GetContractSizeImpl(pair);
+    public double GetContractSize(string pair) => GetContractSizeImpl(pair);
 
     static Func<string, double> GetMinTickImpl = new Func<string, double>((string pair) => Contract.FromCache(pair).Select(c => c.MinTick()).Single()).Memoize();
-    static Func<string, int> GetContractSizeImpl = new Func<string, int>((string pair) => Contract.FromCache(pair).Select(c => c.ComboMultiplier).Single()).Memoize();
+    static Func<string, double> GetContractSizeImpl = new Func<string, double>((string pair) => Contract.FromCache(pair).Select(c => c.ComboMultiplier).Single()).Memoize();
 
     #endregion
   }

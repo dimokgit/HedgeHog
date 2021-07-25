@@ -152,7 +152,7 @@ namespace IBApp {
       return (cache, gdc, GetComboMultiplier(cache));
     }
 
-    private static int GetComboMultiplier(Contract cache) => cache.HedgeComboPrimary((m1, m2)
+    private static double GetComboMultiplier(Contract cache) => cache.HedgeComboPrimary((m1, m2)
       => LogMessage.Send(new { AccountManager = new { GetComboMultiplier = new { NotFound = new { m1, m2 } } } })).Single().ComboMultiplier;
   }
 

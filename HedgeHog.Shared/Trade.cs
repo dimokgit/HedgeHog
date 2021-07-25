@@ -73,7 +73,7 @@ namespace HedgeHog.Shared {
     /// Not Implemented exception
     /// </summary>
     public static Func<double> PipRateNI = () => { throw new NotImplementedException(); };
-    public static Trade Create(ITradesManager tradesManager, string pair, double pipSize, int baseUnitSize, Func<Trade, double> commissionByTrade) {
+    public static Trade Create(ITradesManager tradesManager, string pair, double pipSize, double baseUnitSize, Func<Trade, double> commissionByTrade) {
       return new Trade() { Pair = pair, PipSize = pipSize, BaseUnitSize = baseUnitSize, CommissionByTrade = commissionByTrade, TradesManager = tradesManager };
     }
     private Trade() {
@@ -213,7 +213,7 @@ namespace HedgeHog.Shared {
       }
     }
     public double Position => IsBuy ? Lots : -Lots;
-    public int AmountK { get { return Lots / (BaseUnitSize == 0 ? 1000 : BaseUnitSize); } }
+    public int AmountK { get { return (Lots / (BaseUnitSize == 0 ? 1000 : BaseUnitSize)).ToInt(); } }
 
     [DataMember]
     public string OpenOrderID { get; set; }
@@ -261,7 +261,7 @@ namespace HedgeHog.Shared {
     public void UpdateByPrice(object sender, PriceChangedEventArgs e) {
       UpdateByPrice(sender as ITradesManager, e.Price);
     }
-    public int BaseUnitSize { get; private set; }
+    public double BaseUnitSize { get; private set; }
     public void UpdateByPrice(ITradesManager tradesManager) {
       if(!tradesManager.TryGetPrice(Pair, out var price)) return;
       UpdateByPrice(tradesManager, price);

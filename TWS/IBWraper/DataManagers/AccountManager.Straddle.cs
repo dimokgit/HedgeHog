@@ -26,7 +26,7 @@ namespace IBApp {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
         from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
-        from combo in MakeStraddles(symbol, strikeLevel.IfNaN(price), expirationDaysSkip, 1, count, gap)
+        from combo in MakeStraddles(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count, gap)
         from p in combo.contract.ReqPriceSafe().DefaultIfEmpty()
         select CurrentComboInfo(price, combo, p)).ToArray()
         .Select(b => b
@@ -87,6 +87,35 @@ namespace IBApp {
          .ToArray()
          );
     }
+
+    public static IObservable<(Contract contract, Contract[] options)> MakeStraddles(string symbol, int count, int expirationDaysSkip, int gap) =>
+      MakeStraddles(symbol, count, expirationDaysSkip.CalcExpirationDate(), gap);
+
+    public static IObservable<(Contract contract, Contract[] options)> MakeStraddles(string symbol, int count, DateTime expDate, int gap) =>
+      from cd in symbol.ReqContractDetailsCached()
+      from p in cd.ReqPriceSafe().Select(p => p.avg)
+      from s in MakeStraddles(symbol, p,count, expDate, gap)
+      select s;
+
+    public static IObservable<(Contract contract, Contract[] options)> MakeStraddles(string symbol, double underPrice,int count, DateTime expDate, int gap) {
+      return (from chain in DataManager.IBClientMaster.ReqOptionChainOldCache(symbol, expDate)
+              from g in Enumerable.Range(0, gap + 1)
+              from up in chain.Where(c=>c.IsCall).OrderBy(c=>c.Strike.Abs(underPrice)).Take(count).Select(c=>c.Strike)
+              from pair in BuildStraddlePair(chain, up, g)
+              let cp = new[] { pair.call, pair.put }
+              select (cp.MakeStraddle(), cp)
+       );
+      IEnumerable<(Contract call, Contract put)> BuildStraddlePair(Contract[] chain, double p, int gap) => chain
+                  .GroupBy(x => x.Strike)
+                  .OrderBy(x => x.Key.Abs(p))
+                  .Take(gap + 1)
+                  .SelectMany(g => g.OrderBy(b => b.IsCall).Buffer(2).Select(b => new { call = b[1], put = b[0] }))
+                  .TakeLast(2)
+                  .OrderBy(x => x.call.Strike)
+                  .Buffer(2)
+                  .Select(b => (b.Last().call, b[0].put));
+    }
+
     public IObservable<(Contract contract, Contract[] options)> MakeStraddles
       (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count, int gap) =>
       IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count * 2 + gap * 3, c => true)
@@ -374,7 +403,7 @@ namespace IBApp {
       let tradesLost = allTrades.Where(t => t.contract.Expiration == exp && t.contract.IsOption && t.change <= 0 && !t.IsBuy).ToArray()
       from isCall in tradesLost.Select(t => t.contract.IsCall).Distinct()
       from up in under.ReqPriceSafe()
-      from rolls in CurrentRollOversByUnder(under, isCall,exp, strikesCount, weeks)
+      from rolls in CurrentRollOversByUnder(under, isCall, exp, strikesCount, weeks)
       from roll in rolls//.SideEffect(_ => TraceDebug(rolls.Select(r => new { roll = r.Instrument }).ToTextOrTable("Rolls:")))
       let mul = roll.ComboMultiplier * quantity
       let strikeSign = 1

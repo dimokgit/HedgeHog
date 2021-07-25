@@ -89,12 +89,13 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          CurrentOptionsTest.CurrentStraddles(am); return;
+          LoadMultiple(DateTime.Now.AddMonths(-4), 5, "VXMN1"); return;
+          Tests.HedgeComboPrimary(am, "MESM1", "MBTM1"); return;
           "MBTM1".ReqContractDetailsCached().SelectMany(cd => cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage); return;
 
-          Tests.HedgeComboPrimary(am, "MESM1", "MNQM1"); return;
           TestCombosTrades(10).Subscribe(); return;
           Tests.HedgeCombo(am); return;
-          LoadMultiple(DateTime.Now.AddMonths(-14), 5, "SPY", "QQQ"); return;
           CurrentOptionsTest.CurrentOptions(am); return;
           "VIXW  210302C00027000".ReqContractDetailsCached().SelectMany(cd => cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage); return;
           Tests.MakeHedgeCombo(am); return;
@@ -149,7 +150,7 @@ namespace ConsoleApp {
                 };
                 //fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
                 //fw.GetBarsBase(sec, period, 0, DateTime.Parse("11/29/2019").SetLocal(), DateTime.Parse("11/29/2019 23:59").SetLocal()
-                fw.GetBarsBase(sec, period, 8000, TradesManagerStatic.FX_DATE_NOW, DateTime.Now.SetLocal(), true, false
+                fw.GetBarsBase(sec, period, 20000, TradesManagerStatic.FX_DATE_NOW, DateTime.Now.SetLocal(), true, false
                     , bars, null, showProgress);
                 HandleMessage($"***** Done GetBars {bars.Count}*****");
               } else {

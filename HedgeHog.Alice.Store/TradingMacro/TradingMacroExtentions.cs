@@ -4176,10 +4176,10 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     }
 
     #region LotSize
-    int _BaseUnitSize = 0;
+    double _BaseUnitSize = 0;
     double _mmr = 0;
     public double MinTick { get { return TradesManager.GetMinTick(Pair); } }
-    public int BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = (TradesManager?.GetBaseUnitSize(Pair)).GetValueOrDefault(); } }
+    public double BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = (TradesManager?.GetBaseUnitSize(Pair)).GetValueOrDefault(); } }
     Account _account = null;
     Account Account { get { return _account ?? (_account = TradesManager?.GetAccount()); } }
     public void SetLotSize(Account account = null) {

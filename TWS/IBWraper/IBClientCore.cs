@@ -529,7 +529,7 @@ namespace IBApp {
     }
     public IObservable<Contract> ReqCurrentOptionsAsync
       (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount, Func<Contract, bool> filter) {
-      var expStartDate = ServerTime.Date.AddBusinessDays(expirationDaysSkip);
+      var expStartDate = CalcExpirationDate(expirationDaysSkip);
       return (
         //from exps in ReqStrikesAndExpirations(symbol)
         //from exp in exps.expirations.OrderBy(d => d).Where(d => d >= expStartDate).Take(1)
@@ -544,6 +544,8 @@ namespace IBApp {
           .SelectMany(a => a.OrderBy(t => t.i).ThenBy(t => t.o.Strike).Select(t => t.o))
           .Take(strikesCount * expirationsCount);
     }
+
+    public DateTime CalcExpirationDate(int expirationDaysSkip) => ServerTime.Date.AddBusinessDays(expirationDaysSkip);
 
     public IObservable<Contract> ReqCurrentOptionsFastAsync
       (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount) {

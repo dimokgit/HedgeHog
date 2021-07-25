@@ -47,6 +47,9 @@ namespace IBApp {
       IEnumerable<Contract> getCP(Contract[] option) => (from o in option group o by o.IsCall into g select g.First());
     }
 
+    public static Contract MakeStraddle(this IEnumerable<Contract> contractOptions) => contractOptions.ToList().MakeStraddle();
+    public static Contract MakeStraddle(this IList<Contract> contractOptions) => AccountManager.MakeStraddle(contractOptions);
+
     public static bool IsEntryOrder(this IBApi.Order o) => new[] { "MKT", "LMT" }.Contains(o.OrderType);
 
     public static IEnumerable<T> ByOrderId<T>(this ConcurrentDictionary<int, OrderContractHolder> source, int orderId, Func<OrderContractHolder, T> map)

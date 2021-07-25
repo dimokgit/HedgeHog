@@ -28,7 +28,7 @@ namespace IBApi {
 
       ConId = conId;
     }
-    public Contract SetTestConId(bool isInTest, int multiplier) {
+    public Contract SetTestConId(bool isInTest, double multiplier) {
       if(isInTest && ConId == 0) {
         if(Symbol.IsNullOrEmpty()) Symbol = LocalSymbol;
         if(LocalSymbol.IsNullOrEmpty()) LocalSymbol = Symbol;
@@ -129,8 +129,8 @@ namespace IBApi {
     }
     public IEnumerable<double> MinTicks() => LegsOrMe(MinTickImpl).Concat();
     public double MinTick() => LegsOrMe(MinTickImpl).Concat().Max();
-    public IEnumerable<int> ComboMultipliers => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(int.Parse);
-    public int ComboMultiplier => ComboMultipliers.Min();
+    public IEnumerable<double> ComboMultipliers => new[] { Multiplier }.Concat(Legs().Select(l => l.c.Multiplier)).Where(s => !s.IsNullOrWhiteSpace()).DefaultIfEmpty("1").Select(double.Parse);
+    public double ComboMultiplier => ComboMultipliers.Min();
     public bool IsCombo => IsBag;
     public bool IsFuturesCombo => LegsEx(l => l.c.IsFuture).Count() > 1;
     public bool IsStocksCombo => LegsEx(l => l.c.IsStock).Count() > 1;
@@ -268,10 +268,10 @@ namespace IBApi {
       : Key == other.Key;
     #region Hedge Primary
     public IEnumerable<Contract> HedgeComboPrimary(Action<string> notFound, [CallerMemberName] string Caller = "") {
-      void error(int m1, int m2) => notFound(new {NotFound = $"By {Caller}", m1, m2  } + "");
+      void error(double m1, double m2) => notFound(new {NotFound = $"By {Caller}", m1, m2  } + "");
       return HedgeComboPrimary(error);
     }
-    public IEnumerable<Contract> HedgeComboPrimary(Action<int, int> notFound) {
+    public IEnumerable<Contract> HedgeComboPrimary(Action<double, double> notFound) {
       return (from legs in Legs().Select(l => l.c).Buffer(2)
               where legs.Count == 2
               let c1 = legs[0]
@@ -298,20 +298,20 @@ namespace IBApi {
   }
   public static class ContractMixins {
     public static string ToLable(this ComboLeg l) => l.Ratio == 0 ? "" : (l.Action == "BUY" ? "+" : "-") + (l.Ratio > 1 ? l.Ratio + "" : "");
-    static (int[] mm, int m)[] multipliers = new[] {
-      (new[] { 2, 5 }, 2 ),
-      (new[] { 5, 10 }, 10 ),
-      (new[] { 5, 100 }, 100 ),
-      (new[] { 5, 1000 }, 5 ),
-      (new[] { 10, 1000 }, 10 ),
-      (new[] { 10, 12500 }, 10 ),
-      (new[] { 20, 50 }, 20 ),
-      (new[] { 50, 100 }, 100 ),
-      (new[] { 50, 1000 }, 1000 ),
+    static (double[] mm, double m)[] multipliers = new [] {
+      (new double[] { 2.0, 5.0 }, 2.0 ),
+      (new double[] { 5, 10 }, 10 ),
+      (new double[] { 5, 100 }, 100 ),
+      (new double[] { 5, 1000 }, 5 ),
+      (new double[] { 10, 1000 }, 10 ),
+      (new double[] { 10, 12500 }, 10 ),
+      (new double[] { 20, 50 }, 20 ),
+      (new double[] { 50, 100 }, 100 ),
+      (new double[] { 50, 1000 }, 1000 ),
     };
     static int multiplierErrorCount = 0;
-    public static int multiplier(this int[] mm, Action<int, int> notFound) => multiplier(mm[0], mm[1], notFound);
-    public static int multiplier(int m1, int m2, Action<int, int> notFound) {
+    public static double multiplier(this double[] mm, Action<double, double> notFound) => multiplier(mm[0], mm[1], notFound);
+    public static double multiplier(double m1, double m2, Action<double, double> notFound) {
       if(m1 == m2) return m1;
       var m = multipliers.SingleOrDefault(mm => mm.mm[0] == m1 && mm.mm[1] == m2 || mm.mm[0] == m2 && mm.mm[1] == m1).m;
       if(m == 0 && multiplierErrorCount-- > 0)
