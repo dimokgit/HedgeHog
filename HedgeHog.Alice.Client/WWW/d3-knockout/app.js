@@ -2196,7 +2196,7 @@
         });
       var map = {
         key: function (item) {
-          return ko.utils.unwrapObservable(item.i);
+          return item ? ko.utils.unwrapObservable(item.i) : null;
         }
       };
       ko.mapping.fromJS(butterflies, map, dataViewModel.butterflies);

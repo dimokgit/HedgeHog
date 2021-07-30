@@ -103,7 +103,7 @@ namespace IBApp {
         //.DistinctUntilChanged(t => new { t.Contract, t.Position })
         .Do(x => TracePosition($"Position: {new { x.Contract, x.Position, x.AverageCost, x.Account } }"))
         .Do(x => {
-          if(x.Contract.LocalSymbol == "QQQ" && x.Contract.Exchange == "NASDAQ")
+          if(x.Contract.SecType == "STK" && x.Contract.Exchange == "NASDAQ")
             x.Contract.Exchange = "SMART";
         })
         .SelectMany(p => ReqPositionContractDetailsAsync(p).Select(_ => p))

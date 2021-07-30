@@ -30,17 +30,17 @@ namespace ConsoleApp {
       .Subscribe();
 
     public static void CurrentStraddles(AccountManager am) {
-      var symbol = "ESU1";
-      var expDate = DateTime.Parse("7/25/2021");
+      var symbol = "SPY";
+      var expDate = DateTime.Now.Date;//.Parse("7/25/2021");
       var gap = 5;
-      AccountManager.MakeStraddles(symbol, 2, expDate, gap)
+      AccountManager.MakeStraddles(symbol, 1, expDate, gap)
         //.OrderBy(c => c.options.Buffer(2).Max(o => o[0].Strike.Abs(o[1].Strike)))
         .ToArray()
               .Subscribe(straddles => {
                 HandleMessage("\n" + straddles.Select(straddle => new { straddle.contract }).ToMarkdownTable());
               });
       return;
-      am.CurrentStraddles("ESU1", 0, 0, 2, 20)
+      am.CurrentStraddles("SPY", 0, 0, 2, 20)
         .Subscribe(cs => {
           HandleMessage(cs.Select(c => new { c.option }).ToMarkdownTable());
         });

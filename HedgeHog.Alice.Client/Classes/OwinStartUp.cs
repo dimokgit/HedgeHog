@@ -600,6 +600,7 @@ namespace HedgeHog.Alice.Client {
                         breakEven
                       };
                     });
+                    return cs.ToArray();
                     cs = strikeLevel.HasValue && true
                     ? cs.OrderByDescending(x => x.strikeDelta)
                     : cs.OrderByDescending(x => x.delta);
@@ -767,7 +768,7 @@ namespace HedgeHog.Alice.Client {
                         , exit = 0, exitDelta = 0
                         , pmc = x.pmc.ToInt()
                         , mcu = x.mcUnder.ToInt()
-                        , color = !hasStrike ? "white"
+                        , color = false ? "white"
                         : delta > 0 && (x.contract.IsPut || !hasStrike)
                         ? "#ffd3d9"
                         : delta < 0 && (x.contract.IsCall || !hasStrike)

@@ -72,7 +72,8 @@ namespace ConsoleApp {
       const int twsPort = 7496;
       const int clientId = 11;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
-      bool Connect() => ibClient.LogOn("127.0.0.1", twsPort + "", clientId + "", false);
+      var account = ",U4273389";
+      bool Connect() => ibClient.LogOn("127.0.0.1"+account, twsPort + "", clientId + "", false);
       #endregion
       StartTests();
       if(Connect()) {
@@ -89,12 +90,12 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          "AMZN".ReqContractDetailsCached().SelectMany(cd => cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage); return;
+          TestCombosTrades(10).Subscribe(); return;
           CurrentOptionsTest.CurrentStraddles(am); return;
           LoadMultiple(DateTime.Now.AddMonths(-4), 5, "VXMN1"); return;
           Tests.HedgeComboPrimary(am, "MESM1", "MBTM1"); return;
-          "MBTM1".ReqContractDetailsCached().SelectMany(cd => cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage); return;
 
-          TestCombosTrades(10).Subscribe(); return;
           Tests.HedgeCombo(am); return;
           CurrentOptionsTest.CurrentOptions(am); return;
           "VIXW  210302C00027000".ReqContractDetailsCached().SelectMany(cd => cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage); return;
