@@ -1,0 +1,20 @@
+﻿CREATE FUNCTION fPriceDelta(
+@Pair varchar(10)
+)RETURNS TABLE AS RETURN
+WITH SPX0 AS
+(
+SELECT CAST(StartDate AS date) StartDate,MAX(AskHigh) AskHigh,MIN(BidLow) BidLow 
+FROM t_Bar 
+WHERE Pair=@Pair AND Period = 1
+GROUP BY CAST(StartDate AS date)
+),SPX1 AS
+(
+SELECT *
+, MIN(BidLow) OVER(ORDER BY StartDate  ROWS BETWEEN 30 PRECEDING AND CURRENT ROW)PriceMin
+, MAX(AskHigh) OVER(ORDER BY StartDate  ROWS BETWEEN 30 PRECEDING AND CURRENT ROW)PriceMax
+FROM SPX0
+)
+SELECT TOP(1000000) *
+, (PriceMax-PriceMin)/PriceMin Delta
+FROM SPX1
+ORDER BY StartDate

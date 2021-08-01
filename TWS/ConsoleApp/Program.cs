@@ -90,10 +90,10 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          LoadMultiple(DateTime.Now.AddMonths(-24), 5, "VXX","SPY"); return;
           "AMZN".ReqContractDetailsCached().SelectMany(cd => cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage); return;
           TestCombosTrades(10).Subscribe(); return;
           CurrentOptionsTest.CurrentStraddles(am); return;
-          LoadMultiple(DateTime.Now.AddMonths(-4), 5, "VXMN1"); return;
           Tests.HedgeComboPrimary(am, "MESM1", "MBTM1"); return;
 
           Tests.HedgeCombo(am); return;
