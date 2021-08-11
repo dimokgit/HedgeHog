@@ -600,7 +600,7 @@ namespace HedgeHog.Alice.Client {
                         breakEven
                       };
                     });
-                    return cs.ToArray();
+                    return cs.Distinct(x => x.i).ToArray();
                     cs = strikeLevel.HasValue && true
                     ? cs.OrderByDescending(x => x.strikeDelta)
                     : cs.OrderByDescending(x => x.delta);
@@ -649,7 +649,7 @@ namespace HedgeHog.Alice.Client {
                 .OrderBy(t => t.strike.Abs(sl))
                 .ToArray();
 
-              var puts = options.Where(t => t.cp == "P" && (useNaked ? t._sd <= 5 : t._sd >= -5));
+                var puts = options.Where(t => t.cp == "P" && (useNaked ? t._sd <= 5 : t._sd >= -5));
                 var calls = options.Where(t => t.cp == "C" && (useNaked ? t._sd >= -5 : t._sd <= 5));
                 //return (exp, b: options.OrderByDescending(x => x.strike));
                 return (exp, b: calls.OrderByDescending(x => x.strike).Concat(puts.OrderByDescending(x => x.strike)).ToArray());
@@ -744,6 +744,7 @@ namespace HedgeHog.Alice.Client {
                   .ThenBy(ct => ct.contract.FromDetailsCache().Select(cd => cd.UnderSymbol.IfEmpty(ct.contract.Instrument)).FirstOrDefault())
                   .ThenBy(ct => ct.contract.Legs().Count())
                   .ThenBy(ct => ct.contract.LastTradeDateOrContractMonth2)
+                  .ThenBy(ct => ct.contract.Right)
                   //.ThenBy(ct => ct.contract.IsOption)
                   .ToArray(x => {
                     var hasStrike = x.contract.HasOptions;
@@ -751,6 +752,9 @@ namespace HedgeHog.Alice.Client {
                     var contract = x.contract;
                     var breakEven = contract.BreakEven(-x.openPrice).ToArray();
                     var profit = tm.Strategy == Strategies.HedgeA ? tm.ExitGrossByHedgePositions : x.profit;
+                    var red = "#ffd3d9";
+                    var green = "chartreuse";
+                    string getColor() => x.StrikeColor ? green : red;
                     return new {
                       combo = x.contract.Instrument
                       , i = x.contract.Key
@@ -768,14 +772,9 @@ namespace HedgeHog.Alice.Client {
                         , exit = 0, exitDelta = 0
                         , pmc = x.pmc.ToInt()
                         , mcu = x.mcUnder.ToInt()
-                        , color = false ? "white"
-                        : delta > 0 && (x.contract.IsPut || !hasStrike)
-                        ? "#ffd3d9"
-                        : delta < 0 && (x.contract.IsCall || !hasStrike)
-                        ? "#ffd3d9"
-                        : "chartreuse",
-                      ic = x.contract.IsOptionsCombo,
-                      breakEven
+                        , color = getColor()
+                        , ic = x.contract.IsOptionsCombo
+                        , breakEven
                     };
                   });
 
@@ -866,7 +865,7 @@ namespace HedgeHog.Alice.Client {
           DistanceFromHigh = distFromHigh,
           DistanceFromLow = distFromLow,
           HedgeCalcType = tm.HedgeCalcType + "" + tm.HedgeCalcIndex,
-          GetAccountManager()?.TrendEdgesLastDate
+          TrendEdgesLastDate = RUN_EDGE_TREND ? GetAccountManager()?.TrendEdgesLastDate : DateTime.Now
         };
         string HedgeCalcTypeContext(TradingMacro tml, TradingMacro.HedgeCalcTypes hct) => hct.ToString() + tml.PairIndex;
         ////
@@ -878,7 +877,7 @@ namespace HedgeHog.Alice.Client {
           var hh0 = getHedges(tml);
           hh0.ForEach(h => h.contract.FromCache().RunIfEmpty(() => h.contract.ReqContractDetailsCached().Subscribe()));
           if(hh0.Count < 2) return Observable.Empty<CurrentHedge>();
-          var combo0 = AccountManager.MakeHedgeComboSafe(hQuantity, hh0[0].contract, hh0[1].contract, hh0[0].ratio, hh0[1].ratio, IsInVirtual());
+          var combo0 = MakeHedgeComboSafe(hQuantity, hh0[0].contract, hh0[1].contract, hh0[0].ratio, hh0[1].ratio, IsInVirtual());
           IObservable<MarketPrice> CalcComboPrice()
           => (
           from c in combo0

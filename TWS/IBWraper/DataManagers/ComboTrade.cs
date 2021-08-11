@@ -18,6 +18,8 @@ namespace IBApp {
         && t.contract.Expiration <= DateTime.Today.AddDays(1) 
         && t.contract.UnderContract.Any(u => u.Key == contract.Key));
     }
+    public bool StrikeColor => contract.HasOptions ? contract.ComboStrikeColor(underPrice, position) : PriceColor(contract, underPrice, openPrice, position);
+    static bool PriceColor(Contract c, double underPrice, double openPrice, int position) => (underPrice - openPrice) * c.DeltaSign * position.Sign() > 0;
 
     //new HedgeCombo(hc.contract, pl, openPrice, closePrice, hc.quantity * g.First().position.position.Sign())
     public ComboTrade() {

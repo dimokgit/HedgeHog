@@ -192,7 +192,13 @@ namespace IBApp {
     #endregion
 
     #region Trades
-    public IList<Trade> GetTrades() { return OpenTrades.ToList(); }
+    public IList<Trade> GetTrades() {
+      try {
+        return OpenTrades.ToList();
+      } catch(ArgumentException) {
+        return OpenTrades.ToList();
+      }
+    }
     public IList<Trade> GetClosedTrades() { return ClosedTrades.ToList(); }
     public void SetClosedTrades(IEnumerable<Trade> trades) => ClosedTrades.AddRange(new ReactiveList<Trade>(trades));
     #endregion

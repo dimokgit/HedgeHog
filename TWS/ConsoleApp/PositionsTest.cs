@@ -84,13 +84,19 @@ namespace ConsoleApp {
       .Where(_ => am.Positions.Count > 1)
       .SelectMany(_ =>
         am.ComboTrades(1)
+        //.Where(ct=>ct.contract.IsPut)
         .ToArray()
         )
+      //.Where(cts=>cts.Any())
       .Subscribe(comboPrices => {
+        
         var swCombo = Stopwatch.StartNew();
         HandleMessage2("Matches: Start");
-        HandleMessage(comboPrices.Select(c => new { c.contract, c.position, c.openPrice, c.closePrice }).ToTextOrTable(), false);
+        HandleMessage(comboPrices.Select(ct => new { 
+          ct.contract, ct.position, ct.openPrice, ct.closePrice,ct.underPrice,ct.strikeAvg ,color = ct.StrikeColor
+        }).ToTextOrTable(), false);
         HandleMessage2($"Matches: Done in {swCombo.ElapsedMilliseconds} ms =========================================");
+        bool StrikeColor(Contract c, double underPrice, double openPrice, int position) => (underPrice - openPrice) * c.DeltaSign * position.Sign() > 0;
       });
     }
   }

@@ -29,8 +29,12 @@ namespace ConsoleApp {
        select oc)
       .Subscribe();
 
+    public static void CurrentStraddles(AccountManager am, string symbol) => 
+      am.CurrentStraddles(symbol, double.NaN, 1, 1, 1)
+      .Subscribe(ss => Program.HandleMessage(ss.Select(a => a.combo.contract).Select(c => new { c.ShortString, c.DateWithShort, c.ShortWithDate2 }).ToTextOrTable("Straddles:")));
+
     public static void CurrentStraddles(AccountManager am) {
-      var symbol = "SPY";
+      var symbol = "ESU1";
       var expDate = DateTime.Now.Date;//.Parse("7/25/2021");
       var gap = 5;
       AccountManager.MakeStraddles(symbol, 1, expDate, gap)

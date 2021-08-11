@@ -23,6 +23,7 @@ using static IBApp.AccountManagerMixins;
 
 namespace IBApp {
   public partial class AccountManager {
+    public const bool RUN_EDGE_TREND = false;
     #region Fields
     List<IDisposable> _strams = new List<IDisposable>();
     #endregion
@@ -222,7 +223,7 @@ namespace IBApp {
         .SideEffect(s => _strams.Add(s));
 
       WireOrderEntryLevels();
-      if(false) WireTrendEdges();
+      if(RUN_EDGE_TREND) WireTrendEdges();
 
       DateTime thStart() => ibClient.ServerTime.Date.AddHours(9).AddMinutes(29);
       DateTime thEnd() => ibClient.ServerTime.Date.AddHours(16);

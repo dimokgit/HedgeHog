@@ -12,11 +12,13 @@ using System.Text.RegularExpressions;
 
 namespace IBApp {
   partial class AccountManager {
+    static string[] _hedgeExcepts = new[] { "ES", "MES" };
     public IObservable<ComboTrade> MakeComboHedgeFromPositions(IEnumerable<Position> positions) {
       var a = (from g in HedgedPositions(positions)//.OrderBy(p => p.position.contract.Instrument)
                where g.Length == 2
                let o = g[0]
                let t = g[1]
+               where g.Select(p => p.position.contract.Symbol).Any(s => !_hedgeExcepts.Contains(s))
                let hc = MakeHedgeCombo(1, o.position.contract, t.position.contract, o.position.position.Abs(), -o.position.position.Sign() * t.position.position)
                let quantity = hc.quantity * g.First().position.position.Sign()
                let isBuy = quantity > 0
@@ -50,10 +52,10 @@ namespace IBApp {
 
     public static IObservable<(Position position, double close, double pl, double closePrice)[]> HedgedPositions(IEnumerable<Position> positions) {
       return (from p0 in positions.Sort().ToObservable()
-                //where p.contract.IsFuture || p.contract.IsStock || p.contract.IsOption
               let cp = (p0.position.Abs() /*+ CoveredOption(p0, positions).Sum(p => p.position)*/) * p0.position.Sign()
               let p = p0.position == cp ? p0 : new Position(p0.contract, cp, p0.averageCost)
-              where p.position != 0
+              //where p.contract.IsFuture || p.contract.IsStock// || p.contract.IsOption
+              where p.position != 0 && !p.contract.IsOption
               from price in p.contract.ReqPriceSafe()
               let closePrice = p.position > 0 ? price.bid : price.ask
               let close = closePrice * p.contract.ComboMultiplier * p.position

@@ -207,8 +207,6 @@ namespace ConsoleApp {
     public static void CurrentOptionsTest(AccountManager am, string symbol) {
       am.CurrentOptions(symbol, double.NaN, 0, 2, c => true)
       .Subscribe(ss => Program.HandleMessage(ss.Select(a => a.option).Select(c => new { c.ShortString, c.DateWithShort, c.ShortWithDate2 }).ToTextOrTable("Options:")));
-      am.CurrentStraddles(symbol, double.NaN, 0, 2, 1)
-      .Subscribe(ss => Program.HandleMessage(ss.Select(a => a.combo.contract).Select(c => new { c.ShortString, c.DateWithShort, c.ShortWithDate2 }).ToTextOrTable("Straddles:")));
     }
   }
 }

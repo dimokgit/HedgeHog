@@ -72,8 +72,8 @@ namespace ConsoleApp {
       const int twsPort = 7496;
       const int clientId = 11;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
-      var account = ",U4273389";
-      bool Connect() => ibClient.LogOn("127.0.0.1"+account, twsPort + "", clientId + "", false);
+      var account = "";//,U4273389";
+      bool Connect() => ibClient.LogOn("127.0.0.1" + account, twsPort + "", clientId + "", false);
       #endregion
       StartTests();
       if(Connect()) {
@@ -90,10 +90,15 @@ namespace ConsoleApp {
       void StartTests() {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
-          LoadMultiple(DateTime.Now.AddMonths(-24), 5, "VXX","SPY"); return;
-          "AMZN".ReqContractDetailsCached().SelectMany(cd => cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage); return;
-          TestCombosTrades(10).Subscribe(); return;
-          CurrentOptionsTest.CurrentStraddles(am); return;
+          "AMZN".ReqContractDetailsCached().SelectMany(cd => {
+            HandleMessage( new { IsTradingHours = cd.Contract.IsTradingHours(AccountManager.IBClientMaster.ServerTime) }.ToTextTable());
+          return cd.Contract.ReqPriceSafe();
+            }
+          ).Subscribe(HandleMessage); return;
+          PositionsTest.ComboTrades(am); return;
+          CurrentOptionsTest.CurrentStraddles(am,"ESU1"); return;
+          TestCombosTrades(10).Take(1).Subscribe(); return;
+          LoadMultiple(DateTime.Now.AddMonths(-24), 5, "VXX", "SPY"); return;
           Tests.HedgeComboPrimary(am, "MESM1", "MBTM1"); return;
 
           Tests.HedgeCombo(am); return;
