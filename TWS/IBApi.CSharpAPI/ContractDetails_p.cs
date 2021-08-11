@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using HedgeHog;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace IBApi {
   partial class ContractDetails {
@@ -37,6 +38,19 @@ namespace IBApi {
       if(ContractDetailsCache.TryGetValue(instrument, out var contract))
         yield return map(contract);
     }
+    public DateTime[][] _TradingTimes = new DateTime[0][] { };
+    public DateTime[][] TradingTimes {
+      get {
+        if(_TradingTimes.Length > 0) return _TradingTimes;
+        var timeStr = from thss in (TradingHours ?? "").Split(';')
+                      let ths = thss.Split('-')
+                      where ths.Length == 2
+                      select ths.Select(th =>
+                      DateTime.ParseExact(th, "yyyyMMdd:HHmm", CultureInfo.InvariantCulture)).ToArray();
+        return _TradingTimes = timeStr.ToArray();
+      }
+    }
+    public bool IsTradingHours(DateTime date) => TradingTimes.Any(t => date.Between(t[0], t[1]));
     public override string ToString() =>
       base.ToString();
   }

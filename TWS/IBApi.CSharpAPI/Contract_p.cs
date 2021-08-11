@@ -152,6 +152,10 @@ namespace IBApi {
     public int DeltaSign => IsPut ? -1 : 1;
     public int DeltaSignCombined => LegsOrMe(c => c.DeltaSign).MinMax().With(a => a[0] + a[1]);
     public IEnumerable<double> BreakEven(double openPrice) => Legs().Select(l => l.c.Strike + (l.c.IsCall ? 1 : -1) * openPrice);
+    public bool ComboStrikeColor(double underPrice, int positionSign) =>
+      LegsEx(l => l.c).DefaultIfEmpty(this).All(c => StrikeColor(underPrice, c, positionSign.Sign()));
+    static bool StrikeColor(double underPrice, Contract o, int positionSign) =>
+      (underPrice - o.Strike) * o.DeltaSign * positionSign.Sign() > 0;
 
     public static IList<DateTimeOffset> _LiquidHoursDefault = new List<DateTimeOffset> {
 
@@ -169,6 +173,8 @@ namespace IBApi {
        )
       .Take(2)
       .ToArray();
+    public bool IsTradingHours(DateTime date) => FromDetailsCache().Any(cd=> cd.TradingTimes.Any(t => date.Between(t[0], t[1])));
+
     IList<DateTimeOffset> GetTodayLiquidRange() =>
       (from t in new[] { "0930", "1600" }
        select DateTimeOffset.ParseExact(t, "HHmm", null, DateTimeStyles.None).InTZ(TimeZone).InNewYork()

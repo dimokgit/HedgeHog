@@ -179,8 +179,10 @@ namespace IBApp {
       if(false) OnTickPriceTrace(new { requestId, field, price } + "", $"{nameof(OnTickPrice)}[{requestId}]: {ar.contract}:{new { field, price }}");
       var price2 = ar.price;
       //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
+      const int CLOSE_PRICE = 9;
       const int LOW_52 = 19;
       const int HIGH_52 = 20;
+      if(price == -1) return;
       switch(field) {
         case 1: { // Bid
             if(!price2.IsBidSet || price > 0) {
@@ -198,30 +200,34 @@ namespace IBApp {
             }
             break;
           }
-        case 9: {
-            if(!price2.IsAskSet) {
-              price2.Ask = price;
-              price2.IsAskSet = true;
+        case CLOSE_PRICE: {
+            if(!ar.contract.IsTradingHours(IbClient.ServerTime)) {
+              if(!price2.IsAskSet) {
+                price2.Ask = price;
+                price2.IsAskSet = true;
+              }
+              if(!price2.IsBidSet) {
+                price2.Bid = price;
+                price2.IsBidSet = true;
+              }
+              price2.Time2 = IbClient.ServerTime;
+              RaisePriceChanged(ar);
             }
-            if(!price2.IsBidSet) {
-              price2.Bid = price;
-              price2.IsBidSet = true;
-            }
-            price2.Time2 = IbClient.ServerTime;
-            RaisePriceChanged(ar);
-            break;
           }
+          break;
         case 37:
           break;
         case 4: {
-            if(ar.contract.IsIndex || !price2.IsAskSet && price2.Ask <= 0)
-              price2.Ask = price;
-            if(ar.contract.IsIndex || !price2.IsBidSet && price2.Bid <= 0)
-              price2.Bid = price;
-            price2.Time2 = IbClient.ServerTime;
-            RaisePriceChanged(ar);
-            break;
+            if(!ar.contract.IsTradingHours(IbClient.ServerTime)) {
+              if(ar.contract.IsIndex || !price2.IsAskSet && price2.Ask <= 0)
+                price2.Ask = price;
+              if(ar.contract.IsIndex || !price2.IsBidSet && price2.Bid <= 0)
+                price2.Bid = price;
+              price2.Time2 = IbClient.ServerTime;
+              RaisePriceChanged(ar);
+            }
           }
+          break;
         case 46:
           price2.IsShortable = price > 2.5;
           Trace(new { price2.Pair, price2.IsShortable, price });
