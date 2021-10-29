@@ -186,6 +186,7 @@ namespace HedgeHog.Alice.Client {
         : new DateTimeOffset[]{
           trends0[0].StartDate2,
           trends0[1].StartDate2},
+        close1 = trends0.ToArray(t => t.Trends.PriceAvg1.Round(digits)),
         close2 = trends0.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends0.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
         sel = TradingMacro.IsTrendsEmpty(trends0).IsSelected

@@ -14,7 +14,7 @@ using CURRENT_HEDGES = System.Collections.Generic.List<(IBApi.Contract contract,
 
 namespace IBApp {
   public static class AccountManagerMixins {
-    private static IList<String> primaryInstruments = new String[] { "spy", "es" };
+    private static IList<String> primaryInstruments = new String[] { "spy", "es", "nq" };
 
     public static IEnumerable<T> Sort<T>(this IEnumerable<T> source,Func<T,Contract> contract) =>
       source.OrderByDescending(p => primaryInstruments.Contains(contract(p).Instrument?.ToLower())

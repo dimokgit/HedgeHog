@@ -207,6 +207,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsyncPump.cs" />
+    <Compile Include="C:\TWS API\samples\CSharp\Testbed\ScannerSubscriptionSamples.cs">
+      <Link>ScannerSubscriptionSamples.cs</Link>
+    </Compile>
     <Compile Include="DataManagers\AccountManager.ComboAll.cs" />
     <Compile Include="DataManagers\AccountManager.ComboTrades.cs" />
     <Compile Include="DataManagers\AccountManager.BullPut.cs" />
@@ -237,6 +240,7 @@
     <Compile Include="DataManagers\RollOver.cs" />
     <Compile Include="ErrorMessage.cs" />
     <Compile Include="IBClientCore.Mixins.cs" />
+    <Compile Include="IBClientCore.Scanner.cs" />
     <Compile Include="IBClient_p.cs" />
     <Compile Include="IHistoryLoader.cs" />
     <Compile Include="MessageQueueSynchronizationContext.cs" />
@@ -355,6 +359,7 @@
     <Content Include="Core\Compression\Snappy\lib\win\snappy32.dll" />
     <Content Include="Core\Compression\Snappy\lib\win\snappy64.dll" />
     <Content Include="Core\Compression\Zstandard\lib\win\libzstd.dll" />
+    <Content Include="ScannerParameteres.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\AllInOne\packages\MongoDB.Libmongocrypt.1.0.0\build\MongoDB.Libmongocrypt.targets" Condition="Exists('..\..\AllInOne\packages\MongoDB.Libmongocrypt.1.0.0\build\MongoDB.Libmongocrypt.targets')" />

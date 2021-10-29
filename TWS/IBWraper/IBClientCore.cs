@@ -503,7 +503,9 @@ namespace IBApp {
       var isVIX = true;
       Contract MakeFutureContract(ContractDetails cd, string twsDate) => new Contract { Symbol = cd.MarketName, SecType = "FOP", Exchange = cd.Contract.Exchange, Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
       Contract MakeIndexContract(string s, string twsDate) => new Contract { Symbol = s, SecType = "OPT", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
-      Contract MakeStockContract(string twsDate) => new Contract { Symbol = symbol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
+      Contract MakeStockContract(string twsDate) => new Contract { Symbol = symbol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate
+        , Strike = strike 
+      };
       Contract MakeContract(ContractDetails cd, string twsDate) =>
         (isVIX = cd.UnderSymbol == "VIX") || cd.Contract.IsIndex ? MakeIndexContract(cd.UnderSymbol ?? cd.Contract.Symbol, twsDate)
         : cd.Contract.IsFuture ? MakeFutureContract(cd, twsDate)

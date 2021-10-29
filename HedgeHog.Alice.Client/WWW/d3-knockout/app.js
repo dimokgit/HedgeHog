@@ -359,7 +359,8 @@
     var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
     var context = {
       currentProfit: ko.unwrap(dataViewModel.currentProfit) || "0",
-      hedgeQuantity: ko.unwrap(dataViewModel.hedgeQuantity) || "1"
+      hedgeQuantity: ko.unwrap(dataViewModel.hedgeQuantity) || "1",
+      optionsUnder: ko.unwrap(dataViewModel.optionsUnder)
     };
     var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, dataViewModel.rollCombo(), selectedCombos, context];
     args.noNote = true;
@@ -381,6 +382,7 @@
           dataViewModel.distanceFromLow(x.DistanceFromLow);
           dataViewModel.selectedHedgeCombo(x.HedgeCalcType);
           dataViewModel.trendEdgesLastDate(new Date(x.TrendEdgesLastDate));
+          dataViewModel.priceAvg1(x.PriceAvg1);
         });
       }
       , null
@@ -957,9 +959,9 @@
       }
       this.currentProfit = ko.observable().extend({ persist: "currentProfit" + pair });
       this.edgeType = ko.observable().extend({ persist: "edgeType" + pair });
-      this.comboGap = ko.observable(1).extend({ persist: "comboGap" + pair });
+      this.comboGap = ko.observable(0).extend({ persist: "comboGap" + pair });
       this.comboGap.subscribe(refreshCombos);
-      this.numOfCombos = ko.observable(0).extend({ persist: "numOfCombos" + pair });
+      this.numOfCombos = ko.observable(1).extend({ persist: "numOfCombos" + pair });
       this.numOfCombos.subscribe(refreshCombos);
       function refreshCombos(v) {
         readCombos(true);
@@ -979,7 +981,8 @@
         if (!isNaN(profitAmount)) {
           var instrument = a.combo();
           var orderId = a.orderId();
-          serverCall("updateCloseOrder", [pair, instrument, orderId, null, profitAmount, self.hedgeTest() || false]);
+          var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
+          serverCall("updateCloseOrder", [pair, instrument, orderId, null, profitAmount, self.hedgeTest() || false,selectedCombos]);
         }
       };
       this.showNextInput = function (a, b, c) {
@@ -995,7 +998,8 @@
         if (!isNaN(limit)) {
           var instrument = a.combo();
           var orderId = a.orderId();
-          serverCall("updateCloseOrder", [pair, instrument, orderId, limit, null, self.hedgeTest() || false]);
+          var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
+          serverCall("updateCloseOrder", [pair, instrument, orderId, limit, null, self.hedgeTest() || false,selectedCombos]);
         }
       }
 
@@ -1040,7 +1044,8 @@
         if (!isEdit) serverCall("updateHedgeQuantity", [pair, this.hedgeQuantity()]);
       }.bind(this));
       this.hedgeREL = ko.observable(true);
-      this.hedgeTest = ko.observable(false).extend({ persist: "hedgeTest" + pair });
+      this.hedgeTest = ko.observable(false).extend({ persist: "hedgeTest" + pair, default: true });
+      this.optionsUnder = ko.observable('');
       this.hedgeCombo = ko.mapping.fromJS(ko.observableArray());
       this.hedgeCombo2 = ko.mapping.fromJS(ko.observableArray());
       function mapHedgeCombos() {
@@ -1193,7 +1198,8 @@
       }.bind(this);
       this.closeCombo = function (key) {
         this.canTrade(false);
-        serverCall("closeCombo", [pair, ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel(), self.hedgeTest() || false], done, null, function () { this.canTrade(false); }.bind(this));
+        var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
+        serverCall("closeCombo", [pair, ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel(), self.hedgeTest() || false,selectedCombos], done, null, function () { this.canTrade(false); }.bind(this));
         function done(openOrderMessage) {
           (openOrderMessage || []).forEach(e => showErrorPerm("closeCombo:\n" + e));
           self.canTrade(true);
@@ -1720,6 +1726,7 @@
       this.trendEdgesError = ko.pureComputed(function () {
         return (new Date() - self.trendEdgesLastDate()) / 1000 / 60 > 1 ? "TrendEdge Monitor: " + self.trendEdgesLastDate().toLocaleTimeString() : "";
       });
+      this.priceAvg1 = ko.observable('');
       var waveSmoothByFunction = this.waveSmoothByFunction = ko.observableArray();
       // #endregion
       // #region GetAccounting

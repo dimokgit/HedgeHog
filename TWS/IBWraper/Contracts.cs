@@ -47,6 +47,8 @@ namespace IBApp {
        ? FxContract(pair)
        : pair.IsIndex()
        ? Index(pair.Split(' ').First(), "")
+       : pair.IsFOPtion()
+       ? FOPption(pair)
        : pair.IsOption()
        ? Option(pair)
        : pair.IsFuture()
@@ -111,8 +113,17 @@ namespace IBApp {
       //EXSTART::normaloption::csharp
       Contract contract = new Contract();
       contract.LocalSymbol = symbol;
-      contract.SecType = "OPT";
+      contract.SecType = symbol.IsFOPtion() ? "FOP" : "OPT";
       contract.Exchange = "SMART";
+      contract.Currency = "USD";
+      return contract;
+    }
+    public static Contract FOPption(string symbol) {
+      //EXSTART::normaloption::csharp
+      Contract contract = new Contract();
+      contract.LocalSymbol = symbol;
+      contract.SecType = "FOP";
+      contract.Exchange = "GLOBEX";
       contract.Currency = "USD";
       return contract;
     }

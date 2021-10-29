@@ -128,9 +128,9 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     [BasicAuthenticationFilter]
-    public void UpdateCloseOrder(string pair, string instrument, int orderId, double? limit, double? profit, bool isTest) {
+    public void UpdateCloseOrder(string pair, string instrument, int orderId, double? limit, double? profit, bool isTest,IList<string> selection) {
       var am = GetAccountManager();
-      am.ComboTrades(2)
+      am.ComboTrades(2,selection)
         .Where(ct => ct.contract.Instrument == instrument)
         .Subscribe(trade => {
           try {

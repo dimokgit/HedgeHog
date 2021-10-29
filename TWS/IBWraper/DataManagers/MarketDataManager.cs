@@ -18,6 +18,7 @@ using HedgeHog.Core;
 using HedgeHog.Shared;
 using IBApi;
 using IBSampleApp.util;
+using Order = IBApi.Order;
 
 namespace IBApp {
   public partial class MarketDataManager :DataManager {
@@ -145,7 +146,7 @@ namespace IBApp {
       switch(tickType) {
         // RT Volume
         case 48:
-          RaisePriceChanged(t);
+          //RaisePriceChanged(t);
           break;
       }
     }
@@ -170,11 +171,12 @@ namespace IBApp {
     }
     #endregion
 
-    enum TickType { BidPrice = 1, AskPrice = 2, LastPrice = 4, ClosePrice = 9, MarkPrice = 37 };
+    enum TickType { BidPrice = 1, AskPrice = 2, LastPrice = 4, High = 6, Low = 7, ClosePrice = 9, MarkPrice = 37 };
     private void OnTickPrice(int requestId, int field, double price, TickAttrib attrib) {
       if(!activeRequests.ContainsKey(requestId))
         return;
       var ar = activeRequests[requestId];
+      var trace = false && ar.contract.UnderContract.Any(c => c.LocalSymbol == "SESN");
       if(false) TraceDebug(new[] { new { Price = ar.price, field, price } }.ToTextOrTable($"{nameof(RaisePriceChanged)}:{ ShowThread()}"));
       if(false) OnTickPriceTrace(new { requestId, field, price } + "", $"{nameof(OnTickPrice)}[{requestId}]: {ar.contract}:{new { field, price }}");
       var price2 = ar.price;
@@ -182,20 +184,26 @@ namespace IBApp {
       const int CLOSE_PRICE = 9;
       const int LOW_52 = 19;
       const int HIGH_52 = 20;
+      var doLastPrice = new[] { "NQ", "ES", "MNQ", "MES" }.Contains(ar.contract.Symbol);
+      var st = IbClient.ServerTime;
+      var pt = price2.TimeSet;
+      var doMarkPrice = doLastPrice && (st - pt).TotalSeconds > 30;
       if(price == -1) return;
       switch(field) {
         case 1: { // Bid
+            if(doMarkPrice || doLastPrice) Debug.WriteLine(new { doLastPrice, doMarkPrice, field, price });
             if(!price2.IsBidSet || price > 0) {
               price2.Bid = price;
-              price2.Time2 = IbClient.ServerTime;
+              price2.Time2 = price2.TimeSet = IbClient.ServerTime;
               RaisePriceChanged(ar);
             }
             break;
           }
         case 2: { //ASK
+            if(doMarkPrice || doLastPrice) Debug.WriteLine(new { doLastPrice, doMarkPrice, field, price });
             if(!price2.IsAskSet || price > 0) {
               price2.Ask = price;
-              price2.Time2 = IbClient.ServerTime;
+              price2.Time2 = price2.TimeSet = IbClient.ServerTime;
               RaisePriceChanged(ar);
             }
             break;
@@ -215,10 +223,17 @@ namespace IBApp {
             }
           }
           break;
-        case 37:
+        case 37: {
+            if(doMarkPrice) {
+              var p = Order.OrderPrice(price, ar.contract);
+              price2.Ask = price2.Bid = p;
+              price2.Time2 = IbClient.ServerTime;
+              RaisePriceChanged(ar);
+            }
+          }
           break;
-        case 4: {
-            if(!ar.contract.IsTradingHours(IbClient.ServerTime)) {
+        case (int)TickType.LastPrice: {
+            if(ar.contract.IsIndex || doMarkPrice || !ar.contract.IsTradingHours(IbClient.ServerTime)) {
               if(ar.contract.IsIndex || !price2.IsAskSet && price2.Ask <= 0)
                 price2.Ask = price;
               if(ar.contract.IsIndex || !price2.IsBidSet && price2.Bid <= 0)

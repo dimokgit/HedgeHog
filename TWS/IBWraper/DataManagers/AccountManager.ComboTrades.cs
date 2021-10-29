@@ -43,9 +43,9 @@ namespace IBApp {
     }
     public static double priceFromProfit(double profit, double position, double multiplier, double open)
       => (profit + open) / position / multiplier;
-    public IObservable<ComboTrade> ComboTrades(double priceTimeoutInSeconds) {
+    public IObservable<ComboTrade> ComboTrades(double priceTimeoutInSeconds, IList<string> selection = null) {
       var combos = (
-        from c in ComboTradesImpl().ToObservable()
+        from c in ComboTradesImpl(selection).ToObservable()
         from underPrice in UnderPrice(c.contract, priceTimeoutInSeconds).DefaultIfEmpty()
         from price in c.contract.ReqPriceSafe(priceTimeoutInSeconds).DefaultIfEmpty().Take(1)
         let multiplier = c.contract.ComboMultiplier
@@ -77,7 +77,7 @@ namespace IBApp {
         )
         );
       return
-        MakeComboHedgeFromPositions(Positions).Concat(combos)
+        MakeComboHedgeFromPositions(Positions, selection).Concat(combos)
         .ToArray()
         .SelectMany(cmbs => cmbs
           .OrderBy(c => c.contract.Legs().Count())
@@ -90,7 +90,7 @@ namespace IBApp {
     bool _test = true;
     IObservable<(double bid, double ask, double average)> UnderPrice(Contract contract, double priceTimeoutInSeconds) {
       var cds = contract.FromDetailsCache().Concat(contract.Legs().SelectMany(l => l.c.FromDetailsCache()))
-        .Select(c => c.Contract.IsOption ? c.UnderSymbol : c.Contract.LocalSymbol).Where(s=>!s.IsNullOrWhiteSpace()).Take(1).ToList();
+        .Select(c => c.Contract.IsOption ? c.UnderSymbol : c.Contract.LocalSymbol).Where(s => !s.IsNullOrWhiteSpace()).Take(1).ToList();
       if(cds.FirstOrDefault() == "16472979" && Debugger.IsAttached && _test)
         Debugger.Break();
       if(cds.Any(s => s.IsNullOrWhiteSpace())) {
@@ -105,26 +105,30 @@ namespace IBApp {
         select (underPrice.bid, underPrice.ask, underPrice.ask.Avg(underPrice.bid))
         ).Take(1);
     }
-    public IEnumerable<ComboTradeImpl> ComboTradesImpl() {
+    public IEnumerable<ComboTradeImpl> ComboTradesImpl(IList<string> selection) {
       var positions = Positions.Where(p => p.position != 0).ToArray();
       var combos = (
         from c in positions/*.ParseCombos(orders)*//*.Do(c => IbClient.SetContractSubscription(c.contract))*/
         let order = OrderContractsInternal.Items.OpenByContract(c.contract).Select(oc => (oc.order.OrderId, LmtPrice: oc.order.LmtAuxPrice)).FirstOrDefault()
         select (ComboTradeImpl)(c.contract, c.position, c.open, c.open / c.position.Abs() / c.contract.ComboMultiplier, order.LmtPrice, order.OrderId)
         ).ToList();
-      var comboAll = ComboTradesAllImpl().ToArray();
+      var comboAll = ComboTradesAllImpl(selection).ToArray();
       return combos.Concat(comboAll).Distinct(c => c.contract.Instrument);
     }
-    public COMBO_TRADES_IMPL ComboTradesAllImpl() {
+    public COMBO_TRADES_IMPL ComboTradesAllImpl(IList<string> selection) {
       var positions = Positions.Where(p => p.position != 0 && p.contract.IsOption).ToArray();
       //var expDate = positions.Select(p => p.contract.Expiration).DefaultIfEmpty().Min();
       //var positionsByExpiration = positions.Where(p => p.contract.Expiration == expDate).ToArray();
       var positionsByExpiration = positions.GroupBy(p => p.contract.Expiration);
-      return positionsByExpiration.Select(g => ComboTradesAllImpl2(g.ToArray())).Concat();
+      var exps = positionsByExpiration.Select(g => ComboTradesAllImpl2(g.ToArray())).Concat();
+      //var positionsByStrike = positions.GroupBy(p => new { p.contract.Expiration, p.contract.Strike });
+      var positionsBySelection = positions.Where(p => (selection?.Contains(p.contract.Instrument)).GetValueOrDefault()).ToList();
+      var strikes = positionsBySelection.Count>1? ComboTradesAllImpl2(positionsBySelection): new ComboTradeImpl[0];
+      return exps.Concat(strikes);
     }
 
     static Func<Position, string, int, bool> _filterCombos = (p, tc, ps) => p.contract.TradingClass == tc && p.position.Sign() == ps;
-    private COMBO_TRADES_IMPL ComboTradesAllImpl2(Position[] positions) {
+    private COMBO_TRADES_IMPL ComboTradesAllImpl2(IList<Position> positions) {
       return (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, _filterCombos)
               let sell = ca.positions.All(p => p.position < 0)
               let posSign = sell ? -1 : 1

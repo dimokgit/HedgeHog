@@ -38,7 +38,7 @@ namespace IBApi {
       if(ContractDetailsCache.TryGetValue(instrument, out var contract))
         yield return map(contract);
     }
-    public DateTime[][] _TradingTimes = new DateTime[0][] { };
+    DateTime[][] _TradingTimes = new DateTime[0][] { };
     public DateTime[][] TradingTimes {
       get {
         if(_TradingTimes.Length > 0) return _TradingTimes;

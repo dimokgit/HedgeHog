@@ -242,7 +242,7 @@
       /*addLine(1);*/ addLine("2_"); addLine("3_"); addLine(21); addLine(31);
       addLine("1_2 trend"); addLine("2_2"); addLine("3_2");
       addLine("2_1"); addLine("3_1");
-      addLine("2_0"); addLine("3_0");
+      addLine("1_0 trend"); addLine("2_0"); addLine("3_0");
       addLine("2_3"); addLine("3_3");
       // Trade lines
       function isTradeDrag() {
@@ -727,6 +727,8 @@
         setTrendLine2(trendLines1, 2, 1, "green", trendLines1.sel);
         setTrendLine2(trendLines1, 3, 1, "green", trendLines1.sel);
 
+        //debugger;
+        setTrendLine2(trendLines0, 1, 0, "lightgrey", trendLines0.sel);
         setTrendLine2(trendLines0, 2, 0, "olive", trendLines0.sel);
         setTrendLine2(trendLines0, 3, 0, "olive", trendLines0.sel);
 

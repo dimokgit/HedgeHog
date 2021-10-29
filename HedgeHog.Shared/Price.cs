@@ -22,9 +22,17 @@ namespace HedgeHog.Shared {
     public double High52 { get; set; }
     public bool IsShortable { get; set; } = true;
     public bool IsBidSet { get; set; }
-    public double Bid { get => bid; set { bid = value; IsBidSet = IsBidSet || (value != 0 && value != -1); } }
+    public DateTime TimeSet { get; set; }
+
+    public double Bid {
+      get => bid;
+      set {
+        bid = value;
+        IsBidSet = IsBidSet || (value != -1);
+      }
+    }
     public bool IsAskSet { get; set; }
-    public double Ask { get => ask; set { ask = value; IsAskSet = IsAskSet || (value != 0 && value != -1); } }
+    public double Ask { get => ask; set { ask = value; IsAskSet = IsAskSet || (value != -1); } }
     public double Average { get { return (Ask + Bid) / 2; } }
     public double GreekDelta { get; set; } = 1;
     public double GreekTheta { get; set; } = double.NaN;

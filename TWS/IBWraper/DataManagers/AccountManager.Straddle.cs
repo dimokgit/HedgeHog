@@ -111,6 +111,7 @@ namespace IBApp {
       return (
         from chains in DataManager.IBClientMaster.ReqOptionChainOldCache(symbol, expDate).ToArray()
         from chain in chains
+        where chain.Any()
         from d in chain.Select(c => c.Strike - underPrice).MinBy(d => d.Abs()).Take(1)
         from up in chain.Where(c => c.IsCall).OrderBy(c => c.Strike.Abs(underPrice)).Take(count).Select(c => c.Strike - d)
         from g in Enumerable.Range(0, gap + 1)
@@ -349,19 +350,16 @@ namespace IBApp {
       ).ToArray()
       .Select(a => a.OrderBy(c => c.Expiration).ThenBy(c => c.Strike).ToArray());//.Spy(_spy("CurrentRollOvers"));
 
-    public IObservable<Contract[]> CurrentRollOversByUnder(string underSymbol, bool isCall, DateTime expiration, int strikesCount, int weeks) =>
-       underSymbol.ReqContractDetailsCached().SelectMany(uc => CurrentRollOversByUnder(uc.Contract, isCall, expiration, strikesCount, weeks));
-
-    public IObservable<Contract[]> CurrentRollOversByUnder(Contract underContract, bool isCall, DateTime expiration, int strikesCount, int weeks) =>
+    public IObservable<Contract[]> CurrentRollOversByUnder(Contract underContract, bool isCall, DateTime expiration, double strikeMinMax, int strikesCount, int weeks) =>
       (from yes in Observable.Return(strikesCount > 0 && weeks > 0)
        where yes
        from price in underContract.ReqPriceSafe()//.Spy(_spy("ReqPriceSafe"))
        from allStkExp in IbClient.ReqStrikesAndExpirations(underContract.LocalSymbol)//.Spy(_spy("AllStrikesAndExpirations"))
        let exps = allStkExp.expirations.Where(ex => ex > expiration && ex <= expiration.AddDays(weeks * 7)).OrderBy(ex => ex).ToArray()
        let priceAvg = price.ask.Avg(price.bid)
-       let strikes2 = allStkExp.strikes.OrderBy(strike => strike.Abs(priceAvg)).ToArray()
+       let strikes2 = allStkExp.strikes.OrderBy(strike => strike.Abs(strikeMinMax)).ToArray()
        from strikeFirst in strikes2.Take(1)
-       let strikes3 = strikes2.Where(strike => (isCall && strike >= strikeFirst) || (!isCall && strike <= strikeFirst)).Take(strikesCount).ToArray()
+       let strikes3 = strikes2.Where(strike => (isCall && strike >= strikeMinMax) || (!isCall && strike <= strikeMinMax)).Take(strikesCount).ToArray()
        from strike in strikes3
        from exp in exps
        from cds in IbClient.ReqOptionChainOldCache(underContract.LocalSymbol, exp, strike)//.Spy(_spy("ReqOptionChainOldCache 2"))
@@ -415,22 +413,26 @@ namespace IBApp {
     public IObservable<RollOver> CurrentRollOverByUnder(string under, int quantity, int strikesCount, int weeks, int creditIdDollars)
       => under.ReqContractDetailsCached().SelectMany(cd
         => CurrentRollOverByUnder(cd.Contract, quantity, strikesCount, weeks, creditIdDollars));
+    static double _extRatio = 0.3;
     public IObservable<RollOver> CurrentRollOverByUnder(Contract under, int quantity, int strikesCount, int weeks, int creditIdDollars) =>
       from yes in Observable.Return(strikesCount > 0 && weeks > 0)
       where yes
-      from allTrades in ComboTrades(1).ToArray()
+      from allTrades in ComboTrades(1).Where(ct => ct.contract.UnderContract.Any(c => c == under)).ToArray()
       where allTrades.Any()
       let exp = allTrades.Min(t => t.contract.Expiration)
       let tradesLost = allTrades.Where(t => t.contract.Expiration == exp && t.contract.IsOption && t.change <= 0 && !t.IsBuy).ToArray()
       from isCall in tradesLost.Select(t => t.contract.IsCall).Distinct()
       from up in under.ReqPriceSafe()
-      from rolls in CurrentRollOversByUnder(under, isCall, exp, strikesCount, weeks)
+      let strikeMinMax = isCall ? allTrades.Min(ct => ct.contract.Strike) : allTrades.Max(ct => ct.contract.Strike)
+      from rolls in CurrentRollOversByUnder(under, isCall, exp, strikeMinMax, strikesCount, weeks)
       from roll in rolls//.SideEffect(_ => TraceDebug(rolls.Select(r => new { roll = r.Instrument }).ToTextOrTable("Rolls:")))
       let mul = roll.ComboMultiplier * quantity
       let strikeSign = 1
-      let strikeDeltaAmount = (roll.ComboStrike() - up.avg) * strikeSign * mul
+      let strikeDeltaAmount = (roll.ComboStrike() - up.avg) * strikeSign * mul * 0
       from rp in roll.ReqPriceSafe()
-      let bid = roll.ExtrinsicValue(rp.bid, up.bid)
+      let ev = roll.ExtrinsicValue(rp.bid, up.bid)
+      where ev/rp.bid >= _extRatio
+      let bid = rp.bid// roll.ExtrinsicValue(rp.bid, up.bid)
       let bidAmount = bid * mul
       let tradesChangeAmount = tradesLost.Select(ct => ct.pl).Sum()
       let changeAmount = -tradesChangeAmount - creditIdDollars

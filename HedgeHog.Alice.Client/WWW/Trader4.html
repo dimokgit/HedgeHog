@@ -677,6 +677,7 @@
           <li>
             <select data-bind="options:pairs,value:pairCurrent"></select>
             <select data-bind="options:pairs,value:pairHedgedCurrent"></select>
+            <input data-bind="value:optionsUnder" size="3" style="border-width: 1px;" />
           </li>
           <!--#region Sample-->
           <li style="display:none">
@@ -1343,7 +1344,7 @@
       </div>
       <div style="display:inline-table">
         <label>$</label><b data-bind="text:d3.format('.2f')(priceAvg()),click:toggleComboCurrentStrikeLevel"></b>
-        <input data-bind="value:comboCurrentStrikeLevel" size="1" />
+        <input data-bind="value:comboCurrentStrikeLevel,attr:{placeholder:priceAvg1}" size="1" />
         <input data-bind="value:currentProfit" size="1" style="width:2em" />
 
         <label data-bind="text:d3.format('.1%')(distanceFromLow())"></label>

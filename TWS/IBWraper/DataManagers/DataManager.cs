@@ -25,6 +25,7 @@ namespace IBApp {
     public static string ShowThread() => $"~{Thread.CurrentThread.ManagedThreadId}{Thread.CurrentThread.Name.With(tn => tn.IsNullOrEmpty() ? "" : (":" + tn))}";
     public void TraceError<T>(T v) => TraceWithThread("{!}", v);
     public void TraceDebug<T>(T v) { if(Debugger.IsAttached || UseDebug) TraceWithThread("{?}", v); }
+    public void TraceTemp<T>(T v) => TraceDebug(v);
 
     public void TraceWithThread<T>(string prefix, T v) => Trace(prefix + v + ShowThread());
 

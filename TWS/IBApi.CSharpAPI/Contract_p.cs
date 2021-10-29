@@ -173,7 +173,11 @@ namespace IBApi {
        )
       .Take(2)
       .ToArray();
-    public bool IsTradingHours(DateTime date) => FromDetailsCache().Any(cd=> cd.TradingTimes.Any(t => date.Between(t[0], t[1])));
+    bool? _IsTradingHours = null;
+    public bool IsTradingHours(DateTime date) =>
+      (bool)(_IsTradingHours.HasValue
+      ? _IsTradingHours
+      : _IsTradingHours = FromDetailsCache().Any(cd => cd.TradingTimes.Any(t => date.Between(t[0], t[1]))));
 
     IList<DateTimeOffset> GetTodayLiquidRange() =>
       (from t in new[] { "0930", "1600" }
@@ -274,7 +278,7 @@ namespace IBApi {
       : Key == other.Key;
     #region Hedge Primary
     public IEnumerable<Contract> HedgeComboPrimary(Action<string> notFound, [CallerMemberName] string Caller = "") {
-      void error(double m1, double m2) => notFound(new {NotFound = $"By {Caller}", m1, m2  } + "");
+      void error(double m1, double m2) => notFound(new { NotFound = $"By {Caller}", m1, m2 } + "");
       return HedgeComboPrimary(error);
     }
     public IEnumerable<Contract> HedgeComboPrimary(Action<double, double> notFound) {
@@ -304,7 +308,7 @@ namespace IBApi {
   }
   public static class ContractMixins {
     public static string ToLable(this ComboLeg l) => l.Ratio == 0 ? "" : (l.Action == "BUY" ? "+" : "-") + (l.Ratio > 1 ? l.Ratio + "" : "");
-    static (double[] mm, double m)[] multipliers = new [] {
+    static (double[] mm, double m)[] multipliers = new[] {
       (new double[] { 2.0, 5.0 }, 2.0 ),
       (new double[] { 5, 10 }, 10 ),
       (new double[] { 5, 100 }, 100 ),

@@ -72,7 +72,7 @@ namespace ConsoleApp {
       });
     }
 
-    private static IObservable<PositionMessage> Positioner(AccountManager am, Func<PositionMessage, bool> where) => am.PositionsObservable
+    public static IObservable<PositionMessage> Positioner(AccountManager am, Func<PositionMessage, bool> where) => am.PositionsObservable
             .Where(where)
             .DistinctUntilChanged(c => c.Contract.Key)
             .Do(positions => { HandleMessage(am.Positions.ToTextOrTable("All Positions:")); });
@@ -98,6 +98,24 @@ namespace ConsoleApp {
         HandleMessage2($"Matches: Done in {swCombo.ElapsedMilliseconds} ms =========================================");
         bool StrikeColor(Contract c, double underPrice, double openPrice, int position) => (underPrice - openPrice) * c.DeltaSign * position.Sign() > 0;
       });
+    }
+    public static void TestMakeComboAll(AccountManager am, bool placeOrder) {
+      HandleMessage2("ComboTrade Start");
+      AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass, ps) => pos.contract.TradingClass == tradingClass && pos.position.Sign() == ps)
+      .ForEach(comboPrice => {
+        HandleMessage2(new { comboPrice.contract });
+        comboPrice.contract.contract.ReqPriceSafe()
+        .ToEnumerable()
+        .ForEach(price => {
+          HandleMessage($"Observed {comboPrice.contract} price:{price}");
+          if(placeOrder) {
+            HandleMessage2($"Placing SELL order for{comboPrice.contract}");
+            am.OpenTrade(comboPrice.contract.contract, -1, price.ask.Avg(price.bid) * 0.55, 0, false, DateTime.MinValue);
+          }
+        });
+        HandleMessage2($"ComboTrade Done ==================");
+      });
+
     }
   }
 }

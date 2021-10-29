@@ -63,17 +63,34 @@ namespace ConsoleApp {
             HandleMessage(new { parentContract, hedgeContract, primaryContract = x.pc,price = x.p});
          });
     }
+    public static void HedgeCombo2(AccountManager am) {
+      var parentContract = "NQU1".ContractFactory();
+      var hedgeContract = "NQZ1".ContractFactory();
+      var quantityParent = 1;
+      var quantityHedge = 1;
+      var isTest = true;
+      (from hc in AccountManager.MakeHedgeComboSafe(1, parentContract, hedgeContract, quantityParent, quantityHedge, false)
+       from cd in hc.contract.ReqContractDetailsCached()
+       from p in cd.Contract.ReqPriceSafe().Select(ab => quantityParent > 0 ? ab.ask : ab.bid)
+       from ot in am.OpenTradeWithAction(o => o.Transmit = !isTest, cd.Contract, hc.quantity, p)
+       select ot
+       )
+       .Subscribe(c => {
+         Program.HandleMessage(c.Select(t => new { t.holder, t.error }).ToTextOrTable("Test Order:"));
+         Program.HandleMessage(am.OrderContractsInternal.Items.Select(t => new { t.order, t.contract }).ToTextOrTable("Test Order Holders:"));
+       });
+    }
     public static void HedgeCombo(AccountManager am) {
 
       {
-        var parentContract = "M6BM1".ContractFactory();
-        var hedgeContract = "MESH1".ContractFactory();
-        var quantityParent = 5;
-        double r = 0.17;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
+        var parentContract = "QQQ".ContractFactory();
+        var hedgeContract = "VXX".ContractFactory();
+        var quantityParent = 1;
+        double r = 1;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
         //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
         var isTest = true;
-        (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, hp().p2, false)
+        (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, -hp().p2, false)
          from cd in hc.contract.ReqContractDetailsCached()
          from p in cd.Contract.ReqPriceSafe().Select(ab => quantityParent > 0 ? ab.ask : ab.bid)
          from ot in am.OpenTradeWithAction(o => o.Transmit = !isTest, cd.Contract, hc.quantity, p)

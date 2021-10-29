@@ -72,7 +72,7 @@ namespace ConsoleApp {
       const int twsPort = 7496;
       const int clientId = 11;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
-      var account = "";//,U4273389";
+      var account = ",U4273389";
       bool Connect() => ibClient.LogOn("127.0.0.1" + account, twsPort + "", clientId + "", false);
       #endregion
       StartTests();
@@ -86,24 +86,68 @@ namespace ConsoleApp {
         //  }
         //}
       } else HandleMessage("********** Didn't connect ***************");
-
       void StartTests() {
+        var comboSymbols = new[] { "E4CV1 C4580", "E4CV1 P4580" };
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
-          "AMZN".ReqContractDetailsCached().SelectMany(cd => {
-            HandleMessage( new { IsTradingHours = cd.Contract.IsTradingHours(AccountManager.IBClientMaster.ServerTime) }.ToTextTable());
-          return cd.Contract.ReqPriceSafe();
-            }
+          PositionsTest.Positioner(am, c => c.Position != 0)//comboSymbols.Contains(c.Contract.LocalSymbol))
+          //PositionsTest.Positioner(am, c => c.Contract.IsOption)
+          .Take(4)
+          .ToArray()
+          .Subscribe(ps => {
+            var selectedCombos = comboSymbols;// ps.Select(p => p.Contract.Instrument).ToArray();
+            am.ComboTrades(1, selectedCombos)
+            .ToArray()
+            .Do(cs => HandleMessage(cs.Select(combo => new { combo }).ToTextOrTable()))
+            .SelectMany(cs => cs)
+            .Where(c => c.contract.IsBag && c.contract.ComboLegs?.Count() == 2)
+            .Subscribe(combo => {
+              (from p in combo.contract.ReqPriceSafe().Do(p=>HandleMessage(new { combo, p }))
+               from ot in am.OpenTradeWithAction(o => o.Transmit = false, combo.contract, combo.position, p.ask, 0, false, DateTime.MinValue)
+               select ot
+               )
+              .Subscribe(HandleMessage);
+            });
+          });
+          return;
+          //HandleMessage(new { isFOP="QNEV1 C1503".IsFOPtion()}); return;
+          new[] { "NQZ1", "QNEV1 C1503" }.Select(s0 => s0.ReqContractDetailsCached()).ToObservable()
+          .SelectMany(x => x)
+          .SelectMany(cd => cd.Contract.ReqPriceSafe(10)
+          .Select(price => new { cd.Contract, price }))
+          .ToArray()
+          .Subscribe(a => HandleMessage(a)); return;
+          Tests.HedgeCombo2(am); return;
+          {
+            "NQU1".ReqContractDetailsCached()
+            .SelectMany(_ => am.CurrentOptions(_.Contract.LocalSymbol, 0, 0, 10, c => true))
+            .Subscribe(cds => HandleMessage(cds.Select(cd => new { cd.combo }).ToTextOrTable())); return;
+          }
+          (from sc in Observable.Interval(5.FromSeconds()).Zip(IBClientCore.SCAN_CEDES, (a, b) => b)
+           select IBClientCore.IBClientCoreMaster.ReqScannerSubscription(sc).Select(ss => new { sc, ss })
+          )
+          .Merge(10)
+          //.SelectMany(x=>x)
+          .Do(cds => HandleMessage(new { scanned = new { cds.sc, cds.ss.Length } }))
+          .Select(cds => cds.ss.Select(cd => new { cd.Contract }).ToTextOrTable()).Subscribe(HandleMessage);
+          ; return;
+          {
+            am.CurrentOptions("SESN", 0, 0, 1, c => true)
+            .Select(combos => combos.Select(c => new { c.option, c.marketPrice }).ToTextOrTable()).Subscribe(HandleMessage); return;
+          }
+          LoadMultiple(DateTime.Now.AddMonths(-2), 5, "MRUT"); return;
+          TestAllStrikesAndExpirations(1); return;
+          "MRUT  210816P00226000".ReqContractDetailsCached().SelectMany(cd => {
+            HandleMessage(new { IsTradingHours = cd.Contract.IsTradingHours(AccountManager.IBClientMaster.ServerTime) }.ToTextTable());
+            return cd.Contract.ReqPriceSafe();
+          }
           ).Subscribe(HandleMessage); return;
           PositionsTest.ComboTrades(am); return;
-          CurrentOptionsTest.CurrentStraddles(am,"ESU1"); return;
+          CurrentOptionsTest.CurrentStraddles(am, "ESU1"); return;
           TestCombosTrades(10).Take(1).Subscribe(); return;
-          LoadMultiple(DateTime.Now.AddMonths(-24), 5, "VXX", "SPY"); return;
           Tests.HedgeComboPrimary(am, "MESM1", "MBTM1"); return;
 
-          Tests.HedgeCombo(am); return;
           CurrentOptionsTest.CurrentOptions(am); return;
-          "VIXW  210302C00027000".ReqContractDetailsCached().SelectMany(cd => cd.Contract.ReqPriceSafe()).Subscribe(HandleMessage); return;
           Tests.MakeHedgeCombo(am); return;
           //new Contract { Symbol = "VIX", SecType = "FUT+CONTFUT", Exchange = "CFE" }.ReqContractDetailsCached()
           new Contract { Symbol = "ZN", SecType = "FUT+CONTFUT", Exchange = "ECBOT" }.ReqContractDetailsCached()
@@ -408,19 +452,17 @@ namespace ConsoleApp {
              .Subscribe(p => HandleMessage(p));
           }
           return;
-          {
-            void TestAllStrikesAndExpirations(int num, Action afrer = null) {
-              HandleMessage($"TestAllStrikesAndExpirations: Start {num}");
-              ibClient.ReqStrikesAndExpirations("ESH9")
-              .Subscribe(_ => {
-                HandleMessage(new { strikes = _.strikes.Length, exps = _.expirations.Length });
-                HandleMessage($"TestAllStrikesAndExpirations: End {num}");
-                afrer?.Invoke();
-              });
-            }
-            TestAllStrikesAndExpirations(1);
-            TestAllStrikesAndExpirations(2, () => TestAllStrikesAndExpirations(3));
+          void TestAllStrikesAndExpirations(int num, Action afrer = null) {
+            HandleMessage($"TestAllStrikesAndExpirations: Start {num}");
+            ibClient.ReqStrikesAndExpirations("MRUT")
+            .Subscribe(_ => {
+              HandleMessage(new { strikes = _.strikes.Length, exps = _.expirations.Length });
+              HandleMessage($"TestAllStrikesAndExpirations: End {num}");
+              afrer?.Invoke();
+            });
           }
+          TestAllStrikesAndExpirations(1);
+          TestAllStrikesAndExpirations(2, () => TestAllStrikesAndExpirations(3));
           {
             Contract ESVXXContract(string symbol, int conId1, int conId2, int ratio1, int ratio2) {
               Contract contract = new Contract();
@@ -535,24 +577,6 @@ namespace ConsoleApp {
                 }
               });
               HandleMessage2($"MakeBullPut Done ==================");
-            });
-
-          }
-          void TestMakeComboAll(bool placeOrder) {
-            HandleMessage2("ComboTrade Start");
-            AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass, ps) => pos.contract.TradingClass == tradingClass && pos.position.Sign() == ps)
-            .ForEach(comboPrice => {
-              HandleMessage2(new { comboPrice.contract });
-              comboPrice.contract.contract.ReqPriceSafe()
-              .ToEnumerable()
-              .ForEach(price => {
-                HandleMessage($"Observed {comboPrice.contract} price:{price}");
-                if(placeOrder) {
-                  HandleMessage2($"Placing SELL order for{comboPrice.contract}");
-                  am.OpenTrade(comboPrice.contract.contract, -1, price.ask.Avg(price.bid) * 0.55, 0, false, DateTime.MinValue);
-                }
-              });
-              HandleMessage2($"ComboTrade Done ==================");
             });
 
           }

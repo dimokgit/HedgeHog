@@ -38,7 +38,7 @@ namespace IBApp {
     static ComboLeg ComboLeg((Contract c, int p) combo) =>
       new ComboLeg { ConId = combo.c.ConId, Ratio = combo.p.Abs(), Action = "BUY", Exchange = combo.c.Exchange };
     //new ComboLeg { ConId = combo.c.ConId, Ratio = combo.p.Abs(), Action = combo.p.Sign() > 0 ? "BUY" : "SELL", Exchange = combo.c.Exchange };
-    static IList<ComboLeg> CombosLegs(IEnumerable<(Contract c, int p)> combos) =>
+    public static IList<ComboLeg> CombosLegs(IEnumerable<(Contract c, int p)> combos) =>
         (from combo in combos
          from leg in (combo.c.ComboLegs ?? new List<ComboLeg> { ComboLeg(combo) })
          group leg by leg.ConId into legConId
@@ -46,7 +46,7 @@ namespace IBApp {
           => new ComboLeg { ConId = leg.ConId, Ratio = legConId.Sum(l => l.Ratio), Action = leg.Action, Exchange = leg.Exchange }).First()
          ).ToArray();
 
-    static Func<string, string, string, IList<ComboLeg>, (Contract contract, int positions)> MakeComboCache
+    public static Func<string, string, string, IList<ComboLeg>, (Contract contract, int positions)> MakeComboCache
       = new Func<string, string, string, IList<ComboLeg>, (Contract contract, int positions)>(MakeCombo)
       .Memoize(t => (t.Item1, t.Item2, t.Item3, t.Item4.Select(l => $"{l.ConId}{l.Ratio}{l.Action}").Flatter("")));
 

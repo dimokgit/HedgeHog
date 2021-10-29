@@ -3,9 +3,11 @@ using HedgeHog.Shared;
 using IBApi;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace IBApp {
@@ -85,6 +87,59 @@ namespace IBApp {
       return c.AddToCache();
     }
 
+    public static HedgeCombo MakeUnderCombo(IEnumerable<ComboTrade> combos, IEnumerable<string> selection) {
+      var ct = combos.Where(ct => selection.Contains(ct.contract.Instrument));
+      return MakeUnderCombo(ct);
+    }
+    public static HedgeCombo MakeUnderCombo(IEnumerable<ComboTrade> combos) {
+      var cmbs = combos.Select(p => (p.contract, Position: p.position)).OrderBy(p => p.contract.IsOption).ToArray();
+      return AccountManager.MakeUnderCombo(1, cmbs[0].contract, cmbs[1].contract, cmbs[0].Position, cmbs[1].Position);
+
+    }
+    public static HedgeCombo MakeUnderCombo(int quantity, Contract c1, Contract c2, double ratio1, double ratio2) {
+      if(c1.ConId == 0)
+        throw new Exception($"ComboLeg contract1 has ConId = 0");
+      if(c2.ConId == 0)
+        throw new Exception($"ComboLeg contract2 has ConId = 0");
+      int r1 = (ratio1 * quantity).ToInt().Max(1);
+      int r2 = (ratio2.Abs() * quantity).ToInt().Max(1);
+      if(r1 == int.MinValue || r2 == int.MinValue) {
+        Debugger.Break();
+      }
+      var gcd = new[] { r1, r2 }.GCD();
+      Contract contract = new Contract();
+      var symbol = c1.IsFuture || c1.IsOption
+        ? c1.Symbol.IfEmpty(Regex.Match(c1.LocalSymbol, "(.+).{2}$").Groups[1] + "").ThrowIf(contractSymbol => contractSymbol.IsNullOrWhiteSpace())
+        : new[] { c1.Symbol, c2.Symbol }.OrderBy(s => s).Flatter(",");
+      contract.Symbol = symbol;
+      contract.SecType = "BAG";
+      contract.Currency = "USD";
+      if(c1.PrimaryExch == c1.PrimaryExch)
+        contract.PrimaryExch = c1.PrimaryExch;
+      const string EXCHAGE = "SMART";
+      contract.Exchange = c1.IsFuture || c1.IsFutureOption ? c1.Exchange : EXCHAGE;
+      //contract.TradingClass = "COMB";
+
+      ComboLeg leg1 = new ComboLeg();
+      leg1.ConId = c1.ConId;
+      leg1.Ratio = r1 / gcd;
+      leg1.Action = ratio1 > 0 ? "BUY" : "SELL";
+      leg1.Exchange = contract.Exchange;
+
+      ComboLeg leg2 = new ComboLeg();
+      leg2.ConId = c2.ConId;
+      leg2.Ratio = r2 / gcd;
+      string action = ratio2 > 0 ? "BUY" : "SELL";
+      leg2.Action = action;
+      leg2.Exchange = contract.Exchange;
+
+      contract.ComboLegs = new List<ComboLeg>();
+      contract.ComboLegs.Add(leg1);
+      contract.ComboLegs.Add(leg2);
+
+      var cache = Contract.Contracts.Any() ? contract.FromCache().Single() : contract;
+      return (cache, gcd, GetComboMultiplier(cache));
+    }
     IObservable<(Contract currentContract, HedgeCombo rollContract, ComboTrade currentTrade)> CreateRoll(string currentSymbol, int quantity, string rollSymbol, int rollQuantity) =>
       (from cd in IbClient.ReqContractDetailsCached(currentSymbol)
        let cc = cd.Contract.ThrowIf(contract => !contract.IsOption)

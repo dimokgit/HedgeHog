@@ -532,12 +532,12 @@ namespace HedgeHog.Alice.Client {
         tm.HedgeCalcIndex = index;
       });
     }
-    public object[] ReadStraddles(string pair
+    public async Task<object[]> ReadStraddles(string pair
       , int gap, int numOfCombos, int quantity, double? strikeLevel, int expDaysSkip
       , string optionTypeMap, DateTime hedgeDate, string rollCombo, string[] selectedCombos
       , ExpandoObject context
-      ) =>
-      UseTraderMacro(pair, tm => {
+      ) { 
+       var task = (await UseTraderMacro(pair, async tm => {
         const string HID_BYTV = "ByTV";
         const string HID_BYHV = "ByHV";
         const string HID_BYPOS = "ByPos";
@@ -550,13 +550,18 @@ namespace HedgeHog.Alice.Client {
           int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(expDaysSkip);
           var am = GetAccountManager();
           string CacheKey(Contract c) => c.IsFuture ? c.LocalSymbol : c.Symbol;
-          var underContracts = IBApi.Contract.FromCache(pair).ToArray();
+          var uc = contextDict["optionsUnder"]?.ToString().IfEmpty(pair);
+          var underContracts = await uc.ReqContractDetailsCached().Select(cd => cd.Contract).ToArray();
           if(am != null) {
             Action rollOvers = () => {
               var show = !rollCombo.IsNullOrWhiteSpace() && optionTypeMap == "R";
-              show = optionTypeMap == "R";
+              if(!show) return;
               int.TryParse((string)(contextDict["currentProfit"] ?? "0"), out var currentProfit);
-              am.CurrentRollOverByUnder(pair, quantity, show ? numOfCombos : 0, expDaysSkip.Max(1), currentProfit)
+              (from rollCd in rollCombo.ReqContractDetailsCached()
+               let under = rollCd.UnderSymbol
+               from cr in am.CurrentRollOverByUnder(under, quantity, numOfCombos, expDaysSkip.Max(1), currentProfit)
+               select cr
+               )
               .ToArray()
                //.Where(a => a.Length > 0)
                .Subscribe(_ => {
@@ -734,7 +739,7 @@ namespace HedgeHog.Alice.Client {
 
             //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
             void ComboTrades() =>
-            am.ComboTrades(1)
+            am.ComboTrades(1,selectedCombos)
               .ToArray()
               .Subscribe(cts => {
                 try {
@@ -856,8 +861,10 @@ namespace HedgeHog.Alice.Client {
           .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByTradingRatio(0), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByTR), hedgeQuantity))
           ).Merge();
 
-        var distFromHigh = tm.TradingMacroM1().DefaultIfEmpty(tm).Select(tmM1 => tmM1.RatesMax / tm.CurrentPrice?.Average - 1).SingleOrDefault();
-        var distFromLow = tm.TradingMacroM1().DefaultIfEmpty(tm).Select(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
+        var tm1 = tm.TradingMacroM1().DefaultIfEmpty(tm).ToArray();
+        var distFromHigh = tm1.Select(tmM1 => tmM1.RatesMax / tm.CurrentPrice?.Average - 1).SingleOrDefault();
+        var distFromLow = tm1.Select(tmM1 => tmM1.RatesMax / tmM1.RatesMin - 1).SingleOrDefault();
+        var digits = 2;// tm.Digits();
         return new {
           tm.TradingRatio,
           tm.OptionsDaysGap,
@@ -865,7 +872,8 @@ namespace HedgeHog.Alice.Client {
           DistanceFromHigh = distFromHigh,
           DistanceFromLow = distFromLow,
           HedgeCalcType = tm.HedgeCalcType + "" + tm.HedgeCalcIndex,
-          TrendEdgesLastDate = RUN_EDGE_TREND ? GetAccountManager()?.TrendEdgesLastDate : DateTime.Now
+          TrendEdgesLastDate = RUN_EDGE_TREND ? GetAccountManager()?.TrendEdgesLastDate : DateTime.Now,
+          PriceAvg1 = tm1.Select(tml => tml.TLLime?.PriceAvg1.Round(digits)).FirstOrDefault()
         };
         string HedgeCalcTypeContext(TradingMacro tml, TradingMacro.HedgeCalcTypes hct) => hct.ToString() + tml.PairIndex;
         ////
@@ -910,7 +918,9 @@ namespace HedgeHog.Alice.Client {
             return Observable.Empty<CurrentHedge>();
           }
         }
-      });
+      }).WhenAllSequiential()).ToArray();
+      return task;
+  }
     public class CurrentHedge {
       public CurrentHedge(string id, string contract, double quantity, double ratio, string context, double price, string key) {
         this.id = id;
@@ -1072,10 +1082,10 @@ namespace HedgeHog.Alice.Client {
       return res;
     }
     [BasicAuthenticationFilter]
-    public async Task<string[]> CloseCombo(string pair, string instrument, double? conditionPrice, bool isTest) {
+    public async Task<string[]> CloseCombo(string pair, string instrument, double? conditionPrice, bool isTest,IList<string> selection) {
       var res = (await
       (from am in Observable.Return(GetAccountManager())
-       from ct in am.ComboTrades(1)
+       from ct in am.ComboTrades(1,selection)
        from under in pair.ReqContractDetailsCached().Select(cd => cd.Contract)
        from underPrice in under.ReqPriceSafe()
        where ct.contract.Instrument == instrument
