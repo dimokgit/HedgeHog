@@ -80,6 +80,7 @@ namespace IBApp {
         MakeComboHedgeFromPositions(Positions, selection).Concat(combos)
         .ToArray()
         .SelectMany(cmbs => cmbs
+          .Distinct(c=>c.contract)
           .OrderBy(c => c.contract.Legs().Count())
           .ThenBy(c => c.contract.HasOptions)
           .ThenByDescending(c => c.strikeAvg - c.underPrice)

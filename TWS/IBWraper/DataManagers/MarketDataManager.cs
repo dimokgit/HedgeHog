@@ -23,7 +23,8 @@ using Order = IBApi.Order;
 namespace IBApp {
   public partial class MarketDataManager :DataManager {
     private const string GENERIC_TICK_LIST = "233,221,236,165";
-    static private readonly MemoryCache _currentPrices = MemoryCache.Default;
+    static private readonly MemoryCache __currentPrices = MemoryCache.Default;
+    static private MemoryCache _currentPrices => __currentPrices;
     public static IReadOnlyDictionary<string, Price> CurrentPrices => _currentPrices.ToDictionary(kv => kv.Key, kv => (Price)kv.Value);
     private static ConcurrentDictionary<int, (Contract contract, Price price)> activeRequests = new ConcurrentDictionary<int, (Contract contract, Price price)>();
     public static IReadOnlyDictionary<int, (Contract contract, Price price)> ActiveRequests => activeRequests;
@@ -106,7 +107,10 @@ namespace IBApp {
                 Trace($"{title}:{contract}: {t}");
                 activeRequests.TryRemove(t.id, out var c);
               }
-              , () => TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done."));
+              , () => {
+                AddCurrentPrice(activeRequests[reqId].price);
+                TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done.");
+              });
 
             IbClient.OnReqMktData(() => IbClient.ClientSocket.reqMktData(reqId, contract.IsHedgeCombo ? contract : contract.ContractFactory(), genericTickList, false, false, new List<TagValue>()));
             contract.ReqMktDataId = reqId;
@@ -117,7 +121,22 @@ namespace IBApp {
         }
       }
     }
+    private void AddCurrentPrice(Price price) {
+      if(!_currentPrices.Contains(price.Pair)) {
+        {
+          var cip = new CacheItemPolicy() {
+            RemovedCallback = ce => {
+              ActiveRequestCleaner((Price)ce.CacheItem.Value);
+            },
+            SlidingExpiration = 60.FromSeconds()
+          };
+          if(!_currentPrices.Add(price.Pair, price, cip))
+            TraceError($"RaisePriceChanged: {price.Pair} is already in {nameof(_currentPrices)}");
+          //else TraceDebug($"_currentPrices.Add({t.price.Pair}, {t.price}, cip)");
+        }
+      }
 
+    }
     public IEnumerable<Price> GetPrice(Contract contract, [CallerMemberName] string Caller = "") {
       if(TryGetPrice(contract, out var price, null, Caller))
         yield return price;
@@ -353,19 +372,6 @@ namespace IBApp {
     protected void RaisePriceChanged((Contract contract, Price price) t, [CallerMemberName] string caller = "") {
       if(t.contract.IsHedgeCombo) {
         TraceDebug0($"{nameof(OnTickPrice)}: {t.contract}:{new { t.price.Ask, t.price.Bid }}");
-      }
-      if(!_currentPrices.Contains(t.price.Pair)) {
-        {
-          var cip = true || t.contract.Legs().Count() > 0 ? new CacheItemPolicy() {
-            RemovedCallback = ce => {
-              ActiveRequestCleaner((Price)ce.CacheItem.Value);
-            },
-            SlidingExpiration = 60.FromSeconds()
-          } : new CacheItemPolicy();
-          if(!_currentPrices.Add(t.price.Pair, t.price, cip))
-            TraceError($"RaisePriceChanged: {t.price.Pair} is already in {nameof(_currentPrices)}");
-          //else TraceDebug($"_currentPrices.Add({t.price.Pair}, {t.price}, cip)");
-        }
       }
       PriceChangedEvent?.Invoke(t.price);
       /// Locals

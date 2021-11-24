@@ -27,7 +27,7 @@ namespace IBApp {
     }
     public void OpenOrUpdateLimitOrderByProfit2(Contract contract, int position, int orderId, double openAmount, double profitAmount, bool isTest) {
       var pa = profitAmount.Abs() >= 1 ? profitAmount : openAmount.Abs() * profitAmount;
-      var mul = contract.HedgeComboPrimary(s => TraceError(s)).Single().ComboMultiplier;
+      var mul = contract.HedgeComboPrimary(s => TraceError(s)).DefaultIfEmpty(contract).Single().ComboMultiplier;
       OrderContractsInternal.Items.ByOrderId(orderId)
       .Where(och => !och.isDone)
       .Do(och => {
