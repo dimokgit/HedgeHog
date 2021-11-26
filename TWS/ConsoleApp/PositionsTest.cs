@@ -101,7 +101,7 @@ namespace ConsoleApp {
     }
     public static void TestMakeComboAll(AccountManager am, bool placeOrder) {
       HandleMessage2("ComboTrade Start");
-      AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, tradingClass, ps) => pos.contract.TradingClass == tradingClass && pos.position.Sign() == ps)
+      AccountManager.MakeComboAll(am.Positions.Select(ct => (ct.contract, ct.position)), am.Positions, (pos, keys) => keys.Contains(pos.contract.Key))
       .ForEach(comboPrice => {
         HandleMessage2(new { comboPrice.contract });
         comboPrice.contract.contract.ReqPriceSafe()

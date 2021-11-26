@@ -11,17 +11,19 @@ using static HedgeHog.MathCore;
 namespace IBApp {
   public partial class AccountManager {
     public static (TPositions[] positions, (Contract contract, int positions) contract)[] MakeComboAll<TPositions>
-      (IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, string,int, bool> filter) =>
+      (IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions, Func<TPositions, string[],bool> filter) =>
       combosAll
       .Where(c => c.c.HasOptions)
-      .GroupBy(combo => (combo.c.Symbol, combo.c.TradingClass, combo.c.Exchange, combo.c.Currency, combo.c.Expiration,ps:combo.p.Sign()))
+      .GroupBy(combo => (combo.c.Symbol/*, combo.c.TradingClass*/, combo.c.Exchange, combo.c.Currency/*, combo.c.Expiration*/,ps:combo.p.Sign()))
       .Where(g => g.Count() > 1)
-      .Select(combos =>
-        (
-        positions.Where(p => filter(p, combos.Key.TradingClass,combos.Key.ps)).ToArray(),
+      .Select(combos => {
+        var comboKeys = combosAll.Select(c => c.c.Key).ToArray();
+       return (
+        positions.Where(p => filter(p, comboKeys)).ToArray(),
         MakeComboCache(combos.Key.Symbol, combos.Key.Exchange, combos.Key.Currency
           , CombosLegs(combos).OrderBy(c => c.ConId).ToArray())
-        )
+        );
+      }
       )
       .ToArray();
     public static (TPositions[] positions, (Contract contract, int positions) contract)[] MakeUnderlyingComboAll<TPositions>(IEnumerable<(Contract c, int p)> combosAll, IEnumerable<TPositions> positions) {

@@ -80,6 +80,10 @@ namespace HedgeHog.Alice.Store {
     IBApi.Contract _currentHedgeContract = null;
     public void SetCurrentHedgePosition<T>(IBApi.Contract contract, int quantity, T context) {
       lock(_currentHedgePositionsLock) {
+        if(contract == null) {
+          Log = new Exception("SetCurrentHedgePosition: " + new { contract });
+          return;
+        }
         if(false && contract.Legs().First().c.Instrument != Pair) Debugger.Break();
         _currentHedgeContract = contract;
         var legs = contract.LegsForHedge(Pair).ToList();

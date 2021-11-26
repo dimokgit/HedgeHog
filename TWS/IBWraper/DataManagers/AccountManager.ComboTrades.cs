@@ -128,7 +128,7 @@ namespace IBApp {
       return exps.Concat(strikes);
     }
 
-    static Func<Position, string, int, bool> _filterCombos = (p, tc, ps) => p.contract.TradingClass == tc && p.position.Sign() == ps;
+    static Func<Position, string[], bool> _filterCombos = (p, keys) => keys.Contains(p.contract.Key);
     private COMBO_TRADES_IMPL ComboTradesAllImpl2(IList<Position> positions) {
       return (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, _filterCombos)
               let sell = ca.positions.All(p => p.position < 0)
@@ -139,7 +139,8 @@ namespace IBApp {
               select (ComboTradeImpl)(ca.contract.contract, position: ca.contract.positions * posSign, open, openPrice, order.LmtPrice, order.OrderId));
     }
 
-    static Func<(Contract contract, int position, double open, double price, double pipCost), string, int, bool> _filterByContract = (p, tc, ps) => p.contract.TradingClass == tc && p.position.Sign() == ps;
+    static Func<(Contract contract, int position, double open, double price, double pipCost), string[], bool> _filterByContract = (p, keys)
+      => keys.Contains(p.contract.Key);
     private COMBO_TRADES_IMPL ComboTradesHedge((Contract contract, int position, double open, double price, double pipCost)[] positions) {
       return (from ca in MakeComboAll(positions.Select(p => (p.contract, p.position)), positions, _filterByContract)
               let sell = ca.positions.All(p => p.position < 0)
