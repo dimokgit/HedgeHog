@@ -1453,6 +1453,15 @@
         </tr>
       </tbody>
     </table>
+    <div data-bind="foreach: bookPositions">
+      <div>
+        <button data-bind="click:$parent.removeBookPosition.bind(null,$data)">X</button>
+        <span data-bind="text:l"></span>/
+        <span data-bind="text:i"></span>/
+        <span data-bind="text:bid"></span>/
+        <span data-bind="text:ask"></span>
+      </div>
+    </div>
     <table border="1" cellspacing="0" class="wwwInfo" data-bind="visible:currentCombos().length, expander:{animate: { duration: 1000, easing: 'easeOutBounce'}}">
       <colgroup span="2" style="background-color: lightslategray; color: white"></colgroup>
       <tr style="background-color: lightslategray;color: white;font-weight: bold;text-align: center;" class="pgGroupRow">

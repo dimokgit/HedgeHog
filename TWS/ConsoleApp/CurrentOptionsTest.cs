@@ -29,7 +29,7 @@ namespace ConsoleApp {
        select oc)
       .Subscribe();
 
-    public static void CurrentStraddles(AccountManager am, string symbol) => 
+    public static void CurrentStraddles(AccountManager am, string symbol) =>
       am.CurrentStraddles(symbol, double.NaN, 1, 1, 1)
       .Subscribe(ss => Program.HandleMessage(ss.Select(a => a.combo.contract).Select(c => new { c.ShortString, c.DateWithShort, c.ShortWithDate2 }).ToTextOrTable("Straddles:")));
 
@@ -48,6 +48,22 @@ namespace ConsoleApp {
         .Subscribe(cs => {
           HandleMessage(cs.Select(c => new { c.option }).ToMarkdownTable());
         });
+    }
+    public static void CustomStraddle(AccountManager am, IList<string> options) {
+      var bookStraddle = (from bp in options.ToObservable()
+                          from c in bp.ReqContractDetailsCached()
+                          select c.Contract
+                          ).ToArray()
+                          .Where(cp => cp.Length == 2)
+                          .SelectMany(cp => am.StraddleFromContracts(cp))
+              .Subscribe(straddles => {
+                HandleMessage("\n" + straddles.Select(straddle => new { straddle.combo.contract,straddle.marketPrice,straddle.underPrice }).ToMarkdownTable());
+                (from oc in am.OpenTradeWithAction(o => o.Transmit = false, straddles[0].combo.contract, 1, straddles[0].marketPrice.ask)
+                 select oc
+                 ).Subscribe();
+              });
+      ;
+
     }
 
   }

@@ -106,7 +106,7 @@ namespace IBApp {
         select (underPrice.bid, underPrice.ask, underPrice.ask.Avg(underPrice.bid))
         ).Take(1);
     }
-    public IEnumerable<ComboTradeImpl> ComboTradesImpl(IList<string> selection) {
+    public COMBO_TRADES_IMPL ComboTradesImpl(IList<string> selection) {
       var positions = Positions.Where(p => p.position != 0).ToArray();
       var combos = (
         from c in positions/*.ParseCombos(orders)*//*.Do(c => IbClient.SetContractSubscription(c.contract))*/

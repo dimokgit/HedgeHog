@@ -87,9 +87,10 @@ namespace ConsoleApp {
         //}
       } else HandleMessage("********** Didn't connect ***************");
       void StartTests() {
-        var comboSymbols = new[] { "E4CV1 C4580", "E4CV1 P4580" };
+        var comboSymbols = new[] { "E3CZ1 C4665","EW1Z1 C4670" };
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          CurrentOptionsTest.CustomStraddle(am, comboSymbols); return;
           PositionsTest.Positioner(am, c => c.Position != 0)//comboSymbols.Contains(c.Contract.LocalSymbol))
           //PositionsTest.Positioner(am, c => c.Contract.IsOption)
           .Take(4)

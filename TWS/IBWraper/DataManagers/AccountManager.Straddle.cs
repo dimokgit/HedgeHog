@@ -33,6 +33,16 @@ namespace IBApp {
     }
 
     public IObservable<CurrentCombo[]>
+      StraddleFromContracts(IList<Contract> contracts) {
+      return (
+        from cd in IbClient.ReqContractDetailsCached(contracts[0].Symbol)
+        from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
+        from combo in new[] { (contract:contracts.MakeStraddle(),options:contracts.ToArray()) }
+        from p in combo.contract.ReqPriceSafe().DefaultIfEmpty()
+        select CurrentComboInfo(price, combo, p)
+        ).ToArray();
+    }
+    public IObservable<CurrentCombo[]>
       CurrentStraddles_Old(string symbol, double strikeLevel, int expirationDaysSkip, int count, int gap) {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)

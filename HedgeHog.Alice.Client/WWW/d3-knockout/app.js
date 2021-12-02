@@ -357,12 +357,19 @@
     var expDaysSkip = dataViewModel.expDaysSkip() || 0;
     var hedgeDate = dataViewModel.hedgeVirtualDate();
     var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
+    var bookPositions = dataViewModel.bookPositions().map(x => ko.unwrap(x.i)) ?? [];
     var context = {
       currentProfit: ko.unwrap(dataViewModel.currentProfit) || "0",
       hedgeQuantity: ko.unwrap(dataViewModel.hedgeQuantity) || "1",
-      optionsUnder: ko.unwrap(dataViewModel.optionsUnder)
+      optionsUnder: ko.unwrap(dataViewModel.optionsUnder),
+      bookPositions: bookPositions
     };
-    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos(), dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel()), expDaysSkip, dataViewModel.showOptionType(), hedgeDate, dataViewModel.rollCombo(), selectedCombos, context];
+    var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos()
+      , dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel())
+      , expDaysSkip, dataViewModel.showOptionType(), hedgeDate, dataViewModel.rollCombo()
+      , selectedCombos
+      //, bookPositions
+      , context];
     args.noNote = true;
     readingCombos = true;
     serverCall("readStraddles", args
@@ -1087,6 +1094,23 @@
         );
       }.bind(this);
 
+      //#region bookPositions
+      this.bookPositions = ko.observableArray();
+      this.addBookPosition = function (position) {
+        if (isSelectedCombo(position, this.bookPositions)) {
+          debugger;
+          this.bookPositions.remove(c => compareCombos(c, position));
+        } else {
+          this.bookPositions.push(position);
+          debugger;
+        }
+      }.bind(this);
+      this.removeBookPosition = function (position) {
+        debugger;
+        this.bookPositions.remove(c => compareCombos(c, position));
+      }.bind(this);
+      //#endregion
+
       this.rollOvers = ko.mapping.fromJS(ko.observableArray());
 
       this.rollOversSorted = ko.pureComputed(function () {
@@ -1103,6 +1127,10 @@
       this.toggleSelectedTrade = function (combo) { toggleSelected(combo, this.selectedCombos, this.liveCombos().concat(this.currentCombos())); }.bind(this);
       this.toggleSelectedCombos = function (combo) { toggleSelected(combo, this.selectedCombos, this.liveCombos().concat(this.currentCombos())); }.bind(this);
       function toggleSelected(combo, array, source) {
+        if (event.ctrlKey) {
+          self.addBookPosition(combo);
+          return;
+        }
         var isSelected = isSelectedCombo(combo, array);
         if (isSelected)
           array.remove(c => compareCombos(c, combo));
