@@ -15,6 +15,17 @@ using static ConsoleApp.Program;
 
 namespace ConsoleApp {
   static class Tests {
+    public static void CalcHedgeRatio() {
+      var parentContract = "SPY".ContractFactory();
+      var hedgeContract = "VXX".ContractFactory();
+      (from c in "VXJ2".ReqContractDetailsCached().Select(cd=>cd.Contract)
+       from se in c.Symbol.ReqStrikesAndExpirations()
+      from p in c.ReqPriceSafe()
+      select new {c.ComboMultiplier,p.avg,se}
+      )
+        .Subscribe(cd => HandleMessage(cd.ToJson(true)));
+
+    }
     public static void MakeStockCombo(AccountManager am) {
       var portfolio = new[] { "AAPL", "MSFT", "AMZN" }.TakeLast(3).Select(s => s.ReqContractDetailsCached().Select(cd => cd.Contract)).Merge();
       (from contract in portfolio
@@ -64,10 +75,10 @@ namespace ConsoleApp {
          });
     }
     public static void HedgeCombo2(AccountManager am) {
-      var parentContract = "NQU1".ContractFactory();
-      var hedgeContract = "NQZ1".ContractFactory();
+      var parentContract = "SPY".ContractFactory();
+      var hedgeContract = "VXX".ContractFactory();
       var quantityParent = 1;
-      var quantityHedge = 1;
+      var quantityHedge = -3;
       var isTest = true;
       (from hc in AccountManager.MakeHedgeComboSafe(1, parentContract, hedgeContract, quantityParent, quantityHedge, false)
        from cd in hc.contract.ReqContractDetailsCached()

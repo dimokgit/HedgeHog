@@ -60,7 +60,7 @@ namespace HedgeHog.UI {
       });
     }
     private void FetchNews(DateTime? date = null) {
-      if(newsObserver != null)
+      if(newsObserver != null || newsObserver == null)
         return;
       try {
         //ProcessNews(NewsHound.MyFxBook.Fetch());

@@ -151,7 +151,12 @@ namespace IBApi {
     public int ReqMktDataId { get; set; }
     public int DeltaSign => IsPut ? -1 : 1;
     public int DeltaSignCombined => LegsOrMe(c => c.DeltaSign).MinMax().With(a => a[0] + a[1]);
-    public IEnumerable<double> BreakEven(double openPrice) => Legs().Select(l => l.c.Strike + (l.c.IsCall ? 1 : -1) * openPrice);
+    public IEnumerable<double> BreakEven(double openPrice) {
+      var legs = LegsOrMe().ToList();
+      return legs.Count == 1 && legs[0].IsPut
+        ? new[] { -1, 1 }.Select(s => legs[0].Strike + openPrice * s)
+        : legs.Select(l => l.Strike + (l.IsCall ? 1 : -1) * openPrice);
+    }
     public bool ComboStrikeColor(double underPrice, int positionSign) =>
       LegsEx(l => l.c).DefaultIfEmpty(this).All(c => StrikeColor(underPrice, c, positionSign.Sign()));
     static bool StrikeColor(double underPrice, Contract o, int positionSign) =>

@@ -1269,6 +1269,14 @@ namespace HedgeHog.Alice.Store {
         var showBBSD = (new[] { VoltageFunction, VoltageFunction2 }).Contains((VoltageFunction)VoltageFunction.BBSD) ||
           (new[] { TradeLevelBy.BoilingerDown, TradeLevelBy.BoilingerUp }).Contains((TradeLevelBy)LevelBuyBy) ||
           TakeProfitFunction == TradingMacroTakeProfitFunction.BBand;
+        var anns = tm1s.Select(tm1 => tm1.TrendLines0.Value.YieldNotNull(tl => {
+          var f = tl.FirstOrDefault()?.Trends.PriceAvg1;
+          var s = tl.LastOrDefault()?.Trends.PriceAvg1;
+          var ratio = f.HasValue && !f.Value.IsZeroOrNaN() ? s.Value / f.Value : 0.0;
+          var days = tm1.TLLime.TimeSpan.TotalDays.Ceiling();
+          return new { ratio, days };
+        })).Concat();
+        var annRate = anns.Select(ann => new { r = (Math.Pow(ann.ratio, 365.0 / ann.days) - 1).ToString("p2"), d = ann.days }).SingleOrDefault().ToString();
         return (new {
           StDevHP = $"{tm.StDevByHeightInPips.AutoRound2((int)2)}/{tm.StDevByPriceAvgInPips.AutoRound2((int)2)}:{(StdOverCurrPriceRatio()).Round((int)1)}%",
           //StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
@@ -1282,6 +1290,7 @@ namespace HedgeHog.Alice.Store {
           //Blue_Edge = tm.TrendLinesBlueTrends.EdgeDiff.SingleOrDefault().Round(1)
           //BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
           //WvDistRsd = _waveDistRsd.Round(2)
+          AnnRate = annRate
         })
         .ToExpando()
         .Add((object)(showBBSD ? (object)new { BoilBand = this._boilingerStDev.Value.Select<global::System.Tuple<double, double>, string>(t => string.Format("{0:n2}:{1:n2}", this.InPips(t.Item1), this.InPips(t.Item2))) } : new { }))

@@ -203,7 +203,7 @@ namespace IBApp {
       const int CLOSE_PRICE = 9;
       const int LOW_52 = 19;
       const int HIGH_52 = 20;
-      var doLastPrice = new[] { "NQ", "ES", "MNQ", "MES", "TN" }.Contains(ar.contract.Symbol);
+      var doLastPrice = new[] { "NQ", "ES", "MNQ", "MES", "TN", "VIX","RTY", "YM" }.Contains(ar.contract.Symbol);
       var st = IbClient.ServerTime;
       var pt = price2.TimeSet;
       var doMarkPrice = doLastPrice && (st - pt).TotalSeconds > 30;

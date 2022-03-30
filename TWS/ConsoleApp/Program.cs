@@ -90,6 +90,8 @@ namespace ConsoleApp {
         var comboSymbols = new[] { "E3CZ1 C4665","EW1Z1 C4670" };
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          Tests.CalcHedgeRatio(); return;
+          Tests.HedgeCombo2(am); return;
           CurrentOptionsTest.CustomStraddle(am, comboSymbols); return;
           PositionsTest.Positioner(am, c => c.Position != 0)//comboSymbols.Contains(c.Contract.LocalSymbol))
           //PositionsTest.Positioner(am, c => c.Contract.IsOption)
@@ -118,7 +120,6 @@ namespace ConsoleApp {
           .Select(price => new { cd.Contract, price }))
           .ToArray()
           .Subscribe(a => HandleMessage(a)); return;
-          Tests.HedgeCombo2(am); return;
           {
             "NQU1".ReqContractDetailsCached()
             .SelectMany(_ => am.CurrentOptions(_.Contract.LocalSymbol, 0, 0, 10, c => true))

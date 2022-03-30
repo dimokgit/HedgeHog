@@ -22,5 +22,9 @@ namespace IBApp {
       IBClientCore.IBClientCoreMaster.ReqContractDetailsCached(c);
     public static double Price(this MarketPrice p, bool isBuy) => isBuy ? p.ask : p.bid;
     public static DateTime CalcExpirationDate(this int expirationDaysSkip) =>IBClientCore.IBClientCoreMaster.CalcExpirationDate(expirationDaysSkip);
+    //
+    public static IObservable<(DateTime[] expirations, double[] strikes)> ReqStrikesAndExpirations(this string underSymbol) =>
+      IBClientCore.IBClientCoreMaster.ReqStrikesAndExpirations(underSymbol);
+
+    }
   }
-}

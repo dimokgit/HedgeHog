@@ -538,8 +538,8 @@ namespace HedgeHog.Alice.Client {
       , string[] selectedCombos
       //, string[] bookPositions
       , ExpandoObject context
-      ) {
-      var task = (await UseTraderMacro(pair, async tm => {
+      ) { 
+       var task = (await UseTraderMacro(pair, async tm => {
         const string HID_BYTV = "ByTV";
         const string HID_BYHV = "ByHV";
         const string HID_BYPOS = "ByPos";
@@ -555,15 +555,15 @@ namespace HedgeHog.Alice.Client {
           var uc = contextDict["optionsUnder"]?.ToString().IfEmpty(pair);
           var underContracts = await uc.ReqContractDetailsCached().Select(cd => cd.Contract).ToArray();
           if(am != null) {
-            List<object> bookPositions = contextDict.ContainsKey("bookPositions")
-            ? (List<object>)contextDict["bookPositions"]
-            : new object[0].ToList();
-            var bookStraddle = (from bp in (bookPositions?.ToArray(o => o.ToString()) ?? new string[0]).ToObservable()
-                                from c in bp.ReqContractDetailsCached()
-                                select c.Contract
-                                ).ToArray()
-                                .Where(cp => cp.Length == 2)
-                                .SelectMany(cp => am.StraddleFromContracts(cp));
+             List<object> bookPositions = contextDict.ContainsKey("bookPositions")
+             ? (List<object>)contextDict["bookPositions"]
+             : new object[0].ToList();
+             var bookStraddle = (from bp in (bookPositions?.ToArray(o=>o.ToString()) ?? new string[0]).ToObservable()
+                                 from c in bp.ReqContractDetailsCached()
+                                 select c.Contract
+                                 ).ToArray()
+                                 .Where(cp=>cp.Length == 2)
+                                 .SelectMany(cp=> am.StraddleFromContracts(cp));
             Action rollOvers = () => {
               var show = !rollCombo.IsNullOrWhiteSpace() && optionTypeMap == "R";
               if(!show) return;
@@ -619,7 +619,7 @@ namespace HedgeHog.Alice.Client {
                         breakEven
                       };
                     });
-                    return cs.Distinct(x => x.i).OrderByDescending(s => s.strikeDelta).ToArray();
+                    return cs.Distinct(x => x.i).OrderByDescending(s=>s.strikeDelta).ToArray();
                     cs = strikeLevel.HasValue && true
                     ? cs.OrderByDescending(x => x.strikeDelta)
                     : cs.OrderByDescending(x => x.delta);
@@ -753,7 +753,7 @@ namespace HedgeHog.Alice.Client {
 
             //base.Clients.Caller.liveCombos(am.TradeStraddles().ToArray(x => new { combo = x.straddle, x.netPL, x.position }));
             void ComboTrades() =>
-            am.ComboTrades(1, selectedCombos)
+            am.ComboTrades(1,selectedCombos)
               .ToArray()
               .Subscribe(cts => {
                 try {
@@ -824,10 +824,10 @@ namespace HedgeHog.Alice.Client {
                           let debit = trades.Select(t => t.openPrice.Abs()).DefaultIfEmpty(price.bid).Single()
                           select (c.Strike, debit, c.IsCall)
                           );
-              var pos = ctsObs.SelectMany(cts => cts.Select(ct => (ct.contract.Strike, debit: ct.openPrice.Abs(), ct.contract.IsCall))).Merge(cmbs)
-              .ToArray()
-              .Select(AccountManager.BreakEvens);
-              pos.Subscribe(bes => base.Clients.Caller.tradesBreakEvens(bes.Where(be => !be.level.IsNaNOrZero()).Select(be => be.level)));
+               var pos = ctsObs.SelectMany(cts => cts.Select(ct => (ct.contract.Strike, debit: ct.openPrice.Abs(), ct.contract.IsCall))).Merge(cmbs)
+               .ToArray()
+               .Select(AccountManager.BreakEvens);
+               pos.Subscribe(bes => base.Clients.Caller.tradesBreakEvens(bes.Where(be => !be.level.IsNaNOrZero()).Select(be => be.level)));
               //AccountManager.BreakEvens()
             }
             void CurrentHedges() {
@@ -934,7 +934,7 @@ namespace HedgeHog.Alice.Client {
         }
       }).WhenAllSequiential()).ToArray();
       return task;
-    }
+  }
     public class CurrentHedge {
       public CurrentHedge(string id, string contract, double quantity, double ratio, string context, double price, string key) {
         this.id = id;
@@ -1096,10 +1096,10 @@ namespace HedgeHog.Alice.Client {
       return res;
     }
     [BasicAuthenticationFilter]
-    public async Task<string[]> CloseCombo(string pair, string instrument, double? conditionPrice, bool isTest, IList<string> selection) {
+    public async Task<string[]> CloseCombo(string pair, string instrument, double? conditionPrice, bool isTest,IList<string> selection) {
       var res = (await
       (from am in Observable.Return(GetAccountManager())
-       from ct in am.ComboTrades(1, selection)
+       from ct in am.ComboTrades(1,selection)
        from under in pair.ReqContractDetailsCached().Select(cd => cd.Contract)
        from underPrice in under.ReqPriceSafe()
        where ct.contract.Instrument == instrument
