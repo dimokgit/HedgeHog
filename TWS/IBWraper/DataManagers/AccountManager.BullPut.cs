@@ -17,7 +17,7 @@ namespace IBApp {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
         from price in cd.Contract.ReqPriceSafe().Select(p => p.ask.Avg(p.bid))
-        from combo in MakeBullPuts(symbol, strikeLevel.IfNaN(price), expirationDaysSkip, 1, count, gap)
+        from combo in MakeBullPuts(symbol, strikeLevel.IfNaN(price), expirationDaysSkip, count, gap)
         from p in combo.contract.ReqPriceSafe().DefaultIfEmpty()
         let strikeAvg = combo.options.Average(o => o.Strike)
         select (
@@ -43,8 +43,8 @@ namespace IBApp {
     }
 
     public IObservable<(Contract contract, Contract[] options)> MakeBullPuts
-    (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count, int gap) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, (count + gap + 1) * 2, c => true)
+    (string symbol, double price, int expirationDaysSkip,  int count, int gap) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip,  (count + gap + 1) * 2, c => true)
       .Where(c => c.IsPut)
       //.Take(count*2)
       .ToArray()

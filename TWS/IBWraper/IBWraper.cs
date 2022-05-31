@@ -671,7 +671,7 @@ namespace IBApp {
         var x = (
           from under in _ibClient.ReqContractDetailsCached(Pair).Select(cd => cd.Contract)
           from up in under.ReqPriceSafe().Select(_ => _.ask.Avg(_.bid))
-          from os in _ibClient.ReqCurrentOptionsAsync(Pair, up, new[] { isBuy }, 0, 1, 1, c => true).ToArray()
+          from os in _ibClient.ReqCurrentOptionsAsync(Pair, up, new[] { isBuy }, 0, 1, c => true).ToArray()
           from o in os
           select (o, under, lot: lot * (isBuy ? 1 : -1))
           )

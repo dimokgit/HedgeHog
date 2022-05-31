@@ -37,7 +37,7 @@ namespace IBApp {
       return (
         from cd in IbClient.ReqContractDetailsCached(contracts[0].Symbol)
         from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
-        from combo in new[] { (contract:contracts.MakeStraddle(),options:contracts.ToArray()) }
+        from combo in new[] { (contract: contracts.MakeStraddle(), options: contracts.ToArray()) }
         from p in combo.contract.ReqPriceSafe().DefaultIfEmpty()
         select CurrentComboInfo(price, combo, p)
         ).ToArray();
@@ -47,7 +47,7 @@ namespace IBApp {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
         from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
-        from combo in MakeStraddles(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count, gap)
+        from combo in MakeStraddles(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, count, gap)
         from p in combo.contract.ReqPriceSafe().DefaultIfEmpty()
         select CurrentComboInfo(price, combo, p)).ToArray()
         .Select(b => b
@@ -83,7 +83,7 @@ namespace IBApp {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
         from underPrice in cd.Contract.ReqPriceSafe(5).Select(p => p.bid)
-        from combo in MakeStraddles(symbol, underPrice, expirationDaysSkip, 1, count, gap)
+        from combo in MakeStraddles(symbol, underPrice, expirationDaysSkip, count, gap)
         from p in combo.contract.ReqPriceSafe(2).DefaultIfEmpty()
         let strikeAvg = combo.options.Average(o => o.Strike)
         select (
@@ -149,8 +149,8 @@ namespace IBApp {
     }
 
     public IObservable<(Contract contract, Contract[] options)> MakeStraddles
-      (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count, int gap) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count * 2 + gap * 3, c => true)
+      (string symbol, double price, int expirationDaysSkip, int count, int gap) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, count * 2 + gap * 3, c => true)
       //.Take(count*2)
       .ToArray()
       .SelectMany(reqOptions => {
@@ -182,6 +182,7 @@ namespace IBApp {
     static Contract MakeStraddle(string instrument, string exchange, string currency, IList<int> conIds) {
       if(conIds.Count != 2)
         throw new Exception($"MakeStraddle:{new { conIds }}");
+      var uniDir = Contract.FromCache(conIds[0]).Zip(Contract.FromCache(conIds[1]), (c1, c2) => c1.Right != c2.Right).Single();
       var c = new Contract() {
         Symbol = instrument,
         SecType = "BAG",
@@ -197,7 +198,7 @@ namespace IBApp {
       var put = new ComboLeg() {
         ConId = conIds[1],
         Ratio = 1,
-        Action = "BUY",
+        Action = uniDir ? "BUY" : "SELL",
         Exchange = exchange
       };
       c.ComboLegs = new List<ComboLeg> { call, put };
@@ -207,7 +208,7 @@ namespace IBApp {
 
     #region Make Butterfly
     public IObservable<(Contract contract, Contract[] options)> MakeButterflies(string symbol, double price) =>
-   IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true }, 1, 1, 4, c => true)
+   IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true }, 1, 4, c => true)
     .ToArray()
     //.Select(a => a.OrderBy(c => c.Strike).ToArray())
     .SelectMany(reqOptions =>
@@ -290,9 +291,8 @@ namespace IBApp {
           from cd in IbClient.ReqContractDetailsCached(symbol)
           where count > 0
           from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
-          from options in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, 1, count, filter).ToArray()
-          from option in options.ToObservable()//.RateLimit(10, TaskPoolScheduler.Default)
-          where filter(option)
+          from options in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, count, filter).ToArray()
+          from option in options.Skip((options.Length - 12).Max(0)).ToObservable()//.RateLimit(10, TaskPoolScheduler.Default)
           from p in option.ReqPriceSafe(10, Common.CallerChain("Current Option")).DefaultIfEmpty()
           let pa = p.ask.Avg(p.bid)
           select (CurrentCombo)(
@@ -321,8 +321,8 @@ namespace IBApp {
       }
     }
     public IObservable<Contract> MakeOptions
-      (string symbol, double price, int expirationDaysSkip, int expirationsCount, int count, Func<Contract, bool> filter) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, expirationsCount, count, filter)
+      (string symbol, double price, int expirationDaysSkip, int count, Func<Contract, bool> filter) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, count, filter)
       //.Take(count*2)
       .ToArray()
       .SelectMany(reqOptions => {
@@ -441,7 +441,7 @@ namespace IBApp {
       let strikeDeltaAmount = (roll.ComboStrike() - up.avg) * strikeSign * mul * 0
       from rp in roll.ReqPriceSafe()
       let ev = roll.ExtrinsicValue(rp.bid, up.bid)
-      where ev/rp.bid >= _extRatio
+      where ev / rp.bid >= _extRatio
       let bid = rp.bid// roll.ExtrinsicValue(rp.bid, up.bid)
       let bidAmount = bid * mul
       let tradesChangeAmount = tradesLost.Select(ct => ct.pl).Sum()
@@ -450,7 +450,7 @@ namespace IBApp {
       let days = (roll.Expiration - exp).TotalDays.Floor()//.SideEffect(_ => TraceDebug(new { roll, roll.Expiration, expiration, days = _ }))
       let workDays = exp.GetWorkingDays(roll.Expiration).Max(1)
       let w = 5.0 / workDays
-      let perc = bid / up.bid
+      let perc = MathExtensions.AnnualRate(Account.Equity, Account.Equity + bidAmount, DateTime.Now, roll.Expiration).rate// bid / up.bid
       select new RollOver(under, roll, days, bid, (bid * w).AutoRound2(2), bidAmount, bidAmount * w, (perc * 100).AutoRound2(3), rp.delta.Round(1));
   }
   static class CombosMixins {

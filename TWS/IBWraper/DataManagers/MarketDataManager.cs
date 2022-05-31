@@ -22,7 +22,7 @@ using Order = IBApi.Order;
 
 namespace IBApp {
   public partial class MarketDataManager :DataManager {
-    private const string GENERIC_TICK_LIST = "233,221,236,165";
+    private const string GENERIC_TICK_LIST = "233,221,236,165,106,104";
     static private readonly MemoryCache __currentPrices = MemoryCache.Default;
     static private MemoryCache _currentPrices => __currentPrices;
     public static IReadOnlyDictionary<string, Price> CurrentPrices => _currentPrices.ToDictionary(kv => kv.Key, kv => (Price)kv.Value);
@@ -172,7 +172,7 @@ namespace IBApp {
     #region OnTickPrice Subject
     object _OnTickPriceSubjectLocker = new object();
     ISubject<(string key, string message)> _OnTickPriceTraceSubject;
-    ISubject<(string key, string message)> OnTickPriceTraceSubject {
+    public ISubject<(string key, string message)> OnTickPriceTraceSubject {
       get {
         lock(_OnTickPriceSubjectLocker)
           if(_OnTickPriceTraceSubject == null) {
@@ -190,7 +190,106 @@ namespace IBApp {
     }
     #endregion
 
-    enum TickType { BidPrice = 1, AskPrice = 2, LastPrice = 4, High = 6, Low = 7, ClosePrice = 9, MarkPrice = 37 };
+    enum TickType {
+      BidSize = 0,
+      BidPrice = 1,
+      AskPrice = 2,
+      AskSize = 3,
+      LastPrice = 4,
+      LastSize = 5,
+      High = 6,
+      Low = 7,
+      Volume = 8,
+      ClosePrice = 9,
+      BidOptionComputation = 10,
+      AskOptionComputation = 11,
+      LastOptionComputation = 12,
+      ModelOptionComputation = 13,
+      OpenTick = 14,
+      Low13Weeks = 15,
+      High13Weeks = 16,
+      Low26Weeks = 17,
+      High26Weeks = 18,
+      Low52Weeks = 19,
+      High52Weeks = 20,
+      AverageVolume = 21,
+      OpenInterest = 22,
+      OptionHistoricalVolatility = 23,
+      OptionImpliedVolatility = 24,
+      OptionBidExchange = 25,
+      OptionAskExchange = 26,
+      OptionCallOpenInterest = 27,
+      OptionPutOpenInterest = 28,
+      OptionCallVolume = 29,
+      OptionPutVolume = 30,
+      IndexFuturePremium = 31,
+      BidExchange = 32,
+      AskExchange = 33,
+      AuctionVolume = 34,
+      AuctionPrice = 35,
+      AuctionImbalance = 36,
+      MarkPrice = 37,
+      BidEFPComputation = 38,
+      AskEFPComputation = 39,
+      LastEFPComputation = 40,
+      OpenEFPComputation = 41,
+      HighEFPComputation = 42,
+      LowEFPComputation = 43,
+      CloseEFPComputation = 44,
+      LastTimestamp = 45,
+      Shortable = 46,
+      RTVolumeTimeSales = 48,
+Halted = 49,
+BidYield = 50,
+AskYield = 51,
+LastYield = 52,
+CustomOptionComputation = 53,
+TradeCount = 54,
+TradeRate = 55,
+VolumeRate = 56,
+LastRTHTrade = 57,
+RTHistoricalVolatility = 58,
+IBDividends = 59,
+BondFactorMultiplier = 60,
+RegulatoryImbalance = 61,
+News = 62,
+ShortTermVolume3Minutes = 63,
+ShortTermVolume5Minutes = 64,
+ShortTermVolume10Minutes = 65,
+DelayedBid = 66,
+DelayedAsk = 67,
+DelayedLast = 68,
+DelayedBidSize = 69,
+DelayedAskSize = 70,
+DelayedLastSize = 71,
+DelayedHighPrice = 72,
+DelayedLowPrice = 73,
+DelayedVolume = 74,
+DelayedClose = 75,
+DelayedOpen = 76,
+RTTradeVolume = 77,
+Creditmanmarkprice = 78,
+Creditmanslowmarkprice = 79,
+DelayedBidOption = 80,
+DelayedAskOption = 81,
+DelayedLastOption = 82,
+DelayedModelOption = 83,
+LastExchange = 84,
+LastRegulatoryTime = 85,
+FuturesOpenInterest = 86,
+AverageOptionVolume = 87,
+DelayedLastTimestamp = 88,
+ShortableShares = 89,
+ETFNavClose = 92,
+ETFNavPriorClose = 93,
+ETFNavBid = 94,
+ETFNavAsk = 95,
+ETFNavLast = 96,
+ETFNavFrozenLast = 97,
+ETFNavHigh = 98,
+ETFNavLow = 99,
+};
+
     private void OnTickPrice(int requestId, int field, double price, TickAttrib attrib) {
       if(!activeRequests.ContainsKey(requestId))
         return;
@@ -271,6 +370,10 @@ namespace IBApp {
           break;
         case HIGH_52:
           price2.High52 = price;
+          break;
+        case (int)TickType.OptionImpliedVolatility:
+          price2.OptionImpliedVolatility = price;
+          OnTickPriceTrace(new { field, price } + "", $"{nameof(OnTickPrice)}[{requestId}]: {ar.contract}:{new { field, price }}");
           break;
       }
     }

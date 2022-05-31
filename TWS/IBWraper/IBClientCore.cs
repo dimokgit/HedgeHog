@@ -256,7 +256,7 @@ namespace IBApp {
         );
 
     IObservable<(int tickerId, int field, double value)> _TickGenericObservable;
-    internal IObservable<(int tickerId, int field, double value)> TickGenericObservable =>
+    public IObservable<(int tickerId, int field, double value)> TickGenericObservable =>
       (_TickGenericObservable ?? (_TickGenericObservable = TickGenericFactoryFromEvent()));
     IObservable<(int tickerId, int field, double value)> TickGenericFactoryFromEvent()
       => Observable.FromEvent<Action<int, int, double>, (int tickerId, int field, double value)>(
@@ -530,7 +530,7 @@ namespace IBApp {
          });
     }
     public IObservable<Contract> ReqCurrentOptionsAsync
-      (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int expirationsCount, int strikesCount, Func<Contract, bool> filter) {
+      (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int strikesCount, Func<Contract, bool> filter) {
       var expStartDate = CalcExpirationDate(expirationDaysSkip);
       return (
         //from exps in ReqStrikesAndExpirations(symbol)
@@ -544,7 +544,7 @@ namespace IBApp {
         .Select(a => a.OrderBy(c => c.Strike.Abs(price)).ThenBy(c => c.Right).Select((o, i) => (i, o))
           .ToArray())
           .SelectMany(a => a.OrderBy(t => t.i).ThenBy(t => t.o.Strike).Select(t => t.o))
-          .Take(strikesCount * expirationsCount);
+          .Take(strikesCount);
     }
 
     public DateTime CalcExpirationDate(int expirationDaysSkip) => ServerTime.Date.AddBusinessDays(expirationDaysSkip);

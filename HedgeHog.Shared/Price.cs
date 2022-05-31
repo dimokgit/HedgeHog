@@ -18,6 +18,8 @@ namespace HedgeHog.Shared {
   public delegate void PriceChangedEventHandler(Price Price);
   [Serializable]
   public class Price {
+
+    public double OptionImpliedVolatility { get; set; }
     public double Low52 { get; set; }
     public double High52 { get; set; }
     public bool IsShortable { get; set; } = true;

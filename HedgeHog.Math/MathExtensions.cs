@@ -1275,6 +1275,12 @@ namespace HedgeHog {
       => amount * Math.Pow(1 + interestRate, periods);
     public static double CompoundInteres(this double balance, double profit, double periods)
       => balance.CompoundAmount(profit / balance, periods) / balance - 1;
+    public static (double rate, double days) AnnualRate(double start, double end, DateTime from, DateTime to) {
+      var days = (to.Date.AddHours(16) - from).TotalDays;
+      var ratio = end / start;
+      return (AnnualRate(days+1, ratio), days.AutoRound2(1));
+    }
 
+    private static double AnnualRate(double days, double ratio) => Math.Pow(ratio, 365.0 / (days))-1;
   }
 }

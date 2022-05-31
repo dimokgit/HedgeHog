@@ -87,11 +87,17 @@ namespace ConsoleApp {
         //}
       } else HandleMessage("********** Didn't connect ***************");
       void StartTests() {
+        HandleMessage(MathExtensions.AnnualRate(4481, 4088, DateTime.Parse("2/13/2022"), DateTime.Parse("5/30/2022"))); return;
+
         var comboSymbols = new[] { "E3CZ1 C4665","EW1Z1 C4670" };
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
-          Tests.CalcHedgeRatio(); return;
-          Tests.HedgeCombo2(am); return;
+          Tests.GetHedgePairInfo("NQM2", "GCM2")
+          .Subscribe(hp => HandleMessage(hp));
+          //.Subscribe(hp=>Tests.HedgeCombo(am,hp.pos1,hp.pos2,hp.ratio,10,1));
+          return;
+          Tests.HedgeCombo(am, "SPY", "IWM", 2, 100, 1); return;
+          Tests.GetHedgePairInfo("SPY", "IWM").Subscribe(cd => HandleMessage(cd)); return;
           CurrentOptionsTest.CustomStraddle(am, comboSymbols); return;
           PositionsTest.Positioner(am, c => c.Position != 0)//comboSymbols.Contains(c.Contract.LocalSymbol))
           //PositionsTest.Positioner(am, c => c.Contract.IsOption)
@@ -502,14 +508,14 @@ namespace ConsoleApp {
           var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
           var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
           Task.Delay(2000).ContinueWith(_ => {
-            ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 1, 10, c => true)
+            ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 10, c => true)
             .ToArray()
             .ToEnumerable()
             .ForEach(cds => {
               cds.Take(50).ForEach(cd => HandleMessage2(cd));
               HandleMessage("ReqCurrentOptionsAsync =============================");
             });
-            ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 1, 10, c => true)
+            ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 10, c => true)
             .ToArray()
             .ToEnumerable()
             .ForEach(cds => {
@@ -705,15 +711,14 @@ namespace ConsoleApp {
           }
           (Contract contract, Contract[] options)[] TestStraddleds(string symbol, int gap) {
             var straddlesCount = 5;
-            var expirationCount = 1;
             int expirationDaysSkip = 0;
             var price = ibClient.ReqContractDetailsCached(symbol).SelectMany(cd => cd.ReqPriceSafe().Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}")));
             var contracts = (from p in price
-                             from str in fw.AccountManager.MakeStraddles(symbol, p, expirationDaysSkip, expirationCount, straddlesCount, gap)
+                             from str in fw.AccountManager.MakeStraddles(symbol, p, expirationDaysSkip,  straddlesCount, gap)
                              select str)
             .ToEnumerable()
             .ToArray()
-            .Count(straddlesCount * expirationCount, i => { Debugger.Break(); }, i => { Debugger.Break(); }, new { straddlesCount, expirationCount })
+            .Count(straddlesCount, i => { Debugger.Break(); }, i => { Debugger.Break(); }, new { straddlesCount })
             .Do(c => Passager.ThrowIf(() => !c.contract.Instrument.Contains("[C-P]")))
             .ToArray();
             //Passager.ThrowIf(() => !IBClientCore.OptionChainCache.Count(1, new { }).Do(HandleMessage).Any(x => x.Value.tradingClass == "SPXW"));

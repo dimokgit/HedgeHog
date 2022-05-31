@@ -15,16 +15,33 @@ using static ConsoleApp.Program;
 
 namespace ConsoleApp {
   static class Tests {
-    public static void CalcHedgeRatio() {
-      var parentContract = "SPY".ContractFactory();
-      var hedgeContract = "VXX".ContractFactory();
-      (from c in "VXJ2".ReqContractDetailsCached().Select(cd=>cd.Contract)
-       from se in c.Symbol.ReqStrikesAndExpirations()
-      from p in c.ReqPriceSafe()
-      select new {c.ComboMultiplier,p.avg,se}
-      )
-        .Subscribe(cd => HandleMessage(cd.ToJson(true)));
+    public static IObservable<HedgeRatio> GetHedgePairInfo(string pos1, string pos2) =>
+      from his in GetHedgeInfo(pos1, pos2).Buffer(2).Select(b => new { pos1 = b[0], pos2 = b[1] })
+      select new HedgeRatio(his.pos1.c, his.pos2.c, (his.pos1.cap / his.pos2.cap) * (his.pos1.vlt / his.pos2.vlt));
 
+    public static IObservable<HedgeInfo> GetHedgeInfo(string symbol, string hedge) =>
+      (from s in new[] { symbol, hedge }.ToObservable()
+       from hi in GetHedgeInfo(s)
+       select hi
+      );
+
+    public static IObservable<HedgeInfo> GetHedgeInfo(string symbol) =>
+      from c in symbol.ReqContractDetailsCached().Select(cd => cd.Contract)
+      from hi in GetHedgeInfo(c)
+      select hi;
+    public static IObservable<HedgeInfo> GetHedgeInfo(Contract c) {
+      var ibc = IBClientCore.IBClientCoreMaster;
+      return (from p in c.ReqPriceSafe()
+              from tgo in ibc.TickGenericObservable
+              from price in ibc.TryGetPrice(c)
+              where price.OptionImpliedVolatility > 0
+              let info = new { mul = c.ComboMultiplier * (c.SecType == "STK" ? 1 : 1), p.avg, price.OptionImpliedVolatility }
+              select new HedgeInfo(c, info.mul, info.avg, info.OptionImpliedVolatility.Round(3))
+      )
+      .FirstAsync();
+      //.Subscribe(cd => HandleMessage(cd.ToJson(true)));
+      //      IBClientCore.IBClientCoreMaster.TickGenericObservable.Subscribe(_ =>
+      //        HandleMessage($"SPY Price:{IBClientCore.IBClientCoreMaster.TryGetPrice("SPY".ContractFactory()).Select(p => new { p.OptionImpliedVolatility }).FirstOrDefault()}"));
     }
     public static void MakeStockCombo(AccountManager am) {
       var portfolio = new[] { "AAPL", "MSFT", "AMZN" }.TakeLast(3).Select(s => s.ReqContractDetailsCached().Select(cd => cd.Contract)).Merge();
@@ -55,13 +72,13 @@ namespace ConsoleApp {
       });
     }
 
-    public static void HedgeComboPrimary(AccountManager am,string localSymbol1, string localSymbol2) {
-        var parentContract = localSymbol1.ContractFactory();
-        var hedgeContract = localSymbol2.ContractFactory();
-        var quantityParent = 5;
-        var r = 0.62;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
-        Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
-        //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
+    public static void HedgeComboPrimary(AccountManager am, string localSymbol1, string localSymbol2) {
+      var parentContract = localSymbol1.ContractFactory();
+      var hedgeContract = localSymbol2.ContractFactory();
+      var quantityParent = 10;
+      var r = 1.8;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
+      Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
+      //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
       (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, hp().p2, false)
        from cd in hc.contract.ReqContractDetailsCached()
        let pcs = cd.Contract.HedgeComboPrimary((m1, m2) => throw new SoftException(new { m1, m2, error = "not found" } + ""))
@@ -71,12 +88,12 @@ namespace ConsoleApp {
        select new { pc, p }
          )
          .Subscribe(x => {
-            HandleMessage(new { parentContract, hedgeContract, primaryContract = x.pc,price = x.p});
+           HandleMessage(new { parentContract, hedgeContract, primaryContract = x.pc, price = x.p });
          });
     }
     public static void HedgeCombo2(AccountManager am) {
-      var parentContract = "SPY".ContractFactory();
-      var hedgeContract = "VXX".ContractFactory();
+      var parentContract = "NQM2".ContractFactory();
+      var hedgeContract = "QQQ".ContractFactory();
       var quantityParent = 1;
       var quantityHedge = -3;
       var isTest = true;
@@ -91,13 +108,33 @@ namespace ConsoleApp {
          Program.HandleMessage(am.OrderContractsInternal.Items.Select(t => new { t.order, t.contract }).ToTextOrTable("Test Order Holders:"));
        });
     }
+    public static void HedgeCombo(AccountManager am, string parent, string hedge, double ratio, int quantityParent, int correlation) {
+      var parentContract = parent.ContractFactory();
+      var hedgeContract = hedge.ContractFactory();
+      HedgeCombo(am, parentContract, hedgeContract, ratio, quantityParent, correlation);
+    }
+    public static void HedgeCombo(AccountManager am, Contract parentContract, Contract hedgeContract, double r, int quantityParent, int correlation) {
+      Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
+      //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
+      var isTest = true;
+      (from hc in AccountManager.MakeHedgeComboSafe(quantityParent, parentContract, hedgeContract, hp().p1, hp().p2 * correlation, false)
+       from cd in hc.contract.ReqContractDetailsCached()
+       from p in cd.Contract.ReqPriceSafe().Select(ab => quantityParent > 0 ? ab.ask : ab.bid)
+       from ot in am.OpenTradeWithAction(o => o.Transmit = !isTest, cd.Contract, hc.quantity, p)
+       select ot
+       )
+       .Subscribe(c => {
+         Program.HandleMessage(c.Select(t => new { t.holder, t.error }).ToTextOrTable("Test Order:"));
+         Program.HandleMessage(am.OrderContractsInternal.Items.Select(t => new { t.order, t.contract }).ToTextOrTable("Test Order Holders:"));
+       });
+    }
     public static void HedgeCombo(AccountManager am) {
 
       {
-        var parentContract = "QQQ".ContractFactory();
+        var parentContract = "SPY".ContractFactory();
         var hedgeContract = "VXX".ContractFactory();
-        var quantityParent = 1;
-        double r = 1;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
+        var quantityParent = 100;
+        double r = 7;// quantityParent / ((quantityParent / 2.26).Round(0) + 1);
         Func<(double p1, double p2)> hp = () => r.PositionsFromRatio();
         //while(new[] { (hp().p1 * 600).ToInt(), (hp().p2 * 600).ToInt() }.GCD() != 1) r += 0.01;
         var isTest = true;
@@ -236,5 +273,74 @@ namespace ConsoleApp {
       am.CurrentOptions(symbol, double.NaN, 0, 2, c => true)
       .Subscribe(ss => Program.HandleMessage(ss.Select(a => a.option).Select(c => new { c.ShortString, c.DateWithShort, c.ShortWithDate2 }).ToTextOrTable("Options:")));
     }
+  }
+
+  internal struct HedgeInfo {
+    public Contract c;
+    public double mul;
+    public double avg;
+    public double vlt;
+    public double cap => (mul * avg).Round(0);
+
+    public HedgeInfo(Contract c, double mul, double avg, double vlt) {
+      this.c = c;
+      this.mul = mul;
+      this.avg = avg;
+      this.vlt = vlt;
+    }
+
+    public override bool Equals(object obj) => obj is HedgeInfo other && EqualityComparer<Contract>.Default.Equals(c, other.c) && mul == other.mul && avg == other.avg && vlt == other.vlt;
+
+    public override int GetHashCode() {
+      int hashCode = 2090083034;
+      hashCode = hashCode * -1521134295 + EqualityComparer<Contract>.Default.GetHashCode(c);
+      hashCode = hashCode * -1521134295 + mul.GetHashCode();
+      hashCode = hashCode * -1521134295 + avg.GetHashCode();
+      hashCode = hashCode * -1521134295 + vlt.GetHashCode();
+      return hashCode;
+    }
+
+    public void Deconstruct(out Contract c, out double mul, out double avg, out double vlt) {
+      c = this.c;
+      mul = this.mul;
+      avg = this.avg;
+      vlt = this.vlt;
+    }
+
+    public static implicit operator (Contract c, double mul, double avg, double vlt)(HedgeInfo value) => (value.c, value.mul, value.avg, value.vlt);
+    public static implicit operator HedgeInfo((Contract c, double mul, double avg, double vlt, double cap) value) => new HedgeInfo(value.c, value.mul, value.avg, value.vlt);
+    public override string ToString() => new { c = c.ToString(), mul, avg, vlt, cap }.ToString();
+  }
+
+  internal struct HedgeRatio {
+    public Contract pos1;
+    public Contract pos2;
+    public double ratio;
+
+    public HedgeRatio(Contract pos1, Contract pos2, double ratio) {
+      this.pos1 = pos1;
+      this.pos2 = pos2;
+      this.ratio = ratio;
+    }
+
+    public override bool Equals(object obj) => obj is HedgeRatio other && EqualityComparer<Contract>.Default.Equals(pos1, other.pos1) && EqualityComparer<Contract>.Default.Equals(pos2, other.pos2) && ratio == other.ratio;
+
+    public override int GetHashCode() {
+      int hashCode = -1111949003;
+      hashCode = hashCode * -1521134295 + EqualityComparer<Contract>.Default.GetHashCode(pos1);
+      hashCode = hashCode * -1521134295 + EqualityComparer<Contract>.Default.GetHashCode(pos2);
+      hashCode = hashCode * -1521134295 + ratio.GetHashCode();
+      return hashCode;
+    }
+
+    public void Deconstruct(out Contract pos1, out Contract pos2, out double ratio) {
+      pos1 = this.pos1;
+      pos2 = this.pos2;
+      ratio = this.ratio;
+    }
+
+    public static implicit operator (Contract pos1, Contract pos2, double ratio)(HedgeRatio value) => (value.pos1, value.pos2, value.ratio);
+    public static implicit operator HedgeRatio((Contract pos1, Contract pos2, double ratio) value) => new HedgeRatio(value.pos1, value.pos2, value.ratio);
+    public override string ToString() => new { pos1 = pos1.ToString(), pos2=pos2.ToString(),ratio }.ToString();
   }
 }
