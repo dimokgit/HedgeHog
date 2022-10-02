@@ -355,8 +355,13 @@ namespace IBApp {
           )
           .Distinct(t => t.ContractDetails.Contract.ConId)
           .SelectMany(t => {
-            if(t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty())
+            if(t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty()) {
+              if(t.ContractDetails.UnderSymbol.IsNullOrWhiteSpace()) {
+                TraceDebug($"{t.ContractDetails.Contract.LocalSymbol} - UnderSymbol is empty");
+                return Observable.Empty<ContractDetailsMessage>();
+              }
               return ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Select(_ => t);
+            }
             return Observable.Return(t);
           })
           .ToArray()

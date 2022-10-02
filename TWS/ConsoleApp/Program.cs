@@ -87,11 +87,17 @@ namespace ConsoleApp {
         //}
       } else HandleMessage("********** Didn't connect ***************");
       void StartTests() {
-        HandleMessage(MathExtensions.AnnualRate(4481, 4088, DateTime.Parse("2/13/2022"), DateTime.Parse("5/30/2022"))); return;
+        //HandleMessage(MathExtensions.AnnualRate(4481, 4088, DateTime.Parse("2/13/2022"), DateTime.Parse("5/30/2022"))); return;
 
         var comboSymbols = new[] { "E3CZ1 C4665","EW1Z1 C4670" };
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
+          (from c in "MCLN2".ReqContractDetailsCached().Select(cd=>cd.Contract)
+           from mp in c.ReqPriceSafe()
+           select new { c, mp }
+           )
+          .Subscribe(x => HandleMessage(x));
+          return;
           Tests.GetHedgePairInfo("NQM2", "GCM2")
           .Subscribe(hp => HandleMessage(hp));
           //.Subscribe(hp=>Tests.HedgeCombo(am,hp.pos1,hp.pos2,hp.ratio,10,1));
