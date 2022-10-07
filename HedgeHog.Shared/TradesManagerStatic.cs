@@ -177,7 +177,7 @@ namespace HedgeHog.Shared {
 
     public static bool IsCurrenncy(this string s) => _currencies.Any(c => s.ToUpper().StartsWith(c)) && _currencies.Any(c => s.ToUpper().EndsWith(c));
     private static string[] _treasures = new[] { "ZN   ", "ZB   ", "ZF   " };
-    private static Regex TreasureMatch = new Regex(@"^(?<code>\w{2,3})\s{3}", RegexOptions.IgnoreCase);
+    private static Regex TreasureMatch = new Regex(@"^(?<code>\w{2,3})\s{2,3}\S{3} \d\d", RegexOptions.IgnoreCase);
     private static Regex FutureMatch = new Regex(@"^(?<code>\w{2,3})[A-Z]\d{1,2}$", RegexOptions.IgnoreCase);
     public static bool IsFuture(this string s) => FutureMatch.IsMatch(s) || TreasureMatch.IsMatch(s);
     public static string FutureCode(this string s) => IsFuture(s) ? FutureMatch.Match(s).Groups["code"].Value : s;

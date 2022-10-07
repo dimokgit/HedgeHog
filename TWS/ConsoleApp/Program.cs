@@ -92,7 +92,7 @@ namespace ConsoleApp {
         var comboSymbols = new[] { "E3CZ1 C4665","EW1Z1 C4670" };
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
-          (from c in "MCLN2".ReqContractDetailsCached().Select(cd=>cd.Contract)
+          (from c in "10Y  OCT 22".ReqContractDetailsCached().Select(cd=>cd.Contract)
            from mp in c.ReqPriceSafe()
            select new { c, mp }
            )

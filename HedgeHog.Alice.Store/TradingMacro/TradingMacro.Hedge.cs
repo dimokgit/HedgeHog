@@ -148,7 +148,7 @@ namespace HedgeHog.Alice.Store {
       (double, double, double) MakeParam(TradingMacro tm, double pos) => ((tm.RatesArraySafe.LastBC()?.PriceAvg).GetValueOrDefault(double.NaN), tm.BaseUnitSize, pos);
     }
 
-    private double GetHedgeMultiplier() => _currentHedgeContract.HedgeComboPrimary((m1, m2) => { }).Single().ComboMultiplier;
+    private double GetHedgeMultiplier() => (_currentHedgeContract?.HedgeComboPrimary((m1, m2) => { }).Single().ComboMultiplier).GetValueOrDefault();
 
     private void RunCalcHedgePrices(int voltIndex, int p1, int p2, int hedgeIndex) {
       var sw = Stopwatch.StartNew();
