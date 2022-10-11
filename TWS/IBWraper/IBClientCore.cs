@@ -353,17 +353,13 @@ namespace IBApp {
             return true;
           }
           )
+          .Where(t=> !(t.ContractDetails.Contract.IsOption && t.ContractDetails.UnderSymbol.IsNullOrWhiteSpace()))
           .Distinct(t => t.ContractDetails.Contract.ConId)
-          .SelectMany(t => {
-            if(t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty()) {
-              if(t.ContractDetails.UnderSymbol.IsNullOrWhiteSpace()) {
-                TraceDebug($"{t.ContractDetails.Contract.LocalSymbol} - UnderSymbol is empty");
-                return Observable.Empty<ContractDetailsMessage>();
-              }
-              return ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Select(_ => t);
-            }
-            return Observable.Return(t);
-          })
+          .SelectMany(t => 
+            t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty()
+            ? ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Select(_ => t)
+            : Observable.Return(t)
+          )
           .ToArray()
           .Do(a => {
             if(a.IsEmpty()) {
@@ -373,8 +369,8 @@ namespace IBApp {
             a.ForEach(t => {
               if(t.ContractDetails.Contract.Exchange == "QBALGO") t.ContractDetails.Contract.Exchange = "GLOBEX";
               t.ContractDetails.AddToCache();
-              if(t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty())
-                ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Subscribe();
+              //if(t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty())
+              //  ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Subscribe();
             });
           })
           //.Do(_ => TraceDebug0($"{nameof(ReqContractDetailsAsync)}:{key} found:{_.Length} contracts"))
@@ -471,7 +467,7 @@ namespace IBApp {
     public IObservable<(DateTime[] expirations, double[] strikes)> ReqStrikesAndExpirations(string underSymbol) {
       lock(_allStrikesAndExpirations) {
         if(_allStrikesAndExpirations.TryGetValue(underSymbol, out var cache)) return cache;
-        var increments = new[] { 50.0, 10, 5, 1 };
+        var increments = new[] { 50.0, 10, 10, 1 };
         IEnumerable<double> CurrentIncrement(double price) => increments.OrderBy(i => (price * 0.002).Abs(i)).Take(1).Select(i => (price / i).ToInt() * i);
         var newCache = (from under in ReqContractDetailsCached(underSymbol)
                         from price in under.Contract.ReqPriceSafe()
