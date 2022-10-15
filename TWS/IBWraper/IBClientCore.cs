@@ -353,9 +353,9 @@ namespace IBApp {
             return true;
           }
           )
-          .Where(t=> !(t.ContractDetails.Contract.IsOption && t.ContractDetails.UnderSymbol.IsNullOrWhiteSpace()))
+          .Where(t => !(t.ContractDetails.Contract.IsOption && t.ContractDetails.UnderSymbol.IsNullOrWhiteSpace()))
           .Distinct(t => t.ContractDetails.Contract.ConId)
-          .SelectMany(t => 
+          .SelectMany(t =>
             t.ContractDetails.Contract.IsOption && t.ContractDetails.Contract.UnderContract.IsEmpty()
             ? ReqContractDetailsAsync(t.ContractDetails.UnderSymbol.ContractFactory()).Select(_ => t)
             : Observable.Return(t)
@@ -504,8 +504,14 @@ namespace IBApp {
       var isVIX = true;
       Contract MakeFutureContract(ContractDetails cd, string twsDate) => new Contract { Symbol = cd.MarketName, SecType = "FOP", Exchange = cd.Contract.Exchange, Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
       Contract MakeIndexContract(string s, string twsDate) => new Contract { Symbol = s, SecType = "OPT", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
-      Contract MakeStockContract(string twsDate) => new Contract { Symbol = symbol, SecType = "OPT", Exchange = "SMART", Currency = "USD", LastTradeDateOrContractMonth = twsDate
-        , Strike = strike 
+      Contract MakeStockContract(string twsDate) => new Contract {
+        Symbol = symbol,
+        SecType = "OPT",
+        Exchange = "SMART",
+        Currency = "USD",
+        LastTradeDateOrContractMonth = twsDate
+        ,
+        Strike = strike
       };
       Contract MakeContract(ContractDetails cd, string twsDate) =>
         (isVIX = cd.UnderSymbol == "VIX") || cd.Contract.IsIndex ? MakeIndexContract(cd.UnderSymbol ?? cd.Contract.Symbol, twsDate)
@@ -531,8 +537,8 @@ namespace IBApp {
          });
     }
     public IObservable<Contract> ReqCurrentOptionsAsync
-      (string symbol, double price, bool[] isCalls, int expirationDaysSkip, int strikesCount, Func<Contract, bool> filter) {
-      var expStartDate = CalcExpirationDate(expirationDaysSkip);
+      (string symbol, double price, bool[] isCalls, (int expirationDaysSkip, DateTime expirationDate) exp, int strikesCount, Func<Contract, bool> filter) {
+      var expStartDate = exp.expirationDate.IsMin() ? CalcExpirationDate(exp.expirationDaysSkip) : exp.expirationDate;
       return (
         //from exps in ReqStrikesAndExpirations(symbol)
         //from exp in exps.expirations.OrderBy(d => d).Where(d => d >= expStartDate).Take(1)

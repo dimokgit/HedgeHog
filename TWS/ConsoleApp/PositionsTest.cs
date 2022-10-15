@@ -75,7 +75,13 @@ namespace ConsoleApp {
     public static IObservable<PositionMessage> Positioner(AccountManager am, Func<PositionMessage, bool> where) => am.PositionsObservable
             .Where(where)
             .DistinctUntilChanged(c => c.Contract.Key)
-            .Do(positions => { HandleMessage(am.Positions.ToTextOrTable("All Positions:")); });
+            .Do(positions => { HandleMessage(am.Positions
+              .OrderBy(p=>p.contract.Symbol)
+              .ThenBy(p=>p.contract.Expiration)
+              .ThenByDescending(p=>p.contract.IsCall)
+              .ThenBy(p=>p.contract.Strike)
+              .ToTextOrTable("All Positions:")); 
+            });
 
     public static void ComboTrades(AccountManager am) {
       am.PositionsObservable.Do(positions => {

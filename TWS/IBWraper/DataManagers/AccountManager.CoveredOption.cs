@@ -14,7 +14,7 @@ namespace IBApp {
   public partial class AccountManager {
     public void OpenCoveredOption(Contract contract, int quantity, double price, [CallerMemberName] string Caller = "") {
       double? callStrikeMax = price == 0 ? (double?)null : price;
-      CurrentOptions(contract.Instrument, price, 0, 3, c => c.IsCall)
+      CurrentOptions(contract.Instrument, price, (0, DateTime.MinValue), 3, c => c.IsCall)
         .SelectMany(os => os.OrderBy(o => o.option.Strike))
         .Where(o => o.option.Strike <= callStrikeMax.GetValueOrDefault(o.underPrice))
         .Take(1)

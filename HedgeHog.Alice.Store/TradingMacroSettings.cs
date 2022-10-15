@@ -82,6 +82,7 @@ namespace HedgeHog.Alice.Store {
     public string TradingDaysRange { get; set; }
     public string TradingDistanceFunction { get; set; }
     public double TradingDistanceX { get; set; }
+    public double TradingRatioHedge { get; set; }
     public string TrailingDistanceFunction { get; set; }
     public string TrendBlue { get; set; }
     public string TrendGreen { get; set; }

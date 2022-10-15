@@ -58,6 +58,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     private double tradingRatioHedge;
+    [DataMember]
     [WwwSetting(wwwSettingsTradingParams)]
     public double TradingRatioHedge {
       get => tradingRatioHedge;

@@ -178,7 +178,7 @@ namespace IBApp {
 
     IObservable<CurrentCombo> CurrentOptionOutMoney(string instrument, double enterLevel, bool isCall, int daysToSkip) {
       var mul = isCall ? -1 : 1;
-      return from options in CurrentOptions(instrument, enterLevel, daysToSkip, 2, c => c.IsCall == isCall)
+      return from options in CurrentOptions(instrument, enterLevel, (daysToSkip, DateTime.MinValue), 2, c => c.IsCall == isCall)
              from option in options.OrderBy(o => o.option.Strike * mul).Take(1)
              select option;
     }

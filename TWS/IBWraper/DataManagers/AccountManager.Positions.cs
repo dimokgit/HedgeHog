@@ -16,7 +16,7 @@ namespace IBApp {
       pipCost = contract.ComboMultiplier * position.Abs();
       price = averageCost / contract.ComboMultiplier;
     }
-    public Position(Contract contract,double position, double averageCost) {
+    public Position(Contract contract, double position, double averageCost) {
       this.contract = contract;
       this.position = position.ToInt();
       this.averageCost = averageCost;
@@ -27,6 +27,12 @@ namespace IBApp {
     public Contract contract { get; }
     public int position { get; }
     public int Quantity => position.Abs();
+    public double EntryPrice =>
+      contract.IsOption
+      ? contract.Strike - price * contract.Delta(position)
+      : price * contract.Delta(position);
+      
+      
     public bool IsBuy => position > 0;
     public double averageCost { get; }
     public double open { get; }
@@ -34,7 +40,40 @@ namespace IBApp {
     public double price { get; }
     public double AvgCost { get; }
 
+    private int rightSign => contract.Right == "P" ? 1 : contract.Right == "C" ? -1 : 0;
     public override string ToString() => new { contract, position, averageCost, open, price, pipCost } + "";
+    public bool Compare(Contract contract, int positionSign) =>
+      this.contract.Symbol == contract.Symbol
+      && this.contract.Delta(this.position.Sign()) == contract.Delta(positionSign);
+    //|| contract.LocalSymbol == localSymbol
+
+    private static int delta(Contract c) => (c.IsOption ? 1 : -1) ;
+
+  }
+  public static class PositionsMixin {
+    internal static bool compIgnoreCase(this string s1, string s2) => (s1?.Equals(s2, StringComparison.OrdinalIgnoreCase)).GetValueOrDefault();
+    public static IEnumerable<(string Symbol, string CP, int positionSign, double EntryPrice, int quantity)> EntryPrices(this IEnumerable<Position> positions) {
+      // sync this with position.Compare
+      var gs = positions.GroupBy(p => (p.contract.Symbol, p.contract.Right, posSign: p.position.Sign()));
+
+      return gs.Select(g => {
+        var ep = g.EntryPrice();
+        return (g.Key.Symbol, g.Key.Right, g.Key.posSign, ep.entryPrice, ep.quantity);
+      });
+    }
+    public static (double entryPrice, int quantity) EntryPrice(this IEnumerable<Position> positions) {
+      var s = positions.Sum(p => p.EntryPrice * p.Quantity);
+      var q = positions.Sum(p => p.Quantity);
+      return (s / q, q);
+    }
+    public static IList<(double entryPrice, int quantity)> EntryPrice(this IEnumerable<Position> positions, Func<Position, bool> filter) {
+      var pos = positions.Where(filter).ToList();
+      if(pos.Count == 0) return Enumerable.Empty<(double entryPrice, int quantity)>().ToList();
+      var s = pos.Sum(p => p.EntryPrice * p.Quantity);
+      var q = pos.Sum(p => p.Quantity);
+      return new[] { (s / q, q) };
+    }
+
   }
   public partial class AccountManager {
     public Position ContractPosition(PositionMessage p) => new Position(p);

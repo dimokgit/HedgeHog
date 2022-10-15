@@ -355,6 +355,7 @@
   function readCombos(force) {
     if (!force && readingCombos || dataViewModel.freezeCombos() || !showCombos) return;
     var expDaysSkip = dataViewModel.expDaysSkip() || 0;
+    var expDate = dataViewModel.expDate() || "";
     var hedgeDate = dataViewModel.hedgeVirtualDate();
     var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
     var bookPositions = dataViewModel.bookPositions().map(x => ko.unwrap(x.i)) ?? [];
@@ -362,7 +363,8 @@
       currentProfit: ko.unwrap(dataViewModel.currentProfit) || "0",
       hedgeQuantity: ko.unwrap(dataViewModel.hedgeQuantity) || "1",
       optionsUnder: ko.unwrap(dataViewModel.optionsUnder),
-      bookPositions: bookPositions
+      bookPositions: bookPositions,
+      expDate: expDate
     };
     var args = [pair, dataViewModel.comboGap(), dataViewModel.numOfCombos()
       , dataViewModel.comboQuantity() || 0, parseFloat(dataViewModel.comboCurrentStrikeLevel())
@@ -989,7 +991,7 @@
           var instrument = a.combo();
           var orderId = a.orderId();
           var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
-          serverCall("updateCloseOrder", [pair, instrument, orderId, null, profitAmount, self.hedgeTest() || false,selectedCombos]);
+          serverCall("updateCloseOrder", [pair, instrument, orderId, null, profitAmount, self.hedgeTest() || false, selectedCombos]);
         }
       };
       this.showNextInput = function (a, b, c) {
@@ -1006,7 +1008,7 @@
           var instrument = a.combo();
           var orderId = a.orderId();
           var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
-          serverCall("updateCloseOrder", [pair, instrument, orderId, limit, null, self.hedgeTest() || false,selectedCombos]);
+          serverCall("updateCloseOrder", [pair, instrument, orderId, limit, null, self.hedgeTest() || false, selectedCombos]);
         }
       }
 
@@ -1053,6 +1055,11 @@
       this.hedgeREL = ko.observable(true);
       this.hedgeTest = ko.observable(false).extend({ persist: "hedgeTest" + pair, default: true });
       this.optionsUnder = ko.observable('');
+      this.optionsUnder.subscribe(function (v, e) {
+        serverCall("readExpirations", [v ? v : pair], function (exps) {
+          self.expDates(exps);
+        });
+      })
       this.hedgeCombo = ko.mapping.fromJS(ko.observableArray());
       this.hedgeCombo2 = ko.mapping.fromJS(ko.observableArray());
       function mapHedgeCombos() {
@@ -1227,7 +1234,7 @@
       this.closeCombo = function (key) {
         this.canTrade(false);
         var selectedCombos = dataViewModel.selectedCombos().map(x => ko.unwrap(x.i));
-        serverCall("closeCombo", [pair, ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel(), self.hedgeTest() || false,selectedCombos], done, null, function () { this.canTrade(false); }.bind(this));
+        serverCall("closeCombo", [pair, ko.utils.unwrapObservable(key), self.comboCurrentStrikeLevel(), self.hedgeTest() || false, selectedCombos], done, null, function () { this.canTrade(false); }.bind(this));
         function done(openOrderMessage) {
           (openOrderMessage || []).forEach(e => showErrorPerm("closeCombo:\n" + e));
           self.canTrade(true);
@@ -1742,6 +1749,8 @@
       var corridorCalculationMethod = this.corridorCalculationMethod = ko.observableArray();
       var movingAverageType = this.movingAverageType = ko.observableArray();
       var barsPeriodType = this.barsPeriodType = ko.observableArray();
+      this.expDates = ko.observableArray();
+      this.expDate = ko.observable();
       var strategyType = this.strategyType = ko.observableArray();
       var strategyCurrent = this.strategyCurrent = ko.observable();
       strategyCurrent.subscribe(function (s) {
@@ -2350,7 +2359,10 @@
             serverCall("setHedgedPair", [pair, ph]);
           });
         });
-        //#endregion 
+        serverCall("readExpirations", [pair], function (exps) {
+          dataViewModel.expDates(exps);
+        });
+        //#endregion
         //#region read trade-related data
         serverCall("getPresetTradeLevels", [pair], function (l) {
           dataViewModel.tradePresetLevel(l[0] || 0);

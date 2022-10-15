@@ -1163,7 +1163,7 @@ namespace HedgeHog.Alice.Store {
             _currentOptionDisposable = (
               from price in _priceChangeObservable
               let priceBid = price.EventArgs.Price.Bid
-              from options in ibWraper.AccountManager.CurrentOptions(Pair, priceBid, ExpDayToSkip(), 3, c => true)
+              from options in ibWraper.AccountManager.CurrentOptions(Pair, priceBid, (ExpDayToSkip(), DateTime.MinValue), 3, c => true)
               where options.Any()
               select (priceBid, options)
               //select x.Where(x2 => x2.option.IsPut && x2.strikeAvg < bid).OrderByDescending(t => t.strikeAvg).Take(2).ToList()
@@ -1179,7 +1179,7 @@ namespace HedgeHog.Alice.Store {
             _currentStraddleDisposable = (
               from price in _priceChangeObservable
               let priceBid = price.EventArgs.Price.Bid
-              from straddles in ibWraper.AccountManager.CurrentStraddles(Pair, ExpDayToSkip(), 5, 0)
+              from straddles in ibWraper.AccountManager.CurrentStraddles(Pair, (ExpDayToSkip(), DateTime.MinValue), 5, 0)
                 //let cs = straddles.Where(s => s.strikeAvg > priceBid).OrderBy(s => s.strikeAvg).Skip(1).Take(1).ToList()
               let cs = straddles.OrderByDescending(s => s.delta).Take(1).ToList()
               where cs.Any()
@@ -1247,7 +1247,7 @@ namespace HedgeHog.Alice.Store {
       int nextFriday() => (DateTime.Today.GetNextWeekday(DayOfWeek.Friday) - DateTime.Today).TotalDays.ToInt();
       _priceChangeDisposable = (
         from price in _priceChangeObservable
-        from x in ibWraper.AccountManager.CurrentStraddles(Pair, double.NaN, TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, 0)
+        from x in ibWraper.AccountManager.CurrentStraddles(Pair, double.NaN, (TradesManagerStatic.ExpirationDaysSkip(0), DateTime.MinValue), straddleCount, 0)
         where x.Length == 3 && x.All(c => c.marketPrice.isSet)
         select x
       )
@@ -1311,7 +1311,7 @@ new MarketPrice(
     private long BullCallHistory(IBWraper ibWraper, int shcp, long straddleStartId, long _id, int straddleCount, DateTime saveTime, Action ResetSaveTime) {
       _priceChangeDisposable = (
         from price in _priceChangeObservable
-        from x in ibWraper.AccountManager.CurrentOptions(Pair, CurrentPriceAvg(double.NaN), TradesManagerStatic.ExpirationDaysSkip(0), straddleCount, c => c.IsCall)
+        from x in ibWraper.AccountManager.CurrentOptions(Pair, CurrentPriceAvg(double.NaN), (TradesManagerStatic.ExpirationDaysSkip(0), DateTime.MinValue), straddleCount, c => c.IsCall)
         from callBody in x.Where(t => t.option.IsCall).OrderByDescending(t => t.deltaBid).Take(1)
         from callWing in x.Where(t => t.option.IsCall && t.strikeAvg <= callBody.strikeAvg - 25).OrderByDescending(t => t.strikeAvg).Take(1)
         select (callBody, callWing)

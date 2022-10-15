@@ -39,14 +39,14 @@ namespace HedgeHog.Alice.Store {
         //Log = new Exception(new { StraddleRange = new { volatility, spot } } + "");
         return default;
       }
-      double intRate = 2.0 / 100;// (Math.Pow(2 / 100 + 1, 1) - 1);
+      double intRate = 0;// 2.0 / 100;// (Math.Pow(2 / 100 + 1, 1) - 1);
       int daysToExp = 1;
       double strikeStep = 5;
       double gap = 0;
       double strikeShift = gap * strikeStep / 2;
-      double strikeUp = gap == 0 ? spot.RoundBySample(strikeStep) : (spot + strikeShift).RoundBySample(strikeStep);
-      double strikeDown = gap == 0 ? spot.RoundBySample(strikeStep) : (spot - strikeShift).RoundBySample(strikeStep);
-      double dividents = 2.0029 / 100;
+      double strikeUp = spot;// gap == 0 ? spot.RoundBySample(strikeStep) : (spot + strikeShift).RoundBySample(strikeStep);
+      double strikeDown = spot;// gap == 0 ? spot.RoundBySample(strikeStep) : (spot - strikeShift).RoundBySample(strikeStep);
+      double dividents = 0;// 2.0029 / 100;
       double r = _useAverage ? 1.0 : hh.r;
       var c = BlackScholes.CallPrice(spot, strikeUp, intRate, dividents, daysToExp, volatility) * r;
       var p = BlackScholes.PutPrice(spot, strikeDown, intRate, dividents, daysToExp, volatility) * r;

@@ -11,13 +11,13 @@ using IBApi;
 namespace ConsoleApp {
   static class CurrentOptionsTest {
     public static void CurrentOptions(AccountManager am) =>
-      am.CurrentOptions("VIX", 0, 0, 4, c => true)
+      am.CurrentOptions("VIX", 0, (0, DateTime.MinValue), 4, c => true)
       .Subscribe(se => {
         HandleMessage(se.Select(x => new { x.option }).ToMarkdownTable());
-        am.CurrentOptions("ESH1", 0, 3, 4, c => true)
+        am.CurrentOptions("ESH1", 0, (3, DateTime.MinValue), 4, c => true)
         .Subscribe(es => {
           HandleMessage(es.Select(x => new { x.option }).ToMarkdownTable());
-          am.CurrentOptions("SPX", 0, 3, 4, c => true)
+          am.CurrentOptions("SPX", 0, (3, DateTime.MinValue), 4, c => true)
           .Subscribe(spx => {
             HandleMessage(spx.Select(x => new { x.option }).ToMarkdownTable());
           });
@@ -30,7 +30,7 @@ namespace ConsoleApp {
       .Subscribe();
 
     public static void CurrentStraddles(AccountManager am, string symbol) =>
-      am.CurrentStraddles(symbol, double.NaN, 1, 1, 1)
+      am.CurrentStraddles(symbol, double.NaN, (1, DateTime.MinValue), 1, 1)
       .Subscribe(ss => Program.HandleMessage(ss.Select(a => a.combo.contract).Select(c => new { c.ShortString, c.DateWithShort, c.ShortWithDate2 }).ToTextOrTable("Straddles:")));
 
     public static void CurrentStraddles(AccountManager am) {
@@ -44,7 +44,7 @@ namespace ConsoleApp {
                 HandleMessage("\n" + straddles.Select(straddle => new { straddle.contract }).ToMarkdownTable());
               });
       return;
-      am.CurrentStraddles("SPY", 0, 0, 2, 20)
+      am.CurrentStraddles("SPY", 0, (0, DateTime.MinValue), 2, 20)
         .Subscribe(cs => {
           HandleMessage(cs.Select(c => new { c.option }).ToMarkdownTable());
         });
@@ -57,7 +57,7 @@ namespace ConsoleApp {
                           .Where(cp => cp.Length == 2)
                           .SelectMany(cp => am.StraddleFromContracts(cp))
               .Subscribe(straddles => {
-                HandleMessage("\n" + straddles.Select(straddle => new { straddle.combo.contract,straddle.marketPrice,straddle.underPrice }).ToMarkdownTable());
+                HandleMessage("\n" + straddles.Select(straddle => new { straddle.combo.contract, straddle.marketPrice, straddle.underPrice }).ToMarkdownTable());
                 (from oc in am.OpenTradeWithAction(o => o.Transmit = false, straddles[0].combo.contract, 1, straddles[0].marketPrice.ask)
                  select oc
                  ).Subscribe();

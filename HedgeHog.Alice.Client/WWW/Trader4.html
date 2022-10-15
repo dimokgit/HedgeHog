@@ -1223,7 +1223,7 @@
       <colgroup span="2" style="background-color:lightslategray;color:white"></colgroup>
       <tbody data-bind="foreach:liveCombos">
         <tr data-bind="event:{click:$root.toggleSelectedTrade}">
-          <td data-bind="text:l,css:{comboNameActive:$root.testActiveTrade($data)}" class="comboName" style="text-align:left"></td>
+          <td data-bind="text:l,css:{comboNameActive:$root.testActiveTrade($data)},attr:{title: 'entryPrice:'+entryPrice()}" class="comboName" style="text-align:left"></td>
           <td data-bind="text:d3.format('+.1f')(delta()),style:{color:color()}" style="text-align:right"></td>
           <td data-bind="text:d3.format('.2f')(openPrice())"></td>
           <td data-bind="text:d3.format('.2f')(closePrice())"></td>
@@ -1292,6 +1292,7 @@
   <option value="90">90</option>
   <option value="115">115</option>
 </select>
+        <select data-bind="options:expDates,optionsText:'text',optionsValue:'value',value:expDate,optionsCaption:'...'"></select>
         <label>Qty:</label><input data-bind="value:comboQuantity,hasFocus: comboQuantityInEdit" style="width:2em" />
         <label>Gap:</label><select data-bind="value:comboGap" size="1">
           <option value="0">0</option>

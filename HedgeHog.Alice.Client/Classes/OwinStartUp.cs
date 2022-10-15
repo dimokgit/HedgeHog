@@ -548,8 +548,9 @@ namespace HedgeHog.Alice.Client {
         var contextDict = (IDictionary<string, object>)context;
         var selectedHedge = tm.HedgeCalcType;// (string)(contextDict["selectedHedge"] ?? "");
         int.TryParse(Convert.ToString(contextDict["hedgeQuantity"] ?? "1"), out var hedgeQuantity);
+        DateTime.TryParse(Convert.ToString(contextDict["expDate"] ?? ""), out var expDate);
         if(!tm.IsInVirtualTrading) {
-          int expirationDaysSkip = TradesManagerStatic.ExpirationDaysSkip(expDaysSkip);
+          var expirationDaysSkip = (TradesManagerStatic.ExpirationDaysSkip(expDaysSkip), expDate);
           var am = GetAccountManager();
           string CacheKey(Contract c) => c.IsFuture ? c.LocalSymbol : c.Symbol;
           var uc = contextDict["optionsUnder"]?.ToString().IfEmpty(pair);
@@ -643,7 +644,7 @@ namespace HedgeHog.Alice.Client {
                 Func<Contract, bool> filter = c => map.Contains(c.Right) && c.Strike.Abs(underPrice) <= maxAbs;
                 am.CurrentOptions(CacheKey(underContract), sl, expirationDaysSkip, 100, filter)
                   .Merge(bookStraddle)
-                  .SelectMany(c=>c)
+                  .SelectMany(c => c)
                   .ToArray()
                 .Select(ts => {
                   var exp = ts.Select(t => new { dte = DateTime.Now.Date.GetWorkingDays(t.option.Expiration), exp = t.option.LastTradeDateOrContractMonth2 }).Take(1).ToArray();
@@ -782,7 +783,7 @@ namespace HedgeHog.Alice.Client {
                   .ThenBy(ct => ct.contract.Legs().Count())
                   .ThenBy(ct => ct.contract.LastTradeDateOrContractMonth2)
                   .ThenBy(ct => ct.contract.Right)
-                  //.ThenBy(ct => ct.contract.IsOption)
+                  .ThenBy(ct => ct.contract.Strike)
                   .ToArray(x => {
                     var hasStrike = x.contract.HasOptions;
                     var delta = (hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs()) * (-x.position.Sign());
@@ -791,6 +792,8 @@ namespace HedgeHog.Alice.Client {
                     var profit = tm.Strategy == Strategies.HedgeA ? tm.ExitGrossByHedgePositions : x.profit;
                     var red = "#ffd3d9";
                     var green = "chartreuse";
+                    var entryPrices = GetAccountManager().Positions.EntryPrice(p=>p.Compare(x.contract,x.position.Sign() ));
+                    var entryPrice = entryPrices.Select(ep=>new { entryPrice =ep.entryPrice.AutoRound2(4), ep.quantity }.ToString());
                     string getColor() => x.StrikeColor ? green : red;
                     return new {
                       combo = x.contract.Instrument
@@ -812,6 +815,7 @@ namespace HedgeHog.Alice.Client {
                         , color = getColor()
                         , ic = x.contract.IsOptionsCombo
                         , breakEven
+                        , entryPrice
                     };
                   });
 
@@ -1041,7 +1045,7 @@ namespace HedgeHog.Alice.Client {
       var levelPut = bs.s;
       if(levelCall.IsNaNOrZero()) return def;
       var am = GetAccountManager();
-      var expSkip = tm.ServerTime.Hour > 16 ? 1 : 0;
+      var expSkip = (tm.ServerTime.Hour > 16 ? 1 : 0, DateTime.MinValue);
       var calls = from os in CallsPuts()
                   from cp in os
                   group cp by cp.IsCall into g
@@ -1069,7 +1073,7 @@ namespace HedgeHog.Alice.Client {
       var levelPut = bs.s;
       if(levelCall.IsNaNOrZero()) return def;
       var am = GetAccountManager();
-      var expSkip = tm.ServerTime.Hour > 16 ? 1 : 0;
+      var expSkip = (tm.ServerTime.Hour > 16 ? 1 : 0, DateTime.MinValue);
       var calls = from os in am.CurrentOptions(tm.Pair, levelCall, expSkip, 5, c => c.IsCall && c.Strike > levelCall)
                   from o in os.OrderBy(_ => _.strikeAvg).Take(3).TakeLast(1)
                   select new { l = levelCall, o = o.option.LocalSymbol, cp = o.option.Right, lb = o.option.ShortWithDate };
@@ -1249,6 +1253,13 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
+    public async Task<object[]> ReadExpirations(string pair) {
+      var se = await pair.ReqContractDetailsCached().SelectMany(cd => DataManager.IBClientMaster.ReqStrikesAndExpirations(cd.Contract.LocalSymbol));
+      var r = (from ex in se.expirations
+             select new { text = ex.ToString("dd/MM"), value = ex.ToShortDateString() }
+       ).ToArray();
+      return r;
+    }
     #region Strategies
     [BasicAuthenticationFilter]
     public void ClearStrategy(string pair) {

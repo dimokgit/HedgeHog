@@ -13,11 +13,11 @@ using System.Threading.Tasks;
 namespace IBApp {
   public partial class AccountManager {
     public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo)[]>
-  CurrentBullPuts(string symbol, double strikeLevel, int expirationDaysSkip, int count, int gap) {
+  CurrentBullPuts(string symbol, double strikeLevel, (int expirationDaysSkip, DateTime expirationDate) exp, int count, int gap) {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
         from price in cd.Contract.ReqPriceSafe().Select(p => p.ask.Avg(p.bid))
-        from combo in MakeBullPuts(symbol, strikeLevel.IfNaN(price), expirationDaysSkip, count, gap)
+        from combo in MakeBullPuts(symbol, strikeLevel.IfNaN(price), exp, count, gap)
         from p in combo.contract.ReqPriceSafe().DefaultIfEmpty()
         let strikeAvg = combo.options.Average(o => o.Strike)
         select (
@@ -43,8 +43,8 @@ namespace IBApp {
     }
 
     public IObservable<(Contract contract, Contract[] options)> MakeBullPuts
-    (string symbol, double price, int expirationDaysSkip,  int count, int gap) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip,  (count + gap + 1) * 2, c => true)
+    (string symbol, double price, (int expirationDaysSkip, DateTime expirationDate) exp,  int count, int gap) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, exp,  (count + gap + 1) * 2, c => true)
       .Where(c => c.IsPut)
       //.Take(count*2)
       .ToArray()

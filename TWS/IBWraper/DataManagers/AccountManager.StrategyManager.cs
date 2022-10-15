@@ -48,7 +48,7 @@ namespace IBApp {
        ).Subscribe();
     }
     public IObservable<(double level, Contract option)[]> OptionsByBS(string pair, double level, bool isCall) {
-      var expSkip = IbClient.ServerTime.Hour > 16 ? 1 : 0;
+      var expSkip = (IbClient.ServerTime.Hour > 16 ? 1 : 0, DateTime.MinValue);
       var options = from os in (isCall ? Calls() : Puts()).ToArray()
                     from option in os.OrderBy(OrderBy).Take(3).TakeLast(1)
                     select (level, option);
@@ -61,7 +61,7 @@ namespace IBApp {
       double OrderBy(Contract c) => c.IsCall ? 1 / c.Strike : c.Strike;
     }
     public IObservable<(double level, Contract option)[]> OptionsToSell(string pair, double level, bool isCall) {
-      var expSkip = IbClient.ServerTime.Hour > 16 ? 2 : 1;
+      var expSkip = (IbClient.ServerTime.Hour > 16 ? 2 : 1, DateTime.MinValue);
       var options = from os in (isCall ? Calls() : Puts()).ToArray()
                     from option in os.OrderBy(OrderBy).Take(1).TakeLast(1)
                     select (level, option);

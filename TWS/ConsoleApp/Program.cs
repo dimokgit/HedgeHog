@@ -72,7 +72,7 @@ namespace ConsoleApp {
       const int twsPort = 7496;
       const int clientId = 11;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
-      var account = ",U4273389";
+      var account = "";// ",U4273389";
       bool Connect() => ibClient.LogOn("127.0.0.1" + account, twsPort + "", clientId + "", false);
       #endregion
       StartTests();
@@ -89,10 +89,38 @@ namespace ConsoleApp {
       void StartTests() {
         //HandleMessage(MathExtensions.AnnualRate(4481, 4088, DateTime.Parse("2/13/2022"), DateTime.Parse("5/30/2022"))); return;
 
-        var comboSymbols = new[] { "E3CZ1 C4665","EW1Z1 C4670" };
+        var comboSymbols = new[] { "E3CZ1 C4665", "EW1Z1 C4670" };
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
-          (from c in "10Y  OCT 22".ReqContractDetailsCached().Select(cd=>cd.Contract)
+
+          LoadMultiple(DateTime.Now.AddMonths(-2), 1440, "SPY"); return;
+
+          PositionsTest.Positioner(am, c => c.Position != 0)
+          .DistinctUntilChanged(_ => am.Positions.Count)
+          //.Where(p => p.Contract.IsFuture)
+          .TakeUntil(Observable.Timer(TimeSpan.FromSeconds(5)))
+          .ToArray()
+          .Subscribe(pms => {
+            var _ = pms.First(pm => pm.Contract.IsFuture);
+            var pos = am.Positions.Where(p => p.Compare(_.Contract, _.Position.ToInt())).Select(t => new { t.contract,t.EntryPrice, t.position }).ToList();
+            HandleMessage(pos.ToTextOrTable("Positions"));
+            var ep = am.Positions.EntryPrice(p => p.Compare(_.Contract, _.Position.ToInt())).Select(t => new { t.entryPrice, t.quantity });
+            HandleMessage(ep.ToTextOrTable("Entry Prices"));
+          }); return;
+          PositionsTest.ComboTrades(am); return;
+
+          (from cd in "MESZ2".ReqContractDetailsCached()
+           from se in ibClient.ReqStrikesAndExpirations(cd.Contract.LocalSymbol)
+           from ex in se.expirations
+           select new { text = ex.ToString("dd/MM"), value = ex.ToShortDateString() }
+           ).ToArray()
+           .Subscribe(dts => {
+             HandleMessage("\n" + dts.ToTextOrTable());
+           });
+          return;
+
+
+          (from c in "10Y  OCT 22".ReqContractDetailsCached().Select(cd => cd.Contract)
            from mp in c.ReqPriceSafe()
            select new { c, mp }
            )
@@ -106,23 +134,23 @@ namespace ConsoleApp {
           Tests.GetHedgePairInfo("SPY", "IWM").Subscribe(cd => HandleMessage(cd)); return;
           CurrentOptionsTest.CustomStraddle(am, comboSymbols); return;
           PositionsTest.Positioner(am, c => c.Position != 0)//comboSymbols.Contains(c.Contract.LocalSymbol))
-          //PositionsTest.Positioner(am, c => c.Contract.IsOption)
+                                                            //PositionsTest.Positioner(am, c => c.Contract.IsOption)
           .Take(4)
           .ToArray()
           .Subscribe(ps => {
             var selectedCombos = comboSymbols;// ps.Select(p => p.Contract.Instrument).ToArray();
             am.ComboTrades(1, selectedCombos)
-            .ToArray()
-            .Do(cs => HandleMessage(cs.Select(combo => new { combo }).ToTextOrTable()))
-            .SelectMany(cs => cs)
-            .Where(c => c.contract.IsBag && c.contract.ComboLegs?.Count() == 2)
-            .Subscribe(combo => {
-              (from p in combo.contract.ReqPriceSafe().Do(p=>HandleMessage(new { combo, p }))
-               from ot in am.OpenTradeWithAction(o => o.Transmit = false, combo.contract, combo.position, p.ask, 0, false, DateTime.MinValue)
-               select ot
-               )
-              .Subscribe(HandleMessage);
-            });
+        .ToArray()
+        .Do(cs => HandleMessage(cs.Select(combo => new { combo }).ToTextOrTable()))
+        .SelectMany(cs => cs)
+        .Where(c => c.contract.IsBag && c.contract.ComboLegs?.Count() == 2)
+        .Subscribe(combo => {
+          (from p in combo.contract.ReqPriceSafe().Do(p => HandleMessage(new { combo, p }))
+           from ot in am.OpenTradeWithAction(o => o.Transmit = false, combo.contract, combo.position, p.ask, 0, false, DateTime.MinValue)
+           select ot
+           )
+          .Subscribe(HandleMessage);
+        });
           });
           return;
           //HandleMessage(new { isFOP="QNEV1 C1503".IsFOPtion()}); return;
@@ -132,11 +160,6 @@ namespace ConsoleApp {
           .Select(price => new { cd.Contract, price }))
           .ToArray()
           .Subscribe(a => HandleMessage(a)); return;
-          {
-            "NQU1".ReqContractDetailsCached()
-            .SelectMany(_ => am.CurrentOptions(_.Contract.LocalSymbol, 0, 0, 10, c => true))
-            .Subscribe(cds => HandleMessage(cds.Select(cd => new { cd.combo }).ToTextOrTable())); return;
-          }
           (from sc in Observable.Interval(5.FromSeconds()).Zip(IBClientCore.SCAN_CEDES, (a, b) => b)
            select IBClientCore.IBClientCoreMaster.ReqScannerSubscription(sc).Select(ss => new { sc, ss })
           )
@@ -146,17 +169,14 @@ namespace ConsoleApp {
           .Select(cds => cds.ss.Select(cd => new { cd.Contract }).ToTextOrTable()).Subscribe(HandleMessage);
           ; return;
           {
-            am.CurrentOptions("SESN", 0, 0, 1, c => true)
+            am.CurrentOptions("SESN", 0, (0, DateTime.MinValue), 1, c => true)
             .Select(combos => combos.Select(c => new { c.option, c.marketPrice }).ToTextOrTable()).Subscribe(HandleMessage); return;
           }
-          LoadMultiple(DateTime.Now.AddMonths(-2), 5, "MRUT"); return;
-          TestAllStrikesAndExpirations(1); return;
           "MRUT  210816P00226000".ReqContractDetailsCached().SelectMany(cd => {
             HandleMessage(new { IsTradingHours = cd.Contract.IsTradingHours(AccountManager.IBClientMaster.ServerTime) }.ToTextTable());
             return cd.Contract.ReqPriceSafe();
           }
           ).Subscribe(HandleMessage); return;
-          PositionsTest.ComboTrades(am); return;
           CurrentOptionsTest.CurrentStraddles(am, "ESU1"); return;
           TestCombosTrades(10).Take(1).Subscribe(); return;
           Tests.HedgeComboPrimary(am, "MESM1", "MBTM1"); return;
@@ -197,7 +217,7 @@ namespace ConsoleApp {
             };
             LoadHistory(ibClient, new[] { c });
             */
-            bool repare = false;
+            bool repare = true;
             Action<object> callback = o => HandleMessage(o + "");
             secs.ToObservable()
             .Do(sec =>
@@ -215,7 +235,7 @@ namespace ConsoleApp {
                 //fw.GetBarsBase(es, period, 0, DateTime.Now.AddMonths(-5).SetKind(), DateTime.Now.SetKind(), bars, null, showProgress);
                 //fw.GetBarsBase(sec, period, 0, DateTime.Parse("11/29/2019").SetLocal(), DateTime.Parse("11/29/2019 23:59").SetLocal()
                 fw.GetBarsBase(sec, period, 20000, TradesManagerStatic.FX_DATE_NOW, DateTime.Now.SetLocal(), true, false
-                    , bars, null, showProgress);
+                  , bars, null, showProgress);
                 HandleMessage($"***** Done GetBars {bars.Count}*****");
               } else {
                 PriceHistory.AddTicks(fw, period, sec, dateStart, callback, false);
@@ -354,7 +374,7 @@ namespace ConsoleApp {
 
           }
           {
-            (from options in am.CurrentOptions("ESH9", 0, 1, 3, c => true)
+            (from options in am.CurrentOptions("ESH9", 0, (1, DateTime.MinValue), 3, c => true)
              select options
              )
              .Subscribe(options => {
@@ -443,7 +463,7 @@ namespace ConsoleApp {
             void TestCurrentOptions(int expirationDaysToSkip, bool doMore = true) {
               (from under in ibClient.ReqContractDetailsCached("ESH9")
                from price in under.Contract.ReqPriceSafe()
-               from options in am.CurrentOptions(under.Contract.LocalSymbol, price.ask.Avg(price.bid), expirationDaysToSkip, 10, o => o.IsCall)
+               from options in am.CurrentOptions(under.Contract.LocalSymbol, price.ask.Avg(price.bid), (expirationDaysToSkip, DateTime.MinValue), 10, o => o.IsCall)
                from option in options
                select new { price.bid, option.option }
               )
@@ -466,17 +486,16 @@ namespace ConsoleApp {
              .Subscribe(p => HandleMessage(p));
           }
           return;
-          void TestAllStrikesAndExpirations(int num, Action afrer = null) {
+          "SPY".ReqContractDetailsCached().Select(cd => cd.Contract).Subscribe(ls => TestAllStrikesAndExpirations(ls, 2, () => TestAllStrikesAndExpirations(ls, 3)));
+          void TestAllStrikesAndExpirations(Contract contract, int num, Action afrer = null) {
             HandleMessage($"TestAllStrikesAndExpirations: Start {num}");
-            ibClient.ReqStrikesAndExpirations("MRUT")
+            ibClient.ReqStrikesAndExpirations(contract.LocalSymbol)
             .Subscribe(_ => {
               HandleMessage(new { strikes = _.strikes.Length, exps = _.expirations.Length });
               HandleMessage($"TestAllStrikesAndExpirations: End {num}");
               afrer?.Invoke();
             });
           }
-          TestAllStrikesAndExpirations(1);
-          TestAllStrikesAndExpirations(2, () => TestAllStrikesAndExpirations(3));
           {
             Contract ESVXXContract(string symbol, int conId1, int conId2, int ratio1, int ratio2) {
               Contract contract = new Contract();
@@ -514,14 +533,14 @@ namespace ConsoleApp {
           var cdSPY = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
           var cdSPY2 = ibClient.ReqContractDetailsCached("SPY").ToEnumerable().ToArray();
           Task.Delay(2000).ContinueWith(_ => {
-            ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 10, c => true)
+            ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, (0, DateTime.MinValue), 10, c => true)
             .ToArray()
             .ToEnumerable()
             .ForEach(cds => {
               cds.Take(50).ForEach(cd => HandleMessage2(cd));
               HandleMessage("ReqCurrentOptionsAsync =============================");
             });
-            ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, 0, 10, c => true)
+            ibClient.ReqCurrentOptionsAsync("ESM8", 2670, new[] { true, false }, (0, DateTime.MinValue), 10, c => true)
             .ToArray()
             .ToEnumerable()
             .ForEach(cds => {
@@ -571,7 +590,7 @@ namespace ConsoleApp {
           #region Local Tests
           void TestMakeBullPut(string symbol, bool placeOrder) {
             HandleMessage2("MakeBullPut Start");
-            am.CurrentBullPuts(symbol, double.NaN, 1, 5, 0)
+            am.CurrentBullPuts(symbol, double.NaN, (1, DateTime.MinValue), 5, 0)
             .ToEnumerable()
             .Concat()
             .Count(5, $"{nameof(TestMakeBullPut)}")
@@ -601,7 +620,7 @@ namespace ConsoleApp {
             .SelectMany(pea => TestImpl()).Subscribe();
             IObservable<Unit> TestImpl() { // Combine positions
                                            //HandleMessage("Combos:");
-              return am.CurrentStraddles("SPX", 1, 6, gap)
+              return am.CurrentStraddles("SPX", (1, DateTime.MinValue), 6, gap)
               .Select(ts => ts.Select(t => new {
                 i = t.instrument,
                 bid = t.bid.Round(2),
@@ -694,7 +713,7 @@ namespace ConsoleApp {
 
               //var cds = ibClient.ReqContractDetails(symbol);
               //HandleMessage($"{symbol}: {cds.Select(cd => cd.Summary).Flatter(",") }");
-              return am.CurrentStraddles(symbol, 1, 4, 0)
+              return am.CurrentStraddles(symbol, (1, DateTime.MinValue), 4, 0)
               //.Do(t => t.options.ForEach(c => ibClient.SetOfferSubscription(c, _ => { })))
               .ToEnumerable()
               .ToArray()
@@ -705,11 +724,11 @@ namespace ConsoleApp {
                 HandleMessage2(new { straddle = straddle.combo.contract });
                 //ibClient.SetOfferSubscription(straddle.combo.contract);
                 straddle.combo.contract.ReqPriceSafe(2, false, double.NaN)
-                    .Take(1)
-                    .Subscribe(price => {
-                      Passager.ThrowIf(() => price.ask <= 0 || price.bid <= 0);
-                      HandleMessage2($"Observed:{straddle.instrument}{price}");
-                    });
+                  .Take(1)
+                  .Subscribe(price => {
+                    Passager.ThrowIf(() => price.ask <= 0 || price.bid <= 0);
+                    HandleMessage2($"Observed:{straddle.instrument}{price}");
+                  });
               })
               .Select(straddle => straddle.combo)
               .ToArray();
@@ -720,7 +739,7 @@ namespace ConsoleApp {
             int expirationDaysSkip = 0;
             var price = ibClient.ReqContractDetailsCached(symbol).SelectMany(cd => cd.ReqPriceSafe().Select(p => p.ask.Avg(p.bid)).Do(mp => HandleMessage($"{symbol}:{new { mp }}")));
             var contracts = (from p in price
-                             from str in fw.AccountManager.MakeStraddles(symbol, p, expirationDaysSkip,  straddlesCount, gap)
+                             from str in fw.AccountManager.MakeStraddles(symbol, p, (expirationDaysSkip, DateTime.MinValue), straddlesCount, gap)
                              select str)
             .ToEnumerable()
             .ToArray()

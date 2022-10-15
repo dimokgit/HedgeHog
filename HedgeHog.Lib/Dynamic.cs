@@ -372,7 +372,8 @@ namespace System.Linq.Dynamic
         }
     }
 
-    public sealed class ParseException : Exception
+  [Serializable]
+  public sealed class ParseException : Exception
     {
         int position;
 
@@ -388,7 +389,16 @@ namespace System.Linq.Dynamic
         public override string ToString() {
             return string.Format(Res.ParseExceptionFormat, Message, position);
         }
+
+    public ParseException() {
     }
+
+    public ParseException(string message) : base(message) {
+    }
+
+    public ParseException(string message, Exception innerException) : base(message, innerException) {
+    }
+  }
 
     internal class ExpressionParser
     {

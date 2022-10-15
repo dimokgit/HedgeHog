@@ -149,6 +149,7 @@ namespace IBApi {
     public double ComboStrike() => Strike > 0 ? Strike : LegsEx().With(cls => cls.Sum(c => c.contract.strike * c.leg.Ratio) / cls.Sum(c => c.leg.Ratio));
     public bool HasOptions => LegsOrMe(l => l.IsOption).Max();
     public int ReqMktDataId { get; set; }
+    public int Delta(int posSign) => DeltaSign * posSign.Sign();
     public int DeltaSign => IsPut ? -1 : 1;
     public int DeltaSignCombined => LegsOrMe(c => c.DeltaSign).MinMax().With(a => a[0] + a[1]);
     public IEnumerable<double> BreakEven(double openPrice) {

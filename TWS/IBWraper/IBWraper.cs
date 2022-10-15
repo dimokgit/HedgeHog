@@ -155,13 +155,17 @@ namespace IBApp {
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);
       startDate = fxDate(startDate);
-      var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D : period.Between(3, 15) ? TimeUnit.W : throw new ArgumentOutOfRangeException($"period[{period}]", $"Is out of range");
+      var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D 
+        : period.Between(3, 15) ? TimeUnit.W
+        : period == 1440  ? TimeUnit.Y
+        : throw new ArgumentOutOfRangeException($"period[{period}]", $"Is out of range");
       var barSize = period == 0 ? BarSize._1_secs
         : period == 1 ? BarSize._1_min
         : period == 3 ? BarSize._3_mins
         : period == 5 ? BarSize._5_mins
         : period == 10 ? BarSize._10_mins
-        : BarSize._1_day;
+        : period == 1440 ? BarSize._1_day
+        : throw new ArgumentOutOfRangeException($"period[{period}]", $"Is out of range");
       var duration = (endDate - startDate).Duration();
       var lastTime = DateTime.Now;
       var runFast = isFast.GetValueOrDefault(period == 0 || periodsBack > 0);
@@ -229,11 +233,11 @@ namespace IBApp {
           .ObserveOn(TaskPoolScheduler.Default)
           .ForEachAsync(_ => {
             Trace(title + new { _.Contract, _.Contract.ConId });
-            GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, isFast,useRTH, Bars, map, callBack);
+            GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, isFast, useRTH, Bars, map, callBack);
           })
           .GetAwaiter().GetResult();
       } else
-        GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, isFast,useRTH, Bars, map, callBack);
+        GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, isFast, useRTH, Bars, map, callBack);
     }
     public Account GetAccount() {
       try {
@@ -671,7 +675,7 @@ namespace IBApp {
         var x = (
           from under in _ibClient.ReqContractDetailsCached(Pair).Select(cd => cd.Contract)
           from up in under.ReqPriceSafe().Select(_ => _.ask.Avg(_.bid))
-          from os in _ibClient.ReqCurrentOptionsAsync(Pair, up, new[] { isBuy }, 0, 1, c => true).ToArray()
+          from os in _ibClient.ReqCurrentOptionsAsync(Pair, up, new[] { isBuy }, (0, DateTime.MinValue), 1, c => true).ToArray()
           from o in os
           select (o, under, lot: lot * (isBuy ? 1 : -1))
           )

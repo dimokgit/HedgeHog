@@ -59,7 +59,7 @@ namespace IBApp {
         isCall && enterLevel < underPrice.bid ? "Edge is too low " + enterLevel :
         !isCall && enterLevel > underPrice.ask ? "Edge is too high " + enterLevel : ""
       let cp = underPrice.avg
-      from current in CurrentOptions(instrument, cp, daysToSkip, 2, c => c.IsCall == isCall)
+      from current in CurrentOptions(instrument, cp, (daysToSkip, DateTime.MinValue), 2, c => c.IsCall == isCall)
       from combo in CurrentOptionOutMoney(instrument, enterLevel, isCall, daysToSkip)
       let contract = combo.option
       let currentPrice = current.Average(c => c.option.ExtrinsicValue(c.marketPrice.bid, underPrice.bid))

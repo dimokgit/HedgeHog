@@ -22,11 +22,11 @@ namespace IBApp {
 
     #region Make Straddles
     public IObservable<CurrentCombo[]>
-      CurrentStraddles(string symbol, double strikeLevel, int expirationDaysSkip, int count, int gap) {
+      CurrentStraddles(string symbol, double strikeLevel, (int expirationDaysSkip, DateTime expirationDate) exp, int count, int gap) {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
         from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
-        from combo in MakeStraddles(symbol, strikeLevel.IfNaNOrZero(price), count, expirationDaysSkip.CalcExpirationDate(), gap)
+        from combo in MakeStraddles(symbol, strikeLevel.IfNaNOrZero(price), count, exp.expirationDate.IsMin() ? exp.expirationDaysSkip.CalcExpirationDate() : exp.expirationDate, gap)
         from p in combo.contract.ReqPriceSafe().DefaultIfEmpty()
         select CurrentComboInfo(price, combo, p)
         ).ToArray();
@@ -43,11 +43,11 @@ namespace IBApp {
         ).ToArray();
     }
     public IObservable<CurrentCombo[]>
-      CurrentStraddles_Old(string symbol, double strikeLevel, int expirationDaysSkip, int count, int gap) {
+      CurrentStraddles_Old(string symbol, double strikeLevel, (int expirationDaysSkip, DateTime expirationDate) exp, int count, int gap) {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
         from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
-        from combo in MakeStraddles(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, count, gap)
+        from combo in MakeStraddles(symbol, strikeLevel.IfNaNOrZero(price), exp, count, gap)
         from p in combo.contract.ReqPriceSafe().DefaultIfEmpty()
         select CurrentComboInfo(price, combo, p)).ToArray()
         .Select(b => b
@@ -79,11 +79,11 @@ namespace IBApp {
     }
 
     public IObservable<(string instrument, double bid, double ask, DateTime time, double delta, double strikeAvg, double underPrice, (double up, double dn) breakEven, (Contract contract, Contract[] options) combo)[]>
-      CurrentStraddles(string symbol, int expirationDaysSkip, int count, int gap) {
+      CurrentStraddles(string symbol, (int expirationDaysSkip, DateTime expirationDate) exp, int count, int gap) {
       return (
         from cd in IbClient.ReqContractDetailsCached(symbol)
         from underPrice in cd.Contract.ReqPriceSafe(5).Select(p => p.bid)
-        from combo in MakeStraddles(symbol, underPrice, expirationDaysSkip, count, gap)
+        from combo in MakeStraddles(symbol, underPrice, exp, count, gap)
         from p in combo.contract.ReqPriceSafe(2).DefaultIfEmpty()
         let strikeAvg = combo.options.Average(o => o.Strike)
         select (
@@ -149,8 +149,8 @@ namespace IBApp {
     }
 
     public IObservable<(Contract contract, Contract[] options)> MakeStraddles
-      (string symbol, double price, int expirationDaysSkip, int count, int gap) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, count * 2 + gap * 3, c => true)
+      (string symbol, double price, (int expirationDaysSkip, DateTime expirationDate) exp, int count, int gap) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, exp, count * 2 + gap * 3, c => true)
       //.Take(count*2)
       .ToArray()
       .SelectMany(reqOptions => {
@@ -208,7 +208,7 @@ namespace IBApp {
 
     #region Make Butterfly
     public IObservable<(Contract contract, Contract[] options)> MakeButterflies(string symbol, double price) =>
-   IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true }, 1, 4, c => true)
+   IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true }, (1, DateTime.MinValue), 4, c => true)
     .ToArray()
     //.Select(a => a.OrderBy(c => c.Strike).ToArray())
     .SelectMany(reqOptions =>
@@ -273,8 +273,8 @@ namespace IBApp {
       return (
         from u in IbClient.ReqContractDetailsCached(symbol).Take(0)
         from up in u.Contract.ReqPriceSafe()
-        let nextFriday = MathCore.GetWorkingDays(DateTime.Now, DateTime.Now.AddDays(tvDays).GetNextWeekday(DayOfWeek.Friday))
-        from cs in CurrentOptions(symbol, double.NaN, nextFriday, 6, c => c.Expiration.DayOfWeek == DayOfWeek.Friday)
+        let nextFriday = DateTime.Now.AddDays(tvDays).GetNextWeekday(DayOfWeek.Friday)
+        from cs in CurrentOptions(symbol, double.NaN, (-1, nextFriday), 6, c => c.Expiration.DayOfWeek == DayOfWeek.Friday)
         let calls = cs.Where(c => c.option.IsCall).OrderByDescending(c => c.marketPrice.delta).Take(2)
         let puts = cs.Where(c => c.option.IsPut).OrderByDescending(c => c.marketPrice.delta).Take(2)
         select calls.Concat(puts).Select(o => (o.option, u.Contract, o.underPrice, o.marketPrice.bid, o.marketPrice.ask, o.marketPrice.delta)).ToArray());
@@ -283,7 +283,7 @@ namespace IBApp {
     static IScheduler esCurrOptions = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "CurrOptions" });
     static IObservable<CURRENT_OPTIONS> _CurrentOptionsGate = Observable.Empty<CURRENT_OPTIONS>();
     object _currOptLock = new object();
-    public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, int expirationDaysSkip, int count, Func<Contract, bool> filter, [CallerMemberName] string Caller = "") {
+    public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, (int expirationDaysSkip, DateTime expirationDate) exp, int count, Func<Contract, bool> filter, [CallerMemberName] string Caller = "") {
       lock(_currOptLock) {
         TraceDebug0($"{nameof(CurrentOptions)} from {Caller}");
         return (
@@ -291,7 +291,7 @@ namespace IBApp {
           from cd in IbClient.ReqContractDetailsCached(symbol)
           where count > 0
           from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
-          from options in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), expirationDaysSkip, count, filter).ToArray()
+          from options in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), exp, count, filter).ToArray()
           from option in options.Skip((options.Length - 12).Max(0)).ToObservable()//.RateLimit(10, TaskPoolScheduler.Default)
           from p in option.ReqPriceSafe(10, Common.CallerChain("Current Option")).DefaultIfEmpty()
           let pa = p.ask.Avg(p.bid)
@@ -321,8 +321,8 @@ namespace IBApp {
       }
     }
     public IObservable<Contract> MakeOptions
-      (string symbol, double price, int expirationDaysSkip, int count, Func<Contract, bool> filter) =>
-      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, expirationDaysSkip, count, filter)
+      (string symbol, double price, (int expirationDaysSkip, DateTime expirationDate) exp, int count, Func<Contract, bool> filter) =>
+      IbClient.ReqCurrentOptionsAsync(symbol, price, new[] { true, false }, exp, count, filter)
       //.Take(count*2)
       .ToArray()
       .SelectMany(reqOptions => {

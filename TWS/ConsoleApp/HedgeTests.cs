@@ -225,7 +225,7 @@ namespace ConsoleApp {
         });
         return;
       }
-      am.CurrentOptions(h1, double.NaN, 0, 10, c => true)
+      am.CurrentOptions(h1, double.NaN, (0, DateTime.MinValue), 10, c => true)
       .Subscribe(os => Program.HandleMessage(os.Select(o => new { o.option, o.marketPrice.bid, o.marketPrice.ask }).ToArray().ToTextOrTable("Options:")));
 
 
@@ -270,7 +270,7 @@ namespace ConsoleApp {
 
 
     public static void CurrentOptionsTest(AccountManager am, string symbol) {
-      am.CurrentOptions(symbol, double.NaN, 0, 2, c => true)
+      am.CurrentOptions(symbol, double.NaN, (0, DateTime.MinValue), 2, c => true)
       .Subscribe(ss => Program.HandleMessage(ss.Select(a => a.option).Select(c => new { c.ShortString, c.DateWithShort, c.ShortWithDate2 }).ToTextOrTable("Options:")));
     }
   }
