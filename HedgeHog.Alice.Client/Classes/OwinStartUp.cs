@@ -782,8 +782,8 @@ namespace HedgeHog.Alice.Client {
                   .ThenBy(ct => ct.contract.FromDetailsCache().Select(cd => cd.UnderSymbol.IfEmpty(ct.contract.Instrument)).FirstOrDefault())
                   .ThenBy(ct => ct.contract.Legs().Count())
                   .ThenBy(ct => ct.contract.LastTradeDateOrContractMonth2)
-                  .ThenBy(ct => ct.contract.Right)
                   .ThenBy(ct => ct.contract.Strike)
+                  .ThenBy(ct => ct.contract.Right)
                   .ToArray(x => {
                     var hasStrike = x.contract.HasOptions;
                     var delta = (hasStrike ? x.strikeAvg - x.underPrice : x.closePrice.Abs() - x.openPrice.Abs()) * (-x.position.Sign());

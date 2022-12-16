@@ -209,7 +209,8 @@ namespace IBApp {
         string whatToShow = _contract.IsIndex ? "TRADES" : "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         // TODO: reqHistoricalData - keepUpToDate
-        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, _useRTH ? 1 : 0, 1, false, new List<TagValue>());
+        var dt = _endDate.ToUniversalTime().ToTWSString().Replace(" ", "-");// + " US/Eastern";
+        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, dt, Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, _useRTH ? 1 : 0, 1, false, new List<TagValue>());
       } catch(Exception exc) {
         _error(exc);
         CleanUp();

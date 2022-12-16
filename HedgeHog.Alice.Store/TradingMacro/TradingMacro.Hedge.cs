@@ -437,47 +437,51 @@ namespace HedgeHog.Alice.Store {
     }
     bool doAgain;
     void CalcHedgeRatioByPositions_New(int hedgeIndex) {
-      var tmh = TradingMacroHedged(hedgeIndex).SingleOrDefault();
-      if(tmh == null) return;
-      var _hedgePositionMinMax = _hedgePositionMinMax2[hedgeIndex];
-      if(_hedgePositionMinMax[0] == 0){
-        var price1 = CurrentPrice.Average;
-        var price2 = tmh.CurrentPrice.Average;
-        var mul1 = BaseUnitSize;
-        var mul2 = tmh.BaseUnitSize;
-        double cap1 = price1 * mul1;
-        double cap2 = price2 * mul2;
-        var ratio1 = (cap2 / cap1).Max(1);
-        var ratio2 = (cap1 / cap2).Max(1);
-        _hedgePositionMinMax[0] = ratio1;
-        _hedgePositionMinMax[1] = ratio2;
-      }
-      var sw = Stopwatch.StartNew();
+      try {
+        var tmh = TradingMacroHedged(hedgeIndex).SingleOrDefault();
+        if(tmh == null) return;
+        var _hedgePositionMinMax = _hedgePositionMinMax2[hedgeIndex];
+        if(_hedgePositionMinMax[0] == 0) {
+          var price1 = CurrentPrice.Average;
+          var price2 = tmh.CurrentPrice.Average;
+          var mul1 = BaseUnitSize;
+          var mul2 = tmh.BaseUnitSize;
+          double cap1 = price1 * mul1;
+          double cap2 = price2 * mul2;
+          var ratio1 = (cap2 / cap1).Max(1);
+          var ratio2 = (cap1 / cap2).Max(1);
+          _hedgePositionMinMax[0] = ratio1;
+          _hedgePositionMinMax[1] = ratio2;
+        }
+        var sw = Stopwatch.StartNew();
 
-      var hrs = PosRatios(_hedgePositionMinMax[0], _hedgePositionMinMax[1])
-        //.Select(p => pos1 - p)
-        .Select(pos => new { pos1=pos[0], pos2=pos[1] })
-        .AsParallel()
-        .Select(p => CalcHedgeRatioByPositionsCorrelation(p.pos1, p.pos2, hedgeIndex))
-        .ToArray()
-        .OrderByDescending(hr => hr.corr)
-        .ToArray();
-      if(!hrs.Any(t => !t.corr.IsNaN())) return;
-      var minMax = hrs.Take(1).SelectMany(t => new[] { t.pos1, t.pos2 }).ToArray();
-      doAgain = _hedgePositionMinMax2[hedgeIndex].Zip(minMax, (d1, d2) => d1.Percentage(d2)).Any(p => p > 0.1);
-      _hedgePositionMinMax2[hedgeIndex] = minMax;
-      hrs.Take(1).Where(hr => !hr.corr.IsNaNOrZero()).Select(hr => hr.pos2.Div(hr.pos1)).DefaultIfEmpty(double.NaN).ForEach(hr => SetHedgeRatioByPrices(hedgeIndex)(hr));
-      sw.Stop();
-      //Debug.Print($"{nameof(CalcHedgeRatioByPositions)}:{sw.Elapsed.TotalSeconds.AutoRound2(3)}sec");
-      double[][] PosRatios(double ratio1,double ratio2) {
-        var range1 = PosRange(ratio1);
-        var range2 = PosRange(ratio2);
-        return new[] { range1, range2 }.CartesianProduct().Select(a => a.ToArray()).ToArray();
+        var hrs = PosRatios(_hedgePositionMinMax[0], _hedgePositionMinMax[1])
+          //.Select(p => pos1 - p)
+          .Select(pos => new { pos1 = pos[0], pos2 = pos[1] })
+          .AsParallel()
+          .Select(p => CalcHedgeRatioByPositionsCorrelation(p.pos1, p.pos2, hedgeIndex))
+          .ToArray()
+          .OrderByDescending(hr => hr.corr)
+          .ToArray();
+        if(!hrs.Any(t => !t.corr.IsNaN())) return;
+        var minMax = hrs.Take(1).SelectMany(t => new[] { t.pos1, t.pos2 }).ToArray();
+        doAgain = _hedgePositionMinMax2[hedgeIndex].Zip(minMax, (d1, d2) => d1.Percentage(d2)).Any(p => p > 0.1);
+        _hedgePositionMinMax2[hedgeIndex] = minMax;
+        hrs.Take(1).Where(hr => !hr.corr.IsNaNOrZero()).Select(hr => hr.pos2.Div(hr.pos1)).DefaultIfEmpty(double.NaN).ForEach(hr => SetHedgeRatioByPrices(hedgeIndex)(hr));
+        sw.Stop();
+        //Debug.Print($"{nameof(CalcHedgeRatioByPositions)}:{sw.Elapsed.TotalSeconds.AutoRound2(3)}sec");
+        double[][] PosRatios(double ratio1, double ratio2) {
+          var range1 = PosRange(ratio1);
+          var range2 = PosRange(ratio2);
+          return new[] { range1, range2 }.CartesianProduct().Select(a => a.ToArray()).ToArray();
 
-      }
-      double[] PosRange(double ratio) {
-        var step = ratio * 0.05;
-        return ratio == 1 ? new[] { 1.0 } : Range.Double(ratio / 2, ratio * 1.5, step).ToArray();
+        }
+        double[] PosRange(double ratio) {
+          var step = ratio * 0.05;
+          return ratio == 1 ? new[] { 1.0 } : Range.Double(ratio / 2, ratio * 1.5, step).ToArray();
+        }
+      }catch(Exception exc) {
+        Log = exc;
       }
     }
 

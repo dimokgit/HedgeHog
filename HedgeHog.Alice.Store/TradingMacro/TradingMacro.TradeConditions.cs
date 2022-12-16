@@ -1270,10 +1270,11 @@ namespace HedgeHog.Alice.Store {
           (new[] { TradeLevelBy.BoilingerDown, TradeLevelBy.BoilingerUp }).Contains((TradeLevelBy)LevelBuyBy) ||
           TakeProfitFunction == TradingMacroTakeProfitFunction.BBand;
         var anns = tm1s.Select(tm1 => tm1.TrendLines0.Value.YieldNotNull(tl => {
-          var f = tl.FirstOrDefault()?.Trends.PriceAvg1;
-          var s = tl.LastOrDefault()?.Trends.PriceAvg1;
+          var trends = tl.FirstOrDefault()?.Trends;
+          var f =trends?.Rates.FirstOrDefault()?.PriceAvg;//.PriceAvg2;
+          var s = f + trends?.Slope * (trends.Rates.Count - 1);// tl.LastOrDefault()?.Trends.PriceAvg2;
           var ratio = f.HasValue && !f.Value.IsZeroOrNaN() ? s.Value / f.Value : 0.0;
-          var days = tm1.TLLime.TimeSpan.TotalDays.Ceiling();
+          var days = trends.TimeSpan.TotalDays.Ceiling();
           return new { ratio, days };
         })).Concat();
         var annRate = anns.Select(ann => new { r = (Math.Pow(ann.ratio, 365.0 / ann.days) - 1).ToString("p2"), d = ann.days }).SingleOrDefault().ToString();

@@ -93,6 +93,12 @@ namespace ConsoleApp {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
 
+          (from u in "NQZ2".ReqContractDetailsCached()
+           from underPrice in u.Contract.ReqPriceSafe(5)
+           select underPrice
+          ).Subscribe(); return;
+          PositionsTest.ComboTrades(am); return;
+
           LoadMultiple(DateTime.Now.AddMonths(-2), 1440, "SPY"); return;
 
           PositionsTest.Positioner(am, c => c.Position != 0)
@@ -107,7 +113,6 @@ namespace ConsoleApp {
             var ep = am.Positions.EntryPrice(p => p.Compare(_.Contract, _.Position.ToInt())).Select(t => new { t.entryPrice, t.quantity });
             HandleMessage(ep.ToTextOrTable("Entry Prices"));
           }); return;
-          PositionsTest.ComboTrades(am); return;
 
           (from cd in "MESZ2".ReqContractDetailsCached()
            from se in ibClient.ReqStrikesAndExpirations(cd.Contract.LocalSymbol)
