@@ -257,6 +257,9 @@ namespace IBApp {
       [BarSize._10_mins] = new Dictionary<TimeUnit, int[]> {
         [TimeUnit.M] = new[] { 1, 1 }
       },
+      [BarSize._15_mins] = new Dictionary<TimeUnit, int[]> {
+        [TimeUnit.M] = new[] { 1, 1 }
+      },
       [BarSize._1_day] = new Dictionary<TimeUnit, int[]> {
         [TimeUnit.Y] = new[] { 1, 1 }
       }

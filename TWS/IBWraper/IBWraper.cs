@@ -155,8 +155,9 @@ namespace IBApp {
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
       endDate = fxDate(endDate);
       startDate = fxDate(startDate);
-      var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D 
-        : period.Between(3, 15) ? TimeUnit.W
+      var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D
+        : period.Between(3, 5) ? TimeUnit.W
+        : period.Between(10, 15) ? TimeUnit.M
         : period == 1440  ? TimeUnit.Y
         : throw new ArgumentOutOfRangeException($"period[{period}]", $"Is out of range");
       var barSize = period == 0 ? BarSize._1_secs
@@ -164,6 +165,7 @@ namespace IBApp {
         : period == 3 ? BarSize._3_mins
         : period == 5 ? BarSize._5_mins
         : period == 10 ? BarSize._10_mins
+        : period == 15 ? BarSize._15_mins
         : period == 1440 ? BarSize._1_day
         : throw new ArgumentOutOfRangeException($"period[{period}]", $"Is out of range");
       var duration = (endDate - startDate).Duration();
