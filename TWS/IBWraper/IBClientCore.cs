@@ -464,14 +464,19 @@ namespace IBApp {
     }
 
     static ConcurrentDictionary<string, IObservable<(DateTime[] expDate, double[] strike)>> _allStrikesAndExpirations = new ConcurrentDictionary<string, IObservable<(DateTime[] expDate, double[] strike)>>();
+    public static double _strikeLong(double strike) {
+      var l = Math.Log10(strike).Floor() - 1;
+      var p = Math.Pow(10, l);
+      return strike.Floor(p) * p;
+    }
     public IObservable<(DateTime[] expirations, double[] strikes)> ReqStrikesAndExpirations(string underSymbol) {
       lock(_allStrikesAndExpirations) {
         if(_allStrikesAndExpirations.TryGetValue(underSymbol, out var cache)) return cache;
         var increments = new[] { 50.0, 10, 10, 1 };
-        IEnumerable<double> CurrentIncrement(double price) => increments.OrderBy(i => (price * 0.002).Abs(i)).Take(1).Select(i => (price / i).ToInt() * i);
+        //IEnumerable<double> CurrentIncrement(double price) => increments.OrderBy(i => (price * 0.002).Abs(i)).Take(1).Select(i => (price / i).ToInt() * i);
         var newCache = (from under in ReqContractDetailsCached(underSymbol)
                         from price in under.Contract.ReqPriceSafe()
-                        from strike in CurrentIncrement(price.ask.Avg(price.bid))
+                        let strike = _strikeLong(price.ask.Avg(price.bid))
                         let symbol = under.Contract.LocalSymbol
                         from byStrike in ReqOptionChainOldCache(under.Contract.LocalSymbol, DateTime.MinValue
                         , strike, false)
@@ -498,6 +503,7 @@ namespace IBApp {
     }
     public bool IsExpired(DateTime expiration) => !expiration.IsMin() && expiration.InNewYork().Add(new TimeSpan(16, 15, 0)) < ServerTime.InNewYork();
     public IObservable<Contract> ReqOptionChainOldAsync(string symbol, DateTime expirationDate, double strike, bool waitForAllStrikes) {
+      //TraceDebug(new { ReqOptionChainOldAsync = new { symbol, expirationDate, strike, waitForAllStrikes } });
       Passager.ThrowIf(() => expirationDate.IsMin() && strike == 0, new { expirationDate, strike } + "");
       var fopDate = expirationDate;
       //Trace(new { fopDate = fopDate.ToShortDateString(), symbol, strike });
