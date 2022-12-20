@@ -855,24 +855,6 @@ namespace HedgeHog.Alice.Client {
             void CurrentHedges() {
               var hedgePar = ReadHedgedOther(pair);
               if(hedgePar.IsNullOrEmpty()) return;
-              IObservable<CurrentHedge> ByTM() =>
-             from ch in CurrentHedgesImpl(pair, am, hedgeQuantity)
-               //let h = new { co, ratio = hh.Select(t => t.ratio).First(r => r != 1).AutoRound2(3), context = HID_BYTV/*hh.ToArray(t => t.context).MashDiffs()*/ }
-             from price in ch.contract.ReqPriceSafe()
-             from priceOpt in ch.optionsBuy.ReqPriceSafe()
-             from cts in am.ComboTrades(1).Where(ct => selectedHedge == TradingMacro.HedgeCalcTypes.ByTV && ct.contract.IsHedgeCombo).ToArray()
-             from order in am.OrderContractsInternal.Items.Take(1).Select(oh => (oh.contract, quantity: oh.order.TotalQuantity.ToInt(), context: "Open Order")).DefaultIfEmpty()
-             let ch0 = new CurrentHedge(TradingMacro.HedgeCalcTypes.ByTV + "", ch.contract.ShortString, ch.quantity, ch.ratio, ch.context, price.ask.Avg(price.bid).AutoRound2(2), ch.contract.Key)
-              .SideEffect(_ => cts.Select(ct => (ct.contract, quantity: ct.position, context: "Open Trade"))
-              .IfEmpty(() => order.YieldIf(o => o.contract != null))
-              .Take(1)
-              .DefaultIfEmpty((ch.contract, ch.quantity, context: TradingMacro.HedgeCalcTypes.ByHV + ""))
-              .Where(__ => selectedHedge == TradingMacro.HedgeCalcTypes.ByTV)
-              .ForEach(t => GetTradingMacros(pair, tml => tml.SetCurrentHedgePosition(t.contract, t.quantity.Abs(), t.context))))
-             //let chb = new CurrentHedge("ByTVOB", ch.optionsBuy.ShortSmart, ch.quantity, ch.ratio, "ByTVOB", 0, ch.optionsBuy.Key)
-             //let chs = new CurrentHedge("ByTVOS", ch.optionsSell.ShortSmart, ch.quantity, ch.ratio, "ByTVOS", 0, ch.optionsSell.Key)
-             from ch01 in new[] { ch0/*, chb, chs*/ }
-             select ch01;
               GetCurrentHedgeTMs()
                .ToArray()
                .FirstAsync()
@@ -886,15 +868,8 @@ namespace HedgeHog.Alice.Client {
           .Subscribe(ch => base.Clients.Caller.hedgeCombo(ch.OrderBy(h => h.id)));
 
         bool CompHID(TradingMacro tml, string hid) => false;// selectedHedge.Contains(hid);
-        IObservable<CurrentHedge> GetCurrentHedgeTMs() => GetTradingMacros(pair,
-          tml => /*CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByHV(), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByHV))
-          .Merge(*/
-            CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(0), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByPos), hedgeQuantity)
-          /*)*/
-          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositions(1), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByPoss), hedgeQuantity))
-          //.Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositionsGross(0), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByGross)))
-          //.Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByPositionsGross(1), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByGrosss)))
-          .Merge(CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByTradingRatio(0), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByTR), hedgeQuantity))
+        IObservable<CurrentHedge> GetCurrentHedgeTMs() => GetTradingMacros(pair
+          , tml => CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByTradingRatio(0), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByTR), hedgeQuantity)
           ).Merge();
 
         var tm1 = tm.TradingMacroM1().DefaultIfEmpty(tm).ToArray();
