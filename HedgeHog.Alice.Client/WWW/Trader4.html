@@ -1383,8 +1383,11 @@
         <td style="vertical-align: top; padding-left: 10px;">
           <div>
             <table>
-              <tr><td>REL</td><td><input type="checkbox" data-bind="checked: hedgeREL" /></td></tr>
-              <tr><td><input data-bind="value: hedgeQuantity,hasFocus: hedgeQuantityInEdit" style="width:2em" /></td></tr>
+              <tr>
+                <td><input data-bind="value: hedgeQuantity,hasFocus: hedgeQuantityInEdit" style="width:2em" /></td>
+                <td>REL</td>
+                <td><input type="checkbox" data-bind="checked: hedgeREL" /></td>
+              </tr>
             </table>
           </div>
         </td>
