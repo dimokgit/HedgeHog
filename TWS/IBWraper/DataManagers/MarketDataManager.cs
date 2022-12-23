@@ -104,12 +104,16 @@ namespace IBApp {
             IbClient.WatchReqError(1.FromSeconds()
               , reqId
               , t => {
-                Trace($"{title}:{contract}: {t}");
+                TraceError($"{title}:{contract} will be removed: {t}");
                 activeRequests.TryRemove(t.id, out var c);
               }
               , () => {
-                AddCurrentPrice(activeRequests[reqId].price);
-                TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done.");
+                if(!activeRequests.ContainsKey(reqId))
+                  TraceError($"{title} => request:{reqId} wes removed. See previous error");
+                else {
+                  AddCurrentPrice(activeRequests[reqId].price);
+                  TraceIf(DoShowRequestErrorDone, $"AddRequest: {contract} => {reqId} Error done.");
+                }
               });
 
             IbClient.OnReqMktData(() => IbClient.ClientSocket.reqMktData(reqId, contract.IsHedgeCombo ? contract : contract.ContractFactory(), genericTickList, false, false, new List<TagValue>()));
@@ -373,7 +377,7 @@ ETFNavLow = 99,
           break;
         case (int)TickType.OptionImpliedVolatility:
           price2.OptionImpliedVolatility = price;
-          OnTickPriceTrace(new { field, price } + "", $"{nameof(OnTickPrice)}[{requestId}]: {ar.contract}:{new { field, price }}");
+          TraceDebug($"{nameof(OnTickPrice)}[{requestId}]: {ar.contract}:{new { field, price }}");
           break;
       }
     }

@@ -464,7 +464,7 @@ namespace IBApp {
     }
 
     static ConcurrentDictionary<string, IObservable<(DateTime[] expDate, double[] strike)>> _allStrikesAndExpirations = new ConcurrentDictionary<string, IObservable<(DateTime[] expDate, double[] strike)>>();
-    public static double _strikeLong(double strike) {
+    static double _strikeLong(double strike) {
       var l = Math.Log10(strike).Floor() - 1;
       var p = Math.Pow(10, l);
       return strike.Floor(p) * p;
@@ -536,6 +536,7 @@ namespace IBApp {
          let tws = !fd.IsMin() ? exp.ToTWSDateString() : ""
          let c = MakeContract(under, tws)
          from cd in ReqContractDetailsAsync(c)
+         where cd.Contract.SecType != "EVENT"
          select cd)
          .ToArray()
          .Do(__ => {
