@@ -1060,10 +1060,6 @@ namespace HedgeHog.Alice.Store {
       ? (_priceChangedAsyncBuffer = new PriceChangedAsyncBuffer(this).SideEffect(_strams.Add)) : _priceChangedAsyncBuffer;
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager, IEnumerable<TradingMacro> tradingMacros) {
       _tradingMacros = tradingMacros;
-      if(TradingMacroTrader(Pair).Count() > 1) {
-        Log = new Exception("More then one Trader Macros is not allowed");
-        if(_IsTrader) IsTrader = false;
-      }
       SyncHedgedPair();
       Action<Expression<Func<TradingMacro, bool>>> check = g => TradingMacrosByPair()
         .Scan(0, (t, tm) => t + (g.Compile()(tm) ? 1 : 0))
@@ -3657,32 +3653,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     #endregion
 
     #region IsTrader
-    private bool _IsTrader;
-    [Category(categoryTrading)]
-    [WwwSetting]
-    public bool IsTrader {
-      get {
-        var tmc = TradingMacrosByPair().Count();
-        if(!_IsTrader && tmc == 1 && BarPeriod < BarsPeriodType.m1) _IsTrader = true;
-        return TradingMacrosByPair().Count() == 1 || _IsTrader;
-      }
-      set {
-        if(_IsTrader != value) {
-          _IsTrader = value;
-          var tmo = TradingMacroOther();
-          if(!value)
-            tmo
-              .Where(tm => tm.IsTrader)
-              .IfEmpty(() => tmo)
-              .Take(1)
-              .ForEach(tm => tm.IsTrader = true);
-          else
-            tmo.ForEach(tm => tm.IsTrader = false);
-        }
-        OnPropertyChanged(nameof(IsTrader));
-      }
-    }
-
+    public bool IsTrader => BarPeriod == BarsPeriodType.t1 || TradingMacrosByPair().Count() == 1;
     #endregion
 
     #region IsTrender
