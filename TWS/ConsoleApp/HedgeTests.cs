@@ -71,8 +71,19 @@ namespace ConsoleApp {
         HandleMessage(new { c.contract, c.position, c.openPrice, c.closePrice, c.price.bid, c.price.ask }.ToTextTable("Hedge Combo"), false);
       });
     }
-
-    public static void HedgeComboPrimary(AccountManager am, string localSymbol1, string localSymbol2) {
+    public static void HedgeComboRatio(AccountManager am, string localSymbol1, string localSymbol2) {
+      var parentContract = localSymbol1.ContractFactory();
+      var hedgeContract = localSymbol2.ContractFactory();
+      (from pc in parentContract.ReqContractDetailsCached().Select(cd => cd.Contract)
+       from hc in hedgeContract.ReqContractDetailsCached().Select(cd => cd.Contract)
+       from pPrice in pc.ReqPriceSafe()
+       from hPrice in hc.ReqPriceSafe()
+       let pMul = pc.ComboMultiplier
+       let hMul = hc.ComboMultiplier
+       select new { pPrice = pPrice.avg, hPrice = hPrice.avg, pMul, hMul,capRatio = pPrice.avg*pMul/hPrice.avg/hMul }
+       ).Subscribe(x => HandleMessage(x));
+    }
+      public static void HedgeComboPrimary(AccountManager am, string localSymbol1, string localSymbol2) {
       var parentContract = localSymbol1.ContractFactory();
       var hedgeContract = localSymbol2.ContractFactory();
       var quantityParent = 10;

@@ -868,8 +868,8 @@ namespace HedgeHog.Alice.Client {
           .Subscribe(ch => base.Clients.Caller.hedgeCombo(ch.OrderBy(h => h.id)));
 
         bool CompHID(TradingMacro tml, string hid) => false;// selectedHedge.Contains(hid);
-        IObservable<CurrentHedge> GetCurrentHedgeTMs() => GetTradingMacros(pair
-          , tml => CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByTradingRatio(0), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByTR), hedgeQuantity)
+        IObservable<CurrentHedge> GetCurrentHedgeTMs() => UseTraderMacro(pair).Select(
+           tml => CurrentHedgesTM1(tml, tmh => tmh.CurrentHedgesByTradingRatio(0), HedgeCalcTypeContext(tml, TradingMacro.HedgeCalcTypes.ByTR), hedgeQuantity)
           ).Merge();
 
         var tm1 = tm.TradingMacroM1().DefaultIfEmpty(tm).ToArray();

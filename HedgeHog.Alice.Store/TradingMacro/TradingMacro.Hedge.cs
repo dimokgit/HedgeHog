@@ -450,14 +450,14 @@ namespace HedgeHog.Alice.Store {
         var hvh = tmh.TradingMacroM1(tmh1 => tmh1.HistoricalVolatilityAnnualized3());
         var hvr = hv.Zip(hvh, (a, b) => a.IfNotSetOrZero(double.NaN) / b.IfNotSetOrZero(double.NaN)).SingleOrDefault();
         var hvr2 = CurrentPrice?.OptionImpliedVolatility / tmh.CurrentPrice?.OptionImpliedVolatility;
-        if(hvr.IsNotSetOrZero()) return 0;
+        if(hvr2.GetValueOrDefault().IsNotSetOrZero() && hvr.IsNotSetOrZero()) return 0;
         var price1 = CurrentPrice.Average;
         var price2 = tmh.CurrentPrice.Average;
         var mul1 = BaseUnitSize;
         var mul2 = tmh.BaseUnitSize;
         double cap1 = price1 * mul1;
         double cap2 = price2 * mul2;
-        return cap1 / cap2 * hvr2.GetValueOrDefault(hvr);
+        return cap1 / cap2 * hvr2.GetValueOrDefault().IfNotSetOrZero(hvr);
       } catch(Exception exc) {
         Log = exc;
         return 0;
