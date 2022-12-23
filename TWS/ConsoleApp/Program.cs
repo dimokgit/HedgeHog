@@ -93,13 +93,23 @@ namespace ConsoleApp {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
 
-          (from u in "NQZ2".ReqContractDetailsCached()
-           from underPrice in u.Contract.ReqPriceSafe(5)
-           select underPrice
-          ).Subscribe(); return;
-          PositionsTest.ComboTrades(am); return;
+          CurrentOptionsTest.CurrentOptions(am,"ESH3"); return;
 
-          LoadMultiple(DateTime.Now.AddMonths(-2), 1440, "SPY"); return;
+          (from cd in "YM   MAR 23".ReqContractDetailsCached()
+           from se in ibClient.ReqStrikesAndExpirations(cd.Contract.LocalSymbol)
+           from ex in se.expirations
+           select new { text = ex.ToString("dd/MM"), value = ex.ToShortDateString() }
+           ).ToArray()
+           .Subscribe(dts => {
+             HandleMessage("\n" + dts.ToTextOrTable());
+           });
+          return;
+
+          Tests.HedgeComboRatio(am, "ESH3", "NQH3");return;
+
+          LoadMultiple(DateTime.Now.AddMonths(-2), 15, "SPY"); return;
+
+          PositionsTest.ComboTrades(am); return;
 
           PositionsTest.Positioner(am, c => c.Position != 0)
           .DistinctUntilChanged(_ => am.Positions.Count)
@@ -113,16 +123,6 @@ namespace ConsoleApp {
             var ep = am.Positions.EntryPrice(p => p.Compare(_.Contract, _.Position.ToInt())).Select(t => new { t.entryPrice, t.quantity });
             HandleMessage(ep.ToTextOrTable("Entry Prices"));
           }); return;
-
-          (from cd in "MESZ2".ReqContractDetailsCached()
-           from se in ibClient.ReqStrikesAndExpirations(cd.Contract.LocalSymbol)
-           from ex in se.expirations
-           select new { text = ex.ToString("dd/MM"), value = ex.ToShortDateString() }
-           ).ToArray()
-           .Subscribe(dts => {
-             HandleMessage("\n" + dts.ToTextOrTable());
-           });
-          return;
 
 
           (from c in "10Y  OCT 22".ReqContractDetailsCached().Select(cd => cd.Contract)
@@ -186,7 +186,6 @@ namespace ConsoleApp {
           TestCombosTrades(10).Take(1).Subscribe(); return;
           Tests.HedgeComboPrimary(am, "MESM1", "MBTM1"); return;
 
-          CurrentOptionsTest.CurrentOptions(am); return;
           Tests.MakeHedgeCombo(am); return;
           //new Contract { Symbol = "VIX", SecType = "FUT+CONTFUT", Exchange = "CFE" }.ReqContractDetailsCached()
           new Contract { Symbol = "ZN", SecType = "FUT+CONTFUT", Exchange = "ECBOT" }.ReqContractDetailsCached()

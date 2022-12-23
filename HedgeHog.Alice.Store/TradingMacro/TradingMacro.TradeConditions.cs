@@ -1264,25 +1264,26 @@ namespace HedgeHog.Alice.Store {
       Func<Func<TradingMacro, TL>, IEnumerable<TL>> trenderLine = tl => TradingMacroTrender().Select(tl);
       return TradingMacroTrender(tm => {
         var tm1s = TradingMacroM1();
+        var tmh = TradingMacroHedged(0).SingleOrDefault();
         var tlText = ToFunc((TL tl) => new { l = "Ang" + tl.Color, t = $"{tl.Angle.Abs().Round()},{tl.TimeSpan.ToString("h\\:mm")}" });
         var angles = tm.TrendLinesTrendsAll.Select(tlText).ToArray();
         var showBBSD = (new[] { VoltageFunction, VoltageFunction2 }).Contains((VoltageFunction)VoltageFunction.BBSD) ||
           (new[] { TradeLevelBy.BoilingerDown, TradeLevelBy.BoilingerUp }).Contains((TradeLevelBy)LevelBuyBy) ||
           TakeProfitFunction == TradingMacroTakeProfitFunction.BBand;
-        var anns = tm1s.Select(tm1 => tm1.TrendLines0.Value.YieldNotNull(tl => {
-          var trends = tl.FirstOrDefault()?.Trends;
+        var anns = tm1s.Select(tm1 => {
+          var trends = tm1.TLLime;
           var f =trends?.Rates.FirstOrDefault()?.PriceAvg;//.PriceAvg2;
           var s = f + trends?.Slope * (trends.Rates.Count - 1);// tl.LastOrDefault()?.Trends.PriceAvg2;
           var ratio = f.HasValue && !f.Value.IsZeroOrNaN() ? s.Value / f.Value : 0.0;
           var days = trends.TimeSpan.TotalDays.Ceiling();
-          return new { ratio, days };
-        })).Concat();
-        var annRate = anns.Select(ann => new { r = (Math.Pow(ann.ratio, 365.0 / ann.days) - 1).ToString("p2"), d = ann.days }).SingleOrDefault().ToString();
+          return new { ratio, days,trends.PriceAvg2,trends.PriceAvg3 };
+        });
+        var annRate = anns.Select(ann => new { r = (Math.Pow(ann.ratio, 365.0 / ann.days) - 1).ToString("p2"), d = ann.days }).SingleOrDefault()?.ToString();
         return (new {
           StDevHP = $"{tm.StDevByHeightInPips.AutoRound2((int)2)}/{tm.StDevByPriceAvgInPips.AutoRound2((int)2)}:{(StdOverCurrPriceRatio()).Round((int)1)}%",
           //StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
           //BolngrAvg= InPips(_boilingerAvg,1),
-          ProfitPip = CalculateTakeProfitInPips().Round((int)1),
+          //ProfitPip = CalculateTakeProfitInPips().Round((int)1),
           //RiskRewrd = RiskRewardRatio().ToPercent() + "%/" + InPips((double?)RiskRewardDenominator).AutoRound2((int)2),
           //TlTmeMnMx = string.Join(",", TLsTimeRatio(tm, true).Concat(TLsTimeRatio(tm, false)).Select(tr => tr.ToString("n0") + "%")),
           //GreenEdge = tm.TrendLinesGreenTrends.EdgeDiff.SingleOrDefault().Round(1),
@@ -1291,14 +1292,15 @@ namespace HedgeHog.Alice.Store {
           //Blue_Edge = tm.TrendLinesBlueTrends.EdgeDiff.SingleOrDefault().Round(1)
           //BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
           //WvDistRsd = _waveDistRsd.Round(2)
-          AnnRate = annRate
+          AnnRate = annRate,
+          PriceAvg = anns.Select(ann=> $"{ann.PriceAvg2.AutoRound2(5)}/{ann.PriceAvg3.AutoRound2(5)}").FirstOrDefault()
         })
         .ToExpando()
         .Add((object)(showBBSD ? (object)new { BoilBand = this._boilingerStDev.Value.Select<global::System.Tuple<double, double>, string>(t => string.Format("{0:n2}:{1:n2}", this.InPips(t.Item1), this.InPips(t.Item2))) } : new { }))
         //.Add(angles.ToDictionary(x => x.l, x => (object)x.t))
         //.Add(new { BarsCount = RatesLengthBy == RatesLengthFunction.DistanceMinSmth ? BarCountSmoothed : RatesArray.Count })
-        .Add(TradeConditionsHave(nameof(TLTipOk), nameof(BSTipOk), nameof(BSTipROk), nameof(Store.TradingMacro.PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round((int)3) } : new { })
-        .Add(TradeConditionsHave(nameof(VAOk)) ? (object)new { DistVolts = _distVolt + "%" } : new { })
+        //.Add(TradeConditionsHave(nameof(TLTipOk), nameof(BSTipOk), nameof(BSTipROk), nameof(Store.TradingMacro.PriceTipOk)) ? (object)new { Tip_Ratio = _tipRatioCurrent.Round((int)3) } : new { })
+        //.Add(TradeConditionsHave(nameof(VAOk)) ? (object)new { DistVolts = _distVolt + "%" } : new { })
         //.Add((object)(new { MacdDist = tm.MacdDistances(RatesArray).TakeLast(1).Select(d => d.AutoRound2(3)).SingleOrDefault() }))
         //.Add((object)(new { HistVol = $"{HV(this)}" }))
         //.Add((object)(new { HistVolM = $"{HV(TradingMacroM1().Single())}" }))
@@ -1308,12 +1310,12 @@ namespace HedgeHog.Alice.Store {
         //  => (object)new { HistVolAn = $"{hv.AutoRound2(3)}/{hvm.AutoRound2(3)}:{(hvm / hv).AutoRound2(3)}" }).DefaultIfEmpty(new { }).Single())
         //.Add(new { StrdlHV = new[] { _currentCallByHV, _currentPutByHV }.Select(c => c.Round(2)).Flatter("/") })
         //.Add(new { HVPtP = HVPt(this).Concat(HVP(this)).Select(c => c.AutoRound(3)).Flatter("/") })
-        .Add(new { CHP2 = $"{CurrentHedgePosition2}{TradingMacroM1(tm1 => "/" + tm1.CurrentHedgePosition2).SingleOrDefault()}" })
+        .Add(new { CHP2 = $"{CurrentHedgePosition1}:{CurrentPrice?.OptionImpliedVolatility.Round(3)}/{CurrentHedgePosition2}:{tmh?.CurrentPrice.OptionImpliedVolatility.Round(3)}" })
         //.Add(new { HgSlope = $"{VoltsReg(this, 1)}/{VoltsReg(this, 0)}" })
         //.Add(new { HgSlope2 = tm1s.Select(tm1 => $"{VoltsReg(tm1, 1)}/{VoltsReg(tm1, 0)}").SingleOrDefault() })
         //.Add(new { ExitGrsPrc = $"{ExitGrossByHedgePositions.SideEffect(_ => OnSetExitGrossByHedgeGrossess()):c0}/{ExitPriceByHedgePrices:c0}" })
         //.Add(new { VltCma = $"{VltCma2Ok()}/{GetVoltCmaWaveAvg().With(t => (t.avg.Mult(100).AutoRound2(2), t.avgCount, t.last.Mult(100).AutoRound2(2), t.lastCount))}" })
-        .Add(new { BlSch = $"{StraddleRangeM1().Height.AutoRound2(3)}/{tm1s.Select(tm1 => new[] { tm1.HistoricalVolatilityAnnualized(true) }.Select(v => v.AutoRound2(3)).Flatter("/")).FirstOrDefault()}" })
+        .Add(new { BlSch = $"{StraddleRangeM1().Height.AutoRound2(3)}/{tm1s.Select(tm1 => new[] { tm1.HistoricalVolatilityAnnualized(false) }.Select(v => v.AutoRound2(3)).Flatter("/")).FirstOrDefault()}" })
         .Add(new { HVAs = $"{tm1s.Select(tm1 => new[] { tm1.HistoricalVolatilityAnnualized2(), tm1.HistoricalVolatilityAnnualized3() }.Select(v => v.AutoRound2(3)).Flatter("/")).FirstOrDefault()}" })
         ;
       }
@@ -1766,9 +1768,6 @@ namespace HedgeHog.Alice.Store {
     }
     public IEnumerable<TradingMacro> TradingMacrosByPair() {
       return _tradingMacros.Where(tm => tm.Pair == Pair).OrderBy(tm => PairIndex);
-    }
-    public IEnumerable<TradingMacro> TradingMacrosByPair(bool withHedge) {
-      return _tradingMacros.Where(tm => tm.Pair == Pair || PairHedges.Contains(tm.Pair)).OrderBy(tm => PairIndex);
     }
     public IEnumerable<TradingMacro> TradingMacrosByPair(string pair) {
       return _tradingMacros.Where(tm => tm.Pair.ToLower() == pair.ToLower()).OrderBy(tm => PairIndex);

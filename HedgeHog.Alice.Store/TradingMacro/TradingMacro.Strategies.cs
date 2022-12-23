@@ -26,7 +26,7 @@ namespace HedgeHog.Alice.Store {
     static TimeSpan _afterHourTime = 17.0.FromHours();
     public BlackScholesRange StraddleRangeM1() {
       var tm1 = TradingMacroM1().SingleOrDefault();
-      return tm1 != null ? tm1.StraddleRange(RateLast?.StartDate.Round() ?? DateTime.Today) : throw new Exception("No TradingMacroM1 found.");
+      return tm1 != null ? tm1.StraddleRange(RateLast?.StartDate.Round() ?? DateTime.Today) : default;
     }
     Func<DateTime, BlackScholesRange> _StraddleRangeMemoize;
     Func<DateTime, BlackScholesRange> StraddleRange => _StraddleRangeMemoize
@@ -297,7 +297,6 @@ namespace HedgeHog.Alice.Store {
       CanDoEntryOrders = false;
       CanDoNetLimitOrders = false;
       IsTakeBack = false;
-      IsTrader = BarPeriod == BarsPeriodType.t1;
       IsTrender = true;
       LimitProfitByRatesHeight = false;
       ForceOpenTrade = false;
