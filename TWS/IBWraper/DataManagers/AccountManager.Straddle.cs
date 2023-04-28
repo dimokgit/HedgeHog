@@ -283,6 +283,10 @@ namespace IBApp {
     static IScheduler esCurrOptions = new EventLoopScheduler(ts => new Thread(ts) { IsBackground = true, Name = "CurrOptions" });
     static IObservable<CURRENT_OPTIONS> _CurrentOptionsGate = Observable.Empty<CURRENT_OPTIONS>();
     object _currOptLock = new object();
+    public static double StrikeLevel(double currentPrice, double strikeLevel) =>
+      strikeLevel.IsNotSetOrZero() ? currentPrice
+      : !strikeLevel.Between(-1, 1) ? strikeLevel
+      : currentPrice * (1 + strikeLevel);
     public IObservable<CURRENT_OPTIONS> CurrentOptions(string symbol, double strikeLevel, (int expirationDaysSkip, DateTime expirationDate) exp, int count, Func<Contract, bool> filter, [CallerMemberName] string Caller = "") {
       lock(_currOptLock) {
         TraceDebug0($"{nameof(CurrentOptions)} from {Caller}");
@@ -291,7 +295,7 @@ namespace IBApp {
           from cd in IbClient.ReqContractDetailsCached(symbol)
           where count > 0
           from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
-          from options in MakeOptions(symbol, strikeLevel.IfNaNOrZero(price), exp, count, filter).ToArray()
+          from options in MakeOptions(symbol, StrikeLevel(price, strikeLevel), exp, count, filter).ToArray()
           from option in options.Skip((options.Length - 12).Max(0)).ToObservable()//.RateLimit(10, TaskPoolScheduler.Default)
           from p in option.ReqPriceSafe(10, Common.CallerChain("Current Option")).DefaultIfEmpty()
           let pa = p.ask.Avg(p.bid)

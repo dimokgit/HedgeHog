@@ -92,7 +92,7 @@ namespace IBApp {
       contract.LocalSymbol = localSymbol;
       contract.IncludeExpired = true;
       ;
-      if(symbol == "MBT") {
+      if(symbol == "_MBT_") {
         contract.Exchange = "CMECRYPTO";
         contract.Symbol = "BRR";
       }

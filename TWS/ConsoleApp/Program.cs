@@ -72,7 +72,7 @@ namespace ConsoleApp {
       const int twsPort = 7496;
       const int clientId = 11;
       ReactiveUI.MessageBus.Current.Listen<LogMessage>().Subscribe(lm => HandleMessage(lm.ToJson()));
-      var account = "";// ",U4273389";
+      var account = ",U4273389";
       bool Connect() => ibClient.LogOn("127.0.0.1" + account, twsPort + "", clientId + "", false);
       #endregion
       StartTests();
@@ -93,7 +93,12 @@ namespace ConsoleApp {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
 
-          CurrentOptionsTest.CurrentOptions(am,"ESH3"); return;
+          Tests.HedgeCombo(am, "MESM3", "MBTK3", 2, 2, 1); return;
+
+          Tests.GetHedgePairInfo("SPY", "IWM").Subscribe(cd => HandleMessage(cd)); return;
+          CurrentOptionsTest.CurrentOptions(am, "MBTK3",0.003); return;
+
+          new[] { 0.001, -.001,double.NaN,0,double.MinValue }.ForEach(sl =>HandleMessage(new { price = 3845, sl, sl2 = AccountManager.StrikeLevel(3845, sl) })); return;
 
           (from cd in "YM   MAR 23".ReqContractDetailsCached()
            from se in ibClient.ReqStrikesAndExpirations(cd.Contract.LocalSymbol)
@@ -105,7 +110,7 @@ namespace ConsoleApp {
            });
           return;
 
-          Tests.HedgeComboRatio(am, "ESH3", "NQH3");return;
+          Tests.HedgeComboRatio(am, "ESH3", "NQH3"); return;
 
           LoadMultiple(DateTime.Now.AddMonths(-2), 15, "SPY"); return;
 
@@ -118,7 +123,7 @@ namespace ConsoleApp {
           .ToArray()
           .Subscribe(pms => {
             var _ = pms.First(pm => pm.Contract.IsFuture);
-            var pos = am.Positions.Where(p => p.Compare(_.Contract, _.Position.ToInt())).Select(t => new { t.contract,t.EntryPrice, t.position }).ToList();
+            var pos = am.Positions.Where(p => p.Compare(_.Contract, _.Position.ToInt())).Select(t => new { t.contract, t.EntryPrice, t.position }).ToList();
             HandleMessage(pos.ToTextOrTable("Positions"));
             var ep = am.Positions.EntryPrice(p => p.Compare(_.Contract, _.Position.ToInt())).Select(t => new { t.entryPrice, t.quantity });
             HandleMessage(ep.ToTextOrTable("Entry Prices"));
@@ -135,8 +140,6 @@ namespace ConsoleApp {
           .Subscribe(hp => HandleMessage(hp));
           //.Subscribe(hp=>Tests.HedgeCombo(am,hp.pos1,hp.pos2,hp.ratio,10,1));
           return;
-          Tests.HedgeCombo(am, "SPY", "IWM", 2, 100, 1); return;
-          Tests.GetHedgePairInfo("SPY", "IWM").Subscribe(cd => HandleMessage(cd)); return;
           CurrentOptionsTest.CustomStraddle(am, comboSymbols); return;
           PositionsTest.Positioner(am, c => c.Position != 0)//comboSymbols.Contains(c.Contract.LocalSymbol))
                                                             //PositionsTest.Positioner(am, c => c.Contract.IsOption)

@@ -103,10 +103,10 @@ namespace ConsoleApp {
          });
     }
     public static void HedgeCombo2(AccountManager am) {
-      var parentContract = "NQM2".ContractFactory();
-      var hedgeContract = "QQQ".ContractFactory();
+      var parentContract = "MESM3".ContractFactory();
+      var hedgeContract = "MBTK3".ContractFactory();
       var quantityParent = 1;
-      var quantityHedge = -3;
+      var quantityHedge = -2;
       var isTest = true;
       (from hc in AccountManager.MakeHedgeComboSafe(1, parentContract, hedgeContract, quantityParent, quantityHedge, false)
        from cd in hc.contract.ReqContractDetailsCached()

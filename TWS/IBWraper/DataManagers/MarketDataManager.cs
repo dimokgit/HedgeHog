@@ -377,7 +377,7 @@ ETFNavLow = 99,
           break;
         case (int)TickType.OptionImpliedVolatility:
           price2.OptionImpliedVolatility = price;
-          TraceDebug($"{nameof(OnTickPrice)}[{requestId}]: {ar.contract}:{new { field, price }}");
+          //TraceDebug($"{nameof(OnTickPrice)}[{requestId}]: {ar.contract}:{new { field, price }}");
           break;
       }
     }

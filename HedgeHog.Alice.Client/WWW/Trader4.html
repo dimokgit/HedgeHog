@@ -1316,6 +1316,25 @@
           <option value="10">18</option>
         </select>
         <label>Cmbs#:</label><select data-bind="value:numOfCombos" size="1">
+
+  <option value="-27">-27</option>
+  <option value="-26">-26</option>
+  <option value="-25">-25</option>
+  <option value="-24">-24</option>
+  <option value="-23">-23</option>
+  <option value="-22">-22</option>
+  <option value="-21">-21</option>
+  <option value="-20">-20</option>
+  <option value="-19">-19</option>
+  <option value="-18">-18</option>
+  <option value="-17">-17</option>
+  <option value="-16">-16</option>
+  <option value="-15">-15</option>
+  <option value="-14">-14</option>
+  <option value="-13">-13</option>
+  <option value="-12">-12</option>
+  <option value="-11">-11</option>
+  <option value="-10">-10</option>
   <option value="-9">-9</option>
   <option value="-8">-8</option>
   <option value="-7">-7</option>
@@ -1371,14 +1390,7 @@
         <label data-bind="text:d3.format('.1%')(distanceFromHigh())"></label>
 
         <select data-bind="options:strategyType,optionsText:'text',optionsValue:'text',value:strategyCurrent,optionsCaption:'...'"></select>
-        <button class="small" data-bind="click:openEdge,enable:canTrade,text:'Edge'+showOptionType(),visible:canOpenEdge()"></button>
-        <select data-bind="value:edgeType">
-          <option value="N">N</option>
-          <option value="T">T</option>
-          <option value="S">S</option>
-        </select>
         <button class="small" data-bind="click:openPairWithQuantity,enable:canTrade">Buy</button>
-        <select data-bind="options:rollOversList,optionsText:'l',optionsValue:'combo',value:rollCombo,optionsCaption: '...'"></select>
       </div>
     </div>
     <table data-bind="visible:doShowHedgeUI">

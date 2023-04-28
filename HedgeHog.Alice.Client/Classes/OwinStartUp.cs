@@ -544,7 +544,7 @@ namespace HedgeHog.Alice.Client {
         const string HID_BYHV = "ByHV";
         const string HID_BYPOS = "ByPos";
         var useNaked = numOfCombos >= 0;
-        numOfCombos = numOfCombos.Abs();
+        //numOfCombos = numOfCombos.Abs();
         var contextDict = (IDictionary<string, object>)context;
         var selectedHedge = tm.HedgeCalcType;// (string)(contextDict["selectedHedge"] ?? "");
         int.TryParse(Convert.ToString(contextDict["hedgeQuantity"] ?? "1"), out var hedgeQuantity);
@@ -621,28 +621,34 @@ namespace HedgeHog.Alice.Client {
                         underPL = 0,
                         greekDelta = mp.delta,
                         mp.theta,
-                        breakEven
+                        breakEven,
+                        strikeDiff = t.combo.options.Select(o=>o.Strike).Pairwise().Select(a=>a.Item1.Abs(a.Item2)).SingleOrDefault()
                       };
                     });
-                    return cs.Distinct(x => x.i).OrderByDescending(s => s.strikeDelta).ToArray();
+                    return cs.Distinct(x => x.i)
+                    .OrderByDescending(s => s.strikeDiff)
+                    .ThenByDescending(s => s.strikeDelta)
+                    .ToArray();
                     cs = strikeLevel.HasValue && true
                     ? cs.OrderByDescending(x => x.strikeDelta)
                     : cs.OrderByDescending(x => x.delta);
-                    return cs.Take(numOfCombos).OrderByDescending(x => x.strike).ToArray();
+                    return cs.Take(numOfCombos.Abs()).OrderByDescending(x => x.strike).ToArray();
                   })
                   .Subscribe(b => base.Clients.Caller.butterflies(b));
                 });
-            var sl = strikeLevel.GetValueOrDefault(double.NaN);
 
             Action<string> currentOptions = (map) => {
 
               unders.ForEach(under => {
                 var underContract = under.Contract;
                 var underPrice = under.price.avg;
+                //var sl = strikeLevel.GetValueOrDefault(StrikeLevel(underPrice, -numOfCombos / 1000.0));
+                var sl = StrikeLevel(underPrice, -numOfCombos / 1000.0);
                 var noc = new[] { "C", "P" }.Contains(map) ? numOfCombos : 0;
-                var maxAbs = underPrice * numOfCombos / 1000;
-                Func<Contract, bool> filter = c => map.Contains(c.Right) && c.Strike.Abs(underPrice) <= maxAbs;
-                am.CurrentOptions(CacheKey(underContract), sl, expirationDaysSkip, 100, filter)
+                //var numBase = Math.Log10(underPrice).Ceiling();
+                //var maxAbs = underPrice * numOfCombos / Math.Pow(numBase,numBase);
+                Func<Contract, bool> filter = c => map.Contains(c.Right);// && c.Strike.Abs(underPrice) <= maxAbs;
+                am.CurrentOptions(CacheKey(underContract), sl, expirationDaysSkip, gap, filter)
                   .Merge(bookStraddle)
                   .SelectMany(c => c)
                   .ToArray()
@@ -654,7 +660,7 @@ namespace HedgeHog.Alice.Client {
                     var option = t.combo.contract;
                     var maxPL = t.marketPrice.avg * quantity * option.ComboMultiplier;
                     var strikeDelta = t.strikeAvg - t.underPrice;
-                    var _sd = t.strikeAvg - sl.IfNaNOrZero(t.underPrice);
+                    var _sd = t.strikeAvg - sl;
                     var pl = t.deltaBid * quantity * option.ComboMultiplier;
                     var anoPL = MathExtensions.AnnualRate(am.Account.Equity, am.Account.Equity + pl, DateTime.Now, t.combo.contract.Expiration).rate * 100;
                     return new {
@@ -680,11 +686,11 @@ namespace HedgeHog.Alice.Client {
 
                     };
                   })
-                  .OrderBy(t => t.strike.Abs(sl))
+                  //.OrderBy(t => t.strike.Abs(sl))
                   .ToArray();
 
-                  var puts = options.Where(t => t.cp == "P" && (useNaked ? t._sd <= 5 : t._sd >= -5));
-                  var calls = options.Where(t => t.cp == "C" && (useNaked ? t._sd >= -5 : t._sd <= 5));
+                var puts = options.Where(t => t.cp == "P"); // && (useNaked ? t._sd <= 5 : t._sd >= -5));
+              var calls = options.Where(t => t.cp == "C");// && (useNaked ? t._sd >= -5 : t._sd <= 5));
                   var combos = options.Where(t => t.cp.IsNullOrEmpty());
                   //return (exp, b: options.OrderByDescending(x => x.strike));
                   return (exp, b: combos.Concat(calls.OrderByDescending(x => x.strike)).Concat(puts.OrderByDescending(x => x.strike)).ToArray());
@@ -799,7 +805,7 @@ namespace HedgeHog.Alice.Client {
                       combo = x.contract.Instrument
                       , i = x.contract.Key
                       , l = x.contract.ShortWithDate
-                      , netPL = x.pl - x.Commission
+                      , netPL = x.pl// - x.Commission
                       , x.position
                         , x.closePrice
                         , x.price.bid, x.price.ask

@@ -23,8 +23,8 @@ namespace ConsoleApp {
           });
         });
       });
-    public static void CurrentOptions(AccountManager am,String symbol) =>
-      am.CurrentOptions(symbol, 0, (0, DateTime.MinValue), 4, c => true)
+    public static void CurrentOptions(AccountManager am, string symbol,double strikeLevel) =>
+      am.CurrentOptions(symbol, strikeLevel, (0, DateTime.MinValue), 4, c => true)
       .Subscribe(se => {
         HandleMessage(se.Select(x => new { x.option }).ToMarkdownTable());
       });
