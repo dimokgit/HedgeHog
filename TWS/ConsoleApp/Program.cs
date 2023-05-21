@@ -93,12 +93,26 @@ namespace ConsoleApp {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
 
+          (//from opts in am.CurrentOptions("MESM3", 0, (0, DateTime.Parse("6/30/23")), 4, _ => true)
+           from fc in ibClient.ReqFutureChainCached("MESM3".ContractFactory())
+           select fc
+           )
+           .Subscribe(cds => {
+             cds.ForEach(cd => HandleMessage(cd.Contract.LastTradeDate));
+             ibClient.ReqFutureChainCached("MESM3".ContractFactory())
+             .Subscribe(cds2 => cds2.ForEach(cd => HandleMessage(cd.Contract.LastTradeDate)));
+           });
+          return;
+
+
+
+          Tests.GetHedgePairInfo("SPY", "VXX").Subscribe(cd => HandleMessage(cd)); return;
+          Tests.GetHedgePairInfo("MESM3", "VIX").Subscribe(cd => HandleMessage(cd)); return;
           Tests.HedgeCombo(am, "MESM3", "MBTK3", 2, 2, 1); return;
+          CurrentOptionsTest.CurrentOptions(am, "MBTK3", 0.003); return;
 
-          Tests.GetHedgePairInfo("SPY", "IWM").Subscribe(cd => HandleMessage(cd)); return;
-          CurrentOptionsTest.CurrentOptions(am, "MBTK3",0.003); return;
 
-          new[] { 0.001, -.001,double.NaN,0,double.MinValue }.ForEach(sl =>HandleMessage(new { price = 3845, sl, sl2 = AccountManager.StrikeLevel(3845, sl) })); return;
+          new[] { 0.001, -.001, double.NaN, 0, double.MinValue }.ForEach(sl => HandleMessage(new { price = 3845, sl, sl2 = AccountManager.StrikeLevel(3845, sl) })); return;
 
           (from cd in "YM   MAR 23".ReqContractDetailsCached()
            from se in ibClient.ReqStrikesAndExpirations(cd.Contract.LocalSymbol)

@@ -325,7 +325,7 @@ namespace IBApp {
           })
           */
     public static ConcurrentDictionary<string, IObservable<ContractDetails>> ReqContractDetails { get; } = new ConcurrentDictionary<string, IObservable<ContractDetails>>();
-    private IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
+    public IObservable<ContractDetails> ReqContractDetailsAsync(Contract contract) {
       //if(contract.Instrument.IsNullOrWhiteSpace())
       //  throw new Exception("Contract's Symbol property is empty");
       if(contract.Symbol == "VX" && contract.Exchange == "GLOBEX")
@@ -462,6 +462,32 @@ namespace IBApp {
       OptionChainCache.Clear();
       OptionChainCache.Clear();
     }
+
+    static ConcurrentDictionary<string, IObservable<ContractDetails[]>> _futuresChain = new ConcurrentDictionary<string, IObservable<ContractDetails[]>>();
+    static IObservable<ContractDetails[]> _futuresChainGet(string symbol) {
+      if(_futuresChain.TryGetValue(symbol, out var futs)) return futs;
+      return Observable.Empty<ContractDetails[]>();
+    }
+    public IObservable<ContractDetails[]> ReqFutureChainAsync(string symbol) => ReqFutureChainAsync(symbol.ContractFactory());
+    public IObservable<ContractDetails[]> ReqFutureChainCached(Contract c) {
+      return (from cd in c.ReqContractDetailsCached()
+              from a in _futuresChainGet(cd.MarketName).Merge(ReqFutureChainAsync(cd.Contract)).FirstAsync()
+              select a
+        );
+    }
+    public IObservable<ContractDetails[]> ReqFutureChainAsync(Contract c) {
+        //if(_futuresChain.Any()) return _futuresChain;
+
+        var futs = (from cd in c.ReqContractDetailsCached()
+                  let fcs = MakeFutureContract(cd, null)
+                  from fc in ReqContractDetailsAsync(fcs).ToArray().SideEffect(x => _futuresChain.TryAdd(cd.MarketName, x ))
+                  .Spy($"ReqFutureChainAsync({fcs})")
+                    select fc
+              );
+      return futs;
+      Contract MakeFutureContract(ContractDetails cd, string twsDate) => new Contract { Symbol = cd.MarketName, SecType = cd.Contract.SecType, Exchange = cd.Contract.Exchange, Currency = cd.Contract.Currency, LastTradeDateOrContractMonth = twsDate, Strike = 0 };
+    }
+
 
     static ConcurrentDictionary<string, IObservable<(DateTime[] expDate, double[] strike)>> _allStrikesAndExpirations = new ConcurrentDictionary<string, IObservable<(DateTime[] expDate, double[] strike)>>();
     static double _strikeLong(double strike) {

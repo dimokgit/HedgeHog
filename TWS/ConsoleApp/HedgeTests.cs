@@ -32,7 +32,7 @@ namespace ConsoleApp {
     public static IObservable<HedgeInfo> GetHedgeInfo(Contract c) {
       var ibc = IBClientCore.IBClientCoreMaster;
       return (from p in c.ReqPriceSafe()
-              from tgo in ibc.TickGenericObservable
+              //from tgo in ibc.TickGenericObservable
               from price in ibc.TryGetPrice(c)
               where price.OptionImpliedVolatility > 0
               let info = new { mul = c.ComboMultiplier * (c.SecType == "STK" ? 1 : 1), p.avg, price.OptionImpliedVolatility }
