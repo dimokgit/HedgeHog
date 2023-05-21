@@ -554,7 +554,7 @@ namespace HedgeHog.Alice.Client {
           var am = GetAccountManager();
           string CacheKey(Contract c) => c.IsFuture ? c.LocalSymbol : c.Symbol;
           var uc = contextDict["optionsUnder"]?.ToString().IfEmpty(pair);
-          var unders = await (from cd in uc.ReqContractDetailsCached()
+          var unders = await (from cd in uc.ReqFutureChainCached(expDate)
                               from price in cd.Contract.ReqPriceSafe()
                               select new { cd.Contract, price }
                               ).ToArray();

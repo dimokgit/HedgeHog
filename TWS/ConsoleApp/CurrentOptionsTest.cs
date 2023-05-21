@@ -26,7 +26,7 @@ namespace ConsoleApp {
     public static void CurrentOptions(AccountManager am, string symbol,double strikeLevel,DateTime? expirationDate = null) =>
       am.CurrentOptions(symbol, strikeLevel, (0, expirationDate.GetValueOrDefault(DateTime.MinValue)), 4, c => true)
       .Subscribe(se => {
-        HandleMessage(se.Select(x => new { x.option }).ToMarkdownTable());
+        HandleMessage(se.Select(x => new { x.option,x.underPrice }).ToMarkdownTable());
       });
     public static void ButterFly(AccountManager am) =>
       (from bf in am.MakeButterflies("ESU0", 3225)

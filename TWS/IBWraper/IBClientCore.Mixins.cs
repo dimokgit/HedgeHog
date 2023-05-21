@@ -26,5 +26,7 @@ namespace IBApp {
     public static IObservable<(DateTime[] expirations, double[] strikes)> ReqStrikesAndExpirations(this string underSymbol) =>
       IBClientCore.IBClientCoreMaster.ReqStrikesAndExpirations(underSymbol);
 
-    }
+    public static IObservable<ContractDetails> ReqFutureChainCached(this string instriment,DateTime expDate) =>
+      IBClientCore.IBClientCoreMaster.ReqFutureChainCached(instriment,expDate);
   }
+}

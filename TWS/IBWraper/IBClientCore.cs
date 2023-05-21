@@ -469,6 +469,12 @@ namespace IBApp {
       return Observable.Empty<ContractDetails[]>();
     }
     public IObservable<ContractDetails[]> ReqFutureChainAsync(string symbol) => ReqFutureChainAsync(symbol.ContractFactory());
+    public IObservable<ContractDetails> ReqFutureChainCached(string symbol, DateTime expDate) => ReqFutureChainCached(symbol.ContractFactory(), expDate);
+    public IObservable<ContractDetails> ReqFutureChainCached(Contract c, DateTime expDate) =>
+      (from futs in ReqFutureChainCached(c)
+       from fut in futs.SkipWhile(fut => fut.Contract.LastTradeDate < expDate)
+       select fut
+       ).FirstAsync();
     public IObservable<ContractDetails[]> ReqFutureChainCached(Contract c) {
       return (from cd in c.ReqContractDetailsCached()
               from a in _futuresChainGet(cd.MarketName).Merge(ReqFutureChainAsync(cd.Contract)).FirstAsync()
@@ -476,14 +482,14 @@ namespace IBApp {
         );
     }
     public IObservable<ContractDetails[]> ReqFutureChainAsync(Contract c) {
-        //if(_futuresChain.Any()) return _futuresChain;
+      //if(_futuresChain.Any()) return _futuresChain;
 
-        var futs = (from cd in c.ReqContractDetailsCached()
+      var futs = (from cd in c.ReqContractDetailsCached()
                   let fcs = MakeFutureContract(cd, null)
-                  from fc in ReqContractDetailsAsync(fcs).ToArray().SideEffect(x => _futuresChain.TryAdd(cd.MarketName, x ))
-                  .Spy($"ReqFutureChainAsync({fcs})")
-                    select fc
-              );
+                  from fc in ReqContractDetailsAsync(fcs).ToArray().SideEffect(x => _futuresChain.TryAdd(cd.MarketName, x))
+                  .Spy($"ReqFutureChainAsync({fcs})", o => TraceDebug(o))
+                  select fc
+            );
       return futs;
       Contract MakeFutureContract(ContractDetails cd, string twsDate) => new Contract { Symbol = cd.MarketName, SecType = cd.Contract.SecType, Exchange = cd.Contract.Exchange, Currency = cd.Contract.Currency, LastTradeDateOrContractMonth = twsDate, Strike = 0 };
     }

@@ -294,7 +294,8 @@ namespace IBApp {
           //from w in _CurrentOptionsGate.DefaultIfEmpty().Take(1)
           from cd in IbClient.ReqContractDetailsCached(symbol)
           where count > 0
-          from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
+          from ucd in IbClient.ReqFutureChainCached(symbol, exp.expirationDate)
+          from price in ucd.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
           from options in MakeOptions(symbol, StrikeLevel(price, strikeLevel), exp, count, filter).ToArray()
           from option in options.Skip((options.Length - 12).Max(0)).ToObservable()//.RateLimit(10, TaskPoolScheduler.Default)
           from p in option.ReqPriceSafe(10, Common.CallerChain("Current Option")).DefaultIfEmpty()
