@@ -118,6 +118,7 @@ namespace IBApp {
       select s;
 
     public static IObservable<(Contract contract, Contract[] options)> MakeStraddles(string symbol, double underPrice, int count, DateTime expDate, int gap) {
+      return MakeStraddles(symbol, underPrice, count, expDate, gap / 1000.0);
       return (
         from chains in DataManager.IBClientMaster.ReqOptionChainOldCache(symbol, expDate).ToArray()
         from chain in chains
@@ -146,6 +147,19 @@ namespace IBApp {
         //          .Buffer(2)
         //          .Select(b => (b.Last().call, b[0].put));
       }
+    }
+    public static IObservable<(Contract contract, Contract[] options)> MakeStraddles(string symbol, double underPrice, int count, DateTime expDate, double gap) {
+      return (
+        from chains in DataManager.IBClientMaster.ReqOptionChainOldCache(symbol, expDate).ToArray()
+        from chain in chains
+        where chain.Any()
+        let slc = StrikeLevel(underPrice, gap)
+        let slp = StrikeLevel(underPrice,-gap)
+        from call in chain.Where(c => c.IsCall).OrderBy(c=>c.Strike).Where(c=>c.Strike <=slc).TakeLast(1)
+        from put in chain.Where(c => !c.IsCall).OrderBy(c=>-c.Strike).Where(c=>c.Strike >=slp).TakeLast(1)
+        let cp = new[] { call, put }
+        select (cp.MakeStraddle(), cp)
+       );
     }
 
     public IObservable<(Contract contract, Contract[] options)> MakeStraddles

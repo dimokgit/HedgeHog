@@ -35,7 +35,7 @@ namespace ConsoleApp {
       .Subscribe();
 
     public static void CurrentStraddles(AccountManager am, string symbol) =>
-      am.CurrentStraddles(symbol, double.NaN, (1, DateTime.MinValue), 1, 1)
+      am.CurrentStraddles(symbol, double.NaN, (1, DateTime.MinValue), 3, 20)
       .Subscribe(ss => Program.HandleMessage(ss.Select(a => a.combo.contract).Select(c => new { c.ShortString, c.DateWithShort, c.ShortWithDate2 }).ToTextOrTable("Straddles:")));
 
     public static void CurrentStraddles(AccountManager am) {

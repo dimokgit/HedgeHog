@@ -31,14 +31,16 @@ namespace ConsoleApp {
       select hi;
     public static IObservable<HedgeInfo> GetHedgeInfo(Contract c) {
       var ibc = IBClientCore.IBClientCoreMaster;
-      return (from p in c.ReqPriceSafe()
+      return (from p in c.ReqPriceSafe(1)
+              let p2 = p
               //from tgo in ibc.TickGenericObservable
               from price in ibc.TryGetPrice(c)
-              where price.OptionImpliedVolatility > 0
+              where price.OptionImpliedVolatility.ThrowIf(oiv => oiv == 0) > 0
               let info = new { mul = c.ComboMultiplier * (c.SecType == "STK" ? 1 : 1), p.avg, price.OptionImpliedVolatility }
               select new HedgeInfo(c, info.mul, info.avg, info.OptionImpliedVolatility.Round(3))
       )
-      .FirstAsync();
+      .OnEmpty(()=> HandleMessage(new { c, @is = "Empty"}))
+      .FirstOrDefaultAsync();
       //.Subscribe(cd => HandleMessage(cd.ToJson(true)));
       //      IBClientCore.IBClientCoreMaster.TickGenericObservable.Subscribe(_ =>
       //        HandleMessage($"SPY Price:{IBClientCore.IBClientCoreMaster.TryGetPrice("SPY".ContractFactory()).Select(p => new { p.OptionImpliedVolatility }).FirstOrDefault()}"));
@@ -80,10 +82,10 @@ namespace ConsoleApp {
        from hPrice in hc.ReqPriceSafe()
        let pMul = pc.ComboMultiplier
        let hMul = hc.ComboMultiplier
-       select new { pPrice = pPrice.avg, hPrice = hPrice.avg, pMul, hMul,capRatio = pPrice.avg*pMul/hPrice.avg/hMul }
+       select new { pPrice = pPrice.avg, hPrice = hPrice.avg, pMul, hMul, capRatio = pPrice.avg * pMul / hPrice.avg / hMul }
        ).Subscribe(x => HandleMessage(x));
     }
-      public static void HedgeComboPrimary(AccountManager am, string localSymbol1, string localSymbol2) {
+    public static void HedgeComboPrimary(AccountManager am, string localSymbol1, string localSymbol2) {
       var parentContract = localSymbol1.ContractFactory();
       var hedgeContract = localSymbol2.ContractFactory();
       var quantityParent = 10;
@@ -352,6 +354,8 @@ namespace ConsoleApp {
 
     public static implicit operator (Contract pos1, Contract pos2, double ratio)(HedgeRatio value) => (value.pos1, value.pos2, value.ratio);
     public static implicit operator HedgeRatio((Contract pos1, Contract pos2, double ratio) value) => new HedgeRatio(value.pos1, value.pos2, value.ratio);
-    public override string ToString() => new { pos1 = pos1.ToString(), pos2=pos2.ToString(),ratio }.ToString();
+    public override string ToString() => new {
+      pos1 = pos1?.ToString() ?? "null", pos2 = pos2?.ToString() ?? "null", ratio
+    }.ToString();
   }
 }

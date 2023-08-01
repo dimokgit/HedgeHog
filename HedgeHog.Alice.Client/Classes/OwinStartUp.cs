@@ -543,8 +543,6 @@ namespace HedgeHog.Alice.Client {
         const string HID_BYTV = "ByTV";
         const string HID_BYHV = "ByHV";
         const string HID_BYPOS = "ByPos";
-        var useNaked = numOfCombos >= 0;
-        //numOfCombos = numOfCombos.Abs();
         var contextDict = (IDictionary<string, object>)context;
         var selectedHedge = tm.HedgeCalcType;// (string)(contextDict["selectedHedge"] ?? "");
         int.TryParse(Convert.ToString(contextDict["hedgeQuantity"] ?? "1"), out var hedgeQuantity);
@@ -593,7 +591,7 @@ namespace HedgeHog.Alice.Client {
             Action straddles = () =>
               underContracts
                 .ForEach(underContract => {
-                  am.CurrentStraddles(CacheKey(underContract), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, numOfCombos, gap)
+                  am.CurrentStraddles(CacheKey(underContract), strikeLevel.GetValueOrDefault(double.NaN), expirationDaysSkip, gap, numOfCombos)
                   .Merge(bookStraddle)
                   .SelectMany(c => c)
                   .ToArray()
@@ -632,7 +630,7 @@ namespace HedgeHog.Alice.Client {
                     cs = strikeLevel.HasValue && true
                     ? cs.OrderByDescending(x => x.strikeDelta)
                     : cs.OrderByDescending(x => x.delta);
-                    return cs.Take(numOfCombos.Abs()).OrderByDescending(x => x.strike).ToArray();
+                    return cs.Take(gap.Abs()).OrderByDescending(x => x.strike).ToArray();
                   })
                   .Subscribe(b => base.Clients.Caller.butterflies(b));
                 });

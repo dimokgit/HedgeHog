@@ -93,6 +93,12 @@ namespace ConsoleApp {
         ibClient.ManagedAccountsObservable.Subscribe(s => {
           var am = fw.AccountManager;
 
+          CurrentOptionsTest.CurrentStraddles(am, "MESU3"); return;
+
+          Tests.GetHedgePairInfo("QQQ", "SPY").Subscribe(cd => HandleMessage(cd)); return;
+          Tests.HedgeCombo(am, "MESM3", "VXMM3", 2, 2, -1); return;
+          Tests.GetHedgePairInfo("SPY", "VXX").Subscribe(cd => HandleMessage(cd)); return;
+
           CurrentOptionsTest.CurrentOptions(am, "MESM3", 0.003,DateTime.Parse("6/30/23")); return;
 
           (//from opts in am.CurrentOptions("MESM3", 0, (0, DateTime.Parse("6/30/23")), 4, _ => true)
@@ -106,13 +112,6 @@ namespace ConsoleApp {
              .Subscribe(cd => HandleMessage(cd.Contract.LastTradeDate)));
            });
           return;
-
-
-
-          Tests.GetHedgePairInfo("SPY", "VXX").Subscribe(cd => HandleMessage(cd)); return;
-          Tests.GetHedgePairInfo("MESM3", "VIX").Subscribe(cd => HandleMessage(cd)); return;
-          Tests.HedgeCombo(am, "MESM3", "MBTK3", 2, 2, 1); return;
-
 
           new[] { 0.001, -.001, double.NaN, 0, double.MinValue }.ForEach(sl => HandleMessage(new { price = 3845, sl, sl2 = AccountManager.StrikeLevel(3845, sl) })); return;
 
@@ -201,7 +200,6 @@ namespace ConsoleApp {
             return cd.Contract.ReqPriceSafe();
           }
           ).Subscribe(HandleMessage); return;
-          CurrentOptionsTest.CurrentStraddles(am, "ESU1"); return;
           TestCombosTrades(10).Take(1).Subscribe(); return;
           Tests.HedgeComboPrimary(am, "MESM1", "MBTM1"); return;
 
