@@ -1,5 +1,6 @@
 ﻿using IBApi;
 using System;
+using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 
@@ -28,5 +29,6 @@ namespace IBApp {
 
     public static IObservable<ContractDetails> ReqFutureChainCached(this string instriment,DateTime expDate) =>
       IBClientCore.IBClientCoreMaster.ReqFutureChainCached(instriment,expDate);
+    public static IEnumerable<HedgeHog.Shared.Price> TryGetPrice(this Contract c, [CallerMemberName] string Caller = "") => IBClientCore.IBClientCoreMaster.TryGetPrice(c,Caller);
   }
 }

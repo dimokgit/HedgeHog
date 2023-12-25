@@ -1132,7 +1132,11 @@
       this.selectedCombos = ko.observableArray();
       this.selectedCombos.subscribe(() => readCombos(true));
       this.toggleSelectedTrade = function (combo) { toggleSelected(combo, this.selectedCombos, this.liveCombos().concat(this.currentCombos())); }.bind(this);
-      this.toggleSelectedCombos = function (combo) { toggleSelected(combo, this.selectedCombos, this.liveCombos().concat(this.currentCombos())); }.bind(this);
+      this.toggleSelectedCombos = function (combo) {
+        toggleSelected(combo, this.selectedCombos, this.liveCombos().concat(this.currentCombos()));
+        _.delay(resetPlotter,1000)
+        _.delay(resetPlotter2, 1000)
+      }.bind(this);
       function toggleSelected(combo, array, source) {
         if (event.ctrlKey) {
           self.addBookPosition(combo);

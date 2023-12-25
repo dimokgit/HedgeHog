@@ -373,6 +373,9 @@
     div.hedgeComboActive {
       font-weight: bold;
     }
+    svg > g > g.y.axis > g > text{
+      font-size: 115%;
+    }
   </style>
   <script>
     $(function () {
@@ -1519,18 +1522,18 @@
       </tr>
       <!-- ko foreach:currentCombos -->
       <tr data-bind="event:{click:$root.toggleSelectedCombos}">
-        <td data-bind="text:l,css:{comboNameActive:$root.testActiveCombo($data)}" class="comboName"></td>
+        <td data-bind="text:l,css:{comboNameActive:$root.testActiveCombo($data)},attr:{title:title()}" class="comboName"></td>
         <td data-bind="text:d3.format('+.1f')(strikeDelta())" style="color:white;background-color: lightslategray"></td>
         <!--<td data-bind1="text:d3.format('.1f')(be.up())"></td>
         <td data-bind1="text:d3.format('.1f')(be.dn())"></td>
         <td data-bind1="text:d3.format('.2f')(avg())"></td>-->
-        <td data-bind="text:d3.format('.0f')(maxPlPerc())"></td>
+        <td data-bind="text:maxPlPerc()"></td>
         <td data-bind="text:d3.format('.2f')(perc())"></td>
         <td data-bind="text:d3.format('.2f')(delta())"></td>
         <!--<td data-bind="text:d3.format('.2f')(bid())"></td>-->
         <td data-bind="text:d3.format('.2f')(ask())"></td>
         <td data-bind="text:d3.format('$.0f')(maxPL())"></td>
-        <td data-bind="text:d3.format('.1f')(Math.abs(greekDelta()))+'/'+d3.format('.1f')(theta())"></td>
+        <td data-bind="text:d3.format('.1f')(Math.abs(greekDelta()))+'/'+d3.format('.1f')(theta())+'/'+priceRatio()"></td>
         <td>
           <button data-bind="click:$parent.openButterfly.bind($root,false,$data,true),enabled:$root.canTrade" title="Sell with condition">Sell</button>
           <button data-bind="click:$parent.openButterfly.bind($root,true,$data,true),enabled:$root.canTrade" title="Buy with condition">Buy</button>

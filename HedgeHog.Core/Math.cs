@@ -9,6 +9,12 @@ namespace HedgeHog {
     public static int Max(this int d1, int d2) {
       return Math.Max(d1, d2);
     }
+    public static long Max(this long d1, long d2) {
+      return Math.Max(d1, d2);
+    }
+    public static long Min(this long d1, long d2) {
+      return Math.Min(d1, d2);
+    }
     public static DateTime Max(this DateTime d1, DateTime d2) {
       return d1 >= d2 ? d1 : d2;
     }
@@ -135,6 +141,12 @@ namespace HedgeHog {
     public static int Max(this int v, params int[] other) {
       return other.Aggregate(v, (p, n) => p.Max(n));
     }
+    public static long Max(this long v, params int[] other) {
+      return other.Aggregate(v, (p, n) => p.Max((long)n));
+    }
+    public static long Max(this long v, params long[] other) {
+      return other.Aggregate(v, (p, n) => p.Max(n));
+    }
     public static double Min(this double? v, double? other) {
       return !v.HasValue ? other.GetValueOrDefault(double.NaN) : !other.HasValue ? v.GetValueOrDefault(double.NaN) : Math.Min(v.Value, other.Value);
     }
@@ -149,6 +161,12 @@ namespace HedgeHog {
     }
     public static int Min(this int v, params int[] other) {
       return other.Aggregate(v, (p, n) => p.Min(n));
+    }
+    public static long Min(this long v, params long[] other) {
+      return other.Aggregate(v, (p, n) => p.Min(n));
+    }
+    public static long Min(this long v, params int[] other) {
+      return other.Aggregate(v, (p, n) => p.Min((long)n));
     }
 
     public static int Floor(this double d) { return (int)Math.Floor(d); }
@@ -248,6 +266,7 @@ namespace HedgeHog {
       return d1 < d2 ? d1 <= value && value <= d2 : d1 <= value || value <= d2;
     }
     #endregion
+    public static DateTime CloneDate(this DateTime dateFrom, DateTime dateTo) => dateFrom.Date + dateTo.TimeOfDay;
     public static double IntOrDouble(this double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : Math.Round(d, 1);
     }

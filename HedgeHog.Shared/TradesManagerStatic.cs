@@ -192,7 +192,7 @@ namespace HedgeHog.Shared {
     static string[] _indices = new[] { "SPX", "VIX", "ES", "RUT", "MRUT" };
     public static bool IsIndex(this string s) => _indices.Contains(s.ToUpper());
     //public static bool IsIndex(this string s) => Regex.IsMatch(s, @"\sindex$", RegexOptions.IgnoreCase);
-    static string[] _etfs = new[] { "SPY", "TVIX", "VXX", "UVXY", "SVXY", "QQQ", "IWM","GLD" };
+    static string[] _etfs = new[] { "SPY", "TVIX", "VXX", "UVXY", "SVXY", "QQQ", "IWM","GLD", "BRK B" };
     public static bool IsETF(this string s) => _etfs.Contains(s);
     private static readonly EventLoopScheduler _tradingThread =
       new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; });

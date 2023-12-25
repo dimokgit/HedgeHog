@@ -31,6 +31,16 @@ namespace IBApp {
         select CurrentComboInfo(price, combo, p)
         ).ToArray();
     }
+    public IObservable<CurrentCombo[]>
+      CurrentStraddles(string symbol, double strikeLevel, (int expirationDaysSkip, DateTime expirationDate) exp, int count, double gap) {
+      return (
+        from cd in IbClient.ReqContractDetailsCached(symbol)
+        from price in cd.Contract.ReqPriceSafe(5).Select(p => p.ask.Avg(p.bid))
+        from combo in MakeStraddles(symbol, strikeLevel.IfNaNOrZero(price), count, exp.expirationDate.IsMin() ? exp.expirationDaysSkip.CalcExpirationDate() : exp.expirationDate, gap)
+        from p in combo.contract.ReqPriceSafe().DefaultIfEmpty()
+        select CurrentComboInfo(price, combo, p)
+        ).ToArray();
+    }
 
     public IObservable<CurrentCombo[]>
       StraddleFromContracts(IList<Contract> contracts) {
@@ -117,9 +127,12 @@ namespace IBApp {
       from s in MakeStraddles(symbol, p, count, expDate, gap)
       select s;
 
-    public static IObservable<(Contract contract, Contract[] options)> MakeStraddles(string symbol, double underPrice, int count, DateTime expDate, int gap) {
-      return MakeStraddles(symbol, underPrice, count, expDate, gap / 1000.0);
-      return (
+    public static IObservable<(Contract contract, Contract[] options)> MakeStraddles(string symbol, double underPrice, int count, DateTime expDate, double gap) {
+      return MakeStraddlesBest(symbol, underPrice, expDate, gap);
+    }
+      public static IObservable<(Contract contract, Contract[] options)> MakeStraddles(string symbol, double underPrice, int count, DateTime expDate, int gap) {
+        return MakeStraddlesBest(symbol, underPrice, expDate, gap / 1000.0);
+        return (
         from chains in DataManager.IBClientMaster.ReqOptionChainOldCache(symbol, expDate).ToArray()
         from chain in chains
         where chain.Any()
@@ -148,15 +161,23 @@ namespace IBApp {
         //          .Select(b => (b.Last().call, b[0].put));
       }
     }
-    public static IObservable<(Contract contract, Contract[] options)> MakeStraddles(string symbol, double underPrice, int count, DateTime expDate, double gap) {
+    public static IObservable<(Contract contract, Contract[] options)> MakeStraddlesBest(string symbol, double underPrice, DateTime expDate, double gap) =>
+        from chains in DataManager.IBClientMaster.ReqOptionChainOldCache(symbol, expDate).ToArray()
+        from chain in chains
+        from strile in chain.Where(c => c.IsCall).OrderBy(c => c.Strike.Abs(underPrice)).Take(3).Select(c => c.Strike)
+        from straddle in MakeStraddle(symbol, strile, 1, expDate, gap)
+        select straddle;
+    public static IObservable<(Contract contract, Contract[] options)> MakeStraddle(string symbol, double underPrice, int count, DateTime expDate, double gap) {
       return (
         from chains in DataManager.IBClientMaster.ReqOptionChainOldCache(symbol, expDate).ToArray()
         from chain in chains
         where chain.Any()
         let slc = StrikeLevel(underPrice, gap)
-        let slp = StrikeLevel(underPrice,-gap)
-        from call in chain.Where(c => c.IsCall).OrderBy(c=>c.Strike).Where(c=>c.Strike <=slc).TakeLast(1)
-        from put in chain.Where(c => !c.IsCall).OrderBy(c=>-c.Strike).Where(c=>c.Strike >=slp).TakeLast(1)
+        let slp = StrikeLevel(underPrice, -gap)
+        from call in chain.Where(c => c.IsCall).OrderBy(c => c.Strike).Where(c => c.Strike <= slc).TakeLast(1)
+        from cprice in call.ReqPriceSafe().Do(mp => call.Price = mp.avg)
+        from put in chain.Where(c => !c.IsCall).OrderBy(c => -c.Strike).Where(c => c.Strike >= slp).TakeLast(1)
+        from pprice in put.ReqPriceSafe().Do(mp => put.Price = mp.avg)
         let cp = new[] { call, put }
         select (cp.MakeStraddle(), cp)
        );

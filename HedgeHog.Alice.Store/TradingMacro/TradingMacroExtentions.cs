@@ -69,6 +69,7 @@ namespace HedgeHog.Alice.Store {
 
     static int _activeFastRequests = -1;
     public void OnLoadRates(Action a = null) => LoadRatesAsyncBuffer.Push(() => {
+      Pair.ReqContractDetailsCached().Subscribe();
       if(_activeFastRequests < 0) {
         _activeFastRequests = TradingMacrosActive.Count(IsFast);
         Log = new Exception(new { _activeFastRequests } + "");
@@ -2534,7 +2535,7 @@ new MarketPrice(
             OnScanCorridor(RatesArray, () => {
               try {
                 CorridorAngle = TLRed.Angle;
-                TakeProfitPips = InPips(CalculateTakeProfit());
+                TakeProfitPips = IsTrader ? InPips(CalculateTakeProfit()) : 0.0;
               } catch(Exception exc) { Log = exc; if(IsInVirtualTrading) Strategy = Strategies.None; throw; }
             }, Strategy.IsHedge() || IsInVirtualTrading);
             OnPropertyChanged(nameof(TradingDistanceInPips));
@@ -3861,8 +3862,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
     public double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function, double xRatio) {
       var tp = double.NaN;
       Func<TradeLevelBy, TradeLevelBy, double> tradeLeveBy = (h, l) => (TradeLevelFuncs[h]() - TradeLevelFuncs[l]()) * xRatio;
-      Func<Func<TradingMacro, double>, double> useTrender = f => TradingMacroTrender(f).DefaultIfEmpty(double.NaN).Single();
-      Func<Func<TradingMacro, double>, double> useTrenderComm = f => TradingMacroTrender(tm => f(tm) + tm.InPoints(tm.CommissionInPips()) * 2).DefaultIfEmpty(double.NaN).Single();
+      Func<Func<TradingMacro, double>, double> useTrender = f => TradingMacroTrender(f).DefaultIfEmpty(double.NaN).First();
+      Func<Func<TradingMacro, double>, double> useTrenderComm = f => TradingMacroTrender(tm => f(tm) + tm.InPoints(tm.CommissionInPips()) * 2).DefaultIfEmpty(double.NaN).First();
       switch(function) {
         case TradingMacroTakeProfitFunction.StDev:
           return useTrenderComm(tm => tm.StDevByHeight * xRatio);
@@ -4505,8 +4506,8 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           if(startDate != TradesManagerStatic.FX_DATE_NOW && _Rates.Count > 10)
             periodsBack = 0;
           var groupTicks = false && BarPeriodCalc == BarsPeriodType.s1;
-          var isFast = true;// BarPeriod == BarsPeriodType.t1;
-          bool? useRTH = CanTradeAlwaysOn ? true : (bool?)null;
+          var isFast = BarPeriod == BarsPeriodType.t1;
+          bool? useRTH = CanTradeAlwaysOn ? false : (bool?)null;
           LoadRatesImpl(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate.AddSeconds(1), TradesManagerStatic.FX_DATE_NOW, isFast, useRTH, ratesList, groupTicks);
           if(BarPeriod != BarsPeriodType.t1)
             ratesList.Smoother();
@@ -4553,7 +4554,7 @@ TradesManagerStatic.PipAmount(Pair, Trades.Lots(), (TradesManager?.RateForPipAmo
           }
           //if (BarPeriod == BarsPeriodType.t1)
           //  UseRatesInternal(ri => { ri.Sort(LambdaComparisson.Factory<Rate>((r1, r2) => r1.StartDate > r2.StartDate)); });
-          if(sw.Elapsed > TimeSpan.FromSeconds(LoadRatesSecondsWarning))
+          if(Debugger.IsAttached || sw.Elapsed > TimeSpan.FromSeconds(LoadRatesSecondsWarning))
             Log = new Exception("LoadRates[" + Pair + ":{1}] - {0:n1} sec".Formater(sw.Elapsed.TotalSeconds, (BarsPeriodType)BarPeriod));
           LastRatePullTime = ServerTime;
           UseRatesInternal(rl => new[] { rl.Count - BarsCountCount() }.Where(rc => rc > 0).ForEach(rc => rl.RemoveRange(0, rc)));

@@ -307,6 +307,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CurrentOptionsTest.cs" />
+    <Compile Include="LoadTest.cs" />
     <Compile Include="OrdersTest.cs" />
     <Compile Include="PositionsTest.cs" />
     <Compile Include="EdgeTests.cs" />

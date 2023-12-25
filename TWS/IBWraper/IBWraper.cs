@@ -149,7 +149,8 @@ namespace IBApp {
           ,
           Exchange = cd.ValidExchanges.Split(new[] { ';', ',' })[0]// "GLOBEX"/*contract.Exchange*//*, TradingClass = contract.TradingClass*/
           ,
-          Symbol = cd.UnderSecType == "CASH" ? contract.Symbol : cd.UnderSymbol
+          Symbol = cd.UnderSecType == "CASH" ? contract.Symbol : cd.UnderSymbol,
+          ConId = cd.Contract.ConId
         };
       var isDone = false;
       Func<DateTime, DateTime> fxDate = d => d == FX_DATE_NOW ? new DateTime(DateTime.Now.Ticks, DateTimeKind.Local) : d;
@@ -157,7 +158,7 @@ namespace IBApp {
       startDate = fxDate(startDate);
       var timeUnit = period == 0 ? TimeUnit.S : period == 1 ? TimeUnit.D
         : period.Between(3, 5) ? TimeUnit.W
-        : period.Between(10, 15) ? TimeUnit.M
+        : period.Between(10, 60) ? TimeUnit.M
         : period == 1440  ? TimeUnit.Y
         : throw new ArgumentOutOfRangeException($"period[{period}]", $"Is out of range");
       var barSize = period == 0 ? BarSize._1_secs
@@ -166,11 +167,13 @@ namespace IBApp {
         : period == 5 ? BarSize._5_mins
         : period == 10 ? BarSize._10_mins
         : period == 15 ? BarSize._15_mins
+        : period == 30 ? BarSize._30_mins
+        : period == 60 ? BarSize._1_hour
         : period == 1440 ? BarSize._1_day
         : throw new ArgumentOutOfRangeException($"period[{period}]", $"Is out of range");
       var duration = (endDate - startDate).Duration();
       var lastTime = DateTime.Now;
-      var runFast = isFast.GetValueOrDefault(period == 0 || periodsBack > 0);
+      var runFast = isFast.GetValueOrDefault(period == 0 || periodsBack > 10000);
       var fac = new HistoryLoaderDelegate<TBar>(runFast ? IHistoryLoader.Factory : (HistoryLoaderDelegate<TBar>)IHistoryLoader.Factory_Slow);
       //Trace(new { fac, runFast, pair, period, periodsBack, startDate, endDate });
       fac(
@@ -194,7 +197,7 @@ namespace IBApp {
                  EndDate = list.LastOrDefault()?.StartDate,
                  timeUnit, barSize,
                  contract.Symbol,
-                 duration = HistoryLoader<Rate>.Duration(barSize, timeUnit, duration)
+                 duration = new { barSize, timeUnit, duration }
                }
              },
              list));
@@ -634,7 +637,7 @@ namespace IBApp {
     //  throw new NotImplementedException();
     //}
 
-    public double GetPipSize(string pair) => ContractDetails.FromCache(pair, cd => cd.PriceMagnifier).Count(1, _ => new Exception($"new{pair} not found in cache."), null).Single();
+    public double GetPipSize(string pair) => ContractDetails.FromCache(pair, cd => cd.PriceMagnifier).Count(1, _ => new Exception($"new{pair} not found in cache."), null).DefaultIfEmpty(-1).SingleOrDefault();
     //cd => Math.Pow(10, Math.Log10(cd.MinTick.Floor()))).DefaultIfEmpty().Single();
 
     public IEnumerable<Price> TryGetPrice(string pair) {

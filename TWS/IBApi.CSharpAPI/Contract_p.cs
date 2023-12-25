@@ -39,6 +39,7 @@ namespace IBApi {
       }
       return this;
     }
+    private double price = double.NaN;
     private string HashKey => Instrument +
       (IsOptionsCombo ? ":" + ComboLegs.OrderBy(l => l.Ratio).Select(l => $"{l.ConId}-{l.Ratio}").Flatter(":") : "");
     public double IntrinsicValue(double undePrice) =>
@@ -311,6 +312,7 @@ namespace IBApi {
       .Single();
     #endregion
     public static (string hedge1, string hedge2, string prime)[] HedgePairs { get; set; }
+    public double Price { get => price; set => price = value; }
   }
   public static class ContractMixins {
     public static string ToLable(this ComboLeg l) => l.Ratio == 0 ? "" : (l.Action == "BUY" ? "+" : "-") + (l.Ratio > 1 ? l.Ratio + "" : "");

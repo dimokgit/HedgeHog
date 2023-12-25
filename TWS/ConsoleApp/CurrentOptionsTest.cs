@@ -7,6 +7,7 @@ using static ConsoleApp.Program;
 using MarkdownLog;
 using System.Collections.Generic;
 using IBApi;
+using HedgeHog.Core;
 
 namespace ConsoleApp {
   static class CurrentOptionsTest {
@@ -35,8 +36,10 @@ namespace ConsoleApp {
       .Subscribe();
 
     public static void CurrentStraddles(AccountManager am, string symbol) =>
-      am.CurrentStraddles(symbol, double.NaN, (1, DateTime.MinValue), 3, 20)
-      .Subscribe(ss => Program.HandleMessage(ss.Select(a => a.combo.contract).Select(c => new { c.ShortString, c.DateWithShort, c.ShortWithDate2 }).ToTextOrTable("Straddles:")));
+      am.CurrentStraddles(symbol, double.NaN, (1, DateTime.Now.Date.AddDays(2)), 3, 10)
+      .Subscribe(ss => 
+      HandleMessage(ss.Select(c => new { c.combo.contract.DateWithShort, prices=c.combo.options.ToArray(o=>o.Price).ToJson(), priceRatio = c.priceRatio.AutoRound2(3),c.strikeAvg }).ToTextOrTable("Straddles:"))      
+      );
 
     public static void CurrentStraddles(AccountManager am) {
       var symbol = "ESU1";

@@ -120,7 +120,7 @@ namespace IBApp {
       var positions = Positions.Where(p => p.position != 0 && p.contract.IsOption).ToArray();
       //var expDate = positions.Select(p => p.contract.Expiration).DefaultIfEmpty().Min();
       //var positionsByExpiration = positions.Where(p => p.contract.Expiration == expDate).ToArray();
-      var positionsByExpiration = positions.GroupBy(p => p.contract.Expiration);
+      var positionsByExpiration = positions.GroupBy(p => new { p.contract.Expiration, p.contract.Symbol });
       var exps = positionsByExpiration.Select(g => ComboTradesAllImpl2(g.ToArray())).Concat();
       //var positionsByStrike = positions.GroupBy(p => new { p.contract.Expiration, p.contract.Strike });
       var positionsBySelection = positions.Where(p => (selection?.Contains(p.contract.Instrument)).GetValueOrDefault()).ToList();

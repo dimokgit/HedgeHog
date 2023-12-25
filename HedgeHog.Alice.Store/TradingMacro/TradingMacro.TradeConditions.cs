@@ -21,6 +21,8 @@ using IBApp;
 using System.Threading;
 using ReactiveUI.Legacy;
 using MoreLinq;
+using IBApi;
+
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
 
@@ -1270,17 +1272,39 @@ namespace HedgeHog.Alice.Store {
         var showBBSD = (new[] { VoltageFunction, VoltageFunction2 }).Contains((VoltageFunction)VoltageFunction.BBSD) ||
           (new[] { TradeLevelBy.BoilingerDown, TradeLevelBy.BoilingerUp }).Contains((TradeLevelBy)LevelBuyBy) ||
           TakeProfitFunction == TradingMacroTakeProfitFunction.BBand;
-        var anns = tm1s.Select(tm1 => {
-          var trends = tm1.TLLime;
-          var f =trends?.Rates.FirstOrDefault()?.PriceAvg;//.PriceAvg2;
-          var s = f + trends?.Slope * (trends.Rates.Count - 1);// tl.LastOrDefault()?.Trends.PriceAvg2;
-          var ratio = f.HasValue && !f.Value.IsZeroOrNaN() ? s.Value / f.Value : 0.0;
+        var annsFunc = ToFunc((Func<TradingMacro,TL[]> trendsGet) => tm1s
+        .Select(tm1 => {
+          var trends = trendsGet(tm1).Skip(1).SingleOrDefault();
+          var trends0 = trendsGet(tm1).FirstOrDefault();
+          var barPeriod = tm1.BarPeriodInt;
+          return new { trends, trends0,barPeriod };
+        })
+        .Where(x => x.trends != null && x.trends0 != null & x.trends.Rates.Any() && CurrentPrice != null)
+        .Select(x => {
+          var trends = x.trends;
+          var trends0 = x.trends0;
+          //var trends = tm1.TLLime;
+          var rf = trends.Rates.Last();
+          var contract = IBApi.Contract.FromCache(Pair);
+          //IBApp.AccountManager.IBClientMaster.ReqContractDetailsAsync
+          var periodsPerDate = trends.Count / trends.TimeSpan.TotalDays;
+          var periodsTillYearEnd = (new DateTime(DateTime.Now.Year, 12, 31) - rf.StartDate.Date).TotalDays * periodsPerDate;
+          var f = trends0.PriceAvg2;
+          var l = trends.PriceAvg2;
+          var yEnd = trends.PriceAvg1 + trends.Slope * periodsTillYearEnd;// tl.LastOrDefault()?.Trends.PriceAvg2;
+          var ratio = (l / f);
           var days = trends.TimeSpan.TotalDays.Ceiling();
-          return new { ratio, days,trends.PriceAvg2,trends.PriceAvg3 };
-        });
-        var annRate = anns.Select(ann => new { r = (Math.Pow(ann.ratio, 365.0 / ann.days) - 1).ToString("p2"), d = ann.days }).SingleOrDefault()?.ToString();
+          return new { ratio, days,trends.PriceAvg2,trends.PriceAvg3,yEnd,trends.StDev };
+        }));
+        var annsLime = annsFunc(tm1 => tm1.TrendLines0.Value.ToArray(r=>r.Trends));
+        var annFunc = ToFunc(annsLime, f => f.Select(ann => new { r = (Math.Pow(ann.ratio, 365.0 / ann.days) - 1).ToString("p2"), d = ann.days }).SingleOrDefault()?.ToString());
+        var annLime = annFunc(annsLime);
+        var annsBlue = annsFunc(tm1 => tm1.TrendLines2.Value.ToArray(r => r.Trends));
+        var annBlue = annFunc(annsBlue);
+        var oiv = CurrentPrice?.OptionImpliedVolatility;
+        var stDevLime = annsLime.Select(a => a.StDev).SingleOrDefault();
         return (new {
-          StDevHP = $"{tm.StDevByHeightInPips.AutoRound2((int)2)}/{tm.StDevByPriceAvgInPips.AutoRound2((int)2)}:{(StdOverCurrPriceRatio()).Round((int)1)}%",
+          StDevHPL = $"{tm.StDevByHeightInPips.AutoRound2((int)2)}/{tm.StDevByPriceAvgInPips.AutoRound2((int)2)}/{stDevLime.AutoRound2(3)}:{(StdOverCurrPriceRatio()).Round((int)1)}%",
           //StdTLLast = InPips(tls.TakeLast(1).Select(tl => tl.StDev).SingleOrDefault(),1),
           //BolngrAvg= InPips(_boilingerAvg,1),
           //ProfitPip = CalculateTakeProfitInPips().Round((int)1),
@@ -1292,8 +1316,10 @@ namespace HedgeHog.Alice.Store {
           //Blue_Edge = tm.TrendLinesBlueTrends.EdgeDiff.SingleOrDefault().Round(1)
           //BlueHStd_ = TrendLines2Trends.HStdRatio.SingleOrDefault().Round(1),
           //WvDistRsd = _waveDistRsd.Round(2)
-          AnnRate = annRate,
-          PriceAvg = anns.Select(ann=> $"{ann.PriceAvg2.AutoRound2(5)}/{ann.PriceAvg3.AutoRound2(5)}").FirstOrDefault()
+          AnnLime = annLime,
+          PriceLime = annsLime.Select(ann => $"{ann.PriceAvg2.AutoRound2(4)}/{ann.PriceAvg3.AutoRound2(4)}/{ann.yEnd.AutoRound2(4)}").FirstOrDefault(),
+          AnnBlue = annBlue,
+          PriceBlue = annsBlue.Select(ann => $"{ann.PriceAvg2.AutoRound2(4)}/{ann.PriceAvg3.AutoRound2(4)}/{ann.yEnd.AutoRound2(4)}").FirstOrDefault()
         })
         .ToExpando()
         .Add((object)(showBBSD ? (object)new { BoilBand = this._boilingerStDev.Value.Select<global::System.Tuple<double, double>, string>(t => string.Format("{0:n2}:{1:n2}", this.InPips(t.Item1), this.InPips(t.Item2))) } : new { }))
@@ -1317,6 +1343,7 @@ namespace HedgeHog.Alice.Store {
         //.Add(new { VltCma = $"{VltCma2Ok()}/{GetVoltCmaWaveAvg().With(t => (t.avg.Mult(100).AutoRound2(2), t.avgCount, t.last.Mult(100).AutoRound2(2), t.lastCount))}" })
         .Add(new { BlSch = $"{StraddleRangeM1().Height.AutoRound2(3)}/{tm1s.Select(tm1 => new[] { tm1.HistoricalVolatilityAnnualized(false) }.Select(v => v.AutoRound2(3)).Flatter("/")).FirstOrDefault()}" })
         .Add(new { HVAs = $"{tm1s.Select(tm1 => new[] { tm1.HistoricalVolatilityAnnualized2(), tm1.HistoricalVolatilityAnnualized3() }.Select(v => v.AutoRound2(3)).Flatter("/")).FirstOrDefault()}" })
+        .Add(new { OIV = $"{oiv}" })
         ;
       }
       //.Merge(new { EqnxRatio = tm._wwwInfoEquinox }, () => TradeConditionsHave(EqnxLGRBOk))

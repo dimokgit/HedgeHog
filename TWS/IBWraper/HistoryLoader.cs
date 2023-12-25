@@ -72,6 +72,8 @@ namespace IBApp {
       var lastHour = contract.IsFuture ? 17 : 20;
       _endDate = timeUnit == TimeUnit.W
         ? endDate.InNewYork().Date.GetNextWeekday(DayOfWeek.Friday).AddHours(lastHour)
+        : timeUnit == TimeUnit.M
+        ? endDate.InNewYork().Date.Round(MathCore.RoundTo.MonthEnd) + (23 * 60 + 59).FromMinutes()
         : endDate;//.Date.GetNextWeekday(DayOfWeek.Saturday);
       _timeUnit = timeUnit;
       _barSize = barSize;
@@ -172,6 +174,7 @@ namespace IBApp {
       _delay = TimeSpan.Zero;
       lock(_listLocker) {
         _list.InsertRange(0, _list2.Distinct().SkipWhile(b => _periodsBack == 0 && b.StartDate < _dateStart));
+        _list.Sort(b => b.StartDate.Ticks);
         if((_periodsBack == 0 && _endDate <= _dateStart) || (_periodsBack > 0 && _list.Count >= _periodsBack)) {
           CleanUp();
           _dataEnd(_list);
@@ -209,8 +212,9 @@ namespace IBApp {
         string whatToShow = _contract.IsIndex ? "TRADES" : "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         // TODO: reqHistoricalData - keepUpToDate
+        var duration = Duration(_barSize, _timeUnit, _duration);
         var dt = _endDate.ToUniversalTime().ToTWSString().Replace(" ", "-");// + " US/Eastern";
-        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, dt, Duration(_barSize, _timeUnit, _duration), barSizeSetting, whatToShow, _useRTH ? 1 : 0, 1, false, new List<TagValue>());
+        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, dt, duration, barSizeSetting, whatToShow, _useRTH ? 1 : 0, 1, false, new List<TagValue>());
       } catch(Exception exc) {
         _error(exc);
         CleanUp();
@@ -237,6 +241,14 @@ namespace IBApp {
         [TimeUnit.M] = new[] { 1, 1 }
       },
       [BarSize._15_mins] = new Dictionary<TimeUnit, int[]> {
+        [TimeUnit.M] = new[] { 1, 1 }
+      },
+      [BarSize._30_mins] = new Dictionary<TimeUnit, int[]> {
+        [TimeUnit.W] = new[] { 1, 1 },
+        [TimeUnit.M] = new[] { 1, 1 }
+      },
+      [BarSize._1_hour] = new Dictionary<TimeUnit, int[]> {
+        [TimeUnit.W] = new[] { 1, 1 },
         [TimeUnit.M] = new[] { 1, 1 }
       },
       [BarSize._1_day] = new Dictionary<TimeUnit, int[]> {

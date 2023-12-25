@@ -86,6 +86,7 @@
     <Reference Include="MarkdownLog, Version=0.10.1.0, Culture=neutral, PublicKeyToken=2b6c562c5dd991ab, processorArchitecture=MSIL">
       <HintPath>..\..\AllInOne\packages\MarkdownLog.NS20.0.10.1\lib\netstandard2.0\MarkdownLog.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="MongoDB.Bson, Version=2.11.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\AllInOne\packages\MongoDB.Bson.2.11.1\lib\net452\MongoDB.Bson.dll</HintPath>
     </Reference>

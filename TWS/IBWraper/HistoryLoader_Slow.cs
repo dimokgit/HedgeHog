@@ -14,6 +14,7 @@ using System.Reactive.Concurrency;
 using System.Threading;
 using HedgeHog.DateTimeZone;
 using System.Diagnostics;
+using Microsoft.VisualBasic;
 
 namespace IBApp {
   #region HistoryLoader_Slow
@@ -27,6 +28,7 @@ namespace IBApp {
     private int _reqId;
     private readonly IBClientCore _ibClient;
     private Contract _contract;
+    private readonly ContractDetails _contractDetails;
     private readonly DateTime _dateStart;
     private DateTime __endDate;
     private DateTime _endDate {
@@ -68,15 +70,18 @@ namespace IBApp {
       _list2 = new SortedSet<T>();
       if(endDate.Kind == DateTimeKind.Unspecified)
         throw new Exception(new { endDate = new { endDate.Kind } } + "");
-      _dateStart = endDate.Subtract(duration);
       var lastHour = contract.IsFuture ? 17 : 20;
-      _endDate = false && timeUnit == TimeUnit.W
-        ? endDate.InNewYork().Date.GetNextWeekday(DayOfWeek.Friday).AddHours(lastHour)
-        : endDate;//.Date.GetNextWeekday(DayOfWeek.Saturday);
+      _endDate = endDate;
       _timeUnit = timeUnit;
       _barSize = barSize;
-      var durationByPeriod = barSize.Span().Multiply(periodsBack);
-      _duration = (_endDate - _dateStart).Max(durationByPeriod);
+      _contract = contract;
+      _contractDetails = contract.FromDetailsCache().SingleOrDefault() ?? ContractDetails.ContractDetailsCache.Values.First(cd => cd.Contract.ConId == contract.ConId);
+      var barSpan = barSize.Span();
+      var barsPerWeek = _contractDetails.TradingTimePerWeek.Ticks / barSpan.Ticks;
+      var hoursBack = (periodsBack.Div(barsPerWeek).Ceiling() * 7 * 24.0).FromHours();
+      var durationByPeriod = hoursBack;
+      _duration = periodsBack == 0 ? duration : durationByPeriod;
+       _dateStart = _endDate - _duration;
       _done = done;
       _dataEnd = dataEnd;
       _error = error;
@@ -84,7 +89,6 @@ namespace IBApp {
       _map = map;
       Init();
       var me = this;
-      _contract = contract;
       var ls = _contract.LocalSymbol ?? _contract.Symbol ?? "";
       var isETF = /*cd.LongName.Contains(" ETF") ||*/ ls.IsETF();
       _useRTH = useRTH.GetValueOrDefault(!_contract.IsFuture && !ls.IsOption() && !ls.IsCurrenncy() && !ls.IsFuture() && !isETF && !ls.IsIndex() && _timeUnit != TimeUnit.S);
@@ -141,7 +145,7 @@ namespace IBApp {
           ? _endDate.AddDays(-2)
           : _timeUnit != TimeUnit.S
           ? _endDate.AddDays(-1)
-          : _endDate.AddSeconds(-BarSizeRange(_barSize, _timeUnit).Last());
+          : _endDate.AddSeconds(-BarSizeRange(_barSize, _timeUnit).range.Last());
         _endDate = newEndDate;
         _error(new SoftException(GetType().Name + new { _contract, _endDate, } + " No Data"));
         RequestNextDataChunk();
@@ -172,7 +176,7 @@ namespace IBApp {
       if(m.RequestId != _reqId)
         return;
       _delay = TimeSpan.Zero;
-      Debug.WriteLine(m);
+      Debug.WriteLineIf(false, new { m, _list2 = _list2.Count });
       var ds = m.StartDate.FromTWSString().Min((_cache.FirstOrDefault()?.StartDate).GetValueOrDefault(DateTime.MaxValue));
       var de = m.EndDate.FromTWSString();
       lock(_listLocker) {
@@ -193,18 +197,27 @@ namespace IBApp {
             _reqId = IBClientCore.IBClientCoreMaster.ValidOrderId();
             _error(new SoftException($"HistoryLoader_Slow[{_contract}]:{new { _reqId, listCount = _list.Count }}"));
             _endDate = ds.Subtract(_barSize.Span());
+            while(!_contractDetails.IsTradeHour(_endDate)) {
+              _endDate = _endDate.Subtract(_barSize.Span());
+            }
+
           }
         } else {
           if(_list.Any())
             _dataEnd(_list);
           _list2.Clear();
+          if(_list.Count >= _periodsBack.IfZero(int.MaxValue)){
+            CleanUp();
+            _done(_cache);
+            return;
+          }
         }
         RequestHistoryDataChunk();
       }
     }
     private void IbClient_HistoricalData(HistoricalDataMessage m) {
       if(m.RequestId == _reqId) {
-        Debug.WriteLine(m);
+        //Debug.WriteLine(m);
         var date2 = m.Date.FromTWSString();
         if(false && date2 < _endDate)
           _endDate = _contract.Symbol == "VIX" && date2.TimeOfDay == new TimeSpan(3, 15, 0)
@@ -228,9 +241,18 @@ namespace IBApp {
         string whatToShow = _contract.IsIndex ? "TRADES" : "MIDPOINT";
         //_error(new SoftException(new { ReqId = _reqId, _contract.Symbol, EndDate = _endDate, Duration = Duration(_barSize, _timeUnit, _duration) } + ""));
         // TODO: reqHistoricalData - keepUpToDate
+        var timeLeft = _endDate - _dateStart;
         var duration = Duration(_barSize, _timeUnit, _duration);
+
+        var months = 0;// DateAndTime.DateDiff(DateInterval.Month, _dateStart, _endDate);
+        var weeks = (DateAndTime.DateDiff(DateInterval.WeekOfYear, _dateStart, _endDate).Max(0) + 1).Min(52);
+        duration = months>0 ? $"{months} M": $"{weeks} W";
+
+        Debug.WriteLine(new { duration });
+
+        var dt = _endDate.ToUniversalTime().ToTWSString().Replace(" ", "-");// + " US/Eastern";
         _ibClient.OnReqMktData(() =>
-        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, _endDate.ToTWSString(), duration, barSizeSetting, whatToShow, _useRTH ? 1 : 0, 1, false, new List<TagValue>())
+        _ibClient.ClientSocket.reqHistoricalData(_reqId, _contract, dt, duration, barSizeSetting, whatToShow, _useRTH ? 1 : 0, 1, false, new List<TagValue>())
         );
       } catch(Exception exc) {
         _error(exc);
@@ -260,21 +282,29 @@ namespace IBApp {
       [BarSize._15_mins] = new Dictionary<TimeUnit, int[]> {
         [TimeUnit.M] = new[] { 1, 1 }
       },
+      [BarSize._30_mins] = new Dictionary<TimeUnit, int[]> {
+        //[TimeUnit.W] = new[] { 1, 1 },
+        [TimeUnit.M] = new[] { 1, 6 }
+      },
+      [BarSize._1_hour] = new Dictionary<TimeUnit, int[]> {
+        //[TimeUnit.W] = new[] { 1, 1 },
+        [TimeUnit.M] = new[] { 1, 6 }
+      },
       [BarSize._1_day] = new Dictionary<TimeUnit, int[]> {
         [TimeUnit.Y] = new[] { 1, 1 }
       }
     };
     private readonly int _periodsBack;
 
-    private static int[] BarSizeRange(BarSize barSize, TimeUnit timeUnit) {
-      return BarSizeRanges[barSize][timeUnit];
+    private static (TimeUnit timeUnit, int[]  range ) BarSizeRange(BarSize barSize, TimeUnit timeUnit) {
+      return BarSizeRanges[barSize].TryGetValue(timeUnit,out var bs) ? (timeUnit, bs) : BarSizeRanges[barSize].Select(kv=>(kv.Key,kv.Value)).Last();
     }
     public static string Duration(BarSize barSize, TimeUnit timeUnit, TimeSpan timeSpan) {
       var interval = (timeUnit == TimeUnit.S ? timeSpan.TotalSeconds 
         : timeUnit == TimeUnit.D ? timeSpan.TotalMinutes : timeSpan.TotalDays * 7);
-      var range = BarSizeRange(barSize, timeUnit);
+      var (timeUnit2,range) = BarSizeRange(barSize, timeUnit);
       var duration = Math.Min(Math.Max(interval, range[0]), range[1]).Ceiling();
-      return duration + " " + timeUnit;
+      return duration + " " + timeUnit2;
     }
     #endregion
   }

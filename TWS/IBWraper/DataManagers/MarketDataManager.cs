@@ -302,7 +302,7 @@ ETFNavLow = 99,
       if(false) TraceDebug(new[] { new { Price = ar.price, field, price } }.ToTextOrTable($"{nameof(RaisePriceChanged)}:{ ShowThread()}"));
       if(false) OnTickPriceTrace(new { requestId, field, price } + "", $"{nameof(OnTickPrice)}[{requestId}]: {ar.contract}:{new { field, price }}");
       var price2 = ar.price;
-      //Trace($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, field, price).ToString()}");
+      Verbose0($"{nameof(OnTickPrice)}:{price2.Pair}:{(requestId, (TickType)field, price).ToString()}");
       const int CLOSE_PRICE = 9;
       const int LOW_52 = 19;
       const int HIGH_52 = 20;
@@ -325,18 +325,21 @@ ETFNavLow = 99,
             if(doMarkPrice || doLastPrice) Debug.WriteLine(new { doLastPrice, doMarkPrice, field, price });
             if(!price2.IsAskSet || price > 0) {
               price2.Ask = price;
+              if(!price2.IsBidSet) price2.Bid = price;
               price2.Time2 = price2.TimeSet = IbClient.ServerTime;
               RaisePriceChanged(ar);
             }
             break;
           }
         case CLOSE_PRICE: {
-            if(!ar.contract.IsTradingHours(IbClient.ServerTime)) {
+            if(ar.contract.IsFutureOption || !ar.contract.IsTradingHours(IbClient.ServerTime)) {
               if(!price2.IsAskSet) {
+                TraceDebug($"{nameof(OnTickPrice)}(Close Price Ask):{price2.Pair}:{(requestId, (TickType)field, price).ToString()}");
                 price2.Ask = price;
                 price2.IsAskSet = true;
               }
               if(!price2.IsBidSet) {
+                TraceDebug($"{nameof(OnTickPrice)}(Close Price Bid):{price2.Pair}:{(requestId, (TickType)field, price).ToString()}");
                 price2.Bid = price;
                 price2.IsBidSet = true;
               }

@@ -472,12 +472,12 @@ namespace IBApp {
     public IObservable<ContractDetails> ReqFutureChainCached(string symbol, DateTime expDate) => ReqFutureChainCached(symbol.ContractFactory(), expDate);
     public IObservable<ContractDetails> ReqFutureChainCached(Contract c, DateTime expDate) =>
       (from futs in ReqFutureChainCached(c)
-       from fut in futs.SkipWhile(fut => fut.Contract.LastTradeDate < expDate)
+       from fut in futs.SkipWhile(fut => fut.Contract.LastTradeDate.IfMin(DateTime.MaxValue) < expDate)
        select fut
        ).FirstAsync();
     public IObservable<ContractDetails[]> ReqFutureChainCached(Contract c) {
       return (from cd in c.ReqContractDetailsCached()
-              from a in _futuresChainGet(cd.MarketName).Merge(ReqFutureChainAsync(cd.Contract)).FirstAsync()
+              from a in _futuresChainGet(cd.MarketNameSafe).Merge(ReqFutureChainAsync(cd.Contract)).FirstAsync()
               select a
         );
     }
@@ -486,12 +486,12 @@ namespace IBApp {
 
       var futs = (from cd in c.ReqContractDetailsCached()
                   let fcs = MakeFutureContract(cd, null)
-                  from fc in ReqContractDetailsAsync(fcs).ToArray().SideEffect(x => _futuresChain.TryAdd(cd.MarketName, x))
+                  from fc in ReqContractDetailsAsync(fcs).ToArray().SideEffect(x => _futuresChain.TryAdd(cd.MarketNameSafe, x))
                   .Spy($"ReqFutureChainAsync({fcs})", o => TraceDebug(o))
                   select fc
             );
       return futs;
-      Contract MakeFutureContract(ContractDetails cd, string twsDate) => new Contract { Symbol = cd.MarketName, SecType = cd.Contract.SecType, Exchange = cd.Contract.Exchange, Currency = cd.Contract.Currency, LastTradeDateOrContractMonth = twsDate, Strike = 0 };
+      Contract MakeFutureContract(ContractDetails cd, string twsDate) => new Contract { Symbol = cd.MarketNameSafe, SecType = cd.Contract.SecType, Exchange = cd.Contract.Exchange, Currency = cd.Contract.Currency, LastTradeDateOrContractMonth = twsDate, Strike = 0 };
     }
 
 
@@ -540,7 +540,7 @@ namespace IBApp {
       var fopDate = expirationDate;
       //Trace(new { fopDate = fopDate.ToShortDateString(), symbol, strike });
       var isVIX = true;
-      Contract MakeFutureContract(ContractDetails cd, string twsDate) => new Contract { Symbol = cd.MarketName, SecType = "FOP", Exchange = cd.Contract.Exchange, Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
+      Contract MakeFutureContract(ContractDetails cd, string twsDate) => new Contract { Symbol = cd.MarketNameSafe, SecType = "FOP", Exchange = cd.Contract.Exchange, Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
       Contract MakeIndexContract(string s, string twsDate) => new Contract { Symbol = s, SecType = "OPT", Currency = "USD", LastTradeDateOrContractMonth = twsDate, Strike = strike };
       Contract MakeStockContract(string twsDate) => new Contract {
         Symbol = symbol,

@@ -14,7 +14,7 @@ namespace IBApp {
   partial class AccountManager {
     static string[] _hedgeExcepts = new[] { "ES", "MES" };
     public IObservable<ComboTrade> MakeComboHedgeFromPositions(IEnumerable<Position> positions, IList<string> instruments = null) {
-      var a = (from g in SelectedPositions(positions, instruments).Concat(HedgedPositions(positions))//.OrderBy(p => p.position.contract.Instrument)
+      var a = (from g in SelectedPositions(positions, instruments)//.Concat(HedgedPositions(positions))//.OrderBy(p => p.position.contract.Instrument)
                where g.Length == 2
                let o = g[0]
                let t = g[1]
@@ -24,8 +24,8 @@ namespace IBApp {
                let isBuy = quantity > 0
                let pl = g.Sum(p => p.pl)
                let mul = hc.multiplier// g.Select(x => x.position.contract.ComboMultiplier).ToArray().multiplier() * quantity
-               let openPrice = g.Sum(p => p.position.open) / mul
-               let closePrice = g.Sum(p => p.close) / mul
+               let openPrice = g.Sum(p => p.position.open) / mul / quantity
+               let closePrice = g.Sum(p => p.close) / mul / quantity
                let order = OrderContractsInternal.Items.OpenByContract(hc.contract).Where(oc => oc.order.IsBuy != isBuy).Take(1).ToList()
                let orderId = order.Select(o => o.order.OrderId).SingleOrDefault()
                let tp = order.Select(oc => oc.order.LmtAuxPrice).SingleOrDefault()

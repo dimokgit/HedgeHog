@@ -31,7 +31,7 @@ namespace ConsoleApp {
       select hi;
     public static IObservable<HedgeInfo> GetHedgeInfo(Contract c) {
       var ibc = IBClientCore.IBClientCoreMaster;
-      return (from p in c.ReqPriceSafe(1)
+      return (from p in c.ReqPriceSafe(10)
               let p2 = p
               //from tgo in ibc.TickGenericObservable
               from price in ibc.TryGetPrice(c)

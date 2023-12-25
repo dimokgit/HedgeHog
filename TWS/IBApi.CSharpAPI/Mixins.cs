@@ -1,4 +1,5 @@
 ﻿using HedgeHog;
+using HedgeHog.DateTimeZone;
 using IBApi;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,10 @@ using System.Threading.Tasks;
 
 namespace IBApi {
   public static class IBApiMixins {
+    private static IDictionary<string, string> timeZoneMap = new Dictionary<string, string>() {
+      ["US/Central"] = "Central Standard Time",
+      ["US/Eastern"] = "Eastern Standard Time"
+    };
     public static IEnumerable<Contract> Sort(this IEnumerable<Contract> l) => l.OrderBy(c => c.Strike).ThenBy(c => c.Right);
     public static string MakeOptionSymbol(string tradingClass, DateTime expiration, double strike, bool isCall) {
       var date = expiration.ToTWSOptionDateString();
@@ -50,6 +55,10 @@ namespace IBApi {
       }
 
       return DateTime.SpecifyKind(DateTime.ParseExact(dateTimeString, dateTimeFormat, CultureInfo.InvariantCulture), dateTimeKind);
+    }
+    public static DateTime ChangeTwsZone(this DateTime date, string twsZone) {
+      var tz = TimeZoneInfo.FindSystemTimeZoneById(timeZoneMap[twsZone]);
+      return date + (DateTimeZone.Eastern.BaseUtcOffset - tz.BaseUtcOffset);
     }
   }
 }

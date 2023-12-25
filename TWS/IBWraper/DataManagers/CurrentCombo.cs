@@ -1,6 +1,9 @@
-﻿using IBApi;
+﻿using HedgeHog;
+using IBApi;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reactive.Linq;
 
 namespace IBApp {
   public struct CurrentCombo {
@@ -13,7 +16,8 @@ namespace IBApp {
     public double deltaAsk;
     public MarketPrice marketPrice { get; }
     public Contract option => combo.contract;
-
+    public double priceRatio =>
+      combo.options.Pairwise((o1, o2) => o1.Price.Ratio(o2.Price)).DefaultIfEmpty(double.NaN).First();
     public CurrentCombo(string instrument, MarketPrice marketPrice, double strikeAvg, double underPrice, (double up, double dn) breakEven, Contract contract, double deltaBid, double deltaAsk) : this(
       instrument, marketPrice, strikeAvg, underPrice, breakEven, (contract, new Contract[0]), deltaBid, deltaAsk
       ) {
